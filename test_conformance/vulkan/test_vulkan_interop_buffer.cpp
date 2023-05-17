@@ -265,7 +265,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
                 if (use_fence)
                 {
-                    fence->wait();
+                    clFinish(cmd_queue1);
                 }
                 else
                 {
@@ -325,7 +325,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 {
                     if (use_fence)
                     {
-                        fence->wait();
+                        clFinish(cmd_queue2);
                     }
                     else
                     {
@@ -608,7 +608,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
                 if (use_fence)
                 {
-                    fence->wait();
+                    clFinish(cmd_queue1);
                 }
                 else
                 {
@@ -644,7 +644,6 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 {
                     if (use_fence)
                     {
-                        fence->wait();
                         clFinish(cmd_queue1);
                     }
                     else
@@ -960,7 +959,7 @@ int run_test_with_multi_import_same_ctx(
 
                     if (use_fence)
                     {
-                        fence->wait();
+                        clFinish(cmd_queue1);
                     }
                     else
                     {
@@ -1003,7 +1002,7 @@ int run_test_with_multi_import_same_ctx(
                     {
                         if (use_fence)
                         {
-                            fence->wait();
+                            clFinish(cmd_queue1);
                         }
                         else
                         {
@@ -1368,7 +1367,7 @@ int run_test_with_multi_import_diff_ctx(
 
                     if (use_fence)
                     {
-                        fence->wait();
+                        clFinish(cmd_queue1);
                     }
                     else
                     {
@@ -1411,7 +1410,7 @@ int run_test_with_multi_import_diff_ctx(
                     {
                         if (use_fence)
                         {
-                            fence->wait();
+                            clFinish(cmd_queue1);
                         }
                         else
                         {
@@ -1450,7 +1449,7 @@ int run_test_with_multi_import_diff_ctx(
 
                     if (use_fence)
                     {
-                        vkQueue.submit(vkCommandBuffer, fence);
+                        fence->wait();
                     }
                     else
                     {
@@ -1493,7 +1492,7 @@ int run_test_with_multi_import_diff_ctx(
                     {
                         if (use_fence)
                         {
-                            fence->wait();
+                            clFinish(cmd_queue2);
                         }
                         else
                         {
