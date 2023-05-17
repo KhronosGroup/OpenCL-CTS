@@ -936,7 +936,7 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
         bool svm_capabilities =
             !clGetDeviceInfo(device, CL_DEVICE_SVM_CAPABILITIES,
                              sizeof(svm_caps), &svm_caps, NULL)
-            && svm_capabilities != 0;
+            && svm_caps != 0;
 
         return !svm_capabilities || BasicMutableCommandBufferTest::Skip();
     }
@@ -954,6 +954,7 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
                 __global int *pC;
             } BufPtrs;
             __kernel void set_kernel_exec_info_test(__global BufPtrs* pBufs)
+            {
                 size_t i;
                i = get_global_id(0);
                 pBufs->pA[i]++;
@@ -1010,7 +1011,7 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         cl_mutable_dispatch_exec_info_khr exec_info_list{
-            CL_KERNEL_EXEC_INFO_SVM_PTRS, sizeof(BufPtrs), pBuf
+            CL_KERNEL_EXEC_INFO_SVM_PTRS, sizeof(BufPtrs), newBuf
         };
 
         cl_mutable_dispatch_config_khr dispatch_config{
