@@ -60,10 +60,10 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
     {
         const char *sample_const_arg_kernel =
             R"(
-            __kernel void sample_test(__constant int *src1, __global int *dst)
+            __kernel void sample_test(__constant int *src, __global int *dst)
             {
                 size_t  tid = get_global_id(0);
-                dst[tid] = src1[tid];
+                dst[tid] = src[tid];
             })";
 
         cl_int error;
@@ -101,7 +101,7 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
 
         error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &streams[0]);
         test_error(error, "Unable to set indexed kernel arguments");
-        error = clSetKernelArg(kernel, 1, sizeof(cl_mem) * 2, &streams[1]);
+        error = clSetKernelArg(kernel, 1, sizeof(cl_mem), &streams[1]);
         test_error(error, "Unable to set indexed kernel arguments");
 
         threads[0] = numberOfInts;
@@ -730,7 +730,7 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
-        error = clEnqueueReadBuffer(queue, stream, CL_TRUE, 0, data_size,
+        error = clEnqueueReadBuffer(queue, new_image, CL_TRUE, 0, data_size,
                                     outputData, 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
@@ -898,7 +898,7 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
-        error = clEnqueueReadBuffer(queue, stream, CL_TRUE, 0, data_size,
+        error = clEnqueueReadBuffer(queue, new_image, CL_TRUE, 0, data_size,
                                     outputData, 0, NULL, NULL);
         test_error(error, "clEnqueueReadBuffer failed");
 
