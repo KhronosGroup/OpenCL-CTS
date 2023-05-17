@@ -210,7 +210,7 @@ struct Dimensions : public ComplexMutableCommandBufferTest
             &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        size_t test_dimensions;
+        cl_uint test_dimensions;
 
         error = clGetMutableCommandInfoKHR(
             command, CL_MUTABLE_DISPATCH_DIMENSIONS_KHR,
@@ -231,7 +231,7 @@ struct Dimensions : public ComplexMutableCommandBufferTest
     }
 
     cl_mutable_command_khr command = nullptr;
-    const size_t dimensions = 3;
+    const cl_uint dimensions = 3;
 };
 
 struct InfoType : public ComplexMutableCommandBufferTest
