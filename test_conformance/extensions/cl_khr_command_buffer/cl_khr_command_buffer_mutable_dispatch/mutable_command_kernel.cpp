@@ -932,8 +932,6 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
 
     bool Skip() override
     {
-        cl_mutable_dispatch_fields_khr mutable_capabilities;
-
         cl_device_svm_capabilities svm_caps;
         bool svm_capabilities =
             !clGetDeviceInfo(device, CL_DEVICE_SVM_CAPABILITIES,
