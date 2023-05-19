@@ -22,7 +22,7 @@
 #include "procs.h"
 #include "harness/testHarness.h"
 
-std::string pragma_extension;
+static std::string pragma_extension;
 
 template <int N> struct TestInfo
 {
