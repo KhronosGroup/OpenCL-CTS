@@ -653,7 +653,7 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
 
         clMemWrapper image = create_image_1d(
             context, CL_MEM_READ_WRITE, &formats, image_desc.image_width,
-            image_desc.image_width, 0, nullptr, &error);
+            image_desc.image_width, nullptr, nullptr, &error);
         test_error(error, "create_image_2d failed");
 
         error = create_single_kernel_helper(context, &program, &kernel, 1,
@@ -730,9 +730,12 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
-        error = clEnqueueReadBuffer(queue, new_image, CL_TRUE, 0, data_size,
-                                    outputData, 0, nullptr, nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
+        size_t origin[3] = { 0, 0, 0 };
+        size_t region[3] = { image_desc.image_width, 1, 1 };
+
+        error = clEnqueueReadImage(queue, image, CL_TRUE, origin, region, 0, 0,
+                                   outputData, 0, nullptr, nullptr);
+        test_error(error, "clEnqueueReadImage failed");
 
         for (size_t i = 0; i < imageInfo.width; ++i)
         {
@@ -819,7 +822,7 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
 
         clMemWrapper image = create_image_2d(
             context, CL_MEM_READ_WRITE, &formats, image_desc.image_width,
-            image_desc.image_width, 0, NULL, &error);
+            image_desc.image_height, 0, nullptr, &error);
         test_error(error, "create_image_2d failed");
 
         error = create_single_kernel_helper(context, &program, &kernel, 1,
@@ -898,9 +901,13 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
-        error = clEnqueueReadBuffer(queue, new_image, CL_TRUE, 0, data_size,
-                                    outputData, 0, NULL, NULL);
-        test_error(error, "clEnqueueReadBuffer failed");
+        size_t origin[3] = { 0, 0, 0 };
+        size_t region[3] = { image_desc.image_width, image_desc.image_width,
+                             1 };
+
+        error = clEnqueueReadImage(queue, new_image, CL_TRUE, origin, region, 0,
+                                   0, outputData, 0, nullptr, nullptr);
+        test_error(error, "clEnqueueReadImage failed");
 
         for (size_t i = 0; i < imageInfo.width; ++i)
         {
