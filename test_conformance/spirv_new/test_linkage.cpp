@@ -211,7 +211,7 @@ static int test_linkonce_odr_helper(cl_device_id deviceID, cl_context context,
 
 TEST_SPIRV_FUNC(linkage_linkonce_odr)
 {
-    if (false && !is_extension_available(deviceID, "cl_khr_spirv_linkonce_odr"))
+    if (!is_extension_available(deviceID, "cl_khr_spirv_linkonce_odr"))
     {
         log_info("Extension cl_khr_spirv_linkonce_odr not supported; skipping "
                  "tests.\n");
