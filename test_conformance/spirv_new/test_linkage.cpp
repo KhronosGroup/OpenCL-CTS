@@ -154,8 +154,8 @@ static int test_linkonce_odr_helper(cl_device_id deviceID, cl_context context,
     SPIRV_CHECK_ERROR(err, "Failed to compile export program");
 
     clProgramWrapper prog_main;
-    err = test_linkage_compile(deviceID, context, queue,
-                               main_module_filename, prog_main);
+    err = test_linkage_compile(deviceID, context, queue, main_module_filename,
+                               prog_main);
     SPIRV_CHECK_ERROR(err, "Failed to compile import program");
 
     cl_program progs[] = { prog_obj, prog_main };
