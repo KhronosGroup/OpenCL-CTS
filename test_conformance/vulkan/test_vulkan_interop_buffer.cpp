@@ -265,7 +265,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
                 if (use_fence)
                 {
-                    clFinish(cmd_queue1);
+                    fence->wait();
                 }
                 else
                 {
@@ -608,7 +608,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
                 if (use_fence)
                 {
-                    clFinish(cmd_queue1);
+                    fence->wait();
                 }
                 else
                 {
