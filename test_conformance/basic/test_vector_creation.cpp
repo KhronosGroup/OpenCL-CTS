@@ -19,15 +19,17 @@
 #include "harness/errorHelpers.h"
 #include <vector>
 
+#include <CL/cl_half.h>
+
 #define DEBUG 0
 #define DEPTH 16
 // Limit the maximum code size for any given kernel.
 #define MAX_CODE_SIZE (1024 * 32)
 
-const int sizes[] = { 1, 2, 3, 4, 8, 16, -1, -1, -1, -1 };
-const char *size_names[] = { "",   "2",   "3",   "4",   "8",
-                             "16", "!!a", "!!b", "!!c", "!!d" };
-char extension[128] = { 0 };
+static const int sizes[] = { 1, 2, 3, 4, 8, 16, -1, -1, -1, -1 };
+static const char *size_names[] = { "",   "2",   "3",   "4",   "8",
+                                    "16", "!!a", "!!b", "!!c", "!!d" };
+static char extension[128] = { 0 };
 
 // Creates a kernel by enumerating all possible ways of building the vector out
 // of vloads skip_to_results will skip results up to a given number. If the
@@ -240,18 +242,15 @@ int create_kernel(ExplicitType type, int output_size, char *program,
 int test_vector_creation(cl_device_id deviceID, cl_context context,
                          cl_command_queue queue, int num_elements)
 {
-    std::vector<ExplicitType> vecType = { kChar,  kUChar, kShort, kUShort,
-                                          kInt,   kUInt,  kLong,  kULong,
-                                          kFloat, kHalf,  kDouble };
-    std::vector<unsigned int> vecSizes = { 2, 3, 4, 8, 16 };
+    const std::vector<ExplicitType> vecType = { kChar,  kUChar, kShort, kUShort,
+                                                kInt,   kUInt,  kLong,  kULong,
+                                                kFloat, kHalf,  kDouble };
+    // should be in sync with global array size_names
+    const std::vector<unsigned int> vecSizes = { 1, 2, 3, 4, 8, 16 };
 
-    int error;
+    int error = CL_SUCCESS;
     int total_errors = 0;
-
-    cl_double input_data_double[16] = { 0, 1, 2,  3,  4,  5,  6,  7,
-                                        8, 9, 10, 11, 12, 13, 14, 15 };
-
-    int number_of_results;
+    int number_of_results = 0;
 
     std::vector<char> input_data_converted(sizeof(cl_double) * 16);
     std::vector<char> program_source(sizeof(char) * 1024 * 1024 * 4);
@@ -295,7 +294,22 @@ int test_vector_creation(cl_device_id deviceID, cl_context context,
 
         // Convert the data to the right format for the test.
         memset(input_data_converted.data(), 0xff, sizeof(cl_double) * 16);
-        if (vecType[type_index] != kDouble)
+        if (vecType[type_index] == kDouble)
+        {
+            const cl_double input_data_double[16] = { 0,  1,  2,  3, 4,  5,
+                                                      6,  7,  8,  9, 10, 11,
+                                                      12, 13, 14, 15 };
+            memcpy(input_data_converted.data(), &input_data_double,
+                   sizeof(cl_double) * 16);
+        }
+        else if (vecType[type_index] == kHalf)
+        {
+            cl_half *buf =
+                reinterpret_cast<cl_half *>(input_data_converted.data());
+            for (int j = 0; j < 16; j++)
+                buf[j] = cl_half_from_float(float(j), CL_HALF_RTE);
+        }
+        else
         {
             for (int j = 0; j < 16; j++)
             {
@@ -305,11 +319,6 @@ int test_vector_creation(cl_device_id deviceID, cl_context context,
                         + get_explicit_type_size(vecType[type_index]) * j,
                     kInt, 0, kRoundToEven, vecType[type_index]);
             }
-        }
-        else
-        {
-            memcpy(input_data_converted.data(), &input_data_double,
-                   sizeof(cl_double) * 16);
         }
 
         clMemWrapper input =
@@ -324,7 +333,7 @@ int test_vector_creation(cl_device_id deviceID, cl_context context,
         }
 
         // Iterate over all the vector sizes.
-        for (int size_index = 0; size_index < vecSizes.size(); size_index++)
+        for (int size_index = 1; size_index < vecSizes.size(); size_index++)
         {
             size_t global[] = { 1, 1, 1 };
             int number_generated = -1;
