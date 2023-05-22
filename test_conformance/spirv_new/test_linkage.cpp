@@ -142,16 +142,11 @@ TEST_SPIRV_FUNC(linkage_import_function_link)
     return 0;
 }
 
-TEST_SPIRV_FUNC(linkage_linkonce_odr)
+static int test_linkonce_odr_helper(cl_device_id deviceID, cl_context context,
+                                    cl_command_queue queue,
+                                    const char *main_module_filename)
 {
-    if (!is_extension_available(deviceID, "cl_khr_spirv_linkonce_odr"))
-    {
-        log_info("Extension cl_khr_spirv_linkonce_odr not supported; skipping "
-                 "tests.\n");
-        return 0;
-    }
-
-    int err = 0;
+    cl_int err = 0;
 
     clProgramWrapper prog_obj;
     err = test_linkage_compile(deviceID, context, queue,
@@ -160,7 +155,7 @@ TEST_SPIRV_FUNC(linkage_linkonce_odr)
 
     clProgramWrapper prog_main;
     err = test_linkage_compile(deviceID, context, queue,
-                               "linkage_linkonce_odr_main", prog_main);
+                               main_module_filename, prog_main);
     SPIRV_CHECK_ERROR(err, "Failed to compile import program");
 
     cl_program progs[] = { prog_obj, prog_main };
@@ -207,9 +202,35 @@ TEST_SPIRV_FUNC(linkage_linkonce_odr)
         if (h_out[i] != 5)
         {
             log_error("Incorrect values at location %d\n", i);
-            return -1;
+            return TEST_FAIL;
         }
     }
 
-    return 0;
+    return TEST_PASS;
+}
+
+TEST_SPIRV_FUNC(linkage_linkonce_odr)
+{
+    if (false && !is_extension_available(deviceID, "cl_khr_spirv_linkonce_odr"))
+    {
+        log_info("Extension cl_khr_spirv_linkonce_odr not supported; skipping "
+                 "tests.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    int result = TEST_PASS;
+
+    // For this test, use the default main module, which has an "a" function
+    // with the linkonce_odr linkage type.  This ensures that having two "a"
+    // functions with linkonce_odr works properly.
+    result |= test_linkonce_odr_helper(deviceID, context, queue,
+                                       "linkage_linkonce_odr_main");
+
+    // For this test, use a main module without the "a" function.  This ensures
+    // that the "a" function is properly exported with the linkonce_odr linkage
+    // type.
+    result |= test_linkonce_odr_helper(deviceID, context, queue,
+                                       "linkage_linkonce_odr_noa_main");
+
+    return result;
 }
