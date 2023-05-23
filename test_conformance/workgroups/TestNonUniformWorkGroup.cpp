@@ -514,10 +514,9 @@ TestNonUniformWorkGroup::getMaxLocalWorkgroupSize(const cl_device_id &device)
 {
     if (TestNonUniformWorkGroup::_maxLocalWorkgroupSize == 0)
     {
-        clGetDeviceInfo(
-            device, CL_DEVICE_MAX_WORK_GROUP_SIZE,
-            sizeof(TestNonUniformWorkGroup::_maxLocalWorkgroupSize),
-            &TestNonUniformWorkGroup::_maxLocalWorkgroupSize, NULL);
+        clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE,
+                        sizeof(TestNonUniformWorkGroup::_maxLocalWorkgroupSize),
+                        &TestNonUniformWorkGroup::_maxLocalWorkgroupSize, NULL);
     }
 
     return TestNonUniformWorkGroup::_maxLocalWorkgroupSize;
