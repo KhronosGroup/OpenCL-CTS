@@ -215,6 +215,63 @@ struct BasicEnqueueTest : public BasicCommandBufferTest
     }
 };
 
+// Test re-enqueuing a command-buffer containing a single NDRange command once
+struct BasicReenqueueTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override
+    {
+        cl_int error = clCommandNDRangeKernelKHR(
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
+            nullptr, 0, nullptr, nullptr, nullptr);
+        test_error(error, "clCommandNDRangeKernelKHR failed");
+
+        error = clFinalizeCommandBufferKHR(command_buffer);
+        test_error(error, "clFinalizeCommandBufferKHR failed");
+
+        const cl_int pattern = 42;
+        error = clEnqueueFillBuffer(queue, in_mem, &pattern, sizeof(cl_int), 0,
+                                    data_size(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBuffer failed");
+
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        std::vector<cl_int> output_data(num_elements);
+        error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
+                                    output_data.data(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        for (size_t i = 0; i < num_elements; i++)
+        {
+            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
+        }
+
+        const cl_int new_pattern = 12;
+        error = clEnqueueFillBuffer(queue, in_mem, &new_pattern, sizeof(cl_int), 0,
+                                    data_size(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBuffer failed");
+
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        std::vector<cl_int> new_output_data(num_elements);
+        error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
+                                    new_output_data.data(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        for (size_t i = 0; i < num_elements; i++)
+        {
+            CHECK_VERIFICATION_ERROR(new_pattern, new_output_data[i], i);
+        }
+
+        return CL_SUCCESS;
+    }
+};
+
 // Test enqueuing a command-buffer containing multiple command, including
 // operations other than NDRange kernel execution.
 struct MixedCommandsTest : public BasicCommandBufferTest
@@ -406,6 +463,13 @@ int test_single_ndrange(cl_device_id device, cl_context context,
                         cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<BasicEnqueueTest>(device, context, queue,
+                                            num_elements);
+}
+
+int test_single_ndrange_reenqueue(cl_device_id device, cl_context context,
+                        cl_command_queue queue, int num_elements)
+{
+    return MakeAndRunTest<BasicReenqueueTest>(device, context, queue,
                                             num_elements);
 }
 
