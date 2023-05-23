@@ -54,16 +54,6 @@ const char *unary_fn_code_pattern_v3 =
 
 namespace {
 
-template <typename T> float UlpFn(const T &val, const double &r)
-{
-    if (std::is_same<T, double>::value)
-        return Ulp_Error_Double(val, r);
-    else if (std::is_same<T, float>::value)
-        return Ulp_Error(val, r);
-    else if (std::is_same<T, half>::value)
-        return Ulp_Error(val, r);
-}
-
 template <typename T>
 int verify_degrees(const T *const inptr, const T *const outptr, int n)
 {

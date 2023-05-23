@@ -136,7 +136,8 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
 
 template <typename T>
 int test_smoothstep_fn(cl_device_id device, cl_context context,
-                       cl_command_queue queue, int n_elems, bool vecParam)
+                       cl_command_queue queue, const int n_elems,
+                       const bool vecParam)
 {
     clMemWrapper streams[4];
     std::vector<T> input_ptr[3], output_ptr;
@@ -206,7 +207,7 @@ int test_smoothstep_fn(cl_device_id device, cl_context context,
         test_error(err, "Unable to write input buffer");
     }
 
-    char vecSizeNames[][3] = { "", "2", "4", "8", "16", "3" };
+    const char vecSizeNames[][3] = { "", "2", "4", "8", "16", "3" };
 
     for (i = 0; i < kTotalVecCount; i++)
     {
