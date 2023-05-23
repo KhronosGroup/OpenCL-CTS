@@ -520,11 +520,9 @@ void TestNonUniformWorkGroup::calculateExpectedValues()
 size_t
 TestNonUniformWorkGroup::getMaxLocalWorkgroupSize(const cl_device_id &device)
 {
-    int err;
-
     if (TestNonUniformWorkGroup::_maxLocalWorkgroupSize == 0)
     {
-        err = clGetDeviceInfo(
+        clGetDeviceInfo(
             device, CL_DEVICE_MAX_WORK_GROUP_SIZE,
             sizeof(TestNonUniformWorkGroup::_maxLocalWorkgroupSize),
             &TestNonUniformWorkGroup::_maxLocalWorkgroupSize, NULL);

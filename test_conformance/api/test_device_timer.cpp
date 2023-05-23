@@ -31,7 +31,7 @@ int test_device_and_host_timers(cl_device_id deviceID, cl_context context,
     cl_int result = CL_SUCCESS;
     cl_ulong deviceStartTime, deviceEndTime, deviceTimeDiff;
     cl_ulong hostStartTime, hostEndTime, hostTimeDiff;
-    cl_ulong hostOnlyStartTime, hostOnlyEndTime, hostOnlyTimeDiff;
+    cl_ulong hostOnlyStartTime, hostOnlyEndTime;
     cl_ulong observedDiff;
     cl_ulong allowedDiff;
 
@@ -77,7 +77,6 @@ int test_device_and_host_timers(cl_device_id deviceID, cl_context context,
 
     deviceTimeDiff = deviceEndTime - deviceStartTime;
     hostTimeDiff = hostEndTime - hostStartTime;
-    hostOnlyTimeDiff = hostOnlyEndTime - hostOnlyStartTime;
 
     log_info("Checking results from clGetDeviceAndHostTimer ...\n");
 
