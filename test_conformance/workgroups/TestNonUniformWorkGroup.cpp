@@ -445,15 +445,7 @@ void TestNonUniformWorkGroup::verifyData(DataContainerAttrib *reference,
 
 void TestNonUniformWorkGroup::calculateExpectedValues()
 {
-    size_t nonRemainderGlobalSize[MAX_DIMS];
     size_t numberOfPossibleRegions[MAX_DIMS];
-
-    nonRemainderGlobalSize[0] =
-        _globalSize[0] - (_globalSize[0] % _enqueuedLocalSize[0]);
-    nonRemainderGlobalSize[1] =
-        _globalSize[1] - (_globalSize[1] % _enqueuedLocalSize[1]);
-    nonRemainderGlobalSize[2] =
-        _globalSize[2] - (_globalSize[2] % _enqueuedLocalSize[2]);
 
     numberOfPossibleRegions[0] = (_globalSize[0] > 1) ? 2 : 1;
     numberOfPossibleRegions[1] = (_globalSize[1] > 1) ? 2 : 1;
