@@ -83,8 +83,9 @@ int test_consistency_external_buffer(cl_device_id deviceID, cl_context _context,
 
     VulkanBufferList vkBufferList(1, vkDevice, bufferSize,
                                   vkExternalMemoryHandleType);
-    VulkanDeviceMemory* vkDeviceMem = new VulkanDeviceMemory(
-        vkDevice, vkBufferList[0], memoryTypeList[0], vkExternalMemoryHandleType);
+    VulkanDeviceMemory* vkDeviceMem =
+        new VulkanDeviceMemory(vkDevice, vkBufferList[0], memoryTypeList[0],
+                               vkExternalMemoryHandleType);
 
     vkDeviceMem->bindBuffer(vkBufferList[0], 0);
 
@@ -231,8 +232,9 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
 
     VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
         getSupportedVulkanExternalMemoryHandleTypeList()[0];
-    VulkanImage2D vkImage2D = VulkanImage2D(vkDevice, VULKAN_FORMAT_R8G8B8A8_UNORM, width, height,
-                          1, vkExternalMemoryHandleType);
+    VulkanImage2D vkImage2D =
+        VulkanImage2D(vkDevice, VULKAN_FORMAT_R8G8B8A8_UNORM, width, height, 1,
+                      vkExternalMemoryHandleType);
 
     const VulkanMemoryTypeList& memoryTypeList = vkImage2D.getMemoryTypeList();
     uint64_t totalImageMemSize = vkImage2D.getSize();
@@ -242,9 +244,8 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
              memoryTypeList[0].getMemoryTypeProperty());
     log_info("Image size : %d\n", totalImageMemSize);
 
-    VulkanDeviceMemory* vkDeviceMem =
-        new VulkanDeviceMemory(vkDevice, vkImage2D, memoryTypeList[0],
-                               vkExternalMemoryHandleType);
+    VulkanDeviceMemory* vkDeviceMem = new VulkanDeviceMemory(
+        vkDevice, vkImage2D, memoryTypeList[0], vkExternalMemoryHandleType);
     vkDeviceMem->bindImage(vkImage2D, 0);
 
     void* handle = NULL;

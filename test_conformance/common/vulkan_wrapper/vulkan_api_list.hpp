@@ -75,7 +75,7 @@
     VK_FUNC_DECL(vkDestroyImageView)                                           \
     VK_FUNC_DECL(vkCreateImage)                                                \
     VK_FUNC_DECL(vkGetImageMemoryRequirements)                                 \
-    VK_FUNC_DECL(vkGetImageMemoryRequirements2KHR)                                \
+    VK_FUNC_DECL(vkGetImageMemoryRequirements2KHR)                             \
     VK_FUNC_DECL(vkDestroyImage)                                               \
     VK_FUNC_DECL(vkDestroyBuffer)                                              \
     VK_FUNC_DECL(vkDestroyPipeline)                                            \

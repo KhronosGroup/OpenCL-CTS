@@ -154,10 +154,10 @@ public:
         VulkanDescriptorType descriptorType0, uint32_t descriptorCount0,
         VulkanDescriptorType descriptorType1, uint32_t descriptorCount1,
         VulkanShaderStage shaderStage = VULKAN_SHADER_STAGE_COMPUTE);
-    void addBinding(size_t binding,
-                    VulkanDescriptorType descriptorType,
-                    uint32_t descriptorCount,
-                    VulkanShaderStage shaderStage = VULKAN_SHADER_STAGE_COMPUTE);
+    void
+    addBinding(size_t binding, VulkanDescriptorType descriptorType,
+               uint32_t descriptorCount,
+               VulkanShaderStage shaderStage = VULKAN_SHADER_STAGE_COMPUTE);
     virtual ~VulkanDescriptorSetLayoutBindingList();
 };
 
