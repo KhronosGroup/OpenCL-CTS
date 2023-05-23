@@ -237,12 +237,12 @@ int test_unary_fn(cl_device_id device, cl_context context,
     err = clEnqueueWriteBuffer(queue, streams[0], true, 0,
                                sizeof(T) * num_elements, &input_ptr.front(), 0,
                                NULL, NULL);
-    test_error (err, "clEnqueueWriteBuffer failed\n");
+    test_error(err, "clEnqueueWriteBuffer failed\n");
 
     for (i = 0; i < kTotalVecCount; i++)
     {
         std::string kernelSource;
-        char vecSizeNames[][3] = { "", "2", "4", "8", "16", "3" };
+        const char vecSizeNames[][3] = { "", "2", "4", "8", "16", "3" };
 
         if (i >= kVectorSizeCount)
         {

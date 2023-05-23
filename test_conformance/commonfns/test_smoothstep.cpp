@@ -238,7 +238,7 @@ int test_smoothstep_fn(cl_device_id device, cl_context context,
                               vecParam ? vecSizeNames[i] : "", tname.c_str(),
                               vecParam ? vecSizeNames[i] : "", tname.c_str(),
                               vecSizeNames[i], tname.c_str(), vecSizeNames[i]);
-        }        
+        }
 
         const char *programPtr = kernelSource.c_str();
         err =
