@@ -69,13 +69,13 @@ int image2d_from_buffer_positive(cl_device_id device, cl_context context,
 {
     if (!is_extension_available(device, "cl_khr_image2d_from_buffer"))
     {
-        printf("Extension cl_khr_image2d_from_buffer not available");
+        log_info("Extension cl_khr_image2d_from_buffer not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
     if (!is_extension_available(device, "cl_ext_image_requirements_info"))
     {
-        printf("Extension cl_ext_image_requirements_info not available");
+        log_info("Extension cl_ext_image_requirements_info not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
@@ -89,17 +89,17 @@ int image2d_from_buffer_positive(cl_device_id device, cl_context context,
                                          CL_MEM_READ_WRITE,
                                          CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for (auto flag : flagTypes)
+    for (auto flagType : flagTypes)
     {
         for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
             if (TEST_PASS
-                    != get_format_list(context, imageType, formatList, flag)
+                    != get_format_list(context, imageType, formatList, flagType)
                 || formatList.size() == 0)
             {
-                test_fail("Failure to get supported formats list");
+                test_fail("Failure to get supported formats list\n");
             }
 
             cl_uint row_pitch_alignment_2d = 0;
@@ -121,15 +121,15 @@ int image2d_from_buffer_positive(cl_device_id device, cl_context context,
                 cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                cl_mem_flags flag = (flagType == CL_MEM_KERNEL_READ_AND_WRITE)
                     ? CL_MEM_READ_WRITE
-                    : flag;
+                    : flagType;
 
                 size_t row_pitch_alignment = 0;
                 size_t base_address_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, nullptr, &base_address_alignment);
                 if (TEST_PASS != get_error)
                 {
@@ -143,12 +143,12 @@ int image2d_from_buffer_positive(cl_device_id device, cl_context context,
                 if (base_address_alignment
                     > base_address_alignment_2d * element_size)
                 {
-                    test_fail("Unexpected base_address_alignment");
+                    test_fail("Unexpected base_address_alignment\n");
                 }
 
                 if (row_pitch_alignment > row_pitch_alignment_2d * element_size)
                 {
-                    test_fail("Unexpected row_pitch_alignment");
+                    test_fail("Unexpected row_pitch_alignment\n");
                 }
             }
         }
@@ -167,13 +167,13 @@ int memInfo_image_from_buffer_positive(cl_device_id device, cl_context context,
 {
     if (!is_extension_available(device, "cl_ext_image_requirements_info"))
     {
-        printf("Extension cl_ext_image_requirements_info not available");
+        log_info("Extension cl_ext_image_requirements_info not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
     if (!is_extension_available(device, "cl_ext_image_from_buffer"))
     {
-        printf("Extension cl_ext_image_from_buffer not available");
+        log_info("Extension cl_ext_image_from_buffer not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
@@ -187,17 +187,17 @@ int memInfo_image_from_buffer_positive(cl_device_id device, cl_context context,
                                          CL_MEM_READ_WRITE,
                                          CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for (auto flag : flagTypes)
+    for (auto flagType : flagTypes)
     {
         for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
             if (TEST_PASS
-                    != get_format_list(context, imageType, formatList, flag)
+                    != get_format_list(context, imageType, formatList, flagType)
                 || formatList.size() == 0)
             {
-                test_fail("Failure to get supported formats list");
+                test_fail("Failure to get supported formats list\n");
             }
 
             for (auto format : formatList)
@@ -205,15 +205,15 @@ int memInfo_image_from_buffer_positive(cl_device_id device, cl_context context,
                 cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                cl_mem_flags flag = (flagType == CL_MEM_KERNEL_READ_AND_WRITE)
                     ? CL_MEM_READ_WRITE
-                    : flag;
+                    : flagType;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, &slice_pitch_alignment, nullptr);
                 if (TEST_PASS != get_error)
                 {
@@ -249,7 +249,8 @@ int memInfo_image_from_buffer_positive(cl_device_id device, cl_context context,
 
                 if (returned_buffer != buffer)
                 {
-                    test_fail("Unexpected CL_MEM_ASSOCIATED_MEMOBJECT buffer");
+                    test_fail(
+                        "Unexpected CL_MEM_ASSOCIATED_MEMOBJECT buffer\n");
                 }
 
                 err = clReleaseMemObject(buffer);
@@ -275,13 +276,13 @@ int imageInfo_image_from_buffer_positive(cl_device_id device,
 {
     if (!is_extension_available(device, "cl_ext_image_requirements_info"))
     {
-        printf("Extension cl_ext_image_requirements_info not available");
+        log_info("Extension cl_ext_image_requirements_info not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
     if (!is_extension_available(device, "cl_ext_image_from_buffer"))
     {
-        printf("Extension cl_ext_image_from_buffer not available");
+        log_info("Extension cl_ext_image_from_buffer not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
@@ -295,17 +296,17 @@ int imageInfo_image_from_buffer_positive(cl_device_id device,
                                          CL_MEM_READ_WRITE,
                                          CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for (auto flag : flagTypes)
+    for (auto flagType : flagTypes)
     {
         for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
             if (TEST_PASS
-                    != get_format_list(context, imageType, formatList, flag)
+                    != get_format_list(context, imageType, formatList, flagType)
                 || formatList.size() == 0)
             {
-                test_fail("Failure to get supported formats list");
+                test_fail("Failure to get supported formats list\n");
             }
 
             for (auto format : formatList)
@@ -313,15 +314,15 @@ int imageInfo_image_from_buffer_positive(cl_device_id device,
                 cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                cl_mem_flags flag = (flagType == CL_MEM_KERNEL_READ_AND_WRITE)
                     ? CL_MEM_READ_WRITE
-                    : flag;
+                    : flagType;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, &slice_pitch_alignment, nullptr);
                 if (TEST_PASS != get_error)
                 {
@@ -376,7 +377,7 @@ int imageInfo_image_from_buffer_positive(cl_device_id device,
                     {
                         test_fail(
                             "Unexpected row pitch "
-                            "CL_IMAGE_REQUIREMENTS_ROW_PITCH_ALIGNMENT_EXT");
+                            "CL_IMAGE_REQUIREMENTS_ROW_PITCH_ALIGNMENT_EXT\n");
                     }
                 }
 
@@ -391,9 +392,9 @@ int imageInfo_image_from_buffer_positive(cl_device_id device,
 
                     if (returned_slice_pitch != slice_pitch)
                     {
-                        test_fail(
-                            "Unexpected row pitch "
-                            "CL_IMAGE_REQUIREMENTS_SLICE_PITCH_ALIGNMENT_EXT");
+                        test_fail("Unexpected row pitch "
+                                  "CL_IMAGE_REQUIREMENTS_SLICE_PITCH_ALIGNMENT_"
+                                  "EXT\n");
                     }
                 }
 
@@ -425,13 +426,13 @@ int image_from_buffer_alignment_negative(cl_device_id device,
 {
     if (!is_extension_available(device, "cl_ext_image_requirements_info"))
     {
-        printf("Extension cl_ext_image_requirements_info not available");
+        log_info("Extension cl_ext_image_requirements_info not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
     if (!is_extension_available(device, "cl_ext_image_from_buffer"))
     {
-        printf("Extension cl_ext_image_from_buffer not available");
+        log_info("Extension cl_ext_image_from_buffer not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
@@ -445,17 +446,17 @@ int image_from_buffer_alignment_negative(cl_device_id device,
                                          CL_MEM_READ_WRITE,
                                          CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for (auto flag : flagTypes)
+    for (auto flagType : flagTypes)
     {
         for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
             if (TEST_PASS
-                    != get_format_list(context, imageType, formatList, flag)
+                    != get_format_list(context, imageType, formatList, flagType)
                 || formatList.size() == 0)
             {
-                test_fail("Failure to get supported formats list");
+                test_fail("Failure to get supported formats list\n");
             }
 
             for (auto format : formatList)
@@ -463,16 +464,16 @@ int image_from_buffer_alignment_negative(cl_device_id device,
                 cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                cl_mem_flags flag = (flagType == CL_MEM_KERNEL_READ_AND_WRITE)
                     ? CL_MEM_READ_WRITE
-                    : flag;
+                    : flagType;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
                 size_t base_address_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, &slice_pitch_alignment,
                     &base_address_alignment);
                 if (TEST_PASS != get_error)
@@ -575,13 +576,13 @@ int image_from_small_buffer_negative(cl_device_id device, cl_context context,
 {
     if (!is_extension_available(device, "cl_ext_image_requirements_info"))
     {
-        printf("Extension cl_ext_image_requirements_info not available");
+        log_info("Extension cl_ext_image_requirements_info not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
     if (!is_extension_available(device, "cl_ext_image_from_buffer"))
     {
-        printf("Extension cl_ext_image_from_buffer not available");
+        log_info("Extension cl_ext_image_from_buffer not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
@@ -595,17 +596,17 @@ int image_from_small_buffer_negative(cl_device_id device, cl_context context,
                                          CL_MEM_READ_WRITE,
                                          CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for (auto flag : flagTypes)
+    for (auto flagType : flagTypes)
     {
         for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
             if (TEST_PASS
-                    != get_format_list(context, imageType, formatList, flag)
+                    != get_format_list(context, imageType, formatList, flagType)
                 || formatList.size() == 0)
             {
-                test_fail("Failure to get supported formats list");
+                test_fail("Failure to get supported formats list\n");
             }
 
             for (auto format : formatList)
@@ -613,9 +614,9 @@ int image_from_small_buffer_negative(cl_device_id device, cl_context context,
                 cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                cl_mem_flags flag = (flagType == CL_MEM_KERNEL_READ_AND_WRITE)
                     ? CL_MEM_READ_WRITE
-                    : flag;
+                    : flagType;
 
                 /* Invalid buffer size */
                 cl_int err;
@@ -665,7 +666,7 @@ static int image_from_buffer_fill_check(cl_command_queue queue, cl_mem image,
 
                     if (read_buffer[index] != pattern)
                     {
-                        test_fail("Image pattern check failed");
+                        test_fail("Image pattern check failed\n");
                     }
                 }
             }
@@ -683,13 +684,13 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
 {
     if (!is_extension_available(device, "cl_ext_image_requirements_info"))
     {
-        printf("Extension cl_ext_image_requirements_info not available");
+        log_info("Extension cl_ext_image_requirements_info not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
     if (!is_extension_available(device, "cl_ext_image_from_buffer"))
     {
-        printf("Extension cl_ext_image_from_buffer not available");
+        log_info("Extension cl_ext_image_from_buffer not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
@@ -703,33 +704,39 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
                                          CL_MEM_READ_WRITE,
                                          CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for (auto flag : flagTypes)
+    for (auto flagType : flagTypes)
     {
         for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
             if (TEST_PASS
-                    != get_format_list(context, imageType, formatList, flag)
+                    != get_format_list(context, imageType, formatList, flagType)
                 || formatList.size() == 0)
             {
-                test_fail("Failure to get supported formats list");
+                test_fail("Failure to get supported formats list\n");
             }
 
             for (auto format : formatList)
             {
+                if (!IsChannelOrderSupported(format.image_channel_order)
+                    || !IsChannelTypeSupported(format.image_channel_data_type))
+                {
+                    continue;
+                }
+
                 cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                cl_mem_flags flag = (flagType == CL_MEM_KERNEL_READ_AND_WRITE)
                     ? CL_MEM_READ_WRITE
-                    : flag;
+                    : flagType;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, &slice_pitch_alignment, nullptr);
                 if (TEST_PASS != get_error)
                 {
@@ -877,7 +884,7 @@ static int image_from_buffer_read_check(cl_command_queue queue, cl_mem buffer,
             {
                 if (host_ptr[j] != pattern)
                 {
-                    test_fail("Image pattern check failed");
+                    test_fail("Image pattern check failed\n");
                 }
             }
             host_ptr = host_ptr + row_pitch;
@@ -897,13 +904,13 @@ int image_from_buffer_read_positive(cl_device_id device, cl_context context,
 {
     if (!is_extension_available(device, "cl_ext_image_requirements_info"))
     {
-        printf("Extension cl_ext_image_requirements_info not available");
+        log_info("Extension cl_ext_image_requirements_info not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
     if (!is_extension_available(device, "cl_ext_image_from_buffer"))
     {
-        printf("Extension cl_ext_image_from_buffer not available");
+        log_info("Extension cl_ext_image_from_buffer not available\n");
         return TEST_SKIPPED_ITSELF;
     }
 
@@ -939,8 +946,11 @@ int image_from_buffer_read_positive(cl_device_id device, cl_context context,
 
         const size_t row_pitch =
             aligned_size(TEST_IMAGE_SIZE * element_size, row_pitch_alignment);
-        const size_t slice_pitch =
-            aligned_size(row_pitch * TEST_IMAGE_SIZE, slice_pitch_alignment);
+        const size_t slice_pitch = aligned_size(
+            row_pitch
+                * (imageType == CL_MEM_OBJECT_IMAGE1D_ARRAY ? 1
+                                                            : TEST_IMAGE_SIZE),
+            slice_pitch_alignment);
 
         const size_t buffer_size = slice_pitch * TEST_IMAGE_SIZE;
 

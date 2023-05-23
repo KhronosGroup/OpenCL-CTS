@@ -59,9 +59,8 @@ extern int gSkipCorrectnessTesting;
 extern int gForceFTZ;
 extern int gFastRelaxedDerived;
 extern int gWimpyMode;
+extern int gHostFill;
 extern int gIsInRTZMode;
-extern int gInfNanSupport;
-extern int gIsEmbedded;
 extern int gVerboseBruteForce;
 extern uint32_t gMaxVectorSizeIndex;
 extern uint32_t gMinVectorSizeIndex;
@@ -82,12 +81,6 @@ extern cl_device_fp_config gFloatCapabilities;
 float Abs_Error(float test, double reference);
 float Ulp_Error(float test, double reference);
 float Bruteforce_Ulp_Error_Double(double test, long double reference);
-
-int MakeKernel(const char **c, cl_uint count, const char *name, cl_kernel *k,
-               cl_program *p, bool relaxedMode);
-int MakeKernels(const char **c, cl_uint count, const char *name,
-                cl_uint kernel_count, cl_kernel *k, cl_program *p,
-                bool relaxedMode);
 
 // used to convert a bucket of bits into a search pattern through double
 inline double DoubleFromUInt32(uint32_t bits)

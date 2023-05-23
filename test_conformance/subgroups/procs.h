@@ -20,7 +20,6 @@
 #include "harness/kernelHelpers.h"
 #include "harness/errorHelpers.h"
 #include "harness/conversions.h"
-#include "harness/threadTesting.h"
 #include "harness/typeWrappers.h"
 #include "harness/mt19937.h"
 

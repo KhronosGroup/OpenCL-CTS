@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2023 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,187 +13,265 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
-
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include "procs.h"
+#include "test_base.h"
 
-const char *mix_kernel_code =
-"__kernel void test_mix(__global float *srcA, __global float *srcB, __global float *srcC, __global float *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = mix(srcA[tid], srcB[tid], srcC[tid]);\n"
-"}\n";
+
+const char *mix_fn_code_pattern =
+    "%s\n" /* optional pragma */
+    "__kernel void test_fn(__global %s%s *x, __global %s%s *y, __global %s%s "
+    "*a, __global %s%s *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "    dst[tid] = mix(x[tid], y[tid], a[tid]);\n"
+    "}\n";
+
+const char *mix_fn_code_pattern_v3 =
+    "%s\n" /* optional pragma */
+    "__kernel void test_fn(__global %s *x, __global %s *y, __global %s *a, "
+    "__global %s *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    vstore3(mix(vload3(tid, x), vload3(tid, y), vload3(tid, a)), tid, "
+    "dst);\n"
+    "}\n";
+
+const char *mix_fn_code_pattern_v3_scalar =
+    "%s\n" /* optional pragma */
+    "__kernel void test_fn(__global %s *x, __global %s *y, __global %s *a, "
+    "__global %s *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    vstore3(mix(vload3(tid, x), vload3(tid, y), a[tid]), tid, dst);\n"
+    "}\n";
+
 
 #define MAX_ERR 1e-3
 
-float
-verify_mix(float *inptrA, float *inptrB, float *inptrC, float *outptr, int n)
+namespace {
+
+
+template <typename T>
+int verify_mix(const T *const inptrX, const T *const inptrY,
+               const T *const inptrA, const T *const outptr, const int n,
+               const int veclen, const bool vecParam)
 {
-    float       r, delta, max_err = 0.0f;
-    int         i;
+    T r;
+    float delta = 0.0f;
+    int i;
 
-    for (i=0; i<n; i++)
+    if (vecParam)
     {
-        r = inptrA[i] + ((inptrB[i] - inptrA[i]) * inptrC[i]);
-        delta = fabsf(r - outptr[i]) / r;
-        if(delta > max_err) max_err = delta;
-    }
-    return max_err;
-}
-
-int
-test_mix(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
-{
-    cl_mem            streams[4];
-    cl_float        *input_ptr[3], *output_ptr, *p;
-    cl_program        program;
-    cl_kernel        kernel;
-    void            *values[4];
-    size_t            lengths[1];
-    size_t    threads[1];
-    float            max_err;
-    int                err;
-    int                i;
-    MTdata          d;
-
-    input_ptr[0] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-    input_ptr[1] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-    input_ptr[2] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-    output_ptr = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                sizeof(cl_float) * num_elements, NULL, NULL);
-    if (!streams[0])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
-    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                sizeof(cl_float) * num_elements, NULL, NULL);
-    if (!streams[1])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
-    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                sizeof(cl_float) * num_elements, NULL, NULL);
-    if (!streams[2])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
-
-    streams[3] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                sizeof(cl_float) * num_elements, NULL, NULL);
-    if (!streams[3])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
-
-    p = input_ptr[0];
-    d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
-    {
-        p[i] =  (float) genrand_real1(d);
-    }
-    p = input_ptr[1];
-    for (i=0; i<num_elements; i++)
-    {
-        p[i] = (float) genrand_real1(d);
-    }
-    p = input_ptr[2];
-    for (i=0; i<num_elements; i++)
-    {
-        p[i] = (float) genrand_real1(d);
-    }
-    free_mtdata(d); d = NULL;
-
-    err = clEnqueueWriteBuffer( queue, streams[0], true, 0, sizeof(cl_float)*num_elements, (void *)input_ptr[0], 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clWriteArray failed\n");
-        return -1;
-    }
-    err = clEnqueueWriteBuffer( queue, streams[1], true, 0, sizeof(cl_float)*num_elements, (void *)input_ptr[1], 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clWriteArray failed\n");
-        return -1;
-    }
-    err = clEnqueueWriteBuffer( queue, streams[2], true, 0, sizeof(cl_float)*num_elements, (void *)input_ptr[2], 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clWriteArray failed\n");
-        return -1;
-    }
-
-    lengths[0] = strlen(mix_kernel_code);
-    err = create_single_kernel_helper( context, &program, &kernel, 1, &mix_kernel_code, "test_mix" );
-    test_error( err, "Unable to create test kernel" );
-
-
-    values[0] = streams[0];
-    values[1] = streams[1];
-    values[2] = streams[2];
-    values[3] = streams[3];
-  err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0] );
-  err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1] );
-  err |= clSetKernelArg(kernel, 2, sizeof streams[2], &streams[2] );
-  err |= clSetKernelArg(kernel, 3, sizeof streams[3], &streams[3] );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clSetKernelArgs failed\n");
-        return -1;
-    }
-
-    threads[0] = (size_t)num_elements;
-    err = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clEnqueueNDRangeKernel failed\n");
-        return -1;
-    }
-
-    err = clEnqueueReadBuffer( queue, streams[3], true, 0, sizeof(cl_float)*num_elements, (void *)output_ptr, 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-        log_error("clEnqueueReadBuffer failed\n");
-        return -1;
-    }
-
-    max_err = verify_mix(input_ptr[0], input_ptr[1], input_ptr[2], output_ptr, num_elements);
-    if (max_err > MAX_ERR)
-    {
-        log_error("MIX test failed %g max err\n", max_err);
-        err = -1;
+        for (i = 0; i < n * veclen; i++)
+        {
+            r = inptrX[i] + ((inptrY[i] - inptrX[i]) * inptrA[i]);
+            delta = fabs(double(r - outptr[i])) / r;
+            if (delta > MAX_ERR)
+            {
+                log_error(
+                    "%d) verification error: mix(%a, %a, %a) = *%a vs. %a\n", i,
+                    inptrX[i], inptrY[i], inptrA[i], r, outptr[i]);
+                return -1;
+            }
+        }
     }
     else
     {
-        log_info("MIX test passed %g max err\n", max_err);
-        err = 0;
+        for (int i = 0; i < n; ++i)
+        {
+            int ii = i / veclen;
+            int vi = i * veclen;
+            for (int j = 0; j < veclen; ++j, ++vi)
+            {
+                r = inptrX[vi] + ((inptrY[vi] - inptrX[vi]) * inptrA[i]);
+                delta = fabs(double(r - outptr[vi])) / r;
+                if (delta > MAX_ERR)
+                {
+                    log_error("{%d, element %d}) verification error: mix(%a, "
+                              "%a, %a) = *%a vs. %a\n",
+                              ii, j, inptrX[vi], inptrY[vi], inptrA[i], r,
+                              outptr[vi]);
+                    return -1;
+                }
+            }
+        }
     }
 
-    clReleaseMemObject(streams[0]);
-    clReleaseMemObject(streams[1]);
-    clReleaseMemObject(streams[2]);
-    clReleaseMemObject(streams[3]);
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
-    free(input_ptr[0]);
-    free(input_ptr[1]);
-    free(input_ptr[2]);
-    free(output_ptr);
+    return 0;
+}
+} // namespace
+
+
+template <typename T>
+int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
+                int n_elems, bool vecParam)
+{
+    clMemWrapper streams[4];
+    std::vector<T> input_ptr[3], output_ptr;
+
+    std::vector<clProgramWrapper> programs;
+    std::vector<clKernelWrapper> kernels;
+
+    int err, i;
+    MTdataHolder d = MTdataHolder(gRandomSeed);
+
+    assert(BaseFunctionTest::type2name.find(sizeof(T))
+           != BaseFunctionTest::type2name.end());
+    auto tname = BaseFunctionTest::type2name[sizeof(T)];
+
+    programs.resize(kTotalVecCount);
+    kernels.resize(kTotalVecCount);
+
+    int num_elements = n_elems * (1 << (kTotalVecCount - 1));
+
+
+    for (i = 0; i < 3; i++) input_ptr[i].resize(num_elements);
+    output_ptr.resize(num_elements);
+
+    for (i = 0; i < 4; i++)
+    {
+        streams[i] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    sizeof(T) * num_elements, NULL, &err);
+        test_error(err, "clCreateBuffer failed");
+    }
+
+    for (i = 0; i < num_elements; i++)
+    {
+        input_ptr[0][i] = (T)genrand_real1(d);
+        input_ptr[1][i] = (T)genrand_real1(d);
+        input_ptr[2][i] = (T)genrand_real1(d);
+    }
+
+    std::string pragma_str;
+    if (std::is_same<T, double>::value)
+    {
+        pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+    }
+
+    for (i = 0; i < 3; i++)
+    {
+        err = clEnqueueWriteBuffer(queue, streams[i], CL_TRUE, 0,
+                                   sizeof(T) * num_elements,
+                                   &input_ptr[i].front(), 0, NULL, NULL);
+        test_error(err, "Unable to write input buffer");
+    }
+
+    char vecSizeNames[][3] = { "", "2", "4", "8", "16", "3" };
+
+    for (i = 0; i < kTotalVecCount; i++)
+    {
+        std::string kernelSource;
+        if (i >= kVectorSizeCount)
+        {
+            if (vecParam)
+            {
+                std::string str = mix_fn_code_pattern_v3;
+                kernelSource =
+                    string_format(str, pragma_str.c_str(), tname.c_str(),
+                                  tname.c_str(), tname.c_str(), tname.c_str());
+            }
+            else
+            {
+                std::string str = mix_fn_code_pattern_v3_scalar;
+                kernelSource =
+                    string_format(str, pragma_str.c_str(), tname.c_str(),
+                                  tname.c_str(), tname.c_str(), tname.c_str());
+            }
+        }
+        else
+        {
+            // regular path
+            std::string str = mix_fn_code_pattern;
+            kernelSource =
+                string_format(str, pragma_str.c_str(), tname.c_str(),
+                              vecSizeNames[i], tname.c_str(), vecSizeNames[i],
+                              tname.c_str(), vecParam ? vecSizeNames[i] : "",
+                              tname.c_str(), vecSizeNames[i]);
+        }
+        const char *programPtr = kernelSource.c_str();
+        err =
+            create_single_kernel_helper(context, &programs[i], &kernels[i], 1,
+                                        (const char **)&programPtr, "test_fn");
+        test_error(err, "Unable to create kernel");
+
+        for (int j = 0; j < 4; j++)
+        {
+            err =
+                clSetKernelArg(kernels[i], j, sizeof(streams[j]), &streams[j]);
+            test_error(err, "Unable to set kernel argument");
+        }
+
+        size_t threads = (size_t)n_elems;
+
+        err = clEnqueueNDRangeKernel(queue, kernels[i], 1, NULL, &threads, NULL,
+                                     0, NULL, NULL);
+        test_error(err, "Unable to execute kernel");
+
+        err = clEnqueueReadBuffer(queue, streams[3], true, 0,
+                                  sizeof(T) * num_elements, &output_ptr[0], 0,
+                                  NULL, NULL);
+        test_error(err, "Unable to read results");
+
+        if (verify_mix(&input_ptr[0].front(), &input_ptr[1].front(),
+                       &input_ptr[2].front(), &output_ptr.front(), n_elems,
+                       g_arrVecSizes[i], vecParam))
+        {
+            log_error("mix %s%d%s test failed\n", tname.c_str(),
+                      ((g_arrVecSizes[i])),
+                      vecParam ? "" : std::string(", " + tname).c_str());
+            err = -1;
+        }
+        else
+        {
+            log_info("mix %s%d%s test passed\n", tname.c_str(),
+                     ((g_arrVecSizes[i])),
+                     vecParam ? "" : std::string(", " + tname).c_str());
+            err = 0;
+        }
+
+        if (err) break;
+    }
 
     return err;
 }
 
 
+cl_int MixTest::Run()
+{
+    cl_int error = CL_SUCCESS;
+
+    error = test_mix_fn<float>(device, context, queue, num_elems, vecParam);
+    test_error(error, "MixTest::Run<float> failed");
+
+    if (is_extension_available(device, "cl_khr_fp64"))
+    {
+        error =
+            test_mix_fn<double>(device, context, queue, num_elems, vecParam);
+        test_error(error, "MixTest::Run<double> failed");
+    }
+
+    return error;
+}
 
 
+int test_mix(cl_device_id device, cl_context context, cl_command_queue queue,
+             int n_elems)
+{
+    return MakeAndRunTest<MixTest>(device, context, queue, n_elems, "mix",
+                                   true);
+}
 
+
+int test_mixf(cl_device_id device, cl_context context, cl_command_queue queue,
+              int n_elems)
+{
+    return MakeAndRunTest<MixTest>(device, context, queue, n_elems, "mix",
+                                   false);
+}

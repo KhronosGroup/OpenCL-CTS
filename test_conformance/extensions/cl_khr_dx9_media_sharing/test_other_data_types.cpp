@@ -271,7 +271,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
 
             error = clEnqueueAcquireDX9MediaSurfacesKHR(
                 cmdQueue, static_cast<cl_uint>(memObjList.size()),
-                &memObjList[0], 0, 0, 0);
+                &memObjList[0], 0, NULL, NULL);
             if (error != CL_SUCCESS)
             {
                 log_error("clEnqueueAcquireMediaSurfaceKHR failed: %s\n",
@@ -466,7 +466,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
 
             error = clEnqueueReleaseDX9MediaSurfacesKHR(
                 cmdQueue, static_cast<cl_uint>(memObjList.size()),
-                &memObjList[0], 0, 0, 0);
+                &memObjList[0], 0, NULL, NULL);
             if (error != CL_SUCCESS)
             {
                 log_error("clEnqueueReleaseMediaSurfaceKHR failed: %s\n",

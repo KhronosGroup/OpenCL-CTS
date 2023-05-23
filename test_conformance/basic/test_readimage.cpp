@@ -346,7 +346,7 @@ int test_readimage3d(cl_device_id device, cl_context context,
     int err = test_readimage<CL_MEM_OBJECT_IMAGE3D, cl_uchar>(
         device, context, queue, &format[0]);
 
-    if (check_format(device, context, CL_MEM_OBJECT_IMAGE2D, format[1]))
+    if (check_format(device, context, CL_MEM_OBJECT_IMAGE3D, format[1]))
     {
         err |= test_readimage<CL_MEM_OBJECT_IMAGE3D, cl_uchar>(
             device, context, queue, &format[1]);

@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2023 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,270 +13,283 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
-
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include "procs.h"
+#include "test_base.h"
 
-static const char *smoothstep_kernel_code =
-"__kernel void test_smoothstep(__global float *edge0, __global float *edge1, __global float *x, __global float *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = smoothstep(edge0[tid], edge1[tid], x[tid]);\n"
-"}\n";
 
-static const char *smoothstep2_kernel_code =
-"__kernel void test_smoothstep2(__global float2 *edge0, __global float2 *edge1, __global float2 *x, __global float2 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = smoothstep(edge0[tid], edge1[tid], x[tid]);\n"
-"}\n";
+const char *smoothstep_fn_code_pattern =
+    "%s\n" /* optional pragma */
+    "__kernel void test_fn(__global %s%s *e0, __global %s%s *e1, __global %s%s "
+    "*x, __global %s%s *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    dst[tid] = smoothstep(e0[tid], e1[tid], x[tid]);\n"
+    "}\n";
 
-static const char *smoothstep4_kernel_code =
-"__kernel void test_smoothstep4(__global float4 *edge0, __global float4 *edge1, __global float4 *x, __global float4 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = smoothstep(edge0[tid], edge1[tid], x[tid]);\n"
-"}\n";
+const char *smoothstep_fn_code_pattern_v3 =
+    "%s\n" /* optional pragma */
+    "__kernel void test_fn(__global %s *e0, __global %s *e1, __global %s *x, "
+    "__global %s *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    vstore3(smoothstep(vload3(tid,e0), vload3(tid,e1), vload3(tid,x)), "
+    "tid, dst);\n"
+    "}\n";
 
-static const char *smoothstep8_kernel_code =
-"__kernel void test_smoothstep8(__global float8 *edge0, __global float8 *edge1, __global float8 *x, __global float8 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = smoothstep(edge0[tid], edge1[tid], x[tid]);\n"
-"}\n";
+const char *smoothstep_fn_code_pattern_v3_scalar =
+    "%s\n" /* optional pragma */
+    "__kernel void test_fn(__global %s *e0, __global %s *e1, __global %s *x, "
+    "__global %s *dst)\n"
+    "{\n"
+    "    int  tid = get_global_id(0);\n"
+    "\n"
+    "    vstore3(smoothstep(e0[tid], e1[tid], vload3(tid,x)), tid, dst);\n"
+    "}\n";
 
-static const char *smoothstep16_kernel_code =
-"__kernel void test_smoothstep16(__global float16 *edge0, __global float16 *edge1, __global float16 *x, __global float16 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = smoothstep(edge0[tid], edge1[tid], x[tid]);\n"
-"}\n";
-
-static const char *smoothstep3_kernel_code =
-"__kernel void test_smoothstep3(__global float *edge0, __global float *edge1, __global float *x, __global float *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    vstore3(smoothstep(vload3(tid,edge0),vload3(tid,edge1),vload3(tid,x)), tid, dst);\n"
-"}\n";
 
 #define MAX_ERR (1e-5f)
 
-static float
-verify_smoothstep(float *edge0, float *edge1, float *x, float *outptr, int n)
+namespace {
+
+
+template <typename T>
+int verify_smoothstep(const T *const edge0, const T *const edge1,
+                      const T *const x, const T *const outptr, const int n,
+                      const int veclen, const bool vecParam)
 {
-  float       r, t, delta, max_err = 0.0f;
-  int         i;
+    T r, t;
+    float delta = 0;
 
-  for (i=0; i<n; i++)
-  {
-    t = (x[i] - edge0[i]) / (edge1[i] - edge0[i]);
-    if (t < 0.0f)
-      t = 0.0f;
-    else if (t > 1.0f)
-      t = 1.0f;
-    r = t * t * (3.0f - 2.0f * t);
-    delta = (float)fabs(r - outptr[i]);
-    if (delta > max_err)
-      max_err = delta;
-  }
-
-  return max_err;
-}
-
-const static char *fn_names[] = { "SMOOTHSTEP float", "SMOOTHSTEP float2", "SMOOTHSTEP float4", "SMOOTHSTEP float8", "SMOOTHSTEP float16", "SMOOTHSTEP float3" };
-
-int
-test_smoothstep(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
-{
-  cl_mem      streams[4];
-  cl_float    *input_ptr[3], *output_ptr, *p, *p_edge0;
-  cl_program  program[kTotalVecCount];
-  cl_kernel   kernel[kTotalVecCount];
-  size_t  threads[1];
-  float max_err;
-  int num_elements;
-  int err;
-  int i;
-  MTdata d;
-
-  num_elements = n_elems * 16;
-
-  input_ptr[0] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-  input_ptr[1] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-  input_ptr[2] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-  output_ptr = (cl_float*)malloc(sizeof(cl_float) * num_elements);
-  streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                              sizeof(cl_float) * num_elements, NULL, NULL);
-  if (!streams[0])
-  {
-    log_error("clCreateBuffer failed\n");
-    return -1;
-  }
-  streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                              sizeof(cl_float) * num_elements, NULL, NULL);
-  if (!streams[1])
-  {
-    log_error("clCreateBuffer failed\n");
-    return -1;
-  }
-  streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                              sizeof(cl_float) * num_elements, NULL, NULL);
-  if (!streams[2])
-  {
-    log_error("clCreateBuffer failed\n");
-    return -1;
-  }
-
-  streams[3] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                              sizeof(cl_float) * num_elements, NULL, NULL);
-  if (!streams[3])
-  {
-    log_error("clCreateBuffer failed\n");
-    return -1;
-  }
-
-  p = input_ptr[0];
-  d = init_genrand( gRandomSeed );
-  for (i=0; i<num_elements; i++)
-  {
-    p[i] = get_random_float(-0x00400000, 0x00400000, d);
-  }
-
-  p = input_ptr[1];
-  p_edge0 = input_ptr[0];
-  for (i=0; i<num_elements; i++)
-  {
-    float edge0 = p_edge0[i];
-    float edge1;
-    do {
-      edge1 = get_random_float(-0x00400000, 0x00400000, d);
-      if (edge0 < edge1)
-        break;
-    } while (1);
-    p[i] = edge1;
-  }
-
-  p = input_ptr[2];
-  for (i=0; i<num_elements; i++)
-  {
-    p[i] = get_random_float(-0x00400000, 0x00400000, d);
-  }
-  free_mtdata(d);
-  d = NULL;
-
-  err = clEnqueueWriteBuffer( queue, streams[0], true, 0, sizeof(cl_float)*num_elements, (void *)input_ptr[0], 0, NULL, NULL );
-  if (err != CL_SUCCESS)
-  {
-    log_error("clWriteArray failed\n");
-    return -1;
-  }
-  err = clEnqueueWriteBuffer( queue, streams[1], true, 0, sizeof(cl_float)*num_elements, (void *)input_ptr[1], 0, NULL, NULL );
-  if (err != CL_SUCCESS)
-  {
-    log_error("clWriteArray failed\n");
-    return -1;
-  }
-  err = clEnqueueWriteBuffer( queue, streams[2], true, 0, sizeof(cl_float)*num_elements, (void *)input_ptr[2], 0, NULL, NULL );
-  if (err != CL_SUCCESS)
-  {
-    log_error("clWriteArray failed\n");
-    return -1;
-  }
-
-  err = create_single_kernel_helper( context, &program[0], &kernel[0], 1, &smoothstep_kernel_code, "test_smoothstep" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[1], &kernel[1], 1, &smoothstep2_kernel_code, "test_smoothstep2" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[2], &kernel[2], 1, &smoothstep4_kernel_code, "test_smoothstep4" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[3], &kernel[3], 1, &smoothstep8_kernel_code, "test_smoothstep8" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[4], &kernel[4], 1, &smoothstep16_kernel_code, "test_smoothstep16" );
-  if (err)
-    return -1;
-  err = create_single_kernel_helper( context, &program[5], &kernel[5], 1, &smoothstep3_kernel_code, "test_smoothstep3" );
-  if (err)
-    return -1;
-
-  for (i=0; i<kTotalVecCount; i++)
-  {
-      err = clSetKernelArg(kernel[i], 0, sizeof streams[0], &streams[0] );
-      err |= clSetKernelArg(kernel[i], 1, sizeof streams[1], &streams[1] );
-      err |= clSetKernelArg(kernel[i], 2, sizeof streams[2], &streams[2] );
-      err |= clSetKernelArg(kernel[i], 3, sizeof streams[3], &streams[3] );
-      if (err != CL_SUCCESS)
+    if (vecParam)
     {
-      log_error("clSetKernelArgs failed\n");
-      return -1;
-    }
-  }
-
-
-  threads[0] = (size_t)n_elems;
-  for (i=0; i<kTotalVecCount; i++)
-  {
-    err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, threads, NULL, 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-      log_error("clEnqueueNDRangeKernel failed\n");
-      return -1;
-    }
-
-
-    err = clEnqueueReadBuffer( queue, streams[3], true, 0, sizeof(cl_float)*num_elements, (void *)output_ptr, 0, NULL, NULL );
-    if (err != CL_SUCCESS)
-    {
-      log_error("clEnqueueReadBuffer failed\n");
-      return -1;
-    }
-
-    max_err = verify_smoothstep(input_ptr[0], input_ptr[1], input_ptr[2], output_ptr, n_elems * g_arrVecSizes[i]);
-
-    if (max_err > MAX_ERR)
-    {
-      log_error("%s test failed %g max err\n", fn_names[i], max_err);
-      err = -1;
+        for (int i = 0; i < n * veclen; i++)
+        {
+            t = (x[i] - edge0[i]) / (edge1[i] - edge0[i]);
+            if (t < 0.0f)
+                t = 0.0f;
+            else if (t > 1.0f)
+                t = 1.0f;
+            r = t * t * (3.0f - 2.0f * t);
+            delta = (float)fabs(r - outptr[i]);
+            if (delta > MAX_ERR)
+            {
+                log_error("%d) verification error: smoothstep(%a, %a, %a) = "
+                          "*%a vs. %a\n",
+                          i, x[i], edge0[i], edge1[i], r, outptr[i]);
+                return -1;
+            }
+        }
     }
     else
     {
-      log_info("%s test passed %g max err\n", fn_names[i], max_err);
-      err = 0;
+        for (int i = 0; i < n; ++i)
+        {
+            int ii = i / veclen;
+            int vi = i * veclen;
+            for (int j = 0; j < veclen; ++j, ++vi)
+            {
+                t = (x[vi] - edge0[i]) / (edge1[i] - edge0[i]);
+                if (t < 0.0f)
+                    t = 0.0f;
+                else if (t > 1.0f)
+                    t = 1.0f;
+                r = t * t * (3.0f - 2.0f * t);
+                delta = (float)fabs(r - outptr[vi]);
+                if (delta > MAX_ERR)
+                {
+                    log_error("{%d, element %d}) verification error: "
+                              "smoothstep(%a, %a, %a) = *%a vs. %a\n",
+                              ii, j, x[vi], edge0[i], edge1[i], r, outptr[vi]);
+                    return -1;
+                }
+            }
+        }
     }
+    return 0;
+}
 
-    if (err)
-      break;
-  }
-
-  clReleaseMemObject(streams[0]);
-  clReleaseMemObject(streams[1]);
-  clReleaseMemObject(streams[2]);
-  clReleaseMemObject(streams[3]);
-  for (i=0; i<kTotalVecCount; i++)
-  {
-    clReleaseKernel(kernel[i]);
-    clReleaseProgram(program[i]);
-  }
-  free(input_ptr[0]);
-  free(input_ptr[1]);
-  free(input_ptr[2]);
-  free(output_ptr);
-
-  return err;
 }
 
 
+template <typename T>
+int test_smoothstep_fn(cl_device_id device, cl_context context,
+                       cl_command_queue queue, int n_elems, bool vecParam)
+{
+    clMemWrapper streams[4];
+    std::vector<T> input_ptr[3], output_ptr;
+
+    std::vector<clProgramWrapper> programs;
+    std::vector<clKernelWrapper> kernels;
+
+    int err, i;
+    MTdataHolder d = MTdataHolder(gRandomSeed);
+
+    assert(BaseFunctionTest::type2name.find(sizeof(T))
+           != BaseFunctionTest::type2name.end());
+    auto tname = BaseFunctionTest::type2name[sizeof(T)];
+
+    programs.resize(kTotalVecCount);
+    kernels.resize(kTotalVecCount);
+
+    int num_elements = n_elems * (1 << (kTotalVecCount - 1));
+
+    for (i = 0; i < 3; i++) input_ptr[i].resize(num_elements);
+    output_ptr.resize(num_elements);
+
+    for (i = 0; i < 4; i++)
+    {
+        streams[i] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    sizeof(T) * num_elements, NULL, &err);
+        test_error(err, "clCreateBuffer failed");
+    }
+
+    std::string pragma_str;
+    if (std::is_same<T, float>::value)
+    {
+        for (i = 0; i < num_elements; i++)
+        {
+            input_ptr[0][i] = get_random_float(-0x00200000, 0x00010000, d);
+            input_ptr[1][i] = get_random_float(input_ptr[0][i], 0x00200000, d);
+            input_ptr[2][i] = get_random_float(-0x20000000, 0x20000000, d);
+        }
+    }
+    else if (std::is_same<T, double>::value)
+    {
+        pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+        for (i = 0; i < num_elements; i++)
+        {
+            input_ptr[0][i] = get_random_double(-0x00200000, 0x00010000, d);
+            input_ptr[1][i] = get_random_double(input_ptr[0][i], 0x00200000, d);
+            input_ptr[2][i] = get_random_double(-0x20000000, 0x20000000, d);
+        }
+    }
+
+    for (i = 0; i < 3; i++)
+    {
+        err = clEnqueueWriteBuffer(queue, streams[i], CL_TRUE, 0,
+                                   sizeof(T) * num_elements,
+                                   &input_ptr[i].front(), 0, NULL, NULL);
+        test_error(err, "Unable to write input buffer");
+    }
+
+    char vecSizeNames[][3] = { "", "2", "4", "8", "16", "3" };
+
+    for (i = 0; i < kTotalVecCount; i++)
+    {
+        std::string kernelSource;
+        if (i >= kVectorSizeCount)
+        {
+            if (vecParam)
+            {
+                std::string str = smoothstep_fn_code_pattern_v3;
+                kernelSource =
+                    string_format(str, pragma_str.c_str(), tname.c_str(),
+                                  tname.c_str(), tname.c_str(), tname.c_str());
+            }
+            else
+            {
+                std::string str = smoothstep_fn_code_pattern_v3_scalar;
+                kernelSource =
+                    string_format(str, pragma_str.c_str(), tname.c_str(),
+                                  tname.c_str(), tname.c_str(), tname.c_str());
+            }
+        }
+        else
+        {
+            // regular path
+            std::string str = smoothstep_fn_code_pattern;
+            kernelSource =
+                string_format(str, pragma_str.c_str(), tname.c_str(),
+                              vecParam ? vecSizeNames[i] : "", tname.c_str(),
+                              vecParam ? vecSizeNames[i] : "", tname.c_str(),
+                              vecSizeNames[i], tname.c_str(), vecSizeNames[i]);
+        }
+        const char *programPtr = kernelSource.c_str();
+        err =
+            create_single_kernel_helper(context, &programs[i], &kernels[i], 1,
+                                        (const char **)&programPtr, "test_fn");
+        test_error(err, "Unable to create kernel");
+
+        for (int j = 0; j < 4; j++)
+        {
+            err =
+                clSetKernelArg(kernels[i], j, sizeof(streams[j]), &streams[j]);
+            test_error(err, "Unable to set kernel argument");
+        }
+
+        size_t threads = (size_t)n_elems;
+
+        err = clEnqueueNDRangeKernel(queue, kernels[i], 1, NULL, &threads, NULL,
+                                     0, NULL, NULL);
+        test_error(err, "Unable to execute kernel");
+
+        err = clEnqueueReadBuffer(queue, streams[3], true, 0,
+                                  sizeof(T) * num_elements, &output_ptr[0], 0,
+                                  NULL, NULL);
+        test_error(err, "Unable to read results");
+
+        if (verify_smoothstep((T *)&input_ptr[0].front(),
+                              (T *)&input_ptr[1].front(),
+                              (T *)&input_ptr[2].front(), &output_ptr[0],
+                              n_elems, g_arrVecSizes[i], vecParam))
+        {
+            log_error("smoothstep %s%d%s test failed\n", tname.c_str(),
+                      ((g_arrVecSizes[i])),
+                      vecParam ? "" : std::string(", " + tname).c_str());
+            err = -1;
+        }
+        else
+        {
+            log_info("smoothstep %s%d%s test passed\n", tname.c_str(),
+                     ((g_arrVecSizes[i])),
+                     vecParam ? "" : std::string(", " + tname).c_str());
+            err = 0;
+        }
+
+        if (err) break;
+    }
+
+    return err;
+}
+
+
+cl_int SmoothstepTest::Run()
+{
+    cl_int error = CL_SUCCESS;
+
+    error =
+        test_smoothstep_fn<float>(device, context, queue, num_elems, vecParam);
+    test_error(error, "SmoothstepTest::Run<float> failed");
+
+    if (is_extension_available(device, "cl_khr_fp64"))
+    {
+        error = test_smoothstep_fn<double>(device, context, queue, num_elems,
+                                           vecParam);
+        test_error(error, "SmoothstepTest::Run<double> failed");
+    }
+
+    return error;
+}
+
+
+int test_smoothstep(cl_device_id device, cl_context context,
+                    cl_command_queue queue, int n_elems)
+{
+    return MakeAndRunTest<SmoothstepTest>(device, context, queue, n_elems,
+                                          "smoothstep", true);
+}
+
+
+int test_smoothstepf(cl_device_id device, cl_context context,
+                     cl_command_queue queue, int n_elems)
+{
+    return MakeAndRunTest<SmoothstepTest>(device, context, queue, n_elems,
+                                          "smoothstep", false);
+}

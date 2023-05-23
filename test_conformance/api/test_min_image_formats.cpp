@@ -71,11 +71,11 @@ int test_min_image_formats(cl_device_id device, cl_context context,
     int supports_3D_image_writes =
         is_extension_available(device, "cl_khr_3d_image_writes");
 
-    for (int t = 0; t < ARRAY_SIZE(image_types); t++)
+    for (size_t t = 0; t < ARRAY_SIZE(image_types); t++)
     {
         const cl_mem_object_type type = image_types[t];
         log_info("    testing %s...\n", convert_image_type_to_string(type));
-        for (int f = 0; f < ARRAY_SIZE(mem_flags); f++)
+        for (size_t f = 0; f < ARRAY_SIZE(mem_flags); f++)
         {
             const cl_mem_flags flags = mem_flags[f];
             const char* testTypeString = flags == CL_MEM_READ_ONLY

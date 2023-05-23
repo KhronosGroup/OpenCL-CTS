@@ -16,11 +16,50 @@
 #include "harness/testHarness.h"
 
 test_definition test_list[] = {
-    ADD_TEST(single_ndrange), ADD_TEST(interleaved_enqueue),
-    ADD_TEST(mixed_commands), ADD_TEST(explicit_flush),
-    ADD_TEST(user_events),    ADD_TEST(out_of_order)
+    ADD_TEST(single_ndrange),
+    ADD_TEST(interleaved_enqueue),
+    ADD_TEST(mixed_commands),
+    ADD_TEST(explicit_flush),
+    ADD_TEST(out_of_order),
+    ADD_TEST(simultaneous_out_of_order),
+    ADD_TEST(info_queues),
+    ADD_TEST(info_ref_count),
+    ADD_TEST(info_state),
+    ADD_TEST(info_prop_array),
+    ADD_TEST(basic_profiling),
+    ADD_TEST(simultaneous_profiling),
+    ADD_TEST(regular_wait_for_command_buffer),
+    ADD_TEST(command_buffer_wait_for_command_buffer),
+    ADD_TEST(command_buffer_wait_for_sec_command_buffer),
+    ADD_TEST(return_event_callback),
+    ADD_TEST(clwaitforevents_single),
+    ADD_TEST(clwaitforevents),
+    ADD_TEST(command_buffer_wait_for_regular),
+    ADD_TEST(wait_for_sec_queue_event),
+    ADD_TEST(user_event_wait),
+    ADD_TEST(user_events_wait),
+    ADD_TEST(user_event_callback),
+    ADD_TEST(queue_substitution),
+    ADD_TEST(properties_queue_substitution),
+    ADD_TEST(simultaneous_queue_substitution),
+    ADD_TEST(fill_image),
+    ADD_TEST(fill_buffer),
+    ADD_TEST(copy_image),
+    ADD_TEST(copy_buffer),
+    ADD_TEST(copy_buffer_to_image),
+    ADD_TEST(copy_image_to_buffer),
+    ADD_TEST(copy_buffer_rect),
+    ADD_TEST(barrier_wait_list),
+    ADD_TEST(basic_printf),
+    ADD_TEST(simultaneous_printf),
+    ADD_TEST(basic_set_kernel_arg),
+    ADD_TEST(pending_set_kernel_arg),
+    ADD_TEST(event_info_command_type),
+    ADD_TEST(event_info_command_queue),
+    ADD_TEST(event_info_execution_status),
+    ADD_TEST(event_info_context),
+    ADD_TEST(event_info_reference_count)
 };
-
 
 int main(int argc, const char *argv[])
 {

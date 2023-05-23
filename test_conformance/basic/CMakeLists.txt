@@ -7,7 +7,7 @@ set(${MODULE_NAME}_SOURCES
     test_hiloeo.cpp test_local.cpp test_pointercast.cpp
     test_if.cpp test_loop.cpp
     test_readimage.cpp
-    test_writeimage.cpp test_writeimage_int16.cpp test_writeimage_fp32.cpp
+    test_writeimage.cpp
     test_multireadimageonefmt.cpp test_multireadimagemultifmt.cpp
     test_imagedim.cpp
     test_vloadstore.cpp
@@ -69,5 +69,7 @@ set(${MODULE_NAME}_SOURCES
 if(APPLE)
     list(APPEND ${MODULE_NAME}_SOURCES test_queue_priority.cpp)
 endif(APPLE)
+
+set_gnulike_module_compile_flags("-Wno-unused-but-set-variable")
 
 include(../CMakeCommon.txt)

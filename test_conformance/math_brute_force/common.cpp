@@ -67,22 +67,50 @@ void EmitDefineUndef(std::ostringstream &kernel, const char *name,
     kernel << "#define " << name << " " << GetUndefValue(type) << '\n';
 }
 
-void EmitEnableExtension(std::ostringstream &kernel, ParameterType type)
+void EmitEnableExtension(std::ostringstream &kernel,
+                         const std::initializer_list<ParameterType> &types)
 {
-    switch (type)
-    {
-        case ParameterType::Double:
-            kernel << "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
-            break;
+    bool needsFp64 = false;
 
-        case ParameterType::Float:
-        case ParameterType::Int:
-        case ParameterType::UInt:
-        case ParameterType::Long:
-        case ParameterType::ULong:
-            // No extension required.
-            break;
+    for (const auto &type : types)
+    {
+        switch (type)
+        {
+            case ParameterType::Double: needsFp64 = true; break;
+
+            case ParameterType::Float:
+            case ParameterType::Int:
+            case ParameterType::UInt:
+            case ParameterType::Long:
+            case ParameterType::ULong:
+                // No extension required.
+                break;
+        }
     }
+
+    if (needsFp64) kernel << "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+}
+
+std::string GetBuildOptions(bool relaxed_mode)
+{
+    std::ostringstream options;
+
+    if (gForceFTZ)
+    {
+        options << " -cl-denorms-are-zero";
+    }
+
+    if (gFloatCapabilities & CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT)
+    {
+        options << " -cl-fp32-correctly-rounded-divide-sqrt";
+    }
+
+    if (relaxed_mode)
+    {
+        options << " -cl-fast-relaxed-math";
+    }
+
+    return options.str();
 }
 
 } // anonymous namespace
@@ -101,7 +129,7 @@ std::string GetUnaryKernel(const std::string &kernel_name, const char *builtin,
     EmitDefineType(kernel, "RETTYPE", retType, vector_size_index);
     EmitDefineType(kernel, "TYPE1", type1, vector_size_index);
     EmitDefineUndef(kernel, "UNDEF1", type1);
-    EmitEnableExtension(kernel, type1);
+    EmitEnableExtension(kernel, { retType, type1 });
 
     // clang-format off
     const char *kernel_nonvec3[] = { R"(
@@ -177,7 +205,7 @@ std::string GetUnaryKernel(const std::string &kernel_name, const char *builtin,
     EmitDefineType(kernel, "TYPE1", type1, vector_size_index);
     EmitDefineUndef(kernel, "UNDEF1", type1);
     EmitDefineUndef(kernel, "UNDEFR2", retType2);
-    EmitEnableExtension(kernel, type1);
+    EmitEnableExtension(kernel, { retType1, retType2, type1 });
 
     // clang-format off
     const char *kernel_nonvec3[] = { R"(
@@ -260,7 +288,7 @@ std::string GetBinaryKernel(const std::string &kernel_name, const char *builtin,
     EmitDefineType(kernel, "TYPE2", type2, vector_size_index);
     EmitDefineUndef(kernel, "UNDEF1", type1);
     EmitDefineUndef(kernel, "UNDEF2", type2);
-    EmitEnableExtension(kernel, type1);
+    EmitEnableExtension(kernel, { retType, type1, type2 });
 
     const bool is_vec3 = sizeValues[vector_size_index] == 3;
 
@@ -362,7 +390,7 @@ std::string GetBinaryKernel(const std::string &kernel_name, const char *builtin,
     EmitDefineUndef(kernel, "UNDEF1", type1);
     EmitDefineUndef(kernel, "UNDEF2", type2);
     EmitDefineUndef(kernel, "UNDEFR2", retType2);
-    EmitEnableExtension(kernel, type1);
+    EmitEnableExtension(kernel, { retType1, retType2, type1, type2 });
 
     // clang-format off
     const char *kernel_nonvec3[] = { R"(
@@ -454,7 +482,7 @@ std::string GetTernaryKernel(const std::string &kernel_name,
     EmitDefineUndef(kernel, "UNDEF1", type1);
     EmitDefineUndef(kernel, "UNDEF2", type2);
     EmitDefineUndef(kernel, "UNDEF3", type3);
-    EmitEnableExtension(kernel, type1);
+    EmitEnableExtension(kernel, { retType, type1, type2, type3 });
 
     // clang-format off
     const char *kernel_nonvec3[] = { R"(
@@ -529,4 +557,43 @@ __kernel void )", kernel_name.c_str(), R"((__global RETTYPE_SCALAR* out,
         for (const auto &chunk : kernel_vec3) kernel << chunk;
 
     return kernel.str();
+}
+
+cl_int BuildKernels(BuildKernelInfo &info, cl_uint job_id,
+                    SourceGenerator generator)
+{
+    // Generate the kernel code.
+    cl_uint vector_size_index = gMinVectorSizeIndex + job_id;
+    auto kernel_name = GetKernelName(vector_size_index);
+    auto source = generator(kernel_name, info.nameInCode, vector_size_index);
+    std::array<const char *, 1> sources{ source.c_str() };
+
+    // Create the program.
+    clProgramWrapper &program = info.programs[vector_size_index];
+    auto options = GetBuildOptions(info.relaxedMode);
+    int error =
+        create_single_kernel_helper(gContext, &program, nullptr, sources.size(),
+                                    sources.data(), nullptr, options.c_str());
+    if (error != CL_SUCCESS)
+    {
+        vlog_error("\t\tFAILED -- Failed to create program. (%d)\n", error);
+        return error;
+    }
+
+    // Create a kernel for each thread. cl_kernels aren't thread safe, so make
+    // one for every thread
+    auto &kernels = info.kernels[vector_size_index];
+    assert(kernels.empty() && "Dirty BuildKernelInfo");
+    kernels.resize(info.threadCount);
+    for (auto &kernel : kernels)
+    {
+        kernel = clCreateKernel(program, kernel_name.c_str(), &error);
+        if (!kernel || error != CL_SUCCESS)
+        {
+            vlog_error("\t\tFAILED -- clCreateKernel() failed: (%d)\n", error);
+            return error;
+        }
+    }
+
+    return CL_SUCCESS;
 }

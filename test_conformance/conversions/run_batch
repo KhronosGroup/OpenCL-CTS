@@ -1,4 +1,4 @@
-#!/usr/bin/csh
+#!/bin/bash
 #
 # This runs the conversions in 32- and 64-bit modes, split into 9 processes for better throughput.
 # It is intended to allow for quicker debugging turnaround for code development purposes
