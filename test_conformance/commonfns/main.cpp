@@ -26,7 +26,6 @@ cl_half_rounding_mode BaseFunctionTest::halfRoundingMode = CL_HALF_RTE;
 int g_arrVecSizes[kVectorSizeCount + kStrangeVectorSizeCount];
 int g_arrStrangeVectorSizes[kStrangeVectorSizeCount] = {3};
 
-//--------------------------------------------------------------------------
 static void initVecSizes() {
     int i;
     for(i = 0; i < kVectorSizeCount; ++i) {
@@ -37,7 +36,6 @@ static void initVecSizes() {
     }
 }
 
-//--------------------------------------------------------------------------
 test_definition test_list[] = {
     ADD_TEST(clamp),      ADD_TEST(degrees),     ADD_TEST(fmax),
     ADD_TEST(fmaxf),      ADD_TEST(fmin),        ADD_TEST(fminf),
@@ -49,7 +47,6 @@ test_definition test_list[] = {
 
 const int test_num = ARRAY_SIZE( test_list );
 
-//--------------------------------------------------------------------------
 test_status InitCL(cl_device_id device)
 {
     if (is_extension_available(device, "cl_khr_fp16"))
@@ -74,7 +71,6 @@ test_status InitCL(cl_device_id device)
     return TEST_PASS;
 }
 
-//--------------------------------------------------------------------------
 int main(int argc, const char *argv[])
 {
     initVecSizes();
@@ -89,5 +85,3 @@ int main(int argc, const char *argv[])
     return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, 0,
                                    InitCL);
 }
-
-//--------------------------------------------------------------------------

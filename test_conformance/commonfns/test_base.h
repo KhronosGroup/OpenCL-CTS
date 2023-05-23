@@ -1,5 +1,4 @@
-//
-// Copyright (c) 2022 The Khronos Group Inc.
+// Copyright (c) 2023 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,8 +13,8 @@
 // limitations under the License.
 //
 
-#ifndef _TEST_COMMONFNS_BASE_H
-#define _TEST_COMMONFNS_BASE_H
+#ifndef TEST_COMMONFNS_BASE_H
+#define TEST_COMMONFNS_BASE_H
 
 #include <vector>
 #include <map>
@@ -28,22 +27,14 @@
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 
-//--------------------------------------------------------------------------/
-
 template <typename T>
 using VerifyFuncBinary = int (*)(const T *const, const T *const, const T *const,
                                  const int num, const int vs, const int vp);
 
-//--------------------------------------------------------------------------/
-
 template <typename T>
 using VerifyFuncUnary = int (*)(const T *const, const T *const, const int num);
 
-//--------------------------------------------------------------------------/
-
 using half = cl_half;
-
-//--------------------------------------------------------------------------
 
 struct BaseFunctionTest
 {
@@ -69,8 +60,6 @@ struct BaseFunctionTest
     static cl_half_rounding_mode halfRoundingMode;
 };
 
-//--------------------------------------------------------------------------
-
 struct MinTest : BaseFunctionTest
 {
     MinTest(cl_device_id device, cl_context context, cl_command_queue queue,
@@ -80,8 +69,6 @@ struct MinTest : BaseFunctionTest
 
     cl_int Run() override;
 };
-
-//--------------------------------------------------------------------------
 
 struct MaxTest : BaseFunctionTest
 {
@@ -93,8 +80,6 @@ struct MaxTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-//--------------------------------------------------------------------------
-
 struct ClampTest : BaseFunctionTest
 {
     ClampTest(cl_device_id device, cl_context context, cl_command_queue queue,
@@ -104,8 +89,6 @@ struct ClampTest : BaseFunctionTest
 
     cl_int Run() override;
 };
-
-//--------------------------------------------------------------------------
 
 struct DegreesTest : BaseFunctionTest
 {
@@ -117,8 +100,6 @@ struct DegreesTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-//--------------------------------------------------------------------------
-
 struct RadiansTest : BaseFunctionTest
 {
     RadiansTest(cl_device_id device, cl_context context, cl_command_queue queue,
@@ -129,8 +110,6 @@ struct RadiansTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-//--------------------------------------------------------------------------
-
 struct SignTest : BaseFunctionTest
 {
     SignTest(cl_device_id device, cl_context context, cl_command_queue queue,
@@ -140,8 +119,6 @@ struct SignTest : BaseFunctionTest
 
     cl_int Run() override;
 };
-
-//--------------------------------------------------------------------------
 
 struct SmoothstepTest : BaseFunctionTest
 {
@@ -154,8 +131,6 @@ struct SmoothstepTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-//--------------------------------------------------------------------------
-
 struct StepTest : BaseFunctionTest
 {
     StepTest(cl_device_id device, cl_context context, cl_command_queue queue,
@@ -166,8 +141,6 @@ struct StepTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-//--------------------------------------------------------------------------
-
 struct MixTest : BaseFunctionTest
 {
     MixTest(cl_device_id device, cl_context context, cl_command_queue queue,
@@ -177,8 +150,6 @@ struct MixTest : BaseFunctionTest
 
     cl_int Run() override;
 };
-
-//--------------------------------------------------------------------------/
 
 template <typename... Args>
 std::string string_format(const std::string &format, Args... args)
@@ -192,7 +163,6 @@ std::string string_format(const std::string &format, Args... args)
     return std::string(buffer.get(), buffer.get() + format_size - 1);
 }
 
-//--------------------------------------------------------------------------
 template <typename T> float UlpFn(const T &val, const double &r)
 {
     if (std::is_same<T, half>::value)
@@ -215,7 +185,6 @@ template <typename T> float UlpFn(const T &val, const double &r)
     return -1.f; // wrong val
 }
 
-//--------------------------------------------------------------------------
 template <typename T> inline double conv_to_dbl(const T &val)
 {
     if (std::is_same<T, half>::value)
@@ -224,7 +193,6 @@ template <typename T> inline double conv_to_dbl(const T &val)
         return (double)val;
 }
 
-//--------------------------------------------------------------------------
 template <typename T> inline double conv_to_flt(const T &val)
 {
     if (std::is_same<T, half>::value)
@@ -233,15 +201,12 @@ template <typename T> inline double conv_to_flt(const T &val)
         return (float)val;
 }
 
-//--------------------------------------------------------------------------
 template <typename T> inline half conv_to_half(const T &val)
 {
     if (std::is_floating_point<T>::value)
         return cl_half_from_float(val, BaseFunctionTest::halfRoundingMode);
     return 0;
 }
-
-//--------------------------------------------------------------------------
 
 template <typename T> bool isfinite_fp(const T &v)
 {
@@ -264,8 +229,6 @@ template <typename T> bool isfinite_fp(const T &v)
     }
 }
 
-//--------------------------------------------------------------------------
-
 template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,
                    cl_command_queue queue, int num_elements,
@@ -279,4 +242,4 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
-#endif // _TEST_COMPARISONS_FP_H
+#endif // TEST_COMMONFNS_BASE_H

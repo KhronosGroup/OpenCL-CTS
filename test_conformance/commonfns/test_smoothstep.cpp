@@ -21,8 +21,6 @@
 #include "procs.h"
 #include "test_base.h"
 
-//--------------------------------------------------------------------------
-
 const char *smoothstep_fn_code_pattern =
     "%s\n" /* optional pragma */
     "__kernel void test_fn(__global %s%s *e0, __global %s%s *e1, __global %s%s "
@@ -54,13 +52,10 @@ const char *smoothstep_fn_code_pattern_v3_scalar =
     "    vstore3(smoothstep(e0[tid], e1[tid], vload3(tid,x)), tid, dst);\n"
     "}\n";
 
-//--------------------------------------------------------------------------
-
 #define MAX_ERR (1e-5f)
 
 namespace {
 
-//--------------------------------------------------------------------------
 template <typename T>
 int verify_smoothstep(const T *const edge0, const T *const edge1,
                       const T *const x, const T *const outptr, const int n,
@@ -139,7 +134,6 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
 
 }
 
-//--------------------------------------------------------------------------
 template <typename T>
 int test_smoothstep_fn(cl_device_id device, cl_context context,
                        cl_command_queue queue, int n_elems, bool vecParam)
@@ -151,7 +145,7 @@ int test_smoothstep_fn(cl_device_id device, cl_context context,
     std::vector<clKernelWrapper> kernels;
 
     int err, i;
-    MTdata d;
+    MTdataHolder d = MTdataHolder(gRandomSeed);
 
     assert(BaseFunctionTest::type2name.find(sizeof(T))
            != BaseFunctionTest::type2name.end());
@@ -173,7 +167,6 @@ int test_smoothstep_fn(cl_device_id device, cl_context context,
     }
 
     std::string pragma_str;
-    d = init_genrand(gRandomSeed);
     if (std::is_same<T, float>::value)
     {
         for (i = 0; i < num_elements; i++)
@@ -204,8 +197,6 @@ int test_smoothstep_fn(cl_device_id device, cl_context context,
             input_ptr[2][i] = conv_to_half(get_random_float(-65503, 65503, d));
         }
     }
-
-    free_mtdata(d);
 
     for (i = 0; i < 3; i++)
     {
@@ -246,7 +237,8 @@ int test_smoothstep_fn(cl_device_id device, cl_context context,
                               vecParam ? vecSizeNames[i] : "", tname.c_str(),
                               vecParam ? vecSizeNames[i] : "", tname.c_str(),
                               vecSizeNames[i], tname.c_str(), vecSizeNames[i]);
-        }
+        }        
+
         const char *programPtr = kernelSource.c_str();
         err =
             create_single_kernel_helper(context, &programs[i], &kernels[i], 1,
@@ -295,7 +287,6 @@ int test_smoothstep_fn(cl_device_id device, cl_context context,
     return err;
 }
 
-//--------------------------------------------------------------------------
 cl_int SmoothstepTest::Run()
 {
     cl_int error = CL_SUCCESS;
@@ -320,7 +311,6 @@ cl_int SmoothstepTest::Run()
     return error;
 }
 
-//--------------------------------------------------------------------------
 int test_smoothstep(cl_device_id device, cl_context context,
                     cl_command_queue queue, int n_elems)
 {
@@ -328,12 +318,9 @@ int test_smoothstep(cl_device_id device, cl_context context,
                                           "smoothstep", true);
 }
 
-//--------------------------------------------------------------------------
 int test_smoothstepf(cl_device_id device, cl_context context,
                      cl_command_queue queue, int n_elems)
 {
     return MakeAndRunTest<SmoothstepTest>(device, context, queue, n_elems,
                                           "smoothstep", false);
 }
-
-//--------------------------------------------------------------------------

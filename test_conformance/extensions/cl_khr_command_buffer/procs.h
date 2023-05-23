@@ -29,6 +29,10 @@ extern int test_explicit_flush(cl_device_id device, cl_context context,
                                cl_command_queue queue, int num_elements);
 extern int test_out_of_order(cl_device_id device, cl_context context,
                              cl_command_queue queue, int num_elements);
+extern int test_basic_printf(cl_device_id device, cl_context context,
+                             cl_command_queue queue, int num_elements);
+extern int test_simultaneous_printf(cl_device_id device, cl_context context,
+                                    cl_command_queue queue, int num_elements);
 extern int test_info_queues(cl_device_id device, cl_context context,
                             cl_command_queue queue, int num_elements);
 extern int test_info_ref_count(cl_device_id device, cl_context context,

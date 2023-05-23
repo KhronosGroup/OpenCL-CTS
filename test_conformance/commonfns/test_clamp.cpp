@@ -26,12 +26,9 @@
 #include "procs.h"
 #include "test_base.h"
 
-
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327950288
 #endif
-
-//--------------------------------------------------------------------------
 
 #define CLAMP_KERNEL(type)                                                     \
     const char *clamp_##type##_kernel_code = EMIT_PRAGMA_DIRECTIVE             \
@@ -65,7 +62,6 @@
         "vload3(tid,maxval)), tid, dst);\n"                                    \
         "}\n";
 
-//--------------------------------------------------------------------------
 #define EMIT_PRAGMA_DIRECTIVE "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
 CLAMP_KERNEL(half)
 CLAMP_KERNEL_V(half, 2)
@@ -93,7 +89,6 @@ CLAMP_KERNEL_V(double, 16)
 CLAMP_KERNEL_V3(double, 3)
 #undef EMIT_PRAGMA_DIRECTIVE
 
-
 const char *clamp_half_codes[] = {
     clamp_half_kernel_code,  clamp_half2_kernel_code,  clamp_half4_kernel_code,
     clamp_half8_kernel_code, clamp_half16_kernel_code, clamp_half3_kernel_code
@@ -111,7 +106,6 @@ const char *clamp_double_codes[] = {
 
 namespace {
 
-//--------------------------------------------------------------------------
 template <typename T>
 int verify_clamp(const T *const x, const T *const minval, const T *const maxval,
                  const T *const outptr, int n)
@@ -155,8 +149,6 @@ int verify_clamp(const T *const x, const T *const minval, const T *const maxval,
 }
 }
 
-//--------------------------------------------------------------------------
-
 template <typename T>
 int test_clamp_fn(cl_device_id device, cl_context context,
                   cl_command_queue queue, int n_elems)
@@ -168,7 +160,7 @@ int test_clamp_fn(cl_device_id device, cl_context context,
     std::vector<clKernelWrapper> kernels;
 
     int err, i, j;
-    MTdata d;
+    MTdataHolder d = MTdataHolder(gRandomSeed);
 
     assert(BaseFunctionTest::type2name.find(sizeof(T))
            != BaseFunctionTest::type2name.end());
@@ -189,7 +181,6 @@ int test_clamp_fn(cl_device_id device, cl_context context,
         test_error(err, "clCreateBuffer failed");
     }
 
-    d = init_genrand(gRandomSeed);
     if (std::is_same<T, float>::value)
     {
         for (j = 0; j < num_elements; j++)
@@ -219,7 +210,6 @@ int test_clamp_fn(cl_device_id device, cl_context context,
                 get_random_float(conv_to_flt(input_ptr[1][j]), fval, d));
         }
     }
-    free_mtdata(d);
 
     for (i = 0; i < 3; i++)
     {
@@ -297,8 +287,6 @@ int test_clamp_fn(cl_device_id device, cl_context context,
     return err;
 }
 
-//--------------------------------------------------------------------------
-
 cl_int ClampTest::Run()
 {
     cl_int error = CL_SUCCESS;
@@ -320,12 +308,8 @@ cl_int ClampTest::Run()
     return error;
 }
 
-//--------------------------------------------------------------------------
-
 int test_clamp(cl_device_id device, cl_context context, cl_command_queue queue,
                int n_elems)
 {
     return MakeAndRunTest<ClampTest>(device, context, queue, n_elems);
 }
-
-//--------------------------------------------------------------------------

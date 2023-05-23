@@ -26,7 +26,6 @@
 #include "procs.h"
 #include "test_base.h"
 
-//--------------------------------------------------------------------------
 const char *binary_fn_code_pattern =
 "%s\n" /* optional pragma */
 "__kernel void test_fn(__global %s%s *x, __global %s%s *y, __global %s%s *dst)\n"
@@ -54,7 +53,6 @@ const char *binary_fn_code_pattern_v3_scalar =
 "    vstore3(%s(vload3(tid,x), y[tid] ), tid, dst);\n"
 "}\n";
 
-//--------------------------------------------------------------------------
 template <typename T>
 int test_binary_fn(cl_device_id device, cl_context context,
                    cl_command_queue queue, int n_elems,
@@ -67,7 +65,7 @@ int test_binary_fn(cl_device_id device, cl_context context,
     std::vector<clProgramWrapper> programs;
     std::vector<clKernelWrapper> kernels;
     int err, i, j;
-    MTdata d;
+    MTdataHolder d = MTdataHolder(gRandomSeed);
 
     assert(BaseFunctionTest::type2name.find(sizeof(T))
            != BaseFunctionTest::type2name.end());
@@ -89,7 +87,6 @@ int test_binary_fn(cl_device_id device, cl_context context,
     }
 
     std::string pragma_str;
-    d = init_genrand(gRandomSeed);
     if (std::is_same<T, float>::value)
     {
         for (j = 0; j < num_elements; j++)
@@ -117,8 +114,6 @@ int test_binary_fn(cl_device_id device, cl_context context,
             input_ptr[1][j] = conv_to_half(get_random_float(-fval, fval, d));
         }
     }
-    free_mtdata(d);
-    d = NULL;
 
     for (i = 0; i < 2; i++)
     {
@@ -207,7 +202,6 @@ int test_binary_fn(cl_device_id device, cl_context context,
 
 namespace {
 
-//--------------------------------------------------------------------------
 template <typename T>
 int max_verify(const T* const x, const T* const y, const T* const out,
                int numElements, int vecSize, int vecParam)
@@ -239,7 +233,6 @@ int max_verify(const T* const x, const T* const y, const T* const out,
     return 0;
 }
 
-//--------------------------------------------------------------------------
 template <typename T>
 int min_verify(const T* const x, const T* const y, const T* const out,
                int numElements, int vecSize, int vecParam)
@@ -273,7 +266,6 @@ int min_verify(const T* const x, const T* const y, const T* const out,
 
 }
 
-//--------------------------------------------------------------------------
 cl_int MaxTest::Run()
 {
     cl_int error = CL_SUCCESS;
@@ -300,7 +292,6 @@ cl_int MaxTest::Run()
     return error;
 }
 
-//--------------------------------------------------------------------------
 cl_int MinTest::Run()
 {
     cl_int error = CL_SUCCESS;
@@ -327,7 +318,6 @@ cl_int MinTest::Run()
     return error;
 }
 
-//--------------------------------------------------------------------------
 int test_min(cl_device_id device, cl_context context, cl_command_queue queue,
              int n_elems)
 {
@@ -335,15 +325,12 @@ int test_min(cl_device_id device, cl_context context, cl_command_queue queue,
                                    true);
 }
 
-//--------------------------------------------------------------------------
 int test_minf(cl_device_id device, cl_context context, cl_command_queue queue,
               int n_elems)
 {
     return MakeAndRunTest<MinTest>(device, context, queue, n_elems, "min",
                                    false);
 }
-
-//--------------------------------------------------------------------------
 
 int test_fmin(cl_device_id device, cl_context context, cl_command_queue queue,
               int n_elems)
@@ -352,16 +339,12 @@ int test_fmin(cl_device_id device, cl_context context, cl_command_queue queue,
                                    true);
 }
 
-//--------------------------------------------------------------------------
-
 int test_fminf(cl_device_id device, cl_context context, cl_command_queue queue,
                int n_elems)
 {
     return MakeAndRunTest<MinTest>(device, context, queue, n_elems, "fmin",
                                    false);
 }
-
-//--------------------------------------------------------------------------
 
 int test_max(cl_device_id device, cl_context context, cl_command_queue queue,
              int n_elems)
@@ -370,16 +353,12 @@ int test_max(cl_device_id device, cl_context context, cl_command_queue queue,
                                    true);
 }
 
-//--------------------------------------------------------------------------
-
 int test_maxf(cl_device_id device, cl_context context, cl_command_queue queue,
               int n_elems)
 {
     return MakeAndRunTest<MaxTest>(device, context, queue, n_elems, "max",
                                    false);
 }
-
-//--------------------------------------------------------------------------
 
 int test_fmax(cl_device_id device, cl_context context, cl_command_queue queue,
               int n_elems)
@@ -388,13 +367,9 @@ int test_fmax(cl_device_id device, cl_context context, cl_command_queue queue,
                                    true);
 }
 
-//--------------------------------------------------------------------------
-
 int test_fmaxf(cl_device_id device, cl_context context, cl_command_queue queue,
                int n_elems)
 {
     return MakeAndRunTest<MaxTest>(device, context, queue, n_elems, "fmax",
                                    false);
 }
-
-//--------------------------------------------------------------------------

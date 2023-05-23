@@ -3537,7 +3537,6 @@ void copy_image_data(image_descriptor *srcImageInfo,
     {
         size_t src_width_lod = 1 /*srcImageInfo->width*/;
         size_t src_height_lod = 1 /*srcImageInfo->height*/;
-        size_t src_depth_lod = 1 /*srcImageInfo->depth*/;
 
         switch (srcImageInfo->type)
         {
@@ -3572,10 +3571,6 @@ void copy_image_data(image_descriptor *srcImageInfo,
                 src_height_lod = (srcImageInfo->height >> src_lod)
                     ? (srcImageInfo->height >> src_lod)
                     : 1;
-                if (srcImageInfo->type == CL_MEM_OBJECT_IMAGE3D)
-                    src_depth_lod = (srcImageInfo->depth >> src_lod)
-                        ? (srcImageInfo->depth >> src_lod)
-                        : 1;
                 break;
         }
         src_mip_level_offset = compute_mip_level_offset(srcImageInfo, src_lod);
@@ -3588,7 +3583,6 @@ void copy_image_data(image_descriptor *srcImageInfo,
     {
         size_t dst_width_lod = 1 /*dstImageInfo->width*/;
         size_t dst_height_lod = 1 /*dstImageInfo->height*/;
-        size_t dst_depth_lod = 1 /*dstImageInfo->depth*/;
         switch (dstImageInfo->type)
         {
             case CL_MEM_OBJECT_IMAGE1D:
@@ -3622,10 +3616,6 @@ void copy_image_data(image_descriptor *srcImageInfo,
                 dst_height_lod = (dstImageInfo->height >> dst_lod)
                     ? (dstImageInfo->height >> dst_lod)
                     : 1;
-                if (dstImageInfo->type == CL_MEM_OBJECT_IMAGE3D)
-                    dst_depth_lod = (dstImageInfo->depth >> dst_lod)
-                        ? (dstImageInfo->depth >> dst_lod)
-                        : 1;
                 break;
         }
         dst_mip_level_offset = compute_mip_level_offset(dstImageInfo, dst_lod);

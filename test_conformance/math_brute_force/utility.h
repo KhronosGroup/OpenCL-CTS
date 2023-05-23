@@ -82,9 +82,6 @@ float Abs_Error(float test, double reference);
 float Ulp_Error(float test, double reference);
 float Bruteforce_Ulp_Error_Double(double test, long double reference);
 
-int MakeKernel(const char **c, cl_uint count, const char *name, cl_kernel *k,
-               cl_program *p, bool relaxedMode);
-
 // used to convert a bucket of bits into a search pattern through double
 inline double DoubleFromUInt32(uint32_t bits)
 {

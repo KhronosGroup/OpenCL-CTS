@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "harness/os_helpers.h"
 
 #include <string.h>
 #include <errno.h>
@@ -112,29 +113,6 @@ static char gFileName[256];
 //-----------------------------------------
 // Static helper functions definition
 //-----------------------------------------
-
-//-----------------------------------------
-// getTempFileName
-//-----------------------------------------
-static int getTempFileName()
-{
-    // Create a unique temporary file to allow parallel executed tests.
-#if (defined(__linux__) || defined(__APPLE__)) && (!defined( __ANDROID__ ))
-    sprintf(gFileName, "/tmp/tmpfile.XXXXXX");
-    int fd = mkstemp(gFileName);
-    if (fd == -1)
-        return -1;
-    close(fd);
-#elif defined(_WIN32)
-    UINT ret = GetTempFileName(".", "tmp", 0, gFileName);
-    if (ret == 0)
-        return -1;
-#else
-    MTdata d = init_genrand((cl_uint)time(NULL));
-    sprintf(gFileName, "tmpfile.%u", genrand_int32(d));
-#endif
-    return 0;
-}
 
 //-----------------------------------------
 // acquireOutputStream
@@ -290,7 +268,7 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
     };
 
     //Update testname
-    sprintf(testname,"%s%d","test",testId);
+    std::snprintf(testname, sizeof(testname), "%s%d", "test", testId);
 
     if (allTestCase[testId]->_type == TYPE_HALF
         || allTestCase[testId]->_type == TYPE_HALF_LIMITS)
@@ -300,13 +278,18 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
     //Update addrSpaceArgument and addrSpacePAddArgument types, based on FULL_PROFILE/EMBEDDED_PROFILE
     if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
     {
-        sprintf(addrSpaceArgument, "%s",allTestCase[testId]->_genParameters[testNum].addrSpaceArgumentTypeQualifier);
+        std::snprintf(addrSpaceArgument, sizeof(addrSpaceArgument), "%s",
+                      allTestCase[testId]
+                          ->_genParameters[testNum]
+                          .addrSpaceArgumentTypeQualifier);
 
-        sprintf(addrSpacePAddArgument, "%s", allTestCase[testId]->_genParameters[testNum].addrSpacePAdd);
+        std::snprintf(
+            addrSpacePAddArgument, sizeof(addrSpacePAddArgument), "%s",
+            allTestCase[testId]->_genParameters[testNum].addrSpacePAdd);
     }
 
     if (strlen(addrSpaceArgument) == 0)
-        sprintf(addrSpaceArgument,"void");
+        std::snprintf(addrSpaceArgument, sizeof(addrSpaceArgument), "void");
 
     // create program based on its type
 
@@ -1062,9 +1045,17 @@ int main(int argc, const char* argv[])
         }
     }
 
-    if (getTempFileName() == -1)
+    char* pcTempFname = get_temp_filename();
+    if (pcTempFname != nullptr)
     {
-        log_error("getTempFileName failed\n");
+        strncpy(gFileName, pcTempFname, sizeof(gFileName));
+    }
+
+    free(pcTempFname);
+
+    if (strlen(gFileName) == 0)
+    {
+        log_error("get_temp_filename failed\n");
         return -1;
     }
 
