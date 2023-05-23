@@ -179,7 +179,7 @@ template <typename T> float UlpFn(const T &val, const double &r)
     }
     else
     {
-        log_error("GeometricsFPTest::UlpError: unsupported data type\n");
+        log_error("UlpFn: unsupported data type\n");
     }
 
     return -1.f; // wrong val

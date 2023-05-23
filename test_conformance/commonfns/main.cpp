@@ -75,12 +75,9 @@ int main(int argc, const char *argv[])
 {
     initVecSizes();
 
-    if (BaseFunctionTest::type2name.empty())
-    {
-        BaseFunctionTest::type2name[sizeof(half)] = "half";
-        BaseFunctionTest::type2name[sizeof(float)] = "float";
-        BaseFunctionTest::type2name[sizeof(double)] = "double";
-    }
+    BaseFunctionTest::type2name[sizeof(half)] = "half";
+    BaseFunctionTest::type2name[sizeof(float)] = "float";
+    BaseFunctionTest::type2name[sizeof(double)] = "double";
 
     return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, 0,
                                    InitCL);
