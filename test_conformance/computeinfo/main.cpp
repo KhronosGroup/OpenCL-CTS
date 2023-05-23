@@ -439,8 +439,8 @@ int getPlatformConfigInfo(cl_platform_id platform, config_info* info)
                 err = clGetPlatformInfo(platform, info->opcode, config_size_set,
                                         &info->config.cl_name_version_single,
                                         &config_size_ret);
+                size_err = config_size_set != config_size_ret;
             }
-            size_err = config_size_set != config_size_ret;
             break;
         default:
             log_error("Unknown config type: %d\n", info->config_type);
@@ -585,8 +585,8 @@ int getConfigInfo(cl_device_id device, config_info* info)
                 err = clGetDeviceInfo(device, info->opcode, config_size_set,
                                       &info->config.cl_name_version_single,
                                       &config_size_ret);
+                size_err = config_size_set != config_size_ret;
             }
-            size_err = config_size_set != config_size_ret;
             break;
         default:
             log_error("Unknown config type: %d\n", info->config_type);
