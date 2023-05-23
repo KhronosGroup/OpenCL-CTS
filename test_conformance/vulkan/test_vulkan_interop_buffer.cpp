@@ -959,7 +959,7 @@ int run_test_with_multi_import_same_ctx(
 
                     if (use_fence)
                     {
-                        clFinish(cmd_queue1);
+                        fence->wait();
                     }
                     else
                     {
@@ -1367,7 +1367,7 @@ int run_test_with_multi_import_diff_ctx(
 
                     if (use_fence)
                     {
-                        clFinish(cmd_queue1);
+                        fence->wait();
                     }
                     else
                     {
