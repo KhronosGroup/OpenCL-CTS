@@ -255,6 +255,10 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
 
         test_error(signal_error, "clSetUserEventStatus failed");
 
+        // verify executable state
+        error = verify_state(CL_COMMAND_BUFFER_STATE_EXECUTABLE_KHR);
+        test_error(error, "verify_state failed");
+
         return CL_SUCCESS;
     }
 
