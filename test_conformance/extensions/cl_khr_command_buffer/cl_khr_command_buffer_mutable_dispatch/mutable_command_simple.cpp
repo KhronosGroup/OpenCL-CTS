@@ -44,18 +44,18 @@
 // CL_MUTABLE_DISPATCH_LOCAL_WORK_SIZE_KHR
 // CL_MUTABLE_COMMAND_COMMAND_TYPE_KHR
 
-struct MutableDispatchGlobalOffset : ComplexMutableCommandBufferTest
+struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
 {
-    using ComplexMutableCommandBufferTest::ComplexMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     MutableDispatchGlobalOffset(cl_device_id device, cl_context context,
                                 cl_command_queue queue)
-        : ComplexMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     virtual cl_int SetUp(int elements) override
     {
-        ComplexMutableCommandBufferTest::SetUp(elements);
+        InfoMutableCommandBufferTest::SetUp(elements);
 
         return CL_SUCCESS;
     }
@@ -70,7 +70,7 @@ struct MutableDispatchGlobalOffset : ComplexMutableCommandBufferTest
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
             && mutable_capabilities != CL_MUTABLE_DISPATCH_GLOBAL_OFFSET_KHR;
 
-        return !mutable_support || ComplexMutableCommandBufferTest::Skip();
+        return !mutable_support || InfoMutableCommandBufferTest::Skip();
     }
 
     cl_int Run() override
@@ -135,18 +135,18 @@ struct MutableDispatchGlobalOffset : ComplexMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-struct MutableDispatchGlobalSize : public ComplexMutableCommandBufferTest
+struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
 {
-    using ComplexMutableCommandBufferTest::ComplexMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     MutableDispatchGlobalSize(cl_device_id device, cl_context context,
                               cl_command_queue queue)
-        : ComplexMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     virtual cl_int SetUp(int elements) override
     {
-        ComplexMutableCommandBufferTest::SetUp(elements);
+        InfoMutableCommandBufferTest::SetUp(elements);
 
         return CL_SUCCESS;
     }
@@ -161,7 +161,7 @@ struct MutableDispatchGlobalSize : public ComplexMutableCommandBufferTest
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
             && mutable_capabilities != CL_MUTABLE_DISPATCH_GLOBAL_SIZE_KHR;
 
-        return !mutable_support || ComplexMutableCommandBufferTest::Skip();
+        return !mutable_support || InfoMutableCommandBufferTest::Skip();
     }
 
     cl_int Run() override
@@ -227,18 +227,18 @@ struct MutableDispatchGlobalSize : public ComplexMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-struct MutableDispatchLocalSize : public ComplexMutableCommandBufferTest
+struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
 {
-    using ComplexMutableCommandBufferTest::ComplexMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     MutableDispatchLocalSize(cl_device_id device, cl_context context,
                              cl_command_queue queue)
-        : ComplexMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     virtual cl_int SetUp(int elements) override
     {
-        ComplexMutableCommandBufferTest::SetUp(elements);
+        InfoMutableCommandBufferTest::SetUp(elements);
 
         return CL_SUCCESS;
     }
@@ -253,7 +253,7 @@ struct MutableDispatchLocalSize : public ComplexMutableCommandBufferTest
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
             && mutable_capabilities != CL_MUTABLE_DISPATCH_LOCAL_SIZE_KHR;
 
-        return !mutable_support || ComplexMutableCommandBufferTest::Skip();
+        return !mutable_support || InfoMutableCommandBufferTest::Skip();
     }
 
     cl_int Run() override
@@ -318,18 +318,18 @@ struct MutableDispatchLocalSize : public ComplexMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-struct MutableDispatchArguments : public ComplexMutableCommandBufferTest
+struct MutableDispatchArguments : public InfoMutableCommandBufferTest
 {
-    using ComplexMutableCommandBufferTest::ComplexMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     MutableDispatchArguments(cl_device_id device, cl_context context,
                              cl_command_queue queue)
-        : ComplexMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     virtual cl_int SetUp(int elements) override
     {
-        ComplexMutableCommandBufferTest::SetUp(elements);
+        InfoMutableCommandBufferTest::SetUp(elements);
 
         return CL_SUCCESS;
     }
@@ -344,7 +344,7 @@ struct MutableDispatchArguments : public ComplexMutableCommandBufferTest
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
             && mutable_capabilities != CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
 
-        return !mutable_support || ComplexMutableCommandBufferTest::Skip();
+        return !mutable_support || InfoMutableCommandBufferTest::Skip();
     }
 
     cl_int Run() override

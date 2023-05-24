@@ -106,10 +106,10 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
     const size_t global_work_size = 4 * sizeof(cl_int);
 };
 
-struct ComplexMutableCommandBufferTest : BasicMutableCommandBufferTest
+struct InfoMutableCommandBufferTest : BasicMutableCommandBufferTest
 {
-    ComplexMutableCommandBufferTest(cl_device_id device, cl_context context,
-                                    cl_command_queue queue)
+    InfoMutableCommandBufferTest(cl_device_id device, cl_context context,
+                                 cl_command_queue queue)
         : BasicMutableCommandBufferTest(device, context, queue)
     {}
 

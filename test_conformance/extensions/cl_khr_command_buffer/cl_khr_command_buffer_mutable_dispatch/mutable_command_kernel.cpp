@@ -653,7 +653,7 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
 
         clMemWrapper image = create_image_1d(
             context, CL_MEM_READ_WRITE, &formats, image_desc.image_width,
-            image_desc.image_width, nullptr, nullptr, &error);
+            image_desc.image_width, 0, nullptr, &error);
         test_error(error, "create_image_2d failed");
 
         error = create_single_kernel_helper(context, &program, &kernel, 1,
