@@ -434,16 +434,15 @@ TwoVecToScalarFPTest::TwoVecToScalarKernel(const size_t &vecSize,
             if (std::is_same<T, half>::value)
             {
                 T expv = HFF(expected);
-                if (isnan_fp<T>(expv) && isnan_fp<T>(outData[i])
-                    || ((!isfinite_fp<T>(expv))
-                        && (!isfinite_fp<T>(outData[i]))))
+                if ((isnan_fp<T>(expv) && isnan_fp<T>(outData[i]))
+                    || (!isfinite_fp<T>(expv) && !isfinite_fp<T>(outData[i])))
                     continue;
             }
             else if (isnan(expected) && isnan_fp<T>(outData[i]))
                 continue;
 
-            if (std::is_same<T, float>::value && (!floatHasInfNan)
-                || std::is_same<T, half>::value && (!halfHasInfNan))
+            if ((std::is_same<T, float>::value && !floatHasInfNan)
+                || (std::is_same<T, half>::value && !halfHasInfNan))
             {
                 for (size_t ii = 0; ii < vecSize; ii++)
                 {
