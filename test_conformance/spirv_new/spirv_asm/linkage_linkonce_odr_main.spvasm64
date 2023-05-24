@@ -41,7 +41,7 @@
          %21 = OpLoad %v3ulong %__spirv_BuiltInGlobalInvocationId Aligned 32
          %22 = OpCompositeExtract %ulong %21 0
          %23 = OpUConvert %uint %22
-         %24 = OpIAdd %uint %23 %uint_5
+         %24 = OpFunctionCall %uint %a %23
          %25 = OpFunctionCall %uint %b %23
          %26 = OpIAdd %uint %24 %25
          %27 = OpSConvert %ulong %23
