@@ -233,8 +233,8 @@ cl_int CrossFPTest::CrossKernel(const GeomTestParams<T> &p)
 
     cl_int error;
     /* Check the default rounding mode */
-    if (std::is_same<T, float>::value && floatRoundingMode == 0
-        || std::is_same<T, half>::value && halfRoundingMode == 0)
+    if (std::is_same<T, float>::value && (floatRoundingMode == 0)
+        || std::is_same<T, half>::value && (halfRoundingMode == 0))
         return -1;
 
     for (int vecsize = 3; vecsize <= 4; ++vecsize)
@@ -339,9 +339,9 @@ cl_int CrossFPTest::CrossKernel(const GeomTestParams<T> &p)
             // RTZ devices accrue approximately double the amount of error per
             // operation.  Allow for that.
             if ((std::is_same<T, float>::value
-                 && floatRoundingMode == CL_FP_ROUND_TO_ZERO)
+                 && (floatRoundingMode == CL_FP_ROUND_TO_ZERO))
                 || (std::is_same<T, half>::value
-                    && halfRoundingMode == CL_FP_ROUND_TO_ZERO))
+                    && (halfRoundingMode == CL_FP_ROUND_TO_ZERO)))
             {
                 errorTolerances[0] *= 2.0;
                 errorTolerances[1] *= 2.0;
