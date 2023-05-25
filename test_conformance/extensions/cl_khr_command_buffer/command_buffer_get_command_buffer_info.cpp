@@ -240,9 +240,10 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
         clEventWrapper trigger_event = clCreateUserEvent(context, &error);
         test_error(error, "clCreateUserEvent failed");
 
+        clEventWrapper execute_event;
         // enqueued command buffer blocked on user event
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 1,
-                                          &trigger_event, nullptr);
+                                          &trigger_event, &execute_event);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         // verify pending state
@@ -255,7 +256,7 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
 
         test_error(signal_error, "clSetUserEventStatus failed");
 
-        error = clWaitForEvents(1, &trigger_event);
+        error = clWaitForEvents(1, &execute_event);
         test_error(error, "Unable to wait for execute event");
 
         // verify executable state
