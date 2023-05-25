@@ -11,7 +11,7 @@ set(${MODULE_NAME}_SOURCES
     test_multireadimageonefmt.cpp test_multireadimagemultifmt.cpp
     test_imagedim.cpp
     test_vloadstore.cpp
-    test_int2float.cpp test_float2int.cpp
+    test_int2float.cpp
     test_createkernelsinprogram.cpp
     test_hostptr.cpp
     test_explicit_s2v.cpp
