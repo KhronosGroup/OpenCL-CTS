@@ -255,6 +255,9 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
 
         test_error(signal_error, "clSetUserEventStatus failed");
 
+        error = clWaitForEvents(1, &trigger_event);
+        test_error(error, "Unable to wait for execute event");
+
         // verify executable state
         error = verify_state(CL_COMMAND_BUFFER_STATE_EXECUTABLE_KHR);
         test_error(error, "verify_state failed");
