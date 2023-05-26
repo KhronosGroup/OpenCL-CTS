@@ -52,8 +52,10 @@ extern int      test_image_r8(cl_device_id deviceID, cl_context context, cl_comm
 extern int      test_simplebarrier(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_barrier(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_wg_barrier(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_int2float(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_float2int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_int2fp(cl_device_id deviceID, cl_context context,
+                       cl_command_queue queue, int num_elements);
+extern int test_fp2int(cl_device_id deviceID, cl_context context,
+                       cl_command_queue queue, int num_elements);
 extern int      test_imagearraycopy(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_imagearraycopy3d(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_imagereadwrite(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
