@@ -72,6 +72,8 @@ VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
 
 #if defined(_WIN32) || defined(_WIN64)
     const char *vulkanLoaderLibraryName = "vulkan-1.dll";
+#elif defined(__ANDROID__)
+    const char *vulkanLoaderLibraryName = "libvulkan.so";
 #elif defined(__linux__)
     const char *vulkanLoaderLibraryName = "libvulkan.so.1";
 #endif
