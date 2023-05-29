@@ -293,6 +293,10 @@ struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
             CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
             &dispatch_config
         };
+
+        error = clFinish(queue);
+        test_error(error, "clFinish failed.");
+
         error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
@@ -430,6 +434,10 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
             CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
             &dispatch_config
         };
+
+        error = clFinish(queue);
+        test_error(error, "clFinish failed.");
+
         error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
@@ -577,6 +585,10 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
             CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
             &dispatch_config
         };
+
+        error = clFinish(queue);
+        test_error(error, "clFinish failed.");
+
         error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
