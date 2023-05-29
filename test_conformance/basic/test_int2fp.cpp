@@ -120,8 +120,6 @@ template <bool int2fp> struct TypesIterator
 
     static bool equal_value_from_half(cl_short a, cl_half b)
     {
-        bool ret = a == (cl_short)HTF(b);
-        if (!ret) vlog("ds");
         return a == (cl_short)HTF(b);
     }
 
