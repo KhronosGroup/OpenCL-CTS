@@ -149,8 +149,16 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
             CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
             &dispatch_config
         };
+
+        error = clFinish(queue);
+        test_error(error, "clFinish failed.");
+
         error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
+
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
 
         error =
             clEnqueueReadBuffer(queue, newBuffer, CL_TRUE, 0, sizeToAllocate,
