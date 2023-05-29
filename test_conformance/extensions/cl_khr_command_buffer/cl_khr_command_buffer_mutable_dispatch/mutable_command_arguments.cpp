@@ -663,28 +663,38 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
 
         // Allocate and initialize SVM for initial execution
 
-        int* initWrapper = (int*)clSVMAlloc(context, CL_MEM_READ_WRITE, sizeof(int*), 0);
-        int* initBuffer = (int*)clSVMAlloc(context, CL_MEM_READ_WRITE, num_elements * sizeof(int), 0);
+        int *initWrapper =
+            (int *)clSVMAlloc(context, CL_MEM_READ_WRITE, sizeof(int *), 0);
+        int *initBuffer = (int *)clSVMAlloc(context, CL_MEM_READ_WRITE,
+                                            num_elements * sizeof(int), 0);
         test_assert_error(initWrapper != nullptr && initBuffer != nullptr,
                           "clSVMAlloc failed for initial execution")
 
-        error = clEnqueueSVMMemcpy(queue, CL_TRUE, initWrapper, &initBuffer, sizeof(int*), 0, nullptr, nullptr);
+            error = clEnqueueSVMMemcpy(queue, CL_TRUE, initWrapper, &initBuffer,
+                                       sizeof(int *), 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMMemcpy failed for initWrapper");
 
-        error = clEnqueueSVMMemFill(queue, initBuffer, &zero, sizeof(zero), num_elements * sizeof(int), 0, nullptr, nullptr);
+        error = clEnqueueSVMMemFill(queue, initBuffer, &zero, sizeof(zero),
+                                    num_elements * sizeof(int), 0, nullptr,
+                                    nullptr);
         test_error(error, "clEnqueueSVMMemFill failed for initBuffer");
 
         // Allocate and initialize SVM for modified execution
 
-        int* newWrapper = (int*)clSVMAlloc(context, CL_MEM_READ_WRITE, sizeof(int), 0);
-        int* newBuffer = (int*)clSVMAlloc(context, CL_MEM_READ_WRITE, num_elements * sizeof(int), 0);
+        int *newWrapper =
+            (int *)clSVMAlloc(context, CL_MEM_READ_WRITE, sizeof(int), 0);
+        int *newBuffer = (int *)clSVMAlloc(context, CL_MEM_READ_WRITE,
+                                           num_elements * sizeof(int), 0);
         test_assert_error(newWrapper != nullptr && newBuffer != nullptr,
                           "clSVMAlloc failed for modified execution")
 
-        error = clEnqueueSVMMemcpy(queue, CL_TRUE, newWrapper, &newBuffer, sizeof(int*), 0, nullptr, nullptr);
+            error = clEnqueueSVMMemcpy(queue, CL_TRUE, newWrapper, &newBuffer,
+                                       sizeof(int *), 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMMemFill failed for newWrapper");
 
-        error = clEnqueueSVMMemFill(queue, newBuffer, &zero, sizeof(zero), num_elements * sizeof(int), 0, nullptr, nullptr);
+        error = clEnqueueSVMMemFill(queue, newBuffer, &zero, sizeof(zero),
+                                    num_elements * sizeof(int), 0, nullptr,
+                                    nullptr);
         test_error(error, "clEnqueueSVMMemFill failed for newB");
 
         // Build and execute the command buffer for the initial execution
@@ -698,11 +708,13 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
 
         cl_ndrange_kernel_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
-            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR | CL_MUTABLE_DISPATCH_EXEC_INFO_KHR, 0
+            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR
+                | CL_MUTABLE_DISPATCH_EXEC_INFO_KHR,
+            0
         };
         error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, props, kernel, 1, nullptr,
-            &num_elements, nullptr, 0, nullptr, nullptr, &command);
+            command_buffer, nullptr, props, kernel, 1, nullptr, &num_elements,
+            nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);
@@ -717,13 +729,18 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
 
         // Check the results of the initial execution
 
-        error = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, initBuffer, num_elements * sizeof(int), 0, nullptr, nullptr);
+        error =
+            clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, initBuffer,
+                            num_elements * sizeof(int), 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMMap failed for initBuffer");
 
-        for (size_t i = 0; i < num_elements; i++) {
-            if (initBuffer[i] != 1) {
-                log_error("Initial verification failed at index %zu: Got %d, wanted 1\n",
-                    i, initBuffer[i]);
+        for (size_t i = 0; i < num_elements; i++)
+        {
+            if (initBuffer[i] != 1)
+            {
+                log_error("Initial verification failed at index %zu: Got %d, "
+                          "wanted 1\n",
+                          i, initBuffer[i]);
                 return TEST_FAIL;
             }
         }
@@ -767,13 +784,18 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
 
         // Check the results of the modified execution
 
-        error = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, newBuffer, num_elements * sizeof(int), 0, nullptr, nullptr);
+        error =
+            clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, newBuffer,
+                            num_elements * sizeof(int), 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMMap failed for newBuffer");
 
-        for (size_t i = 0; i < num_elements; i++) {
-            if (newBuffer[i] != 1) {
-                log_error("Modified verification failed at index %zu: Got %d, wanted 1\n",
-                    i, newBuffer[i]);
+        for (size_t i = 0; i < num_elements; i++)
+        {
+            if (newBuffer[i] != 1)
+            {
+                log_error("Modified verification failed at index %zu: Got %d, "
+                          "wanted 1\n",
+                          i, newBuffer[i]);
                 return TEST_FAIL;
             }
         }
