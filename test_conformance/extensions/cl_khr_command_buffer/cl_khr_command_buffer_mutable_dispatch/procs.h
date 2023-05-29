@@ -59,4 +59,24 @@ extern int test_mutable_command_info_global_work_size(cl_device_id device,
                                                       cl_context context,
                                                       cl_command_queue queue,
                                                       int num_elements);
+extern int test_mutable_dispatch_global_arguments(cl_device_id device,
+                                                  cl_context context,
+                                                  cl_command_queue queue,
+                                                  int num_elements);
+extern int test_mutable_dispatch_local_arguments(cl_device_id device,
+                                                 cl_context context,
+                                                 cl_command_queue queue,
+                                                 int num_elements);
+extern int test_mutable_dispatch_pod_arguments(cl_device_id device,
+                                               cl_context context,
+                                               cl_command_queue queue,
+                                               int num_elements);
+extern int test_mutable_dispatch_null_arguments(cl_device_id device,
+                                                cl_context context,
+                                                cl_command_queue queue,
+                                                int num_elements);
+extern int test_mutable_dispatch_svm_arguments(cl_device_id device,
+                                               cl_context context,
+                                               cl_command_queue queue,
+                                               int num_elements);
 #endif /*_CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_PROCS_H*/
