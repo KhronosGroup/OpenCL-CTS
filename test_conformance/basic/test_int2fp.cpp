@@ -41,18 +41,6 @@ __kernel void test_X2Y(__global TYPE_X *src, __global TYPE_Y *dst)
 
 })";
 
-// half in range -32768..32768, non-zero exp and mantissa
-cl_half get_random_half(MTdata d)
-{
-    const unsigned m_size = 0x3fe;
-    const unsigned e_size = 0x1d;
-    const unsigned s_size = 0x1;
-    unsigned ind = genrand_int32(d) % (s_size * e_size * m_size);
-    return static_cast<cl_half>((((ind / (e_size * m_size)) << 15)
-                                 | (((ind / m_size) % e_size + 1) << 10)
-                                 | (ind % m_size + 1)));
-}
-
 template <bool int2fp> struct TypesIterator
 {
     TypesIterator(cl_device_id deviceID, cl_context context,
@@ -80,15 +68,18 @@ template <bool int2fp> struct TypesIterator
             if (int2fp)
             {
                 auto random_generator = [&seed]() {
-                    float t = HTF(get_random_half(seed));
-                    return t;
+                    return (short)get_random_float(
+                        -MAKE_HEX_FLOAT(0x1.ffcp+14, 1.9990234375f, 14),
+                        MAKE_HEX_FLOAT(0x1.ffcp+14, 1.9990234375f, 14), seed);
                 };
                 std::generate(v.begin(), v.end(), random_generator);
             }
             else
             {
                 auto random_generator = [&seed]() {
-                    return get_random_half(seed);
+                    return HFF(get_random_float(
+                        -MAKE_HEX_FLOAT(0x1.ffcp+14, 1.9990234375f, 14),
+                        MAKE_HEX_FLOAT(0x1.ffcp+14, 1.9990234375f, 14), seed));
                 };
                 std::generate(v.begin(), v.end(), random_generator);
             }
