@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2023 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,14 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
-
+#include <iomanip>
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
-#include <limits.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
+#include <vector>
 
 #include "procs.h"
 
@@ -31,9 +30,10 @@ int odd_offset( int index, int vectorSize ) { return index * 2 + 1; }
 
 typedef int (*OffsetFunc)( int index, int vectorSize );
 static const OffsetFunc offsetFuncs[4] = { hi_offset, lo_offset, even_offset, odd_offset };
-typedef int (*verifyFunc)( const void *, const void *, const void *, int n, const char *sizeName );
 static const char *operatorToUse_names[] = { "hi", "lo", "even", "odd" };
-static const char *test_str_names[] = { "char", "uchar", "short", "ushort", "int", "uint", "long", "ulong", "float", "double" };
+static const char *test_str_names[] = { "char", "uchar", "short", "ushort",
+                                        "int",  "uint",  "long",  "ulong",
+                                        "half", "float", "double" };
 
 static const unsigned int vector_sizes[] =     { 1, 2, 3, 4, 8, 16};
 static const unsigned int vector_aligns[] =    { 1, 2, 4, 4, 8, 16};
@@ -45,42 +45,40 @@ static const unsigned int out_vector_idx[] =   { 0, 0, 1, 1, 3, 4};
 // strcat(gentype, vector_size_names[out_vector_idx[i]]);
 static const char *vector_size_names[] = { "", "2", "3", "4", "8", "16"};
 
-static const size_t  kSizes[] = { 1, 1, 2, 2, 4, 4, 8, 8, 4, 8 };
+static const size_t kSizes[] = { 1, 1, 2, 2, 4, 4, 8, 8, 2, 4, 8 };
 static int CheckResults( void *in, void *out, size_t elementCount, int type, int vectorSize, int operatorToUse );
 
 int test_hiloeo(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
 {
-    cl_int *input_ptr, *output_ptr, *p;
     int err;
-    cl_uint i;
     int hasDouble = is_extension_available( device, "cl_khr_fp64" );
+    int hasHalf = is_extension_available(device, "cl_khr_fp16");
     cl_uint vectorSize, operatorToUse;
     cl_uint type;
-    MTdata d;
+    MTdataHolder d(gRandomSeed);
 
     int expressionMode;
     int numExpressionModes = 2;
 
     size_t length = sizeof(cl_int) * 4 * n_elems;
 
-    input_ptr   = (cl_int*)malloc(length);
-    output_ptr  = (cl_int*)malloc(length);
+    std::vector<cl_int> input_ptr(4 * n_elems);
+    std::vector<cl_int> output_ptr(4 * n_elems);
 
-    p = input_ptr;
-    d = init_genrand( gRandomSeed );
-    for (i=0; i<4 * (cl_uint) n_elems; i++)
-        p[i] = genrand_int32(d);
-    free_mtdata(d); d = NULL;
+    for (cl_uint i = 0; i < 4 * (cl_uint)n_elems; i++)
+        input_ptr[i] = genrand_int32(d);
 
     for( type = 0; type < sizeof( test_str_names ) / sizeof( test_str_names[0] ); type++ )
     {
         // Note: restrict the element count here so we don't end up overrunning the output buffer if we're compensating for 32-bit writes
         size_t elementCount = length / kSizes[type];
-        cl_mem streams[2];
+        clMemWrapper streams[2];
 
         // skip double if unavailable
         if( !hasDouble && ( 0 == strcmp( test_str_names[type], "double" )))
             continue;
+
+        if (!hasHalf && (0 == strcmp(test_str_names[type], "half"))) continue;
 
         if( !gHasLong &&
             (( 0 == strcmp( test_str_names[type], "long" )) ||
@@ -104,12 +102,9 @@ int test_hiloeo(cl_device_id device, cl_context context, cl_command_queue queue,
             return -1;
         }
 
-        err = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, length, input_ptr, 0, NULL, NULL);
-        if (err != CL_SUCCESS)
-        {
-            log_error("clEnqueueWriteBuffer failed\n");
-            return -1;
-        }
+        err = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, length,
+                                   input_ptr.data(), 0, NULL, NULL);
+        test_error(err, "clEnqueueWriteBuffer failed\n");
 
         for( operatorToUse = 0; operatorToUse < sizeof( operatorToUse_names ) / sizeof( operatorToUse_names[0] ); operatorToUse++ )
         {
@@ -118,8 +113,8 @@ int test_hiloeo(cl_device_id device, cl_context context, cl_command_queue queue,
             for( vectorSize = 1; vectorSize < sizeof( vector_size_names ) / sizeof( vector_size_names[0] ); vectorSize++ ) {
                 for(expressionMode = 0; expressionMode < numExpressionModes; ++expressionMode) {
 
-                    cl_program program = NULL;
-                    cl_kernel kernel = NULL;
+                    clProgramWrapper program;
+                    clKernelWrapper kernel;
                     cl_uint outVectorSize = out_vector_idx[vectorSize];
                     char expression[1024];
 
@@ -139,92 +134,64 @@ int test_hiloeo(cl_device_id device, cl_context context, cl_command_queue queue,
                         "}\n"
                     };
 
-                    if(expressionMode == 0) {
-                        sprintf(expression, "srcA[tid]");
-                    } else if(expressionMode == 1) {
-                        switch(vector_sizes[vectorSize]) {
-                            case 16:
-                                sprintf(expression,
-                                        "((%s16)(srcA[tid].s0, srcA[tid].s1, srcA[tid].s2, srcA[tid].s3, srcA[tid].s4, srcA[tid].s5, srcA[tid].s6, srcA[tid].s7, srcA[tid].s8, srcA[tid].s9, srcA[tid].sA, srcA[tid].sB, srcA[tid].sC, srcA[tid].sD, srcA[tid].sE, srcA[tid].sf))",
-                                        test_str_names[type]
-                                        );
-                                break;
-                            case 8:
-                                sprintf(expression,
-                                        "((%s8)(srcA[tid].s0, srcA[tid].s1, srcA[tid].s2, srcA[tid].s3, srcA[tid].s4, srcA[tid].s5, srcA[tid].s6, srcA[tid].s7))",
-                                        test_str_names[type]
-                                        );
-                                break;
-                            case 4:
-                                sprintf(expression,
-                                        "((%s4)(srcA[tid].s0, srcA[tid].s1, srcA[tid].s2, srcA[tid].s3))",
-                                        test_str_names[type]
-                                        );
-                                break;
-                            case 3:
-                                sprintf(expression,
-                                        "((%s3)(srcA[tid].s0, srcA[tid].s1, srcA[tid].s2))",
-                                        test_str_names[type]
-                                        );
-                                break;
-                            case 2:
-                                sprintf(expression,
-                                        "((%s2)(srcA[tid].s0, srcA[tid].s1))",
-                                        test_str_names[type]
-                                        );
-                                break;
-                            default :
-                                sprintf(expression, "srcA[tid]");
-                                log_info("Default\n");
-                        }
-                    } else {
-                        sprintf(expression, "srcA[tid]");
+                    if (expressionMode == 1 && vector_sizes[vectorSize] != 1)
+                    {
+                        std::ostringstream sstr;
+                        const char *index_chars[] = { "0", "1", "2", "3",
+                                                      "4", "5", "6", "7",
+                                                      "8", "9", "A", "B",
+                                                      "C", "D", "E", "f" };
+                        sstr << "((" << test_str_names[type]
+                             << std::to_string(vector_sizes[vectorSize])
+                             << ")(";
+                        for (unsigned i = 0; i < vector_sizes[vectorSize]; i++)
+                            sstr << " srcA[tid].s" << index_chars[i] << ",";
+                        sstr.seekp(-1, sstr.cur);
+                        sstr << "))";
+                        std::snprintf(expression, sizeof(expression), "%s",
+                                      sstr.str().c_str());
+                    }
+                    else
+                    {
+                        std::snprintf(expression, sizeof(expression),
+                                      "srcA[tid]");
                     }
 
                     if (0 == strcmp( test_str_names[type], "double" ))
                         source[0] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
 
+                    if (0 == strcmp(test_str_names[type], "half"))
+                        source[0] =
+                            "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
+
                     char kernelName[128];
                     snprintf( kernelName, sizeof( kernelName ), "test_%s_%s%s", operatorToUse_names[ operatorToUse ], test_str_names[type], vector_size_names[vectorSize] );
                     err = create_single_kernel_helper(context, &program, &kernel, sizeof( source ) / sizeof( source[0] ), source, kernelName );
-                    if (err)
-                        return -1;
+                    test_error(err, "create_single_kernel_helper failed\n");
 
                     err  = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
                     err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1]);
-                    if (err != CL_SUCCESS)
-                    {
-                        log_error("clSetKernelArgs failed\n");
-                        return -1;
-                    }
+                    test_error(err, "clSetKernelArg failed\n");
 
                     //Wipe the output buffer clean
                     uint32_t pattern = 0xdeadbeef;
-                    memset_pattern4( output_ptr, &pattern, length );
-                    err = clEnqueueWriteBuffer(queue, streams[1], CL_TRUE, 0, length, output_ptr, 0, NULL, NULL);
-                    if (err != CL_SUCCESS)
-                    {
-                        log_error("clEnqueueWriteBuffer failed\n");
-                        return -1;
-                    }
+                    memset_pattern4(output_ptr.data(), &pattern, length);
+                    err = clEnqueueWriteBuffer(queue, streams[1], CL_TRUE, 0,
+                                               length, output_ptr.data(), 0,
+                                               NULL, NULL);
+                    test_error(err, "clEnqueueWriteBuffer failed\n");
 
                     size_t size = elementCount / (vector_aligns[vectorSize]);
                     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &size, NULL, 0, NULL, NULL);
-                    if (err != CL_SUCCESS)
-                    {
-                        log_error("clEnqueueNDRangeKernel failed\n");
-                        return -1;
-                    }
+                    test_error(err, "clEnqueueNDRangeKernel failed\n");
 
-                    err = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, length, output_ptr, 0, NULL, NULL);
-                    if (err != CL_SUCCESS)
-                    {
-                        log_error("clEnqueueReadBuffer failed\n");
-                        return -1;
-                    }
+                    err = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0,
+                                              length, output_ptr.data(), 0,
+                                              NULL, NULL);
+                    test_error(err, "clEnqueueReadBuffer failed\n");
 
-                    char *inP = (char *)input_ptr;
-                    char *outP = (char *)output_ptr;
+                    char *inP = (char *)input_ptr.data();
+                    char *outP = (char *)output_ptr.data();
                     outP += kSizes[type] * ( ( vector_sizes[outVectorSize] ) -
                                             ( vector_sizes[ out_vector_idx[vectorSize] ] ) );
                     // was                outP += kSizes[type] * ( ( 1 << outVectorSize ) - ( 1 << ( vectorSize - 1 ) ) );
@@ -240,180 +207,88 @@ int test_hiloeo(cl_device_id device, cl_context context, cl_command_queue queue,
                         inP += kSizes[type] * ( vector_aligns[vectorSize] );
                         outP += kSizes[type] * ( vector_aligns[outVectorSize] );
                     }
-
-                    clReleaseKernel( kernel );
-                    clReleaseProgram( program );
                     log_info( "." );
                     fflush( stdout );
                 }
             }
         }
-
-        clReleaseMemObject( streams[0] );
-        clReleaseMemObject( streams[1] );
         log_info( "done\n" );
     }
 
     log_info("HiLoEO test passed\n");
-
-    free(input_ptr);
-    free(output_ptr);
-
     return err;
 }
 
-static int CheckResults( void *in, void *out, size_t elementCount, int type, int vectorSize, int operatorToUse )
+template <typename T>
+cl_int verify(void *in, void *out, size_t elementCount, int type,
+              int vectorSize, int operatorToUse, size_t cmpVectorSize)
 {
-    cl_ulong  array[8];
+    size_t halfVectorSize = vector_sizes[out_vector_idx[vectorSize]];
+    size_t elementSize = kSizes[type];
+    OffsetFunc f = offsetFuncs[operatorToUse];
+    cl_ulong array[8];
     void *p = array;
-    size_t halfVectorSize  = vector_sizes[out_vector_idx[vectorSize]];
-    size_t cmpVectorSize =  vector_sizes[out_vector_idx[vectorSize]];
-    // was 1 << (vectorSize-1);
-    OffsetFunc f = offsetFuncs[ operatorToUse ];
-    size_t elementSize =  kSizes[type];
 
-    if(vector_size_names[vectorSize][0] == '3') {
-        if(operatorToUse_names[operatorToUse][0] == 'h' ||
-           operatorToUse_names[operatorToUse][0] == 'o') // hi or odd
+    std::ostringstream ss;
+
+    T *i = (T *)in, *o = (T *)out;
+
+    for (cl_uint k = 0; k < elementCount; k++)
+    {
+        T *o2 = (T *)p;
+        for (size_t j = 0; j < halfVectorSize; j++)
+            o2[j] = i[f((int)j, (int)halfVectorSize * 2)];
+
+        if (memcmp(o, o2, elementSize * cmpVectorSize))
+        {
+            ss << "\n"
+               << k << ") Failure for" << test_str_names[type]
+               << vector_size_names[vectorSize] << '.'
+               << operatorToUse_names[operatorToUse] << " { "
+               << "0x" << std::setfill('0') << std::setw(elementSize * 2)
+               << std::hex << i[0];
+
+            for (size_t j = 1; j < halfVectorSize * 2; j++) ss << ", " << i[j];
+            ss << " } --> { " << o[0];
+            for (size_t j = 1; j < halfVectorSize; j++) ss << ", " << o[j];
+            ss << " }\n";
+            return -1;
+        }
+        i += 2 * halfVectorSize;
+        o += halfVectorSize;
+    }
+    return 0;
+}
+
+static int CheckResults(void *in, void *out, size_t elementCount, int type,
+                        int vectorSize, int operatorToUse)
+{
+    size_t cmpVectorSize = vector_sizes[out_vector_idx[vectorSize]];
+    size_t elementSize = kSizes[type];
+
+    if (vector_size_names[vectorSize][0] == '3')
+    {
+        if (operatorToUse_names[operatorToUse][0] == 'h'
+            || operatorToUse_names[operatorToUse][0] == 'o') // hi or odd
         {
             cmpVectorSize = 1; // special case for vec3 ignored values
         }
     }
 
-    switch( elementSize )
+    switch (elementSize)
     {
         case 1:
-        {
-            char *i = (char*)in;
-            char *o = (char*)out;
-            size_t j;
-            cl_uint k;
-            OffsetFunc f = offsetFuncs[ operatorToUse ];
-
-            for( k = 0; k  < elementCount; k++ )
-            {
-                char *o2 = (char*)p;
-                for( j = 0; j < halfVectorSize; j++ )
-                    o2[j] = i[ f((int)j, (int)halfVectorSize*2) ];
-
-                if( memcmp( o, o2, elementSize * cmpVectorSize ) )
-                {
-                    log_info( "\n%d) Failure for %s%s.%s { %d", k, test_str_names[type], vector_size_names[ vectorSize ], operatorToUse_names[ operatorToUse ], i[0] );
-                    for( j = 1; j < halfVectorSize * 2; j++ )
-                        log_info( ", %d", i[j] );
-                    log_info( " } --> { %d", o[0] );
-                    for( j = 1; j < halfVectorSize; j++ )
-                        log_info( ", %d", o[j] );
-                    log_info( " }\n" );
-                    return -1;
-                }
-                i += 2 * halfVectorSize;
-                o += halfVectorSize;
-            }
-        }
-            break;
-
+            return verify<char>(in, out, elementCount, type, vectorSize,
+                                operatorToUse, cmpVectorSize);
         case 2:
-        {
-            short *i = (short*)in;
-            short *o = (short*)out;
-            size_t j;
-            cl_uint k;
-
-            for( k = 0; k  < elementCount; k++ )
-            {
-                short *o2 = (short*)p;
-                for( j = 0; j < halfVectorSize; j++ )
-                    o2[j] = i[ f((int)j, (int)halfVectorSize*2) ];
-
-                if( memcmp( o, o2, elementSize * cmpVectorSize ) )
-                {
-                    log_info( "\n%d) Failure for %s%s.%s { %d", k, test_str_names[type], vector_size_names[ vectorSize ], operatorToUse_names[ operatorToUse ], i[0] );
-                    for( j = 1; j < halfVectorSize * 2; j++ )
-                        log_info( ", %d", i[j] );
-                    log_info( " } --> { %d", o[0] );
-                    for( j = 1; j < halfVectorSize; j++ )
-                        log_info( ", %d", o[j] );
-                    log_info( " }\n" );
-                    return -1;
-                }
-                i += 2 * halfVectorSize;
-                o += halfVectorSize;
-            }
-        }
-            break;
-
+            return verify<short>(in, out, elementCount, type, vectorSize,
+                                 operatorToUse, cmpVectorSize);
         case 4:
-        {
-            int *i = (int*)in;
-            int *o = (int*)out;
-            size_t j;
-            cl_uint k;
-
-            for( k = 0; k  < elementCount; k++ )
-            {
-                int *o2 = (int *)p;
-                for( j = 0; j < halfVectorSize; j++ )
-                    o2[j] = i[ f((int)j, (int)halfVectorSize*2) ];
-
-                for( j = 0; j < cmpVectorSize; j++ )
-        {
-            /* Allow float nans to be binary different */
-            if( memcmp( &o[j], &o2[j], elementSize ) && !((strcmp(test_str_names[type], "float") == 0) && isnan(((float *)o)[j]) && isnan(((float *)o2)[j])))
-            {
-                log_info( "\n%d) Failure for %s%s.%s { 0x%8.8x", k, test_str_names[type], vector_size_names[ vectorSize ], operatorToUse_names[ operatorToUse ], i[0] );
-            for( j = 1; j < halfVectorSize * 2; j++ )
-                log_info( ", 0x%8.8x", i[j] );
-            log_info( " } --> { 0x%8.8x", o[0] );
-            for( j = 1; j < halfVectorSize; j++ )
-                log_info( ", 0x%8.8x", o[j] );
-            log_info( " }\n" );
-            return -1;
-            }
-        }
-        i += 2 * halfVectorSize;
-        o += halfVectorSize;
-            }
-        }
-            break;
-
+            return verify<int>(in, out, elementCount, type, vectorSize,
+                               operatorToUse, cmpVectorSize);
         case 8:
-        {
-            cl_ulong *i = (cl_ulong*)in;
-            cl_ulong *o = (cl_ulong*)out;
-            size_t j;
-            cl_uint k;
-
-            for( k = 0; k  < elementCount; k++ )
-            {
-                cl_ulong *o2 = (cl_ulong*)p;
-                for( j = 0; j < halfVectorSize; j++ )
-                    o2[j] = i[ f((int)j, (int)halfVectorSize*2) ];
-
-                if( memcmp( o, o2, elementSize * cmpVectorSize ) )
-                {
-                    log_info( "\n%d) Failure for %s%s.%s { 0x%16.16llx", k, test_str_names[type], vector_size_names[ vectorSize ], operatorToUse_names[ operatorToUse ], i[0] );
-                    for( j = 1; j < halfVectorSize * 2; j++ )
-                        log_info( ", 0x%16.16llx", i[j] );
-                    log_info( " } --> { 0x%16.16llx", o[0] );
-                    for( j = 1; j < halfVectorSize; j++ )
-                        log_info( ", 0x%16.16llx", o[j] );
-                    log_info( " }\n" );
-                    return -1;
-                }
-                i += 2 * halfVectorSize;
-                o += halfVectorSize;
-            }
-        }
-            break;
-
-        default:
-            log_info( "Internal error. Unknown data type\n" );
-            return -2;
+            return verify<cl_ulong>(in, out, elementCount, type, vectorSize,
+                                    operatorToUse, cmpVectorSize);
+        default: log_info("Internal error. Unknown data type\n"); return -2;
     }
-
-    return 0;
 }
-
-
-
