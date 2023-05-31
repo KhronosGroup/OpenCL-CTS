@@ -66,7 +66,28 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
 
     cl_int Run() override
     {
-        cl_int error = clCommandNDRangeKernelKHR(
+        const char *global_size_kernel =
+            R"(
+                __kernel void sample_test(__global int *dst)
+            {
+                size_t tid = get_global_id(0);
+                dst[tid] = get_global_size(0);
+            })";
+
+        cl_int error = create_single_kernel_helper(
+            context, &program, &kernel, 1, &global_size_kernel, "sample_test");
+        test_error(error, "Creating kernel failed");
+
+        clMemWrapper stream;
+        stream = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
+                                nullptr, &error);
+        test_error(error, "Creating test array failed");
+
+        /* Set the arguments */
+        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &stream);
+        test_error(error, "Unable to set indexed kernel arguments");
+
+        error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, nullptr, kernel, 1, nullptr,
             &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
@@ -117,11 +138,38 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
             return TEST_FAIL;
         }
 
+        size_t num_elements = sizeToAllocate / sizeof(cl_int);
+
+        std::vector<cl_int> resultData;
+        resultData.resize(num_elements);
+
+        error = clEnqueueReadBuffer(queue, stream, CL_TRUE, 0, sizeToAllocate,
+                                    resultData.data(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        for (size_t i = 0; i < num_elements; i++)
+            if (i > global_size && default_global_size != resultData[i])
+            {
+                log_error("Data failed to verify: global_size != "
+                          "resultData[%d]=%d\n",
+                          i, resultData[i]);
+                return TEST_FAIL;
+            }
+            else if (i < global_size && global_size != resultData[i])
+            {
+                log_error("Data failed to verify: global_size != "
+                          "resultData[%d]=%d\n",
+                          i, resultData[i]);
+                return TEST_FAIL;
+            }
+
         return CL_SUCCESS;
     }
 
     size_t test_global_work_size = 0;
     const size_t global_size = 3;
+    const size_t sizeToAllocate = 64;
+    const size_t default_global_size = 16;
     size_t size;
 
     cl_mutable_command_khr command = nullptr;
