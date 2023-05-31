@@ -214,21 +214,27 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
                                     &user_event, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        cl_mutable_dispatch_exec_info_khr exec_info_list{
-            CL_KERNEL_EXEC_INFO_SVM_PTRS, sizeof(in_mem), in_mem
-        };
+        clMemWrapper new_out_mem = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+                                                  sizeof(cl_int) * num_elements
+                                                      * buffer_size_multiplier,
+                                                  nullptr, &error);
+        test_error(error, "clCreateBuffer failed");
+
+        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(new_out_mem),
+                                           &new_out_mem };
+        cl_mutable_dispatch_arg_khr args[] = { arg_1 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
             CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
             nullptr,
             command,
-            0 /* num_args */,
+            1 /* num_args */,
             0 /* num_svm_arg */,
-            1 /* num_exec_infos */,
+            0 /* num_exec_infos */,
             0 /* work_dim - 0 means no change to dimensions */,
-            nullptr /* arg_list */,
+            args /* arg_list */,
             nullptr /* arg_svm_list - nullptr means no change*/,
-            &exec_info_list /* exec_info_list */,
+            nullptr /* exec_info_list */,
             nullptr /* global_work_offset */,
             nullptr /* global_work_size */,
             nullptr /* local_work_size */
@@ -241,6 +247,15 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
         error = clUpdateMutableCommandsKHR(out_of_order_command_buffer,
                                            &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
+
+        error = clEnqueueCommandBufferKHR(
+            0, nullptr, out_of_order_command_buffer, 0, nullptr, &user_event);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        error = clEnqueueReadBuffer(out_of_order_queue, new_out_mem, CL_TRUE, 0,
+                                    data_size(), output_data.data(), 1,
+                                    &user_event, nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
 
         for (size_t i = 0; i < num_elements; i++)
         {
@@ -277,34 +292,6 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
 
         error = clFinalizeCommandBufferKHR(out_of_order_command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        cl_mutable_dispatch_exec_info_khr exec_info_list{
-            CL_KERNEL_EXEC_INFO_SVM_PTRS, sizeof(in_mem), in_mem
-        };
-
-        cl_mutable_dispatch_config_khr dispatch_config{
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
-            nullptr,
-            command,
-            0 /* num_args */,
-            0 /* num_svm_arg */,
-            1 /* num_exec_infos */,
-            0 /* work_dim - 0 means no change to dimensions */,
-            nullptr /* arg_list */,
-            nullptr /* arg_svm_list - nullptr means no change*/,
-            &exec_info_list /* exec_info_list */,
-            nullptr /* global_work_offset */,
-            nullptr /* global_work_size */,
-            nullptr /* local_work_size */
-        };
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
-            &dispatch_config
-        };
-
-        error = clUpdateMutableCommandsKHR(out_of_order_command_buffer,
-                                           &mutable_config);
-        test_error(error, "clUpdateMutableCommandsKHR failed");
 
         return CL_SUCCESS;
     }
@@ -345,6 +332,52 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         error = clEnqueueReadBuffer(out_of_order_queue, out_mem, CL_FALSE,
+                                    pd.offset * sizeof(cl_int), data_size(),
+                                    pd.output_buffer.data(), 1,
+                                    &pd.wait_events[2], nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        clMemWrapper new_out_mem = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+                                                  sizeof(cl_int) * num_elements
+                                                      * buffer_size_multiplier,
+                                                  nullptr, &error);
+        test_error(error, "clCreateBuffer failed");
+
+        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(new_out_mem),
+                                           &new_out_mem };
+        cl_mutable_dispatch_arg_khr args[] = { arg_1 };
+
+        cl_mutable_dispatch_config_khr dispatch_config{
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
+            nullptr,
+            command,
+            1 /* num_args */,
+            0 /* num_svm_arg */,
+            0 /* num_exec_infos */,
+            0 /* work_dim - 0 means no change to dimensions */,
+            args /* arg_list */,
+            nullptr /* arg_svm_list - nullptr means no change*/,
+            nullptr /* exec_info_list */,
+            nullptr /* global_work_offset */,
+            nullptr /* global_work_size */,
+            nullptr /* local_work_size */
+        };
+        cl_mutable_base_config_khr mutable_config{
+            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
+            &dispatch_config
+        };
+
+        error = clUpdateMutableCommandsKHR(out_of_order_command_buffer,
+                                           &mutable_config);
+        test_error(error, "clUpdateMutableCommandsKHR failed");
+
+        // command buffer execution must wait for two wait-events
+        error = clEnqueueCommandBufferKHR(
+            0, nullptr, out_of_order_command_buffer, 2, &pd.wait_events[0],
+            &pd.wait_events[2]);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        error = clEnqueueReadBuffer(out_of_order_queue, new_out_mem, CL_FALSE,
                                     pd.offset * sizeof(cl_int), data_size(),
                                     pd.output_buffer.data(), 1,
                                     &pd.wait_events[2], nullptr);
