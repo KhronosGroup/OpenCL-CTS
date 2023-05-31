@@ -27,6 +27,7 @@
 #define MAX_CODE_SIZE (1024 * 32)
 
 static const int sizes[] = { 1, 2, 3, 4, 8, 16, -1, -1, -1, -1 };
+static const int initial_no_sizes[] = { 0, 0, 0, 0, 1, 2, 3 };
 static const char *size_names[] = { "",   "2",   "3",   "4",   "8",
                                     "16", "!!a", "!!b", "!!c", "!!d" };
 static char extension[128] = { 0 };
@@ -81,7 +82,7 @@ int create_kernel(ExplicitType type, int output_size, char *program,
     char storePrefix[128], storeSuffix[128];
 
     // Start out trying sizes 1,1,1,1,1...
-    for (int i = 0; i < DEPTH; i++) pos[i] = 0;
+    for (int i = 0; i < DEPTH; i++) pos[i] = initial_no_sizes[number_of_sizes];
 
     int done = 0;
     while (!done)
