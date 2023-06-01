@@ -32,6 +32,7 @@ template <typename T> using VerifyFunc = bool (*)(const T &, const T &);
 struct RelTestBase
 {
     explicit RelTestBase(const ExplicitTypes &dt): dataType(dt) {}
+    virtual ~RelTestBase() = default;
     ExplicitTypes dataType;
 };
 
