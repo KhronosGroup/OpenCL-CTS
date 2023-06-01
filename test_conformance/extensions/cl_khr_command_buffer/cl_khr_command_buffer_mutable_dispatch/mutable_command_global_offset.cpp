@@ -100,6 +100,9 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
+        error = clFinish(queue);
+        test_error(error, "clFinish failed.");
+
         cl_mutable_dispatch_config_khr dispatch_config{
             CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
             nullptr,
@@ -111,7 +114,7 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
             nullptr /* arg_list */,
             nullptr /* arg_svm_list - nullptr means no change*/,
             nullptr /* exec_info_list */,
-            &global_offset /* global_work_offset */,
+            &update_global_offset /* global_work_offset */,
             nullptr /* global_work_size */,
             nullptr /* local_work_size */
         };
@@ -129,10 +132,10 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
 
         error = clGetMutableCommandInfoKHR(
             command, CL_MUTABLE_DISPATCH_GLOBAL_WORK_OFFSET_KHR,
-            sizeof(test_global_work_offset), &test_global_work_offset, &size);
+            sizeof(info_global_offset), &info_global_offset, &size);
         test_error(error, "clGetMutableCommandInfoKHR failed");
 
-        if (test_global_work_offset != global_offset)
+        if (info_global_offset != update_global_offset)
         {
             log_error("ERROR: Wrong size returned from "
                       "clGetMutableCommandInfoKHR.");
@@ -149,27 +152,26 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (size_t i = 0; i < num_elements; i++)
-            if (i < global_offset && 0 != resultData[i])
+            if (i < update_global_offset && 0 != resultData[i])
             {
-                log_error("Data failed to verify: global_offset != "
+                log_error("Data failed to verify: update_global_offset != "
                           "resultData[%d]=%d\n",
                           i, resultData[i]);
                 return TEST_FAIL;
             }
-            else if (i > global_offset && global_offset != resultData[i])
+            else if (i > update_global_offset
+                     && update_global_offset != resultData[i])
             {
-                log_error("Data failed to verify: global_offset != "
+                log_error("Data failed to verify: update_global_offset != "
                           "resultData[%d]=%d\n",
                           i, resultData[i]);
                 return TEST_FAIL;
             }
-        return CL_SUCCESS;
-
         return CL_SUCCESS;
     }
 
-    size_t test_global_work_offset = 0;
-    const size_t global_offset = 3;
+    size_t info_global_offset = 0;
+    const size_t update_global_offset = 3;
     const size_t sizeToAllocate = 76;
     size_t size;
     cl_mutable_command_khr command = nullptr;
