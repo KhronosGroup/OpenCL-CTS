@@ -99,6 +99,9 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
+        error = clFinish(queue);
+        test_error(error, "clFinish failed.");
+
         cl_mutable_dispatch_config_khr dispatch_config{
             CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
             nullptr,
@@ -112,7 +115,7 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
             nullptr /* exec_info_list */,
             nullptr /* global_work_offset */,
             nullptr /* global_work_size */,
-            &local_size /* local_work_size */
+            &update_local_size /* local_work_size */
         };
         cl_mutable_base_config_khr mutable_config{
             CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
@@ -128,10 +131,10 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
 
         error = clGetMutableCommandInfoKHR(
             command, CL_MUTABLE_DISPATCH_LOCAL_WORK_SIZE_KHR,
-            sizeof(test_local_work_size), &test_local_work_size, &size);
+            sizeof(info_local_size), &info_local_size, &size);
         test_error(error, "clGetMutableCommandInfoKHR failed");
 
-        if (test_local_work_size != local_size)
+        if (info_local_size != update_local_size)
         {
             log_error("ERROR: Wrong size returned from "
                       "clGetMutableCommandInfoKHR.");
@@ -148,9 +151,9 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (size_t i = 0; i < num_elements; i++)
-            if (local_size != resultData[i])
+            if (update_local_size != resultData[i])
             {
-                log_error("Data failed to verify: local_size != "
+                log_error("Data failed to verify: update_local_size != "
                           "resultData[%d]=%d\n",
                           i, resultData[i]);
                 return TEST_FAIL;
@@ -159,8 +162,8 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
         return CL_SUCCESS;
     }
 
-    size_t test_local_work_size = 0;
-    const size_t local_size = 8;
+    size_t info_local_size = 0;
+    const size_t update_local_size = 8;
     const size_t sizeToAllocate = 64;
     size_t size;
     cl_mutable_command_khr command = nullptr;
