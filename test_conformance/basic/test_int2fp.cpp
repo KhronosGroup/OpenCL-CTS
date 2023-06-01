@@ -65,10 +65,13 @@ template <bool int2fp> struct TypesIterator
 
         if (sizeof(T) == sizeof(cl_half))
         {
+            // Bound generated half values to 0x1.ffcp+14(32752.0) which is the
+            // largest cl_half value smaller than the max value of cl_short,
+            // 32767.
             if (int2fp)
             {
                 auto random_generator = [&seed]() {
-                    return (short)get_random_float(
+                    return (cl_short)get_random_float(
                         -MAKE_HEX_FLOAT(0x1.ffcp+14, 1.9990234375f, 14),
                         MAKE_HEX_FLOAT(0x1.ffcp+14, 1.9990234375f, 14), seed);
                 };
