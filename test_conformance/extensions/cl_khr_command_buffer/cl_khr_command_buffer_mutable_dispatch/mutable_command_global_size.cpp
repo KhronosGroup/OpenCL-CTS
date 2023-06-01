@@ -99,6 +99,9 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
+        error = clFinish(queue);
+        test_error(error, "clFinish failed.");
+
         cl_mutable_dispatch_config_khr dispatch_config{
             CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
             nullptr,
@@ -111,7 +114,7 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
             nullptr /* arg_svm_list - nullptr means no change*/,
             nullptr /* exec_info_list */,
             nullptr /* global_work_offset */,
-            &global_size /* global_work_size */,
+            &update_global_size /* global_work_size */,
             nullptr /* local_work_size */
         };
         cl_mutable_base_config_khr mutable_config{
@@ -128,10 +131,10 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
 
         error = clGetMutableCommandInfoKHR(
             command, CL_MUTABLE_DISPATCH_GLOBAL_WORK_SIZE_KHR,
-            sizeof(test_global_work_size), &test_global_work_size, &size);
+            sizeof(info_global_size), &info_global_size, &size);
         test_error(error, "clGetMutableCommandInfoKHR failed");
 
-        if (test_global_work_size != global_size)
+        if (info_global_size != update_global_size)
         {
             log_error("ERROR: Wrong size returned from "
                       "clGetMutableCommandInfoKHR.");
@@ -148,16 +151,17 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (size_t i = 0; i < num_elements; i++)
-            if (i > global_size && default_global_size != resultData[i])
+            if (i > update_global_size && global_work_size != resultData[i])
             {
-                log_error("Data failed to verify: global_size != "
+                log_error("Data failed to verify: update_global_size != "
                           "resultData[%d]=%d\n",
                           i, resultData[i]);
                 return TEST_FAIL;
             }
-            else if (i < global_size && global_size != resultData[i])
+            else if (i < update_global_size
+                     && update_global_size != resultData[i])
             {
-                log_error("Data failed to verify: global_size != "
+                log_error("Data failed to verify: update_global_size != "
                           "resultData[%d]=%d\n",
                           i, resultData[i]);
                 return TEST_FAIL;
@@ -166,10 +170,9 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
         return CL_SUCCESS;
     }
 
-    size_t test_global_work_size = 0;
-    const size_t global_size = 3;
+    size_t info_global_size = 0;
+    const size_t update_global_size = 3;
     const size_t sizeToAllocate = 64;
-    const size_t default_global_size = 16;
     size_t size;
 
     cl_mutable_command_khr command = nullptr;
