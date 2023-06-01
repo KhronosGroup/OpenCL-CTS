@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2019 The Khronos Group Inc.
+// Copyright (c) 2017-2023 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -552,6 +552,25 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     }
 
     /* If we have a device checking function, run it */
+    for (int i = 0; i < testNum; ++i)
+    {
+        if ((testList[i].deviceCheckFn != nullptr))
+        {
+            test_status status = testList[i].deviceCheckFn(device);
+            switch (status)
+            {
+                case TEST_PASS: break;
+                default:
+                    suite_did_not_pass_init(suiteName, status, i, testList);
+                    test_definition swap = testList[i];
+                    testList[i] = testList[testNum - 1];
+                    testList[testNum - 1] = swap;
+                    testNum--;
+                    break;
+            }
+        }
+    }
+
     if ((deviceCheckFn != NULL))
     {
         test_status status = deviceCheckFn(device);

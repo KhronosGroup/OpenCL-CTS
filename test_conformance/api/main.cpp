@@ -28,8 +28,11 @@
 // FIXME: To use certain functions in harness/imageHelpers.h
 // (for example, generate_random_image_data()), the tests are required to
 // declare the following variables (<rdar://problem/11111245>):
+test_status InitCL(cl_device_id device);
 
 test_definition test_list[] = {
+    ADD_TEST_WITH_CHECK(timer_resolution_queries, InitCL),
+    ADD_TEST_WITH_CHECK(device_and_host_timers, InitCL),
     ADD_TEST(get_platform_info),
     ADD_TEST_VERSION(get_sampler_info, Version(2, 0)),
     ADD_TEST(get_sampler_info_compatibility),
@@ -150,13 +153,7 @@ test_definition test_list[] = {
     ADD_TEST(negative_get_platform_ids),
 };
 
-test_definition test_list_with_check[] = {
-    ADD_TEST(timer_resolution_queries),
-    ADD_TEST(device_and_host_timers),
-};
-
 const int test_num = ARRAY_SIZE(test_list);
-const int test_num_with_check = ARRAY_SIZE(test_list_with_check);
 
 
 test_status InitCL(cl_device_id device)
@@ -201,8 +198,5 @@ test_status InitCL(cl_device_id device)
 
 int main(int argc, const char *argv[])
 {
-    int status = runTestHarness(argc, argv, test_num, test_list, false, 0);
-    if (status != 0) return status;
-    return runTestHarnessWithCheck(argc, argv, test_num_with_check,
-                                   test_list_with_check, false, 0, InitCL);
+    return runTestHarness(argc, argv, test_num, test_list, false, 0);
 }

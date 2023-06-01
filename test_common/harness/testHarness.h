@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2019 The Khronos Group Inc.
+// Copyright (c) 2017-2023 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,7 +53,19 @@ private:
     int m_minor;
 };
 
+typedef enum test_status
+{
+    TEST_PASS = 0,
+    TEST_FAIL = 1,
+    TEST_SKIP = 2,
+    TEST_SKIPPED_ITSELF = -100,
+} test_status;
+
 Version get_device_cl_version(cl_device_id device);
+// Device checking function. See runTestHarnessWithCheck. If this function
+// returns anything other than TEST_PASS, the harness exits.
+typedef test_status (*DeviceCheckFn)(cl_device_id device);
+
 
 #define ADD_TEST(fn)                                                           \
     {                                                                          \
@@ -62,6 +74,11 @@ Version get_device_cl_version(cl_device_id device);
 #define ADD_TEST_VERSION(fn, ver)                                              \
     {                                                                          \
         test_##fn, #fn, ver                                                    \
+    }
+
+#define ADD_TEST_WITH_CHECK(fn, check)                                         \
+    {                                                                          \
+        test_##fn, #fn, Version(1, 0), check                                   \
     }
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -74,16 +91,8 @@ typedef struct test_definition
     test_function_pointer func;
     const char *name;
     Version min_version;
+    DeviceCheckFn deviceCheckFn;
 } test_definition;
-
-
-typedef enum test_status
-{
-    TEST_PASS = 0,
-    TEST_FAIL = 1,
-    TEST_SKIP = 2,
-    TEST_SKIPPED_ITSELF = -100,
-} test_status;
 
 struct test_harness_config
 {
@@ -106,10 +115,6 @@ extern int runTestHarness(int argc, const char *argv[], int testNum,
                           test_definition testList[],
                           int forceNoContextCreation,
                           cl_command_queue_properties queueProps);
-
-// Device checking function. See runTestHarnessWithCheck. If this function
-// returns anything other than TEST_PASS, the harness exits.
-typedef test_status (*DeviceCheckFn)(cl_device_id device);
 
 // Same as runTestHarness, but also supplies a function that checks the created
 // device for required functionality. Returns EXIT_SUCCESS iff all tests
