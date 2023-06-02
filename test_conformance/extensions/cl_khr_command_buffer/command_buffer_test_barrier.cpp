@@ -83,6 +83,19 @@ struct BarrierWithWaitListKHR : public BasicCommandBufferTest
 
         /* Check second enqueue of command buffer */
 
+        error = clEnqueueFillBuffer(queue, in_mem, &pattern, sizeof(cl_int), 0,
+                                    data_size(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBufferKHR failed");
+
+        error = clEnqueueFillBuffer(queue, out_mem, &overwritten_pattern,
+                                    sizeof(cl_int), 0, data_size(), 0, nullptr,
+                                    nullptr);
+        test_error(error, "clEnqueueFillBufferKHR failed");
+
+        error = clEnqueueCommandBufferKHR(
+            0, nullptr, out_of_order_command_buffer, 0, nullptr, &event);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
         std::vector<cl_int> output_data_2(num_elements);
         error = clEnqueueReadBuffer(out_of_order_queue, out_mem, CL_TRUE, 0,
                                     data_size(), output_data_2.data(), 1,
