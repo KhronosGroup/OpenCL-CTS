@@ -289,18 +289,17 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
     return img;
 }
 
-// WARNING -- not thread safe
-BufferOwningPtr<char> srcData;
-BufferOwningPtr<char> dstData;
-BufferOwningPtr<char> srcHost;
-BufferOwningPtr<char> dstHost;
-
 int test_copy_image_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
                             const size_t sourcePos[], const size_t destPos[], const size_t regionSize[], MTdata d )
 {
     int error;
 
     clMemWrapper srcImage, dstImage;
+
+    BufferOwningPtr<char> srcData;
+    BufferOwningPtr<char> dstData;
+    BufferOwningPtr<char> srcHost;
+    BufferOwningPtr<char> dstHost;
 
     if( gDebugTrace )
         log_info( " ++ Entering inner test loop...\n" );

@@ -64,16 +64,21 @@ static int test_setargs_and_execution(cl_command_queue queue, cl_kernel kernel,
     cl_int status;
     const char *typestr;
 
-    if (type == NON_NULL_PATH) {
-        status = clSetKernelArg(kernel, 0, sizeof(cl_mem), &test_buf);
-        typestr = "non-NULL";
-    } else if (type == ADDROF_NULL_PATH) {
-        test_buf = NULL;
-        status = clSetKernelArg(kernel, 0, sizeof(cl_mem), &test_buf);
-        typestr = "&NULL";
-    } else if (type == NULL_PATH) {
-        status = clSetKernelArg(kernel, 0, sizeof(cl_mem), NULL);
-        typestr = "NULL";
+    switch (type)
+    {
+        case NON_NULL_PATH:
+            status = clSetKernelArg(kernel, 0, sizeof(cl_mem), &test_buf);
+            typestr = "non-NULL";
+            break;
+        case ADDROF_NULL_PATH:
+            test_buf = NULL;
+            status = clSetKernelArg(kernel, 0, sizeof(cl_mem), &test_buf);
+            typestr = "&NULL";
+            break;
+        case NULL_PATH:
+            status = clSetKernelArg(kernel, 0, sizeof(cl_mem), NULL);
+            typestr = "NULL";
+            break;
     }
 
     log_info("Testing setKernelArgs with %s buffer.\n", typestr);
