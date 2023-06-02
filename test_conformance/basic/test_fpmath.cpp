@@ -31,17 +31,14 @@
 #include "procs.h"
 #include "utils.h"
 
-static char extension[128] = { 0 };
+static const char *fp_kernel_code = R"(
+%s
+__kernel void test_fp(__global TYPE *srcA, __global TYPE *srcB, __global TYPE *dst)
+{
+    int  tid = get_global_id(0);
 
-// clang-format off
-static const char* fp_kernel_code[] = {
-extension,
-"__kernel void test_fp(__global TYPE *srcA, __global TYPE *srcB, __global TYPE *dst)\n"
-"{\n"
-"    int tid = get_global_id( 0 );\n",
-"    dst[tid] = srcA[tid] OP srcB[tid];\n",
-"}\n"};
-// clang-format on
+    dst[tid] = srcA[tid] OP srcB[tid];
+})";
 
 template <typename T> double toDouble(T val)
 {
@@ -139,9 +136,9 @@ template <typename T> void generate_random_inputs(std::vector<T> (&input)[2])
     else
     {
         auto random_generator = [&seed]() {
-            return get_random_float(HFF(-MAKE_HEX_FLOAT(0x1.0p15f, 0x1, 15)),
-                                    HFF(MAKE_HEX_FLOAT(0x1.0p15f, 0x1, 15)),
-                                    seed);
+            return HFF(get_random_float(-MAKE_HEX_FLOAT(0x1.0p15f, 0x1, 15),
+                                        MAKE_HEX_FLOAT(0x1.0p15f, 0x1, 15),
+                                        seed));
         };
         for (auto &v : input)
             std::generate(v.begin(), v.end(), random_generator);
@@ -186,9 +183,10 @@ struct TypesIterator
         if (std::is_same<T, cl_half>::value)
             sstr << "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
 
-        snprintf(extension, sizeof(extension), "%s", sstr.str().c_str());
+        std::string program_source =
+            str_sprintf(std::string(fp_kernel_code), sstr.str().c_str());
 
-        for (unsigned i = 0; i < sizeof(vecSizes) / sizeof(size_t); i++)
+        for (unsigned i = 0; i < ARRAY_SIZE(vecSizes); i++)
         {
             test.vec_size = vecSizes[i];
 
@@ -202,7 +200,7 @@ struct TypesIterator
 
             size_t length = sizeof(T) * num_elements * test.vec_size;
 
-            int isRTZ = 0;
+            bool isRTZ = false;
             RoundingMode oldMode = kDefaultRoundingMode;
 
 
@@ -211,7 +209,7 @@ struct TypesIterator
             {
                 if (CL_FP_ROUND_TO_ZERO == fpConfigHalf)
                 {
-                    isRTZ = 1;
+                    isRTZ = true;
                     oldMode = get_round();
                 }
             }
@@ -219,7 +217,7 @@ struct TypesIterator
             {
                 if (CL_FP_ROUND_TO_ZERO == fpConfigFloat)
                 {
-                    isRTZ = 1;
+                    isRTZ = true;
                     oldMode = get_round();
                 }
             }
@@ -252,10 +250,10 @@ struct TypesIterator
                 .append(" -DOP=")
                 .append(1, test.op);
 
-            err = create_single_kernel_helper(
-                context, &program, &kernel,
-                sizeof(fp_kernel_code) / sizeof(fp_kernel_code[0]),
-                fp_kernel_code, "test_fp", build_options.c_str());
+            const char *ptr = program_source.c_str();
+            err =
+                create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                            "test_fp", build_options.c_str());
 
             test_error(err, "create_single_kernel_helper failed");
 
