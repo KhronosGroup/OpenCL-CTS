@@ -4708,7 +4708,7 @@ cl_half reference_nanh(cl_ushort x)
     return h;
 }
 
-float reference_nextafterh(float xx, float yy)
+float reference_nextafterh(float xx, float yy, bool allow_denorms)
 {
     cl_half tmp_a = cl_half_from_float(xx, CL_HALF_RTE);
     cl_half tmp_b = cl_half_from_float(yy, CL_HALF_RTE);
@@ -4730,6 +4730,19 @@ float reference_nextafterh(float xx, float yy)
 
     a_h += (a_h < b_h) ? 1 : -1;
     a_h = (a_h < 0) ? (cl_short)0x8000 - a_h : a_h;
+
+
+    if (!allow_denorms && IsHalfSubnormal(a_h))
+    {
+        auto sgn = [](float val) { return (0.f < val) - (val < 0.f); };
+
+        bool signs = sgn(xx) == sgn(yy);
+        bool zeros = (fabs(yy) == 0.f) && (fabs(xx) == 0.f);
+        if ((fabs(yy) > fabs(xx) && signs) || (zeros && !signs))
+            a_h = (a_h & 0x8000) ? 0x8400 : 0x0400;
+        else
+            a_h = 0;
+    }
 
     return cl_half_to_float(a_h);
 }

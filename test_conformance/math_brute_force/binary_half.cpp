@@ -501,6 +501,13 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                     if (IsHalfSubnormal(
                             cl_half_from_float(correct, CL_HALF_RTE)))
                     {
+                        if (isNextafter)
+                        {
+                            correct = reference_nextafterh(s[j], s2[j], false);
+                            err = Ulp_Error_Half(q[j], correct);
+                            fail = !(fabsf(err) <= ulps);
+                        }
+
                         fail = fail && (test != 0.0f);
                         if (!fail) err = 0.0f;
                     }
@@ -510,13 +517,15 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                         double correct2, correct3;
                         float err2, err3;
                         if (isNextafter)
+                        {
                             correct2 = reference_nextafterh(0.0, s2[j]);
-                        else
-                            correct2 = ref_func(0.0, s2[j]);
-                        if (isNextafter)
                             correct3 = reference_nextafterh(-0.0, s2[j]);
+                        }
                         else
+                        {
+                            correct2 = ref_func(0.0, s2[j]);
                             correct3 = ref_func(-0.0, s2[j]);
+                        }
                         if (skipNanInf)
                         {
                             // Note: no double rounding here.  Reference
@@ -528,11 +537,14 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                                 continue;
                         }
 
-                        err2 = Ulp_Error_Half(q[j], correct2);
-                        err3 = Ulp_Error_Half(q[j], correct3);
-                        fail = fail
-                            && ((!(fabsf(err2) <= ulps))
-                                && (!(fabsf(err3) <= ulps)));
+                        auto check_error = [&]() {
+                            err2 = Ulp_Error_Half(q[j], correct2);
+                            err3 = Ulp_Error_Half(q[j], correct3);
+                            fail = fail
+                                && ((!(fabsf(err2) <= ulps))
+                                    && (!(fabsf(err3) <= ulps)));
+                        };
+                        check_error();
                         if (fabsf(err2) < fabsf(err)) err = err2;
                         if (fabsf(err3) < fabsf(err)) err = err3;
 
@@ -542,6 +554,15 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                             || IsHalfSubnormal(
                                 cl_half_from_float(correct3, CL_HALF_RTE)))
                         {
+                            if (fail && isNextafter)
+                            {
+                                correct2 =
+                                    reference_nextafterh(0.0, s2[j], false);
+                                correct3 =
+                                    reference_nextafterh(-0.0, s2[j], false);
+                                check_error();
+                            }
+
                             fail = fail && (test != 0.0f);
                             if (!fail) err = 0.0f;
                         }
@@ -563,21 +584,19 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                             float err4, err5;
 
                             if (isNextafter)
+                            {
                                 correct2 = reference_nextafterh(0.0, 0.0);
-                            else
-                                correct2 = ref_func(0.0, 0.0);
-                            if (isNextafter)
                                 correct3 = reference_nextafterh(-0.0, 0.0);
-                            else
-                                correct3 = ref_func(-0.0, 0.0);
-                            if (isNextafter)
                                 correct4 = reference_nextafterh(0.0, -0.0);
-                            else
-                                correct4 = ref_func(0.0, -0.0);
-                            if (isNextafter)
                                 correct5 = reference_nextafterh(-0.0, -0.0);
+                            }
                             else
+                            {
+                                correct2 = ref_func(0.0, 0.0);
+                                correct3 = ref_func(-0.0, 0.0);
+                                correct4 = ref_func(0.0, -0.0);
                                 correct5 = ref_func(-0.0, -0.0);
+                            }
 
                             // Per section 10 paragraph 6, accept any result if
                             // an input or output is a infinity or NaN or
@@ -596,19 +615,23 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                                     || IsFloatNaN(correct5))
                                     continue;
                             }
-                            err2 = Ulp_Error_Half(q[j], correct2);
-                            err3 = Ulp_Error_Half(q[j], correct3);
-                            err4 = Ulp_Error_Half(q[j], correct4);
-                            err5 = Ulp_Error_Half(q[j], correct5);
-                            fail = fail
-                                && ((!(fabsf(err2) <= ulps))
-                                    && (!(fabsf(err3) <= ulps))
-                                    && (!(fabsf(err4) <= ulps))
-                                    && (!(fabsf(err5) <= ulps)));
-                            if (fabsf(err2) < fabsf(err)) err = err2;
-                            if (fabsf(err3) < fabsf(err)) err = err3;
-                            if (fabsf(err4) < fabsf(err)) err = err4;
-                            if (fabsf(err5) < fabsf(err)) err = err5;
+
+                            auto check_error4 = [&]() {
+                                err2 = Ulp_Error_Half(q[j], correct2);
+                                err3 = Ulp_Error_Half(q[j], correct3);
+                                err4 = Ulp_Error_Half(q[j], correct4);
+                                err5 = Ulp_Error_Half(q[j], correct5);
+                                fail = fail
+                                    && ((!(fabsf(err2) <= ulps))
+                                        && (!(fabsf(err3) <= ulps))
+                                        && (!(fabsf(err4) <= ulps))
+                                        && (!(fabsf(err5) <= ulps)));
+                                if (fabsf(err2) < fabsf(err)) err = err2;
+                                if (fabsf(err3) < fabsf(err)) err = err3;
+                                if (fabsf(err4) < fabsf(err)) err = err4;
+                                if (fabsf(err5) < fabsf(err)) err = err5;
+                            };
+                            check_error4();
 
                             // retry per section 6.5.3.4
                             if (IsHalfSubnormal(
@@ -620,6 +643,19 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                                 || IsHalfSubnormal(
                                     cl_half_from_float(correct5, CL_HALF_RTE)))
                             {
+                                if (fail && isNextafter)
+                                {
+                                    correct2 =
+                                        reference_nextafterh(0.0, 0.0, false);
+                                    correct3 =
+                                        reference_nextafterh(-0.0, 0.0, false);
+                                    correct4 =
+                                        reference_nextafterh(0.0, -0.0, false);
+                                    correct5 =
+                                        reference_nextafterh(-0.0, -0.0, false);
+                                    check_error4();
+                                }
+
                                 fail = fail && (test != 0.0f);
                                 if (!fail) err = 0.0f;
                             }
@@ -641,13 +677,16 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                         float err2, err3;
 
                         if (isNextafter)
+                        {
                             correct2 = reference_nextafterh(s[j], 0.0);
-                        else
-                            correct2 = ref_func(s[j], 0.0);
-                        if (isNextafter)
                             correct3 = reference_nextafterh(s[j], -0.0);
+                        }
                         else
+                        {
+                            correct2 = ref_func(s[j], 0.0);
                             correct3 = ref_func(s[j], -0.0);
+                        }
+
                         if (skipNanInf)
                         {
                             // Note: no double rounding here.  Reference
@@ -658,13 +697,16 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                                 continue;
                         }
 
-                        err2 = Ulp_Error_Half(q[j], correct2);
-                        err3 = Ulp_Error_Half(q[j], correct3);
-                        fail = fail
-                            && ((!(fabsf(err2) <= ulps))
-                                && (!(fabsf(err3) <= ulps)));
-                        if (fabsf(err2) < fabsf(err)) err = err2;
-                        if (fabsf(err3) < fabsf(err)) err = err3;
+                        auto check_error = [&]() {
+                            err2 = Ulp_Error_Half(q[j], correct2);
+                            err3 = Ulp_Error_Half(q[j], correct3);
+                            fail = fail
+                                && ((!(fabsf(err2) <= ulps))
+                                    && (!(fabsf(err3) <= ulps)));
+                            if (fabsf(err2) < fabsf(err)) err = err2;
+                            if (fabsf(err3) < fabsf(err)) err = err3;
+                        };
+                        check_error();
 
                         // retry per section 6.5.3.4
                         if (IsHalfSubnormal(
@@ -672,6 +714,15 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                             || IsHalfSubnormal(
                                 cl_half_from_float(correct3, CL_HALF_RTE)))
                         {
+                            if (fail && isNextafter)
+                            {
+                                correct2 =
+                                    reference_nextafterh(s[j], 0.0, false);
+                                correct3 =
+                                    reference_nextafterh(s[j], -0.0, false);
+                                check_error();
+                            }
+
                             fail = fail && (test != 0.0f);
                             if (!fail) err = 0.0f;
                         }

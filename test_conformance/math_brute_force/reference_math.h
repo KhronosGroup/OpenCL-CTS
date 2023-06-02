@@ -162,7 +162,7 @@ long double reference_fractl(long double, long double*);
 long double reference_fmal(long double, long double, long double);
 long double reference_madl(long double, long double, long double);
 long double reference_nextafterl(long double, long double);
-float reference_nextafterh(float, float);
+float reference_nextafterh(float, float, bool allow_denormals = true);
 cl_half reference_nanh(cl_ushort);
 long double reference_recipl(long double);
 long double reference_rootnl(long double, int);
