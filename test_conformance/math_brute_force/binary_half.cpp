@@ -616,22 +616,19 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                                     continue;
                             }
 
-                            auto check_error4 = [&]() {
-                                err2 = Ulp_Error_Half(q[j], correct2);
-                                err3 = Ulp_Error_Half(q[j], correct3);
-                                err4 = Ulp_Error_Half(q[j], correct4);
-                                err5 = Ulp_Error_Half(q[j], correct5);
-                                fail = fail
-                                    && ((!(fabsf(err2) <= ulps))
-                                        && (!(fabsf(err3) <= ulps))
-                                        && (!(fabsf(err4) <= ulps))
-                                        && (!(fabsf(err5) <= ulps)));
-                                if (fabsf(err2) < fabsf(err)) err = err2;
-                                if (fabsf(err3) < fabsf(err)) err = err3;
-                                if (fabsf(err4) < fabsf(err)) err = err4;
-                                if (fabsf(err5) < fabsf(err)) err = err5;
-                            };
-                            check_error4();
+                            err2 = Ulp_Error_Half(q[j], correct2);
+                            err3 = Ulp_Error_Half(q[j], correct3);
+                            err4 = Ulp_Error_Half(q[j], correct4);
+                            err5 = Ulp_Error_Half(q[j], correct5);
+                            fail = fail
+                                && ((!(fabsf(err2) <= ulps))
+                                    && (!(fabsf(err3) <= ulps))
+                                    && (!(fabsf(err4) <= ulps))
+                                    && (!(fabsf(err5) <= ulps)));
+                            if (fabsf(err2) < fabsf(err)) err = err2;
+                            if (fabsf(err3) < fabsf(err)) err = err3;
+                            if (fabsf(err4) < fabsf(err)) err = err4;
+                            if (fabsf(err5) < fabsf(err)) err = err5;
 
                             // retry per section 6.5.3.4
                             if (IsHalfSubnormal(
@@ -643,19 +640,6 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                                 || IsHalfSubnormal(
                                     cl_half_from_float(correct5, CL_HALF_RTE)))
                             {
-                                if (fail && isNextafter)
-                                {
-                                    correct2 =
-                                        reference_nextafterh(0.0, 0.0, false);
-                                    correct3 =
-                                        reference_nextafterh(-0.0, 0.0, false);
-                                    correct4 =
-                                        reference_nextafterh(0.0, -0.0, false);
-                                    correct5 =
-                                        reference_nextafterh(-0.0, -0.0, false);
-                                    check_error4();
-                                }
-
                                 fail = fail && (test != 0.0f);
                                 if (!fail) err = 0.0f;
                             }
