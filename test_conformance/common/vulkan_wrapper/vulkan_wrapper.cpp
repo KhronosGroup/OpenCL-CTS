@@ -2025,16 +2025,26 @@ VulkanDeviceMemory::VulkanDeviceMemory(
     VkMemoryDedicatedAllocateInfo vkMemoryDedicatedAllocateInfo = {};
     vkMemoryDedicatedAllocateInfo.sType =
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;
-    vkMemoryDedicatedAllocateInfo.pNext =
-        externalMemoryHandleType ? &vkExportMemoryAllocateInfoKHR : NULL;
+    vkMemoryDedicatedAllocateInfo.pNext = NULL;
     vkMemoryDedicatedAllocateInfo.image = image;
     vkMemoryDedicatedAllocateInfo.buffer = VK_NULL_HANDLE;
 
     VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
     vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    vkMemoryAllocateInfo.pNext = &vkMemoryDedicatedAllocateInfo;
     vkMemoryAllocateInfo.allocationSize = m_size;
     vkMemoryAllocateInfo.memoryTypeIndex = (uint32_t)memoryType;
+
+    if (m_isDedicated)
+    {
+        vkMemoryAllocateInfo.pNext = &vkMemoryDedicatedAllocateInfo;
+        vkMemoryDedicatedAllocateInfo.pNext =
+            externalMemoryHandleType ? &vkExportMemoryAllocateInfoKHR : NULL;
+    }
+    else
+    {
+        vkMemoryAllocateInfo.pNext =
+            externalMemoryHandleType ? &vkExportMemoryAllocateInfoKHR : NULL;
+    }
 
     vkAllocateMemory(m_device, &vkMemoryAllocateInfo, NULL, &m_vkDeviceMemory);
 }
@@ -2077,17 +2087,27 @@ VulkanDeviceMemory::VulkanDeviceMemory(
     VkMemoryDedicatedAllocateInfo vkMemoryDedicatedAllocateInfo = {};
     vkMemoryDedicatedAllocateInfo.sType =
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;
-    vkMemoryDedicatedAllocateInfo.pNext =
-        externalMemoryHandleType ? &vkExportMemoryAllocateInfoKHR : NULL;
+    vkMemoryDedicatedAllocateInfo.pNext = NULL;
     vkMemoryDedicatedAllocateInfo.image = VK_NULL_HANDLE;
     vkMemoryDedicatedAllocateInfo.buffer = buffer;
 
     VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
     vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    vkMemoryAllocateInfo.pNext =
-        m_isDedicated ? &vkMemoryDedicatedAllocateInfo : nullptr;
     vkMemoryAllocateInfo.allocationSize = m_size;
     vkMemoryAllocateInfo.memoryTypeIndex = (uint32_t)memoryType;
+
+    if (m_isDedicated)
+    {
+        vkMemoryAllocateInfo.pNext = &vkMemoryDedicatedAllocateInfo;
+        vkMemoryDedicatedAllocateInfo.pNext =
+            externalMemoryHandleType ? &vkExportMemoryAllocateInfoKHR : NULL;
+    }
+    else
+    {
+        vkMemoryAllocateInfo.pNext =
+            externalMemoryHandleType ? &vkExportMemoryAllocateInfoKHR : NULL;
+    }
+
 
     VkResult res = vkAllocateMemory(m_device, &vkMemoryAllocateInfo, NULL,
                                     &m_vkDeviceMemory);
