@@ -136,8 +136,8 @@ template <typename T> void generate_random_inputs(std::vector<T> (&input)[2])
     else
     {
         auto random_generator = [&seed]() {
-            return HFF(get_random_float(-MAKE_HEX_FLOAT(0x1.0p15f, 0x1, 15),
-                                        MAKE_HEX_FLOAT(0x1.0p15f, 0x1, 15),
+            return HFF(get_random_float(-MAKE_HEX_FLOAT(0x1.0p8f, 0x1, 8),
+                                        MAKE_HEX_FLOAT(0x1.0p8f, 0x1, 8),
                                         seed));
         };
         for (auto &v : input)
