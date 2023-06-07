@@ -603,10 +603,10 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
                                     event_ptrs[1], nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        error = clFinish(queue);
+        error = clFinish(queue_sec);
         test_error(error, "clFinish failed");
 
-        error = clFinish(queue_sec);
+        error = clFinish(queue);
         test_error(error, "clFinish failed");
 
         // verify the result - result buffer must contain initial pattern
