@@ -38,7 +38,7 @@ int test_vector_times_scalar(cl_device_id deviceID,
     {
         if (!is_extension_available(deviceID, "cl_khr_fp16"))
         {
-            log_info("Extension cl_khr_fp16 not supported; skipping double "
+            log_info("Extension cl_khr_fp16 not supported; skipping half "
                      "tests.\n");
             return 0;
         }
