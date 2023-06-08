@@ -835,9 +835,9 @@ void callTestFunctions(test_definition testList[],
         std::vector<std::thread *> threads;
         test_harness_state state = { testList, resultTestList, deviceToUse,
                                      config };
-        for (int i = 0; i < config.numWorkerThreads; i++)
+        for (unsigned i = 0; i < config.numWorkerThreads; i++)
         {
-            log_info("Spawning worker thread %i\n", i);
+            log_info("Spawning worker thread %u\n", i);
             threads.push_back(new std::thread(test_function_runner, &state));
         }
 
