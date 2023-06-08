@@ -22,6 +22,7 @@
 
 #include "harness/deviceInfo.h"
 #include "harness/typeWrappers.h"
+#include "harness/stringHelpers.h"
 
 #include "procs.h"
 #include "test_base.h"
@@ -134,14 +135,14 @@ int test_binary_fn(cl_device_id device, cl_context context,
             {
                 std::string str = binary_fn_code_pattern_v3;
                 kernelSource =
-                    string_format(str, pragma_str.c_str(), tname.c_str(),
+                    str_sprintf(str, pragma_str.c_str(), tname.c_str(),
                                   tname.c_str(), tname.c_str(), fnName.c_str());
             }
             else
             {
                 std::string str = binary_fn_code_pattern_v3_scalar;
                 kernelSource =
-                    string_format(str, pragma_str.c_str(), tname.c_str(),
+                    str_sprintf(str, pragma_str.c_str(), tname.c_str(),
                                   tname.c_str(), tname.c_str(), fnName.c_str());
             }
         }
@@ -149,7 +150,7 @@ int test_binary_fn(cl_device_id device, cl_context context,
         {
             // do regular
             std::string str = binary_fn_code_pattern;
-            kernelSource = string_format(
+            kernelSource = str_sprintf(
                 str, pragma_str.c_str(), tname.c_str(), vecSizeNames[i],
                 tname.c_str(), vecSecParam ? vecSizeNames[i] : "",
                 tname.c_str(), vecSizeNames[i], fnName.c_str());

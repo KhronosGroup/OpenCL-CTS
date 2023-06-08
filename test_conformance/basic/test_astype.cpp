@@ -23,10 +23,10 @@
 #include <vector>
 
 #include "harness/conversions.h"
+#include "harness/stringHelpers.h"
 #include "harness/typeWrappers.h"
 
 #include "procs.h"
-#include "utils.h"
 
 // clang-format off
 

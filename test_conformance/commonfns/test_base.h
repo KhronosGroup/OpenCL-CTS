@@ -151,18 +151,6 @@ struct MixTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-template <typename... Args>
-std::string string_format(const std::string &format, Args... args)
-{
-    int sformat = std::snprintf(nullptr, 0, format.c_str(), args...) + 1;
-    if (sformat <= 0)
-        throw std::runtime_error("string_format: string processing error.");
-    auto format_size = static_cast<size_t>(sformat);
-    std::unique_ptr<char[]> buffer(new char[format_size]);
-    std::snprintf(buffer.get(), format_size, format.c_str(), args...);
-    return std::string(buffer.get(), buffer.get() + format_size - 1);
-}
-
 template <typename T> float UlpFn(const T &val, const double &r)
 {
     if (std::is_same<T, half>::value)

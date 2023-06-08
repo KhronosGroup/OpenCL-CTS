@@ -18,6 +18,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "harness/stringHelpers.h"
+
 #include "procs.h"
 #include "test_base.h"
 
@@ -205,14 +207,14 @@ int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
             {
                 std::string str = mix_fn_code_pattern_v3;
                 kernelSource =
-                    string_format(str, pragma_str.c_str(), tname.c_str(),
+                    str_sprintf(str, pragma_str.c_str(), tname.c_str(),
                                   tname.c_str(), tname.c_str(), tname.c_str());
             }
             else
             {
                 std::string str = mix_fn_code_pattern_v3_scalar;
                 kernelSource =
-                    string_format(str, pragma_str.c_str(), tname.c_str(),
+                    str_sprintf(str, pragma_str.c_str(), tname.c_str(),
                                   tname.c_str(), tname.c_str(), tname.c_str());
             }
         }
@@ -221,7 +223,7 @@ int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
             // regular path
             std::string str = mix_fn_code_pattern;
             kernelSource =
-                string_format(str, pragma_str.c_str(), tname.c_str(),
+                str_sprintf(str, pragma_str.c_str(), tname.c_str(),
                               vecSizeNames[i], tname.c_str(), vecSizeNames[i],
                               tname.c_str(), vecParam ? vecSizeNames[i] : "",
                               tname.c_str(), vecSizeNames[i]);

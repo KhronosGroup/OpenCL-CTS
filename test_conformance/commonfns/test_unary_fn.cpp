@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "harness/deviceInfo.h"
+#include "harness/stringHelpers.h"
 #include "harness/typeWrappers.h"
 
 #include "procs.h"
@@ -247,13 +248,13 @@ int test_unary_fn(cl_device_id device, cl_context context,
         if (i >= kVectorSizeCount)
         {
             std::string str = unary_fn_code_pattern_v3;
-            kernelSource = string_format(str, pragma_str.c_str(), tname.c_str(),
+            kernelSource = str_sprintf(str, pragma_str.c_str(), tname.c_str(),
                                          tname.c_str(), fnName.c_str());
         }
         else
         {
             std::string str = unary_fn_code_pattern;
-            kernelSource = string_format(str, pragma_str.c_str(), tname.c_str(),
+            kernelSource = str_sprintf(str, pragma_str.c_str(), tname.c_str(),
                                          vecSizeNames[i], tname.c_str(),
                                          vecSizeNames[i], fnName.c_str());
         }

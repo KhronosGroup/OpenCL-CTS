@@ -18,6 +18,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "harness/stringHelpers.h"
+
 #include "procs.h"
 #include "test_base.h"
 
@@ -175,14 +177,14 @@ int test_step_fn(cl_device_id device, cl_context context,
             {
                 std::string str = step_fn_code_pattern_v3;
                 kernelSource =
-                    string_format(str, pragma_str.c_str(), tname.c_str(),
+                    str_sprintf(str, pragma_str.c_str(), tname.c_str(),
                                   tname.c_str(), tname.c_str());
             }
             else
             {
                 std::string str = step_fn_code_pattern_v3_scalar;
                 kernelSource =
-                    string_format(str, pragma_str.c_str(), tname.c_str(),
+                    str_sprintf(str, pragma_str.c_str(), tname.c_str(),
                                   tname.c_str(), tname.c_str());
             }
         }
@@ -191,7 +193,7 @@ int test_step_fn(cl_device_id device, cl_context context,
             // regular path
             std::string str = step_fn_code_pattern;
             kernelSource =
-                string_format(str, pragma_str.c_str(), tname.c_str(),
+                str_sprintf(str, pragma_str.c_str(), tname.c_str(),
                               vecParam ? vecSizeNames[i] : "", tname.c_str(),
                               vecSizeNames[i], tname.c_str(), vecSizeNames[i]);
         }
