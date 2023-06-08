@@ -28,7 +28,7 @@
     {                                                                          \
         if (reference != result)                                               \
         {                                                                      \
-            log_error("Expected %d was %d at index %u\n", reference, result,   \
+            log_error("Expected %d was %d at index %zu\n", reference, result,  \
                       index);                                                  \
             return TEST_FAIL;                                                  \
         }                                                                      \
