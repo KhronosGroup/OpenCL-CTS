@@ -178,14 +178,14 @@ int test_step_fn(cl_device_id device, cl_context context,
                 std::string str = step_fn_code_pattern_v3;
                 kernelSource =
                     str_sprintf(str, pragma_str.c_str(), tname.c_str(),
-                                  tname.c_str(), tname.c_str());
+                                tname.c_str(), tname.c_str());
             }
             else
             {
                 std::string str = step_fn_code_pattern_v3_scalar;
                 kernelSource =
                     str_sprintf(str, pragma_str.c_str(), tname.c_str(),
-                                  tname.c_str(), tname.c_str());
+                                tname.c_str(), tname.c_str());
             }
         }
         else
@@ -194,8 +194,8 @@ int test_step_fn(cl_device_id device, cl_context context,
             std::string str = step_fn_code_pattern;
             kernelSource =
                 str_sprintf(str, pragma_str.c_str(), tname.c_str(),
-                              vecParam ? vecSizeNames[i] : "", tname.c_str(),
-                              vecSizeNames[i], tname.c_str(), vecSizeNames[i]);
+                            vecParam ? vecSizeNames[i] : "", tname.c_str(),
+                            vecSizeNames[i], tname.c_str(), vecSizeNames[i]);
         }
         const char *programPtr = kernelSource.c_str();
         err =

@@ -136,14 +136,14 @@ int test_binary_fn(cl_device_id device, cl_context context,
                 std::string str = binary_fn_code_pattern_v3;
                 kernelSource =
                     str_sprintf(str, pragma_str.c_str(), tname.c_str(),
-                                  tname.c_str(), tname.c_str(), fnName.c_str());
+                                tname.c_str(), tname.c_str(), fnName.c_str());
             }
             else
             {
                 std::string str = binary_fn_code_pattern_v3_scalar;
                 kernelSource =
                     str_sprintf(str, pragma_str.c_str(), tname.c_str(),
-                                  tname.c_str(), tname.c_str(), fnName.c_str());
+                                tname.c_str(), tname.c_str(), fnName.c_str());
             }
         }
         else

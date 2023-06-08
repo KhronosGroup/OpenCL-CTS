@@ -208,14 +208,14 @@ int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
                 std::string str = mix_fn_code_pattern_v3;
                 kernelSource =
                     str_sprintf(str, pragma_str.c_str(), tname.c_str(),
-                                  tname.c_str(), tname.c_str(), tname.c_str());
+                                tname.c_str(), tname.c_str(), tname.c_str());
             }
             else
             {
                 std::string str = mix_fn_code_pattern_v3_scalar;
                 kernelSource =
                     str_sprintf(str, pragma_str.c_str(), tname.c_str(),
-                                  tname.c_str(), tname.c_str(), tname.c_str());
+                                tname.c_str(), tname.c_str(), tname.c_str());
             }
         }
         else
@@ -224,9 +224,9 @@ int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
             std::string str = mix_fn_code_pattern;
             kernelSource =
                 str_sprintf(str, pragma_str.c_str(), tname.c_str(),
-                              vecSizeNames[i], tname.c_str(), vecSizeNames[i],
-                              tname.c_str(), vecParam ? vecSizeNames[i] : "",
-                              tname.c_str(), vecSizeNames[i]);
+                            vecSizeNames[i], tname.c_str(), vecSizeNames[i],
+                            tname.c_str(), vecParam ? vecSizeNames[i] : "",
+                            tname.c_str(), vecSizeNames[i]);
         }
         const char *programPtr = kernelSource.c_str();
         err =
