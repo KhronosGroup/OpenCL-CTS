@@ -79,20 +79,30 @@ int check_image(cl_command_queue queue, cl_mem mem) {
         return -1;
     }
 
-    if (type == CL_MEM_OBJECT_BUFFER) {
-        log_error("Expected image object, not buffer.\n");
-        return -1;
-    } else if (type == CL_MEM_OBJECT_IMAGE2D) {
-        error = clGetImageInfo(mem, CL_IMAGE_WIDTH, sizeof(width), &width, NULL);
-        if (error) {
-            print_error(error, "clGetMemObjectInfo failed for CL_IMAGE_WIDTH.");
+    switch (type)
+    {
+        case CL_MEM_OBJECT_BUFFER:
+            log_error("Expected image object, not buffer.\n");
             return -1;
-        }
-        error = clGetImageInfo(mem, CL_IMAGE_HEIGHT, sizeof(height), &height, NULL);
-        if (error) {
-            print_error(error, "clGetMemObjectInfo failed for CL_IMAGE_HEIGHT.");
-            return -1;
-        }
+        case CL_MEM_OBJECT_IMAGE2D:
+            error = clGetImageInfo(mem, CL_IMAGE_WIDTH, sizeof(width), &width,
+                                   NULL);
+            if (error)
+            {
+                print_error(error,
+                            "clGetMemObjectInfo failed for CL_IMAGE_WIDTH.");
+                return -1;
+            }
+            error = clGetImageInfo(mem, CL_IMAGE_HEIGHT, sizeof(height),
+                                   &height, NULL);
+            if (error)
+            {
+                print_error(error,
+                            "clGetMemObjectInfo failed for CL_IMAGE_HEIGHT.");
+                return -1;
+            }
+            break;
+        default: log_error("unexpected object type"); return -1;
     }
 
 
