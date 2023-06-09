@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/rounding_mode.h"
 #include "harness/ThreadPool.h"
 #include "harness/testHarness.h"
 #include "harness/parseParameters.h"
@@ -54,10 +53,8 @@
 #include "Sleep.h"
 
 #include "basic_test_conversions.h"
-#include <limits.h>
-#include <string.h>
-
-#include "harness/mt19937.h"
+#include <climits>
+#include <cstring>
 
 #if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
 #include "fplib.h"

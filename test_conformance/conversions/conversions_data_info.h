@@ -71,7 +71,7 @@ struct DataInitInfo
 
 struct DataInitBase : public DataInitInfo
 {
-    DataInitBase(const DataInitInfo &agg): DataInitInfo(agg) {}
+    explicit DataInitBase(const DataInitInfo &agg): DataInitInfo(agg) {}
     virtual void conv_array(void *out, void *in, size_t n) {}
     virtual void conv_array_sat(void *out, void *in, size_t n) {}
     virtual void init(const cl_uint &, const cl_uint &) {}
@@ -81,8 +81,7 @@ struct DataInitBase : public DataInitInfo
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 struct DataInfoSpec : public DataInitBase
 {
-
-    DataInfoSpec(const DataInitInfo &agg);
+    explicit DataInfoSpec(const DataInitInfo &agg);
 
     // helpers
     float round_to_int(float f);

@@ -15,12 +15,7 @@
 //
 #include "harness/testHarness.h"
 #include "harness/compat.h"
-#include "harness/rounding_mode.h"
 #include "harness/ThreadPool.h"
-#include "harness/testHarness.h"
-#include "harness/kernelHelpers.h"
-#include "harness/mt19937.h"
-#include "harness/kernelHelpers.h"
 
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
@@ -43,8 +38,6 @@
 
 #include <sstream>
 #include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
 #if !defined(_WIN32)
 #include <libgen.h>
 #include <sys/mman.h>
@@ -57,11 +50,6 @@
 #include <type_traits>
 
 #include "basic_test_conversions.h"
-
-#if (defined(_WIN32) && defined(_MSC_VER))
-// need for _controlfp_s and rouinding modes in RoundingMode
-#include "harness/testHarness.h"
-#endif
 
 #if defined(_WIN32)
 #include <mmintrin.h>
