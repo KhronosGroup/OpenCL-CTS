@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2023 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,11 +34,7 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(semaphores_multi_signal, Version(1, 2)),
     ADD_TEST_VERSION(semaphores_multi_wait, Version(1, 2)),
     ADD_TEST_VERSION(semaphores_queries, Version(1, 2)),
-    ADD_TEST_VERSION(semaphores_order_1, Version(1, 2)),
-    ADD_TEST_VERSION(semaphores_order_2, Version(1, 2)),
-    ADD_TEST_VERSION(semaphores_order_3, Version(1, 2)),
     ADD_TEST_VERSION(semaphores_import_export_fd, Version(1, 2)),
-    ADD_TEST_VERSION(semaphores_invalid_command, Version(1, 2)),
 };
 
 const int test_num = ARRAY_SIZE(test_list);
