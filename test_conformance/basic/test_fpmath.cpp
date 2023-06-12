@@ -14,13 +14,16 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "harness/rounding_mode.h"
+#include "harness/stringHelpers.h"
+
+#include <CL/cl_half.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "harness/rounding_mode.h"
 
 #include <algorithm>
 #include <functional>
@@ -29,7 +32,6 @@
 #include <vector>
 
 #include "procs.h"
-#include "utils.h"
 
 static const char *fp_kernel_code = R"(
 %s
@@ -39,6 +41,11 @@ __kernel void test_fp(__global TYPE *srcA, __global TYPE *srcB, __global TYPE *d
 
     dst[tid] = srcA[tid] OP srcB[tid];
 })";
+
+extern cl_half_rounding_mode halfRoundingMode;
+
+#define HFF(num) cl_half_from_float(num, halfRoundingMode)
+#define HTF(num) cl_half_to_float(num)
 
 template <typename T> double toDouble(T val)
 {
