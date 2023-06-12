@@ -73,7 +73,7 @@ struct FillImageKHR : public BasicCommandBufferTest
 
         for (size_t i = 0; i < data_size; i++)
         {
-            CHECK_VERIFICATION_ERROR(static_cast<cl_char>(pattern_2),
+            CHECK_VERIFICATION_ERROR(static_cast<cl_char>(pattern_1),
                                      output_data_2[i], i);
         }
 
@@ -161,7 +161,7 @@ struct FillBufferKHR : public BasicCommandBufferTest
 
         for (size_t i = 0; i < data_size(); i++)
         {
-            CHECK_VERIFICATION_ERROR(pattern_2, output_data_2[i], i);
+            CHECK_VERIFICATION_ERROR(pattern_1, output_data_2[i], i);
         }
 
         return CL_SUCCESS;
