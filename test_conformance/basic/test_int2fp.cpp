@@ -16,6 +16,7 @@
 #include "CL/cl_half.h"
 #include "harness/compat.h"
 #include "harness/errorHelpers.h"
+#include "harness/stringHelpers.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,7 +29,11 @@
 #include <vector>
 
 #include "procs.h"
-#include "utils.h"
+
+extern cl_half_rounding_mode halfRoundingMode;
+
+#define HFF(num) cl_half_from_float(num, halfRoundingMode)
+#define HTF(num) cl_half_to_float(num)
 
 namespace {
 const char *int2float_kernel_code = R"(
