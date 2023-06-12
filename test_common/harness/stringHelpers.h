@@ -20,10 +20,6 @@
 #include <memory>
 #include <string>
 
-#include <CL/cl_half.h>
-
-extern cl_half_rounding_mode halfRoundingMode;
-
 inline std::string concat_kernel(const char *sstr[], int num)
 {
     std::string res;
@@ -41,8 +37,5 @@ inline std::string str_sprintf(const std::string &str, Args... args)
     std::snprintf(buffer.get(), s, str.c_str(), args...);
     return std::string(buffer.get(), buffer.get() + s - 1);
 }
-
-#define HFF(num) cl_half_from_float(num, halfRoundingMode)
-#define HTF(num) cl_half_to_float(num)
 
 #endif // BASIC_UTIL_H

@@ -22,23 +22,28 @@
 #include <sys/stat.h>
 #include <vector>
 
+#include <CL/cl_half.h>
+
 #include "procs.h"
 #include "harness/conversions.h"
-#include "harness/typeWrappers.h"
 #include "harness/errorHelpers.h"
-
-#include "utils.h"
+#include "harness/stringHelpers.h"
+#include "harness/typeWrappers.h"
 
 // Outputs debug information for stores
 #define DEBUG 0
 // Forces stores/loads to be done with offsets = tid
 #define LINEAR_OFFSETS 0
 #define NUM_LOADS    512
+#define HFF(num) cl_half_from_float(num, halfRoundingMode)
+#define HTF(num) cl_half_to_float(num)
 
 char pragma_str[128] = { 0 };
 char mem_type[64] = { 0 };
 char store_str[128] = { 0 };
 char load_str[128] = { 0 };
+
+extern cl_half_rounding_mode halfRoundingMode;
 
 // clang-format off
 static const char *store_pattern= "results[ tid ] = tmp;\n";
