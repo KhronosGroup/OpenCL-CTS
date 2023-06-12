@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef _CL_KHR_COMMAND_BUFFER_TEST_BASE_H
-#define _CL_KHR_COMMAND_BUFFER_TEST_BASE_H
+#ifndef CL_KHR_COMMAND_BUFFER_TEST_BASE_H
+#define CL_KHR_COMMAND_BUFFER_TEST_BASE_H
 
 #include <CL/cl_ext.h>
 #include "harness/deviceInfo.h"
@@ -174,4 +174,4 @@ public:
     }
 
 
-#endif // _CL_KHR_COMMAND_BUFFER_TEST_BASE_H
+#endif // CL_KHR_COMMAND_BUFFER_TEST_BASE_H

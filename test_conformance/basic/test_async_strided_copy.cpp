@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2023 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,15 +20,16 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
-
+#include <vector>
 
 #include "procs.h"
 #include "harness/conversions.h"
 
+// clang-format off
+
 static const char *async_strided_global_to_local_kernel =
 "%s\n" // optional pragma string
-"%s__kernel void test_fn( const __global %s *src, __global %s *dst, __local %s *localBuffer, int copiesPerWorkgroup, int copiesPerWorkItem, int stride )\n"
+"__kernel void test_fn( const __global %s *src, __global %s *dst, __local %s *localBuffer, int copiesPerWorkgroup, int copiesPerWorkItem, int stride )\n"
 "{\n"
 " int i;\n"
 // Zero the local storage first
@@ -46,7 +47,7 @@ static const char *async_strided_global_to_local_kernel =
 
 static const char *async_strided_local_to_global_kernel =
 "%s\n" // optional pragma string
-"%s__kernel void test_fn( const __global %s *src, __global %s *dst, __local %s *localBuffer, int copiesPerWorkgroup, int copiesPerWorkItem, int stride )\n"
+"__kernel void test_fn( const __global %s *src, __global %s *dst, __local %s *localBuffer, int copiesPerWorkgroup, int copiesPerWorkItem, int stride )\n"
 "{\n"
 " int i;\n"
 // Zero the local storage first
@@ -63,6 +64,7 @@ static const char *async_strided_local_to_global_kernel =
 " wait_group_events( 1, &event );\n"
 "}\n" ;
 
+// clang-format on
 
 int test_strided_copy(cl_device_id deviceID, cl_context context, cl_command_queue queue, const char *kernelCode, ExplicitType vecType, int vecSize, int stride)
 {
@@ -71,8 +73,7 @@ int test_strided_copy(cl_device_id deviceID, cl_context context, cl_command_queu
     clKernelWrapper kernel;
     clMemWrapper streams[ 2 ];
     size_t threads[ 1 ], localThreads[ 1 ];
-    void *inBuffer, *outBuffer;
-    MTdata d;
+    MTdataHolder d(gRandomSeed);
     char vecNameString[64]; vecNameString[0] = 0;
 
     if (vecSize == 1)
@@ -94,10 +95,15 @@ int test_strided_copy(cl_device_id deviceID, cl_context context, cl_command_queu
     char programSource[4096]; programSource[0]=0;
     char *programPtr;
 
-    sprintf(programSource, kernelCode,
-        vecType == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable" : "",
-        "",
-        vecNameString, vecNameString, vecNameString, vecNameString, get_explicit_type_name(vecType), vecNameString, vecNameString);
+    std::string extStr = "";
+    if (vecType == kDouble)
+        extStr = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable";
+    else if (vecType == kHalf)
+        extStr = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable";
+
+    sprintf(programSource, kernelCode, extStr.c_str(), vecNameString,
+            vecNameString, vecNameString, vecNameString,
+            get_explicit_type_name(vecType), vecNameString, vecNameString);
     //log_info("program: %s\n", programSource);
     programPtr = programSource;
 
@@ -151,9 +157,9 @@ int test_strided_copy(cl_device_id deviceID, cl_context context, cl_command_queu
     size_t globalBufferSize = numberOfLocalWorkgroups*localBufferSize*stride;
     size_t globalWorkgroupSize = numberOfLocalWorkgroups*localWorkgroupSize;
 
-    inBuffer = (void*)malloc(globalBufferSize);
-    outBuffer = (void*)malloc(globalBufferSize);
-    memset(outBuffer, 0, globalBufferSize);
+    std::vector<unsigned char> inBuffer(globalBufferSize);
+    std::vector<unsigned char> outBuffer(globalBufferSize);
+    memset(outBuffer.data(), 0, globalBufferSize);
 
     cl_int copiesPerWorkItemInt, copiesPerWorkgroup;
     copiesPerWorkItemInt = (int)numberOfCopiesPerWorkitem;
@@ -165,13 +171,15 @@ int test_strided_copy(cl_device_id deviceID, cl_context context, cl_command_queu
     threads[0] = globalWorkgroupSize;
     localThreads[0] = localWorkgroupSize;
 
-    d = init_genrand( gRandomSeed );
-    generate_random_data( vecType, globalBufferSize/get_explicit_type_size(vecType), d, inBuffer );
-    free_mtdata(d); d = NULL;
+    generate_random_data(vecType,
+                         globalBufferSize / get_explicit_type_size(vecType), d,
+                         inBuffer.data());
 
-    streams[ 0 ] = clCreateBuffer( context, CL_MEM_COPY_HOST_PTR, globalBufferSize, inBuffer, &error );
+    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, globalBufferSize,
+                                inBuffer.data(), &error);
     test_error( error, "Unable to create input buffer" );
-    streams[ 1 ] = clCreateBuffer( context, CL_MEM_COPY_HOST_PTR, globalBufferSize, outBuffer, &error );
+    streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, globalBufferSize,
+                                outBuffer.data(), &error);
     test_error( error, "Unable to create output buffer" );
 
     error = clSetKernelArg( kernel, 0, sizeof( streams[ 0 ] ), &streams[ 0 ] );
@@ -192,17 +200,20 @@ int test_strided_copy(cl_device_id deviceID, cl_context context, cl_command_queu
     test_error( error, "Unable to queue kernel" );
 
     // Read
-    error = clEnqueueReadBuffer( queue, streams[ 1 ], CL_TRUE, 0, globalBufferSize, outBuffer, 0, NULL, NULL );
+    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, globalBufferSize,
+                                outBuffer.data(), 0, NULL, NULL);
     test_error( error, "Unable to read results" );
 
     // Verify
     size_t typeSize = get_explicit_type_size(vecType)* vecSize;
     for (int i=0; i<(int)globalBufferSize; i+=(int)elementSize*(int)stride)
     {
-        if (memcmp( ((char *)inBuffer)+i, ((char *)outBuffer)+i, typeSize) != 0 )
+        if (memcmp(&inBuffer.at(i), &outBuffer.at(i), typeSize) != 0)
         {
-            unsigned char * inchar = (unsigned char*)inBuffer + i;
-            unsigned char * outchar = (unsigned char*)outBuffer + i;
+            unsigned char *inchar =
+                static_cast<unsigned char *>(&inBuffer.at(i));
+            unsigned char *outchar =
+                static_cast<unsigned char *>(&outBuffer.at(i));
             char values[4096];
             values[0] = 0;
 
@@ -215,33 +226,34 @@ int test_strided_copy(cl_device_id deviceID, cl_context context, cl_command_queu
                 sprintf(values + strlen( values), "%2x ", outchar[j]);
             sprintf(values + strlen(values), "]");
             log_error("%s\n", values);
-            free(inBuffer);
-            free(outBuffer);
             return -1;
         }
     }
-
-    free(inBuffer);
-    free(outBuffer);
 
     return 0;
 }
 
 int test_strided_copy_all_types(cl_device_id deviceID, cl_context context, cl_command_queue queue, const char *kernelCode)
 {
-    ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort, kInt, kUInt, kLong, kULong, kFloat, kDouble, kNumExplicitTypes };
-    unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
-    unsigned int strideSizes[] = { 1, 3, 4, 5, 0 };
+    const std::vector<ExplicitType> vecType = { kChar,  kUChar, kShort, kUShort,
+                                                kInt,   kUInt,  kLong,  kULong,
+                                                kFloat, kHalf,  kDouble };
+    const unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
+    const unsigned int strideSizes[] = { 1, 3, 4, 5, 0 };
     unsigned int size, typeIndex, stride;
 
     int errors = 0;
 
-    for( typeIndex = 0; vecType[ typeIndex ] != kNumExplicitTypes; typeIndex++ )
-    {
-        if( vecType[ typeIndex ] == kDouble && !is_extension_available( deviceID, "cl_khr_fp64" ) )
-            continue;
+    bool fp16Support = is_extension_available(deviceID, "cl_khr_fp16");
+    bool fp64Support = is_extension_available(deviceID, "cl_khr_fp64");
 
+    for (typeIndex = 0; typeIndex < vecType.size(); typeIndex++)
+    {
         if (( vecType[ typeIndex ] == kLong || vecType[ typeIndex ] == kULong ) && !gHasLong )
+            continue;
+        else if (vecType[typeIndex] == kDouble && !fp64Support)
+            continue;
+        else if (vecType[typeIndex] == kHalf && !fp16Support)
             continue;
 
         for( size = 0; vecSizes[ size ] != 0; size++ )
@@ -259,9 +271,6 @@ int test_strided_copy_all_types(cl_device_id deviceID, cl_context context, cl_co
         return -1;
     return 0;
 }
-
-
-
 
 int test_async_strided_copy_global_to_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
