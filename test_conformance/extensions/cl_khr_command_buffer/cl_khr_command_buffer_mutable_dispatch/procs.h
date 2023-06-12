@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_PROCS_H
-#define _CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_PROCS_H
+#ifndef CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_PROCS_H
+#define CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_PROCS_H
 
 #include <CL/cl.h>
 

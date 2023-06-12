@@ -105,7 +105,6 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
         add_cxx_flag_if_supported(-Wall)
         # Suppress warnings that currently trigger on the code base.
         # This list should shrink over time when warnings are fixed.
-        add_cxx_flag_if_supported(-Wno-sometimes-uninitialized)
         add_cxx_flag_if_supported(-Wno-sign-compare)
     endif()
     add_cxx_flag_if_supported(-Wno-narrowing)

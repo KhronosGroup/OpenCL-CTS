@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _HOST_ATOMICS_H_
-#define _HOST_ATOMICS_H_
+#ifndef HOST_ATOMICS_H_
+#define HOST_ATOMICS_H_
 
 #include "harness/testHarness.h"
 
@@ -247,4 +247,4 @@ CorrespondingType host_atomic_fetch_max(volatile AtomicType *a, CorrespondingTyp
 bool host_atomic_flag_test_and_set(volatile HOST_ATOMIC_FLAG *a, TExplicitMemoryOrderType order);
 void host_atomic_flag_clear(volatile HOST_ATOMIC_FLAG *a, TExplicitMemoryOrderType order);
 
-#endif //_HOST_ATOMICS_H_
+#endif // HOST_ATOMICS_H_
