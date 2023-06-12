@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 
+#include <cstdint>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
