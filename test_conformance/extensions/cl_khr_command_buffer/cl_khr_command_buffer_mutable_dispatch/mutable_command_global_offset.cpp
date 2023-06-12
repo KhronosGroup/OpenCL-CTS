@@ -59,7 +59,7 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
             !clGetDeviceInfo(
                 device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
-            && mutable_capabilities != CL_MUTABLE_DISPATCH_GLOBAL_OFFSET_KHR;
+            && mutable_capabilities & CL_MUTABLE_DISPATCH_GLOBAL_OFFSET_KHR;
 
         return !mutable_support || InfoMutableCommandBufferTest::Skip();
     }
@@ -132,7 +132,7 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
 
         error = clGetMutableCommandInfoKHR(
             command, CL_MUTABLE_DISPATCH_GLOBAL_WORK_OFFSET_KHR,
-            sizeof(info_global_offset), &info_global_offset, &size);
+            sizeof(info_global_offset), &info_global_offset, nullptr);
         test_error(error, "clGetMutableCommandInfoKHR failed");
 
         if (info_global_offset != update_global_offset)
@@ -141,8 +141,6 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
                       "clGetMutableCommandInfoKHR.");
             return TEST_FAIL;
         }
-
-        size_t num_elements = sizeToAllocate / sizeof(cl_int);
 
         std::vector<cl_int> resultData;
         resultData.resize(num_elements);
@@ -173,7 +171,7 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
     size_t info_global_offset = 0;
     const size_t update_global_offset = 3;
     const size_t sizeToAllocate = 76;
-    size_t size;
+    const size_t num_elements = sizeToAllocate / sizeof(cl_int);
     cl_mutable_command_khr command = nullptr;
 };
 
