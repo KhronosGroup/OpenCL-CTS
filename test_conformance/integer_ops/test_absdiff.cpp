@@ -22,6 +22,17 @@
 
 #include "procs.h"
 
+template <class Integer>
+static typename std::make_unsigned<Integer>::type abs_diff(Integer a, Integer b)
+{
+    using Unsigned = typename std::make_unsigned<Integer>::type;
+    Unsigned ua = a;
+    Unsigned ub = b;
+    Unsigned diff = ua - ub;
+    if (a < b) diff = -diff;
+    return diff;
+}
+
 static int verify_absdiff_char( const void *p, const void *q, const void *r, size_t n, const char *sizeName, size_t vecSize )
 {
     const cl_char *inA = (const cl_char *)p;
@@ -30,9 +41,7 @@ static int verify_absdiff_char( const void *p, const void *q, const void *r, siz
     size_t i;
     for( i = 0; i < n; i++ )
     {
-        cl_uchar r = inA[i] - inB[i];
-        if( inB[i] > inA[i] )
-            r = inB[i] - inA[i];
+        cl_uchar r = abs_diff(inA[i], inB[i]);
         if( r != outptr[i] )
         { log_info( "%ld) Failure for absdiff( (char%s) 0x%2.2x, (char%s) 0x%2.2x) = *0x%2.2x vs 0x%2.2x\n", i, sizeName, inA[i], sizeName, inB[i], r, outptr[i] ); return -1; }
     }
@@ -47,9 +56,7 @@ static int verify_absdiff_uchar( const void *p, const void *q, const void *r, si
     size_t i;
     for( i = 0; i < n; i++ )
     {
-        cl_uchar r = inA[i] - inB[i];
-        if( inB[i] > inA[i] )
-            r = inB[i] - inA[i];
+        cl_uchar r = abs_diff(inA[i], inB[i]);
         if( r != outptr[i] )
         { log_info( "%ld) Failure for absdiff( (uchar%s) 0x%2.2x, (uchar%s) 0x%2.2x) = *0x%2.2x vs 0x%2.2x\n", i, sizeName, inA[i], sizeName, inB[i], r, outptr[i] ); return -1; }
     }
@@ -64,9 +71,7 @@ static int verify_absdiff_short( const void *p, const void *q, const void *r, si
     size_t i;
     for( i = 0; i < n; i++ )
     {
-        cl_ushort r = inA[i] - inB[i];
-        if( inB[i] > inA[i] )
-            r = inB[i] - inA[i];
+        cl_ushort r = abs_diff(inA[i], inB[i]);
         if( r != outptr[i] )
         { log_info( "%ld) Failure for absdiff( (short%s) 0x%4.4x, (short%s) 0x%4.4x) = *0x%4.4x vs 0x%4.4x\n", i, sizeName, inA[i], sizeName, inB[i], r, outptr[i] ); return -1; }
     }
@@ -81,9 +86,7 @@ static int verify_absdiff_ushort( const void *p, const void *q, const void *r, s
     size_t i;
     for( i = 0; i < n; i++ )
     {
-        cl_ushort r = inA[i] - inB[i];
-        if( inB[i] > inA[i] )
-            r = inB[i] - inA[i];
+        cl_ushort r = abs_diff(inA[i], inB[i]);
         if( r != outptr[i] )
         { log_info( "%ld) Failure for absdiff( (ushort%s) 0x%4.4x, (ushort%s) 0x%4.4x) = *0x%4.4x vs 0x%4.4x\n", i, sizeName, inA[i], sizeName, inB[i], r, outptr[i] ); return -1; }
     }
@@ -98,9 +101,7 @@ static int verify_absdiff_int( const void *p, const void *q, const void *r, size
     size_t i;
     for( i = 0; i < n; i++ )
     {
-        cl_uint r = inA[i] - inB[i];
-        if( inB[i] > inA[i] )
-            r = inB[i] - inA[i];
+        cl_uint r = abs_diff(inA[i], inB[i]);
         if( r != outptr[i] )
         {
             log_info( "%ld) Failure for absdiff( (int%s) 0x%8.8x, (int%s) 0x%8.8x) = *0x%8.8x vs 0x%8.8x\n", i, sizeName, inA[i], sizeName, inB[i], r, outptr[i] );
@@ -118,9 +119,7 @@ static int verify_absdiff_uint( const void *p, const void *q, const void *r, siz
     size_t i;
     for( i = 0; i < n; i++ )
     {
-        cl_uint r = inA[i] - inB[i];
-        if( inB[i] > inA[i] )
-            r = inB[i] - inA[i];
+        cl_uint r = abs_diff(inA[i], inB[i]);
         if( r != outptr[i] )
         { log_info( "%ld) Failure for absdiff( (uint%s) 0x%8.8x, (uint%s) 0x%8.8x) = *0x%8.8x vs 0x%8.8x\n", i, sizeName, inA[i], sizeName, inB[i], r, outptr[i] ); return -1; }
     }
@@ -135,9 +134,7 @@ static int verify_absdiff_long( const void *p, const void *q, const void *r, siz
     size_t i;
     for( i = 0; i < n; i++ )
     {
-        cl_ulong r = inA[i] - inB[i];
-        if( inB[i] > inA[i] )
-            r = inB[i] - inA[i];
+        cl_ulong r = abs_diff(inA[i], inB[i]);
         if( r != outptr[i] )
         { log_info( "%ld) Failure for absdiff( (long%s) 0x%16.16llx, (long%s) 0x%16.16llx) = *0x%16.16llx vs 0x%16.16llx\n", i, sizeName, inA[i], sizeName, inB[i], r, outptr[i] ); return -1; }
     }
@@ -152,9 +149,7 @@ static int verify_absdiff_ulong( const void *p, const void *q, const void *r, si
     size_t i;
     for( i = 0; i < n; i++ )
     {
-        cl_ulong r = inA[i] - inB[i];
-        if( inB[i] > inA[i] )
-            r = inB[i] - inA[i];
+        cl_ulong r = abs_diff(inA[i], inB[i]);
         if( r != outptr[i] )
         { log_info( "%ld) Failure for absdiff( (ulong%s) 0x%16.16llx, (ulong%s) 0x%16.16llx) = *0x%16.16llx vs 0x%16.16llx\n", i, sizeName, inA[i], sizeName, inB[i], r, outptr[i] ); return -1; }
     }

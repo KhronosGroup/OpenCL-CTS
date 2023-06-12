@@ -77,7 +77,6 @@ cmake .. -G Ninja \
       -DBUILD_WSI_XLIB_SUPPORT=OFF \
       -DBUILD_WSI_XCB_SUPPORT=OFF \
       -DBUILD_WSI_WAYLAND_SUPPORT=OFF \
-      -DUSE_GAS=OFF \
       -C helper.cmake ..
 cmake --build . -j2
 

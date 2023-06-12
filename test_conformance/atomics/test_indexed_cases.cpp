@@ -201,7 +201,6 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     int number_of_bins = number_of_items / divisor;
     int max_counts_per_bin = divisor * 2;
 
-    int fail = 0;
     int err;
 
     clProgramWrapper program;
@@ -345,7 +344,6 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     {
         log_error("add_index_bin_test FAILED to set kernel arguments: %d\n",
                   err);
-        fail = 1;
         return -1;
     }
 
@@ -354,7 +352,7 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     if (err)
     {
         log_error("add_index_bin_test FAILED to execute kernel: %d\n", err);
-        fail = 1;
+        return -1;
     }
 
     cl_int *final_bin_assignments =
@@ -372,7 +370,7 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     if (err)
     {
         log_error("add_index_bin_test FAILED to read back bins: %d\n", err);
-        fail = 1;
+        return -1;
     }
 
     cl_int *final_bin_counts =
@@ -390,7 +388,7 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     {
         log_error("add_index_bin_test FAILED to read back bin_counters: %d\n",
                   err);
-        fail = 1;
+        return -1;
     }
 
     // Verification.

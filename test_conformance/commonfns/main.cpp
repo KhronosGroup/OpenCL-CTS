@@ -13,11 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
 
 #include <stdio.h>
 #include <string.h>
 #include "procs.h"
+#include "test_base.h"
+
+std::map<size_t, std::string> BaseFunctionTest::type2name;
 
 int g_arrVecSizes[kVectorSizeCount + kStrangeVectorSizeCount];
 int g_arrStrangeVectorSizes[kStrangeVectorSizeCount] = {3};
@@ -32,25 +34,13 @@ static void initVecSizes() {
     }
 }
 
-
 test_definition test_list[] = {
-    ADD_TEST( clamp ),
-    ADD_TEST( degrees ),
-    ADD_TEST( fmax ),
-    ADD_TEST( fmaxf ),
-    ADD_TEST( fmin ),
-    ADD_TEST( fminf ),
-    ADD_TEST( max ),
-    ADD_TEST( maxf ),
-    ADD_TEST( min ),
-    ADD_TEST( minf ),
-    ADD_TEST( mix ),
-    ADD_TEST( radians ),
-    ADD_TEST( step ),
-    ADD_TEST( stepf ),
-    ADD_TEST( smoothstep ),
-    ADD_TEST( smoothstepf ),
-    ADD_TEST( sign ),
+    ADD_TEST(clamp),      ADD_TEST(degrees),     ADD_TEST(fmax),
+    ADD_TEST(fmaxf),      ADD_TEST(fmin),        ADD_TEST(fminf),
+    ADD_TEST(max),        ADD_TEST(maxf),        ADD_TEST(min),
+    ADD_TEST(minf),       ADD_TEST(mix),         ADD_TEST(mixf),
+    ADD_TEST(radians),    ADD_TEST(step),        ADD_TEST(stepf),
+    ADD_TEST(smoothstep), ADD_TEST(smoothstepf), ADD_TEST(sign),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
@@ -58,6 +48,14 @@ const int test_num = ARRAY_SIZE( test_list );
 int main(int argc, const char *argv[])
 {
     initVecSizes();
+
+    if (BaseFunctionTest::type2name.empty())
+    {
+        BaseFunctionTest::type2name[sizeof(half)] = "half";
+        BaseFunctionTest::type2name[sizeof(float)] = "float";
+        BaseFunctionTest::type2name[sizeof(double)] = "double";
+    }
+
     return runTestHarness(argc, argv, test_num, test_list, false, 0);
 }
 

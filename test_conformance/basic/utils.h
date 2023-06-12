@@ -19,6 +19,7 @@
 
 #include <memory>
 #include <string>
+
 #include <CL/cl_half.h>
 
 extern cl_half_rounding_mode halfRoundingMode;
