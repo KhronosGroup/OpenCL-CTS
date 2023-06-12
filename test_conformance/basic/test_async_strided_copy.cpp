@@ -211,9 +211,9 @@ int test_strided_copy(cl_device_id deviceID, cl_context context, cl_command_queu
         if (memcmp(&inBuffer.at(i), &outBuffer.at(i), typeSize) != 0)
         {
             unsigned char *inchar =
-                static_cast<unsigned char *>(inBuffer.data());
+                static_cast<unsigned char *>(&inBuffer.at(i));
             unsigned char *outchar =
-                static_cast<unsigned char *>(outBuffer.data());
+                static_cast<unsigned char *>(&outBuffer.at(i));
             char values[4096];
             values[0] = 0;
 

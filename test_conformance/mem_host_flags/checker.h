@@ -219,7 +219,7 @@ cl_int cBuffer_checker<T>::SetupASSubBuffer(cl_mem_flags parent_buffer_flag)
         err = CL_SUCCESS;
     }
 
-    cl_mem_flags f;
+    cl_mem_flags f = 0;
     if (parent_buffer_flag & CL_MEM_HOST_READ_ONLY)
         f = CL_MEM_HOST_READ_ONLY;
     else if (parent_buffer_flag & CL_MEM_HOST_WRITE_ONLY)
