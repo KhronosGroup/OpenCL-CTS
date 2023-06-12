@@ -59,7 +59,7 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
             !clGetDeviceInfo(
                 device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
-            && mutable_capabilities != CL_MUTABLE_DISPATCH_LOCAL_SIZE_KHR;
+            && mutable_capabilities & CL_MUTABLE_DISPATCH_LOCAL_SIZE_KHR;
 
         return !mutable_support || InfoMutableCommandBufferTest::Skip();
     }
@@ -131,7 +131,7 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
 
         error = clGetMutableCommandInfoKHR(
             command, CL_MUTABLE_DISPATCH_LOCAL_WORK_SIZE_KHR,
-            sizeof(info_local_size), &info_local_size, &size);
+            sizeof(info_local_size), &info_local_size, nullptr);
         test_error(error, "clGetMutableCommandInfoKHR failed");
 
         if (info_local_size != update_local_size)
@@ -140,8 +140,6 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
                       "clGetMutableCommandInfoKHR.");
             return TEST_FAIL;
         }
-
-        size_t num_elements = sizeToAllocate / sizeof(cl_int);
 
         std::vector<cl_int> resultData;
         resultData.resize(num_elements);
@@ -165,7 +163,8 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
     size_t info_local_size = 0;
     const size_t update_local_size = 8;
     const size_t sizeToAllocate = 64;
-    size_t size;
+    const size_t num_elements = sizeToAllocate / sizeof(cl_int);
+
     cl_mutable_command_khr command = nullptr;
 };
 
