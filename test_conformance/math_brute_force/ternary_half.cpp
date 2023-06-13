@@ -262,12 +262,12 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
         if (gSkipCorrectnessTesting) break;
 
         // Verify data
-        uint32_t *t = (uint32_t *)gOut_Ref;
+        uint16_t *t = (uint16_t *)gOut_Ref;
         for (size_t j = 0; j < half_buffer_size; j++)
         {
             for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {
-                uint32_t *q = (uint32_t *)(gOut[k]);
+                uint16_t *q = (uint16_t *)(gOut[k]);
 
                 // If we aren't getting the correctly rounded result
                 if (t[j] != q[j])
