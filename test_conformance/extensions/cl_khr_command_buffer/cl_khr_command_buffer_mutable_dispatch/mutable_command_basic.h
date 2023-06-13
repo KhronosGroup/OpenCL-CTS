@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef _CL_KHR_MUTABLE_COMMAND_BASIC_H
-#define _CL_KHR_MUTABLE_COMMAND_BASIC_H
+#ifndef CL_KHR_MUTABLE_COMMAND_BASIC_H
+#define CL_KHR_MUTABLE_COMMAND_BASIC_H
 
 #include "../basic_command_buffer.h"
 #include "../command_buffer_test_base.h"
@@ -104,4 +104,4 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
     const size_t global_work_size = 4 * sizeof(cl_int);
 };
 
-#endif //_CL_KHR_MUTABLE_COMMAND_BASIC_H
+#endif // CL_KHR_MUTABLE_COMMAND_BASIC_H

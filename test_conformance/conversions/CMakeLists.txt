@@ -16,4 +16,6 @@ set_source_files_properties(
         COMPILE_FLAGS -march=i686)
 endif(NOT CMAKE_CL_64 AND NOT MSVC AND NOT ANDROID)
 
+set_gnulike_module_compile_flags("-Wno-unused-but-set-variable")
+
 include(../CMakeCommon.txt)
