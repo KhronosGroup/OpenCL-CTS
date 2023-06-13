@@ -157,6 +157,8 @@ Tv negOp(Tv in)
     return -in;
 }
 
+inline cl_half negOpHalf(cl_half v) { return v ^ 0x8000; }
+
 template<typename Tv>
 Tv notOp(Tv in)
 {
