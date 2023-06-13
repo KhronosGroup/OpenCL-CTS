@@ -103,7 +103,7 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
     clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
 
     const char* kernelString = "__kernel void empty() {}";
-    const size_t global_work_size = 4 * sizeof(cl_int);
+    const size_t global_work_size = 4 * 16;
 };
 
 struct InfoMutableCommandBufferTest : BasicMutableCommandBufferTest
