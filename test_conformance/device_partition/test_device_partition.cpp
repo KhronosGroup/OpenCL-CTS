@@ -212,7 +212,7 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
     clProgramWrapper program;
     clKernelWrapper kernels[2];
     clMemWrapper  stream;
-    clCommandQueueWrapper queues[MAX_QUEUES];
+    clCommandQueueWrapper queues[MAX_QUEUES] = {};
     size_t threads[1], localThreads[1];
     int data[TEST_SIZE];
     int outputData[TEST_SIZE];
@@ -225,8 +225,6 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
     for (i=0; i<deviceCount; i++) {
         expectedResultsOneDevice[i] = expectedResultsOneDeviceArray + (i * TEST_SIZE);
     }
-
-    memset(queues, 0, sizeof(queues));
 
     RandomSeed seed( gRandomSeed );
 
@@ -390,7 +388,7 @@ int test_device_partition_type_support(cl_device_id parentDevice, const cl_devic
     } else {
         test_error_ret( err, "Unable to get device partition properties (1)", -1 );
     };
-    for ( int i = 0; i < supportedProps.size(); i++)
+    for (size_t i = 0; i < supportedProps.size(); i++)
     {
         if (supportedProps[i] == partitionType)
         {

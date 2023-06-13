@@ -65,6 +65,7 @@ static int gStopOnError = 0;
 static bool gSkipRestOfTests;
 int gForceFTZ = 0;
 int gWimpyMode = 0;
+int gHostFill = 0;
 static int gHasDouble = 0;
 static int gTestFloat = 1;
 // This flag should be 'ON' by default and it can be changed through the command
@@ -421,6 +422,8 @@ static int ParseArgs(int argc, const char **argv)
                         parseWimpyReductionFactor(arg, gWimpyReductionFactor);
                         break;
 
+                    case 'b': gHostFill ^= 1; break;
+
                     case 'z': gForceFTZ ^= 1; break;
 
                     case '1':
@@ -550,6 +553,7 @@ static void PrintUsage(void)
     vlog("\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
          "1-10, default factor(%u)\n",
          gWimpyReductionFactor);
+    vlog("\t\t-b\tFill buffers on host instead of device. (Default: off)\n");
     vlog("\t\t-z\tToggle FTZ mode (Section 6.5.3) for all functions. (Set by "
          "device capabilities by default.)\n");
     vlog("\t\t-v\tToggle Verbosity (Default: off)\n ");
@@ -1020,34 +1024,6 @@ int IsTininessDetectedBeforeRounding(void)
     gCheckTininessBeforeRounding = 0 == (data.f & 0x7fffffff);
 
     return 0;
-}
-
-
-int MakeKernel(const char **c, cl_uint count, const char *name, cl_kernel *k,
-               cl_program *p, bool relaxedMode)
-{
-    int error = 0;
-    char options[200] = "";
-
-    if (gForceFTZ)
-    {
-        strcat(options, " -cl-denorms-are-zero");
-    }
-
-    if (relaxedMode)
-    {
-        strcat(options, " -cl-fast-relaxed-math");
-    }
-
-    error =
-        create_single_kernel_helper(gContext, p, k, count, c, name, options);
-    if (error != CL_SUCCESS)
-    {
-        vlog_error("\t\tFAILED -- Failed to create kernel. (%d)\n", error);
-        return error;
-    }
-
-    return error;
 }
 
 static int IsInRTZMode(void)

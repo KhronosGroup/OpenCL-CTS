@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
+#include "harness/os_helpers.h"
 
 #include <string.h>
 #include <errno.h>
@@ -40,7 +40,6 @@
 #include "harness/testHarness.h"
 #include "harness/errorHelpers.h"
 #include "harness/kernelHelpers.h"
-#include "harness/mt19937.h"
 #include "harness/parseParameters.h"
 
 #include <CL/cl_ext.h>
@@ -114,29 +113,6 @@ static char gFileName[256];
 //-----------------------------------------
 // Static helper functions definition
 //-----------------------------------------
-
-//-----------------------------------------
-// getTempFileName
-//-----------------------------------------
-static int getTempFileName()
-{
-    // Create a unique temporary file to allow parallel executed tests.
-#if (defined(__linux__) || defined(__APPLE__)) && (!defined( __ANDROID__ ))
-    sprintf(gFileName, "/tmp/tmpfile.XXXXXX");
-    int fd = mkstemp(gFileName);
-    if (fd == -1)
-        return -1;
-    close(fd);
-#elif defined(_WIN32)
-    UINT ret = GetTempFileName(".", "tmp", 0, gFileName);
-    if (ret == 0)
-        return -1;
-#else
-    MTdata d = init_genrand((cl_uint)time(NULL));
-    sprintf(gFileName, "tmpfile.%u", genrand_int32(d));
-#endif
-    return 0;
-}
 
 //-----------------------------------------
 // acquireOutputStream
@@ -237,10 +213,13 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
     char testname[256] = {0};
     char addrSpaceArgument[256] = {0};
     char addrSpacePAddArgument[256] = {0};
+    char extension[128] = { 0 };
 
     //Program Source code for int,float,octal,hexadecimal,char,string
-    const char *sourceGen[] = {
-        "__kernel void ", testname,
+    const char* sourceGen[] = {
+        extension,
+        "__kernel void ",
+        testname,
         "(void)\n",
         "{\n"
         "   printf(\"",
@@ -251,8 +230,10 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
         "}\n"
     };
     //Program Source code for vector
-    const char *sourceVec[] = {
-        "__kernel void ", testname,
+    const char* sourceVec[] = {
+        extension,
+        "__kernel void ",
+        testname,
         "(void)\n",
         "{\n",
         allTestCase[testId]->_genParameters[testNum].dataType,
@@ -287,23 +268,39 @@ static cl_program makePrintfProgram(cl_kernel *kernel_ptr, const cl_context cont
     };
 
     //Update testname
-    sprintf(testname,"%s%d","test",testId);
+    std::snprintf(testname, sizeof(testname), "%s%d", "test", testId);
+
+    if (allTestCase[testId]->_type == TYPE_HALF
+        || allTestCase[testId]->_type == TYPE_HALF_LIMITS)
+        strcpy(extension, "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n");
+
 
     //Update addrSpaceArgument and addrSpacePAddArgument types, based on FULL_PROFILE/EMBEDDED_PROFILE
     if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
     {
-        sprintf(addrSpaceArgument, "%s",allTestCase[testId]->_genParameters[testNum].addrSpaceArgumentTypeQualifier);
+        std::snprintf(addrSpaceArgument, sizeof(addrSpaceArgument), "%s",
+                      allTestCase[testId]
+                          ->_genParameters[testNum]
+                          .addrSpaceArgumentTypeQualifier);
 
-        sprintf(addrSpacePAddArgument, "%s", allTestCase[testId]->_genParameters[testNum].addrSpacePAdd);
+        std::snprintf(
+            addrSpacePAddArgument, sizeof(addrSpacePAddArgument), "%s",
+            allTestCase[testId]->_genParameters[testNum].addrSpacePAdd);
     }
 
     if (strlen(addrSpaceArgument) == 0)
-        sprintf(addrSpaceArgument,"void");
+        std::snprintf(addrSpaceArgument, sizeof(addrSpaceArgument), "void");
 
     // create program based on its type
 
     if(allTestCase[testId]->_type == TYPE_VECTOR)
     {
+        if (strcmp(allTestCase[testId]->_genParameters[testNum].dataType,
+                   "half")
+            == 0)
+            strcpy(extension,
+                   "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n");
+
         err = create_single_kernel_helper(
             context, &program, kernel_ptr,
             sizeof(sourceVec) / sizeof(sourceVec[0]), sourceVec, testname);
@@ -404,8 +401,27 @@ static bool is64bAddressSpace(cl_device_id  device_id)
 //-----------------------------------------
 static int doTest(cl_command_queue queue, cl_context context, const unsigned int testId, const unsigned int testNum, cl_device_id device)
 {
+    if ((allTestCase[testId]->_type == TYPE_HALF
+         || allTestCase[testId]->_type == TYPE_HALF_LIMITS)
+        && !is_extension_available(device, "cl_khr_fp16"))
+    {
+        log_info(
+            "Skipping half because cl_khr_fp16 extension is not supported.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
     if(allTestCase[testId]->_type == TYPE_VECTOR)
     {
+        if ((strcmp(allTestCase[testId]->_genParameters[testNum].dataType,
+                    "half")
+             == 0)
+            && !is_extension_available(device, "cl_khr_fp16"))
+        {
+            log_info("Skipping half because cl_khr_fp16 extension is not "
+                     "supported.\n");
+            return TEST_SKIPPED_ITSELF;
+        }
+
         log_info("%d)testing printf(\"%sv%s%s\",%s)\n",testNum,allTestCase[testId]->_genParameters[testNum].vectorFormatFlag,allTestCase[testId]->_genParameters[testNum].vectorSize,
                  allTestCase[testId]->_genParameters[testNum].vectorFormatSpecifier,allTestCase[testId]->_genParameters[testNum].dataRepresentation);
     }
@@ -614,6 +630,75 @@ int test_int_8(cl_device_id deviceID, cl_context context, cl_command_queue queue
 }
 
 
+int test_half_0(cl_device_id deviceID, cl_context context,
+                cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HALF, 0, deviceID);
+}
+int test_half_1(cl_device_id deviceID, cl_context context,
+                cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HALF, 1, deviceID);
+}
+int test_half_2(cl_device_id deviceID, cl_context context,
+                cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HALF, 2, deviceID);
+}
+int test_half_3(cl_device_id deviceID, cl_context context,
+                cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HALF, 3, deviceID);
+}
+int test_half_4(cl_device_id deviceID, cl_context context,
+                cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HALF, 4, deviceID);
+}
+int test_half_5(cl_device_id deviceID, cl_context context,
+                cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HALF, 5, deviceID);
+}
+int test_half_6(cl_device_id deviceID, cl_context context,
+                cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HALF, 6, deviceID);
+}
+int test_half_7(cl_device_id deviceID, cl_context context,
+                cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HALF, 7, deviceID);
+}
+int test_half_8(cl_device_id deviceID, cl_context context,
+                cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HALF, 8, deviceID);
+}
+int test_half_9(cl_device_id deviceID, cl_context context,
+                cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HALF, 9, deviceID);
+}
+
+
+int test_half_limits_0(cl_device_id deviceID, cl_context context,
+                       cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HALF_LIMITS, 0, deviceID);
+}
+int test_half_limits_1(cl_device_id deviceID, cl_context context,
+                       cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HALF_LIMITS, 1, deviceID);
+}
+int test_half_limits_2(cl_device_id deviceID, cl_context context,
+                       cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HALF_LIMITS, 2, deviceID);
+}
+
+
 int test_float_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(gQueue, gContext, TYPE_FLOAT, 0, deviceID);
@@ -800,6 +885,11 @@ int test_vector_4(cl_device_id deviceID, cl_context context, cl_command_queue qu
 {
     return doTest(gQueue, gContext, TYPE_VECTOR, 4, deviceID);
 }
+int test_vector_5(cl_device_id deviceID, cl_context context,
+                  cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_VECTOR, 5, deviceID);
+}
 
 
 int test_address_space_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
@@ -855,6 +945,15 @@ test_definition test_list[] = {
     ADD_TEST(int_6),           ADD_TEST(int_7),
     ADD_TEST(int_8),
 
+    ADD_TEST(half_0),          ADD_TEST(half_1),
+    ADD_TEST(half_2),          ADD_TEST(half_3),
+    ADD_TEST(half_4),          ADD_TEST(half_5),
+    ADD_TEST(half_6),          ADD_TEST(half_7),
+    ADD_TEST(half_8),          ADD_TEST(half_9),
+
+    ADD_TEST(half_limits_0),   ADD_TEST(half_limits_1),
+    ADD_TEST(half_limits_2),
+
     ADD_TEST(float_0),         ADD_TEST(float_1),
     ADD_TEST(float_2),         ADD_TEST(float_3),
     ADD_TEST(float_4),         ADD_TEST(float_5),
@@ -885,7 +984,7 @@ test_definition test_list[] = {
 
     ADD_TEST(vector_0),        ADD_TEST(vector_1),
     ADD_TEST(vector_2),        ADD_TEST(vector_3),
-    ADD_TEST(vector_4),
+    ADD_TEST(vector_4),        ADD_TEST(vector_5),
 
     ADD_TEST(address_space_0), ADD_TEST(address_space_1),
     ADD_TEST(address_space_2), ADD_TEST(address_space_3),
@@ -946,9 +1045,17 @@ int main(int argc, const char* argv[])
         }
     }
 
-    if (getTempFileName() == -1)
+    char* pcTempFname = get_temp_filename();
+    if (pcTempFname != nullptr)
     {
-        log_error("getTempFileName failed\n");
+        strncpy(gFileName, pcTempFname, sizeof(gFileName));
+    }
+
+    free(pcTempFname);
+
+    if (strlen(gFileName) == 0)
+    {
+        log_error("get_temp_filename failed\n");
         return -1;
     }
 
@@ -1055,6 +1162,24 @@ test_status InitCL( cl_device_id device )
     checkNull(gQueue, "clCreateCommandQueue");
 
     releaseOutputStream(gFd);
+
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        const cl_device_fp_config fpConfigHalf =
+            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
+        if (fpConfigHalf == CL_FP_ROUND_TO_NEAREST)
+        {
+            half_rounding_mode = CL_HALF_RTE;
+        }
+        else if (fpConfigHalf == CL_FP_ROUND_TO_ZERO)
+        {
+            half_rounding_mode = CL_HALF_RTZ;
+        }
+        else
+        {
+            log_error("Error while acquiring half rounding mode");
+        }
+    }
 
     // Generate reference results
     generateRef(device);

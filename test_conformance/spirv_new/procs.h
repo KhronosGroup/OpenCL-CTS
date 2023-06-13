@@ -39,7 +39,7 @@ Agreement as executed between Khronos and the recipient.
 class baseTestClass {
 public:
     baseTestClass() {}
-    virtual basefn getFunction() = 0;
+    virtual test_function_pointer getFunction() = 0;
 };
 
 class spirvTestsRegistry {
@@ -72,11 +72,11 @@ template <typename T> T *createAndRegister(const char *name, Version version)
                            cl_command_queue queue, int num_elements);          \
     class test_##name##_class : public baseTestClass {                         \
     private:                                                                   \
-        basefn fn;                                                             \
+        test_function_pointer fn;                                              \
                                                                                \
     public:                                                                    \
         test_##name##_class(): fn(test_##name) {}                              \
-        basefn getFunction() { return fn; }                                    \
+        test_function_pointer getFunction() { return fn; }                     \
     };                                                                         \
     test_##name##_class *var_##name =                                          \
         createAndRegister<test_##name##_class>(#name, version);                \

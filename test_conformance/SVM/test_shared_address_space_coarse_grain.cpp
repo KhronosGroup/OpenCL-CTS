@@ -57,7 +57,6 @@ cl_int create_linked_lists_on_host(cl_command_queue cmdq, cl_mem nodes, Node *pN
 cl_int verify_linked_lists_on_host(int ci, cl_command_queue cmdq, cl_mem nodes, Node *pNodes2, cl_int ListLength, size_t numLists, cl_bool useNewAPI )
 {
   cl_int error = CL_SUCCESS;
-  cl_int correct_count;
 
   Node *pNodes;
   if (useNewAPI == CL_FALSE)
@@ -71,8 +70,6 @@ cl_int verify_linked_lists_on_host(int ci, cl_command_queue cmdq, cl_mem nodes, 
     error = clEnqueueSVMMap(cmdq, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, pNodes2, sizeof(Node)*ListLength * numLists, 0, NULL,NULL);
     test_error2(error, pNodes, "clEnqueueSVMMap failed");
   }
-
-  correct_count = 0;
 
   error = verify_linked_lists(pNodes, numLists, ListLength);
   if(error) return -1;

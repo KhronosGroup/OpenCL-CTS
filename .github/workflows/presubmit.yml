@@ -28,7 +28,7 @@ jobs:
             debug: 1
             extra: " debug"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
       - name: Setup OpenGL build dependencies
@@ -59,7 +59,7 @@ jobs:
     steps:
       - name: Install packages
         run: sudo apt install -y clang-format clang-format-9
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Check code format

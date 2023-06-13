@@ -49,9 +49,11 @@ namespace detail {
 
 struct test_case_registration
 {
-    test_case_registration(const std::string& name, const basefn ptr)
+    test_case_registration(const std::string& name,
+                           const test_function_pointer ptr)
     {
-        ::autotest::test_suite::global_test_suite().add(test_definition({ptr, strdup(name.c_str())}));
+        ::autotest::test_suite::global_test_suite().add(
+            test_definition({ ptr, strdup(name.c_str()) }));
     }
 };
 

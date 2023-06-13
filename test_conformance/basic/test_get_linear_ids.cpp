@@ -104,15 +104,19 @@ test_get_linear_ids(cl_device_id device, cl_context context, cl_command_queue qu
 
         switch (dims) {
         case 1:
-            log_info("  testing offset=%u global=%u local=%u...\n", gwo[0], gws[0], lws[0]);
+            log_info("  testing offset=%zu global=%zu local=%zu...\n", gwo[0],
+                     gws[0], lws[0]);
             break;
         case 2:
-            log_info("  testing offset=(%u,%u) global=(%u,%u) local=(%u,%u)...\n",
-                    gwo[0], gwo[1], gws[0], gws[1], lws[0], lws[1]);
+            log_info("  testing offset=(%zu,%zu) global=(%zu,%zu) "
+                     "local=(%zu,%zu)...\n",
+                     gwo[0], gwo[1], gws[0], gws[1], lws[0], lws[1]);
             break;
         case 3:
-            log_info("  testing offset=(%u,%u,%u) global=(%u,%u,%u) local=(%u,%u,%u)...\n",
-                    gwo[0], gwo[1], gwo[2], gws[0], gws[1], gws[2], lws[0], lws[1], lws[2]);
+            log_info("  testing offset=(%zu,%zu,%zu) global=(%zu,%zu,%zu) "
+                     "local=(%zu,%zu,%zu)...\n",
+                     gwo[0], gwo[1], gwo[2], gws[0], gws[1], gws[2], lws[0],
+                     lws[1], lws[2]);
             break;
         }
 

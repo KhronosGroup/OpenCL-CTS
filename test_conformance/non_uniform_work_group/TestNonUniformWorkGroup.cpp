@@ -448,12 +448,7 @@ void TestNonUniformWorkGroup::verifyData (DataContainerAttrib * reference, DataC
 }
 
 void TestNonUniformWorkGroup::calculateExpectedValues () {
-  size_t nonRemainderGlobalSize[MAX_DIMS];
   size_t numberOfPossibleRegions[MAX_DIMS];
-
-  nonRemainderGlobalSize[0] = _globalSize[0] - (_globalSize[0] % _enqueuedLocalSize[0]);
-  nonRemainderGlobalSize[1] = _globalSize[1] - (_globalSize[1] % _enqueuedLocalSize[1]);
-  nonRemainderGlobalSize[2] = _globalSize[2] - (_globalSize[2] % _enqueuedLocalSize[2]);
 
   numberOfPossibleRegions[0] = (_globalSize[0]>1)?2:1;
   numberOfPossibleRegions[1] = (_globalSize[1]>1)?2:1;
@@ -502,6 +497,11 @@ size_t TestNonUniformWorkGroup::getMaxLocalWorkgroupSize (const cl_device_id &de
   if (TestNonUniformWorkGroup::_maxLocalWorkgroupSize == 0) {
     err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE,
       sizeof(TestNonUniformWorkGroup::_maxLocalWorkgroupSize), &TestNonUniformWorkGroup::_maxLocalWorkgroupSize, NULL);
+    if (err)
+    {
+        log_error("clGetDeviceInfo failed\n");
+        return 0;
+    }
   }
 
   return TestNonUniformWorkGroup::_maxLocalWorkgroupSize;
