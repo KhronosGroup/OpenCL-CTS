@@ -44,13 +44,6 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
         : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
-    virtual cl_int SetUp(int elements) override
-    {
-        InfoMutableCommandBufferTest::SetUp(elements);
-
-        return CL_SUCCESS;
-    }
-
     bool Skip() override
     {
         cl_mutable_dispatch_fields_khr mutable_capabilities;
