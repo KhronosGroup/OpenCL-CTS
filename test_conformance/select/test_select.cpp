@@ -75,7 +75,6 @@ static void printUsage( void );
         if (errCodeResult != CL_SUCCESS)                                       \
         {                                                                      \
             gFailCount++;                                                      \
-            ;                                                                  \
             print_error(errCodeResult, msg);                                   \
             return errCode;                                                    \
         }                                                                      \
