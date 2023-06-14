@@ -64,7 +64,7 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
                const int veclen, const bool vecParam)
 {
     double r, o;
-    float delta = 0.0f;
+    float delta = 0.f, max_delta = 0.f;
     int i;
 
     if (vecParam)
@@ -77,19 +77,27 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
 
             o = conv_to_dbl(outptr[i]);
             delta = fabs(double(r - o)) / r;
-            if (delta > MAX_ERR)
+            if (!std::is_same<T, half>::value)
             {
-                if (std::is_same<T, half>::value)
-                    log_error("%d) verification error: mix(%a, %a, %a) = *%a "
-                              "vs. %a\n",
-                              i, conv_to_flt(inptrX[i]), conv_to_flt(inptrY[i]),
-                              conv_to_flt(inptrA[i]), r,
-                              conv_to_flt(outptr[i]));
-                else
-                    log_error("%d) verification error: mix(%a, %a, %a) = *%a "
-                              "vs. %a\n",
-                              i, inptrX[i], inptrY[i], inptrA[i], r, outptr[i]);
-                return -1;
+                if (delta > MAX_ERR)
+                {
+                    if (std::is_same<T, half>::value)
+                        log_error(
+                            "%d) verification error: mix(%a, %a, %a) = *%a "
+                            "vs. %a\n",
+                            i, conv_to_flt(inptrX[i]), conv_to_flt(inptrY[i]),
+                            conv_to_flt(inptrA[i]), r, conv_to_flt(outptr[i]));
+                    else
+                        log_error(
+                            "%d) verification error: mix(%a, %a, %a) = *%a "
+                            "vs. %a\n",
+                            i, inptrX[i], inptrY[i], inptrA[i], r, outptr[i]);
+                    return -1;
+                }
+            }
+            else
+            {
+                max_delta = std::max(max_delta, delta);
             }
         }
     }
@@ -105,26 +113,39 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
                     + ((conv_to_dbl(inptrY[vi]) - conv_to_dbl(inptrX[vi]))
                        * conv_to_dbl(inptrA[i]));
                 delta = fabs(double(r - conv_to_dbl(outptr[vi]))) / r;
-                if (delta > MAX_ERR)
+                if (!std::is_same<T, half>::value)
                 {
-                    if (std::is_same<T, half>::value)
-                        log_error(
-                            "{%d, element %d}) verification error: mix(%a, "
-                            "%a, %a) = *%a vs. %a\n",
-                            ii, j, conv_to_flt(inptrX[vi]),
-                            conv_to_flt(inptrY[vi]), conv_to_flt(inptrA[i]), r,
-                            conv_to_flt(outptr[vi]));
-                    else
-                        log_error(
-                            "{%d, element %d}) verification error: mix(%a, "
-                            "%a, %a) = *%a vs. %a\n",
-                            ii, j, inptrX[vi], inptrY[vi], inptrA[i], r,
-                            outptr[vi]);
-                    return -1;
+                    if (delta > MAX_ERR)
+                    {
+                        if (std::is_same<T, half>::value)
+                            log_error(
+                                "{%d, element %d}) verification error: mix(%a, "
+                                "%a, %a) = *%a vs. %a\n",
+                                ii, j, conv_to_flt(inptrX[vi]),
+                                conv_to_flt(inptrY[vi]), conv_to_flt(inptrA[i]),
+                                r, conv_to_flt(outptr[vi]));
+                        else
+                            log_error(
+                                "{%d, element %d}) verification error: mix(%a, "
+                                "%a, %a) = *%a vs. %a\n",
+                                ii, j, inptrX[vi], inptrY[vi], inptrA[i], r,
+                                outptr[vi]);
+                        return -1;
+                    }
+                }
+                else
+                {
+                    max_delta = std::max(max_delta, delta);
                 }
             }
         }
     }
+
+    // due to the fact that accuracy of mix for cl_khr_fp16 is implementation
+    // defined this test only reports maximum error without testing maximum
+    // error threshold
+    if (std::is_same<T, half>::value)
+        log_error("mix half verification result, max delta: %a\n", max_delta);
 
     return 0;
 }
