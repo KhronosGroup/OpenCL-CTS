@@ -44,13 +44,6 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
         : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
-    virtual cl_int SetUp(int elements) override
-    {
-        InfoMutableCommandBufferTest::SetUp(elements);
-
-        return CL_SUCCESS;
-    }
-
     bool Skip() override
     {
         cl_mutable_dispatch_fields_khr mutable_capabilities;
@@ -149,7 +142,7 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (size_t i = 0; i < num_elements; i++)
-            if (i > update_global_size && global_work_size != resultData[i])
+            if (i >= update_global_size && global_work_size != resultData[i])
             {
                 log_error("Data failed to verify: update_global_size != "
                           "resultData[%d]=%d\n",
@@ -170,9 +163,8 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
 
     size_t info_global_size = 0;
     const size_t update_global_size = 3;
-    const size_t sizeToAllocate = 64;
+    const size_t sizeToAllocate = global_work_size;
     const size_t num_elements = sizeToAllocate / sizeof(cl_int);
-
     cl_mutable_command_khr command = nullptr;
 };
 
