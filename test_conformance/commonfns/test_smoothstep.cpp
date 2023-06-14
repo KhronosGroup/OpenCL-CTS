@@ -127,6 +127,7 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
         }
     }
 
+    // accuracy of smoothstep for cl_khr_fp16 is implementation defined
     if (std::is_same<T, half>::value)
         log_error("smoothstep half verification result, max delta: %a\n",
                   max_delta);

@@ -63,7 +63,7 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
                const T *const inptrA, const T *const outptr, const int n,
                const int veclen, const bool vecParam)
 {
-    double r;
+    double r, o;
     float delta = 0.0f;
     int i;
 
@@ -74,7 +74,9 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
             r = conv_to_dbl(inptrX[i])
                 + ((conv_to_dbl(inptrY[i]) - conv_to_dbl(inptrX[i]))
                    * conv_to_dbl(inptrA[i]));
-            delta = fabs(double(r - conv_to_dbl(outptr[i]))) / r;
+
+            o = conv_to_dbl(outptr[i]);
+            delta = fabs(double(r - o)) / r;
             if (delta > MAX_ERR)
             {
                 if (std::is_same<T, half>::value)
@@ -139,7 +141,7 @@ int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
     std::vector<clKernelWrapper> kernels;
 
     int err, i;
-    MTdata d;
+    MTdataHolder d(gRandomSeed);
 
     assert(BaseFunctionTest::type2name.find(sizeof(T))
            != BaseFunctionTest::type2name.end());
@@ -167,10 +169,9 @@ int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
         pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
     }
 
-    d = init_genrand(gRandomSeed);
-    if (std::is_same<T, double>::value)
+    if (std::is_same<T, half>::value)
     {
-        pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+        pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
         for (i = 0; i < num_elements; i++)
         {
             input_ptr[0][i] = conv_to_half((float)genrand_real1(d));
@@ -187,7 +188,6 @@ int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
             input_ptr[2][i] = (T)genrand_real1(d);
         }
     }
-    free_mtdata(d);
 
     for (i = 0; i < 3; i++)
     {

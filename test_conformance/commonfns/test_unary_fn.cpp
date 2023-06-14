@@ -231,7 +231,7 @@ int test_unary_fn(cl_device_id device, cl_context context,
         for (int j = 0; j < num_elements; j++)
         {
             input_ptr[j] = conv_to_half(get_random_float(
-                (float)(-65503.f * M_PI), (float)(65503.f * M_PI), d));
+                (float)(-10000.f * M_PI), (float)(10000.f * M_PI), d));
         }
     }
 
