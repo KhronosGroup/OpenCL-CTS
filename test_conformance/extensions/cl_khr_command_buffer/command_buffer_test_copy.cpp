@@ -72,6 +72,10 @@ struct CopyImageKHR : public BasicCommandBufferTest
                                    region, 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillImageKHR failed");
 
+        error = clEnqueueFillImage(queue, dst_image, fill_color_2, origin,
+                                   region, 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillImageKHR failed");
+
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
@@ -168,6 +172,10 @@ struct CopyBufferKHR : public BasicCommandBufferTest
                                     0, data_size(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBufferKHR failed");
 
+        error = clEnqueueFillBuffer(queue, out_mem, &pattern_2, sizeof(cl_char),
+                                    0, data_size(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBufferKHR failed");
+
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
@@ -231,6 +239,10 @@ struct CopyBufferToImageKHR : public BasicCommandBufferTest
                                     0, data_size, 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
 
+        error = clEnqueueFillImage(queue, image, &fill_color_2, origin, region,
+                                   0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillImage failed");
+
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
@@ -280,6 +292,10 @@ struct CopyBufferToImageKHR : public BasicCommandBufferTest
                  region[3] = { img_width, img_height, 1 };
     const cl_char pattern_1 = 0x11;
     const cl_char pattern_2 = 0x22;
+
+    const cl_uint fill_color_2[4] = { pattern_2, pattern_2, pattern_2,
+                                      pattern_2 };
+
     const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
 
     clMemWrapper buffer;
@@ -326,6 +342,9 @@ struct CopyImageToBufferKHR : public BasicCommandBufferTest
         error = clEnqueueFillImage(queue, image, fill_color_2, origin, region,
                                    0, nullptr, nullptr);
         test_error(error, "clEnqueueFillImage failed");
+
+        error = clEnqueueFillBuffer(queue, buffer, &pattern_2, sizeof(cl_char),
+                                    0, data_size, 0, nullptr, nullptr);
 
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
@@ -424,6 +443,10 @@ struct CopyBufferRectKHR : public BasicCommandBufferTest
         /* Check second enqueue of command buffer */
 
         error = clEnqueueFillBuffer(queue, in_mem, &pattern_2, sizeof(cl_char),
+                                    0, data_size, 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBuffer failed");
+
+        error = clEnqueueFillBuffer(queue, out_mem, &pattern_2, sizeof(cl_char),
                                     0, data_size, 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
 
