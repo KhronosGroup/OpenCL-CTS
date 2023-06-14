@@ -21,6 +21,8 @@
 #include "mt19937.h"
 #include "compat.h"
 
+#include <CL/cl_half.h>
+
 #if defined(__SSE__) || defined(_MSC_VER)
 #include <xmmintrin.h>
 #endif
@@ -261,6 +263,11 @@ static Long sLowerLimits[kNumExplicitTypes] = {
         }                                                                      \
         break;
 
+#define TO_HALF_CASE(inType)                                                   \
+    case kHalf:                                                                \
+        halfPtr = (cl_half *)outRaw;                                           \
+        *halfPtr = cl_half_from_float((float)(*inType##Ptr), CL_HALF_RTE);     \
+        break;
 #define TO_FLOAT_CASE(inType)                                                  \
     case kFloat:                                                               \
         floatPtr = (float *)outRaw;                                            \
@@ -280,6 +287,59 @@ static Long sLowerLimits[kNumExplicitTypes] = {
         outType##Ptr = (outType *)outRaw;                                      \
         *outType##Ptr = (outType)lrintf_clamped(*floatPtr);                    \
         break;
+
+#define HALF_ROUND_CASE(outEnum, outType, rounding, sat)                       \
+    case outEnum: {                                                            \
+        outType##Ptr = (outType *)outRaw;                                      \
+        /* Get the tens digit */                                               \
+        float fltEq = (Long)cl_half_to_float(*halfPtr);                        \
+        Long wholeValue = (Long)fltEq;                                         \
+        float largeRemainder = (fltEq - (float)wholeValue) * 10.f;             \
+        /* What do we do based on that? */                                     \
+        if (rounding == kRoundToEven)                                          \
+        {                                                                      \
+            if (wholeValue & 1LL) /*between 1 and 1.99 */                      \
+                wholeValue += 1LL; /* round up to even */                      \
+        }                                                                      \
+        else if (rounding == kRoundToZero)                                     \
+        {                                                                      \
+            /* Nothing to do, round-to-zero is what C casting does */          \
+        }                                                                      \
+        else if (rounding == kRoundToPosInf)                                   \
+        {                                                                      \
+            /* Only positive numbers are wrong */                              \
+            if (largeRemainder != 0.f && wholeValue >= 0) wholeValue++;        \
+        }                                                                      \
+        else if (rounding == kRoundToNegInf)                                   \
+        {                                                                      \
+            /* Only negative numbers are off */                                \
+            if (largeRemainder != 0.f && wholeValue < 0) wholeValue--;         \
+        }                                                                      \
+        else                                                                   \
+        { /* Default is round-to-nearest */                                    \
+            wholeValue = (Long)lrintf_clamped(fltEq);                          \
+        }                                                                      \
+        /* Now apply saturation rules */                                       \
+        if (sat)                                                               \
+        {                                                                      \
+            if ((sLowerLimits[outEnum] < 0                                     \
+                 && wholeValue > (Long)sUpperLimits[outEnum])                  \
+                || (sLowerLimits[outEnum] == 0                                 \
+                    && (ULong)wholeValue > sUpperLimits[outEnum]))             \
+                *outType##Ptr = (outType)sUpperLimits[outEnum];                \
+            else if (wholeValue < sLowerLimits[outEnum])                       \
+                *outType##Ptr = (outType)sLowerLimits[outEnum];                \
+            else                                                               \
+                *outType##Ptr = (outType)wholeValue;                           \
+        }                                                                      \
+        else                                                                   \
+        {                                                                      \
+            *outType##Ptr = (outType)(                                         \
+                wholeValue                                                     \
+                & (0xffffffffffffffffLL >> (64 - (sizeof(outType) * 8))));     \
+        }                                                                      \
+    }                                                                          \
+    break;
 
 #define FLOAT_ROUND_CASE(outEnum, outType, rounding, sat)                      \
     case outEnum: {                                                            \
@@ -404,6 +464,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
     uint *uintPtr;
     Long *LongPtr;
     ULong *ULongPtr;
+    cl_half *halfPtr;
     float *floatPtr;
     double *doublePtr;
 
@@ -434,6 +495,11 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                            get_explicit_type_size(outType));
                     break;
 
+                case kHalf:
+                    halfPtr = (cl_half *)outRaw;
+                    *halfPtr =
+                        (*boolPtr) ? cl_half_from_float(-1.f, CL_HALF_RTE) : 0;
+                    break;
                 case kFloat:
                     floatPtr = (float *)outRaw;
                     *floatPtr = (*boolPtr) ? -1.f : 0.f;
@@ -471,6 +537,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(schar, kULong, ULong)
                     SIMPLE_CAST_CASE(schar, kUnsignedLong, ULong)
 
+                    TO_HALF_CASE(schar)
                     TO_FLOAT_CASE(schar)
                     TO_DOUBLE_CASE(schar)
 
@@ -503,6 +570,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(uchar, kULong, ULong)
                     SIMPLE_CAST_CASE(uchar, kUnsignedLong, ULong)
 
+                    TO_HALF_CASE(uchar)
                     TO_FLOAT_CASE(uchar)
                     TO_DOUBLE_CASE(uchar)
 
@@ -535,6 +603,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(uchar, kULong, ULong)
                     SIMPLE_CAST_CASE(uchar, kUnsignedLong, ULong)
 
+                    TO_HALF_CASE(uchar)
                     TO_FLOAT_CASE(uchar)
                     TO_DOUBLE_CASE(uchar)
 
@@ -567,6 +636,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(short, kULong, ULong)
                     SIMPLE_CAST_CASE(short, kUnsignedLong, ULong)
 
+                    TO_HALF_CASE(short)
                     TO_FLOAT_CASE(short)
                     TO_DOUBLE_CASE(short)
 
@@ -599,6 +669,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(ushort, kULong, ULong)
                     SIMPLE_CAST_CASE(ushort, kUnsignedLong, ULong)
 
+                    TO_HALF_CASE(ushort)
                     TO_FLOAT_CASE(ushort)
                     TO_DOUBLE_CASE(ushort)
 
@@ -631,6 +702,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(ushort, kULong, ULong)
                     SIMPLE_CAST_CASE(ushort, kUnsignedLong, ULong)
 
+                    TO_HALF_CASE(ushort)
                     TO_FLOAT_CASE(ushort)
                     TO_DOUBLE_CASE(ushort)
 
@@ -663,6 +735,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(int, kULong, ULong)
                     SIMPLE_CAST_CASE(int, kUnsignedLong, ULong)
 
+                    TO_HALF_CASE(int)
                     TO_FLOAT_CASE(int)
                     TO_DOUBLE_CASE(int)
 
@@ -695,6 +768,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(uint, kULong, ULong)
                     SIMPLE_CAST_CASE(uint, kUnsignedLong, ULong)
 
+                    TO_HALF_CASE(uint)
                     TO_FLOAT_CASE(uint)
                     TO_DOUBLE_CASE(uint)
 
@@ -727,6 +801,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(uint, kULong, ULong)
                     SIMPLE_CAST_CASE(uint, kUnsignedLong, ULong)
 
+                    TO_HALF_CASE(uint)
                     TO_FLOAT_CASE(uint)
                     TO_DOUBLE_CASE(uint)
 
@@ -759,6 +834,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     DOWN_CAST_CASE(Long, kULong, ULong, saturate)
                     DOWN_CAST_CASE(Long, kUnsignedLong, ULong, saturate)
 
+                    TO_HALF_CASE(Long)
                     TO_FLOAT_CASE(Long)
                     TO_DOUBLE_CASE(Long)
 
@@ -791,6 +867,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     U_DOWN_CAST_CASE(ULong, kUnsignedInt, uint, saturate)
                     U_DOWN_CAST_CASE(ULong, kLong, Long, saturate)
 
+                    TO_HALF_CASE(ULong)
                     TO_FLOAT_CASE(ULong)
                     TO_DOUBLE_CASE(ULong)
 
@@ -823,8 +900,48 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     U_DOWN_CAST_CASE(ULong, kUnsignedInt, uint, saturate)
                     U_DOWN_CAST_CASE(ULong, kLong, Long, saturate)
 
+                    TO_HALF_CASE(ULong)
                     TO_FLOAT_CASE(ULong)
                     TO_DOUBLE_CASE(ULong)
+
+                default:
+                    log_error("ERROR: Invalid type given to "
+                              "convert_explicit_value!!\n");
+                    break;
+            }
+            break;
+
+        case kHalf:
+            halfPtr = (cl_half *)inRaw;
+            switch (outType)
+            {
+                BOOL_CASE(half)
+
+                HALF_ROUND_CASE(kChar, schar, roundType, saturate)
+                HALF_ROUND_CASE(kUChar, uchar, roundType, saturate)
+                HALF_ROUND_CASE(kUnsignedChar, uchar, roundType, saturate)
+                HALF_ROUND_CASE(kShort, short, roundType, saturate)
+                HALF_ROUND_CASE(kUShort, ushort, roundType, saturate)
+                HALF_ROUND_CASE(kUnsignedShort, ushort, roundType, saturate)
+                HALF_ROUND_CASE(kInt, int, roundType, saturate)
+                HALF_ROUND_CASE(kUInt, uint, roundType, saturate)
+                HALF_ROUND_CASE(kUnsignedInt, uint, roundType, saturate)
+                HALF_ROUND_CASE(kLong, Long, roundType, saturate)
+                HALF_ROUND_CASE(kULong, ULong, roundType, saturate)
+                HALF_ROUND_CASE(kUnsignedLong, ULong, roundType, saturate)
+
+                case kHalf:
+                    memcpy(outRaw, inRaw, get_explicit_type_size(inType));
+                    break;
+
+                case kFloat:
+                    floatPtr = (float *)outRaw;
+                    *floatPtr = cl_half_to_float(*halfPtr);
+                    break;
+                case kDouble:
+                    doublePtr = (double *)outRaw;
+                    *doublePtr = cl_half_to_float(*halfPtr);
+                    break;
 
                 default:
                     log_error("ERROR: Invalid type given to "
@@ -851,6 +968,8 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                 FLOAT_ROUND_CASE(kLong, Long, roundType, saturate)
                 FLOAT_ROUND_CASE(kULong, ULong, roundType, saturate)
                 FLOAT_ROUND_CASE(kUnsignedLong, ULong, roundType, saturate)
+
+                TO_HALF_CASE(float)
 
                 case kFloat:
                     memcpy(outRaw, inRaw, get_explicit_type_size(inType));
@@ -883,6 +1002,8 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                 DOUBLE_ROUND_CASE(kLong, Long, roundType, saturate)
                 DOUBLE_ROUND_CASE(kULong, ULong, roundType, saturate)
                 DOUBLE_ROUND_CASE(kUnsignedLong, ULong, roundType, saturate)
+
+                TO_HALF_CASE(double)
 
                 TO_FLOAT_CASE(double);
 
