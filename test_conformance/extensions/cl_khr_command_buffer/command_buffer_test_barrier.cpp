@@ -83,13 +83,14 @@ struct BarrierWithWaitListKHR : public BasicCommandBufferTest
 
         /* Check second enqueue of command buffer */
 
-        error = clEnqueueFillBuffer(queue, in_mem, &pattern, sizeof(cl_int), 0,
-                                    data_size(), 0, nullptr, nullptr);
+        error =
+            clEnqueueFillBuffer(queue, in_mem, &zero_pattern, sizeof(cl_int), 0,
+                                data_size(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBufferKHR failed");
 
-        error = clEnqueueFillBuffer(queue, out_mem, &overwritten_pattern,
-                                    sizeof(cl_int), 0, data_size(), 0, nullptr,
-                                    nullptr);
+        error =
+            clEnqueueFillBuffer(queue, out_mem, &zero_pattern, sizeof(cl_int),
+                                0, data_size(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBufferKHR failed");
 
         error = clEnqueueCommandBufferKHR(
@@ -132,6 +133,7 @@ struct BarrierWithWaitListKHR : public BasicCommandBufferTest
     }
 
     const cl_int pattern = 0x16;
+    const cl_int zero_pattern = 0x0;
     clCommandQueueWrapper out_of_order_queue;
     clCommandBufferWrapper out_of_order_command_buffer;
     clEventWrapper event;
