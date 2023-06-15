@@ -378,7 +378,11 @@ int test_vload_local(cl_device_id device, cl_context context, cl_command_queue q
     cl_ulong localSize;
     int error = clGetDeviceInfo( device, CL_DEVICE_LOCAL_MEM_SIZE, sizeof( localSize ), &localSize, NULL );
     test_error( error, "Unable to get max size of local memory buffer" );
-    localSize = std::min(localSize, (cl_ulong)2048);
+    if (localSize > 10240) localSize = 10240;
+    if (localSize > 4096)
+        localSize -= 2048;
+    else
+        localSize /= 2;
 
     return test_vset<test_vload>(device, context, queue, create_local_load_code,
                                  (size_t)localSize);
@@ -410,7 +414,11 @@ int test_vload_constant(cl_device_id device, cl_context context, cl_command_queu
     cl_ulong maxSize;
     int error = clGetDeviceInfo( device, CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, sizeof( maxSize ), &maxSize, NULL );
     test_error( error, "Unable to get max size of constant memory buffer" );
-    maxSize = std::min(maxSize, (cl_ulong)2048);
+    if (maxSize > 10240) maxSize = 10240;
+    if (maxSize > 4096)
+        maxSize -= 2048;
+    else
+        maxSize /= 2;
 
     return test_vset<test_vload>(device, context, queue,
                                  create_constant_load_code, (size_t)maxSize);
@@ -803,8 +811,11 @@ int test_vstore_local(cl_device_id device, cl_context context, cl_command_queue 
     cl_ulong localSize;
     int error = clGetDeviceInfo( device, CL_DEVICE_LOCAL_MEM_SIZE, sizeof( localSize ), &localSize, NULL );
     test_error( error, "Unable to get max size of local memory buffer" );
-    localSize = std::min(localSize, (cl_ulong)2048);
-
+    if (localSize > 10240) localSize = 10240;
+    if (localSize > 4096)
+        localSize -= 2048;
+    else
+        localSize /= 2;
     return test_vset<test_vstore>(device, context, queue,
                                   create_local_store_code, (size_t)localSize);
 }
