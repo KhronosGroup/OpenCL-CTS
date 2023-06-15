@@ -293,10 +293,10 @@ struct CopyBufferToImageKHR : public BasicCommandBufferTest
     const cl_char pattern_1 = 0x11;
     const cl_char pattern_2 = 0x22;
 
-    const cl_uint fill_color_2[4] = { static_cast<const cl_int>(pattern_2),
-                                      static_cast<const cl_int>(pattern_2),
-                                      static_cast<const cl_int>(pattern_2),
-                                      static_cast<const cl_int>(pattern_2) };
+    const cl_uint fill_color_2[4] = { static_cast<cl_uint>(pattern_2),
+                                      static_cast<cl_uint>(pattern_2),
+                                      static_cast<cl_uint>(pattern_2),
+                                      static_cast<cl_uint>(pattern_2) };
 
     const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
 
