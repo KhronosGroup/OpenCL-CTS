@@ -82,7 +82,7 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
 
         error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, nullptr, kernel, 1, nullptr,
-            &global_work_size, nullptr, 0, nullptr, nullptr, &command);
+            &global_work_size, &local_work_size, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);
@@ -107,7 +107,7 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
             nullptr /* arg_svm_list - nullptr means no change*/,
             nullptr /* exec_info_list */,
             nullptr /* global_work_offset */,
-            nullptr /* global_work_size */,
+            &update_global_size /* global_work_size */,
             &update_local_size /* local_work_size */
         };
         cl_mutable_base_config_khr mutable_config{
@@ -142,7 +142,15 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (size_t i = 0; i < num_elements; i++)
-            if (update_local_size != resultData[i])
+            if (i < update_global_size && update_local_size != resultData[i])
+            {
+                log_error("Data failed to verify: update_local_size != "
+                          "resultData[%d]=%d\n",
+                          i, resultData[i]);
+                return TEST_FAIL;
+            }
+            else if (i >= update_global_size
+                     && local_work_size != resultData[i])
             {
                 log_error("Data failed to verify: update_local_size != "
                           "resultData[%d]=%d\n",
@@ -154,7 +162,10 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
     }
 
     size_t info_local_size = 0;
-    const size_t update_local_size = 8;
+    const size_t global_work_size = 16;
+    const size_t local_work_size = 8;
+    const size_t update_global_size = 8;
+    const size_t update_local_size = 4;
     const size_t sizeToAllocate = 64;
     const size_t num_elements = sizeToAllocate / sizeof(cl_int);
 
