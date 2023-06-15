@@ -60,7 +60,6 @@ struct DataInitInfo
     RoundingMode round;
     cl_uint threads;
 
-
     static std::vector<uint32_t> specialValuesUInt;
     static std::vector<float> specialValuesFloat;
     static std::vector<double> specialValuesDouble;
@@ -68,13 +67,15 @@ struct DataInitInfo
 
 struct DataInitBase : public DataInitInfo
 {
+    virtual ~DataInitBase() = default;
+
     explicit DataInitBase(const DataInitInfo &agg): DataInitInfo(agg) {}
     virtual void conv_array(void *out, void *in, size_t n) {}
     virtual void conv_array_sat(void *out, void *in, size_t n) {}
     virtual void init(const cl_uint &, const cl_uint &) {}
 };
 
-template <typename InType, typename OutType, bool InFP, bool OutFP>
+template <typename InType, typename OutType>
 struct DataInfoSpec : public DataInitBase
 {
     explicit DataInfoSpec(const DataInitInfo &agg);
@@ -124,9 +125,8 @@ struct DataInfoSpec : public DataInitBase
     }
 };
 
-template <typename InType, typename OutType, bool InFP, bool OutFP>
-DataInfoSpec<InType, OutType, InFP, OutFP>::DataInfoSpec(
-    const DataInitInfo &agg)
+template <typename InType, typename OutType>
+DataInfoSpec<InType, OutType>::DataInfoSpec(const DataInitInfo &agg)
     : DataInitBase(agg), mdv(0)
 {
     if (std::is_same<cl_float, OutType>::value)
@@ -252,8 +252,8 @@ DataInfoSpec<InType, OutType, InFP, OutFP>::DataInfoSpec(
     // clang-format on
 }
 
-template <typename InType, typename OutType, bool InFP, bool OutFP>
-float DataInfoSpec<InType, OutType, InFP, OutFP>::round_to_int(float f)
+template <typename InType, typename OutType>
+float DataInfoSpec<InType, OutType>::round_to_int(float f)
 {
     static const float magic[2] = { MAKE_HEX_FLOAT(0x1.0p23f, 0x1, 23),
                                     -MAKE_HEX_FLOAT(0x1.0p23f, 0x1, 23) };
@@ -281,9 +281,8 @@ float DataInfoSpec<InType, OutType, InFP, OutFP>::round_to_int(float f)
     return f;
 }
 
-template <typename InType, typename OutType, bool InFP, bool OutFP>
-long long
-DataInfoSpec<InType, OutType, InFP, OutFP>::round_to_int_and_clamp(double f)
+template <typename InType, typename OutType>
+long long DataInfoSpec<InType, OutType>::round_to_int_and_clamp(double f)
 {
     static const double magic[2] = { MAKE_HEX_DOUBLE(0x1.0p52, 0x1LL, 52),
                                      MAKE_HEX_DOUBLE(-0x1.0p52, -0x1LL, 52) };
@@ -314,8 +313,8 @@ DataInfoSpec<InType, OutType, InFP, OutFP>::round_to_int_and_clamp(double f)
     return (long long)f;
 }
 
-template <typename InType, typename OutType, bool InFP, bool OutFP>
-OutType DataInfoSpec<InType, OutType, InFP, OutFP>::absolute(const OutType &x)
+template <typename InType, typename OutType>
+OutType DataInfoSpec<InType, OutType>::absolute(const OutType &x)
 {
     union {
         cl_uint u;
@@ -332,8 +331,8 @@ OutType DataInfoSpec<InType, OutType, InFP, OutFP>::absolute(const OutType &x)
     return u.f;
 }
 
-template <typename InType, typename OutType, bool InFP, bool OutFP>
-void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
+template <typename InType, typename OutType>
+void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
 {
     if (std::is_same<cl_float, InType>::value)
     {
@@ -480,9 +479,8 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
 #define CLAMP(_lo, _x, _hi)                                                    \
     ((_x) < (_lo) ? (_lo) : ((_x) > (_hi) ? (_hi) : (_x)))
 
-template <typename InType, typename OutType, bool InFP, bool OutFP>
-void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
-                                                          InType *in)
+template <typename InType, typename OutType>
+void DataInfoSpec<InType, OutType>::conv_sat(OutType *out, InType *in)
 {
     if (std::is_floating_point<InType>::value)
     {
@@ -599,9 +597,9 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
     }
 }
 
-template <typename InType, typename OutType, bool InFP, bool OutFP>
-void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
-                                                      const cl_uint &thread_id)
+template <typename InType, typename OutType>
+void DataInfoSpec<InType, OutType>::init(const cl_uint &job_id,
+                                         const cl_uint &thread_id)
 {
     uint64_t ulStart = start;
     void *pIn = (char *)gIn + job_id * size * gTypeSizes[inType];
@@ -761,8 +759,8 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
     }
 }
 
-template <typename InType, typename OutType, bool InFP, bool OutFP>
-InType DataInfoSpec<InType, OutType, InFP, OutFP>::clamp(const InType &in)
+template <typename InType, typename OutType>
+InType DataInfoSpec<InType, OutType>::clamp(const InType &in)
 {
     if (std::is_integral<OutType>::value)
     {

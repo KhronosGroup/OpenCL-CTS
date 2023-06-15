@@ -135,7 +135,7 @@ struct CalcRefValsBase
     cl_int result;
 };
 
-template <typename InType, typename OutType, bool InFP, bool OutFP>
+template <typename InType, typename OutType>
 struct CalcRefValsPat : CalcRefValsBase
 {
     int check_result(void *, uint32_t, int) override;
@@ -165,12 +165,12 @@ struct WriteInputBufferInfo
 using TypeIter = std::tuple<cl_uchar, cl_char, cl_ushort, cl_short, cl_uint,
                             cl_int, cl_float, cl_double, cl_ulong, cl_long>;
 
-constexpr bool isTypeFp[] = { 0, 0, 0, 0, 0, 0, 1, 1, 0, 0 };
-
 // Helper test fixture for constructing OpenCL objects used in testing
 // a variety of simple command-buffer enqueue scenarios.
 struct ConversionsTest
 {
+    virtual ~ConversionsTest() = default;
+
     ConversionsTest(cl_device_id device, cl_context context,
                     cl_command_queue queue);
 
@@ -179,11 +179,11 @@ struct ConversionsTest
     // Test body returning an OpenCL error code
     cl_int Run();
 
-    template <typename InType, typename OutType, bool InFP, bool OutFP>
+    template <typename InType, typename OutType>
     int DoTest(Type outType, Type inType, SaturationMode sat,
                RoundingMode round);
 
-    template <typename InType, typename OutType, bool InFP, bool OutFP>
+    template <typename InType, typename OutType>
     void TestTypesConversion(const Type &inType, const Type &outType, int &tn);
 
 protected:
@@ -210,7 +210,7 @@ template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,
                    cl_command_queue queue, int num_elements)
 {
-    auto test_fixture = T(device, context, queue);
+    T test_fixture(device, context, queue);
 
     cl_int error = test_fixture.SetUp(num_elements);
     test_error_ret(error, "Error in test initialization", TEST_FAIL);
@@ -267,8 +267,7 @@ protected:
         if (!testType<OutType>(outType)) vlog_error("Unexpected data type!\n");
 
         // run the conversions
-        test.TestTypesConversion<InType, OutType, isTypeFp[In], isTypeFp[Out]>(
-            inType, outType, testNumber);
+        test.TestTypesConversion<InType, OutType>(inType, outType, testNumber);
         inType = (Type)(inType + 1);
     }
 
@@ -336,9 +335,8 @@ protected:
         if (testType<InType>(inType) && testType<OutType>(outType))
         {
             // run the conversions
-            test.TestTypesConversion<InType, OutType, isTypeFp[In],
-                                     isTypeFp[Out]>(inType, outType,
-                                                    testNumber);
+            test.TestTypesConversion<InType, OutType>(inType, outType,
+                                                      testNumber);
         }
     }
 

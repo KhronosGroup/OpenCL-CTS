@@ -283,10 +283,9 @@ static inline void Force64BitFPUPrecision(void)
 }
 
 
-template <typename InType, typename OutType, bool InFP, bool OutFP>
-int CalcRefValsPat<InType, OutType, InFP, OutFP>::check_result(void *test,
-                                                               uint32_t count,
-                                                               int vectorSize)
+template <typename InType, typename OutType>
+int CalcRefValsPat<InType, OutType>::check_result(void *test, uint32_t count,
+                                                  int vectorSize)
 {
     const cl_uchar *a = (const cl_uchar *)gAllowZ;
 
@@ -449,7 +448,7 @@ cl_int ConversionsTest::SetUp(int elements)
 }
 
 
-template <typename InType, typename OutType, bool InFP, bool OutFP>
+template <typename InType, typename OutType>
 void ConversionsTest::TestTypesConversion(const Type &inType,
                                           const Type &outType, int &testNumber)
 {
@@ -517,8 +516,7 @@ void ConversionsTest::TestTypesConversion(const Type &inType,
                     gMinVectorSize = 0;
             }
 
-            if ((error = DoTest<InType, OutType, InFP, OutFP>(outType, inType,
-                                                              sat, round)))
+            if ((error = DoTest<InType, OutType>(outType, inType, sat, round)))
             {
                 vlog_error("\t *** %d) convert_%sn%s%s( %sn ) "
                            "FAILED ** \n",
@@ -531,7 +529,7 @@ void ConversionsTest::TestTypesConversion(const Type &inType,
 }
 
 
-template <typename InType, typename OutType, bool InFP, bool OutFP>
+template <typename InType, typename OutType>
 int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
                             RoundingMode round)
 {
@@ -539,15 +537,11 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
     cl_ulong wall_start = mach_absolute_time();
 #endif
 
-#if 0
     uint64_t lastCase = 1ULL << (8 * gTypeSizes[inType]);
-#else
     cl_uint threads = GetThreadCount();
-    uint64_t lastCase = 1000000ULL;
-#endif
 
     DataInitInfo info = { 0, 0, outType, inType, sat, round, threads };
-    DataInfoSpec<InType, OutType, InFP, OutFP> init_info(info);
+    DataInfoSpec<InType, OutType> init_info(info);
     WriteInputBufferInfo writeInputBufferInfo;
     int vectorSize;
     int error = 0;
@@ -570,7 +564,7 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
     for (vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
     {
         writeInputBufferInfo.calcInfo[vectorSize].reset(
-            new CalcRefValsPat<InType, OutType, InFP, OutFP>());
+            new CalcRefValsPat<InType, OutType>());
         writeInputBufferInfo.calcInfo[vectorSize]->program =
             conv_test::MakeProgram(
                 outType, inType, sat, round, vectorSize,
@@ -604,11 +598,9 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
             init_info.round = round = kRoundTowardZero;
     }
 
-#if 0
     // Figure out how many elements are in a work block
     // we handle 64-bit types a bit differently.
     if (8 * gTypeSizes[inType] > 32) lastCase = 0x100000000ULL;
-#endif
 
     if (!gWimpyMode && gIsEmbedded)
         step = blockCount * EMBEDDED_REDUCTION_FACTOR;
