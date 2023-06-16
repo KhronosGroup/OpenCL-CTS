@@ -25,6 +25,17 @@ int test_extract(cl_device_id deviceID, cl_context context,
             return 0;
         }
     }
+
+    if (std::string(name).find("half") != std::string::npos)
+    {
+        if (!is_extension_available(deviceID, "cl_khr_fp16"))
+        {
+            log_info(
+                "Extension cl_khr_fp16 not supported; skipping half tests.\n");
+            return 0;
+        }
+    }
+
     cl_int err = CL_SUCCESS;
 
     clProgramWrapper prog;
