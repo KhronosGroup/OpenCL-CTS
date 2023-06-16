@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#ifndef COMMON_H_
+#define COMMON_H_
 
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
@@ -1567,4 +1567,4 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
     return 0;
 }
 
-#endif //_COMMON_H_
+#endif // COMMON_H_

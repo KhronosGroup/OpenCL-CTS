@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef _TEST_CL_EXT_IMAGE_BUFFER
-#define _TEST_CL_EXT_IMAGE_BUFFER
+#ifndef TEST_CL_EXT_IMAGE_BUFFER
+#define TEST_CL_EXT_IMAGE_BUFFER
 
 #define TEST_IMAGE_SIZE 20
 
@@ -121,4 +121,4 @@ static inline void image_desc_init(cl_image_desc* desc,
     }
 }
 
-#endif /* _TEST_CL_EXT_IMAGE_BUFFER */
+#endif // TEST_CL_EXT_IMAGE_BUFFER

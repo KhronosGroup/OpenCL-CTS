@@ -91,7 +91,6 @@ int test_work_item_functions(cl_device_id deviceID, cl_context context, cl_comma
     {
         for( int i = 0; i < NUM_TESTS; i++  )
         {
-            size_t numItems = 1;
             for( size_t j = 0; j < dim; j++ )
             {
                 // All of our thread sizes should be within the max local sizes, since they're all <= 20
@@ -99,8 +98,6 @@ int test_work_item_functions(cl_device_id deviceID, cl_context context, cl_comma
                 localThreads[ j ] = threads[ j ] / (size_t)random_in_range( 1, (int)threads[ j ], d );
                 while( localThreads[ j ] > 1 && ( threads[ j ] % localThreads[ j ] != 0 ) )
                     localThreads[ j ]--;
-
-                numItems *= threads[ j ];
 
                 // Hack for now: localThreads > 1 are iffy
                 localThreads[ j ] = 1;
