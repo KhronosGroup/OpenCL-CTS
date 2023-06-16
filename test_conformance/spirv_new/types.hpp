@@ -109,6 +109,9 @@ GENRAND_REAL_FUNC(cl_float, 2)
 GENRAND_REAL_FUNC(cl_float, 4)
 GENRAND_REAL_FUNC(cl_double, 2)
 GENRAND_REAL_FUNC(cl_double, 4)
+GENRAND_REAL_FUNC(cl_half, 2)
+GENRAND_REAL_FUNC(cl_half, 4)
+GENRAND_REAL_FUNC(cl_half, 8)
 
 template<> inline cl_half genrandReal<cl_half>(RandomSeed &seed)
 {
