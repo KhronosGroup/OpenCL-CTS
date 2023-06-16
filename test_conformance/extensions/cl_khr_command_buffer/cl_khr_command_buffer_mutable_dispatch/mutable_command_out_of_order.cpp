@@ -140,13 +140,17 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
     //--------------------------------------------------------------------------
     bool Skip() override
     {
-        if (BasicMutableCommandBufferTest::Skip()) return true;
+        cl_mutable_dispatch_fields_khr mutable_capabilities;
 
-        if (!out_of_order_support
-            || (simultaneous_use_requested && !simultaneous_use_support))
-            return true;
+        bool mutable_support =
+            !clGetDeviceInfo(
+                device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
+                sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
+            && mutable_capabilities & CL_MUTABLE_DISPATCH_GLOBAL_OFFSET_KHR;
 
-        return false;
+        return (!out_of_order_support
+                || (simultaneous_use_requested && !simultaneous_use_support))
+            && (!mutable_support || BasicMutableCommandBufferTest::Skip());
     }
 
     //--------------------------------------------------------------------------
