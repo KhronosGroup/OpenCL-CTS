@@ -1,0 +1,43 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 23
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Vector16
+               OpCapability Float16
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %1 "vector_half8_insert" %gl_GlobalInvocationID
+               OpName %in "in"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %in FuncParamAttr NoCapture
+               OpDecorate %4 FuncParamAttr NoCapture
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+      %half = OpTypeFloat 16
+    %v8half = OpTypeVector %half 8
+%_ptr_CrossWorkgroup_half = OpTypePointer CrossWorkgroup %half
+%_ptr_CrossWorkgroup_v8half = OpTypePointer CrossWorkgroup %v8half
+         %13 = OpTypeFunction %void %_ptr_CrossWorkgroup_half %_ptr_CrossWorkgroup_v8half %uint
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
+          %1 = OpFunction %void None %13
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_half
+          %4 = OpFunctionParameter %_ptr_CrossWorkgroup_v8half
+         %14 = OpFunctionParameter %uint
+         %15 = OpLabel
+         %16 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %17 = OpCompositeExtract %uint %16 0
+         %18 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_half %in %17
+         %19 = OpLoad %half %18
+         %20 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v8half %4 %17
+         %21 = OpLoad %v8half %20
+         %22 = OpVectorInsertDynamic %v8half %21 %19 %14
+               OpStore %20 %22
+               OpReturn
+               OpFunctionEnd
