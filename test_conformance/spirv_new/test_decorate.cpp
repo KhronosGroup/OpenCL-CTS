@@ -19,6 +19,8 @@ or Khronos Conformance Test Source License Agreement as executed between Khronos
 #include <limits>
 #include <cmath>
 
+#include <CL/cl_half.h>
+
 #ifndef isnan
 // Ensure isnan is always present as a macro
 #define isnan std::isnan
@@ -324,7 +326,17 @@ int test_fp_rounding(cl_device_id deviceID,
             return 0;
         }
     }
- 
+
+    if (std::string(name).find("half") != std::string::npos)
+    {
+        if (!is_extension_available(deviceID, "cl_khr_fp16"))
+        {
+            log_info(
+                "Extension cl_khr_fp16 not supported; skipping half tests.\n");
+            return 0;
+        }
+    }
+
     const int num = h_in.size();
     const size_t in_bytes = num * sizeof(Ti);
     const size_t out_bytes = num * sizeof(To);
@@ -373,7 +385,11 @@ int test_fp_rounding(cl_device_id deviceID,
 template<typename Ti, typename To>
 inline To round_to_zero(Ti in)
 {
-    To out = (To)(in);
+    To out;
+    if (std::is_same<Ti, cl_half>::value)
+        out = (To)cl_half_to_float(in);
+    else
+        out = (To)(in);
     return out;
 }
 
@@ -389,20 +405,36 @@ template<typename Ti, typename To>
 inline To round_to_even(Ti in)
 {
     // https://en.wikipedia.org/wiki/Rounding#Round_half_to_even
-    return std::floor(in + 0.5) - 1 + std::abs(sign(reference_remainderl((long double)in, 2) - 0.5));
+    if (std::is_same<Ti, cl_half>::value)
+    {
+        float fin = cl_half_to_float(in);
+        return std::floor(fin + 0.5) - 1
+            + std::abs(sign(reference_remainderl((long double)fin, 2) - 0.5));
+    }
+    else
+        return std::floor(in + 0.5) - 1
+            + std::abs(sign(reference_remainderl((long double)in, 2) - 0.5));
 }
 
 template<typename Ti, typename To>
 inline To round_to_posinf(Ti in)
 {
-    To out = std::ceil(in);
+    To out;
+    if (std::is_same<Ti, cl_half>::value)
+        out = std::ceil(cl_half_to_float(in));
+    else
+        out = std::ceil(in);
     return out;
 }
 
 template<typename Ti, typename To>
 inline To round_to_neginf(Ti in)
 {
-    To out = std::floor(in);
+    To out;
+    if (std::is_same<Ti, cl_half>::value)
+        out = std::floor(cl_half_to_float(in));
+    else
+        out = std::floor(in);
     return out;
 }
 
@@ -423,7 +455,12 @@ inline To round_to_neginf(Ti in)
         const char *name = "decorate_rounding_" #name "_" #Ti "_" #To;  \
         return test_fp_rounding(deviceID, context, queue,               \
                                 name, in, out);                         \
-    }                                                                   \
+    }
+
+TEST_SPIRV_FP_ROUNDING_DECORATE(rte, round_to_even, half, short);
+TEST_SPIRV_FP_ROUNDING_DECORATE(rtz, round_to_zero, half, short);
+TEST_SPIRV_FP_ROUNDING_DECORATE(rtp, round_to_posinf, half, short);
+TEST_SPIRV_FP_ROUNDING_DECORATE(rtn, round_to_neginf, half, short);
 
 TEST_SPIRV_FP_ROUNDING_DECORATE(rte, round_to_even, float, int);
 TEST_SPIRV_FP_ROUNDING_DECORATE(rtz, round_to_zero, float, int);
