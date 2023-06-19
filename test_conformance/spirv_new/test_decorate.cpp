@@ -338,16 +338,15 @@ int test_saturate_full(cl_device_id deviceID,
     return verify_saturated_results<Ti, Tl, To>(deviceID, context, queue, name, prog);
 }
 
-#define TEST_SATURATED_CONVERSION(Ti, Tl, To)           \
-    TEST_SPIRV_FUNC(decorate_saturated_conversion_##To) \
-    {                                                   \
-        typedef cl_##Ti cl_Ti;                          \
-        typedef cl_##Tl cl_Tl;                          \
-        typedef cl_##To cl_To;                          \
-        return test_saturate_full<cl_Ti, cl_Tl, cl_To>  \
-            (deviceID, context, queue,                  \
-             "decorate_saturated_conversion_" #To,      \
-             #Ti #Tl #To);                              \
+#define TEST_SATURATED_CONVERSION(Ti, Tl, To)                                  \
+    TEST_SPIRV_FUNC(decorate_saturated_conversion_##To)                        \
+    {                                                                          \
+        typedef cl_##Ti cl_Ti;                                                 \
+        typedef cl_##Tl cl_Tl;                                                 \
+        typedef cl_##To cl_To;                                                 \
+        return test_saturate_full<cl_Ti, cl_Tl, cl_To>(                        \
+            deviceID, context, queue, "decorate_saturated_conversion_" #To,    \
+            #Ti #Tl #To);                                                      \
     }
 
 TEST_SATURATED_CONVERSION(half, short, char)
@@ -483,23 +482,23 @@ inline To round_to_neginf(Ti in)
     return out;
 }
 
-#define TEST_SPIRV_FP_ROUNDING_DECORATE(name, func, Ti, To)             \
-    TEST_SPIRV_FUNC(decorate_fp_rounding_mode_##name##_##Ti##_##To)     \
-    {                                                                   \
-        typedef cl_##Ti clTi;                                           \
-        typedef cl_##To clTo;                                           \
-        const int num = 1 << 16;                                        \
-        std::vector<clTi> in(num);                                      \
-        std::vector<clTo>  out(num);                                    \
-        RandomSeed seed(gRandomSeed);                                   \
-                                                                        \
-        for (int i = 0; i < num; i++) {                                 \
-            in[i] = num * genrand<clTi>(seed) - num/2;                  \
-            out[i] = func<clTi, clTo>(in[i]);                           \
-        }                                                               \
-        const char *name = "decorate_rounding_" #name "_" #Ti "_" #To;  \
-        return test_fp_rounding(deviceID, context, queue,               \
-                                name, in, out);                         \
+#define TEST_SPIRV_FP_ROUNDING_DECORATE(name, func, Ti, To)                    \
+    TEST_SPIRV_FUNC(decorate_fp_rounding_mode_##name##_##Ti##_##To)            \
+    {                                                                          \
+        typedef cl_##Ti clTi;                                                  \
+        typedef cl_##To clTo;                                                  \
+        const int num = 1 << 16;                                               \
+        std::vector<clTi> in(num);                                             \
+        std::vector<clTo> out(num);                                            \
+        RandomSeed seed(gRandomSeed);                                          \
+                                                                               \
+        for (int i = 0; i < num; i++)                                          \
+        {                                                                      \
+            in[i] = num * genrand<clTi>(seed) - num / 2;                       \
+            out[i] = func<clTi, clTo>(in[i]);                                  \
+        }                                                                      \
+        const char *name = "decorate_rounding_" #name "_" #Ti "_" #To;         \
+        return test_fp_rounding(deviceID, context, queue, name, in, out);      \
     }
 
 TEST_SPIRV_FP_ROUNDING_DECORATE(rte, round_to_even, half, short);
