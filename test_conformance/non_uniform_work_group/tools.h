@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _TOOLS_H
-#define _TOOLS_H
+#ifndef TOOLS_H
+#define TOOLS_H
 
 #include "procs.h"
 #include <vector>
@@ -106,4 +106,4 @@ namespace Error {
   };
 
 }
-#endif // _TOOLS_H
+#endif // TOOLS_H

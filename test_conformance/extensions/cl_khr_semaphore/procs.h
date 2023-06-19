@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2023 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,17 +41,7 @@ extern int test_semaphores_multi_wait(cl_device_id deviceID, cl_context context,
                                       cl_command_queue queue, int num_elements);
 extern int test_semaphores_queries(cl_device_id deviceID, cl_context context,
                                    cl_command_queue queue, int num_elements);
-extern int test_semaphores_order_1(cl_device_id deviceID, cl_context context,
-                                   cl_command_queue queue, int num_elements);
-extern int test_semaphores_order_2(cl_device_id deviceID, cl_context context,
-                                   cl_command_queue queue, int num_elements);
-extern int test_semaphores_order_3(cl_device_id deviceID, cl_context context,
-                                   cl_command_queue queue, int num_elements);
 extern int test_semaphores_import_export_fd(cl_device_id deviceID,
                                             cl_context context,
                                             cl_command_queue queue,
                                             int num_elements);
-extern int test_semaphores_invalid_command(cl_device_id deviceID,
-                                           cl_context context,
-                                           cl_command_queue queue,
-                                           int num_elements);

@@ -22,6 +22,8 @@
 #include "procs.h"
 #include "harness/testHarness.h"
 
+static std::string pragma_extension;
+
 template <int N> struct TestInfo
 {
 };
@@ -629,7 +631,9 @@ static int test_vectype(const char* type_name, cl_device_id device,
         clProgramWrapper program;
         clKernelWrapper kernel;
 
-        const char* xyzw_source = TestInfo<N>::kernel_source_xyzw;
+        std::string program_src =
+            pragma_extension + std::string(TestInfo<N>::kernel_source_xyzw);
+        const char* xyzw_source = program_src.c_str();
         error = create_single_kernel_helper(
             context, &program, &kernel, 1, &xyzw_source,
             "test_vector_swizzle_xyzw", buildOptions.c_str());
@@ -643,7 +647,9 @@ static int test_vectype(const char* type_name, cl_device_id device,
         clProgramWrapper program;
         clKernelWrapper kernel;
 
-        const char* sN_source = TestInfo<N>::kernel_source_sN;
+        std::string program_src =
+            pragma_extension + std::string(TestInfo<N>::kernel_source_sN);
+        const char* sN_source = program_src.c_str();
         error = create_single_kernel_helper(
             context, &program, &kernel, 1, &sN_source, "test_vector_swizzle_sN",
             buildOptions.c_str());
@@ -660,7 +666,9 @@ static int test_vectype(const char* type_name, cl_device_id device,
         const Version device_version = get_device_cl_version(device);
         if (device_version >= Version(3, 0))
         {
-            const char* rgba_source = TestInfo<N>::kernel_source_rgba;
+            std::string program_src =
+                pragma_extension + std::string(TestInfo<N>::kernel_source_rgba);
+            const char* rgba_source = program_src.c_str();
             error = create_single_kernel_helper(
                 context, &program, &kernel, 1, &rgba_source,
                 "test_vector_swizzle_rgba", buildOptions.c_str());
@@ -689,6 +697,7 @@ int test_vector_swizzle(cl_device_id device, cl_context context,
                         cl_command_queue queue, int num_elements)
 {
     int hasDouble = is_extension_available(device, "cl_khr_fp64");
+    int hasHalf = is_extension_available(device, "cl_khr_fp16");
 
     int result = TEST_PASS;
     result |= test_type<cl_char>("char", device, context, queue);
@@ -703,8 +712,14 @@ int test_vector_swizzle(cl_device_id device, cl_context context,
         result |= test_type<cl_ulong>("ulong", device, context, queue);
     }
     result |= test_type<cl_float>("float", device, context, queue);
+    if (hasHalf)
+    {
+        pragma_extension = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
+        result |= test_type<cl_half>("half", device, context, queue);
+    }
     if (hasDouble)
     {
+        pragma_extension = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
         result |= test_type<cl_double>("double", device, context, queue);
     }
     return result;

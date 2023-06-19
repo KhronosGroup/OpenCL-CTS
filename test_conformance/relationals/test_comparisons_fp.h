@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef _TEST_COMPARISONS_FP_H
-#define _TEST_COMPARISONS_FP_H
+#ifndef TEST_COMPARISONS_FP_H
+#define TEST_COMPARISONS_FP_H
 
 #include <map>
 #include <memory>
@@ -32,6 +32,7 @@ template <typename T> using VerifyFunc = bool (*)(const T &, const T &);
 struct RelTestBase
 {
     explicit RelTestBase(const ExplicitTypes &dt): dataType(dt) {}
+    virtual ~RelTestBase() = default;
     ExplicitTypes dataType;
 };
 
@@ -224,4 +225,4 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
-#endif // _TEST_COMPARISONS_FP_H
+#endif // TEST_COMPARISONS_FP_H
