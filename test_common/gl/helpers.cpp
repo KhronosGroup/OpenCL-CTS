@@ -1047,8 +1047,10 @@ void * CreateGLTexture2DMultisample( size_t width, size_t height, size_t samples
   GLint max_samples = get_gl_max_samples(target, internalFormat);
   check_gl_error()
 
-  if (max_samples < (GLint)samples)
-    log_error("GL error: requested samples (%d) exceeds renderer max samples (%d)\n", samples, max_samples);
+      if (max_samples < (GLint)samples)
+          log_error("GL error: requested samples (%zu) exceeds renderer max "
+                    "samples (%d)\n",
+                    samples, max_samples);
 
   // Setup the GLSL program
   const GLchar *vertex_source =
@@ -1145,7 +1147,9 @@ void * CreateGLTexture2DMultisample( size_t width, size_t height, size_t samples
   check_gl_error();
 
   if (fbo_samples < (GLint)samples)
-    log_error("GL Error: requested samples (%d) exceeds FBO capability (%d)\n", samples, fbo_samples);
+      log_error(
+          "GL Error: requested samples (%zu) exceeds FBO capability (%d)\n",
+          samples, fbo_samples);
 
   glUseProgram(prog);
   check_gl_error()
@@ -1306,7 +1310,9 @@ void * CreateGLTexture2DArrayMultisample(size_t width, size_t height,
   GLint max_samples = get_gl_max_samples(target, internalFormat);
 
   if (max_samples < (GLint)samples)
-    log_error("GL error: requested samples (%d) exceeds renderer max samples (%d)\n", samples, max_samples);
+      log_error("GL error: requested samples (%zu) exceeds renderer max "
+                "samples (%d)\n",
+                samples, max_samples);
 
   // Setup the GLSL program
   const GLchar *vertex_source =
@@ -1438,7 +1444,9 @@ void * CreateGLTexture2DArrayMultisample(size_t width, size_t height,
     check_gl_error();
 
     if (fbo_samples < (GLint)samples)
-      log_error("GL Error: requested samples (%d) exceeds FBO capability (%d)\n", samples, fbo_samples);
+        log_error(
+            "GL Error: requested samples (%zu) exceeds FBO capability (%d)\n",
+            samples, fbo_samples);
 
     glUseProgram(prog);
     check_gl_error()
