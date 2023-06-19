@@ -26,12 +26,15 @@ or Khronos Conformance Test Source License Agreement as executed between Khronos
 #define isnan std::isnan
 #endif
 
+#define HALF_NAN 0x7e00
+
 long double reference_remainderl(long double x, long double y);
 int gIsInRTZMode = 0;
 int gDeviceILogb0 = 1;
 int gDeviceILogbNaN = 1;
 int gCheckTininessBeforeRounding = 1;
 
+static int inline is_half_nan(cl_half half) { return (half & 0x7fff) > 0x7c00; }
 
 static int verify_results(cl_device_id deviceID,
                           cl_context context,
@@ -212,14 +215,39 @@ int verify_saturated_results(cl_device_id deviceID,
     Tl range = (Tl)(hiVal) - (Tl)(loVal);
 
     RandomSeed seed(gRandomSeed);
-    for (int i = 0; i < num; i++) {
-        h_lhs[i] = genrand<Ti>(seed) * range;
-        Tl val = (genrand<Tl>(seed) % hiVal);
-        // randomly set some values on rhs to NaN
-        if (val * 20 < hiVal) {
-            h_rhs[i] = NAN;
-        } else {
-            h_rhs[i] = (Ti)(val);
+    if (std::is_same<Ti, cl_half>::value)
+    {
+        for (int i = 0; i < num; i++)
+        {
+            h_lhs[i] =
+                cl_half_from_float(genrand<float>(seed) * range, CL_HALF_RTE);
+            Tl val = (genrand<Tl>(seed) % hiVal);
+            // randomly set some values on rhs to NaN
+            if (val * 20 < hiVal)
+            {
+                h_rhs[i] = HALF_NAN;
+            }
+            else
+            {
+                h_rhs[i] = (Ti)(val);
+            }
+        }
+    }
+    else
+    {
+        for (int i = 0; i < num; i++)
+        {
+            h_lhs[i] = genrand<Ti>(seed) * range;
+            Tl val = (genrand<Tl>(seed) % hiVal);
+            // randomly set some values on rhs to NaN
+            if (val * 20 < hiVal)
+            {
+                h_rhs[i] = NAN;
+            }
+            else
+            {
+                h_rhs[i] = (Ti)(val);
+            }
         }
     }
 
@@ -256,11 +284,28 @@ int verify_saturated_results(cl_device_id deviceID,
     SPIRV_CHECK_ERROR(err, "Failed to read to output");
 
     for (int i = 0; i < num; i++) {
-        Tl ival = (Tl)(h_lhs[i] * h_rhs[i]);
-        To val = (To)std::min<Ti>(std::max<Ti>(ival, loVal), hiVal);
 
-        if (isnan(h_rhs[i])) {
-            val = 0;
+        To val;
+        if (std::is_same<Ti, cl_half>::value)
+        {
+            Tl ival =
+                (Tl)(cl_half_to_float(h_lhs[i]) * cl_half_to_float(h_rhs[i]));
+            val = (To)std::min<float>(std::max<float>(ival, loVal), hiVal);
+
+            if (is_half_nan(h_rhs[i]))
+            {
+                val = 0;
+            }
+        }
+        else
+        {
+            Tl ival = (Tl)(h_lhs[i] * h_rhs[i]);
+            val = (To)std::min<Ti>(std::max<Ti>(ival, loVal), hiVal);
+
+            if (isnan(h_rhs[i]))
+            {
+                val = 0;
+            }
         }
 
         if (val != h_res[i]) {
@@ -303,10 +348,10 @@ int test_saturate_full(cl_device_id deviceID,
             (deviceID, context, queue,                  \
              "decorate_saturated_conversion_" #To,      \
              #Ti #Tl #To);                              \
-    }                                                   \
+    }
 
-TEST_SATURATED_CONVERSION(float, int, char)
-TEST_SATURATED_CONVERSION(float, uint, uchar)
+TEST_SATURATED_CONVERSION(half, short, char)
+TEST_SATURATED_CONVERSION(half, ushort, uchar)
 TEST_SATURATED_CONVERSION(float, int, short)
 TEST_SATURATED_CONVERSION(float, uint, ushort)
 TEST_SATURATED_CONVERSION(double, long, int)
