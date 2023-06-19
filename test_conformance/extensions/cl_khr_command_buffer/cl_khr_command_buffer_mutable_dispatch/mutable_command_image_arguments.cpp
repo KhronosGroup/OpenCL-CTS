@@ -54,44 +54,51 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
     {
         const char *sample_const_arg_kernel =
             R"(__kernel void sample_test( read_only image1d_t source, sampler_t
-            sampler, __global int4 *results )
+            sampler, int width, write_only image1d_t dest, __global int4
+        *results )
             {
                int offset = get_global_id(0);
-               results[ offset ] = read_imagei( source, sampler, offset);
+
+               int4 color = read_imagei( source, sampler, offset );
+
+               write_imagei( dest, offset, color );
             })";
 
         cl_int error;
         clProgramWrapper program;
         clKernelWrapper kernel;
-        size_t threads[1], localThreads[1];
 
         cl_image_desc image_desc;
         memset(&image_desc, 0x0, sizeof(cl_image_desc));
         image_desc.image_type = CL_MEM_OBJECT_IMAGE1D;
-        image_desc.image_width = 100;
-        image_desc.image_height = 100;
+        image_desc.image_width = 4;
         image_desc.image_row_pitch = 0;
         image_desc.num_mip_levels = 0;
 
-        size_t data_size =
-            image_desc.image_width * image_desc.image_height * sizeof(cl_int);
+        size_t data_size = image_desc.image_width * sizeof(cl_int);
 
         const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
 
         image_descriptor imageInfo = { 0 };
         imageInfo.type = CL_MEM_OBJECT_IMAGE1D;
         imageInfo.format = &formats;
-        imageInfo.width = 100;
-        imageInfo.depth = 0;
+        imageInfo.width = 4;
 
         BufferOwningPtr<char> imageValues, outputData;
         MTdataHolder d(gRandomSeed);
         generate_random_image_data(&imageInfo, imageValues, d);
         generate_random_image_data(&imageInfo, outputData, d);
 
-        clMemWrapper image = create_image_1d(
-            context, CL_MEM_READ_WRITE, &formats, image_desc.image_width,
-            image_desc.image_width, 0, nullptr, &error);
+        char *host_ptr = (char *)imageValues;
+
+        clMemWrapper src_image = create_image_1d(
+            context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, &formats,
+            image_desc.image_width, 0, host_ptr, nullptr, &error);
+        test_error(error, "create_image_1d failed");
+
+        clMemWrapper dst_image = create_image_1d(
+            context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, &formats,
+            image_desc.image_width, 0, host_ptr, nullptr, &error);
         test_error(error, "create_image_2d failed");
 
         error = create_single_kernel_helper(context, &program, &kernel, 1,
@@ -108,26 +115,31 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
                                 imageValues, &error);
         test_error(error, "Creating test array failed");
 
-        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &image);
+        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &src_image);
         test_error(error, "Unable to set indexed kernel arguments");
 
         error = clSetKernelArg(kernel, 1, sizeof(cl_sampler), &sampler);
         test_error(error, "Unable to set indexed kernel arguments");
 
-        error = clSetKernelArg(kernel, 2, sizeof(cl_mem), &stream);
+        error = clSetKernelArg(kernel, 2, sizeof(int), &image_desc.image_width);
         test_error(error, "Unable to set indexed kernel arguments");
 
-        threads[0] = image_desc.image_width;
-        localThreads[0] = 1;
+        error = clSetKernelArg(kernel, 3, sizeof(cl_mem), &dst_image);
+        test_error(error, "Unable to set indexed kernel arguments");
+
+        error = clSetKernelArg(kernel, 4, sizeof(cl_mem), &stream);
+        test_error(error, "Unable to set indexed kernel arguments");
 
         cl_ndrange_kernel_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
 
+        size_t globalDim[3] = { 4, 1, 1 }, localDim[3] = { 1, 1, 1 };
+
         error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, props, kernel, 1, nullptr, threads,
-            localThreads, 0, nullptr, nullptr, &command);
+            command_buffer, nullptr, props, kernel, 1, nullptr, globalDim,
+            localDim, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);
@@ -137,10 +149,12 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed")
 
-            clMemWrapper new_image =
-                create_image_1d(context, CL_MEM_READ_WRITE, &formats,
-                                image_desc.image_width, image_desc.image_width,
-                                imageValues, nullptr, &error);
+            error = clFinish(queue);
+        test_error(error, "clFinish failed.");
+
+        clMemWrapper new_image = create_image_1d(
+            context, CL_MEM_READ_WRITE, &formats, image_desc.image_width, 0,
+            host_ptr, nullptr, &error);
         test_error(error, "create_image_2d failed");
 
         cl_mutable_dispatch_arg_khr arg_0{ 0, sizeof(cl_mem), &new_image };
@@ -171,8 +185,8 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         size_t origin[3] = { 0, 0, 0 };
         size_t region[3] = { image_desc.image_width, 1, 1 };
 
-        error = clEnqueueReadImage(queue, image, CL_TRUE, origin, region, 0, 0,
-                                   outputData, 0, nullptr, nullptr);
+        error = clEnqueueReadImage(queue, new_image, CL_TRUE, origin, region, 0,
+                                   0, outputData, 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadImage failed");
 
         for (size_t i = 0; i < imageInfo.width; ++i)
@@ -191,8 +205,6 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
     }
 
     cl_mutable_command_khr command = nullptr;
-    const cl_ulong max_size = 16;
-    cl_ulong currentSize;
 };
 
 struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
@@ -213,28 +225,29 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
 
     cl_int Run() override
     {
+
         const char *sample_const_arg_kernel =
             R"(__kernel void sample_test( read_only image2d_t source, sampler_t
-            sampler, int width, __global int4 *results )
+            sampler, int width, write_only image2d_t dest, __global int4
+        *results )
             {
                int x = get_global_id(0);
                int y = get_global_id(1);
 
-               int offset = width * y + x;
-               results[ offset ] = read_imagei( source, sampler, (int2) (x, y) );
-            })";
+               int4 color = read_imagei( source, sampler, (int2) (x, y) );
 
+               write_imagei( dest, (int2) (x, y), color );
+            })";
 
         cl_int error;
         clProgramWrapper program;
         clKernelWrapper kernel;
-        size_t threads[1], localThreads[1];
 
         cl_image_desc image_desc;
         memset(&image_desc, 0x0, sizeof(cl_image_desc));
         image_desc.image_type = CL_MEM_OBJECT_IMAGE2D;
-        image_desc.image_width = 100;
-        image_desc.image_height = 100;
+        image_desc.image_width = 4;
+        image_desc.image_height = 4;
         image_desc.image_row_pitch = 0;
         image_desc.num_mip_levels = 0;
 
@@ -245,22 +258,29 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
 
         image_descriptor imageInfo = { 0 };
         imageInfo.type = CL_MEM_OBJECT_IMAGE2D;
-        imageInfo.width = 100;
-        imageInfo.height = 100;
+        imageInfo.width = 4;
+        imageInfo.height = 4;
         imageInfo.format = &formats;
-        imageInfo.depth = 0;
 
         BufferOwningPtr<char> imageValues;
+        std::vector<char> outputData1(data_size);
+
         MTdataHolder d(gRandomSeed);
         generate_random_image_data(&imageInfo, imageValues, d);
 
-        size_t image_size = imageInfo.width * imageInfo.height * sizeof(cl_int);
-        BufferOwningPtr<int> outputData(malloc(image_size));
-        memset(outputData, 0xff, image_size);
+        char *host_ptr = (char *)imageValues;
+        BufferOwningPtr<char> outputData(malloc(data_size));
 
-        clMemWrapper image = create_image_2d(
-            context, CL_MEM_READ_WRITE, &formats, image_desc.image_width,
-            image_desc.image_height, 0, nullptr, &error);
+        clMemWrapper src_image =
+            create_image_2d(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                            &formats, image_desc.image_width,
+                            image_desc.image_height, 0, host_ptr, &error);
+        test_error(error, "create_image_2d failed");
+
+        clMemWrapper dst_image =
+            create_image_2d(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                            &formats, image_desc.image_width,
+                            image_desc.image_height, 0, host_ptr, &error);
         test_error(error, "create_image_2d failed");
 
         error = create_single_kernel_helper(context, &program, &kernel, 1,
@@ -277,7 +297,7 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
                                 imageValues, &error);
         test_error(error, "Creating test array failed");
 
-        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &image);
+        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &src_image);
         test_error(error, "Unable to set indexed kernel arguments");
 
         error = clSetKernelArg(kernel, 1, sizeof(cl_sampler), &sampler);
@@ -286,11 +306,13 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         error = clSetKernelArg(kernel, 2, sizeof(int), &image_desc.image_width);
         test_error(error, "Unable to set indexed kernel arguments");
 
-        error = clSetKernelArg(kernel, 3, sizeof(cl_mem), &stream);
+        error = clSetKernelArg(kernel, 3, sizeof(cl_mem), &dst_image);
         test_error(error, "Unable to set indexed kernel arguments");
 
-        threads[0] = image_desc.image_width;
-        localThreads[0] = 1;
+        error = clSetKernelArg(kernel, 4, sizeof(cl_mem), &stream);
+        test_error(error, "Unable to set indexed kernel arguments");
+
+        size_t globalDim[3] = { 4, 4, 1 }, localDim[3] = { 1, 1, 1 };
 
         cl_ndrange_kernel_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
@@ -298,8 +320,8 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         };
 
         error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, props, kernel, 1, nullptr, threads,
-            localThreads, 0, nullptr, nullptr, &command);
+            command_buffer, nullptr, props, kernel, 1, nullptr, globalDim,
+            localDim, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);
@@ -309,9 +331,13 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        clMemWrapper new_image = create_image_2d(
-            context, CL_MEM_READ_WRITE, &formats, image_desc.image_width,
-            image_desc.image_width, 0, imageValues, &error);
+        error = clFinish(queue);
+        test_error(error, "clFinish failed.");
+
+        clMemWrapper new_image =
+            create_image_2d(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                            &formats, image_desc.image_width,
+                            image_desc.image_height, 0, imageValues, &error);
         test_error(error, "create_image_2d failed");
 
         cl_mutable_dispatch_arg_khr arg_0{ 0, sizeof(cl_mem), &new_image };
@@ -340,20 +366,20 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         size_t origin[3] = { 0, 0, 0 };
-        size_t region[3] = { image_desc.image_width, image_desc.image_width,
+        size_t region[3] = { image_desc.image_width, image_desc.image_height,
                              1 };
 
         error = clEnqueueReadImage(queue, new_image, CL_TRUE, origin, region, 0,
-                                   0, outputData, 0, nullptr, nullptr);
+                                   0, outputData1.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadImage failed");
 
-        for (size_t i = 0; i < imageInfo.width; ++i)
+        for (size_t i = 0; i < imageInfo.width * imageInfo.height; ++i)
         {
-            if (imageValues[i] != outputData[i])
+            if (imageValues[i] != outputData1[i])
             {
                 log_error("Data failed to verify: imageValues[%d]=%d != "
                           "outputData[%d]=%d\n",
-                          i, imageValues[i], i, outputData[i]);
+                          i, imageValues[i], i, outputData1[i]);
             }
             return TEST_FAIL;
         }
@@ -362,8 +388,6 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
     }
 
     cl_mutable_command_khr command = nullptr;
-    const cl_ulong max_size = 16;
-    cl_ulong currentSize;
 };
 
 int test_mutable_dispatch_image_1d_arguments(cl_device_id device,
