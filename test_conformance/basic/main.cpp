@@ -59,8 +59,8 @@ test_definition test_list[] = {
     ADD_TEST(image_r8),
     ADD_TEST(barrier),
     ADD_TEST_VERSION(wg_barrier, Version(2, 0)),
-    ADD_TEST(int2float),
-    ADD_TEST(float2int),
+    ADD_TEST(int2fp),
+    ADD_TEST(fp2int),
     ADD_TEST(imagereadwrite),
     ADD_TEST(imagereadwrite3d),
     ADD_TEST(readimage3d),
@@ -156,7 +156,7 @@ test_definition test_list[] = {
     ADD_TEST(simple_read_image_pitch),
     ADD_TEST(simple_write_image_pitch),
 
-#if defined( __APPLE__ )
+#if defined(__APPLE__)
     ADD_TEST(queue_priority),
 #endif
 
