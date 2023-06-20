@@ -153,8 +153,8 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         test_error(error, "clFinish failed.");
 
         clMemWrapper new_image = create_image_1d(
-            context, CL_MEM_READ_WRITE, &formats, image_desc.image_width, 0,
-            host_ptr, nullptr, &error);
+            context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, &formats,
+            image_desc.image_width, 0, host_ptr, nullptr, &error);
         test_error(error, "create_image_2d failed");
 
         cl_mutable_dispatch_arg_khr arg_0{ 0, sizeof(cl_mem), &new_image };
@@ -182,7 +182,11 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
-        size_t origin[3] = { 0, 0, 0 };
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_error(error, "clEnqueueCommandBufferKHR failed")
+
+            size_t origin[3] = { 0, 0, 0 };
         size_t region[3] = { image_desc.image_width, 1, 1 };
 
         error = clEnqueueReadImage(queue, new_image, CL_TRUE, origin, region, 0,
@@ -263,7 +267,6 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         imageInfo.format = &formats;
 
         BufferOwningPtr<char> imageValues;
-        std::vector<char> outputData1(data_size);
 
         MTdataHolder d(gRandomSeed);
         generate_random_image_data(&imageInfo, imageValues, d);
@@ -365,21 +368,25 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
         size_t origin[3] = { 0, 0, 0 };
         size_t region[3] = { image_desc.image_width, image_desc.image_height,
                              1 };
 
         error = clEnqueueReadImage(queue, new_image, CL_TRUE, origin, region, 0,
-                                   0, outputData1.data(), 0, nullptr, nullptr);
+                                   0, outputData, 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadImage failed");
 
         for (size_t i = 0; i < imageInfo.width * imageInfo.height; ++i)
         {
-            if (imageValues[i] != outputData1[i])
+            if (imageValues[i] != outputData[i])
             {
                 log_error("Data failed to verify: imageValues[%d]=%d != "
                           "outputData[%d]=%d\n",
-                          i, imageValues[i], i, outputData1[i]);
+                          i, imageValues[i], i, outputData[i]);
             }
             return TEST_FAIL;
         }
