@@ -107,7 +107,7 @@ int test_binary_fn(cl_device_id device, cl_context context,
     }
     else if (std::is_same<T, half>::value)
     {
-        const float fval = 0x20000000;
+        const float fval = CL_HALF_MAX;
         pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
         for (int j = 0; j < num_elements; j++)
         {

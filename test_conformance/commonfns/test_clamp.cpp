@@ -201,7 +201,7 @@ int test_clamp_fn(cl_device_id device, cl_context context,
     }
     else if (std::is_same<T, half>::value)
     {
-        const float fval = 0x200000;
+        const float fval = CL_HALF_MAX;
         for (j = 0; j < num_elements; j++)
         {
             input_ptr[0][j] = conv_to_half(get_random_float(-fval, fval, d));

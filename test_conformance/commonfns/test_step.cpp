@@ -149,7 +149,7 @@ int test_step_fn(cl_device_id device, cl_context context,
     }
     else if (std::is_same<T, half>::value)
     {
-        const float fval = 0x40000000;
+        const float fval = CL_HALF_MAX;
         pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
         for (i = 0; i < num_elements; i++)
         {
