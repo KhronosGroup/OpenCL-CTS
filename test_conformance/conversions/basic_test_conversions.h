@@ -184,7 +184,8 @@ struct ConversionsTest
                RoundingMode round);
 
     template <typename InType, typename OutType>
-    void TestTypesConversion(const Type &inType, const Type &outType, int &tn);
+    void TestTypesConversion(const Type &inType, const Type &outType, int &tn,
+                             const int smvs);
 
 protected:
     cl_context context;
@@ -244,7 +245,7 @@ struct IterOverTypes : public TestType
 {
     IterOverTypes(const TypeIter &typeIter, ConversionsTest &test)
         : inType((Type)0), outType((Type)0), typeIter(typeIter), test(test),
-          testNumber(-1)
+          testNumber(-1), startMinVectorSize(gMinVectorSize)
     {}
 
     void Run() { for_each_out_elem(typeIter); }
@@ -267,7 +268,8 @@ protected:
         if (!testType<OutType>(outType)) vlog_error("Unexpected data type!\n");
 
         // run the conversions
-        test.TestTypesConversion<InType, OutType>(inType, outType, testNumber);
+        test.TestTypesConversion<InType, OutType>(inType, outType, testNumber,
+                                                  startMinVectorSize);
         inType = (Type)(inType + 1);
     }
 
@@ -307,6 +309,7 @@ protected:
     const TypeIter &typeIter;
     ConversionsTest &test;
     int testNumber;
+    int startMinVectorSize;
 };
 
 
@@ -316,7 +319,7 @@ struct IterOverSelectedTypes : public TestType
     IterOverSelectedTypes(const TypeIter &typeIter, ConversionsTest &test,
                           const Type &in, const Type &out)
         : inType(in), outType(out), typeIter(typeIter), test(test),
-          testNumber(-1)
+          testNumber(-1), startMinVectorSize(gMinVectorSize)
     {}
 
     void Run() { for_each_out_elem(typeIter); }
@@ -335,8 +338,8 @@ protected:
         if (testType<InType>(inType) && testType<OutType>(outType))
         {
             // run the conversions
-            test.TestTypesConversion<InType, OutType>(inType, outType,
-                                                      testNumber);
+            test.TestTypesConversion<InType, OutType>(
+                inType, outType, testNumber, startMinVectorSize);
         }
     }
 
@@ -374,6 +377,7 @@ protected:
     const TypeIter &typeIter;
     ConversionsTest &test;
     int testNumber;
+    int startMinVectorSize;
 };
 
 

@@ -450,12 +450,12 @@ cl_int ConversionsTest::SetUp(int elements)
 
 template <typename InType, typename OutType>
 void ConversionsTest::TestTypesConversion(const Type &inType,
-                                          const Type &outType, int &testNumber)
+                                          const Type &outType, int &testNumber,
+                                          int startMinVectorSize)
 {
     SaturationMode sat;
     RoundingMode round;
     int error;
-    int startMinVectorSize = gMinVectorSize;
 
     // skip longs on embedded
     if (!gHasLong
