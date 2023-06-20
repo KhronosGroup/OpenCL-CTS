@@ -225,7 +225,7 @@ int test_vload(cl_device_id device, cl_context context, cl_command_queue queue,
     test_error( error, "Unable to read results" );
 
     // Create the reference results
-    referenceBuffer.assign(0, numLoads * typeSize * vecSize);
+    referenceBuffer.assign(numLoads * typeSize * vecSize, 0);
     for( i = 0; i < numLoads; i++ )
     {
         memcpy(&referenceBuffer[i * typeSize * vecSize],
