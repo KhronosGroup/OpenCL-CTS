@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2023 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #include "harness/kernelHelpers.h"
 #include "harness/testHarness.h"
 #include "harness/errorHelpers.h"
@@ -21,9 +22,8 @@
 #include "harness/rounding_mode.h"
 
 extern int      test_hostptr(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_fpmath_float(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_fpmath_float2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_fpmath_float4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_fpmath(cl_device_id deviceID, cl_context context,
+                       cl_command_queue queue, int num_elements);
 extern int      test_intmath_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_intmath_int2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_intmath_int4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

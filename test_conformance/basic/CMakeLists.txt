@@ -2,7 +2,7 @@ set(MODULE_NAME BASIC)
 
 set(${MODULE_NAME}_SOURCES
     main.cpp
-    test_fpmath_float.cpp
+    test_fpmath.cpp
     test_intmath.cpp
     test_hiloeo.cpp test_local.cpp test_pointercast.cpp
     test_if.cpp test_loop.cpp
