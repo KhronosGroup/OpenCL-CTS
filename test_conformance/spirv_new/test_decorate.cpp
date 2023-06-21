@@ -189,13 +189,6 @@ int verify_saturated_results(cl_device_id deviceID,
                              const char *kname,
                              const clProgramWrapper &prog)
 {
-    if(std::string(kname).find("double") != std::string::npos) {
-        if(!is_extension_available(deviceID, "cl_khr_fp64")) {
-            log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
-            return 0;
-        }
-    }
-
     cl_int err = 0;
 
     const int num = 1 << 20;
@@ -325,12 +318,26 @@ int test_saturate_full(cl_device_id deviceID,
                        const char *name,
                        const char *types)
 {
-    if(std::string(types).find("double") != std::string::npos) {
-        if(!is_extension_available(deviceID, "cl_khr_fp64")) {
-            log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
+    if (std::string(types).find("double") != std::string::npos)
+    {
+        if (!is_extension_available(deviceID, "cl_khr_fp64"))
+        {
+            log_info("Extension cl_khr_fp64 not supported; skipping double "
+                     "tests.\n");
             return 0;
         }
     }
+
+    if (std::string(types).find("half") != std::string::npos)
+    {
+        if (!is_extension_available(deviceID, "cl_khr_fp16"))
+        {
+            log_info(
+                "Extension cl_khr_fp16 not supported; skipping half tests.\n");
+            return 0;
+        }
+    }
+
     clProgramWrapper prog;
     cl_int err = 0;
     err = get_program_with_il(prog, deviceID, context, name);
@@ -339,18 +346,20 @@ int test_saturate_full(cl_device_id deviceID,
 }
 
 #define TEST_SATURATED_CONVERSION(Ti, Tl, To)                                  \
-    TEST_SPIRV_FUNC(decorate_saturated_conversion_##To)                        \
+    TEST_SPIRV_FUNC(decorate_saturated_conversion_##Ti##_to_##To)              \
     {                                                                          \
         typedef cl_##Ti cl_Ti;                                                 \
         typedef cl_##Tl cl_Tl;                                                 \
         typedef cl_##To cl_To;                                                 \
+        const char *name = "decorate_saturated_conversion_" #Ti "_to_" #To;    \
         return test_saturate_full<cl_Ti, cl_Tl, cl_To>(                        \
-            deviceID, context, queue, "decorate_saturated_conversion_" #To,    \
-            #Ti #Tl #To);                                                      \
+            deviceID, context, queue, name, #Ti #Tl #To);                      \
     }
 
 TEST_SATURATED_CONVERSION(half, short, char)
 TEST_SATURATED_CONVERSION(half, ushort, uchar)
+TEST_SATURATED_CONVERSION(float, int, char)
+TEST_SATURATED_CONVERSION(float, uint, uchar)
 TEST_SATURATED_CONVERSION(float, int, short)
 TEST_SATURATED_CONVERSION(float, uint, ushort)
 TEST_SATURATED_CONVERSION(double, long, int)
@@ -364,9 +373,12 @@ int test_fp_rounding(cl_device_id deviceID,
                      std::vector<Ti> &h_in,
                      std::vector<To> &h_out)
 {
-    if(std::string(name).find("double") != std::string::npos) {
-        if(!is_extension_available(deviceID, "cl_khr_fp64")) {
-            log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
+    if (std::string(name).find("double") != std::string::npos)
+    {
+        if (!is_extension_available(deviceID, "cl_khr_fp64"))
+        {
+            log_info("Extension cl_khr_fp64 not supported; skipping double "
+                     "tests.\n");
             return 0;
         }
     }
