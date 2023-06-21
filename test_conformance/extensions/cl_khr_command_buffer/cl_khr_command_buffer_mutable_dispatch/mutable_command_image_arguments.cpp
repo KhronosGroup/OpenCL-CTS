@@ -387,8 +387,8 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
                 log_error("Data failed to verify: imageValues[%d]=%d != "
                           "outputData[%d]=%d\n",
                           i, imageValues[i], i, outputData[i]);
+                return TEST_FAIL;
             }
-            return TEST_FAIL;
         }
 
         return TEST_PASS;
