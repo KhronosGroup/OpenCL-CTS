@@ -221,8 +221,6 @@ int do_test_work_group_suggested_local_size(
     bool (*skip_cond)(size_t), size_t start, size_t end, size_t incr,
     cl_long max_local_mem_size, size_t global_work_offset[], num_dims dim)
 {
-    clProgramWrapper scan_program;
-    clKernelWrapper scan_kernel;
     int err;
     size_t test_values[] = { 1, 1, 1 };
     std::string kernel_names[6] = {
@@ -244,6 +242,8 @@ int do_test_work_group_suggested_local_size(
     for (int kernel_num = 0; kernel_num < 6; kernel_num++)
     {
         if (max_local_mem_size < local_mem_size[kernel_num]) continue;
+        clProgramWrapper scan_program;
+        clKernelWrapper scan_kernel;
         // Create the kernel
         err = create_single_kernel_helper(
             context, &scan_program, &scan_kernel, 1,
