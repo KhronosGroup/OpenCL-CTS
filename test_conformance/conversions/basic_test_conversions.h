@@ -317,9 +317,11 @@ protected:
 struct IterOverSelectedTypes : public TestType
 {
     IterOverSelectedTypes(const TypeIter &typeIter, ConversionsTest &test,
-                          const Type &in, const Type &out)
-        : inType(in), outType(out), typeIter(typeIter), test(test),
-          testNumber(-1), startMinVectorSize(gMinVectorSize)
+                          const Type in, const Type out,
+                          const RoundingMode round, const SaturationMode sat)
+        : inType(in), outType(out), rounding(round), saturation(sat),
+          typeIter(typeIter), test(test), testNumber(-1),
+          startMinVectorSize(gMinVectorSize)
     {}
 
     void Run() { for_each_out_elem(typeIter); }
@@ -337,9 +339,9 @@ protected:
     {
         if (testType<InType>(inType) && testType<OutType>(outType))
         {
-            // run the conversions
-            test.TestTypesConversion<InType, OutType>(
-                inType, outType, testNumber, startMinVectorSize);
+            // run selected conversion
+            // testing of the result will happen afterwards
+            test.DoTest<InType, OutType>(outType, inType, saturation, rounding);
         }
     }
 
@@ -374,6 +376,9 @@ protected:
 protected:
     Type inType;
     Type outType;
+    RoundingMode rounding;
+    SaturationMode saturation;
+
     const TypeIter &typeIter;
     ConversionsTest &test;
     int testNumber;

@@ -406,7 +406,8 @@ cl_int CustomConversionsTest::Run()
                 gMinVectorSize = 0;
         }
 
-        IterOverSelectedTypes iter(typeIterator, *this, inType, outType);
+        IterOverSelectedTypes iter(typeIterator, *this, inType, outType, round,
+                                   sat);
 
         iter.Run();
 
