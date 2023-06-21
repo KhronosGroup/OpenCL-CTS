@@ -119,7 +119,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
         getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
-    std::shared_ptr<VulkanFence> fence;
+    std::shared_ptr<VulkanFence> fence = nullptr;
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
@@ -237,38 +237,24 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
             for (uint32_t iter = 0; iter < maxIter; iter++)
             {
 
-                if (iter == 0)
+                if (use_fence)
                 {
-                    if (use_fence)
-                    {
-                        fence->reset();
-                        vkQueue.submit(vkCommandBuffer, fence);
-                    }
-                    else
-                    {
-                        vkQueue.submit(vkCommandBuffer, vkVk2CLSemaphore);
-                    }
+                    fence->reset();
+                    vkQueue.submit(vkCommandBuffer, fence);
+                    fence->wait();
                 }
                 else
                 {
-                    if (use_fence)
+                    if (iter == 0)
                     {
-                        fence->reset();
-                        vkQueue.submit(vkCommandBuffer, fence);
+                        vkQueue.submit(vkCommandBuffer, vkVk2CLSemaphore);
                     }
                     else
                     {
                         vkQueue.submit(vkCl2VkSemaphore, vkCommandBuffer,
                                        vkVk2CLSemaphore);
                     }
-                }
 
-                if (use_fence)
-                {
-                    fence->wait();
-                }
-                else
-                {
                     clVk2CLExternalSemaphore->wait(cmd_queue1);
                 }
 
@@ -321,16 +307,16 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                     goto CLEANUP;
                 }
 
-                if (iter != (maxIter - 1))
+                if (use_fence)
                 {
-                    if (use_fence)
-                    {
-                        clFinish(cmd_queue2);
-                    }
-                    else
-                    {
-                        clCl2VkExternalSemaphore->signal(cmd_queue2);
-                    }
+                    clFlush(cmd_queue1);
+                    clFlush(cmd_queue2);
+                    clFinish(cmd_queue1);
+                    clFinish(cmd_queue2);
+                }
+                else if (!use_fence && iter != (maxIter - 1))
+                {
+                    clCl2VkExternalSemaphore->signal(cmd_queue2);
                 }
             }
             error_2 = (uint8_t *)malloc(sizeof(uint8_t));
@@ -461,7 +447,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
         getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
-    std::shared_ptr<VulkanFence> fence;
+    std::shared_ptr<VulkanFence> fence = nullptr;
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
@@ -580,38 +566,24 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
             for (uint32_t iter = 0; iter < maxIter; iter++)
             {
-                if (iter == 0)
+                if (use_fence)
                 {
-                    if (use_fence)
-                    {
-                        fence->reset();
-                        vkQueue.submit(vkCommandBuffer, fence);
-                    }
-                    else
-                    {
-                        vkQueue.submit(vkCommandBuffer, vkVk2CLSemaphore);
-                    }
+                    fence->reset();
+                    vkQueue.submit(vkCommandBuffer, fence);
+                    fence->wait();
                 }
                 else
                 {
-                    if (use_fence)
+                    if (iter == 0)
                     {
-                        fence->reset();
-                        vkQueue.submit(vkCommandBuffer, fence);
+                        vkQueue.submit(vkCommandBuffer, vkVk2CLSemaphore);
                     }
                     else
                     {
                         vkQueue.submit(vkCl2VkSemaphore, vkCommandBuffer,
                                        vkVk2CLSemaphore);
                     }
-                }
 
-                if (use_fence)
-                {
-                    fence->wait();
-                }
-                else
-                {
                     clVk2CLExternalSemaphore->wait(cmd_queue1);
                 }
 
@@ -640,16 +612,14 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                                 " error\n");
                     goto CLEANUP;
                 }
-                if (iter != (maxIter - 1))
+                if (use_fence)
                 {
-                    if (use_fence)
-                    {
-                        clFinish(cmd_queue1);
-                    }
-                    else
-                    {
-                        clCl2VkExternalSemaphore->signal(cmd_queue1);
-                    }
+                    clFlush(cmd_queue1);
+                    clFinish(cmd_queue1);
+                }
+                else if (!use_fence && (iter != (maxIter - 1)))
+                {
+                    clCl2VkExternalSemaphore->signal(cmd_queue1);
                 }
             }
             error_2 = (uint8_t *)malloc(sizeof(uint8_t));
@@ -777,7 +747,7 @@ int run_test_with_multi_import_same_ctx(
         getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
-    std::shared_ptr<VulkanFence> fence;
+    std::shared_ptr<VulkanFence> fence = nullptr;
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
@@ -1160,7 +1130,7 @@ int run_test_with_multi_import_diff_ctx(
         getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
-    std::shared_ptr<VulkanFence> fence;
+    std::shared_ptr<VulkanFence> fence = nullptr;
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
