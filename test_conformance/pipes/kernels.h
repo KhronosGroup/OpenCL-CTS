@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _KERNELS_H_
-#define _KERNELS_H_
+#ifndef KERNELS_H_
+#define KERNELS_H_
 
 static const char* pipe_readwrite_struct_kernel_code = {
     "typedef struct{\n"
@@ -127,4 +127,4 @@ static const char* pipe_convenience_readwrite_struct_kernel_code = {
     "    read_pipe(in_pipe, &dst[gid]);\n"
     "}\n" };
 
-#endif //_KERNELS_H_
+#endif // KERNELS_H_
