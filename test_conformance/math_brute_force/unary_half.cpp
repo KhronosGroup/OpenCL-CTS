@@ -113,7 +113,9 @@ int TestFunc_Half_Half(const Func *f, MTdata d, bool relaxedMode)
     }
     else
     {
-        test_info.jobCount = (cl_uint)((1ULL << 32) / test_info.step);
+        test_info.jobCount =
+            std::max((cl_uint)1,
+                     (cl_uint)((1ULL << sizeof(cl_half) * 8) / test_info.step));
     }
 
     test_info.f = f;
