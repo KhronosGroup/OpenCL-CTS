@@ -399,13 +399,13 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
         test_error_count(err, "clCreateUserEvent failed");
 
         err = clEnqueueWriteBuffer(queue, src1, CL_FALSE, 0, BUFFER_SIZE,
-                                   src1_host.data(), 0, NULL, NULL);
+                                   src1_host.data(), 1, &user_event, NULL);
         test_error_count(err, "Error: Could not write src1");
         err = clEnqueueWriteBuffer(queue, src2, CL_FALSE, 0, BUFFER_SIZE,
-                                   src2_host.data(), 0, NULL, NULL);
+                                   src2_host.data(), 1, &user_event, NULL);
         test_error_count(err, "Error: Could not write src2");
         err = clEnqueueWriteBuffer(queue, cmp, CL_FALSE, 0, BUFFER_SIZE,
-                                   cmp_host.data(), 0, NULL, NULL);
+                                   cmp_host.data(), 1, &user_event, NULL);
         test_error_count(err, "Error: Could not write cmp");
 
         Select sfunc = (cmptype == ctype[stype][0]) ? vrefSelects[stype][0]
