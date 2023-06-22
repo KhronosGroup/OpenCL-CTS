@@ -389,23 +389,23 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
 
     log_info("Testing...");
     uint64_t i;
+
     for (i=0; i < blocks; i+=step)
     {
         initSrcBuffer(src1_host.data(), stype, d);
         initSrcBuffer(src2_host.data(), stype, d);
         initCmpBuffer(cmp_host.data(), cmptype, i * cmp_stride, block_elements);
 
-        clEventWrapper user_event = clCreateUserEvent(context, &err);
-        test_error_count(err, "clCreateUserEvent failed");
-
         err = clEnqueueWriteBuffer(queue, src1, CL_FALSE, 0, BUFFER_SIZE,
-                                   src1_host.data(), 1, &user_event, NULL);
+                                   src1_host.data(), 0, NULL, NULL);
         test_error_count(err, "Error: Could not write src1");
+
         err = clEnqueueWriteBuffer(queue, src2, CL_FALSE, 0, BUFFER_SIZE,
-                                   src2_host.data(), 1, &user_event, NULL);
+                                   src2_host.data(), 0, NULL, NULL);
         test_error_count(err, "Error: Could not write src2");
+
         err = clEnqueueWriteBuffer(queue, cmp, CL_FALSE, 0, BUFFER_SIZE,
-                                   cmp_host.data(), 1, &user_event, NULL);
+                                   cmp_host.data(), 0, NULL, NULL);
         test_error_count(err, "Error: Could not write cmp");
 
         Select sfunc = (cmptype == ctype[stype][0]) ? vrefSelects[stype][0]
@@ -417,9 +417,6 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
                                              : refSelects[stype][1];
         (*sfunc)(sref.data(), src1_host.data(), src2_host.data(),
                  cmp_host.data(), block_elements);
-
-        err = clSetUserEventStatus(user_event, CL_COMPLETE);
-        test_error_count(err, "clSetUserEventStatus failed");
 
         for (int vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
         {
