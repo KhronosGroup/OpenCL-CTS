@@ -1026,34 +1026,6 @@ int IsTininessDetectedBeforeRounding(void)
     return 0;
 }
 
-
-int MakeKernel(const char **c, cl_uint count, const char *name, cl_kernel *k,
-               cl_program *p, bool relaxedMode)
-{
-    int error = 0;
-    char options[200] = "";
-
-    if (gForceFTZ)
-    {
-        strcat(options, " -cl-denorms-are-zero");
-    }
-
-    if (relaxedMode)
-    {
-        strcat(options, " -cl-fast-relaxed-math");
-    }
-
-    error =
-        create_single_kernel_helper(gContext, p, k, count, c, name, options);
-    if (error != CL_SUCCESS)
-    {
-        vlog_error("\t\tFAILED -- Failed to create kernel. (%d)\n", error);
-        return error;
-    }
-
-    return error;
-}
-
 static int IsInRTZMode(void)
 {
     int error;

@@ -406,8 +406,8 @@ int test_get_program_info_kernel_names( cl_device_id deviceID, cl_context contex
 
     if (i == sizeof( actual_names ) / sizeof( actual_names[0] ) )
     {
-        free(kernel_names);
         log_error( "Kernel names \"%s\" did not match:\n", kernel_names );
+        free(kernel_names);
         for( i = 0; i < sizeof( actual_names ) / sizeof( actual_names[0] ); i++ )
             log_error( "\t\t\"%s\"\n", actual_names[0] );
         return -1;

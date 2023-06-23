@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef _CL_KHR_BASIC_COMMAND_BUFFER_H
-#define _CL_KHR_BASIC_COMMAND_BUFFER_H
+#ifndef CL_KHR_BASIC_COMMAND_BUFFER_H
+#define CL_KHR_BASIC_COMMAND_BUFFER_H
 
 #include "command_buffer_test_base.h"
 #include "harness/typeWrappers.h"
@@ -28,7 +28,7 @@
     {                                                                          \
         if (reference != result)                                               \
         {                                                                      \
-            log_error("Expected %d was %d at index %u\n", reference, result,   \
+            log_error("Expected %d was %d at index %zu\n", reference, result,  \
                       index);                                                  \
             return TEST_FAIL;                                                  \
         }                                                                      \
@@ -99,4 +99,4 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
-#endif // _CL_KHR_BASIC_COMMAND_BUFFER_H
+#endif // CL_KHR_BASIC_COMMAND_BUFFER_H

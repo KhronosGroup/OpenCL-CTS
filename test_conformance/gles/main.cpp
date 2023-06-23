@@ -266,9 +266,13 @@ int main(int argc, const char *argv[])
     }
 
         // Note: don't use the entire harness, because we have a different way of obtaining the device (via the context)
-        error = parseAndCallCommandLineTests( argc_tmp, argv_tmp, deviceIDs[i], test_num, test_list, true, 0, 1024 );
-        if( error != 0 )
-          break;
+    test_harness_config config{};
+    config.forceNoContextCreation = true;
+    config.numElementsToUse = 1024;
+    config.queueProps = 0;
+    error = parseAndCallCommandLineTests(argc_tmp, argv_tmp, deviceIDs[i],
+                                         test_num, test_list, config);
+    if (error != 0) break;
     }
 
     // Clean-up.
@@ -338,7 +342,12 @@ int main(int argc, const char *argv[])
         goto cleanup;
 #else
         // Note: don't use the entire harness, because we have a different way of obtaining the device (via the context)
-        error = parseAndCallCommandLineTests( argc_, argv_, deviceIDs[ i ], test_num32, test_list32, true, 0, 1024 );
+        test_harness_config config{};
+        config.forceNoContextCreation = true;
+        config.numElementsToUse = 1024;
+        config.queueProps = 0;
+        error = parseAndCallCommandLineTests(argc_, argv_, deviceIDs[i],
+                                             test_num32, test_list32, config);
         if( error != 0 )
           break;
 #endif

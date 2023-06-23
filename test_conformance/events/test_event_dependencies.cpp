@@ -52,7 +52,7 @@ int test_event_enqueue_wait_for_events_run_test(
 {
     cl_int error = CL_SUCCESS;
     size_t threads[3] = { TEST_SIZE, 0, 0 };
-    int i, loop_count, event_count, expected_value, failed;
+    int i, loop_count, expected_value, failed;
     int expected_if_only_queue[2];
     int max_count = TEST_SIZE;
 
@@ -65,8 +65,6 @@ int test_event_enqueue_wait_for_events_run_test(
     clMemWrapper data;
     clProgramWrapper program;
     clKernelWrapper kernel1[TEST_COUNT], kernel2[TEST_COUNT];
-    clEventWrapper event[TEST_COUNT * 4 + 2]; // If we usemarkers we get 2 more
-                                              // events per iteration
 
     if (test_enqueue_wait_for_events)
         log_info("\tTesting with clEnqueueBarrierWithWaitList as barrier "
@@ -249,11 +247,13 @@ int test_event_enqueue_wait_for_events_run_test(
     else
         log_info("Queues chosen alternatily for each kernel execution.\n");
 
-    event_count = 0;
+    clEventWrapper pre_loop_event;
+    clEventWrapper last_loop_event;
+
     for (i = 0; i < (int)TEST_SIZE; i++) values[i] = 1;
     error = clEnqueueWriteBuffer(queues[0], data, CL_FALSE, 0,
                                  TEST_SIZE * sizeof(cl_int), values, 0, NULL,
-                                 &event[event_count]);
+                                 &pre_loop_event);
     test_error(error, "clEnqueueWriteBuffer 2 failed");
     expected_value = 1;
     expected_if_only_queue[0] = 1;
@@ -263,7 +263,7 @@ int test_event_enqueue_wait_for_events_run_test(
     if (test_enqueue_wait_for_events)
     {
         error = clEnqueueBarrierWithWaitList(queues[queue_to_use], 1,
-                                             &event[event_count], NULL);
+                                             &pre_loop_event, NULL);
         test_error(error, "Unable to queue wait for events");
     }
     else if (test_barrier)
@@ -275,6 +275,13 @@ int test_event_enqueue_wait_for_events_run_test(
 
     for (loop_count = 0; loop_count < TEST_COUNT; loop_count++)
     {
+        int event_count = 0;
+        clEventWrapper first_dependency =
+            (loop_count == 0) ? pre_loop_event : last_loop_event;
+        clEventWrapper
+            event[5]; // A maximum of 5 events are created in the loop
+        event[event_count] = first_dependency;
+
         // Execute kernel 1
         event_count++;
         if (use_waitlist | use_marker)
@@ -424,6 +431,7 @@ int test_event_enqueue_wait_for_events_run_test(
                                                  NULL);
             test_error(error, "Unable to queue barrier");
         }
+        last_loop_event = event[event_count];
     }
 
     // Now finish up everything
@@ -435,7 +443,7 @@ int test_event_enqueue_wait_for_events_run_test(
 
     error = clEnqueueReadBuffer(queues[0], data, CL_TRUE, 0,
                                 TEST_SIZE * sizeof(cl_int), values, 1,
-                                &event[event_count], NULL);
+                                &last_loop_event, NULL);
 
     test_error(error, "clEnqueueReadBuffer failed");
 

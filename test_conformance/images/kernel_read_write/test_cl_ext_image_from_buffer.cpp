@@ -89,14 +89,14 @@ int image2d_from_buffer_positive(cl_device_id device, cl_context context,
                                          CL_MEM_READ_WRITE,
                                          CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for (auto flag : flagTypes)
+    for (auto flagType : flagTypes)
     {
         for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
             if (TEST_PASS
-                    != get_format_list(context, imageType, formatList, flag)
+                    != get_format_list(context, imageType, formatList, flagType)
                 || formatList.size() == 0)
             {
                 test_fail("Failure to get supported formats list\n");
@@ -121,15 +121,15 @@ int image2d_from_buffer_positive(cl_device_id device, cl_context context,
                 cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                cl_mem_flags flag = (flagType == CL_MEM_KERNEL_READ_AND_WRITE)
                     ? CL_MEM_READ_WRITE
-                    : flag;
+                    : flagType;
 
                 size_t row_pitch_alignment = 0;
                 size_t base_address_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, nullptr, &base_address_alignment);
                 if (TEST_PASS != get_error)
                 {
@@ -187,14 +187,14 @@ int memInfo_image_from_buffer_positive(cl_device_id device, cl_context context,
                                          CL_MEM_READ_WRITE,
                                          CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for (auto flag : flagTypes)
+    for (auto flagType : flagTypes)
     {
         for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
             if (TEST_PASS
-                    != get_format_list(context, imageType, formatList, flag)
+                    != get_format_list(context, imageType, formatList, flagType)
                 || formatList.size() == 0)
             {
                 test_fail("Failure to get supported formats list\n");
@@ -205,15 +205,15 @@ int memInfo_image_from_buffer_positive(cl_device_id device, cl_context context,
                 cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                cl_mem_flags flag = (flagType == CL_MEM_KERNEL_READ_AND_WRITE)
                     ? CL_MEM_READ_WRITE
-                    : flag;
+                    : flagType;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, &slice_pitch_alignment, nullptr);
                 if (TEST_PASS != get_error)
                 {
@@ -296,14 +296,14 @@ int imageInfo_image_from_buffer_positive(cl_device_id device,
                                          CL_MEM_READ_WRITE,
                                          CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for (auto flag : flagTypes)
+    for (auto flagType : flagTypes)
     {
         for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
             if (TEST_PASS
-                    != get_format_list(context, imageType, formatList, flag)
+                    != get_format_list(context, imageType, formatList, flagType)
                 || formatList.size() == 0)
             {
                 test_fail("Failure to get supported formats list\n");
@@ -314,15 +314,15 @@ int imageInfo_image_from_buffer_positive(cl_device_id device,
                 cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                cl_mem_flags flag = (flagType == CL_MEM_KERNEL_READ_AND_WRITE)
                     ? CL_MEM_READ_WRITE
-                    : flag;
+                    : flagType;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, &slice_pitch_alignment, nullptr);
                 if (TEST_PASS != get_error)
                 {
@@ -446,14 +446,14 @@ int image_from_buffer_alignment_negative(cl_device_id device,
                                          CL_MEM_READ_WRITE,
                                          CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for (auto flag : flagTypes)
+    for (auto flagType : flagTypes)
     {
         for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
             if (TEST_PASS
-                    != get_format_list(context, imageType, formatList, flag)
+                    != get_format_list(context, imageType, formatList, flagType)
                 || formatList.size() == 0)
             {
                 test_fail("Failure to get supported formats list\n");
@@ -464,16 +464,16 @@ int image_from_buffer_alignment_negative(cl_device_id device,
                 cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                cl_mem_flags flag = (flagType == CL_MEM_KERNEL_READ_AND_WRITE)
                     ? CL_MEM_READ_WRITE
-                    : flag;
+                    : flagType;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
                 size_t base_address_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, &slice_pitch_alignment,
                     &base_address_alignment);
                 if (TEST_PASS != get_error)
@@ -596,14 +596,14 @@ int image_from_small_buffer_negative(cl_device_id device, cl_context context,
                                          CL_MEM_READ_WRITE,
                                          CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for (auto flag : flagTypes)
+    for (auto flagType : flagTypes)
     {
         for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
             if (TEST_PASS
-                    != get_format_list(context, imageType, formatList, flag)
+                    != get_format_list(context, imageType, formatList, flagType)
                 || formatList.size() == 0)
             {
                 test_fail("Failure to get supported formats list\n");
@@ -614,9 +614,9 @@ int image_from_small_buffer_negative(cl_device_id device, cl_context context,
                 cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                cl_mem_flags flag = (flagType == CL_MEM_KERNEL_READ_AND_WRITE)
                     ? CL_MEM_READ_WRITE
-                    : flag;
+                    : flagType;
 
                 /* Invalid buffer size */
                 cl_int err;
@@ -704,14 +704,14 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
                                          CL_MEM_READ_WRITE,
                                          CL_MEM_KERNEL_READ_AND_WRITE };
 
-    for (auto flag : flagTypes)
+    for (auto flagType : flagTypes)
     {
         for (auto imageType : imageTypes)
         {
             /* Get the list of supported image formats */
             std::vector<cl_image_format> formatList;
             if (TEST_PASS
-                    != get_format_list(context, imageType, formatList, flag)
+                    != get_format_list(context, imageType, formatList, flagType)
                 || formatList.size() == 0)
             {
                 test_fail("Failure to get supported formats list\n");
@@ -728,15 +728,15 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
                 cl_image_desc image_desc = { 0 };
                 image_desc_init(&image_desc, imageType);
 
-                flag = (flag == CL_MEM_KERNEL_READ_AND_WRITE)
+                cl_mem_flags flag = (flagType == CL_MEM_KERNEL_READ_AND_WRITE)
                     ? CL_MEM_READ_WRITE
-                    : flag;
+                    : flagType;
 
                 size_t row_pitch_alignment = 0;
                 size_t slice_pitch_alignment = 0;
 
                 int get_error = get_image_requirement_alignment(
-                    device, context, 0, &format, &image_desc,
+                    device, context, flag, &format, &image_desc,
                     &row_pitch_alignment, &slice_pitch_alignment, nullptr);
                 if (TEST_PASS != get_error)
                 {

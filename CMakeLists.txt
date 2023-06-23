@@ -17,6 +17,7 @@ add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_0_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_1_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_0_APIS=1)
+add_definitions(-DCL_NO_EXTENSION_PROTOTYPES)
 
 option(USE_CL_EXPERIMENTAL "Use Experimental definitions" OFF)
 if(USE_CL_EXPERIMENTAL)
@@ -104,8 +105,6 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
         add_cxx_flag_if_supported(-Wall)
         # Suppress warnings that currently trigger on the code base.
         # This list should shrink over time when warnings are fixed.
-        add_cxx_flag_if_supported(-Wno-unused-but-set-variable)
-        add_cxx_flag_if_supported(-Wno-sometimes-uninitialized)
         add_cxx_flag_if_supported(-Wno-sign-compare)
     endif()
     add_cxx_flag_if_supported(-Wno-narrowing)
