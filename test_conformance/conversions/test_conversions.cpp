@@ -54,10 +54,8 @@
 #include "Sleep.h"
 
 #include "basic_test_conversions.h"
-#include <limits.h>
-#include <string.h>
-
-#include "harness/mt19937.h"
+#include <climits>
+#include <cstring>
 
 #if (defined(__arm__) || defined(__aarch64__)) && defined(__GNUC__)
 #include "fplib.h"
@@ -70,13 +68,11 @@ bool qcom_sat;
 roundingMode qcom_rm;
 #endif
 
-////////////////////////////////////////////////////////////////////////////////////////
 
 static int ParseArgs(int argc, const char **argv);
 static void PrintUsage(void);
 test_status InitCL(cl_device_id device);
 
-////////////////////////////////////////////////////////////////////////////////////////
 
 const char *gTypeNames[kTypeCount] = { "uchar",  "char",  "ushort", "short",
                                        "uint",   "int",   "half",   "float",
@@ -96,7 +92,6 @@ size_t gTypeSizes[kTypeCount] = {
 char appName[64] = "ctest";
 int gMultithread = 1;
 
-////////////////////////////////////////////////////////////////////////////////////////
 
 int test_conversions(cl_device_id device, cl_context context,
                      cl_command_queue queue, int num_elements)
@@ -113,7 +108,6 @@ int test_conversions(cl_device_id device, cl_context context,
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
 
 test_definition test_list[] = {
     ADD_TEST(conversions),
@@ -121,7 +115,6 @@ test_definition test_list[] = {
 
 const int test_num = ARRAY_SIZE(test_list);
 
-////////////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, const char **argv)
 {
@@ -179,7 +172,6 @@ int main(int argc, const char **argv)
     return ret;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
 
 static int ParseArgs(int argc, const char **argv)
 {
@@ -330,7 +322,6 @@ static int ParseArgs(int argc, const char **argv)
     return 0;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
 
 static void PrintUsage(void)
 {
@@ -369,7 +360,6 @@ static void PrintUsage(void)
         "number can be then passed to indicate how many tests to run\n\n");
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
 
 test_status InitCL(cl_device_id device)
 {
@@ -568,5 +558,3 @@ test_status InitCL(cl_device_id device)
     vlog("\n");
     return TEST_PASS;
 }
-
-////////////////////////////////////////////////////////////////////////////////////////

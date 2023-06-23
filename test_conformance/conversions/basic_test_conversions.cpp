@@ -17,10 +17,6 @@
 #include "harness/compat.h"
 #include "harness/rounding_mode.h"
 #include "harness/ThreadPool.h"
-#include "harness/testHarness.h"
-#include "harness/kernelHelpers.h"
-#include "harness/mt19937.h"
-#include "harness/kernelHelpers.h"
 
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
@@ -43,8 +39,6 @@
 
 #include <sstream>
 #include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
 #if !defined(_WIN32)
 #include <libgen.h>
 #include <sys/mman.h>
@@ -57,11 +51,6 @@
 #include <type_traits>
 
 #include "basic_test_conversions.h"
-
-#if (defined(_WIN32) && defined(_MSC_VER))
-// need for _controlfp_s and rouinding modes in RoundingMode
-#include "harness/testHarness.h"
-#endif
 
 #if defined(_WIN32)
 #include <mmintrin.h>
@@ -113,16 +102,11 @@ MTdata gMTdata;
 const char **argList = NULL;
 int argCount = 0;
 
-////////////////////////////////////////////////////////////////////////////////////////
-
 double SubtractTime(uint64_t endTime, uint64_t startTime);
-
-////////////////////////////////////////////////////////////////////////////////////////
 
 cl_half_rounding_mode DataInitInfo::halfRoundingMode = CL_HALF_RTE;
 cl_half_rounding_mode ConversionsTest::defaultHalfRoundingMode = CL_HALF_RTE;
 
-////////////////////////////////////////////////////////////////////////////////////////
 // clang-format off
 // for readability sake keep this section unformatted
 
@@ -279,7 +263,6 @@ std::vector<double> DataInitInfo::specialValuesDouble = {
     MAKE_HEX_DOUBLE(0x1.ffffffff00001p62, 0x1ffffffff00001LL, 10),
 };
 // clang-format on
-////////////////////////////////////////////////////////////////////////////////////////
 
 // Windows (since long double got deprecated) sets the x87 to 53-bit precision
 // (that's x87 default state).  This causes problems with the tests that
@@ -303,8 +286,6 @@ static inline void Force64BitFPUPrecision(void)
     /* Implement for other platforms if needed */
 #endif
 }
-
-////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 int CalcRefValsPat<InType, OutType, InFP, OutFP>::check_result(void *test,
@@ -370,8 +351,6 @@ int CalcRefValsPat<InType, OutType, InFP, OutFP>::check_result(void *test,
     return 0;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
-
 cl_uint RoundUpToNextPowerOfTwo(cl_uint x)
 {
     if (0 == (x & (x - 1))) return x;
@@ -380,8 +359,6 @@ cl_uint RoundUpToNextPowerOfTwo(cl_uint x)
 
     return x + x;
 }
-
-////////////////////////////////////////////////////////////////////////////////////////
 
 cl_int CustomConversionsTest::Run()
 {
@@ -447,7 +424,8 @@ cl_int CustomConversionsTest::Run()
                 gMinVectorSize = 0;
         }
 
-        IterOverSelectedTypes iter(typeIterator, *this, inType, outType);
+        IterOverSelectedTypes iter(typeIterator, *this, inType, outType, round,
+                                   sat);
 
         iter.Run();
 
@@ -462,8 +440,6 @@ cl_int CustomConversionsTest::Run()
     return gFailCount;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
-
 ConversionsTest::ConversionsTest(cl_device_id device, cl_context context,
                                  cl_command_queue queue)
     : context(context), device(device), queue(queue), num_elements(0),
@@ -471,8 +447,6 @@ ConversionsTest::ConversionsTest(cl_device_id device, cl_context context,
                      cl_uint(0), cl_int(0), cl_half(0), cl_float(0),
                      cl_double(0), cl_ulong(0), cl_long(0) })
 {}
-
-////////////////////////////////////////////////////////////////////////////////////////
 
 cl_int ConversionsTest::Run()
 {
@@ -482,8 +456,6 @@ cl_int ConversionsTest::Run()
 
     return gFailCount;
 }
-
-////////////////////////////////////////////////////////////////////////////////////////
 
 cl_int ConversionsTest::SetUp(int elements)
 {
@@ -512,16 +484,14 @@ cl_int ConversionsTest::SetUp(int elements)
     return CL_SUCCESS;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
-
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 void ConversionsTest::TestTypesConversion(const Type &inType,
-                                          const Type &outType, int &testNumber)
+                                          const Type &outType, int &testNumber,
+                                          int startMinVectorSize)
 {
     SaturationMode sat;
     RoundingMode round;
     int error;
-    int startMinVectorSize = gMinVectorSize;
 
     // skip longs on embedded
     if (!gHasLong
@@ -609,8 +579,6 @@ void ConversionsTest::TestTypesConversion(const Type &inType,
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
-
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
                             RoundingMode round)
@@ -619,12 +587,8 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
     cl_ulong wall_start = mach_absolute_time();
 #endif
 
-#if 0
     uint64_t lastCase = 1ULL << (8 * gTypeSizes[inType]);
-#else
     cl_uint threads = GetThreadCount();
-    uint64_t lastCase = 1000000ULL;
-#endif
 
     DataInitInfo info = { 0, 0, outType, inType, sat, round, threads };
     DataInfoSpec<InType, OutType, InFP, OutFP> init_info(info);
@@ -689,11 +653,9 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
             init_info.round = round = kRoundTowardZero;
     }
 
-#if 0
     // Figure out how many elements are in a work block
     // we handle 64-bit types a bit differently.
     if (8 * gTypeSizes[inType] > 32) lastCase = 0x100000000ULL;
-#endif
 
     if (!gWimpyMode && gIsEmbedded)
         step = blockCount * EMBEDDED_REDUCTION_FACTOR;
@@ -996,15 +958,12 @@ double SubtractTime(uint64_t endTime, uint64_t startTime)
 }
 #endif
 
-////////////////////////////////////////////////////////////////////////////////
-
 static void setAllowZ(uint8_t *allow, uint32_t *x, cl_uint count)
 {
     cl_uint i;
     for (i = 0; i < count; ++i)
         allow[i] |= (uint8_t)((x[i] & 0x7f800000U) == 0);
 }
-
 
 void MapResultValuesComplete(const std::unique_ptr<CalcRefValsBase> &ptr);
 
@@ -1045,7 +1004,6 @@ void MapResultValuesComplete(const std::unique_ptr<CalcRefValsBase> &info)
     // e was already released by WriteInputBufferComplete. It should be
     // destroyed automatically soon after we exit.
 }
-
 
 void CL_CALLBACK CalcReferenceValuesComplete(cl_event e, cl_int status,
                                              void *data)
@@ -1172,11 +1130,7 @@ void CL_CALLBACK CalcReferenceValuesComplete(cl_event e, cl_int status,
     // CalcReferenceValuesComplete exit.
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////
-
 namespace conv_test {
-
-////////////////////////////////////////////////////////////////////////////////
 
 cl_int InitData(cl_uint job_id, cl_uint thread_id, void *p)
 {
@@ -1186,8 +1140,6 @@ cl_int InitData(cl_uint job_id, cl_uint thread_id, void *p)
 
     return CL_SUCCESS;
 }
-
-////////////////////////////////////////////////////////////////////////////////
 
 cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
 {
@@ -1204,7 +1156,6 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
     void *s = (cl_uchar *)gIn + job_id * count * gTypeSizes[info->inType];
     void *a = (cl_uchar *)gAllowZ + job_id * count;
     void *d = (cl_uchar *)gRef + job_id * count * gTypeSizes[info->outType];
-
 
     if (outType != inType)
     {
@@ -1344,8 +1295,6 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
     return CL_SUCCESS;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
 uint64_t GetTime(void)
 {
 #if defined(__APPLE__)
@@ -1359,8 +1308,6 @@ uint64_t GetTime(void)
     return 0;
 #endif
 }
-
-////////////////////////////////////////////////////////////////////////////////
 
 // Note: not called reentrantly
 void WriteInputBufferComplete(void *data)
@@ -1421,8 +1368,6 @@ void WriteInputBufferComplete(void *data)
     // e was already released by the main thread. It should be destroyed
     // automatically soon after we exit.
 }
-
-////////////////////////////////////////////////////////////////////////////////
 
 cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
                        RoundingMode round, int vectorSize, cl_kernel *outKernel)
@@ -1554,8 +1499,6 @@ cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
     return program;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////
-
 int RunKernel(cl_kernel kernel, void *inBuf, void *outBuf, size_t blockCount)
 {
     // The global dimensions are just the blockCount to execute since we haven't
@@ -1580,8 +1523,6 @@ int RunKernel(cl_kernel kernel, void *inBuf, void *outBuf, size_t blockCount)
 
     return 0;
 }
-
-////////////////////////////////////////////////////////////////////////////////////////
 
 int GetTestCase(const char *name, Type *outType, Type *inType,
                 SaturationMode *sat, RoundingMode *round)
@@ -1639,6 +1580,3 @@ int GetTestCase(const char *name, Type *outType, Type *inType,
 }
 
 } // namespace conv_test
-
-
-////////////////////////////////////////////////////////////////////////////////////////

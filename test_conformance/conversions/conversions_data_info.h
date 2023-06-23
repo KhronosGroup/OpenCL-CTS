@@ -44,7 +44,6 @@ extern roundingMode qcom_rm;
 extern size_t gTypeSizes[kTypeCount];
 extern void *gIn;
 
-//--------------------------------------------------------------------------
 
 typedef enum
 {
@@ -54,7 +53,6 @@ typedef enum
     kSaturationModeCount
 } SaturationMode;
 
-//--------------------------------------------------------------------------
 
 struct DataInitInfo
 {
@@ -73,28 +71,26 @@ struct DataInitInfo
     static std::vector<double> specialValuesDouble;
 };
 
-//--------------------------------------------------------------------------
 
 #define HFF(num) cl_half_from_float(num, DataInitInfo::halfRoundingMode)
 #define HTF(num) cl_half_to_float(num)
 
-//--------------------------------------------------------------------------
 
 struct DataInitBase : public DataInitInfo
 {
-    DataInitBase(const DataInitInfo &agg): DataInitInfo(agg) {}
+    virtual ~DataInitBase() = default;
+
+    explicit DataInitBase(const DataInitInfo &agg): DataInitInfo(agg) {}
     virtual void conv_array(void *out, void *in, size_t n) {}
     virtual void conv_array_sat(void *out, void *in, size_t n) {}
     virtual void init(const cl_uint &, const cl_uint &) {}
 };
 
-//--------------------------------------------------------------------------
 
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 struct DataInfoSpec : public DataInitBase
 {
-
-    DataInfoSpec(const DataInitInfo &agg);
+    explicit DataInfoSpec(const DataInitInfo &agg);
 
     // helpers
     float round_to_int(float f);
@@ -114,50 +110,44 @@ struct DataInfoSpec : public DataInitBase
 
     std::vector<MTdataHolder> mdv;
 
-    ////////////////////////////////////////////////////////////////////////////
+
     constexpr bool is_in_half() const
     {
         return (std::is_same<InType, cl_half>::value && InFP);
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     constexpr bool is_out_half() const
     {
         return (std::is_same<OutType, cl_half>::value && OutFP);
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     void conv_array(void *out, void *in, size_t n) override
     {
         for (size_t i = 0; i < n; i++)
             conv(&((OutType *)out)[i], &((InType *)in)[i]);
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     void conv_array_sat(void *out, void *in, size_t n) override
     {
         for (size_t i = 0; i < n; i++)
             conv_sat(&((OutType *)out)[i], &((InType *)in)[i]);
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     void init(const cl_uint &, const cl_uint &) override;
     InType clamp(const InType &);
-    ////////////////////////////////////////////////////////////////////////////
+
     inline float fclamp(float lo, float v, float hi)
     {
         v = v < lo ? lo : v;
         return v < hi ? v : hi;
     }
-    ////////////////////////////////////////////////////////////////////////////
+
     inline double dclamp(double lo, double v, double hi)
     {
         v = v < lo ? lo : v;
         return v < hi ? v : hi;
     }
 };
-
-////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 DataInfoSpec<InType, OutType, InFP, OutFP>::DataInfoSpec(
@@ -287,8 +277,6 @@ DataInfoSpec<InType, OutType, InFP, OutFP>::DataInfoSpec(
     // clang-format on
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
-
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 float DataInfoSpec<InType, OutType, InFP, OutFP>::round_to_int(float f)
 {
@@ -317,8 +305,6 @@ float DataInfoSpec<InType, OutType, InFP, OutFP>::round_to_int(float f)
     }
     return f;
 }
-
-////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 long long
@@ -353,8 +339,6 @@ DataInfoSpec<InType, OutType, InFP, OutFP>::round_to_int_and_clamp(double f)
     return (long long)f;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
-
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 OutType DataInfoSpec<InType, OutType, InFP, OutFP>::absolute(const OutType &x)
 {
@@ -373,14 +357,10 @@ OutType DataInfoSpec<InType, OutType, InFP, OutFP>::absolute(const OutType &x)
     return u.f;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////
-
 template <typename T, bool fp> constexpr bool is_half()
 {
     return (std::is_same<cl_half, T>::value && fp);
 }
-
-////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
@@ -541,12 +521,8 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
-
 #define CLAMP(_lo, _x, _hi)                                                    \
     ((_x) < (_lo) ? (_lo) : ((_x) > (_hi) ? (_hi) : (_x)))
-
-////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
@@ -681,8 +657,6 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
-
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
                                                       const cl_uint &thread_id)
@@ -692,9 +666,6 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
 
     if (is_in_half())
     {
-        const unsigned m_size = 0x1ff;
-        const unsigned e_size = 0xf;
-        const unsigned s_size = 0x2;
         const unsigned sclamp =
             std::is_signed<OutType>::value ? 0xffff : 0x7fff;
 
@@ -702,11 +673,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
 
         for (unsigned i = start; i < size; i++)
         {
-            unsigned ind = i % (s_size * e_size * m_size);
-            o[i] = static_cast<InType>((((ind / (e_size * m_size)) << 15)
-                                        | (((ind / m_size) % e_size + 1) << 10)
-                                        | (ind % m_size + 1))
-                                       & sclamp);
+            o[i] = static_cast<InType>(i % sclamp);
         }
     }
     else if (std::is_integral<InType>::value)
@@ -864,8 +831,6 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
-
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 InType DataInfoSpec<InType, OutType, InFP, OutFP>::clamp(const InType &in)
 {
@@ -884,7 +849,5 @@ InType DataInfoSpec<InType, OutType, InFP, OutFP>::clamp(const InType &in)
     }
     return in;
 }
-
-////////////////////////////////////////////////////////////////////////////////////////
 
 #endif /* CONVERSIONS_DATA_INFO_H */

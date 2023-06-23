@@ -42,8 +42,6 @@
 
 #include "conversions_data_info.h"
 
-// typedef void (*Convert)( void *dest, void *src, size_t );
-
 #define kVectorSizeCount 6
 #define kMaxVectorSize 16
 #define kPageSize 4096
@@ -52,11 +50,6 @@
 #define EMBEDDED_REDUCTION_FACTOR 16
 #define PERF_LOOP_COUNT 100
 
-
-// extern Convert gConversions[kTypeCount][kTypeCount];                // [dest
-// format][source format] extern Convert
-// gSaturatedConversions[kTypeCount][kTypeCount];       // [dest format][source
-// format]
 extern const char *gTypeNames[ kTypeCount ];
 extern const char *gRoundingModeNames[ kRoundingModeCount ];        // { "", "_rte", "_rtp", "_rtn", "_rtz" }
 extern const char *gSaturationNames[ kSaturationModeCount ];        // { "", "_sat" }
@@ -114,8 +107,6 @@ extern int vectorSizes[];
 extern size_t gComputeDevices;
 extern uint32_t gDeviceFrequency;
 
-//--------------------------------------------------------------------------
-
 namespace conv_test {
 
 cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
@@ -136,10 +127,9 @@ void *FlushToZero(void);
 void UnFlushToZero(void *);
 }
 
-//--------------------------------------------------------------------------
-
 struct CalcRefValsBase
 {
+    virtual ~CalcRefValsBase() = default;
     virtual int check_result(void *, uint32_t, int) { return 0; }
 
     // pointer back to the parent WriteInputBufferInfo struct
@@ -151,15 +141,11 @@ struct CalcRefValsBase
     cl_int result;
 };
 
-//--------------------------------------------------------------------------
-
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 struct CalcRefValsPat : CalcRefValsBase
 {
     int check_result(void *, uint32_t, int) override;
 };
-
-//--------------------------------------------------------------------------
 
 struct WriteInputBufferInfo
 {
@@ -181,9 +167,6 @@ struct WriteInputBufferInfo
     std::vector<std::unique_ptr<CalcRefValsBase>> calcInfo;
 };
 
-
-//--------------------------------------------------------------------------
-
 // Must be aligned with Type enums!
 using TypeIter =
     std::tuple<cl_uchar, cl_char, cl_ushort, cl_short, cl_uint, cl_int, cl_half,
@@ -192,26 +175,27 @@ using TypeIter =
 // hardcoded solution needed due to typeid confusing cl_ushort/cl_half
 constexpr bool isTypeFp[] = { 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0 };
 
-//--------------------------------------------------------------------------
-
 // Helper test fixture for constructing OpenCL objects used in testing
 // a variety of simple command-buffer enqueue scenarios.
 struct ConversionsTest
 {
+    virtual ~ConversionsTest() = default;
+
     ConversionsTest(cl_device_id device, cl_context context,
                     cl_command_queue queue);
 
-    virtual cl_int SetUp(int elements);
+    cl_int SetUp(int elements);
 
     // Test body returning an OpenCL error code
-    virtual cl_int Run();
+    cl_int Run();
 
     template <typename InType, typename OutType, bool InFP, bool OutFP>
     int DoTest(Type outType, Type inType, SaturationMode sat,
                RoundingMode round);
 
     template <typename InType, typename OutType, bool InFP, bool OutFP>
-    void TestTypesConversion(const Type &inType, const Type &outType, int &tn);
+    void TestTypesConversion(const Type &inType, const Type &outType, int &tn,
+                             int startMinVectorSize);
 
 protected:
     cl_context context;
@@ -226,8 +210,6 @@ public:
     static cl_half_rounding_mode defaultHalfRoundingMode;
 };
 
-//--------------------------------------------------------------------------
-
 struct CustomConversionsTest : ConversionsTest
 {
     CustomConversionsTest(cl_device_id device, cl_context context,
@@ -235,24 +217,20 @@ struct CustomConversionsTest : ConversionsTest
         : ConversionsTest(device, context, queue)
     {}
 
-    cl_int Run() override;
+    cl_int Run();
 };
-
-//--------------------------------------------------------------------------
 
 template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,
                    cl_command_queue queue, int num_elements)
 {
-    auto test_fixture = T(device, context, queue);
+    T test_fixture(device, context, queue);
 
     cl_int error = test_fixture.SetUp(num_elements);
     test_error_ret(error, "Error in test initialization", TEST_FAIL);
 
     return test_fixture.Run();
 }
-
-//--------------------------------------------------------------------------
 
 struct TestType
 {
@@ -276,19 +254,17 @@ struct TestType
     }
 };
 
-//--------------------------------------------------------------------------
 // Helper structures to iterate over all tuple attributes of different types
 struct IterOverTypes : public TestType
 {
     IterOverTypes(const TypeIter &typeIter, ConversionsTest &test)
         : inType((Type)0), outType((Type)0), typeIter(typeIter), test(test),
-          testNumber(-1)
+          testNumber(-1), startMinVectorSize(gMinVectorSize)
     {}
 
     void Run() { for_each_out_elem(typeIter); }
 
 protected:
-    ////////////////////////////////////////////////////////////////////////////////////////
 
     template <std::size_t Out = 0, typename OutType>
     void iterate_out_type(const OutType &t)
@@ -297,8 +273,6 @@ protected:
         outType = (Type)(outType + 1);
         inType = (Type)0;
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////
 
     template <std::size_t In, std::size_t Out, typename OutType,
               typename InType>
@@ -310,19 +284,15 @@ protected:
 
         // run the conversions
         test.TestTypesConversion<InType, OutType, isTypeFp[In], isTypeFp[Out]>(
-            inType, outType, testNumber);
+            inType, outType, testNumber, startMinVectorSize);
         inType = (Type)(inType + 1);
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////
 
     template <std::size_t Out = 0, typename... Tp>
     inline typename std::enable_if<Out == sizeof...(Tp), void>::type
     for_each_out_elem(
         const std::tuple<Tp...> &) // Unused arguments are given no names.
     {}
-
-    ////////////////////////////////////////////////////////////////////////////////////////
 
     template <std::size_t Out = 0, typename... Tp>
         inline typename std::enable_if < Out<sizeof...(Tp), void>::type
@@ -331,8 +301,6 @@ protected:
         iterate_out_type<Out>(std::get<Out>(t));
         for_each_out_elem<Out + 1, Tp...>(t);
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////
 
     template <std::size_t In = 0, std::size_t Out, typename OutType,
               typename... Tp>
@@ -341,8 +309,6 @@ protected:
         const std::tuple<Tp...> &) // Unused arguments are given no names.
     {}
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-
     template <std::size_t In = 0, std::size_t Out, typename OutType,
               typename... Tp>
         inline typename std::enable_if < In<sizeof...(Tp), void>::type
@@ -352,30 +318,30 @@ protected:
         for_each_in_elem<In + 1, Out, OutType, Tp...>(t);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-
 protected:
     Type inType;
     Type outType;
     const TypeIter &typeIter;
     ConversionsTest &test;
     int testNumber;
+    int startMinVectorSize;
 };
 
-//--------------------------------------------------------------------------
+
 // Helper structures to select type 2 type conversion test case
 struct IterOverSelectedTypes : public TestType
 {
     IterOverSelectedTypes(const TypeIter &typeIter, ConversionsTest &test,
-                          const Type &in, const Type &out)
-        : inType(in), outType(out), typeIter(typeIter), test(test),
-          testNumber(-1)
+                          const Type in, const Type out,
+                          const RoundingMode round, const SaturationMode sat)
+        : inType(in), outType(out), rounding(round), saturation(sat),
+          typeIter(typeIter), test(test), testNumber(-1),
+          startMinVectorSize(gMinVectorSize)
     {}
 
     void Run() { for_each_out_elem(typeIter); }
 
 protected:
-    ////////////////////////////////////////////////////////////////////////////////////////
 
     template <std::size_t Out = 0, typename OutType>
     void iterate_out_type(const OutType &t)
@@ -383,29 +349,23 @@ protected:
         for_each_in_elem<0, Out, OutType>(typeIter);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-
     template <std::size_t In, std::size_t Out, typename OutType,
               typename InType>
     void iterate_in_type(const InType &t)
     {
         if (testType<InType>(inType) && testType<OutType>(outType))
         {
-            // run the conversions
-            test.TestTypesConversion<InType, OutType, isTypeFp[In],
-                                     isTypeFp[Out]>(inType, outType,
-                                                    testNumber);
+            // run selected conversion
+            // testing of the result will happen afterwards
+            test.DoTest<InType, OutType, isTypeFp[In], isTypeFp[Out]>(
+                outType, inType, saturation, rounding);
         }
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////
 
     template <std::size_t Out = 0, typename... Tp>
     inline typename std::enable_if<Out == sizeof...(Tp), void>::type
     for_each_out_elem(const std::tuple<Tp...> &)
     {}
-
-    ////////////////////////////////////////////////////////////////////////////////////////
 
     template <std::size_t Out = 0, typename... Tp>
         inline typename std::enable_if < Out<sizeof...(Tp), void>::type
@@ -415,15 +375,11 @@ protected:
         for_each_out_elem<Out + 1, Tp...>(t);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-
     template <std::size_t In = 0, std::size_t Out, typename OutType,
               typename... Tp>
     inline typename std::enable_if<In == sizeof...(Tp), void>::type
     for_each_in_elem(const std::tuple<Tp...> &)
     {}
-
-    ////////////////////////////////////////////////////////////////////////////////////////
 
     template <std::size_t In = 0, std::size_t Out, typename OutType,
               typename... Tp>
@@ -434,17 +390,18 @@ protected:
         for_each_in_elem<In + 1, Out, OutType, Tp...>(t);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-
 protected:
     Type inType;
     Type outType;
+    RoundingMode rounding;
+    SaturationMode saturation;
+
     const TypeIter &typeIter;
     ConversionsTest &test;
     int testNumber;
+    int startMinVectorSize;
 };
 
-//--------------------------------------------------------------------------
 
 #endif /* BASIC_TEST_CONVERSIONS_H */
 
