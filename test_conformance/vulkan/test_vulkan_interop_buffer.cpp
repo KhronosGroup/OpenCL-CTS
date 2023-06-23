@@ -901,24 +901,17 @@ int run_test_with_multi_import_same_ctx(
 
                 for (uint32_t iter = 0; iter < maxIter; iter++)
                 {
-                    if (iter == 0)
+                    if (use_fence)
                     {
-                        if (use_fence)
-                        {
-                            fence->reset();
-                            vkQueue.submit(vkCommandBuffer, fence);
-                        }
-                        else
-                        {
-                            vkQueue.submit(vkCommandBuffer, vkVk2CLSemaphore);
-                        }
+                        fence->reset();
+                        vkQueue.submit(vkCommandBuffer, fence);
+                        fence->wait();
                     }
                     else
                     {
-                        if (use_fence)
+                        if (iter == 0)
                         {
-                            fence->reset();
-                            vkQueue.submit(vkCommandBuffer, fence);
+                            vkQueue.submit(vkCommandBuffer, vkVk2CLSemaphore);
                         }
                         else
                         {
@@ -968,16 +961,13 @@ int run_test_with_multi_import_same_ctx(
                             goto CLEANUP;
                         }
                     }
-                    if (iter != (maxIter - 1))
+                    if (use_fence)
                     {
-                        if (use_fence)
-                        {
-                            clFinish(cmd_queue1);
-                        }
-                        else
-                        {
-                            clCl2VkExternalSemaphore->signal(cmd_queue1);
-                        }
+                        clFinish(cmd_queue1);
+                    }
+                    else if (!!use_fence && iter != (maxIter - 1))
+                    {
+                        clCl2VkExternalSemaphore->signal(cmd_queue1);
                     }
                 }
                 error_2 = (uint8_t *)malloc(sizeof(uint8_t));
@@ -1309,24 +1299,17 @@ int run_test_with_multi_import_diff_ctx(
 
                 for (uint32_t iter = 0; iter < maxIter; iter++)
                 {
-                    if (iter == 0)
+                    if (use_fence)
                     {
-                        if (use_fence)
-                        {
-                            fence->reset();
-                            vkQueue.submit(vkCommandBuffer, fence);
-                        }
-                        else
-                        {
-                            vkQueue.submit(vkCommandBuffer, vkVk2CLSemaphore);
-                        }
+                        fence->reset();
+                        vkQueue.submit(vkCommandBuffer, fence);
+                        fence->wait();
                     }
                     else
                     {
-                        if (use_fence)
+                        if (iter == 0)
                         {
-                            fence->reset();
-                            vkQueue.submit(vkCommandBuffer, fence);
+                            vkQueue.submit(vkCommandBuffer, vkVk2CLSemaphore);
                         }
                         else
                         {
@@ -1376,39 +1359,29 @@ int run_test_with_multi_import_diff_ctx(
                             goto CLEANUP;
                         }
                     }
-                    if (iter != (maxIter - 1))
+                    if (use_fence)
                     {
-                        if (use_fence)
-                        {
-                            clFinish(cmd_queue1);
-                        }
-                        else
-                        {
-                            clCl2VkExternalSemaphore->signal(cmd_queue1);
-                        }
+                        clFinish(cmd_queue1);
+                    }
+                    else if (!use_fence && iter != (maxIter - 1))
+                    {
+                        clCl2VkExternalSemaphore->signal(cmd_queue1);
                     }
                 }
                 clFinish(cmd_queue1);
                 for (uint32_t iter = 0; iter < maxIter; iter++)
                 {
-                    if (iter == 0)
+                    if (use_fence)
                     {
-                        if (use_fence)
-                        {
-                            fence->reset();
-                            vkQueue.submit(vkCommandBuffer, fence);
-                        }
-                        else
-                        {
-                            vkQueue.submit(vkCommandBuffer, vkVk2CLSemaphore);
-                        }
+                        fence->reset();
+                        vkQueue.submit(vkCommandBuffer, fence);
+                        fence->wait();
                     }
                     else
                     {
-                        if (use_fence)
+                        if (iter == 0)
                         {
-                            fence->reset();
-                            vkQueue.submit(vkCommandBuffer, fence);
+                            vkQueue.submit(vkCommandBuffer, vkVk2CLSemaphore);
                         }
                         else
                         {
@@ -1458,16 +1431,13 @@ int run_test_with_multi_import_diff_ctx(
                             goto CLEANUP;
                         }
                     }
-                    if (iter != (maxIter - 1))
+                    if (use_fence)
                     {
-                        if (use_fence)
-                        {
-                            clFinish(cmd_queue2);
-                        }
-                        else
-                        {
-                            clCl2VkExternalSemaphore2->signal(cmd_queue2);
-                        }
+                        clFinish(cmd_queue2);
+                    }
+                    else if (!use_fence && iter != (maxIter - 1))
+                    {
+                        clCl2VkExternalSemaphore2->signal(cmd_queue2);
                     }
                 }
                 clFinish(cmd_queue2);
