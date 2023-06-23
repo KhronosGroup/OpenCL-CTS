@@ -265,7 +265,6 @@ struct IterOverTypes : public TestType
     void Run() { for_each_out_elem(typeIter); }
 
 protected:
-
     template <std::size_t Out = 0, typename OutType>
     void iterate_out_type(const OutType &t)
     {
@@ -342,7 +341,6 @@ struct IterOverSelectedTypes : public TestType
     void Run() { for_each_out_elem(typeIter); }
 
 protected:
-
     template <std::size_t Out = 0, typename OutType>
     void iterate_out_type(const OutType &t)
     {
