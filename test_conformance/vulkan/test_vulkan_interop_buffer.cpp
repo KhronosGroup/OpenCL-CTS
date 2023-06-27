@@ -965,7 +965,7 @@ int run_test_with_multi_import_same_ctx(
                     {
                         clFinish(cmd_queue1);
                     }
-                    else if (!!use_fence && iter != (maxIter - 1))
+                    else if (!use_fence && iter != (maxIter - 1))
                     {
                         clCl2VkExternalSemaphore->signal(cmd_queue1);
                     }
