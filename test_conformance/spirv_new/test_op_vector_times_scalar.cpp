@@ -17,6 +17,8 @@ or Khronos Conformance Test Source License Agreement as executed between Khronos
 #include <sstream>
 #include <string>
 
+using half = cl_half;
+
 template<typename Tv, typename Ts>
 int test_vector_times_scalar(cl_device_id deviceID,
                              cl_context context,
@@ -28,6 +30,16 @@ int test_vector_times_scalar(cl_device_id deviceID,
     if(std::string(Tname).find("double") != std::string::npos) {
         if(!is_extension_available(deviceID, "cl_khr_fp64")) {
             log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
+            return 0;
+        }
+    }
+
+    if (std::string(Tname).find("half") != std::string::npos)
+    {
+        if (!is_extension_available(deviceID, "cl_khr_fp16"))
+        {
+            log_info("Extension cl_khr_fp16 not supported; skipping half "
+                     "tests.\n");
             return 0;
         }
     }
@@ -171,5 +183,7 @@ int test_vector_times_scalar(cl_device_id deviceID,
                                                 lhs, rhs);      \
     }
 
+
 TEST_VECTOR_TIMES_SCALAR(float, 4)
 TEST_VECTOR_TIMES_SCALAR(double, 4)
+TEST_VECTOR_TIMES_SCALAR(half, 4)

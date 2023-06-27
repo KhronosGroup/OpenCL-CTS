@@ -19,26 +19,22 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <cmath>
 
 #include <CL/cl_half.h>
 #include <CL/cl_ext.h>
 
-#include "harness/deviceInfo.h"
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
-
 
 template <typename T>
 using VerifyFuncBinary = int (*)(const T *const, const T *const, const T *const,
                                  const int num, const int vs, const int vp);
 
-
 template <typename T>
 using VerifyFuncUnary = int (*)(const T *const, const T *const, const int num);
 
-
 using half = cl_half;
-
 
 struct BaseFunctionTest
 {
@@ -61,8 +57,8 @@ struct BaseFunctionTest
     bool vecParam;
 
     static std::map<size_t, std::string> type2name;
+    static cl_half_rounding_mode halfRoundingMode;
 };
-
 
 struct MinTest : BaseFunctionTest
 {
@@ -74,7 +70,6 @@ struct MinTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-
 struct MaxTest : BaseFunctionTest
 {
     MaxTest(cl_device_id device, cl_context context, cl_command_queue queue,
@@ -84,7 +79,6 @@ struct MaxTest : BaseFunctionTest
 
     cl_int Run() override;
 };
-
 
 struct ClampTest : BaseFunctionTest
 {
@@ -96,7 +90,6 @@ struct ClampTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-
 struct DegreesTest : BaseFunctionTest
 {
     DegreesTest(cl_device_id device, cl_context context, cl_command_queue queue,
@@ -106,7 +99,6 @@ struct DegreesTest : BaseFunctionTest
 
     cl_int Run() override;
 };
-
 
 struct RadiansTest : BaseFunctionTest
 {
@@ -118,7 +110,6 @@ struct RadiansTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-
 struct SignTest : BaseFunctionTest
 {
     SignTest(cl_device_id device, cl_context context, cl_command_queue queue,
@@ -128,7 +119,6 @@ struct SignTest : BaseFunctionTest
 
     cl_int Run() override;
 };
-
 
 struct SmoothstepTest : BaseFunctionTest
 {
@@ -141,7 +131,6 @@ struct SmoothstepTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-
 struct StepTest : BaseFunctionTest
 {
     StepTest(cl_device_id device, cl_context context, cl_command_queue queue,
@@ -151,7 +140,6 @@ struct StepTest : BaseFunctionTest
 
     cl_int Run() override;
 };
-
 
 struct MixTest : BaseFunctionTest
 {
@@ -163,19 +151,71 @@ struct MixTest : BaseFunctionTest
     cl_int Run() override;
 };
 
-
-template <typename... Args>
-std::string string_format(const std::string &format, Args... args)
+template <typename T> float UlpFn(const T &val, const double &r)
 {
-    int sformat = std::snprintf(nullptr, 0, format.c_str(), args...) + 1;
-    if (sformat <= 0)
-        throw std::runtime_error("string_format: string processing error.");
-    auto format_size = static_cast<size_t>(sformat);
-    std::unique_ptr<char[]> buffer(new char[format_size]);
-    std::snprintf(buffer.get(), format_size, format.c_str(), args...);
-    return std::string(buffer.get(), buffer.get() + format_size - 1);
+    if (std::is_same<T, half>::value)
+    {
+        return Ulp_Error_Half(val, r);
+    }
+    else if (std::is_same<T, float>::value)
+    {
+        return Ulp_Error(val, r);
+    }
+    else if (std::is_same<T, double>::value)
+    {
+        return Ulp_Error_Double(val, r);
+    }
+    else
+    {
+        log_error("UlpFn: unsupported data type\n");
+    }
+
+    return -1.f; // wrong val
 }
 
+template <typename T> inline double conv_to_dbl(const T &val)
+{
+    if (std::is_same<T, half>::value)
+        return (double)cl_half_to_float(val);
+    else
+        return (double)val;
+}
+
+template <typename T> inline double conv_to_flt(const T &val)
+{
+    if (std::is_same<T, half>::value)
+        return (float)cl_half_to_float(val);
+    else
+        return (float)val;
+}
+
+template <typename T> inline half conv_to_half(const T &val)
+{
+    if (std::is_floating_point<T>::value)
+        return cl_half_from_float(val, BaseFunctionTest::halfRoundingMode);
+    return 0;
+}
+
+template <typename T> bool isfinite_fp(const T &v)
+{
+    if (std::is_same<T, half>::value)
+    {
+        // Extract FP16 exponent and mantissa
+        uint16_t h_exp = (((half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+        uint16_t h_mant = ((half)v) & 0x3FF;
+
+        // !Inf test
+        return !(h_exp == 0x1F && h_mant == 0);
+    }
+    else
+    {
+#if !defined(_WIN32)
+        return std::isfinite(v);
+#else
+        return isfinite(v);
+#endif
+    }
+}
 
 template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,

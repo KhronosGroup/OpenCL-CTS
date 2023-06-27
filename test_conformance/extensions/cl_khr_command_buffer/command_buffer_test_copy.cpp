@@ -38,7 +38,7 @@ struct CopyImageKHR : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandFillImageKHR(command_buffer, nullptr, src_image,
-                                             fill_color, origin, region, 0,
+                                             fill_color_1, origin, region, 0,
                                              nullptr, nullptr, nullptr);
 
         test_error(error, "clCommandFillImageKHR failed");
@@ -56,13 +56,38 @@ struct CopyImageKHR : public BasicCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        std::vector<cl_char> output_data(data_size);
-        error = clEnqueueReadImage(queue, dst_image, CL_TRUE, origin, region, 0,
-                                   0, output_data.data(), 0, nullptr, nullptr);
+        std::vector<cl_char> output_data_1(data_size);
+        error =
+            clEnqueueReadImage(queue, dst_image, CL_TRUE, origin, region, 0, 0,
+                               output_data_1.data(), 0, nullptr, nullptr);
 
         for (size_t i = 0; i < data_size; i++)
         {
-            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
+            CHECK_VERIFICATION_ERROR(pattern_1, output_data_1[i], i);
+        }
+
+        /* Check second enqueue of command buffer */
+
+        error = clEnqueueFillImage(queue, src_image, fill_color_2, origin,
+                                   region, 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillImageKHR failed");
+
+        error = clEnqueueFillImage(queue, dst_image, fill_color_2, origin,
+                                   region, 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillImageKHR failed");
+
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        std::vector<cl_char> output_data_2(data_size);
+        error =
+            clEnqueueReadImage(queue, dst_image, CL_TRUE, origin, region, 0, 0,
+                               output_data_2.data(), 0, nullptr, nullptr);
+
+        for (size_t i = 0; i < data_size; i++)
+        {
+            CHECK_VERIFICATION_ERROR(pattern_1, output_data_2[i], i);
         }
 
         return CL_SUCCESS;
@@ -97,8 +122,12 @@ struct CopyImageKHR : public BasicCommandBufferTest
     const size_t data_size = img_width * img_height * 4 * sizeof(cl_char);
     const size_t origin[3] = { 0, 0, 0 },
                  region[3] = { img_width, img_height, 1 };
-    const cl_uint pattern = 0x05;
-    const cl_uint fill_color[4] = { pattern, pattern, pattern, pattern };
+    const cl_uint pattern_1 = 0x05;
+    const cl_uint fill_color_1[4] = { pattern_1, pattern_1, pattern_1,
+                                      pattern_1 };
+    const cl_uint pattern_2 = 0x1;
+    const cl_uint fill_color_2[4] = { pattern_2, pattern_2, pattern_2,
+                                      pattern_2 };
     const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
     clMemWrapper src_image;
     clMemWrapper dst_image;
@@ -111,7 +140,7 @@ struct CopyBufferKHR : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandFillBufferKHR(
-            command_buffer, nullptr, in_mem, &pattern, sizeof(cl_char), 0,
+            command_buffer, nullptr, in_mem, &pattern_1, sizeof(cl_char), 0,
             data_size(), 0, nullptr, nullptr, nullptr);
         test_error(error, "clCommandFillBufferKHR failed");
 
@@ -127,20 +156,45 @@ struct CopyBufferKHR : public BasicCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        std::vector<cl_char> output_data(data_size());
+        std::vector<cl_char> output_data_1(data_size());
         error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
-                                    output_data.data(), 0, nullptr, nullptr);
+                                    output_data_1.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (size_t i = 0; i < data_size(); i++)
         {
-            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
+            CHECK_VERIFICATION_ERROR(pattern_1, output_data_1[i], i);
+        }
+
+        /* Check second enqueue of command buffer */
+
+        error = clEnqueueFillBuffer(queue, in_mem, &pattern_2, sizeof(cl_char),
+                                    0, data_size(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBufferKHR failed");
+
+        error = clEnqueueFillBuffer(queue, out_mem, &pattern_2, sizeof(cl_char),
+                                    0, data_size(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBufferKHR failed");
+
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        std::vector<cl_char> output_data_2(data_size());
+        error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
+                                    output_data_2.data(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        for (size_t i = 0; i < data_size(); i++)
+        {
+            CHECK_VERIFICATION_ERROR(pattern_1, output_data_2[i], i);
         }
 
         return CL_SUCCESS;
     }
 
-    const cl_char pattern = 0x14;
+    const cl_char pattern_1 = 0x14;
+    const cl_char pattern_2 = 0x28;
 };
 
 struct CopyBufferToImageKHR : public BasicCommandBufferTest
@@ -150,7 +204,7 @@ struct CopyBufferToImageKHR : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandFillBufferKHR(
-            command_buffer, nullptr, buffer, &pattern, sizeof(cl_char), 0,
+            command_buffer, nullptr, buffer, &pattern_1, sizeof(cl_char), 0,
             data_size, 0, nullptr, nullptr, nullptr);
 
         test_error(error, "clCommandFillBufferKHR failed");
@@ -168,15 +222,40 @@ struct CopyBufferToImageKHR : public BasicCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        std::vector<cl_char> output_data(data_size);
+        std::vector<cl_char> output_data_1(data_size);
 
         error = clEnqueueReadImage(queue, image, CL_TRUE, origin, region, 0, 0,
-                                   output_data.data(), 0, nullptr, nullptr);
+                                   output_data_1.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadImage failed");
 
         for (size_t i = 0; i < data_size; i++)
         {
-            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
+            CHECK_VERIFICATION_ERROR(pattern_1, output_data_1[i], i);
+        }
+
+        /* Check second enqueue of command buffer */
+
+        error = clEnqueueFillBuffer(queue, buffer, &pattern_2, sizeof(cl_char),
+                                    0, data_size, 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBuffer failed");
+
+        error = clEnqueueFillImage(queue, image, &fill_color_2, origin, region,
+                                   0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillImage failed");
+
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        std::vector<cl_char> output_data_2(data_size);
+
+        error = clEnqueueReadImage(queue, image, CL_TRUE, origin, region, 0, 0,
+                                   output_data_2.data(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueReadImage failed");
+
+        for (size_t i = 0; i < data_size; i++)
+        {
+            CHECK_VERIFICATION_ERROR(pattern_1, output_data_2[i], i);
         }
 
         return CL_SUCCESS;
@@ -211,7 +290,14 @@ struct CopyBufferToImageKHR : public BasicCommandBufferTest
     const size_t data_size = img_width * img_height * 4 * sizeof(cl_char);
     const size_t origin[3] = { 0, 0, 0 },
                  region[3] = { img_width, img_height, 1 };
-    const cl_char pattern = 0x11;
+    const cl_char pattern_1 = 0x11;
+    const cl_char pattern_2 = 0x22;
+
+    const cl_uint fill_color_2[4] = { static_cast<cl_uint>(pattern_2),
+                                      static_cast<cl_uint>(pattern_2),
+                                      static_cast<cl_uint>(pattern_2),
+                                      static_cast<cl_uint>(pattern_2) };
+
     const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
 
     clMemWrapper buffer;
@@ -225,7 +311,7 @@ struct CopyImageToBufferKHR : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_int error =
-            clCommandFillImageKHR(command_buffer, nullptr, image, fill_color,
+            clCommandFillImageKHR(command_buffer, nullptr, image, fill_color_1,
                                   origin, region, 0, nullptr, nullptr, nullptr);
 
         test_error(error, "clCommandFillImageKHR failed");
@@ -243,16 +329,39 @@ struct CopyImageToBufferKHR : public BasicCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        std::vector<cl_char> output_data(data_size);
+        std::vector<cl_char> output_data_1(data_size);
 
         error = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, data_size,
-                                    output_data.data(), 0, nullptr, nullptr);
+                                    output_data_1.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (size_t i = 0; i < data_size; i++)
         {
-            CHECK_VERIFICATION_ERROR(static_cast<cl_char>(pattern),
-                                     output_data[i], i);
+            CHECK_VERIFICATION_ERROR(static_cast<cl_char>(pattern_1),
+                                     output_data_1[i], i);
+        }
+
+        error = clEnqueueFillImage(queue, image, fill_color_2, origin, region,
+                                   0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillImage failed");
+
+        error = clEnqueueFillBuffer(queue, buffer, &pattern_2, sizeof(cl_char),
+                                    0, data_size, 0, nullptr, nullptr);
+
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        std::vector<cl_char> output_data_2(data_size);
+
+        error = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, data_size,
+                                    output_data_2.data(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        for (size_t i = 0; i < data_size; i++)
+        {
+            CHECK_VERIFICATION_ERROR(static_cast<cl_char>(pattern_1),
+                                     output_data_2[i], i);
         }
 
         return CL_SUCCESS;
@@ -287,8 +396,12 @@ struct CopyImageToBufferKHR : public BasicCommandBufferTest
     const size_t data_size = img_width * img_height * 4 * sizeof(cl_char);
     const size_t origin[3] = { 0, 0, 0 },
                  region[3] = { img_width, img_height, 1 };
-    const cl_uint pattern = 0x12;
-    const cl_uint fill_color[4] = { pattern, pattern, pattern, pattern };
+    const cl_uint pattern_1 = 0x12;
+    const cl_uint fill_color_1[4] = { pattern_1, pattern_1, pattern_1,
+                                      pattern_1 };
+    const cl_uint pattern_2 = 0x24;
+    const cl_uint fill_color_2[4] = { pattern_2, pattern_2, pattern_2,
+                                      pattern_2 };
     const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
 
     clMemWrapper image;
@@ -302,7 +415,7 @@ struct CopyBufferRectKHR : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandFillBufferKHR(
-            command_buffer, nullptr, in_mem, &pattern, sizeof(cl_char), 0,
+            command_buffer, nullptr, in_mem, &pattern_1, sizeof(cl_char), 0,
             data_size, 0, nullptr, nullptr, nullptr);
         test_error(error, "clCommandFillBufferKHR failed");
 
@@ -319,14 +432,38 @@ struct CopyBufferRectKHR : public BasicCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        std::vector<cl_char> output_data(data_size);
+        std::vector<cl_char> output_data_1(data_size);
         error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size,
-                                    output_data.data(), 0, nullptr, nullptr);
+                                    output_data_1.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (size_t i = 0; i < data_size; i++)
         {
-            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
+            CHECK_VERIFICATION_ERROR(pattern_1, output_data_1[i], i);
+        }
+
+        /* Check second enqueue of command buffer */
+
+        error = clEnqueueFillBuffer(queue, in_mem, &pattern_2, sizeof(cl_char),
+                                    0, data_size, 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBuffer failed");
+
+        error = clEnqueueFillBuffer(queue, out_mem, &pattern_2, sizeof(cl_char),
+                                    0, data_size, 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBuffer failed");
+
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        std::vector<cl_char> output_data_2(data_size);
+        error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size,
+                                    output_data_2.data(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        for (size_t i = 0; i < data_size; i++)
+        {
+            CHECK_VERIFICATION_ERROR(pattern_1, output_data_2[i], i);
         }
 
         return CL_SUCCESS;
@@ -353,7 +490,8 @@ struct CopyBufferRectKHR : public BasicCommandBufferTest
     const size_t data_size = img_width * img_height * sizeof(cl_char);
     const size_t origin[3] = { 0, 0, 0 },
                  region[3] = { img_width, img_height, 1 };
-    const cl_char pattern = 0x13;
+    const cl_char pattern_1 = 0x13;
+    const cl_char pattern_2 = 0x26;
 
     clMemWrapper in_mem;
     clMemWrapper out_mem;

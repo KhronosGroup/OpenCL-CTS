@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "harness/conversions.h"
+#include "harness/stringHelpers.h"
+#include "harness/typeWrappers.h"
 
 #include <limits.h>
 #include <stdio.h>
@@ -22,11 +25,7 @@
 #include <sys/stat.h>
 #include <vector>
 
-#include "harness/conversions.h"
-#include "harness/typeWrappers.h"
-
 #include "procs.h"
-#include "utils.h"
 
 // clang-format off
 
