@@ -32,6 +32,15 @@ int test_negation(cl_device_id deviceID,
             return 0;
         }
     }
+    if (std::string(Tname).find("half") != std::string::npos)
+    {
+        if (!is_extension_available(deviceID, "cl_khr_fp16"))
+        {
+            log_info(
+                "Extension cl_khr_fp16 not supported; skipping half tests.\n");
+            return 0;
+        }
+    }
 
     cl_int err = CL_SUCCESS;
     int num = (int)h_in.size();
@@ -73,29 +82,28 @@ int test_negation(cl_device_id deviceID,
     return 0;
 }
 
-#define TEST_NEGATION(TYPE, Tv, OP, FUNC)       \
-    TEST_SPIRV_FUNC(OP##_##TYPE)                \
-    {                                           \
-        int num = 1 << 20;                      \
-        std::vector<Tv> in(num);                \
-        RandomSeed seed(gRandomSeed);           \
-        for (int i = 0; i < num; i++) {         \
-            in[i] = genrand<Tv>(seed);          \
-        }                                       \
-        return test_negation<Tv>(deviceID,      \
-                                 context,       \
-                                 queue,         \
-                                 #TYPE,         \
-                                 #OP,           \
-                                 in, FUNC);     \
-    }                                           \
+#define TEST_NEGATION(TYPE, Tv, OP, FUNC)                                      \
+    TEST_SPIRV_FUNC(OP##_##TYPE)                                               \
+    {                                                                          \
+        int num = 1 << 20;                                                     \
+        std::vector<Tv> in(num);                                               \
+        RandomSeed seed(gRandomSeed);                                          \
+        for (int i = 0; i < num; i++)                                          \
+        {                                                                      \
+            in[i] = genrand<Tv>(seed);                                         \
+        }                                                                      \
+        return test_negation<Tv>(deviceID, context, queue, #TYPE, #OP, in,     \
+                                 FUNC);                                        \
+    }
 
 
+#define TEST_NEG_HALF TEST_NEGATION(half, cl_half, op_neg, negOpHalf)
 #define TEST_NEG(TYPE)        TEST_NEGATION(TYPE, cl_##TYPE, op_neg, negOp<cl_##TYPE>)
 #define TEST_NOT(TYPE)        TEST_NEGATION(TYPE, cl_##TYPE, op_not, notOp<cl_##TYPE>)
 #define TEST_NEG_VEC(TYPE, N) TEST_NEGATION(TYPE##N, cl_##TYPE##N, op_neg, (negOpVec<cl_##TYPE##N, N>))
 #define TEST_NOT_VEC(TYPE, N) TEST_NEGATION(TYPE##N, cl_##TYPE##N, op_not, (notOpVec<cl_##TYPE##N, N>))
 
+TEST_NEG_HALF
 TEST_NEG(float)
 TEST_NEG(double)
 TEST_NEG(int)
