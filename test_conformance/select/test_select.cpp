@@ -14,11 +14,14 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "harness/typeWrappers.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include <vector>
+
 #if ! defined( _WIN32)
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
@@ -66,6 +69,16 @@ static void printUsage( void );
 #define BUFFER_SIZE (1024*1024)
 #define KPAGESIZE 4096
 
+#define test_error_count(errCode, msg)                                         \
+    {                                                                          \
+        auto errCodeResult = errCode;                                          \
+        if (errCodeResult != CL_SUCCESS)                                       \
+        {                                                                      \
+            gFailCount++;                                                      \
+            print_error(errCodeResult, msg);                                   \
+            return errCode;                                                    \
+        }                                                                      \
+    }
 
 // When we indicate non wimpy mode, the types that are 32 bits value will
 // test their entire range and 64 bits test will test the 32 bit
@@ -73,12 +86,6 @@ static void printUsage( void );
 // [-min_short, min_short]
 static bool  s_wimpy_mode = false;
 static int s_wimpy_reduction_factor = 256;
-
-// Tests are broken into the major test which is based on the
-// src and cmp type and their corresponding vector types and
-// sub tests which is for each individual test.  The following
-// tracks the subtests
-int s_test_cnt = 0;
 
 //-----------------------------------------
 // Static helper functions
@@ -237,6 +244,9 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
     if (srctype == kdouble)
         strcpy( extension, "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n" );
 
+    if (srctype == khalf)
+        strcpy(extension, "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n");
+
     // create type name and testname
     switch( vec_len )
     {
@@ -288,25 +298,14 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context cont
     return program;
 }
 
-
 #define VECTOR_SIZE_COUNT   6
 
 static int doTest(cl_command_queue queue, cl_context context, Type stype, Type cmptype, cl_device_id device)
 {
     int err = CL_SUCCESS;
-    int s_test_fail = 0;
-    MTdataHolder d;
+    MTdataHolder d(gRandomSeed);
     const size_t element_count[VECTOR_SIZE_COUNT] = { 1, 2, 3, 4, 8, 16 };
-    cl_mem src1 = NULL;
-    cl_mem src2 = NULL;
-    cl_mem cmp = NULL;
-    cl_mem dest = NULL;
-    void *ref = NULL;
-    void *sref = NULL;
-    void *src1_host = NULL;
-    void *src2_host = NULL;
-    void *cmp_host = NULL;
-    void *dest_host = NULL;
+    clMemWrapper src1, src2, cmp, dest;
 
     cl_ulong blocks = type_size[stype] * 0x100000000ULL / BUFFER_SIZE;
     size_t block_elements = BUFFER_SIZE / type_size[stype];
@@ -315,13 +314,19 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
 
     // It is more efficient to create the tests all at once since we
     // use the same test data on each of the vector sizes
-    int vecsize;
-    cl_program programs[VECTOR_SIZE_COUNT];
-    cl_kernel  kernels[VECTOR_SIZE_COUNT];
+    clProgramWrapper programs[VECTOR_SIZE_COUNT];
+    clKernelWrapper kernels[VECTOR_SIZE_COUNT];
 
-    if(stype == kdouble && ! is_extension_available( device, "cl_khr_fp64" ))
+    if (stype == kdouble && !is_extension_available(device, "cl_khr_fp64"))
     {
         log_info("Skipping double because cl_khr_fp64 extension is not supported.\n");
+        return 0;
+    }
+
+    if (stype == khalf && !is_extension_available(device, "cl_khr_fp16"))
+    {
+        log_info(
+            "Skipping half because cl_khr_fp16 extension is not supported.\n");
         return 0;
     }
 
@@ -340,53 +345,40 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
        }
     }
 
-    for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
+    src1 = clCreateBuffer( context, CL_MEM_READ_ONLY, BUFFER_SIZE, NULL, &err );
+    test_error_count(err, "Error: could not allocate src1 buffer\n");
+    src2 = clCreateBuffer( context, CL_MEM_READ_ONLY, BUFFER_SIZE, NULL, &err );
+    test_error_count(err, "Error: could not allocate src2 buffer\n");
+    cmp = clCreateBuffer( context, CL_MEM_READ_ONLY, BUFFER_SIZE, NULL, &err );
+    test_error_count(err, "Error: could not allocate cmp buffer\n");
+    dest = clCreateBuffer( context, CL_MEM_WRITE_ONLY, BUFFER_SIZE, NULL, &err );
+    test_error_count(err, "Error: could not allocate dest buffer\n");
+
+    for (int vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
     {
-        programs[vecsize] = makeSelectProgram(&kernels[vecsize], context, stype, cmptype, element_count[vecsize] );
-        if (!programs[vecsize] || !kernels[vecsize]) {
-            ++s_test_fail;
-            ++s_test_cnt;
+        programs[vecsize] = makeSelectProgram(&kernels[vecsize], context, stype,
+                                              cmptype, element_count[vecsize]);
+        if (!programs[vecsize] || !kernels[vecsize])
+        {
             return -1;
         }
+
+        err = clSetKernelArg(kernels[vecsize], 0, sizeof dest, &dest);
+        test_error_count(err, "Error: Cannot set kernel arg dest!\n");
+        err = clSetKernelArg(kernels[vecsize], 1, sizeof src1, &src1);
+        test_error_count(err, "Error: Cannot set kernel arg dest!\n");
+        err = clSetKernelArg(kernels[vecsize], 2, sizeof src2, &src2);
+        test_error_count(err, "Error: Cannot set kernel arg dest!\n");
+        err = clSetKernelArg(kernels[vecsize], 3, sizeof cmp, &cmp);
+        test_error_count(err, "Error: Cannot set kernel arg dest!\n");
     }
 
-    ref = malloc( BUFFER_SIZE );
-    if( NULL == ref ){ log_error("Error: could not allocate ref buffer\n" ); goto exit; }
-    sref = malloc( BUFFER_SIZE );
-    if( NULL == sref ){ log_error("Error: could not allocate ref buffer\n" ); goto exit; }
-    src1 = clCreateBuffer( context, CL_MEM_READ_ONLY, BUFFER_SIZE, NULL, &err );
-    if( err ) { log_error( "Error: could not allocate src1 buffer\n" );  ++s_test_fail; goto exit; }
-    src2 = clCreateBuffer( context, CL_MEM_READ_ONLY, BUFFER_SIZE, NULL, &err );
-    if( err ) { log_error( "Error: could not allocate src2 buffer\n" );  ++s_test_fail; goto exit; }
-    cmp = clCreateBuffer( context, CL_MEM_READ_ONLY, BUFFER_SIZE, NULL, &err );
-    if( err ) { log_error( "Error: could not allocate cmp buffer\n" );  ++s_test_fail; goto exit; }
-    dest = clCreateBuffer( context, CL_MEM_WRITE_ONLY, BUFFER_SIZE, NULL, &err );
-    if( err ) { log_error( "Error: could not allocate dest buffer\n" );  ++s_test_fail; goto exit; }
-
-    src1_host = malloc(BUFFER_SIZE);
-    if (NULL == src1_host)
-    {
-        log_error("Error: could not allocate src1_host buffer\n");
-        goto exit;
-    }
-    src2_host = malloc(BUFFER_SIZE);
-    if (NULL == src2_host)
-    {
-        log_error("Error: could not allocate src2_host buffer\n");
-        goto exit;
-    }
-    cmp_host = malloc(BUFFER_SIZE);
-    if (NULL == cmp_host)
-    {
-        log_error("Error: could not allocate cmp_host buffer\n");
-        goto exit;
-    }
-    dest_host = malloc(BUFFER_SIZE);
-    if (NULL == dest_host)
-    {
-        log_error("Error: could not allocate dest_host buffer\n");
-        goto exit;
-    }
+    std::vector<char> ref(BUFFER_SIZE);
+    std::vector<char> sref(BUFFER_SIZE);
+    std::vector<char> src1_host(BUFFER_SIZE);
+    std::vector<char> src2_host(BUFFER_SIZE);
+    std::vector<char> cmp_host(BUFFER_SIZE);
+    std::vector<char> dest_host(BUFFER_SIZE);
 
     // We block the test as we are running over the range of compare values
     // "block the test" means "break the test into blocks"
@@ -396,111 +388,63 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
         cmp_stride = block_elements * step * (0xffffffffffffffffULL / 0x100000000ULL + 1);
 
     log_info("Testing...");
-    d = MTdataHolder(gRandomSeed);
     uint64_t i;
+
     for (i=0; i < blocks; i+=step)
     {
-        void *s1 = clEnqueueMapBuffer( queue, src1, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, NULL, NULL, &err );
-        if( err ){ log_error( "Error: Could not map src1" ); goto exit; }
-        // Setup the input data to change for each block
-        initSrcBuffer( s1, stype, d);
+        initSrcBuffer(src1_host.data(), stype, d);
+        initSrcBuffer(src2_host.data(), stype, d);
+        initCmpBuffer(cmp_host.data(), cmptype, i * cmp_stride, block_elements);
 
-        void *s2 = clEnqueueMapBuffer( queue, src2, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, NULL, NULL, &err );
-        if( err ){ log_error( "Error: Could not map src2" ); goto exit; }
-        // Setup the input data to change for each block
-        initSrcBuffer( s2, stype, d);
+        err = clEnqueueWriteBuffer(queue, src1, CL_FALSE, 0, BUFFER_SIZE,
+                                   src1_host.data(), 0, NULL, NULL);
+        test_error_count(err, "Error: Could not write src1");
 
-        void *s3 = clEnqueueMapBuffer( queue, cmp, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, NULL, NULL, &err );
-        if( err ){ log_error( "Error: Could not map cmp" ); goto exit; }
-        // Setup the input data to change for each block
-        initCmpBuffer(s3, cmptype, i * cmp_stride, block_elements);
+        err = clEnqueueWriteBuffer(queue, src2, CL_FALSE, 0, BUFFER_SIZE,
+                                   src2_host.data(), 0, NULL, NULL);
+        test_error_count(err, "Error: Could not write src2");
 
-        if( (err = clEnqueueUnmapMemObject( queue, src1, s1, 0, NULL, NULL )))
-        { log_error( "Error: coult not unmap src1\n" );  ++s_test_fail; goto exit; }
-        if( (err = clEnqueueUnmapMemObject( queue, src2, s2, 0, NULL, NULL )))
-        { log_error( "Error: coult not unmap src2\n" );  ++s_test_fail; goto exit; }
-        if( (err = clEnqueueUnmapMemObject( queue, cmp, s3, 0, NULL, NULL )))
-        { log_error( "Error: coult not unmap cmp\n" );  ++s_test_fail; goto exit; }
-
-        // Create the reference result
-        err = clEnqueueReadBuffer(queue, src1, CL_TRUE, 0, BUFFER_SIZE,
-                                  src1_host, 0, NULL, NULL);
-        if (err)
-        {
-            log_error("Error: Reading buffer from src1 to src1_host failed\n");
-            ++s_test_fail;
-            goto exit;
-        }
-        err = clEnqueueReadBuffer(queue, src2, CL_TRUE, 0, BUFFER_SIZE,
-                                  src2_host, 0, NULL, NULL);
-        if (err)
-        {
-            log_error("Error: Reading buffer from src2 to src2_host failed\n");
-            ++s_test_fail;
-            goto exit;
-        }
-        err = clEnqueueReadBuffer(queue, cmp, CL_TRUE, 0, BUFFER_SIZE, cmp_host,
-                                  0, NULL, NULL);
-        if (err)
-        {
-            log_error("Error: Reading buffer from cmp to cmp_host failed\n");
-            ++s_test_fail;
-            goto exit;
-        }
+        err = clEnqueueWriteBuffer(queue, cmp, CL_FALSE, 0, BUFFER_SIZE,
+                                   cmp_host.data(), 0, NULL, NULL);
+        test_error_count(err, "Error: Could not write cmp");
 
         Select sfunc = (cmptype == ctype[stype][0]) ? vrefSelects[stype][0]
                                                     : vrefSelects[stype][1];
-        (*sfunc)(ref, src1_host, src2_host, cmp_host, block_elements);
+        (*sfunc)(ref.data(), src1_host.data(), src2_host.data(),
+                 cmp_host.data(), block_elements);
 
         sfunc = (cmptype == ctype[stype][0]) ? refSelects[stype][0]
                                              : refSelects[stype][1];
-        (*sfunc)(sref, src1_host, src2_host, cmp_host, block_elements);
+        (*sfunc)(sref.data(), src1_host.data(), src2_host.data(),
+                 cmp_host.data(), block_elements);
 
-        for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
+        for (int vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
         {
             size_t vector_size = element_count[vecsize] * type_size[stype];
             size_t vector_count =  (BUFFER_SIZE + vector_size - 1) / vector_size;
 
-            if((err = clSetKernelArg(kernels[vecsize], 0,  sizeof dest, &dest) ))
-            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
-            if((err = clSetKernelArg(kernels[vecsize], 1,  sizeof src1, &src1) ))
-            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
-            if((err = clSetKernelArg(kernels[vecsize], 2,  sizeof src2, &src2) ))
-            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
-            if((err = clSetKernelArg(kernels[vecsize], 3,  sizeof cmp, &cmp) ))
-            { log_error( "Error: Cannot set kernel arg dest! %d\n", err ); ++s_test_fail; goto exit; }
+            const cl_int pattern = -1;
+            err = clEnqueueFillBuffer(queue, dest, &pattern, sizeof(cl_int), 0,
+                                      BUFFER_SIZE, 0, nullptr, nullptr);
+            test_error_count(err, "clEnqueueFillBuffer failed");
 
-            // Wipe destination
-            void *d = clEnqueueMapBuffer( queue, dest, CL_TRUE, CL_MAP_WRITE, 0, BUFFER_SIZE, 0, NULL, NULL, &err );
-            if( err ){ log_error( "Error: Could not map dest" );  ++s_test_fail; goto exit; }
-            memset( d, -1, BUFFER_SIZE );
-            if( (err = clEnqueueUnmapMemObject( queue, dest, d, 0, NULL, NULL ) ) ){ log_error( "Error: Could not unmap dest" ); ++s_test_fail; goto exit; }
 
             err = clEnqueueNDRangeKernel(queue, kernels[vecsize], 1, NULL, &vector_count, NULL, 0, NULL, NULL);
-            if (err != CL_SUCCESS) {
-                log_error("clEnqueueNDRangeKernel failed errcode:%d\n", err);
-                ++s_test_fail;
-                goto exit;
-            }
+            test_error_count(err, "clEnqueueNDRangeKernel failed errcode\n");
 
             err = clEnqueueReadBuffer(queue, dest, CL_TRUE, 0, BUFFER_SIZE,
-                                      dest_host, 0, NULL, NULL);
-            if (err)
-            {
-                log_error(
-                    "Error: Reading buffer from dest to dest_host failed\n");
-                ++s_test_fail;
-                goto exit;
-            }
+                                      dest_host.data(), 0, NULL, NULL);
+            test_error_count(
+                err, "Error: Reading buffer from dest to dest_host failed\n");
 
-            if ((*checkResults[stype])(dest_host, vecsize == 0 ? sref : ref,
+            if ((*checkResults[stype])(dest_host.data(),
+                                       vecsize == 0 ? sref.data() : ref.data(),
                                        block_elements, element_count[vecsize])
                 != 0)
             {
                 log_error("vec_size:%d indx: 0x%16.16llx\n",
                           (int)element_count[vecsize], i);
-                ++s_test_fail;
-                goto exit;
+                return TEST_FAIL;
             }
         } // for vecsize
     } // for i
@@ -510,28 +454,6 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     else
         log_info(" Wimpy Passed\n\n");
 
-exit:
-    if( src1 )  clReleaseMemObject( src1 );
-    if( src2 )  clReleaseMemObject( src2 );
-    if( cmp )   clReleaseMemObject( cmp );
-    if( dest)   clReleaseMemObject( dest );
-    if( ref )   free(ref );
-    if( sref )  free(sref );
-    if (src1_host) free(src1_host);
-    if (src2_host) free(src2_host);
-    if (cmp_host) free(cmp_host);
-    if (dest_host) free(dest_host);
-
-    for (vecsize = 0; vecsize < VECTOR_SIZE_COUNT; vecsize++) {
-        clReleaseKernel(kernels[vecsize]);
-        clReleaseProgram(programs[vecsize]);
-    }
-    ++s_test_cnt;
-    if (s_test_fail)
-    {
-        err = TEST_FAIL;
-        gFailCount++;
-    }
     return err;
 }
 
@@ -566,6 +488,16 @@ int test_select_short_ushort(cl_device_id deviceID, cl_context context, cl_comma
 int test_select_short_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kshort, kshort, deviceID);
+}
+int test_select_half_ushort(cl_device_id deviceID, cl_context context,
+                            cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, khalf, kushort, deviceID);
+}
+int test_select_half_short(cl_device_id deviceID, cl_context context,
+                           cl_command_queue queue, int num_elements)
+{
+    return doTest(queue, context, khalf, kshort, deviceID);
 }
 int test_select_uint_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
@@ -617,26 +549,17 @@ int test_select_double_long(cl_device_id deviceID, cl_context context, cl_comman
 }
 
 test_definition test_list[] = {
-    ADD_TEST( select_uchar_uchar ),
-    ADD_TEST( select_uchar_char ),
-    ADD_TEST( select_char_uchar ),
-    ADD_TEST( select_char_char ),
-    ADD_TEST( select_ushort_ushort ),
-    ADD_TEST( select_ushort_short ),
-    ADD_TEST( select_short_ushort ),
-    ADD_TEST( select_short_short ),
-    ADD_TEST( select_uint_uint ),
-    ADD_TEST( select_uint_int ),
-    ADD_TEST( select_int_uint ),
-    ADD_TEST( select_int_int ),
-    ADD_TEST( select_float_uint ),
-    ADD_TEST( select_float_int ),
-    ADD_TEST( select_ulong_ulong ),
-    ADD_TEST( select_ulong_long ),
-    ADD_TEST( select_long_ulong ),
-    ADD_TEST( select_long_long ),
-    ADD_TEST( select_double_ulong ),
-    ADD_TEST( select_double_long ),
+    ADD_TEST(select_uchar_uchar),   ADD_TEST(select_uchar_char),
+    ADD_TEST(select_char_uchar),    ADD_TEST(select_char_char),
+    ADD_TEST(select_ushort_ushort), ADD_TEST(select_ushort_short),
+    ADD_TEST(select_short_ushort),  ADD_TEST(select_short_short),
+    ADD_TEST(select_half_ushort),   ADD_TEST(select_half_short),
+    ADD_TEST(select_uint_uint),     ADD_TEST(select_uint_int),
+    ADD_TEST(select_int_uint),      ADD_TEST(select_int_int),
+    ADD_TEST(select_float_uint),    ADD_TEST(select_float_int),
+    ADD_TEST(select_ulong_ulong),   ADD_TEST(select_ulong_long),
+    ADD_TEST(select_long_ulong),    ADD_TEST(select_long_long),
+    ADD_TEST(select_double_ulong),  ADD_TEST(select_double_long),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
