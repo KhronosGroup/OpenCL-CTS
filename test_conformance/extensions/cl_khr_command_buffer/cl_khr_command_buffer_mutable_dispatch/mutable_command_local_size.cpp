@@ -18,14 +18,8 @@
 #include "typeWrappers.h"
 #include "procs.h"
 #include "testHarness.h"
-#include "imageHelpers.h"
-#include <vector>
-#include <iostream>
-#include <random>
-#include <cstring>
-#include <algorithm>
-#include <memory>
 #include "mutable_command_basic.h"
+#include <vector>
 
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
