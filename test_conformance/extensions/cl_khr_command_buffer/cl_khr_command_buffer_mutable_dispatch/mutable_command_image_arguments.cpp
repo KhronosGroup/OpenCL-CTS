@@ -299,7 +299,7 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         generate_random_image_data(&imageInfo, imageValues, d);
 
         char *host_ptr = (char *)imageValues;
-        BufferOwningPtr<char> outputData(malloc(data_size));
+        std::vector<char> outputData(data_size);
 
         clMemWrapper src_image =
             create_image_2d(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
@@ -393,7 +393,7 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
                              1 };
 
         error = clEnqueueReadImage(queue, new_image, CL_TRUE, origin, region, 0,
-                                   0, outputData, 0, nullptr, nullptr);
+                                   0, outputData.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadImage failed");
 
         for (size_t i = 0; i < imageInfo.width * imageInfo.height; ++i)
