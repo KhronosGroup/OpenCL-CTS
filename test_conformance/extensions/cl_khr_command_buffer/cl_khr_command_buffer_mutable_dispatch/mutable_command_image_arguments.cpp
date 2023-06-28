@@ -50,12 +50,32 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         return CL_SUCCESS;
     }
 
+    bool Skip() override
+    {
+        cl_bool image_support;
+
+        cl_int error =
+            clGetDeviceInfo(device, CL_DEVICE_IMAGE_SUPPORT,
+                            sizeof(image_support), &image_support, nullptr);
+        test_error(error, "clGetDeviceInfo for CL_DEVICE_IMAGE_SUPPORT failed");
+
+        cl_mutable_dispatch_fields_khr mutable_capabilities;
+
+        bool mutable_support =
+            !clGetDeviceInfo(
+                device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
+                sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
+            && mutable_capabilities & CL_MUTABLE_DISPATCH_LOCAL_SIZE_KHR;
+
+        return (!mutable_support && !image_support)
+            || BasicMutableCommandBufferTest::Skip();
+    }
+
     cl_int Run() override
     {
         const char *sample_const_arg_kernel =
             R"(__kernel void sample_test( read_only image1d_t source, sampler_t
-            sampler, int width, write_only image1d_t dest, __global int4
-        *results )
+            sampler, write_only image1d_t dest)
             {
                int offset = get_global_id(0);
 
@@ -74,8 +94,6 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         image_desc.image_width = 4;
         image_desc.image_row_pitch = 0;
         image_desc.num_mip_levels = 0;
-
-        size_t data_size = image_desc.image_width * sizeof(cl_int);
 
         const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
 
@@ -110,24 +128,13 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
             context, CL_FALSE, CL_ADDRESS_NONE, CL_FILTER_NEAREST, &error);
         test_error(error, "Unable to create sampler");
 
-        clMemWrapper stream;
-        stream = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, data_size,
-                                imageValues, &error);
-        test_error(error, "Creating test array failed");
-
         error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &src_image);
         test_error(error, "Unable to set indexed kernel arguments");
 
         error = clSetKernelArg(kernel, 1, sizeof(cl_sampler), &sampler);
         test_error(error, "Unable to set indexed kernel arguments");
 
-        error = clSetKernelArg(kernel, 2, sizeof(int), &image_desc.image_width);
-        test_error(error, "Unable to set indexed kernel arguments");
-
-        error = clSetKernelArg(kernel, 3, sizeof(cl_mem), &dst_image);
-        test_error(error, "Unable to set indexed kernel arguments");
-
-        error = clSetKernelArg(kernel, 4, sizeof(cl_mem), &stream);
+        error = clSetKernelArg(kernel, 2, sizeof(cl_mem), &dst_image);
         test_error(error, "Unable to set indexed kernel arguments");
 
         cl_ndrange_kernel_command_properties_khr props[] = {
@@ -147,9 +154,9 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
 
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed")
+        test_error(error, "clEnqueueCommandBufferKHR failed");
 
-            error = clFinish(queue);
+        error = clFinish(queue);
         test_error(error, "clFinish failed.");
 
         clMemWrapper new_image = create_image_1d(
@@ -184,9 +191,9 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
 
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed")
+        test_error(error, "clEnqueueCommandBufferKHR failed");
 
-            size_t origin[3] = { 0, 0, 0 };
+        size_t origin[3] = { 0, 0, 0 };
         size_t region[3] = { image_desc.image_width, 1, 1 };
 
         error = clEnqueueReadImage(queue, new_image, CL_TRUE, origin, region, 0,
@@ -227,13 +234,33 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         return CL_SUCCESS;
     }
 
+    bool Skip() override
+    {
+        cl_bool image_support;
+
+        cl_int error =
+            clGetDeviceInfo(device, CL_DEVICE_IMAGE_SUPPORT,
+                            sizeof(image_support), &image_support, nullptr);
+        test_error(error, "clGetDeviceInfo for CL_DEVICE_IMAGE_SUPPORT failed");
+
+        cl_mutable_dispatch_fields_khr mutable_capabilities;
+
+        bool mutable_support =
+            !clGetDeviceInfo(
+                device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
+                sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
+            && mutable_capabilities & CL_MUTABLE_DISPATCH_LOCAL_SIZE_KHR;
+
+        return (!mutable_support && !image_support)
+            || BasicMutableCommandBufferTest::Skip();
+    }
+
     cl_int Run() override
     {
 
         const char *sample_const_arg_kernel =
             R"(__kernel void sample_test( read_only image2d_t source, sampler_t
-            sampler, int width, write_only image2d_t dest, __global int4
-        *results )
+            sampler, write_only image2d_t dest)
             {
                int x = get_global_id(0);
                int y = get_global_id(1);
@@ -295,24 +322,13 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
             context, CL_FALSE, CL_ADDRESS_NONE, CL_FILTER_NEAREST, &error);
         test_error(error, "Unable to create sampler");
 
-        clMemWrapper stream;
-        stream = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, data_size,
-                                imageValues, &error);
-        test_error(error, "Creating test array failed");
-
         error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &src_image);
         test_error(error, "Unable to set indexed kernel arguments");
 
         error = clSetKernelArg(kernel, 1, sizeof(cl_sampler), &sampler);
         test_error(error, "Unable to set indexed kernel arguments");
 
-        error = clSetKernelArg(kernel, 2, sizeof(int), &image_desc.image_width);
-        test_error(error, "Unable to set indexed kernel arguments");
-
-        error = clSetKernelArg(kernel, 3, sizeof(cl_mem), &dst_image);
-        test_error(error, "Unable to set indexed kernel arguments");
-
-        error = clSetKernelArg(kernel, 4, sizeof(cl_mem), &stream);
+        error = clSetKernelArg(kernel, 2, sizeof(cl_mem), &dst_image);
         test_error(error, "Unable to set indexed kernel arguments");
 
         size_t globalDim[3] = { 4, 4, 1 }, localDim[3] = { 1, 1, 1 };
