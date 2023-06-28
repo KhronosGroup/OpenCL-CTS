@@ -67,4 +67,8 @@ extern int test_mutable_dispatch_image_2d_arguments(cl_device_id device,
                                                     cl_context context,
                                                     cl_command_queue queue,
                                                     int num_elements);
+extern int test_mutable_dispatch_global_offset(cl_device_id device,
+                                               cl_context context,
+                                               cl_command_queue queue,
+                                               int num_elements);
 #endif /*_CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_PROCS_H*/

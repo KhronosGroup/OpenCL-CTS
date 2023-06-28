@@ -201,14 +201,33 @@ struct BasicEnqueueTest : public BasicCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        std::vector<cl_int> output_data(num_elements);
+        std::vector<cl_int> output_data_1(num_elements);
         error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
-                                    output_data.data(), 0, nullptr, nullptr);
+                                    output_data_1.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (size_t i = 0; i < num_elements; i++)
         {
-            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
+            CHECK_VERIFICATION_ERROR(pattern, output_data_1[i], i);
+        }
+
+        const cl_int new_pattern = 12;
+        error = clEnqueueFillBuffer(queue, in_mem, &new_pattern, sizeof(cl_int),
+                                    0, data_size(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBuffer failed");
+
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        std::vector<cl_int> output_data_2(num_elements);
+        error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
+                                    output_data_2.data(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        for (size_t i = 0; i < num_elements; i++)
+        {
+            CHECK_VERIFICATION_ERROR(new_pattern, output_data_2[i], i);
         }
 
         return CL_SUCCESS;

@@ -70,15 +70,42 @@ struct BarrierWithWaitListKHR : public BasicCommandBufferTest
             0, nullptr, out_of_order_command_buffer, 0, nullptr, &event);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        std::vector<cl_int> output_data(num_elements);
+        std::vector<cl_int> output_data_1(num_elements);
         error = clEnqueueReadBuffer(out_of_order_queue, out_mem, CL_TRUE, 0,
-                                    data_size(), output_data.data(), 1, &event,
-                                    nullptr);
+                                    data_size(), output_data_1.data(), 1,
+                                    &event, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (size_t i = 0; i < num_elements; i++)
         {
-            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
+            CHECK_VERIFICATION_ERROR(pattern, output_data_1[i], i);
+        }
+
+        /* Check second enqueue of command buffer */
+
+        error =
+            clEnqueueFillBuffer(queue, in_mem, &zero_pattern, sizeof(cl_int), 0,
+                                data_size(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBufferKHR failed");
+
+        error =
+            clEnqueueFillBuffer(queue, out_mem, &zero_pattern, sizeof(cl_int),
+                                0, data_size(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBufferKHR failed");
+
+        error = clEnqueueCommandBufferKHR(
+            0, nullptr, out_of_order_command_buffer, 0, nullptr, &event);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        std::vector<cl_int> output_data_2(num_elements);
+        error = clEnqueueReadBuffer(out_of_order_queue, out_mem, CL_TRUE, 0,
+                                    data_size(), output_data_2.data(), 1,
+                                    &event, nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        for (size_t i = 0; i < num_elements; i++)
+        {
+            CHECK_VERIFICATION_ERROR(pattern, output_data_2[i], i);
         }
 
         return CL_SUCCESS;
@@ -106,6 +133,7 @@ struct BarrierWithWaitListKHR : public BasicCommandBufferTest
     }
 
     const cl_int pattern = 0x16;
+    const cl_int zero_pattern = 0x0;
     clCommandQueueWrapper out_of_order_queue;
     clCommandBufferWrapper out_of_order_command_buffer;
     clEventWrapper event;
