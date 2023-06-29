@@ -65,7 +65,7 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
             !clGetDeviceInfo(
                 device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
-            && mutable_capabilities & CL_MUTABLE_DISPATCH_LOCAL_SIZE_KHR;
+            && mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
 
         return (!mutable_support && !image_support)
             || BasicMutableCommandBufferTest::Skip();
@@ -102,21 +102,23 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         imageInfo.format = &formats;
         imageInfo.width = 4;
 
-        BufferOwningPtr<char> imageValues, outputData;
+        BufferOwningPtr<char> imageValues_input, imageValues_output, outputData;
         MTdataHolder d(gRandomSeed);
-        generate_random_image_data(&imageInfo, imageValues, d);
+        generate_random_image_data(&imageInfo, imageValues_input, d);
+        generate_random_image_data(&imageInfo, imageValues_output, d);
         generate_random_image_data(&imageInfo, outputData, d);
 
-        char *host_ptr = (char *)imageValues;
+        char *host_ptr_input = (char *)imageValues_input;
+        char *host_ptr_output = (char *)imageValues_output;
 
         clMemWrapper src_image = create_image_1d(
             context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, &formats,
-            image_desc.image_width, 0, host_ptr, nullptr, &error);
+            image_desc.image_width, 0, host_ptr_input, nullptr, &error);
         test_error(error, "create_image_1d failed");
 
         clMemWrapper dst_image = create_image_1d(
             context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, &formats,
-            image_desc.image_width, 0, host_ptr, nullptr, &error);
+            image_desc.image_width, 0, host_ptr_output, nullptr, &error);
         test_error(error, "create_image_2d failed");
 
         error = create_single_kernel_helper(context, &program, &kernel, 1,
@@ -161,11 +163,11 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
 
         clMemWrapper new_image = create_image_1d(
             context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, &formats,
-            image_desc.image_width, 0, host_ptr, nullptr, &error);
+            image_desc.image_width, 0, host_ptr_input, nullptr, &error);
         test_error(error, "create_image_2d failed");
 
-        cl_mutable_dispatch_arg_khr arg_0{ 0, sizeof(cl_mem), &new_image };
-        cl_mutable_dispatch_arg_khr args[] = { arg_0 };
+        cl_mutable_dispatch_arg_khr arg_2{ 2, sizeof(cl_mem), &new_image };
+        cl_mutable_dispatch_arg_khr args[] = { arg_2 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
             CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
@@ -202,11 +204,11 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
 
         for (size_t i = 0; i < imageInfo.width; ++i)
         {
-            if (imageValues[i] != outputData[i])
+            if (imageValues_input[i] != outputData[i])
             {
                 log_error("Data failed to verify: imageValues[%d]=%d != "
                           "outputData[%d]=%d\n",
-                          i, imageValues[i], i, outputData[i]);
+                          i, imageValues_input[i], i, outputData[i]);
 
                 return TEST_FAIL;
             }
@@ -249,7 +251,7 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
             !clGetDeviceInfo(
                 device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
-            && mutable_capabilities & CL_MUTABLE_DISPATCH_LOCAL_SIZE_KHR;
+            && mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
 
         return (!mutable_support && !image_support)
             || BasicMutableCommandBufferTest::Skip();
@@ -293,24 +295,26 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         imageInfo.height = 4;
         imageInfo.format = &formats;
 
-        BufferOwningPtr<char> imageValues;
+        BufferOwningPtr<char> imageValues_input, imageValues_output;
 
         MTdataHolder d(gRandomSeed);
-        generate_random_image_data(&imageInfo, imageValues, d);
+        generate_random_image_data(&imageInfo, imageValues_input, d);
+        generate_random_image_data(&imageInfo, imageValues_output, d);
 
-        char *host_ptr = (char *)imageValues;
+        char *host_ptr_input = (char *)imageValues_input;
+        char *host_ptr_output = (char *)imageValues_output;
         std::vector<char> outputData(data_size);
 
         clMemWrapper src_image =
             create_image_2d(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                             &formats, image_desc.image_width,
-                            image_desc.image_height, 0, host_ptr, &error);
+                            image_desc.image_height, 0, host_ptr_input, &error);
         test_error(error, "create_image_2d failed");
 
-        clMemWrapper dst_image =
-            create_image_2d(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                            &formats, image_desc.image_width,
-                            image_desc.image_height, 0, host_ptr, &error);
+        clMemWrapper dst_image = create_image_2d(
+            context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, &formats,
+            image_desc.image_width, image_desc.image_height, 0, host_ptr_output,
+            &error);
         test_error(error, "create_image_2d failed");
 
         error = create_single_kernel_helper(context, &program, &kernel, 1,
@@ -353,14 +357,14 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         error = clFinish(queue);
         test_error(error, "clFinish failed.");
 
-        clMemWrapper new_image =
-            create_image_2d(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                            &formats, image_desc.image_width,
-                            image_desc.image_height, 0, imageValues, &error);
+        clMemWrapper new_image = create_image_2d(
+            context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, &formats,
+            image_desc.image_width, image_desc.image_height, 0,
+            imageValues_input, &error);
         test_error(error, "create_image_2d failed");
 
-        cl_mutable_dispatch_arg_khr arg_0{ 0, sizeof(cl_mem), &new_image };
-        cl_mutable_dispatch_arg_khr args[] = { arg_0 };
+        cl_mutable_dispatch_arg_khr arg_2{ 2, sizeof(cl_mem), &new_image };
+        cl_mutable_dispatch_arg_khr args[] = { arg_2 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
             CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
@@ -398,11 +402,11 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
 
         for (size_t i = 0; i < imageInfo.width * imageInfo.height; ++i)
         {
-            if (imageValues[i] != outputData[i])
+            if (imageValues_input[i] != outputData[i])
             {
                 log_error("Data failed to verify: imageValues[%d]=%d != "
                           "outputData[%d]=%d\n",
-                          i, imageValues[i], i, outputData[i]);
+                          i, imageValues_input[i], i, outputData[i]);
                 return TEST_FAIL;
             }
         }
