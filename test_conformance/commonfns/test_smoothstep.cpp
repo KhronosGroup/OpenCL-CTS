@@ -18,9 +18,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "harness/stringHelpers.h"
+
 #include "procs.h"
 #include "test_base.h"
-
 
 const char *smoothstep_fn_code_pattern =
     "%s\n" /* optional pragma */
@@ -53,38 +54,43 @@ const char *smoothstep_fn_code_pattern_v3_scalar =
     "    vstore3(smoothstep(e0[tid], e1[tid], vload3(tid,x)), tid, dst);\n"
     "}\n";
 
-
 #define MAX_ERR (1e-5f)
 
 namespace {
-
 
 template <typename T>
 int verify_smoothstep(const T *const edge0, const T *const edge1,
                       const T *const x, const T *const outptr, const int n,
                       const int veclen, const bool vecParam)
 {
-    T r, t;
-    float delta = 0;
+    double r, t;
+    float delta = 0, max_delta = 0;
 
     if (vecParam)
     {
         for (int i = 0; i < n * veclen; i++)
         {
-            t = (x[i] - edge0[i]) / (edge1[i] - edge0[i]);
-            if (t < 0.0f)
-                t = 0.0f;
-            else if (t > 1.0f)
-                t = 1.0f;
-            r = t * t * (3.0f - 2.0f * t);
-            delta = (float)fabs(r - outptr[i]);
-            if (delta > MAX_ERR)
+            t = (conv_to_dbl(x[i]) - conv_to_dbl(edge0[i]))
+                / (conv_to_dbl(edge1[i]) - conv_to_dbl(edge0[i]));
+            if (t < 0.0)
+                t = 0.0;
+            else if (t > 1.0)
+                t = 1.0;
+            r = t * t * (3.0 - 2.0 * t);
+            delta = (float)fabs(r - conv_to_dbl(outptr[i]));
+            if (!std::is_same<T, half>::value)
             {
-                log_error("%d) verification error: smoothstep(%a, %a, %a) = "
-                          "*%a vs. %a\n",
-                          i, x[i], edge0[i], edge1[i], r, outptr[i]);
-                return -1;
+                if (delta > MAX_ERR)
+                {
+                    log_error(
+                        "%d) verification error: smoothstep(%a, %a, %a) = "
+                        "*%a vs. %a\n",
+                        i, x[i], edge0[i], edge1[i], r, outptr[i]);
+                    return -1;
+                }
             }
+            else
+                max_delta = std::max(max_delta, delta);
         }
     }
     else
@@ -95,32 +101,48 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
             int vi = i * veclen;
             for (int j = 0; j < veclen; ++j, ++vi)
             {
-                t = (x[vi] - edge0[i]) / (edge1[i] - edge0[i]);
-                if (t < 0.0f)
-                    t = 0.0f;
-                else if (t > 1.0f)
-                    t = 1.0f;
-                r = t * t * (3.0f - 2.0f * t);
-                delta = (float)fabs(r - outptr[vi]);
-                if (delta > MAX_ERR)
+                t = (conv_to_dbl(x[vi]) - conv_to_dbl(edge0[i]))
+                    / (conv_to_dbl(edge1[i]) - conv_to_dbl(edge0[i]));
+                if (t < 0.0)
+                    t = 0.0;
+                else if (t > 1.0)
+                    t = 1.0;
+                r = t * t * (3.0 - 2.0 * t);
+                delta = (float)fabs(r - conv_to_dbl(outptr[vi]));
+
+                if (!std::is_same<T, half>::value)
                 {
-                    log_error("{%d, element %d}) verification error: "
-                              "smoothstep(%a, %a, %a) = *%a vs. %a\n",
-                              ii, j, x[vi], edge0[i], edge1[i], r, outptr[vi]);
-                    return -1;
+                    if (delta > MAX_ERR)
+                    {
+                        log_error("{%d, element %d}) verification error: "
+                                  "smoothstep(%a, %a, %a) = *%a vs. %a\n",
+                                  ii, j, x[vi], edge0[i], edge1[i], r,
+                                  outptr[vi]);
+                        return -1;
+                    }
                 }
+                else
+                    max_delta = std::max(max_delta, delta);
             }
         }
     }
+
+    // due to the fact that accuracy of smoothstep for cl_khr_fp16 is
+    // implementation defined this test only reports maximum error without
+    // testing maximum error threshold
+    if (std::is_same<T, half>::value)
+        log_error("smoothstep half verification result, max delta: %a\n",
+                  max_delta);
+
     return 0;
 }
 
 }
 
-
 template <typename T>
 int test_smoothstep_fn(cl_device_id device, cl_context context,
-                       cl_command_queue queue, int n_elems, bool vecParam)
+                       cl_command_queue queue, const int n_elems,
+                       const bool vecParam)
 {
     clMemWrapper streams[4];
     std::vector<T> input_ptr[3], output_ptr;
@@ -170,6 +192,17 @@ int test_smoothstep_fn(cl_device_id device, cl_context context,
             input_ptr[2][i] = get_random_double(-0x20000000, 0x20000000, d);
         }
     }
+    else if (std::is_same<T, half>::value)
+    {
+        pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
+        for (i = 0; i < num_elements; i++)
+        {
+            input_ptr[0][i] = conv_to_half(get_random_float(-65503, 65503, d));
+            input_ptr[1][i] = conv_to_half(
+                get_random_float(conv_to_flt(input_ptr[0][i]), 65503, d));
+            input_ptr[2][i] = conv_to_half(get_random_float(-65503, 65503, d));
+        }
+    }
 
     for (i = 0; i < 3; i++)
     {
@@ -179,7 +212,7 @@ int test_smoothstep_fn(cl_device_id device, cl_context context,
         test_error(err, "Unable to write input buffer");
     }
 
-    char vecSizeNames[][3] = { "", "2", "4", "8", "16", "3" };
+    const char vecSizeNames[][3] = { "", "2", "4", "8", "16", "3" };
 
     for (i = 0; i < kTotalVecCount; i++)
     {
@@ -190,15 +223,15 @@ int test_smoothstep_fn(cl_device_id device, cl_context context,
             {
                 std::string str = smoothstep_fn_code_pattern_v3;
                 kernelSource =
-                    string_format(str, pragma_str.c_str(), tname.c_str(),
-                                  tname.c_str(), tname.c_str(), tname.c_str());
+                    str_sprintf(str, pragma_str.c_str(), tname.c_str(),
+                                tname.c_str(), tname.c_str(), tname.c_str());
             }
             else
             {
                 std::string str = smoothstep_fn_code_pattern_v3_scalar;
                 kernelSource =
-                    string_format(str, pragma_str.c_str(), tname.c_str(),
-                                  tname.c_str(), tname.c_str(), tname.c_str());
+                    str_sprintf(str, pragma_str.c_str(), tname.c_str(),
+                                tname.c_str(), tname.c_str(), tname.c_str());
             }
         }
         else
@@ -206,11 +239,12 @@ int test_smoothstep_fn(cl_device_id device, cl_context context,
             // regular path
             std::string str = smoothstep_fn_code_pattern;
             kernelSource =
-                string_format(str, pragma_str.c_str(), tname.c_str(),
-                              vecParam ? vecSizeNames[i] : "", tname.c_str(),
-                              vecParam ? vecSizeNames[i] : "", tname.c_str(),
-                              vecSizeNames[i], tname.c_str(), vecSizeNames[i]);
+                str_sprintf(str, pragma_str.c_str(), tname.c_str(),
+                            vecParam ? vecSizeNames[i] : "", tname.c_str(),
+                            vecParam ? vecSizeNames[i] : "", tname.c_str(),
+                            vecSizeNames[i], tname.c_str(), vecSizeNames[i]);
         }
+
         const char *programPtr = kernelSource.c_str();
         err =
             create_single_kernel_helper(context, &programs[i], &kernels[i], 1,
@@ -259,10 +293,15 @@ int test_smoothstep_fn(cl_device_id device, cl_context context,
     return err;
 }
 
-
 cl_int SmoothstepTest::Run()
 {
     cl_int error = CL_SUCCESS;
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        error = test_smoothstep_fn<half>(device, context, queue, num_elems,
+                                         vecParam);
+        test_error(error, "SmoothstepTest::Run<cl_half> failed");
+    }
 
     error =
         test_smoothstep_fn<float>(device, context, queue, num_elems, vecParam);
@@ -278,14 +317,12 @@ cl_int SmoothstepTest::Run()
     return error;
 }
 
-
 int test_smoothstep(cl_device_id device, cl_context context,
                     cl_command_queue queue, int n_elems)
 {
     return MakeAndRunTest<SmoothstepTest>(device, context, queue, n_elems,
                                           "smoothstep", true);
 }
-
 
 int test_smoothstepf(cl_device_id device, cl_context context,
                      cl_command_queue queue, int n_elems)

@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2023 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,8 +18,10 @@
 #include <string.h>
 #include "procs.h"
 #include "test_base.h"
+#include "harness/kernelHelpers.h"
 
 std::map<size_t, std::string> BaseFunctionTest::type2name;
+cl_half_rounding_mode BaseFunctionTest::halfRoundingMode = CL_HALF_RTE;
 
 int g_arrVecSizes[kVectorSizeCount + kStrangeVectorSizeCount];
 int g_arrStrangeVectorSizes[kStrangeVectorSizeCount] = {3};
@@ -45,17 +47,38 @@ test_definition test_list[] = {
 
 const int test_num = ARRAY_SIZE( test_list );
 
+test_status InitCL(cl_device_id device)
+{
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        const cl_device_fp_config fpConfigHalf =
+            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
+        if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
+        {
+            BaseFunctionTest::halfRoundingMode = CL_HALF_RTE;
+        }
+        else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
+        {
+            BaseFunctionTest::halfRoundingMode = CL_HALF_RTZ;
+        }
+        else
+        {
+            log_error("Error while acquiring half rounding mode");
+            return TEST_FAIL;
+        }
+    }
+
+    return TEST_PASS;
+}
+
 int main(int argc, const char *argv[])
 {
     initVecSizes();
 
-    if (BaseFunctionTest::type2name.empty())
-    {
-        BaseFunctionTest::type2name[sizeof(half)] = "half";
-        BaseFunctionTest::type2name[sizeof(float)] = "float";
-        BaseFunctionTest::type2name[sizeof(double)] = "double";
-    }
+    BaseFunctionTest::type2name[sizeof(half)] = "half";
+    BaseFunctionTest::type2name[sizeof(float)] = "float";
+    BaseFunctionTest::type2name[sizeof(double)] = "double";
 
-    return runTestHarness(argc, argv, test_num, test_list, false, 0);
+    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, 0,
+                                   InitCL);
 }
-

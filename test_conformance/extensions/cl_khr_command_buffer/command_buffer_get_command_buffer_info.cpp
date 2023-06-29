@@ -26,6 +26,7 @@ enum class CombufInfoTestMode
     CITM_REF_COUNT,
     CITM_STATE,
     CITM_PROP_ARRAY,
+    CITM_CONTEXT,
 };
 
 namespace {
@@ -38,6 +39,7 @@ namespace {
 // -test case for CL_COMMAND_BUFFER_REFERENCE_COUNT_KHR query
 // -test case for CL_COMMAND_BUFFER_STATE_KHR query
 // -test case for CL_COMMAND_BUFFER_PROPERTIES_ARRAY_KHR query
+// -test case for CL_COMMAND_BUFFER_CONTEXT_KHR query
 
 template <CombufInfoTestMode test_mode>
 struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
@@ -69,6 +71,10 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
             case CombufInfoTestMode::CITM_PROP_ARRAY:
                 error = RunPropArrayInfoTest();
                 test_error(error, "RunPropArrayInfoTest failed");
+                break;
+            case CombufInfoTestMode::CITM_CONTEXT:
+                error = RunContextInfoTest();
+                test_error(error, "RunContextInfoTest failed");
                 break;
         }
 
@@ -323,6 +329,46 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
         return TEST_FAIL;
     }
 
+    cl_int RunContextInfoTest()
+    {
+        cl_int error = TEST_PASS;
+
+        // record command buffers
+        error = RecordCommandBuffer();
+        test_error(error, "RecordCommandBuffer failed");
+
+        size_t ret_value_size = 0;
+        error = clGetCommandBufferInfoKHR(command_buffer,
+                                          CL_COMMAND_BUFFER_CONTEXT_KHR, 0,
+                                          nullptr, &ret_value_size);
+        test_error(error, "clGetCommandBufferInfoKHR failed");
+
+        test_assert_error(
+            ret_value_size == sizeof(cl_context),
+            "Unexpected result of CL_COMMAND_BUFFER_CONTEXT_KHR query!");
+
+        cl_context ret_context = nullptr;
+        error = clGetCommandBufferInfoKHR(
+            command_buffer, CL_COMMAND_BUFFER_CONTEXT_KHR, sizeof(cl_context),
+            &ret_context, nullptr);
+        test_error(error, "clGetCommandBufferInfoKHR failed");
+        test_assert_error(
+            ret_context != nullptr,
+            "Unexpected result of CL_COMMAND_BUFFER_CONTEXT_KHR query!");
+
+        cl_context expected_context = nullptr;
+        error =
+            clGetCommandQueueInfo(queue, CL_QUEUE_CONTEXT, sizeof(cl_context),
+                                  &expected_context, nullptr);
+        test_error(error, "clGetCommandQueueInfo failed");
+
+        test_assert_error(
+            ret_context == expected_context,
+            "Unexpected result of CL_COMMAND_BUFFER_CONTEXT_KHR query!");
+
+        return TEST_PASS;
+    }
+
     const cl_int pattern = 0xE;
 };
 
@@ -358,5 +404,13 @@ int test_info_prop_array(cl_device_id device, cl_context context,
 {
     return MakeAndRunTest<
         CommandBufferGetCommandBufferInfo<CombufInfoTestMode::CITM_PROP_ARRAY>>(
+        device, context, queue, num_elements);
+}
+
+int test_info_context(cl_device_id device, cl_context context,
+                      cl_command_queue queue, int num_elements)
+{
+    return MakeAndRunTest<
+        CommandBufferGetCommandBufferInfo<CombufInfoTestMode::CITM_CONTEXT>>(
         device, context, queue, num_elements);
 }
