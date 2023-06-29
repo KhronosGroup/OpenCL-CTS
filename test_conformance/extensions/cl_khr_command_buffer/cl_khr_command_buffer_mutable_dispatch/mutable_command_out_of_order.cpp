@@ -47,11 +47,6 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
     //--------------------------------------------------------------------------
     cl_int SetUpKernel() override
     {
-        // if device doesn't support simultaneous use which was requested
-        // we can skip creation of OCL resources
-        if (simultaneous_use_requested && !simultaneous_use_support)
-            return CL_SUCCESS;
-
         cl_int error = BasicMutableCommandBufferTest::SetUpKernel();
         test_error(error, "BasicMutableCommandBufferTest::SetUpKernel failed");
 
@@ -83,11 +78,6 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
     //--------------------------------------------------------------------------
     cl_int SetUpKernelArgs() override
     {
-        // if device doesn't support simultaneous use which was requested
-        // we can skip creation of OCL resources
-        if (simultaneous_use_requested && !simultaneous_use_support)
-            return CL_SUCCESS;
-
         cl_int error = BasicMutableCommandBufferTest::SetUpKernelArgs();
         test_error(error,
                    "BasicMutableCommandBufferTest::SetUpKernelArgs failed");
@@ -146,7 +136,7 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
             !clGetDeviceInfo(
                 device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
-            && mutable_capabilities & CL_MUTABLE_DISPATCH_GLOBAL_OFFSET_KHR;
+            && mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
 
         return (!out_of_order_support
                 || (simultaneous_use_requested && !simultaneous_use_support))
@@ -205,18 +195,32 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
     //--------------------------------------------------------------------------
     cl_int RunSingle()
     {
-        cl_int error = RecordCommandBuffer();
+        cl_int error;
+
+        if (!user_single_event)
+        {
+            user_single_event = clCreateUserEvent(context, &error);
+            test_error(error, "clCreateUserEvent failed");
+        }
+
+        error = RecordCommandBuffer();
         test_error(error, "RecordCommandBuffer failed");
 
-        error = clEnqueueCommandBufferKHR(
-            0, nullptr, out_of_order_command_buffer, 0, nullptr, &user_event);
+        error =
+            clEnqueueCommandBufferKHR(0, nullptr, out_of_order_command_buffer,
+                                      0, nullptr, &user_single_event);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         std::vector<cl_int> output_data(num_elements);
         error = clEnqueueReadBuffer(out_of_order_queue, out_mem, CL_TRUE, 0,
                                     data_size(), output_data.data(), 1,
-                                    &user_event, nullptr);
+                                    &user_single_event, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
+
+        for (size_t i = 0; i < num_elements; i++)
+        {
+            CHECK_VERIFICATION_ERROR(pattern_pri, output_data[i], i);
+        }
 
         clMemWrapper new_out_mem = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
                                                   sizeof(cl_int) * num_elements
@@ -252,13 +256,14 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
                                            &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
-        error = clEnqueueCommandBufferKHR(
-            0, nullptr, out_of_order_command_buffer, 0, nullptr, &user_event);
+        error =
+            clEnqueueCommandBufferKHR(0, nullptr, out_of_order_command_buffer,
+                                      0, nullptr, &user_single_event);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         error = clEnqueueReadBuffer(out_of_order_queue, new_out_mem, CL_TRUE, 0,
                                     data_size(), output_data.data(), 1,
-                                    &user_event, nullptr);
+                                    &user_single_event, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (size_t i = 0; i < num_elements; i++)
@@ -435,6 +440,7 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
     clCommandBufferWrapper out_of_order_command_buffer;
 
     clEventWrapper user_event;
+    clEventWrapper user_single_event;
     clEventWrapper wait_pass_event;
 
     clKernelWrapper kernel_fill;
