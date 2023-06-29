@@ -14,17 +14,8 @@
 // limitations under the License.
 //
 
-#include <extensionHelpers.h>
-#include "typeWrappers.h"
-#include "procs.h"
-#include "testHarness.h"
-#include "imageHelpers.h"
 #include <vector>
-#include <iostream>
-#include <random>
-#include <cstring>
-#include <algorithm>
-#include <memory>
+#include "imageHelpers.h"
 #include "mutable_command_basic.h"
 
 #include <CL/cl.h>
@@ -67,7 +58,7 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
             && mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
 
-        return (!mutable_support && !image_support)
+        return (!mutable_support || !image_support)
             || BasicMutableCommandBufferTest::Skip();
     }
 
@@ -163,8 +154,8 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
 
         clMemWrapper new_image = create_image_1d(
             context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, &formats,
-            image_desc.image_width, 0, host_ptr_input, nullptr, &error);
-        test_error(error, "create_image_2d failed");
+            image_desc.image_width, 0, host_ptr_output, nullptr, &error);
+        test_error(error, "create_image_1d failed");
 
         cl_mutable_dispatch_arg_khr arg_2{ 2, sizeof(cl_mem), &new_image };
         cl_mutable_dispatch_arg_khr args[] = { arg_2 };
@@ -253,7 +244,7 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
             && mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
 
-        return (!mutable_support && !image_support)
+        return (!mutable_support || !image_support)
             || BasicMutableCommandBufferTest::Skip();
     }
 
@@ -360,7 +351,7 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         clMemWrapper new_image = create_image_2d(
             context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, &formats,
             image_desc.image_width, image_desc.image_height, 0,
-            imageValues_input, &error);
+            imageValues_output, &error);
         test_error(error, "create_image_2d failed");
 
         cl_mutable_dispatch_arg_khr arg_2{ 2, sizeof(cl_mem), &new_image };
