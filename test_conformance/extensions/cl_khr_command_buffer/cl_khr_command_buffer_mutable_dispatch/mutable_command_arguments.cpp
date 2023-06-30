@@ -14,17 +14,8 @@
 // limitations under the License.
 //
 
-#include <extensionHelpers.h>
-#include "typeWrappers.h"
-#include "procs.h"
 #include "testHarness.h"
 #include "imageHelpers.h"
-#include <vector>
-#include <iostream>
-#include <random>
-#include <cstring>
-#include <algorithm>
-#include <memory>
 #include "mutable_command_basic.h"
 
 #include <CL/cl.h>
@@ -237,11 +228,10 @@ struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
                                             "sample_test");
         test_error(error, "Creating kernel failed");
 
-        currentSize = max_size;
         MTdataHolder d(gRandomSeed);
 
         size_t sizeToAllocate =
-            ((size_t)currentSize / sizeof(cl_int)) * sizeof(cl_int);
+            ((size_t)max_size / sizeof(cl_int)) * sizeof(cl_int);
         size_t numberOfInts = sizeToAllocate / sizeof(cl_int);
         constantData.resize(sizeToAllocate / sizeof(cl_int));
         resultData.resize(sizeToAllocate / sizeof(cl_int));
@@ -334,7 +324,6 @@ struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
 
     cl_mutable_command_khr command = nullptr;
     const cl_ulong max_size = 16;
-    cl_ulong currentSize;
 };
 
 struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
@@ -345,19 +334,6 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
                                 cl_command_queue queue)
         : BasicMutableCommandBufferTest(device, context, queue)
     {}
-
-    virtual cl_int SetUp(int elements) override
-    {
-        BasicMutableCommandBufferTest::SetUp(elements);
-
-        cl_platform_id platform;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
-                            &platform, nullptr);
-        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
-
-        return 0;
-    }
 
     cl_int Run() override
     {
@@ -381,11 +357,10 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
                                             "sample_test");
         test_error(error, "Creating kernel failed");
 
-        currentSize = max_size;
         MTdataHolder d(gRandomSeed);
 
         size_t sizeToAllocate =
-            ((size_t)currentSize / sizeof(cl_int)) * sizeof(cl_int);
+            ((size_t)max_size / sizeof(cl_int)) * sizeof(cl_int);
         size_t numberOfInts = sizeToAllocate / sizeof(cl_int);
         constantData.resize(sizeToAllocate / sizeof(cl_int));
         resultData.resize(sizeToAllocate / sizeof(cl_int));
@@ -474,7 +449,6 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
 
     cl_mutable_command_khr command = nullptr;
     const cl_ulong max_size = 16;
-    cl_ulong currentSize;
 };
 
 struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
@@ -485,19 +459,6 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
                                  cl_command_queue queue)
         : BasicMutableCommandBufferTest(device, context, queue)
     {}
-
-    virtual cl_int SetUp(int elements) override
-    {
-        BasicMutableCommandBufferTest::SetUp(elements);
-
-        cl_platform_id platform;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
-                            &platform, nullptr);
-        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
-
-        return 0;
-    }
 
     cl_int Run() override
     {
@@ -633,7 +594,6 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
 
     cl_mutable_command_khr command = nullptr;
     const cl_ulong max_size = 16;
-    cl_ulong currentSize;
 };
 
 struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
@@ -685,37 +645,37 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
 
         // Allocate and initialize SVM for initial execution
 
-        int *initWrapper =
-            (int *)clSVMAlloc(context, CL_MEM_READ_WRITE, sizeof(int *), 0);
-        int *initBuffer = (int *)clSVMAlloc(context, CL_MEM_READ_WRITE,
-                                            num_elements * sizeof(int), 0);
+        cl_int *initWrapper =
+            (cl_int *)clSVMAlloc(context, CL_MEM_READ_WRITE, sizeof(cl_int *), 0);
+        cl_int *initBuffer = (cl_int *)clSVMAlloc(context, CL_MEM_READ_WRITE,
+                                            num_elements * sizeof(cl_int), 0);
         test_assert_error(initWrapper != nullptr && initBuffer != nullptr,
                           "clSVMAlloc failed for initial execution")
 
             error = clEnqueueSVMMemcpy(queue, CL_TRUE, initWrapper, &initBuffer,
-                                       sizeof(int *), 0, nullptr, nullptr);
+                                       sizeof(cl_int *), 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMMemcpy failed for initWrapper");
 
         error = clEnqueueSVMMemFill(queue, initBuffer, &zero, sizeof(zero),
-                                    num_elements * sizeof(int), 0, nullptr,
+                                    num_elements * sizeof(cl_int), 0, nullptr,
                                     nullptr);
         test_error(error, "clEnqueueSVMMemFill failed for initBuffer");
 
         // Allocate and initialize SVM for modified execution
 
-        int *newWrapper =
-            (int *)clSVMAlloc(context, CL_MEM_READ_WRITE, sizeof(int), 0);
-        int *newBuffer = (int *)clSVMAlloc(context, CL_MEM_READ_WRITE,
-                                           num_elements * sizeof(int), 0);
+        cl_int *newWrapper =
+            (cl_int *)clSVMAlloc(context, CL_MEM_READ_WRITE, sizeof(cl_int), 0);
+        cl_int *newBuffer = (cl_int *)clSVMAlloc(context, CL_MEM_READ_WRITE,
+                                           num_elements * sizeof(cl_int), 0);
         test_assert_error(newWrapper != nullptr && newBuffer != nullptr,
                           "clSVMAlloc failed for modified execution")
 
             error = clEnqueueSVMMemcpy(queue, CL_TRUE, newWrapper, &newBuffer,
-                                       sizeof(int *), 0, nullptr, nullptr);
+                                       sizeof(cl_int *), 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMMemFill failed for newWrapper");
 
         error = clEnqueueSVMMemFill(queue, newBuffer, &zero, sizeof(zero),
-                                    num_elements * sizeof(int), 0, nullptr,
+                                    num_elements * sizeof(cl_int), 0, nullptr,
                                     nullptr);
         test_error(error, "clEnqueueSVMMemFill failed for newB");
 
