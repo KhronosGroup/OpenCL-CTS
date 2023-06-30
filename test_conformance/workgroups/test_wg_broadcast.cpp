@@ -70,7 +70,7 @@ verify_wg_broadcast_1D(float *inptr, float *outptr, size_t n, size_t wg_size)
 
     for (i=0,group_id=0; i<n; i+=wg_size,group_id++)
     {
-        int local_size = (n-i) > wg_size ? wg_size : (n-i);
+        size_t local_size = (n - i) > wg_size ? wg_size : (n - i);
         float broadcast_result = inptr[i + (group_id % local_size)];
         for (j=0; j<local_size; j++)
         {
@@ -172,7 +172,6 @@ test_work_group_broadcast_1D(cl_device_id device, cl_context context, cl_command
     size_t       wg_size[1];
     size_t       num_elements;
     int          err;
-    int          i;
     MTdata       d;
 
     err = create_single_kernel_helper(context, &program, &kernel, 1,
@@ -207,7 +206,7 @@ test_work_group_broadcast_1D(cl_device_id device, cl_context context, cl_command
 
     p = input_ptr[0];
     d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
+    for (size_t i = 0; i < num_elements; i++)
     {
         p[i] = get_random_float((float)(-100000.f * M_PI), (float)(100000.f * M_PI) ,d);
     }
@@ -278,7 +277,6 @@ test_work_group_broadcast_2D(cl_device_id device, cl_context context, cl_command
     size_t       num_workgroups;
     size_t       num_elements;
     int          err;
-    int          i;
     MTdata       d;
 
     err = create_single_kernel_helper(context, &program, &kernel, 1,
@@ -333,7 +331,7 @@ test_work_group_broadcast_2D(cl_device_id device, cl_context context, cl_command
 
     p = input_ptr[0];
     d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
+    for (size_t i = 0; i < num_elements; i++)
     {
         p[i] = get_random_float((float)(-100000.f * M_PI), (float)(100000.f * M_PI) ,d);
     }
@@ -402,7 +400,6 @@ test_work_group_broadcast_3D(cl_device_id device, cl_context context, cl_command
     size_t       num_workgroups;
     size_t       num_elements;
     int          err;
-    int          i;
     MTdata       d;
 
     err = create_single_kernel_helper(context, &program, &kernel, 1,
@@ -458,7 +455,7 @@ test_work_group_broadcast_3D(cl_device_id device, cl_context context, cl_command
 
     p = input_ptr[0];
     d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
+    for (size_t i = 0; i < num_elements; i++)
     {
         p[i] = get_random_float((float)(-100000.f * M_PI), (float)(100000.f * M_PI) ,d);
     }
