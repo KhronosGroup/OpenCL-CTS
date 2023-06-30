@@ -4,6 +4,7 @@ set(${MODULE_NAME}_SOURCES
     main.cpp
     mutable_command_info.cpp
     mutable_command_arguments.cpp
+    mutable_command_global_offset.cpp
     ../basic_command_buffer.cpp
 )
 

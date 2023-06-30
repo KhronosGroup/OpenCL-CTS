@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2023 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,14 +22,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <CL/cl_half.h>
+
 #include "harness/testHarness.h"
 #include "procs.h"
 
 test_definition test_list[] = {
     ADD_TEST(hostptr),
-    ADD_TEST(fpmath_float),
-    ADD_TEST(fpmath_float2),
-    ADD_TEST(fpmath_float4),
+    ADD_TEST(fpmath),
     ADD_TEST(intmath_int),
     ADD_TEST(intmath_int2),
     ADD_TEST(intmath_int4),
@@ -58,8 +59,8 @@ test_definition test_list[] = {
     ADD_TEST(image_r8),
     ADD_TEST(barrier),
     ADD_TEST_VERSION(wg_barrier, Version(2, 0)),
-    ADD_TEST(int2float),
-    ADD_TEST(float2int),
+    ADD_TEST(int2fp),
+    ADD_TEST(fp2int),
     ADD_TEST(imagereadwrite),
     ADD_TEST(imagereadwrite3d),
     ADD_TEST(readimage3d),
@@ -155,7 +156,7 @@ test_definition test_list[] = {
     ADD_TEST(simple_read_image_pitch),
     ADD_TEST(simple_write_image_pitch),
 
-#if defined( __APPLE__ )
+#if defined(__APPLE__)
     ADD_TEST(queue_priority),
 #endif
 
@@ -164,9 +165,35 @@ test_definition test_list[] = {
 };
 
 const int test_num = ARRAY_SIZE( test_list );
+cl_half_rounding_mode halfRoundingMode = CL_HALF_RTE;
+
+test_status InitCL(cl_device_id device)
+{
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        const cl_device_fp_config fpConfigHalf =
+            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
+        if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
+        {
+            halfRoundingMode = CL_HALF_RTE;
+        }
+        else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
+        {
+            halfRoundingMode = CL_HALF_RTZ;
+        }
+        else
+        {
+            log_error("Error while acquiring half rounding mode");
+            return TEST_FAIL;
+        }
+    }
+
+    return TEST_PASS;
+}
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness(argc, argv, test_num, test_list, false, 0);
+    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, 0,
+                                   InitCL);
 }
 

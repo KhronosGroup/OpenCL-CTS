@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2023 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,6 +22,7 @@
 
 #include "harness/deviceInfo.h"
 #include "harness/typeWrappers.h"
+#include "harness/stringHelpers.h"
 
 #include "procs.h"
 #include "test_base.h"
@@ -52,7 +53,6 @@ const char *binary_fn_code_pattern_v3_scalar =
 "\n"
 "    vstore3(%s(vload3(tid,x), y[tid] ), tid, dst);\n"
 "}\n";
-
 
 template <typename T>
 int test_binary_fn(cl_device_id device, cl_context context,
@@ -105,6 +105,16 @@ int test_binary_fn(cl_device_id device, cl_context context,
             input_ptr[1][j] = get_random_double(-0x20000000, 0x20000000, d);
         }
     }
+    else if (std::is_same<T, half>::value)
+    {
+        const float fval = CL_HALF_MAX;
+        pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
+        for (int j = 0; j < num_elements; j++)
+        {
+            input_ptr[0][j] = conv_to_half(get_random_float(-fval, fval, d));
+            input_ptr[1][j] = conv_to_half(get_random_float(-fval, fval, d));
+        }
+    }
 
     for (i = 0; i < 2; i++)
     {
@@ -125,22 +135,22 @@ int test_binary_fn(cl_device_id device, cl_context context,
             {
                 std::string str = binary_fn_code_pattern_v3;
                 kernelSource =
-                    string_format(str, pragma_str.c_str(), tname.c_str(),
-                                  tname.c_str(), tname.c_str(), fnName.c_str());
+                    str_sprintf(str, pragma_str.c_str(), tname.c_str(),
+                                tname.c_str(), tname.c_str(), fnName.c_str());
             }
             else
             {
                 std::string str = binary_fn_code_pattern_v3_scalar;
                 kernelSource =
-                    string_format(str, pragma_str.c_str(), tname.c_str(),
-                                  tname.c_str(), tname.c_str(), fnName.c_str());
+                    str_sprintf(str, pragma_str.c_str(), tname.c_str(),
+                                tname.c_str(), tname.c_str(), fnName.c_str());
             }
         }
         else
         {
             // do regular
             std::string str = binary_fn_code_pattern;
-            kernelSource = string_format(
+            kernelSource = str_sprintf(
                 str, pragma_str.c_str(), tname.c_str(), vecSizeNames[i],
                 tname.c_str(), vecSecParam ? vecSizeNames[i] : "",
                 tname.c_str(), vecSizeNames[i], fnName.c_str());
@@ -203,13 +213,20 @@ int max_verify(const T* const x, const T* const y, const T* const out,
         {
             int k = i * vecSize + j;
             int l = (k * vecParam + i * (1 - vecParam));
-            T v = (x[k] < y[l]) ? y[l] : x[k];
+            T v = (conv_to_dbl(x[k]) < conv_to_dbl(y[l])) ? y[l] : x[k];
             if (v != out[k])
             {
-                log_error(
-                    "x[%d]=%g y[%d]=%g out[%d]=%g, expected %g. (index %d is "
-                    "vector %d, element %d, for vector size %d)\n",
-                    k, x[k], l, y[l], k, out[k], v, k, i, j, vecSize);
+                if (std::is_same<T, half>::value)
+                    log_error("x[%d]=%g y[%d]=%g out[%d]=%g, expected %g. "
+                              "(index %d is "
+                              "vector %d, element %d, for vector size %d)\n",
+                              k, conv_to_flt(x[k]), l, conv_to_flt(y[l]), k,
+                              conv_to_flt(out[k]), v, k, i, j, vecSize);
+                else
+                    log_error("x[%d]=%g y[%d]=%g out[%d]=%g, expected %g. "
+                              "(index %d is "
+                              "vector %d, element %d, for vector size %d)\n",
+                              k, x[k], l, y[l], k, out[k], v, k, i, j, vecSize);
                 return -1;
             }
         }
@@ -227,13 +244,20 @@ int min_verify(const T* const x, const T* const y, const T* const out,
         {
             int k = i * vecSize + j;
             int l = (k * vecParam + i * (1 - vecParam));
-            T v = (x[k] > y[l]) ? y[l] : x[k];
+            T v = (conv_to_dbl(x[k]) > conv_to_dbl(y[l])) ? y[l] : x[k];
             if (v != out[k])
             {
-                log_error(
-                    "x[%d]=%g y[%d]=%g out[%d]=%g, expected %g. (index %d is "
-                    "vector %d, element %d, for vector size %d)\n",
-                    k, x[k], l, y[l], k, out[k], v, k, i, j, vecSize);
+                if (std::is_same<T, half>::value)
+                    log_error("x[%d]=%g y[%d]=%g out[%d]=%g, expected %g. "
+                              "(index %d is "
+                              "vector %d, element %d, for vector size %d)\n",
+                              k, conv_to_flt(x[k]), l, conv_to_flt(y[l]), k,
+                              conv_to_flt(out[k]), v, k, i, j, vecSize);
+                else
+                    log_error("x[%d]=%g y[%d]=%g out[%d]=%g, expected %g. "
+                              "(index %d is "
+                              "vector %d, element %d, for vector size %d)\n",
+                              k, x[k], l, y[l], k, out[k], v, k, i, j, vecSize);
                 return -1;
             }
         }
@@ -246,6 +270,13 @@ int min_verify(const T* const x, const T* const y, const T* const out,
 cl_int MaxTest::Run()
 {
     cl_int error = CL_SUCCESS;
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        error = test_binary_fn<cl_half>(device, context, queue, num_elems,
+                                        fnName.c_str(), vecParam,
+                                        max_verify<cl_half>);
+        test_error(error, "MaxTest::Run<cl_half> failed");
+    }
 
     error = test_binary_fn<float>(device, context, queue, num_elems,
                                   fnName.c_str(), vecParam, max_verify<float>);
@@ -265,6 +296,13 @@ cl_int MaxTest::Run()
 cl_int MinTest::Run()
 {
     cl_int error = CL_SUCCESS;
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        error = test_binary_fn<cl_half>(device, context, queue, num_elems,
+                                        fnName.c_str(), vecParam,
+                                        min_verify<cl_half>);
+        test_error(error, "MinTest::Run<cl_half> failed");
+    }
 
     error = test_binary_fn<float>(device, context, queue, num_elems,
                                   fnName.c_str(), vecParam, min_verify<float>);
