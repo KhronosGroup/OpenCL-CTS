@@ -70,21 +70,21 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
 
         std::vector<cl_int> srcData(num_elements);
         for (size_t i = 0; i < num_elements; i++)
-            srcData[i] = (int)genrand_int32(d);
+            srcData[i] = (cl_int)genrand_int32(d);
 
         clMemWrapper srcBuf =
             clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                           num_elements * sizeof(int), srcData.data(), &error);
+                           num_elements * sizeof(cl_int), srcData.data(), &error);
         test_error(error, "Creating src buffer");
 
         clMemWrapper dstBuf0 =
             clCreateBuffer(context, CL_MEM_READ_WRITE,
-                           num_elements * sizeof(int), NULL, &error);
+                           num_elements * sizeof(cl_int), NULL, &error);
         test_error(error, "Creating initial dst buffer failed");
 
         clMemWrapper dstBuf1 =
             clCreateBuffer(context, CL_MEM_READ_WRITE,
-                           num_elements * sizeof(int), NULL, &error);
+                           num_elements * sizeof(cl_int), NULL, &error);
         test_error(error, "Creating updated dst buffer failed");
 
         // Build and execute the command buffer for the initial execution
@@ -116,7 +116,7 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
 
         std::vector<cl_int> dstData0(num_elements);
         error = clEnqueueReadBuffer(queue, dstBuf0, CL_TRUE, 0,
-                                    num_elements * sizeof(int), dstData0.data(),
+                                    num_elements * sizeof(cl_int), dstData0.data(),
                                     0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer for initial dst failed");
 
@@ -167,7 +167,7 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
 
         std::vector<cl_int> dstData1(num_elements);
         error = clEnqueueReadBuffer(queue, dstBuf1, CL_TRUE, 0,
-                                    num_elements * sizeof(int), dstData1.data(),
+                                    num_elements * sizeof(cl_int), dstData1.data(),
                                     0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer for modified dst failed");
 
@@ -237,7 +237,7 @@ struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
         resultData.resize(sizeToAllocate / sizeof(cl_int));
 
         for (size_t i = 0; i < numberOfInts; i++)
-            constantData[i] = (int)genrand_int32(d);
+            constantData[i] = (cl_int)genrand_int32(d);
 
         clMemWrapper streams[2];
         streams[0] =
@@ -366,7 +366,7 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
         resultData.resize(sizeToAllocate / sizeof(cl_int));
 
         for (size_t i = 0; i < numberOfInts; i++)
-            constantData[i] = (int)genrand_int32(d);
+            constantData[i] = (cl_int)genrand_int32(d);
 
         clMemWrapper stream;
         stream = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, sizeToAllocate,
@@ -377,7 +377,7 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
         /* Set the arguments */
         error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &stream);
         test_error(error, "Unable to set indexed kernel arguments");
-        int intarg = 10;
+        cl_int intarg = 10;
         error = clSetKernelArg(kernel, 1, sizeof(cl_int), &intarg);
         test_error(error, "Unable to set indexed kernel arguments");
 
@@ -483,16 +483,16 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
 
         std::vector<cl_int> srcData(num_elements);
         for (size_t i = 0; i < num_elements; i++)
-            srcData[i] = (int)genrand_int32(d);
+            srcData[i] = (cl_int)genrand_int32(d);
 
         clMemWrapper srcBuf =
             clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                           num_elements * sizeof(int), srcData.data(), &error);
+                           num_elements * sizeof(cl_int), srcData.data(), &error);
         test_error(error, "Creating src buffer");
 
         clMemWrapper dstBuf =
             clCreateBuffer(context, CL_MEM_READ_WRITE,
-                           num_elements * sizeof(int), NULL, &error);
+                           num_elements * sizeof(cl_int), NULL, &error);
         test_error(error, "Creating dst buffer failed");
 
         // Build and execute the command buffer for the initial execution
@@ -524,7 +524,7 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
 
         std::vector<cl_int> dstData0(num_elements);
         error = clEnqueueReadBuffer(queue, dstBuf, CL_TRUE, 0,
-                                    num_elements * sizeof(int), dstData0.data(),
+                                    num_elements * sizeof(cl_int), dstData0.data(),
                                     0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer for initial dst failed");
 
@@ -575,7 +575,7 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
 
         std::vector<cl_int> dstData1(num_elements);
         error = clEnqueueReadBuffer(queue, dstBuf, CL_TRUE, 0,
-                                    num_elements * sizeof(int), dstData1.data(),
+                                    num_elements * sizeof(cl_int), dstData1.data(),
                                     0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer for modified dst failed");
 
