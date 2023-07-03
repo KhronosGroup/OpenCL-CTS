@@ -76,9 +76,9 @@ extern int test_mutable_dispatch_null_arguments(cl_device_id device,
                                                 cl_command_queue queue,
                                                 int num_elements);
 extern int test_mutable_dispatch_svm_arguments(cl_device_id device,
-                                                cl_context context,
-                                                cl_command_queue queue,
-                                                int num_elements);
+                                               cl_context context,
+                                               cl_command_queue queue,
+                                               int num_elements);
 extern int test_mutable_dispatch_global_offset(cl_device_id device,
                                                cl_context context,
                                                cl_command_queue queue,
