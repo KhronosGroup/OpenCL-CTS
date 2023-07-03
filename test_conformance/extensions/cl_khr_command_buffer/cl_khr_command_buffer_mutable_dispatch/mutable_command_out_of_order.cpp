@@ -15,9 +15,6 @@
 //
 
 #include <extensionHelpers.h>
-#include "typeWrappers.h"
-#include "procs.h"
-#include "testHarness.h"
 #include <vector>
 #include "mutable_command_basic.h"
 
@@ -101,16 +98,8 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
         cl_int error = BasicMutableCommandBufferTest::SetUp(elements);
         test_error(error, "BasicMutableCommandBufferTest::SetUp failed");
 
-        cl_platform_id platform;
-        error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
-                                sizeof(cl_platform_id), &platform, nullptr);
-        test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
-
         error = SetUpKernel();
         test_error(error, "SetUpKernel failed");
-
-        error = SetUpKernelArgs();
-        test_error(error, "SetUpKernelArgs failed");
 
         out_of_order_queue = clCreateCommandQueue(
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &error);
@@ -138,9 +127,10 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
             && mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
 
-        return (!out_of_order_support
-                || (simultaneous_use_requested && !simultaneous_use_support))
-            && (!mutable_support || BasicMutableCommandBufferTest::Skip());
+
+        return !out_of_order_support
+            || (simultaneous_use_requested && !simultaneous_use_support)
+            || !mutable_support || BasicMutableCommandBufferTest::Skip();
     }
 
     //--------------------------------------------------------------------------
@@ -197,24 +187,17 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
     {
         cl_int error;
 
-        if (!user_single_event)
-        {
-            user_single_event = clCreateUserEvent(context, &error);
-            test_error(error, "clCreateUserEvent failed");
-        }
-
         error = RecordCommandBuffer();
         test_error(error, "RecordCommandBuffer failed");
 
-        error =
-            clEnqueueCommandBufferKHR(0, nullptr, out_of_order_command_buffer,
-                                      0, nullptr, &user_single_event);
+        error = clEnqueueCommandBufferKHR(
+            0, nullptr, out_of_order_command_buffer, 0, nullptr, &single_event);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         std::vector<cl_int> output_data(num_elements);
         error = clEnqueueReadBuffer(out_of_order_queue, out_mem, CL_TRUE, 0,
                                     data_size(), output_data.data(), 1,
-                                    &user_single_event, nullptr);
+                                    &single_event, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (size_t i = 0; i < num_elements; i++)
@@ -256,14 +239,13 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
                                            &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
-        error =
-            clEnqueueCommandBufferKHR(0, nullptr, out_of_order_command_buffer,
-                                      0, nullptr, &user_single_event);
+        error = clEnqueueCommandBufferKHR(
+            0, nullptr, out_of_order_command_buffer, 0, nullptr, &single_event);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         error = clEnqueueReadBuffer(out_of_order_queue, new_out_mem, CL_TRUE, 0,
                                     data_size(), output_data.data(), 1,
-                                    &user_single_event, nullptr);
+                                    &single_event, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
         for (size_t i = 0; i < num_elements; i++)
@@ -440,7 +422,7 @@ struct OutOfOrderTest : public BasicMutableCommandBufferTest
     clCommandBufferWrapper out_of_order_command_buffer;
 
     clEventWrapper user_event;
-    clEventWrapper user_single_event;
+    clEventWrapper single_event;
     clEventWrapper wait_pass_event;
 
     clKernelWrapper kernel_fill;
