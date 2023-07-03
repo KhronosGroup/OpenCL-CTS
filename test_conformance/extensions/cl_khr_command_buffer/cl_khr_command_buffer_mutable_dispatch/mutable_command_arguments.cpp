@@ -68,7 +68,7 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
 
         MTdataHolder d(gRandomSeed);
 
-        std::vector<int> srcData(num_elements);
+        std::vector<cl_int> srcData(num_elements);
         for (size_t i = 0; i < num_elements; i++)
             srcData[i] = (int)genrand_int32(d);
 
@@ -378,7 +378,7 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
         error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &stream);
         test_error(error, "Unable to set indexed kernel arguments");
         int intarg = 10;
-        error = clSetKernelArg(kernel, 1, sizeof(int), &intarg);
+        error = clSetKernelArg(kernel, 1, sizeof(cl_int), &intarg);
         test_error(error, "Unable to set indexed kernel arguments");
 
         threads[0] = numberOfInts;
@@ -402,7 +402,7 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         intarg = 20;
-        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(int), &intarg };
+        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(cl_int), &intarg };
         cl_mutable_dispatch_arg_khr args[] = { arg_1 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
@@ -481,7 +481,7 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
 
         MTdataHolder d(gRandomSeed);
 
-        std::vector<int> srcData(num_elements);
+        std::vector<cl_int> srcData(num_elements);
         for (size_t i = 0; i < num_elements; i++)
             srcData[i] = (int)genrand_int32(d);
 
@@ -640,7 +640,7 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
 
     cl_int Run() override
     {
-        const int zero = 0;
+        const cl_int zero = 0;
         cl_int error;
 
         // Allocate and initialize SVM for initial execution
@@ -650,10 +650,10 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
         cl_int *initBuffer = (cl_int *)clSVMAlloc(
             context, CL_MEM_READ_WRITE, num_elements * sizeof(cl_int), 0);
         test_assert_error(initWrapper != nullptr && initBuffer != nullptr,
-                          "clSVMAlloc failed for initial execution")
+                          "clSVMAlloc failed for initial execution");
 
-            error = clEnqueueSVMMemcpy(queue, CL_TRUE, initWrapper, &initBuffer,
-                                       sizeof(cl_int *), 0, nullptr, nullptr);
+        error = clEnqueueSVMMemcpy(queue, CL_TRUE, initWrapper, &initBuffer,
+                                   sizeof(cl_int *), 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMMemcpy failed for initWrapper");
 
         error = clEnqueueSVMMemFill(queue, initBuffer, &zero, sizeof(zero),
@@ -668,10 +668,10 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
         cl_int *newBuffer = (cl_int *)clSVMAlloc(
             context, CL_MEM_READ_WRITE, num_elements * sizeof(cl_int), 0);
         test_assert_error(newWrapper != nullptr && newBuffer != nullptr,
-                          "clSVMAlloc failed for modified execution")
+                          "clSVMAlloc failed for modified execution");
 
-            error = clEnqueueSVMMemcpy(queue, CL_TRUE, newWrapper, &newBuffer,
-                                       sizeof(cl_int *), 0, nullptr, nullptr);
+        error = clEnqueueSVMMemcpy(queue, CL_TRUE, newWrapper, &newBuffer,
+                                   sizeof(cl_int *), 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMMemFill failed for newWrapper");
 
         error = clEnqueueSVMMemFill(queue, newBuffer, &zero, sizeof(zero),
@@ -713,7 +713,7 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
 
         error =
             clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, initBuffer,
-                            num_elements * sizeof(int), 0, nullptr, nullptr);
+                            num_elements * sizeof(cl_int), 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMMap failed for initBuffer");
 
         for (size_t i = 0; i < num_elements; i++)
@@ -727,7 +727,7 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
             }
         }
 
-        clEnqueueSVMUnmap(queue, initBuffer, 0, nullptr, nullptr);
+        error = clEnqueueSVMUnmap(queue, initBuffer, 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMUnmap failed for initBuffer");
 
         error = clFinish(queue);
@@ -768,7 +768,7 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
 
         error =
             clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, newBuffer,
-                            num_elements * sizeof(int), 0, nullptr, nullptr);
+                            num_elements * sizeof(cl_int), 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMMap failed for newBuffer");
 
         for (size_t i = 0; i < num_elements; i++)
@@ -782,7 +782,7 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
             }
         }
 
-        clEnqueueSVMUnmap(queue, newBuffer, 0, nullptr, nullptr);
+        error = clEnqueueSVMUnmap(queue, newBuffer, 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMUnmap failed for newBuffer");
 
         error = clFinish(queue);
