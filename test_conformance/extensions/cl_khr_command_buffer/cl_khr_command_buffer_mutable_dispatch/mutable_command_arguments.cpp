@@ -251,7 +251,7 @@ struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
         /* Set the arguments */
         error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &streams[0]);
         test_error(error, "Unable to set indexed kernel arguments");
-        error = clSetKernelArg(kernel, 1, sizeof(cl_mem) * 2, nullptr);
+        error = clSetKernelArg(kernel, 1, sizeof(cl_mem), nullptr);
         test_error(error, "Unable to set indexed kernel arguments");
         error = clSetKernelArg(kernel, 2, sizeof(cl_mem), &streams[1]);
         test_error(error, "Unable to set indexed kernel arguments");
@@ -672,7 +672,7 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
 
         error = clEnqueueSVMMemcpy(queue, CL_TRUE, newWrapper, &newBuffer,
                                    sizeof(cl_int *), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueSVMMemFill failed for newWrapper");
+        test_error(error, "clEnqueueSVMMemcpy failed for newWrapper");
 
         error = clEnqueueSVMMemFill(queue, newBuffer, &zero, sizeof(zero),
                                     num_elements * sizeof(cl_int), 0, nullptr,
