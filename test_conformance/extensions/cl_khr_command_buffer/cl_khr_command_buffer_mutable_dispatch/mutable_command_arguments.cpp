@@ -251,7 +251,7 @@ struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
         /* Set the arguments */
         error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &streams[0]);
         test_error(error, "Unable to set indexed kernel arguments");
-        error = clSetKernelArg(kernel, 1, sizeof(cl_mem), nullptr);
+        error = clSetKernelArg(kernel, 1, numberOfInts, nullptr);
         test_error(error, "Unable to set indexed kernel arguments");
         error = clSetKernelArg(kernel, 2, sizeof(cl_mem), &streams[1]);
         test_error(error, "Unable to set indexed kernel arguments");
