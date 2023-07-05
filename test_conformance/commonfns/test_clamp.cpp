@@ -26,11 +26,9 @@
 #include "procs.h"
 #include "test_base.h"
 
-
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327950288
 #endif
-
 
 #define CLAMP_KERNEL(type)                                                     \
     const char *clamp_##type##_kernel_code = EMIT_PRAGMA_DIRECTIVE             \
@@ -64,6 +62,14 @@
         "vload3(tid,maxval)), tid, dst);\n"                                    \
         "}\n";
 
+#define EMIT_PRAGMA_DIRECTIVE "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
+CLAMP_KERNEL(half)
+CLAMP_KERNEL_V(half, 2)
+CLAMP_KERNEL_V(half, 4)
+CLAMP_KERNEL_V(half, 8)
+CLAMP_KERNEL_V(half, 16)
+CLAMP_KERNEL_V3(half, 3)
+#undef EMIT_PRAGMA_DIRECTIVE
 
 #define EMIT_PRAGMA_DIRECTIVE " "
 CLAMP_KERNEL(float)
@@ -83,6 +89,10 @@ CLAMP_KERNEL_V(double, 16)
 CLAMP_KERNEL_V3(double, 3)
 #undef EMIT_PRAGMA_DIRECTIVE
 
+const char *clamp_half_codes[] = {
+    clamp_half_kernel_code,  clamp_half2_kernel_code,  clamp_half4_kernel_code,
+    clamp_half8_kernel_code, clamp_half16_kernel_code, clamp_half3_kernel_code
+};
 const char *clamp_float_codes[] = {
     clamp_float_kernel_code,   clamp_float2_kernel_code,
     clamp_float4_kernel_code,  clamp_float8_kernel_code,
@@ -96,28 +106,48 @@ const char *clamp_double_codes[] = {
 
 namespace {
 
-
 template <typename T>
 int verify_clamp(const T *const x, const T *const minval, const T *const maxval,
                  const T *const outptr, int n)
 {
-    T t;
-    for (int i = 0; i < n; i++)
+    if (std::is_same<T, half>::value)
     {
-        t = std::min(std::max(x[i], minval[i]), maxval[i]);
-        if (t != outptr[i])
+        float t;
+        for (int i = 0; i < n; i++)
         {
-            log_error(
-                "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n", i,
-                x[i], minval[i], maxval[i], t, outptr[i]);
-            return -1;
+            t = std::min(
+                std::max(cl_half_to_float(x[i]), cl_half_to_float(minval[i])),
+                cl_half_to_float(maxval[i]));
+            if (t != cl_half_to_float(outptr[i]))
+            {
+                log_error(
+                    "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n",
+                    i, cl_half_to_float(x[i]), cl_half_to_float(minval[i]),
+                    cl_half_to_float(maxval[i]), t,
+                    cl_half_to_float(outptr[i]));
+                return -1;
+            }
+        }
+    }
+    else
+    {
+        T t;
+        for (int i = 0; i < n; i++)
+        {
+            t = std::min(std::max(x[i], minval[i]), maxval[i]);
+            if (t != outptr[i])
+            {
+                log_error(
+                    "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n",
+                    i, x[i], minval[i], maxval[i], t, outptr[i]);
+                return -1;
+            }
         }
     }
 
     return 0;
 }
 }
-
 
 template <typename T>
 int test_clamp_fn(cl_device_id device, cl_context context,
@@ -169,6 +199,17 @@ int test_clamp_fn(cl_device_id device, cl_context context,
             input_ptr[2][j] = get_random_double(input_ptr[1][j], 0x20000000, d);
         }
     }
+    else if (std::is_same<T, half>::value)
+    {
+        const float fval = CL_HALF_MAX;
+        for (j = 0; j < num_elements; j++)
+        {
+            input_ptr[0][j] = conv_to_half(get_random_float(-fval, fval, d));
+            input_ptr[1][j] = conv_to_half(get_random_float(-fval, fval, d));
+            input_ptr[2][j] = conv_to_half(
+                get_random_float(conv_to_flt(input_ptr[1][j]), fval, d));
+        }
+    }
 
     for (i = 0; i < 3; i++)
     {
@@ -194,9 +235,16 @@ int test_clamp_fn(cl_device_id device, cl_context context,
                 "test_clamp");
             test_error(err, "Unable to create kernel");
         }
+        else if (std::is_same<T, half>::value)
+        {
+            err = create_single_kernel_helper(
+                context, &programs[i], &kernels[i], 1, &clamp_half_codes[i],
+                "test_clamp");
+            test_error(err, "Unable to create kernel");
+        }
 
-        log_info("Just made a program for float, i=%d, size=%d, in slot %d\n",
-                 i, g_arrVecSizes[i], i);
+        log_info("Just made a program for %s, i=%d, size=%d, in slot %d\n",
+                 tname.c_str(), i, g_arrVecSizes[i], i);
         fflush(stdout);
 
         for (j = 0; j < 4; j++)
@@ -239,10 +287,14 @@ int test_clamp_fn(cl_device_id device, cl_context context,
     return err;
 }
 
-
 cl_int ClampTest::Run()
 {
     cl_int error = CL_SUCCESS;
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        error = test_clamp_fn<cl_half>(device, context, queue, num_elems);
+        test_error(error, "ClampTest::Run<cl_half> failed");
+    }
 
     error = test_clamp_fn<float>(device, context, queue, num_elems);
     test_error(error, "ClampTest::Run<float> failed");
@@ -255,7 +307,6 @@ cl_int ClampTest::Run()
 
     return error;
 }
-
 
 int test_clamp(cl_device_id device, cl_context context, cl_command_queue queue,
                int n_elems)

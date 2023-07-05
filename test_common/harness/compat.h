@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _COMPAT_H_
-#define _COMPAT_H_
+#ifndef COMPAT_H_
+#define COMPAT_H_
 
 #if defined(_WIN32) && defined(_MSC_VER)
 #include <Windows.h>
@@ -398,4 +398,4 @@ EXTERN_C int __builtin_clz(unsigned int pattern);
 #define sleep(sec) Sleep((sec)*1000)
 #endif
 
-#endif // _COMPAT_H_
+#endif // COMPAT_H_
