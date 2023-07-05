@@ -219,10 +219,8 @@ int do_test(cl_device_id device, cl_context context, cl_command_queue queue,
 int do_test_work_group_suggested_local_size(
     cl_device_id device, cl_context context, cl_command_queue queue,
     bool (*skip_cond)(size_t), size_t start, size_t end, size_t incr,
-    cl_long max_local_mem_size, size_t global_work_offset[], num_dims dim)
+    cl_ulong max_local_mem_size, size_t global_work_offset[], num_dims dim)
 {
-    clProgramWrapper scan_program;
-    clKernelWrapper scan_kernel;
     int err;
     size_t test_values[] = { 1, 1, 1 };
     std::string kernel_names[6] = {
@@ -244,6 +242,8 @@ int do_test_work_group_suggested_local_size(
     for (int kernel_num = 0; kernel_num < 6; kernel_num++)
     {
         if (max_local_mem_size < local_mem_size[kernel_num]) continue;
+        clProgramWrapper scan_program;
+        clKernelWrapper scan_kernel;
         // Create the kernel
         err = create_single_kernel_helper(
             context, &scan_program, &scan_kernel, 1,
@@ -300,7 +300,7 @@ int test_work_group_suggested_local_size_1D(cl_device_id device,
                  "Skipping the test.\n");
         return TEST_SKIPPED_ITSELF;
     }
-    cl_long max_local_mem_size;
+    cl_ulong max_local_mem_size;
     cl_int err =
         clGetDeviceInfo(device, CL_DEVICE_LOCAL_MEM_SIZE,
                         sizeof(max_local_mem_size), &max_local_mem_size, NULL);

@@ -18,9 +18,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "harness/stringHelpers.h"
+
 #include "procs.h"
 #include "test_base.h"
-
 
 const char *step_fn_code_pattern = "%s\n" /* optional pragma */
                                    "__kernel void test_fn(__global %s%s *edge, "
@@ -48,7 +49,6 @@ const char *step_fn_code_pattern_v3_scalar =
     "    vstore3(step(edge[tid], vload3(tid,x)), tid, dst);\n"
     "}\n";
 
-
 namespace {
 
 template <typename T>
@@ -62,8 +62,8 @@ int verify_step(const T *const inptrA, const T *const inptrB,
     {
         for (int i = 0; i < n * veclen; i++)
         {
-            r = (inptrB[i] < inptrA[i]) ? 0.0 : 1.0;
-            if (r != outptr[i]) return -1;
+            r = (conv_to_dbl(inptrB[i]) < conv_to_dbl(inptrA[i])) ? 0.0 : 1.0;
+            if (r != conv_to_dbl(outptr[i])) return -1;
         }
     }
     else
@@ -73,23 +73,30 @@ int verify_step(const T *const inptrA, const T *const inptrB,
             int ii = i / veclen;
             for (int j = 0; j < veclen && i < n; ++j, ++i)
             {
-                r = (inptrB[i] < inptrA[ii]) ? 0.0f : 1.0f;
-                if (r != outptr[i])
+                r = (conv_to_dbl(inptrB[i]) < conv_to_dbl(inptrA[ii])) ? 0.0f
+                                                                       : 1.0f;
+                if (r != conv_to_dbl(outptr[i]))
                 {
-                    log_error("Failure @ {%d, element %d}: step(%a,%a) -> *%a "
-                              "vs %a\n",
-                              ii, j, inptrA[ii], inptrB[i], r, outptr[i]);
+                    if (std::is_same<T, half>::value)
+                        log_error(
+                            "Failure @ {%d, element %d}: step(%a,%a) -> *%a "
+                            "vs %a\n",
+                            ii, j, conv_to_flt(inptrA[ii]),
+                            conv_to_flt(inptrB[i]), r, conv_to_flt(outptr[i]));
+                    else
+                        log_error(
+                            "Failure @ {%d, element %d}: step(%a,%a) -> *%a "
+                            "vs %a\n",
+                            ii, j, inptrA[ii], inptrB[i], r, outptr[i]);
                     return -1;
                 }
             }
         }
     }
-
     return 0;
 }
 
 }
-
 
 template <typename T>
 int test_step_fn(cl_device_id device, cl_context context,
@@ -140,6 +147,16 @@ int test_step_fn(cl_device_id device, cl_context context,
             input_ptr[1][i] = get_random_double(-0x40000000, 0x40000000, d);
         }
     }
+    else if (std::is_same<T, half>::value)
+    {
+        const float fval = CL_HALF_MAX;
+        pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
+        for (i = 0; i < num_elements; i++)
+        {
+            input_ptr[0][i] = conv_to_half(get_random_float(-fval, fval, d));
+            input_ptr[1][i] = conv_to_half(get_random_float(-fval, fval, d));
+        }
+    }
 
     for (i = 0; i < 2; i++)
     {
@@ -160,15 +177,15 @@ int test_step_fn(cl_device_id device, cl_context context,
             {
                 std::string str = step_fn_code_pattern_v3;
                 kernelSource =
-                    string_format(str, pragma_str.c_str(), tname.c_str(),
-                                  tname.c_str(), tname.c_str());
+                    str_sprintf(str, pragma_str.c_str(), tname.c_str(),
+                                tname.c_str(), tname.c_str());
             }
             else
             {
                 std::string str = step_fn_code_pattern_v3_scalar;
                 kernelSource =
-                    string_format(str, pragma_str.c_str(), tname.c_str(),
-                                  tname.c_str(), tname.c_str());
+                    str_sprintf(str, pragma_str.c_str(), tname.c_str(),
+                                tname.c_str(), tname.c_str());
             }
         }
         else
@@ -176,9 +193,9 @@ int test_step_fn(cl_device_id device, cl_context context,
             // regular path
             std::string str = step_fn_code_pattern;
             kernelSource =
-                string_format(str, pragma_str.c_str(), tname.c_str(),
-                              vecParam ? vecSizeNames[i] : "", tname.c_str(),
-                              vecSizeNames[i], tname.c_str(), vecSizeNames[i]);
+                str_sprintf(str, pragma_str.c_str(), tname.c_str(),
+                            vecParam ? vecSizeNames[i] : "", tname.c_str(),
+                            vecSizeNames[i], tname.c_str(), vecSizeNames[i]);
         }
         const char *programPtr = kernelSource.c_str();
         err =
@@ -229,10 +246,14 @@ int test_step_fn(cl_device_id device, cl_context context,
     return err;
 }
 
-
 cl_int StepTest::Run()
 {
     cl_int error = CL_SUCCESS;
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        error = test_step_fn<half>(device, context, queue, num_elems, vecParam);
+        test_error(error, "StepTest::Run<cl_half> failed");
+    }
 
     error = test_step_fn<float>(device, context, queue, num_elems, vecParam);
     test_error(error, "StepTest::Run<float> failed");
@@ -247,14 +268,12 @@ cl_int StepTest::Run()
     return error;
 }
 
-
 int test_step(cl_device_id device, cl_context context, cl_command_queue queue,
               int n_elems)
 {
     return MakeAndRunTest<StepTest>(device, context, queue, n_elems, "step",
                                     true);
 }
-
 
 int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue,
                int n_elems)
