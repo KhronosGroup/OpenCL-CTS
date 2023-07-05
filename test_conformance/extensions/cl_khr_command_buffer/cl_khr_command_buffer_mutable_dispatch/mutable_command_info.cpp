@@ -42,13 +42,13 @@
 // CL_MUTABLE_DISPATCH_LOCAL_WORK_SIZE_KHR
 // CL_MUTABLE_COMMAND_COMMAND_TYPE_KHR
 
-struct InfoDeviceQuery : public BasicMutableCommandBufferTest
+struct InfoDeviceQuery : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     InfoDeviceQuery(cl_device_id device, cl_context context,
                     cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -71,12 +71,12 @@ struct InfoDeviceQuery : public BasicMutableCommandBufferTest
     }
 };
 
-struct InfoBuffer : public BasicMutableCommandBufferTest
+struct InfoBuffer : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     InfoBuffer(cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -108,13 +108,13 @@ struct InfoBuffer : public BasicMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-struct PropertiesArray : public BasicMutableCommandBufferTest
+struct PropertiesArray : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     PropertiesArray(cl_device_id device, cl_context context,
                     cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -154,12 +154,12 @@ struct PropertiesArray : public BasicMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-struct Kernel : public BasicMutableCommandBufferTest
+struct Kernel : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     Kernel(cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -195,12 +195,12 @@ struct Kernel : public BasicMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-struct Dimensions : public BasicMutableCommandBufferTest
+struct Dimensions : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     Dimensions(cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -234,12 +234,12 @@ struct Dimensions : public BasicMutableCommandBufferTest
     const size_t dimensions = 3;
 };
 
-struct InfoType : public BasicMutableCommandBufferTest
+struct InfoType : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     InfoType(cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -271,12 +271,12 @@ struct InfoType : public BasicMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-struct InfoQueue : public BasicMutableCommandBufferTest
+struct InfoQueue : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     InfoQueue(cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -308,13 +308,13 @@ struct InfoQueue : public BasicMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-struct InfoGlobalWorkOffset : public BasicMutableCommandBufferTest
+struct InfoGlobalWorkOffset : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     InfoGlobalWorkOffset(cl_device_id device, cl_context context,
                          cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -346,13 +346,13 @@ struct InfoGlobalWorkOffset : public BasicMutableCommandBufferTest
     size_t test_global_work_offset = 0;
 };
 
-struct InfoGlobalWorkSize : public BasicMutableCommandBufferTest
+struct InfoGlobalWorkSize : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     InfoGlobalWorkSize(cl_device_id device, cl_context context,
                        cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -383,13 +383,13 @@ struct InfoGlobalWorkSize : public BasicMutableCommandBufferTest
     size_t test_global_work_size = 0;
 };
 
-struct InfoLocalWorkSize : public BasicMutableCommandBufferTest
+struct InfoLocalWorkSize : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     InfoLocalWorkSize(cl_device_id device, cl_context context,
                       cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
