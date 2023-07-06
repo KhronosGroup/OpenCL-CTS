@@ -18,7 +18,10 @@
 #include "harness/typeWrappers.h"
 #include "harness/testHarness.h"
 
+// clang-format off
+
 const char *anyAllTestKernelPattern =
+"%s\n" // optional pragma
 "%s\n" // optional pragma
 "__kernel void sample_test(__global %s%s *sourceA, __global int *destValues)\n"
 "{\n"
@@ -29,12 +32,15 @@ const char *anyAllTestKernelPattern =
 
 const char *anyAllTestKernelPatternVload =
 "%s\n" // optional pragma
+"%s\n" // optional pragma
 "__kernel void sample_test(__global %s%s *sourceA, __global int *destValues)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
 "    destValues[tid] = %s(vload3(tid, (__global %s *)sourceA));\n" // ugh, almost
 "\n"
 "}\n";
+
+// clang-format on
 
 #define TEST_SIZE 512
 
@@ -67,14 +73,22 @@ int test_any_all_kernel(cl_context context, cl_command_queue queue,
              get_explicit_type_name( vecType ), sizeName);
     if(DENSE_PACK_VECS && vecSize == 3) {
         // anyAllTestKernelPatternVload
-        sprintf( kernelSource, anyAllTestKernelPatternVload,
-                vecType == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable" : "",
-                get_explicit_type_name( vecType ), sizeName, fnName,
-                get_explicit_type_name(vecType));
+        sprintf(
+            kernelSource, anyAllTestKernelPatternVload,
+            vecType == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable"
+                               : "",
+            vecType == kHalf ? "#pragma OPENCL EXTENSION cl_khr_fp16 : enable"
+                             : "",
+            get_explicit_type_name(vecType), sizeName, fnName,
+            get_explicit_type_name(vecType));
     } else {
-        sprintf( kernelSource, anyAllTestKernelPattern,
-                vecType == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable" : "",
-                get_explicit_type_name( vecType ), sizeName, fnName );
+        sprintf(
+            kernelSource, anyAllTestKernelPattern,
+            vecType == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable"
+                               : "",
+            vecType == kHalf ? "#pragma OPENCL EXTENSION cl_khr_fp16 : enable"
+                             : "",
+            get_explicit_type_name(vecType), sizeName, fnName);
     }
     /* Create kernels */
     programPtr = kernelSource;
@@ -282,7 +296,10 @@ int test_relational_all(cl_device_id device, cl_context context, cl_command_queu
     return retVal;
 }
 
+// clang-format off
+
 const char *selectTestKernelPattern =
+"%s\n" // optional pragma
 "%s\n" // optional pragma
 "__kernel void sample_test(__global %s%s *sourceA, __global %s%s *sourceB, __global %s%s *sourceC, __global %s%s *destValues)\n"
 "{\n"
@@ -294,6 +311,7 @@ const char *selectTestKernelPattern =
 
 const char *selectTestKernelPatternVload =
 "%s\n" // optional pragma
+"%s\n" // optional pragma
 "__kernel void sample_test(__global %s%s *sourceA, __global %s%s *sourceB, __global %s%s *sourceC, __global %s%s *destValues)\n"
 "{\n"
 "    int  tid = get_global_id(0);\n"
@@ -301,6 +319,8 @@ const char *selectTestKernelPatternVload =
 "    vstore3(tmp, tid, (__global %s *)destValues);\n"
 "\n"
 "}\n";
+
+// clang-format on
 
 typedef void (*selectVerifyFn)( ExplicitType vecType, ExplicitType testVecType, unsigned int vecSize, void *inDataA, void *inDataB, void *inDataTest, void *outData );
 
@@ -335,26 +355,34 @@ int test_select_kernel(cl_context context, cl_command_queue queue, const char *f
 
     if(DENSE_PACK_VECS && vecSize == 3) {
         // anyAllTestKernelPatternVload
-        sprintf( kernelSource, selectTestKernelPatternVload,
-                (vecType == kDouble || testVecType == kDouble) ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable" : "",
-                get_explicit_type_name( vecType ), sizeName,
-                get_explicit_type_name( vecType ), sizeName,
-                get_explicit_type_name( testVecType ), sizeName,
-                get_explicit_type_name( vecType ), outSizeName,
-                get_explicit_type_name( vecType ), sizeName,
-                fnName,
-                get_explicit_type_name( vecType ),
-                get_explicit_type_name( vecType ),
-                get_explicit_type_name( vecType ),
-                get_explicit_type_name( testVecType ) );
+        sprintf(kernelSource, selectTestKernelPatternVload,
+                (vecType == kDouble || testVecType == kDouble)
+                    ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable"
+                    : "",
+                (vecType == kHalf || testVecType == kHalf)
+                    ? "#pragma OPENCL EXTENSION cl_khr_fp16 : enable"
+                    : "",
+                get_explicit_type_name(vecType), sizeName,
+                get_explicit_type_name(vecType), sizeName,
+                get_explicit_type_name(testVecType), sizeName,
+                get_explicit_type_name(vecType), outSizeName,
+                get_explicit_type_name(vecType), sizeName, fnName,
+                get_explicit_type_name(vecType),
+                get_explicit_type_name(vecType),
+                get_explicit_type_name(vecType),
+                get_explicit_type_name(testVecType));
     } else {
-        sprintf( kernelSource, selectTestKernelPattern,
-                (vecType == kDouble || testVecType == kDouble) ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable" : "",
-                get_explicit_type_name( vecType ), sizeName,
-                get_explicit_type_name( vecType ), sizeName,
-                get_explicit_type_name( testVecType ), sizeName,
-                get_explicit_type_name( vecType ), outSizeName,
-                fnName );
+        sprintf(kernelSource, selectTestKernelPattern,
+                (vecType == kDouble || testVecType == kDouble)
+                    ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable"
+                    : "",
+                (vecType == kHalf || testVecType == kHalf)
+                    ? "#pragma OPENCL EXTENSION cl_khr_fp16 : enable"
+                    : "",
+                get_explicit_type_name(vecType), sizeName,
+                get_explicit_type_name(vecType), sizeName,
+                get_explicit_type_name(testVecType), sizeName,
+                get_explicit_type_name(vecType), outSizeName, fnName);
     }
 
     /* Create kernels */
@@ -500,14 +528,17 @@ void bitselect_verify_fn( ExplicitType vecType, ExplicitType testVecType, unsign
 
 int test_relational_bitselect(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
 {
-    ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort, kInt, kUInt, kLong, kULong, kFloat, kDouble };
+    constexpr ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort,
+                                         kInt,  kUInt,  kLong,  kULong,
+                                         kHalf, kFloat, kDouble };
+    constexpr auto vecTypeSize = sizeof(vecType) / sizeof(ExplicitType);
     unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
     unsigned int index, typeIndex;
     int retVal = 0;
     RandomSeed seed( gRandomSeed );
 
 
-    for( typeIndex = 0; typeIndex < 10; typeIndex++ )
+    for (typeIndex = 0; typeIndex < vecTypeSize; typeIndex++)
     {
         if ((vecType[typeIndex] == kLong || vecType[typeIndex] == kULong) && !gHasLong)
             continue;
@@ -522,6 +553,19 @@ int test_relational_bitselect(cl_device_id device, cl_context context, cl_comman
             else
                 log_info("Testing doubles.\n");
         }
+
+        if (vecType[typeIndex] == kHalf)
+        {
+            if (!is_extension_available(device, "cl_khr_fp16"))
+            {
+                log_info("Extension cl_khr_fp16 not supported; skipping half "
+                         "tests.\n");
+                continue;
+            }
+            else
+                log_info("Testing halfs.\n");
+        }
+
         for( index = 0; vecSizes[ index ] != 0; index++ )
         {
             // Test!
@@ -584,14 +628,18 @@ void select_signed_verify_fn( ExplicitType vecType, ExplicitType testVecType, un
 
 int test_relational_select_signed(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
 {
-    ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort, kInt, kUInt, kLong, kULong, kFloat, kDouble };
+    constexpr ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort,
+                                         kInt,  kUInt,  kLong,  kULong,
+                                         kHalf, kFloat, kDouble };
+    constexpr auto vecTypeSize = sizeof(vecType) / sizeof(ExplicitType);
+
     ExplicitType testVecType[] = { kChar, kShort, kInt, kLong, kNumExplicitTypes };
     unsigned int vecSizes[] = { 1, 2, 4, 8, 16, 0 };
     unsigned int index, typeIndex, testTypeIndex;
     int retVal = 0;
     RandomSeed seed( gRandomSeed );
 
-    for( typeIndex = 0; typeIndex < 10; typeIndex++ )
+    for (typeIndex = 0; typeIndex < vecTypeSize; typeIndex++)
     {
         if ((vecType[typeIndex] == kLong || vecType[typeIndex] == kULong) && !gHasLong)
             continue;
@@ -602,6 +650,19 @@ int test_relational_select_signed(cl_device_id device, cl_context context, cl_co
                 continue;
             } else {
                 log_info("Testing doubles.\n");
+            }
+        }
+        if (vecType[typeIndex] == kHalf)
+        {
+            if (!is_extension_available(device, "cl_khr_fp16"))
+            {
+                log_info("Extension cl_khr_fp16 not supported; skipping half "
+                         "tests.\n");
+                continue;
+            }
+            else
+            {
+                log_info("Testing halfs.\n");
             }
         }
         for( testTypeIndex = 0; testVecType[ testTypeIndex ] != kNumExplicitTypes; testTypeIndex++ )
@@ -673,7 +734,11 @@ void select_unsigned_verify_fn( ExplicitType vecType, ExplicitType testVecType, 
 
 int test_relational_select_unsigned(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
 {
-    ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort, kInt, kUInt, kLong, kULong, kFloat, kDouble };
+    constexpr ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort,
+                                         kInt,  kUInt,  kLong,  kULong,
+                                         kHalf, kFloat, kDouble };
+    constexpr auto vecTypeSize = sizeof(vecType) / sizeof(ExplicitType);
+
     ExplicitType testVecType[] = { kUChar, kUShort, kUInt, kULong, kNumExplicitTypes };
     unsigned int vecSizes[] = { 1, 2, 4, 8, 16, 0 };
     unsigned int index, typeIndex, testTypeIndex;
@@ -681,7 +746,7 @@ int test_relational_select_unsigned(cl_device_id device, cl_context context, cl_
     RandomSeed seed(gRandomSeed);
 
 
-    for( typeIndex = 0; typeIndex < 10; typeIndex++ )
+    for (typeIndex = 0; typeIndex < vecTypeSize; typeIndex++)
     {
         if ((vecType[typeIndex] == kLong || vecType[typeIndex] == kULong) && !gHasLong)
             continue;
@@ -692,6 +757,19 @@ int test_relational_select_unsigned(cl_device_id device, cl_context context, cl_
                 continue;
             } else {
                 log_info("Testing doubles.\n");
+            }
+        }
+        if (vecType[typeIndex] == kHalf)
+        {
+            if (!is_extension_available(device, "cl_khr_fp16"))
+            {
+                log_info("Extension cl_khr_fp16 not supported; skipping half "
+                         "tests.\n");
+                continue;
+            }
+            else
+            {
+                log_info("Testing halfs.\n");
             }
         }
         for( testTypeIndex = 0; testVecType[ testTypeIndex ] != kNumExplicitTypes; testTypeIndex++ )
@@ -714,85 +792,3 @@ int test_relational_select_unsigned(cl_device_id device, cl_context context, cl_
 
     return retVal;
 }
-
-
-
-extern int test_relational_isequal_float(cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
-extern int test_relational_isnotequal_float(cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
-extern int test_relational_isgreater_float(cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
-extern int test_relational_isgreaterequal_float(cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
-extern int test_relational_isless_float(cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
-extern int test_relational_islessequal_float(cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
-extern int test_relational_islessgreater_float(cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
-extern int test_relational_isequal_double(cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
-extern int test_relational_isnotequal_double(cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
-extern int test_relational_isgreater_double(cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
-extern int test_relational_isgreaterequal_double(cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
-extern int test_relational_isless_double(cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
-extern int test_relational_islessequal_double(cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
-extern int test_relational_islessgreater_double(cl_device_id device, cl_context context, cl_command_queue queue, int numElements );
-
-
-int test_relational_isequal(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
-{
-    int err = 0;
-    err |= test_relational_isequal_float( device, context, queue, numElements );
-    err |= test_relational_isequal_double( device, context, queue, numElements );
-    return err;
-}
-
-
-int test_relational_isnotequal(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
-{
-    int err = 0;
-    err |= test_relational_isnotequal_float( device, context, queue, numElements );
-    err |= test_relational_isnotequal_double( device, context, queue, numElements );
-    return err;
-}
-
-
-int test_relational_isgreater(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
-{
-    int err = 0;
-    err |= test_relational_isgreater_float( device, context, queue, numElements );
-    err |= test_relational_isgreater_double( device, context, queue, numElements );
-    return err;
-}
-
-
-int test_relational_isgreaterequal(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
-{
-    int err = 0;
-    err |= test_relational_isgreaterequal_float( device, context, queue, numElements );
-    err |= test_relational_isgreaterequal_double( device, context, queue, numElements );
-    return err;
-}
-
-
-int test_relational_isless(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
-{
-    int err = 0;
-    err |= test_relational_isless_float( device, context, queue, numElements );
-    err |= test_relational_isless_double( device, context, queue, numElements );
-    return err;
-}
-
-
-int test_relational_islessequal(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
-{
-    int err = 0;
-    err |= test_relational_islessequal_float( device, context, queue, numElements );
-    err |= test_relational_islessequal_double( device, context, queue, numElements );
-    return err;
-}
-
-
-int test_relational_islessgreater(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
-{
-    int err = 0;
-    err |= test_relational_islessgreater_float( device, context, queue, numElements );
-    err |= test_relational_islessgreater_double( device, context, queue, numElements );
-    return err;
-}
-
-

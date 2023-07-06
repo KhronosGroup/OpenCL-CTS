@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _CL_KHR_COMMAND_BUFFER_PROCS_H
-#define _CL_KHR_COMMAND_BUFFER_PROCS_H
+#ifndef CL_KHR_COMMAND_BUFFER_PROCS_H
+#define CL_KHR_COMMAND_BUFFER_PROCS_H
 
 #include <CL/cl.h>
 
@@ -41,6 +41,8 @@ extern int test_info_state(cl_device_id device, cl_context context,
                            cl_command_queue queue, int num_elements);
 extern int test_info_prop_array(cl_device_id device, cl_context context,
                                 cl_command_queue queue, int num_elements);
+extern int test_info_context(cl_device_id device, cl_context context,
+                             cl_command_queue queue, int num_elements);
 extern int test_basic_set_kernel_arg(cl_device_id device, cl_context context,
                                      cl_command_queue queue, int num_elements);
 extern int test_pending_set_kernel_arg(cl_device_id device, cl_context context,
@@ -131,4 +133,4 @@ extern int test_event_info_reference_count(cl_device_id device,
                                            cl_command_queue queue,
                                            int num_elements);
 
-#endif /*_CL_KHR_COMMAND_BUFFER_PROCS_H*/
+#endif // CL_KHR_COMMAND_BUFFER_PROCS_H

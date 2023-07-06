@@ -15,8 +15,8 @@ Agreement or Khronos Conformance Test Source License Agreement as
 executed between Khronos and the recipient.
 ******************************************************************/
 
-#ifndef _CRC32_H_
-#define _CRC32_H_
+#ifndef CRC32_H_
+#define CRC32_H_
 
 #include <stdint.h>
 #include <stddef.h>

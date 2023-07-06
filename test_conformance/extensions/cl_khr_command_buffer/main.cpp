@@ -26,6 +26,7 @@ test_definition test_list[] = {
     ADD_TEST(info_ref_count),
     ADD_TEST(info_state),
     ADD_TEST(info_prop_array),
+    ADD_TEST(info_context),
     ADD_TEST(basic_profiling),
     ADD_TEST(simultaneous_profiling),
     ADD_TEST(regular_wait_for_command_buffer),
