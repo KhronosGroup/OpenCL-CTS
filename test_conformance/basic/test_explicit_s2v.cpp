@@ -26,6 +26,8 @@
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
+namespace {
+
 // clang-format off
 
 #define DECLARE_S2V_IDENT_KERNEL(srctype,dsttype,size) \
@@ -286,10 +288,10 @@ struct TypesIterator
             };
 
             std::stringstream sstr;
-            if (srcType == kDouble || dstType == kDouble)
+            if (srcT == kDouble || dstT == kDouble)
                 sstr << "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
 
-            if (srcType == kHalf || dstType == kHalf)
+            if (srcT == kHalf || dstT == kHalf)
                 sstr << "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
 
             snprintf(pragma, sizeof(pragma), "%s", sstr.str().c_str());
@@ -332,6 +334,8 @@ protected:
     constexpr static unsigned int sample_count =
         128; // hardcoded in original test
 };
+
+} // anonymous namespace
 
 int test_explicit_s2v(cl_device_id deviceID, cl_context context,
                       cl_command_queue queue, int num_elements)
