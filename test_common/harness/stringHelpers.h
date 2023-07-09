@@ -18,6 +18,7 @@
 #define STRING_HELPERS_H
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 inline std::string concat_kernel(const char *sstr[], int num)
