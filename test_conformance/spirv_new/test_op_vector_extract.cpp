@@ -25,6 +25,17 @@ int test_extract(cl_device_id deviceID, cl_context context,
             return 0;
         }
     }
+
+    if (std::string(name).find("half") != std::string::npos)
+    {
+        if (!is_extension_available(deviceID, "cl_khr_fp16"))
+        {
+            log_info(
+                "Extension cl_khr_fp16 not supported; skipping half tests.\n");
+            return 0;
+        }
+    }
+
     cl_int err = CL_SUCCESS;
 
     clProgramWrapper prog;
@@ -76,27 +87,30 @@ int test_extract(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-#define TEST_VECTOR_EXTRACT(TYPE, N)                        \
-    TEST_SPIRV_FUNC(op_vector_##TYPE##N##_extract)          \
-    {                                                       \
-        typedef cl_##TYPE##N Tv;                            \
-        typedef cl_##TYPE Ts;                               \
-        const int num = 1 << 20;                            \
-        std::vector<Tv> in(num);                            \
-        const char *name = "vector_" #TYPE #N "_extract";   \
-                                                            \
-        RandomSeed seed(gRandomSeed);                       \
-                                                            \
-        for (int i = 0; i < num; i++) {                     \
-            in[i] = genrand<Tv>(seed);                      \
-        }                                                   \
-                                                            \
-        return test_extract<Tv, Ts>(deviceID,               \
-                                    context, queue,         \
-                                    name,                   \
-                                    in, N);                 \
+#define TEST_VECTOR_EXTRACT(TYPE, N)                                           \
+    TEST_SPIRV_FUNC(op_vector_##TYPE##N##_extract)                             \
+    {                                                                          \
+        if (sizeof(cl_##TYPE) == 2)                                            \
+        {                                                                      \
+            PASSIVE_REQUIRE_FP16_SUPPORT(deviceID);                            \
+        }                                                                      \
+        typedef cl_##TYPE##N Tv;                                               \
+        typedef cl_##TYPE Ts;                                                  \
+        const int num = 1 << 20;                                               \
+        std::vector<Tv> in(num);                                               \
+        const char *name = "vector_" #TYPE #N "_extract";                      \
+                                                                               \
+        RandomSeed seed(gRandomSeed);                                          \
+                                                                               \
+        for (int i = 0; i < num; i++)                                          \
+        {                                                                      \
+            in[i] = genrand<Tv>(seed);                                         \
+        }                                                                      \
+                                                                               \
+        return test_extract<Tv, Ts>(deviceID, context, queue, name, in, N);    \
     }
 
+TEST_VECTOR_EXTRACT(half, 8)
 TEST_VECTOR_EXTRACT(int, 4)
 TEST_VECTOR_EXTRACT(float, 4)
 TEST_VECTOR_EXTRACT(long, 2)
