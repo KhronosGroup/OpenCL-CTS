@@ -59,6 +59,10 @@ extern int test_mutable_command_info_global_work_size(cl_device_id device,
                                                       cl_context context,
                                                       cl_command_queue queue,
                                                       int num_elements);
+extern int test_mutable_dispatch_local_size(cl_device_id device,
+                                            cl_context context,
+                                            cl_command_queue queue,
+                                            int num_elements);
 extern int test_mutable_dispatch_global_offset(cl_device_id device,
                                                cl_context context,
                                                cl_command_queue queue,
