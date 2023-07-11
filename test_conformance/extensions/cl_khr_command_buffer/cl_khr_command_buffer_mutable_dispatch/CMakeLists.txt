@@ -4,6 +4,8 @@ set(${MODULE_NAME}_SOURCES
     main.cpp
     mutable_command_info.cpp
     mutable_command_out_of_order.cpp
+    mutable_command_global_size.cpp
+    mutable_command_local_size.cpp
     mutable_command_global_offset.cpp
     ../basic_command_buffer.cpp
 )

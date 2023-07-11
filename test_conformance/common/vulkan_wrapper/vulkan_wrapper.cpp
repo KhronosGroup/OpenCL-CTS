@@ -605,6 +605,37 @@ VulkanQueue &VulkanDevice::getQueue(const VulkanQueueFamily &queueFamily,
 VulkanDevice::operator VkDevice() const { return m_vkDevice; }
 
 ////////////////////////////////
+// VulkanFence implementation //
+////////////////////////////////
+
+VulkanFence::VulkanFence(const VulkanDevice &vkDevice)
+{
+
+    device = vkDevice;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.pNext = nullptr;
+    fenceInfo.flags = 0;
+
+    VkResult vkStatus = vkCreateFence(device, &fenceInfo, nullptr, &fence);
+
+    if (vkStatus != VK_SUCCESS)
+    {
+        throw std::runtime_error("Error: Failed create fence.");
+    }
+}
+
+VulkanFence::~VulkanFence() { vkDestroyFence(device, fence, nullptr); }
+
+void VulkanFence::reset() { vkResetFences(device, 1, &fence); }
+
+void VulkanFence::wait()
+{
+    vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+}
+
+////////////////////////////////
 // VulkanQueue implementation //
 ////////////////////////////////
 
@@ -614,6 +645,22 @@ VulkanQueue::VulkanQueue(const VulkanQueue &queue): m_vkQueue(queue.m_vkQueue)
 VulkanQueue::VulkanQueue(VkQueue vkQueue): m_vkQueue(vkQueue) {}
 
 VulkanQueue::~VulkanQueue() {}
+
+void VulkanQueue::submit(const VulkanCommandBuffer &commandBuffer,
+                         const std::shared_ptr<VulkanFence> &vkFence)
+{
+    VulkanCommandBufferList commandBufferList;
+    commandBufferList.add(commandBuffer);
+
+    VkSubmitInfo vkSubmitInfo = {};
+    vkSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    vkSubmitInfo.pNext = NULL;
+    vkSubmitInfo.waitSemaphoreCount = (uint32_t)0;
+    vkSubmitInfo.commandBufferCount = (uint32_t)commandBufferList.size();
+    vkSubmitInfo.pCommandBuffers = commandBufferList();
+
+    vkQueueSubmit(m_vkQueue, 1, &vkSubmitInfo, vkFence->fence);
+}
 
 void VulkanQueue::submit(const VulkanSemaphoreList &waitSemaphoreList,
                          const VulkanCommandBufferList &commandBufferList,

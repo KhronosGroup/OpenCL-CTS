@@ -21,6 +21,7 @@
 #include "vulkan_wrapper_types.hpp"
 #include "vulkan_list_map.hpp"
 #include "vulkan_api_list.hpp"
+#include <memory>
 
 class VulkanInstance {
     friend const VulkanInstance &getVulkanInstance();
@@ -145,6 +146,20 @@ public:
     operator VkDevice() const;
 };
 
+class VulkanFence {
+    friend class VulkanQueue;
+
+protected:
+    VkFence fence;
+    VkDevice device;
+
+public:
+    VulkanFence(const VulkanDevice &device);
+    virtual ~VulkanFence();
+    void reset();
+    void wait();
+};
+
 class VulkanQueue {
     friend class VulkanDevice;
 
@@ -157,6 +172,8 @@ protected:
 
 public:
     const VulkanQueueFamily &getQueueFamily();
+    void submit(const VulkanCommandBuffer &commandBuffer,
+                const std::shared_ptr<VulkanFence> &fence);
     void submit(const VulkanSemaphoreList &waitSemaphoreList,
                 const VulkanCommandBufferList &commandBufferList,
                 const VulkanSemaphoreList &signalSemaphoreList);
@@ -568,7 +585,6 @@ public:
     const std::wstring &getName() const;
     operator VkSemaphore() const;
 };
-
 
 #define VK_FUNC_DECL(name) extern "C" PFN_##name _##name;
 VK_FUNC_LIST
