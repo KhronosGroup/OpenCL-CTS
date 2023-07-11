@@ -59,6 +59,13 @@ extern int test_mutable_command_info_global_work_size(cl_device_id device,
                                                       cl_context context,
                                                       cl_command_queue queue,
                                                       int num_elements);
+extern int test_mutable_dispatch_out_of_order(cl_device_id device,
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements);
+extern int test_mutable_dispatch_simultaneous_out_of_order(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
 extern int test_mutable_dispatch_global_size(cl_device_id device,
                                              cl_context context,
                                              cl_command_queue queue,
