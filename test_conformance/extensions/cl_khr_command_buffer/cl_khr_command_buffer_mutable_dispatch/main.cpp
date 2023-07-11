@@ -26,6 +26,8 @@ test_definition test_list[] = {
     ADD_TEST(mutable_command_info_global_work_offset),
     ADD_TEST(mutable_command_info_local_work_size),
     ADD_TEST(mutable_command_info_global_work_size),
+    ADD_TEST(mutable_dispatch_image_1d_arguments),
+    ADD_TEST(mutable_dispatch_image_2d_arguments),
     ADD_TEST(mutable_dispatch_out_of_order),
     ADD_TEST(mutable_dispatch_simultaneous_out_of_order),
     ADD_TEST(mutable_dispatch_global_size),

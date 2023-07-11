@@ -59,6 +59,14 @@ extern int test_mutable_command_info_global_work_size(cl_device_id device,
                                                       cl_context context,
                                                       cl_command_queue queue,
                                                       int num_elements);
+extern int test_mutable_dispatch_image_1d_arguments(cl_device_id device,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements);
+extern int test_mutable_dispatch_image_2d_arguments(cl_device_id device,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements);
 extern int test_mutable_dispatch_global_arguments(cl_device_id device,
                                                   cl_context context,
                                                   cl_command_queue queue,
