@@ -140,7 +140,7 @@ struct PropertiesArray : public InfoMutableCommandBufferTest
         if (size != sizeof(props) || test_props[0] != props[0]
             || test_props[1] != props[1])
         {
-            log_error("ERROR: Incorrect command buffer returned from "
+            log_error("ERROR: Incorrect properties returned from "
                       "clGetMutableCommandInfoKHR.");
             return TEST_FAIL;
         }
@@ -181,7 +181,7 @@ struct Kernel : public InfoMutableCommandBufferTest
         // opaque object.
         if (test_kernel != kernel)
         {
-            log_error("ERROR: Incorrect command buffer returned from "
+            log_error("ERROR: Incorrect kernel returned from "
                       "clGetMutableCommandInfoKHR.");
             return TEST_FAIL;
         }
@@ -210,8 +210,7 @@ struct Dimensions : public InfoMutableCommandBufferTest
             &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        size_t test_dimensions;
-
+        cl_uint test_dimensions = 0;
         error = clGetMutableCommandInfoKHR(
             command, CL_MUTABLE_DISPATCH_DIMENSIONS_KHR,
             sizeof(test_dimensions), &test_dimensions, nullptr);
@@ -219,7 +218,7 @@ struct Dimensions : public InfoMutableCommandBufferTest
 
         if (test_dimensions != dimensions)
         {
-            log_error("ERROR: Incorrect command buffer returned from "
+            log_error("ERROR: Incorrect dimensions returned from "
                       "clGetMutableCommandInfoKHR.");
             return TEST_FAIL;
         }
@@ -330,7 +329,7 @@ struct InfoGlobalWorkOffset : public InfoMutableCommandBufferTest
 
         if (test_global_work_offset != global_work_offset)
         {
-            log_error("ERROR: Wrong size returned from "
+            log_error("ERROR: Wrong global work offset returned from "
                       "clGetMutableCommandInfoKHR.");
             return TEST_FAIL;
         }
@@ -368,7 +367,7 @@ struct InfoGlobalWorkSize : public InfoMutableCommandBufferTest
 
         if (test_global_work_size != global_work_size)
         {
-            log_error("ERROR: Wrong size returned from "
+            log_error("ERROR: Wrong global work size returned from "
                       "clGetMutableCommandInfoKHR.");
             return TEST_FAIL;
         }
@@ -405,7 +404,7 @@ struct InfoLocalWorkSize : public InfoMutableCommandBufferTest
 
         if (test_local_work_size != local_work_size)
         {
-            log_error("ERROR: Wrong size returned from "
+            log_error("ERROR: Wrong local work size returned from "
                       "clGetMutableCommandInfoKHR.");
             return TEST_FAIL;
         }
