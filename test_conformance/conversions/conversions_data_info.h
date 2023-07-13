@@ -150,13 +150,13 @@ DataInfoSpec<InType, OutType>::DataInfoSpec(const DataInitInfo &agg)
     else if (std::is_same<cl_long, OutType>::value)
         ranges = std::make_pair(CL_LONG_MIN, CL_LONG_MAX);
 
-    InType outMin = ((InType)ranges.first);
-    InType outMax = ((InType)ranges.second);
-
     // clang-format off
     // for readability sake keep this section unformatted
     if (std::is_floating_point<InType>::value)
     { // from float/double
+        InType outMin = static_cast<InType>(ranges.first);
+        InType outMax = static_cast<InType>(ranges.second);
+
         InType eps = std::is_same<InType, cl_float>::value ? (InType) FLT_EPSILON : (InType) DBL_EPSILON;
         if (std::is_integral<OutType>::value)
         { // to char/uchar/short/ushort/int/uint/long/ulong
