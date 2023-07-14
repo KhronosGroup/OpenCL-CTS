@@ -408,7 +408,9 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
                                              // always convert to +0.0
             }
 #else
-            *out = (*in == 0 ? 0.0 : (OutType)*in);
+            // Use volatile to prevent optimization by Clang compiler
+            volatile InType vi = *in;
+            *out = (vi == 0 ? 0.0 : static_cast<OutType>(vi));
 #endif
         }
         else if (std::is_same<cl_float, OutType>::value)
@@ -467,12 +469,21 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
     else
     {
         if (std::is_same<cl_float, OutType>::value)
-            *out = (*in == 0 ? 0.f : *in); // Per IEEE-754-2008 5.4.1, 0's
-                                           // always convert to +0.0
+        {
+            // Use volatile to prevent optimization by Clang compiler
+            volatile InType vi = *in;
+            // Per IEEE-754-2008 5.4.1, 0 always converts to +0.0
+            *out = (vi == 0 ? 0.0f : vi);
+        }
         else if (std::is_same<cl_double, OutType>::value)
+        {
+            // Per IEEE-754-2008 5.4.1, 0 always converts to +0.0
             *out = (*in == 0 ? 0.0 : *in);
+        }
         else
+        {
             *out = (OutType)*in;
+        }
     }
 }
 
