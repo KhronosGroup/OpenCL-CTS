@@ -538,7 +538,6 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
     cl_ulong wall_start = mach_absolute_time();
 #endif
 
-    uint64_t lastCase = 1ULL << (8 * gTypeSizes[inType]);
     cl_uint threads = GetThreadCount();
 
     DataInitInfo info = { 0, 0, outType, inType, sat, round, threads };
@@ -601,7 +600,9 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
 
     // Figure out how many elements are in a work block
     // we handle 64-bit types a bit differently.
-    if (8 * gTypeSizes[inType] > 32) lastCase = 0x100000000ULL;
+    uint64_t lastCase = (8 * gTypeSizes[inType] > 32)
+        ? 0x100000000ULL
+        : 1ULL << (8 * gTypeSizes[inType]);
 
     if (!gWimpyMode && gIsEmbedded)
         step = blockCount * EMBEDDED_REDUCTION_FACTOR;
