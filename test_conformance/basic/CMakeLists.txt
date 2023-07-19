@@ -52,14 +52,12 @@ set(${MODULE_NAME}_SOURCES
     test_kernel_call_kernel_function.cpp
     test_local_kernel_scope.cpp
     test_progvar.cpp
-    test_wg_barrier.cpp
     test_global_linear_id.cpp
     test_local_linear_id.cpp
     test_enqueued_local_size.cpp
     test_simple_image_pitch.cpp
     test_get_linear_ids.cpp
     test_rw_image_access_qualifier.cpp
-    test_wg_barrier.cpp
     test_enqueued_local_size.cpp
     test_global_linear_id.cpp
     test_local_linear_id.cpp
