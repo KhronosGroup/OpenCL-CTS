@@ -16,6 +16,7 @@ set(${MODULE_NAME}_SOURCES
     test_write_3D.cpp
     test_cl_ext_image_requirements_info.cpp
     test_cl_ext_image_from_buffer.cpp
+    test_cl_ext_image_raw10_raw12.cpp
     ../common.cpp
 )
 
