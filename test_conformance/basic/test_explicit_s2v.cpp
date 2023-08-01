@@ -98,6 +98,26 @@ const char * kernel_explicit_s2v_set[NUM_VEC_TYPES][NUM_VEC_TYPES][5] = {
 
 // clang-format on
 
+int IsFloatNaN(double x)
+{
+    union {
+        cl_float d;
+        cl_uint u;
+    } u;
+    u.d = (cl_float)x;
+    return ((u.u & 0x7fffffffU) > 0x7F800000U);
+}
+
+bool IsHalfNaN(cl_half v)
+{
+    // Extract FP16 exponent and mantissa
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+
+    // NaN test
+    return (h_exp == 0x1F && h_mant != 0);
+}
+
 int test_explicit_s2v_function(cl_context context, cl_command_queue queue,
                                cl_kernel kernel, ExplicitType srcType,
                                unsigned int count, ExplicitType destType,
@@ -159,6 +179,13 @@ int test_explicit_s2v_function(cl_context context, cl_command_queue queue,
         {
             if( memcmp( convertedData, outPtr + destTypeSize * s, destTypeSize ) != 0 )
             {
+                if ((srcType == kHalf) && (destType == kFloat)
+                    && IsHalfNaN(*reinterpret_cast<cl_half *>(inPtr))
+                    && IsFloatNaN(*reinterpret_cast<cl_float *>(outPtr + destTypeSize * s)))
+                {
+                    continue;
+                }
+
                 unsigned int *p = (unsigned int *)outPtr;
                 log_error( "ERROR: Output value %d:%d does not validate for size %d:%d!\n", i, s, vecSize, (int)destTypeSize );
                 log_error( "       Input:   0x%0*x\n", (int)( paramSize * 2 ), *(unsigned int *)inPtr & ( 0xffffffff >> ( 32 - paramSize * 8 ) ) );
