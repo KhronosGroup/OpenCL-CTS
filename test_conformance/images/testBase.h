@@ -53,6 +53,9 @@ enum MethodsToTest
     k2DTo2DArray = ( 1 << 8 ),
     k2DArrayTo3D = ( 1 << 9 ),
     k3DTo2DArray = ( 1 << 10 ),
+    k1DBuffer = (1 << 11),
+    k1DTo1DBuffer = (1 << 12),
+    k1DBufferTo1D = (1 << 13),
 };
 
 
