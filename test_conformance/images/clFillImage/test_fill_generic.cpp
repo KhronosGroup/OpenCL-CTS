@@ -21,6 +21,10 @@ static void CL_CALLBACK free_pitch_buffer( cl_mem image, void *buf )
 {
     free( buf );
 }
+static void CL_CALLBACK release_cl_buffer(cl_mem image, void *buf)
+{
+    clReleaseMemObject((cl_mem)buf);
+}
 
 cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr<char>& data, image_descriptor *imageInfo, int *error )
 {
@@ -70,6 +74,26 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             if ( gEnablePitch )
                 host_ptr = malloc( imageInfo->arraySize * imageInfo->slicePitch );
             break;
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+            if (gDebugTrace)
+                log_info(" - Creating 1D buffer image %d ...\n",
+                         (int)imageInfo->width);
+            if (gEnablePitch) host_ptr = malloc(imageInfo->rowPitch);
+            {
+                cl_int err;
+                cl_mem buffer =
+                    clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                   imageInfo->rowPitch, host_ptr, &err);
+                if (err != CL_SUCCESS)
+                {
+                    log_error("ERROR: Could not create buffer for 1D buffer "
+                              "image. %ld bytes\n",
+                              imageInfo->rowPitch);
+                    return NULL;
+                }
+                imageDesc.buffer = buffer;
+            }
+            break;
     }
 
     if (gEnablePitch)
@@ -101,6 +125,21 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             free(host_ptr);
     }
 
+    if (imageDesc.buffer != NULL)
+    {
+        int callbackError = clSetMemObjectDestructorCallback(
+            img, release_cl_buffer, imageDesc.buffer);
+        if (callbackError != CL_SUCCESS)
+        {
+            log_error("Error: Unable to attach destructor callback to 1d "
+                      "buffer image. Err: %d\n",
+                      callbackError);
+            clReleaseMemObject(imageDesc.buffer);
+            clReleaseMemObject(img);
+            return NULL;
+        }
+    }
+
     if ( *error != CL_SUCCESS )
     {
         long long unsigned imageSize = get_image_size_mb( imageInfo );
@@ -122,6 +161,12 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
                 log_error( "ERROR: Unable to create 2D image array of size %d x %d x %d (%llu MB): %s\n", (int)imageInfo->width, (int)imageInfo->height, (int)imageInfo->arraySize, imageSize, IGetErrorString( *error ) );
                 break;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+                log_error(
+                    "ERROR: Unable to create 1D buffer image of size %d (%llu "
+                    "MB):(%s)",
+                    (int)imageInfo->width, imageSize, IGetErrorString(*error));
+                break;
         }
         return NULL;
     }
@@ -139,6 +184,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             depth = 1;
             imageSize = imageInfo->rowPitch * imageInfo->arraySize;
             break;
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
         case CL_MEM_OBJECT_IMAGE1D:
             height = depth = 1;
             imageSize = imageInfo->rowPitch;
@@ -194,6 +240,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
                 break;
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
             case CL_MEM_OBJECT_IMAGE1D:
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
                 dstPitch2D = mappedSlice;
                 break;
         }
@@ -285,6 +332,9 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
             break;
         case CL_MEM_OBJECT_IMAGE2D_ARRAY:
             dataBytes = imageInfo->arraySize * imageInfo->slicePitch;
+            break;
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+            dataBytes = imageInfo->rowPitch;
             break;
     }
 
@@ -398,6 +448,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     size_t imageRegion[ 3 ] = { imageInfo->width, 1, 1 };
     switch (imageInfo->type)
     {
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
         case CL_MEM_OBJECT_IMAGE1D:
             break;
         case CL_MEM_OBJECT_IMAGE2D:
@@ -437,6 +488,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     size_t secondDim = 1;
 
     switch (imageInfo->type) {
+      case CL_MEM_OBJECT_IMAGE1D_BUFFER:
       case CL_MEM_OBJECT_IMAGE1D:
         secondDim = 1;
         thirdDim = 1;
@@ -485,7 +537,9 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
 
             total_matched += scanlineSize;
             sourcePtr += imageInfo->rowPitch;
-            if((imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY || imageInfo->type == CL_MEM_OBJECT_IMAGE1D))
+            if ((imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY
+                 || imageInfo->type == CL_MEM_OBJECT_IMAGE1D
+                 || imageInfo->type == CL_MEM_OBJECT_IMAGE1D_BUFFER))
             destPtr += mappedSlice;
             else
             destPtr += mappedRow;
