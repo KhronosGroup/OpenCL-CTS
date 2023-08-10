@@ -1797,14 +1797,14 @@ VulkanImage2D::VulkanImage2D(const VulkanImage2D &image2D): VulkanImage(image2D)
 
 VulkanImage2D::VulkanImage2D(
     const VulkanDevice &device, VulkanFormat format, uint32_t width,
-    uint32_t height, uint32_t numMipLevels,
+    uint32_t height, VulkanImageTiling imageTiling, uint32_t numMipLevels,
     VulkanExternalMemoryHandleType externalMemoryHandleType,
     VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
     VulkanSharingMode sharingMode)
     : VulkanImage(device, VULKAN_IMAGE_TYPE_2D, format,
                   VulkanExtent3D(width, height, 1), numMipLevels, 1,
-                  externalMemoryHandleType, imageCreateFlag,
-                  VULKAN_IMAGE_TILING_OPTIMAL, imageUsage, sharingMode)
+                  externalMemoryHandleType, imageCreateFlag, imageTiling,
+                  imageUsage, sharingMode)
 {}
 
 VulkanImage2D::~VulkanImage2D() {}

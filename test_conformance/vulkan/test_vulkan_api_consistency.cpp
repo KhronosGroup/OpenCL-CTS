@@ -232,9 +232,15 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
 
     VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
         getSupportedVulkanExternalMemoryHandleTypeList()[0];
+
+    VulkanImageTiling vulkanImageTiling =
+        vkClExternalMemoryHandleTilingAssumption(
+            deviceID, vkExternalMemoryHandleType, &errNum);
+    ASSERT_SUCCESS(errNum, "Failed to query OpenCL tiling mode");
+
     VulkanImage2D vkImage2D =
-        VulkanImage2D(vkDevice, VULKAN_FORMAT_R8G8B8A8_UNORM, width, height, 1,
-                      vkExternalMemoryHandleType);
+        VulkanImage2D(vkDevice, VULKAN_FORMAT_R8G8B8A8_UNORM, width, height,
+                      vulkanImageTiling, 1, vkExternalMemoryHandleType);
 
     const VulkanMemoryTypeList& memoryTypeList = vkImage2D.getMemoryTypeList();
     uint64_t totalImageMemSize = vkImage2D.getSize();

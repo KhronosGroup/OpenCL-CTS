@@ -129,4 +129,8 @@ public:
 
 extern void init_cl_vk_ext(cl_platform_id);
 
+VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
+    cl_device_id deviceId,
+    VulkanExternalMemoryHandleType vkExternalMemoryHandleType, int *error_ret);
+
 #endif // _opencl_vulkan_wrapper_hpp_

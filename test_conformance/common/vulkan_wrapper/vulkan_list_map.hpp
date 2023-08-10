@@ -212,6 +212,7 @@ public:
         uint64_t baseOffset, uint64_t interImageOffset,
         const VulkanDevice &device, VulkanFormat format, uint32_t width,
         uint32_t height, uint32_t mipLevels,
+        VulkanImageTiling vulkanImageTiling,
         VulkanExternalMemoryHandleType externalMemoryHandleType =
             VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
         VulkanImageCreateFlag imageCreateFlag = VULKAN_IMAGE_CREATE_FLAG_NONE,
@@ -220,7 +221,8 @@ public:
         VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
     VulkanImage2DList(
         size_t numImages, const VulkanDevice &device, VulkanFormat format,
-        uint32_t width, uint32_t height, uint32_t mipLevels = 1,
+        uint32_t width, uint32_t height, VulkanImageTiling vulkanImageTiling,
+        uint32_t mipLevels = 1,
         VulkanExternalMemoryHandleType externalMemoryHandleType =
             VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
         VulkanImageCreateFlag imageCreateFlag = VULKAN_IMAGE_CREATE_FLAG_NONE,
