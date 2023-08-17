@@ -211,8 +211,7 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
 
         // lambda to verify given state
         auto verify_state = [&](const cl_command_buffer_state_khr &expected) {
-            cl_command_buffer_state_khr state =
-                CL_COMMAND_BUFFER_STATE_INVALID_KHR;
+            cl_command_buffer_state_khr state = ~cl_command_buffer_state_khr(0);
 
             cl_int error = clGetCommandBufferInfoKHR(
                 command_buffer, CL_COMMAND_BUFFER_STATE_KHR, sizeof(state),
