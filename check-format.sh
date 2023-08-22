@@ -2,7 +2,7 @@
 
 # Arg used to specify non-'origin/main' comparison branch
 ORIGIN_BRANCH=${1:-"origin/main"}
-CLANG_BINARY=${2:-"`which clang-format-9`"}
+CLANG_BINARY=${2:-"`which clang-format-11`"}
 
 # Run git-clang-format to check for violations
 CLANG_FORMAT_OUTPUT=$(git-clang-format --diff $ORIGIN_BRANCH --extensions c,cpp,h,hpp --binary $CLANG_BINARY)
