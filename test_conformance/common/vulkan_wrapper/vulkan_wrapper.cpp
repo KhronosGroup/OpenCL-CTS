@@ -276,13 +276,13 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice vkPhysicalDevice)
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR;
     vkPhysicalDeviceIDPropertiesKHR.pNext = NULL;
 
-    VkPhysicalDeviceProperties2KHR vkPhysicalDeviceProperties2KHR = {};
-    vkPhysicalDeviceProperties2KHR.sType =
+    VkPhysicalDeviceProperties2 vkPhysicalDeviceProperties2 = {};
+    vkPhysicalDeviceProperties2.sType =
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
-    vkPhysicalDeviceProperties2KHR.pNext = &vkPhysicalDeviceIDPropertiesKHR;
+    vkPhysicalDeviceProperties2.pNext = &vkPhysicalDeviceIDPropertiesKHR;
 
-    vkGetPhysicalDeviceProperties2KHR(m_vkPhysicalDevice,
-                                      &vkPhysicalDeviceProperties2KHR);
+    vkGetPhysicalDeviceProperties2(m_vkPhysicalDevice,
+                                   &vkPhysicalDeviceProperties2);
 
     memcpy(m_vkDeviceUUID, vkPhysicalDeviceIDPropertiesKHR.deviceUUID,
            sizeof(m_vkDeviceUUID));
@@ -1633,8 +1633,8 @@ VulkanBuffer::VulkanBuffer(
     vkMemoryRequirementsInfo.buffer = m_vkBuffer;
     vkMemoryRequirementsInfo.pNext = NULL;
 
-    vkGetBufferMemoryRequirements2KHR(m_device, &vkMemoryRequirementsInfo,
-                                      &vkMemoryRequirements);
+    vkGetBufferMemoryRequirements2(m_device, &vkMemoryRequirementsInfo,
+                                   &vkMemoryRequirements);
 
     m_dedicated = vkMemoryDedicatedRequirements.requiresDedicatedAllocation;
 
@@ -1738,8 +1738,8 @@ VulkanImage::VulkanImage(
     vkMemoryRequirementsInfo.image = m_vkImage;
     vkMemoryRequirementsInfo.pNext = NULL;
 
-    vkGetImageMemoryRequirements2KHR(m_device, &vkMemoryRequirementsInfo,
-                                     &vkMemoryRequirements);
+    vkGetImageMemoryRequirements2(m_device, &vkMemoryRequirementsInfo,
+                                  &vkMemoryRequirements);
     m_size = vkMemoryRequirements.memoryRequirements.size;
     m_alignment = vkMemoryRequirements.memoryRequirements.alignment;
     m_dedicated = vkMemoryDedicatedRequirements.requiresDedicatedAllocation;
