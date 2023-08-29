@@ -59,7 +59,9 @@ test_definition test_list[] = {
     ADD_TEST(event_info_command_queue),
     ADD_TEST(event_info_execution_status),
     ADD_TEST(event_info_context),
-    ADD_TEST(event_info_reference_count)
+    ADD_TEST(event_info_reference_count),
+    ADD_TEST(finalize_invalid),
+    ADD_TEST(finalize_empty)
 };
 
 int main(int argc, const char *argv[])
