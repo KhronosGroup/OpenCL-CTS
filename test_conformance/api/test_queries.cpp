@@ -799,8 +799,8 @@ int test_kernel_required_group_size(cl_device_id deviceID, cl_context context, c
         test_error(error, "clFinish failed");
 
         if (max_dimensions == 2) {
-            return 0;
             free(source);
+            return 0;
         }
 
         local[1]--; local[2]++;

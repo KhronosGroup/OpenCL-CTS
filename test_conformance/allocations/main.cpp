@@ -326,6 +326,7 @@ int main(int argc, const char *argv[])
         else if ( strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 )
         {
             printUsage( argv[0] );
+            free(argList);
             return -1;
         }
 
