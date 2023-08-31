@@ -462,7 +462,7 @@ int test_large_multiple_embedded_headers(cl_context context, cl_device_id device
         header_names[i] = _strdup(buffer);
 
         sprintf(buffer, composite_kernel_extern_template, i);
-        const char* line = _strdup(buffer);
+        const char *line = buffer;
         error = create_single_kernel_helper_create_program(context, &headers[i], 1, &line);
         if( headers[i] == NULL || error != CL_SUCCESS )
         {

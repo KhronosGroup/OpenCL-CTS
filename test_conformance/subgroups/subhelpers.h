@@ -44,7 +44,7 @@ cl_uint4 generate_bit_mask(cl_uint subgroup_local_id,
 // for each subgroup values defined different values
 // for rest of workitems set 1 shuffle values
 void fill_and_shuffle_safe_values(std::vector<cl_ulong> &safe_values,
-                                  int sb_size);
+                                  size_t sb_size);
 
 struct WorkGroupParams
 {

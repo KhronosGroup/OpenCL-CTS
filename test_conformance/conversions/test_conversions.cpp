@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/rounding_mode.h"
 #include "harness/ThreadPool.h"
 #include "harness/testHarness.h"
 #include "harness/parseParameters.h"
@@ -119,7 +118,6 @@ const int test_num = ARRAY_SIZE(test_list);
 int main(int argc, const char **argv)
 {
     int error;
-    cl_uint seed = (cl_uint)time(NULL);
 
     argc = parseCustomParam(argc, argv);
     if (argc == -1)
@@ -146,8 +144,8 @@ int main(int argc, const char **argv)
 #endif
 
     vlog("===========================================================\n");
-    vlog("Random seed: %u\n", seed);
-    gMTdata = init_genrand(seed);
+    vlog("Random seed: %u\n", gRandomSeed);
+    gMTdata = init_genrand(gRandomSeed);
 
     const char *arg[] = { argv[0] };
     int ret =
@@ -522,8 +520,6 @@ test_status InitCL(cl_device_id device)
             return TEST_FAIL;
         }
     }
-
-    gMTdata = init_genrand(gRandomSeed);
 
     char c[1024];
     static const char *no_yes[] = { "NO", "YES" };

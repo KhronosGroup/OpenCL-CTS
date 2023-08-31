@@ -15,7 +15,6 @@
 //
 #include "harness/testHarness.h"
 #include "harness/compat.h"
-#include "harness/rounding_mode.h"
 #include "harness/ThreadPool.h"
 
 #if defined(__APPLE__)
@@ -101,6 +100,7 @@ int gMaxVectorSize = sizeof(vectorSizes) / sizeof(vectorSizes[0]);
 MTdata gMTdata;
 const char **argList = NULL;
 int argCount = 0;
+
 
 double SubtractTime(uint64_t endTime, uint64_t startTime);
 
@@ -264,6 +264,7 @@ std::vector<double> DataInitInfo::specialValuesDouble = {
 };
 // clang-format on
 
+
 // Windows (since long double got deprecated) sets the x87 to 53-bit precision
 // (that's x87 default state).  This causes problems with the tests that
 // convert long and ulong to float and double or otherwise deal with values
@@ -351,6 +352,7 @@ int CalcRefValsPat<InType, OutType, InFP, OutFP>::check_result(void *test,
     return 0;
 }
 
+
 cl_uint RoundUpToNextPowerOfTwo(cl_uint x)
 {
     if (0 == (x & (x - 1))) return x;
@@ -359,6 +361,7 @@ cl_uint RoundUpToNextPowerOfTwo(cl_uint x)
 
     return x + x;
 }
+
 
 cl_int CustomConversionsTest::Run()
 {
@@ -391,8 +394,7 @@ cl_int CustomConversionsTest::Run()
             continue;
         }
 
-
-        // skip double if we don't have it
+        // skip half if we don't have it
         if (!gTestHalfs && (inType == khalf || outType == khalf))
         {
             if (gHasHalfs)
@@ -400,7 +402,7 @@ cl_int CustomConversionsTest::Run()
                 vlog_error("\t *** convert_%sn%s%s( %sn ) FAILED ** \n",
                            gTypeNames[outType], gSaturationNames[sat],
                            gRoundingModeNames[round], gTypeNames[inType]);
-                vlog("\t\tcl_khr_fp64 enabled, but double testing turned "
+                vlog("\t\tcl_khr_fp16 enabled, but half testing turned "
                      "off.\n");
             }
             continue;
@@ -440,6 +442,7 @@ cl_int CustomConversionsTest::Run()
     return gFailCount;
 }
 
+
 ConversionsTest::ConversionsTest(cl_device_id device, cl_context context,
                                  cl_command_queue queue)
     : context(context), device(device), queue(queue), num_elements(0),
@@ -447,6 +450,7 @@ ConversionsTest::ConversionsTest(cl_device_id device, cl_context context,
                      cl_uint(0), cl_int(0), cl_half(0), cl_float(0),
                      cl_double(0), cl_ulong(0), cl_long(0) })
 {}
+
 
 cl_int ConversionsTest::Run()
 {
@@ -456,6 +460,7 @@ cl_int ConversionsTest::Run()
 
     return gFailCount;
 }
+
 
 cl_int ConversionsTest::SetUp(int elements)
 {
@@ -474,7 +479,7 @@ cl_int ConversionsTest::SetUp(int elements)
             DataInitInfo::halfRoundingMode = CL_HALF_RTZ;
             ConversionsTest::defaultHalfRoundingMode = CL_HALF_RTZ;
         }
-        else // CL_FP_ROUND_TO_INF ??
+        else
         {
             log_error("Error while acquiring half rounding mode");
             return TEST_FAIL;
@@ -542,7 +547,7 @@ void ConversionsTest::TestTypesConversion(const Type &inType,
                 continue;
             }
 
-            // skip double if we don't have it
+            // skip half if we don't have it
             if (!gTestHalfs && (inType == khalf || outType == khalf))
             {
                 if (gHasHalfs)
@@ -550,7 +555,7 @@ void ConversionsTest::TestTypesConversion(const Type &inType,
                     vlog_error("\t *** convert_%sn%s%s( %sn ) FAILED ** \n",
                                gTypeNames[outType], gSaturationNames[sat],
                                gRoundingModeNames[round], gTypeNames[inType]);
-                    vlog("\t\tcl_khr_fp64 enabled, but double testing turned "
+                    vlog("\t\tcl_khr_fp16 enabled, but half testing turned "
                          "off.\n");
                 }
                 continue;
@@ -587,7 +592,6 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
     cl_ulong wall_start = mach_absolute_time();
 #endif
 
-    uint64_t lastCase = 1ULL << (8 * gTypeSizes[inType]);
     cl_uint threads = GetThreadCount();
 
     DataInitInfo info = { 0, 0, outType, inType, sat, round, threads };
@@ -655,7 +659,9 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
 
     // Figure out how many elements are in a work block
     // we handle 64-bit types a bit differently.
-    if (8 * gTypeSizes[inType] > 32) lastCase = 0x100000000ULL;
+    uint64_t lastCase = (8 * gTypeSizes[inType] > 32)
+        ? 0x100000000ULL
+        : 1ULL << (8 * gTypeSizes[inType]);
 
     if (!gWimpyMode && gIsEmbedded)
         step = blockCount * EMBEDDED_REDUCTION_FACTOR;
@@ -965,6 +971,7 @@ static void setAllowZ(uint8_t *allow, uint32_t *x, cl_uint count)
         allow[i] |= (uint8_t)((x[i] & 0x7f800000U) == 0);
 }
 
+
 void MapResultValuesComplete(const std::unique_ptr<CalcRefValsBase> &ptr);
 
 void CL_CALLBACK CalcReferenceValuesComplete(cl_event e, cl_int status,
@@ -1004,6 +1011,7 @@ void MapResultValuesComplete(const std::unique_ptr<CalcRefValsBase> &info)
     // e was already released by WriteInputBufferComplete. It should be
     // destroyed automatically soon after we exit.
 }
+
 
 void CL_CALLBACK CalcReferenceValuesComplete(cl_event e, cl_int status,
                                              void *data)
@@ -1233,7 +1241,6 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
             if (inType == kfloat || outType == kfloat)
                 setAllowZ((uint8_t *)a, (uint32_t *)s, count);
         }
-
         if (gForceHalfFTZ)
         {
             if (inType == khalf || outType == khalf)
@@ -1499,6 +1506,8 @@ cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
     return program;
 }
 
+//
+
 int RunKernel(cl_kernel kernel, void *inBuf, void *outBuf, size_t blockCount)
 {
     // The global dimensions are just the blockCount to execute since we haven't
@@ -1523,6 +1532,7 @@ int RunKernel(cl_kernel kernel, void *inBuf, void *outBuf, size_t blockCount)
 
     return 0;
 }
+
 
 int GetTestCase(const char *name, Type *outType, Type *inType,
                 SaturationMode *sat, RoundingMode *round)

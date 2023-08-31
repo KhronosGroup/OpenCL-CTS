@@ -51,6 +51,8 @@ const std::vector<VulkanFormat> getSupportedVulkanFormatList();
 uint32_t getVulkanFormatElementSize(VulkanFormat format);
 const char* getVulkanFormatGLSLFormat(VulkanFormat format);
 const char* getVulkanFormatGLSLTypePrefix(VulkanFormat format);
+cl_external_semaphore_handle_type_khr getCLSemaphoreTypeFromVulkanType(
+    VulkanExternalSemaphoreHandleType vulkanExternalSemaphoreHandleType);
 
 std::string prepareVulkanShader(
     std::string shaderCode,

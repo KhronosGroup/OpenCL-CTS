@@ -42,13 +42,13 @@
 // CL_MUTABLE_DISPATCH_LOCAL_WORK_SIZE_KHR
 // CL_MUTABLE_COMMAND_COMMAND_TYPE_KHR
 
-struct InfoDeviceQuery : public BasicMutableCommandBufferTest
+struct InfoDeviceQuery : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     InfoDeviceQuery(cl_device_id device, cl_context context,
                     cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -71,12 +71,12 @@ struct InfoDeviceQuery : public BasicMutableCommandBufferTest
     }
 };
 
-struct InfoBuffer : public BasicMutableCommandBufferTest
+struct InfoBuffer : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     InfoBuffer(cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -108,13 +108,13 @@ struct InfoBuffer : public BasicMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-struct PropertiesArray : public BasicMutableCommandBufferTest
+struct PropertiesArray : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     PropertiesArray(cl_device_id device, cl_context context,
                     cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -140,7 +140,7 @@ struct PropertiesArray : public BasicMutableCommandBufferTest
         if (size != sizeof(props) || test_props[0] != props[0]
             || test_props[1] != props[1])
         {
-            log_error("ERROR: Incorrect command buffer returned from "
+            log_error("ERROR: Incorrect properties returned from "
                       "clGetMutableCommandInfoKHR.");
             return TEST_FAIL;
         }
@@ -154,12 +154,12 @@ struct PropertiesArray : public BasicMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-struct Kernel : public BasicMutableCommandBufferTest
+struct Kernel : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     Kernel(cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -181,7 +181,7 @@ struct Kernel : public BasicMutableCommandBufferTest
         // opaque object.
         if (test_kernel != kernel)
         {
-            log_error("ERROR: Incorrect command buffer returned from "
+            log_error("ERROR: Incorrect kernel returned from "
                       "clGetMutableCommandInfoKHR.");
             return TEST_FAIL;
         }
@@ -195,12 +195,12 @@ struct Kernel : public BasicMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-struct Dimensions : public BasicMutableCommandBufferTest
+struct Dimensions : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     Dimensions(cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -210,8 +210,7 @@ struct Dimensions : public BasicMutableCommandBufferTest
             &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        size_t test_dimensions;
-
+        cl_uint test_dimensions = 0;
         error = clGetMutableCommandInfoKHR(
             command, CL_MUTABLE_DISPATCH_DIMENSIONS_KHR,
             sizeof(test_dimensions), &test_dimensions, nullptr);
@@ -219,7 +218,7 @@ struct Dimensions : public BasicMutableCommandBufferTest
 
         if (test_dimensions != dimensions)
         {
-            log_error("ERROR: Incorrect command buffer returned from "
+            log_error("ERROR: Incorrect dimensions returned from "
                       "clGetMutableCommandInfoKHR.");
             return TEST_FAIL;
         }
@@ -234,12 +233,12 @@ struct Dimensions : public BasicMutableCommandBufferTest
     const size_t dimensions = 3;
 };
 
-struct InfoType : public BasicMutableCommandBufferTest
+struct InfoType : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     InfoType(cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -271,12 +270,12 @@ struct InfoType : public BasicMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-struct InfoQueue : public BasicMutableCommandBufferTest
+struct InfoQueue : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     InfoQueue(cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -308,13 +307,13 @@ struct InfoQueue : public BasicMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-struct InfoGlobalWorkOffset : public BasicMutableCommandBufferTest
+struct InfoGlobalWorkOffset : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     InfoGlobalWorkOffset(cl_device_id device, cl_context context,
                          cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -330,7 +329,7 @@ struct InfoGlobalWorkOffset : public BasicMutableCommandBufferTest
 
         if (test_global_work_offset != global_work_offset)
         {
-            log_error("ERROR: Wrong size returned from "
+            log_error("ERROR: Wrong global work offset returned from "
                       "clGetMutableCommandInfoKHR.");
             return TEST_FAIL;
         }
@@ -346,13 +345,13 @@ struct InfoGlobalWorkOffset : public BasicMutableCommandBufferTest
     size_t test_global_work_offset = 0;
 };
 
-struct InfoGlobalWorkSize : public BasicMutableCommandBufferTest
+struct InfoGlobalWorkSize : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     InfoGlobalWorkSize(cl_device_id device, cl_context context,
                        cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -368,7 +367,7 @@ struct InfoGlobalWorkSize : public BasicMutableCommandBufferTest
 
         if (test_global_work_size != global_work_size)
         {
-            log_error("ERROR: Wrong size returned from "
+            log_error("ERROR: Wrong global work size returned from "
                       "clGetMutableCommandInfoKHR.");
             return TEST_FAIL;
         }
@@ -383,13 +382,13 @@ struct InfoGlobalWorkSize : public BasicMutableCommandBufferTest
     size_t test_global_work_size = 0;
 };
 
-struct InfoLocalWorkSize : public BasicMutableCommandBufferTest
+struct InfoLocalWorkSize : public InfoMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
+    using InfoMutableCommandBufferTest::InfoMutableCommandBufferTest;
 
     InfoLocalWorkSize(cl_device_id device, cl_context context,
                       cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
     cl_int Run() override
@@ -405,7 +404,7 @@ struct InfoLocalWorkSize : public BasicMutableCommandBufferTest
 
         if (test_local_work_size != local_work_size)
         {
-            log_error("ERROR: Wrong size returned from "
+            log_error("ERROR: Wrong local work size returned from "
                       "clGetMutableCommandInfoKHR.");
             return TEST_FAIL;
         }

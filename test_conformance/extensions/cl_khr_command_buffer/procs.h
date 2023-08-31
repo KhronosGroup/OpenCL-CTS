@@ -41,6 +41,8 @@ extern int test_info_state(cl_device_id device, cl_context context,
                            cl_command_queue queue, int num_elements);
 extern int test_info_prop_array(cl_device_id device, cl_context context,
                                 cl_command_queue queue, int num_elements);
+extern int test_info_context(cl_device_id device, cl_context context,
+                             cl_command_queue queue, int num_elements);
 extern int test_basic_set_kernel_arg(cl_device_id device, cl_context context,
                                      cl_command_queue queue, int num_elements);
 extern int test_pending_set_kernel_arg(cl_device_id device, cl_context context,
@@ -130,5 +132,9 @@ extern int test_event_info_reference_count(cl_device_id device,
                                            cl_context context,
                                            cl_command_queue queue,
                                            int num_elements);
+extern int test_finalize_invalid(cl_device_id device, cl_context context,
+                                 cl_command_queue queue, int num_elements);
+extern int test_finalize_empty(cl_device_id device, cl_context context,
+                               cl_command_queue queue, int num_elements);
 
 #endif // CL_KHR_COMMAND_BUFFER_PROCS_H

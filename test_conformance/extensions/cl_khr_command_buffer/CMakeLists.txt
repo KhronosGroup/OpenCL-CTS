@@ -14,6 +14,7 @@ set(${MODULE_NAME}_SOURCES
     command_buffer_test_copy.cpp
     command_buffer_test_barrier.cpp
     command_buffer_test_event_info.cpp
+    command_buffer_finalize.cpp
 )
 
 include(../../CMakeCommon.txt)
