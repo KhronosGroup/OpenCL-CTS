@@ -21,6 +21,7 @@
 #include <fstream>
 #include <set>
 #include <string>
+#include <algorithm>
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
 #if defined(_WIN32) || defined(_WIN64)

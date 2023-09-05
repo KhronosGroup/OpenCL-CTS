@@ -328,7 +328,11 @@ public:
                         const VulkanDescriptorSetLayout &descriptorSetLayout);
     virtual ~VulkanDescriptorSet();
     void update(uint32_t binding, const VulkanBuffer &buffer);
+    void updateArray(uint32_t binding, unsigned numBuffers,
+                     const VulkanBufferList &buffers);
     void update(uint32_t binding, const VulkanImageView &imageView);
+    void updateArray(uint32_t binding,
+                     const VulkanImageViewList &imageViewList);
     operator VkDescriptorSet() const;
 };
 
@@ -424,6 +428,7 @@ protected:
     VkBuffer m_vkBuffer;
     uint64_t m_size;
     uint64_t m_alignment;
+    bool m_dedicated;
     VulkanMemoryTypeList m_memoryTypeList;
 
     VulkanBuffer(const VulkanBuffer &buffer);
@@ -441,6 +446,7 @@ public:
     uint64_t getSize() const;
     uint64_t getAlignment() const;
     const VulkanMemoryTypeList &getMemoryTypeList() const;
+    bool isDedicated() const;
     operator VkBuffer() const;
 };
 
@@ -452,6 +458,7 @@ protected:
     const VulkanFormat m_format;
     const uint32_t m_numMipLevels;
     const uint32_t m_numLayers;
+    bool m_dedicated;
     VkImage m_vkImage;
     uint64_t m_size;
     uint64_t m_alignment;
@@ -478,6 +485,7 @@ public:
     uint32_t getNumLayers() const;
     uint64_t getSize() const;
     uint64_t getAlignment() const;
+    bool isDedicated() const;
     const VulkanMemoryTypeList &getMemoryTypeList() const;
     VkImageCreateInfo getVkImageCreateInfo() const;
     operator VkImage() const;
@@ -487,12 +495,11 @@ class VulkanImage2D : public VulkanImage {
 protected:
     VkImageView m_vkImageView;
 
-    VulkanImage2D(const VulkanImage2D &image2D);
-
 public:
     VulkanImage2D(
         const VulkanDevice &device, VulkanFormat format, uint32_t width,
-        uint32_t height, uint32_t numMipLevels = 1,
+        uint32_t height, VulkanImageTiling imageTiling,
+        uint32_t numMipLevels = 1,
         VulkanExternalMemoryHandleType externalMemoryHandleType =
             VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
         VulkanImageCreateFlag imageCreateFlag = VULKAN_IMAGE_CREATE_FLAG_NONE,
@@ -501,6 +508,8 @@ public:
         VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
     virtual ~VulkanImage2D();
     virtual VulkanExtent3D getExtent3D(uint32_t mipLevel = 0) const;
+
+    VulkanImage2D(const VulkanImage2D &image2D);
 };
 
 class VulkanImageView {
@@ -537,6 +546,11 @@ public:
                            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
                        const void *name = NULL);
     VulkanDeviceMemory(const VulkanDevice &device, const VulkanImage &image,
+                       const VulkanMemoryType &memoryType,
+                       VulkanExternalMemoryHandleType externalMemoryHandleType =
+                           VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
+                       const void *name = NULL);
+    VulkanDeviceMemory(const VulkanDevice &device, const VulkanBuffer &buffer,
                        const VulkanMemoryType &memoryType,
                        VulkanExternalMemoryHandleType externalMemoryHandleType =
                            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
