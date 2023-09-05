@@ -181,7 +181,8 @@ int test_explicit_s2v_function(cl_context context, cl_command_queue queue,
             {
                 if ((srcType == kHalf) && (destType == kFloat)
                     && IsHalfNaN(*reinterpret_cast<cl_half *>(inPtr))
-                    && IsFloatNaN(*reinterpret_cast<cl_float *>(outPtr + destTypeSize * s)))
+                    && IsFloatNaN(*reinterpret_cast<cl_float *>(
+                        outPtr + destTypeSize * s)))
                 {
                     continue;
                 }
