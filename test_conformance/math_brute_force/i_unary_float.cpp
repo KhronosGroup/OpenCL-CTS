@@ -49,11 +49,6 @@ int TestFunc_Int_Float(const Func *f, MTdata d, bool relaxedMode)
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
-    // This test is not using ThreadPool so we need to disable FTZ here
-    // for reference computations
-    FPU_mode_type oldMode;
-    DisableFTZ(&oldMode);
-
     Force64BitFPUPrecision();
 
     // Init the kernels
@@ -225,6 +220,5 @@ int TestFunc_Int_Float(const Func *f, MTdata d, bool relaxedMode)
     vlog("\n");
 
 exit:
-    RestoreFPState(&oldMode);
     return error;
 }
