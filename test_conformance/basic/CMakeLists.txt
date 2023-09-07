@@ -2,16 +2,16 @@ set(MODULE_NAME BASIC)
 
 set(${MODULE_NAME}_SOURCES
     main.cpp
-    test_fpmath_float.cpp
+    test_fpmath.cpp
     test_intmath.cpp
     test_hiloeo.cpp test_local.cpp test_pointercast.cpp
     test_if.cpp test_loop.cpp
     test_readimage.cpp
-    test_writeimage.cpp test_writeimage_int16.cpp test_writeimage_fp32.cpp
+    test_writeimage.cpp
     test_multireadimageonefmt.cpp test_multireadimagemultifmt.cpp
     test_imagedim.cpp
     test_vloadstore.cpp
-    test_int2float.cpp test_float2int.cpp
+    test_int2fp.cpp
     test_createkernelsinprogram.cpp
     test_hostptr.cpp
     test_explicit_s2v.cpp
@@ -52,14 +52,12 @@ set(${MODULE_NAME}_SOURCES
     test_kernel_call_kernel_function.cpp
     test_local_kernel_scope.cpp
     test_progvar.cpp
-    test_wg_barrier.cpp
     test_global_linear_id.cpp
     test_local_linear_id.cpp
     test_enqueued_local_size.cpp
     test_simple_image_pitch.cpp
     test_get_linear_ids.cpp
     test_rw_image_access_qualifier.cpp
-    test_wg_barrier.cpp
     test_enqueued_local_size.cpp
     test_global_linear_id.cpp
     test_local_linear_id.cpp

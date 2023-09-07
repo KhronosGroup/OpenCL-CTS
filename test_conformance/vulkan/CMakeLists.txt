@@ -1,12 +1,12 @@
 set (MODULE_NAME VULKAN)
 
 if(WIN32)
-    list(APPEND CLConform_LIBRARIES vulkan-1)
+    list(APPEND CLConform_LIBRARIES vulkan-1 vulkan_wrapper)
 else(WIN32)
-    list(APPEND CLConform_LIBRARIES vulkan dl)
+    list(APPEND CLConform_LIBRARIES vulkan dl vulkan_wrapper)
 endif(WIN32)
 set(CMAKE_CXX_FLAGS "-fpermissive")
-if(WIN32) 
+if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
 endif(WIN32)
 
@@ -26,11 +26,7 @@ set (${MODULE_NAME}_SOURCES
         test_vulkan_interop_image.cpp
         test_vulkan_api_consistency.cpp
         test_vulkan_platform_device_info.cpp
-        vulkan_interop_common/vulkan_wrapper.cpp
-        vulkan_interop_common/vulkan_interop_common.cpp
-        vulkan_interop_common/opencl_vulkan_wrapper.cpp
-        vulkan_interop_common/vulkan_utility.cpp
-        vulkan_interop_common/vulkan_list_map.cpp
+        vulkan_interop_common.cpp
         ../../test_common/harness/genericThread.cpp
         ../../test_common/harness/errorHelpers.cpp
         ../../test_common/harness/testHarness.cpp
@@ -45,6 +41,6 @@ set (${MODULE_NAME}_SOURCES
 set_source_files_properties(
     ${${MODULE_NAME}_SOURCES}
     PROPERTIES LANGUAGE CXX)
-include_directories("./vulkan_interop_common/")
+include_directories("../common/vulkan_wrapper")
 
 include(../CMakeCommon.txt)

@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2017-2022 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -58,6 +58,10 @@ test_definition test_list[] = {
 
     ADD_TEST(integer_mul24),
     ADD_TEST(integer_mad24),
+
+    ADD_TEST(extended_bit_ops_extract),
+    ADD_TEST(extended_bit_ops_insert),
+    ADD_TEST(extended_bit_ops_reverse),
 
     ADD_TEST(long_math),
     ADD_TEST(long_logic),

@@ -173,13 +173,15 @@ int test_fmath(cl_device_id deviceID,
                           lhs, rhs);                \
     }
 
-#define TEST_FMATH_MODE(TYPE, MODE)             \
-    TEST_FMATH_FUNC(TYPE, fadd, MODE)           \
-    TEST_FMATH_FUNC(TYPE, fsub, MODE)           \
-    TEST_FMATH_FUNC(TYPE, fmul, MODE)           \
-    TEST_FMATH_FUNC(TYPE, fdiv, MODE)           \
-    TEST_FMATH_FUNC(TYPE, frem, MODE)           \
-    TEST_FMATH_FUNC(TYPE, fmod, MODE)           \
+#define TEST_FMATH_MODE(TYPE, MODE)                                            \
+    TEST_FMATH_FUNC(TYPE, fadd, MODE)                                          \
+    TEST_FMATH_FUNC(TYPE, fsub, MODE)                                          \
+    TEST_FMATH_FUNC(TYPE, fmul, MODE)                                          \
+    TEST_FMATH_FUNC(TYPE, fdiv, MODE)                                          \
+    // disable those tests until we figure out what the precision requirements
+    // are
+    //    TEST_FMATH_FUNC(TYPE, frem, MODE)
+    //    TEST_FMATH_FUNC(TYPE, fmod, MODE)
 
 #define TEST_FMATH_TYPE(TYPE)                   \
     TEST_FMATH_MODE(TYPE, regular)              \

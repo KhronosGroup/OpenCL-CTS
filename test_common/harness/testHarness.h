@@ -16,7 +16,6 @@
 #ifndef _testHarness_h
 #define _testHarness_h
 
-#include "threadTesting.h"
 #include "clImageHelper.h"
 #include <string>
 #include <sstream>
@@ -67,9 +66,12 @@ Version get_device_cl_version(cl_device_id device);
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
+typedef int (*test_function_pointer)(cl_device_id deviceID, cl_context context,
+                                     cl_command_queue queue, int num_elements);
+
 typedef struct test_definition
 {
-    basefn func;
+    test_function_pointer func;
     const char *name;
     Version min_version;
 } test_definition;
@@ -82,6 +84,14 @@ typedef enum test_status
     TEST_SKIP = 2,
     TEST_SKIPPED_ITSELF = -100,
 } test_status;
+
+struct test_harness_config
+{
+    int forceNoContextCreation;
+    int numElementsToUse;
+    cl_command_queue_properties queueProps;
+    unsigned numWorkerThreads;
+};
 
 extern int gFailCount;
 extern int gTestCount;
@@ -115,9 +125,7 @@ extern int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
 extern int parseAndCallCommandLineTests(int argc, const char *argv[],
                                         cl_device_id device, int testNum,
                                         test_definition testList[],
-                                        int forceNoContextCreation,
-                                        cl_command_queue_properties queueProps,
-                                        int num_elements);
+                                        const test_harness_config &config);
 
 // Call this function if you need to do all the setup work yourself, and just
 // need the function list called/ managed.
@@ -129,21 +137,19 @@ extern int parseAndCallCommandLineTests(int argc, const char *argv[],
 //    resultTestList is an array of statuses which contain the result of each
 //    selected test testNum is the number of tests in testList, selectedTestList
 //    and resultTestList contextProps are used to create a testing context for
-//    each test deviceToUse and numElementsToUse are all just passed to each
+//    each test deviceToUse and config are all just passed to each
 //    test function
 extern void callTestFunctions(test_definition testList[],
                               unsigned char selectedTestList[],
                               test_status resultTestList[], int testNum,
                               cl_device_id deviceToUse,
-                              int forceNoContextCreation, int numElementsToUse,
-                              cl_command_queue_properties queueProps);
+                              const test_harness_config &config);
 
 // This function is called by callTestFunctions, once per function, to do setup,
 // call, logging and cleanup
-extern test_status
-callSingleTestFunction(test_definition test, cl_device_id deviceToUse,
-                       int forceNoContextCreation, int numElementsToUse,
-                       cl_command_queue_properties queueProps);
+extern test_status callSingleTestFunction(test_definition test,
+                                          cl_device_id deviceToUse,
+                                          const test_harness_config &config);
 
 ///// Miscellaneous steps
 

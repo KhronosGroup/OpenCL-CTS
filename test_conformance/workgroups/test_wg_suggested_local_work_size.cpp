@@ -108,12 +108,6 @@ bool is_not_even(size_t a) { return (is_prime(a) || (a % 2 == 1)); }
 bool is_not_odd(size_t a) { return (is_prime(a) || (a % 2 == 0)); }
 
 #define NELEMS(s) (sizeof(s) / sizeof((s)[0]))
-/* The numbers we chose in the value_range are to be used for the second and
-   third dimension of the global work group size. The numbers below cover many
-   different cases: 1024 is a power of 2, 3 is an odd and small prime number, 12
-   is a multiple of 4 but not a power of 2, 1031 is a large odd and prime number
-   and 1 is to test the lack of this dimension if the others are present */
-const size_t value_range[] = { 1024, 3, 12, 1031, 1 };
 /* The value_range_nD contains numbers to be used for the experiments with 2D
    and 3D global work sizes. This is because we need smaller numbers so that the
    resulting number of work items is meaningful and does not become too large.
@@ -225,10 +219,8 @@ int do_test(cl_device_id device, cl_context context, cl_command_queue queue,
 int do_test_work_group_suggested_local_size(
     cl_device_id device, cl_context context, cl_command_queue queue,
     bool (*skip_cond)(size_t), size_t start, size_t end, size_t incr,
-    cl_long max_local_mem_size, size_t global_work_offset[], num_dims dim)
+    cl_ulong max_local_mem_size, size_t global_work_offset[], num_dims dim)
 {
-    clProgramWrapper scan_program;
-    clKernelWrapper scan_kernel;
     int err;
     size_t test_values[] = { 1, 1, 1 };
     std::string kernel_names[6] = {
@@ -250,6 +242,8 @@ int do_test_work_group_suggested_local_size(
     for (int kernel_num = 0; kernel_num < 6; kernel_num++)
     {
         if (max_local_mem_size < local_mem_size[kernel_num]) continue;
+        clProgramWrapper scan_program;
+        clKernelWrapper scan_kernel;
         // Create the kernel
         err = create_single_kernel_helper(
             context, &scan_program, &scan_kernel, 1,
@@ -271,7 +265,7 @@ int do_test_work_group_suggested_local_size(
         // return error if no number is found due to the skip condition
         err = -1;
         unsigned int j = 0;
-        size_t num_elems = NELEMS(value_range);
+        size_t num_elems = NELEMS(value_range_nD);
         for (size_t i = start; i < end; i += incr)
         {
             if (skip_cond(i)) continue;
@@ -306,7 +300,7 @@ int test_work_group_suggested_local_size_1D(cl_device_id device,
                  "Skipping the test.\n");
         return TEST_SKIPPED_ITSELF;
     }
-    cl_long max_local_mem_size;
+    cl_ulong max_local_mem_size;
     cl_int err =
         clGetDeviceInfo(device, CL_DEVICE_LOCAL_MEM_SIZE,
                         sizeof(max_local_mem_size), &max_local_mem_size, NULL);

@@ -13,22 +13,22 @@ jobs:
       fail-fast: false
       matrix:
         mainmatrix: [true]
-        os: [ubuntu-20.04, macos-latest, windows-latest]
+        os: [ubuntu-22.04, macos-latest, windows-latest]
         include:
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             mainmatrix: true
             gl: 1
             extra: " gl"
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             mainmatrix: false
             arch: arm
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             mainmatrix: false
             arch: aarch64
             debug: 1
             extra: " debug"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
       - name: Setup OpenGL build dependencies
@@ -55,11 +55,11 @@ jobs:
         run: ./presubmit.sh
   formatcheck:
     name: Check code format
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Install packages
-        run: sudo apt install -y clang-format clang-format-9
-      - uses: actions/checkout@v2
+        run: sudo apt install -y clang-format clang-format-11
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Check code format

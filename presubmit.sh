@@ -13,6 +13,7 @@ TOOLCHAIN_PREFIX_aarch64=aarch64-linux-gnu
 TOOLCHAIN_FILE=${TOP}/toolchain.cmake
 touch ${TOOLCHAIN_FILE}
 BUILD_OPENGL_TEST="OFF"
+BUILD_VULKAN_TEST="ON"
 
 cmake --version
 echo
@@ -76,7 +77,6 @@ cmake .. -G Ninja \
       -DBUILD_WSI_XLIB_SUPPORT=OFF \
       -DBUILD_WSI_XCB_SUPPORT=OFF \
       -DBUILD_WSI_WAYLAND_SUPPORT=OFF \
-      -DUSE_GAS=OFF \
       -C helper.cmake ..
 cmake --build . -j2
 
@@ -102,6 +102,7 @@ cmake .. -G Ninja \
       -DOPENCL_LIBRARIES="${CMAKE_OPENCL_LIBRARIES_OPTION}" \
       -DUSE_CL_EXPERIMENTAL=ON \
       -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST} \
+      -DVULKAN_IS_SUPPORTED=${BUILD_VULKAN_TEST} \
       -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/ \
       -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/
 cmake --build . -j3
