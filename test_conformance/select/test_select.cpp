@@ -16,18 +16,18 @@
 #include "harness/compat.h"
 #include "harness/typeWrappers.h"
 
-#include <cassert>
-#include <cstdio>
-#include <ctime>
-#include <cstring>
-#include <chrono>
+#include <assert.h>
+#include <stdio.h>
+#include <time.h>
+#include <string.h>
 #include <vector>
+
 #if ! defined( _WIN32)
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
 #endif
 #endif
-#include <climits>
+#include <limits.h>
 #include "test_select.h"
 
 #include "harness/testHarness.h"
@@ -49,7 +49,7 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
 
 // make a program that uses select for the given stype (src/dest type),
 // ctype (comparison type), veclen (vector length)
-static cl_program makeSelectProgram(cl_kernel *kernel_ptr, cl_context context, Type srctype, Type cmptype, size_t vec_len);
+static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context context, Type stype, Type ctype, size_t veclen );
 
 // Creates and execute the select test for the given device, context,
 // stype (source/dest type), cmptype (comparison type), using max_tg_size
@@ -59,7 +59,7 @@ static int doTest(cl_command_queue queue, cl_context context,
                   Type stype, Type cmptype, cl_device_id device);
 
 
-static void printUsage( );
+static void printUsage( void );
 
 //-----------------------------------------
 // Definitions and initializations
@@ -80,7 +80,7 @@ static void printUsage( );
         }                                                                      \
     }
 
-// When we indicate non-wimpy mode, the types that are 32 bits value will
+// When we indicate non wimpy mode, the types that are 32 bits value will
 // test their entire range and 64 bits test will test the 32 bit
 // range.  Otherwise, we test a subset of the range
 // [-min_short, min_short]
@@ -97,7 +97,7 @@ int int_log2(size_t value) {
         return INT_MIN;
 
 #if defined( __GNUC__ )
-    return static_cast<int> (8*sizeof(size_t) - 1UL - __builtin_clzl(value));
+    return (unsigned) (8*sizeof(size_t) - 1UL - __builtin_clzl(value));
 #else
     int result = -1;
     while(value)
@@ -110,9 +110,9 @@ int int_log2(size_t value) {
 }
 
 
-static void initSrcBuffer(void* src1, Type, MTdata d)
+static void initSrcBuffer(void* src1, Type stype, MTdata d)
 {
-    auto* s1 = (unsigned int *)src1;
+    unsigned int* s1 = (unsigned int *)src1;
     size_t i;
 
     for ( i=0 ; i < BUFFER_SIZE/sizeof(cl_int); i++)
@@ -124,27 +124,27 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
     assert(cmptype != kfloat);
     switch (type_size[cmptype]) {
         case 1: {
-            auto* ub = (uint8_t *)cmp;
+            uint8_t* ub = (uint8_t *)cmp;
             for (i=0; i < count; ++i)
                 ub[i] = (uint8_t)start++;
             break;
         }
         case 2: {
-            auto* us = (uint16_t *)cmp;
+            uint16_t* us = (uint16_t *)cmp;
             for (i=0; i < count; ++i)
                 us[i] = (uint16_t)start++;
             break;
         }
         case 4: {
             if (!s_wimpy_mode) {
-                auto* ui = (uint32_t *)cmp;
+                uint32_t* ui = (uint32_t *)cmp;
                 for (i=0; i < count; ++i)
                     ui[i] = (uint32_t)start++;
             }
             else {
-                // The short test doesn't iterate over the entire 32 bit space, so
-                // we alternate between positive and negative values'
-                auto* ui = (int32_t *)cmp;
+                // The short test doesn't iterate over the entire 32 bit space so
+                // we alternate between positive and negative values
+                int32_t* ui = (int32_t *)cmp;
                 int32_t sign = 1;
                 for (i=0; i < count; ++i, ++start) {
                     ui[i] = (int32_t)start*sign;
@@ -156,10 +156,10 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
         case 8: {
             // We don't iterate over the entire space of 64 bit so for the
             // selects, we want to test positive and negative values
-            auto* ll = (int64_t *)cmp;
+            int64_t* ll = (int64_t *)cmp;
             int64_t sign = 1;
             for (i=0; i < count; ++i, ++start) {
-                ll[i] = static_cast<int64_t>(start)*sign;
+                ll[i] = start*sign;
                 sign = sign * -1;
             }
             break;
@@ -172,7 +172,7 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
 // Make the various incarnations of the program we want to run
 //  stype: source and destination type for the select
 //  ctype: compare type
-static cl_program makeSelectProgram(cl_kernel *kernel_ptr, cl_context context, Type srctype, Type cmptype, size_t vec_len)
+static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context context, Type srctype, Type cmptype, size_t vec_len)
 {
     char testname[256];
     char stypename[32];
@@ -272,8 +272,9 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, cl_context context, T
             log_info("Building %s(%s, %s, %s)\n", testname, stypename, stypename, ctypename);
             break;
         default:
-            log_error( "Unknown vector type. Aborting...\n" );
+            log_error( "Unkown vector type. Aborting...\n" );
             exit(-1);
+            break;
     }
 
     /*
@@ -291,7 +292,7 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, cl_context context, T
                                     psrc, testname))
     {
         log_error("Failed to build program (%d)\n", err);
-        return nullptr;
+        return NULL;
     }
 
     return program;
@@ -306,7 +307,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     const size_t element_count[VECTOR_SIZE_COUNT] = { 1, 2, 3, 4, 8, 16 };
     clMemWrapper src1, src2, cmp, dest;
 
-//    cl_ulong blocks = type_size[stype] * 0x100000000ULL / BUFFER_SIZE;
+    cl_ulong blocks = type_size[stype] * 0x100000000ULL / BUFFER_SIZE;
     size_t block_elements = BUFFER_SIZE / type_size[stype];
     size_t step = s_wimpy_mode ? s_wimpy_reduction_factor : 1;
     cl_ulong cmp_stride = block_elements * step;
@@ -389,10 +390,10 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     log_info("Testing...");
     uint64_t i;
 
+    initSrcBuffer(src1_host.data(), stype, d);
+    initSrcBuffer(src2_host.data(), stype, d);
     for (i=0; i < blocks; i+=step)
     {
-        initSrcBuffer(src1_host.data(), stype, d);
-        initSrcBuffer(src2_host.data(), stype, d);
         initCmpBuffer(cmp_host.data(), cmptype, i * cmp_stride, block_elements);
 
         err = clEnqueueWriteBuffer(queue, src1, CL_FALSE, 0, BUFFER_SIZE,
@@ -418,9 +419,9 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
                  cmp_host.data(), block_elements);
 
         for (int vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
-    {
-        size_t vector_size = element_count[vecsize] * type_size[stype];
-        size_t vector_count =  (BUFFER_SIZE + vector_size - 1) / vector_size;
+        {
+            size_t vector_size = element_count[vecsize] * type_size[stype];
+            size_t vector_count =  (BUFFER_SIZE + vector_size - 1) / vector_size;
 
             const cl_int pattern = -1;
             err = clEnqueueFillBuffer(queue, dest, &pattern, sizeof(cl_int), 0,
@@ -440,18 +441,13 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
                                        vecsize == 0 ? sref.data() : ref.data(),
                                        block_elements, element_count[vecsize])
                 != 0)
-        {
+            {
                 log_error("vec_size:%d indx: 0x%16.16llx\n",
                           (int)element_count[vecsize], i);
                 return TEST_FAIL;
-        }
-    } // for vecsize
-    if( (err = clEnqueueUnmapMemObject( queue, src1, s1, 0, nullptr, nullptr )))
-    { log_error( "Error: coult not unmap src1\n" );  ++s_test_fail; goto exit; }
-    if( (err = clEnqueueUnmapMemObject( queue, src2, s2, 0, nullptr, nullptr )))
-    { log_error( "Error: coult not unmap src2\n" );  ++s_test_fail; goto exit; }
-    if( (err = clEnqueueUnmapMemObject( queue, cmp, s3, 0, nullptr, nullptr )))
-    { log_error( "Error: coult not unmap cmp\n" );  ++s_test_fail; goto exit; }
+            }
+        } // for vecsize
+    } // for i
 
     if (!s_wimpy_mode)
         log_info(" Passed\n\n");
@@ -461,35 +457,35 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     return err;
 }
 
-int test_select_uchar_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_uchar_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kuchar, kuchar, deviceID);
 }
-int test_select_uchar_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_uchar_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kuchar, kchar, deviceID);
 }
-int test_select_char_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_char_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kchar, kuchar, deviceID);
 }
-int test_select_char_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_char_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kchar, kchar, deviceID);
 }
-int test_select_ushort_ushort(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_ushort_ushort(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kushort, kushort, deviceID);
 }
-int test_select_ushort_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_ushort_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kushort, kshort, deviceID);
 }
-int test_select_short_ushort(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_short_ushort(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kshort, kushort, deviceID);
 }
-int test_select_short_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_short_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kshort, kshort, deviceID);
 }
@@ -507,47 +503,47 @@ int test_select_uint_uint(cl_device_id deviceID, cl_context context, cl_command_
 {
     return doTest(queue, context, kuint, kuint, deviceID);
 }
-int test_select_uint_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_uint_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kuint, kint, deviceID);
 }
-int test_select_int_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_int_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kint, kuint, deviceID);
 }
-int test_select_int_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_int_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kint, kint, deviceID);
 }
-int test_select_float_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_float_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kfloat, kuint, deviceID);
 }
-int test_select_float_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_float_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kfloat, kint, deviceID);
 }
-int test_select_ulong_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_ulong_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kulong, kulong, deviceID);
 }
-int test_select_ulong_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_ulong_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kulong, klong, deviceID);
 }
-int test_select_long_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_long_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, klong, kulong, deviceID);
 }
-int test_select_long_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_long_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, klong, klong, deviceID);
 }
-int test_select_double_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_double_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kdouble, kulong, deviceID);
 }
-int test_select_double_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int)
+int test_select_double_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
 {
     return doTest(queue, context, kdouble, klong, deviceID);
 }
@@ -570,7 +566,7 @@ const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char* argv[])
 {
-    test_start()
+    test_start();
 
     argc = parseCustomParam(argc, argv);
     if (argc == -1)
@@ -580,7 +576,7 @@ int main(int argc, const char* argv[])
 
     const char ** argList = (const char **)calloc( argc, sizeof( char*) );
 
-    if( nullptr == argList )
+    if( NULL == argList )
     {
         log_error( "Failed to allocate memory for argList array.\n" );
         return 1;
@@ -592,7 +588,7 @@ int main(int argc, const char* argv[])
     for( int i = 1; i < argc; ++i )
     {
         const char *arg = argv[i];
-        if (arg == nullptr)
+        if (arg == NULL)
             break;
 
         if (arg[0] == '-')
@@ -635,14 +631,14 @@ int main(int argc, const char* argv[])
         log_info("*** Wimpy Reduction Factor: %-27u ***\n\n", s_wimpy_reduction_factor);
     }
 
-    int err = runTestHarness(static_cast<int>(argCount), argList, test_num, test_list, false, 0);
+    int err = runTestHarness(argCount, argList, test_num, test_list, false, 0);
 
     free( argList );
 
     return err;
 }
 
-static void printUsage( )
+static void printUsage( void )
 {
     log_info("test_select:  [-w] <optional: test_names> \n");
     log_info("\tdefault is to run the full test on the default device\n");
@@ -650,8 +646,8 @@ static void printUsage( )
     log_info("\t-[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", s_wimpy_reduction_factor);
     log_info("\n");
     log_info("Test names:\n");
-    for(auto & i : test_list)
+    for( int i = 0; i < test_num; i++ )
     {
-        log_info( "\t%s\n", i.name );
+        log_info( "\t%s\n", test_list[i].name );
     }
 }

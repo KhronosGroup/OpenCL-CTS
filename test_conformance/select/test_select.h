@@ -18,8 +18,8 @@
 
 #include "harness/compat.h"
 
-#include <cstdio>
-#include <cstring>
+#include <stdio.h>
+#include <string.h>
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -62,7 +62,7 @@ typedef void (*Select)(void *const dest, const void *const src1,
                        const void *const src2, const void *const cmp, size_t c);
 extern Select refSelects[kTypeCount][2];
 
-// Reference functions for the primitive type but uses the vector
+// Reference functions for the primtive type but uses the vector
 // definition of true and false
 extern Select vrefSelects[kTypeCount][2];
 
