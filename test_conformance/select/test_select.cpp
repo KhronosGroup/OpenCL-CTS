@@ -122,7 +122,7 @@ static void initSrcBuffer(void* src1, Type stype, MTdata d)
         s1[i]   = genrand_int32(d);
 }
 
-static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start,
+static void initCmpBuffer(void *cmp, Type cmptype, uint64_t start,
                           const size_t count)
 {
     int i;
