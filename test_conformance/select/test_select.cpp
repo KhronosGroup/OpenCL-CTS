@@ -52,7 +52,7 @@ static void initCmpBuffer(void *cmp, Type cmptype, uint64_t start,
 // ctype (comparison type), veclen (vector length)
 static cl_program makeSelectProgram(cl_kernel *kernel_ptr, cl_context context,
                                     Type stype, Type ctype,
-                                    const size_t veclen );
+                                    const size_t veclen);
 
 // Creates and execute the select test for the given device, context,
 // stype (source/dest type), cmptype (comparison type), using max_tg_size
@@ -123,7 +123,8 @@ static void initSrcBuffer(void* src1, Type stype, MTdata d)
 }
 
 static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start,
-                          const size_t count) {
+                          const size_t count)
+{
     int i;
     assert(cmptype != kfloat);
     switch (type_size[cmptype]) {
