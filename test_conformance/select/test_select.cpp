@@ -45,11 +45,11 @@ static void initSrcBuffer(void* src1, Type stype, MTdata);
 
 // initialize the valued used to compare with in the select with
 // vlaues [start, count)
-static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count);
+static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, const size_t count);
 
 // make a program that uses select for the given stype (src/dest type),
 // ctype (comparison type), veclen (vector length)
-static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context context, Type stype, Type ctype, size_t veclen );
+static cl_program makeSelectProgram(cl_kernel *kernel_ptr, cl_context context, Type stype, Type ctype, const size_t veclen );
 
 // Creates and execute the select test for the given device, context,
 // stype (source/dest type), cmptype (comparison type), using max_tg_size
@@ -119,7 +119,7 @@ static void initSrcBuffer(void* src1, Type stype, MTdata d)
         s1[i]   = genrand_int32(d);
 }
 
-static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count) {
+static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, const size_t count) {
     int i;
     assert(cmptype != kfloat);
     switch (type_size[cmptype]) {
@@ -145,10 +145,11 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
                 // The short test doesn't iterate over the entire 32 bit space so
                 // we alternate between positive and negative values
                 int32_t* ui = (int32_t *)cmp;
-                int32_t sign = 1;
-                for (i=0; i < count; ++i, ++start) {
-                    ui[i] = (int32_t)start*sign;
-                    sign = sign * -1;
+                int32_t neg_start = (int32_t)start * -1;
+                for (i=0; i < count; i++) {
+                    ++start;
+                    --neg_start;
+                    ui[i] = (int32_t)((i%2)?start:neg_start);
                 }
             }
             break;
@@ -157,10 +158,11 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
             // We don't iterate over the entire space of 64 bit so for the
             // selects, we want to test positive and negative values
             int64_t* ll = (int64_t *)cmp;
-            int64_t sign = 1;
-            for (i=0; i < count; ++i, ++start) {
-                ll[i] = start*sign;
-                sign = sign * -1;
+            int64_t neg_start = (int64_t)start * -1;
+            for (i=0; i < count; i++) {
+                ++start;
+                --neg_start;
+                ll[i] = (int64_t)((i%2)?start:neg_start);
             }
             break;
         }
@@ -172,7 +174,7 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
 // Make the various incarnations of the program we want to run
 //  stype: source and destination type for the select
 //  ctype: compare type
-static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context context, Type srctype, Type cmptype, size_t vec_len)
+static cl_program makeSelectProgram(cl_kernel *kernel_ptr, const cl_context context, Type srctype, Type cmptype, const size_t vec_len)
 {
     char testname[256];
     char stypename[32];
@@ -308,7 +310,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     clMemWrapper src1, src2, cmp, dest;
 
     cl_ulong blocks = type_size[stype] * 0x100000000ULL / BUFFER_SIZE;
-    size_t block_elements = BUFFER_SIZE / type_size[stype];
+    const size_t block_elements = BUFFER_SIZE / type_size[stype];
     size_t step = s_wimpy_mode ? s_wimpy_reduction_factor : 1;
     cl_ulong cmp_stride = block_elements * step;
 
@@ -354,10 +356,21 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     dest = clCreateBuffer( context, CL_MEM_WRITE_ONLY, BUFFER_SIZE, NULL, &err );
     test_error_count(err, "Error: could not allocate dest buffer\n");
 
-    for (int vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
+    programs[0] = makeSelectProgram(&kernels[0], context, stype,
+                                          cmptype, element_count[0]);
+    programs[1] = makeSelectProgram(&kernels[1], context, stype,
+                                    cmptype, element_count[1]);
+    programs[2] = makeSelectProgram(&kernels[2], context, stype,
+                                    cmptype, element_count[2]);
+    programs[3] = makeSelectProgram(&kernels[3], context, stype,
+                                    cmptype, element_count[3]);
+    programs[4] = makeSelectProgram(&kernels[4], context, stype,
+                                    cmptype, element_count[4]);
+    programs[5] = makeSelectProgram(&kernels[5], context, stype,
+                                    cmptype, element_count[5]);
+
+    for (size_t vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
     {
-        programs[vecsize] = makeSelectProgram(&kernels[vecsize], context, stype,
-                                              cmptype, element_count[vecsize]);
         if (!programs[vecsize] || !kernels[vecsize])
         {
             return -1;
