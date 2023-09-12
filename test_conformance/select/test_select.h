@@ -28,18 +28,20 @@
 #endif
 
 // Defines the set of types we support (no support for double)
-typedef enum {
+typedef enum
+{
     kuchar = 0,
     kchar = 1,
     kushort = 2,
     kshort = 3,
-    kuint = 4,
-    kint = 5,
-    kfloat = 6,
-    kulong = 7,
-    klong = 8,
-    kdouble = 9,
-    kTypeCount  // always goes last
+    khalf = 4,
+    kuint = 5,
+    kint = 6,
+    kfloat = 7,
+    kulong = 8,
+    klong = 9,
+    kdouble = 10,
+    kTypeCount // always goes last
 } Type;
 
 
@@ -56,7 +58,8 @@ extern const size_t type_size[kTypeCount];
 extern const Type ctype[kTypeCount][2];
 
 // Reference functions for the primitive (non vector) type
-typedef void (*Select)(void *dest, void *src1, void *src2, void *cmp, size_t c);
+typedef void (*Select)(void *const dest, const void *const src1,
+                       const void *const src2, const void *const cmp, size_t c);
 extern Select refSelects[kTypeCount][2];
 
 // Reference functions for the primtive type but uses the vector
@@ -64,7 +67,8 @@ extern Select refSelects[kTypeCount][2];
 extern Select vrefSelects[kTypeCount][2];
 
 // Check functions for each output type
-typedef size_t (*CheckResults)(void *out1, void *out2, size_t count, size_t vectorSize);
+typedef size_t (*CheckResults)(const void *const out1, const void *const out2,
+                               size_t count, size_t vectorSize);
 extern CheckResults checkResults[kTypeCount];
 
 // Helpful macros

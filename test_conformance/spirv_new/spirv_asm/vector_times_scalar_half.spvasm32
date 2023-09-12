@@ -1,0 +1,46 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 25
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Float16
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %1 "vector_times_scalar" %gl_GlobalInvocationID
+               OpName %res "res"
+               OpName %lhs "lhs"
+               OpName %rhs "rhs"
+               OpDecorate %5 FuncParamAttr NoCapture
+          %5 = OpDecorationGroup
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpGroupDecorate %5 %res %lhs %rhs
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+     %half = OpTypeFloat 16
+%_ptr_CrossWorkgroup_half = OpTypePointer CrossWorkgroup %half
+   %v4half = OpTypeVector %half 4
+%_ptr_CrossWorkgroup_v4half = OpTypePointer CrossWorkgroup %v4half
+         %15 = OpTypeFunction %void %_ptr_CrossWorkgroup_v4half %_ptr_CrossWorkgroup_v4half %_ptr_CrossWorkgroup_half
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
+          %1 = OpFunction %void None %15
+        %res = OpFunctionParameter %_ptr_CrossWorkgroup_v4half
+        %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_v4half
+        %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_half
+         %16 = OpLabel
+         %17 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %18 = OpCompositeExtract %uint %17 0
+         %19 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v4half %lhs %18
+         %20 = OpLoad %v4half %19 Aligned 8
+         %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_half %rhs %18
+         %22 = OpLoad %half %21 Aligned 2
+         %23 = OpVectorTimesScalar %v4half %20 %22
+         %24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v4half %res %18
+               OpStore %24 %23 Aligned 8
+               OpReturn
+               OpFunctionEnd

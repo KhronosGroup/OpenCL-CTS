@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+#include <memory>
+
 #include "testBase.h"
 #include "harness/conversions.h"
 
@@ -226,13 +229,13 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
              (int)global_threads[0], (int)local_threads[0]);
 
     // Allocate our storage
-    cl_mem bin_counters =
+    clMemWrapper bin_counters =
         clCreateBuffer(context, CL_MEM_READ_WRITE,
                        sizeof(cl_int) * number_of_bins, NULL, NULL);
-    cl_mem bins = clCreateBuffer(
+    clMemWrapper bins = clCreateBuffer(
         context, CL_MEM_READ_WRITE,
         sizeof(cl_int) * number_of_bins * max_counts_per_bin, NULL, NULL);
-    cl_mem bin_assignments =
+    clMemWrapper bin_assignments =
         clCreateBuffer(context, CL_MEM_READ_ONLY,
                        sizeof(cl_int) * number_of_items, NULL, NULL);
 
@@ -253,7 +256,7 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     }
 
     // Initialize our storage
-    cl_int *l_bin_counts = (cl_int *)malloc(sizeof(cl_int) * number_of_bins);
+    std::unique_ptr<cl_int[]> l_bin_counts(new cl_int[number_of_bins]);
     if (!l_bin_counts)
     {
         log_error("add_index_bin_test FAILED to allocate initial values for "
@@ -263,8 +266,8 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     int i;
     for (i = 0; i < number_of_bins; i++) l_bin_counts[i] = 0;
     err = clEnqueueWriteBuffer(queue, bin_counters, true, 0,
-                               sizeof(cl_int) * number_of_bins, l_bin_counts, 0,
-                               NULL, NULL);
+                               sizeof(cl_int) * number_of_bins,
+                               l_bin_counts.get(), 0, NULL, NULL);
     if (err)
     {
         log_error("add_index_bin_test FAILED to set initial values for "
@@ -273,8 +276,8 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
         return -1;
     }
 
-    cl_int *values =
-        (cl_int *)malloc(sizeof(cl_int) * number_of_bins * max_counts_per_bin);
+    std::unique_ptr<cl_int[]> values(
+        new cl_int[number_of_bins * max_counts_per_bin]);
     if (!values)
     {
         log_error(
@@ -285,7 +288,7 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     err = clEnqueueWriteBuffer(queue, bins, true, 0,
                                sizeof(cl_int) * number_of_bins
                                    * max_counts_per_bin,
-                               values, 0, NULL, NULL);
+                               values.get(), 0, NULL, NULL);
     if (err)
     {
         log_error(
@@ -293,10 +296,8 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
             err);
         return -1;
     }
-    free(values);
 
-    cl_int *l_bin_assignments =
-        (cl_int *)malloc(sizeof(cl_int) * number_of_items);
+    std::unique_ptr<cl_int[]> l_bin_assignments(new cl_int[number_of_items]);
     if (!l_bin_assignments)
     {
         log_error("add_index_bin_test FAILED to allocate initial values for "
@@ -326,7 +327,7 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     }
     err = clEnqueueWriteBuffer(queue, bin_assignments, true, 0,
                                sizeof(cl_int) * number_of_items,
-                               l_bin_assignments, 0, NULL, NULL);
+                               l_bin_assignments.get(), 0, NULL, NULL);
     if (err)
     {
         log_error("add_index_bin_test FAILED to set initial values for "
@@ -355,8 +356,8 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
         return -1;
     }
 
-    cl_int *final_bin_assignments =
-        (cl_int *)malloc(sizeof(cl_int) * number_of_bins * max_counts_per_bin);
+    std::unique_ptr<cl_int[]> final_bin_assignments(
+        new cl_int[number_of_bins * max_counts_per_bin]);
     if (!final_bin_assignments)
     {
         log_error("add_index_bin_test FAILED to allocate initial values for "
@@ -366,15 +367,14 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     err = clEnqueueReadBuffer(queue, bins, true, 0,
                               sizeof(cl_int) * number_of_bins
                                   * max_counts_per_bin,
-                              final_bin_assignments, 0, NULL, NULL);
+                              final_bin_assignments.get(), 0, NULL, NULL);
     if (err)
     {
         log_error("add_index_bin_test FAILED to read back bins: %d\n", err);
         return -1;
     }
 
-    cl_int *final_bin_counts =
-        (cl_int *)malloc(sizeof(cl_int) * number_of_bins);
+    std::unique_ptr<cl_int[]> final_bin_counts(new cl_int[number_of_bins]);
     if (!final_bin_counts)
     {
         log_error("add_index_bin_test FAILED to allocate initial values for "
@@ -382,8 +382,8 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
         return -1;
     }
     err = clEnqueueReadBuffer(queue, bin_counters, true, 0,
-                              sizeof(cl_int) * number_of_bins, final_bin_counts,
-                              0, NULL, NULL);
+                              sizeof(cl_int) * number_of_bins,
+                              final_bin_counts.get(), 0, NULL, NULL);
     if (err)
     {
         log_error("add_index_bin_test FAILED to read back bin_counters: %d\n",
@@ -460,13 +460,7 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
             errors++;
         }
     }
-    free(l_bin_counts);
-    free(l_bin_assignments);
-    free(final_bin_assignments);
-    free(final_bin_counts);
-    clReleaseMemObject(bin_counters);
-    clReleaseMemObject(bins);
-    clReleaseMemObject(bin_assignments);
+
     if (errors == 0)
     {
         log_info("add_index_bin_test passed. Each item was put in the correct "

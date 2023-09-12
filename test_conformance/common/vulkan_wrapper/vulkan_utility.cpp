@@ -21,6 +21,7 @@
 #include <fstream>
 #include <set>
 #include <string>
+#include <algorithm>
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
 #if defined(_WIN32) || defined(_WIN64)
@@ -248,6 +249,9 @@ getSupportedVulkanExternalSemaphoreHandleTypeList()
     }
     externalSemaphoreHandleTypeList.push_back(
         VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT);
+#elif defined(__ANDROID__)
+    externalSemaphoreHandleTypeList.push_back(
+        VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD);
 #else
     externalSemaphoreHandleTypeList.push_back(
         VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD);
@@ -478,6 +482,33 @@ const std::vector<VulkanFormat> getSupportedVulkanFormatList()
     }
 
     return formatList;
+}
+
+cl_external_semaphore_handle_type_khr getCLSemaphoreTypeFromVulkanType(
+    VulkanExternalSemaphoreHandleType vulkanExternalSemaphoreHandleType)
+{
+    cl_external_semaphore_handle_type_khr clExternalSemaphoreHandleTypeKhr = 0;
+    switch (vulkanExternalSemaphoreHandleType)
+    {
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD:
+            clExternalSemaphoreHandleTypeKhr =
+                CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR;
+            break;
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT:
+            clExternalSemaphoreHandleTypeKhr =
+                CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR;
+            break;
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT_KMT:
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT:
+            clExternalSemaphoreHandleTypeKhr =
+                CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR;
+            break;
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD:
+            clExternalSemaphoreHandleTypeKhr = CL_SEMAPHORE_HANDLE_SYNC_FD_KHR;
+            break;
+        default: break;
+    }
+    return clExternalSemaphoreHandleTypeKhr;
 }
 
 uint32_t getVulkanFormatElementSize(VulkanFormat format)

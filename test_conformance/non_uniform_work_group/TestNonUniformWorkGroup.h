@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _TESTNONUNIFORMWORKGROUP_H
-#define _TESTNONUNIFORMWORKGROUP_H
+#ifndef TESTNONUNIFORMWORKGROUP_H
+#define TESTNONUNIFORMWORKGROUP_H
 
 #include "procs.h"
 #include <vector>
@@ -147,5 +147,4 @@ private:
   unsigned int _overallCounter;
 };
 
-#endif // _TESTNONUNIFORMWORKGROUP_H
-
+#endif // TESTNONUNIFORMWORKGROUP_H

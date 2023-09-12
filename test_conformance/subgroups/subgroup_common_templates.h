@@ -483,29 +483,30 @@ template <typename Ty, ShuffleOp operation> struct SHF
     static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
                            const WorkGroupParams &test_params)
     {
-        int ii, i, j, k, n;
+        int ii, k;
+        size_t n;
         cl_uint l;
-        int nw = test_params.local_workgroup_size;
-        int ns = test_params.subgroup_size;
+        size_t nw = test_params.local_workgroup_size;
+        size_t ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        size_t nj = (nw + ns - 1) / ns;
         Ty tr, rr;
         ng = ng / nw;
 
         for (k = 0; k < ng; ++k)
         { // for each work_group
-            for (j = 0; j < nw; ++j)
+            for (size_t j = 0; j < nw; ++j)
             { // inside the work_group
                 mx[j] = x[j]; // read host inputs for work_group
                 my[j] = y[j]; // read device outputs for work_group
             }
 
-            for (j = 0; j < nj; ++j)
+            for (size_t j = 0; j < nj; ++j)
             { // for each subgroup
                 ii = j * ns;
                 n = ii + ns > nw ? nw - ii : ns;
 
-                for (i = 0; i < n; ++i)
+                for (size_t i = 0; i < n; ++i)
                 { // inside the subgroup
                   // shuffle index storage
                     int midx = 4 * ii + 4 * i + 2;

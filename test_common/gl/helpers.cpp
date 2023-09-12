@@ -1715,7 +1715,7 @@ void * CreateGLRenderbuffer( GLsizei width, GLsizei height,
         // Reverse and reorder to validate since in the
         // kernel the read_imagef() call always returns RGBA
         cl_uchar *p = (cl_uchar *)buffer;
-        for( size_t i = 0; i < (size_t)width * height; i++ )
+        for (GLsizei i = 0; i < width * height; i++)
         {
             cl_uchar uc0 = p[i * 4 + 0];
             cl_uchar uc1 = p[i * 4 + 1];
@@ -1733,7 +1733,7 @@ void * CreateGLRenderbuffer( GLsizei width, GLsizei height,
       // Reverse and reorder to validate since in the
       // kernel the read_imagef() call always returns RGBA
       cl_uchar *p = (cl_uchar *)buffer;
-      for( size_t i = 0; i < width * height; i++ )
+      for (GLsizei i = 0; i < width * height; i++)
       {
         cl_uchar uc0 = p[i * 4 + 0];
         cl_uchar uc1 = p[i * 4 + 1];

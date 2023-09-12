@@ -141,6 +141,16 @@ VulkanDescriptorSetLayoutBindingList::VulkanDescriptorSetLayoutBindingList(
 
 VulkanDescriptorSetLayoutBindingList::VulkanDescriptorSetLayoutBindingList() {}
 
+void VulkanDescriptorSetLayoutBindingList::addBinding(
+    size_t binding, VulkanDescriptorType descriptorType,
+    uint32_t descriptorCount, VulkanShaderStage shaderStage)
+{
+    VulkanDescriptorSetLayoutBinding *descriptorSetLayoutBinding =
+        new VulkanDescriptorSetLayoutBinding(binding, descriptorType,
+                                             descriptorCount, shaderStage);
+    add(*descriptorSetLayoutBinding);
+}
+
 VulkanDescriptorSetLayoutBindingList::VulkanDescriptorSetLayoutBindingList(
     size_t numDescriptorSetLayoutBindings, VulkanDescriptorType descriptorType,
     uint32_t descriptorCount, VulkanShaderStage shaderStage)
@@ -268,6 +278,7 @@ VulkanImage2DList::VulkanImage2DList(
     size_t numImages, std::vector<VulkanDeviceMemory *> &deviceMemory,
     uint64_t baseOffset, uint64_t interImageOffset, const VulkanDevice &device,
     VulkanFormat format, uint32_t width, uint32_t height, uint32_t mipLevels,
+    VulkanImageTiling vulkanImageTiling,
     VulkanExternalMemoryHandleType externalMemoryHandleType,
     VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
     VulkanSharingMode sharingMode)
@@ -275,8 +286,8 @@ VulkanImage2DList::VulkanImage2DList(
     for (size_t i2DIdx = 0; i2DIdx < numImages; i2DIdx++)
     {
         VulkanImage2D *image2D = new VulkanImage2D(
-            device, format, width, height, mipLevels, externalMemoryHandleType,
-            imageCreateFlag, imageUsage, sharingMode);
+            device, format, width, height, vulkanImageTiling, mipLevels,
+            externalMemoryHandleType, imageCreateFlag, imageUsage, sharingMode);
         add(*image2D);
         deviceMemory[i2DIdx]->bindImage(
             *image2D, baseOffset + (i2DIdx * interImageOffset));
@@ -285,16 +296,16 @@ VulkanImage2DList::VulkanImage2DList(
 
 VulkanImage2DList::VulkanImage2DList(
     size_t numImages, const VulkanDevice &device, VulkanFormat format,
-    uint32_t width, uint32_t height, uint32_t mipLevels,
-    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    uint32_t width, uint32_t height, VulkanImageTiling vulkanImageTiling,
+    uint32_t mipLevels, VulkanExternalMemoryHandleType externalMemoryHandleType,
     VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
     VulkanSharingMode sharingMode)
 {
     for (size_t bIdx = 0; bIdx < numImages; bIdx++)
     {
         VulkanImage2D *image2D = new VulkanImage2D(
-            device, format, width, height, mipLevels, externalMemoryHandleType,
-            imageCreateFlag, imageUsage, sharingMode);
+            device, format, width, height, vulkanImageTiling, mipLevels,
+            externalMemoryHandleType, imageCreateFlag, imageUsage, sharingMode);
         add(*image2D);
     }
 }

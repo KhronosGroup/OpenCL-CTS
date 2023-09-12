@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "harness/deviceInfo.h"
+#include "harness/stringHelpers.h"
 #include "harness/typeWrappers.h"
 
 #include "procs.h"
@@ -29,7 +30,6 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327950288
 #endif
-
 
 // clang-format off
 const char *unary_fn_code_pattern =
@@ -51,22 +51,9 @@ const char *unary_fn_code_pattern_v3 =
 "}\n";
 // clang-format on
 
-
 #define MAX_ERR 2.0f
 
 namespace {
-
-
-template <typename T> float UlpFn(const T &val, const double &r)
-{
-    if (std::is_same<T, double>::value)
-        return Ulp_Error_Double(val, r);
-    else if (std::is_same<T, float>::value)
-        return Ulp_Error(val, r);
-    else if (std::is_same<T, half>::value)
-        return Ulp_Error(val, r);
-}
-
 
 template <typename T>
 int verify_degrees(const T *const inptr, const T *const outptr, int n)
@@ -77,7 +64,11 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
 
     for (int i = 0, j = 0; i < n; i++, j++)
     {
-        r = (180.0 / M_PI) * inptr[i];
+        r = (180.0 / M_PI) * conv_to_dbl(inptr[i]);
+
+        if (std::is_same<T, half>::value)
+            if (!isfinite_fp(conv_to_half(r)) && !isfinite_fp(outptr[i]))
+                continue;
 
         error = UlpFn(outptr[i], r);
 
@@ -88,20 +79,31 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
             max_val = r;
             if (fabsf(error) > MAX_ERR)
             {
-                log_error("%d) Error @ %a: *%a vs %a  (*%g vs %g) ulps: %f\n",
-                          i, inptr[i], r, outptr[i], r, outptr[i], error);
+                if (std::is_same<T, half>::value)
+                    log_error(
+                        "%d) Error @ %a: *%a vs %a  (*%g vs %g) ulps: %f\n", i,
+                        conv_to_flt(inptr[i]), r, conv_to_flt(outptr[i]), r,
+                        conv_to_flt(outptr[i]), error);
+                else
+                    log_error(
+                        "%d) Error @ %a: *%a vs %a  (*%g vs %g) ulps: %f\n", i,
+                        inptr[i], r, outptr[i], r, outptr[i], error);
                 return 1;
             }
         }
     }
 
-    log_info("degrees: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
-             max_error, max_index, max_val, outptr[max_index], max_val,
-             outptr[max_index]);
+    if (std::is_same<T, half>::value)
+        log_info("degrees: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
+                 max_error, max_index, max_val, conv_to_flt(outptr[max_index]),
+                 max_val, conv_to_flt(outptr[max_index]));
+    else
+        log_info("degrees: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
+                 max_error, max_index, max_val, outptr[max_index], max_val,
+                 outptr[max_index]);
 
     return 0;
 }
-
 
 template <typename T>
 int verify_radians(const T *const inptr, const T *const outptr, int n)
@@ -112,8 +114,14 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
 
     for (int i = 0, j = 0; i < n; i++, j++)
     {
-        r = (M_PI / 180.0) * inptr[i];
-        error = Ulp_Error(outptr[i], r);
+        r = (M_PI / 180.0) * conv_to_dbl(inptr[i]);
+
+        if (std::is_same<T, half>::value)
+            if (!isfinite_fp(conv_to_half(r)) && !isfinite_fp(outptr[i]))
+                continue;
+
+        error = UlpFn(outptr[i], r);
+
         if (fabsf(error) > max_error)
         {
             max_error = error;
@@ -121,40 +129,50 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
             max_val = r;
             if (fabsf(error) > MAX_ERR)
             {
-                log_error("%d) Error @ %a: *%a vs %a  (*%g vs %g) ulps: %f\n",
-                          i, inptr[i], r, outptr[i], r, outptr[i], error);
+                if (std::is_same<T, half>::value)
+                    log_error(
+                        "%d) Error @ %a: *%a vs %a  (*%g vs %g) ulps: %f\n", i,
+                        conv_to_flt(inptr[i]), r, conv_to_flt(outptr[i]), r,
+                        conv_to_flt(outptr[i]), error);
+                else
+                    log_error(
+                        "%d) Error @ %a: *%a vs %a  (*%g vs %g) ulps: %f\n", i,
+                        inptr[i], r, outptr[i], r, outptr[i], error);
                 return 1;
             }
         }
     }
 
-    log_info("radians: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
-             max_error, max_index, max_val, outptr[max_index], max_val,
-             outptr[max_index]);
+    if (std::is_same<T, half>::value)
+        log_info("radians: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
+                 max_error, max_index, max_val, conv_to_flt(outptr[max_index]),
+                 max_val, conv_to_flt(outptr[max_index]));
+    else
+        log_info("radians: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
+                 max_error, max_index, max_val, outptr[max_index], max_val,
+                 outptr[max_index]);
 
     return 0;
 }
 
-
 template <typename T>
 int verify_sign(const T *const inptr, const T *const outptr, int n)
 {
-    T r = 0;
+    double r = 0;
     for (int i = 0; i < n; i++)
     {
-        if (inptr[i] > 0.0f)
+        if (conv_to_dbl(inptr[i]) > 0.0f)
             r = 1.0;
-        else if (inptr[i] < 0.0f)
+        else if (conv_to_dbl(inptr[i]) < 0.0f)
             r = -1.0;
         else
             r = 0.0;
-        if (r != outptr[i]) return -1;
+        if (r != conv_to_dbl(outptr[i])) return -1;
     }
     return 0;
 }
 
 }
-
 
 template <typename T>
 int test_unary_fn(cl_device_id device, cl_context context,
@@ -207,33 +225,38 @@ int test_unary_fn(cl_device_id device, cl_context context,
                 get_random_double(-100000.0 * M_PI, 100000.0 * M_PI, d);
         }
     }
+    else if (std::is_same<T, half>::value)
+    {
+        pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
+        for (int j = 0; j < num_elements; j++)
+        {
+            input_ptr[j] = conv_to_half(get_random_float(
+                (float)(-10000.f * M_PI), (float)(10000.f * M_PI), d));
+        }
+    }
 
     err = clEnqueueWriteBuffer(queue, streams[0], true, 0,
                                sizeof(T) * num_elements, &input_ptr.front(), 0,
                                NULL, NULL);
-    if (err != CL_SUCCESS)
-    {
-        log_error("clEnqueueWriteBuffer failed\n");
-        return -1;
-    }
+    test_error(err, "clEnqueueWriteBuffer failed\n");
 
     for (i = 0; i < kTotalVecCount; i++)
     {
         std::string kernelSource;
-        char vecSizeNames[][3] = { "", "2", "4", "8", "16", "3" };
+        const char vecSizeNames[][3] = { "", "2", "4", "8", "16", "3" };
 
         if (i >= kVectorSizeCount)
         {
             std::string str = unary_fn_code_pattern_v3;
-            kernelSource = string_format(str, pragma_str.c_str(), tname.c_str(),
-                                         tname.c_str(), fnName.c_str());
+            kernelSource = str_sprintf(str, pragma_str.c_str(), tname.c_str(),
+                                       tname.c_str(), fnName.c_str());
         }
         else
         {
             std::string str = unary_fn_code_pattern;
-            kernelSource = string_format(str, pragma_str.c_str(), tname.c_str(),
-                                         vecSizeNames[i], tname.c_str(),
-                                         vecSizeNames[i], fnName.c_str());
+            kernelSource = str_sprintf(str, pragma_str.c_str(), tname.c_str(),
+                                       vecSizeNames[i], tname.c_str(),
+                                       vecSizeNames[i], fnName.c_str());
         }
 
         /* Create kernels */
@@ -290,11 +313,18 @@ int test_unary_fn(cl_device_id device, cl_context context,
     return err;
 }
 
-
 cl_int DegreesTest::Run()
 {
-    cl_int error = test_unary_fn<float>(device, context, queue, num_elems,
-                                        fnName.c_str(), verify_degrees<float>);
+    cl_int error = CL_SUCCESS;
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        error = test_unary_fn<half>(device, context, queue, num_elems,
+                                    fnName.c_str(), verify_degrees<half>);
+        test_error(error, "DegreesTest::Run<cl_half> failed");
+    }
+
+    error = test_unary_fn<float>(device, context, queue, num_elems,
+                                 fnName.c_str(), verify_degrees<float>);
     test_error(error, "DegreesTest::Run<float> failed");
 
     if (is_extension_available(device, "cl_khr_fp64"))
@@ -307,11 +337,18 @@ cl_int DegreesTest::Run()
     return error;
 }
 
-
 cl_int RadiansTest::Run()
 {
-    cl_int error = test_unary_fn<float>(device, context, queue, num_elems,
-                                        fnName.c_str(), verify_radians<float>);
+    cl_int error = CL_SUCCESS;
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        error = test_unary_fn<half>(device, context, queue, num_elems,
+                                    fnName.c_str(), verify_radians<half>);
+        test_error(error, "RadiansTest::Run<cl_half> failed");
+    }
+
+    error = test_unary_fn<float>(device, context, queue, num_elems,
+                                 fnName.c_str(), verify_radians<float>);
     test_error(error, "RadiansTest::Run<float> failed");
 
     if (is_extension_available(device, "cl_khr_fp64"))
@@ -324,11 +361,18 @@ cl_int RadiansTest::Run()
     return error;
 }
 
-
 cl_int SignTest::Run()
 {
-    cl_int error = test_unary_fn<float>(device, context, queue, num_elems,
-                                        fnName.c_str(), verify_sign<float>);
+    cl_int error = CL_SUCCESS;
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        error = test_unary_fn<half>(device, context, queue, num_elems,
+                                    fnName.c_str(), verify_sign<half>);
+        test_error(error, "SignTest::Run<cl_half> failed");
+    }
+
+    error = test_unary_fn<float>(device, context, queue, num_elems,
+                                 fnName.c_str(), verify_sign<float>);
     test_error(error, "SignTest::Run<float> failed");
 
     if (is_extension_available(device, "cl_khr_fp64"))
@@ -341,7 +385,6 @@ cl_int SignTest::Run()
     return error;
 }
 
-
 int test_degrees(cl_device_id device, cl_context context,
                  cl_command_queue queue, int n_elems)
 {
@@ -349,14 +392,12 @@ int test_degrees(cl_device_id device, cl_context context,
                                        "degrees");
 }
 
-
 int test_radians(cl_device_id device, cl_context context,
                  cl_command_queue queue, int n_elems)
 {
     return MakeAndRunTest<RadiansTest>(device, context, queue, n_elems,
                                        "radians");
 }
-
 
 int test_sign(cl_device_id device, cl_context context, cl_command_queue queue,
               int n_elems)

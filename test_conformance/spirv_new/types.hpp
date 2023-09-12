@@ -43,6 +43,8 @@ VEC_NOT_EQ_FUNC(cl_float, 2)
 VEC_NOT_EQ_FUNC(cl_float, 4)
 VEC_NOT_EQ_FUNC(cl_double, 2)
 VEC_NOT_EQ_FUNC(cl_double, 4)
+VEC_NOT_EQ_FUNC(cl_half, 2)
+VEC_NOT_EQ_FUNC(cl_half, 4)
 
 template<typename T>
 bool isNotEqual(const T &lhs, const T &rhs)
@@ -109,6 +111,9 @@ GENRAND_REAL_FUNC(cl_float, 2)
 GENRAND_REAL_FUNC(cl_float, 4)
 GENRAND_REAL_FUNC(cl_double, 2)
 GENRAND_REAL_FUNC(cl_double, 4)
+GENRAND_REAL_FUNC(cl_half, 2)
+GENRAND_REAL_FUNC(cl_half, 4)
+GENRAND_REAL_FUNC(cl_half, 8)
 
 template<> inline cl_half genrandReal<cl_half>(RandomSeed &seed)
 {
@@ -156,6 +161,8 @@ Tv negOp(Tv in)
 {
     return -in;
 }
+
+inline cl_half negOpHalf(cl_half v) { return v ^ 0x8000; }
 
 template<typename Tv>
 Tv notOp(Tv in)

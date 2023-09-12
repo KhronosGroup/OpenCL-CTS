@@ -14,11 +14,15 @@
 // limitations under the License.
 //
 
+#include <cstdint>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <stdexcept>
 #include <vector>
+
+#include "harness/stringHelpers.h"
 
 #include <CL/cl_half.h>
 
@@ -80,29 +84,6 @@ extension,
 };
 // clang-format on
 
-
-std::string concat_kernel(const char* sstr[], int num)
-{
-    std::string res;
-    for (int i = 0; i < num; i++) res += std::string(sstr[i]);
-    return res;
-}
-
-template <typename... Args>
-std::string string_format(const std::string& format, Args... args)
-{
-    int size_s = std::snprintf(nullptr, 0, format.c_str(), args...)
-        + 1; // Extra space for '\0'
-    if (size_s <= 0)
-    {
-        throw std::runtime_error("Error during formatting.");
-    }
-    auto size = static_cast<size_t>(size_s);
-    std::unique_ptr<char[]> buf(new char[size]);
-    std::snprintf(buf.get(), size, format.c_str(), args...);
-    return std::string(buf.get(),
-                       buf.get() + size - 1); // We don't want the '\0' inside
-}
 
 template <typename T, typename F> bool verify(const T& A, const T& B)
 {
@@ -224,14 +205,14 @@ int RelationalsFPTest::test_equiv_kernel(unsigned int vecSize,
             auto str =
                 concat_kernel(equivTestKerPat_3,
                               sizeof(equivTestKerPat_3) / sizeof(const char*));
-            kernelSource = string_format(str, fnName.c_str(), opName.c_str());
+            kernelSource = str_sprintf(str, fnName.c_str(), opName.c_str());
         }
         else
         {
             auto str = concat_kernel(equivTestKerPatLessGreater_3,
                                      sizeof(equivTestKerPatLessGreater_3)
                                          / sizeof(const char*));
-            kernelSource = string_format(str, fnName.c_str());
+            kernelSource = str_sprintf(str, fnName.c_str());
         }
     }
     else
@@ -241,14 +222,14 @@ int RelationalsFPTest::test_equiv_kernel(unsigned int vecSize,
             auto str =
                 concat_kernel(equivTestKernPat,
                               sizeof(equivTestKernPat) / sizeof(const char*));
-            kernelSource = string_format(str, fnName.c_str(), opName.c_str());
+            kernelSource = str_sprintf(str, fnName.c_str(), opName.c_str());
         }
         else
         {
             auto str = concat_kernel(equivTestKernPatLessGreater,
                                      sizeof(equivTestKernPatLessGreater)
                                          / sizeof(const char*));
-            kernelSource = string_format(str, fnName.c_str());
+            kernelSource = str_sprintf(str, fnName.c_str());
         }
     }
 

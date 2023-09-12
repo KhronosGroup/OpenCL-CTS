@@ -26,6 +26,7 @@ test_definition test_list[] = {
     ADD_TEST(info_ref_count),
     ADD_TEST(info_state),
     ADD_TEST(info_prop_array),
+    ADD_TEST(info_context),
     ADD_TEST(basic_profiling),
     ADD_TEST(simultaneous_profiling),
     ADD_TEST(regular_wait_for_command_buffer),
@@ -58,7 +59,9 @@ test_definition test_list[] = {
     ADD_TEST(event_info_command_queue),
     ADD_TEST(event_info_execution_status),
     ADD_TEST(event_info_context),
-    ADD_TEST(event_info_reference_count)
+    ADD_TEST(event_info_reference_count),
+    ADD_TEST(finalize_invalid),
+    ADD_TEST(finalize_empty)
 };
 
 int main(int argc, const char *argv[])

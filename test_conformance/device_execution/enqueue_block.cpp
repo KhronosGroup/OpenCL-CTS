@@ -27,561 +27,538 @@
 
 #ifdef CL_VERSION_2_0
 extern int gWimpyMode;
-static const char* enqueue_simple_block[] =
-{
-    NL, "void block_fn(size_t tid, int mul, __global int* res)"
-    NL, "{"
-    NL, "  res[tid] = mul * 7 - 21;"
-    NL, "}"
-    NL, ""
-    NL, "kernel void enqueue_simple_block(__global int* res)"
-    NL, "{"
-    NL, "  int multiplier = 3;"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, ""
-    NL, "  void (^kernelBlock)(void) = ^{ block_fn(tid, multiplier, res); };"
-    NL, ""
-    NL, "  res[tid] = -1;"
-    NL, "  queue_t def_q = get_default_queue();"
-    NL, "  ndrange_t ndrange = ndrange_1D(1);"
-    NL, "  int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "}"
-    NL
-};
 
-static const char* enqueue_block_with_local_arg1[] =
-{
-    NL, "#define LOCAL_MEM_SIZE 10"
-    NL, ""
-    NL, "void block_fn_local_arg1(size_t tid, int mul, __global int* res, __local int* tmp)"
-    NL, "{"
-    NL, "  for(int i = 0; i < LOCAL_MEM_SIZE; i++)"
-    NL, "  {"
-    NL, "    tmp[i] = mul * 7 - 21;"
-    NL, "    res[tid] += tmp[i];"
-    NL, "  }"
-    NL, "  res[tid] += 2;"
-    NL, "}"
-    NL, ""
-    NL, "kernel void enqueue_block_with_local_arg1(__global int* res)"
-    NL, "{"
-    NL, "  int multiplier = 3;"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, ""
-    NL, "  void (^kernelBlock)(__local void*) = ^(__local void* buf){ block_fn_local_arg1(tid, multiplier, res, (local int*)buf); };"
-    NL, ""
-    NL, "  res[tid] = -2;"
-    NL, "  queue_t def_q = get_default_queue();"
-    NL, "  ndrange_t ndrange = ndrange_1D(1);"
-    NL, "  int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock, (uint)(LOCAL_MEM_SIZE*sizeof(int)));"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "}"
-    NL
-};
+// clang-format off
+static const char* enqueue_simple_block[] = { R"(
+    void block_fn(size_t tid, int mul, __global int* res)
+    {
+      res[tid] = mul * 7 - 21;
+    }
 
-static const char* enqueue_block_with_local_arg2[] =
-{
-    NL, "#define LOCAL_MEM_SIZE 10"
-    NL, ""
-    NL, "void block_fn_local_arg1(size_t tid, int mul, __global int* res, __local int* tmp1, __local float4* tmp2)"
-    NL, "{"
-    NL, "  for(int i = 0; i < LOCAL_MEM_SIZE; i++)"
-    NL, "  {"
-    NL, "    tmp1[i]   = mul * 7 - 21;"
-    NL, "    tmp2[i].x = (float)(mul * 7 - 21);"
-    NL, "    tmp2[i].y = (float)(mul * 7 - 21);"
-    NL, "    tmp2[i].z = (float)(mul * 7 - 21);"
-    NL, "    tmp2[i].w = (float)(mul * 7 - 21);"
-    NL, ""
-    NL, "    res[tid] += tmp1[i];"
-    NL, "    res[tid] += (int)(tmp2[i].x+tmp2[i].y+tmp2[i].z+tmp2[i].w);"
-    NL, "  }"
-    NL, "  res[tid] += 2;"
-    NL, "}"
-    NL, ""
-    NL, "kernel void enqueue_block_with_local_arg2(__global int* res)"
-    NL, "{"
-    NL, "  int multiplier = 3;"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, ""
-    NL, "  void (^kernelBlock)(__local void*, __local void*) = ^(__local void* buf1, __local void* buf2)"
-    NL, "    { block_fn_local_arg1(tid, multiplier, res, (local int*)buf1, (local float4*)buf2); };"
-    NL, ""
-    NL, "  res[tid] = -2;"
-    NL, "  queue_t def_q = get_default_queue();"
-    NL, "  ndrange_t ndrange = ndrange_1D(1);"
-    NL, "  int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock, (uint)(LOCAL_MEM_SIZE*sizeof(int)), (uint)(LOCAL_MEM_SIZE*sizeof(float4)));"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "}"
-    NL
-};
+    kernel void enqueue_simple_block(__global int* res)
+    {
+      int multiplier = 3;
+      size_t tid = get_global_id(0);
 
-static const char* enqueue_block_with_wait_list[] =
-{
-    NL, "#define BLOCK_SUBMITTED 1"
-    NL, "#define BLOCK_COMPLETED 2"
-    NL, "#define CHECK_SUCCESS   0"
-    NL, ""
-    NL, "kernel void enqueue_block_with_wait_list(__global int* res)"
-    NL, "{"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, ""
-    NL, "  clk_event_t user_evt = create_user_event();"
-    NL, ""
-    NL, "  res[tid] = BLOCK_SUBMITTED;"
-    NL, "  queue_t def_q = get_default_queue();"
-    NL, "  ndrange_t ndrange = ndrange_1D(1);"
-    NL, "  clk_event_t block_evt;"
-    NL, "  int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &user_evt, &block_evt,"
-    NL, "  ^{"
-    NL, "      res[tid] = BLOCK_COMPLETED;"
-    NL, "   });"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, ""
-    NL, "  retain_event(block_evt);"
-    NL, "  release_event(block_evt);"
-    NL, ""
-    NL, "  //check block is not started"
-    NL, "  if(res[tid] == BLOCK_SUBMITTED)"
-    NL, "  {"
-    NL, "    clk_event_t my_evt;"
-    NL, "    enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &block_evt, &my_evt, "
-    NL, "    ^{"
-    NL, "       //check block is completed"
-    NL, "       if(res[tid] == BLOCK_COMPLETED) res[tid] = CHECK_SUCCESS;"
-    NL, "     });"
-    NL, "    release_event(my_evt);"
-    NL, "  }"
-    NL, ""
-    NL, "  set_user_event_status(user_evt, CL_COMPLETE);"
-    NL, ""
-    NL, "  release_event(user_evt);"
-    NL, "  release_event(block_evt);"
-    NL, "}"
-    NL
-};
+      void (^kernelBlock)(void) = ^{ block_fn(tid, multiplier, res); };
 
-static const char* enqueue_block_with_wait_list_and_local_arg[] =
-{
-    NL, "#define LOCAL_MEM_SIZE 10"
-    NL, "#define BLOCK_COMPLETED 1"
-    NL, "#define BLOCK_SUBMITTED 2"
-    NL, "#define BLOCK_STARTED   3"
-    NL, "#define CHECK_SUCCESS   0"
-    NL, ""
-    NL, "void block_fn_local_arg(size_t tid, int mul, __global int* res, __local int* tmp)"
-    NL, "{"
-    NL, "  res[tid] = BLOCK_STARTED;"
-    NL, "  for(int i = 0; i < LOCAL_MEM_SIZE; i++)"
-    NL, "  {"
-    NL, "    tmp[i] = mul * 7 - 21;"
-    NL, "    res[tid] += tmp[i];"
-    NL, "  }"
-    NL, "  if(res[tid] == BLOCK_STARTED) res[tid] = BLOCK_COMPLETED;"
-    NL, "}"
-    NL, ""
-    NL, "kernel void enqueue_block_with_wait_list_and_local_arg(__global int* res)"
-    NL, "{"
-    NL, "  int multiplier = 3;"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, "  clk_event_t user_evt = create_user_event();"
-    NL, ""
-    NL, "  res[tid] = BLOCK_SUBMITTED;"
-    NL, "  queue_t def_q = get_default_queue();"
-    NL, "  ndrange_t ndrange = ndrange_1D(1);"
-    NL, "  clk_event_t block_evt;"
-    NL, "  int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &user_evt, &block_evt, "
-    NL, "    ^(__local void* buf) {"
-    NL, "       block_fn_local_arg(tid, multiplier, res, (__local int*)buf);"
-    NL, "     }, LOCAL_MEM_SIZE*sizeof(int));"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, ""
-    NL, "  retain_event(block_evt);"
-    NL, "  release_event(block_evt);"
-    NL, ""
-    NL, "  //check block is not started"
-    NL, "  if(res[tid] == BLOCK_SUBMITTED)"
-    NL, "  {"
-    NL, "    clk_event_t my_evt;"
-    NL, "    enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &block_evt, &my_evt, "
-    NL, "    ^{"
-    NL, "       //check block is completed"
-    NL, "       if(res[tid] == BLOCK_COMPLETED) res[tid] = CHECK_SUCCESS;"
-    NL, "     });"
-    NL, "    release_event(my_evt);"
-    NL, "  }"
-    NL, ""
-    NL, "  set_user_event_status(user_evt, CL_COMPLETE);"
-    NL, ""
-    NL, "  release_event(user_evt);"
-    NL, "  release_event(block_evt);"
-    NL, "}"
-    NL
-};
+      res[tid] = -1;
+      queue_t def_q = get_default_queue();
+      ndrange_t ndrange = ndrange_1D(1);
+      int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);
+      if (enq_res != CLK_SUCCESS) { res[tid] = -1; return; }
+    }
+)" };
 
-static const char* enqueue_block_get_kernel_work_group_size[] =
-{
-    NL, "void block_fn(size_t tid, int mul, __global int* res)"
-    NL, "{"
-    NL, "  res[tid] = mul * 7 - 21;"
-    NL, "}"
-    NL, ""
-    NL, "kernel void enqueue_block_get_kernel_work_group_size(__global int* res)"
-    NL, "{"
-    NL, "    int multiplier = 3;"
-    NL, "    size_t tid = get_global_id(0);"
-    NL, ""
-    NL, "    void (^kernelBlock)(void) = ^{ block_fn(tid, multiplier, res); };"
-    NL, ""
-    NL, "    size_t local_work_size = get_kernel_work_group_size(kernelBlock);"
-    NL, "    if (local_work_size <= 0){ res[tid] = -1; return; }"
-    NL, "    size_t global_work_size = local_work_size * 4;"
-    NL, ""
-    NL, "    res[tid] = -1;"
-    NL, "    queue_t q1 = get_default_queue();"
-    NL, "    ndrange_t ndrange = ndrange_1D(global_work_size, local_work_size);"
-    NL, ""
-    NL, "    int enq_res = enqueue_kernel(q1, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);"
-    NL, "    if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "}"
-};
+static const char* enqueue_block_with_local_arg1[] = { R"(
+    #define LOCAL_MEM_SIZE 10
 
-static const char* enqueue_block_get_kernel_preferred_work_group_size_multiple[] =
-{
-    NL, "void block_fn(size_t tid, int mul, __global int* res)"
-    NL, "{"
-    NL, "  res[tid] = mul * 7 - 21;"
-    NL, "}"
-    NL, ""
-    NL, "kernel void enqueue_block_get_kernel_preferred_work_group_size_multiple(__global int* res)"
-    NL, "{"
-    NL, "    int multiplier = 3;"
-    NL, "    size_t tid = get_global_id(0);"
-    NL, ""
-    NL, "    void (^kernelBlock)(void) = ^{ block_fn(tid, multiplier, res); };"
-    NL, ""
-    NL, "    size_t local_work_size = get_kernel_preferred_work_group_size_multiple(kernelBlock);"
-    NL, "    if (local_work_size <= 0){ res[tid] = -1; return; }"
-    NL, "    size_t global_work_size = local_work_size * 4;"
-    NL, ""
-    NL, "    res[tid] = -1;"
-    NL, "    queue_t q1 = get_default_queue();"
-    NL, "    ndrange_t ndrange = ndrange_1D(global_work_size, local_work_size);"
-    NL, ""
-    NL, "    int enq_res = enqueue_kernel(q1, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);"
-    NL, "    if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "}"
-};
+    void block_fn_local_arg1(size_t tid, int mul, __global int* res, __local int* tmp)
+    {
+      for (int i = 0; i < LOCAL_MEM_SIZE; i++)
+      {
+        tmp[i] = mul * 7 - 21;
+        res[tid] += tmp[i];
+      }
+      res[tid] += 2;
+    }
 
-static const char* enqueue_block_capture_event_profiling_info_after_execution[] =
-{
-    NL, "#define MAX_GWS " STRINGIFY_VALUE(MAX_GWS)
-    NL, ""
-    NL, "__global ulong value[MAX_GWS*2] = {0};"
-    NL, ""
-    NL, "void block_fn(size_t tid, __global int* res)"
-    NL, "{"
-    NL, "    res[tid] = -2;"
-    NL, "}"
-    NL, ""
-    NL, "void check_res(size_t tid, const clk_event_t evt, __global int* res)"
-    NL, "{"
-    NL, "    capture_event_profiling_info (evt, CLK_PROFILING_COMMAND_EXEC_TIME, &value[tid*2]);"
-    NL, ""
-    NL, "    if (value[tid*2] > 0 && value[tid*2+1] > 0) res[tid] =  0;"
-    NL, "    else                                        res[tid] = -4;"
-    NL, "    release_event(evt);"
-    NL, "}"
-    NL, ""
-    NL, "kernel void enqueue_block_capture_event_profiling_info_after_execution(__global int* res)"
-    NL, "{"
-    NL, "    size_t tid = get_global_id(0);"
-    NL, ""
-    NL, "    res[tid] = -1;"
-    NL, "    queue_t def_q = get_default_queue();"
-    NL, "    ndrange_t ndrange = ndrange_1D(1);"
-    NL, "    clk_event_t block_evt1;"
-    NL, ""
-    NL, "    void (^kernelBlock)(void)  = ^{ block_fn (tid, res);                   };"
-    NL, ""
-    NL, "    int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 0, NULL, &block_evt1, kernelBlock);"
-    NL, "    if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, ""
-    NL, "    void (^checkBlock) (void)  = ^{ check_res(tid, block_evt1, res);      };"
-    NL, ""
-    NL, "    enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &block_evt1, NULL, checkBlock);"
-    NL, "    if(enq_res != CLK_SUCCESS) { res[tid] = -3; return; }"
-    NL, "}"
-    NL
-};
+    kernel void enqueue_block_with_local_arg1(__global int* res)
+    {
+      int multiplier = 3;
+      size_t tid = get_global_id(0);
 
-static const char* enqueue_block_capture_event_profiling_info_before_execution[] =
-{
-    NL, "#define MAX_GWS " STRINGIFY_VALUE(MAX_GWS)
-    NL, ""
-    NL, "__global ulong value[MAX_GWS*2] = {0};"
-    NL, ""
-    NL, "void block_fn(size_t tid, __global int* res)"
-    NL, "{"
-    NL, "    res[tid] = -2;"
-    NL, "}"
-    NL, ""
-    NL, "void check_res(size_t tid, const ulong *value, __global int* res)"
-    NL, "{"
-    NL, "    if (value[tid*2] > 0 && value[tid*2+1] > 0) res[tid] =  0;"
-    NL, "    else                                        res[tid] = -4;"
-    NL, "}"
-    NL, ""
-    NL, "kernel void enqueue_block_capture_event_profiling_info_before_execution(__global int* res)"
-    NL, "{"
-    NL, "    int multiplier = 3;"
-    NL, "    size_t tid = get_global_id(0);"
-    NL, "    clk_event_t user_evt = create_user_event();"
-    NL, ""
-    NL, "    res[tid] = -1;"
-    NL, "    queue_t def_q = get_default_queue();"
-    NL, "    ndrange_t ndrange = ndrange_1D(1);"
-    NL, "    clk_event_t block_evt1;"
-    NL, "    clk_event_t block_evt2;"
-    NL, ""
-    NL, "    void (^kernelBlock)(void)  = ^{ block_fn (tid, res);                   };"
-    NL, ""
-    NL, "    int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &user_evt, &block_evt1, kernelBlock);"
-    NL, "    if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, ""
-    NL, "    capture_event_profiling_info (block_evt1, CLK_PROFILING_COMMAND_EXEC_TIME, &value[tid*2]);"
-    NL, ""
-    NL, "    set_user_event_status(user_evt, CL_COMPLETE);"
-    NL, ""
-    NL, "    void (^checkBlock) (void)  = ^{ check_res(tid, &value, res);      };"
-    NL, ""
-    NL, "    enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &block_evt1, &block_evt2, checkBlock);"
-    NL, "    if(enq_res != CLK_SUCCESS) { res[tid] = -3; return; }"
-    NL, ""
-    NL, "    release_event(user_evt);"
-    NL, "    release_event(block_evt1);"
-    NL, "    release_event(block_evt2);"
-    NL, "}"
-    NL
-};
+      void (^kernelBlock)(__local void*) = ^(__local void* buf){ block_fn_local_arg1(tid, multiplier, res, (local int*)buf); };
 
-static const char* enqueue_block_with_barrier[] =
-{
-    NL, "void block_fn(size_t tid, int mul, __global int* res)"
-    NL, "{"
-    NL, "  if(mul > 0) barrier(CLK_GLOBAL_MEM_FENCE);"
-    NL, "  res[tid] = mul * 7 -21;"
-    NL, "}"
-    NL, ""
-    NL, "void loop_fn(size_t tid, int n, __global int* res)"
-    NL, "{"
-    NL, "  while(n > 0)"
-    NL, "  {"
-    NL, "    barrier(CLK_GLOBAL_MEM_FENCE);"
-    NL, "    res[tid] = 0;"
-    NL, "    --n;"
-    NL, "  }"
-    NL, "}"
-    NL, ""
-    NL, "kernel void enqueue_block_with_barrier(__global int* res)"
-    NL, "{"
-    NL, "  int multiplier = 3;"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, "  queue_t def_q = get_default_queue();"
-    NL, "  res[tid] = -1;"
-    NL, "  size_t n = 256;"
-    NL, ""
-    NL, "  void (^kernelBlock)(void) = ^{ block_fn(tid, multiplier, res); };"
-    NL, ""
-    NL, "  ndrange_t ndrange = ndrange_1D(n);"
-    NL, "  int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, ""
-    NL, "  void (^loopBlock)(void) = ^{ loop_fn(tid, n, res); };"
-    NL, ""
-    NL, "  enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, loopBlock);"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, "}"
-    NL
-};
+      res[tid] = -2;
+      queue_t def_q = get_default_queue();
+      ndrange_t ndrange = ndrange_1D(1);
+      int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock, (uint)(LOCAL_MEM_SIZE*sizeof(int)));
+      if (enq_res != CLK_SUCCESS) { res[tid] = -1; return; }
+    }
+)" };
 
-static const char* enqueue_marker_with_block_event[] =
-{
-    NL, "#define BLOCK_COMPLETED 1"
-    NL, "#define BLOCK_SUBMITTED 2"
-    NL, "#define CHECK_SUCCESS   0"
-    NL, ""
-    NL, "kernel void enqueue_marker_with_block_event(__global int* res)"
-    NL, "{"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, ""
-    NL, "  clk_event_t user_evt = create_user_event();"
-    NL, ""
-    NL, "  res[tid] = BLOCK_SUBMITTED;"
-    NL, "  queue_t def_q = get_default_queue();"
-    NL, "  ndrange_t ndrange = ndrange_1D(1);"
-    NL, ""
-    NL, "  clk_event_t block_evt1;"
-    NL, "  clk_event_t marker_evt;"
-    NL, ""
-    NL, "  int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &user_evt, &block_evt1,"
-    NL, "  ^{"
-    NL, "     res[tid] = BLOCK_COMPLETED;"
-    NL, "   });"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -2; return; }"
-    NL, ""
-    NL, "  enq_res = enqueue_marker(def_q, 1, &block_evt1, &marker_evt);"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -3; return; }"
-    NL, ""
-    NL, "  retain_event(marker_evt);"
-    NL, "  release_event(marker_evt);"
-    NL, ""
-    NL, "  //check block is not started"
-    NL, "  if(res[tid] == BLOCK_SUBMITTED)"
-    NL, "  {"
-    NL, "    clk_event_t my_evt;"
-    NL, "    enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &marker_evt, &my_evt, "
-    NL, "    ^{"
-    NL, "       //check block is completed"
-    NL, "       if(res[tid] == BLOCK_COMPLETED) res[tid] = CHECK_SUCCESS;"
-    NL, "     });"
-    NL, "    release_event(my_evt);"
-    NL, "  }"
-    NL, ""
-    NL, "  set_user_event_status(user_evt, CL_COMPLETE);"
-    NL, ""
-    NL, "  release_event(block_evt1);"
-    NL, "  release_event(marker_evt);"
-    NL, "  release_event(user_evt);"
-    NL, "}"
-    NL
-};
+static const char* enqueue_block_with_local_arg2[] = { R"(
+    #define LOCAL_MEM_SIZE 10
 
-static const char* enqueue_marker_with_user_event[] =
-{
-    NL, "#define BLOCK_COMPLETED 1"
-    NL, "#define BLOCK_SUBMITTED 2"
-    NL, "#define CHECK_SUCCESS   0"
-    NL, ""
-    NL, "kernel void enqueue_marker_with_user_event(__global int* res)"
-    NL, "{"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, "  uint multiplier = 7;"
-    NL, ""
-    NL, "  clk_event_t user_evt = create_user_event();"
-    NL, ""
-    NL, "  res[tid] = BLOCK_SUBMITTED;"
-    NL, "  queue_t def_q = get_default_queue();"
-    NL, "  ndrange_t ndrange = ndrange_1D(1);"
-    NL, ""
-    NL, "  clk_event_t marker_evt;"
-    NL, "  clk_event_t block_evt;"
-    NL, ""
-    NL, "  int enq_res = enqueue_marker(def_q, 1, &user_evt, &marker_evt);"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, ""
-    NL, "  retain_event(marker_evt);"
-    NL, "  release_event(marker_evt);"
-    NL, ""
-    NL, "  enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &marker_evt, &block_evt, "
-    NL, "  ^{"
-    NL, "     if(res[tid] == BLOCK_SUBMITTED) res[tid] = CHECK_SUCCESS;"
-    NL, "   });"
-    NL, ""
-    NL, "  //check block is not started"
-    NL, "  if(res[tid] != BLOCK_SUBMITTED)  { res[tid] = -2; return; }"
-    NL, ""
-    NL, "  set_user_event_status(user_evt, CL_COMPLETE);"
-    NL, ""
-    NL, "  release_event(block_evt);"
-    NL, "  release_event(marker_evt);"
-    NL, "  release_event(user_evt);"
-    NL, "}"
-    NL
-};
+    void block_fn_local_arg1(size_t tid, int mul, __global int* res, __local int* tmp1, __local float4* tmp2)
+    {
+      for (int i = 0; i < LOCAL_MEM_SIZE; i++)
+      {
+        tmp1[i]   = mul * 7 - 21;
+        tmp2[i].x = (float)(mul * 7 - 21);
+        tmp2[i].y = (float)(mul * 7 - 21);
+        tmp2[i].z = (float)(mul * 7 - 21);
+        tmp2[i].w = (float)(mul * 7 - 21);
 
-static const char* enqueue_marker_with_mixed_events[] =
-{
-    NL, "#define BLOCK_COMPLETED 1"
-    NL, "#define BLOCK_SUBMITTED 2"
-    NL, "#define CHECK_SUCCESS   0"
-    NL, ""
-    NL, "kernel void enqueue_marker_with_mixed_events(__global int* res)"
-    NL, "{"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, ""
-    NL, "  clk_event_t mix_ev[2];"
-    NL, "  mix_ev[0] = create_user_event();"
-    NL, ""
-    NL, "  res[tid] = BLOCK_SUBMITTED;"
-    NL, "  queue_t def_q = get_default_queue();"
-    NL, "  ndrange_t ndrange = ndrange_1D(1);"
-    NL, ""
-    NL, "  int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &mix_ev[0], &mix_ev[1],"
-    NL, "  ^{"
-    NL, "     res[tid] = BLOCK_COMPLETED;"
-    NL, "   });"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -2; return; }"
-    NL, ""
-    NL, "  clk_event_t marker_evt;"
-    NL, ""
-    NL, "  enq_res = enqueue_marker(def_q, 2, mix_ev, &marker_evt);"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -3; return; }"
-    NL, ""
-    NL, "  retain_event(marker_evt);"
-    NL, "  release_event(marker_evt);"
-    NL, ""
-    NL, "  //check block is not started"
-    NL, "  if(res[tid] == BLOCK_SUBMITTED)"
-    NL, "  {"
-    NL, "    clk_event_t my_evt;"
-    NL, "    enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &marker_evt, &my_evt, "
-    NL, "    ^{"
-    NL, "       //check block is completed"
-    NL, "       if(res[tid] == BLOCK_COMPLETED) res[tid] = CHECK_SUCCESS;"
-    NL, "     });"
-    NL, "    release_event(my_evt);"
-    NL, "  }"
-    NL, ""
-    NL, "  set_user_event_status(mix_ev[0], CL_COMPLETE);"
-    NL, ""
-    NL, "  release_event(mix_ev[1]);"
-    NL, "  release_event(marker_evt);"
-    NL, "  release_event(mix_ev[0]);"
-    NL, "}"
-    NL
-};
+        res[tid] += tmp1[i];
+        res[tid] += (int)(tmp2[i].x+tmp2[i].y+tmp2[i].z+tmp2[i].w);
+      }
+      res[tid] += 2;
+    }
 
-static const char* enqueue_block_with_mixed_events[] =
-{
-    NL, "kernel void enqueue_block_with_mixed_events(__global int* res)"
-    NL, "{"
-    NL, "  int enq_res;"
-    NL, "  size_t tid = get_global_id(0);"
-    NL, "  clk_event_t mix_ev[3];"
-    NL, "  mix_ev[0] = create_user_event();"
-    NL, "  queue_t def_q = get_default_queue();"
-    NL, "  ndrange_t ndrange = ndrange_1D(1);"
-    NL, "  res[tid] = -2;"
-    NL, ""
-    NL, "  enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &mix_ev[0], &mix_ev[1], ^{ res[tid]++; });"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -1; return; }"
-    NL, ""
-    NL, "  enq_res = enqueue_marker(def_q, 1, &mix_ev[1], &mix_ev[2]);"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -3; return; }"
-    NL, ""
-    NL, "  enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, sizeof(mix_ev)/sizeof(mix_ev[0]), mix_ev, NULL, ^{ res[tid]++; });"
-    NL, "  if(enq_res != CLK_SUCCESS) { res[tid] = -4; return; }"
-    NL, ""
-    NL, "  set_user_event_status(mix_ev[0], CL_COMPLETE);"
-    NL, ""
-    NL, "  release_event(mix_ev[0]);"
-    NL, "  release_event(mix_ev[1]);"
-    NL, "  release_event(mix_ev[2]);"
-    NL, "}"
-    NL
-};
+    kernel void enqueue_block_with_local_arg2(__global int* res)
+    {
+      int multiplier = 3;
+      size_t tid = get_global_id(0);
+
+      void (^kernelBlock)(__local void*, __local void*) = ^(__local void* buf1, __local void* buf2)
+        { block_fn_local_arg1(tid, multiplier, res, (local int*)buf1, (local float4*)buf2); };
+
+      res[tid] = -2;
+      queue_t def_q = get_default_queue();
+      ndrange_t ndrange = ndrange_1D(1);
+      int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock, (uint)(LOCAL_MEM_SIZE*sizeof(int)), (uint)(LOCAL_MEM_SIZE*sizeof(float4)));
+      if (enq_res != CLK_SUCCESS) { res[tid] = -1; return; }
+    }
+)" };
+
+static const char* enqueue_block_with_wait_list[] = { R"(
+    #define BLOCK_SUBMITTED 1
+    #define BLOCK_COMPLETED 2
+    #define CHECK_SUCCESS   0
+
+    kernel void enqueue_block_with_wait_list(__global int* res)
+    {
+      size_t tid = get_global_id(0);
+
+      clk_event_t user_evt = create_user_event();
+
+      res[tid] = BLOCK_SUBMITTED;
+      queue_t def_q = get_default_queue();
+      ndrange_t ndrange = ndrange_1D(1);
+      clk_event_t block_evt;
+      int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &user_evt, &block_evt,
+      ^{
+          res[tid] = BLOCK_COMPLETED;
+       });
+      if (enq_res != CLK_SUCCESS) { res[tid] = -1; return; }
+
+      retain_event(block_evt);
+      release_event(block_evt);
+
+      //check block is not started
+      if (res[tid] == BLOCK_SUBMITTED)
+      {
+        clk_event_t my_evt;
+        enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &block_evt, &my_evt,
+        ^{
+           //check block is completed
+           if (res[tid] == BLOCK_COMPLETED) res[tid] = CHECK_SUCCESS;
+         });
+        release_event(my_evt);
+      }
+
+      set_user_event_status(user_evt, CL_COMPLETE);
+
+      release_event(user_evt);
+      release_event(block_evt);
+    }
+)" };
+
+static const char* enqueue_block_with_wait_list_and_local_arg[] = { R"(
+    #define LOCAL_MEM_SIZE 10
+    #define BLOCK_COMPLETED 1
+    #define BLOCK_SUBMITTED 2
+    #define BLOCK_STARTED   3
+    #define CHECK_SUCCESS   0
+
+    void block_fn_local_arg(size_t tid, int mul, __global int* res, __local int* tmp)
+    {
+      res[tid] = BLOCK_STARTED;
+      for (int i = 0; i < LOCAL_MEM_SIZE; i++)
+      {
+        tmp[i] = mul * 7 - 21;
+        res[tid] += tmp[i];
+      }
+      if (res[tid] == BLOCK_STARTED) res[tid] = BLOCK_COMPLETED;
+    }
+
+    kernel void enqueue_block_with_wait_list_and_local_arg(__global int* res)
+    {
+      int multiplier = 3;
+      size_t tid = get_global_id(0);
+      clk_event_t user_evt = create_user_event();
+
+      res[tid] = BLOCK_SUBMITTED;
+      queue_t def_q = get_default_queue();
+      ndrange_t ndrange = ndrange_1D(1);
+      clk_event_t block_evt;
+      int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &user_evt, &block_evt,
+        ^(__local void* buf) {
+           block_fn_local_arg(tid, multiplier, res, (__local int*)buf);
+         }, LOCAL_MEM_SIZE*sizeof(int));
+      if (enq_res != CLK_SUCCESS) { res[tid] = -1; return; }
+
+      retain_event(block_evt);
+      release_event(block_evt);
+
+      //check block is not started
+      if (res[tid] == BLOCK_SUBMITTED)
+      {
+        clk_event_t my_evt;
+        enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &block_evt, &my_evt,
+        ^{
+           //check block is completed
+           if (res[tid] == BLOCK_COMPLETED) res[tid] = CHECK_SUCCESS;
+         });
+        release_event(my_evt);
+      }
+
+      set_user_event_status(user_evt, CL_COMPLETE);
+
+      release_event(user_evt);
+      release_event(block_evt);
+    }
+)" };
+
+static const char* enqueue_block_get_kernel_work_group_size[] = { R"(
+    void block_fn(size_t tid, int mul, __global int* res)
+    {
+      res[tid] = mul * 7 - 21;
+    }
+
+    kernel void enqueue_block_get_kernel_work_group_size(__global int* res)
+    {
+        int multiplier = 3;
+        size_t tid = get_global_id(0);
+
+        void (^kernelBlock)(void) = ^{ block_fn(tid, multiplier, res); };
+
+        size_t local_work_size = get_kernel_work_group_size(kernelBlock);
+        if (local_work_size <= 0){ res[tid] = -1; return; }
+        size_t global_work_size = local_work_size * 4;
+
+        res[tid] = -1;
+        queue_t q1 = get_default_queue();
+        ndrange_t ndrange = ndrange_1D(global_work_size, local_work_size);
+
+        int enq_res = enqueue_kernel(q1, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);
+        if (enq_res != CLK_SUCCESS) { res[tid] = -1; return; }
+    }
+)" };
+
+static const char* enqueue_block_get_kernel_preferred_work_group_size_multiple[] = { R"(
+    void block_fn(size_t tid, int mul, __global int* res)
+    {
+      res[tid] = mul * 7 - 21;
+    }
+
+    kernel void enqueue_block_get_kernel_preferred_work_group_size_multiple(__global int* res)
+    {
+        int multiplier = 3;
+        size_t tid = get_global_id(0);
+
+        void (^kernelBlock)(void) = ^{ block_fn(tid, multiplier, res); };
+
+        size_t local_work_size = get_kernel_preferred_work_group_size_multiple(kernelBlock);
+        if (local_work_size <= 0){ res[tid] = -1; return; }
+        size_t global_work_size = local_work_size * 4;
+
+        res[tid] = -1;
+        queue_t q1 = get_default_queue();
+        ndrange_t ndrange = ndrange_1D(global_work_size, local_work_size);
+
+        int enq_res = enqueue_kernel(q1, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);
+        if (enq_res != CLK_SUCCESS) { res[tid] = -1; return; }
+    }
+)" };
+
+static const char* enqueue_block_capture_event_profiling_info_after_execution[] = {
+    "#define MAX_GWS " STRINGIFY_VALUE(MAX_GWS) "\n"
+    , R"(
+    __global ulong value[MAX_GWS*2] = {0};
+
+    void block_fn(size_t tid, __global int* res)
+    {
+        res[tid] = -2;
+    }
+
+    void check_res(size_t tid, const clk_event_t evt, __global int* res)
+    {
+        capture_event_profiling_info (evt, CLK_PROFILING_COMMAND_EXEC_TIME, &value[tid*2]);
+
+        if (value[tid*2] > 0 && value[tid*2+1] > 0) res[tid] =  0;
+        else                                        res[tid] = -4;
+        release_event(evt);
+    }
+
+    kernel void enqueue_block_capture_event_profiling_info_after_execution(__global int* res)
+    {
+        size_t tid = get_global_id(0);
+
+        res[tid] = -1;
+        queue_t def_q = get_default_queue();
+        ndrange_t ndrange = ndrange_1D(1);
+        clk_event_t block_evt1;
+
+        void (^kernelBlock)(void)  = ^{ block_fn (tid, res);                   };
+
+        int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 0, NULL, &block_evt1, kernelBlock);
+        if (enq_res != CLK_SUCCESS) { res[tid] = -1; return; }
+
+        void (^checkBlock) (void)  = ^{ check_res(tid, block_evt1, res);      };
+
+        enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &block_evt1, NULL, checkBlock);
+        if (enq_res != CLK_SUCCESS) { res[tid] = -3; return; }
+    }
+)" };
+
+static const char* enqueue_block_capture_event_profiling_info_before_execution[] = {
+    "#define MAX_GWS " STRINGIFY_VALUE(MAX_GWS) "\n"
+    , R"(
+    __global ulong value[MAX_GWS*2] = {0};
+
+    void block_fn(size_t tid, __global int* res)
+    {
+        res[tid] = -2;
+    }
+
+    void check_res(size_t tid, const ulong *value, __global int* res)
+    {
+        if (value[tid*2] > 0 && value[tid*2+1] > 0) res[tid] =  0;
+        else                                        res[tid] = -4;
+    }
+
+    kernel void enqueue_block_capture_event_profiling_info_before_execution(__global int* res)
+    {
+        int multiplier = 3;
+        size_t tid = get_global_id(0);
+        clk_event_t user_evt = create_user_event();
+
+        res[tid] = -1;
+        queue_t def_q = get_default_queue();
+        ndrange_t ndrange = ndrange_1D(1);
+        clk_event_t block_evt1;
+        clk_event_t block_evt2;
+
+        void (^kernelBlock)(void)  = ^{ block_fn (tid, res);                   };
+
+        int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &user_evt, &block_evt1, kernelBlock);
+        if (enq_res != CLK_SUCCESS) { res[tid] = -1; return; }
+
+        capture_event_profiling_info (block_evt1, CLK_PROFILING_COMMAND_EXEC_TIME, &value[tid*2]);
+
+        set_user_event_status(user_evt, CL_COMPLETE);
+
+        void (^checkBlock) (void)  = ^{ check_res(tid, &value, res);      };
+
+        enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &block_evt1, &block_evt2, checkBlock);
+        if (enq_res != CLK_SUCCESS) { res[tid] = -3; return; }
+
+        release_event(user_evt);
+        release_event(block_evt1);
+        release_event(block_evt2);
+    }
+)" };
+
+static const char* enqueue_block_with_barrier[] = { R"(
+    void block_fn(size_t tid, int mul, __global int* res)
+    {
+      if (mul > 0) barrier(CLK_GLOBAL_MEM_FENCE);
+      res[tid] = mul * 7 -21;
+    }
+
+    void loop_fn(size_t tid, int n, __global int* res)
+    {
+      while (n > 0)
+      {
+        barrier(CLK_GLOBAL_MEM_FENCE);
+        res[tid] = 0;
+        --n;
+      }
+    }
+
+    kernel void enqueue_block_with_barrier(__global int* res)
+    {
+      int multiplier = 3;
+      size_t tid = get_global_id(0);
+      queue_t def_q = get_default_queue();
+      res[tid] = -1;
+      size_t n = 256;
+
+      void (^kernelBlock)(void) = ^{ block_fn(tid, multiplier, res); };
+
+      ndrange_t ndrange = ndrange_1D(n);
+      int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, kernelBlock);
+      if (enq_res != CLK_SUCCESS) { res[tid] = -1; return; }
+
+      void (^loopBlock)(void) = ^{ loop_fn(tid, n, res); };
+
+      enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange, loopBlock);
+      if (enq_res != CLK_SUCCESS) { res[tid] = -1; return; }
+    }
+)" };
+
+static const char* enqueue_marker_with_block_event[] = { R"(
+    #define BLOCK_COMPLETED 1
+    #define BLOCK_SUBMITTED 2
+    #define CHECK_SUCCESS   0
+
+    kernel void enqueue_marker_with_block_event(__global int* res)
+    {
+      size_t tid = get_global_id(0);
+
+      clk_event_t user_evt = create_user_event();
+
+      res[tid] = BLOCK_SUBMITTED;
+      queue_t def_q = get_default_queue();
+      ndrange_t ndrange = ndrange_1D(1);
+
+      clk_event_t block_evt1;
+      clk_event_t marker_evt;
+
+      int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &user_evt, &block_evt1,
+      ^{
+         res[tid] = BLOCK_COMPLETED;
+       });
+      if (enq_res != CLK_SUCCESS) { res[tid] = -2; return; }
+
+      enq_res = enqueue_marker(def_q, 1, &block_evt1, &marker_evt);
+      if (enq_res != CLK_SUCCESS) { res[tid] = -3; return; }
+
+      retain_event(marker_evt);
+      release_event(marker_evt);
+
+      //check block is not started
+      if (res[tid] == BLOCK_SUBMITTED)
+      {
+        clk_event_t my_evt;
+        enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &marker_evt, &my_evt,
+        ^{
+           //check block is completed
+           if (res[tid] == BLOCK_COMPLETED) res[tid] = CHECK_SUCCESS;
+         });
+        release_event(my_evt);
+      }
+
+      set_user_event_status(user_evt, CL_COMPLETE);
+
+      release_event(block_evt1);
+      release_event(marker_evt);
+      release_event(user_evt);
+    }
+)" };
+
+static const char* enqueue_marker_with_user_event[] = { R"(
+    #define BLOCK_COMPLETED 1
+    #define BLOCK_SUBMITTED 2
+    #define CHECK_SUCCESS   0
+
+    kernel void enqueue_marker_with_user_event(__global int* res)
+    {
+      size_t tid = get_global_id(0);
+      uint multiplier = 7;
+
+      clk_event_t user_evt = create_user_event();
+
+      res[tid] = BLOCK_SUBMITTED;
+      queue_t def_q = get_default_queue();
+      ndrange_t ndrange = ndrange_1D(1);
+
+      clk_event_t marker_evt;
+      clk_event_t block_evt;
+
+      int enq_res = enqueue_marker(def_q, 1, &user_evt, &marker_evt);
+      if (enq_res != CLK_SUCCESS) { res[tid] = -1; return; }
+
+      retain_event(marker_evt);
+      release_event(marker_evt);
+
+      enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &marker_evt, &block_evt,
+      ^{
+         if (res[tid] == BLOCK_SUBMITTED) res[tid] = CHECK_SUCCESS;
+       });
+
+      //check block is not started
+      if (res[tid] != BLOCK_SUBMITTED)  { res[tid] = -2; return; }
+
+      set_user_event_status(user_evt, CL_COMPLETE);
+
+      release_event(block_evt);
+      release_event(marker_evt);
+      release_event(user_evt);
+    }
+)" };
+
+static const char* enqueue_marker_with_mixed_events[] = { R"(
+    #define BLOCK_COMPLETED 1
+    #define BLOCK_SUBMITTED 2
+    #define CHECK_SUCCESS   0
+
+    kernel void enqueue_marker_with_mixed_events(__global int* res)
+    {
+      size_t tid = get_global_id(0);
+
+      clk_event_t mix_ev[2];
+      mix_ev[0] = create_user_event();
+
+      res[tid] = BLOCK_SUBMITTED;
+      queue_t def_q = get_default_queue();
+      ndrange_t ndrange = ndrange_1D(1);
+
+      int enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &mix_ev[0], &mix_ev[1],
+      ^{
+         res[tid] = BLOCK_COMPLETED;
+       });
+      if (enq_res != CLK_SUCCESS) { res[tid] = -2; return; }
+
+      clk_event_t marker_evt;
+
+      enq_res = enqueue_marker(def_q, 2, mix_ev, &marker_evt);
+      if (enq_res != CLK_SUCCESS) { res[tid] = -3; return; }
+
+      retain_event(marker_evt);
+      release_event(marker_evt);
+
+      //check block is not started
+      if (res[tid] == BLOCK_SUBMITTED)
+      {
+        clk_event_t my_evt;
+        enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &marker_evt, &my_evt,
+        ^{
+           //check block is completed
+           if (res[tid] == BLOCK_COMPLETED) res[tid] = CHECK_SUCCESS;
+         });
+        release_event(my_evt);
+      }
+
+      set_user_event_status(mix_ev[0], CL_COMPLETE);
+
+      release_event(mix_ev[1]);
+      release_event(marker_evt);
+      release_event(mix_ev[0]);
+    }
+)" };
+
+static const char* enqueue_block_with_mixed_events[] = { R"(
+    kernel void enqueue_block_with_mixed_events(__global int* res)
+    {
+      int enq_res;
+      size_t tid = get_global_id(0);
+      clk_event_t mix_ev[3];
+      mix_ev[0] = create_user_event();
+      queue_t def_q = get_default_queue();
+      ndrange_t ndrange = ndrange_1D(1);
+      res[tid] = -2;
+
+      enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &mix_ev[0], &mix_ev[1], ^{ res[tid]++; });
+      if (enq_res != CLK_SUCCESS) { res[tid] = -1; return; }
+
+      enq_res = enqueue_marker(def_q, 1, &mix_ev[1], &mix_ev[2]);
+      if (enq_res != CLK_SUCCESS) { res[tid] = -3; return; }
+
+      enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, sizeof(mix_ev)/sizeof(mix_ev[0]), mix_ev, NULL, ^{ res[tid]++; });
+      if (enq_res != CLK_SUCCESS) { res[tid] = -4; return; }
+
+      set_user_event_status(mix_ev[0], CL_COMPLETE);
+
+      release_event(mix_ev[0]);
+      release_event(mix_ev[1]);
+      release_event(mix_ev[2]);
+    }
+)" };
+// clang-format on
 
 static const kernel_src sources_enqueue_block[] =
 {
