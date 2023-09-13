@@ -96,12 +96,9 @@ uint32_t get_channel_data_type_size(cl_channel_type channelType)
         case CL_UNSIGNED_INT32: return sizeof(cl_int);
 
         case CL_UNORM_SHORT_565:
-        case CL_UNORM_SHORT_555:
-            return 2;
+        case CL_UNORM_SHORT_555: return 2;
 
-
-        case CL_UNORM_INT_101010:
-            return 4;
+        case CL_UNORM_INT_101010: return 4;
 
         case CL_FLOAT: return sizeof(cl_float);
 
@@ -282,12 +279,9 @@ uint32_t get_pixel_size(const cl_image_format *format)
             return get_format_channel_count(format) * sizeof(cl_int);
 
         case CL_UNORM_SHORT_565:
-        case CL_UNORM_SHORT_555:
-            return 2;
+        case CL_UNORM_SHORT_555: return 2;
 
-
-        case CL_UNORM_INT_101010:
-            return 4;
+        case CL_UNORM_INT_101010: return 4;
 
         case CL_FLOAT:
             return get_format_channel_count(format) * sizeof(cl_float);
