@@ -97,21 +97,10 @@ uint32_t get_channel_data_type_size(cl_channel_type channelType)
 
         case CL_UNORM_SHORT_565:
         case CL_UNORM_SHORT_555:
-#ifdef OBSOLETE_FORMAT
-        case CL_UNORM_SHORT_565_REV:
-        case CL_UNORM_SHORT_555_REV:
-#endif
             return 2;
 
-#ifdef OBSOLETE_FORMAT
-        case CL_UNORM_INT_8888:
-        case CL_UNORM_INT_8888_REV: return 4;
-#endif
 
         case CL_UNORM_INT_101010:
-#ifdef OBSOLETE_FORMAT
-        case CL_UNORM_INT_101010_REV:
-#endif
             return 4;
 
         case CL_FLOAT: return sizeof(cl_float);
@@ -294,21 +283,10 @@ uint32_t get_pixel_size(const cl_image_format *format)
 
         case CL_UNORM_SHORT_565:
         case CL_UNORM_SHORT_555:
-#ifdef OBSOLETE_FORMAT
-        case CL_UNORM_SHORT_565_REV:
-        case CL_UNORM_SHORT_555_REV:
-#endif
             return 2;
 
-#ifdef OBSOLETE_FORMAT
-        case CL_UNORM_INT_8888:
-        case CL_UNORM_INT_8888_REV: return 4;
-#endif
 
         case CL_UNORM_INT_101010:
-#ifdef OBSOLETE_FORMAT
-        case CL_UNORM_INT_101010_REV:
-#endif
             return 4;
 
         case CL_FLOAT:
