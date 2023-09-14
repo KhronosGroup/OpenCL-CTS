@@ -3145,7 +3145,7 @@ public:
     }
 
 private:
-    int _subCaseId;
+    size_t _subCaseId;
     struct TestDefinition _subCase;
 };
 

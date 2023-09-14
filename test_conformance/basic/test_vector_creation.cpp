@@ -260,7 +260,7 @@ int test_vector_creation(cl_device_id deviceID, cl_context context,
     std::vector<char> output_data;
 
     // Iterate over all the types
-    for (int type_index = 0; type_index < vecType.size(); type_index++)
+    for (size_t type_index = 0; type_index < vecType.size(); type_index++)
     {
 
         if (!gHasLong
@@ -336,7 +336,7 @@ int test_vector_creation(cl_device_id deviceID, cl_context context,
         }
 
         // Iterate over all the vector sizes.
-        for (int size_index = 1; size_index < vecSizes.size(); size_index++)
+        for (size_t size_index = 1; size_index < vecSizes.size(); size_index++)
         {
             size_t global[] = { 1, 1, 1 };
             int number_generated = -1;
