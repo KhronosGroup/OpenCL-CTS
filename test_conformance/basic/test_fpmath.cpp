@@ -94,7 +94,7 @@ int verify_fp(std::vector<T> (&input)[2], std::vector<T> &output,
 {
     auto &inA = input[0];
     auto &inB = input[1];
-    for (int i = 0; i < output.size(); i++)
+    for (size_t i = 0; i < output.size(); i++)
     {
         bool nan_test = false;
 
@@ -106,7 +106,7 @@ int verify_fp(std::vector<T> (&input)[2], std::vector<T> &output,
         if (r != output[i] && nan_test)
         {
             log_error("FP math test for type: %s, vec size: %zu, failed at "
-                      "index %d, %a '%c' %a, expected %a, get %a\n",
+                      "index %zu, %a '%c' %a, expected %a, get %a\n",
                       test.type_str.c_str(), test.vec_size, i, toDouble(inA[i]),
                       test.op, toDouble(inB[i]), toDouble(r),
                       toDouble(output[i]));
@@ -238,13 +238,13 @@ struct TypesIterator
 
             generate_random_inputs<T>(inputs);
 
-            for (int i = 0; i < ARRAY_SIZE(streams); i++)
+            for (size_t i = 0; i < ARRAY_SIZE(streams); i++)
             {
                 streams[i] = clCreateBuffer(context, CL_MEM_READ_WRITE, length,
                                             NULL, &err);
                 test_error(err, "clCreateBuffer failed.");
             }
-            for (int i = 0; i < ARRAY_SIZE(inputs); i++)
+            for (size_t i = 0; i < ARRAY_SIZE(inputs); i++)
             {
                 err =
                     clEnqueueWriteBuffer(queue, streams[i], CL_TRUE, 0, length,
@@ -264,7 +264,7 @@ struct TypesIterator
 
             test_error(err, "create_single_kernel_helper failed");
 
-            for (int i = 0; i < ARRAY_SIZE(streams); i++)
+            for (size_t i = 0; i < ARRAY_SIZE(streams); i++)
             {
                 err =
                     clSetKernelArg(kernel, i, sizeof(streams[i]), &streams[i]);

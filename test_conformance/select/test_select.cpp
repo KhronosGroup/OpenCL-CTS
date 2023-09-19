@@ -119,34 +119,32 @@ static void initSrcBuffer(void* src1, Type stype, MTdata d)
         s1[i]   = genrand_int32(d);
 }
 
-static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count) {
-    int i;
+static void initCmpBuffer(void *cmp, Type cmptype, uint64_t start, size_t count)
+{
     assert(cmptype != kfloat);
     switch (type_size[cmptype]) {
         case 1: {
             uint8_t* ub = (uint8_t *)cmp;
-            for (i=0; i < count; ++i)
-                ub[i] = (uint8_t)start++;
+            for (size_t i = 0; i < count; ++i) ub[i] = (uint8_t)start++;
             break;
         }
         case 2: {
             uint16_t* us = (uint16_t *)cmp;
-            for (i=0; i < count; ++i)
-                us[i] = (uint16_t)start++;
+            for (size_t i = 0; i < count; ++i) us[i] = (uint16_t)start++;
             break;
         }
         case 4: {
             if (!s_wimpy_mode) {
                 uint32_t* ui = (uint32_t *)cmp;
-                for (i=0; i < count; ++i)
-                    ui[i] = (uint32_t)start++;
+                for (size_t i = 0; i < count; ++i) ui[i] = (uint32_t)start++;
             }
             else {
                 // The short test doesn't iterate over the entire 32 bit space so
                 // we alternate between positive and negative values
                 int32_t* ui = (int32_t *)cmp;
                 int32_t sign = 1;
-                for (i=0; i < count; ++i, ++start) {
+                for (size_t i = 0; i < count; ++i, ++start)
+                {
                     ui[i] = (int32_t)start*sign;
                     sign = sign * -1;
                 }
@@ -158,7 +156,8 @@ static void initCmpBuffer(void* cmp, Type cmptype, uint64_t start, size_t count)
             // selects, we want to test positive and negative values
             int64_t* ll = (int64_t *)cmp;
             int64_t sign = 1;
-            for (i=0; i < count; ++i, ++start) {
+            for (size_t i = 0; i < count; ++i, ++start)
+            {
                 ll[i] = start*sign;
                 sign = sign * -1;
             }
