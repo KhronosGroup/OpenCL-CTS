@@ -57,11 +57,19 @@ Version get_device_cl_version(cl_device_id device);
 
 #define ADD_TEST(fn)                                                           \
     {                                                                          \
-        test_##fn, #fn, Version(1, 0)                                          \
+        test_##fn, #fn, Version(1, 0), true                                    \
     }
 #define ADD_TEST_VERSION(fn, ver)                                              \
     {                                                                          \
-        test_##fn, #fn, ver                                                    \
+        test_##fn, #fn, ver, true                                              \
+    }
+#define ADD_TEST_SEQUENTIAL(fn)                                                \
+    {                                                                          \
+        test_##fn, #fn, Version(1, 0), false                                   \
+    }
+#define ADD_TEST_VERSION_SEQUENTIAL(fn, ver)                                   \
+    {                                                                          \
+        test_##fn, #fn, ver, false                                             \
     }
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -74,6 +82,7 @@ typedef struct test_definition
     test_function_pointer func;
     const char *name;
     Version min_version;
+    bool support_parallel;
 } test_definition;
 
 

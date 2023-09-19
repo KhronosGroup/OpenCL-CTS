@@ -261,12 +261,12 @@ int test_image2d_write_non_blocking(cl_device_id device, cl_context context, cl_
 }
 
 test_definition test_list[] = {
-    ADD_TEST( buffer ),
-    ADD_TEST( image2d_read ),
-    ADD_TEST( image2d_write ),
-    ADD_TEST( buffer_non_blocking ),
-    ADD_TEST( image2d_read_non_blocking ),
-    ADD_TEST( image2d_write_non_blocking ),
+    ADD_TEST_SEQUENTIAL( buffer ),
+    ADD_TEST_SEQUENTIAL( image2d_read ),
+    ADD_TEST_SEQUENTIAL( image2d_write ),
+    ADD_TEST_SEQUENTIAL( buffer_non_blocking ),
+    ADD_TEST_SEQUENTIAL( image2d_read_non_blocking ),
+    ADD_TEST_SEQUENTIAL( image2d_write_non_blocking ),
 };
 
 const int test_num = ARRAY_SIZE( test_list );

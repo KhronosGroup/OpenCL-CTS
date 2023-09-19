@@ -823,11 +823,20 @@ void callTestFunctions(test_definition testList[],
     else
     {
         // Queue all tests that need to run
+        // queue tests that require sequential run:
+        std::vector<int> sequentialTestList;
         for (int i = 0; i < testNum; ++i)
         {
             if (selectedTestList[i])
             {
-                gTestQueue.push_back(i);
+                //test if required to run sequentially:
+                if(!testList[i].support_parallel) {
+                    sequentialTestList.push_back(i);
+                }
+                else
+                {
+                    gTestQueue.push_back(i);
+                }
             }
         }
 
@@ -835,6 +844,12 @@ void callTestFunctions(test_definition testList[],
         std::vector<std::thread *> threads;
         test_harness_state state = { testList, resultTestList, deviceToUse,
                                      config };
+        // run the requested sequential tests first:
+        for(auto test_num : sequentialTestList) {
+            state.results[test_num] =
+                callSingleTestFunction(testList[test_num], deviceToUse, config);
+        }
+
         for (unsigned i = 0; i < config.numWorkerThreads; i++)
         {
             log_info("Spawning worker thread %u\n", i);
