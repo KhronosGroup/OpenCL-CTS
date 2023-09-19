@@ -5,6 +5,13 @@
 #include <thread>
 #include <chrono>
 
+#if !defined(CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR)
+#pragma message(                                                               \
+    "Using old CL_DEVICE_HANDLE_LIST_KHR enum for external semaphores, please update your headers!")
+#define CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR CL_DEVICE_HANDLE_LIST_KHR
+#define CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR CL_DEVICE_HANDLE_LIST_END_KHR
+#endif
+
 #define FLUSH_DELAY_S 5
 
 #define SEMAPHORE_PARAM_TEST(param_name, param_type, expected)                 \
@@ -120,7 +127,8 @@ int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
     SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_TYPE_KHR, cl_semaphore_type_khr,
                          CL_SEMAPHORE_TYPE_BINARY_KHR);
 
-    SEMAPHORE_PARAM_TEST(CL_DEVICE_HANDLE_LIST_KHR, cl_device_id, deviceID);
+    SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR, cl_device_id,
+                         deviceID);
 
     SEMAPHORE_PARAM_TEST(
         CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR, cl_uint,
