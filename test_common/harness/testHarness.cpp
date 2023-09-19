@@ -829,8 +829,9 @@ void callTestFunctions(test_definition testList[],
         {
             if (selectedTestList[i])
             {
-                //test if required to run sequentially:
-                if(!testList[i].support_parallel) {
+                // test if required to run sequentially:
+                if (!testList[i].support_parallel)
+                {
                     sequentialTestList.push_back(i);
                 }
                 else
@@ -845,7 +846,8 @@ void callTestFunctions(test_definition testList[],
         test_harness_state state = { testList, resultTestList, deviceToUse,
                                      config };
         // run the requested sequential tests first:
-        for(auto test_num : sequentialTestList) {
+        for (auto test_num : sequentialTestList)
+        {
             state.results[test_num] =
                 callSingleTestFunction(testList[test_num], deviceToUse, config);
         }
