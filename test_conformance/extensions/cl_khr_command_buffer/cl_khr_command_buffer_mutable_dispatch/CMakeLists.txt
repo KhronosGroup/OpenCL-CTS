@@ -12,4 +12,6 @@ set(${MODULE_NAME}_SOURCES
     ../basic_command_buffer.cpp
 )
 
+set_gnulike_module_compile_flags("-Wno-sign-compare")
+
 include(../../../CMakeCommon.txt)

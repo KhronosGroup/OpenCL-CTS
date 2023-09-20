@@ -21,7 +21,7 @@ set(${MODULE_NAME}_SOURCES
 
 # Make unused variables not fatal in this module; see
 # https://github.com/KhronosGroup/OpenCL-CTS/issues/1484
-set_gnulike_module_compile_flags("-Wno-error=unused-variable -Wno-unused-but-set-variable")
+set_gnulike_module_compile_flags("-Wno-error=unused-variable -Wno-unused-but-set-variable -Wno-sign-compare")
 
 include(../../CMakeCommon.txt)
 
