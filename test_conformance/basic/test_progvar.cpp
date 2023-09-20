@@ -581,13 +581,19 @@ static void l_load_abilities(cl_device_id device)
         cl_uint max_dim = 0;
         status = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,
                                  sizeof(max_dim), &max_dim, 0);
-        assert(status == CL_SUCCESS);
+        if (check_error(status,
+                        "clGetDeviceInfo for "
+                        "CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS failed."))
+            return;
         assert(max_dim > 0);
         size_t max_id[3];
         max_id[0] = 0;
         status = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
                                  max_dim * sizeof(size_t), &max_id[0], 0);
-        assert(status == CL_SUCCESS);
+        if (check_error(status,
+                        "clGetDeviceInfo for "
+                        "CL_DEVICE_MAX_WORK_ITEM_SIZES failed."))
+            return;
         l_max_global_id0 = max_id[0];
     }
 
@@ -597,7 +603,10 @@ static void l_load_abilities(cl_device_id device)
         status =
             clGetDeviceInfo(device, CL_DEVICE_LINKER_AVAILABLE,
                             sizeof(l_linker_available), &l_linker_available, 0);
-        assert(status == CL_SUCCESS);
+        if (check_error(status,
+                        "clGetDeviceInfo for "
+                        "CL_DEVICE_LINKER_AVAILABLE failed."))
+            return;
     }
 }
 
@@ -903,6 +912,7 @@ static std::string global_decls(const TypeInfo& ti, bool with_init)
                                vol, tn, vol, tn, vol, tn, vol, tn);
     }
     assert(num_printed < sizeof(decls));
+    (void)num_printed;
     return std::string(decls);
 }
 
@@ -983,6 +993,7 @@ static std::string writer_function(const TypeInfo& ti)
                                writer_template_atomic, ti.get_buf_elem_type());
     }
     assert(num_printed < sizeof(writer_src));
+    (void)num_printed;
     std::string result = writer_src;
     return result;
 }
@@ -1024,6 +1035,7 @@ static std::string reader_function(const TypeInfo& ti)
                      ti.get_buf_elem_type(), ti.get_buf_elem_type());
     }
     assert(num_printed < sizeof(reader_src));
+    (void)num_printed;
     std::string result = reader_src;
     return result;
 }
