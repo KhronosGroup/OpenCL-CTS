@@ -459,43 +459,43 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1, c
                                         ->getExternalMemoryImage();
                             }
 
-                            clCl2VkExternalSemaphore->signal(cmd_queue1);
-                            if (!useSingleImageKernel)
-                            {
-                                vkDescriptorSet.updateArray(1,
-                                                            vkImage2DViewList);
+                            err = clCl2VkExternalSemaphore->signal(cmd_queue1);
+                            test_error_and_cleanup(err, CLEANUP,"Failed to signal CL semaphore\n");
+
+                            if (!useSingleImageKernel) {
+                                vkDescriptorSet.updateArray(1, vkImage2DViewList);
                                 vkCopyCommandBuffer.begin();
                                 vkCopyCommandBuffer.pipelineBarrier(
-                                    vkImage2DList,
-                                    VULKAN_IMAGE_LAYOUT_UNDEFINED,
-                                    VULKAN_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-                                for (size_t i2DIdx = 0;
-                                     i2DIdx < vkImage2DList.size(); i2DIdx++)
-                                {
-                                    vkCopyCommandBuffer.copyBufferToImage(
-                                        vkSrcBuffer, vkImage2DList[i2DIdx],
+                                        vkImage2DList,
+                                        VULKAN_IMAGE_LAYOUT_UNDEFINED,
                                         VULKAN_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+                                for (size_t i2DIdx = 0;
+                                     i2DIdx < vkImage2DList.size(); i2DIdx++) {
+                                    vkCopyCommandBuffer.copyBufferToImage(
+                                            vkSrcBuffer, vkImage2DList[i2DIdx],
+                                            VULKAN_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
                                 }
                                 vkCopyCommandBuffer.pipelineBarrier(
-                                    vkImage2DList,
-                                    VULKAN_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                    VULKAN_IMAGE_LAYOUT_GENERAL);
+                                        vkImage2DList,
+                                        VULKAN_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                        VULKAN_IMAGE_LAYOUT_GENERAL);
                                 vkCopyCommandBuffer.end();
                                 memset(dstBufferPtr, 0, srcBufSize);
                                 vkQueue.submit(vkCopyCommandBuffer);
                                 vkShaderCommandBuffer.begin();
                                 vkShaderCommandBuffer.bindPipeline(
-                                    vkComputePipeline);
+                                        vkComputePipeline);
                                 vkShaderCommandBuffer.bindDescriptorSets(
-                                    vkComputePipeline, vkPipelineLayout,
-                                    vkDescriptorSet);
+                                        vkComputePipeline, vkPipelineLayout,
+                                        vkDescriptorSet);
                                 vkShaderCommandBuffer.dispatch(
-                                    NUM_BLOCKS(width, NUM_THREADS_PER_GROUP_X),
-                                    NUM_BLOCKS(height,
-                                               NUM_THREADS_PER_GROUP_Y / 2),
-                                    1);
+                                        NUM_BLOCKS(width, NUM_THREADS_PER_GROUP_X),
+                                        NUM_BLOCKS(height,
+                                                   NUM_THREADS_PER_GROUP_Y / 2),
+                                        1);
                                 vkShaderCommandBuffer.end();
                             }
+
                             for (uint32_t iter = 0; iter < innerIterations;
                                  iter++)
                             {
@@ -631,14 +631,11 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1, c
                                 err |= clSetKernelArg(updateKernelCQ1, ++j,
                                                       sizeof(unsigned int),
                                                       &numMipLevels);
+                                test_error_and_cleanup(
+                                    err,
+                                    CLEANUP,
+                                    "Error: Failed to set arg values \n");
 
-                                if (err != CL_SUCCESS)
-                                {
-                                    print_error(
-                                        err,
-                                        "Error: Failed to set arg values \n");
-                                    goto CLEANUP;
-                                }
                                 // clVk2CLExternalSemaphore->wait(cmd_queue1);
                                 size_t global_work_size[3] = { width, height,
                                                                1 };
@@ -647,26 +644,17 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1, c
                                     cmd_queue1, updateKernelCQ1, 2, NULL,
                                     global_work_size, NULL, 0, NULL,
                                     &first_launch);
-                                if (err != CL_SUCCESS)
-                                {
-                                    goto CLEANUP;
-                                }
+                                test_error_and_cleanup(err, CLEANUP, "Failed to enqueue updateKernelCQ1\n");
+
                                 err = clEnqueueNDRangeKernel(
                                     cmd_queue2, updateKernelCQ2, 2, NULL,
                                     global_work_size, NULL, 1, &first_launch,
                                     NULL);
-                                if (err != CL_SUCCESS)
-                                {
-                                    goto CLEANUP;
-                                }
+                                test_error_and_cleanup(err, CLEANUP, "Failed to enqueue updateKernelCQ2\n");
 
                                 clFinish(cmd_queue2);
                                 err = clCl2VkExternalSemaphore->signal(cmd_queue2);
-                                if(err != CL_SUCCESS)
-                                {
-                                    print_error(err,"Failed to signal CL semaphore\n");
-                                    goto CLEANUP;
-                                }
+                                test_error_and_cleanup(err, CLEANUP,"Failed to signal CL semaphore\n");
                             }
 
                             unsigned int flags = 0;
@@ -678,14 +666,11 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1, c
                                 err = clEnqueueReadImage(
                                     cmd_queue1, external_mem_image2[i], CL_TRUE,
                                     origin, region, 0, 0, dstBufferPtr, 0, NULL,
-                                    &eventReadImage);
-
-                                if (err != CL_SUCCESS)
-                                {
-                                    print_error(err,
-                                                "clEnqueueReadImage failed with"
-                                                "error\n");
-                                }
+                                    NULL);
+                                test_error_and_cleanup(err,
+                                            CLEANUP,
+                                            "clEnqueueReadImage failed with"
+                                            "error\n");
 
                                 if (memcmp(srcBufferPtr, dstBufferPtr,
                                            srcBufSize))
@@ -737,10 +722,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1, c
                             externalMemory2.erase(externalMemory2.begin(),
                                                   externalMemory2.begin()
                                                       + num2DImages);
-                            if (CL_SUCCESS != err)
-                            {
-                                goto CLEANUP;
-                            }
+                            test_error_and_cleanup(err, CLEANUP, "Test error detected\n");
                         }
                     }
                 }
@@ -932,7 +914,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1, c
                             vkClExternalMemoryHandleTilingAssumption(
                                 deviceId,
                                 vkExternalMemoryHandleTypeList[emhtIdx], &err);
-                        ASSERT_SUCCESS(err,
+                        test_error_and_cleanup(err, CLEANUP,
                                        "Failed to query OpenCL tiling mode");
 
                         VulkanImage2D vkDummyImage2D(
@@ -1031,43 +1013,43 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1, c
                                         ->getExternalMemoryImage();
                             }
 
-                            clCl2VkExternalSemaphore->signal(cmd_queue1);
-                            if (!useSingleImageKernel)
-                            {
-                                vkDescriptorSet.updateArray(1,
-                                                            vkImage2DViewList);
+                            err = clCl2VkExternalSemaphore->signal(cmd_queue1);
+                            test_error_and_cleanup(err, CLEANUP,"Failed to signal CL semaphore\n");
+
+                            if (!useSingleImageKernel) {
+                                vkDescriptorSet.updateArray(1, vkImage2DViewList);
                                 vkCopyCommandBuffer.begin();
                                 vkCopyCommandBuffer.pipelineBarrier(
-                                    vkImage2DList,
-                                    VULKAN_IMAGE_LAYOUT_UNDEFINED,
-                                    VULKAN_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-                                for (size_t i2DIdx = 0;
-                                     i2DIdx < vkImage2DList.size(); i2DIdx++)
-                                {
-                                    vkCopyCommandBuffer.copyBufferToImage(
-                                        vkSrcBuffer, vkImage2DList[i2DIdx],
+                                        vkImage2DList,
+                                        VULKAN_IMAGE_LAYOUT_UNDEFINED,
                                         VULKAN_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+                                for (size_t i2DIdx = 0;
+                                     i2DIdx < vkImage2DList.size(); i2DIdx++) {
+                                    vkCopyCommandBuffer.copyBufferToImage(
+                                            vkSrcBuffer, vkImage2DList[i2DIdx],
+                                            VULKAN_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
                                 }
                                 vkCopyCommandBuffer.pipelineBarrier(
-                                    vkImage2DList,
-                                    VULKAN_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                    VULKAN_IMAGE_LAYOUT_GENERAL);
+                                        vkImage2DList,
+                                        VULKAN_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                        VULKAN_IMAGE_LAYOUT_GENERAL);
                                 vkCopyCommandBuffer.end();
                                 memset(dstBufferPtr, 0, srcBufSize);
                                 vkQueue.submit(vkCopyCommandBuffer);
                                 vkShaderCommandBuffer.begin();
                                 vkShaderCommandBuffer.bindPipeline(
-                                    vkComputePipeline);
+                                        vkComputePipeline);
                                 vkShaderCommandBuffer.bindDescriptorSets(
-                                    vkComputePipeline, vkPipelineLayout,
-                                    vkDescriptorSet);
+                                        vkComputePipeline, vkPipelineLayout,
+                                        vkDescriptorSet);
                                 vkShaderCommandBuffer.dispatch(
-                                    NUM_BLOCKS(width, NUM_THREADS_PER_GROUP_X),
-                                    NUM_BLOCKS(height,
-                                               NUM_THREADS_PER_GROUP_Y / 2),
-                                    1);
+                                        NUM_BLOCKS(width, NUM_THREADS_PER_GROUP_X),
+                                        NUM_BLOCKS(height,
+                                                   NUM_THREADS_PER_GROUP_Y / 2),
+                                        1);
                                 vkShaderCommandBuffer.end();
                             }
+
                             for (uint32_t iter = 0; iter < innerIterations;
                                  iter++)
                             {
@@ -1123,12 +1105,8 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1, c
                                                vkVk2CLSemaphore);
 
                                 err = clVk2CLExternalSemaphore->wait(cmd_queue1);
-                                if (err != CL_SUCCESS)
-                                {
-                                    print_error(err,
-                                                "Error: failed to wait on CL external semaphore\n");
-                                    goto CLEANUP;
-                                }
+                                test_error_and_cleanup(err, CLEANUP,
+                                            "Error: failed to wait on CL external semaphore\n");
 
                                 switch (num2DImages)
                                 {
@@ -1173,30 +1151,20 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1, c
                                 err |= clSetKernelArg(updateKernelCQ1, ++j,
                                                       sizeof(unsigned int),
                                                       &numMipLevels);
-
-                                if (err != CL_SUCCESS)
-                                {
-                                    print_error(err,
-                                                "Error: Failed to set arg "
-                                                "values for kernel-1\n");
-                                    goto CLEANUP;
-                                }
+                                test_error_and_cleanup(err,
+                                            CLEANUP,
+                                            "Error: Failed to set arg "
+                                            "values for kernel-1\n");
 
                                 size_t global_work_size[3] = { width, height,
                                                                1 };
                                 err = clEnqueueNDRangeKernel(
                                     cmd_queue1, updateKernelCQ1, 2, NULL,
                                     global_work_size, NULL, 0, NULL, NULL);
-                                if (err != CL_SUCCESS)
-                                {
-                                    goto CLEANUP;
-                                }
+                                test_error_and_cleanup(err, CLEANUP, "Failed to enqueue updateKernelCQ1\n");
+
                                 err = clCl2VkExternalSemaphore->signal(cmd_queue1);
-                                if(err != CL_SUCCESS)
-                                {
-                                    print_error(err,"Failed to signal CL semaphore\n");
-                                    goto CLEANUP;
-                                }
+                                test_error_and_cleanup(err, CLEANUP, "Failed to signal CL semaphore\n");
                             }
 
                             unsigned int flags = 0;
@@ -1207,14 +1175,11 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1, c
                                 err = clEnqueueReadImage(
                                     cmd_queue1, external_mem_image2[i], CL_TRUE,
                                     origin, region, 0, 0, dstBufferPtr, 0, NULL,
-                                    &eventReadImage);
-
-                                if (err != CL_SUCCESS)
-                                {
-                                    print_error(err,
-                                                "clEnqueueReadImage failed with"
-                                                "error\n");
-                                }
+                                    NULL);
+                                test_error_and_cleanup(err,
+                                            CLEANUP,
+                                            "clEnqueueReadImage failed with"
+                                            "error\n");
 
                                 if (memcmp(srcBufferPtr, dstBufferPtr,
                                            srcBufSize))
@@ -1266,10 +1231,7 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1, c
                             externalMemory2.erase(externalMemory2.begin(),
                                                   externalMemory2.begin()
                                                       + num2DImages);
-                            if (CL_SUCCESS != err)
-                            {
-                                goto CLEANUP;
-                            }
+                            test_error_and_cleanup(err, CLEANUP, "Test detected error\n");
                         }
                     }
                 }
@@ -1326,32 +1288,20 @@ int test_image_common(cl_device_id device_, cl_context context_,
     cl_context_properties contextProperties[] = { CL_CONTEXT_PLATFORM, 0, 0 };
     // get the platform ID
     err = clGetPlatformIDs(1, &platform, NULL);
-    if (err != CL_SUCCESS)
-    {
-        print_error(err, "Error: Failed to get platform\n");
-        goto CLEANUP;
-    }
+    test_error_and_cleanup(err, CLEANUP, "Error: Failed to get platform\n");
 
     err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 0, NULL, &num_devices);
-    if (CL_SUCCESS != err)
-    {
-        print_error(err, "clGetDeviceIDs failed in returning no. of devices\n");
-        goto CLEANUP;
-    }
+    test_error_and_cleanup(err, CLEANUP, "clGetDeviceIDs failed in returning no. of devices\n");
+
     devices = (cl_device_id *)malloc(num_devices * sizeof(cl_device_id));
     if (NULL == devices)
     {
-        err = CL_OUT_OF_HOST_MEMORY;
-        print_error(err, "Unable to allocate memory for devices\n");
-        goto CLEANUP;
+        test_fail_and_cleanup(err, CLEANUP, "Unable to allocate memory for devices\n");
     }
     err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, num_devices, devices,
                          NULL);
-    if (CL_SUCCESS != err)
-    {
-        print_error(err, "Failed to get deviceID.\n");
-        goto CLEANUP;
-    }
+    test_error_and_cleanup(err, CLEANUP, "Failed to get deviceID.\n");
+
     contextProperties[1] = (cl_context_properties)platform;
     log_info("Assigned contextproperties for platform\n");
     for (device_no = 0; device_no < num_devices; device_no++)
@@ -1382,11 +1332,8 @@ int test_image_common(cl_device_id device_, cl_context context_,
         }
         err = clGetDeviceInfo(devices[device_no], CL_DEVICE_UUID_KHR,
                               CL_UUID_SIZE_KHR, uuid, NULL);
-        if (CL_SUCCESS != err)
-        {
-            print_error(err, "clGetDeviceInfo failed with error");
-            goto CLEANUP;
-        }
+        test_error_and_cleanup(err, CLEANUP, "clGetDeviceInfo failed with error");
+
 
         if(!is_extension_available(devices[device_no], "cl_khr_external_memory_opaque_fd"))
         {
@@ -1412,53 +1359,36 @@ int test_image_common(cl_device_id device_, cl_context context_,
 
     if(supportedSemaphoreTypes.empty())
     {
-        log_error("No devices found that support OpenCL semaphores\n");
-        err = EXIT_FAILURE;
-        goto CLEANUP;
+        test_fail_and_cleanup(err, CLEANUP, "No devices found that support OpenCL semaphores\n");
     }
 
     if (device_no >= num_devices)
     {
-        err = EXIT_FAILURE;
-        print_error(err,
+        test_fail_and_cleanup(err,
+                    CLEANUP,
                     "OpenCL error:"
                     "No Vulkan-OpenCL Interop capable GPU found.\n");
-        goto CLEANUP;
     }
     deviceId = devices[device_no];
     err = setMaxImageDimensions(deviceId, max_width, max_height);
-    if (CL_SUCCESS != err)
-    {
-        print_error(err, "error setting max image dimensions");
-        goto CLEANUP;
-    }
+    test_error_and_cleanup(err, CLEANUP, "error setting max image dimensions");
+
     log_info("Set max_width to %lu and max_height to %lu\n", max_width,
              max_height);
     context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU,
                                       NULL, NULL, &err);
-    if (CL_SUCCESS != err)
-    {
-        print_error(err, "error creating context");
-        goto CLEANUP;
-    }
+    test_error_and_cleanup(err, CLEANUP, "error creating context");
+
     log_info("Successfully created context !!!\n");
 
     cmd_queue1 = clCreateCommandQueue(context, devices[device_no], 0, &err);
-    if (CL_SUCCESS != err)
-    {
-        err = CL_INVALID_COMMAND_QUEUE;
-        print_error(err, "Error: Failed to create command queue!\n");
-        goto CLEANUP;
-    }
+    test_error_and_cleanup(err, CLEANUP, "Error: Failed to create command queue!\n");
+
     log_info("clCreateCommandQueue successfull \n");
 
     cmd_queue2 = clCreateCommandQueue(context, devices[device_no], 0, &err);
-    if (CL_SUCCESS != err)
-    {
-        err = CL_INVALID_COMMAND_QUEUE;
-        print_error(err, "Error: Failed to create command queue!\n");
-        goto CLEANUP;
-    }
+    test_error_and_cleanup(err, CLEANUP, "Error: Failed to create command queue!\n");
+
     log_info("clCreateCommandQueue2 successful \n");
 
     for (int i = 0; i < num_kernels; i++)
@@ -1517,31 +1447,17 @@ int test_image_common(cl_device_id device_, cl_context context_,
                 context, 1, &sourceTexts[k], &program_source_length, &err);
             err |= clBuildProgram(program[k], 0, NULL, NULL, NULL, NULL);
         }
+        test_error_and_cleanup(err, CLEANUP, "Error: Failed to build program");
 
-        if (err != CL_SUCCESS)
-        {
-            print_error(err, "Error: Failed to build program");
-            goto CLEANUP;
-        }
         // create the kernel
         kernel_float[i] = clCreateKernel(program[0], "image2DKernel", &err);
-        if (err != CL_SUCCESS)
-        {
-            print_error(err, "clCreateKernel failed");
-            goto CLEANUP;
-        }
+        test_error_and_cleanup(err, CLEANUP, "clCreateKernel failed");
+
         kernel_signed[i] = clCreateKernel(program[1], "image2DKernel", &err);
-        if (err != CL_SUCCESS)
-        {
-            print_error(err, "clCreateKernel failed");
-            goto CLEANUP;
-        }
+        test_error_and_cleanup(err, CLEANUP, "clCreateKernel failed");
+
         kernel_unsigned[i] = clCreateKernel(program[2], "image2DKernel", &err);
-        if (err != CL_SUCCESS)
-        {
-            print_error(err, "clCreateKernel failed ");
-            goto CLEANUP;
-        }
+        test_error_and_cleanup(err, CLEANUP, "clCreateKernel failed ");
     }
     for(VulkanExternalSemaphoreHandleType externalSemaphoreType: supportedSemaphoreTypes)
     {

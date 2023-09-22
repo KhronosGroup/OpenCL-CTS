@@ -219,7 +219,7 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
 #else
     if (!is_extension_available(devList[0], "cl_khr_external_memory_opaque_fd"))
     {
-        throw std::runtime_error(
+        test_fail(
             "Device does not support cl_khr_external_memory_opaque_fd "
             "extension \n");
     }

@@ -175,7 +175,7 @@ getVulkanMemoryType(const VulkanDevice &device,
         }
     }
 
-    // CHECK_LT(mtIdx, memoryTypeList.size());
+    ASSERT(mtIdx < memoryTypeList.size());
     return memoryTypeList[mtIdx];
 }
 
