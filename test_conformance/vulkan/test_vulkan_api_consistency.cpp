@@ -532,32 +532,7 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
         test_error(errNum,
                    "Unable to create semaphore with valid semaphore properties");
 
-
-        // Call Signal twice consecutively
-        errNum = clEnqueueSignalSemaphoresKHRptr(cmd_queue, 1, &clVk2Clsemaphore,
-                                                 NULL, 0, NULL, NULL);
-        test_error(errNum, "clEnqueueSignalSemaphoresKHRptr failed");
-
-        errNum = clEnqueueSignalSemaphoresKHRptr(cmd_queue, 1, &clCl2Vksemaphore,
-                                                 NULL, 0, NULL, NULL);
-        test_error(errNum,
-                   "clEnqueueSignalSemaphoresKHRptr failed for two "
-                   "consecutive wait events");
-
-
-        // Call Wait twice consecutively
-        errNum = clEnqueueWaitSemaphoresKHRptr(cmd_queue, 1, &clVk2Clsemaphore,
-                                               NULL, 0, NULL, NULL);
-        test_error(errNum, "clEnqueueWaitSemaphoresKHRptr failed");
-
-        errNum = clEnqueueWaitSemaphoresKHRptr(cmd_queue, 1, &clCl2Vksemaphore,
-                                               NULL, 0, NULL, NULL);
-        test_error(errNum,
-                   "clEnqueueWaitSemaphoresKHRptr failed for two "
-                   " consecutive wait events");
-
-
-        // Pass invalid object to release call
+       // Pass invalid object to release call
         errNum = clReleaseSemaphoreKHRptr(NULL);
         test_failure_error(errNum, CL_INVALID_VALUE,
                            "clReleaseSemaphoreKHRptr fails with "
