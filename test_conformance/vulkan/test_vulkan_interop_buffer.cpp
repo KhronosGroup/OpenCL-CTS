@@ -15,15 +15,15 @@
 //
 
 #include <vulkan_interop_common.hpp>
-#include <vulkan_wrapper.hpp>
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
-#include <assert.h>
 #include <vector>
 #include <iostream>
+#include <cstring>
 #include <memory>
 #include <string.h>
 #include "harness/errorHelpers.h"
+#include "deviceInfo.h"
 
 #define MAX_BUFFERS 5
 #define MAX_IMPORTS 5
@@ -84,7 +84,7 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                             cl_command_queue &cmd_queue2, cl_kernel *kernel,
                             cl_kernel &verify_kernel, VulkanDevice &vkDevice,
                             uint32_t numBuffers, uint32_t bufferSize,
-                            bool use_fence)
+                            bool use_fence, VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType)
 {
     int err = CL_SUCCESS;
     size_t global_work_size[1];
@@ -115,8 +115,6 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
     const std::vector<VulkanExternalMemoryHandleType>
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
-    VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     std::shared_ptr<VulkanFence> fence = nullptr;
@@ -258,7 +256,13 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                                        vkVk2CLSemaphore);
                     }
 
-                    clVk2CLExternalSemaphore->wait(cmd_queue1);
+                    err = clVk2CLExternalSemaphore->wait(cmd_queue1);
+                    if (err != CL_SUCCESS)
+                    {
+                        print_error(err,
+                                    "Error: failed to wait on CL external semaphore\n");
+                        goto CLEANUP;
+                    }
                 }
 
 
@@ -319,7 +323,12 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 }
                 else if (!use_fence && iter != (maxIter - 1))
                 {
-                    clCl2VkExternalSemaphore->signal(cmd_queue2);
+                    err = clCl2VkExternalSemaphore->signal(cmd_queue2);
+                    if(err != CL_SUCCESS)
+                    {
+                        print_error(err,"Failed to signal CL semaphore\n");
+                        goto CLEANUP;
+                    }
                 }
             }
             error_2 = (uint8_t *)malloc(sizeof(uint8_t));
@@ -429,10 +438,10 @@ CLEANUP:
     return err;
 }
 
-int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
-                            cl_kernel *kernel, cl_kernel &verify_kernel,
-                            VulkanDevice &vkDevice, uint32_t numBuffers,
-                            uint32_t bufferSize, bool use_fence)
+int
+run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1, cl_kernel *kernel, cl_kernel &verify_kernel,
+                        VulkanDevice &vkDevice, uint32_t numBuffers, uint32_t bufferSize,
+                        VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType, bool use_fence)
 {
     log_info("RUNNING TEST WITH ONE QUEUE...... \n\n");
     size_t global_work_size[1];
@@ -444,10 +453,8 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
     int err = CL_SUCCESS;
 
     const std::vector<VulkanExternalMemoryHandleType>
-        vkExternalMemoryHandleTypeList =
+            vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
-    VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     std::shared_ptr<VulkanFence> fence = nullptr;
@@ -626,7 +633,12 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 }
                 else if (!use_fence && (iter != (maxIter - 1)))
                 {
-                    clCl2VkExternalSemaphore->signal(cmd_queue1);
+                    err = clCl2VkExternalSemaphore->signal(cmd_queue1);
+                    if(err != CL_SUCCESS)
+                    {
+                        print_error(err,"Failed to signal CL semaphore\n");
+                        goto CLEANUP;
+                    }
                 }
             }
             error_2 = (uint8_t *)malloc(sizeof(uint8_t));
@@ -751,7 +763,7 @@ int run_test_with_multi_import_same_ctx(
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
+            getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice)[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     std::shared_ptr<VulkanFence> fence = nullptr;
@@ -935,7 +947,13 @@ int run_test_with_multi_import_same_ctx(
                     }
                     else
                     {
-                        clVk2CLExternalSemaphore->wait(cmd_queue1);
+                        err = clVk2CLExternalSemaphore->wait(cmd_queue1);
+                        if (err != CL_SUCCESS)
+                        {
+                            print_error(err,
+                                        "Error: failed to wait on CL external semaphore\n");
+                            goto CLEANUP;
+                        }
                     }
 
                     for (uint8_t launchIter = 0; launchIter < numImports;
@@ -976,7 +994,12 @@ int run_test_with_multi_import_same_ctx(
                     }
                     else if (!use_fence && iter != (maxIter - 1))
                     {
-                        clCl2VkExternalSemaphore->signal(cmd_queue1);
+                        err = clCl2VkExternalSemaphore->signal(cmd_queue1);
+                        if(err != CL_SUCCESS)
+                        {
+                            print_error(err,"Failed to signal CL semaphore\n");
+                            goto CLEANUP;
+                        }
                     }
                 }
                 error_2 = (uint8_t *)malloc(sizeof(uint8_t));
@@ -1126,7 +1149,7 @@ int run_test_with_multi_import_diff_ctx(
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
+            getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice)[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     std::shared_ptr<VulkanFence> fence = nullptr;
@@ -1333,7 +1356,13 @@ int run_test_with_multi_import_diff_ctx(
                     }
                     else
                     {
-                        clVk2CLExternalSemaphore->wait(cmd_queue1);
+                        err = clVk2CLExternalSemaphore->wait(cmd_queue1);
+                        if (err != CL_SUCCESS)
+                        {
+                            print_error(err,
+                                        "Error: failed to wait on CL external semaphore\n");
+                            goto CLEANUP;
+                        }
                     }
 
                     for (uint8_t launchIter = 0; launchIter < numImports;
@@ -1374,7 +1403,12 @@ int run_test_with_multi_import_diff_ctx(
                     }
                     else if (!use_fence && iter != (maxIter - 1))
                     {
-                        clCl2VkExternalSemaphore->signal(cmd_queue1);
+                        err = clCl2VkExternalSemaphore->signal(cmd_queue1);
+                        if(err != CL_SUCCESS)
+                        {
+                            print_error(err,"Failed to signal CL semaphore\n");
+                            goto CLEANUP;
+                        }
                     }
                 }
                 clFinish(cmd_queue1);
@@ -1405,7 +1439,13 @@ int run_test_with_multi_import_diff_ctx(
                     }
                     else
                     {
-                        clVk2CLExternalSemaphore2->wait(cmd_queue2);
+                        err= clVk2CLExternalSemaphore2->wait(cmd_queue2);
+                        if (err != CL_SUCCESS)
+                        {
+                            print_error(err,
+                                        "Error: failed to wait on CL external semaphore\n");
+                            goto CLEANUP;
+                        }
                     }
 
                     for (uint8_t launchIter = 0; launchIter < numImports;
@@ -1446,7 +1486,12 @@ int run_test_with_multi_import_diff_ctx(
                     }
                     else if (!use_fence && iter != (maxIter - 1))
                     {
-                        clCl2VkExternalSemaphore2->signal(cmd_queue2);
+                        err = clCl2VkExternalSemaphore2->signal(cmd_queue2);
+                        if(err != CL_SUCCESS)
+                        {
+                            print_error(err,"Failed to signal CL semaphore\n");
+                            goto CLEANUP;
+                        }
                     }
                 }
                 clFinish(cmd_queue2);
@@ -1688,6 +1733,8 @@ int test_buffer_common(cl_device_id device_, cl_context context_,
     uint32_t bufferSizeListforOffset[] = { 256, 512, 1024 };
 
     cl_context_properties contextProperties[] = { CL_CONTEXT_PLATFORM, 0, 0 };
+    std::vector<VulkanExternalSemaphoreHandleType> supportedSemaphoreTypes;
+
     errNum = clGetPlatformIDs(1, &platform, NULL);
     if (errNum != CL_SUCCESS)
     {
@@ -1720,37 +1767,35 @@ int test_buffer_common(cl_device_id device_, cl_context context_,
     log_info("Assigned contextproperties for platform\n");
     for (device_no = 0; device_no < num_devices; device_no++)
     {
-        errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_EXTENSIONS, 0,
-                                 NULL, &extensionSize);
-        if (CL_SUCCESS != errNum)
-        {
-            print_error(errNum,
-                        "Error in clGetDeviceInfo for getting device_extension "
-                        "size....\n");
-            goto CLEANUP;
-        }
-        extensions = (char *)malloc(extensionSize);
-        if (NULL == extensions)
-        {
-            print_error(errNum, "Unable to allocate memory for extensions\n");
-            errNum = CL_OUT_OF_HOST_MEMORY;
-            goto CLEANUP;
-        }
-        errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_EXTENSIONS,
-                                 extensionSize, extensions, NULL);
-        if (CL_SUCCESS != errNum)
-        {
-            print_error(errNum,
-                        "Error in clGetDeviceInfo for device_extension\n");
-            goto CLEANUP;
-        }
         errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_UUID_KHR,
-                                 CL_UUID_SIZE_KHR, uuid, &extensionSize);
+                                 CL_UUID_SIZE_KHR, uuid, NULL);
         if (CL_SUCCESS != errNum)
         {
             print_error(errNum, "clGetDeviceInfo failed\n");
             goto CLEANUP;
         }
+
+        if(!is_extension_available(devices[device_no], "cl_khr_external_memory_opaque_fd"))
+        {
+            log_info("Device %u does not support cl_khr_external_memory_opaque_fd, which is required for this test. Skipping\n", device_no);
+            continue;
+        }
+
+        if(!use_fence)
+        {
+            supportedSemaphoreTypes = getSupportedInteropExternalSemaphoreHandleTypes(devices[device_no], vkDevice);
+        }
+        else{
+            supportedSemaphoreTypes.push_back(VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NONE);
+        }
+
+
+        // If device does not support any semaphores, try the next one
+        if(!use_fence && supportedSemaphoreTypes.empty())
+        {
+            continue;
+        }
+
         errNum =
             memcmp(uuid, vkDevice.getPhysicalDevice().getUUID(), VK_UUID_SIZE);
         if (errNum == 0)
@@ -1758,6 +1803,14 @@ int test_buffer_common(cl_device_id device_, cl_context context_,
             break;
         }
     }
+
+    if(!use_fence && supportedSemaphoreTypes.empty())
+    {
+        log_error("No devices found that support OpenCL semaphores\n");
+        errNum = EXIT_FAILURE;
+        goto CLEANUP;
+    }
+
     if (device_no >= num_devices)
     {
         errNum = EXIT_FAILURE;
@@ -1885,48 +1938,41 @@ int test_buffer_common(cl_device_id device_, cl_context context_,
         }
     }
 
-    for (size_t numBuffersIdx = 0; numBuffersIdx < ARRAY_SIZE(numBuffersList);
-         numBuffersIdx++)
-    {
-        uint32_t numBuffers = numBuffersList[numBuffersIdx];
-        log_info("Number of buffers: %d\n", numBuffers);
-        for (size_t sizeIdx = 0; sizeIdx < ARRAY_SIZE(bufferSizeList);
-             sizeIdx++)
-        {
-            uint32_t bufferSize = bufferSizeList[sizeIdx];
-            uint32_t bufferSizeForOffset = bufferSizeListforOffset[sizeIdx];
-            log_info("&&&& RUNNING vulkan_opencl_buffer test for Buffer size: "
-                     "%d\n",
-                     bufferSize);
-            if (multiImport && !multiCtx)
-            {
-                errNum = run_test_with_multi_import_same_ctx(
-                    context, cmd_queue1, kernel, verify_kernel, vkDevice,
-                    numBuffers, bufferSize, bufferSizeForOffset, use_fence);
-            }
-            else if (multiImport && multiCtx)
-            {
-                errNum = run_test_with_multi_import_diff_ctx(
-                    context, context2, cmd_queue1, cmd_queue3, kernel, kernel2,
-                    verify_kernel, verify_kernel2, vkDevice, numBuffers,
-                    bufferSize, bufferSizeForOffset, use_fence);
-            }
-            else if (numCQ == 2)
-            {
-                errNum = run_test_with_two_queue(
-                    context, cmd_queue1, cmd_queue2, kernel, verify_kernel,
-                    vkDevice, numBuffers + 1, bufferSize, use_fence);
-            }
-            else
-            {
-                errNum = run_test_with_one_queue(
-                    context, cmd_queue1, kernel, verify_kernel, vkDevice,
-                    numBuffers, bufferSize, use_fence);
-            }
-            if (errNum != CL_SUCCESS)
-            {
-                print_error(errNum, "func_name failed \n");
-                goto CLEANUP;
+    // TODO: Add support for empty list if use_fence enabled
+    for(VulkanExternalSemaphoreHandleType semaphoreType: supportedSemaphoreTypes) {
+        for (size_t numBuffersIdx = 0; numBuffersIdx < ARRAY_SIZE(numBuffersList);
+             numBuffersIdx++) {
+            uint32_t numBuffers = numBuffersList[numBuffersIdx];
+            log_info("Number of buffers: %d\n", numBuffers);
+            for (size_t sizeIdx = 0; sizeIdx < ARRAY_SIZE(bufferSizeList);
+                 sizeIdx++) {
+                uint32_t bufferSize = bufferSizeList[sizeIdx];
+                uint32_t bufferSizeForOffset = bufferSizeListforOffset[sizeIdx];
+                log_info("&&&& RUNNING vulkan_opencl_buffer test for Buffer size: "
+                         "%d\n",
+                         bufferSize);
+                if (multiImport && !multiCtx) {
+                    errNum = run_test_with_multi_import_same_ctx(
+                            context, cmd_queue1, kernel, verify_kernel, vkDevice,
+                            numBuffers, bufferSize, bufferSizeForOffset, use_fence);
+                } else if (multiImport && multiCtx) {
+                    errNum = run_test_with_multi_import_diff_ctx(
+                            context, context2, cmd_queue1, cmd_queue3, kernel, kernel2,
+                            verify_kernel, verify_kernel2, vkDevice, numBuffers,
+                            bufferSize, bufferSizeForOffset, use_fence);
+                } else if (numCQ == 2) {
+                    errNum = run_test_with_two_queue(
+                            context, cmd_queue1, cmd_queue2, kernel, verify_kernel,
+                            vkDevice, numBuffers + 1, bufferSize, use_fence, semaphoreType);
+                } else {
+                    errNum = run_test_with_one_queue(
+                            context, cmd_queue1, kernel, verify_kernel, vkDevice,
+                            numBuffers, bufferSize, semaphoreType, use_fence);
+                }
+                if (errNum != CL_SUCCESS) {
+                    print_error(errNum, "func_name failed \n");
+                    goto CLEANUP;
+                }
             }
         }
     }

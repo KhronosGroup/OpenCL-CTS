@@ -108,7 +108,7 @@ int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
+            getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice)[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
 
     clExternalSemaphore sema_ext(vkVk2CLSemaphore, context,
@@ -179,7 +179,7 @@ int test_external_semaphores_multi_context(cl_device_id deviceID,
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
+            getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice)[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
 
     cl_int err = CL_SUCCESS;
@@ -269,7 +269,7 @@ static int semaphore_external_cross_queue_helper(cl_device_id deviceID,
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
+            getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice)[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
 
     clExternalSemaphore sema_ext(vkVk2CLSemaphore, context,
@@ -336,7 +336,7 @@ int test_external_semaphores_simple_1(cl_device_id deviceID, cl_context context,
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
+            getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice)[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
 
     clExternalSemaphore sema_ext(vkVk2CLSemaphore, context,
@@ -402,7 +402,7 @@ int test_external_semaphores_simple_2(cl_device_id deviceID, cl_context context,
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
+            getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice)[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
 
     clExternalSemaphore sema_ext(vkVk2CLSemaphore, context,
@@ -498,7 +498,7 @@ int test_external_semaphores_reuse(cl_device_id deviceID, cl_context context,
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
+            getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice)[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
 
     clExternalSemaphore sema_ext(vkVk2CLSemaphore, context,
@@ -611,7 +611,7 @@ static int external_semaphore_cross_queue_helper(cl_device_id deviceID,
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
+            getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice)[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
 
     clExternalSemaphore sema_ext(vkVk2CLSemaphore, context,
@@ -726,7 +726,7 @@ int test_external_semaphores_cross_queues_io2(cl_device_id deviceID,
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
+            getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice)[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
 
     clExternalSemaphore sema_ext_1(vkVk2CLSemaphore, context,
@@ -809,7 +809,7 @@ int test_external_semaphores_multi_signal(cl_device_id deviceID,
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
+            getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice)[0];
     VulkanSemaphore vkVk2CLSemaphore1(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkVk2CLSemaphore2(vkDevice, vkExternalSemaphoreHandleType);
 
@@ -887,7 +887,7 @@ int test_external_semaphores_multi_wait(cl_device_id deviceID,
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
+            getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice)[0];
     VulkanSemaphore vkVk2CLSemaphore1(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkVk2CLSemaphore2(vkDevice, vkExternalSemaphoreHandleType);
 

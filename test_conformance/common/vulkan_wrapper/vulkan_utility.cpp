@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
+#include "deviceInfo.h"
 #if defined(_WIN32) || defined(_WIN64)
 #include <versionhelpers.h>
 #endif
@@ -236,28 +237,83 @@ getSupportedVulkanExternalMemoryHandleTypeList()
 }
 
 const std::vector<VulkanExternalSemaphoreHandleType>
-getSupportedVulkanExternalSemaphoreHandleTypeList()
+getSupportedVulkanExternalSemaphoreHandleTypeList(const VulkanDevice &vkDevice)
 {
-    std::vector<VulkanExternalSemaphoreHandleType>
-        externalSemaphoreHandleTypeList;
+    typedef struct  {
+        const char *extension_name;
+        VkExternalSemaphoreHandleTypeFlagBits vk_type;
+        VulkanExternalSemaphoreHandleType enum_type;
+    }VkSemaphoreHandleMap;
 
+    // Add all known handle types, use Vulkan queries to determine what is supported.
+    std::vector<VkSemaphoreHandleMap> all_known_handle_types;
+    all_known_handle_types.push_back({"VK_KHR_external_semaphore_fd", VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR, VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD});
+    all_known_handle_types.push_back({"VK_KHR_external_semaphore_fd", VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR, VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD});
+    all_known_handle_types.push_back({"VK_KHR_external_semaphore_win32", VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR, VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT});
+    // An exception to the rule about letting Vulkan sort out support.  Only allow NT macro on Windows 8 and later
 #if _WIN32
     if (IsWindows8OrGreater())
     {
-        externalSemaphoreHandleTypeList.push_back(
-            VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT);
+        all_known_handle_types.push_back({"VK_KHR_external_semaphore_win32", VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR, VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT});
     }
-    externalSemaphoreHandleTypeList.push_back(
-        VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT);
-#elif defined(__ANDROID__)
-    externalSemaphoreHandleTypeList.push_back(
-        VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD);
-#else
-    externalSemaphoreHandleTypeList.push_back(
-        VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD);
 #endif
 
+    std::vector<VulkanExternalSemaphoreHandleType>
+        externalSemaphoreHandleTypeList;
+
+    for(auto handle_type : all_known_handle_types) {
+        if(!vkDevice.getPhysicalDevice().hasExtension(handle_type.extension_name)) {
+            continue;
+        }
+
+        VkPhysicalDeviceExternalSemaphoreInfo handle_query = {
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO,
+                nullptr,
+                handle_type.vk_type
+        };
+        VkExternalSemaphoreProperties query_result = {};
+        vkGetPhysicalDeviceExternalSemaphorePropertiesKHR(vkDevice.getPhysicalDevice(), &handle_query, &query_result);
+        if(query_result.externalSemaphoreFeatures & (VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT_KHR | VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT_KHR )) {
+            externalSemaphoreHandleTypeList.push_back(
+                    handle_type.enum_type);
+        }
+    }
+
     return externalSemaphoreHandleTypeList;
+}
+
+std::vector<VulkanExternalSemaphoreHandleType>
+getSupportedInteropExternalSemaphoreHandleTypes(cl_device_id device, VulkanDevice &vkDevice)
+{
+    const std::vector<VulkanExternalSemaphoreHandleType>
+            supportedVkSemaphoreTypes = getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice);
+    std::vector<VulkanExternalSemaphoreHandleType> supportedSemaphoreTypes;
+
+    if( is_extension_available(device, "cl_khr_external_semaphore_opaque_fd")  &&
+        std::count(supportedVkSemaphoreTypes.begin(), supportedVkSemaphoreTypes.end(), VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD))
+    {
+        supportedSemaphoreTypes.push_back(VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD);
+    }
+
+    if(is_extension_available(device, "cl_khr_external_semaphore_sync_fd") &&
+       std::count(supportedVkSemaphoreTypes.begin(), supportedVkSemaphoreTypes.end(), VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD))
+    {
+        supportedSemaphoreTypes.push_back(VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD);
+    }
+
+    if(is_extension_available(device, "cl_khr_external_semaphore_win32") &&
+       std::count(supportedVkSemaphoreTypes.begin(), supportedVkSemaphoreTypes.end(), VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT))
+    {
+        supportedSemaphoreTypes.push_back(VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT);
+    }
+
+    if(is_extension_available(device, "cl_khr_external_semaphore_win32") &&
+       std::count(supportedVkSemaphoreTypes.begin(), supportedVkSemaphoreTypes.end(), VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT))
+    {
+        supportedSemaphoreTypes.push_back(VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT);
+    }
+
+    return supportedSemaphoreTypes;
 }
 
 const std::vector<VulkanFormat> getSupportedVulkanFormatList()
@@ -633,6 +689,8 @@ operator<<(std::ostream &os,
             return os << "Opaque D3DKMT handle";
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT_KMT:
             return os << "Opaque NT and D3DKMT handle";
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD:
+            return os << "Sync fd semaphore handle";
     }
 
     return os;

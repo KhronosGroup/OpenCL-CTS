@@ -18,6 +18,7 @@
 #include <string>
 #include "harness/errorHelpers.h"
 #include <algorithm>
+#include "deviceInfo.h"
 
 #define MAX_2D_IMAGES 5
 #define MAX_2D_IMAGE_WIDTH 1024
@@ -189,11 +190,9 @@ const cl_kernel getKernelType(VulkanFormat format, cl_kernel kernel_float,
     return kernel;
 }
 
-int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
-                            cl_command_queue &cmd_queue2,
-                            cl_kernel *kernel_unsigned,
-                            cl_kernel *kernel_signed, cl_kernel *kernel_float,
-                            VulkanDevice &vkDevice)
+int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1, cl_command_queue &cmd_queue2,
+                            cl_kernel *kernel_unsigned, cl_kernel *kernel_signed, cl_kernel *kernel_float,
+                            VulkanDevice &vkDevice, VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType)
 {
     cl_int err = CL_SUCCESS;
     size_t origin[3] = { 0, 0, 0 };
@@ -245,8 +244,6 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
     VulkanCommandBuffer vkShaderCommandBuffer(vkDevice, vkCommandPool);
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
-    VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     clExternalSemaphore *clVk2CLExternalSemaphore = NULL;
@@ -552,7 +549,15 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                                 vkQueue.submit(vkCl2VkSemaphore,
                                                vkShaderCommandBuffer,
                                                vkVk2CLSemaphore);
-                                clVk2CLExternalSemaphore->wait(cmd_queue1);
+
+                                err = clVk2CLExternalSemaphore->wait(cmd_queue1);
+                                if (err != CL_SUCCESS)
+                                {
+                                    print_error(err,
+                                                "Error: failed to wait on CL external semaphore\n");
+                                    goto CLEANUP;
+                                }
+
                                 switch (num2DImages)
                                 {
                                     case 2:
@@ -656,7 +661,12 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                                 }
 
                                 clFinish(cmd_queue2);
-                                clCl2VkExternalSemaphore->signal(cmd_queue2);
+                                err = clCl2VkExternalSemaphore->signal(cmd_queue2);
+                                if(err != CL_SUCCESS)
+                                {
+                                    print_error(err,"Failed to signal CL semaphore\n");
+                                    goto CLEANUP;
+                                }
                             }
 
                             unsigned int flags = 0;
@@ -748,10 +758,9 @@ CLEANUP:
     return err;
 }
 
-int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
-                            cl_kernel *kernel_unsigned,
-                            cl_kernel *kernel_signed, cl_kernel *kernel_float,
-                            VulkanDevice &vkDevice)
+int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1, cl_kernel *kernel_unsigned,
+                            cl_kernel *kernel_signed, cl_kernel *kernel_float, VulkanDevice &vkDevice,
+                            VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType)
 {
     cl_int err = CL_SUCCESS;
     size_t origin[3] = { 0, 0, 0 };
@@ -802,8 +811,6 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
     VulkanCommandBuffer vkShaderCommandBuffer(vkDevice, vkCommandPool);
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
-    VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     clExternalSemaphore *clVk2CLExternalSemaphore = NULL;
@@ -1114,7 +1121,15 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                                 vkQueue.submit(vkCl2VkSemaphore,
                                                vkShaderCommandBuffer,
                                                vkVk2CLSemaphore);
-                                clVk2CLExternalSemaphore->wait(cmd_queue1);
+
+                                err = clVk2CLExternalSemaphore->wait(cmd_queue1);
+                                if (err != CL_SUCCESS)
+                                {
+                                    print_error(err,
+                                                "Error: failed to wait on CL external semaphore\n");
+                                    goto CLEANUP;
+                                }
+
                                 switch (num2DImages)
                                 {
                                     case 1:
@@ -1176,7 +1191,12 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                                 {
                                     goto CLEANUP;
                                 }
-                                clCl2VkExternalSemaphore->signal(cmd_queue1);
+                                err = clCl2VkExternalSemaphore->signal(cmd_queue1);
+                                if(err != CL_SUCCESS)
+                                {
+                                    print_error(err,"Failed to signal CL semaphore\n");
+                                    goto CLEANUP;
+                                }
                             }
 
                             unsigned int flags = 0;
@@ -1299,6 +1319,7 @@ int test_image_common(cl_device_id device_, cl_context context_,
     cl_kernel kernel_unsigned[num_kernels] = { NULL, NULL, NULL, NULL };
     cl_mem external_mem_image1;
     cl_mem external_mem_image2;
+    std::vector<VulkanExternalSemaphoreHandleType> supportedSemaphoreTypes;
 
     VulkanDevice vkDevice;
 
@@ -1360,12 +1381,27 @@ int test_image_common(cl_device_id device_, cl_context context_,
             goto CLEANUP;
         }
         err = clGetDeviceInfo(devices[device_no], CL_DEVICE_UUID_KHR,
-                              CL_UUID_SIZE_KHR, uuid, &extensionSize);
+                              CL_UUID_SIZE_KHR, uuid, NULL);
         if (CL_SUCCESS != err)
         {
             print_error(err, "clGetDeviceInfo failed with error");
             goto CLEANUP;
         }
+
+        if(!is_extension_available(devices[device_no], "cl_khr_external_memory_opaque_fd"))
+        {
+            log_info("Device %u does not support cl_khr_external_memory_opaque_fd, which is required for this test. Skipping\n", device_no);
+            continue;
+        }
+
+        supportedSemaphoreTypes = getSupportedInteropExternalSemaphoreHandleTypes(devices[device_no], vkDevice);
+
+        // If device does not support any semaphores, try the next one
+        if(supportedSemaphoreTypes.empty())
+        {
+            continue;
+        }
+
         err =
             memcmp(uuid, vkDevice.getPhysicalDevice().getUUID(), VK_UUID_SIZE);
         if (err == 0)
@@ -1373,6 +1409,14 @@ int test_image_common(cl_device_id device_, cl_context context_,
             break;
         }
     }
+
+    if(supportedSemaphoreTypes.empty())
+    {
+        log_error("No devices found that support OpenCL semaphores\n");
+        err = EXIT_FAILURE;
+        goto CLEANUP;
+    }
+
     if (device_no >= num_devices)
     {
         err = EXIT_FAILURE;
@@ -1499,16 +1543,19 @@ int test_image_common(cl_device_id device_, cl_context context_,
             goto CLEANUP;
         }
     }
-    if (numCQ == 2)
+    for(VulkanExternalSemaphoreHandleType externalSemaphoreType: supportedSemaphoreTypes)
     {
-        err = run_test_with_two_queue(context, cmd_queue1, cmd_queue2,
-                                      kernel_unsigned, kernel_signed,
-                                      kernel_float, vkDevice);
-    }
-    else
-    {
-        err = run_test_with_one_queue(context, cmd_queue1, kernel_unsigned,
-                                      kernel_signed, kernel_float, vkDevice);
+        if (numCQ == 2)
+        {
+            err = run_test_with_two_queue(context, cmd_queue1, cmd_queue2,
+                                          kernel_unsigned, kernel_signed,
+                                          kernel_float, vkDevice, externalSemaphoreType);
+        }
+        else
+        {
+            err = run_test_with_one_queue(context, cmd_queue1, kernel_unsigned,
+                                          kernel_signed, kernel_float, vkDevice, externalSemaphoreType);
+        }
     }
 CLEANUP:
     for (int i = 0; i < num_kernels; i++)
