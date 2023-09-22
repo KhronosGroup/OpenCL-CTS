@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+
+#include <cinttypes>
 #include <vector>
 
 #if ! defined( _WIN32)
@@ -441,7 +443,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
                                        block_elements, element_count[vecsize])
                 != 0)
             {
-                log_error("vec_size:%d indx: 0x%16.16llx\n",
+                log_error("vec_size:%d indx: 0x%16.16" PRIx64 "\n",
                           (int)element_count[vecsize], i);
                 return TEST_FAIL;
             }
