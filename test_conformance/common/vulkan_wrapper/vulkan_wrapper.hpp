@@ -540,6 +540,7 @@ protected:
     uint64_t m_size;
     bool m_isDedicated;
 
+
     VulkanDeviceMemory(const VulkanDeviceMemory &deviceMemory);
 
 public:

@@ -88,10 +88,8 @@ protected:
 
 public:
     clExternalMemory();
-    clExternalMemory(const VulkanDeviceMemory *deviceMemory,
-                     VulkanExternalMemoryHandleType externalMemoryHandleType,
-                     uint64_t offset, uint64_t size, cl_context context,
-                     cl_device_id deviceId);
+    clExternalMemory(const VulkanDeviceMemory *deviceMemory, VulkanExternalMemoryHandleType externalMemoryHandleType,
+                     uint64_t size, cl_context context, cl_device_id deviceId);
 
     virtual ~clExternalMemory();
     cl_mem getExternalMemoryBuffer();

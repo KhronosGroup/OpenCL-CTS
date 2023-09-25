@@ -531,10 +531,9 @@ clExternalMemory::clExternalMemory(const clExternalMemory &externalMemory)
     : m_externalMemory(externalMemory.m_externalMemory)
 {}
 
-clExternalMemory::clExternalMemory(
-    const VulkanDeviceMemory *deviceMemory,
-    VulkanExternalMemoryHandleType externalMemoryHandleType, uint64_t offset,
-    uint64_t size, cl_context context, cl_device_id deviceId)
+clExternalMemory::clExternalMemory(const VulkanDeviceMemory *deviceMemory,
+                                   VulkanExternalMemoryHandleType externalMemoryHandleType,
+                                   uint64_t size, cl_context context, cl_device_id deviceId)
 {
     int err = 0;
     m_externalMemory = NULL;
