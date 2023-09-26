@@ -28,7 +28,7 @@
 const char *sample_kernel_start =
     "__kernel void sample_test(__global float *src, __global int *dst)\n"
     "{\n"
-    "    float temp = 0.0;\n"
+    "    float temp = 0.0f;\n"
     "    int  tid = get_global_id(0);\n";
 
 const char *sample_kernel_end = "}\n";
