@@ -16,6 +16,7 @@
 #include "harness/errorHelpers.h"
 
 #include <stdio.h>
+#include <cinttypes>
 #include "test_select.h"
 
 
@@ -648,8 +649,8 @@ size_t check_uchar(const void *const test, const void *const correct,
         for (i = 0; i < count; i++)
             if (t[i] != c[i])
             {
-                log_error("\n(check_uchar) Error for vector size %ld found at "
-                          "0x%8.8lx (of 0x%8.8lx):  "
+                log_error("\n(check_uchar) Error for vector size %zu found at "
+                          "0x%8.8zx (of 0x%8.8zx):  "
                           "*0x%2.2x vs 0x%2.2x\n",
                           vector_size, i, count, c[i], t[i]);
                 return i + 1;
@@ -670,8 +671,8 @@ size_t check_char(const void *const test, const void *const correct,
         for (i = 0; i < count; i++)
             if (t[i] != c[i])
             {
-                log_error("\n(check_char) Error for vector size %ld found at "
-                          "0x%8.8lx (of 0x%8.8lx):  "
+                log_error("\n(check_char) Error for vector size %zu found at "
+                          "0x%8.8zx (of 0x%8.8zx):  "
                           "*0x%2.2x vs 0x%2.2x\n",
                           vector_size, i, count, c[i], t[i]);
                 return i + 1;
@@ -693,8 +694,8 @@ size_t check_ushort(const void *const test, const void *const correct,
         for (i = 0; i < count; i++)
             if (t[i] != c[i])
             {
-                log_error("\n(check_ushort) Error for vector size %ld found at "
-                          "0x%8.8lx (of 0x%8.8lx):  "
+                log_error("\n(check_ushort) Error for vector size %zu found at "
+                          "0x%8.8zx (of 0x%8.8zx):  "
                           "*0x%4.4x vs 0x%4.4x\n",
                           vector_size, i, count, c[i], t[i]);
                 return i + 1;
@@ -716,8 +717,8 @@ size_t check_short(const void *const test, const void *const correct,
         for (i = 0; i < count; i++)
             if (t[i] != c[i])
             {
-                log_error("\n(check_short) Error for vector size %ld found at "
-                          "0x%8.8lx (of 0x%8.8lx):  "
+                log_error("\n(check_short) Error for vector size %zu found at "
+                          "0x%8.8zx (of 0x%8.8zx):  "
                           "*0x%8.8x vs 0x%8.8x\n",
                           vector_size, i, count, c[i], t[i]);
                 return i + 1;
@@ -739,8 +740,8 @@ size_t check_uint(const void *const test, const void *const correct,
         for (i = 0; i < count; i++)
             if (t[i] != c[i])
             {
-                log_error("\n(check_uint) Error for vector size %ld found at "
-                          "0x%8.8lx (of 0x%8.8lx):  "
+                log_error("\n(check_uint) Error for vector size %zu found at "
+                          "0x%8.8zx (of 0x%8.8zx):  "
                           "*0x%8.8x vs 0x%8.8x\n",
                           vector_size, i, count, c[i], t[i]);
                 return i + 1;
@@ -763,8 +764,8 @@ size_t check_int(const void *const test, const void *const correct,
             if (t[i] != c[i])
             {
 
-                log_error("\n(check_int) Error for vector size %ld found at "
-                          "0x%8.8lx (of 0x%8.8lx):  "
+                log_error("\n(check_int) Error for vector size %zu found at "
+                          "0x%8.8zx (of 0x%8.8zx):  "
                           "*0x%8.8x vs 0x%8.8x\n",
                           vector_size, i, count, c[i], t[i]);
                 return i + 1;
@@ -786,9 +787,9 @@ size_t check_ulong(const void *const test, const void *const correct,
         for (i = 0; i < count; i++)
             if (t[i] != c[i])
             {
-                log_error("\n(check_ulong) Error for vector size %ld found at "
-                          "0x%8.8lx (of 0x%8.8lx):  "
-                          "*0x%16.16llx vs 0x%16.16llx\n",
+                log_error("\n(check_ulong) Error for vector size %zu found at "
+                          "0x%8.8zx (of 0x%8.8zx):  "
+                          "*0x%16.16" PRIx64 " vs 0x%16.16" PRIx64 "\n",
                           vector_size, i, count, c[i], t[i]);
                 return i + 1;
             }
@@ -809,9 +810,9 @@ size_t check_long(const void *const test, const void *const correct,
         for (i = 0; i < count; i++)
             if (t[i] != c[i])
             {
-                log_error("\n(check_long) Error for vector size %ld found at "
-                          "0x%8.8lx (of 0x%8.8lx):  "
-                          "*0x%16.16llx vs 0x%16.16llx\n",
+                log_error("\n(check_long) Error for vector size %zu found at "
+                          "0x%8.8zx (of 0x%8.8zx):  "
+                          "*0x%16.16" PRIx64 " vs 0x%16.16" PRIx64 "\n",
                           vector_size, i, count, c[i], t[i]);
                 return i + 1;
             }
@@ -834,8 +835,8 @@ size_t check_half(const void *const test, const void *const correct,
                 && !(isnan(((cl_half *)correct)[i])
                      && isnan(((cl_half *)test)[i])))
             {
-                log_error("\n(check_half) Error for vector size %ld found at "
-                          "0x%8.8lx (of 0x%8.8lx):  "
+                log_error("\n(check_half) Error for vector size %zu found at "
+                          "0x%8.8zx (of 0x%8.8zx):  "
                           "*0x%4.4x vs 0x%4.4x\n",
                           vector_size, i, count, c[i], t[i]);
                 return i + 1;
@@ -858,8 +859,8 @@ size_t check_float(const void *const test, const void *const correct,
             if ((t[i] != c[i])
                 && !(isnan(((float *)correct)[i]) && isnan(((float *)test)[i])))
             {
-                log_error("\n(check_float) Error for vector size %ld found at "
-                          "0x%8.8lx (of 0x%8.8lx):  "
+                log_error("\n(check_float) Error for vector size %zu found at "
+                          "0x%8.8zx (of 0x%8.8zx):  "
                           "*0x%8.8x vs 0x%8.8x\n",
                           vector_size, i, count, c[i], t[i]);
                 return i + 1;
@@ -883,9 +884,9 @@ size_t check_double(const void *const test, const void *const correct,
                 && !(isnan(((double *)correct)[i])
                      && isnan(((double *)test)[i])))
             {
-                log_error("\n(check_double) Error for vector size %ld found at "
-                          "0x%8.8lx (of 0x%8.8lx):  "
-                          "*0x%16.16llx vs 0x%16.16llx\n",
+                log_error("\n(check_double) Error for vector size %zu found at "
+                          "0x%8.8zx (of 0x%8.8zx):  "
+                          "*0x%16.16" PRIx64 " vs 0x%16.16" PRIx64 "\n",
                           vector_size, i, count, c[i], t[i]);
                 return i + 1;
             }

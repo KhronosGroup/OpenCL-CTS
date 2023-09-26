@@ -123,7 +123,7 @@ int test_intmath(cl_device_id device, cl_context context,
     size_t datasize = sizeof(T) * num_elements * N;
 
     // Create device buffers.
-    for (int i = 0; i < ARRAY_SIZE(streams); i++)
+    for (size_t i = 0; i < ARRAY_SIZE(streams); i++)
     {
         streams[i] =
             clCreateBuffer(context, CL_MEM_READ_WRITE, datasize, NULL, &err);
@@ -175,7 +175,7 @@ int test_intmath(cl_device_id device, cl_context context,
         test_error(err, "clEnqueueReadBuffer failed\n");
 
         // Verify results
-        for (int i = 0; i < num_elements * N; i++)
+        for (unsigned i = 0; i < num_elements * N; i++)
         {
             T r = test.ref(inputA[i], inputB[i], inputC[i]);
             if (r != output[i])

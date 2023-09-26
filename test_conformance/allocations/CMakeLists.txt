@@ -8,4 +8,6 @@ set(${MODULE_NAME}_SOURCES
         allocation_utils.cpp
 )
 
+set_gnulike_module_compile_flags("-Wno-sign-compare")
+
 include(../CMakeCommon.txt)

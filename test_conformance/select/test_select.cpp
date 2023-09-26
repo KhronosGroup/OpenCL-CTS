@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+
+#include <cinttypes>
 #include <vector>
 
 #if ! defined( _WIN32)
@@ -124,34 +126,31 @@ static void initSrcBuffer(void* src1, Type stype, MTdata d)
 
 static void initCmpBuffer(void *cmp, Type cmptype, uint64_t start,
                           const size_t count)
+
 {
-    int i;
     assert(cmptype != kfloat);
     switch (type_size[cmptype]) {
         case 1: {
             uint8_t* ub = (uint8_t *)cmp;
-            for (i=0; i < count; ++i)
-                ub[i] = (uint8_t)start++;
+            for (size_t i = 0; i < count; ++i) ub[i] = (uint8_t)start++;
             break;
         }
         case 2: {
             uint16_t* us = (uint16_t *)cmp;
-            for (i=0; i < count; ++i)
-                us[i] = (uint16_t)start++;
+            for (size_t i = 0; i < count; ++i) us[i] = (uint16_t)start++;
             break;
         }
         case 4: {
             if (!s_wimpy_mode) {
                 uint32_t* ui = (uint32_t *)cmp;
-                for (i=0; i < count; ++i)
-                    ui[i] = (uint32_t)start++;
+                for (size_t i = 0; i < count; ++i) ui[i] = (uint32_t)start++;
             }
             else {
                 // The short test doesn't iterate over the entire 32 bit space so
                 // we alternate between positive and negative values
                 int32_t* ui = (int32_t *)cmp;
                 int32_t neg_start = (int32_t)start * -1;
-                for (i = 0; i < count; i++)
+                for (size_t i = 0; i < count; i++)
                 {
                     ++start;
                     --neg_start;
@@ -165,7 +164,7 @@ static void initCmpBuffer(void *cmp, Type cmptype, uint64_t start,
             // selects, we want to test positive and negative values
             int64_t* ll = (int64_t *)cmp;
             int64_t neg_start = (int64_t)start * -1;
-            for (i = 0; i < count; i++)
+            for (size_t i = 0; i < count; i++)
             {
                 ++start;
                 --neg_start;
@@ -464,7 +463,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
                                        block_elements, element_count[vecsize])
                 != 0)
             {
-                log_error("vec_size:%d indx: 0x%16.16llx\n",
+                log_error("vec_size:%d indx: 0x%16.16" PRIx64 "\n",
                           (int)element_count[vecsize], i);
                 return TEST_FAIL;
             }

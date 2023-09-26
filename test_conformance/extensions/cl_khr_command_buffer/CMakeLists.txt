@@ -17,6 +17,8 @@ set(${MODULE_NAME}_SOURCES
     command_buffer_finalize.cpp
 )
 
+set_gnulike_module_compile_flags("-Wno-sign-compare")
+
 include(../../CMakeCommon.txt)
 
 add_subdirectory( cl_khr_command_buffer_mutable_dispatch )

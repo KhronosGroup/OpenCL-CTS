@@ -160,7 +160,7 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
 
         // verify the results by comparing timestamps
         bool all_vals_0 = prof_params.front().value != 0;
-        for (int i = 1; i < prof_params.size(); i++)
+        for (size_t i = 1; i < prof_params.size(); i++)
         {
             all_vals_0 = (prof_params[i].value != 0) ? false : all_vals_0;
             if (prof_params[i - 1].value > prof_params[i].value)

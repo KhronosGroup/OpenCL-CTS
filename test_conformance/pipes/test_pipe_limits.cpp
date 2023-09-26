@@ -274,8 +274,7 @@ int test_pipe_max_packet_size(cl_device_id deviceID, cl_context context, cl_comm
     size_t global_work_size[3];
     cl_int err;
     size_t size;
-    int num_pipe_elements = 1024;
-    int i;
+    cl_uint num_pipe_elements = 1024;
     cl_uint max_pipe_packet_size;
     clEventWrapper producer_sync_event = NULL;
     clEventWrapper consumer_sync_event = NULL;
@@ -287,7 +286,7 @@ int test_pipe_max_packet_size(cl_device_id deviceID, cl_context context, cl_comm
 
     size_t min_alignment = get_min_alignment(context);
 
-    global_work_size[0] = (cl_uint)num_pipe_elements;
+    global_work_size[0] = num_pipe_elements;
 
     std::stringstream source;
 
@@ -312,7 +311,8 @@ int test_pipe_max_packet_size(cl_device_id deviceID, cl_context context, cl_comm
 
     inptr = (cl_char *)align_malloc(size, min_alignment);
 
-    for(i = 0; i < size; i++){
+    for (size_t i = 0; i < size; i++)
+    {
         inptr[i] = (char)genrand_int32(d);
     }
     BufferInPtr.reset(inptr, nullptr, 0, size, true);
@@ -412,7 +412,7 @@ int test_pipe_max_active_reservations(cl_device_id deviceID, cl_context context,
     clMemWrapper buf_reserve_id_t_size_aligned;
     cl_int *inptr;
     void *outptr;
-    int size, i;
+    int size;
     clProgramWrapper program;
     clKernelWrapper kernel[3];
     size_t global_work_size[3];
@@ -565,7 +565,8 @@ int test_pipe_max_active_reservations(cl_device_id deviceID, cl_context context,
     size = sizeof(cl_int) * max_active_reservations;
     inptr = (cl_int *)align_malloc(size, min_alignment);
 
-    for(i = 0; i < max_active_reservations; i++){
+    for (cl_uint i = 0; i < max_active_reservations; i++)
+    {
         inptr[i] = (int)genrand_int32(d);
     }
     BufferInPtr.reset(inptr, nullptr, 0, size, true);
