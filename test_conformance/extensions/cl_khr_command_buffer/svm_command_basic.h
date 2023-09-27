@@ -19,7 +19,7 @@ struct BasicSVMCommandBufferTest : BasicCommandBufferTest
 protected:
     cl_int init_extension_functions();
 
-    clCommandSVMMemfillKHR_fn clCommandSVMMemfillKHR = nullptr;
+    clCommandSVMMemFillKHR_fn clCommandSVMMemFillKHR = nullptr;
     clCommandSVMMemcpyKHR_fn clCommandSVMMemcpyKHR = nullptr;
 
     clSVMWrapper svm_in_mem, svm_out_mem;

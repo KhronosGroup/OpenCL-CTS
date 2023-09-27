@@ -38,10 +38,10 @@ bool BasicSVMCommandBufferTest::Skip()
         log_error("Unable to initialise extension functions");
         return true;
     }
-    if (clCommandSVMMemcpyKHR == nullptr || clCommandSVMMemfillKHR == nullptr)
+    if (clCommandSVMMemcpyKHR == nullptr || clCommandSVMMemFillKHR == nullptr)
     {
         log_info("Platform does not support clCommandSVMMemcpyKHR or "
-                 "clCommandSVMMemfillKHR\n");
+                 "clCommandSVMMemFillKHR\n");
         return true;
     }
 
@@ -79,7 +79,7 @@ cl_int BasicSVMCommandBufferTest::init_extension_functions()
                                    sizeof(cl_platform_id), &platform, nullptr);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
 
-    GET_EXTENSION_ADDRESS(clCommandSVMMemfillKHR);
+    GET_EXTENSION_ADDRESS(clCommandSVMMemFillKHR);
     GET_EXTENSION_ADDRESS(clCommandSVMMemcpyKHR);
 
     return CL_SUCCESS;
