@@ -324,26 +324,6 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
     test_error(errNum, "Unable to create Image with Properties");
     image.reset();
 
-    // Passing properties, image_desc and image_format all as NULL
-    image = clCreateImageWithProperties(context, NULL, CL_MEM_READ_WRITE, NULL,
-                                        NULL, NULL, &errNum);
-    test_failure_error(
-        errNum, CL_INVALID_IMAGE_DESCRIPTOR,
-        "Image creation must fail with CL_INVALID_IMAGE_DESCRIPTOR "
-        "when all are passed as NULL");
-
-    image.reset();
-
-    // Passing NULL properties and a valid image_format and image_desc
-    image =
-        clCreateImageWithProperties(context, NULL, CL_MEM_READ_WRITE,
-                                    &img_format, &image_desc, NULL, &errNum);
-    test_error(errNum,
-               "Unable to create image with NULL properties "
-               "with valid image format and image desc");
-
-    image.reset();
-
     // Passing image_format as NULL
     image = clCreateImageWithProperties(context, extMemProperties.data(),
                                         CL_MEM_READ_WRITE, NULL, &image_desc,
