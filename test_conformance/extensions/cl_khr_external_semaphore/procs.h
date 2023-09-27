@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _CL_KHR_EXTERNAL_SEMAPHORE_PROCS_H
-#define _CL_KHR_EXTERNAL_SEMAPHORE_PROCS_H
+#ifndef CL_KHR_EXTERNAL_SEMAPHORE_PROCS_H
+#define CL_KHR_EXTERNAL_SEMAPHORE_PROCS_H
 
 #include <CL/cl.h>
 
@@ -79,4 +79,4 @@ extern int test_external_semaphores_invalid_command(cl_device_id deviceID,
                                                     cl_context context,
                                                     cl_command_queue queue,
                                                     int num_elements);
-#endif /* CL_KHR_EXTERNAL_SEMAPHORE */
+#endif // CL_KHR_EXTERNAL_SEMAPHORE_PROCS_H

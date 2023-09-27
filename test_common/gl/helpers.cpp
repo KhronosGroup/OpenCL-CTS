@@ -966,12 +966,13 @@ void reorder_verification_buffer(GLenum glFormat, GLenum glType, char* buffer, s
 
 #ifdef GL_VERSION_3_2
 
-#define check_gl_error() \
-{ \
-  GLenum errnom = GL_NO_ERROR;\
-  if ((errnom = glGetError()) != GL_NO_ERROR)\
-    log_error("GL Error: 0x%04X at %s:%d\n", errnom, __FILE__, __LINE__);\
-}
+#define CHECK_GL_ERROR()                                                       \
+    {                                                                          \
+        GLenum errnom = GL_NO_ERROR;                                           \
+        if ((errnom = glGetError()) != GL_NO_ERROR)                            \
+            log_error("GL Error: 0x%04X at %s:%d\n", errnom, __FILE__,         \
+                      __LINE__);                                               \
+    }
 
 const char *get_gl_vector_type( GLenum internalformat )
 {
@@ -1045,10 +1046,12 @@ void * CreateGLTexture2DMultisample( size_t width, size_t height, size_t samples
 
   // Check if the renderer supports enough samples
   GLint max_samples = get_gl_max_samples(target, internalFormat);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   if (max_samples < (GLint)samples)
-    log_error("GL error: requested samples (%d) exceeds renderer max samples (%d)\n", samples, max_samples);
+      log_error("GL error: requested samples (%zu) exceeds renderer max "
+                "samples (%d)\n",
+                samples, max_samples);
 
   // Setup the GLSL program
   const GLchar *vertex_source =
@@ -1075,36 +1078,36 @@ void * CreateGLTexture2DMultisample( size_t width, size_t height, size_t samples
   glShaderWrapper vertex_shader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vertex_shader, 1, &vertex_source, NULL);
   glCompileShader(vertex_shader);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   glShaderWrapper fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fragment_shader, 1, &fragment_source, NULL);
   glCompileShader(fragment_shader);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   GLuint prog = glCreateProgram();
   glAttachShader(prog, vertex_shader);
   glAttachShader(prog, fragment_shader);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   glBindAttribLocation(prog, 0, "att0");
   glLinkProgram(prog);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   // Setup the FBO and texture
   glFramebufferWrapper fbo;
   glGenFramebuffers(1, &fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   glViewport(0, 0, width, height);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   GLuint tex = 0;
   glGenTextures(1, &tex);
   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex);
   glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, internalFormat, width, height, fixedSampleLocations);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   GLint attachment;
   switch (internalFormat) {
@@ -1122,7 +1125,7 @@ void * CreateGLTexture2DMultisample( size_t width, size_t height, size_t samples
   }
 
   glFramebufferTexture(GL_FRAMEBUFFER, attachment, tex, 0);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   GLint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   if (status == GL_FRAMEBUFFER_UNSUPPORTED) {
@@ -1142,22 +1145,24 @@ void * CreateGLTexture2DMultisample( size_t width, size_t height, size_t samples
   // Check if the framebuffer supports enough samples
   GLint fbo_samples = 0;
   glGetIntegerv(GL_SAMPLES, &fbo_samples);
-  check_gl_error();
+  CHECK_GL_ERROR();
 
   if (fbo_samples < (GLint)samples)
-    log_error("GL Error: requested samples (%d) exceeds FBO capability (%d)\n", samples, fbo_samples);
+      log_error(
+          "GL Error: requested samples (%zu) exceeds FBO capability (%d)\n",
+          samples, fbo_samples);
 
   glUseProgram(prog);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   if (attachment != GL_DEPTH_ATTACHMENT && attachment != GL_DEPTH_STENCIL_ATTACHMENT) {
     glDisable(GL_DEPTH_TEST);
-    check_gl_error()
+    CHECK_GL_ERROR()
   }
   else {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_ALWAYS);
-    check_gl_error()
+    CHECK_GL_ERROR()
   }
 
   // Setup the VBO for rendering a quad
@@ -1172,14 +1177,14 @@ void * CreateGLTexture2DMultisample( size_t width, size_t height, size_t samples
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STREAM_DRAW);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   glVertexArraysWrapper vao;
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat)*2, 0);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   //clearing color and depth buffer
   glClearColor(0, 0, 0, 0);
@@ -1223,13 +1228,13 @@ void * CreateGLTexture2DMultisample( size_t width, size_t height, size_t samples
     color += color_delta;
 
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    check_gl_error();
+    CHECK_GL_ERROR();
 
     glFlush();
   }
 
   glDisable(GL_SAMPLE_MASK);
-  check_gl_error();
+  CHECK_GL_ERROR();
 
   *outTextureID = tex;
 
@@ -1306,7 +1311,9 @@ void * CreateGLTexture2DArrayMultisample(size_t width, size_t height,
   GLint max_samples = get_gl_max_samples(target, internalFormat);
 
   if (max_samples < (GLint)samples)
-    log_error("GL error: requested samples (%d) exceeds renderer max samples (%d)\n", samples, max_samples);
+      log_error("GL error: requested samples (%zu) exceeds renderer max "
+                "samples (%d)\n",
+                samples, max_samples);
 
   // Setup the GLSL program
   const GLchar *vertex_source =
@@ -1333,36 +1340,36 @@ void * CreateGLTexture2DArrayMultisample(size_t width, size_t height,
   glShaderWrapper vertex_shader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vertex_shader, 1, &vertex_source, NULL);
   glCompileShader(vertex_shader);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   glShaderWrapper fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fragment_shader, 1, &fragment_source, NULL);
   glCompileShader(fragment_shader);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   glProgramWrapper prog = glCreateProgram();
   glAttachShader(prog, vertex_shader);
   glAttachShader(prog, fragment_shader);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   glBindAttribLocation(prog, 0, "att0");
   glLinkProgram(prog);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   // Setup the FBO and texture
   glFramebufferWrapper fbo;
   glGenFramebuffers(1, &fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   glViewport(0, 0, width, height);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   GLuint tex = 0;
   glGenTextures(1, &tex);
   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, tex);
   glTexImage3DMultisample(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, samples, internalFormat, width, height, total_layers, fixedSampleLocations);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   GLint attachment;
   switch (internalFormat) {
@@ -1384,12 +1391,12 @@ void * CreateGLTexture2DArrayMultisample(size_t width, size_t height,
 
   if (attachment != GL_DEPTH_ATTACHMENT && attachment != GL_DEPTH_STENCIL_ATTACHMENT) {
     glDisable(GL_DEPTH_TEST);
-  check_gl_error()
+    CHECK_GL_ERROR()
   }
   else {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_ALWAYS);
-    check_gl_error()
+    CHECK_GL_ERROR()
   }
 
   // Setup the VBO for rendering a quad
@@ -1404,18 +1411,18 @@ void * CreateGLTexture2DArrayMultisample(size_t width, size_t height,
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STREAM_DRAW);
-  check_gl_error()
+  CHECK_GL_ERROR()
 
   glVertexArraysWrapper vao;
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat)*2, 0);
-    check_gl_error()
+  CHECK_GL_ERROR()
 
   for (size_t l=0; l!=total_layers; ++l) {
     glFramebufferTextureLayer(GL_FRAMEBUFFER, attachment, tex, 0, l);
-      check_gl_error()
+    CHECK_GL_ERROR()
 
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status == GL_FRAMEBUFFER_UNSUPPORTED) {
@@ -1435,13 +1442,15 @@ void * CreateGLTexture2DArrayMultisample(size_t width, size_t height,
     // Check if the framebuffer supports enough samples
     GLint fbo_samples = 0;
     glGetIntegerv(GL_SAMPLES, &fbo_samples);
-    check_gl_error();
+    CHECK_GL_ERROR();
 
     if (fbo_samples < (GLint)samples)
-      log_error("GL Error: requested samples (%d) exceeds FBO capability (%d)\n", samples, fbo_samples);
+        log_error(
+            "GL Error: requested samples (%zu) exceeds FBO capability (%d)\n",
+            samples, fbo_samples);
 
     glUseProgram(prog);
-    check_gl_error()
+    CHECK_GL_ERROR()
 
     //clearing color and depth buffer
     glClearColor(0, 0, 0, 0);
@@ -1482,13 +1491,13 @@ void * CreateGLTexture2DArrayMultisample(size_t width, size_t height,
       glUniform1f(glGetUniformLocation(prog, "depthVal"), val);
 
       glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-      check_gl_error();
+      CHECK_GL_ERROR();
 
       glFlush();
     }
 
     glDisable(GL_SAMPLE_MASK);
-    check_gl_error();
+    CHECK_GL_ERROR();
   }
 
   *outTextureID = tex;
@@ -1715,7 +1724,7 @@ void * CreateGLRenderbuffer( GLsizei width, GLsizei height,
         // Reverse and reorder to validate since in the
         // kernel the read_imagef() call always returns RGBA
         cl_uchar *p = (cl_uchar *)buffer;
-        for( size_t i = 0; i < (size_t)width * height; i++ )
+        for (GLsizei i = 0; i < width * height; i++)
         {
             cl_uchar uc0 = p[i * 4 + 0];
             cl_uchar uc1 = p[i * 4 + 1];
@@ -1733,7 +1742,7 @@ void * CreateGLRenderbuffer( GLsizei width, GLsizei height,
       // Reverse and reorder to validate since in the
       // kernel the read_imagef() call always returns RGBA
       cl_uchar *p = (cl_uchar *)buffer;
-      for( size_t i = 0; i < width * height; i++ )
+      for (GLsizei i = 0; i < width * height; i++)
       {
         cl_uchar uc0 = p[i * 4 + 0];
         cl_uchar uc1 = p[i * 4 + 1];

@@ -24,14 +24,14 @@
 
 template <class T> class C_host_memory_block {
 public:
-    int num_elements;
+    size_t num_elements;
     int element_size;
     T *pData;
 
     C_host_memory_block();
     ~C_host_memory_block();
-    void Init(int num_elem, T &value);
-    void Init(int num_elem);
+    void Init(size_t num_elem, T &value);
+    void Init(size_t num_elem);
     void Set_to(T &val);
     void Set_to_zero();
     bool Equal_to(T &val);
@@ -40,7 +40,7 @@ public:
     bool Equal_rect(C_host_memory_block<T> &another, size_t *host_origin,
                     size_t *region, size_t host_row_pitch,
                     size_t host_slice_pitch);
-    bool Equal(T *pData, int num_elements);
+    bool Equal(T *pData, size_t num_elements);
 
     bool Equal_rect_from_orig(C_host_memory_block<T> &another, size_t *soffset,
                               size_t *region, size_t host_row_pitch,
@@ -63,20 +63,20 @@ template <class T> C_host_memory_block<T>::~C_host_memory_block()
     num_elements = 0;
 }
 
-template <class T> void C_host_memory_block<T>::Init(int num_elem, T &value)
+template <class T> void C_host_memory_block<T>::Init(size_t num_elem, T &value)
 {
     if (pData != NULL) delete[] pData;
     pData = new T[num_elem];
-    for (int i = 0; i < num_elem; i++) pData[i] = value;
+    for (size_t i = 0; i < num_elem; i++) pData[i] = value;
 
     num_elements = num_elem;
 }
 
-template <class T> void C_host_memory_block<T>::Init(int num_elem)
+template <class T> void C_host_memory_block<T>::Init(size_t num_elem)
 {
     if (pData != NULL) delete[] pData;
     pData = new T[num_elem];
-    for (int i = 0; i < num_elem; i++) pData[i] = (T)i;
+    for (size_t i = 0; i < num_elem; i++) pData[i] = (T)i;
 
     num_elements = num_elem;
 }
@@ -88,14 +88,14 @@ template <class T> void C_host_memory_block<T>::Set_to_zero()
 
 template <class T> void C_host_memory_block<T>::Set_to(T &val)
 {
-    for (int i = 0; i < num_elements; i++) pData[i] = val;
+    for (size_t i = 0; i < num_elements; i++) pData[i] = val;
 }
 
 template <class T> bool C_host_memory_block<T>::Equal_to(T &val)
 {
-    int count = 0;
+    size_t count = 0;
 
-    for (int i = 0; i < num_elements; i++)
+    for (size_t i = 0; i < num_elements; i++)
     {
         if (pData[i] == val) count++;
     }
@@ -106,9 +106,9 @@ template <class T> bool C_host_memory_block<T>::Equal_to(T &val)
 template <class T>
 bool C_host_memory_block<T>::Equal(C_host_memory_block<T> &another)
 {
-    int count = 0;
+    size_t count = 0;
 
-    for (int i = 0; i < num_elements; i++)
+    for (size_t i = 0; i < num_elements; i++)
     {
         if (pData[i] == another.pData[i]) count++;
     }
@@ -117,13 +117,13 @@ bool C_host_memory_block<T>::Equal(C_host_memory_block<T> &another)
 }
 
 template <class T>
-bool C_host_memory_block<T>::Equal(T *pIn_Data, int Innum_elements)
+bool C_host_memory_block<T>::Equal(T *pIn_Data, size_t Innum_elements)
 {
     if (this->num_elements != Innum_elements) return false;
 
-    int count = 0;
+    size_t count = 0;
 
-    for (int i = 0; i < num_elements; i++)
+    for (size_t i = 0; i < num_elements; i++)
     {
         if (pData[i] == pIn_Data[i]) count++;
     }
@@ -134,7 +134,7 @@ bool C_host_memory_block<T>::Equal(T *pIn_Data, int Innum_elements)
 template <class T> size_t C_host_memory_block<T>::Count(T &val)
 {
     size_t count = 0;
-    for (int i = 0; i < num_elements; i++)
+    for (size_t i = 0; i < num_elements; i++)
     {
         if (pData[i] == val) count++;
     }

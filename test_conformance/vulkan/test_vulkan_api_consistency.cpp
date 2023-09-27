@@ -81,10 +81,11 @@ int test_consistency_external_buffer(cl_device_id deviceID, cl_context _context,
     const VulkanMemoryTypeList& memoryTypeList =
         vkDummyBuffer.getMemoryTypeList();
 
-    VulkanDeviceMemory* vkDeviceMem = new VulkanDeviceMemory(
-        vkDevice, bufferSize, memoryTypeList[0], vkExternalMemoryHandleType);
     VulkanBufferList vkBufferList(1, vkDevice, bufferSize,
                                   vkExternalMemoryHandleType);
+    VulkanDeviceMemory* vkDeviceMem =
+        new VulkanDeviceMemory(vkDevice, vkBufferList[0], memoryTypeList[0],
+                               vkExternalMemoryHandleType);
 
     vkDeviceMem->bindBuffer(vkBufferList[0], 0);
 
@@ -231,22 +232,27 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
 
     VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
         getSupportedVulkanExternalMemoryHandleTypeList()[0];
-    VulkanImage2D* vkImage2D =
-        new VulkanImage2D(vkDevice, VULKAN_FORMAT_R8G8B8A8_UNORM, width, height,
-                          1, vkExternalMemoryHandleType);
 
-    const VulkanMemoryTypeList& memoryTypeList = vkImage2D->getMemoryTypeList();
-    uint64_t totalImageMemSize = vkImage2D->getSize();
+    VulkanImageTiling vulkanImageTiling =
+        vkClExternalMemoryHandleTilingAssumption(
+            deviceID, vkExternalMemoryHandleType, &errNum);
+    ASSERT_SUCCESS(errNum, "Failed to query OpenCL tiling mode");
+
+    VulkanImage2D vkImage2D =
+        VulkanImage2D(vkDevice, VULKAN_FORMAT_R8G8B8A8_UNORM, width, height,
+                      vulkanImageTiling, 1, vkExternalMemoryHandleType);
+
+    const VulkanMemoryTypeList& memoryTypeList = vkImage2D.getMemoryTypeList();
+    uint64_t totalImageMemSize = vkImage2D.getSize();
 
     log_info("Memory type index: %lu\n", (uint32_t)memoryTypeList[0]);
     log_info("Memory type property: %d\n",
              memoryTypeList[0].getMemoryTypeProperty());
     log_info("Image size : %d\n", totalImageMemSize);
 
-    VulkanDeviceMemory* vkDeviceMem =
-        new VulkanDeviceMemory(vkDevice, totalImageMemSize, memoryTypeList[0],
-                               vkExternalMemoryHandleType);
-    vkDeviceMem->bindImage(*vkImage2D, 0);
+    VulkanDeviceMemory* vkDeviceMem = new VulkanDeviceMemory(
+        vkDevice, vkImage2D, memoryTypeList[0], vkExternalMemoryHandleType);
+    vkDeviceMem->bindImage(vkImage2D, 0);
 
     void* handle = NULL;
     int fd;
@@ -299,7 +305,7 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
     extMemProperties.push_back(0);
 
     const VkImageCreateInfo VulkanImageCreateInfo =
-        vkImage2D->getVkImageCreateInfo();
+        vkImage2D.getVkImageCreateInfo();
 
     errNum = getCLImageInfoFromVkImageInfo(
         &VulkanImageCreateInfo, totalImageMemSize, &img_format, &image_desc);

@@ -1185,7 +1185,7 @@ int test_min_max_image_buffer_size(cl_device_id deviceID, cl_context context,
 int test_min_max_parameter_size(cl_device_id deviceID, cl_context context,
                                 cl_command_queue queue, int num_elements)
 {
-    int error, retVal, i;
+    int error, i;
     size_t maxSize;
     char *programSrc;
     char *ptr;
@@ -1320,8 +1320,6 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context,
         }
 
         /* Try to set a large argument to the kernel */
-        retVal = 0;
-
         mem = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_long), NULL,
                              &error);
         test_error(error, "clCreateBuffer failed");
@@ -2292,7 +2290,7 @@ int test_min_max_device_version(cl_device_id deviceID, cl_context context,
     {
         log_info("Checking for required extensions for OpenCL 1.1 and later "
                  "devices...\n");
-        for (int i = 0; i < ARRAY_SIZE(requiredExtensions11); i++)
+        for (size_t i = 0; i < ARRAY_SIZE(requiredExtensions11); i++)
         {
             if (!is_extension_available(deviceID, requiredExtensions11[i]))
             {
@@ -2337,7 +2335,7 @@ int test_min_max_device_version(cl_device_id deviceID, cl_context context,
         {
             log_info("Checking for required extensions for OpenCL 2.0, 2.1 and "
                      "2.2 devices...\n");
-            for (int i = 0; i < ARRAY_SIZE(requiredExtensions2x); i++)
+            for (size_t i = 0; i < ARRAY_SIZE(requiredExtensions2x); i++)
             {
                 if (!is_extension_available(deviceID, requiredExtensions2x[i]))
                 {

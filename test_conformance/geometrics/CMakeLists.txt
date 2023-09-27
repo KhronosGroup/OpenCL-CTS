@@ -6,5 +6,7 @@ set(${MODULE_NAME}_SOURCES
     test_geometrics.cpp
 )
 
+set_gnulike_module_compile_flags("-Wno-sign-compare")
+
 include(../CMakeCommon.txt)
 

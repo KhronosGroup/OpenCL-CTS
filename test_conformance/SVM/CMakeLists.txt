@@ -17,4 +17,6 @@ set(${MODULE_NAME}_SOURCES
     test_migrate.cpp
 )
 
+set_gnulike_module_compile_flags("-Wno-sometimes-uninitialized -Wno-sign-compare")
+
 include(../CMakeCommon.txt)

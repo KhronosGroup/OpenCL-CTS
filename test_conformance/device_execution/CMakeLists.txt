@@ -17,6 +17,6 @@ set(DEVICE_EXECUTION_SOURCES
     utils.cpp
 )
 
-include(../CMakeCommon.txt)
+set_gnulike_module_compile_flags("-Wno-sign-compare")
 
-# end of file #
+include(../CMakeCommon.txt)

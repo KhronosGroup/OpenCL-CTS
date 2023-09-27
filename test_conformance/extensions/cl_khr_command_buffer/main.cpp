@@ -22,6 +22,11 @@ test_definition test_list[] = {
     ADD_TEST(explicit_flush),
     ADD_TEST(out_of_order),
     ADD_TEST(simultaneous_out_of_order),
+    ADD_TEST(info_queues),
+    ADD_TEST(info_ref_count),
+    ADD_TEST(info_state),
+    ADD_TEST(info_prop_array),
+    ADD_TEST(info_context),
     ADD_TEST(basic_profiling),
     ADD_TEST(simultaneous_profiling),
     ADD_TEST(regular_wait_for_command_buffer),
@@ -46,13 +51,17 @@ test_definition test_list[] = {
     ADD_TEST(copy_image_to_buffer),
     ADD_TEST(copy_buffer_rect),
     ADD_TEST(barrier_wait_list),
+    ADD_TEST(basic_printf),
+    ADD_TEST(simultaneous_printf),
     ADD_TEST(basic_set_kernel_arg),
     ADD_TEST(pending_set_kernel_arg),
     ADD_TEST(event_info_command_type),
     ADD_TEST(event_info_command_queue),
     ADD_TEST(event_info_execution_status),
     ADD_TEST(event_info_context),
-    ADD_TEST(event_info_reference_count)
+    ADD_TEST(event_info_reference_count),
+    ADD_TEST(finalize_invalid),
+    ADD_TEST(finalize_empty)
 };
 
 int main(int argc, const char *argv[])

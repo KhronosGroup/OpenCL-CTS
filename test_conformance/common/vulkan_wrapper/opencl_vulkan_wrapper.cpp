@@ -19,7 +19,7 @@
 #include "harness/errorHelpers.h"
 #include "harness/deviceInfo.h"
 #include <assert.h>
-#include <iostream>
+#include <algorithm>
 #include <stdexcept>
 
 #define ASSERT(x) assert((x))
@@ -740,21 +740,42 @@ clExternalSemaphore::clExternalSemaphore(
     cl_int err = 0;
     cl_device_id devList[] = { deviceId, NULL };
 
-#ifdef _WIN32
-    if (!is_extension_available(devList[0], "cl_khr_external_semaphore_win32"))
+    switch (externalSemaphoreHandleType)
     {
-        throw std::runtime_error("Device does not support "
-                                 "cl_khr_external_semaphore_win32 extension\n");
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD:
+            if (!is_extension_available(devList[0],
+                                        "cl_khr_external_semaphore_opaque_fd"))
+            {
+                throw std::runtime_error("Device does not support "
+                                         "cl_khr_external_semaphore_opaque_fd "
+                                         "extension \n");
+            }
+            break;
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT:
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT:
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT_KMT:
+            if (!is_extension_available(devList[0],
+                                        "cl_khr_external_semaphore_win32"))
+            {
+                throw std::runtime_error(
+                    "Device does not support "
+                    "cl_khr_external_semaphore_win32 extension\n");
+            }
+            break;
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD:
+            if (!is_extension_available(devList[0],
+                                        "cl_khr_external_semaphore_sync_fd"))
+            {
+                throw std::runtime_error(
+                    "Device does not support cl_khr_external_semaphore_sync_fd "
+                    "extension \n");
+            }
+            break;
+        default:
+            throw std::runtime_error(
+                "Unsupported external semaphore handle type\n");
+            break;
     }
-#elif !defined(__APPLE__)
-    if (!is_extension_available(devList[0],
-                                "cl_khr_external_semaphore_opaque_fd"))
-    {
-        throw std::runtime_error(
-            "Device does not support cl_khr_external_semaphore_opaque_fd "
-            "extension \n");
-    }
-#endif
 
     std::vector<cl_semaphore_properties_khr> sema_props{
         (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
@@ -802,6 +823,16 @@ clExternalSemaphore::clExternalSemaphore(
                                      CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)handle);
 #endif
+            break;
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD:
+            err = check_external_semaphore_handle_type(
+                devList[0], CL_SEMAPHORE_HANDLE_SYNC_FD_KHR);
+            sema_props.push_back(static_cast<cl_semaphore_properties_khr>(
+                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR));
+            sema_props.push_back(static_cast<cl_semaphore_properties_khr>(
+                CL_SEMAPHORE_HANDLE_SYNC_FD_KHR));
+            sema_props.push_back(static_cast<cl_semaphore_properties_khr>(
+                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR));
             break;
         default:
             ASSERT(0);
@@ -855,4 +886,68 @@ void clExternalSemaphore::wait(cl_command_queue cmd_queue)
 cl_semaphore_khr &clExternalSemaphore::getCLSemaphore()
 {
     return m_externalSemaphore;
+}
+
+cl_external_memory_handle_type_khr vkToOpenCLExternalMemoryHandleType(
+    VulkanExternalMemoryHandleType vkExternalMemoryHandleType)
+{
+    switch (vkExternalMemoryHandleType)
+    {
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
+            return CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR;
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
+            return CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR;
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_KMT:
+            return CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR;
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE: return 0;
+    }
+    return 0;
+}
+
+VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
+    cl_device_id deviceId,
+    VulkanExternalMemoryHandleType vkExternalMemoryHandleType, int *error_ret)
+{
+    size_t size = 0;
+    VulkanImageTiling mode = VULKAN_IMAGE_TILING_OPTIMAL;
+
+    assert(error_ret
+           != nullptr); // errcode_ret is not optional, it must be checked
+
+    *error_ret = clGetDeviceInfo(
+        deviceId,
+        CL_DEVICE_EXTERNAL_MEMORY_IMPORT_ASSUME_LINEAR_IMAGES_HANDLE_TYPES_KHR,
+        0, nullptr, &size);
+    if (*error_ret != CL_SUCCESS)
+    {
+        return mode;
+    }
+
+    if (size == 0)
+    {
+        return mode;
+    }
+
+    std::vector<cl_external_memory_handle_type_khr> assume_linear_types(
+        size / sizeof(cl_external_memory_handle_type_khr));
+
+    *error_ret = clGetDeviceInfo(
+        deviceId,
+        CL_DEVICE_EXTERNAL_MEMORY_IMPORT_ASSUME_LINEAR_IMAGES_HANDLE_TYPES_KHR,
+        size, assume_linear_types.data(), nullptr);
+    if (*error_ret != CL_SUCCESS)
+    {
+        return mode;
+    }
+
+    if (std::find(
+            assume_linear_types.begin(), assume_linear_types.end(),
+            vkToOpenCLExternalMemoryHandleType(vkExternalMemoryHandleType))
+        != assume_linear_types.end())
+    {
+        mode = VULKAN_IMAGE_TILING_LINEAR;
+    }
+
+    return mode;
 }

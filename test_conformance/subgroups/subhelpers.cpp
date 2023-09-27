@@ -206,7 +206,7 @@ void set_last_workgroup_params(int non_uniform_size, int &number_of_subgroups,
 }
 
 void fill_and_shuffle_safe_values(std::vector<cl_ulong> &safe_values,
-                                  int sb_size)
+                                  size_t sb_size)
 {
     // max product is 720, cl_half has enough precision for it
     const std::vector<cl_ulong> non_one_values{ 2, 3, 4, 5, 6 };
