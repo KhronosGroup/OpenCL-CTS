@@ -672,7 +672,8 @@ CLEANUP:
 
 int run_test_with_multi_import_same_ctx(cl_context &context, cl_command_queue &cmd_queue1, cl_kernel *kernel,
                                         cl_kernel &verify_kernel, VulkanDevice &vkDevice, uint32_t numBuffers,
-                                        uint32_t bufferSize, bool use_fence)
+                                        uint32_t bufferSize, bool use_fence,
+                                        VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType)
 {
     size_t global_work_size[1];
     uint8_t *error_2;
@@ -687,8 +688,6 @@ int run_test_with_multi_import_same_ctx(cl_context &context, cl_command_queue &c
     const std::vector<VulkanExternalMemoryHandleType>
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
-    VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-            getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice)[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     std::shared_ptr<VulkanFence> fence = nullptr;
@@ -996,7 +995,8 @@ CLEANUP:
 int run_test_with_multi_import_diff_ctx(cl_context &context, cl_context &context2, cl_command_queue &cmd_queue1,
                                         cl_command_queue &cmd_queue2, cl_kernel *kernel1, cl_kernel *kernel2,
                                         cl_kernel &verify_kernel, cl_kernel verify_kernel2, VulkanDevice &vkDevice,
-                                        uint32_t numBuffers, uint32_t bufferSize, bool use_fence)
+                                        uint32_t numBuffers, uint32_t bufferSize, bool use_fence,
+                                        VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType)
 {
     size_t global_work_size[1];
     uint8_t *error_3;
@@ -1017,8 +1017,6 @@ int run_test_with_multi_import_diff_ctx(cl_context &context, cl_context &context
     const std::vector<VulkanExternalMemoryHandleType>
         vkExternalMemoryHandleTypeList =
             getSupportedVulkanExternalMemoryHandleTypeList();
-    VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-            getSupportedVulkanExternalSemaphoreHandleTypeList(vkDevice)[0];
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     std::shared_ptr<VulkanFence> fence = nullptr;
@@ -1671,12 +1669,12 @@ int test_buffer_common(cl_device_id device_, cl_context context_,
                 if (multiImport && !multiCtx) {
                     errNum = run_test_with_multi_import_same_ctx(
                             context, cmd_queue1, kernel, verify_kernel, vkDevice,
-                            numBuffers, bufferSize, use_fence);
+                            numBuffers, bufferSize, use_fence, semaphoreType);
                 } else if (multiImport && multiCtx) {
                     errNum = run_test_with_multi_import_diff_ctx(
                             context, context2, cmd_queue1, cmd_queue3, kernel, kernel2,
                             verify_kernel, verify_kernel2, vkDevice, numBuffers,
-                            bufferSize, use_fence);
+                            bufferSize, use_fence, semaphoreType);
                 } else if (numCQ == 2) {
                     errNum = run_test_with_two_queue(
                             context, cmd_queue1, cmd_queue2, kernel, verify_kernel,
