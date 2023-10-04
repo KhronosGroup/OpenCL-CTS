@@ -51,12 +51,6 @@ bool BasicSVMCommandBufferTest::Skip()
         log_error("Unable to initialise extension functions");
         return true;
     }
-    if (clCommandSVMMemcpyKHR == nullptr || clCommandSVMMemFillKHR == nullptr)
-    {
-        log_info("Platform does not support clCommandSVMMemcpyKHR or "
-                 "clCommandSVMMemFillKHR\n");
-        return true;
-    }
 
     return false;
 }
@@ -85,11 +79,12 @@ cl_int BasicSVMCommandBufferTest::SetUpKernelArgs(void)
 
 cl_int BasicSVMCommandBufferTest::init_extension_functions()
 {
-    BasicCommandBufferTest::init_extension_functions();
+    cl_int error = BasicCommandBufferTest::init_extension_functions();
+    test_error(error, "Unable to initialise extension functions");
 
     cl_platform_id platform;
-    cl_int error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
-                                   sizeof(cl_platform_id), &platform, nullptr);
+    error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
+                            &platform, nullptr);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
 
     GET_EXTENSION_ADDRESS(clCommandSVMMemFillKHR);

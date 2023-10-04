@@ -179,8 +179,8 @@ struct FillSVMBufferKHR : public BasicSVMCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandSVMMemFillKHR(
-            command_buffer, nullptr, svm_in_mem(), &pattern_1,
-            sizeof(cl_char), data_size(), 0, nullptr, nullptr, nullptr);
+            command_buffer, nullptr, svm_in_mem(), &pattern_1, sizeof(cl_char),
+            data_size(), 0, nullptr, nullptr, nullptr);
         test_error(error, "clCommandSVMMemFillKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);
