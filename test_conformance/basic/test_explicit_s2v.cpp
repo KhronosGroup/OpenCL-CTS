@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <cmath>
+#define isnan std::isnan
 #include "harness/compat.h"
 
 #include <stdio.h>
@@ -98,16 +100,6 @@ const char * kernel_explicit_s2v_set[NUM_VEC_TYPES][NUM_VEC_TYPES][5] = {
 
 // clang-format on
 
-int IsFloatNaN(double x)
-{
-    union {
-        cl_float d;
-        cl_uint u;
-    } u;
-    u.d = (cl_float)x;
-    return ((u.u & 0x7fffffffU) > 0x7F800000U);
-}
-
 bool IsHalfNaN(cl_half v)
 {
     // Extract FP16 exponent and mantissa
@@ -179,10 +171,14 @@ int test_explicit_s2v_function(cl_context context, cl_command_queue queue,
         {
             if( memcmp( convertedData, outPtr + destTypeSize * s, destTypeSize ) != 0 )
             {
-                if ((srcType == kHalf) && (destType == kFloat)
-                    && IsHalfNaN(*reinterpret_cast<cl_half *>(inPtr))
-                    && IsFloatNaN(*reinterpret_cast<cl_float *>(
-                        outPtr + destTypeSize * s)))
+                bool isSrcNaN = (((srcType == kHalf) && IsHalfNaN(*reinterpret_cast<cl_half *>(inPtr)))
+                                 || ((srcType == kFloat) && isnan(*reinterpret_cast<cl_float *>(inPtr)))
+                                 || ((srcType == kDouble) && isnan(*reinterpret_cast<cl_double *>(inPtr))));
+                bool isDestNaN = (((destType == kHalf) && IsHalfNaN(*reinterpret_cast<cl_half *>(outPtr + destTypeSize * s)))
+                                  || ((destType == kFloat) && isnan(*reinterpret_cast<cl_float *>(outPtr + destTypeSize * s)))
+                                  || ((destType == kDouble) && isnan(*reinterpret_cast<cl_double *>(outPtr + destTypeSize * s))));
+
+                if (isSrcNaN && isDestNaN)
                 {
                     continue;
                 }
