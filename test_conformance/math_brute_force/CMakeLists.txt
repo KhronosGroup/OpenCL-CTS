@@ -43,10 +43,8 @@ set(${MODULE_NAME}_SOURCES
 
 # math_brute_force compiles cleanly with -Wall (except for a few remaining
 # warnings), but other tests not (yet); so enable -Wall locally.
-set_gnulike_module_compile_flags("-Wall -Wno-strict-aliasing -Wno-unknown-pragmas")
-if(${CLConform_TARGET_ARCH} STREQUAL "ARM64")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffp-contract=off")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffp-contract=off")
-endif()
+set_gnulike_module_compile_flags("-Wall -Wno-strict-aliasing -Wno-unknown-pragmasi -ffp-contract=off")
+
+add_cxx_flag_if_supported("-ffp-contract=off")
 
 include(../CMakeCommon.txt)
