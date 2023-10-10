@@ -34,6 +34,18 @@
         }                                                                      \
     }
 
+// If it is supported get the addresses of all the APIs here.
+#define GET_EXTENSION_ADDRESS(FUNC)                                            \
+    FUNC = reinterpret_cast<FUNC##_fn>(                                        \
+        clGetExtensionFunctionAddressForPlatform(platform, #FUNC));            \
+    if (FUNC == nullptr)                                                       \
+    {                                                                          \
+        log_error("ERROR: clGetExtensionFunctionAddressForPlatform failed"     \
+                  " with " #FUNC "\n");                                        \
+        return TEST_FAIL;                                                      \
+    }
+
+
 // Helper test fixture for constructing OpenCL objects used in testing
 // a variety of simple command-buffer enqueue scenarios.
 struct BasicCommandBufferTest : CommandBufferTestBase
@@ -69,6 +81,7 @@ protected:
     unsigned buffer_size_multiplier;
     clCommandBufferWrapper command_buffer;
 };
+
 
 template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,
