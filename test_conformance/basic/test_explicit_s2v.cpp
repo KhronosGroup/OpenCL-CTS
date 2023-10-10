@@ -14,7 +14,8 @@
 // limitations under the License.
 //
 #include <cmath>
-#define isnan std::isnan
+using std::isnan;
+#define isnan isnan
 #include "harness/compat.h"
 
 #include <stdio.h>
