@@ -5,13 +5,6 @@
 #include <thread>
 #include <chrono>
 
-#if !defined(CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR)
-#pragma message(                                                               \
-    "Using old CL_DEVICE_HANDLE_LIST_KHR enum for external semaphores, please update your headers!")
-#define CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR CL_DEVICE_HANDLE_LIST_KHR
-#define CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR CL_DEVICE_HANDLE_LIST_END_KHR
-#endif
-
 #define FLUSH_DELAY_S 5
 
 #define SEMAPHORE_PARAM_TEST(param_name, param_type, expected)                 \

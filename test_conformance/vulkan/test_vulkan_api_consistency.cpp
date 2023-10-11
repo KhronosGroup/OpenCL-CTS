@@ -33,19 +33,6 @@
 #include "harness/typeWrappers.h"
 #include "harness/deviceInfo.h"
 
-#if !defined(CL_MEM_DEVICE_HANDLE_LIST_KHR)
-#pragma message(                                                               \
-    "Using old CL_DEVICE_HANDLE_LIST_KHR enum for external memory, please update your headers!")
-#define CL_MEM_DEVICE_HANDLE_LIST_KHR CL_DEVICE_HANDLE_LIST_KHR
-#define CL_MEM_DEVICE_HANDLE_LIST_END_KHR CL_DEVICE_HANDLE_LIST_END_KHR
-#endif
-#if !defined(CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR)
-#pragma message(                                                               \
-    "Using old CL_DEVICE_HANDLE_LIST_KHR enum for external semaphores, please update your headers!")
-#define CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR CL_DEVICE_HANDLE_LIST_KHR
-#define CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR CL_DEVICE_HANDLE_LIST_END_KHR
-#endif
-
 int test_consistency_external_buffer(cl_device_id deviceID, cl_context _context,
                                      cl_command_queue _queue, int num_elements)
 {
