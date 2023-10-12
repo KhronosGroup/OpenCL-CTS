@@ -172,12 +172,22 @@ int test_explicit_s2v_function(cl_context context, cl_command_queue queue,
         {
             if( memcmp( convertedData, outPtr + destTypeSize * s, destTypeSize ) != 0 )
             {
-                bool isSrcNaN = (((srcType == kHalf) && IsHalfNaN(*reinterpret_cast<cl_half *>(inPtr)))
-                                 || ((srcType == kFloat) && isnan(*reinterpret_cast<cl_float *>(inPtr)))
-                                 || ((srcType == kDouble) && isnan(*reinterpret_cast<cl_double *>(inPtr))));
-                bool isDestNaN = (((destType == kHalf) && IsHalfNaN(*reinterpret_cast<cl_half *>(outPtr + destTypeSize * s)))
-                                  || ((destType == kFloat) && isnan(*reinterpret_cast<cl_float *>(outPtr + destTypeSize * s)))
-                                  || ((destType == kDouble) && isnan(*reinterpret_cast<cl_double *>(outPtr + destTypeSize * s))));
+                bool isSrcNaN =
+                    (((srcType == kHalf)
+                      && IsHalfNaN(*reinterpret_cast<cl_half *>(inPtr)))
+                     || ((srcType == kFloat)
+                         && isnan(*reinterpret_cast<cl_float *>(inPtr)))
+                     || ((srcType == kDouble)
+                         && isnan(*reinterpret_cast<cl_double *>(inPtr))));
+                bool isDestNaN = (((destType == kHalf)
+                                   && IsHalfNaN(*reinterpret_cast<cl_half *>(
+                                       outPtr + destTypeSize * s)))
+                                  || ((destType == kFloat)
+                                      && isnan(*reinterpret_cast<cl_float *>(
+                                          outPtr + destTypeSize * s)))
+                                  || ((destType == kDouble)
+                                      && isnan(*reinterpret_cast<cl_double *>(
+                                          outPtr + destTypeSize * s))));
 
                 if (isSrcNaN && isDestNaN)
                 {
