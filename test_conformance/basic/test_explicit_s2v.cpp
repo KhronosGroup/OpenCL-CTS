@@ -15,7 +15,6 @@
 //
 #include <cmath>
 using std::isnan;
-#define isnan isnan
 #include "harness/compat.h"
 
 #include <stdio.h>
