@@ -31,12 +31,6 @@ int test_get_image_info_1D_buffer(cl_device_id device, cl_context context,
     RandomSeed seed(gRandomSeed);
     size_t pixelSize;
 
-    cl_mem_flags all_host_ptr_flags[5] = { flags, CL_MEM_ALLOC_HOST_PTR | flags,
-                                           CL_MEM_COPY_HOST_PTR | flags,
-                                           CL_MEM_ALLOC_HOST_PTR
-                                               | CL_MEM_COPY_HOST_PTR | flags,
-                                           CL_MEM_USE_HOST_PTR | flags };
-
     memset(&imageInfo, 0x0, sizeof(image_descriptor));
     imageInfo.type = CL_MEM_OBJECT_IMAGE1D_BUFFER;
     imageInfo.format = format;
@@ -61,26 +55,13 @@ int test_get_image_info_1D_buffer(cl_device_id device, cl_context context,
         for (imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++)
         {
             imageInfo.rowPitch = imageInfo.width * pixelSize;
-            for (unsigned int j = 0;
-                 j < sizeof(all_host_ptr_flags) / sizeof(cl_mem_flags); j++)
-            {
-                if (gDebugTrace)
-                    log_info("   at size %d (flags[%u] 0x%x pitch %d)\n",
-                             (int)imageInfo.width, j,
-                             (unsigned int)all_host_ptr_flags[j],
-                             (int)imageInfo.rowPitch);
-                if (test_get_image_info_single(context, &imageInfo, seed,
-                                               all_host_ptr_flags[j], 0, 0))
-                    return -1;
-                if (all_host_ptr_flags[j]
-                    & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR))
-                { // skip test when host_ptr is NULL
-                    if (test_get_image_info_single(context, &imageInfo, seed,
-                                                   all_host_ptr_flags[j],
-                                                   imageInfo.rowPitch, 0))
-                        return -1;
-                }
-            }
+            if (gDebugTrace)
+                log_info("   at size %d (flags 0x%x pitch %d)\n",
+                         (int)imageInfo.width, (unsigned int)flags,
+                         (int)imageInfo.rowPitch);
+            if (test_get_image_info_single(context, &imageInfo, seed, flags, 0,
+                                           0))
+                return -1;
         }
     }
     else if (gTestMaxImages)
@@ -98,26 +79,13 @@ int test_get_image_info_1D_buffer(cl_device_id device, cl_context context,
             imageInfo.width = sizes[idx][0];
             imageInfo.rowPitch = imageInfo.width * pixelSize;
             log_info("Testing %d x 1\n", (int)sizes[idx][0]);
-            for (unsigned int j = 0;
-                 j < sizeof(all_host_ptr_flags) / sizeof(cl_mem_flags); j++)
-            {
-                if (gDebugTrace)
-                    log_info("   at max size %d (flags[%u] 0x%x pitch %d)\n",
-                             (int)imageInfo.width, j,
-                             (unsigned int)all_host_ptr_flags[j],
-                             (int)imageInfo.rowPitch);
-                if (test_get_image_info_single(context, &imageInfo, seed,
-                                               all_host_ptr_flags[j], 0, 0))
-                    return -1;
-                if (all_host_ptr_flags[j]
-                    & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR))
-                { // skip test when host_ptr is NULL
-                    if (test_get_image_info_single(context, &imageInfo, seed,
-                                                   all_host_ptr_flags[j],
-                                                   imageInfo.rowPitch, 0))
-                        return -1;
-                }
-            }
+            if (gDebugTrace)
+                log_info("   at max size %d (flags 0x%x pitch %d)\n",
+                         (int)imageInfo.width, (unsigned int)flags,
+                         (int)imageInfo.rowPitch);
+            if (test_get_image_info_single(context, &imageInfo, seed, flags, 0,
+                                           0))
+                return -1;
         }
     }
     else
@@ -146,27 +114,13 @@ int test_get_image_info_1D_buffer(cl_device_id device, cl_context context,
                 size = (cl_ulong)imageInfo.rowPitch * 4;
             } while (size > maxAllocSize || (size * 3) > memSize);
 
-            for (unsigned int j = 0;
-                 j < sizeof(all_host_ptr_flags) / sizeof(cl_mem_flags); j++)
-            {
-                if (gDebugTrace)
-                    log_info(
-                        "   at size %d (flags[%u] 0x%x pitch %d) out of %d\n",
-                        (int)imageInfo.width, j,
-                        (unsigned int)all_host_ptr_flags[j],
-                        (int)imageInfo.rowPitch, (int)maxWidth);
-                if (test_get_image_info_single(context, &imageInfo, seed,
-                                               all_host_ptr_flags[j], 0, 0))
-                    return -1;
-                if (all_host_ptr_flags[j]
-                    & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR))
-                { // skip test when host_ptr is NULL
-                    if (test_get_image_info_single(context, &imageInfo, seed,
-                                                   all_host_ptr_flags[j],
-                                                   imageInfo.rowPitch, 0))
-                        return -1;
-                }
-            }
+            if (gDebugTrace)
+                log_info("   at size %d (flags 0x%x pitch %d) out of %d\n",
+                         (int)imageInfo.width, (unsigned int)flags,
+                         (int)imageInfo.rowPitch, (int)maxWidth);
+            if (test_get_image_info_single(context, &imageInfo, seed, flags, 0,
+                                           0))
+                return -1;
         }
     }
 
