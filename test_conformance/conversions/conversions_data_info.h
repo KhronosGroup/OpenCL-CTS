@@ -402,7 +402,11 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
             }
             else
             {
+#if defined(_M_X64)
                 _mm_store_sd(&result, _mm_cvtsi64_sd(_mm_setzero_pd(), l));
+#else
+                result = l;
+#endif
                 ((double *)out)[0] =
                     (l == 0 ? 0.0 : result); // Per IEEE-754-2008 5.4.1, 0's
                                              // always convert to +0.0
