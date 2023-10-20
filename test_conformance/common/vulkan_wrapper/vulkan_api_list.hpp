@@ -193,9 +193,8 @@
     _vkEnumerateDeviceExtensionProperties
 #define vkGetPhysicalDeviceSurfaceSupportKHR                                   \
     _vkGetPhysicalDeviceSurfaceSupportKHR
-#define vkImportSemaphoreFdKHR                                                 \
-    _vkImportSemaphoreFdKHR
-#define vkGetPhysicalDeviceExternalSemaphorePropertiesKHR \
+#define vkImportSemaphoreFdKHR _vkImportSemaphoreFdKHR
+#define vkGetPhysicalDeviceExternalSemaphorePropertiesKHR                      \
     _vkGetPhysicalDeviceExternalSemaphorePropertiesKHR
 #define vkGetMemoryWin32HandleKHR _vkGetMemoryWin32HandleKHR
 #define vkGetSemaphoreWin32HandleKHR _vkGetSemaphoreWin32HandleKHR
