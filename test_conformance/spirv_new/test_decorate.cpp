@@ -27,8 +27,6 @@ int gDeviceILogb0 = 1;
 int gDeviceILogbNaN = 1;
 int gCheckTininessBeforeRounding = 1;
 
-static int inline is_half_nan(cl_half half) { return (half & 0x7fff) > 0x7c00; }
-
 static int verify_results(cl_device_id deviceID,
                           cl_context context,
                           cl_command_queue queue,
