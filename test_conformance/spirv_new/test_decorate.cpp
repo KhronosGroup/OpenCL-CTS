@@ -42,7 +42,8 @@ static int verify_results(cl_device_id deviceID,
     cl_int err = 0;
 
     RandomSeed seed(gRandomSeed);
-    for (int i = 0; i < num; i++) {
+    for (int i = 0; i < num; i++)
+    {
         h_lhs[i] = genrand<cl_int>(seed);
         h_rhs[i] = genrand<cl_int>(seed);
     }
@@ -84,8 +85,10 @@ static int verify_results(cl_device_id deviceID,
     err = clEnqueueReadBuffer(queue, res, CL_TRUE, 0, bytes, &h_res[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read to output");
 
-    for (int i = 0; i < num; i++) {
-        if (h_res[i] != (h_lhs[i] + h_rhs[i])) {
+    for (int i = 0; i < num; i++)
+    {
+        if (h_res[i] != (h_lhs[i] + h_rhs[i]))
+        {
             log_error("Values do not match at location %d\n", i);
             return -1;
         }
@@ -130,12 +133,10 @@ TEST_SPIRV_FUNC(decorate_constant)
 
 TEST_SPIRV_FUNC(decorate_cpacked)
 {
-    PACKED(
-        struct packed_struct_t {
-            cl_int ival;
-            cl_char cval;
-        }
-        );
+    PACKED(struct packed_struct_t {
+        cl_int ival;
+        cl_char cval;
+    });
 
     typedef struct packed_struct_t packed_t;
 
@@ -164,9 +165,10 @@ TEST_SPIRV_FUNC(decorate_cpacked)
     err = clEnqueueReadBuffer(queue, res, CL_TRUE, 0, bytes, &h_res[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read to output");
 
-    for (int i = 0; i < num; i++) {
-        if (h_res[i].ival != 2100483600 ||
-            h_res[i].cval != 127) {
+    for (int i = 0; i < num; i++)
+    {
+        if (h_res[i].ival != 2100483600 || h_res[i].cval != 127)
+        {
             log_error("Values do not match at location %d\n", i);
             return -1;
         }
@@ -175,8 +177,8 @@ TEST_SPIRV_FUNC(decorate_cpacked)
     return 0;
 }
 
-template<typename Ti, typename Tl, typename To>
-static inline Ti generate_saturated_lhs_input(RandomSeed& seed)
+template <typename Ti, typename Tl, typename To>
+static inline Ti generate_saturated_lhs_input(RandomSeed &seed)
 {
     constexpr auto loVal = std::numeric_limits<To>::min();
     constexpr auto hiVal = std::numeric_limits<To>::max();
@@ -190,8 +192,8 @@ static inline Ti generate_saturated_lhs_input(RandomSeed& seed)
     return genrand<Ti>(seed) * range;
 }
 
-template<typename Ti, typename Tl, typename To>
-static inline Ti generate_saturated_rhs_input(RandomSeed& seed)
+template <typename Ti, typename Tl, typename To>
+static inline Ti generate_saturated_rhs_input(RandomSeed &seed)
 {
     constexpr auto hiVal = std::numeric_limits<To>::max();
 
@@ -212,7 +214,7 @@ static inline Ti generate_saturated_rhs_input(RandomSeed& seed)
     return val;
 }
 
-template<typename Ti, typename Tl, typename To>
+template <typename Ti, typename Tl, typename To>
 static inline To compute_saturated_output(Ti lhs, Ti rhs)
 {
     constexpr auto loVal = std::numeric_limits<To>::min();
@@ -243,11 +245,9 @@ static inline To compute_saturated_output(Ti lhs, Ti rhs)
     return val;
 }
 
-template<typename Ti, typename Tl, typename To>
-int verify_saturated_results(cl_device_id deviceID,
-                             cl_context context,
-                             cl_command_queue queue,
-                             const char *kname,
+template <typename Ti, typename Tl, typename To>
+int verify_saturated_results(cl_device_id deviceID, cl_context context,
+                             cl_command_queue queue, const char *kname,
                              const clProgramWrapper &prog)
 {
     cl_int err = 0;
@@ -306,7 +306,8 @@ int verify_saturated_results(cl_device_id deviceID,
     {
         To val = compute_saturated_output<Ti, Tl, To>(h_lhs[i], h_rhs[i]);
 
-        if (val != h_res[i]) {
+        if (val != h_res[i])
+        {
             log_error("Value error at %d: got %d, want %d\n", i, val, h_res[i]);
             return -1;
         }
@@ -347,7 +348,8 @@ int test_saturate_full(cl_device_id deviceID,
     cl_int err = 0;
     err = get_program_with_il(prog, deviceID, context, name);
     SPIRV_CHECK_ERROR(err, "Failed to build program");
-    return verify_saturated_results<Ti, Tl, To>(deviceID, context, queue, name, prog);
+    return verify_saturated_results<Ti, Tl, To>(deviceID, context, queue, name,
+                                                prog);
 }
 
 #define TEST_SATURATED_CONVERSION(Ti, Tl, To)                                  \
@@ -432,9 +434,12 @@ int test_fp_rounding(cl_device_id deviceID,
     err = clEnqueueReadBuffer(queue, out, CL_TRUE, 0, out_bytes, &h_res[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read from output");
 
-    for (int i = 0; i < num; i++) {
-        if (h_res[i] != h_out[i]) {
-            log_error("Values do not match at location %d. Original :%lf, Expected: %ld, Found %ld\n",
+    for (int i = 0; i < num; i++)
+    {
+        if (h_res[i] != h_out[i])
+        {
+            log_error("Values do not match at location %d. Original :%lf, "
+                      "Expected: %ld, Found %ld\n",
                       i, h_in[i], h_out[i], h_res[i]);
             return -1;
         }
@@ -482,7 +487,8 @@ static inline Ti generate_fprounding_input(RandomSeed &seed)
     constexpr auto minVal = std::numeric_limits<To>::min() / 2;
     constexpr auto maxVal = std::numeric_limits<To>::max() / 2;
 
-    if (std::is_same<cl_half, Ti>::value) {
+    if (std::is_same<cl_half, Ti>::value)
+    {
         cl_float f = genrandReal_range<cl_float>(minVal, maxVal, seed);
         return cl_half_from_float(f, CL_HALF_RTE);
     }
