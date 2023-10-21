@@ -226,7 +226,7 @@ static inline To compute_saturated_output(Ti lhs, Ti rhs)
         f = cl_half_to_float(cl_half_from_float(f, CL_HALF_RTE));
 
         To val = (To)std::min<float>(std::max<float>(f, loVal), hiVal);
-        if (std::isnan(cl_half_from_float(rhs, CL_HALF_RTE)))
+        if (isnan(cl_half_from_float(rhs, CL_HALF_RTE)))
         {
             val = 0;
         }
@@ -236,7 +236,7 @@ static inline To compute_saturated_output(Ti lhs, Ti rhs)
     Tl ival = (Tl)(lhs * rhs);
     To val = (To)std::min<Ti>(std::max<Ti>(ival, loVal), hiVal);
 
-    if (std::isnan(rhs))
+    if (isnan(rhs))
     {
         val = 0;
     }
