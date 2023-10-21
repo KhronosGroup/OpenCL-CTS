@@ -21,13 +21,6 @@ or Khronos Conformance Test Source License Agreement as executed between Khronos
 
 #include <CL/cl_half.h>
 
-#ifndef isnan
-// Ensure isnan is always present as a macro
-#define isnan std::isnan
-#endif
-
-#define HALF_NAN 0x7e00
-
 long double reference_remainderl(long double x, long double y);
 int gIsInRTZMode = 0;
 int gDeviceILogb0 = 1;
@@ -183,6 +176,74 @@ TEST_SPIRV_FUNC(decorate_cpacked)
 }
 
 template<typename Ti, typename Tl, typename To>
+static inline Ti generate_saturated_lhs_input(RandomSeed& seed)
+{
+    constexpr auto loVal = std::numeric_limits<To>::min();
+    constexpr auto hiVal = std::numeric_limits<To>::max();
+    constexpr Tl range = (Tl)(hiVal) - (Tl)(loVal);
+
+    if (std::is_same<cl_half, Ti>::value)
+    {
+        return cl_half_from_float(genrand<float>(seed) * range, CL_HALF_RTE);
+    }
+
+    return genrand<Ti>(seed) * range;
+}
+
+template<typename Ti, typename Tl, typename To>
+static inline Ti generate_saturated_rhs_input(RandomSeed& seed)
+{
+    constexpr auto hiVal = std::numeric_limits<To>::max();
+
+    Tl val = genrand<Tl>(seed) % hiVal;
+    if (std::is_same<cl_half, Ti>::value)
+    {
+        if (val > 0 && val * 20 < hiVal)
+        {
+            return cl_half_from_float(NAN, CL_HALF_RTE);
+        }
+        return cl_half_from_float(val, CL_HALF_RTE);
+    }
+
+    if (val > 0 && val * 20 < hiVal)
+    {
+        return (Ti)NAN;
+    }
+    return val;
+}
+
+template<typename Ti, typename Tl, typename To>
+static inline To compute_saturated_output(Ti lhs, Ti rhs)
+{
+    constexpr auto loVal = std::numeric_limits<To>::min();
+    constexpr auto hiVal = std::numeric_limits<To>::max();
+
+    if (std::is_same<Ti, cl_half>::value)
+    {
+        cl_float f = cl_half_to_float(lhs) * cl_half_to_float(rhs);
+
+        // Quantize to fp16:
+        f = cl_half_to_float(cl_half_from_float(f, CL_HALF_RTE));
+
+        To val = (To)std::min<float>(std::max<float>(f, loVal), hiVal);
+        if (std::isnan(cl_half_from_float(rhs, CL_HALF_RTE)))
+        {
+            val = 0;
+        }
+        return val;
+    }
+
+    Tl ival = (Tl)(lhs * rhs);
+    To val = (To)std::min<Ti>(std::max<Ti>(ival, loVal), hiVal);
+
+    if (std::isnan(rhs))
+    {
+        val = 0;
+    }
+    return val;
+}
+
+template<typename Ti, typename Tl, typename To>
 int verify_saturated_results(cl_device_id deviceID,
                              cl_context context,
                              cl_command_queue queue,
@@ -202,46 +263,11 @@ int verify_saturated_results(cl_device_id deviceID,
     std::vector<Ti> h_lhs(num);
     std::vector<Ti> h_rhs(num);
 
-    To loVal = std::numeric_limits<To>::min();
-    To hiVal = std::numeric_limits<To>::max();
-
-    Tl range = (Tl)(hiVal) - (Tl)(loVal);
-
     RandomSeed seed(gRandomSeed);
-    if (std::is_same<Ti, cl_half>::value)
+    for (int i = 0; i < num; i++)
     {
-        for (int i = 0; i < num; i++)
-        {
-            h_lhs[i] =
-                cl_half_from_float(genrand<float>(seed) * range, CL_HALF_RTE);
-            Tl val = (genrand<Tl>(seed) % hiVal);
-            // randomly set some values on rhs to NaN
-            if (val * 20 < hiVal)
-            {
-                h_rhs[i] = HALF_NAN;
-            }
-            else
-            {
-                h_rhs[i] = (Ti)(val);
-            }
-        }
-    }
-    else
-    {
-        for (int i = 0; i < num; i++)
-        {
-            h_lhs[i] = genrand<Ti>(seed) * range;
-            Tl val = (genrand<Tl>(seed) % hiVal);
-            // randomly set some values on rhs to NaN
-            if (val * 20 < hiVal)
-            {
-                h_rhs[i] = NAN;
-            }
-            else
-            {
-                h_rhs[i] = (Ti)(val);
-            }
-        }
+        h_lhs[i] = generate_saturated_lhs_input<Ti, Tl, To>(seed);
+        h_rhs[i] = generate_saturated_rhs_input<Ti, Tl, To>(seed);
     }
 
     clMemWrapper lhs = clCreateBuffer(context, CL_MEM_READ_ONLY, in_bytes, NULL, &err);
@@ -276,33 +302,12 @@ int verify_saturated_results(cl_device_id deviceID,
     err = clEnqueueReadBuffer(queue, res, CL_TRUE, 0, out_bytes, &h_res[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read to output");
 
-    for (int i = 0; i < num; i++) {
-
-        To val;
-        if (std::is_same<Ti, cl_half>::value)
-        {
-            Tl ival =
-                (Tl)(cl_half_to_float(h_lhs[i]) * cl_half_to_float(h_rhs[i]));
-            val = (To)std::min<float>(std::max<float>(ival, loVal), hiVal);
-
-            if (is_half_nan(h_rhs[i]))
-            {
-                val = 0;
-            }
-        }
-        else
-        {
-            Tl ival = (Tl)(h_lhs[i] * h_rhs[i]);
-            val = (To)std::min<Ti>(std::max<Ti>(ival, loVal), hiVal);
-
-            if (isnan(h_rhs[i]))
-            {
-                val = 0;
-            }
-        }
+    for (int i = 0; i < num; i++)
+    {
+        To val = compute_saturated_output<Ti, Tl, To>(h_lhs[i], h_rhs[i]);
 
         if (val != h_res[i]) {
-            log_error("Value error at %d\n", i);
+            log_error("Value error at %d: got %d, want %d\n", i, val, h_res[i]);
             return -1;
         }
     }
@@ -438,60 +443,51 @@ int test_fp_rounding(cl_device_id deviceID,
     return 0;
 }
 
-template<typename Ti, typename To>
-inline To round_to_zero(Ti in)
+template <typename T> static inline double to_double(T in) { return in; }
+
+template <> inline double to_double(cl_half in) { return cl_half_to_float(in); }
+
+template <typename Ti, typename To> static inline To round_to_zero(Ti in)
 {
-    To out;
-    if (std::is_same<Ti, cl_half>::value)
-        out = (To)cl_half_to_float(in);
-    else
-        out = (To)(in);
-    return out;
+    return (To)to_double(in);
 }
 
-template<typename T>
-int sign(T val)
+template <typename T> static inline int sign(T val)
 {
     if (val < 0) return -1;
     if (val > 0) return 1;
     return 0;
 }
 
-template<typename Ti, typename To>
-inline To round_to_even(Ti in)
+template <typename Ti, typename To> static inline To round_to_even(Ti in)
 {
-    // https://en.wikipedia.org/wiki/Rounding#Round_half_to_even
-    if (std::is_same<Ti, cl_half>::value)
-    {
-        float fin = cl_half_to_float(in);
-        return std::floor(fin + 0.5) - 1
-            + std::abs(sign(reference_remainderl((long double)fin, 2) - 0.5));
+    double din = to_double(in);
+    return std::floor(din + 0.5) - 1
+        + std::abs(sign(reference_remainderl((long double)din, 2) - 0.5));
+}
+
+template <typename Ti, typename To> static inline To round_to_posinf(Ti in)
+{
+    return std::ceil(to_double(in));
+}
+
+template <typename Ti, typename To> static inline To round_to_neginf(Ti in)
+{
+    return std::floor(to_double(in));
+}
+
+template <typename Ti, typename To>
+static inline Ti generate_fprounding_input(RandomSeed &seed)
+{
+    constexpr auto minVal = std::numeric_limits<To>::min() / 2;
+    constexpr auto maxVal = std::numeric_limits<To>::max() / 2;
+
+    if (std::is_same<cl_half, Ti>::value) {
+        cl_float f = genrandReal_range<cl_float>(minVal, maxVal, seed);
+        return cl_half_from_float(f, CL_HALF_RTE);
     }
-    else
-        return std::floor(in + 0.5) - 1
-            + std::abs(sign(reference_remainderl((long double)in, 2) - 0.5));
-}
 
-template<typename Ti, typename To>
-inline To round_to_posinf(Ti in)
-{
-    To out;
-    if (std::is_same<Ti, cl_half>::value)
-        out = std::ceil(cl_half_to_float(in));
-    else
-        out = std::ceil(in);
-    return out;
-}
-
-template<typename Ti, typename To>
-inline To round_to_neginf(Ti in)
-{
-    To out;
-    if (std::is_same<Ti, cl_half>::value)
-        out = std::floor(cl_half_to_float(in));
-    else
-        out = std::floor(in);
-    return out;
+    return genrandReal_range<Ti>(minVal, maxVal, seed);
 }
 
 #define TEST_SPIRV_FP_ROUNDING_DECORATE(name, func, Ti, To)                    \
@@ -506,7 +502,7 @@ inline To round_to_neginf(Ti in)
                                                                                \
         for (int i = 0; i < num; i++)                                          \
         {                                                                      \
-            in[i] = num * genrand<clTi>(seed) - num / 2;                       \
+            in[i] = generate_fprounding_input<clTi, clTo>(seed);               \
             out[i] = func<clTi, clTo>(in[i]);                                  \
         }                                                                      \
         const char *name = "decorate_rounding_" #name "_" #Ti "_" #To;         \
