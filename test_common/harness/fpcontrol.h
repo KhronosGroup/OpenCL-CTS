@@ -43,6 +43,8 @@ typedef int64_t FPU_mode_type;
 #elif defined(__PPC__)
 #include <fpu_control.h>
 extern __thread fpu_control_t fpu_control;
+#elif defined(__mips__)
+#include "mips/m32c1.h"
 #endif
 // Set the reference hardware floating point unit to FTZ mode
 inline void ForceFTZ(FPU_mode_type *mode)
@@ -65,6 +67,8 @@ inline void ForceFTZ(FPU_mode_type *mode)
     __asm__ volatile("mrs %0, fpcr" : "=r"(fpscr));
     *mode = fpscr;
     __asm__ volatile("msr fpcr, %0" ::"r"(fpscr | (1U << 24)));
+#elif defined(__mips__)
+    fpa_bissr(FPA_CSR_FS);
 #else
 #error ForceFTZ needs an implentation
 #endif
@@ -91,6 +95,8 @@ inline void DisableFTZ(FPU_mode_type *mode)
     __asm__ volatile("mrs %0, fpcr" : "=r"(fpscr));
     *mode = fpscr;
     __asm__ volatile("msr fpcr, %0" ::"r"(fpscr & ~(1U << 24)));
+#elif defined(__mips__)
+    fpa_bicsr(FPA_CSR_FS);
 #else
 #error DisableFTZ needs an implentation
 #endif
@@ -109,6 +115,8 @@ inline void RestoreFPState(FPU_mode_type *mode)
     // Add 64 bit support
 #elif defined(__aarch64__)
     __asm__ volatile("msr fpcr, %0" ::"r"(*mode));
+#elif defined(__mips__)
+    // Mips runs by default with DAZ=1 FTZ=1
 #else
 #error RestoreFPState needs an implementation
 #endif
