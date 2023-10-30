@@ -79,4 +79,11 @@ extern int test_external_semaphores_invalid_command(cl_device_id deviceID,
                                                     cl_context context,
                                                     cl_command_queue queue,
                                                     int num_elements);
+extern int test_external_semaphores_no_re_export(cl_device_id deviceID,
+                                                 cl_context context,
+                                                 cl_command_queue defaultQueue,
+                                                 int num_elements);
+extern int test_external_semaphores_multiple_export(
+    cl_device_id deviceID, cl_context context, cl_command_queue defaultQueue,
+    int num_elements);
 #endif // CL_KHR_EXTERNAL_SEMAPHORE_PROCS_H

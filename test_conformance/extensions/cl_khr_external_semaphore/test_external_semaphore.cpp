@@ -933,3 +933,228 @@ int test_external_semaphores_multi_wait(cl_device_id deviceID,
 
     return TEST_PASS;
 }
+
+int test_external_semaphores_no_re_export(cl_device_id deviceID,
+                                          cl_context context,
+                                          cl_command_queue defaultQueue,
+                                          int num_elements)
+{
+    GET_PFN(deviceID, clCreateSemaphoreWithPropertiesKHR);
+    GET_PFN(deviceID, clReleaseSemaphoreKHR);
+    GET_PFN(deviceID, clEnqueueSignalSemaphoresKHR);
+    GET_PFN(deviceID, clGetSemaphoreHandleForTypeKHR);
+
+    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
+    {
+        log_info("cl_khr_semaphore is not supported on this platoform. "
+                 "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_int err = CL_SUCCESS;
+
+    size_t size_import_types = 0;
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR,
+                          0, 0, &size_import_types);
+    test_error(err, "Failed to query device semaphore import handle types");
+    if (size_import_types == 0)
+    {
+        log_info("No import types reported.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    size_t num_import_types =
+        size_import_types / sizeof(cl_external_semaphore_handle_type_khr);
+    std::vector<cl_external_semaphore_handle_type_khr> import_types(
+        num_import_types);
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR,
+                          size_import_types, import_types.data(), nullptr);
+    test_error(err, "Failed to query device semaphore import handle types");
+
+    size_t size_export_types = 0;
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
+                          0, 0, &size_export_types);
+    test_error(err, "Failed to query device semaphore import handle types");
+    if (size_export_types == 0)
+    {
+        log_info("No export types reported.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    size_t num_export_types =
+        size_export_types / sizeof(cl_external_semaphore_handle_type_khr);
+    std::vector<cl_external_semaphore_handle_type_khr> export_types(
+        num_export_types);
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
+                          size_export_types, export_types.data(), nullptr);
+    test_error(err, "Failed to query device semaphore export handle types");
+
+    clCommandQueueWrapper queue =
+        clCreateCommandQueue(context, deviceID, 0, &err);
+    test_error(err, "Could not create command queue");
+
+    int test_counter = 0; // The number of tests run
+    for (auto import_type : import_types)
+    {
+        for (auto export_type : export_types)
+        {
+            // Generate handle for import.  For this a signal is necessary. This
+            // may need to be updated for specific implementations, which may
+            // require external APIs to generate some signals.
+            if (std::find(export_types.begin(), export_types.end(), import_type)
+                == export_types.end())
+            {
+                log_error("This test requires a valid signal to generate a "
+                          "handle for import, but does not know "
+                          "how to generate a signal for the handle type "
+                          "0x%04x.  Update the test to add support for"
+                          "handle type 0x%04x\n",
+                          import_type, import_type);
+                return TEST_FAIL;
+            }
+
+            std::vector<cl_semaphore_properties_khr> signal_sema_props{
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+                (cl_semaphore_properties_khr)
+                    CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
+                (cl_semaphore_properties_khr)import_type,
+                (cl_semaphore_properties_khr)
+                    CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR,
+                0
+            };
+            cl_semaphore_khr signal_semaphore =
+                clCreateSemaphoreWithPropertiesKHR(
+                    context, signal_sema_props.data(), &err);
+            test_error(err, "Failed to create semaphore for signaling\n");
+
+            err = clEnqueueSignalSemaphoresKHR(queue, 1, &signal_semaphore,
+                                               nullptr, 0, nullptr, nullptr);
+            test_error(err, "Failed to signal semaphore\n");
+
+            cl_semaphore_properties_khr dummy_handle = -1;
+            err = clGetSemaphoreHandleForTypeKHR(
+                signal_semaphore, deviceID, import_type, sizeof(dummy_handle),
+                &dummy_handle, nullptr);
+            test_error(err, "Failed to get handle from semaphore\n");
+
+            std::vector<cl_semaphore_properties_khr> sema_props{
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+                (cl_semaphore_properties_khr)import_type,
+                (cl_semaphore_properties_khr)dummy_handle,
+                (cl_semaphore_properties_khr)
+                    CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
+                (cl_semaphore_properties_khr)export_type,
+                (cl_semaphore_properties_khr)
+                    CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR,
+                0
+            };
+            cl_semaphore_khr re_export_semaphore =
+                clCreateSemaphoreWithPropertiesKHR(context, sema_props.data(),
+                                                   &err);
+            if (err == CL_SUCCESS)
+            {
+                err = clReleaseSemaphoreKHR(re_export_semaphore);
+                test_error(err, "Failed to release re-export semaphore\n");
+            }
+
+            if (err != CL_INVALID_OPERATION)
+            {
+                log_error("Expected CL_INVALID_OPERATION when creating a "
+                          "semaphore for import and export, got %d\n",
+                          err);
+                return TEST_FAIL;
+            }
+
+            err = clFinish(queue);
+            test_error(err, "Failed to finish queue\n");
+
+            err = clReleaseSemaphoreKHR(signal_semaphore);
+            test_error(err, "Failed to release signal semaphore\n");
+
+            test_counter++;
+        }
+    }
+
+    if (test_counter == 0)
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
+
+
+    return TEST_PASS;
+}
+
+int test_external_semaphores_multiple_export(cl_device_id deviceID,
+                                             cl_context context,
+                                             cl_command_queue defaultQueue,
+                                             int num_elements)
+{
+    GET_PFN(deviceID, clCreateSemaphoreWithPropertiesKHR);
+    GET_PFN(deviceID, clReleaseSemaphoreKHR);
+
+    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
+    {
+        log_info("cl_khr_semaphore is not supported on this platoform. "
+                 "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_int err = CL_SUCCESS;
+
+    size_t size_export_types = 0;
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
+                          0, 0, &size_export_types);
+    test_error(err, "Failed to query device semaphore import handle types");
+    if (size_export_types == 0)
+    {
+        log_info("No export types reported.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    size_t num_export_types =
+        size_export_types / sizeof(cl_external_semaphore_handle_type_khr);
+    std::vector<cl_external_semaphore_handle_type_khr> export_types(
+        num_export_types);
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
+                          size_export_types, export_types.data(), nullptr);
+    test_error(err, "Failed to query device semaphore export handle types");
+
+    if (num_export_types < 2)
+    {
+        log_info("Device does not support multiple export handle types.  "
+                 "Cannot test\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    std::vector<cl_semaphore_properties_khr> sema_props{
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR
+    };
+    for (auto export_type : export_types)
+    {
+        sema_props.push_back(export_type);
+    }
+    sema_props.push_back((cl_semaphore_properties_khr)
+                             CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR);
+    sema_props.push_back(0);
+
+    cl_semaphore_khr multiple_export_semaphore =
+        clCreateSemaphoreWithPropertiesKHR(context, sema_props.data(), &err);
+    if (err == CL_SUCCESS)
+    {
+        clReleaseSemaphoreKHR(multiple_export_semaphore);
+    }
+
+    if (err != CL_INVALID_VALUE)
+    {
+        log_error("Expected CL_INVALID_VALUE when creating a semaphore with "
+                  "multiple exports, got %d\n",
+                  err);
+        return TEST_FAIL;
+    }
+
+    return TEST_PASS;
+}

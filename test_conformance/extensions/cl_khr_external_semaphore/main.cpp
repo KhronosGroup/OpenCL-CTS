@@ -26,6 +26,8 @@ test_definition test_list[] = {
     ADD_TEST(external_semaphores_cross_queues_io2),
     ADD_TEST(external_semaphores_multi_signal),
     ADD_TEST(external_semaphores_multi_wait),
+    ADD_TEST(external_semaphores_no_re_export),
+    ADD_TEST(external_semaphores_multiple_export),
     // ADD_TEST(external_semaphores_order_1),
     // ADD_TEST(external_semaphores_order_2),
     // ADD_TEST(external_semaphores_order_3),
