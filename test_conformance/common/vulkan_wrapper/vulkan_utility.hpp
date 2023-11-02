@@ -33,7 +33,8 @@
 const VulkanInstance& getVulkanInstance();
 const VulkanPhysicalDevice& getVulkanPhysicalDevice();
 const VulkanQueueFamily&
-getVulkanQueueFamily(uint32_t queueFlags = VULKAN_QUEUE_FLAG_MASK_ALL);
+getVulkanQueueFamily(uint32_t queueFlags = VULKAN_QUEUE_FLAG_GRAPHICS
+                         | VULKAN_QUEUE_FLAG_COMPUTE);
 const VulkanMemoryType&
 getVulkanMemoryType(const VulkanDevice& device,
                     VulkanMemoryTypeProperty memoryTypeProperty);
@@ -51,6 +52,8 @@ const std::vector<VulkanFormat> getSupportedVulkanFormatList();
 uint32_t getVulkanFormatElementSize(VulkanFormat format);
 const char* getVulkanFormatGLSLFormat(VulkanFormat format);
 const char* getVulkanFormatGLSLTypePrefix(VulkanFormat format);
+cl_external_semaphore_handle_type_khr getCLSemaphoreTypeFromVulkanType(
+    VulkanExternalSemaphoreHandleType vulkanExternalSemaphoreHandleType);
 
 std::string prepareVulkanShader(
     std::string shaderCode,

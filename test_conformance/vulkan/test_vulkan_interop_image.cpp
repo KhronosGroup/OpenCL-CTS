@@ -226,9 +226,11 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
     srcBufferPtr = (char *)malloc(maxImage2DSize);
     dstBufferPtr = (char *)malloc(maxImage2DSize);
 
-    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
-        VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
-        VULKAN_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_2D_IMAGE_DESCRIPTORS);
+    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
+    vkDescriptorSetLayoutBindingList.addBinding(
+        0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
+    vkDescriptorSetLayoutBindingList.addBinding(
+        1, VULKAN_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_2D_IMAGE_DESCRIPTORS);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
@@ -255,10 +257,10 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
     clCl2VkExternalSemaphore = new clExternalSemaphore(
         vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
 
-    std::vector<VulkanDeviceMemory *> vkNonDedicatedImage2DListDeviceMemory1;
-    std::vector<VulkanDeviceMemory *> vkNonDedicatedImage2DListDeviceMemory2;
-    std::vector<clExternalMemoryImage *> nonDedicatedExternalMemory1;
-    std::vector<clExternalMemoryImage *> nonDedicatedExternalMemory2;
+    std::vector<VulkanDeviceMemory *> vkImage2DListDeviceMemory1;
+    std::vector<VulkanDeviceMemory *> vkImage2DListDeviceMemory2;
+    std::vector<clExternalMemoryImage *> externalMemory1;
+    std::vector<clExternalMemoryImage *> externalMemory2;
     std::vector<char> vkImage2DShader;
 
     for (size_t fIdx = 0; fIdx < vkFormatList.size(); fIdx++)
@@ -352,8 +354,6 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                         VulkanExternalMemoryHandleType
                             vkExternalMemoryHandleType =
                                 vkExternalMemoryHandleTypeList[emhtIdx];
-                        log_info("External memory handle type: %d \n",
-                                 vkExternalMemoryHandleType);
                         if ((true == disableNTHandleType)
                             && (VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT
                                 == vkExternalMemoryHandleType))
@@ -361,9 +361,19 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                             // Skip running for WIN32 NT handle.
                             continue;
                         }
+                        log_info("External memory handle type: %d \n",
+                                 vkExternalMemoryHandleType);
+                        VulkanImageTiling vulkanImageTiling =
+                            vkClExternalMemoryHandleTilingAssumption(
+                                deviceId,
+                                vkExternalMemoryHandleTypeList[emhtIdx], &err);
+                        ASSERT_SUCCESS(err,
+                                       "Failed to query OpenCL tiling mode");
+
                         VulkanImage2D vkDummyImage2D(
                             vkDevice, vkFormatList[0], widthList[0],
-                            heightList[0], 1, vkExternalMemoryHandleType);
+                            heightList[0], vulkanImageTiling, 1,
+                            vkExternalMemoryHandleType);
                         const VulkanMemoryTypeList &memoryTypeList =
                             vkDummyImage2D.getMemoryTypeList();
 
@@ -390,118 +400,73 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                             {
                                 VulkanImage2D vkImage2D(
                                     vkDevice, vkFormat, width, height,
-                                    numMipLevels, vkExternalMemoryHandleType);
+                                    vulkanImageTiling, numMipLevels,
+                                    vkExternalMemoryHandleType);
                                 ASSERT_LEQ(vkImage2D.getSize(), maxImage2DSize);
                                 totalImageMemSize =
                                     ROUND_UP(vkImage2D.getSize(),
                                              vkImage2D.getAlignment());
                             }
-                            VulkanImage2DList vkNonDedicatedImage2DList(
+                            VulkanImage2DList vkImage2DList(
                                 num2DImages, vkDevice, vkFormat, width, height,
-                                numMipLevels, vkExternalMemoryHandleType);
+                                vulkanImageTiling, numMipLevels,
+                                vkExternalMemoryHandleType);
                             for (size_t bIdx = 0; bIdx < num2DImages; bIdx++)
                             {
-                                if (non_dedicated)
-                                {
-                                    vkNonDedicatedImage2DListDeviceMemory1
-                                        .push_back(new VulkanDeviceMemory(
-                                            vkDevice, totalImageMemSize,
-                                            memoryType,
-                                            vkExternalMemoryHandleType));
-                                }
-                                else
-                                {
-                                    vkNonDedicatedImage2DListDeviceMemory1
-                                        .push_back(new VulkanDeviceMemory(
-                                            vkDevice,
-                                            vkNonDedicatedImage2DList[bIdx],
-                                            memoryType,
-                                            vkExternalMemoryHandleType));
-                                }
-                                vkNonDedicatedImage2DListDeviceMemory1[bIdx]
-                                    ->bindImage(vkNonDedicatedImage2DList[bIdx],
-                                                0);
-                                nonDedicatedExternalMemory1.push_back(
+                                vkImage2DListDeviceMemory1.push_back(
+                                    new VulkanDeviceMemory(
+                                        vkDevice, vkImage2DList[bIdx],
+                                        memoryType,
+                                        vkExternalMemoryHandleType));
+                                vkImage2DListDeviceMemory1[bIdx]->bindImage(
+                                    vkImage2DList[bIdx], 0);
+                                externalMemory1.push_back(
                                     new clExternalMemoryImage(
-                                        *vkNonDedicatedImage2DListDeviceMemory1
-                                            [bIdx],
+                                        *vkImage2DListDeviceMemory1[bIdx],
                                         vkExternalMemoryHandleType, context,
                                         totalImageMemSize, width, height, 0,
-                                        vkNonDedicatedImage2DList[bIdx],
-                                        deviceId));
+                                        vkImage2DList[bIdx], deviceId));
                             }
-                            VulkanImageViewList vkNonDedicatedImage2DViewList(
-                                vkDevice, vkNonDedicatedImage2DList);
-                            VulkanImage2DList vkNonDedicatedImage2DList2(
+                            VulkanImageViewList vkImage2DViewList(
+                                vkDevice, vkImage2DList);
+                            VulkanImage2DList vkImage2DList2(
                                 num2DImages, vkDevice, vkFormat, width, height,
-                                numMipLevels, vkExternalMemoryHandleType);
+                                vulkanImageTiling, numMipLevels,
+                                vkExternalMemoryHandleType);
                             for (size_t bIdx = 0; bIdx < num2DImages; bIdx++)
                             {
-                                if (non_dedicated)
-                                {
-                                    vkNonDedicatedImage2DListDeviceMemory2
-                                        .push_back(new VulkanDeviceMemory(
-                                            vkDevice, totalImageMemSize,
-                                            memoryType,
-                                            vkExternalMemoryHandleType));
-                                }
-                                else
-                                {
-                                    vkNonDedicatedImage2DListDeviceMemory2
-                                        .push_back(new VulkanDeviceMemory(
-                                            vkDevice,
-                                            vkNonDedicatedImage2DList2[bIdx],
-                                            memoryType,
-                                            vkExternalMemoryHandleType));
-                                }
-                                vkNonDedicatedImage2DListDeviceMemory2[bIdx]
-                                    ->bindImage(
-                                        vkNonDedicatedImage2DList2[bIdx], 0);
-                                nonDedicatedExternalMemory2.push_back(
+                                vkImage2DListDeviceMemory2.push_back(
+                                    new VulkanDeviceMemory(
+                                        vkDevice, vkImage2DList2[bIdx],
+                                        memoryType,
+                                        vkExternalMemoryHandleType));
+                                vkImage2DListDeviceMemory2[bIdx]->bindImage(
+                                    vkImage2DList2[bIdx], 0);
+                                externalMemory2.push_back(
                                     new clExternalMemoryImage(
-                                        *vkNonDedicatedImage2DListDeviceMemory2
-                                            [bIdx],
+                                        *vkImage2DListDeviceMemory2[bIdx],
                                         vkExternalMemoryHandleType, context,
                                         totalImageMemSize, width, height, 0,
-                                        vkNonDedicatedImage2DList2[bIdx],
-                                        deviceId));
+                                        vkImage2DList2[bIdx], deviceId));
                             }
-                            VulkanImageViewList vkDedicatedImage2DViewList(
-                                vkDevice, vkNonDedicatedImage2DList2);
 
                             cl_mem external_mem_image1[5];
                             cl_mem external_mem_image2[5];
                             for (int i = 0; i < num2DImages; i++)
                             {
                                 external_mem_image1[i] =
-                                    nonDedicatedExternalMemory1[i]
+                                    externalMemory1[i]
                                         ->getExternalMemoryImage();
                                 external_mem_image2[i] =
-                                    nonDedicatedExternalMemory2[i]
+                                    externalMemory2[i]
                                         ->getExternalMemoryImage();
                             }
-                            VulkanImage2DList &vkImage2DList =
-                                vkNonDedicatedImage2DList;
-                            VulkanImageViewList &vkImage2DViewList =
-                                vkNonDedicatedImage2DViewList;
 
                             clCl2VkExternalSemaphore->signal(cmd_queue1);
                             if (!useSingleImageKernel)
                             {
-                                for (size_t i2DIdx = 0;
-                                     i2DIdx < vkImage2DList.size(); i2DIdx++)
-                                {
-                                    for (uint32_t mipLevel = 0;
-                                         mipLevel < numMipLevels; mipLevel++)
-                                    {
-                                        uint32_t i2DvIdx =
-                                            (uint32_t)(i2DIdx * numMipLevels)
-                                            + mipLevel;
-                                        vkDescriptorSet.update(
-                                            1 + i2DvIdx,
-                                            vkImage2DViewList[i2DvIdx]);
-                                    }
-                                }
+                                vkDescriptorSet.updateArray(1,
+                                                            vkImage2DViewList);
                                 vkCopyCommandBuffer.begin();
                                 vkCopyCommandBuffer.pipelineBarrier(
                                     vkImage2DList,
@@ -743,29 +708,25 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                             }
                             for (int i = 0; i < num2DImages; i++)
                             {
-                                delete vkNonDedicatedImage2DListDeviceMemory1
-                                    [i];
-                                delete vkNonDedicatedImage2DListDeviceMemory2
-                                    [i];
-                                delete nonDedicatedExternalMemory1[i];
-                                delete nonDedicatedExternalMemory2[i];
+                                delete vkImage2DListDeviceMemory1[i];
+                                delete vkImage2DListDeviceMemory2[i];
+                                delete externalMemory1[i];
+                                delete externalMemory2[i];
                             }
-                            vkNonDedicatedImage2DListDeviceMemory1.erase(
-                                vkNonDedicatedImage2DListDeviceMemory1.begin(),
-                                vkNonDedicatedImage2DListDeviceMemory1.begin()
+                            vkImage2DListDeviceMemory1.erase(
+                                vkImage2DListDeviceMemory1.begin(),
+                                vkImage2DListDeviceMemory1.begin()
                                     + num2DImages);
-                            vkNonDedicatedImage2DListDeviceMemory2.erase(
-                                vkNonDedicatedImage2DListDeviceMemory2.begin(),
-                                vkNonDedicatedImage2DListDeviceMemory2.begin()
+                            vkImage2DListDeviceMemory2.erase(
+                                vkImage2DListDeviceMemory2.begin(),
+                                vkImage2DListDeviceMemory2.begin()
                                     + num2DImages);
-                            nonDedicatedExternalMemory1.erase(
-                                nonDedicatedExternalMemory1.begin(),
-                                nonDedicatedExternalMemory1.begin()
-                                    + num2DImages);
-                            nonDedicatedExternalMemory2.erase(
-                                nonDedicatedExternalMemory2.begin(),
-                                nonDedicatedExternalMemory2.begin()
-                                    + num2DImages);
+                            externalMemory1.erase(externalMemory1.begin(),
+                                                  externalMemory1.begin()
+                                                      + num2DImages);
+                            externalMemory2.erase(externalMemory2.begin(),
+                                                  externalMemory2.begin()
+                                                      + num2DImages);
                             if (CL_SUCCESS != err)
                             {
                                 goto CLEANUP;
@@ -822,9 +783,11 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
     srcBufferPtr = (char *)malloc(maxImage2DSize);
     dstBufferPtr = (char *)malloc(maxImage2DSize);
 
-    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
-        VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
-        VULKAN_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_2D_IMAGE_DESCRIPTORS);
+    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
+    vkDescriptorSetLayoutBindingList.addBinding(
+        0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
+    vkDescriptorSetLayoutBindingList.addBinding(
+        1, VULKAN_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_2D_IMAGE_DESCRIPTORS);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
@@ -851,10 +814,10 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
     clCl2VkExternalSemaphore = new clExternalSemaphore(
         vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
 
-    std::vector<VulkanDeviceMemory *> vkNonDedicatedImage2DListDeviceMemory1;
-    std::vector<VulkanDeviceMemory *> vkNonDedicatedImage2DListDeviceMemory2;
-    std::vector<clExternalMemoryImage *> nonDedicatedExternalMemory1;
-    std::vector<clExternalMemoryImage *> nonDedicatedExternalMemory2;
+    std::vector<VulkanDeviceMemory *> vkImage2DListDeviceMemory1;
+    std::vector<VulkanDeviceMemory *> vkImage2DListDeviceMemory2;
+    std::vector<clExternalMemoryImage *> externalMemory1;
+    std::vector<clExternalMemoryImage *> externalMemory2;
     std::vector<char> vkImage2DShader;
 
     for (size_t fIdx = 0; fIdx < vkFormatList.size(); fIdx++)
@@ -957,9 +920,18 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                             // Skip running for WIN32 NT handle.
                             continue;
                         }
+
+                        VulkanImageTiling vulkanImageTiling =
+                            vkClExternalMemoryHandleTilingAssumption(
+                                deviceId,
+                                vkExternalMemoryHandleTypeList[emhtIdx], &err);
+                        ASSERT_SUCCESS(err,
+                                       "Failed to query OpenCL tiling mode");
+
                         VulkanImage2D vkDummyImage2D(
                             vkDevice, vkFormatList[0], widthList[0],
-                            heightList[0], 1, vkExternalMemoryHandleType);
+                            heightList[0], vulkanImageTiling, 1,
+                            vkExternalMemoryHandleType);
                         const VulkanMemoryTypeList &memoryTypeList =
                             vkDummyImage2D.getMemoryTypeList();
 
@@ -985,98 +957,78 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                             {
                                 VulkanImage2D vkImage2D(
                                     vkDevice, vkFormat, width, height,
-                                    numMipLevels, vkExternalMemoryHandleType);
+                                    vulkanImageTiling, numMipLevels,
+                                    vkExternalMemoryHandleType);
                                 ASSERT_LEQ(vkImage2D.getSize(), maxImage2DSize);
                                 totalImageMemSize =
                                     ROUND_UP(vkImage2D.getSize(),
                                              vkImage2D.getAlignment());
                             }
-                            VulkanImage2DList vkNonDedicatedImage2DList(
+                            VulkanImage2DList vkImage2DList(
                                 num2DImages, vkDevice, vkFormat, width, height,
-                                numMipLevels, vkExternalMemoryHandleType);
-                            for (size_t bIdx = 0;
-                                 bIdx < vkNonDedicatedImage2DList.size();
+                                vulkanImageTiling, numMipLevels,
+                                vkExternalMemoryHandleType);
+                            for (size_t bIdx = 0; bIdx < vkImage2DList.size();
                                  bIdx++)
                             {
                                 // Create list of Vulkan device memories and
                                 // bind the list of Vulkan images.
-                                vkNonDedicatedImage2DListDeviceMemory1
-                                    .push_back(new VulkanDeviceMemory(
-                                        vkDevice, totalImageMemSize, memoryType,
+                                vkImage2DListDeviceMemory1.push_back(
+                                    new VulkanDeviceMemory(
+                                        vkDevice, vkImage2DList[bIdx],
+                                        memoryType,
                                         vkExternalMemoryHandleType));
-                                vkNonDedicatedImage2DListDeviceMemory1[bIdx]
-                                    ->bindImage(vkNonDedicatedImage2DList[bIdx],
-                                                0);
-                                nonDedicatedExternalMemory1.push_back(
+                                vkImage2DListDeviceMemory1[bIdx]->bindImage(
+                                    vkImage2DList[bIdx], 0);
+                                externalMemory1.push_back(
                                     new clExternalMemoryImage(
-                                        *vkNonDedicatedImage2DListDeviceMemory1
-                                            [bIdx],
+                                        *vkImage2DListDeviceMemory1[bIdx],
                                         vkExternalMemoryHandleType, context,
                                         totalImageMemSize, width, height, 0,
-                                        vkNonDedicatedImage2DList[bIdx],
-                                        deviceId));
+                                        vkImage2DList[bIdx], deviceId));
                             }
-                            VulkanImageViewList vkNonDedicatedImage2DViewList(
-                                vkDevice, vkNonDedicatedImage2DList);
+                            VulkanImageViewList vkImage2DViewList(
+                                vkDevice, vkImage2DList);
 
-                            VulkanImage2DList vkNonDedicatedImage2DList2(
+                            VulkanImage2DList vkImage2DList2(
                                 num2DImages, vkDevice, vkFormat, width, height,
-                                numMipLevels, vkExternalMemoryHandleType);
-                            for (size_t bIdx = 0;
-                                 bIdx < vkNonDedicatedImage2DList2.size();
+                                vulkanImageTiling, numMipLevels,
+                                vkExternalMemoryHandleType);
+                            for (size_t bIdx = 0; bIdx < vkImage2DList2.size();
                                  bIdx++)
                             {
-                                vkNonDedicatedImage2DListDeviceMemory2
-                                    .push_back(new VulkanDeviceMemory(
-                                        vkDevice, totalImageMemSize, memoryType,
+                                vkImage2DListDeviceMemory2.push_back(
+                                    new VulkanDeviceMemory(
+                                        vkDevice, vkImage2DList2[bIdx],
+                                        memoryType,
                                         vkExternalMemoryHandleType));
-                                vkNonDedicatedImage2DListDeviceMemory2[bIdx]
-                                    ->bindImage(
-                                        vkNonDedicatedImage2DList2[bIdx], 0);
-                                nonDedicatedExternalMemory2.push_back(
+                                vkImage2DListDeviceMemory2[bIdx]->bindImage(
+                                    vkImage2DList2[bIdx], 0);
+                                externalMemory2.push_back(
                                     new clExternalMemoryImage(
-                                        *vkNonDedicatedImage2DListDeviceMemory2
-                                            [bIdx],
+                                        *vkImage2DListDeviceMemory2[bIdx],
                                         vkExternalMemoryHandleType, context,
                                         totalImageMemSize, width, height, 0,
-                                        vkNonDedicatedImage2DList2[bIdx],
-                                        deviceId));
+                                        vkImage2DList2[bIdx], deviceId));
                             }
-                            VulkanImageViewList vkDedicatedImage2DViewList(
-                                vkDevice, vkNonDedicatedImage2DList2);
+
                             cl_mem external_mem_image1[4];
                             cl_mem external_mem_image2[4];
                             for (int i = 0; i < num2DImages; i++)
                             {
                                 external_mem_image1[i] =
-                                    nonDedicatedExternalMemory1[i]
+                                    externalMemory1[i]
                                         ->getExternalMemoryImage();
                                 external_mem_image2[i] =
-                                    nonDedicatedExternalMemory2[i]
+                                    externalMemory2[i]
                                         ->getExternalMemoryImage();
                             }
-                            VulkanImage2DList &vkImage2DList =
-                                vkNonDedicatedImage2DList;
-                            VulkanImageViewList &vkImage2DViewList =
-                                vkNonDedicatedImage2DViewList;
 
                             clCl2VkExternalSemaphore->signal(cmd_queue1);
                             if (!useSingleImageKernel)
                             {
-                                for (size_t i2DIdx = 0;
-                                     i2DIdx < vkImage2DList.size(); i2DIdx++)
-                                {
-                                    for (uint32_t mipLevel = 0;
-                                         mipLevel < numMipLevels; mipLevel++)
-                                    {
-                                        uint32_t i2DvIdx =
-                                            (uint32_t)(i2DIdx * numMipLevels)
-                                            + mipLevel;
-                                        vkDescriptorSet.update(
-                                            1 + i2DvIdx,
-                                            vkImage2DViewList[i2DvIdx]);
-                                    }
-                                }
+                                vkDescriptorSet.updateArray(1,
+                                                            vkImage2DViewList);
                                 vkCopyCommandBuffer.begin();
                                 vkCopyCommandBuffer.pipelineBarrier(
                                     vkImage2DList,
@@ -1275,29 +1227,25 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                             }
                             for (int i = 0; i < num2DImages; i++)
                             {
-                                delete vkNonDedicatedImage2DListDeviceMemory1
-                                    [i];
-                                delete vkNonDedicatedImage2DListDeviceMemory2
-                                    [i];
-                                delete nonDedicatedExternalMemory1[i];
-                                delete nonDedicatedExternalMemory2[i];
+                                delete vkImage2DListDeviceMemory1[i];
+                                delete vkImage2DListDeviceMemory2[i];
+                                delete externalMemory1[i];
+                                delete externalMemory2[i];
                             }
-                            vkNonDedicatedImage2DListDeviceMemory1.erase(
-                                vkNonDedicatedImage2DListDeviceMemory1.begin(),
-                                vkNonDedicatedImage2DListDeviceMemory1.begin()
+                            vkImage2DListDeviceMemory1.erase(
+                                vkImage2DListDeviceMemory1.begin(),
+                                vkImage2DListDeviceMemory1.begin()
                                     + num2DImages);
-                            vkNonDedicatedImage2DListDeviceMemory2.erase(
-                                vkNonDedicatedImage2DListDeviceMemory2.begin(),
-                                vkNonDedicatedImage2DListDeviceMemory2.begin()
+                            vkImage2DListDeviceMemory2.erase(
+                                vkImage2DListDeviceMemory2.begin(),
+                                vkImage2DListDeviceMemory2.begin()
                                     + num2DImages);
-                            nonDedicatedExternalMemory1.erase(
-                                nonDedicatedExternalMemory1.begin(),
-                                nonDedicatedExternalMemory1.begin()
-                                    + num2DImages);
-                            nonDedicatedExternalMemory2.erase(
-                                nonDedicatedExternalMemory2.begin(),
-                                nonDedicatedExternalMemory2.begin()
-                                    + num2DImages);
+                            externalMemory1.erase(externalMemory1.begin(),
+                                                  externalMemory1.begin()
+                                                      + num2DImages);
+                            externalMemory2.erase(externalMemory2.begin(),
+                                                  externalMemory2.begin()
+                                                      + num2DImages);
                             if (CL_SUCCESS != err)
                             {
                                 goto CLEANUP;

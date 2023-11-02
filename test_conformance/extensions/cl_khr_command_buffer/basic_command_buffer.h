@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef _CL_KHR_BASIC_COMMAND_BUFFER_H
-#define _CL_KHR_BASIC_COMMAND_BUFFER_H
+#ifndef CL_KHR_BASIC_COMMAND_BUFFER_H
+#define CL_KHR_BASIC_COMMAND_BUFFER_H
 
 #include "command_buffer_test_base.h"
 #include "harness/typeWrappers.h"
@@ -33,6 +33,18 @@
             return TEST_FAIL;                                                  \
         }                                                                      \
     }
+
+// If it is supported get the addresses of all the APIs here.
+#define GET_EXTENSION_ADDRESS(FUNC)                                            \
+    FUNC = reinterpret_cast<FUNC##_fn>(                                        \
+        clGetExtensionFunctionAddressForPlatform(platform, #FUNC));            \
+    if (FUNC == nullptr)                                                       \
+    {                                                                          \
+        log_error("ERROR: clGetExtensionFunctionAddressForPlatform failed"     \
+                  " with " #FUNC "\n");                                        \
+        return TEST_FAIL;                                                      \
+    }
+
 
 // Helper test fixture for constructing OpenCL objects used in testing
 // a variety of simple command-buffer enqueue scenarios.
@@ -70,6 +82,7 @@ protected:
     clCommandBufferWrapper command_buffer;
 };
 
+
 template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,
                    cl_command_queue queue, int num_elements)
@@ -99,4 +112,4 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
-#endif // _CL_KHR_BASIC_COMMAND_BUFFER_H
+#endif // CL_KHR_BASIC_COMMAND_BUFFER_H

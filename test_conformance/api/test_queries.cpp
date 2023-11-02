@@ -644,6 +644,13 @@ int test_get_device_info(cl_device_id deviceID, cl_context context, cl_command_q
     }
     log_info( "\tReported device profile: %s \n", profile );
 
+    if (strcmp(profile, "FULL_PROFILE") == 0 && compilerAvail != CL_TRUE)
+    {
+        log_error("ERROR: Returned profile of device is FULL , but "
+                  "CL_DEVICE_COMPILER_AVAILABLE is not CL_TRUE as required by "
+                  "OpenCL 1.2!");
+        return -1;
+    }
 
     return 0;
 }
@@ -799,8 +806,8 @@ int test_kernel_required_group_size(cl_device_id deviceID, cl_context context, c
         test_error(error, "clFinish failed");
 
         if (max_dimensions == 2) {
-            return 0;
             free(source);
+            return 0;
         }
 
         local[1]--; local[2]++;

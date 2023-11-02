@@ -36,7 +36,7 @@ struct get_test_data
 };
 
 static int check_group(const get_test_data *result, int nw, cl_uint ensg,
-                       int maxwgs)
+                       size_t maxwgs)
 {
     int first = -1;
     int last = -1;
@@ -168,7 +168,7 @@ static int check_group(const get_test_data *result, int nw, cl_uint ensg,
 
         j = (result[first].subGroupSize + 31) / 32 * result[i].subGroupId
             + (result[i].subGroupLocalId >> 5);
-        if (j < sizeof(hit) / 4)
+        if (j < static_cast<int>(sizeof(hit) / 4))
         {
             cl_uint b = 1U << (result[i].subGroupLocalId & 0x1fU);
             if ((hit[j] & b) != 0)
@@ -191,7 +191,7 @@ int test_work_item_functions(cl_device_id device, cl_context context,
     static const size_t lsize = 200;
     int error;
     int i, j, k, q, r, nw;
-    int maxwgs;
+    size_t maxwgs;
     cl_uint ensg;
     size_t global;
     size_t local;
@@ -235,7 +235,7 @@ int test_work_item_functions(cl_device_id device, cl_context context,
     error = get_max_allowed_work_group_size(context, kernel, &local, NULL);
     if (error != 0) return error;
 
-    maxwgs = (int)local;
+    maxwgs = local;
 
     // Limit it a bit so we have muliple work groups
     // Ideally this will still be large enough to give us multiple subgroups

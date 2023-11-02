@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _HARNESS_H_
-#define _HARNESS_H_
+#ifndef HARNESS_H_
+#define HARNESS_H_
 
 #define _CRT_SECURE_NO_WARNINGS
 

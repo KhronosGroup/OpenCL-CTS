@@ -72,7 +72,9 @@ VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
 
 #if defined(_WIN32) || defined(_WIN64)
     const char *vulkanLoaderLibraryName = "vulkan-1.dll";
-#elif defined(__linux__)
+#elif defined(__ANDROID__)
+    const char *vulkanLoaderLibraryName = "libvulkan.so";
+#else
     const char *vulkanLoaderLibraryName = "libvulkan.so.1";
 #endif
 #ifdef _WIN32
@@ -274,13 +276,13 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice vkPhysicalDevice)
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR;
     vkPhysicalDeviceIDPropertiesKHR.pNext = NULL;
 
-    VkPhysicalDeviceProperties2KHR vkPhysicalDeviceProperties2KHR = {};
-    vkPhysicalDeviceProperties2KHR.sType =
+    VkPhysicalDeviceProperties2 vkPhysicalDeviceProperties2 = {};
+    vkPhysicalDeviceProperties2.sType =
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
-    vkPhysicalDeviceProperties2KHR.pNext = &vkPhysicalDeviceIDPropertiesKHR;
+    vkPhysicalDeviceProperties2.pNext = &vkPhysicalDeviceIDPropertiesKHR;
 
-    vkGetPhysicalDeviceProperties2KHR(m_vkPhysicalDevice,
-                                      &vkPhysicalDeviceProperties2KHR);
+    vkGetPhysicalDeviceProperties2(m_vkPhysicalDevice,
+                                   &vkPhysicalDeviceProperties2);
 
     memcpy(m_vkDeviceUUID, vkPhysicalDeviceIDPropertiesKHR.deviceUUID,
            sizeof(m_vkDeviceUUID));
@@ -605,6 +607,37 @@ VulkanQueue &VulkanDevice::getQueue(const VulkanQueueFamily &queueFamily,
 VulkanDevice::operator VkDevice() const { return m_vkDevice; }
 
 ////////////////////////////////
+// VulkanFence implementation //
+////////////////////////////////
+
+VulkanFence::VulkanFence(const VulkanDevice &vkDevice)
+{
+
+    device = vkDevice;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.pNext = nullptr;
+    fenceInfo.flags = 0;
+
+    VkResult vkStatus = vkCreateFence(device, &fenceInfo, nullptr, &fence);
+
+    if (vkStatus != VK_SUCCESS)
+    {
+        throw std::runtime_error("Error: Failed create fence.");
+    }
+}
+
+VulkanFence::~VulkanFence() { vkDestroyFence(device, fence, nullptr); }
+
+void VulkanFence::reset() { vkResetFences(device, 1, &fence); }
+
+void VulkanFence::wait()
+{
+    vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+}
+
+////////////////////////////////
 // VulkanQueue implementation //
 ////////////////////////////////
 
@@ -614,6 +647,22 @@ VulkanQueue::VulkanQueue(const VulkanQueue &queue): m_vkQueue(queue.m_vkQueue)
 VulkanQueue::VulkanQueue(VkQueue vkQueue): m_vkQueue(vkQueue) {}
 
 VulkanQueue::~VulkanQueue() {}
+
+void VulkanQueue::submit(const VulkanCommandBuffer &commandBuffer,
+                         const std::shared_ptr<VulkanFence> &vkFence)
+{
+    VulkanCommandBufferList commandBufferList;
+    commandBufferList.add(commandBuffer);
+
+    VkSubmitInfo vkSubmitInfo = {};
+    vkSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    vkSubmitInfo.pNext = NULL;
+    vkSubmitInfo.waitSemaphoreCount = (uint32_t)0;
+    vkSubmitInfo.commandBufferCount = (uint32_t)commandBufferList.size();
+    vkSubmitInfo.pCommandBuffers = commandBufferList();
+
+    vkQueueSubmit(m_vkQueue, 1, &vkSubmitInfo, vkFence->fence);
+}
 
 void VulkanQueue::submit(const VulkanSemaphoreList &waitSemaphoreList,
                          const VulkanCommandBufferList &commandBufferList,
@@ -964,12 +1013,14 @@ void VulkanDescriptorPool::VulkanDescriptorPoolCommon(
                 == vkDescriptorTypeToDescriptorCountMap.end())
             {
                 vkDescriptorTypeToDescriptorCountMap
-                    [vkDescriptorSetLayoutBinding.descriptorType] = 1;
+                    [vkDescriptorSetLayoutBinding.descriptorType] =
+                        vkDescriptorSetLayoutBinding.descriptorCount;
             }
             else
             {
                 vkDescriptorTypeToDescriptorCountMap
-                    [vkDescriptorSetLayoutBinding.descriptorType]++;
+                    [vkDescriptorSetLayoutBinding.descriptorType] +=
+                    vkDescriptorSetLayoutBinding.descriptorCount;
             }
         }
 
@@ -1110,6 +1161,35 @@ void VulkanDescriptorSet::update(uint32_t binding, const VulkanBuffer &buffer)
     vkUpdateDescriptorSets(m_device, 1, &vkWriteDescriptorSet, 0, NULL);
 }
 
+void VulkanDescriptorSet::updateArray(uint32_t binding, unsigned numBuffers,
+                                      const VulkanBufferList &buffers)
+{
+    VkDescriptorBufferInfo *vkDescriptorBufferInfo =
+        (VkDescriptorBufferInfo *)calloc(numBuffers,
+                                         sizeof(VkDescriptorBufferInfo));
+    for (unsigned i = 0; i < numBuffers; i++)
+    {
+        vkDescriptorBufferInfo[i].buffer = buffers[i];
+        vkDescriptorBufferInfo[i].offset = 0;
+        vkDescriptorBufferInfo[i].range = VK_WHOLE_SIZE;
+    }
+
+    VkWriteDescriptorSet vkWriteDescriptorSet = {};
+    vkWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    vkWriteDescriptorSet.pNext = NULL;
+    vkWriteDescriptorSet.dstSet = m_vkDescriptorSet;
+    vkWriteDescriptorSet.dstBinding = binding;
+    vkWriteDescriptorSet.dstArrayElement = 0;
+    vkWriteDescriptorSet.descriptorCount = numBuffers;
+    vkWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    vkWriteDescriptorSet.pImageInfo = NULL;
+    vkWriteDescriptorSet.pBufferInfo = vkDescriptorBufferInfo;
+    vkWriteDescriptorSet.pTexelBufferView = NULL;
+
+    vkUpdateDescriptorSets(m_device, 1, &vkWriteDescriptorSet, 0, NULL);
+    free(vkDescriptorBufferInfo);
+}
+
 void VulkanDescriptorSet::update(uint32_t binding,
                                  const VulkanImageView &imageView)
 {
@@ -1131,6 +1211,34 @@ void VulkanDescriptorSet::update(uint32_t binding,
     vkWriteDescriptorSet.pTexelBufferView = NULL;
 
     vkUpdateDescriptorSets(m_device, 1, &vkWriteDescriptorSet, 0, NULL);
+}
+
+void VulkanDescriptorSet::updateArray(uint32_t binding,
+                                      const VulkanImageViewList &imageViewList)
+{
+    VkDescriptorImageInfo *vkDescriptorImageInfo =
+        new VkDescriptorImageInfo[imageViewList.size()];
+    for (size_t i = 0; i < imageViewList.size(); i++)
+    {
+        vkDescriptorImageInfo[i].sampler = VK_NULL_HANDLE;
+        vkDescriptorImageInfo[i].imageView = imageViewList[i];
+        vkDescriptorImageInfo[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+    }
+
+    VkWriteDescriptorSet vkWriteDescriptorSet = {};
+    vkWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    vkWriteDescriptorSet.pNext = NULL;
+    vkWriteDescriptorSet.dstSet = m_vkDescriptorSet;
+    vkWriteDescriptorSet.dstBinding = binding;
+    vkWriteDescriptorSet.dstArrayElement = 0;
+    vkWriteDescriptorSet.descriptorCount = imageViewList.size();
+    vkWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+    vkWriteDescriptorSet.pImageInfo = vkDescriptorImageInfo;
+    vkWriteDescriptorSet.pBufferInfo = NULL;
+    vkWriteDescriptorSet.pTexelBufferView = NULL;
+
+    vkUpdateDescriptorSets(m_device, 1, &vkWriteDescriptorSet, 0, NULL);
+    delete[] vkDescriptorImageInfo;
 }
 
 VulkanDescriptorSet::operator VkDescriptorSet() const
@@ -1456,12 +1564,14 @@ VulkanBuffer::VulkanBuffer(const VulkanBuffer &buffer)
       m_memoryTypeList(buffer.m_memoryTypeList)
 {}
 
+bool VulkanBuffer::isDedicated() const { return m_dedicated; }
+
 VulkanBuffer::VulkanBuffer(
     const VulkanDevice &device, uint64_t size,
     VulkanExternalMemoryHandleType externalMemoryHandleType,
     VulkanBufferUsage bufferUsage, VulkanSharingMode sharingMode,
     const VulkanQueueFamilyList &queueFamilyList)
-    : m_device(device), m_vkBuffer(VK_NULL_HANDLE)
+    : m_device(device), m_vkBuffer(VK_NULL_HANDLE), m_dedicated(false)
 {
     std::vector<uint32_t> queueFamilyIndexList;
     if (queueFamilyList.size() == 0)
@@ -1507,16 +1617,36 @@ VulkanBuffer::VulkanBuffer(
 
     vkCreateBuffer(m_device, &vkBufferCreateInfo, NULL, &m_vkBuffer);
 
-    VkMemoryRequirements vkMemoryRequirements = {};
-    vkGetBufferMemoryRequirements(m_device, m_vkBuffer, &vkMemoryRequirements);
-    m_size = vkMemoryRequirements.size;
-    m_alignment = vkMemoryRequirements.alignment;
+    VkMemoryDedicatedRequirements vkMemoryDedicatedRequirements = {};
+    vkMemoryDedicatedRequirements.sType =
+        VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS;
+    vkMemoryDedicatedRequirements.pNext = NULL;
+
+    VkMemoryRequirements2 vkMemoryRequirements = {};
+    vkMemoryRequirements.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
+    vkMemoryRequirements.pNext = &vkMemoryDedicatedRequirements;
+
+    VkBufferMemoryRequirementsInfo2 vkMemoryRequirementsInfo = {};
+
+    vkMemoryRequirementsInfo.sType =
+        VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2;
+    vkMemoryRequirementsInfo.buffer = m_vkBuffer;
+    vkMemoryRequirementsInfo.pNext = NULL;
+
+    vkGetBufferMemoryRequirements2(m_device, &vkMemoryRequirementsInfo,
+                                   &vkMemoryRequirements);
+
+    m_dedicated = vkMemoryDedicatedRequirements.requiresDedicatedAllocation;
+
+    m_size = vkMemoryRequirements.memoryRequirements.size;
+    m_alignment = vkMemoryRequirements.memoryRequirements.alignment;
     const VulkanMemoryTypeList &memoryTypeList =
         m_device.getPhysicalDevice().getMemoryTypeList();
     for (size_t mtIdx = 0; mtIdx < memoryTypeList.size(); mtIdx++)
     {
         uint32_t memoryTypeIndex = memoryTypeList[mtIdx];
-        if ((1 << memoryTypeIndex) & vkMemoryRequirements.memoryTypeBits)
+        if ((1 << memoryTypeIndex)
+            & vkMemoryRequirements.memoryRequirements.memoryTypeBits)
         {
             m_memoryTypeList.add(memoryTypeList[mtIdx]);
         }
@@ -1591,16 +1721,36 @@ VulkanImage::VulkanImage(
 
     vkCreateImage(m_device, &vkImageCreateInfo, NULL, &m_vkImage);
     VulkanImageCreateInfo = vkImageCreateInfo;
-    VkMemoryRequirements vkMemoryRequirements = {};
-    vkGetImageMemoryRequirements(m_device, m_vkImage, &vkMemoryRequirements);
-    m_size = vkMemoryRequirements.size;
-    m_alignment = vkMemoryRequirements.alignment;
+
+    VkMemoryDedicatedRequirements vkMemoryDedicatedRequirements = {};
+    vkMemoryDedicatedRequirements.sType =
+        VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS;
+    vkMemoryDedicatedRequirements.pNext = NULL;
+
+    VkMemoryRequirements2 vkMemoryRequirements = {};
+    vkMemoryRequirements.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
+    vkMemoryRequirements.pNext = &vkMemoryDedicatedRequirements;
+
+    VkImageMemoryRequirementsInfo2 vkMemoryRequirementsInfo = {};
+
+    vkMemoryRequirementsInfo.sType =
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2;
+    vkMemoryRequirementsInfo.image = m_vkImage;
+    vkMemoryRequirementsInfo.pNext = NULL;
+
+    vkGetImageMemoryRequirements2(m_device, &vkMemoryRequirementsInfo,
+                                  &vkMemoryRequirements);
+    m_size = vkMemoryRequirements.memoryRequirements.size;
+    m_alignment = vkMemoryRequirements.memoryRequirements.alignment;
+    m_dedicated = vkMemoryDedicatedRequirements.requiresDedicatedAllocation;
+
     const VulkanMemoryTypeList &memoryTypeList =
         m_device.getPhysicalDevice().getMemoryTypeList();
     for (size_t mtIdx = 0; mtIdx < memoryTypeList.size(); mtIdx++)
     {
         uint32_t memoryTypeIndex = memoryTypeList[mtIdx];
-        if ((1 << memoryTypeIndex) & vkMemoryRequirements.memoryTypeBits)
+        if ((1 << memoryTypeIndex)
+            & vkMemoryRequirements.memoryRequirements.memoryTypeBits)
         {
             m_memoryTypeList.add(memoryTypeList[mtIdx]);
         }
@@ -1629,6 +1779,8 @@ uint64_t VulkanImage::getSize() const { return m_size; }
 
 uint64_t VulkanImage::getAlignment() const { return m_alignment; }
 
+bool VulkanImage::isDedicated() const { return m_dedicated; }
+
 const VulkanMemoryTypeList &VulkanImage::getMemoryTypeList() const
 {
     return m_memoryTypeList;
@@ -1645,14 +1797,14 @@ VulkanImage2D::VulkanImage2D(const VulkanImage2D &image2D): VulkanImage(image2D)
 
 VulkanImage2D::VulkanImage2D(
     const VulkanDevice &device, VulkanFormat format, uint32_t width,
-    uint32_t height, uint32_t numMipLevels,
+    uint32_t height, VulkanImageTiling imageTiling, uint32_t numMipLevels,
     VulkanExternalMemoryHandleType externalMemoryHandleType,
     VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
     VulkanSharingMode sharingMode)
     : VulkanImage(device, VULKAN_IMAGE_TYPE_2D, format,
                   VulkanExtent3D(width, height, 1), numMipLevels, 1,
-                  externalMemoryHandleType, imageCreateFlag,
-                  VULKAN_IMAGE_TILING_OPTIMAL, imageUsage, sharingMode)
+                  externalMemoryHandleType, imageCreateFlag, imageTiling,
+                  imageUsage, sharingMode)
 {}
 
 VulkanImage2D::~VulkanImage2D() {}
@@ -1839,7 +1991,8 @@ VulkanDeviceMemory::VulkanDeviceMemory(
     const VulkanDevice &device, const VulkanImage &image,
     const VulkanMemoryType &memoryType,
     VulkanExternalMemoryHandleType externalMemoryHandleType, const void *name)
-    : m_device(device), m_size(image.getSize()), m_isDedicated(true)
+    : m_device(device), m_size(image.getSize()),
+      m_isDedicated(image.isDedicated())
 {
 #if defined(_WIN32) || defined(_WIN64)
     WindowsSecurityAttributes winSecurityAttributes;
@@ -1872,18 +2025,93 @@ VulkanDeviceMemory::VulkanDeviceMemory(
     VkMemoryDedicatedAllocateInfo vkMemoryDedicatedAllocateInfo = {};
     vkMemoryDedicatedAllocateInfo.sType =
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;
-    vkMemoryDedicatedAllocateInfo.pNext =
-        externalMemoryHandleType ? &vkExportMemoryAllocateInfoKHR : NULL;
+    vkMemoryDedicatedAllocateInfo.pNext = NULL;
     vkMemoryDedicatedAllocateInfo.image = image;
     vkMemoryDedicatedAllocateInfo.buffer = VK_NULL_HANDLE;
 
     VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
     vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    vkMemoryAllocateInfo.pNext = &vkMemoryDedicatedAllocateInfo;
     vkMemoryAllocateInfo.allocationSize = m_size;
     vkMemoryAllocateInfo.memoryTypeIndex = (uint32_t)memoryType;
 
+    if (m_isDedicated)
+    {
+        vkMemoryAllocateInfo.pNext = &vkMemoryDedicatedAllocateInfo;
+        vkMemoryDedicatedAllocateInfo.pNext =
+            externalMemoryHandleType ? &vkExportMemoryAllocateInfoKHR : NULL;
+    }
+    else
+    {
+        vkMemoryAllocateInfo.pNext =
+            externalMemoryHandleType ? &vkExportMemoryAllocateInfoKHR : NULL;
+    }
+
     vkAllocateMemory(m_device, &vkMemoryAllocateInfo, NULL, &m_vkDeviceMemory);
+}
+
+VulkanDeviceMemory::VulkanDeviceMemory(
+    const VulkanDevice &device, const VulkanBuffer &buffer,
+    const VulkanMemoryType &memoryType,
+    VulkanExternalMemoryHandleType externalMemoryHandleType, const void *name)
+    : m_device(device), m_size(buffer.getSize()),
+      m_isDedicated(buffer.isDedicated())
+{
+#if defined(_WIN32) || defined(_WIN64)
+    WindowsSecurityAttributes winSecurityAttributes;
+
+    VkExportMemoryWin32HandleInfoKHR vkExportMemoryWin32HandleInfoKHR = {};
+    vkExportMemoryWin32HandleInfoKHR.sType =
+        VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR;
+    vkExportMemoryWin32HandleInfoKHR.pNext = NULL;
+    vkExportMemoryWin32HandleInfoKHR.pAttributes = &winSecurityAttributes;
+    vkExportMemoryWin32HandleInfoKHR.dwAccess =
+        DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
+    vkExportMemoryWin32HandleInfoKHR.name = (LPCWSTR)name;
+
+#endif
+
+    VkExportMemoryAllocateInfoKHR vkExportMemoryAllocateInfoKHR = {};
+    vkExportMemoryAllocateInfoKHR.sType =
+        VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR;
+#if defined(_WIN32) || defined(_WIN64)
+    vkExportMemoryAllocateInfoKHR.pNext = externalMemoryHandleType
+            & VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT
+        ? &vkExportMemoryWin32HandleInfoKHR
+        : NULL;
+#else
+    vkExportMemoryAllocateInfoKHR.pNext = NULL;
+#endif
+    vkExportMemoryAllocateInfoKHR.handleTypes =
+        (VkExternalMemoryHandleTypeFlagsKHR)externalMemoryHandleType;
+
+    VkMemoryDedicatedAllocateInfo vkMemoryDedicatedAllocateInfo = {};
+    vkMemoryDedicatedAllocateInfo.sType =
+        VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;
+    vkMemoryDedicatedAllocateInfo.pNext = NULL;
+    vkMemoryDedicatedAllocateInfo.image = VK_NULL_HANDLE;
+    vkMemoryDedicatedAllocateInfo.buffer = buffer;
+
+    VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
+    vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    vkMemoryAllocateInfo.allocationSize = m_size;
+    vkMemoryAllocateInfo.memoryTypeIndex = (uint32_t)memoryType;
+
+    if (m_isDedicated)
+    {
+        vkMemoryAllocateInfo.pNext = &vkMemoryDedicatedAllocateInfo;
+        vkMemoryDedicatedAllocateInfo.pNext =
+            externalMemoryHandleType ? &vkExportMemoryAllocateInfoKHR : NULL;
+    }
+    else
+    {
+        vkMemoryAllocateInfo.pNext =
+            externalMemoryHandleType ? &vkExportMemoryAllocateInfoKHR : NULL;
+    }
+
+
+    VkResult res = vkAllocateMemory(m_device, &vkMemoryAllocateInfo, NULL,
+                                    &m_vkDeviceMemory);
+    ASSERT_SUCCESS(res, "Failed to allocate device memory");
 }
 
 VulkanDeviceMemory::~VulkanDeviceMemory()
@@ -1952,11 +2180,21 @@ void VulkanDeviceMemory::unmap() { vkUnmapMemory(m_device, m_vkDeviceMemory); }
 
 void VulkanDeviceMemory::bindBuffer(const VulkanBuffer &buffer, uint64_t offset)
 {
+    if (buffer.isDedicated() && !m_isDedicated)
+    {
+        throw std::runtime_error(
+            "Buffer requires dedicated memory.  Failed to bind");
+    }
     vkBindBufferMemory(m_device, buffer, m_vkDeviceMemory, offset);
 }
 
 void VulkanDeviceMemory::bindImage(const VulkanImage &image, uint64_t offset)
 {
+    if (image.isDedicated() && !m_isDedicated)
+    {
+        throw std::runtime_error(
+            "Image requires dedicated memory.  Failed to bind");
+    }
     vkBindImageMemory(m_device, image, m_vkDeviceMemory, offset);
 }
 

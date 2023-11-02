@@ -14,10 +14,11 @@
 // limitations under the License.
 //
 
-#ifndef BASIC_UTILS_H
-#define BASIC_UTILS_H
+#ifndef STRING_HELPERS_H
+#define STRING_HELPERS_H
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 inline std::string concat_kernel(const char *sstr[], int num)
@@ -38,4 +39,4 @@ inline std::string str_sprintf(const std::string &str, Args... args)
     return std::string(buffer.get(), buffer.get() + s - 1);
 }
 
-#endif // BASIC_UTIL_H
+#endif // STRING_HELPERS_H

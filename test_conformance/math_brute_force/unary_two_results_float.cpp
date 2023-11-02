@@ -189,12 +189,11 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
         // Get that moving
         if ((error = clFlush(gQueue))) vlog("clFlush failed\n");
 
-        FPU_mode_type oldMode;
+        FPU_mode_type oldMode = 0;
         RoundingMode oldRoundMode = kRoundToNearestEven;
         if (isFract)
         {
             // Calculate the correctly rounded reference result
-            memset(&oldMode, 0, sizeof(oldMode));
             if (ftz || relaxedMode) ForceFTZ(&oldMode);
 
             // Set the rounding mode to match the device

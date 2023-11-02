@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,45 +21,45 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <vector>
 
 #include "procs.h"
 
-const char *loop_kernel_code =
-"__kernel void test_loop(__global int *src, __global int *loopindx, __global int *loopcnt, __global int *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"    int  n = get_global_size(0);\n"
-"    int  i, j;\n"
-"\n"
-"    dst[tid] = 0;\n"
-"    for (i=0,j=loopindx[tid]; i<loopcnt[tid]; i++,j++)\n"
-"    {\n"
-"        if (j >= n)\n"
-"            j = 0;\n"
-"        dst[tid] += src[j];\n"
-"    }\n"
-"\n"
-"}\n";
-
-
-int
-verify_loop(int *inptr, int *loopindx, int *loopcnt, int *outptr, int n)
+namespace {
+const char *loop_kernel_code = R"(
+__kernel void test_loop(__global int *src, __global int *loopindx, __global int *loopcnt, __global int *dst)
 {
-    int     r, i, j, k;
+    int  tid = get_global_id(0);
+    int  n = get_global_size(0);
+    int  i, j;
 
-    for (i=0; i<n; i++)
+    dst[tid] = 0;
+    for (i=0, j=loopindx[tid]; i<loopcnt[tid]; i++, j++)
     {
-        r = 0;
-        for (j=0,k=loopindx[i]; j<loopcnt[i]; j++,k++)
+        if (j >= n)
+            j = 0;
+        dst[tid] += src[j];
+    }
+}
+)";
+
+
+int verify_loop(std::vector<cl_int> inptr, std::vector<cl_int> loopindx,
+                std::vector<cl_int> loopcnt, std::vector<cl_int> outptr, int n)
+{
+    for (int i = 0; i < n; i++)
+    {
+        int r = 0;
+        for (int j = 0, k = loopindx[i]; j < loopcnt[i]; j++, k++)
         {
-            if (k >= n)
-                k = 0;
+            if (k >= n) k = 0;
             r += inptr[k];
         }
 
         if (r != outptr[i])
         {
-            log_error("LOOP test failed: %d found, expected %d\n", outptr[i], r);
+            log_error("LOOP test failed: %d found, expected %d\n", outptr[i],
+                      r);
             return -1;
         }
     }
@@ -67,119 +67,69 @@ verify_loop(int *inptr, int *loopindx, int *loopcnt, int *outptr, int n)
     log_info("LOOP test passed\n");
     return 0;
 }
-
-int test_loop(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+}
+int test_loop(cl_device_id device, cl_context context, cl_command_queue queue,
+              int num_elements)
 {
-    cl_mem streams[4];
-    cl_int *input_ptr, *loop_indx, *loop_cnt, *output_ptr;
-    cl_program program;
-    cl_kernel kernel;
-    size_t threads[1];
-    int err, i;
+    clMemWrapper streams[4];
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+    int err;
 
     size_t length = sizeof(cl_int) * num_elements;
-    input_ptr  = (cl_int*)malloc(length);
-    loop_indx  = (cl_int*)malloc(length);
-    loop_cnt   = (cl_int*)malloc(length);
-    output_ptr = (cl_int*)malloc(length);
+    std::vector<cl_int> input(length);
+    std::vector<cl_int> loop_indx(length);
+    std::vector<cl_int> loop_cnt(length);
+    std::vector<cl_int> output(length);
 
-    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, NULL);
-    if (!streams[0])
+    for (auto &stream : streams)
     {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
-    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, NULL);
-    if (!streams[1])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
-    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, NULL);
-    if (!streams[2])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
-    streams[3] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, NULL);
-    if (!streams[3])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
+        stream =
+            clCreateBuffer(context, CL_MEM_READ_WRITE, length, nullptr, &err);
+        test_error(err, "clCreateBuffer failed.");
     }
 
-    MTdata d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
+    RandomSeed seed(gRandomSeed);
+    for (int i = 0; i < num_elements; i++)
     {
-        input_ptr[i] = (int)genrand_int32(d);
-        loop_indx[i] = (int)get_random_float(0, num_elements-1, d);
-        loop_cnt[i] = (int)get_random_float(0, num_elements/32, d);
-    }
-    free_mtdata(d); d = NULL;
+        input[i] = static_cast<int>(genrand_int32(seed));
+        loop_indx[i] =
+            static_cast<int>(get_random_float(0, num_elements - 1, seed));
+        loop_cnt[i] =
+            static_cast<int>(get_random_float(0, num_elements / 32, seed));
+    };
 
-  err = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, length, input_ptr, 0, NULL, NULL);
-  if (err != CL_SUCCESS)
-  {
-    log_error("clEnqueueWriteBuffer failed\n");
-    return -1;
-  }
-  err = clEnqueueWriteBuffer(queue, streams[1], CL_TRUE, 0, length, loop_indx, 0, NULL, NULL);
-  if (err != CL_SUCCESS)
-  {
-    log_error("clEnqueueWriteBuffer failed\n");
-    return -1;
-  }
-  err = clEnqueueWriteBuffer(queue, streams[2], CL_TRUE, 0, length, loop_cnt, 0, NULL, NULL);
-  if (err != CL_SUCCESS)
-  {
-    log_error("clEnqueueWriteBuffer failed\n");
-    return -1;
-  }
+    err = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, length,
+                               input.data(), 0, nullptr, nullptr);
+    test_error(err, "clEnqueueWriteBuffer failed.");
+    err = clEnqueueWriteBuffer(queue, streams[1], CL_TRUE, 0, length,
+                               loop_indx.data(), 0, nullptr, nullptr);
+    test_error(err, "clEnqueueWriteBuffer failed.");
+    err = clEnqueueWriteBuffer(queue, streams[2], CL_TRUE, 0, length,
+                               loop_cnt.data(), 0, nullptr, nullptr);
+    test_error(err, "clEnqueueWriteBuffer failed.");
 
-  err = create_single_kernel_helper(context, &program, &kernel, 1, &loop_kernel_code, "test_loop" );
-  if (err)
-    return -1;
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &loop_kernel_code, "test_loop");
+    test_error(err, "create_single_kernel_helper failed.");
 
-  err  = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
-  err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1]);
-  err |= clSetKernelArg(kernel, 2, sizeof streams[2], &streams[2]);
-  err |= clSetKernelArg(kernel, 3, sizeof streams[3], &streams[3]);
-    if (err != CL_SUCCESS)
+    for (int i = 0; i < ARRAY_SIZE(streams); i++)
     {
-        log_error("clSetKernelArgs failed\n");
-        return -1;
+        err = clSetKernelArg(kernel, i, sizeof streams[i], &streams[i]);
+        test_error(err, "clSetKernelArgs failed\n");
     }
 
-    threads[0] = (unsigned int)num_elements;
-  err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL);
-  if (err != CL_SUCCESS)
-  {
-    log_error("clEnqueueNDRangeKernel failed\n");
-    return -1;
-  }
+    size_t threads[] = { (size_t)num_elements };
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, threads, nullptr, 0,
+                                 nullptr, nullptr);
+    test_error(err, "clEnqueueNDRangeKernel failed\n");
 
-  err = clEnqueueReadBuffer(queue, streams[3], CL_TRUE, 0, length, output_ptr, 0, NULL, NULL);
-  if (err != CL_SUCCESS)
-  {
-    log_error("clReadArray failed\n");
-    return -1;
-  }
+    err = clEnqueueReadBuffer(queue, streams[3], CL_TRUE, 0, length,
+                              output.data(), 0, nullptr, nullptr);
+    test_error(err, "clEnqueueReadBuffer failed\n");
 
-  err = verify_loop(input_ptr, loop_indx, loop_cnt, output_ptr, num_elements);
+    err = verify_loop(input, loop_indx, loop_cnt, output, num_elements);
 
-    // cleanup
-    clReleaseMemObject(streams[0]);
-    clReleaseMemObject(streams[1]);
-    clReleaseMemObject(streams[2]);
-    clReleaseMemObject(streams[3]);
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
-    free(input_ptr);
-    free(loop_indx);
-    free(loop_cnt);
-    free(output_ptr);
 
     return err;
 }
-
-

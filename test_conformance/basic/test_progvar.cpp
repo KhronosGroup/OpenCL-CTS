@@ -48,6 +48,7 @@
 #include <sys/stat.h>
 #include "harness/typeWrappers.h"
 #include "harness/errorHelpers.h"
+#include "harness/featureHelpers.h"
 #include "harness/mt19937.h"
 #include "procs.h"
 
@@ -57,6 +58,7 @@
 static int l_has_double = 0;
 static int l_has_half = 0;
 static int l_64bit_device = 0;
+static int l_has_atomics = 1;
 static int l_has_int64_atomics = 0;
 static int l_has_intptr_atomics = 0;
 static int l_has_cles_int64 = 0;
@@ -398,7 +400,7 @@ private:
 ////////////////////
 // File scope function declarations
 
-static void l_load_abilities(cl_device_id device);
+static int l_load_abilities(cl_device_id device);
 static const char* l_get_fp64_pragma(void);
 static const char* l_get_cles_int64_pragma(void);
 static int l_build_type_table(cl_device_id device);
@@ -547,11 +549,25 @@ static cl_int print_build_log(cl_program program, cl_uint num_devices,
     return error;
 }
 
-static void l_load_abilities(cl_device_id device)
+static int l_load_abilities(cl_device_id device)
 {
     l_has_half = is_extension_available(device, "cl_khr_fp16");
     l_has_double = is_extension_available(device, "cl_khr_fp64");
     l_has_cles_int64 = is_extension_available(device, "cles_khr_int64");
+
+    if (get_device_cl_version(device) >= Version(3, 0))
+    {
+        OpenCLCFeatures features;
+        int ret = get_device_cl_c_features(device, features);
+        if (ret)
+        {
+            log_error("Couldn't query OpenCL C features for the device!\n");
+            return ret;
+        }
+
+        l_has_atomics = features.supports__opencl_c_atomic_order_seq_cst
+            && features.supports__opencl_c_atomic_scope_device;
+    }
 
     l_has_int64_atomics =
         is_extension_available(device, "cl_khr_int64_base_atomics")
@@ -566,7 +582,8 @@ static void l_load_abilities(cl_device_id device)
     }
 
     // 32-bit devices always have intptr atomics.
-    l_has_intptr_atomics = !l_64bit_device || l_has_int64_atomics;
+    l_has_intptr_atomics =
+        l_has_atomics && (!l_64bit_device || l_has_int64_atomics);
 
     union {
         char c[4];
@@ -581,13 +598,19 @@ static void l_load_abilities(cl_device_id device)
         cl_uint max_dim = 0;
         status = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,
                                  sizeof(max_dim), &max_dim, 0);
-        assert(status == CL_SUCCESS);
+        if (check_error(status,
+                        "clGetDeviceInfo for "
+                        "CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS failed."))
+            return TEST_FAIL;
         assert(max_dim > 0);
         size_t max_id[3];
         max_id[0] = 0;
         status = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
                                  max_dim * sizeof(size_t), &max_id[0], 0);
-        assert(status == CL_SUCCESS);
+        if (check_error(status,
+                        "clGetDeviceInfo for "
+                        "CL_DEVICE_MAX_WORK_ITEM_SIZES failed."))
+            return TEST_FAIL;
         l_max_global_id0 = max_id[0];
     }
 
@@ -597,8 +620,13 @@ static void l_load_abilities(cl_device_id device)
         status =
             clGetDeviceInfo(device, CL_DEVICE_LINKER_AVAILABLE,
                             sizeof(l_linker_available), &l_linker_available, 0);
-        assert(status == CL_SUCCESS);
+        if (check_error(status,
+                        "clGetDeviceInfo for "
+                        "CL_DEVICE_LINKER_AVAILABLE failed."))
+            return TEST_FAIL;
     }
+
+    return TEST_PASS;
 }
 
 
@@ -640,7 +668,9 @@ static int l_build_type_table(cl_device_id device)
     const char* intptr_atomics[] = { "atomic_intptr_t", "atomic_uintptr_t",
                                      "atomic_size_t", "atomic_ptrdiff_t" };
 
-    l_load_abilities(device);
+    int ret = l_load_abilities(device);
+    if (ret) return CL_INVALID_DEVICE;
+
     num_type_info = 0;
 
     // Boolean.
@@ -679,6 +709,7 @@ static int l_build_type_table(cl_device_id device)
     // Atomic types.
     for (iscalar = 0; iscalar < sizeof(atomics) / sizeof(atomics[0]); ++iscalar)
     {
+        if (!l_has_atomics) continue;
         if (!l_has_int64_atomics && strstr(atomics[iscalar], "long")) continue;
         if (!(l_has_int64_atomics && l_has_double)
             && strstr(atomics[iscalar], "double"))
@@ -903,6 +934,7 @@ static std::string global_decls(const TypeInfo& ti, bool with_init)
                                vol, tn, vol, tn, vol, tn, vol, tn);
     }
     assert(num_printed < sizeof(decls));
+    (void)num_printed;
     return std::string(decls);
 }
 
@@ -983,6 +1015,7 @@ static std::string writer_function(const TypeInfo& ti)
                                writer_template_atomic, ti.get_buf_elem_type());
     }
     assert(num_printed < sizeof(writer_src));
+    (void)num_printed;
     std::string result = writer_src;
     return result;
 }
@@ -1024,6 +1057,7 @@ static std::string reader_function(const TypeInfo& ti)
                      ti.get_buf_elem_type(), ti.get_buf_elem_type());
     }
     assert(num_printed < sizeof(reader_src));
+    (void)num_printed;
     std::string result = reader_src;
     return result;
 }

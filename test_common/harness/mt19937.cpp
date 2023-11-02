@@ -51,6 +51,7 @@
 #include "harness/alloc.h"
 
 #ifdef __SSE2__
+#include <mutex>
 #include <emmintrin.h>
 #endif
 
@@ -107,7 +108,7 @@ cl_uint genrand_int32(MTdata d)
     /* mag01[x] = x * MATRIX_A  for x=0,1 */
     static const cl_uint mag01[2] = { 0x0UL, MATRIX_A };
 #ifdef __SSE2__
-    static volatile int init = 0;
+    static std::once_flag init_flag;
     static union {
         __m128i v;
         cl_uint s[4];
@@ -123,8 +124,7 @@ cl_uint genrand_int32(MTdata d)
         int kk;
 
 #ifdef __SSE2__
-        if (0 == init)
-        {
+        auto init_fn = []() {
             upper_mask.s[0] = upper_mask.s[1] = upper_mask.s[2] =
                 upper_mask.s[3] = UPPER_MASK;
             lower_mask.s[0] = lower_mask.s[1] = lower_mask.s[2] =
@@ -134,8 +134,8 @@ cl_uint genrand_int32(MTdata d)
                 MATRIX_A;
             c0.s[0] = c0.s[1] = c0.s[2] = c0.s[3] = (cl_uint)0x9d2c5680UL;
             c1.s[0] = c1.s[1] = c1.s[2] = c1.s[3] = (cl_uint)0xefc60000UL;
-            init = 1;
-        }
+        };
+        std::call_once(init_flag, init_fn);
 #endif
 
         kk = 0;

@@ -107,8 +107,9 @@ int test_queue_properties(cl_device_id deviceID, cl_context context, cl_command_
 
     clProgramWrapper program;
     clKernelWrapper kernel;
-    cl_queue_properties_khr device_props = 0;
-    cl_queue_properties_khr queue_prop_def[] = { CL_QUEUE_PROPERTIES, 0, 0 };
+    cl_command_queue_properties device_props = 0;
+    cl_command_queue_properties queue_prop_def[] = { CL_QUEUE_PROPERTIES, 0,
+                                                     0 };
 
     // Query extension
     if (!is_extension_available(deviceID, "cl_khr_create_command_queue"))
