@@ -16,6 +16,8 @@
 #include "common.h"
 #include "harness/mt19937.h"
 
+#include <vector>
+
 #define GLOBAL_SIZE 65536
 
 static const char *sources[] = {
@@ -75,9 +77,9 @@ wait_and_release(const char* s, cl_event* evs, int n)
 
 int test_svm_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
 {
-    cl_uint amem[GLOBAL_SIZE];
-    cl_uint bmem[GLOBAL_SIZE];
-    cl_uint cmem[GLOBAL_SIZE];
+    std::vector<cl_uint> amem(GLOBAL_SIZE);
+    std::vector<cl_uint> bmem(GLOBAL_SIZE);
+    std::vector<cl_uint> cmem(GLOBAL_SIZE);
     cl_event evs[20];
 
     const size_t global_size = GLOBAL_SIZE;
@@ -145,9 +147,9 @@ int test_svm_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue
     test_error(error, "clSetKernelArgSVMPointer failed");
 
     // Initialize host copy of data (and result)
-    fill_buffer(amem, global_size, seed);
-    fill_buffer(bmem, global_size, seed);
-    fill_buffer(cmem, global_size, seed);
+    fill_buffer(amem.data(), global_size, seed);
+    fill_buffer(bmem.data(), global_size, seed);
+    fill_buffer(cmem.data(), global_size, seed);
 
     // Now we're ready to start
     {
@@ -218,9 +220,9 @@ int test_svm_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue
     if (error)
         return -1;
 
-    memcpy((void *)asvm, (void *)amem, global_size*sizeof(cl_uint));
-    memcpy((void *)bsvm, (void *)bmem, global_size*sizeof(cl_uint));
-    memcpy((void *)csvm, (void *)cmem, global_size*sizeof(cl_uint));
+    memcpy((void *)asvm, (void *)amem.data(), global_size * sizeof(cl_uint));
+    memcpy((void *)bsvm, (void *)bmem.data(), global_size * sizeof(cl_uint));
+    memcpy((void *)csvm, (void *)cmem.data(), global_size * sizeof(cl_uint));
 
     {
         error = clEnqueueSVMUnmap(queues[1], (void *)asvm, 0, NULL, &evs[0]);
@@ -304,9 +306,9 @@ int test_svm_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue
         return -1;
 
     // Check kernel results
-    bool ok = check("memory a", (cl_uint *)asvm, amem, global_size);
-    ok &= check("memory b", (cl_uint *)bsvm, bmem, global_size);
-    ok &= check("memory c", (cl_uint *)csvm, cmem, global_size);
+    bool ok = check("memory a", (cl_uint *)asvm, amem.data(), global_size);
+    ok &= check("memory b", (cl_uint *)bsvm, bmem.data(), global_size);
+    ok &= check("memory c", (cl_uint *)csvm, cmem.data(), global_size);
 
     {
         void *ptrs[] = { asvm, bsvm, csvm };
