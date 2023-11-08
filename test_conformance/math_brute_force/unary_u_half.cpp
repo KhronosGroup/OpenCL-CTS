@@ -23,7 +23,8 @@
 #include <cstring>
 #include <cinttypes>
 
-////////////////////////////////////////////////////////////////////////////////
+namespace {
+
 static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
                                  void *p)
 {
@@ -36,7 +37,8 @@ static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
     return BuildKernels(info, job_id, generator);
 }
 
-////////////////////////////////////////////////////////////////////////////////
+} // anonymous namespace
+
 int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
 {
     int error;
@@ -90,7 +92,7 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
         // write garbage into output arrays
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            uint16_t pattern = 0xdead;
+            uint32_t pattern = 0xACDCACDC;
             memset_pattern4(gOut[j], &pattern, bufferSize);
             if ((error =
                      clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
@@ -139,7 +141,7 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
             if (!strcmp(name, "nan"))
                 r[j] = reference_nanh(p[j]);
             else
-                r[j] = cl_half_from_float(f->func.f_u(p[j]), CL_HALF_RTE);
+                r[j] = HFF(f->func.f_u(p[j]));
         }
         // Read the data back
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
@@ -181,8 +183,7 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
                         if (ftz)
                         {
                             // retry per section 6.5.3.2
-                            if (IsHalfSubnormal(
-                                    cl_half_from_float(correct, CL_HALF_RTE)))
+                            if (IsHalfResultSubnormal(correct, half_ulps))
                             {
                                 fail = fail && (test != 0.0f);
                                 if (!fail) err = 0.0f;
@@ -197,8 +198,8 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
                     if (fail)
                     {
                         vlog_error(
-                            "\n%s%s: %f ulp error at 0x%0.4x \nExpected: %a "
-                            "(0x%0.4x) \nActual: %a (0x%0.4x)\n",
+                            "\n%s%s: %f ulp error at 0x%04x \nExpected: %a "
+                            "(0x%04x) \nActual: %a (0x%04x)\n",
                             f->name, sizeNames[k], err, p[j],
                             cl_half_to_float(r[j]), r[j], test, q[j]);
                         return -1;

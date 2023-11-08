@@ -62,8 +62,7 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
     float half_ulps = f->half_ulps;
 
     // Init the kernels
-    BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode,
-                                relaxedMode };
+    BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode };
     if ((error = ThreadPool_Do(BuildKernelFn_HalfFn,
                                gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                &build_info)))
@@ -77,22 +76,14 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
             const unsigned m_size = 0x1ff;
             const unsigned e_size = 0xf;
             const unsigned s_size = 0x2;
-            const unsigned sclamp = 0xffff;
 
             for (size_t j = 0; j < half_buffer_size; j++)
             {
                 unsigned ind = j % (s_size * e_size * m_size);
                 unsigned val = (((ind / (e_size * m_size)) << 15)
                                 | (((ind / m_size) % e_size + 1) << 10)
-                                | (ind % m_size + 1))
-                    & sclamp;
+                                | (ind % m_size + 1));
                 pIn[j] = val;
-
-                if (relaxedMode && strcmp(f->name, "sincos") == 0)
-                {
-                    float pj = HTF(pIn[j]);
-                    if (fabs(pj) > M_PI) pIn[j] = 0x7e00; // HALF_NAN
-                }
             }
         }
 
@@ -106,7 +97,7 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
         // Write garbage into output arrays
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            uint32_t pattern = 0xffffdead;
+            uint32_t pattern = 0xacdcacdc;
             if (gHostFill)
             {
                 memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
@@ -200,7 +191,7 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
         {
             // Calculate the correctly rounded reference result
             memset(&oldMode, 0, sizeof(oldMode));
-            if (ftz || relaxedMode) ForceFTZ(&oldMode);
+            if (ftz) ForceFTZ(&oldMode);
 
             // Set the rounding mode to match the device
             if (gIsInRTZMode)
@@ -218,11 +209,7 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
                 double dd;
                 feclearexcept(FE_OVERFLOW);
 
-                if (relaxedMode)
-                    ref1[j] = HFF((float)f->rfunc.f_fpf(HTF(pIn[j]), &dd));
-                else
-                    ref1[j] = HFF((float)f->func.f_fpf(HTF(pIn[j]), &dd));
-
+                ref1[j] = HFF((float)f->func.f_fpf(HTF(pIn[j]), &dd));
                 ref2[j] = HFF((float)dd);
                 overflow[j] =
                     FE_OVERFLOW == (FE_OVERFLOW & fetestexcept(FE_OVERFLOW));
@@ -233,11 +220,7 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
             for (size_t j = 0; j < half_buffer_size; j++)
             {
                 double dd;
-                if (relaxedMode)
-                    ref1[j] = HFF((float)f->rfunc.f_fpf(HTF(pIn[j]), &dd));
-                else
-                    ref1[j] = HFF((float)f->func.f_fpf(HTF(pIn[j]), &dd));
-
+                ref1[j] = HFF((float)f->func.f_fpf(HTF(pIn[j]), &dd));
                 ref2[j] = HFF((float)dd);
             }
         }
@@ -283,17 +266,14 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
                     double fp_correct1 = 0, fp_correct2 = 0;
                     float err = 0, err2 = 0;
 
-                    if (relaxedMode)
-                        fp_correct1 = f->rfunc.f_fpf(HTF(pIn[j]), &fp_correct2);
-                    else
-                        fp_correct1 = f->func.f_fpf(HTF(pIn[j]), &fp_correct2);
+                    fp_correct1 = f->func.f_fpf(HTF(pIn[j]), &fp_correct2);
 
                     cl_half correct1 = HFF(fp_correct1);
                     cl_half correct2 = HFF(fp_correct2);
 
                     // Per section 10 paragraph 6, accept any result if an input
                     // or output is a infinity or NaN or overflow
-                    if (relaxedMode || skipNanInf)
+                    if (skipNanInf)
                     {
                         if (skipNanInf && overflow[j]) continue;
                         // Note: no double rounding here.  Reference functions
@@ -304,35 +284,18 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
                             continue;
                     }
 
-                    // If we are in fast relaxed math, we
-                    // have a different calculation for the
-                    // subnormal threshold.
-                    typedef int (*CheckForSubnormal)(double, float);
-                    CheckForSubnormal isFloatResultSubnormalPtr;
-                    if (relaxedMode)
-                    {
-                        err = Abs_Error(HTF(test1[j]), fp_correct1);
-                        err2 = Abs_Error(HTF(test2[j]), fp_correct2);
-                        isFloatResultSubnormalPtr =
-                            &IsFloatResultSubnormalAbsError;
-                    }
-                    else
-                    {
-                        err = Ulp_Error_Half(test1[j], fp_correct1);
-                        err2 = Ulp_Error_Half(test2[j], fp_correct2);
-                        isFloatResultSubnormalPtr = &IsFloatResultSubnormal;
-                    }
+                    err = Ulp_Error_Half(test1[j], fp_correct1);
+                    err2 = Ulp_Error_Half(test2[j], fp_correct2);
+
                     int fail =
                         !(fabsf(err) <= half_ulps && fabsf(err2) <= half_ulps);
 
-                    if (ftz || relaxedMode)
+                    if (ftz)
                     {
                         // retry per section 6.5.3.2
-                        if ((*isFloatResultSubnormalPtr)(fp_correct1,
-                                                         half_ulps))
+                        if (IsHalfResultSubnormal(fp_correct1, half_ulps))
                         {
-                            if ((*isFloatResultSubnormalPtr)(fp_correct2,
-                                                             half_ulps))
+                            if (IsHalfResultSubnormal(fp_correct2, half_ulps))
                             {
                                 fail = fail
                                     && !(HTF(test1[j]) == 0.0f
@@ -351,8 +314,7 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
                                 if (!fail) err = 0.0f;
                             }
                         }
-                        else if ((*isFloatResultSubnormalPtr)(fp_correct2,
-                                                              half_ulps))
+                        else if (IsHalfResultSubnormal(fp_correct2, half_ulps))
                         {
                             fail = fail
                                 && !(HTF(test2[j]) == 0.0f
@@ -369,19 +331,8 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
                             float errp, err2p, errn, err2n;
 
                             if (skipNanInf) feclearexcept(FE_OVERFLOW);
-                            if (relaxedMode)
-                            {
-                                fp_correctp =
-                                    f->rfunc.f_fpf(0.0, &fp_correct2p);
-                                fp_correctn =
-                                    f->rfunc.f_fpf(-0.0, &fp_correct2n);
-                            }
-                            else
-                            {
-                                fp_correctp = f->func.f_fpf(0.0, &fp_correct2p);
-                                fp_correctn =
-                                    f->func.f_fpf(-0.0, &fp_correct2n);
-                            }
+                            fp_correctp = f->func.f_fpf(0.0, &fp_correct2p);
+                            fp_correctn = f->func.f_fpf(-0.0, &fp_correct2n);
 
                             cl_half correctp = HFF(fp_correctp);
                             cl_half correctn = HFF(fp_correctn);
@@ -408,20 +359,10 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
                                     continue;
                             }
 
-                            if (relaxedMode)
-                            {
-                                errp = Abs_Error(HTF(test1[j]), fp_correctp);
-                                err2p = Abs_Error(HTF(test1[j]), fp_correct2p);
-                                errn = Abs_Error(HTF(test1[j]), fp_correctn);
-                                err2n = Abs_Error(HTF(test1[j]), fp_correct2n);
-                            }
-                            else
-                            {
-                                errp = Ulp_Error_Half(test1[j], fp_correctp);
-                                err2p = Ulp_Error_Half(test1[j], fp_correct2p);
-                                errn = Ulp_Error_Half(test1[j], fp_correctn);
-                                err2n = Ulp_Error_Half(test1[j], fp_correct2n);
-                            }
+                            errp = Ulp_Error_Half(test1[j], fp_correctp);
+                            err2p = Ulp_Error_Half(test1[j], fp_correct2p);
+                            errn = Ulp_Error_Half(test1[j], fp_correctn);
+                            err2n = Ulp_Error_Half(test1[j], fp_correct2n);
 
                             fail = fail
                                 && ((!(fabsf(errp) <= half_ulps))
@@ -434,15 +375,14 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
                             if (fabsf(err2n) < fabsf(err2)) err2 = err2n;
 
                             // retry per section 6.5.3.4
-                            if ((*isFloatResultSubnormalPtr)(fp_correctp,
-                                                             half_ulps)
-                                || (*isFloatResultSubnormalPtr)(fp_correctn,
-                                                                half_ulps))
+                            if (IsHalfResultSubnormal(fp_correctp, half_ulps)
+                                || IsHalfResultSubnormal(fp_correctn,
+                                                         half_ulps))
                             {
-                                if ((*isFloatResultSubnormalPtr)(fp_correct2p,
-                                                                 half_ulps)
-                                    || (*isFloatResultSubnormalPtr)(
-                                        fp_correct2n, half_ulps))
+                                if (IsHalfResultSubnormal(fp_correct2p,
+                                                          half_ulps)
+                                    || IsHalfResultSubnormal(fp_correct2n,
+                                                             half_ulps))
                                 {
                                     fail = fail
                                         && !(HTF(test1[j]) == 0.0f
@@ -457,10 +397,10 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
                                     if (!fail) err = 0.0f;
                                 }
                             }
-                            else if ((*isFloatResultSubnormalPtr)(fp_correct2p,
-                                                                  half_ulps)
-                                     || (*isFloatResultSubnormalPtr)(
-                                         fp_correct2n, half_ulps))
+                            else if (IsHalfResultSubnormal(fp_correct2p,
+                                                           half_ulps)
+                                     || IsHalfResultSubnormal(fp_correct2n,
+                                                              half_ulps))
                             {
                                 fail = fail
                                     && !(HTF(test2[j]) == 0.0f

@@ -23,7 +23,6 @@
 
 namespace {
 
-////////////////////////////////////////////////////////////////////////////////
 cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo &info = *(BuildKernelInfo *)p;
@@ -35,7 +34,6 @@ cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-////////////////////////////////////////////////////////////////////////////////
 // Thread specific data for a worker thread
 typedef struct ThreadInfo
 {
@@ -47,7 +45,6 @@ typedef struct ThreadInfo
         tQueue; // per thread command queue to improve performance
 } ThreadInfo;
 
-////////////////////////////////////////////////////////////////////////////////
 struct TestInfoBase
 {
     size_t subBufferSize; // Size of the sub-buffer in elements
@@ -64,7 +61,6 @@ struct TestInfoBase
     float half_sin_cos_tan_limit;
 };
 
-////////////////////////////////////////////////////////////////////////////////
 struct TestInfo : public TestInfoBase
 {
     TestInfo(const TestInfoBase &base): TestInfoBase(base) {}
@@ -80,12 +76,265 @@ struct TestInfo : public TestInfoBase
     KernelMatrix k;
 };
 
+cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
+{
+    TestInfo *job = (TestInfo *)data;
+    size_t buffer_elements = job->subBufferSize;
+    size_t buffer_size = buffer_elements * sizeof(cl_half);
+    cl_uint scale = job->scale;
+    cl_uint base = job_id * (cl_uint)job->step;
+    ThreadInfo *tinfo = &(job->tinfo[thread_id]);
+    float ulps = job->ulps;
+    fptr func = job->f->func;
+    cl_uint j, k;
+    cl_int error = CL_SUCCESS;
+
+    int isRangeLimited = job->isRangeLimited;
+    float half_sin_cos_tan_limit = job->half_sin_cos_tan_limit;
+    int ftz = job->ftz;
+
+    std::vector<float> s(0);
+
+    // start the map of the output arrays
+    cl_event e[VECTOR_SIZE_COUNT];
+    cl_ushort *out[VECTOR_SIZE_COUNT];
+    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    {
+        out[j] = (uint16_t *)clEnqueueMapBuffer(
+            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
+            buffer_size, 0, NULL, e + j, &error);
+        if (error || NULL == out[j])
+        {
+            vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
+                       error);
+            return error;
+        }
+    }
+
+    // Get that moving
+    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
+
+    // Write the new values to the input array
+    cl_ushort *p = (cl_ushort *)gIn + thread_id * buffer_elements;
+    for (j = 0; j < buffer_elements; j++)
+    {
+        p[j] = base + j * scale;
+    }
+
+    if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
+                                      buffer_size, p, 0, NULL, NULL)))
+    {
+        vlog_error("Error: clEnqueueWriteBuffer failed! err: %d\n", error);
+        return error;
+    }
+
+    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    {
+        // Wait for the map to finish
+        if ((error = clWaitForEvents(1, e + j)))
+        {
+            vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
+            return error;
+        }
+        if ((error = clReleaseEvent(e[j])))
+        {
+            vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
+            return error;
+        }
+
+        // Fill the result buffer with garbage, so that old results don't carry
+        // over
+        uint32_t pattern = 0xACDCACDC;
+        memset_pattern4(out[j], &pattern, buffer_size);
+        if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
+                                             out[j], 0, NULL, NULL)))
+        {
+            vlog_error("Error: clEnqueueMapBuffer failed! err: %d\n", error);
+            return error;
+        }
+
+        // run the kernel
+        size_t vectorCount =
+            (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
+        cl_kernel kernel = job->k[j][thread_id]; // each worker thread has its
+                                                 // own copy of the cl_kernel
+        cl_program program = job->programs[j];
+
+        if ((error = clSetKernelArg(kernel, 0, sizeof(tinfo->outBuf[j]),
+                                    &tinfo->outBuf[j])))
+        {
+            LogBuildError(program);
+            return error;
+        }
+        if ((error = clSetKernelArg(kernel, 1, sizeof(tinfo->inBuf),
+                                    &tinfo->inBuf)))
+        {
+            LogBuildError(program);
+            return error;
+        }
+
+        if ((error = clEnqueueNDRangeKernel(tinfo->tQueue, kernel, 1, NULL,
+                                            &vectorCount, NULL, 0, NULL, NULL)))
+        {
+            vlog_error("FAILED -- could not execute kernel\n");
+            return error;
+        }
+    }
+
+
+    // Get that moving
+    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 2 failed\n");
+
+    if (gSkipCorrectnessTesting) return CL_SUCCESS;
+
+    // Calculate the correctly rounded reference result
+    cl_half *r = (cl_half *)gOut_Ref + thread_id * buffer_elements;
+    s.resize(buffer_elements);
+    for (j = 0; j < buffer_elements; j++)
+    {
+        s[j] = (float)cl_half_to_float(p[j]);
+        r[j] = HFF(func.f_f(s[j]));
+    }
+
+    // Read the data back -- no need to wait for the first N-1 buffers. This is
+    // an in order queue.
+    for (j = gMinVectorSizeIndex; j + 1 < gMaxVectorSizeIndex; j++)
+    {
+        out[j] = (uint16_t *)clEnqueueMapBuffer(
+            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_READ, 0,
+            buffer_size, 0, NULL, NULL, &error);
+        if (error || NULL == out[j])
+        {
+            vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
+                       error);
+            return error;
+        }
+    }
+    // Wait for the last buffer
+    out[j] = (uint16_t *)clEnqueueMapBuffer(tinfo->tQueue, tinfo->outBuf[j],
+                                            CL_TRUE, CL_MAP_READ, 0,
+                                            buffer_size, 0, NULL, NULL, &error);
+    if (error || NULL == out[j])
+    {
+        vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error);
+        return error;
+    }
+
+    // Verify data
+    for (j = 0; j < buffer_elements; j++)
+    {
+        for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
+        {
+            cl_ushort *q = out[k];
+
+            // If we aren't getting the correctly rounded result
+            if (r[j] != q[j])
+            {
+                float test = cl_half_to_float(q[j]);
+                double correct = func.f_f(s[j]);
+                float err = Ulp_Error_Half(q[j], correct);
+                int fail = !(fabsf(err) <= ulps);
+
+                // half_sin/cos/tan are only valid between +-2**16, Inf, NaN
+                if (isRangeLimited
+                    && fabsf(s[j]) > MAKE_HEX_FLOAT(0x1.0p16f, 0x1L, 16)
+                    && fabsf(s[j]) < INFINITY)
+                {
+                    if (fabsf(test) <= half_sin_cos_tan_limit)
+                    {
+                        err = 0;
+                        fail = 0;
+                    }
+                }
+
+                if (fail)
+                {
+                    if (ftz)
+                    {
+                        // retry per section 6.5.3.2
+                        if (IsHalfResultSubnormal(correct, ulps))
+                        {
+                            fail = fail && (test != 0.0f);
+                            if (!fail) err = 0.0f;
+                        }
+
+                        // retry per section 6.5.3.3
+                        if (IsHalfSubnormal(p[j]))
+                        {
+                            double correct2 = func.f_f(0.0);
+                            double correct3 = func.f_f(-0.0);
+                            float err2 = Ulp_Error_Half(q[j], correct2);
+                            float err3 = Ulp_Error_Half(q[j], correct3);
+                            fail = fail
+                                && ((!(fabsf(err2) <= ulps))
+                                    && (!(fabsf(err3) <= ulps)));
+                            if (fabsf(err2) < fabsf(err)) err = err2;
+                            if (fabsf(err3) < fabsf(err)) err = err3;
+
+                            // retry per section 6.5.3.4
+                            if (IsHalfResultSubnormal(correct2, ulps)
+                                || IsHalfResultSubnormal(correct3, ulps))
+                            {
+                                fail = fail && (test != 0.0f);
+                                if (!fail) err = 0.0f;
+                            }
+                        }
+                    }
+                }
+                if (fabsf(err) > tinfo->maxError)
+                {
+                    tinfo->maxError = fabsf(err);
+                    tinfo->maxErrorValue = s[j];
+                }
+                if (fail)
+                {
+                    vlog_error("\nERROR: %s%s: %f ulp error at %a "
+                               "(half 0x%04x)\nExpected: %a (half 0x%04x) "
+                               "\nActual: %a (half 0x%04x)\n",
+                               job->f->name, sizeNames[k], err, s[j], p[j],
+                               cl_half_to_float(r[j]), r[j], test, q[j]);
+                    error = -1;
+                    return error;
+                }
+            }
+        }
+    }
+
+    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    {
+        if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
+                                             out[j], 0, NULL, NULL)))
+        {
+            vlog_error("Error: clEnqueueUnmapMemObject %d failed 2! err: %d\n",
+                       j, error);
+            return error;
+        }
+    }
+
+    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 3 failed\n");
+
+
+    if (0 == (base & 0x0fffffff))
+    {
+        if (gVerboseBruteForce)
+        {
+            vlog("base:%14u step:%10u scale:%10u buf_elements:%10zd ulps:%5.3f "
+                 "ThreadCount:%2u\n",
+                 base, job->step, job->scale, buffer_elements, job->ulps,
+                 job->threadCount);
+        }
+        else
+        {
+            vlog(".");
+        }
+        fflush(stdout);
+    }
+
+    return error;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *p);
+} // anonymous namespace
 
-////////////////////////////////////////////////////////////////////////////////
 int TestFunc_Half_Half(const Func *f, MTdata d, bool relaxedMode)
 {
     TestInfoBase test_info_base;
@@ -215,268 +464,6 @@ int TestFunc_Half_Half(const Func *f, MTdata d, bool relaxedMode)
 
     if (!gSkipCorrectnessTesting) vlog("\t%8.2f @ %a", maxError, maxErrorVal);
     vlog("\n");
-
-    return error;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
-{
-    TestInfo *job = (TestInfo *)data;
-    size_t buffer_elements = job->subBufferSize;
-    size_t buffer_size = buffer_elements * sizeof(cl_half);
-    cl_uint scale = job->scale;
-    cl_uint base = job_id * (cl_uint)job->step;
-    ThreadInfo *tinfo = &(job->tinfo[thread_id]);
-    float ulps = job->ulps;
-    fptr func = job->f->func;
-    cl_uint j, k;
-    cl_int error = CL_SUCCESS;
-
-    int isRangeLimited = job->isRangeLimited;
-    float half_sin_cos_tan_limit = job->half_sin_cos_tan_limit;
-    int ftz = job->ftz;
-
-    std::vector<float> s(0);
-
-    // start the map of the output arrays
-    cl_event e[VECTOR_SIZE_COUNT];
-    cl_ushort *out[VECTOR_SIZE_COUNT];
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-    {
-        out[j] = (uint16_t *)clEnqueueMapBuffer(
-            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
-            buffer_size, 0, NULL, e + j, &error);
-        if (error || NULL == out[j])
-        {
-            vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
-                       error);
-            return error;
-        }
-    }
-
-    // Get that moving
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
-
-    // Write the new values to the input array
-    cl_ushort *p = (cl_ushort *)gIn + thread_id * buffer_elements;
-    for (j = 0; j < buffer_elements; j++)
-    {
-        p[j] = base + j * scale;
-    }
-
-    if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
-                                      buffer_size, p, 0, NULL, NULL)))
-    {
-        vlog_error("Error: clEnqueueWriteBuffer failed! err: %d\n", error);
-        return error;
-    }
-
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-    {
-        // Wait for the map to finish
-        if ((error = clWaitForEvents(1, e + j)))
-        {
-            vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
-            return error;
-        }
-        if ((error = clReleaseEvent(e[j])))
-        {
-            vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
-            return error;
-        }
-
-        // Fill the result buffer with garbage, so that old results don't carry
-        // over
-        uint16_t pattern = 0xdead;
-        memset_pattern4(out[j], &pattern, buffer_size);
-        if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
-                                             out[j], 0, NULL, NULL)))
-        {
-            vlog_error("Error: clEnqueueMapBuffer failed! err: %d\n", error);
-            return error;
-        }
-
-        // run the kernel
-        size_t vectorCount =
-            (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
-        cl_kernel kernel = job->k[j][thread_id]; // each worker thread has its
-                                                 // own copy of the cl_kernel
-        cl_program program = job->programs[j];
-
-        if ((error = clSetKernelArg(kernel, 0, sizeof(tinfo->outBuf[j]),
-                                    &tinfo->outBuf[j])))
-        {
-            LogBuildError(program);
-            return error;
-        }
-        if ((error = clSetKernelArg(kernel, 1, sizeof(tinfo->inBuf),
-                                    &tinfo->inBuf)))
-        {
-            LogBuildError(program);
-            return error;
-        }
-
-        if ((error = clEnqueueNDRangeKernel(tinfo->tQueue, kernel, 1, NULL,
-                                            &vectorCount, NULL, 0, NULL, NULL)))
-        {
-            vlog_error("FAILED -- could not execute kernel\n");
-            return error;
-        }
-    }
-
-
-    // Get that moving
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 2 failed\n");
-
-    if (gSkipCorrectnessTesting) return CL_SUCCESS;
-
-    // Calculate the correctly rounded reference result
-    cl_half *r = (cl_half *)gOut_Ref + thread_id * buffer_elements;
-    cl_ushort *t = (cl_ushort *)r;
-    s.resize(buffer_elements);
-    for (j = 0; j < buffer_elements; j++)
-    {
-        s[j] = (float)cl_half_to_float(p[j]);
-        r[j] = cl_half_from_float(func.f_f(s[j]), CL_HALF_RTE);
-    }
-
-    // Read the data back -- no need to wait for the first N-1 buffers. This is
-    // an in order queue.
-    for (j = gMinVectorSizeIndex; j + 1 < gMaxVectorSizeIndex; j++)
-    {
-        out[j] = (uint16_t *)clEnqueueMapBuffer(
-            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_READ, 0,
-            buffer_size, 0, NULL, NULL, &error);
-        if (error || NULL == out[j])
-        {
-            vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
-                       error);
-            return error;
-        }
-    }
-    // Wait for the last buffer
-    out[j] = (uint16_t *)clEnqueueMapBuffer(tinfo->tQueue, tinfo->outBuf[j],
-                                            CL_TRUE, CL_MAP_READ, 0,
-                                            buffer_size, 0, NULL, NULL, &error);
-    if (error || NULL == out[j])
-    {
-        vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j, error);
-        return error;
-    }
-
-    // Verify data
-    for (j = 0; j < buffer_elements; j++)
-    {
-        for (k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
-        {
-            cl_ushort *q = out[k];
-
-            // If we aren't getting the correctly rounded result
-            if (t[j] != q[j])
-            {
-                float test = cl_half_to_float(q[j]);
-                double correct = func.f_f(s[j]);
-                float err = Ulp_Error_Half(q[j], correct);
-                int fail = !(fabsf(err) <= ulps);
-
-                // half_sin/cos/tan are only valid between +-2**16, Inf, NaN
-                if (isRangeLimited
-                    && fabsf(s[j]) > MAKE_HEX_FLOAT(0x1.0p16f, 0x1L, 16)
-                    && fabsf(s[j]) < INFINITY)
-                {
-                    if (fabsf(test) <= half_sin_cos_tan_limit)
-                    {
-                        err = 0;
-                        fail = 0;
-                    }
-                }
-
-                if (fail)
-                {
-                    if (ftz)
-                    {
-                        // retry per section 6.5.3.2
-                        if (IsHalfSubnormal(
-                                cl_half_from_float(correct, CL_HALF_RTE)))
-                        {
-                            fail = fail && (test != 0.0f);
-                            if (!fail) err = 0.0f;
-                        }
-
-                        // retry per section 6.5.3.3
-                        if (IsHalfSubnormal(p[j]))
-                        {
-                            double correct2 = func.f_f(0.0);
-                            double correct3 = func.f_f(-0.0);
-                            float err2 = Ulp_Error_Half(q[j], correct2);
-                            float err3 = Ulp_Error_Half(q[j], correct3);
-                            fail = fail
-                                && ((!(fabsf(err2) <= ulps))
-                                    && (!(fabsf(err3) <= ulps)));
-                            if (fabsf(err2) < fabsf(err)) err = err2;
-                            if (fabsf(err3) < fabsf(err)) err = err3;
-
-                            // retry per section 6.5.3.4
-                            if (IsHalfSubnormal(
-                                    cl_half_from_float(correct2, CL_HALF_RTE))
-                                || IsHalfSubnormal(
-                                    cl_half_from_float(correct3, CL_HALF_RTE)))
-                            {
-                                fail = fail && (test != 0.0f);
-                                if (!fail) err = 0.0f;
-                            }
-                        }
-                    }
-                }
-                if (fabsf(err) > tinfo->maxError)
-                {
-                    tinfo->maxError = fabsf(err);
-                    tinfo->maxErrorValue = s[j];
-                }
-                if (fail)
-                {
-                    vlog_error("\nERROR: %s%s: %f ulp error at %a "
-                               "(0x%0.4x)\nExpected: %a (half 0x%0.4x) "
-                               "\nActual: %a (half 0x%0.4x)\n",
-                               job->f->name, sizeNames[k], err, s[j], p[j],
-                               cl_half_to_float(r[j]), t[j], test, q[j]);
-                    error = -1;
-                    return error;
-                }
-            }
-        }
-    }
-
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-    {
-        if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
-                                             out[j], 0, NULL, NULL)))
-        {
-            vlog_error("Error: clEnqueueUnmapMemObject %d failed 2! err: %d\n",
-                       j, error);
-            return error;
-        }
-    }
-
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 3 failed\n");
-
-
-    if (0 == (base & 0x0fffffff))
-    {
-        if (gVerboseBruteForce)
-        {
-            vlog("base:%14u step:%10u scale:%10u buf_elements:%10zd ulps:%5.3f "
-                 "ThreadCount:%2u\n",
-                 base, job->step, job->scale, buffer_elements, job->ulps,
-                 job->threadCount);
-        }
-        else
-        {
-            vlog(".");
-        }
-        fflush(stdout);
-    }
 
     return error;
 }

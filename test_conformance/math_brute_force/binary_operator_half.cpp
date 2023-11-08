@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 The Khronos Group Inc.
+// Copyright (c) 2017 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,16 +14,12 @@
 // limitations under the License.
 //
 
-#include "harness/errorHelpers.h"
-
 #include "common.h"
 #include "function_list.h"
 #include "test_functions.h"
 #include "utility.h"
-#include "reference_math.h"
 
 #include <cstring>
-#include <algorithm>
 
 namespace {
 
@@ -42,24 +38,37 @@ cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 // Thread specific data for a worker thread
 struct ThreadInfo
 {
-    clMemWrapper inBuf; // input buffer for the thread
-    clMemWrapper inBuf2; // input buffer for the thread
-    clMemWrapper outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
-    float maxError; // max error value. Init to 0.
-    double
-        maxErrorValue; // position of the max error value (param 1).  Init to 0.
-    double maxErrorValue2; // position of the max error value (param 2).  Init
-                           // to 0.
+    // Input and output buffers for the thread
+    clMemWrapper inBuf;
+    clMemWrapper inBuf2;
+    Buffers outBuf;
+
+    // max error value. Init to 0.
+    float maxError;
+    // position of the max error value (param 1).  Init to 0.
+    double maxErrorValue;
+    // position of the max error value (param 2).  Init to 0.
+    double maxErrorValue2;
     MTdataHolder d;
 
-    clCommandQueueWrapper
-        tQueue; // per thread command queue to improve performance
+    // Per thread command queue to improve performance
+    clCommandQueueWrapper tQueue;
 };
 
-struct TestInfoBase
+struct TestInfo
 {
     size_t subBufferSize; // Size of the sub-buffer in elements
     const Func *f; // A pointer to the function info
+
+    // Programs for various vector sizes.
+    Programs programs;
+
+    // Thread-specific kernels for each vector size:
+    // k[vector_size][thread_id]
+    KernelMatrix k;
+
+    // Array of thread specific information
+    std::vector<ThreadInfo> tinfo;
 
     cl_uint threadCount; // Number of worker threads
     cl_uint jobCount; // Number of jobs
@@ -68,24 +77,7 @@ struct TestInfoBase
     float ulps; // max_allowed ulps
     int ftz; // non-zero if running in flush to zero mode
 
-    int isFDim;
-    int skipNanInf;
-    int isNextafter;
-};
-
-struct TestInfo : public TestInfoBase
-{
-    TestInfo(const TestInfoBase &base): TestInfoBase(base) {}
-
-    // Array of thread specific information
-    std::vector<ThreadInfo> tinfo;
-
-    // Programs for various vector sizes.
-    Programs programs;
-
-    // Thread-specific kernels for each vector size:
-    // k[vector_size][thread_id]
-    KernelMatrix k;
+    // no special fields
 };
 
 // A table of more difficult cases to get right
@@ -103,7 +95,7 @@ const cl_half specialValuesHalf[] = {
     0xc000, /* -2 */
 };
 
-size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
+constexpr size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
 
 cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 {
@@ -117,23 +109,17 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     int ftz = job->ftz;
     MTdata d = tinfo->d;
     cl_int error;
+
     const char *name = job->f->name;
-
-    int isFDim = job->isFDim;
-    int skipNanInf = job->skipNanInf;
-    int isNextafter = job->isNextafter;
-    cl_ushort *t;
-    cl_half *r;
+    cl_half *r = 0;
     std::vector<float> s(0), s2(0);
-    cl_uint j = 0;
-
     RoundingMode oldRoundMode;
-    cl_int copysign_test = 0;
+
+    cl_event e[VECTOR_SIZE_COUNT];
+    cl_half *out[VECTOR_SIZE_COUNT];
 
     // start the map of the output arrays
-    cl_event e[VECTOR_SIZE_COUNT];
-    cl_ushort *out[VECTOR_SIZE_COUNT];
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         out[j] = (cl_ushort *)clEnqueueMapBuffer(
             tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
@@ -149,39 +135,60 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     // Get that moving
     if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
 
+    bool divide = strcmp(name, "divide") == 0;
+
     // Init input array
-    cl_ushort *p = (cl_ushort *)gIn + thread_id * buffer_elements;
-    cl_ushort *p2 = (cl_ushort *)gIn2 + thread_id * buffer_elements;
-    j = 0;
+    cl_half *p = (cl_half *)gIn + thread_id * buffer_elements;
+    cl_half *p2 = (cl_half *)gIn2 + thread_id * buffer_elements;
+    cl_uint idx = 0;
     int totalSpecialValueCount =
         specialValuesHalfCount * specialValuesHalfCount;
-    int indx = (totalSpecialValueCount - 1) / buffer_elements;
+    int lastSpecialJobIndex = (totalSpecialValueCount - 1) / buffer_elements;
 
-    if (job_id <= (cl_uint)indx)
-    { // test edge cases
+    if (job_id <= (cl_uint)lastSpecialJobIndex)
+    {
+        // Insert special values
         uint32_t x, y;
 
         x = (job_id * buffer_elements) % specialValuesHalfCount;
         y = (job_id * buffer_elements) / specialValuesHalfCount;
 
-        for (; j < buffer_elements; j++)
+        for (; idx < buffer_elements; idx++)
         {
-            p[j] = specialValuesHalf[x];
-            p2[j] = specialValuesHalf[y];
+            p[idx] = specialValuesHalf[x];
+            p2[idx] = specialValuesHalf[y];
             if (++x >= specialValuesHalfCount)
             {
                 x = 0;
                 y++;
                 if (y >= specialValuesHalfCount) break;
             }
+
+            if (divide)
+            {
+                cl_half pj = p[idx] & 0x7fff;
+                cl_half p2j = p2[idx] & 0x7fff;
+                // Replace values outside [2^-7, 2^7] with QNaN
+                if (pj < 0x2000 || pj > 0x5800) p[idx] = 0x7e00; // HALF_NAN
+                if (p2j < 0x2000 || p2j > 0x5800) p2[idx] = 0x7e00;
+            }
         }
     }
 
-    // Init any remaining values.
-    for (; j < buffer_elements; j++)
+    // Init any remaining values
+    for (; idx < buffer_elements; idx++)
     {
-        p[j] = (cl_ushort)genrand_int32(d);
-        p2[j] = (cl_ushort)genrand_int32(d);
+        p[idx] = (cl_half)genrand_int32(d);
+        p2[idx] = (cl_half)genrand_int32(d);
+
+        if (divide)
+        {
+            cl_half pj = p[idx] & 0x7fff;
+            cl_half p2j = p2[idx] & 0x7fff;
+            // Replace values outside [2^-7, 2^7] with QNaN
+            if (pj < 0x2000 || pj > 0x5800) p[idx] = 0x7e00; // HALF_NAN
+            if (p2j < 0x2000 || p2j > 0x5800) p2[idx] = 0x7e00;
+        }
     }
 
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
@@ -198,7 +205,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
         return error;
     }
 
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         // Wait for the map to finish
         if ((error = clWaitForEvents(1, e + j)))
@@ -224,7 +231,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
             return error;
         }
 
-        // run the kernel
+        // Run the kernel
         size_t vectorCount =
             (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
         cl_kernel kernel = job->k[j][thread_id]; // each worker thread has its
@@ -266,42 +273,32 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
         return CL_SUCCESS;
     }
 
+    // Calculate the correctly rounded reference result
     FPU_mode_type oldMode;
+    memset(&oldMode, 0, sizeof(oldMode));
+    if (ftz) ForceFTZ(&oldMode);
+
+    // Set the rounding mode to match the device
     oldRoundMode = kRoundToNearestEven;
-    if (isFDim)
-    {
-        // Calculate the correctly rounded reference result
-        memset(&oldMode, 0, sizeof(oldMode));
-        if (ftz) ForceFTZ(&oldMode);
-
-        // Set the rounding mode to match the device
-        if (gIsInRTZMode) oldRoundMode = set_round(kRoundTowardZero, kfloat);
-    }
-
-    if (!strcmp(name, "copysign")) copysign_test = 1;
-
-#define ref_func(s, s2) (copysign_test ? func.f_ff_f(s, s2) : func.f_ff(s, s2))
+    if (gIsInRTZMode) oldRoundMode = set_round(kRoundTowardZero, kfloat);
 
     // Calculate the correctly rounded reference result
     r = (cl_half *)gOut_Ref + thread_id * buffer_elements;
-    t = (cl_ushort *)r;
     s.resize(buffer_elements);
     s2.resize(buffer_elements);
-    for (j = 0; j < buffer_elements; j++)
+
+    for (size_t j = 0; j < buffer_elements; j++)
     {
-        s[j] = cl_half_to_float(p[j]);
-        s2[j] = cl_half_to_float(p2[j]);
-        if (isNextafter)
-            r[j] = cl_half_from_float(reference_nextafterh(s[j], s2[j]),
-                                      CL_HALF_RTE);
-        else
-            r[j] = cl_half_from_float(ref_func(s[j], s2[j]), CL_HALF_RTE);
+        s[j] = HTF(p[j]);
+        s2[j] = HTF(p2[j]);
+        r[j] = HFF(func.f_ff(s[j], s2[j]));
     }
 
-    if (isFDim && ftz) RestoreFPState(&oldMode);
-    // Read the data back -- no need to wait for the first N-1 buffers. This is
-    // an in order queue.
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    if (ftz) RestoreFPState(&oldMode);
+
+    // Read the data back -- no need to wait for the first N-1 buffers but wait
+    // for the last buffer. This is an in order queue.
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         cl_bool blocking = (j + 1 < gMaxVectorSizeIndex) ? CL_FALSE : CL_TRUE;
         out[j] = (cl_ushort *)clEnqueueMapBuffer(
@@ -317,26 +314,21 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 
     // Verify data
 
-    for (j = 0; j < buffer_elements; j++)
+    for (size_t j = 0; j < buffer_elements; j++)
     {
         for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
         {
-            cl_ushort *q = out[k];
+            cl_half *q = out[k];
 
             // If we aren't getting the correctly rounded result
-            if (t[j] != q[j])
+            if (r[j] != q[j])
             {
-                double correct;
-                if (isNextafter)
-                    correct = reference_nextafterh(s[j], s2[j]);
-                else
-                    correct = ref_func(s[j], s2[j]);
-
-                float test = cl_half_to_float(q[j]);
+                float test = HTF(q[j]);
+                float correct = func.f_ff(s[j], s2[j]);
 
                 // Per section 10 paragraph 6, accept any result if an input or
                 // output is a infinity or NaN or overflow
-                if (skipNanInf)
+                if (!gInfNanSupport)
                 {
                     // Note: no double rounding here.  Reference functions
                     // calculate in single precision.
@@ -345,7 +337,9 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                         || IsFloatInfinity(s[j]) || IsFloatNaN(s[j]))
                         continue;
                 }
+
                 float err = Ulp_Error_Half(q[j], correct);
+
                 int fail = !(fabsf(err) <= ulps);
 
                 if (fail && ftz)
@@ -353,32 +347,22 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                     // retry per section 6.5.3.2
                     if (IsHalfResultSubnormal(correct, ulps))
                     {
-                        if (isNextafter)
-                        {
-                            correct = reference_nextafterh(s[j], s2[j], false);
-                            err = Ulp_Error_Half(q[j], correct);
-                            fail = !(fabsf(err) <= ulps);
-                        }
-
                         fail = fail && (test != 0.0f);
                         if (!fail) err = 0.0f;
                     }
 
+                    // retry per section 6.5.3.3
                     if (IsHalfSubnormal(p[j]))
                     {
                         double correct2, correct3;
                         float err2, err3;
-                        if (isNextafter)
-                        {
-                            correct2 = reference_nextafterh(0.0, s2[j]);
-                            correct3 = reference_nextafterh(-0.0, s2[j]);
-                        }
-                        else
-                        {
-                            correct2 = ref_func(0.0, s2[j]);
-                            correct3 = ref_func(-0.0, s2[j]);
-                        }
-                        if (skipNanInf)
+
+                        correct2 = HTF(func.f_ff(0.0, s2[j]));
+                        correct3 = HTF(func.f_ff(-0.0, s2[j]));
+
+                        // Per section 10 paragraph 6, accept any result if an
+                        // input or output is a infinity or NaN or overflow
+                        if (!gInfNanSupport)
                         {
                             // Note: no double rounding here.  Reference
                             // functions calculate in single precision.
@@ -389,14 +373,12 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                                 continue;
                         }
 
-                        auto check_error = [&]() {
-                            err2 = Ulp_Error_Half(q[j], correct2);
-                            err3 = Ulp_Error_Half(q[j], correct3);
-                            fail = fail
-                                && ((!(fabsf(err2) <= ulps))
-                                    && (!(fabsf(err3) <= ulps)));
-                        };
-                        check_error();
+                        err2 = Ulp_Error_Half(q[j], correct2);
+                        err3 = Ulp_Error_Half(q[j], correct3);
+                        fail = fail
+                            && ((!(fabsf(err2) <= ulps))
+                                && (!(fabsf(err3) <= ulps)));
+
                         if (fabsf(err2) < fabsf(err)) err = err2;
                         if (fabsf(err3) < fabsf(err)) err = err3;
 
@@ -404,26 +386,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                         if (IsHalfResultSubnormal(correct2, ulps)
                             || IsHalfResultSubnormal(correct3, ulps))
                         {
-                            if (fail && isNextafter)
-                            {
-                                correct2 =
-                                    reference_nextafterh(0.0, s2[j], false);
-                                correct3 =
-                                    reference_nextafterh(-0.0, s2[j], false);
-                                check_error();
-                            }
-
                             fail = fail && (test != 0.0f);
-                            if (!fail) err = 0.0f;
-                        }
-
-                        // allow to omit denorm values for platforms with no
-                        // denorm support for nextafter
-                        if (fail && (isNextafter)
-                            && (correct <= cl_half_to_float(0x3FF))
-                            && (correct >= cl_half_to_float(0x83FF)))
-                        {
-                            fail = fail && (q[j] != p[j]);
                             if (!fail) err = 0.0f;
                         }
 
@@ -433,25 +396,15 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                             double correct4, correct5;
                             float err4, err5;
 
-                            if (isNextafter)
-                            {
-                                correct2 = reference_nextafterh(0.0, 0.0);
-                                correct3 = reference_nextafterh(-0.0, 0.0);
-                                correct4 = reference_nextafterh(0.0, -0.0);
-                                correct5 = reference_nextafterh(-0.0, -0.0);
-                            }
-                            else
-                            {
-                                correct2 = ref_func(0.0, 0.0);
-                                correct3 = ref_func(-0.0, 0.0);
-                                correct4 = ref_func(0.0, -0.0);
-                                correct5 = ref_func(-0.0, -0.0);
-                            }
+                            correct2 = HTF(func.f_ff(0.0, 0.0));
+                            correct3 = HTF(func.f_ff(-0.0, 0.0));
+                            correct4 = HTF(func.f_ff(0.0, -0.0));
+                            correct5 = HTF(func.f_ff(-0.0, -0.0));
 
                             // Per section 10 paragraph 6, accept any result if
                             // an input or output is a infinity or NaN or
                             // overflow
-                            if (skipNanInf)
+                            if (!gInfNanSupport)
                             {
                                 // Note: no double rounding here.  Reference
                                 // functions calculate in single precision.
@@ -489,16 +442,6 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                                 fail = fail && (test != 0.0f);
                                 if (!fail) err = 0.0f;
                             }
-
-                            // allow to omit denorm values for platforms with no
-                            // denorm support for nextafter
-                            if (fail && (isNextafter)
-                                && (correct <= cl_half_to_float(0x3FF))
-                                && (correct >= cl_half_to_float(0x83FF)))
-                            {
-                                fail = fail && (q[j] != p2[j]);
-                                if (!fail) err = 0.0f;
-                            }
                         }
                     }
                     else if (IsHalfSubnormal(p2[j]))
@@ -506,18 +449,12 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                         double correct2, correct3;
                         float err2, err3;
 
-                        if (isNextafter)
-                        {
-                            correct2 = reference_nextafterh(s[j], 0.0);
-                            correct3 = reference_nextafterh(s[j], -0.0);
-                        }
-                        else
-                        {
-                            correct2 = ref_func(s[j], 0.0);
-                            correct3 = ref_func(s[j], -0.0);
-                        }
+                        correct2 = HTF(func.f_ff(s[j], 0.0));
+                        correct3 = HTF(func.f_ff(s[j], -0.0));
 
-                        if (skipNanInf)
+                        // Per section 10 paragraph 6, accept any result if an
+                        // input or output is a infinity or NaN or overflow
+                        if (!gInfNanSupport)
                         {
                             // Note: no double rounding here.  Reference
                             // functions calculate in single precision.
@@ -527,41 +464,19 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                                 continue;
                         }
 
-                        auto check_error = [&]() {
-                            err2 = Ulp_Error_Half(q[j], correct2);
-                            err3 = Ulp_Error_Half(q[j], correct3);
-                            fail = fail
-                                && ((!(fabsf(err2) <= ulps))
-                                    && (!(fabsf(err3) <= ulps)));
-                            if (fabsf(err2) < fabsf(err)) err = err2;
-                            if (fabsf(err3) < fabsf(err)) err = err3;
-                        };
-                        check_error();
+                        err2 = Ulp_Error_Half(q[j], correct2);
+                        err3 = Ulp_Error_Half(q[j], correct3);
+                        fail = fail
+                            && ((!(fabsf(err2) <= ulps))
+                                && (!(fabsf(err3) <= ulps)));
+                        if (fabsf(err2) < fabsf(err)) err = err2;
+                        if (fabsf(err3) < fabsf(err)) err = err3;
 
                         // retry per section 6.5.3.4
                         if (IsHalfResultSubnormal(correct2, ulps)
                             || IsHalfResultSubnormal(correct3, ulps))
                         {
-                            if (fail && isNextafter)
-                            {
-                                correct2 =
-                                    reference_nextafterh(s[j], 0.0, false);
-                                correct3 =
-                                    reference_nextafterh(s[j], -0.0, false);
-                                check_error();
-                            }
-
                             fail = fail && (test != 0.0f);
-                            if (!fail) err = 0.0f;
-                        }
-
-                        // allow to omit denorm values for platforms with no
-                        // denorm support for nextafter
-                        if (fail && (isNextafter)
-                            && (correct <= cl_half_to_float(0x3FF))
-                            && (correct >= cl_half_to_float(0x83FF)))
-                        {
-                            fail = fail && (q[j] != p2[j]);
                             if (!fail) err = 0.0f;
                         }
                     }
@@ -579,18 +494,16 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                                "%a (0x%04x)}\nExpected: %a  (half 0x%04x) "
                                "\nActual: %a (half 0x%04x) at index: %zu\n",
                                name, sizeNames[k], err, s[j], p[j], s2[j],
-                               p2[j], cl_half_to_float(r[j]), r[j], test, q[j],
-                               j);
-                    error = -1;
-                    return error;
+                               p2[j], HTF(r[j]), r[j], test, q[j], j);
+                    return -1;
                 }
             }
         }
     }
 
-    if (isFDim && gIsInRTZMode) (void)set_round(oldRoundMode, kfloat);
+    if (gIsInRTZMode) (void)set_round(oldRoundMode, kfloat);
 
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+    for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
                                              out[j], 0, NULL, NULL)))
@@ -602,6 +515,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     }
 
     if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 3 failed\n");
+
 
     if (0 == (base & 0x0fffffff))
     {
@@ -619,25 +533,22 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
         fflush(stdout);
     }
 
-    return error;
+    return CL_SUCCESS;
 }
 
 } // anonymous namespace
 
-int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
-                                   bool relaxedMode)
+int TestFunc_Half_Half_Half_Operator(const Func *f, MTdata d, bool relaxedMode)
 {
-    TestInfoBase test_info_base;
+    TestInfo test_info{};
     cl_int error;
     float maxError = 0.0f;
     double maxErrorVal = 0.0;
     double maxErrorVal2 = 0.0;
 
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
-    // Init test_info
-    memset(&test_info_base, 0, sizeof(test_info_base));
-    TestInfo test_info(test_info_base);
 
+    // Init test_info
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_half) * RoundUpToNextPowerOfTwo(test_info.threadCount));
@@ -659,12 +570,7 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
     test_info.ftz =
         f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gHalfCapabilities);
 
-    test_info.isFDim = 0 == strcmp("fdim", f->nameInCode);
-    test_info.skipNanInf = test_info.isFDim && !gInfNanSupport;
-    test_info.isNextafter = isNextafter;
-
     test_info.tinfo.resize(test_info.threadCount);
-
     for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
         cl_buffer_region region = { i * test_info.subBufferSize
@@ -683,7 +589,7 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
         test_info.tinfo[i].inBuf2 =
             clCreateSubBuffer(gInBuffer2, CL_MEM_READ_ONLY,
                               CL_BUFFER_CREATE_TYPE_REGION, &region, &error);
-        if (error || NULL == test_info.tinfo[i].inBuf)
+        if (error || NULL == test_info.tinfo[i].inBuf2)
         {
             vlog_error("Error: Unable to create sub-buffer of gInBuffer2 for "
                        "region {%zd, %zd}\n",
@@ -694,14 +600,13 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             test_info.tinfo[i].outBuf[j] = clCreateSubBuffer(
-                gOutBuffer[j], CL_MEM_WRITE_ONLY, CL_BUFFER_CREATE_TYPE_REGION,
+                gOutBuffer[j], CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION,
                 &region, &error);
             if (error || NULL == test_info.tinfo[i].outBuf[j])
             {
-                vlog_error(
-                    "Error: Unable to create sub-buffer of gOutBuffer[%d] "
-                    "for region {%zd, %zd}\n",
-                    (int)j, region.origin, region.size);
+                vlog_error("Error: Unable to create sub-buffer of "
+                           "gOutBuffer[%d] for region {%zd, %zd}\n",
+                           (int)j, region.origin, region.size);
                 return error;
             }
         }
@@ -712,18 +617,21 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
             vlog_error("clCreateCommandQueue failed. (%d)\n", error);
             return error;
         }
+
         test_info.tinfo[i].d = MTdataHolder(genrand_int32(d));
     }
 
     // Init the kernels
     {
-        BuildKernelInfo build_info = { test_info.threadCount, test_info.k,
-                                       test_info.programs, f->nameInCode };
+        BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
+                                    test_info.programs, f->nameInCode };
         error = ThreadPool_Do(BuildKernel_HalfFn,
                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
                               &build_info);
+
         test_error(error, "ThreadPool_Do: BuildKernel_HalfFn failed\n");
     }
+    // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
         error = ThreadPool_Do(TestHalf, test_info.jobCount, &test_info);
@@ -752,14 +660,4 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
     vlog("\n");
 
     return error;
-}
-
-int TestFunc_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
-{
-    return TestFunc_Half_Half_Half_common(f, d, 0, relaxedMode);
-}
-
-int TestFunc_Half_Half_Half_nextafter(const Func *f, MTdata d, bool relaxedMode)
-{
-    return TestFunc_Half_Half_Half_common(f, d, 1, relaxedMode);
 }

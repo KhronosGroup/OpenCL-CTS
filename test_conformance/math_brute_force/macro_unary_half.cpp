@@ -23,7 +23,6 @@
 
 namespace {
 
-////////////////////////////////////////////////////////////////////////////////
 cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo &info = *(BuildKernelInfo *)p;
@@ -35,7 +34,6 @@ cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-////////////////////////////////////////////////////////////////////////////////
 // Thread specific data for a worker thread
 struct ThreadInfo
 {
@@ -45,7 +43,6 @@ struct ThreadInfo
         tQueue; // per thread command queue to improve performance
 };
 
-////////////////////////////////////////////////////////////////////////////////
 struct TestInfoBase
 {
     size_t subBufferSize; // Size of the sub-buffer in elements
@@ -57,7 +54,6 @@ struct TestInfoBase
     int ftz; // non-zero if running in flush to zero mode
 };
 
-////////////////////////////////////////////////////////////////////////////////
 struct TestInfo : public TestInfoBase
 {
     TestInfo(const TestInfoBase &base): TestInfoBase(base) {}
@@ -73,114 +69,7 @@ struct TestInfo : public TestInfoBase
     KernelMatrix k;
 };
 
-}
-
-////////////////////////////////////////////////////////////////////////////////
-static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *p);
-
-////////////////////////////////////////////////////////////////////////////////
-int TestMacro_Int_Half(const Func *f, MTdata d, bool relaxedMode)
-{
-    TestInfoBase test_info_base;
-    cl_int error;
-    size_t i, j;
-
-    logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
-    // Init test_info
-    memset(&test_info_base, 0, sizeof(test_info_base));
-    TestInfo test_info(test_info_base);
-
-    test_info.threadCount = GetThreadCount();
-    test_info.subBufferSize = BUFFER_SIZE
-        / (sizeof(cl_half) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    test_info.scale = getTestScale(sizeof(cl_half));
-
-    test_info.step = (cl_uint)test_info.subBufferSize * test_info.scale;
-    if (test_info.step / test_info.subBufferSize != test_info.scale)
-    {
-        // there was overflow
-        test_info.jobCount = 1;
-    }
-    else
-    {
-        test_info.jobCount =
-            std::max((cl_uint)1,
-                     (cl_uint)((1ULL << sizeof(cl_half) * 8) / test_info.step));
-    }
-
-    test_info.f = f;
-    test_info.ftz =
-        f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gHalfCapabilities);
-
-    test_info.tinfo.resize(test_info.threadCount);
-
-    for (i = 0; i < test_info.threadCount; i++)
-    {
-        cl_buffer_region region = { i * test_info.subBufferSize
-                                        * sizeof(cl_half),
-                                    test_info.subBufferSize * sizeof(cl_half) };
-        test_info.tinfo[i].inBuf =
-            clCreateSubBuffer(gInBuffer, CL_MEM_READ_ONLY,
-                              CL_BUFFER_CREATE_TYPE_REGION, &region, &error);
-        if (error || NULL == test_info.tinfo[i].inBuf)
-        {
-            vlog_error("Error: Unable to create sub-buffer of gInBuffer for "
-                       "region {%zd, %zd}\n",
-                       region.origin, region.size);
-            return error;
-        }
-
-        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-        {
-            test_info.tinfo[i].outBuf[j] = clCreateSubBuffer(
-                gOutBuffer[j], CL_MEM_WRITE_ONLY, CL_BUFFER_CREATE_TYPE_REGION,
-                &region, &error);
-            if (error || NULL == test_info.tinfo[i].outBuf[j])
-            {
-                vlog_error("Error: Unable to create sub-buffer of gOutBuffer "
-                           "for region {%zd, %zd}\n",
-                           region.origin, region.size);
-                return error;
-            }
-        }
-        test_info.tinfo[i].tQueue =
-            clCreateCommandQueue(gContext, gDevice, 0, &error);
-        if (NULL == test_info.tinfo[i].tQueue || error)
-        {
-            vlog_error("clCreateCommandQueue failed. (%d)\n", error);
-            return error;
-        }
-    }
-
-    // Init the kernels
-    {
-        BuildKernelInfo build_info = { test_info.threadCount, test_info.k,
-                                       test_info.programs, f->nameInCode };
-        error = ThreadPool_Do(BuildKernel_HalfFn,
-                              gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                              &build_info);
-        test_error(error, "ThreadPool_Do: BuildKernel_HalfFn failed\n");
-    }
-
-    if (!gSkipCorrectnessTesting)
-    {
-        error = ThreadPool_Do(TestHalf, test_info.jobCount, &test_info);
-
-        test_error(error, "ThreadPool_Do: TestHalf failed\n");
-
-        if (gWimpyMode)
-            vlog("Wimp pass");
-        else
-            vlog("passed");
-    }
-
-    vlog("\n");
-
-    return error;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
+cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 {
     TestInfo *job = (TestInfo *)data;
     size_t buffer_elements = job->subBufferSize;
@@ -246,7 +135,7 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 
         // Fill the result buffer with garbage, so that old results don't carry
         // over
-        uint16_t pattern = 0xdead;
+        uint32_t pattern = 0xACDCACDC;
         memset_pattern4(out[j], &pattern, buffer_size);
         if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
                                              out[j], 0, NULL, NULL)))
@@ -353,7 +242,7 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 
             short err = t[j] - q[j];
             if (q[j] > t[j]) err = q[j] - t[j];
-            vlog_error("\nERROR: %s: %d ulp error at %a (0x%0.4x)\nExpected: "
+            vlog_error("\nERROR: %s: %d ulp error at %a (0x%04x)\nExpected: "
                        "%d vs. %d\n",
                        name, err, s[j], p[j], t[j], q[j]);
             error = -1;
@@ -381,7 +270,7 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                 short err = -t[j] - q[j];
                 if (q[j] > -t[j]) err = q[j] + t[j];
                 vlog_error("\nERROR: %s%s: %d ulp error at %a "
-                           "(0x%0.4x)\nExpected: %d \nActual: %d\n",
+                           "(0x%04x)\nExpected: %d \nActual: %d\n",
                            name, sizeNames[k], err, s[j], p[j], -t[j], q[j]);
                 error = -1;
                 return error;
@@ -417,5 +306,107 @@ static cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
         }
         fflush(stdout);
     }
+    return error;
+}
+
+} // anonymous namespace
+
+int TestMacro_Int_Half(const Func *f, MTdata d, bool relaxedMode)
+{
+    TestInfoBase test_info_base;
+    cl_int error;
+    size_t i, j;
+
+    logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
+    // Init test_info
+    memset(&test_info_base, 0, sizeof(test_info_base));
+    TestInfo test_info(test_info_base);
+
+    test_info.threadCount = GetThreadCount();
+    test_info.subBufferSize = BUFFER_SIZE
+        / (sizeof(cl_half) * RoundUpToNextPowerOfTwo(test_info.threadCount));
+    test_info.scale = getTestScale(sizeof(cl_half));
+
+    test_info.step = (cl_uint)test_info.subBufferSize * test_info.scale;
+    if (test_info.step / test_info.subBufferSize != test_info.scale)
+    {
+        // there was overflow
+        test_info.jobCount = 1;
+    }
+    else
+    {
+        test_info.jobCount =
+            std::max((cl_uint)1,
+                     (cl_uint)((1ULL << sizeof(cl_half) * 8) / test_info.step));
+    }
+
+    test_info.f = f;
+    test_info.ftz =
+        f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gHalfCapabilities);
+
+    test_info.tinfo.resize(test_info.threadCount);
+
+    for (i = 0; i < test_info.threadCount; i++)
+    {
+        cl_buffer_region region = { i * test_info.subBufferSize
+                                        * sizeof(cl_half),
+                                    test_info.subBufferSize * sizeof(cl_half) };
+        test_info.tinfo[i].inBuf =
+            clCreateSubBuffer(gInBuffer, CL_MEM_READ_ONLY,
+                              CL_BUFFER_CREATE_TYPE_REGION, &region, &error);
+        if (error || NULL == test_info.tinfo[i].inBuf)
+        {
+            vlog_error("Error: Unable to create sub-buffer of gInBuffer for "
+                       "region {%zd, %zd}\n",
+                       region.origin, region.size);
+            return error;
+        }
+
+        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        {
+            test_info.tinfo[i].outBuf[j] = clCreateSubBuffer(
+                gOutBuffer[j], CL_MEM_WRITE_ONLY, CL_BUFFER_CREATE_TYPE_REGION,
+                &region, &error);
+            if (error || NULL == test_info.tinfo[i].outBuf[j])
+            {
+                vlog_error("Error: Unable to create sub-buffer of gOutBuffer "
+                           "for region {%zd, %zd}\n",
+                           region.origin, region.size);
+                return error;
+            }
+        }
+        test_info.tinfo[i].tQueue =
+            clCreateCommandQueue(gContext, gDevice, 0, &error);
+        if (NULL == test_info.tinfo[i].tQueue || error)
+        {
+            vlog_error("clCreateCommandQueue failed. (%d)\n", error);
+            return error;
+        }
+    }
+
+    // Init the kernels
+    {
+        BuildKernelInfo build_info = { test_info.threadCount, test_info.k,
+                                       test_info.programs, f->nameInCode };
+        error = ThreadPool_Do(BuildKernel_HalfFn,
+                              gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                              &build_info);
+        test_error(error, "ThreadPool_Do: BuildKernel_HalfFn failed\n");
+    }
+
+    if (!gSkipCorrectnessTesting)
+    {
+        error = ThreadPool_Do(TestHalf, test_info.jobCount, &test_info);
+
+        test_error(error, "ThreadPool_Do: TestHalf failed\n");
+
+        if (gWimpyMode)
+            vlog("Wimp pass");
+        else
+            vlog("passed");
+    }
+
+    vlog("\n");
+
     return error;
 }

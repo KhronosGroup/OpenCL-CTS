@@ -9,8 +9,10 @@ set(${MODULE_NAME}_SOURCES
     binary_i_half.cpp
     binary_operator_double.cpp
     binary_operator_float.cpp
+    binary_operator_half.cpp
     binary_two_results_i_double.cpp
     binary_two_results_i_float.cpp
+    binary_two_results_i_half.cpp
     common.cpp
     common.h
     function_list.cpp

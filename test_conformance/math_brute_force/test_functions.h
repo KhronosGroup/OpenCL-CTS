@@ -87,6 +87,9 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata,
 int TestFunc_Double_Double_Double_Operator(const Func *f, MTdata,
                                            bool relaxedMode);
 
+// half op half
+int TestFunc_Half_Half_Half_Operator(const Func *f, MTdata, bool relaxedMode);
+
 // float foo(float, int)
 int TestFunc_Float_Float_Int(const Func *f, MTdata, bool relaxedMode);
 
@@ -134,6 +137,9 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata, bool relaxedMode);
 
 // double foo(double, double, int*)
 int TestFunc_DoubleI_Double_Double(const Func *f, MTdata, bool relaxedMode);
+
+// half foo(half, half, int*)
+int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode);
 
 // Special handling for mad.
 // float mad(float, float, float)

@@ -23,7 +23,8 @@
 #include <memory>
 #include <cinttypes>
 
-////////////////////////////////////////////////////////////////////////////////
+namespace {
+
 static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
                                  void *p)
 {
@@ -36,7 +37,8 @@ static cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED,
     return BuildKernels(info, job_id, generator);
 }
 
-////////////////////////////////////////////////////////////////////////////////
+} // anonymous namespace
+
 int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
 {
     int error;
@@ -174,7 +176,7 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
 
                     uint32_t err = t[j] - q[j];
                     if (q[j] > t[j]) err = q[j] - t[j];
-                    vlog_error("\nERROR: %s%s: %d ulp error at %a (0x%0.4x): "
+                    vlog_error("\nERROR: %s%s: %d ulp error at %a (0x%04x): "
                                "*%d vs. %d\n",
                                f->name, sizeNames[k], err, s[j], p[j], t[j],
                                q[j]);

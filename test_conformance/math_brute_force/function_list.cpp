@@ -164,7 +164,7 @@ static constexpr vtbl _binary_operator = {
     "binaryOperator",
     TestFunc_Float_Float_Float_Operator,
     TestFunc_Double_Double_Double_Operator,
-    NULL,
+    TestFunc_Half_Half_Half_Operator,
 };
 
 static constexpr vtbl _binary_i = {
@@ -206,7 +206,7 @@ static constexpr vtbl _binary_two_results_i = {
     "binary_two_results_i",
     TestFunc_FloatI_Float_Float,
     TestFunc_DoubleI_Double_Double,
-    NULL,
+    TestFunc_HalfI_Half_Half,
 };
 
 static constexpr vtbl _mad_tbl = {

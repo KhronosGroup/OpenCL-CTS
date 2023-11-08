@@ -72,8 +72,7 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
     maxiError = half_ulps == INFINITY ? CL_ULONG_MAX : 0;
 
     // Init the kernels
-    BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode,
-                                relaxedMode };
+    BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode };
     if ((error = ThreadPool_Do(BuildKernelFn_HalfFn,
                                gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                &build_info)))
@@ -88,15 +87,13 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
             const unsigned m_size = 0x1ff;
             const unsigned e_size = 0xf;
             const unsigned s_size = 0x2;
-            const unsigned sclamp = 0xffff;
 
             for (size_t j = 0; j < half_buffer_size; j++)
             {
                 unsigned ind = j % (s_size * e_size * m_size);
                 unsigned val = (((ind / (e_size * m_size)) << 15)
                                 | (((ind / m_size) % e_size + 1) << 10)
-                                | (ind % m_size + 1))
-                    & sclamp;
+                                | (ind % m_size + 1));
                 pIn[j] = val;
             }
         }
@@ -111,7 +108,7 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
         // Write garbage into output arrays
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            uint32_t pattern = 0xffffdead;
+            uint32_t pattern = 0xacdcacdc;
             if (gHostFill)
             {
                 memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
@@ -161,9 +158,7 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
         // Run the kernels
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            // sizeof(cl_half) < sizeof (int32_t)
-            // to prevent overflowing gOut_Ref2 it is necessary to use
-            // bigger type as denominator for buffer size calculation
+            // align working group size with the bigger output type
             size_t vectorSize = sizeValues[j] * sizeof(int32_t);
             size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
             if ((error = clSetKernelArg(kernels[j][thread_id], 0,
@@ -211,15 +206,17 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
         // Read the data back
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
+            cl_bool blocking =
+                (j + 1 < gMaxVectorSizeIndex) ? CL_FALSE : CL_TRUE;
             if ((error =
-                     clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
+                     clEnqueueReadBuffer(gQueue, gOutBuffer[j], blocking, 0,
                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
                 return error;
             }
             if ((error =
-                     clEnqueueReadBuffer(gQueue, gOutBuffer2[j], CL_TRUE, 0,
+                     clEnqueueReadBuffer(gQueue, gOutBuffer2[j], blocking, 0,
                                          BUFFER_SIZE, gOut2[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray2 failed %d\n", error);
@@ -251,10 +248,10 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
                     cl_long iErr = (int64_t)test2[j] - (int64_t)correct2;
                     int fail = !(fabsf(err) <= half_ulps
                                  && abs_cl_long(iErr) <= maxiError);
-                    if (ftz || relaxedMode)
+                    if (ftz)
                     {
                         // retry per section 6.5.3.2
-                        if (IsFloatResultSubnormal(fp_correct, half_ulps))
+                        if (IsHalfResultSubnormal(fp_correct, half_ulps))
                         {
                             fail = fail && !(test == 0.0f && iErr == 0);
                             if (!fail) err = 0.0f;
@@ -294,9 +291,9 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
 
                             // retry per section 6.5.3.4
                             if (fail
-                                && (IsFloatResultSubnormal(correct2, half_ulps)
-                                    || IsFloatResultSubnormal(fp_correct3,
-                                                              half_ulps)))
+                                && (IsHalfResultSubnormal(correct2, half_ulps)
+                                    || IsHalfResultSubnormal(fp_correct3,
+                                                             half_ulps)))
                             {
                                 fail = fail
                                     && !(test == 0.0f

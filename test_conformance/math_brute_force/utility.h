@@ -126,6 +126,12 @@ inline int IsFloatResultSubnormal(double x, float ulps)
     return x < MAKE_HEX_DOUBLE(0x1.0p-126, 0x1, -126);
 }
 
+inline int IsHalfResultSubnormal(float x, float ulps)
+{
+    x = fabs(x) - MAKE_HEX_FLOAT(0x1.0p-24, 0x1, -24) * ulps;
+    return x < MAKE_HEX_FLOAT(0x1.0p-14, 0x1, -14);
+}
+
 inline int IsFloatResultSubnormalAbsError(double x, float abs_err)
 {
     x = x - abs_err;

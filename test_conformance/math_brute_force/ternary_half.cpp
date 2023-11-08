@@ -41,14 +41,17 @@ cl_int BuildKernelFn_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 
 // A table of more difficult cases to get right
 static const cl_half specialValuesHalf[] = {
-    0xffff,
-    0x0000,
-    0x0001,
-    0x7c00 /*INFINITY*/,
-    0xfc00 /*-INFINITY*/,
-    0x8000 /*-0*/,
-    0x7bff /*HALF_MAX*/,
-    0x0400 /*HALF_MIN*/
+    0xffff, 0x0000, 0x0001, 0x7c00, /*INFINITY*/
+    0xfc00, /*-INFINITY*/
+    0x8000, /*-0*/
+    0x7bff, /*HALF_MAX*/
+    0x0400, /*HALF_MIN*/
+    0x03ff, /* Largest denormal */
+    0x3c00, /* 1 */
+    0xbc00, /* -1 */
+    0x3555, /*nearest value to 1/3*/
+    0x3bff, /*largest number less than one*/
+    0xc000, /* -2 */
 };
 
 constexpr size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
@@ -78,8 +81,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
 
     // Init the kernels
-    BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode,
-                                relaxedMode };
+    BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode };
     if ((error = ThreadPool_Do(BuildKernelFn_HalfFn,
                                gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                &build_info)))
@@ -294,7 +296,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                         test != correct ? Ulp_Error_Half(test, ref1) : 0.f;
                     fail = !(fabsf(err) <= half_ulps);
 
-                    if (fail && (ftz || relaxedMode))
+                    if (fail && ftz)
                     {
                         // retry per section 6.5.3.2  with flushing on
                         if (0.0f == test

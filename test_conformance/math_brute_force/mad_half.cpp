@@ -21,7 +21,8 @@
 
 #include <cstring>
 
-////////////////////////////////////////////////////////////////////////////////
+namespace {
+
 cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo &info = *(BuildKernelInfo *)p;
@@ -34,7 +35,8 @@ cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-////////////////////////////////////////////////////////////////////////////////
+} // anonymous namespace
+
 int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
 {
     int error;
@@ -42,7 +44,7 @@ int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
     KernelMatrix kernels;
     const unsigned thread_id = 0; // Test is currently not multithreaded.
     float maxError = 0.0f;
-    //    int ftz = f->ftz || gForceFTZ;
+
     float maxErrorVal = 0.0f;
     float maxErrorVal2 = 0.0f;
     float maxErrorVal3 = 0.0f;
@@ -96,7 +98,7 @@ int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
         // write garbage into output arrays
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            uint16_t pattern = 0xdead;
+            uint32_t pattern = 0xACDCACDC;
             memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
             if ((error =
                      clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
