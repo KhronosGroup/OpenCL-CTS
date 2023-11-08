@@ -577,7 +577,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                 {
                     vlog_error("\nERROR: %s%s: %f ulp error at {%a (0x%04x), "
                                "%a (0x%04x)}\nExpected: %a  (half 0x%04x) "
-                               "\nActual: %a (half 0x%04x) at index: %zu\n",
+                               "\nActual: %a (half 0x%04x) at index: %u\n",
                                name, sizeNames[k], err, s[j], p[j], s2[j],
                                p2[j], cl_half_to_float(r[j]), r[j], test, q[j],
                                j);
