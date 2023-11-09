@@ -683,7 +683,7 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
         test_info.tinfo[i].inBuf2 =
             clCreateSubBuffer(gInBuffer2, CL_MEM_READ_ONLY,
                               CL_BUFFER_CREATE_TYPE_REGION, &region, &error);
-        if (error || NULL == test_info.tinfo[i].inBuf)
+        if (error || NULL == test_info.tinfo[i].inBuf2)
         {
             vlog_error("Error: Unable to create sub-buffer of gInBuffer2 for "
                        "region {%zd, %zd}\n",
