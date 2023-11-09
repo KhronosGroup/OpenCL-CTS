@@ -126,8 +126,11 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
     std::vector<char> vkBufferShader = readFile("buffer.spv");
 
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
-    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
-        MAX_BUFFERS + 1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
+    vkDescriptorSetLayoutBindingList.addBinding(
+        0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
+    vkDescriptorSetLayoutBindingList.addBinding(
+        1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_BUFFERS);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
@@ -189,9 +192,9 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
             for (size_t bIdx = 0; bIdx < numBuffers; bIdx++)
             {
-                vkBufferListDeviceMemory.push_back(
-                    new VulkanDeviceMemory(vkDevice, bufferSize, memoryType,
-                                           vkExternalMemoryHandleType));
+                vkBufferListDeviceMemory.push_back(new VulkanDeviceMemory(
+                    vkDevice, vkBufferList[bIdx], memoryType,
+                    vkExternalMemoryHandleType));
                 externalMemory.push_back(new clExternalMemory(
                     vkBufferListDeviceMemory[bIdx], vkExternalMemoryHandleType,
                     0, bufferSize, context, deviceId));
@@ -210,8 +213,8 @@ int run_test_with_two_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 vkBufferListDeviceMemory[bIdx]->bindBuffer(vkBufferList[bIdx],
                                                            0);
                 buffers[bIdx] = externalMemory[bIdx]->getExternalMemoryBuffer();
-                vkDescriptorSet.update((uint32_t)bIdx + 1, vkBufferList[bIdx]);
             }
+            vkDescriptorSet.updateArray(1, numBuffers, vkBufferList);
             vkCommandBuffer.begin();
             vkCommandBuffer.bindPipeline(vkComputePipeline);
             vkCommandBuffer.bindDescriptorSets(
@@ -453,8 +456,11 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
     std::vector<char> vkBufferShader = readFile("buffer.spv");
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
-    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
-        MAX_BUFFERS + 1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
+    vkDescriptorSetLayoutBindingList.addBinding(
+        0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
+    vkDescriptorSetLayoutBindingList.addBinding(
+        1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_BUFFERS);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
@@ -517,9 +523,9 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
 
             for (size_t bIdx = 0; bIdx < numBuffers; bIdx++)
             {
-                vkBufferListDeviceMemory.push_back(
-                    new VulkanDeviceMemory(vkDevice, bufferSize, memoryType,
-                                           vkExternalMemoryHandleType));
+                vkBufferListDeviceMemory.push_back(new VulkanDeviceMemory(
+                    vkDevice, vkBufferList[bIdx], memoryType,
+                    vkExternalMemoryHandleType));
                 externalMemory.push_back(new clExternalMemory(
                     vkBufferListDeviceMemory[bIdx], vkExternalMemoryHandleType,
                     0, bufferSize, context, deviceId));
@@ -538,8 +544,9 @@ int run_test_with_one_queue(cl_context &context, cl_command_queue &cmd_queue1,
                 vkBufferListDeviceMemory[bIdx]->bindBuffer(vkBufferList[bIdx],
                                                            0);
                 buffers[bIdx] = externalMemory[bIdx]->getExternalMemoryBuffer();
-                vkDescriptorSet.update((uint32_t)bIdx + 1, vkBufferList[bIdx]);
             }
+            vkDescriptorSet.updateArray(1, vkBufferList.size(), vkBufferList);
+
             vkCommandBuffer.begin();
             vkCommandBuffer.bindPipeline(vkComputePipeline);
             vkCommandBuffer.bindDescriptorSets(
@@ -754,8 +761,11 @@ int run_test_with_multi_import_same_ctx(
     std::vector<char> vkBufferShader = readFile("buffer.spv");
 
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
-    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
-        MAX_BUFFERS + 1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
+    vkDescriptorSetLayoutBindingList.addBinding(
+        0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
+    vkDescriptorSetLayoutBindingList.addBinding(
+        1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_BUFFERS);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
@@ -836,7 +846,7 @@ int run_test_with_multi_import_same_ctx(
                     if (withOffset == 0)
                     {
                         vkBufferListDeviceMemory.push_back(
-                            new VulkanDeviceMemory(vkDevice, pBufferSize,
+                            new VulkanDeviceMemory(vkDevice, vkBufferList[bIdx],
                                                    memoryType,
                                                    vkExternalMemoryHandleType));
                     }
@@ -880,9 +890,8 @@ int run_test_with_multi_import_same_ctx(
                             externalMemory[bIdx][cl_bIdx]
                                 ->getExternalMemoryBuffer();
                     }
-                    vkDescriptorSet.update((uint32_t)bIdx + 1,
-                                           vkBufferList[bIdx]);
                 }
+                vkDescriptorSet.updateArray(1, numBuffers, vkBufferList);
                 vkCommandBuffer.begin();
                 vkCommandBuffer.bindPipeline(vkComputePipeline);
                 vkCommandBuffer.bindDescriptorSets(

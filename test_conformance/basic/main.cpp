@@ -92,16 +92,8 @@ test_definition test_list[] = {
     ADD_TEST(image_param),
     ADD_TEST(image_multipass_integer_coord),
     ADD_TEST(image_multipass_float_coord),
-    ADD_TEST(explicit_s2v_char),
-    ADD_TEST(explicit_s2v_uchar),
-    ADD_TEST(explicit_s2v_short),
-    ADD_TEST(explicit_s2v_ushort),
-    ADD_TEST(explicit_s2v_int),
-    ADD_TEST(explicit_s2v_uint),
-    ADD_TEST(explicit_s2v_long),
-    ADD_TEST(explicit_s2v_ulong),
-    ADD_TEST(explicit_s2v_float),
-    ADD_TEST(explicit_s2v_double),
+
+    ADD_TEST(explicit_s2v),
 
     ADD_TEST(enqueue_map_buffer),
     ADD_TEST(enqueue_map_image),

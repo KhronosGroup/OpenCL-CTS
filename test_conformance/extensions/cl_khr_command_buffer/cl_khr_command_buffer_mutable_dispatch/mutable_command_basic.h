@@ -19,17 +19,6 @@
 #include "../basic_command_buffer.h"
 #include "../command_buffer_test_base.h"
 
-// If it is supported get the addresses of all the APIs here.
-#define GET_EXTENSION_ADDRESS(FUNC)                                            \
-    FUNC = reinterpret_cast<FUNC##_fn>(                                        \
-        clGetExtensionFunctionAddressForPlatform(platform, #FUNC));            \
-    if (FUNC == nullptr)                                                       \
-    {                                                                          \
-        log_error("ERROR: clGetExtensionFunctionAddressForPlatform failed"     \
-                  " with " #FUNC "\n");                                        \
-        return TEST_FAIL;                                                      \
-    }
-
 struct BasicMutableCommandBufferTest : BasicCommandBufferTest
 {
     BasicMutableCommandBufferTest(cl_device_id device, cl_context context,

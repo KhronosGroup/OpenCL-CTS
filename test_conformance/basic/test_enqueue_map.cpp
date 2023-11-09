@@ -54,7 +54,8 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context,
     BufferOwningPtr<cl_char> referenceData{ malloc(bufferSize) };
     BufferOwningPtr<cl_char> finalData{ malloc(bufferSize) };
 
-    for (int src_flag_id = 0; src_flag_id < ARRAY_SIZE(flag_set); src_flag_id++)
+    for (size_t src_flag_id = 0; src_flag_id < ARRAY_SIZE(flag_set);
+         src_flag_id++)
     {
         clMemWrapper memObject;
         log_info("Testing with cl_mem_flags src: %s\n",
@@ -155,7 +156,8 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context,
     BufferOwningPtr<cl_uint> finalData{ malloc(imageDataSize) };
 
     MTdataHolder d{ gRandomSeed };
-    for (int src_flag_id = 0; src_flag_id < ARRAY_SIZE(flag_set); src_flag_id++)
+    for (size_t src_flag_id = 0; src_flag_id < ARRAY_SIZE(flag_set);
+         src_flag_id++)
     {
         clMemWrapper memObject;
         log_info("Testing with cl_mem_flags src: %s\n",

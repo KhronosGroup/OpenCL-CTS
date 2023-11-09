@@ -81,7 +81,6 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     int ftz = job->ftz;
     bool relaxedMode = job->relaxedMode;
     cl_int error = CL_SUCCESS;
-    cl_int ret = CL_SUCCESS;
     const char *name = job->f->name;
 
     int signbit_test = 0;
@@ -245,8 +244,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 if (q[j] > t[j]) err = q[j] - t[j];
                 vlog_error("\nERROR: %s: %d ulp error at %a: *%d vs. %d\n",
                            name, err, ((float *)s)[j], t[j], q[j]);
-                error = -1;
-                goto exit;
+                return -1;
             }
 
 
@@ -272,15 +270,12 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                     vlog_error(
                         "\nERROR: %s%s: %d ulp error at %a: *%d vs. %d\n", name,
                         sizeNames[k], err, ((float *)s)[j], -t[j], q[j]);
-                    error = -1;
-                    goto exit;
+                    return -1;
                 }
             }
         }
     }
 
-exit:
-    ret = error;
     for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
@@ -315,7 +310,7 @@ exit:
         fflush(stdout);
     }
 
-    return ret;
+    return CL_SUCCESS;
 }
 
 } // anonymous namespace

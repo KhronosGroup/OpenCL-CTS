@@ -136,7 +136,7 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
 
         // We can not check if this is the right queue because this is an opaque
         // object, test against NULL.
-        for (int i = 0; i < queue_list.size(); i++)
+        for (size_t i = 0; i < queue_list.size(); i++)
         {
             test_assert_error(
                 queue_list[i] == queue,

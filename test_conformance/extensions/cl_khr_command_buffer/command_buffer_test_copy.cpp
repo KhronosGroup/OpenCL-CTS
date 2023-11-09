@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
+#include "svm_command_basic.h"
 #include "harness/typeWrappers.h"
 #include "procs.h"
 
@@ -184,6 +185,74 @@ struct CopyBufferKHR : public BasicCommandBufferTest
         error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
                                     output_data_2.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
+
+        for (size_t i = 0; i < data_size(); i++)
+        {
+            CHECK_VERIFICATION_ERROR(pattern_1, output_data_2[i], i);
+        }
+
+        return CL_SUCCESS;
+    }
+
+    const cl_char pattern_1 = 0x14;
+    const cl_char pattern_2 = 0x28;
+};
+
+struct CopySVMBufferKHR : public BasicSVMCommandBufferTest
+{
+    using BasicSVMCommandBufferTest::BasicSVMCommandBufferTest;
+
+    cl_int Run() override
+    {
+        cl_int error = clCommandSVMMemFillKHR(
+            command_buffer, nullptr, svm_in_mem(), &pattern_1, sizeof(cl_char),
+            data_size(), 0, nullptr, nullptr, nullptr);
+        test_error(error, "clCommandSVMMemFillKHR failed");
+
+        error = clCommandSVMMemcpyKHR(command_buffer, nullptr, svm_out_mem(),
+                                      svm_in_mem(), data_size(), 0, nullptr,
+                                      nullptr, nullptr);
+        test_error(error, "clCommandSVMMemcpyKHR failed");
+
+        error = clFinalizeCommandBufferKHR(command_buffer);
+        test_error(error, "clFinalizeCommandBufferKHR failed");
+
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        std::vector<cl_char> output_data_1(data_size());
+        error =
+            clEnqueueSVMMemcpy(queue, CL_TRUE, output_data_1.data(),
+                               svm_out_mem(), data_size(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueSVMMemcpy failed");
+
+        for (size_t i = 0; i < data_size(); i++)
+        {
+            CHECK_VERIFICATION_ERROR(pattern_1, output_data_1[i], i);
+        }
+
+        /* Check second enqueue of command buffer */
+        error = clEnqueueSVMMemFill(queue, svm_in_mem(), &pattern_2,
+                                    sizeof(cl_char), data_size(), 0, nullptr,
+                                    nullptr);
+        test_error(error, "clEnqueueSVMMemFill failed");
+
+        error = clEnqueueSVMMemFill(queue, svm_out_mem(), &pattern_2,
+                                    sizeof(cl_char), data_size(), 0, nullptr,
+                                    nullptr);
+        test_error(error, "clEnqueueSVMMemFill failed");
+
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        std::vector<cl_char> output_data_2(data_size());
+
+        error =
+            clEnqueueSVMMemcpy(queue, CL_TRUE, output_data_2.data(),
+                               svm_out_mem(), data_size(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueSVMMemcpy failed");
 
         for (size_t i = 0; i < data_size(); i++)
         {
@@ -509,6 +578,14 @@ int test_copy_buffer(cl_device_id device, cl_context context,
 {
     return MakeAndRunTest<CopyBufferKHR>(device, context, queue, num_elements);
 }
+
+int test_copy_svm_buffer(cl_device_id device, cl_context context,
+                         cl_command_queue queue, int num_elements)
+{
+    return MakeAndRunTest<CopySVMBufferKHR>(device, context, queue,
+                                            num_elements);
+}
+
 
 int test_copy_buffer_to_image(cl_device_id device, cl_context context,
                               cl_command_queue queue, int num_elements)

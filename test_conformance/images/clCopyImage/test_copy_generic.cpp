@@ -519,32 +519,53 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     if( gDebugTrace )
         log_info( " - Scanline verification...\n" );
 
-    size_t thirdDim;
-    size_t secondDim;
-    if (dstImageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY)
+    size_t thirdDim = 1;
+    size_t secondDim = 1;
+
+    switch (dstImageInfo->type)
     {
-        secondDim = dstImageInfo->arraySize;
-        thirdDim = 1;
-    }
-    else if (dstImageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
-    {
-        secondDim = dstImageInfo->height;
-        if( gTestMipmaps )
-            secondDim = (dstImageInfo->height >> dst_lod) ? (dstImageInfo->height >> dst_lod):1;
-        thirdDim = dstImageInfo->arraySize;
-    }
-    else
-    {
-        secondDim = dstImageInfo->height;
-        thirdDim = dstImageInfo->depth;
-        if( gTestMipmaps )
-        {
-            secondDim = (dstImageInfo->height >> dst_lod) ? (dstImageInfo->height >> dst_lod):1;
-            if(dstImageInfo->type == CL_MEM_OBJECT_IMAGE3D)
-                thirdDim = (dstImageInfo->depth >> dst_lod) ? (dstImageInfo->depth >> dst_lod):1;
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY: {
+            secondDim = dstImageInfo->arraySize;
+            break;
+        }
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY: {
+            secondDim = dstImageInfo->height;
+            thirdDim = dstImageInfo->arraySize;
+            break;
+        }
+        case CL_MEM_OBJECT_IMAGE3D: {
+            secondDim = dstImageInfo->height;
+            thirdDim = dstImageInfo->depth;
+            break;
+        }
+        case CL_MEM_OBJECT_IMAGE2D: {
+            secondDim = dstImageInfo->height;
+            break;
+        }
+        case CL_MEM_OBJECT_IMAGE1D: {
+            break;
+        }
+        default: {
+            log_error("ERROR: Unsupported Image type. \n");
+            return error;
+            break;
         }
     }
-
+    if (gTestMipmaps)
+    {
+        switch (dstImageInfo->type)
+        {
+            case CL_MEM_OBJECT_IMAGE3D:
+                thirdDim = (dstImageInfo->depth >> dst_lod) ? (dstImageInfo->depth >> dst_lod):1;
+                /* Fallthrough */
+            case CL_MEM_OBJECT_IMAGE2D:
+            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+                secondDim = (dstImageInfo->height >> dst_lod)
+                    ? (dstImageInfo->height >> dst_lod)
+                    : 1;
+                break;
+        }
+    }
     for( size_t z = 0; z < thirdDim; z++ )
     {
         for( size_t y = 0; y < secondDim; y++ )

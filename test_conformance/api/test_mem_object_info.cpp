@@ -217,6 +217,9 @@ int test_get_buffer_info( cl_device_id deviceID, cl_context context, cl_command_
             // Create a buffer object to test against.
             bufferObject = clCreateBuffer( context, bufferFlags[ i ], addressAlign * 4, NULL, &error );
             test_error( error, "Unable to create buffer to test with" );
+            void *ptr;
+            TEST_MEM_OBJECT_PARAM(bufferObject, CL_MEM_HOST_PTR, ptr, NULL,
+                                  "host pointer", "%p", void *)
         }
 
         // Perform buffer object queries.
