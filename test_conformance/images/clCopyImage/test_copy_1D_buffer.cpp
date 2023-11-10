@@ -33,41 +33,12 @@ int test_copy_image_size_1D_buffer(cl_context context, cl_command_queue queue,
     size_t width_lod = srcImageInfo->width;
     size_t max_mip_level;
 
-    if (gTestMipmaps)
-    {
-        max_mip_level = srcImageInfo->num_mip_levels;
-        // Work at a random mip level
-        src_lod = (size_t)random_in_range(
-            0, max_mip_level ? max_mip_level - 1 : 0, d);
-        dst_lod = (size_t)random_in_range(
-            0, max_mip_level ? max_mip_level - 1 : 0, d);
-        src_width_lod = (srcImageInfo->width >> src_lod)
-            ? (srcImageInfo->width >> src_lod)
-            : 1;
-        dst_width_lod = (srcImageInfo->width >> dst_lod)
-            ? (srcImageInfo->width >> dst_lod)
-            : 1;
-        width_lod =
-            (src_width_lod > dst_width_lod) ? dst_width_lod : src_width_lod;
-        src_row_pitch_lod =
-            src_width_lod * get_pixel_size(srcImageInfo->format);
-        dst_row_pitch_lod =
-            dst_width_lod * get_pixel_size(srcImageInfo->format);
-    }
-
     // First, try just a full covering region
     sourcePos[0] = sourcePos[1] = sourcePos[2] = 0;
     destPos[0] = destPos[1] = destPos[2] = 0;
     regionSize[0] = srcImageInfo->width;
     regionSize[1] = 1;
     regionSize[2] = 1;
-
-    if (gTestMipmaps)
-    {
-        sourcePos[1] = src_lod;
-        destPos[1] = dst_lod;
-        regionSize[0] = width_lod;
-    }
 
     retCode =
         test_copy_image_generic(context, queue, srcImageInfo, dstImageInfo,
@@ -80,24 +51,6 @@ int test_copy_image_size_1D_buffer(cl_context context, cl_command_queue queue,
     // Now try a sampling of different random regions
     for (int i = 0; i < 8; i++)
     {
-        if (gTestMipmaps)
-        {
-            // Work at a random mip level
-            src_lod = (size_t)random_in_range(
-                0, max_mip_level ? max_mip_level - 1 : 0, d);
-            dst_lod = (size_t)random_in_range(
-                0, max_mip_level ? max_mip_level - 1 : 0, d);
-            src_width_lod = (srcImageInfo->width >> src_lod)
-                ? (srcImageInfo->width >> src_lod)
-                : 1;
-            dst_width_lod = (srcImageInfo->width >> dst_lod)
-                ? (srcImageInfo->width >> dst_lod)
-                : 1;
-            width_lod =
-                (src_width_lod > dst_width_lod) ? dst_width_lod : src_width_lod;
-            sourcePos[1] = src_lod;
-            destPos[1] = dst_lod;
-        }
         // Pick a random size
         regionSize[0] = (width_lod > 8)
             ? (size_t)random_in_range(8, (int)width_lod - 1, d)
@@ -135,6 +88,13 @@ int test_copy_image_set_1D_buffer(cl_device_id device, cl_context context,
     RandomSeed seed(gRandomSeed);
     size_t pixelSize;
 
+    if (gTestMipmaps)
+    {
+        // 1D image buffers don't support mipmaps
+        // https://registry.khronos.org/OpenCL/specs/3.0-unified/html/OpenCL_Ext.html#cl_khr_mipmap_image
+        return 0;
+    }
+
     imageInfo.format = format;
     imageInfo.height = imageInfo.depth = imageInfo.arraySize =
         imageInfo.slicePitch = 0;
@@ -161,11 +121,6 @@ int test_copy_image_set_1D_buffer(cl_device_id device, cl_context context,
         {
             size_t rowPadding = gEnablePitch ? 48 : 0;
             imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-
-            if (gTestMipmaps)
-                imageInfo.num_mip_levels = (cl_uint)random_log_in_range(
-                    2, (int)compute_max_mip_levels(imageInfo.width, 0, 0),
-                    seed);
 
             if (gEnablePitch)
             {
@@ -200,11 +155,6 @@ int test_copy_image_set_1D_buffer(cl_device_id device, cl_context context,
             imageInfo.width = sizes[idx][0];
             imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
 
-            if (gTestMipmaps)
-                imageInfo.num_mip_levels = (cl_uint)random_log_in_range(
-                    2, (int)compute_max_mip_levels(imageInfo.width, 0, 0),
-                    seed);
-
             if (gEnablePitch)
             {
                 do
@@ -237,33 +187,19 @@ int test_copy_image_set_1D_buffer(cl_device_id device, cl_context context,
                 imageInfo.width =
                     (size_t)random_log_in_range(16, (int)maxWidth / 32, seed);
 
-                if (gTestMipmaps)
-                {
-                    imageInfo.num_mip_levels = (cl_uint)random_log_in_range(
-                        2, (int)compute_max_mip_levels(imageInfo.width, 0, 0),
-                        seed);
-                    imageInfo.rowPitch =
-                        imageInfo.width * get_pixel_size(imageInfo.format);
-                    size = compute_mipmapped_image_size(imageInfo);
-                    size = size * 4;
-                }
-                else
-                {
-                    imageInfo.rowPitch =
-                        imageInfo.width * pixelSize + rowPadding;
+                imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
 
-                    if (gEnablePitch)
+                if (gEnablePitch)
+                {
+                    do
                     {
-                        do
-                        {
-                            rowPadding++;
-                            imageInfo.rowPitch =
-                                imageInfo.width * pixelSize + rowPadding;
-                        } while ((imageInfo.rowPitch % pixelSize) != 0);
-                    }
-
-                    size = (size_t)imageInfo.rowPitch * 4;
+                        rowPadding++;
+                        imageInfo.rowPitch =
+                            imageInfo.width * pixelSize + rowPadding;
+                    } while ((imageInfo.rowPitch % pixelSize) != 0);
                 }
+
+                size = (size_t)imageInfo.rowPitch * 4;
             } while (size > maxAllocSize || (size * 3) > memSize);
 
             if (gDebugTrace)
@@ -271,9 +207,6 @@ int test_copy_image_set_1D_buffer(cl_device_id device, cl_context context,
                 log_info("   at size %d (row pitch %d) out of %d\n",
                          (int)imageInfo.width, (int)imageInfo.rowPitch,
                          (int)maxWidth);
-                if (gTestMipmaps)
-                    log_info("   and %llu mip levels\n",
-                             (size_t)imageInfo.num_mip_levels);
             }
 
             int ret = test_copy_image_size_1D_buffer(context, queue, &imageInfo,
@@ -294,6 +227,13 @@ int test_copy_image_set_1D_1D_buffer(cl_device_id device, cl_context context,
     image_descriptor imageInfo = { 0 };
     RandomSeed seed(gRandomSeed);
     size_t pixelSize;
+
+    if (gTestMipmaps)
+    {
+        // 1D image buffers don't support mipmaps
+        // https://registry.khronos.org/OpenCL/specs/3.0-unified/html/OpenCL_Ext.html#cl_khr_mipmap_image
+        return 0;
+    }
 
     imageInfo.format = format;
     imageInfo.height = imageInfo.depth = imageInfo.arraySize =
@@ -321,11 +261,6 @@ int test_copy_image_set_1D_1D_buffer(cl_device_id device, cl_context context,
         {
             size_t rowPadding = gEnablePitch ? 48 : 0;
             imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-
-            if (gTestMipmaps)
-                imageInfo.num_mip_levels = (cl_uint)random_log_in_range(
-                    2, (int)compute_max_mip_levels(imageInfo.width, 0, 0),
-                    seed);
 
             if (gEnablePitch)
             {
@@ -362,11 +297,6 @@ int test_copy_image_set_1D_1D_buffer(cl_device_id device, cl_context context,
             size_t rowPadding = gEnablePitch ? 48 : 0;
             imageInfo.width = sizes[idx][0];
             imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-
-            if (gTestMipmaps)
-                imageInfo.num_mip_levels = (cl_uint)random_log_in_range(
-                    2, (int)compute_max_mip_levels(imageInfo.width, 0, 0),
-                    seed);
 
             if (gEnablePitch)
             {
@@ -404,33 +334,19 @@ int test_copy_image_set_1D_1D_buffer(cl_device_id device, cl_context context,
                 imageInfo.width =
                     (size_t)random_log_in_range(16, (int)maxWidth / 32, seed);
 
-                if (gTestMipmaps)
-                {
-                    imageInfo.num_mip_levels = (cl_uint)random_log_in_range(
-                        2, (int)compute_max_mip_levels(imageInfo.width, 0, 0),
-                        seed);
-                    imageInfo.rowPitch =
-                        imageInfo.width * get_pixel_size(imageInfo.format);
-                    size = compute_mipmapped_image_size(imageInfo);
-                    size = size * 4;
-                }
-                else
-                {
-                    imageInfo.rowPitch =
-                        imageInfo.width * pixelSize + rowPadding;
+                imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
 
-                    if (gEnablePitch)
+                if (gEnablePitch)
+                {
+                    do
                     {
-                        do
-                        {
-                            rowPadding++;
-                            imageInfo.rowPitch =
-                                imageInfo.width * pixelSize + rowPadding;
-                        } while ((imageInfo.rowPitch % pixelSize) != 0);
-                    }
-
-                    size = (size_t)imageInfo.rowPitch * 4;
+                        rowPadding++;
+                        imageInfo.rowPitch =
+                            imageInfo.width * pixelSize + rowPadding;
+                    } while ((imageInfo.rowPitch % pixelSize) != 0);
                 }
+
+                size = (size_t)imageInfo.rowPitch * 4;
             } while (size > maxAllocSize || (size * 3) > memSize);
 
             if (gDebugTrace)
@@ -438,9 +354,6 @@ int test_copy_image_set_1D_1D_buffer(cl_device_id device, cl_context context,
                 log_info("   at size %d (row pitch %d) out of %d\n",
                          (int)imageInfo.width, (int)imageInfo.rowPitch,
                          (int)maxWidth);
-                if (gTestMipmaps)
-                    log_info("   and %llu mip levels\n",
-                             (size_t)imageInfo.num_mip_levels);
             }
 
             image_descriptor srcImageInfo = imageInfo;
@@ -464,6 +377,13 @@ int test_copy_image_set_1D_buffer_1D(cl_device_id device, cl_context context,
     image_descriptor imageInfo = { 0 };
     RandomSeed seed(gRandomSeed);
     size_t pixelSize;
+
+    if (gTestMipmaps)
+    {
+        // 1D image buffers don't support mipmaps
+        // https://registry.khronos.org/OpenCL/specs/3.0-unified/html/OpenCL_Ext.html#cl_khr_mipmap_image
+        return 0;
+    }
 
     imageInfo.format = format;
     imageInfo.height = imageInfo.depth = imageInfo.arraySize =
@@ -491,11 +411,6 @@ int test_copy_image_set_1D_buffer_1D(cl_device_id device, cl_context context,
         {
             size_t rowPadding = gEnablePitch ? 48 : 0;
             imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-
-            if (gTestMipmaps)
-                imageInfo.num_mip_levels = (cl_uint)random_log_in_range(
-                    2, (int)compute_max_mip_levels(imageInfo.width, 0, 0),
-                    seed);
 
             if (gEnablePitch)
             {
@@ -533,11 +448,6 @@ int test_copy_image_set_1D_buffer_1D(cl_device_id device, cl_context context,
             imageInfo.width = sizes[idx][0];
             imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
 
-            if (gTestMipmaps)
-                imageInfo.num_mip_levels = (cl_uint)random_log_in_range(
-                    2, (int)compute_max_mip_levels(imageInfo.width, 0, 0),
-                    seed);
-
             if (gEnablePitch)
             {
                 do
@@ -574,33 +484,19 @@ int test_copy_image_set_1D_buffer_1D(cl_device_id device, cl_context context,
                 imageInfo.width =
                     (size_t)random_log_in_range(16, (int)maxWidth / 32, seed);
 
-                if (gTestMipmaps)
-                {
-                    imageInfo.num_mip_levels = (cl_uint)random_log_in_range(
-                        2, (int)compute_max_mip_levels(imageInfo.width, 0, 0),
-                        seed);
-                    imageInfo.rowPitch =
-                        imageInfo.width * get_pixel_size(imageInfo.format);
-                    size = compute_mipmapped_image_size(imageInfo);
-                    size = size * 4;
-                }
-                else
-                {
-                    imageInfo.rowPitch =
-                        imageInfo.width * pixelSize + rowPadding;
+                imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
 
-                    if (gEnablePitch)
+                if (gEnablePitch)
+                {
+                    do
                     {
-                        do
-                        {
-                            rowPadding++;
-                            imageInfo.rowPitch =
-                                imageInfo.width * pixelSize + rowPadding;
-                        } while ((imageInfo.rowPitch % pixelSize) != 0);
-                    }
-
-                    size = (size_t)imageInfo.rowPitch * 4;
+                        rowPadding++;
+                        imageInfo.rowPitch =
+                            imageInfo.width * pixelSize + rowPadding;
+                    } while ((imageInfo.rowPitch % pixelSize) != 0);
                 }
+
+                size = (size_t)imageInfo.rowPitch * 4;
             } while (size > maxAllocSize || (size * 3) > memSize);
 
             if (gDebugTrace)
@@ -608,9 +504,6 @@ int test_copy_image_set_1D_buffer_1D(cl_device_id device, cl_context context,
                 log_info("   at size %d (row pitch %d) out of %d\n",
                          (int)imageInfo.width, (int)imageInfo.rowPitch,
                          (int)maxWidth);
-                if (gTestMipmaps)
-                    log_info("   and %llu mip levels\n",
-                             (size_t)imageInfo.num_mip_levels);
             }
 
             image_descriptor dstImageInfo = imageInfo;
