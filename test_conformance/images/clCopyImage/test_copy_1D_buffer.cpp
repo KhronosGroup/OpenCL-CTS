@@ -28,10 +28,7 @@ int test_copy_image_size_1D_buffer(cl_context context, cl_command_queue queue,
 {
     size_t sourcePos[3], destPos[3], regionSize[3];
     int ret = 0, retCode;
-    size_t src_lod = 0, src_width_lod = srcImageInfo->width, src_row_pitch_lod;
-    size_t dst_lod = 0, dst_width_lod = srcImageInfo->width, dst_row_pitch_lod;
     size_t width_lod = srcImageInfo->width;
-    size_t max_mip_level;
 
     // First, try just a full covering region
     sourcePos[0] = sourcePos[1] = sourcePos[2] = 0;
