@@ -93,9 +93,9 @@ int test_consistency_external_buffer(cl_device_id deviceID, cl_context _context,
     int fd;
 
     std::vector<cl_mem_properties> extMemProperties{
-        (cl_mem_properties)CL_DEVICE_HANDLE_LIST_KHR,
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
         (cl_mem_properties)devList[0],
-        (cl_mem_properties)CL_DEVICE_HANDLE_LIST_END_KHR,
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_END_KHR,
     };
     cl_external_memory_handle_type_khr type;
     switch (vkExternalMemoryHandleType)
@@ -162,9 +162,9 @@ int test_consistency_external_buffer(cl_device_id deviceID, cl_context _context,
         (cl_mem_properties)type,
         (cl_mem_properties)-64, // Passing random invalid fd
 #endif
-        (cl_mem_properties)CL_DEVICE_HANDLE_LIST_KHR,
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
         (cl_mem_properties)devList[0],
-        (cl_mem_properties)CL_DEVICE_HANDLE_LIST_END_KHR,
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_END_KHR,
         0
     };
     buffer = clCreateBufferWithProperties(context, extMemProperties2.data(), 1,
@@ -257,9 +257,9 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
     void* handle = NULL;
     int fd;
     std::vector<cl_mem_properties> extMemProperties{
-        (cl_mem_properties)CL_DEVICE_HANDLE_LIST_KHR,
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
         (cl_mem_properties)devList[0],
-        (cl_mem_properties)CL_DEVICE_HANDLE_LIST_END_KHR,
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_END_KHR,
     };
     switch (vkExternalMemoryHandleType)
     {
@@ -484,15 +484,15 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
             "Unsupported external sempahore handle type\n ");
     }
     sema_props1.push_back(
-        (cl_semaphore_properties_khr)CL_DEVICE_HANDLE_LIST_KHR);
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR);
     sema_props1.push_back((cl_semaphore_properties_khr)devList[0]);
     sema_props1.push_back(
-        (cl_semaphore_properties_khr)CL_DEVICE_HANDLE_LIST_END_KHR);
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR);
     sema_props2.push_back(
-        (cl_semaphore_properties_khr)CL_DEVICE_HANDLE_LIST_KHR);
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR);
     sema_props2.push_back((cl_semaphore_properties_khr)devList[0]);
     sema_props2.push_back(
-        (cl_semaphore_properties_khr)CL_DEVICE_HANDLE_LIST_END_KHR);
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR);
     sema_props1.push_back(0);
     sema_props2.push_back(0);
 

@@ -120,7 +120,8 @@ int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
     SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_TYPE_KHR, cl_semaphore_type_khr,
                          CL_SEMAPHORE_TYPE_BINARY_KHR);
 
-    SEMAPHORE_PARAM_TEST(CL_DEVICE_HANDLE_LIST_KHR, cl_device_id, deviceID);
+    SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR, cl_device_id,
+                         deviceID);
 
     SEMAPHORE_PARAM_TEST(
         CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR, cl_uint,

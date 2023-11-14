@@ -595,10 +595,11 @@ clExternalMemory::clExternalMemory(
         throw std::runtime_error("Unsupported external memory type\n ");
     }
 
-    extMemProperties.push_back((cl_mem_properties)CL_DEVICE_HANDLE_LIST_KHR);
+    extMemProperties.push_back(
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR);
     extMemProperties.push_back((cl_mem_properties)devList[0]);
     extMemProperties.push_back(
-        (cl_mem_properties)CL_DEVICE_HANDLE_LIST_END_KHR);
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_END_KHR);
     extMemProperties.push_back(0);
 
     m_externalMemory = clCreateBufferWithProperties(
@@ -691,10 +692,11 @@ clExternalMemoryImage::clExternalMemoryImage(
         throw std::runtime_error("getCLImageInfoFromVkImageInfo failed!!!");
     }
 
-    extMemProperties1.push_back((cl_mem_properties)CL_DEVICE_HANDLE_LIST_KHR);
+    extMemProperties1.push_back(
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR);
     extMemProperties1.push_back((cl_mem_properties)devList[0]);
     extMemProperties1.push_back(
-        (cl_mem_properties)CL_DEVICE_HANDLE_LIST_END_KHR);
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_END_KHR);
     extMemProperties1.push_back(0);
     m_externalMemory = clCreateImageWithProperties(
         context, extMemProperties1.data(), CL_MEM_READ_WRITE, &img_format,
@@ -846,10 +848,10 @@ clExternalSemaphore::clExternalSemaphore(
     }
 
     sema_props.push_back(
-        (cl_semaphore_properties_khr)CL_DEVICE_HANDLE_LIST_KHR);
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR);
     sema_props.push_back((cl_semaphore_properties_khr)devList[0]);
     sema_props.push_back(
-        (cl_semaphore_properties_khr)CL_DEVICE_HANDLE_LIST_END_KHR);
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR);
     sema_props.push_back(0);
     m_externalSemaphore =
         clCreateSemaphoreWithPropertiesKHRptr(context, sema_props.data(), &err);
