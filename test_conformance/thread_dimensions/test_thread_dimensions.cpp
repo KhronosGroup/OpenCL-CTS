@@ -701,8 +701,14 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
 
     log_info("Testing with dimensions up to %s.\n",
              print_dimensions(max_x_size, max_y_size, max_z_size, dimensions));
-    log_info("Testing with buffer size %d.\n", bufferSize);
-    log_info("Testing with buffer step %d.\n", bufferStep);
+    if (bufferSize)
+    {
+        log_info("Testing with buffer size %d.\n", bufferSize);
+    }
+    if (bufferStep)
+    {
+        log_info("Testing with buffer step %d.\n", bufferStep);
+    }
     cl_uint x_size, y_size, z_size;
 
     d = init_genrand(gRandomSeed);
