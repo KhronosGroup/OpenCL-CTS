@@ -627,7 +627,8 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
 #else
             *out = x >= MAKE_HEX_DOUBLE(0x1.0p64, 0x1LL, 64)
                 ? (OutType)0xFFFFFFFFFFFFFFFFULL
-                : x < 0 ? 0 : (OutType)x;
+                : x < 0 ? 0
+                        : (OutType)x;
 #endif
         }
         else if ((std::is_same<InType, cl_float>::value || is_in_half())
@@ -637,8 +638,8 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
             *out = f >= MAKE_HEX_DOUBLE(0x1.0p63, 0x1LL, 63)
                 ? (OutType)0x7FFFFFFFFFFFFFFFULL
                 : f < MAKE_HEX_DOUBLE(-0x1.0p63, -0x1LL, 63)
-                    ? (OutType)0x8000000000000000LL
-                    : (OutType)f;
+                ? (OutType)0x8000000000000000LL
+                : (OutType)f;
         }
         else if (std::is_same<InType, cl_double>::value
                  && std::is_same<cl_ulong, OutType>::value)
@@ -646,7 +647,8 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
             InType f = rint(*in);
             *out = f >= MAKE_HEX_DOUBLE(0x1.0p64, 0x1LL, 64)
                 ? (OutType)0xFFFFFFFFFFFFFFFFULL
-                : f < 0 ? 0 : (OutType)f;
+                : f < 0 ? 0
+                        : (OutType)f;
         }
         else if (std::is_same<InType, cl_double>::value
                  && std::is_same<cl_long, OutType>::value)
@@ -655,8 +657,8 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
             *out = f >= MAKE_HEX_DOUBLE(0x1.0p63, 0x1LL, 63)
                 ? (OutType)0x7FFFFFFFFFFFFFFFULL
                 : f < MAKE_HEX_DOUBLE(-0x1.0p63, -0x1LL, 63)
-                    ? (OutType)0x8000000000000000LL
-                    : (OutType)f;
+                ? (OutType)0x8000000000000000LL
+                : (OutType)f;
         }
         else
         { // in half/float/double, out char/uchar/short/ushort/int/uint
