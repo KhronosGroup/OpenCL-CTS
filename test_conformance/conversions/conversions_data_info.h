@@ -385,11 +385,11 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
         if (std::is_same<cl_double, OutType>::value)
         {
 #if defined(_MSC_VER)
-            cl_ulong l = ((cl_ulong *)in)[0];
             double result;
 
             if (std::is_same<cl_ulong, InType>::value)
             {
+                cl_ulong l = ((cl_ulong *)in)[0];
                 cl_long sl = ((cl_long)l < 0) ? (cl_long)((l >> 1) | (l & 1))
                                               : (cl_long)l;
 #if defined(_M_X64)
@@ -402,6 +402,7 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
             }
             else
             {
+                cl_long l = ((cl_long *)in)[0];
 #if defined(_M_X64)
                 _mm_store_sd(&result, _mm_cvtsi64_sd(_mm_setzero_pd(), l));
 #else
