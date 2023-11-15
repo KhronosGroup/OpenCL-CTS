@@ -234,18 +234,18 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
 
 struct TestType
 {
-    template <typename T> bool testType(Type in)
+    template <typename T, bool FP> bool testType(Type in)
     {
         switch (in)
         {
             default: return false;
             case kuchar: return std::is_same<cl_uchar, T>::value;
             case kchar: return std::is_same<cl_char, T>::value;
-            case kushort: return std::is_same<cl_ushort, T>::value;
+            case kushort: return std::is_same<cl_ushort, T>::value && !FP;
             case kshort: return std::is_same<cl_short, T>::value;
             case kuint: return std::is_same<cl_uint, T>::value;
             case kint: return std::is_same<cl_int, T>::value;
-            case khalf: return std::is_same<cl_half, T>::value;
+            case khalf: return std::is_same<cl_half, T>::value && FP;
             case kfloat: return std::is_same<cl_float, T>::value;
             case kdouble: return std::is_same<cl_double, T>::value;
             case kulong: return std::is_same<cl_ulong, T>::value;
@@ -277,9 +277,11 @@ protected:
               typename InType>
     void iterate_in_type(const InType &t)
     {
-        if (!testType<InType>(inType)) vlog_error("Unexpected data type!\n");
+        if (!testType<InType, isTypeFp[In]>(inType))
+            vlog_error("Unexpected data type!\n");
 
-        if (!testType<OutType>(outType)) vlog_error("Unexpected data type!\n");
+        if (!testType<OutType, isTypeFp[Out]>(outType))
+            vlog_error("Unexpected data type!\n");
 
         // run the conversions
         test.TestTypesConversion<InType, OutType, isTypeFp[In], isTypeFp[Out]>(
@@ -351,7 +353,8 @@ protected:
               typename InType>
     void iterate_in_type(const InType &t)
     {
-        if (testType<InType>(inType) && testType<OutType>(outType))
+        if (testType<InType, isTypeFp[In]>(inType)
+            && testType<OutType, isTypeFp[Out]>(outType))
         {
             // run selected conversion
             // testing of the result will happen afterwards

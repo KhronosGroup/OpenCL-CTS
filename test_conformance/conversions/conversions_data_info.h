@@ -67,6 +67,7 @@ struct DataInitInfo
     static std::vector<uint32_t> specialValuesUInt;
     static std::vector<float> specialValuesFloat;
     static std::vector<double> specialValuesDouble;
+    static std::vector<cl_half> specialValuesHalf;
 };
 
 #define HFF(num) cl_half_from_float(num, DataInitInfo::halfRoundingMode)
@@ -151,11 +152,13 @@ DataInfoSpec<InType, OutType, InFP, OutFP>::DataInfoSpec(
         ranges = std::make_pair(CL_FLT_MIN, CL_FLT_MAX);
     else if (std::is_same<cl_double, OutType>::value)
         ranges = std::make_pair(CL_DBL_MIN, CL_DBL_MAX);
+    else if (std::is_same<cl_half, OutType>::value && OutFP)
+        ranges = std::make_pair(HFF(CL_HALF_MIN), HFF(CL_HALF_MAX));
     else if (std::is_same<cl_uchar, OutType>::value)
         ranges = std::make_pair(0, CL_UCHAR_MAX);
     else if (std::is_same<cl_char, OutType>::value)
         ranges = std::make_pair(CL_CHAR_MIN, CL_CHAR_MAX);
-    else if (std::is_same<cl_ushort, OutType>::value)
+    else if (std::is_same<cl_ushort, OutType>::value && !OutFP)
         ranges = std::make_pair(0, CL_USHRT_MAX);
     else if (std::is_same<cl_short, OutType>::value)
         ranges = std::make_pair(CL_SHRT_MIN, CL_SHRT_MAX);
@@ -176,12 +179,12 @@ DataInfoSpec<InType, OutType, InFP, OutFP>::DataInfoSpec(
         InType outMax = static_cast<InType>(ranges.second);
 
         InType eps = std::is_same<InType, cl_float>::value ? (InType) FLT_EPSILON : (InType) DBL_EPSILON;
-        if (std::is_integral<OutType>::value)
-        { // to char/uchar/short/ushort/int/uint/long/ulong/half
+        if (std::is_integral<OutType>::value && !OutFP)
+        { // to char/uchar/short/ushort/int/uint/long/ulong
             if (sizeof(OutType)<=sizeof(cl_short))
-            { // to char/uchar/short/ushort/half
+            { // to char/uchar/short/ushort
                 clamp_ranges=
-                {{outMin-0.5f, outMax + 0.5f - outMax * 0.5f * eps},
+                 {{outMin-0.5f, outMax + 0.5f - outMax * 0.5f * eps},
                   {outMin-0.5f, outMax + 0.5f - outMax * 0.5f * eps},
                   {outMin-1.0f+(std::is_signed<OutType>::value?outMax:0.5f)*eps, outMax-1.f},
                   {outMin-0.0f, outMax - outMax * 0.5f * eps },
@@ -266,6 +269,50 @@ DataInfoSpec<InType, OutType, InFP, OutFP>::DataInfoSpec(
                 }
             }
         }
+    }
+    else if (is_in_half())
+    {
+        float outMin = static_cast<float>(ranges.first);
+        float outMax = static_cast<float>(ranges.second);
+        float eps = CL_HALF_EPSILON;
+        cl_half_rounding_mode prev_half_round = DataInitInfo::halfRoundingMode;
+        DataInitInfo::halfRoundingMode = CL_HALF_RTZ;
+
+        if (std::is_integral<OutType>::value)
+        { // to char/uchar/short/ushort/int/uint/long/ulong
+            if (sizeof(OutType)<=sizeof(cl_char) || std::is_same<OutType, cl_short>::value)
+            { // to char/uchar
+                clamp_ranges=
+                 {{HFF(outMin-0.5f), HFF(outMax + 0.5f - outMax * 0.5f * eps)},
+                  {HFF(outMin-0.5f), HFF(outMax + 0.5f - outMax * 0.5f * eps)},
+                  {HFF(outMin-1.0f+(std::is_signed<OutType>::value?outMax:0.5f)*eps), HFF(outMax-1.f)},
+                  {HFF(outMin-0.0f), HFF(outMax - outMax * 0.5f * eps) },
+                  {HFF(outMin-1.0f+(std::is_signed<OutType>::value?outMax:0.5f)*eps), HFF(outMax - outMax * 0.5f * eps)}};
+            }
+            else
+            { // to ushort/int/uint/long/ulong
+                if (std::is_signed<OutType>::value)
+                {
+                    clamp_ranges=
+                    { {HFF(-CL_HALF_MAX), HFF(CL_HALF_MAX)},
+                      {HFF(-CL_HALF_MAX), HFF(CL_HALF_MAX)},
+                      {HFF(-CL_HALF_MAX), HFF(CL_HALF_MAX)},
+                      {HFF(-CL_HALF_MAX), HFF(CL_HALF_MAX)},
+                      {HFF(-CL_HALF_MAX), HFF(CL_HALF_MAX)}};
+                }
+                else
+                {
+                    clamp_ranges=
+                    { {HFF(outMin), HFF(CL_HALF_MAX)},
+                      {HFF(outMin), HFF(CL_HALF_MAX)},
+                      {HFF(outMin), HFF(CL_HALF_MAX)},
+                      {HFF(outMin), HFF(CL_HALF_MAX)},
+                      {HFF(outMin), HFF(CL_HALF_MAX)}};
+                }
+            }
+        }
+
+        DataInitInfo::halfRoundingMode = prev_half_round;
     }
     // clang-format on
 }
@@ -372,7 +419,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
         }
         else if (is_out_half())
         {
-            *out = static_cast<OutType>(HFF(*in));
+            *out = HFF(*in);
         }
         else if (std::is_same<cl_ulong, OutType>::value)
         {
@@ -674,21 +721,35 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
 
     if (is_in_half())
     {
-        const unsigned sclamp =
-            std::is_signed<OutType>::value ? 0xffff : 0x7fff;
+        cl_half *o = (cl_half *)pIn;
+        int i;
 
-        InType *o = (InType *)pIn;
+        if (gIsEmbedded)
+            for (i = 0; i < size; i++)
+                o[i] = (cl_half)genrand_int32(mdv[thread_id]);
+        else
+            for (i = 0; i < size; i++) o[i] = (cl_half)((i + ulStart) % 0xffff);
 
-        for (unsigned i = start; i < size; i++)
+        if (0 == ulStart)
         {
-            o[i] = static_cast<InType>(i % sclamp);
+            size_t tableSize = specialValuesHalf.size()
+                * sizeof(decltype(specialValuesHalf)::value_type);
+            if (sizeof(InType) * size < tableSize)
+                tableSize = sizeof(InType) * size;
+            memcpy((char *)(o + i) - tableSize, &specialValuesHalf.front(),
+                   tableSize);
+        }
+
+        if (kUnsaturated == sat)
+        {
+            for (i = 0; i < size; i++) o[i] = clamp(o[i]);
         }
     }
     else if (std::is_integral<InType>::value)
     {
         InType *o = (InType *)pIn;
         if (sizeof(InType) <= sizeof(cl_short))
-        { // char/uchar/ushort/short/half
+        { // char/uchar/ushort/short
             for (int i = 0; i < size; i++) o[i] = ulStart++;
         }
         else if (sizeof(InType) <= sizeof(cl_int))
@@ -842,7 +903,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
 template <typename InType, typename OutType, bool InFP, bool OutFP>
 InType DataInfoSpec<InType, OutType, InFP, OutFP>::clamp(const InType &in)
 {
-    if (std::is_integral<OutType>::value)
+    if (std::is_integral<OutType>::value && !OutFP)
     {
         if (std::is_same<InType, cl_float>::value)
         {
@@ -853,6 +914,11 @@ InType DataInfoSpec<InType, OutType, InFP, OutFP>::clamp(const InType &in)
         {
             return dclamp(clamp_ranges[round].first, in,
                           clamp_ranges[round].second);
+        }
+        else if (std::is_same<InType, cl_half>::value && InFP)
+        {
+            return HFF(fclamp(HTF(clamp_ranges[round].first), HTF(in),
+                              HTF(clamp_ranges[round].second)));
         }
     }
     return in;

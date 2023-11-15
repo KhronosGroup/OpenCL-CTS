@@ -262,8 +262,30 @@ std::vector<double> DataInitInfo::specialValuesDouble = {
     MAKE_HEX_DOUBLE(0x1.fffffffefffffp62, 0x1fffffffefffffLL, 10), MAKE_HEX_DOUBLE(0x1.ffffffffp62, 0x1ffffffffLL, 30),
     MAKE_HEX_DOUBLE(0x1.ffffffff00001p62, 0x1ffffffff00001LL, 10),
 };
-// clang-format on
 
+// A table of more difficult cases to get right
+std::vector<cl_half> DataInitInfo::specialValuesHalf = {
+    0xffff,
+    0x0000,
+    0x0001,
+    0x7c00, /*INFINITY*/
+    0xfc00, /*-INFINITY*/
+    0x8000, /*-0*/
+    0x7bff, /*HALF_MAX*/
+    0x0400, /*HALF_MIN*/
+    0x03ff, /* Largest denormal */
+    0x3c00, /* 1 */
+    0xbc00, /* -1 */
+    0x3555, /*nearest value to 1/3*/
+    0x3bff, /*largest number less than one*/
+    0xc000, /* -2 */
+    0xfbff, /* -HALF_MAX */
+    0x8400, /* -HALF_MIN */
+    0x4248, /* M_PI_H */
+    0xc248, /* -M_PI_H */
+    0xbbff, /* Largest negative fraction */
+};
+// clang-format on
 
 // Windows (since long double got deprecated) sets the x87 to 53-bit precision
 // (that's x87 default state).  This causes problems with the tests that
@@ -295,7 +317,24 @@ int CalcRefValsPat<InType, OutType, InFP, OutFP>::check_result(void *test,
 {
     const cl_uchar *a = (const cl_uchar *)gAllowZ;
 
-    if (std::is_integral<OutType>::value || is_half<OutType, OutFP>())
+    if (is_half<OutType, OutFP>())
+    {
+        const cl_half *t = (const cl_half *)test;
+        const cl_half *c = (const cl_half *)gRef;
+
+        for (uint32_t i = 0; i < count; i++)
+            if (t[i] != c[i] &&
+                // Allow nan's to be binary different
+                !((t[i] & 0x7fff) > 0x7C00 && (c[i] & 0x7fff) > 0x7C00)
+                && !(a[i] != (cl_uchar)0 && t[i] == (c[i] & 0x8000)))
+            {
+                vlog(
+                    "\nError for vector size %d found at 0x%8.8x:  *%a vs %a\n",
+                    vectorSize, i, HTF(c[i]), HTF(t[i]));
+                return i + 1;
+            }
+    }
+    else if (std::is_integral<OutType>::value)
     { // char/uchar/short/ushort/half/int/uint/long/ulong
         const OutType *t = (const OutType *)test;
         const OutType *c = (const OutType *)gRef;
@@ -1012,6 +1051,112 @@ void MapResultValuesComplete(const std::unique_ptr<CalcRefValsBase> &info)
     // destroyed automatically soon after we exit.
 }
 
+template <typename T> static bool isnan_fp(const T &v)
+{
+    if (std::is_same<T, cl_half>::value)
+    {
+        uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+        uint16_t h_mant = ((cl_half)v) & 0x3FF;
+        return (h_exp == 0x1F && h_mant != 0);
+    }
+    else
+    {
+#if !defined(_WIN32)
+        return std::isnan(v);
+#else
+        return _isnan(v);
+#endif
+    }
+}
+
+template <typename InType>
+void ZeroNanToIntCases(cl_uint count, void *mapped, Type outType)
+{
+    InType *inp = (InType *)gIn;
+    for (auto j = 0; j < count; j++)
+    {
+        if (isnan_fp<InType>(inp[j]))
+            memset((char *)mapped + j * gTypeSizes[outType], 0,
+                   gTypeSizes[outType]);
+    }
+}
+
+template <typename InType, typename OutType>
+void FixNanToFltConversions(InType *inp, OutType *outp, cl_uint count)
+{
+    if (std::is_same<OutType, cl_half>::value)
+    {
+        for (auto j = 0; j < count; j++)
+            if (isnan_fp(inp[j]) && isnan_fp(outp[j]))
+                outp[j] = 0x7e00; // HALF_NAN
+    }
+    else
+    {
+        for (auto j = 0; j < count; j++)
+            if (isnan_fp(inp[j]) && isnan_fp(outp[j])) outp[j] = NAN;
+    }
+}
+
+void FixNanConversions(Type outType, Type inType, void *d, cl_uint count)
+{
+    if (outType != kfloat && outType != kdouble && outType != khalf)
+    {
+        if (inType == kfloat)
+            ZeroNanToIntCases<float>(count, d, outType);
+        else if (inType == kdouble)
+            ZeroNanToIntCases<double>(count, d, outType);
+        else if (inType == khalf)
+            ZeroNanToIntCases<cl_half>(count, d, outType);
+    }
+    else if (inType == kfloat || inType == kdouble || inType == khalf)
+    {
+        // outtype and intype is float or double or half.  NaN conversions for
+        // float/double/half could be any NaN
+        if (inType == kfloat)
+        {
+            float *inp = (float *)gIn;
+            if (outType == kdouble)
+            {
+                double *outp = (double *)d;
+                FixNanToFltConversions(inp, outp, count);
+            }
+            else if (outType == khalf)
+            {
+                cl_half *outp = (cl_half *)d;
+                FixNanToFltConversions(inp, outp, count);
+            }
+        }
+        else if (inType == kdouble)
+        {
+            double *inp = (double *)gIn;
+            if (outType == kfloat)
+            {
+                float *outp = (float *)d;
+                FixNanToFltConversions(inp, outp, count);
+            }
+            else if (outType == khalf)
+            {
+                cl_half *outp = (cl_half *)d;
+                FixNanToFltConversions(inp, outp, count);
+            }
+        }
+        else if (inType == khalf)
+        {
+            cl_half *inp = (cl_half *)gIn;
+            if (outType == kfloat)
+            {
+                float *outp = (float *)d;
+                FixNanToFltConversions(inp, outp, count);
+            }
+            else if (outType == kdouble)
+            {
+                double *outp = (double *)d;
+                FixNanToFltConversions(inp, outp, count);
+            }
+        }
+    }
+}
+
 
 void CL_CALLBACK CalcReferenceValuesComplete(cl_event e, cl_int status,
                                              void *data)
@@ -1024,7 +1169,6 @@ void CL_CALLBACK CalcReferenceValuesComplete(cl_event e, cl_int status,
     Type outType =
         info->parent->outType; // the data type of the conversion result
     Type inType = info->parent->inType; // the data type of the conversion input
-    size_t j;
     cl_int error;
     cl_event doneBarrier = info->parent->doneBarrier;
 
@@ -1046,51 +1190,7 @@ void CL_CALLBACK CalcReferenceValuesComplete(cl_event e, cl_int status,
 
     // Patch up NaNs conversions to integer to zero -- these can be converted to
     // any integer
-    if (outType != kfloat && outType != kdouble)
-    {
-        if (inType == kfloat)
-        {
-            float *inp = (float *)gIn;
-            for (j = 0; j < count; j++)
-            {
-                if (isnan(inp[j]))
-                    memset((char *)mapped + j * gTypeSizes[outType], 0,
-                           gTypeSizes[outType]);
-            }
-        }
-        if (inType == kdouble)
-        {
-            double *inp = (double *)gIn;
-            for (j = 0; j < count; j++)
-            {
-                if (isnan(inp[j]))
-                    memset((char *)mapped + j * gTypeSizes[outType], 0,
-                           gTypeSizes[outType]);
-            }
-        }
-    }
-    else if (inType == kfloat || inType == kdouble)
-    { // outtype and intype is float or double.  NaN conversions for float <->
-      // double can be any NaN
-        if (inType == kfloat && outType == kdouble)
-        {
-            float *inp = (float *)gIn;
-            double *outp = (double *)mapped;
-            for (j = 0; j < count; j++)
-            {
-                if (isnan(inp[j]) && isnan(outp[j])) outp[j] = NAN;
-            }
-        }
-        if (inType == kdouble && outType == kfloat)
-        {
-            double *inp = (double *)gIn;
-            float *outp = (float *)mapped;
-            for (j = 0; j < count; j++)
-            {
-                if (isnan(inp[j]) && isnan(outp[j])) outp[j] = NAN;
-            }
-        }
-    }
+    FixNanConversions(outType, inType, mapped, count);
 
     if (memcmp(mapped, gRef, count * gTypeSizes[outType]))
         info->result =
@@ -1157,7 +1257,6 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
     Type inType = info->inType;
     Type outType = info->outType;
     RoundingMode round = info->round;
-    size_t j;
 
     Force64BitFPUPrecision();
 
@@ -1255,49 +1354,7 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
 
     // Patch up NaNs conversions to integer to zero -- these can be converted to
     // any integer
-    if (info->outType != kfloat && info->outType != kdouble)
-    {
-        if (inType == kfloat)
-        {
-            float *inp = (float *)s;
-            for (j = 0; j < count; j++)
-            {
-                if (isnan(inp[j]))
-                    memset((char *)d + j * gTypeSizes[outType], 0,
-                           gTypeSizes[outType]);
-            }
-        }
-        if (inType == kdouble)
-        {
-            double *inp = (double *)s;
-            for (j = 0; j < count; j++)
-            {
-                if (isnan(inp[j]))
-                    memset((char *)d + j * gTypeSizes[outType], 0,
-                           gTypeSizes[outType]);
-            }
-        }
-    }
-    else if (inType == kfloat || inType == kdouble)
-    { // outtype and intype is float or double.  NaN conversions for float <->
-      // double can be any NaN
-        if (inType == kfloat && outType == kdouble)
-        {
-            float *inp = (float *)s;
-            for (j = 0; j < count; j++)
-            {
-                if (isnan(inp[j])) ((double *)d)[j] = NAN;
-            }
-        }
-        if (inType == kdouble && outType == kfloat)
-        {
-            double *inp = (double *)s;
-            for (j = 0; j < count; j++)
-            {
-                if (isnan(inp[j])) ((float *)d)[j] = NAN;
-            }
-        }
-    }
+    FixNanConversions(outType, inType, d, count);
 
     return CL_SUCCESS;
 }
