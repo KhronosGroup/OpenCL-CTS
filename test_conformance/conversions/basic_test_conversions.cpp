@@ -48,6 +48,7 @@
 
 #include <vector>
 #include <type_traits>
+#include <cmath>
 
 #include "basic_test_conversions.h"
 
