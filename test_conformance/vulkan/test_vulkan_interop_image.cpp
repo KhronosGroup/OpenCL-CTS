@@ -1307,10 +1307,10 @@ int test_image_common(cl_device_id device_, cl_context context_,
     char source_2[4096];
     char source_3[4096];
     size_t program_source_length;
-    cl_program program[num_kernel_types];
-    cl_kernel kernel_float[num_kernels] = { NULL, NULL, NULL, NULL };
-    cl_kernel kernel_signed[num_kernels] = { NULL, NULL, NULL, NULL };
-    cl_kernel kernel_unsigned[num_kernels] = { NULL, NULL, NULL, NULL };
+    cl_program program[num_kernel_types] = { NULL };
+    cl_kernel kernel_float[num_kernels] = { NULL };
+    cl_kernel kernel_signed[num_kernels] = { NULL };
+    cl_kernel kernel_unsigned[num_kernels] = { NULL };
     cl_mem external_mem_image1;
     cl_mem external_mem_image2;
     std::vector<VulkanExternalSemaphoreHandleType> supportedSemaphoreTypes;
@@ -1368,17 +1368,6 @@ int test_image_common(cl_device_id device_, cl_context context_,
                               CL_UUID_SIZE_KHR, uuid, NULL);
         test_error_and_cleanup(err, CLEANUP,
                                "clGetDeviceInfo failed with error");
-
-
-        if (!is_extension_available(devices[device_no],
-                                    "cl_khr_external_memory_opaque_fd"))
-        {
-            log_info(
-                "Device %u does not support cl_khr_external_memory_opaque_fd, "
-                "which is required for this test. Skipping\n",
-                device_no);
-            continue;
-        }
 
         supportedSemaphoreTypes =
             getSupportedInteropExternalSemaphoreHandleTypes(devices[device_no],

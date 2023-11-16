@@ -1573,16 +1573,6 @@ int test_buffer_common(cl_device_id device_, cl_context context_,
                                  CL_UUID_SIZE_KHR, uuid, NULL);
         test_error_and_cleanup(errNum, CLEANUP, "clGetDeviceInfo failed\n");
 
-        if (!is_extension_available(devices[device_no],
-                                    "cl_khr_external_memory_opaque_fd"))
-        {
-            log_info(
-                "Device %u does not support cl_khr_external_memory_opaque_fd, "
-                "which is required for this test. Skipping\n",
-                device_no);
-            continue;
-        }
-
         if (!use_fence)
         {
             supportedSemaphoreTypes =

@@ -261,17 +261,10 @@ getSupportedVulkanExternalSemaphoreHandleTypeList(const VulkanDevice &vkDevice)
         { "VK_KHR_external_semaphore_win32",
           VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR,
           VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT });
-    // An exception to the rule about letting Vulkan sort out support.  Only
-    // allow NT macro on Windows 8 and later
-#if _WIN32
-    if (IsWindows8OrGreater())
-    {
-        all_known_handle_types.push_back(
-            { "VK_KHR_external_semaphore_win32",
-              VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,
-              VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT });
-    }
-#endif
+    all_known_handle_types.push_back(
+        { "VK_KHR_external_semaphore_win32",
+          VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,
+          VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT });
 
     std::vector<VulkanExternalSemaphoreHandleType>
         externalSemaphoreHandleTypeList;
@@ -588,7 +581,6 @@ cl_external_semaphore_handle_type_khr getCLSemaphoreTypeFromVulkanType(
             clExternalSemaphoreHandleTypeKhr =
                 CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR;
             break;
-        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT_KMT:
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT:
             clExternalSemaphoreHandleTypeKhr =
                 CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR;
@@ -721,8 +713,6 @@ operator<<(std::ostream &os,
             return os << "Opaque NT handle";
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT:
             return os << "Opaque D3DKMT handle";
-        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT_KMT:
-            return os << "Opaque NT and D3DKMT handle";
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD:
             return os << "Sync fd semaphore handle";
     }

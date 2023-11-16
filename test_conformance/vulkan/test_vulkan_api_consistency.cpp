@@ -460,7 +460,7 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
                 break;
 #endif
         default: log_error("Unsupported external memory handle type\n"); break;
-    }
+        }
     if (CL_SUCCESS != errNum)
     {
         throw std::runtime_error(
@@ -479,58 +479,54 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
     sema_props1.push_back(0);
     sema_props2.push_back(0);
 
-        // Pass NULL properties
-        cl_semaphore_khr cl_ext_semaphore =
-            clCreateSemaphoreWithPropertiesKHRptr(context, NULL, &errNum);
-        test_failure_error(errNum, CL_INVALID_VALUE,
-                           "Semaphore creation must fail with CL_INVALID_VALUE "
-                           " when properties are passed as NULL");
+    // Pass NULL properties
+    cl_semaphore_khr cl_ext_semaphore =
+        clCreateSemaphoreWithPropertiesKHRptr(context, NULL, &errNum);
+    test_failure_error(errNum, CL_INVALID_VALUE,
+                       "Semaphore creation must fail with CL_INVALID_VALUE "
+                       " when properties are passed as NULL");
 
 
-        // Pass invalid semaphore object to wait
-        errNum = clEnqueueWaitSemaphoresKHRptr(cmd_queue, 1, NULL, NULL, 0,
-                                               NULL, NULL);
-        test_failure_error(
-            errNum, CL_INVALID_VALUE,
-            "clEnqueueWaitSemaphoresKHR fails with CL_INVALID_VALUE "
-            "when invalid semaphore object is passed");
+    // Pass invalid semaphore object to wait
+    errNum =
+        clEnqueueWaitSemaphoresKHRptr(cmd_queue, 1, NULL, NULL, 0, NULL, NULL);
+    test_failure_error(errNum, CL_INVALID_VALUE,
+                       "clEnqueueWaitSemaphoresKHR fails with CL_INVALID_VALUE "
+                       "when invalid semaphore object is passed");
 
 
-        // Pass invalid semaphore object to signal
-        errNum = clEnqueueSignalSemaphoresKHRptr(cmd_queue, 1, NULL, NULL, 0,
-                                                 NULL, NULL);
-        test_failure_error(
-            errNum, CL_INVALID_VALUE,
-            "clEnqueueSignalSemaphoresKHR fails with CL_INVALID_VALUE"
-            "when invalid semaphore object is passed");
+    // Pass invalid semaphore object to signal
+    errNum = clEnqueueSignalSemaphoresKHRptr(cmd_queue, 1, NULL, NULL, 0, NULL,
+                                             NULL);
+    test_failure_error(
+        errNum, CL_INVALID_VALUE,
+        "clEnqueueSignalSemaphoresKHR fails with CL_INVALID_VALUE"
+        "when invalid semaphore object is passed");
 
 
-        // Create two semaphore objects
-        clVk2Clsemaphore = clCreateSemaphoreWithPropertiesKHRptr(
-            context, sema_props1.data(), &errNum);
-        test_error(
-            errNum,
-            "Unable to create semaphore with valid semaphore properties");
+    // Create two semaphore objects
+    clVk2Clsemaphore = clCreateSemaphoreWithPropertiesKHRptr(
+        context, sema_props1.data(), &errNum);
+    test_error(errNum,
+               "Unable to create semaphore with valid semaphore properties");
 
-        clCl2Vksemaphore = clCreateSemaphoreWithPropertiesKHRptr(
-            context, sema_props2.data(), &errNum);
-        test_error(
-            errNum,
-            "Unable to create semaphore with valid semaphore properties");
+    clCl2Vksemaphore = clCreateSemaphoreWithPropertiesKHRptr(
+        context, sema_props2.data(), &errNum);
+    test_error(errNum,
+               "Unable to create semaphore with valid semaphore properties");
 
-        // Pass invalid object to release call
-        errNum = clReleaseSemaphoreKHRptr(NULL);
-        test_failure_error(
-            errNum, CL_INVALID_VALUE,
-            "clReleaseSemaphoreKHRptr fails with "
-            "CL_INVALID_VALUE when NULL semaphore object is passed");
+    // Pass invalid object to release call
+    errNum = clReleaseSemaphoreKHRptr(NULL);
+    test_failure_error(errNum, CL_INVALID_VALUE,
+                       "clReleaseSemaphoreKHRptr fails with "
+                       "CL_INVALID_VALUE when NULL semaphore object is passed");
 
-        // Release both semaphore objects
-        errNum = clReleaseSemaphoreKHRptr(clVk2Clsemaphore);
-        test_error(errNum, "clReleaseSemaphoreKHRptr failed");
+    // Release both semaphore objects
+    errNum = clReleaseSemaphoreKHRptr(clVk2Clsemaphore);
+    test_error(errNum, "clReleaseSemaphoreKHRptr failed");
 
-        errNum = clReleaseSemaphoreKHRptr(clCl2Vksemaphore);
-        test_error(errNum, "clReleaseSemaphoreKHRptr failed");
+    errNum = clReleaseSemaphoreKHRptr(clCl2Vksemaphore);
+    test_error(errNum, "clReleaseSemaphoreKHRptr failed");
     }
 
     return TEST_PASS;
