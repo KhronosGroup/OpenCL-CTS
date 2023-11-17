@@ -48,8 +48,7 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
     int ftz = f->ftz || 0 == (gHalfCapabilities & CL_FP_DENORM) || gForceFTZ;
     size_t bufferSize = BUFFER_SIZE;
     uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
-    uint64_t bufferElements = bufferSize / sizeof(cl_int);
-    std::vector<float> s(0);
+    size_t bufferElements = bufferSize / sizeof(cl_int);
 
     int scale = (int)((1ULL << 16) / (16 * bufferElements) + 1);
 
@@ -69,7 +68,7 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
                                    &build_info)))
             return error;
     }
-    s.resize(bufferElements);
+    std::vector<float> s(bufferElements);
 
     for (uint64_t i = 0; i < (1ULL << 16); i += step)
     {
@@ -94,15 +93,26 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
         // write garbage into output arrays
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            uint32_t pattern = 0xffffdead;
-            memset_pattern4(gOut[j], &pattern, bufferSize);
-            if ((error =
-                     clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
-                                          bufferSize, gOut[j], 0, NULL, NULL)))
+            uint32_t pattern = 0xacdcacdc;
+            if (gHostFill)
             {
-                vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
-                           error, j);
-                return error;
+                memset_pattern4(gOut[j], &pattern, bufferSize);
+                if ((error = clEnqueueWriteBuffer(gQueue, gOutBuffer[j],
+                                                  CL_FALSE, 0, bufferSize,
+                                                  gOut[j], 0, NULL, NULL)))
+                {
+                    vlog_error(
+                        "\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
+                        error, j);
+                    return error;
+                }
+            }
+            else
+            {
+                error = clEnqueueFillBuffer(gQueue, gOutBuffer[j], &pattern,
+                                            sizeof(pattern), 0, bufferSize, 0,
+                                            NULL, NULL);
+                test_error(error, "clEnqueueFillBuffer failed!\n");
             }
         }
 

@@ -98,15 +98,26 @@ int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
         // write garbage into output arrays
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            uint32_t pattern = 0xACDCACDC;
-            memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
-            if ((error =
-                     clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
-                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
+            uint32_t pattern = 0xacdcacdc;
+            if (gHostFill)
             {
-                vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
-                           error, j);
-                return error;
+                memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
+                if ((error = clEnqueueWriteBuffer(gQueue, gOutBuffer[j],
+                                                  CL_FALSE, 0, BUFFER_SIZE,
+                                                  gOut[j], 0, NULL, NULL)))
+                {
+                    vlog_error(
+                        "\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
+                        error, j);
+                    return error;
+                }
+            }
+            else
+            {
+                error = clEnqueueFillBuffer(gQueue, gOutBuffer[j], &pattern,
+                                            sizeof(pattern), 0, BUFFER_SIZE, 0,
+                                            NULL, NULL);
+                test_error(error, "clEnqueueFillBuffer failed!\n");
             }
         }
 

@@ -95,24 +95,28 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 
     std::vector<float> s(0);
 
-    // start the map of the output arrays
     cl_event e[VECTOR_SIZE_COUNT];
     cl_ushort *out[VECTOR_SIZE_COUNT];
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-    {
-        out[j] = (uint16_t *)clEnqueueMapBuffer(
-            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
-            buffer_size, 0, NULL, e + j, &error);
-        if (error || NULL == out[j])
-        {
-            vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
-                       error);
-            return error;
-        }
-    }
 
-    // Get that moving
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
+    if (gHostFill)
+    {
+        // start the map of the output arrays
+        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        {
+            out[j] = (uint16_t *)clEnqueueMapBuffer(
+                tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
+                buffer_size, 0, NULL, e + j, &error);
+            if (error || NULL == out[j])
+            {
+                vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
+                           error);
+                return error;
+            }
+        }
+
+        // Get that moving
+        if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
+    }
 
     // Write the new values to the input array
     cl_ushort *p = (cl_ushort *)gIn + thread_id * buffer_elements;
@@ -130,27 +134,37 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 
     for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
-        // Wait for the map to finish
-        if ((error = clWaitForEvents(1, e + j)))
+        if (gHostFill)
         {
-            vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
-            return error;
-        }
-        if ((error = clReleaseEvent(e[j])))
-        {
-            vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
-            return error;
+            // Wait for the map to finish
+            if ((error = clWaitForEvents(1, e + j)))
+            {
+                vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
+                return error;
+            }
+            if ((error = clReleaseEvent(e[j])))
+            {
+                vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
+                return error;
+            }
         }
 
         // Fill the result buffer with garbage, so that old results don't carry
         // over
-        uint32_t pattern = 0xACDCACDC;
-        memset_pattern4(out[j], &pattern, buffer_size);
-        if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
-                                             out[j], 0, NULL, NULL)))
+        uint32_t pattern = 0xacdcacdc;
+        if (gHostFill)
         {
-            vlog_error("Error: clEnqueueMapBuffer failed! err: %d\n", error);
-            return error;
+            memset_pattern4(out[j], &pattern, buffer_size);
+            error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
+                                            out[j], 0, NULL, NULL);
+            test_error(error, "clEnqueueUnmapMemObject failed!\n");
+        }
+        else
+        {
+            error = clEnqueueFillBuffer(tinfo->tQueue, tinfo->outBuf[j],
+                                             &pattern, sizeof(pattern), 0,
+                                             buffer_size, 0, NULL, NULL);
+            test_error(error, "clEnqueueFillBuffer failed!\n");
         }
 
         // run the kernel

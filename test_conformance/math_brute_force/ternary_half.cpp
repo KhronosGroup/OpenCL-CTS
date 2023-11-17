@@ -52,6 +52,11 @@ static const cl_half specialValuesHalf[] = {
     0x3555, /*nearest value to 1/3*/
     0x3bff, /*largest number less than one*/
     0xc000, /* -2 */
+    0xfbff, /* -HALF_MAX */
+    0x8400, /* -HALF_MIN */
+    0x4248, /* M_PI_H */
+    0xc248, /* -M_PI_H */
+    0xbbff, /* Largest negative fraction */
 };
 
 constexpr size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
@@ -72,9 +77,9 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal3 = 0.0f;
     uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
 
-    constexpr size_t half_buffer_size = BUFFER_SIZE / sizeof(cl_half);
+    constexpr size_t bufferElements = BUFFER_SIZE / sizeof(cl_half);
 
-    cl_uchar overflow[half_buffer_size];
+    cl_uchar overflow[bufferElements];
     float half_ulps = f->half_ulps;
     int skipNanInf = (0 == strcmp("fma", f->nameInCode));
 
@@ -99,7 +104,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
         { // test edge cases
             uint32_t x, y, z;
             x = y = z = 0;
-            for (; idx < half_buffer_size; idx++)
+            for (; idx < bufferElements; idx++)
             {
                 hp0[idx] = specialValuesHalf[x];
                 hp1[idx] = specialValuesHalf[y];
@@ -115,7 +120,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                     }
                 }
             }
-            if (idx == half_buffer_size)
+            if (idx == bufferElements)
                 vlog_error("Test Error: not all special cases tested!\n");
         }
 
@@ -124,7 +129,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
             return HFF((1.0f - t) * CL_HALF_MIN + t * CL_HALF_MAX);
         };
 
-        for (; idx < half_buffer_size; idx++)
+        for (; idx < bufferElements; idx++)
         {
             hp0[idx] = any_value();
             hp1[idx] = any_value();
@@ -155,7 +160,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
         // Write garbage into output arrays
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            uint32_t pattern = 0xffffdead;
+            uint32_t pattern = 0xacdcacdc;
             if (gHostFill)
             {
                 memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
@@ -171,14 +176,10 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
             }
             else
             {
-                if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer[j],
-                                                 &pattern, sizeof(pattern), 0,
-                                                 BUFFER_SIZE, 0, NULL, NULL)))
-                {
-                    vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
-                               error);
-                    return error;
-                }
+                error = clEnqueueFillBuffer(gQueue, gOutBuffer[j], &pattern,
+                                            sizeof(pattern), 0, BUFFER_SIZE, 0,
+                                            NULL, NULL);
+                test_error(error, "clEnqueueFillBuffer failed!\n");
             }
         }
 
@@ -233,7 +234,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
         cl_half *res = (cl_half *)gOut_Ref;
         if (skipNanInf)
         {
-            for (size_t j = 0; j < half_buffer_size; j++)
+            for (size_t j = 0; j < bufferElements; j++)
             {
                 feclearexcept(FE_OVERFLOW);
                 res[j] = HFF((float)f->func.f_fma(
@@ -244,7 +245,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
         }
         else
         {
-            for (size_t j = 0; j < half_buffer_size; j++)
+            for (size_t j = 0; j < bufferElements; j++)
                 res[j] = HFF((float)f->func.f_fma(
                     HTF(hp0[j]), HTF(hp1[j]), HTF(hp2[j]), CORRECTLY_ROUNDED));
         }
@@ -265,7 +266,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
 
         // Verify data
         uint16_t *t = (uint16_t *)gOut_Ref;
-        for (size_t j = 0; j < half_buffer_size; j++)
+        for (size_t j = 0; j < bufferElements; j++)
         {
             for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {

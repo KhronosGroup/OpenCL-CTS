@@ -124,23 +124,15 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
             }
             else
             {
-                if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer[j],
+                error = clEnqueueFillBuffer(gQueue, gOutBuffer[j],
                                                  &pattern, sizeof(pattern), 0,
-                                                 BUFFER_SIZE, 0, NULL, NULL)))
-                {
-                    vlog_error("Error: clEnqueueFillBuffer 1 failed! err: %d\n",
-                               error);
-                    return error;
-                }
+                                                 BUFFER_SIZE, 0, NULL, NULL);
+                test_error(error, "clEnqueueFillBuffer 1 failed!\n");
 
-                if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer[j],
+                error = clEnqueueFillBuffer(gQueue, gOutBuffer[j],
                                                  &pattern, sizeof(pattern), 0,
-                                                 BUFFER_SIZE, 0, NULL, NULL)))
-                {
-                    vlog_error("Error: clEnqueueFillBuffer 2 failed! err: %d\n",
-                               error);
-                    return error;
-                }
+                                                 BUFFER_SIZE, 0, NULL, NULL);
+                test_error(error, "clEnqueueFillBuffer 2 failed!\n");
             }
         }
 

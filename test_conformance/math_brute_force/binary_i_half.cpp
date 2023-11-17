@@ -47,7 +47,7 @@ typedef struct ThreadInfo
         maxErrorValue; // position of the max error value (param 1).  Init to 0.
     cl_int maxErrorValue2; // position of the max error value (param 2).  Init
                            // to 0.
-    MTdata d;
+    MTdataHolder d;
     clCommandQueueWrapper
         tQueue; // per thread command queue to improve performance
 } ThreadInfo;
@@ -93,9 +93,14 @@ const cl_half specialValuesHalf[] = {
     0x3555, /*nearest value to 1/3*/
     0x3bff, /*largest number less than one*/
     0xc000, /* -2 */
+    0xfbff, /* -HALF_MAX */
+    0x8400, /* -HALF_MIN */
+    0x4248, /* M_PI_H */
+    0xc248, /* -M_PI_H */
+    0xbbff, /* Largest negative fraction */
 };
 
-size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
+constexpr size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
 
 const int specialValuesInt3[] = { 0,     1,       2,       3,       1022, 1023,
                                   1024,  INT_MIN, INT_MAX, -1,      -2,   -3,
@@ -123,21 +128,26 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     // start the map of the output arrays
     cl_event e[VECTOR_SIZE_COUNT];
     cl_ushort *out[VECTOR_SIZE_COUNT];
-    for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
-    {
-        out[j] = (cl_ushort *)clEnqueueMapBuffer(
-            tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
-            buffer_elements * sizeof(cl_ushort), 0, NULL, e + j, &error);
-        if (error || NULL == out[j])
-        {
-            vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
-                       error);
-            return error;
-        }
-    }
 
-    // Get that moving
-    if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
+    if (gHostFill)
+    {
+        // start the map of the output arrays
+        for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
+        {
+            out[j] = (cl_ushort *)clEnqueueMapBuffer(
+                tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
+                buffer_elements * sizeof(cl_ushort), 0, NULL, e + j, &error);
+            if (error || NULL == out[j])
+            {
+                vlog_error("Error: clEnqueueMapBuffer %d failed! err: %d\n", j,
+                           error);
+                return error;
+            }
+        }
+
+        // Get that moving
+        if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
+    }
 
     // Init input array
     cl_ushort *p = (cl_ushort *)gIn + thread_id * buffer_elements;
@@ -191,27 +201,38 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 
     for (j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
-        // Wait for the map to finish
-        if ((error = clWaitForEvents(1, e + j)))
+        if (gHostFill)
         {
-            vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
-            return error;
-        }
-        if ((error = clReleaseEvent(e[j])))
-        {
-            vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
-            return error;
+            // Wait for the map to finish
+            if ((error = clWaitForEvents(1, e + j)))
+            {
+                vlog_error("Error: clWaitForEvents failed! err: %d\n", error);
+                return error;
+            }
+            if ((error = clReleaseEvent(e[j])))
+            {
+                vlog_error("Error: clReleaseEvent failed! err: %d\n", error);
+                return error;
+            }
         }
 
         // Fill the result buffer with garbage, so that old results don't carry
         // over
-        uint32_t pattern = 0xACDCACDC;
-        memset_pattern4(out[j], &pattern, buffer_elements * sizeof(cl_half));
-        if ((error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
-                                             out[j], 0, NULL, NULL)))
+        uint32_t pattern = 0xacdcacdc;
+        if (gHostFill)
         {
-            vlog_error("Error: clEnqueueMapBuffer failed! err: %d\n", error);
-            return error;
+            memset_pattern4(out[j], &pattern,
+                            buffer_elements * sizeof(cl_half));
+            error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
+                                            out[j], 0, NULL, NULL);
+            test_error(error, "clEnqueueUnmapMemObject failed!\n");
+        }
+        else
+        {
+            error = clEnqueueFillBuffer(
+                tinfo->tQueue, tinfo->outBuf[j], &pattern, sizeof(pattern), 0,
+                buffer_elements * sizeof(cl_half), 0, NULL, NULL);
+            test_error(error, "clEnqueueFillBuffer failed!\n");
         }
 
         // run the kernel
@@ -479,7 +500,7 @@ int TestFunc_Half_Half_Int(const Func *f, MTdata d, bool relaxedMode)
             return error;
         }
 
-        test_info.tinfo[i].d = init_genrand(genrand_int32(d));
+        test_info.tinfo[i].d = MTdataHolder(genrand_int32(d));
     }
 
 
