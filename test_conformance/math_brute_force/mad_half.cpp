@@ -51,11 +51,8 @@ int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
     size_t bufferSize = BUFFER_SIZE;
 
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
-    uint64_t step = bufferSize / sizeof(cl_half);
-    if (gWimpyMode)
-    {
-        step = (1ULL << 32) * gWimpyReductionFactor / (512);
-    }
+    uint64_t step = getTestStep(sizeof(cl_half), bufferSize);
+
     // Init the kernels
     {
         BuildKernelInfo build_info = { 1, kernels, programs, f->nameInCode };

@@ -55,10 +55,6 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
     const char *name = f->name;
     float half_ulps = f->half_ulps;
-    if (gWimpyMode)
-    {
-        step = (1ULL << 32) * gWimpyReductionFactor / (512);
-    }
 
     // Init the kernels
     BuildKernelInfo build_info = { 1, kernels, programs, f->nameInCode };
