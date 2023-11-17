@@ -108,9 +108,9 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
             }
             else
             {
-                error = clEnqueueFillBuffer(gQueue, gOutBuffer[j],
-                                                 &pattern, sizeof(pattern), 0,
-                                                 bufferSize, 0, NULL, NULL);
+                error = clEnqueueFillBuffer(gQueue, gOutBuffer[j], &pattern,
+                                            sizeof(pattern), 0, bufferSize, 0,
+                                            NULL, NULL);
                 test_error(error, "clEnqueueFillBuffer failed!\n");
             }
         }

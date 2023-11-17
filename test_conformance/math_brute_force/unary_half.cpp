@@ -162,8 +162,8 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
         else
         {
             error = clEnqueueFillBuffer(tinfo->tQueue, tinfo->outBuf[j],
-                                             &pattern, sizeof(pattern), 0,
-                                             buffer_size, 0, NULL, NULL);
+                                        &pattern, sizeof(pattern), 0,
+                                        buffer_size, 0, NULL, NULL);
             test_error(error, "clEnqueueFillBuffer failed!\n");
         }
 
