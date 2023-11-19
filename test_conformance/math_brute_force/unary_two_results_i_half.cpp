@@ -61,7 +61,8 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
     // sizeof(cl_half) < sizeof (int32_t)
     // to prevent overflowing gOut_Ref2 it is necessary to use
     // bigger type as denominator for buffer size calculation
-    constexpr size_t half_buffer_size = BUFFER_SIZE / sizeof(int32_t);
+    constexpr size_t bufferElements = BUFFER_SIZE / sizeof(int32_t);
+    int scale = (int)((1ULL << 16) / (16 * bufferElements) + 1);
 
     cl_ulong maxiError = 0;
 
@@ -78,24 +79,19 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
                                &build_info)))
         return error;
 
-    for (uint64_t i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < (1ULL << 16); i += step)
     {
         // Init input array
         cl_half *pIn = (cl_half *)gIn;
-
+        if (gWimpyMode)
         {
-            const unsigned m_size = 0x1ff;
-            const unsigned e_size = 0xf;
-            const unsigned s_size = 0x2;
-
-            for (size_t j = 0; j < half_buffer_size; j++)
-            {
-                unsigned ind = j % (s_size * e_size * m_size);
-                unsigned val = (((ind / (e_size * m_size)) << 15)
-                                | (((ind / m_size) % e_size + 1) << 10)
-                                | (ind % m_size + 1));
-                pIn[j] = val;
-            }
+            for (size_t j = 0; j < bufferElements; j++)
+                pIn[j] = (cl_ushort)i + j * scale;
+        }
+        else
+        {
+            for (size_t j = 0; j < bufferElements; j++)
+                pIn[j] = (cl_ushort)i + j;
         }
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
@@ -192,7 +188,7 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
         // Calculate the correctly rounded reference result
         cl_half *ref1 = (cl_half *)gOut_Ref;
         int32_t *ref2 = (int32_t *)gOut_Ref2;
-        for (size_t j = 0; j < half_buffer_size; j++)
+        for (size_t j = 0; j < bufferElements; j++)
             ref1[j] = HFF((float)f->func.f_fpI(HTF(pIn[j]), ref2 + j));
 
         // Read the data back
@@ -219,7 +215,7 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
         if (gSkipCorrectnessTesting) break;
 
         // Verify data
-        for (size_t j = 0; j < half_buffer_size; j++)
+        for (size_t j = 0; j < bufferElements; j++)
         {
             for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {

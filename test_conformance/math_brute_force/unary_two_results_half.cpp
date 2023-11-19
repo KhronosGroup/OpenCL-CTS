@@ -51,9 +51,10 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal1 = 0.0f;
     uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
 
-    constexpr size_t half_buffer_size = BUFFER_SIZE / sizeof(cl_half);
+    constexpr size_t bufferElements = BUFFER_SIZE / sizeof(cl_half);
+    int scale = (int)((1ULL << 16) / (16 * bufferElements) + 1);
 
-    cl_uchar overflow[half_buffer_size];
+    cl_uchar overflow[bufferElements];
     int isFract = 0 == strcmp("fract", f->nameInCode);
     int skipNanInf = isFract;
 
@@ -68,23 +69,19 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
                                &build_info)))
         return error;
 
-    for (uint64_t i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < (1ULL << 16); i += step)
     {
         // Init input array
         cl_half *pIn = (cl_half *)gIn;
+        if (gWimpyMode)
         {
-            const unsigned m_size = 0x1ff;
-            const unsigned e_size = 0xf;
-            const unsigned s_size = 0x2;
-
-            for (size_t j = 0; j < half_buffer_size; j++)
-            {
-                unsigned ind = j % (s_size * e_size * m_size);
-                unsigned val = (((ind / (e_size * m_size)) << 15)
-                                | (((ind / m_size) % e_size + 1) << 10)
-                                | (ind % m_size + 1));
-                pIn[j] = val;
-            }
+            for (size_t j = 0; j < bufferElements; j++)
+                pIn[j] = (cl_ushort)i + j * scale;
+        }
+        else
+        {
+            for (size_t j = 0; j < bufferElements; j++)
+                pIn[j] = (cl_ushort)i + j;
         }
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
@@ -196,20 +193,21 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
 
         if (skipNanInf)
         {
-            for (size_t j = 0; j < half_buffer_size; j++)
+            for (size_t j = 0; j < bufferElements; j++)
             {
                 double dd;
                 feclearexcept(FE_OVERFLOW);
 
                 ref1[j] = HFF((float)f->func.f_fpf(HTF(pIn[j]), &dd));
                 ref2[j] = HFF((float)dd);
+
                 overflow[j] =
                     FE_OVERFLOW == (FE_OVERFLOW & fetestexcept(FE_OVERFLOW));
             }
         }
         else
         {
-            for (size_t j = 0; j < half_buffer_size; j++)
+            for (size_t j = 0; j < bufferElements; j++)
             {
                 double dd;
                 ref1[j] = HFF((float)f->func.f_fpf(HTF(pIn[j]), &dd));
@@ -245,7 +243,7 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
         }
 
         // Verify data
-        for (size_t j = 0; j < half_buffer_size; j++)
+        for (size_t j = 0; j < bufferElements; j++)
         {
             for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
             {
