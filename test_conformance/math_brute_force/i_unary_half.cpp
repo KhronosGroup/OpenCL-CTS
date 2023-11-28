@@ -47,10 +47,11 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
     KernelMatrix kernels;
     const unsigned thread_id = 0; // Test is currently not multithreaded.
     int ftz = f->ftz || 0 == (gHalfCapabilities & CL_FP_DENORM) || gForceFTZ;
-    size_t bufferSize = BUFFER_SIZE;
     uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
-    size_t bufferElements = std::min(bufferSize / sizeof(cl_int),
+    size_t bufferElements = std::min(BUFFER_SIZE / sizeof(cl_int),
                                      size_t(1ULL << (sizeof(cl_half) * 8)));
+    size_t bufferSizeIn = bufferElements * sizeof(cl_half);
+    size_t bufferSizeOut = bufferElements * sizeof(cl_int);
 
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
     // This test is not using ThreadPool so we need to disable FTZ here
@@ -78,7 +79,7 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
         for (size_t j = 0; j < bufferElements; j++) p[j] = (cl_ushort)i + j;
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
-                                          bufferSize, gIn, 0, NULL, NULL)))
+                                          bufferSizeIn, gIn, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
@@ -90,9 +91,9 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
             uint32_t pattern = 0xacdcacdc;
             if (gHostFill)
             {
-                memset_pattern4(gOut[j], &pattern, bufferSize);
+                memset_pattern4(gOut[j], &pattern, bufferSizeOut);
                 if ((error = clEnqueueWriteBuffer(gQueue, gOutBuffer[j],
-                                                  CL_FALSE, 0, bufferSize,
+                                                  CL_FALSE, 0, bufferSizeOut,
                                                   gOut[j], 0, NULL, NULL)))
                 {
                     vlog_error(
@@ -104,8 +105,8 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
             else
             {
                 error = clEnqueueFillBuffer(gQueue, gOutBuffer[j], &pattern,
-                                            sizeof(pattern), 0, bufferSize, 0,
-                                            NULL, NULL);
+                                            sizeof(pattern), 0, bufferSizeOut,
+                                            0, NULL, NULL);
                 test_error(error, "clEnqueueFillBuffer failed!\n");
             }
         }
@@ -114,7 +115,7 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_int);
-            size_t localCount = (bufferSize + vectorSize - 1) / vectorSize;
+            size_t localCount = (bufferSizeOut + vectorSize - 1) / vectorSize;
             if ((error = clSetKernelArg(kernels[j][thread_id], 0,
                                         sizeof(gOutBuffer[j]), &gOutBuffer[j])))
             {
@@ -144,15 +145,15 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
         int *r = (int *)gOut_Ref;
         for (size_t j = 0; j < bufferElements; j++)
         {
-            s[j] = cl_half_to_float(p[j]);
+            s[j] = HTF(p[j]);
             r[j] = f->func.i_f(s[j]);
         }
         // Read the data back
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            if ((error =
-                     clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
-                                         bufferSize, gOut[j], 0, NULL, NULL)))
+            if ((error = clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
+                                             bufferSizeOut, gOut[j], 0, NULL,
+                                             NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
                 return error;
@@ -195,7 +196,7 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
             {
                 vlog("base:%14" PRIu64 " step:%10" PRIu64
                      "  bufferSize:%10zd \n",
-                     i, step, bufferSize);
+                     i, step, bufferSizeOut);
             }
             else
             {
