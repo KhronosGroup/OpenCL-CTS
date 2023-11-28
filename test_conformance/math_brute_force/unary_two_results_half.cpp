@@ -201,6 +201,9 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
                 ref1[j] = HFF((float)f->func.f_fpf(HTF(pIn[j]), &dd));
                 ref2[j] = HFF((float)dd);
 
+                // ensure correct rounding of fract result is not reaching 1
+                if (isFract && HTF(ref1[j]) >= 1.f) ref1[j] = 0x3bff;
+
                 overflow[j] =
                     FE_OVERFLOW == (FE_OVERFLOW & fetestexcept(FE_OVERFLOW));
             }

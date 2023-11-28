@@ -19,6 +19,7 @@
 #include "test_functions.h"
 #include "utility.h"
 
+#include <algorithm>
 #include <cstring>
 #include <memory>
 #include <cinttypes>
@@ -48,9 +49,8 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
     int ftz = f->ftz || 0 == (gHalfCapabilities & CL_FP_DENORM) || gForceFTZ;
     size_t bufferSize = BUFFER_SIZE;
     uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
-    size_t bufferElements = bufferSize / sizeof(cl_int);
-
-    int scale = (int)((1ULL << 16) / (16 * bufferElements) + 1);
+    size_t bufferElements = std::min(bufferSize / sizeof(cl_int),
+                                     size_t(1ULL << (sizeof(cl_half) * 8)));
 
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
     // This test is not using ThreadPool so we need to disable FTZ here
@@ -74,15 +74,9 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
     {
         // Init input array
         cl_ushort *p = (cl_ushort *)gIn;
-        if (gWimpyMode)
-        {
-            for (size_t j = 0; j < bufferElements; j++)
-                p[j] = (cl_ushort)i + j * scale;
-        }
-        else
-        {
-            for (size_t j = 0; j < bufferElements; j++) p[j] = (cl_ushort)i + j;
-        }
+
+        for (size_t j = 0; j < bufferElements; j++) p[j] = (cl_ushort)i + j;
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
         {
