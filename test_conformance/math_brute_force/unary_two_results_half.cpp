@@ -51,10 +51,11 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal1 = 0.0f;
     uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
 
-    constexpr size_t bufferElements = BUFFER_SIZE / sizeof(cl_half);
-    int scale = (int)((1ULL << 16) / (16 * bufferElements) + 1);
+    size_t bufferElements = std::min(BUFFER_SIZE / sizeof(cl_half),
+                                     size_t(1ULL << (sizeof(cl_half) * 8)));
+    size_t bufferSize = bufferElements * sizeof(cl_half);
 
-    cl_uchar overflow[bufferElements];
+    std::vector<cl_uchar> overflow(bufferElements);
     int isFract = 0 == strcmp("fract", f->nameInCode);
     int skipNanInf = isFract;
 
@@ -73,19 +74,10 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
     {
         // Init input array
         cl_half *pIn = (cl_half *)gIn;
-        if (gWimpyMode)
-        {
-            for (size_t j = 0; j < bufferElements; j++)
-                pIn[j] = (cl_ushort)i + j * scale;
-        }
-        else
-        {
-            for (size_t j = 0; j < bufferElements; j++)
-                pIn[j] = (cl_ushort)i + j;
-        }
+        for (size_t j = 0; j < bufferElements; j++) pIn[j] = (cl_ushort)i + j;
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
-                                          BUFFER_SIZE, gIn, 0, NULL, NULL)))
+                                          bufferSize, gIn, 0, NULL, NULL)))
         {
             vlog_error("\n*** Error %d in clEnqueueWriteBuffer ***\n", error);
             return error;
@@ -97,9 +89,9 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
             uint32_t pattern = 0xacdcacdc;
             if (gHostFill)
             {
-                memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
+                memset_pattern4(gOut[j], &pattern, bufferSize);
                 if ((error = clEnqueueWriteBuffer(gQueue, gOutBuffer[j],
-                                                  CL_FALSE, 0, BUFFER_SIZE,
+                                                  CL_FALSE, 0, bufferSize,
                                                   gOut[j], 0, NULL, NULL)))
                 {
                     vlog_error(
@@ -108,9 +100,9 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
                     return error;
                 }
 
-                memset_pattern4(gOut2[j], &pattern, BUFFER_SIZE);
+                memset_pattern4(gOut2[j], &pattern, bufferSize);
                 if ((error = clEnqueueWriteBuffer(gQueue, gOutBuffer2[j],
-                                                  CL_FALSE, 0, BUFFER_SIZE,
+                                                  CL_FALSE, 0, bufferSize,
                                                   gOut2[j], 0, NULL, NULL)))
                 {
                     vlog_error(
@@ -122,12 +114,12 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
             else
             {
                 error = clEnqueueFillBuffer(gQueue, gOutBuffer[j], &pattern,
-                                            sizeof(pattern), 0, BUFFER_SIZE, 0,
+                                            sizeof(pattern), 0, bufferSize, 0,
                                             NULL, NULL);
                 test_error(error, "clEnqueueFillBuffer 1 failed!\n");
 
                 error = clEnqueueFillBuffer(gQueue, gOutBuffer[j], &pattern,
-                                            sizeof(pattern), 0, BUFFER_SIZE, 0,
+                                            sizeof(pattern), 0, bufferSize, 0,
                                             NULL, NULL);
                 test_error(error, "clEnqueueFillBuffer 2 failed!\n");
             }
@@ -137,7 +129,7 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_half);
-            size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
+            size_t localCount = (bufferSize + vectorSize - 1) / vectorSize;
             if ((error = clSetKernelArg(kernels[j][thread_id], 0,
                                         sizeof(gOutBuffer[j]), &gOutBuffer[j])))
             {
@@ -225,14 +217,14 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
         {
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer[j], CL_TRUE, 0,
-                                         BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
+                                         bufferSize, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
                 return error;
             }
             if ((error =
                      clEnqueueReadBuffer(gQueue, gOutBuffer2[j], CL_TRUE, 0,
-                                         BUFFER_SIZE, gOut2[j], 0, NULL, NULL)))
+                                         bufferSize, gOut2[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray2 failed %d\n", error);
                 return error;
@@ -432,8 +424,8 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
             if (gVerboseBruteForce)
             {
                 vlog("base:%14" PRIu64 " step:%10" PRIu64
-                     "  bufferSize:%10d \n",
-                     i, step, BUFFER_SIZE);
+                     "  bufferSize:%10zu \n",
+                     i, step, bufferSize);
             }
             else
             {

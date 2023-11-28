@@ -48,10 +48,10 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
     float maxError = 0.0f;
     int ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gHalfCapabilities);
     float maxErrorVal = 0.0f;
-    size_t bufferSize = BUFFER_SIZE;
-    size_t bufferElements = bufferSize / sizeof(cl_half);
     uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
-    int scale = (int)((1ULL << 32) / (16 * bufferElements) + 1);
+    size_t bufferElements = std::min(BUFFER_SIZE / sizeof(cl_half),
+                                     size_t(1ULL << (sizeof(cl_half) * 8)));
+    size_t bufferSize = bufferElements * sizeof(cl_half);
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
     const char *name = f->name;
     float half_ulps = f->half_ulps;
@@ -69,14 +69,7 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
     {
         // Init input array
         cl_ushort *p = (cl_ushort *)gIn;
-        if (gWimpyMode)
-        {
-            for (size_t j = 0; j < bufferElements; j++) p[j] = i + j * scale;
-        }
-        else
-        {
-            for (size_t j = 0; j < bufferElements; j++) p[j] = (uint16_t)i + j;
-        }
+        for (size_t j = 0; j < bufferElements; j++) p[j] = (uint16_t)i + j;
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
