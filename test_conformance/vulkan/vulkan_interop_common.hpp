@@ -43,7 +43,5 @@ extern bool debug_trace;
 extern bool useSingleImageKernel;
 extern bool useDeviceLocal;
 extern bool disableNTHandleType;
-// Enable offset for multiImport of vulkan device memory
-extern bool enableOffset;
 
 #endif // _vulkan_interop_common_hpp_
