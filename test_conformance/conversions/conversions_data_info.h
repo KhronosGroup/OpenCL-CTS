@@ -72,6 +72,7 @@ struct DataInitInfo
 
 #define HFF(num) cl_half_from_float(num, DataInitInfo::halfRoundingMode)
 #define HTF(num) cl_half_to_float(num)
+#define HFD(num) cl_half_from_double(num, DataInitInfo::halfRoundingMode)
 
 struct DataInitBase : public DataInitInfo
 {
@@ -456,7 +457,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
         if (std::is_same<cl_float, OutType>::value)
             *out = (OutType)*in;
         else if (is_out_half())
-            *out = static_cast<OutType>(HFF(*in));
+            *out = static_cast<OutType>(HFD(*in));
         else
             *out = rint(*in);
     }

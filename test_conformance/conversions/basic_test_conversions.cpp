@@ -550,7 +550,8 @@ void ConversionsTest::TestTypesConversion(const Type &inType,
          sat = (SaturationMode)(sat + 1))
     {
         // skip illegal saturated conversions to float type
-        if (kSaturated == sat && (outType == kfloat || outType == kdouble))
+        if (kSaturated == sat
+            && (outType == kfloat || outType == kdouble || outType == khalf))
         {
             continue;
         }
