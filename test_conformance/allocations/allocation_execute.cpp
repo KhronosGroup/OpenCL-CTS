@@ -140,7 +140,7 @@ int check_image(cl_command_queue queue, cl_mem mem) {
 }
 
 
-#define NUM_OF_WORK_ITEMS 8192*32
+#define NUM_OF_WORK_ITEMS (8192 * 32)
 
 int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id device_id, int test, cl_mem mems[], int number_of_mems_used, int verify_checksum) {
 
