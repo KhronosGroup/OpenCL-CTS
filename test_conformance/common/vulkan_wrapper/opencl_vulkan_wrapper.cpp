@@ -34,6 +34,7 @@ pfnclEnqueueReleaseExternalMemObjectsKHR
     clEnqueueReleaseExternalMemObjectsKHRptr;
 pfnclReleaseSemaphoreKHR clReleaseSemaphoreKHRptr;
 pfnclGetSemaphoreHandleForTypeKHR clGetSemaphoreHandleForTypeKHRptr;
+pfnclReImportSemaphoreSyncFdKHR clReImportSemaphoreSyncFdKHRptr;
 
 void init_cl_vk_ext(cl_platform_id opencl_platform)
 {
@@ -78,6 +79,15 @@ void init_cl_vk_ext(cl_platform_id opencl_platform)
     {
         throw std::runtime_error("Failed to get the function pointer of "
                                  "clGetSemaphoreHandleForTypeKHRptr!");
+    }
+
+    clReImportSemaphoreSyncFdKHRptr = (pfnclReImportSemaphoreSyncFdKHR)
+        clGetExtensionFunctionAddressForPlatform(
+            opencl_platform, "clReImportSemaphoreSyncFdKHR");
+    if (NULL == clReImportSemaphoreSyncFdKHRptr)
+    {
+        throw std::runtime_error("Failed to get the function pointer of "
+                                 "clReImportSemaphoreSyncFdKHRptr!");
     }
 }
 
@@ -669,7 +679,6 @@ clExternalMemoryImage::clExternalMemoryImage(
             break;
 #elif !defined(__APPLE__)
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
-            log_info(" Opaque file descriptors are not supported on Windows\n");
             fd = (int)deviceMemory.getHandle(externalMemoryHandleType);
             errcode_ret = check_external_memory_handle_type(
                 devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
@@ -738,7 +747,17 @@ clExternalMemoryImage::clExternalMemoryImage() {}
 // clExternalSemaphore implementation //
 //////////////////////////////////////////
 
-clExternalSemaphore::clExternalSemaphore(
+int clExternalSemaphore::signal(cl_command_queue cmd_queue)
+{
+    return CL_INVALID_OPERATION;
+}
+
+int clExternalSemaphore::wait(cl_command_queue cmd_queue)
+{
+    return CL_INVALID_OPERATION;
+}
+
+clExternalImportableSemaphore::clExternalImportableSemaphore(
     const VulkanSemaphore &semaphore, cl_context context,
     VulkanExternalSemaphoreHandleType externalSemaphoreHandleType,
     cl_device_id deviceId)
@@ -759,17 +778,12 @@ clExternalSemaphore::clExternalSemaphore(
     switch (externalSemaphoreHandleType)
     {
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD:
-#ifdef _WIN32
-            ASSERT(0);
-#else
-            log_info(" Opaque file descriptors are not supported on Windows\n");
             fd = (int)semaphore.getHandle(externalSemaphoreHandleType);
             err = check_external_semaphore_handle_type(
                 devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
             sema_props.push_back(
                 (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)fd);
-#endif
             break;
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT:
 #ifndef _WIN32
@@ -802,12 +816,10 @@ clExternalSemaphore::clExternalSemaphore(
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD:
             err = check_external_semaphore_handle_type(
                 devList[0], CL_SEMAPHORE_HANDLE_SYNC_FD_KHR);
-            sema_props.push_back(static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR));
+
             sema_props.push_back(static_cast<cl_semaphore_properties_khr>(
                 CL_SEMAPHORE_HANDLE_SYNC_FD_KHR));
-            sema_props.push_back(static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR));
+            sema_props.push_back(static_cast<cl_semaphore_properties_khr>(-1));
             break;
         default:
             ASSERT(0);
@@ -837,7 +849,7 @@ clExternalSemaphore::clExternalSemaphore(
     }
 }
 
-clExternalSemaphore::~clExternalSemaphore() noexcept(false)
+clExternalImportableSemaphore::~clExternalImportableSemaphore() noexcept(false)
 {
     cl_int err = clReleaseSemaphoreKHRptr(m_externalSemaphore);
     if (err != CL_SUCCESS)
@@ -846,7 +858,83 @@ clExternalSemaphore::~clExternalSemaphore() noexcept(false)
     }
 }
 
-int clExternalSemaphore::signal(cl_command_queue cmd_queue)
+int clExternalImportableSemaphore::wait(cl_command_queue cmd_queue)
+{
+    int err = CL_SUCCESS;
+    if (m_externalHandleType == VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD)
+    {
+        cl_int err = 0;
+        fd = (int)m_deviceSemaphore.getHandle(m_externalHandleType);
+        err = clReImportSemaphoreSyncFdKHRptr(m_externalSemaphore, nullptr, fd);
+        if (err != CL_SUCCESS)
+        {
+            return err;
+        }
+    }
+
+    err = clEnqueueWaitSemaphoresKHRptr(cmd_queue, 1, &m_externalSemaphore,
+                                        NULL, 0, NULL, NULL);
+    return err;
+}
+
+cl_semaphore_khr &clExternalImportableSemaphore::getCLSemaphore()
+{
+    return m_externalSemaphore;
+}
+
+
+clExternalExportableSemaphore::clExternalExportableSemaphore(
+    const VulkanSemaphore &semaphore, cl_context context,
+    VulkanExternalSemaphoreHandleType externalSemaphoreHandleType,
+    cl_device_id deviceId)
+    : m_deviceSemaphore(semaphore)
+{
+
+    cl_int err = 0;
+    cl_device_id devList[] = { deviceId, NULL };
+    m_externalHandleType = externalSemaphoreHandleType;
+    m_externalSemaphore = nullptr;
+    m_device = deviceId;
+    m_context = context;
+
+    std::vector<cl_semaphore_properties_khr> sema_props{
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+    };
+    sema_props.push_back(
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR);
+    sema_props.push_back(
+        (cl_semaphore_properties_khr)getCLSemaphoreTypeFromVulkanType(
+            externalSemaphoreHandleType));
+    sema_props.push_back((cl_semaphore_properties_khr)
+                             CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR);
+    sema_props.push_back(
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR);
+    sema_props.push_back((cl_semaphore_properties_khr)devList[0]);
+    sema_props.push_back(
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR);
+    sema_props.push_back(0);
+    m_externalSemaphore =
+        clCreateSemaphoreWithPropertiesKHRptr(context, sema_props.data(), &err);
+    if (CL_SUCCESS != err)
+    {
+        log_error("clCreateSemaphoreWithPropertiesKHRptr failed with %d\n",
+                  err);
+        throw std::runtime_error(
+            "clCreateSemaphoreWithPropertiesKHRptr failed! ");
+    }
+}
+
+clExternalExportableSemaphore::~clExternalExportableSemaphore() noexcept(false)
+{
+    cl_int err = clReleaseSemaphoreKHRptr(m_externalSemaphore);
+    if (err != CL_SUCCESS)
+    {
+        throw std::runtime_error("clReleaseSemaphoreKHR failed!");
+    }
+}
+
+int clExternalExportableSemaphore::signal(cl_command_queue cmd_queue)
 {
     int err = clEnqueueSignalSemaphoresKHRptr(
         cmd_queue, 1, &m_externalSemaphore, NULL, 0, NULL, nullptr);
@@ -886,60 +974,7 @@ int clExternalSemaphore::signal(cl_command_queue cmd_queue)
     return err;
 }
 
-int clExternalSemaphore::wait(cl_command_queue cmd_queue)
-{
-    int err = CL_SUCCESS;
-    if (m_externalHandleType == VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD)
-    {
-        cl_int err = 0;
-        cl_device_id devList[] = { m_device, NULL };
-        std::vector<cl_semaphore_properties_khr> sema_props{
-            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
-            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
-        };
-        fd = (int)m_deviceSemaphore.getHandle(m_externalHandleType);
-
-        err = check_external_semaphore_handle_type(
-            devList[0], CL_SEMAPHORE_HANDLE_SYNC_FD_KHR);
-        if (CL_SUCCESS != err)
-        {
-            log_error("CL_SEMAPHORE_HANDLE_SYNC_FD_KHR not supported\n");
-            return err;
-        }
-
-        sema_props.push_back(
-            (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_SYNC_FD_KHR);
-        sema_props.push_back((cl_semaphore_properties_khr)fd);
-
-        sema_props.push_back(0);
-
-        if (m_externalSemaphore)
-        {
-            err = clReleaseSemaphoreKHRptr(m_externalSemaphore);
-            if (err != CL_SUCCESS)
-            {
-                log_error("Failed to release CL external semaphore\n");
-                return err;
-            }
-            m_externalSemaphore = nullptr;
-        }
-
-        m_externalSemaphore = clCreateSemaphoreWithPropertiesKHRptr(
-            m_context, sema_props.data(), &err);
-        if (CL_SUCCESS != err)
-        {
-            log_error("clCreateSemaphoreWithPropertiesKHRptr failed with %d\n",
-                      err);
-            return err;
-        }
-    }
-
-    err = clEnqueueWaitSemaphoresKHRptr(cmd_queue, 1, &m_externalSemaphore,
-                                        NULL, 0, NULL, NULL);
-    return err;
-}
-
-cl_semaphore_khr &clExternalSemaphore::getCLSemaphore()
+cl_semaphore_khr &clExternalExportableSemaphore::getCLSemaphore()
 {
     return m_externalSemaphore;
 }

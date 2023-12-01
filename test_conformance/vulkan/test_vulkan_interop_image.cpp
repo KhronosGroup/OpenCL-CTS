@@ -251,9 +251,9 @@ int run_test_with_two_queue(
     clExternalSemaphore *clVk2CLExternalSemaphore = NULL;
     clExternalSemaphore *clCl2VkExternalSemaphore = NULL;
 
-    clVk2CLExternalSemaphore = new clExternalSemaphore(
+    clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
         vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
-    clCl2VkExternalSemaphore = new clExternalSemaphore(
+    clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
         vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
 
     std::vector<VulkanDeviceMemory *> vkImage2DListDeviceMemory1;
@@ -816,9 +816,9 @@ int run_test_with_one_queue(
     clExternalSemaphore *clVk2CLExternalSemaphore = NULL;
     clExternalSemaphore *clCl2VkExternalSemaphore = NULL;
 
-    clVk2CLExternalSemaphore = new clExternalSemaphore(
+    clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
         vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
-    clCl2VkExternalSemaphore = new clExternalSemaphore(
+    clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
         vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
 
     std::vector<VulkanDeviceMemory *> vkImage2DListDeviceMemory1;
