@@ -42,7 +42,7 @@ TEST_SPIRV_FUNC(basic_1_3)
     test_error(error, "Unable to create destination buffer");
 
     clProgramWrapper prog;
-    error = get_program_with_il(prog, deviceID, context, "basic_1_3");
+    error = get_program_with_il(prog, deviceID, context, "spv1.3/basic");
     test_error(error, "Unable to build SPIR-V program");
 
     clKernelWrapper kernel = clCreateKernel(prog, "test_basic_1_3", &error);
