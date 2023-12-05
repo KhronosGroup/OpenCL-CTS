@@ -60,10 +60,12 @@ TEST_SPIRV_FUNC(basic_versions)
     for (auto& testCase : mapILtoSubdir)
     {
         if (gVersionSkip) {
-            log_info("Skipping version check for %s.\n", testCase.first.c_str());
+            log_info("    Skipping version check for %s.\n", testCase.first.c_str());
         } else if (ilVersions.find(testCase.first) == std::string::npos) {
-            log_info("Version %s is not supported; skipping test.\n", testCase.first.c_str());
+            log_info("    Version %s is not supported; skipping test.\n", testCase.first.c_str());
             continue;
+        } else {
+            log_info("    testing %s...\n", testCase.first.c_str());
         }
 
         const cl_int zero = 0;
