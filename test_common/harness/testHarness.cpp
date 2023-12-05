@@ -1196,18 +1196,21 @@ Version get_device_spirv_il_version(cl_device_id device)
         ASSERT_SUCCESS(err, "clGetDeviceInfo");
     }
 
-    if (strstr(str.data(), "SPIR-V_1.0") != NULL)
-        return Version(1, 0);
-    else if (strstr(str.data(), "SPIR-V_1.1") != NULL)
-        return Version(1, 1);
-    else if (strstr(str.data(), "SPIR-V_1.2") != NULL)
-        return Version(1, 2);
-    else if (strstr(str.data(), "SPIR-V_1.3") != NULL)
-        return Version(1, 3);
+    // Because this query returns a space-separated list of IL version strings
+    // we should check for SPIR-V versions in reverse order, to return the
+    // highest version supported.
+    if (strstr(str.data(), "SPIR-V_1.5") != NULL)
+        return Version(1, 5);
     else if (strstr(str.data(), "SPIR-V_1.4") != NULL)
         return Version(1, 4);
-    else if (strstr(str.data(), "SPIR-V_1.5") != NULL)
-        return Version(1, 5);
+    else if (strstr(str.data(), "SPIR-V_1.3") != NULL)
+        return Version(1, 3);
+    else if (strstr(str.data(), "SPIR-V_1.2") != NULL)
+        return Version(1, 2);
+    else if (strstr(str.data(), "SPIR-V_1.1") != NULL)
+        return Version(1, 1);
+    else if (strstr(str.data(), "SPIR-V_1.0") != NULL)
+        return Version(1, 0);
 
     throw std::runtime_error(std::string("Unknown SPIR-V version: ")
                              + str.data());
