@@ -32,20 +32,23 @@ TEST_SPIRV_FUNC(basic_versions)
     std::vector<cl_int> h_src(num_elements);
     generate_random_data(kInt, h_src.size(), d, h_src.data());
 
-    clMemWrapper src = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, h_src.size() * sizeof(cl_int), h_src.data(), &error);
+    clMemWrapper src =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       h_src.size() * sizeof(cl_int), h_src.data(), &error);
     test_error(error, "Unable to create source buffer");
 
-    clMemWrapper dst = clCreateBuffer(context, 0, h_src.size() * sizeof(cl_int), NULL, &error);
+    clMemWrapper dst =
+        clCreateBuffer(context, 0, h_src.size() * sizeof(cl_int), NULL, &error);
     test_error(error, "Unable to create destination buffer");
 
     std::map<std::string, std::string> mapILtoSubdir({
-        {"SPIR-V_1.0", ""}, // SPIR-V 1.0 files are in the base directory
-        {"SPIR-V_1.1", "spv1.1"},
-        {"SPIR-V_1.2", "spv1.2"},
-        {"SPIR-V_1.3", "spv1.3"},
-        {"SPIR-V_1.4", "spv1.4"},
-        {"SPIR-V_1.5", "spv1.5"},
-        {"SPIR-V_1.6", "spv1.6"},
+        { "SPIR-V_1.0", "" }, // SPIR-V 1.0 files are in the base directory
+        { "SPIR-V_1.1", "spv1.1" },
+        { "SPIR-V_1.2", "spv1.2" },
+        { "SPIR-V_1.3", "spv1.3" },
+        { "SPIR-V_1.4", "spv1.4" },
+        { "SPIR-V_1.5", "spv1.5" },
+        { "SPIR-V_1.6", "spv1.6" },
     });
 
     size_t sz = 0;
@@ -54,22 +57,32 @@ TEST_SPIRV_FUNC(basic_versions)
 
     std::string ilVersions;
     ilVersions.resize(sz);
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_IL_VERSION, sz, &ilVersions[0], NULL);
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_IL_VERSION, sz, &ilVersions[0],
+                            NULL);
     test_error(error, "Unable to query device IL versions string");
 
     for (auto& testCase : mapILtoSubdir)
     {
-        if (gVersionSkip) {
-            log_info("    Skipping version check for %s.\n", testCase.first.c_str());
-        } else if (ilVersions.find(testCase.first) == std::string::npos) {
-            log_info("    Version %s is not supported; skipping test.\n", testCase.first.c_str());
+        if (gVersionSkip)
+        {
+            log_info("    Skipping version check for %s.\n",
+                     testCase.first.c_str());
+        }
+        else if (ilVersions.find(testCase.first) == std::string::npos)
+        {
+            log_info("    Version %s is not supported; skipping test.\n",
+                     testCase.first.c_str());
             continue;
-        } else {
+        }
+        else
+        {
             log_info("    testing %s...\n", testCase.first.c_str());
         }
 
         const cl_int zero = 0;
-        error = clEnqueueFillBuffer(queue, dst, &zero, sizeof(zero), 0, h_src.size() * sizeof(cl_int), 0, NULL, NULL);
+        error =
+            clEnqueueFillBuffer(queue, dst, &zero, sizeof(zero), 0,
+                                h_src.size() * sizeof(cl_int), 0, NULL, NULL);
         test_error(error, "Unable to initialize destination buffer");
 
         std::string filename = testCase.second + "/basic";
