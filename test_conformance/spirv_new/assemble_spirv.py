@@ -33,13 +33,12 @@ from textwrap import wrap
 # sub-directories for specific SPIR-V environments
 spirv_envs = [
     '', # all files in the root directory are considered SPIR-V 1.0
-    #'spv1.0',
-    #'spv1.1',
-    #'spv1.2',
+    'spv1.1',
+    'spv1.2',
     'spv1.3',
-    #'spv1.4',
-    #'spv1.5',
-    #'spv1.6',
+    'spv1.4',
+    'spv1.5',
+    'spv1.6',
 ]
 
 def fatal(message):
