@@ -423,10 +423,10 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
             cl_float outVal = 0.f;
 
 #if defined(_MSC_VER) && defined(_M_X64)
-            cl_ulong l = ((cl_ulong *)in)[0];
             float result;
             if (std::is_same<cl_ulong, InType>::value)
             {
+                cl_ulong l = ((cl_ulong *)in)[0];
                 cl_long sl = ((cl_long)l < 0) ? (cl_long)((l >> 1) | (l & 1))
                                               : (cl_long)l;
                 _mm_store_ss(&result, _mm_cvtsi64_ss(_mm_setzero_ps(), sl));
@@ -435,6 +435,7 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
             }
             else
             {
+                cl_long l = ((cl_long *)in)[0];
                 _mm_store_ss(&result, _mm_cvtsi64_ss(_mm_setzero_ps(), l));
                 outVal = (l == 0 ? 0.0f : result); // Per IEEE-754-2008 5.4.1,
                                                    // 0's always convert to +0.0
