@@ -96,6 +96,26 @@ void init_cl_vk_ext(cl_platform_id opencl_platform, cl_uint num_devices,
                                      "clReImportSemaphoreSyncFdKHR!");
         }
     }
+
+    clEnqueueAcquireExternalMemObjectsKHRptr =
+        (pfnclEnqueueAcquireExternalMemObjectsKHR)
+            clGetExtensionFunctionAddressForPlatform(
+                opencl_platform, "clEnqueueAcquireExternalMemObjectsKHR");
+    if (nullptr == clEnqueueAcquireExternalMemObjectsKHRptr)
+    {
+        throw std::runtime_error("Failed to get the function pointer of "
+                                 "clEnqueueAcquireExternalMemObjectsKHR!");
+    }
+
+    clEnqueueReleaseExternalMemObjectsKHRptr =
+        (pfnclEnqueueReleaseExternalMemObjectsKHR)
+            clGetExtensionFunctionAddressForPlatform(
+                opencl_platform, "clEnqueueReleaseExternalMemObjectsKHR");
+    if (nullptr == clEnqueueReleaseExternalMemObjectsKHRptr)
+    {
+        throw std::runtime_error("Failed to get the function pointer of "
+                                 "clEnqueueReleaseExternalMemObjectsKHR!");
+    }
 }
 
 cl_int setMaxImageDimensions(cl_device_id deviceID, size_t &max_width,
