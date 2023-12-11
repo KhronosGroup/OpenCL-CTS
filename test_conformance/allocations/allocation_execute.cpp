@@ -239,7 +239,9 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
     }
 
     // Set the result
-    result_mem = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_uint)*NUM_OF_WORK_ITEMS, returned_results.data(), &error);
+    result_mem = clCreateBuffer(
+        context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+        sizeof(cl_uint) * NUM_OF_WORK_ITEMS, returned_results.data(), &error);
     test_error(error, "clCreateBuffer failed");
     error = clSetKernelArg(kernel, i, sizeof(result_mem), &result_mem);
     test_error(error, "clSetKernelArg failed");
@@ -345,7 +347,9 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
 
     // Verify the checksum.
     // Read back the result
-    error = clEnqueueReadBuffer(*queue, result_mem, CL_TRUE, 0, sizeof(cl_uint)*NUM_OF_WORK_ITEMS, returned_results.data(), 0, NULL, NULL);
+    error = clEnqueueReadBuffer(*queue, result_mem, CL_TRUE, 0,
+                                sizeof(cl_uint) * NUM_OF_WORK_ITEMS,
+                                returned_results.data(), 0, NULL, NULL);
     test_error_abort(error, "clEnqueueReadBuffer failed");
     final_result = 0;
     if (test == BUFFER || test == IMAGE_READ || test == BUFFER_NON_BLOCKING || test == IMAGE_READ_NON_BLOCKING) {
