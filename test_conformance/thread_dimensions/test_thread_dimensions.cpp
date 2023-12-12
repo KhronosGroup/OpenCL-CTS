@@ -740,11 +740,14 @@ test_thread_dimensions(cl_device_id device, cl_context context, cl_command_queue
                         cl_uint total_local_size = local_x_size * local_y_size * local_z_size;
                         long total_global_size = final_x_size * final_y_size * final_z_size;
                         if (total_local_size < max_workgroup_size) {
-                            if (total_global_size > 16384*16384) {
-                                if (total_local_size < 64) {
-                                    log_info("Skipping test as local_size is small and it will take a long time.\n");
-                                    continue;
-                                }
+                            if (((total_global_size > 16384 * 16384)
+                                 && (total_local_size < 64))
+                                || ((total_global_size > 8192 * 8192)
+                                    && (total_local_size < 16)))
+                            {
+                                log_info("Skipping test as local_size is small "
+                                         "and it will take a long time.\n");
+                                continue;
                             }
                         }
 
