@@ -17,6 +17,7 @@
 #include "harness/conversions.h"
 
 #include <algorithm>
+#include <cinttypes>
 
 #define TEST_SIZE 512
 
@@ -198,11 +199,11 @@ int test_single_param_integer_kernel(cl_command_queue queue, cl_context context,
 
                     case 8:
                         if( useOpKernel )
-                            log_error( "ERROR: Data sample %d:%d does not validate! Expected (0x%16.16llx), got (0x%16.16llx), sources (0x%16.16llx, 0x%16.16llx)\n",
+                            log_error( "ERROR: Data sample %d:%d does not validate! Expected (0x%16.16" PRIx64 "), got (0x%16.16" PRIx64 "), sources (0x%16.16" PRIx64 ", 0x%16.16" PRIx64 ")\n",
                                       (int)i, (int)j, ((cl_ulong*)&expected)[0], *( (cl_ulong *)p ),
                                       *( (cl_ulong *)in ), *( (cl_ulong *)in2 ) );
                         else
-                        log_error( "ERROR: Data sample %d:%d does not validate! Expected (0x%16.16llx), got (0x%16.16llx), sources (0x%16.16llx)\n",
+                        log_error( "ERROR: Data sample %d:%d does not validate! Expected (0x%16.16" PRIx64 "), got (0x%16.16" PRIx64 "), sources (0x%16.16" PRIx64 ")\n",
                                   (int)i, (int)j, ((cl_ulong*)&expected)[0], *( (cl_ulong *)p ),
                                             *( (cl_ulong *)in ) );
                         break;
@@ -750,7 +751,7 @@ int test_two_param_integer_kernel(cl_command_queue queue, cl_context context, co
                         break;
 
                     case 8:
-                        log_error( "ERROR: Data sample %d:%d does not validate! Expected (0x%16.16llx), got (0x%16.16llx), sources (0x%16.16llx, 0x%16.16llx)\n",
+                        log_error( "ERROR: Data sample %d:%d does not validate! Expected (0x%16.16" PRIx64 "), got (0x%16.16" PRIx64 "), sources (0x%16.16" PRIx64 ", 0x%16.16" PRIx64 ")\n",
                                   (int)i, (int)j, ((cl_ulong*)&expected)[ 0 ], *( (cl_ulong *)out ),
                                             *( (cl_ulong *)inA ),
                                             *( (cl_ulong *)inB ) );
@@ -1417,7 +1418,7 @@ int test_three_param_integer_kernel(cl_command_queue queue, cl_context context, 
                         break;
 
                     case 8:
-                        log_error( "ERROR: Data sample %d:%d does not validate! Expected (0x%16.16llx), got (0x%16.16llx), sources (0x%16.16llx, 0x%16.16llx, 0x%16.16llx)\n",
+                        log_error( "ERROR: Data sample %d:%d does not validate! Expected (0x%16.16" PRIx64 "), got (0x%16.16" PRIx64 "), sources (0x%16.16" PRIx64 ", 0x%16.16" PRIx64 ", 0x%16.16" PRIx64 ")\n",
                                   (int)i, (int)j, ((cl_ulong*)&expected)[ 0 ], *( (cl_ulong *)out ),
                                             *( (cl_ulong *)inA ),
                                             *( (cl_ulong *)inB ),
