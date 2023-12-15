@@ -158,7 +158,7 @@ if( WIN32 AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" )
 endif()
 
 # To handle addresses larger than 2 gigabytes for 32bit targets
-if( WIN32 AND "${CMAKE_EXE_LINKER_FLAGS}" MATCHES "/machine:X86")
+if(WIN32 AND ${CLConform_TARGET_ARCH} STREQUAL "x86")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
 endif()
 
