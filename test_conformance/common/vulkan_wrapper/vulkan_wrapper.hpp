@@ -53,12 +53,15 @@ protected:
     VulkanQueueFamilyList m_queueFamilyList;
     VulkanMemoryHeapList m_memoryHeapList;
     VulkanMemoryTypeList m_memoryTypeList;
+    std::vector<VkExtensionProperties> m_extensions;
+
 
     VulkanPhysicalDevice(const VulkanPhysicalDevice &physicalDevice);
     VulkanPhysicalDevice(VkPhysicalDevice vkPhysicalDevice);
     virtual ~VulkanPhysicalDevice();
 
 public:
+    bool hasExtension(const char *extension_name) const;
     const VulkanQueueFamilyList &getQueueFamilyList() const;
     const VulkanMemoryHeapList &getMemoryHeapList() const;
     const VulkanMemoryTypeList &getMemoryTypeList() const;
@@ -537,6 +540,7 @@ protected:
     uint64_t m_size;
     bool m_isDedicated;
 
+
     VulkanDeviceMemory(const VulkanDeviceMemory &deviceMemory);
 
 public:
@@ -588,6 +592,7 @@ public:
         VulkanExternalSemaphoreHandleType externalSemaphoreHandleType =
             VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NONE,
         const std::wstring name = L"");
+    const VulkanDevice &getDevice() const;
     virtual ~VulkanSemaphore();
 #ifdef _WIN32
     HANDLE getHandle(

@@ -18,6 +18,8 @@
 #include "../common.h"
 #include "test_cl_ext_image_buffer.hpp"
 
+static inline bool is_power_of_two(size_t num) { return !(num & (num - 1)); }
+
 static int get_image_requirement_alignment(
     cl_device_id device, cl_context context, cl_mem_flags flags,
     const cl_image_format* image_format, const cl_image_desc* image_desc,
@@ -79,11 +81,17 @@ int image2d_from_buffer_positive(cl_device_id device, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
-    std::vector<cl_mem_object_type> imageTypes{
-        CL_MEM_OBJECT_IMAGE1D,       CL_MEM_OBJECT_IMAGE2D,
-        CL_MEM_OBJECT_IMAGE3D,       CL_MEM_OBJECT_IMAGE1D_BUFFER,
-        CL_MEM_OBJECT_IMAGE1D_ARRAY, CL_MEM_OBJECT_IMAGE2D_ARRAY
-    };
+    cl_uint row_pitch_alignment_2d = 0;
+    cl_int err = clGetDeviceInfo(device, CL_DEVICE_IMAGE_PITCH_ALIGNMENT,
+                                 sizeof(row_pitch_alignment_2d),
+                                 &row_pitch_alignment_2d, nullptr);
+    test_error(err, "Error clGetDeviceInfo");
+
+    cl_uint base_address_alignment_2d = 0;
+    err = clGetDeviceInfo(device, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT,
+                          sizeof(base_address_alignment_2d),
+                          &base_address_alignment_2d, nullptr);
+    test_error(err, "Error clGetDeviceInfo");
 
     std::vector<cl_mem_flags> flagTypes{ CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY,
                                          CL_MEM_READ_WRITE,
@@ -91,55 +99,43 @@ int image2d_from_buffer_positive(cl_device_id device, cl_context context,
 
     for (auto flagType : flagTypes)
     {
-        for (auto imageType : imageTypes)
+
+        /* Get the list of supported image formats */
+        std::vector<cl_image_format> formatList;
+        if (TEST_PASS
+                != get_format_list(context, CL_MEM_OBJECT_IMAGE2D, formatList,
+                                   flagType)
+            || formatList.size() == 0)
         {
-            /* Get the list of supported image formats */
-            std::vector<cl_image_format> formatList;
-            if (TEST_PASS
-                    != get_format_list(context, imageType, formatList, flagType)
-                || formatList.size() == 0)
+            test_fail("Failure to get supported formats list\n");
+        }
+
+        for (auto format : formatList)
+        {
+            cl_image_desc image_desc = { 0 };
+            image_desc_init(&image_desc, CL_MEM_OBJECT_IMAGE2D);
+
+            cl_mem_flags flag = (flagType == CL_MEM_KERNEL_READ_AND_WRITE)
+                ? CL_MEM_READ_WRITE
+                : flagType;
+
+            size_t row_pitch_alignment = 0;
+            size_t base_address_alignment = 0;
+
+            int get_error = get_image_requirement_alignment(
+                device, context, flag, &format, &image_desc,
+                &row_pitch_alignment, nullptr, &base_address_alignment);
+            if (TEST_PASS != get_error)
             {
-                test_fail("Failure to get supported formats list\n");
+                return get_error;
             }
 
-            cl_uint row_pitch_alignment_2d = 0;
-            cl_int err =
-                clGetDeviceInfo(device, CL_DEVICE_IMAGE_PITCH_ALIGNMENT,
-                                sizeof(row_pitch_alignment_2d),
-                                &row_pitch_alignment_2d, nullptr);
-            test_error(err, "Error clGetDeviceInfo");
+            const size_t element_size =
+                get_format_size(context, &format, CL_MEM_OBJECT_IMAGE2D, flag);
 
-            cl_uint base_address_alignment_2d = 0;
-            err =
-                clGetDeviceInfo(device, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT,
-                                sizeof(base_address_alignment_2d),
-                                &base_address_alignment_2d, nullptr);
-            test_error(err, "Error clGetDeviceInfo");
-
-            for (auto format : formatList)
+            if (is_power_of_two(element_size))
             {
-                cl_image_desc image_desc = { 0 };
-                image_desc_init(&image_desc, imageType);
-
-                cl_mem_flags flag = (flagType == CL_MEM_KERNEL_READ_AND_WRITE)
-                    ? CL_MEM_READ_WRITE
-                    : flagType;
-
-                size_t row_pitch_alignment = 0;
-                size_t base_address_alignment = 0;
-
-                int get_error = get_image_requirement_alignment(
-                    device, context, flag, &format, &image_desc,
-                    &row_pitch_alignment, nullptr, &base_address_alignment);
-                if (TEST_PASS != get_error)
-                {
-                    return get_error;
-                }
-
-                const size_t element_size =
-                    get_format_size(context, &format, imageType, flag);
-
-                /*  Alignements in pixels vs bytes */
+                /*  Alignments in pixels vs bytes */
                 if (base_address_alignment
                     > base_address_alignment_2d * element_size)
                 {

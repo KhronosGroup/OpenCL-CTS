@@ -17,6 +17,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <cinttypes>
 #include "procs.h"
 #include "harness/testHarness.h"
 
@@ -72,12 +73,17 @@ int check_times(cl_ulong queueStart, cl_ulong commandSubmit, cl_ulong commandSta
   err = clGetDeviceInfo(device, CL_DEVICE_PROFILING_TIMER_RESOLUTION, sizeof(profiling_resolution), &profiling_resolution, NULL);
     test_error(err, "clGetDeviceInfo for CL_DEVICE_PROFILING_TIMER_RESOLUTION failed.\n");
 
-  log_info("CL_PROFILING_COMMAND_QUEUED: %llu CL_PROFILING_COMMAND_SUBMIT: %llu CL_PROFILING_COMMAND_START: %llu CL_PROFILING_COMMAND_END: %llu CL_DEVICE_PROFILING_TIMER_RESOLUTION: %ld\n",
-           queueStart, commandSubmit, commandStart, commandEnd, profiling_resolution);
+    log_info("CL_PROFILING_COMMAND_QUEUED: %" PRIu64
+             " CL_PROFILING_COMMAND_SUBMIT: %" PRIu64
+             " CL_PROFILING_COMMAND_START: %" PRIu64
+             " CL_PROFILING_COMMAND_END: %" PRIu64
+             " CL_DEVICE_PROFILING_TIMER_RESOLUTION: %zu\n",
+             queueStart, commandSubmit, commandStart, commandEnd,
+             profiling_resolution);
 
-  double queueTosubmitTimeS = (double)(commandSubmit - queueStart)*1e-9;
-  double submitToStartTimeS = (double)(commandStart - commandSubmit)*1e-9;
-  double startToEndTimeS = (double)(commandEnd - commandStart)*1e-9;
+    double queueTosubmitTimeS = (double)(commandSubmit - queueStart) * 1e-9;
+    double submitToStartTimeS = (double)(commandStart - commandSubmit) * 1e-9;
+    double startToEndTimeS = (double)(commandEnd - commandStart) * 1e-9;
 
     log_info( "Profiling info:\n" );
     log_info( "Time from queue to submit : %fms\n", (double)(queueTosubmitTimeS) * 1000.f );

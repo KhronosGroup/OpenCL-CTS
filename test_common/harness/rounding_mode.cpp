@@ -197,6 +197,8 @@ RoundingMode get_round(void)
 #include <xmmintrin.h>
 #elif defined(__PPC__)
 #include <fpu_control.h>
+#elif defined(__mips__)
+#include "mips/m32c1.h"
 #endif
 void *FlushToZero(void)
 {
@@ -218,6 +220,9 @@ void *FlushToZero(void)
     _FPU_GETCW(flags);
     flags |= _FPU_MASK_NI;
     _FPU_SETCW(flags);
+    return NULL;
+#elif defined(__mips__)
+    fpa_bissr(FPA_CSR_FS);
     return NULL;
 #else
 #error Unknown arch
@@ -247,6 +252,8 @@ void UnFlushToZero(void *p)
     _FPU_GETCW(flags);
     flags &= ~_FPU_MASK_NI;
     _FPU_SETCW(flags);
+#elif defined(__mips__)
+    fpa_bicsr(FPA_CSR_FS);
 #else
 #error Unknown arch
 #endif

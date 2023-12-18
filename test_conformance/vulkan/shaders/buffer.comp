@@ -15,7 +15,7 @@ layout(binding = 1) buffer Buffer
 {
   uint8_t ptr[];
 } bufferPtrList[MAX_BUFFERS];
-layout(local_size_x = 512) in;
+layout(local_size_x = 128) in;
 void main() {
     for (uint32_t bufIdx = 0; bufIdx < numBuffers; bufIdx++) {
         uint32_t ptrIdx = gl_GlobalInvocationID.x;

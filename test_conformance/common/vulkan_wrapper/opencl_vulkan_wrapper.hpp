@@ -50,6 +50,10 @@ typedef cl_int (*pfnclEnqueueReleaseExternalMemObjectsKHR)(
     const cl_mem *mem_objects, cl_uint num_events_in_wait_list,
     const cl_event *event_wait_list, cl_event *event);
 typedef cl_int (*pfnclReleaseSemaphoreKHR)(cl_semaphore_khr sema_object);
+typedef cl_int (*pfnclGetSemaphoreHandleForTypeKHR)(
+    cl_semaphore_khr sema_object, cl_device_id device,
+    cl_external_semaphore_handle_type_khr handleType, size_t handle_size,
+    void *handle, size_t *handleSize);
 
 extern pfnclCreateSemaphoreWithPropertiesKHR
     clCreateSemaphoreWithPropertiesKHRptr;
@@ -83,8 +87,7 @@ public:
     clExternalMemory();
     clExternalMemory(const VulkanDeviceMemory *deviceMemory,
                      VulkanExternalMemoryHandleType externalMemoryHandleType,
-                     uint64_t offset, uint64_t size, cl_context context,
-                     cl_device_id deviceId);
+                     uint64_t size, cl_context context, cl_device_id deviceId);
 
     virtual ~clExternalMemory();
     cl_mem getExternalMemoryBuffer();
@@ -111,9 +114,12 @@ public:
 class clExternalSemaphore {
 protected:
     cl_semaphore_khr m_externalSemaphore;
+    VulkanExternalSemaphoreHandleType m_externalHandleType;
+    cl_device_id m_device;
+    cl_context m_context;
+    const VulkanSemaphore &m_deviceSemaphore;
     int fd;
     void *handle;
-    clExternalSemaphore(const clExternalSemaphore &externalSemaphore);
 
 public:
     clExternalSemaphore(
@@ -121,8 +127,8 @@ public:
         VulkanExternalSemaphoreHandleType externalSemaphoreHandleType,
         cl_device_id deviceId);
     virtual ~clExternalSemaphore() noexcept(false);
-    void signal(cl_command_queue command_queue);
-    void wait(cl_command_queue command_queue);
+    int signal(cl_command_queue command_queue);
+    int wait(cl_command_queue command_queue);
     cl_semaphore_khr &getCLSemaphore();
     // operator openclExternalSemaphore_t() const;
 };

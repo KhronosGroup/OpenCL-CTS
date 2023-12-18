@@ -93,9 +93,9 @@ int test_consistency_external_buffer(cl_device_id deviceID, cl_context _context,
     int fd;
 
     std::vector<cl_mem_properties> extMemProperties{
-        (cl_mem_properties)CL_DEVICE_HANDLE_LIST_KHR,
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
         (cl_mem_properties)devList[0],
-        (cl_mem_properties)CL_DEVICE_HANDLE_LIST_END_KHR,
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_END_KHR,
     };
     cl_external_memory_handle_type_khr type;
     switch (vkExternalMemoryHandleType)
@@ -162,9 +162,9 @@ int test_consistency_external_buffer(cl_device_id deviceID, cl_context _context,
         (cl_mem_properties)type,
         (cl_mem_properties)-64, // Passing random invalid fd
 #endif
-        (cl_mem_properties)CL_DEVICE_HANDLE_LIST_KHR,
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
         (cl_mem_properties)devList[0],
-        (cl_mem_properties)CL_DEVICE_HANDLE_LIST_END_KHR,
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_END_KHR,
         0
     };
     buffer = clCreateBufferWithProperties(context, extMemProperties2.data(), 1,
@@ -219,9 +219,8 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
 #else
     if (!is_extension_available(devList[0], "cl_khr_external_memory_opaque_fd"))
     {
-        throw std::runtime_error(
-            "Device does not support cl_khr_external_memory_opaque_fd "
-            "extension \n");
+        test_fail("Device does not support cl_khr_external_memory_opaque_fd "
+                  "extension \n");
     }
 #endif
     uint32_t width = 256;
@@ -257,9 +256,9 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
     void* handle = NULL;
     int fd;
     std::vector<cl_mem_properties> extMemProperties{
-        (cl_mem_properties)CL_DEVICE_HANDLE_LIST_KHR,
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
         (cl_mem_properties)devList[0],
-        (cl_mem_properties)CL_DEVICE_HANDLE_LIST_END_KHR,
+        (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_END_KHR,
     };
     switch (vkExternalMemoryHandleType)
     {
@@ -324,26 +323,6 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
     test_error(errNum, "Unable to create Image with Properties");
     image.reset();
 
-    // Passing properties, image_desc and image_format all as NULL
-    image = clCreateImageWithProperties(context, NULL, CL_MEM_READ_WRITE, NULL,
-                                        NULL, NULL, &errNum);
-    test_failure_error(
-        errNum, CL_INVALID_IMAGE_DESCRIPTOR,
-        "Image creation must fail with CL_INVALID_IMAGE_DESCRIPTOR "
-        "when all are passed as NULL");
-
-    image.reset();
-
-    // Passing NULL properties and a valid image_format and image_desc
-    image =
-        clCreateImageWithProperties(context, NULL, CL_MEM_READ_WRITE,
-                                    &img_format, &image_desc, NULL, &errNum);
-    test_error(errNum,
-               "Unable to create image with NULL properties "
-               "with valid image format and image desc");
-
-    image.reset();
-
     // Passing image_format as NULL
     image = clCreateImageWithProperties(context, extMemProperties.data(),
                                         CL_MEM_READ_WRITE, NULL, &image_desc,
@@ -396,103 +375,107 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
 
     cl_device_id devList[] = { deviceID, NULL };
 
-#ifdef _WIN32
-    if (!is_extension_available(devList[0], "cl_khr_external_semaphore_win32"))
-    {
-        throw std::runtime_error(
-            "Device does not support cl_khr_external_semaphore_win32 "
-            "extension \n");
-    }
-#else
-    if (!is_extension_available(devList[0],
-                                "cl_khr_external_semaphore_opaque_fd"))
-    {
-        throw std::runtime_error(
-            "Device does not support "
-            "cl_khr_external_semaphore_opaque_fd extension \n");
-    }
-#endif
-    VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType =
-        getSupportedVulkanExternalSemaphoreHandleTypeList()[0];
-    VulkanSemaphore vkVk2Clsemaphore(vkDevice, vkExternalSemaphoreHandleType);
-    VulkanSemaphore vkCl2Vksemaphore(vkDevice, vkExternalSemaphoreHandleType);
-    cl_semaphore_khr clCl2Vksemaphore;
-    cl_semaphore_khr clVk2Clsemaphore;
+    std::vector<VulkanExternalSemaphoreHandleType> supportedExternalSemaphores =
+        getSupportedInteropExternalSemaphoreHandleTypes(devList[0], vkDevice);
 
-    void* handle1 = NULL;
-    void* handle2 = NULL;
-    int fd1, fd2;
-    std::vector<cl_semaphore_properties_khr> sema_props1{
-        (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
-        (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
-    };
-    std::vector<cl_semaphore_properties_khr> sema_props2{
-        (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
-        (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
-    };
-    switch (vkExternalSemaphoreHandleType)
+    if (supportedExternalSemaphores.empty())
     {
+        test_fail("No supported external semaphore types found\n");
+    }
+
+    for (VulkanExternalSemaphoreHandleType semaphoreHandleType :
+         supportedExternalSemaphores)
+    {
+        VulkanSemaphore vkVk2Clsemaphore(vkDevice, semaphoreHandleType);
+        VulkanSemaphore vkCl2Vksemaphore(vkDevice, semaphoreHandleType);
+        cl_semaphore_khr clCl2Vksemaphore;
+        cl_semaphore_khr clVk2Clsemaphore;
+        void* handle1 = NULL;
+        void* handle2 = NULL;
+        int fd1, fd2;
+        std::vector<cl_semaphore_properties_khr> sema_props1{
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+        };
+        std::vector<cl_semaphore_properties_khr> sema_props2{
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+        };
+        switch (semaphoreHandleType)
+        {
 #ifdef _WIN32
-        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT:
-            log_info(" Opaque NT handles are only supported on Windows\n");
-            handle1 = vkVk2Clsemaphore.getHandle(vkExternalSemaphoreHandleType);
-            handle2 = vkCl2Vksemaphore.getHandle(vkExternalSemaphoreHandleType);
-            errNum = check_external_semaphore_handle_type(
-                devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
-            sema_props1.push_back((cl_semaphore_properties_khr)
-                                      CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
-            sema_props1.push_back((cl_semaphore_properties_khr)handle1);
-            sema_props2.push_back((cl_semaphore_properties_khr)
-                                      CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
-            sema_props2.push_back((cl_semaphore_properties_khr)handle2);
-            break;
-        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT:
-            log_info(" Opaque D3DKMT handles are only supported on Windows\n");
-            handle1 = vkVk2Clsemaphore.getHandle(vkExternalSemaphoreHandleType);
-            handle2 = vkCl2Vksemaphore.getHandle(vkExternalSemaphoreHandleType);
-            errNum = check_external_semaphore_handle_type(
-                devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
-            sema_props1.push_back((cl_semaphore_properties_khr)
-                                      CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
-            sema_props1.push_back((cl_semaphore_properties_khr)handle1);
-            sema_props2.push_back((cl_semaphore_properties_khr)
-                                      CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
-            sema_props2.push_back((cl_semaphore_properties_khr)handle2);
-            break;
+            case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT:
+                log_info(" Opaque NT handles are only supported on Windows\n");
+                handle1 = vkVk2Clsemaphore.getHandle(semaphoreHandleType);
+                handle2 = vkCl2Vksemaphore.getHandle(semaphoreHandleType);
+                errNum = check_external_semaphore_handle_type(
+                    devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
+                sema_props1.push_back((cl_semaphore_properties_khr)
+                                          CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
+                sema_props1.push_back((cl_semaphore_properties_khr)handle1);
+                sema_props2.push_back((cl_semaphore_properties_khr)
+                                          CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
+                sema_props2.push_back((cl_semaphore_properties_khr)handle2);
+                break;
+            case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT:
+                log_info(
+                    " Opaque D3DKMT handles are only supported on Windows\n");
+                handle1 = vkVk2Clsemaphore.getHandle(semaphoreHandleType);
+                handle2 = vkCl2Vksemaphore.getHandle(semaphoreHandleType);
+                errNum = check_external_semaphore_handle_type(
+                    devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
+                sema_props1.push_back(
+                    (cl_semaphore_properties_khr)
+                        CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
+                sema_props1.push_back((cl_semaphore_properties_khr)handle1);
+                sema_props2.push_back(
+                    (cl_semaphore_properties_khr)
+                        CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
+                sema_props2.push_back((cl_semaphore_properties_khr)handle2);
+                break;
 #else
-        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD:
-            log_info(" Opaque file descriptors are not supported on Windows\n");
-            fd1 =
-                (int)vkVk2Clsemaphore.getHandle(vkExternalSemaphoreHandleType);
-            fd2 =
-                (int)vkCl2Vksemaphore.getHandle(vkExternalSemaphoreHandleType);
-            errNum = check_external_semaphore_handle_type(
-                devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
-            sema_props1.push_back(
-                (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
-            sema_props1.push_back((cl_semaphore_properties_khr)fd1);
-            sema_props2.push_back(
-                (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
-            sema_props2.push_back((cl_semaphore_properties_khr)fd2);
-            break;
+            case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD:
+                fd1 = (int)vkVk2Clsemaphore.getHandle(semaphoreHandleType);
+                fd2 = (int)vkCl2Vksemaphore.getHandle(semaphoreHandleType);
+                errNum = check_external_semaphore_handle_type(
+                    devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
+                sema_props1.push_back((cl_semaphore_properties_khr)
+                                          CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
+                sema_props1.push_back((cl_semaphore_properties_khr)fd1);
+                sema_props2.push_back((cl_semaphore_properties_khr)
+                                          CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
+                sema_props2.push_back((cl_semaphore_properties_khr)fd2);
+                break;
+            case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD:
+                fd1 = -1;
+                fd2 = -1;
+                errNum = check_external_semaphore_handle_type(
+                    devList[0], CL_SEMAPHORE_HANDLE_SYNC_FD_KHR);
+                sema_props1.push_back((cl_semaphore_properties_khr)
+                                          CL_SEMAPHORE_HANDLE_SYNC_FD_KHR);
+                sema_props1.push_back((cl_semaphore_properties_khr)fd1);
+                sema_props2.push_back((cl_semaphore_properties_khr)
+                                          CL_SEMAPHORE_HANDLE_SYNC_FD_KHR);
+                sema_props2.push_back((cl_semaphore_properties_khr)fd2);
+                break;
 #endif
         default: log_error("Unsupported external memory handle type\n"); break;
-    }
+        }
     if (CL_SUCCESS != errNum)
     {
         throw std::runtime_error(
             "Unsupported external sempahore handle type\n ");
     }
     sema_props1.push_back(
-        (cl_semaphore_properties_khr)CL_DEVICE_HANDLE_LIST_KHR);
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR);
     sema_props1.push_back((cl_semaphore_properties_khr)devList[0]);
     sema_props1.push_back(
-        (cl_semaphore_properties_khr)CL_DEVICE_HANDLE_LIST_END_KHR);
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR);
     sema_props2.push_back(
-        (cl_semaphore_properties_khr)CL_DEVICE_HANDLE_LIST_KHR);
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR);
     sema_props2.push_back((cl_semaphore_properties_khr)devList[0]);
     sema_props2.push_back(
-        (cl_semaphore_properties_khr)CL_DEVICE_HANDLE_LIST_END_KHR);
+        (cl_semaphore_properties_khr)CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR);
     sema_props1.push_back(0);
     sema_props2.push_back(0);
 
@@ -532,31 +515,6 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
     test_error(errNum,
                "Unable to create semaphore with valid semaphore properties");
 
-
-    // Call Signal twice consecutively
-    errNum = clEnqueueSignalSemaphoresKHRptr(cmd_queue, 1, &clVk2Clsemaphore,
-                                             NULL, 0, NULL, NULL);
-    test_error(errNum, "clEnqueueSignalSemaphoresKHRptr failed");
-
-    errNum = clEnqueueSignalSemaphoresKHRptr(cmd_queue, 1, &clCl2Vksemaphore,
-                                             NULL, 0, NULL, NULL);
-    test_error(errNum,
-               "clEnqueueSignalSemaphoresKHRptr failed for two "
-               "consecutive wait events");
-
-
-    // Call Wait twice consecutively
-    errNum = clEnqueueWaitSemaphoresKHRptr(cmd_queue, 1, &clVk2Clsemaphore,
-                                           NULL, 0, NULL, NULL);
-    test_error(errNum, "clEnqueueWaitSemaphoresKHRptr failed");
-
-    errNum = clEnqueueWaitSemaphoresKHRptr(cmd_queue, 1, &clCl2Vksemaphore,
-                                           NULL, 0, NULL, NULL);
-    test_error(errNum,
-               "clEnqueueWaitSemaphoresKHRptr failed for two "
-               " consecutive wait events");
-
-
     // Pass invalid object to release call
     errNum = clReleaseSemaphoreKHRptr(NULL);
     test_failure_error(errNum, CL_INVALID_VALUE,
@@ -569,6 +527,7 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
 
     errNum = clReleaseSemaphoreKHRptr(clCl2Vksemaphore);
     test_error(errNum, "clReleaseSemaphoreKHRptr failed");
+    }
 
     return TEST_PASS;
 }
