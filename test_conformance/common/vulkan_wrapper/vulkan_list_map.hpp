@@ -336,6 +336,8 @@ const VulkanWrapper &
         return (m_wrapperList.size() > 0) ? m_wrapperList[idx].get()
                                           : m_constWrapperList[idx].get();
     }
+
+    throw std::runtime_error("Out of bounds operator access");
 }
 
 template <class VulkanWrapper, class VulkanNative>
