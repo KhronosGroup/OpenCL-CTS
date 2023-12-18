@@ -42,10 +42,11 @@ typedef enum
     kshort = 3,
     kuint = 4,
     kint = 5,
-    kfloat = 6,
-    kdouble = 7,
-    kulong = 8,
-    klong = 9,
+    khalf = 6,
+    kfloat = 7,
+    kdouble = 8,
+    kulong = 9,
+    klong = 10,
 
     // This goes last
     kTypeCount
