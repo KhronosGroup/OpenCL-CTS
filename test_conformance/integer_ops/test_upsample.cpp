@@ -213,7 +213,7 @@ void * create_upsample_data( ExplicitType type, void *sourceA, void *sourceB, si
             }
             break;
         default:
-            log_error( "ERROR: unknown type size: %ld\n", tSize );
+            log_error("ERROR: unknown type size: %zu\n", tSize);
             return NULL;
     }
 

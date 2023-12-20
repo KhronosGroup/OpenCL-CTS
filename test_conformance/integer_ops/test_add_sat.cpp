@@ -22,6 +22,7 @@
 #include <sys/stat.h>
 
 #include <algorithm>
+#include <cinttypes>
 
 #include "procs.h"
 
@@ -140,7 +141,13 @@ static int verify_addsat_long( const cl_long *inA, const cl_long *inB, const cl_
                 r = CL_LONG_MIN;
         }
         if( r != outptr[i] )
-        { log_info( "%d) Failure for add_sat( (long%s) 0x%16.16llx, (long%s) 0x%16.16llx) = *0x%16.16llx vs 0x%16.16llx\n", i, sizeName, inA[i], sizeName, inB[i], r, outptr[i] ); return -1; }
+        {
+            log_info("%d) Failure for add_sat( (long%s) 0x%16.16" PRIx64
+                     ", (long%s) 0x%16.16" PRIx64 ") = *0x%16.16" PRIx64
+                     " vs 0x%16.16" PRIx64 "\n",
+                     i, sizeName, inA[i], sizeName, inB[i], r, outptr[i]);
+            return -1;
+        }
     }
     return 0;
 }
@@ -154,7 +161,13 @@ static int verify_addsat_ulong( const cl_ulong *inA, const cl_ulong *inB, const 
         if( r < inA[i] )
             r = CL_ULONG_MAX;
         if( r != outptr[i] )
-        { log_info( "%d) Failure for add_sat( (ulong%s) 0x%16.16llx, (ulong%s) 0x%16.16llx) = *0x%16.16llx vs 0x%16.16llx\n", i, sizeName, inA[i], sizeName, inB[i], r, outptr[i] ); return -1; }
+        {
+            log_info("%d) Failure for add_sat( (ulong%s) 0x%16.16" PRIx64
+                     ", (ulong%s) 0x%16.16" PRIx64 ") = *0x%16.16" PRIx64
+                     " vs 0x%16.16" PRIx64 "\n",
+                     i, sizeName, inA[i], sizeName, inB[i], r, outptr[i]);
+            return -1;
+        }
     }
     return 0;
 }
