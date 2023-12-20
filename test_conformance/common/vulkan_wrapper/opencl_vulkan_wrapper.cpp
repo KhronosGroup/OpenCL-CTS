@@ -757,7 +757,7 @@ int clExternalSemaphore::wait(cl_command_queue cmd_queue)
     return CL_INVALID_OPERATION;
 }
 
-clExternalSemaphore::~clExternalSemaphore() noexcept(false) = default;
+clExternalSemaphore::~clExternalSemaphore() = default;
 
 clExternalImportableSemaphore::clExternalImportableSemaphore(
     const VulkanSemaphore &semaphore, cl_context context,
@@ -851,7 +851,7 @@ clExternalImportableSemaphore::clExternalImportableSemaphore(
     }
 }
 
-clExternalImportableSemaphore::~clExternalImportableSemaphore() noexcept(false)
+clExternalImportableSemaphore::~clExternalImportableSemaphore()
 {
     cl_int err = clReleaseSemaphoreKHRptr(m_externalSemaphore);
     if (err != CL_SUCCESS)
@@ -927,7 +927,7 @@ clExternalExportableSemaphore::clExternalExportableSemaphore(
     }
 }
 
-clExternalExportableSemaphore::~clExternalExportableSemaphore() noexcept(false)
+clExternalExportableSemaphore::~clExternalExportableSemaphore()
 {
     cl_int err = clReleaseSemaphoreKHRptr(m_externalSemaphore);
     if (err != CL_SUCCESS)

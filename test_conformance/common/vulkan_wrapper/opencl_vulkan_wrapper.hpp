@@ -119,7 +119,7 @@ public:
     virtual int signal(cl_command_queue command_queue);
     virtual int wait(cl_command_queue command_queue);
     virtual cl_semaphore_khr &getCLSemaphore() = 0;
-    virtual ~clExternalSemaphore() noexcept(false) = 0;
+    virtual ~clExternalSemaphore() = 0;
 };
 
 
@@ -138,7 +138,7 @@ public:
         const VulkanSemaphore &deviceSemaphore, cl_context context,
         VulkanExternalSemaphoreHandleType externalSemaphoreHandleType,
         cl_device_id deviceId);
-    ~clExternalImportableSemaphore() noexcept(false) override;
+    ~clExternalImportableSemaphore() override;
     int wait(cl_command_queue command_queue) override;
     cl_semaphore_khr &getCLSemaphore() override;
 };
@@ -158,7 +158,7 @@ public:
         const VulkanSemaphore &deviceSemaphore, cl_context context,
         VulkanExternalSemaphoreHandleType externalSemaphoreHandleType,
         cl_device_id deviceId);
-    ~clExternalExportableSemaphore() noexcept(false) override;
+    ~clExternalExportableSemaphore() override;
     int signal(cl_command_queue command_queue) override;
     cl_semaphore_khr &getCLSemaphore() override;
 };
