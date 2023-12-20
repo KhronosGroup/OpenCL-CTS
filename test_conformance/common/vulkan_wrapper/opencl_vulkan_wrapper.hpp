@@ -119,7 +119,7 @@ public:
     virtual int signal(cl_command_queue command_queue);
     virtual int wait(cl_command_queue command_queue);
     virtual cl_semaphore_khr &getCLSemaphore() = 0;
-    virtual ~clExternalSemaphore() noexcept(false) = default;
+    virtual ~clExternalSemaphore() noexcept(false) = 0;
 };
 
 

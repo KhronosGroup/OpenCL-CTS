@@ -757,6 +757,8 @@ int clExternalSemaphore::wait(cl_command_queue cmd_queue)
     return CL_INVALID_OPERATION;
 }
 
+clExternalSemaphore::~clExternalSemaphore() noexcept(false) = default;
+
 clExternalImportableSemaphore::clExternalImportableSemaphore(
     const VulkanSemaphore &semaphore, cl_context context,
     VulkanExternalSemaphoreHandleType externalSemaphoreHandleType,
