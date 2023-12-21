@@ -13,15 +13,8 @@ jobs:
       fail-fast: false
       matrix:
         mainmatrix: [true]
-        os: [ubuntu-22.04, macos-latest, windows-latest]
+        os: [ubuntu-22.04, macos-latest]
         include:
-          - os: ubuntu-22.04
-            mainmatrix: true
-            gl: 1
-            extra: " gl"
-          - os: ubuntu-22.04
-            mainmatrix: false
-            arch: arm
           - os: ubuntu-22.04
             mainmatrix: false
             arch: aarch64

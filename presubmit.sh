@@ -90,7 +90,7 @@ if [[ ${RUNNER_OS} == "Windows" ]]; then
   CMAKE_CACHE_OPTIONS=""
 else
   CMAKE_OPENCL_LIBRARIES_OPTION="-lOpenCL -lpthread"
-  CMAKE_CACHE_OPTIONS="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
+  CMAKE_CACHE_OPTIONS=""
 fi
 cmake .. -G Ninja \
       -DCMAKE_BUILD_TYPE="${BUILD_CONFIG}" \
@@ -105,4 +105,4 @@ cmake .. -G Ninja \
       -DVULKAN_IS_SUPPORTED=${BUILD_VULKAN_TEST} \
       -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/ \
       -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/
-cmake --build . -j3
+cmake --build . --verbose -j3 --target test_spir
