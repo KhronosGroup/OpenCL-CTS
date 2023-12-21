@@ -549,7 +549,7 @@ template <typename Ty, ShuffleOp operation> struct SHF
                         if (!compare(rr, tr))
                         {
                             log_error("ERROR: sub_group_%s(%s) mismatch for "
-                                      "local id %d in sub group %d in group "
+                                      "local id %zu in sub group %zu in group "
                                       "%d\n",
                                       operation_names(operation),
                                       TypeManager<Ty>::name(), i, j, k);

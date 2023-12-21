@@ -126,8 +126,10 @@ int launch_kernels_and_verify(clContextWrapper &context, clCommandQueueWrapper* 
   // each device and the host inserted all of the pixels, check that none are missing.
   if(num_items != num_pixels * (num_devices + 1) )
   {
-    log_error("The hash table is not correct, num items %d, expected num items: %d\n", num_items, num_pixels * (num_devices + 1));
-    return -1; // test did not pass
+      log_error("The hash table is not correct, num items %d, expected num "
+                "items: %zu\n",
+                num_items, num_pixels * (num_devices + 1));
+      return -1; // test did not pass
   }
   return 0;
 }

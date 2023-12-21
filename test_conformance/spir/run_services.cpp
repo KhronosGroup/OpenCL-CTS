@@ -762,7 +762,9 @@ bool compare_results( const TestResult& lhs, const TestResult& rhs, float ulps )
     {
         if( ! lhs.kernelArgs().getArg(i)->compare( *rhs.kernelArgs().getArg(i), ulps ) )
         {
-            log_error("the kernel parameter (%d) is different between SPIR and CL version of the kernel\n", i);
+            log_error("the kernel parameter (%zu) is different between SPIR "
+                      "and CL version of the kernel\n",
+                      i);
             return false;
         }
     }

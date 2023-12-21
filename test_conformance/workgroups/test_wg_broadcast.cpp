@@ -76,7 +76,9 @@ verify_wg_broadcast_1D(float *inptr, float *outptr, size_t n, size_t wg_size)
         {
             if ( broadcast_result != outptr[i+j] )
             {
-                log_info("work_group_broadcast: Error at %u: expected = %f, got = %f\n", i+j, broadcast_result, outptr[i+j]);
+                log_info("work_group_broadcast: Error at %zu: expected = %f, "
+                         "got = %f\n",
+                         i + j, broadcast_result, outptr[i + j]);
                 return -1;
             }
         }
@@ -107,7 +109,10 @@ verify_wg_broadcast_2D(float *inptr, float *outptr, size_t nx, size_t ny, size_t
                     size_t indx = (i + _i) * nx + (j + _j);
                     if ( broadcast_result != outptr[indx] )
                     {
-                        log_info("work_group_broadcast: Error at (%u, %u): expected = %f, got = %f\n", j+_j, i+_i, broadcast_result, outptr[indx]);
+                        log_info("work_group_broadcast: Error at (%zu, %zu): "
+                                 "expected = %f, got = %f\n",
+                                 j + _j, i + _i, broadcast_result,
+                                 outptr[indx]);
                         return -1;
                     }
                 }
@@ -146,7 +151,10 @@ verify_wg_broadcast_3D(float *inptr, float *outptr, size_t nx, size_t ny, size_t
                             size_t indx = (i + _i) * ny * nx + (j + _j) * nx + (k + _k);
                             if ( broadcast_result != outptr[indx] )
                             {
-                                log_info("work_group_broadcast: Error at (%u, %u, %u): expected = %f, got = %f\n", k+_k, j+_j, i+_i, broadcast_result, outptr[indx]);
+                                log_info("work_group_broadcast: Error at (%zu, "
+                                         "%zu, %zu): expected = %f, got = %f\n",
+                                         k + _k, j + _j, i + _i,
+                                         broadcast_result, outptr[indx]);
                                 return -1;
                             }
                         }
