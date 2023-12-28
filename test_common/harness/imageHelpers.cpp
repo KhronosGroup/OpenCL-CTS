@@ -311,7 +311,8 @@ uint32_t get_pixel_size(const cl_image_format *format)
         case CL_UNORM_INT_101010_REV:
 #endif
             return 4;
-
+        case CL_UNSIGNED_INT_RAW10_EXT:
+        case CL_UNSIGNED_INT_RAW12_EXT: return 2;
         case CL_FLOAT:
             return get_format_channel_count(format) * sizeof(cl_float);
 
