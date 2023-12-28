@@ -347,48 +347,6 @@ void read_image_pixel(void *imageData, image_descriptor *imageInfo, int x,
             break;
         }
 
-#ifdef OBSOLETE_FORMAT
-        case CL_UNORM_SHORT_565_REV: {
-            unsigned short *dPtr = (unsigned short *)ptr;
-            tempData[2] = (T)(dPtr[0] >> 11);
-            tempData[1] = (T)((dPtr[0] >> 5) & 63);
-            tempData[0] = (T)(dPtr[0] & 31);
-            break;
-        }
-
-        case CL_UNORM_SHORT_555_REV: {
-            unsigned short *dPtr = (unsigned short *)ptr;
-            tempData[2] = (T)((dPtr[0] >> 10) & 31);
-            tempData[1] = (T)((dPtr[0] >> 5) & 31);
-            tempData[0] = (T)(dPtr[0] & 31);
-            break;
-        }
-
-        case CL_UNORM_INT_8888: {
-            unsigned int *dPtr = (unsigned int *)ptr;
-            tempData[3] = (T)(dPtr[0] >> 24);
-            tempData[2] = (T)((dPtr[0] >> 16) & 0xff);
-            tempData[1] = (T)((dPtr[0] >> 8) & 0xff);
-            tempData[0] = (T)(dPtr[0] & 0xff);
-            break;
-        }
-        case CL_UNORM_INT_8888_REV: {
-            unsigned int *dPtr = (unsigned int *)ptr;
-            tempData[0] = (T)(dPtr[0] >> 24);
-            tempData[1] = (T)((dPtr[0] >> 16) & 0xff);
-            tempData[2] = (T)((dPtr[0] >> 8) & 0xff);
-            tempData[3] = (T)(dPtr[0] & 0xff);
-            break;
-        }
-
-        case CL_UNORM_INT_101010_REV: {
-            unsigned int *dPtr = (unsigned int *)ptr;
-            tempData[2] = (T)((dPtr[0] >> 20) & 0x3ff);
-            tempData[1] = (T)((dPtr[0] >> 10) & 0x3ff);
-            tempData[0] = (T)(dPtr[0] & 0x3ff);
-            break;
-        }
-#endif
         case CL_UNORM_SHORT_555: {
             cl_ushort *dPtr = (cl_ushort *)ptr;
             tempData[0] = (T)((dPtr[0] >> 10) & 31);
