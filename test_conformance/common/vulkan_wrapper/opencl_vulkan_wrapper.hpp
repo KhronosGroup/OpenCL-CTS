@@ -163,7 +163,8 @@ public:
     cl_semaphore_khr &getCLSemaphore() override;
 };
 
-extern void init_cl_vk_ext(cl_platform_id);
+extern void init_cl_vk_ext(cl_platform_id, cl_uint num_devices,
+                           cl_device_id *deviceIds);
 
 VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
     cl_device_id deviceId,

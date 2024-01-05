@@ -36,7 +36,8 @@ pfnclReleaseSemaphoreKHR clReleaseSemaphoreKHRptr;
 pfnclGetSemaphoreHandleForTypeKHR clGetSemaphoreHandleForTypeKHRptr;
 pfnclReImportSemaphoreSyncFdKHR clReImportSemaphoreSyncFdKHRptr;
 
-void init_cl_vk_ext(cl_platform_id opencl_platform)
+void init_cl_vk_ext(cl_platform_id opencl_platform, cl_uint num_devices,
+                    cl_device_id *deviceIds)
 {
     clEnqueueWaitSemaphoresKHRptr =
         (pfnclEnqueueWaitSemaphoresKHR)clGetExtensionFunctionAddressForPlatform(
@@ -81,13 +82,19 @@ void init_cl_vk_ext(cl_platform_id opencl_platform)
                                  "clGetSemaphoreHandleForTypeKHRptr!");
     }
 
+    // Required only if cl_khr_external_semaphore_sync_fd is reported
     clReImportSemaphoreSyncFdKHRptr = (pfnclReImportSemaphoreSyncFdKHR)
         clGetExtensionFunctionAddressForPlatform(
             opencl_platform, "clReImportSemaphoreSyncFdKHR");
-    if (NULL == clReImportSemaphoreSyncFdKHRptr)
+    for (cl_uint i = 0; i < num_devices; i++)
     {
-        throw std::runtime_error("Failed to get the function pointer of "
-                                 "clReImportSemaphoreSyncFdKHRptr!");
+        if (is_extension_available(deviceIds[i],
+                                   "cl_khr_external_semaphore_sync_fd")
+            && (NULL == clReImportSemaphoreSyncFdKHRptr))
+        {
+            throw std::runtime_error("Failed to get the function pointer of "
+                                     "clReImportSemaphoreSyncFdKHR!");
+        }
     }
 }
 
