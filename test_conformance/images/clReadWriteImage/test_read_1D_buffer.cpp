@@ -56,7 +56,7 @@ int test_read_image_1D_buffer(cl_context context, cl_command_queue queue,
     if (gDebugTrace) log_info(" - Writing image...\n");
 
     size_t origin[3] = { 0, 0, 0 };
-    size_t region[3] = { 0, 1, 1 };
+    size_t region[3] = { imageInfo->width, 1, 1 };
     size_t fullImageSize = imageInfo->rowPitch;
 
     BufferOwningPtr<char> resultValues(malloc(fullImageSize));
