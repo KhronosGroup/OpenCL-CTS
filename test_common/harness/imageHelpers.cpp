@@ -775,7 +775,7 @@ void get_max_sizes(
         size_t M = maximum_sizes[0];
         size_t A = max_pixels;
 
-        M = static_cast<size_t>(fmin(A / M, M));
+        M = static_cast<size_t>(fmax(1, fmin(A / M, M)));
 
         // Store the size
         sizes[(*numberOfSizes)][0] = M;
