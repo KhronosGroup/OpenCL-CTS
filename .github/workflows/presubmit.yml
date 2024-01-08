@@ -38,11 +38,14 @@ jobs:
           sudo apt-get -y install libglu1-mesa-dev freeglut3-dev mesa-common-dev libglew-dev
       - name: Setup MSVC with Ninja
         uses: ilammy/msvc-dev-cmd@v1
+      - name: Get System Info
+        uses: kenchan0130/actions-system-info@master
+        id: system-info
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           variant: sccache
-          key: ${{ matrix.os }}-${{ matrix.arch }}
+          key: ${{ matrix.os }}-${{ steps.system-info.outputs.release }}-${{ matrix.arch }}
       - name: Fetch OpenCL Headers
         shell: bash
         run: |
