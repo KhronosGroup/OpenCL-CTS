@@ -6,7 +6,6 @@ set (SPIR_SOURCES
     run_build_test.cpp
     run_services.cpp
     kernelargs.cpp
-    ../math_brute_force/function_list.cpp
 )
 
 add_executable(${SPIR_OUT}
@@ -17,9 +16,6 @@ if(UNIX)
 elseif(MSVC)
     target_compile_options(${SPIR_OUT} PRIVATE /GR /EHs /EHc)
 endif()
-
-# Import function list from math_brute_force
-target_compile_definitions(${SPIR_OUT} PRIVATE FUNCTION_LIST_ULPS_ONLY)
 
 target_link_libraries(${SPIR_OUT} harness ${CLConform_LIBRARIES})
 
