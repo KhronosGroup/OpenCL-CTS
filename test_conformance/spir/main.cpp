@@ -13,6 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+// Import function list from math_brute_force
+#define FUNCTION_LIST_ULPS_ONLY
+#include "../math_brute_force/function_list.cpp"
+
 #include "harness/compat.h"
 
 #include <stdio.h>
