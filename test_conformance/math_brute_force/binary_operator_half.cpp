@@ -198,7 +198,6 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
             if (p2j < 0x2000 || p2j > 0x5800) p2[idx] = 0x7e00;
         }
     }
-
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
                                       buffer_size, p, 0, NULL, NULL)))
     {
@@ -374,8 +373,8 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                         double correct2, correct3;
                         float err2, err3;
 
-                        correct2 = HTF(func.f_ff(0.0, s2[j]));
-                        correct3 = HTF(func.f_ff(-0.0, s2[j]));
+                        correct2 = func.f_ff(0.0, s2[j]);
+                        correct3 = func.f_ff(-0.0, s2[j]);
 
                         // Per section 10 paragraph 6, accept any result if an
                         // input or output is a infinity or NaN or overflow
@@ -407,16 +406,17 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                             if (!fail) err = 0.0f;
                         }
 
+
                         // try with both args as zero
                         if (IsHalfSubnormal(p2[j]))
                         {
                             double correct4, correct5;
                             float err4, err5;
 
-                            correct2 = HTF(func.f_ff(0.0, 0.0));
-                            correct3 = HTF(func.f_ff(-0.0, 0.0));
-                            correct4 = HTF(func.f_ff(0.0, -0.0));
-                            correct5 = HTF(func.f_ff(-0.0, -0.0));
+                            correct2 = func.f_ff(0.0, 0.0);
+                            correct3 = func.f_ff(-0.0, 0.0);
+                            correct4 = func.f_ff(0.0, -0.0);
+                            correct5 = func.f_ff(-0.0, -0.0);
 
                             // Per section 10 paragraph 6, accept any result if
                             // an input or output is a infinity or NaN or
@@ -466,8 +466,9 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                         double correct2, correct3;
                         float err2, err3;
 
-                        correct2 = HTF(func.f_ff(s[j], 0.0));
-                        correct3 = HTF(func.f_ff(s[j], -0.0));
+                        correct2 = func.f_ff(s[j], 0.0);
+                        correct3 = func.f_ff(s[j], -0.0);
+
 
                         // Per section 10 paragraph 6, accept any result if an
                         // input or output is a infinity or NaN or overflow
