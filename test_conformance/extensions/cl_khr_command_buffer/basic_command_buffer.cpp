@@ -419,6 +419,62 @@ struct InterleavedEnqueueTest : public BasicCommandBufferTest
     }
 };
 
+// Test correct error code is returned from invalid usage of a returned
+// command handle from a command appending entry-point.
+struct InvalidCommandHandleTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int SetUp(int elements) override
+    {
+        mutable_dispatch_support = is_extension_available(
+            device, "cl_khr_command_buffer_mutable_dispatch");
+
+        return BasicCommandBufferTest::SetUp(elements);
+    }
+
+    cl_int Run() override
+    {
+        cl_mutable_command_khr kernel_command = nullptr;
+        cl_int error = clCommandNDRangeKernelKHR(
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
+            nullptr, 0, nullptr, nullptr, &kernel_command);
+
+        if (mutable_dispatch_support)
+        {
+            test_error(error, "clCommandNDRangeKernelKHRfailed");
+        }
+        else
+        {
+            test_failure_error_ret(error, CL_INVALID_VALUE,
+                                   "clCommandNDRangeKernelKHR should return "
+                                   "CL_INVALID_VALUE when an "
+                                   "output mutable handle is passed without "
+                                   "any layered extensions.",
+                                   TEST_FAIL);
+        }
+
+        const cl_int pattern = 42;
+        cl_mutable_command_khr fill_command = nullptr;
+        error = clCommandFillBufferKHR(
+            command_buffer, nullptr, in_mem, &pattern, sizeof(cl_int), 0,
+            sizeof(cl_int), 0, nullptr, nullptr, &fill_command);
+
+        test_failure_error_ret(
+            error, CL_INVALID_VALUE,
+            "clCommandFillBufferKHR should return CL_INVALID_VALUE when an "
+            "output mutable handle is passed without any layered extensions.",
+            TEST_FAIL);
+
+        return CL_SUCCESS;
+    }
+
+    bool Skip() override { return BasicCommandBufferTest::Skip(); }
+
+    bool mutable_dispatch_support = false;
+};
+
+
 } // anonymous namespace
 
 int test_single_ndrange(cl_device_id device, cl_context context,
@@ -447,4 +503,11 @@ int test_explicit_flush(cl_device_id device, cl_context context,
 {
     return MakeAndRunTest<ExplicitFlushTest>(device, context, queue,
                                              num_elements);
+}
+
+int test_invalid_command_handle(cl_device_id device, cl_context context,
+                                cl_command_queue queue, int num_elements)
+{
+    return MakeAndRunTest<InvalidCommandHandleTest>(device, context, queue,
+                                                    num_elements);
 }
