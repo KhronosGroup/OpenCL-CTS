@@ -754,16 +754,6 @@ clExternalMemoryImage::clExternalMemoryImage() {}
 // clExternalSemaphore implementation //
 //////////////////////////////////////////
 
-int clExternalSemaphore::signal(cl_command_queue cmd_queue)
-{
-    return CL_INVALID_OPERATION;
-}
-
-int clExternalSemaphore::wait(cl_command_queue cmd_queue)
-{
-    return CL_INVALID_OPERATION;
-}
-
 clExternalSemaphore::~clExternalSemaphore() = default;
 
 clExternalImportableSemaphore::clExternalImportableSemaphore(
@@ -886,6 +876,12 @@ int clExternalImportableSemaphore::wait(cl_command_queue cmd_queue)
     return err;
 }
 
+int clExternalImportableSemaphore::signal(cl_command_queue cmd_queue)
+{
+    return clEnqueueSignalSemaphoresKHRptr(cmd_queue, 1, &m_externalSemaphore,
+                                           NULL, 0, NULL, NULL);
+}
+
 cl_semaphore_khr &clExternalImportableSemaphore::getCLSemaphore()
 {
     return m_externalSemaphore;
@@ -981,6 +977,12 @@ int clExternalExportableSemaphore::signal(cl_command_queue cmd_queue)
     }
 
     return err;
+}
+
+int clExternalExportableSemaphore::wait(cl_command_queue command_queue)
+{
+    return clEnqueueWaitSemaphoresKHRptr(command_queue, 1, &m_externalSemaphore,
+                                         NULL, 0, NULL, nullptr);
 }
 
 cl_semaphore_khr &clExternalExportableSemaphore::getCLSemaphore()
