@@ -237,8 +237,8 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
             for (size_t j = 0; j < bufferElements; j++)
             {
                 feclearexcept(FE_OVERFLOW);
-                res[j] = HFF((float)f->func.f_fma(
-                    HTF(hp0[j]), HTF(hp1[j]), HTF(hp2[j]), CORRECTLY_ROUNDED));
+                res[j] = HFD((double)f->dfunc.f_fff(HTF(hp0[j]), HTF(hp1[j]),
+                                                    HTF(hp2[j])));
                 overflow[j] =
                     FE_OVERFLOW == (FE_OVERFLOW & fetestexcept(FE_OVERFLOW));
             }
@@ -246,8 +246,8 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
         else
         {
             for (size_t j = 0; j < bufferElements; j++)
-                res[j] = HFF((float)f->func.f_fma(
-                    HTF(hp0[j]), HTF(hp1[j]), HTF(hp2[j]), CORRECTLY_ROUNDED));
+                res[j] = HFD((double)f->dfunc.f_fff(HTF(hp0[j]), HTF(hp1[j]),
+                                                    HTF(hp2[j])));
         }
 
         // Read the data back
@@ -277,9 +277,9 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                 {
                     int fail;
                     cl_half test = ((cl_half *)q)[j];
-                    float ref1 = f->func.f_fma(HTF(hp0[j]), HTF(hp1[j]),
-                                               HTF(hp2[j]), CORRECTLY_ROUNDED);
-                    cl_half correct = HFF(ref1);
+                    double ref1 = (double)f->dfunc.f_fff(
+                        HTF(hp0[j]), HTF(hp1[j]), HTF(hp2[j]));
+                    cl_half correct = HFD(ref1);
 
                     // Per section 10 paragraph 6, accept any result if an input
                     // or output is a infinity or NaN or overflow
