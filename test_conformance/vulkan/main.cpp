@@ -136,13 +136,6 @@ int test_image_single_queue(cl_device_id device_, cl_context context_,
     log_info("RUNNING TEST WITH ONE QUEUE...... \n\n");
     return test_image_common(device_, context_, queue_, numElements_);
 }
-int test_image_single_queue_for_3dimage(cl_device_id device_, cl_context context_,
-                            cl_command_queue queue_, int numElements_)
-{
-    params_reset();
-    log_info("RUNNING TEST WITH ONE QUEUE...... \n\n");
-    return test_image_common_3dimage(device_, context_, queue_, numElements_);
-}
 int test_image_multiple_queue(cl_device_id device_, cl_context context_,
                               cl_command_queue queue_, int numElements_)
 {
