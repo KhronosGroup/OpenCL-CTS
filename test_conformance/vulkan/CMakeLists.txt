@@ -9,8 +9,13 @@ set(CMAKE_CXX_FLAGS "-fpermissive")
 if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
 endif(WIN32)
-
-set (CLConform_VULKAN_LIBRARIES_DIR "${VULKAN_LIB_DIR}")
+if(MSVC)
+    set (CLConform_VULKAN_LIBRARIES_DIR "${VULKAN_LIB_DIR}/${ARCH}_win32")
+elseif(MINGW)
+    set (CLConform_VULKAN_LIBRARIES_DIR "${VULKAN_LIB_DIR}/${ARCH}_mingw")
+else(MSVC)
+    set (CLConform_VULKAN_LIBRARIES_DIR "${VULKAN_LIB_DIR}/${ARCH}_Linux")
+endif(MSVC)
 
 link_directories(${CLConform_VULKAN_LIBRARIES_DIR})
 
@@ -25,6 +30,8 @@ set (${MODULE_NAME}_SOURCES
         test_vulkan_interop_buffer.cpp
         test_vulkan_interop_image.cpp
         test_vulkan_api_consistency.cpp
+        test_vulkan_api_consistency_for_3dimages.cpp
+        test_vulkan_api_consistency_for_1dimages.cpp
         test_vulkan_platform_device_info.cpp
         vulkan_interop_common.cpp
         ../../test_common/harness/genericThread.cpp
@@ -43,4 +50,7 @@ set_source_files_properties(
     PROPERTIES LANGUAGE CXX)
 include_directories("../common/vulkan_wrapper")
 
+if(BUILD_SPIRV_AT_COMPILE_TIME)
+    include(shaders/CMakeLists.txt)
+endif(BUILD_SPIRV_AT_COMPILE_TIME)
 include(../CMakeCommon.txt)

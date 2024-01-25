@@ -44,7 +44,9 @@ class VulkanBuffer;
 class VulkanOffset3D;
 class VulkanExtent3D;
 class VulkanImage;
+class VulkanImage1D;
 class VulkanImage2D;
+class VulkanImage3D;
 class VulkanImageView;
 class VulkanDeviceMemory;
 class VulkanSemaphore;
@@ -60,6 +62,7 @@ class VulkanCommandBufferList;
 class VulkanDescriptorSetLayoutList;
 class VulkanBufferList;
 class VulkanImage2DList;
+class VulkanImage3DList;
 class VulkanImageViewList;
 class VulkanDeviceMemoryList;
 class VulkanSemaphoreList;
@@ -167,6 +170,9 @@ enum VulkanExternalSemaphoreHandleType
         VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,
     VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT =
         VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR,
+    VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT_KMT =
+        VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
+        | VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR,
     VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD =
         VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR
 };

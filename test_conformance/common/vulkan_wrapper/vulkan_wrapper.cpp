@@ -303,9 +303,11 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice vkPhysicalDevice)
     for (size_t qfpIdx = 0; qfpIdx < vkQueueFamilyPropertiesList.size();
          qfpIdx++)
     {
-        VulkanQueueFamily *queueFamily = new VulkanQueueFamily(
-            uint32_t(qfpIdx), vkQueueFamilyPropertiesList[qfpIdx]);
-        m_queueFamilyList.add(*queueFamily);
+        if (isQueueFamilyRequired(vkQueueFamilyPropertiesList[qfpIdx])) {
+            VulkanQueueFamily *queueFamily = new VulkanQueueFamily(
+                uint32_t(qfpIdx), vkQueueFamilyPropertiesList[qfpIdx]);
+            m_queueFamilyList.add(*queueFamily);
+        }
     }
 
     vkGetPhysicalDeviceMemoryProperties(m_vkPhysicalDevice,
@@ -335,16 +337,6 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice vkPhysicalDevice)
             memoryHeap);
         m_memoryTypeList.add(*memoryType);
     }
-
-    uint32_t num_extensions = 0;
-    vkEnumerateDeviceExtensionProperties(m_vkPhysicalDevice, nullptr,
-                                         &num_extensions, nullptr);
-    if (num_extensions)
-    {
-        m_extensions.resize(num_extensions);
-        vkEnumerateDeviceExtensionProperties(
-            m_vkPhysicalDevice, nullptr, &num_extensions, m_extensions.data());
-    }
 }
 
 VulkanPhysicalDevice::~VulkanPhysicalDevice()
@@ -368,6 +360,11 @@ VulkanPhysicalDevice::~VulkanPhysicalDevice()
     }
 }
 
+bool VulkanPhysicalDevice::isQueueFamilyRequired(
+    VkQueueFamilyProperties &vkQueueFamilyProperties, uint32_t queueFlags)
+{
+    return (vkQueueFamilyProperties.queueFlags & queueFlags) == queueFlags;
+}
 
 const VulkanQueueFamilyList &VulkanPhysicalDevice::getQueueFamilyList() const
 {
@@ -396,18 +393,6 @@ uint32_t VulkanPhysicalDevice::getNodeMask() const
 VulkanPhysicalDevice::operator VkPhysicalDevice() const
 {
     return m_vkPhysicalDevice;
-}
-
-bool VulkanPhysicalDevice::hasExtension(const char *extension_name) const
-{
-    for (const auto &m_extension : m_extensions)
-    {
-        if (!strcmp(m_extension.extensionName, extension_name))
-        {
-            return true;
-        }
-    }
-    return false;
 }
 
 bool operator<(const VulkanQueueFamily &queueFamilyA,
@@ -518,18 +503,19 @@ VulkanDevice::VulkanDevice(
     : m_physicalDevice(physicalDevice), m_vkDevice(NULL)
 {
     uint32_t maxQueueCount = 0;
-    for (uint32_t qfIdx = 0;
-         qfIdx < (uint32_t)physicalDevice.getQueueFamilyList().size(); qfIdx++)
+    uint32_t qfIdx;
+    const VulkanQueueFamilyList &queueFamilyList = physicalDevice.getQueueFamilyList();
+    for (uint32_t listIdx = 0; listIdx < queueFamilyList.size(); listIdx++)
     {
         maxQueueCount =
-            std::max(maxQueueCount, queueFamilyToQueueCountMap[qfIdx]);
+            std::max(maxQueueCount, queueFamilyToQueueCountMap[queueFamilyList[listIdx]]);
     }
 
     std::vector<VkDeviceQueueCreateInfo> vkDeviceQueueCreateInfoList;
     std::vector<float> queuePriorities(maxQueueCount);
-    for (uint32_t qfIdx = 0;
-         qfIdx < (uint32_t)physicalDevice.getQueueFamilyList().size(); qfIdx++)
+    for (uint32_t listIdx = 0; listIdx < queueFamilyList.size(); listIdx++)
     {
+        qfIdx = queueFamilyList[listIdx];
         if (queueFamilyToQueueCountMap[qfIdx])
         {
             VkDeviceQueueCreateInfo vkDeviceQueueCreateInfo = {};
@@ -580,10 +566,9 @@ VulkanDevice::VulkanDevice(
 
     vkCreateDevice(physicalDevice, &vkDeviceCreateInfo, NULL, &m_vkDevice);
 
-    for (uint32_t qfIdx = 0;
-         qfIdx < (uint32_t)m_physicalDevice.getQueueFamilyList().size();
-         qfIdx++)
+    for (uint32_t listIdx = 0; listIdx < queueFamilyList.size(); listIdx++)
     {
+        qfIdx = queueFamilyList[listIdx];
         VulkanQueueList *queueList = new VulkanQueueList();
         m_queueFamilyIndexToQueueListMap.insert(qfIdx, *queueList);
         for (uint32_t qIdx = 0; qIdx < queueFamilyToQueueCountMap[qfIdx];
@@ -599,10 +584,11 @@ VulkanDevice::VulkanDevice(
 
 VulkanDevice::~VulkanDevice()
 {
-    for (uint32_t qfIdx = 0;
-         qfIdx < (uint32_t)m_physicalDevice.getQueueFamilyList().size();
-         qfIdx++)
+    uint32_t qfIdx;
+    const VulkanQueueFamilyList &queueFamilyList = m_physicalDevice.getQueueFamilyList();
+    for (uint32_t listIdx = 0; listIdx < queueFamilyList.size(); listIdx++)
     {
+        qfIdx = queueFamilyList[listIdx];
         for (size_t qIdx = 0;
              qIdx < m_queueFamilyIndexToQueueListMap[qfIdx].size(); qIdx++)
         {
@@ -1811,6 +1797,36 @@ const VulkanMemoryTypeList &VulkanImage::getMemoryTypeList() const
 VulkanImage::operator VkImage() const { return m_vkImage; }
 
 //////////////////////////////////
+// VulkanImage1D implementation //
+//////////////////////////////////
+
+VulkanImage1D::VulkanImage1D(const VulkanImage1D &image1D): VulkanImage(image1D)
+{}
+
+VulkanImage1D::VulkanImage1D(
+    const VulkanDevice &device, VulkanFormat format, uint32_t width,
+    VulkanImageTiling imageTiling, uint32_t numMipLevels,
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
+    VulkanSharingMode sharingMode)
+    : VulkanImage(device, VULKAN_IMAGE_TYPE_1D, format,
+                  VulkanExtent3D(width, 1, 1), numMipLevels, 1,
+                  externalMemoryHandleType, imageCreateFlag, imageTiling,
+                  imageUsage, sharingMode)
+{}
+
+VulkanImage1D::~VulkanImage1D() {}
+
+VulkanExtent3D VulkanImage1D::getExtent3D(uint32_t mipLevel) const
+{
+    uint32_t width = std::max(m_extent3D.getWidth() >> mipLevel, uint32_t(1));
+    uint32_t height = 1;
+    uint32_t depth = 1;
+
+    return VulkanExtent3D(width, height, depth);
+}
+
+//////////////////////////////////
 // VulkanImage2D implementation //
 //////////////////////////////////
 
@@ -1836,6 +1852,37 @@ VulkanExtent3D VulkanImage2D::getExtent3D(uint32_t mipLevel) const
     uint32_t width = std::max(m_extent3D.getWidth() >> mipLevel, uint32_t(1));
     uint32_t height = std::max(m_extent3D.getHeight() >> mipLevel, uint32_t(1));
     uint32_t depth = 1;
+
+    return VulkanExtent3D(width, height, depth);
+}
+
+
+//////////////////////////////////
+// VulkanImage3D implementation //
+//////////////////////////////////
+
+VulkanImage3D::VulkanImage3D(const VulkanImage3D &image3D): VulkanImage(image3D)
+{}
+
+VulkanImage3D::VulkanImage3D(
+    const VulkanDevice &device, VulkanFormat format, uint32_t width,
+    uint32_t height, uint32_t depth, VulkanImageTiling imageTiling, uint32_t numMipLevels,
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
+    VulkanSharingMode sharingMode)
+    : VulkanImage(device, VULKAN_IMAGE_TYPE_3D, format,
+                  VulkanExtent3D(width, height, depth), numMipLevels, 1,
+                  externalMemoryHandleType, imageCreateFlag, imageTiling,
+                  imageUsage, sharingMode)
+{}
+
+VulkanImage3D::~VulkanImage3D() {}
+
+VulkanExtent3D VulkanImage3D::getExtent3D(uint32_t mipLevel) const
+{
+    uint32_t width = std::max(m_extent3D.getWidth() >> mipLevel, uint32_t(1));
+    uint32_t height = std::max(m_extent3D.getHeight() >> mipLevel, uint32_t(1));
+    uint32_t depth = std::max(m_extent3D.getDepth() >> mipLevel, uint32_t(1));
 
     return VulkanExtent3D(width, height, depth);
 }
@@ -2278,8 +2325,6 @@ VulkanSemaphore::VulkanSemaphore(
     vkCreateSemaphore(m_device, &vkSemaphoreCreateInfo, NULL, &m_vkSemaphore);
 }
 
-const VulkanDevice &VulkanSemaphore::getDevice() const { return m_device; }
-
 VulkanSemaphore::~VulkanSemaphore()
 {
     vkDestroySemaphore(m_device, m_vkSemaphore, NULL);
@@ -2320,23 +2365,6 @@ int VulkanSemaphore::getHandle(
         vkSemaphoreGetFdInfoKHR.semaphore = m_vkSemaphore;
         vkSemaphoreGetFdInfoKHR.handleType =
             VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
-
-        vkGetSemaphoreFdKHR(m_device, &vkSemaphoreGetFdInfoKHR, &fd);
-
-        return fd;
-    }
-    else if (externalSemaphoreHandleType
-             == VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD)
-    {
-        int fd;
-
-        VkSemaphoreGetFdInfoKHR vkSemaphoreGetFdInfoKHR = {};
-        vkSemaphoreGetFdInfoKHR.sType =
-            VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR;
-        vkSemaphoreGetFdInfoKHR.pNext = NULL;
-        vkSemaphoreGetFdInfoKHR.semaphore = m_vkSemaphore;
-        vkSemaphoreGetFdInfoKHR.handleType =
-            VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR;
 
         vkGetSemaphoreFdKHR(m_device, &vkSemaphoreGetFdInfoKHR, &fd);
 

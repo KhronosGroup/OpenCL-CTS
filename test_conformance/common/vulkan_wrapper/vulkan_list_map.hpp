@@ -232,6 +232,36 @@ public:
     virtual ~VulkanImage2DList();
 };
 
+class VulkanImage3DList : public VulkanList<VulkanImage3D, VkImage> {
+protected:
+    VulkanImage3DList(const VulkanImage3DList &image3DList);
+
+public:
+    VulkanImage3DList(
+        size_t numImages, std::vector<VulkanDeviceMemory *> &deviceMemory,
+        uint64_t baseOffset, uint64_t interImageOffset,
+        const VulkanDevice &device, VulkanFormat format, uint32_t width,
+        uint32_t height, uint32_t depth, uint32_t mipLevels,
+        VulkanImageTiling vulkanImageTiling,
+        VulkanExternalMemoryHandleType externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
+        VulkanImageCreateFlag imageCreateFlag = VULKAN_IMAGE_CREATE_FLAG_NONE,
+        VulkanImageUsage imageUsage =
+            VULKAN_IMAGE_USAGE_SAMPLED_STORAGE_TRANSFER_SRC_DST,
+        VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
+    VulkanImage3DList(
+        size_t numImages, const VulkanDevice &device, VulkanFormat format,
+        uint32_t width, uint32_t height, uint32_t depth, VulkanImageTiling vulkanImageTiling,
+        uint32_t mipLevels = 1,
+        VulkanExternalMemoryHandleType externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
+        VulkanImageCreateFlag imageCreateFlag = VULKAN_IMAGE_CREATE_FLAG_NONE,
+        VulkanImageUsage imageUsage =
+            VULKAN_IMAGE_USAGE_SAMPLED_STORAGE_TRANSFER_SRC_DST,
+        VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
+    virtual ~VulkanImage3DList();
+};
+
 class VulkanImageViewList : public VulkanList<VulkanImageView, VkImageView> {
 protected:
     VulkanImageViewList(const VulkanImageViewList &imageViewList);
@@ -336,8 +366,6 @@ const VulkanWrapper &
         return (m_wrapperList.size() > 0) ? m_wrapperList[idx].get()
                                           : m_constWrapperList[idx].get();
     }
-
-    throw std::runtime_error("Out of bounds operator access");
 }
 
 template <class VulkanWrapper, class VulkanNative>

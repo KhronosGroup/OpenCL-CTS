@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 
-
 #include <algorithm>
 #include "vulkan_list_map.hpp"
 #include "vulkan_utility.hpp"
@@ -79,19 +78,16 @@ VulkanQueueFamilyToQueueCountMap::VulkanQueueFamilyToQueueCountMap(
 VulkanQueueFamilyToQueueCountMap::VulkanQueueFamilyToQueueCountMap(
     uint32_t numQueuesPerFamily)
 {
-    uint32_t maxQueueFamilyCount = 0;
     const VulkanPhysicalDeviceList &physicalDeviceList =
         getVulkanInstance().getPhysicalDeviceList();
     for (size_t pdIdx = 0; pdIdx < physicalDeviceList.size(); pdIdx++)
     {
-        maxQueueFamilyCount = std::max(
-            maxQueueFamilyCount,
-            (uint32_t)physicalDeviceList[pdIdx].getQueueFamilyList().size());
-    }
-
-    for (uint32_t qfIdx = 0; qfIdx < maxQueueFamilyCount; qfIdx++)
-    {
-        insert(qfIdx, numQueuesPerFamily);
+        const VulkanQueueFamilyList &queueFamilyList =
+            physicalDeviceList[pdIdx].getQueueFamilyList();
+        for (uint32_t qfIdx = 0; qfIdx < queueFamilyList.size(); qfIdx++)
+        {
+            insert(queueFamilyList[qfIdx], numQueuesPerFamily);
+        }
     }
 }
 
@@ -316,6 +312,57 @@ VulkanImage2DList::~VulkanImage2DList()
     {
         VulkanImage2D &image2D = m_wrapperList[i2DIdx];
         delete &image2D;
+    }
+}
+
+//////////////////////////////////////
+// VulkanImage3DList implementation //
+//////////////////////////////////////
+
+VulkanImage3DList::VulkanImage3DList(const VulkanImage3DList &image3DList) {}
+
+VulkanImage3DList::VulkanImage3DList(
+    size_t numImages, std::vector<VulkanDeviceMemory *> &deviceMemory,
+    uint64_t baseOffset, uint64_t interImageOffset, const VulkanDevice &device,
+    VulkanFormat format, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels,
+    VulkanImageTiling vulkanImageTiling,
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
+    VulkanSharingMode sharingMode)
+{
+    for (size_t i2DIdx = 0; i2DIdx < numImages; i2DIdx++)
+    {
+        VulkanImage3D *image3D = new VulkanImage3D(
+            device, format, width, height, depth, vulkanImageTiling, mipLevels,
+            externalMemoryHandleType, imageCreateFlag, imageUsage, sharingMode);
+        add(*image3D);
+        deviceMemory[i2DIdx]->bindImage(
+            *image3D, baseOffset + (i2DIdx * interImageOffset));
+    }
+}
+
+VulkanImage3DList::VulkanImage3DList(
+    size_t numImages, const VulkanDevice &device, VulkanFormat format,
+    uint32_t width, uint32_t height, uint32_t depth, VulkanImageTiling vulkanImageTiling,
+    uint32_t mipLevels, VulkanExternalMemoryHandleType externalMemoryHandleType,
+    VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
+    VulkanSharingMode sharingMode)
+{
+    for (size_t bIdx = 0; bIdx < numImages; bIdx++)
+    {
+        VulkanImage3D *image3D = new VulkanImage3D(
+            device, format, width, height, depth, vulkanImageTiling, mipLevels,
+            externalMemoryHandleType, imageCreateFlag, imageUsage, sharingMode);
+        add(*image3D);
+    }
+}
+
+VulkanImage3DList::~VulkanImage3DList()
+{
+    for (size_t i2DIdx = 0; i2DIdx < m_wrapperList.size(); i2DIdx++)
+    {
+        VulkanImage3D &image3D = m_wrapperList[i2DIdx];
+        delete &image3D;
     }
 }
 

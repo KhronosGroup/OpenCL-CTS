@@ -28,6 +28,18 @@ extern int test_consistency_external_image(cl_device_id device,
                                            cl_context context,
                                            cl_command_queue queue,
                                            int num_elements);
+extern int test_consistency_external_for_3dimage(cl_device_id device,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements);
+extern int test_image_single_queue_for_3dimage(cl_device_id device,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements);
+extern int test_consistency_external_for_1dimage(cl_device_id device,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements);
 extern int test_consistency_external_semaphore(cl_device_id device,
                                                cl_context context,
                                                cl_command_queue queue,
