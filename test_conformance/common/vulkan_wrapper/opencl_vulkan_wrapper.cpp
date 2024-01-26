@@ -579,7 +579,7 @@ clExternalMemory::clExternalMemory(const clExternalMemory &externalMemory)
 clExternalMemory::clExternalMemory(
     const VulkanDeviceMemory *deviceMemory,
     VulkanExternalMemoryHandleType externalMemoryHandleType, uint64_t size,
-    cl_context context, cl_device_id deviceId)
+    cl_context context, cl_device_id deviceId, cl_bool useNameForImport)
 {
     int err = 0;
     m_externalMemory = NULL;
@@ -621,7 +621,7 @@ clExternalMemory::clExternalMemory(
                 ASSERT(0);
 #else
                 const std::wstring &name = deviceMemory->getName();
-                if (name.size())
+                if (name.size() && useNameForImport)
                 {
                     err = check_external_memory_handle_type(
                         devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR);
@@ -684,7 +684,8 @@ clExternalMemoryImage::clExternalMemoryImage(
     const VulkanDeviceMemory &deviceMemory,
     VulkanExternalMemoryHandleType externalMemoryHandleType, cl_context context,
     size_t totalImageMemSize, size_t imageWidth, size_t imageHeight,
-    size_t totalSize, const VulkanImage2D &image2D, cl_device_id deviceId)
+    size_t totalSize, const VulkanImage2D &image2D, cl_device_id deviceId,
+    cl_bool useNameForImport)
 {
     cl_int errcode_ret = 0;
     std::vector<cl_mem_properties> extMemProperties1;
@@ -712,7 +713,7 @@ clExternalMemoryImage::clExternalMemoryImage(
             {
                 log_info("Opaque NT handles are only supported on Windows\n");
                 const std::wstring &name = deviceMemory.getName();
-                if (name.size())
+                if (name.size() && useNameForImport)
                 {
                     errcode_ret = check_external_memory_handle_type(
                         devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR);
@@ -816,7 +817,7 @@ clExternalSemaphore::~clExternalSemaphore() = default;
 clExternalImportableSemaphore::clExternalImportableSemaphore(
     const VulkanSemaphore &semaphore, cl_context context,
     VulkanExternalSemaphoreHandleType externalSemaphoreHandleType,
-    cl_device_id deviceId)
+    cl_device_id deviceId, cl_bool useNameForImport)
     : m_deviceSemaphore(semaphore)
 {
 
@@ -844,6 +845,7 @@ clExternalImportableSemaphore::clExternalImportableSemaphore(
             sema_props.push_back(
                 (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)fd);
+#endif
             break;
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT:
             {
@@ -852,7 +854,7 @@ clExternalImportableSemaphore::clExternalImportableSemaphore(
                 ASSERT(0);
 #else
                 const std::wstring &name = semaphore.getName();
-                if (name.size())
+                if (name.size() && useNameForImport)
                 {
                     err = check_external_semaphore_handle_type(
                         devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_NAME_KHR);
