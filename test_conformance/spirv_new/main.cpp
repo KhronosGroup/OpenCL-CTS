@@ -33,9 +33,12 @@ const std::string slash = "/";
 #endif
 
 const std::string spvExt = ".spv";
+bool gVersionSkip = false;
 std::string gAddrWidth = "";
 std::string spvBinariesPath = "spirv_bin";
-std::string spvBinariesPathArg = "--spirv-binaries-path";
+
+const std::string spvBinariesPathArg = "--spirv-binaries-path";
+const std::string spvVersionSkipArg = "--skip-spirv-version-check";
 
 std::vector<unsigned char> readBinary(const char *file_name)
 {
@@ -227,7 +230,10 @@ test_status InitCL(cl_device_id id)
 
 void printUsage() {
     log_info("Reading SPIR-V files from default '%s' path.\n", spvBinariesPath.c_str());
-    log_info("In case you want to set other directory use '%s' argument.\n", spvBinariesPathArg.c_str());
+    log_info("In case you want to set other directory use '%s' argument.\n",
+             spvBinariesPathArg.c_str());
+    log_info("To skip the SPIR-V version check use the '%s' argument.\n",
+             spvVersionSkipArg.c_str());
 }
 
 int main(int argc, const char *argv[])
@@ -245,6 +251,11 @@ int main(int argc, const char *argv[])
                 argsRemoveNum += 2;
                 modifiedSpvBinariesPath = true;
             }
+        }
+        if (argv[i] == spvVersionSkipArg)
+        {
+            gVersionSkip = true;
+            argsRemoveNum++;
         }
 
         if (argsRemoveNum > 0) {
