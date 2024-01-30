@@ -769,10 +769,11 @@ test_status InitCL(cl_device_id device)
     IsTininessDetectedBeforeRounding();
 
     cl_platform_id platform;
-    int err = clGetPlatformIDs(1, &platform, NULL);
+    int err = clGetDeviceInfo(gDevice, CL_DEVICE_PLATFORM, sizeof(platform),
+                              &platform, NULL);
     if (err)
     {
-        print_error(err, "clGetPlatformIDs failed");
+        print_error(err, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
         return TEST_FAIL;
     }
 
