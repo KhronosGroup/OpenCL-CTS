@@ -46,7 +46,8 @@ class VulkanExtent3D;
 class VulkanImage;
 class VulkanImage1D;
 class VulkanImage2D;
-class VulkanImage3D;class VulkanImageView;
+class VulkanImage3D;
+class VulkanImageView;
 class VulkanDeviceMemory;
 class VulkanSemaphore;
 
