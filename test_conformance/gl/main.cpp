@@ -253,8 +253,7 @@ int main(int argc, const char *argv[])
     // At least one device supports CL-GL interop, so init the test.
     if (glEnv->Init(&argc, (char **)argv, CL_FALSE))
     {
-        log_error(
-            "Failed to initialize the GL environment for this test.\n");
+        log_error("Failed to initialize the GL environment for this test.\n");
         return -1;
     }
 
@@ -333,7 +332,7 @@ int main(int argc, const char *argv[])
 
     // OpenGL 3.2 tests.
     // ////////////////////////////////////////////////////////
-    if ((argc  == 1) || first_32_testname)
+    if ((argc == 1) || first_32_testname)
     {
         // Create a context to use and then grab a device (or devices) from it
         sCurrentContext = glEnv->CreateCLContext();
