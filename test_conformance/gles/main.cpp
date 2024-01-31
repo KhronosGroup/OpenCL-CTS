@@ -171,15 +171,15 @@ int main(int argc, const char *argv[])
     goto cleanup;
   }
 
+  // At least one device supports CL-GL interop, so init the test.
+  if( glEnv->Init( &argc, (char **)argv, CL_FALSE ) ) {
+    log_error("Failed to initialize the GL environment for this test.\n");
+    error = -1;
+    goto cleanup;
+  }
+
   // OpenGL tests for non-3.2 ////////////////////////////////////////////////////////
   if ((argc == 1) || (first_32_testname != 1)) {
-
-    // At least one device supports CL-GL interop, so init the test.
-    if( glEnv->Init( &argc, (char **)argv, CL_FALSE ) ) {
-      log_error("Failed to initialize the GL environment for this test.\n");
-      error = -1;
-      goto cleanup;
-    }
 
     // Create a context to use and then grab a device (or devices) from it
     sCurrentContext = glEnv->CreateCLContext();
@@ -279,19 +279,10 @@ int main(int argc, const char *argv[])
       // We move this to a common cleanup step to make sure that things will be released properly before the test exit
       goto cleanup;
       // clReleaseContext( sCurrentContext );
-      // delete glEnv;
   }
 
   // OpenGL 3.2 tests. ////////////////////////////////////////////////////////
   if ((argc==1) || first_32_testname) {
-
-    // At least one device supports CL-GL interop, so init the test.
-    if( glEnv->Init( &argc, (char **)argv, CL_TRUE ) ) {
-      log_error("Failed to initialize the GL environment for this test.\n");
-      error = -1;
-      goto cleanup;
-    }
-
     // Create a context to use and then grab a device (or devices) from it
     sCurrentContext = glEnv->CreateCLContext();
     if( sCurrentContext == NULL ) {
