@@ -28,8 +28,6 @@
 #include <sstream>
 #include <string>
 
-extern bool gVersionSkip;
-
 template <typename T> struct TestInfo
 {
 };
@@ -114,6 +112,12 @@ static int test_expect_type(cl_device_id device, cl_context context,
 
 TEST_SPIRV_FUNC(op_expect)
 {
+    if (!is_extension_available(deviceID, "cl_khr_expect_assume"))
+    {
+        log_info("cl_khr_expect_assume is not supported; skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
     int result = TEST_PASS;
 
     result |= test_expect_type<cl_char>(deviceID, context, queue);
@@ -125,4 +129,53 @@ TEST_SPIRV_FUNC(op_expect)
     }
 
     return result;
+}
+
+TEST_SPIRV_FUNC(op_assume)
+{
+    if (!is_extension_available(deviceID, "cl_khr_expect_assume"))
+    {
+        log_info("cl_khr_expect_assume is not supported; skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_int error = CL_SUCCESS;
+
+    clMemWrapper dst =
+        clCreateBuffer(context, 0, num_elements * sizeof(cl_int), NULL, &error);
+    test_error(error, "Unable to create destination buffer");
+
+    clProgramWrapper prog;
+    error = get_program_with_il(prog, deviceID, context, "assume");
+    test_error(error, "Unable to build SPIR-V program");
+
+    clKernelWrapper kernel = clCreateKernel(prog, "test_assume", &error);
+    test_error(error, "Unable to create SPIR-V kernel");
+
+    const cl_int value = 42;
+    error |= clSetKernelArg(kernel, 0, sizeof(dst), &dst);
+    error |= clSetKernelArg(kernel, 1, sizeof(value), &value);
+    test_error(error, "Unable to set kernel arguments");
+
+    size_t global = num_elements;
+    error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0,
+                                    NULL, NULL);
+    test_error(error, "Unable to enqueue kernel");
+
+    std::vector<cl_int> h_dst(num_elements);
+    error = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0,
+                                h_dst.size() * sizeof(cl_int), h_dst.data(),
+                                0, NULL, NULL);
+    test_error(error, "Unable to read destination buffer");
+
+    for (int i = 0; i < num_elements; i++)
+    {
+        if (h_dst[i] != value)
+        {
+            log_error("Values do not match at location %d\n", i);
+            return TEST_FAIL;
+        }
+    }
+
+    return TEST_PASS;
 }
