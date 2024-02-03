@@ -61,16 +61,19 @@ static int test_expect_type(cl_device_id device, cl_context context,
     const T value = 42;
     cl_int error = CL_SUCCESS;
 
-    std::vector<size_t> vecSizes({1, 2, 3, 4, 8, 16});
+    std::vector<size_t> vecSizes({ 1, 2, 3, 4, 8, 16 });
     std::vector<T> testData;
     testData.reserve(16 * vecSizes.size());
 
-    for (auto v : vecSizes) {
+    for (auto v : vecSizes)
+    {
         size_t i;
-        for (i = 0; i < v; i++) {
+        for (i = 0; i < v; i++)
+        {
             testData.push_back(value);
         }
-        for (; i < 16; i++) {
+        for (; i < 16; i++)
+        {
             testData.push_back(0);
         }
     }
@@ -84,7 +87,8 @@ static int test_expect_type(cl_device_id device, cl_context context,
     error = get_program_with_il(prog, device, context, TestInfo<T>::testName);
     test_error(error, "Unable to build SPIR-V program");
 
-    clKernelWrapper kernel = clCreateKernel(prog, TestInfo<T>::testName, &error);
+    clKernelWrapper kernel =
+        clCreateKernel(prog, TestInfo<T>::testName, &error);
     test_error(error, "Unable to create SPIR-V kernel");
 
     error |= clSetKernelArg(kernel, 0, sizeof(dst), &dst);
@@ -102,7 +106,8 @@ static int test_expect_type(cl_device_id device, cl_context context,
                             resData.data(), 0, NULL, NULL);
     test_error(error, "Unable to read destination buffer");
 
-    if (resData != testData) {
+    if (resData != testData)
+    {
         log_error("Values do not match!\n");
         return TEST_FAIL;
     }
@@ -159,13 +164,13 @@ TEST_SPIRV_FUNC(op_assume)
 
     size_t global = num_elements;
     error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0,
-                                    NULL, NULL);
+                                   NULL, NULL);
     test_error(error, "Unable to enqueue kernel");
 
     std::vector<cl_int> h_dst(num_elements);
     error = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0,
-                                h_dst.size() * sizeof(cl_int), h_dst.data(),
-                                0, NULL, NULL);
+                                h_dst.size() * sizeof(cl_int), h_dst.data(), 0,
+                                NULL, NULL);
     test_error(error, "Unable to read destination buffer");
 
     for (int i = 0; i < num_elements; i++)
