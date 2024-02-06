@@ -75,6 +75,7 @@ extern RoundingMode gFloatToHalfRoundingMode;
 extern cl_half_rounding_mode gHalfRoundingMode;
 
 #define HFF(num) cl_half_from_float(num, gHalfRoundingMode)
+#define HFD(num) cl_half_from_double(num, gHalfRoundingMode)
 #define HTF(num) cl_half_to_float(num)
 
 #define LOWER_IS_BETTER 0
