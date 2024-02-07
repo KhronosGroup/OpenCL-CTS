@@ -482,15 +482,18 @@ template <typename Ti, typename To> static inline To round_to_neginf(Ti in)
 template <typename Ti, typename To>
 static inline Ti generate_fprounding_input(RandomSeed &seed)
 {
-    constexpr auto minVal = std::numeric_limits<To>::min() / 2;
-    constexpr auto maxVal = std::numeric_limits<To>::max() / 2;
-
     if (std::is_same<cl_half, Ti>::value)
     {
+        constexpr auto minVal =
+            static_cast<cl_float>(std::numeric_limits<To>::min() / 2);
+        constexpr auto maxVal =
+            static_cast<cl_float>(std::numeric_limits<To>::max() / 2);
         cl_float f = genrandReal_range<cl_float>(minVal, maxVal, seed);
         return cl_half_from_float(f, CL_HALF_RTE);
     }
 
+    constexpr auto minVal = static_cast<Ti>(std::numeric_limits<To>::min() / 2);
+    constexpr auto maxVal = static_cast<Ti>(std::numeric_limits<To>::max() / 2);
     return genrandReal_range<Ti>(minVal, maxVal, seed);
 }
 
