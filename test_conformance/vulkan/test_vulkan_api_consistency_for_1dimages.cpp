@@ -3,7 +3,7 @@
 #include <vulkan_wrapper.hpp>
 #if !defined(__APPLE__)
 #include <CL/cl.h>
-#include <CL/cl_ext.h>  
+#include <CL/cl_ext.h>
 #else
 #include <OpenCL/cl.h>
 #include <OpenCL/cl_ext.h>
@@ -17,8 +17,10 @@
 #include "harness/typeWrappers.h"
 #include "harness/deviceInfo.h"
 
-int test_consistency_external_for_1dimage(cl_device_id deviceID, cl_context _context,
-                                    cl_command_queue _queue, int num_elements)
+int test_consistency_external_for_1dimage(cl_device_id deviceID, 
+                                          cl_context _context,
+                                          cl_command_queue _queue, 
+                                          int num_elements)
 {
     cl_int errNum;
     VulkanDevice vkDevice;

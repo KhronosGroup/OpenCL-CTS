@@ -19,8 +19,10 @@
 #include <string>
 
 
-int test_consistency_external_for_3dimage(cl_device_id deviceID, cl_context _context,
-                                    cl_command_queue _queue, int num_elements)
+int test_consistency_external_for_3dimage(cl_device_id deviceID, 
+                                          cl_context _context,
+                                          cl_command_queue _queue, 
+                                          int num_elements)
 {
     cl_int errNum;
     VulkanDevice vkDevice;
@@ -75,8 +77,8 @@ int test_consistency_external_for_3dimage(cl_device_id deviceID, cl_context _con
     ASSERT_SUCCESS(errNum, "Failed to query OpenCL tiling mode");
 
     VulkanImage3D vkImage3D =
-        VulkanImage3D(vkDevice, VULKAN_FORMAT_R8G8B8A8_UNORM, width, height, depth,
-                      vulkanImageTiling, 1, vkExternalMemoryHandleType);
+        VulkanImage3D(vkDevice, VULKAN_FORMAT_R8G8B8A8_UNORM, width, height, 
+                      depth, vulkanImageTiling, 1, vkExternalMemoryHandleType);
 
     const VulkanMemoryTypeList& memoryTypeList = vkImage3D.getMemoryTypeList();
     uint64_t totalImageMemSize = vkImage3D.getSize();
