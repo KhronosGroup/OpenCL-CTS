@@ -399,7 +399,7 @@ VulkanImage3DList::VulkanImage3DList(
 VulkanImage3DList::VulkanImage3DList(
     size_t numImages, const VulkanDevice &device, VulkanFormat format,
     uint32_t width, uint32_t height, uint32_t depth,
-    VulkanImageTiling vulkanImageTiling,uint32_t mipLevels,
+    VulkanImageTiling vulkanImageTiling, uint32_t mipLevels,
     VulkanExternalMemoryHandleType externalMemoryHandleType,
     VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
     VulkanSharingMode sharingMode)
