@@ -59,12 +59,8 @@ int test_1Dbuffer(cl_device_id device, cl_context context,
 }
 
 test_definition test_list[] = {
-    ADD_TEST( 1D ),
-    ADD_TEST( 2D ),
-    ADD_TEST( 3D ),
-    ADD_TEST( 1Darray ),
-    ADD_TEST( 2Darray ),
-    ADD_TEST( 1Dbuffer ),
+    ADD_TEST(1D),      ADD_TEST(2D),      ADD_TEST(3D),
+    ADD_TEST(1Darray), ADD_TEST(2Darray), ADD_TEST(1Dbuffer),
 };
 
 const int test_num = ARRAY_SIZE( test_list );

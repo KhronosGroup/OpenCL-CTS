@@ -54,12 +54,14 @@ int test_copy_image_size_1D_buffer(cl_context context, cl_command_queue queue,
             : width_lod;
 
         // Now pick positions within valid ranges
-        sourcePos[0] = (width_lod > regionSize[0]) ? (size_t)random_in_range(
-                           0, (int)(width_lod - regionSize[0] - 1), d)
-                                                   : 0;
-        destPos[0] = (width_lod > regionSize[0]) ? (size_t)random_in_range(
-                         0, (int)(width_lod - regionSize[0] - 1), d)
-                                                 : 0;
+        sourcePos[0] = (width_lod > regionSize[0])
+            ? (size_t)random_in_range(0, (int)(width_lod - regionSize[0] - 1),
+                                      d)
+            : 0;
+        destPos[0] = (width_lod > regionSize[0])
+            ? (size_t)random_in_range(0, (int)(width_lod - regionSize[0] - 1),
+                                      d)
+            : 0;
 
 
         // Go for it!

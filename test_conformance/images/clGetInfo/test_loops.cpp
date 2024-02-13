@@ -71,9 +71,9 @@ int test_image_type( cl_device_id device, cl_context context, cl_mem_object_type
             test_return = test_get_image_info_2D_array( device, context, &formatList[ i ], flags );
             break;
           case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-            test_return = test_get_image_info_1D_buffer(device, context,
-                                                        &formatList[i], flags);
-            break;
+              test_return = test_get_image_info_1D_buffer(
+                  device, context, &formatList[i], flags);
+              break;
         }
 
         if (test_return) {

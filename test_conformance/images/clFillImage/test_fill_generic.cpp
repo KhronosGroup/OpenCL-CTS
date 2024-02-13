@@ -240,9 +240,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
                 break;
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
             case CL_MEM_OBJECT_IMAGE1D:
-            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-                dstPitch2D = mappedSlice;
-                break;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER: dstPitch2D = mappedSlice; break;
         }
 
         for ( size_t z = 0; z < depth; z++ )
@@ -488,29 +486,30 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     size_t secondDim = 1;
 
     switch (imageInfo->type) {
-      case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-      case CL_MEM_OBJECT_IMAGE1D:
-        secondDim = 1;
-        thirdDim = 1;
-        break;
-      case CL_MEM_OBJECT_IMAGE2D:
-        secondDim = imageInfo->height;
-        thirdDim = 1;
-        break;
-      case CL_MEM_OBJECT_IMAGE3D:
-        secondDim = imageInfo->height;
-        thirdDim = imageInfo->depth;
-        break;
-      case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-        secondDim = imageInfo->arraySize;
-        thirdDim = 1;
-        break;
-      case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-        secondDim = imageInfo->height;
-        thirdDim = imageInfo->arraySize;
-        break;
-      default:
-        log_error("Test error: unhandled image type at %s:%d\n",__FILE__,__LINE__);
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+        case CL_MEM_OBJECT_IMAGE1D:
+            secondDim = 1;
+            thirdDim = 1;
+            break;
+        case CL_MEM_OBJECT_IMAGE2D:
+            secondDim = imageInfo->height;
+            thirdDim = 1;
+            break;
+        case CL_MEM_OBJECT_IMAGE3D:
+            secondDim = imageInfo->height;
+            thirdDim = imageInfo->depth;
+            break;
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+            secondDim = imageInfo->arraySize;
+            thirdDim = 1;
+            break;
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+            secondDim = imageInfo->height;
+            thirdDim = imageInfo->arraySize;
+            break;
+        default:
+            log_error("Test error: unhandled image type at %s:%d\n", __FILE__,
+                      __LINE__);
     };
 
     // Count the number of bytes successfully matched
@@ -540,7 +539,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
             if ((imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY
                  || imageInfo->type == CL_MEM_OBJECT_IMAGE1D
                  || imageInfo->type == CL_MEM_OBJECT_IMAGE1D_BUFFER))
-            destPtr += mappedSlice;
+                destPtr += mappedSlice;
             else
             destPtr += mappedRow;
         }

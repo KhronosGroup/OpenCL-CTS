@@ -440,9 +440,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
         switch(dstImageInfo->type)
         {
             case CL_MEM_OBJECT_IMAGE1D:
-            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-                dst_lod = destPos[1];
-                break;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER: dst_lod = destPos[1]; break;
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
             case CL_MEM_OBJECT_IMAGE2D:
                 dst_lod = destPos[2];

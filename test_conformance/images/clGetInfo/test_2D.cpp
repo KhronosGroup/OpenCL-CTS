@@ -200,9 +200,7 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
     case CL_MEM_OBJECT_IMAGE2D:
     case CL_MEM_OBJECT_IMAGE1D_ARRAY:
     case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-    case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-      required_depth = 0;
-      break;
+    case CL_MEM_OBJECT_IMAGE1D_BUFFER: required_depth = 0; break;
     case CL_MEM_OBJECT_IMAGE3D:
       required_depth = imageInfo->depth;
       break;
@@ -224,9 +222,7 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
     case CL_MEM_OBJECT_IMAGE1D:
     case CL_MEM_OBJECT_IMAGE2D:
     case CL_MEM_OBJECT_IMAGE3D:
-    case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-      required_array_size = 0;
-      break;
+    case CL_MEM_OBJECT_IMAGE1D_BUFFER: required_array_size = 0; break;
     case CL_MEM_OBJECT_IMAGE1D_ARRAY:
     case CL_MEM_OBJECT_IMAGE2D_ARRAY:
       required_array_size = imageInfo->arraySize;
