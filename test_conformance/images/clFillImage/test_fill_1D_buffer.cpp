@@ -51,10 +51,9 @@ int test_fill_image_size_1D_buffer(cl_context context, cl_command_queue queue,
             : imageInfo->width;
 
         // Now pick positions within valid ranges
-        origin[0] = (imageInfo->width > region[0])
-            ? (size_t)random_in_range(
-                  0, (int)(imageInfo->width - region[0] - 1), d)
-            : 0;
+        origin[0] = (imageInfo->width > region[0]) ? (size_t)random_in_range(
+                        0, (int)(imageInfo->width - region[0] - 1), d)
+                                                   : 0;
 
         // Go for it!
         retCode = test_fill_image_generic(context, queue, imageInfo, origin,
