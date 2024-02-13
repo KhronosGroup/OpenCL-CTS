@@ -17,9 +17,9 @@
 #include "harness/typeWrappers.h"
 #include "harness/deviceInfo.h"
 
-int test_consistency_external_for_1dimage(cl_device_id deviceID, 
+int test_consistency_external_for_1dimage(cl_device_id deviceID,
                                           cl_context _context,
-                                          cl_command_queue _queue, 
+                                          cl_command_queue _queue,
                                           int num_elements)
 {
     cl_int errNum;
@@ -201,6 +201,6 @@ int test_consistency_external_for_1dimage(cl_device_id deviceID,
 
     if (cmd_queue) clReleaseCommandQueue(cmd_queue);
     if (context) clReleaseContext(context);
-    
+
     return TEST_PASS;
 }

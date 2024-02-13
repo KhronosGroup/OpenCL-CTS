@@ -278,7 +278,7 @@ VulkanImage1DList::VulkanImage1DList(
     size_t numImages, std::vector<VulkanDeviceMemory *> &deviceMemory,
     uint64_t baseOffset, uint64_t interImageOffset, const VulkanDevice &device,
     VulkanFormat format, uint32_t width, uint32_t mipLevels,
-    VulkanImageTiling vulkanImageTiling, 
+    VulkanImageTiling vulkanImageTiling,
     VulkanExternalMemoryHandleType externalMemoryHandleType,
     VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
     VulkanSharingMode sharingMode)
@@ -296,7 +296,7 @@ VulkanImage1DList::VulkanImage1DList(
 
 VulkanImage1DList::VulkanImage1DList(
     size_t numImages, const VulkanDevice &device, VulkanFormat format,
-    uint32_t width, VulkanImageTiling vulkanImageTiling, uint32_t mipLevels, 
+    uint32_t width, VulkanImageTiling vulkanImageTiling, uint32_t mipLevels,
     VulkanExternalMemoryHandleType externalMemoryHandleType,
     VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
     VulkanSharingMode sharingMode)
@@ -379,7 +379,7 @@ VulkanImage3DList::VulkanImage3DList(const VulkanImage3DList &image3DList) {}
 VulkanImage3DList::VulkanImage3DList(
     size_t numImages, std::vector<VulkanDeviceMemory *> &deviceMemory,
     uint64_t baseOffset, uint64_t interImageOffset, const VulkanDevice &device,
-    VulkanFormat format, uint32_t width, uint32_t height, uint32_t depth, 
+    VulkanFormat format, uint32_t width, uint32_t height, uint32_t depth,
     uint32_t mipLevels, VulkanImageTiling vulkanImageTiling,
     VulkanExternalMemoryHandleType externalMemoryHandleType,
     VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
@@ -398,8 +398,8 @@ VulkanImage3DList::VulkanImage3DList(
 
 VulkanImage3DList::VulkanImage3DList(
     size_t numImages, const VulkanDevice &device, VulkanFormat format,
-    uint32_t width, uint32_t height, uint32_t depth, 
-    VulkanImageTiling vulkanImageTiling,uint32_t mipLevels, 
+    uint32_t width, uint32_t height, uint32_t depth,
+    VulkanImageTiling vulkanImageTiling,uint32_t mipLevels,
     VulkanExternalMemoryHandleType externalMemoryHandleType,
     VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
     VulkanSharingMode sharingMode)

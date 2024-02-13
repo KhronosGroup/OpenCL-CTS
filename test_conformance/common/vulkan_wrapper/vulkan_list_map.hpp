@@ -205,7 +205,7 @@ public:
 class VulkanImage1DList : public VulkanList<VulkanImage1D, VkImage> {
 protected:
     VulkanImage1DList(const VulkanImage1DList &image1DList);
-    
+
 public:
     VulkanImage1DList(
         size_t numImages, std::vector<VulkanDeviceMemory *> &deviceMemory,
@@ -280,7 +280,7 @@ public:
         VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
     VulkanImage3DList(
         size_t numImages, const VulkanDevice &device, VulkanFormat format,
-        uint32_t width, uint32_t height, uint32_t depth, 
+        uint32_t width, uint32_t height, uint32_t depth,
         VulkanImageTiling vulkanImageTiling, uint32_t mipLevels = 1,
         VulkanExternalMemoryHandleType externalMemoryHandleType =
             VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,

@@ -3,7 +3,7 @@
 #include <vulkan_wrapper.hpp>
 #if !defined(__APPLE__)
 #include <CL/cl.h>
-#include <CL/cl_ext.h>  
+#include <CL/cl_ext.h>
 #else
 #include <OpenCL/cl.h>
 #include <OpenCL/cl_ext.h>
@@ -19,9 +19,9 @@
 #include <string>
 
 
-int test_consistency_external_for_3dimage(cl_device_id deviceID, 
+int test_consistency_external_for_3dimage(cl_device_id deviceID,
                                           cl_context _context,
-                                          cl_command_queue _queue, 
+                                          cl_command_queue _queue,
                                           int num_elements)
 {
     cl_int errNum;
@@ -77,7 +77,7 @@ int test_consistency_external_for_3dimage(cl_device_id deviceID,
     ASSERT_SUCCESS(errNum, "Failed to query OpenCL tiling mode");
 
     VulkanImage3D vkImage3D =
-        VulkanImage3D(vkDevice, VULKAN_FORMAT_R8G8B8A8_UNORM, width, height, 
+        VulkanImage3D(vkDevice, VULKAN_FORMAT_R8G8B8A8_UNORM, width, height,
                       depth, vulkanImageTiling, 1, vkExternalMemoryHandleType);
 
     const VulkanMemoryTypeList& memoryTypeList = vkImage3D.getMemoryTypeList();
@@ -205,6 +205,6 @@ int test_consistency_external_for_3dimage(cl_device_id deviceID,
 
     if (cmd_queue) clReleaseCommandQueue(cmd_queue);
     if (context) clReleaseContext(context);
-    
+
     return TEST_PASS;
 }
