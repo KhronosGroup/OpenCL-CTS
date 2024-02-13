@@ -94,6 +94,13 @@ T genrandReal(RandomSeed &seed)
     return genrand_real1(seed);
 }
 
+// Longer-term this could be refactored out and replace random_float():
+template <typename T> T genrandReal_range(T low, T high, RandomSeed &seed)
+{
+    T t = genrand_real1(seed);
+    return (1.0 - t) * low + t * high;
+}
+
 template<typename T, int N>
 T genrandRealVec(RandomSeed &seed)
 {

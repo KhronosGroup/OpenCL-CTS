@@ -1,15 +1,14 @@
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos SPIR-V Tools Assembler; 0
-; Bound: 28
+; Bound: 25
 ; Schema: 0
                OpCapability Addresses
                OpCapability Linkage
                OpCapability Kernel
-               OpCapability Int64
                OpCapability Int8
-               OpMemoryModel Physical64 OpenCL
-               OpEntryPoint Kernel %1 "decorate_saturated_conversion_uchar" %gl_GlobalInvocationID
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %1 "decorate_saturated_conversion_float_to_uchar" %gl_GlobalInvocationID
                OpName %res "res"
                OpName %lhs "lhs"
                OpName %rhs "rhs"
@@ -18,33 +17,30 @@
                OpDecorate %gl_GlobalInvocationID Constant
                OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
                OpDecorate %7 SaturatedConversion
-      %ulong = OpTypeInt 64 0
-    %v3ulong = OpTypeVector %ulong 3
-%_ptr_Input_v3ulong = OpTypePointer Input %v3ulong
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
       %uchar = OpTypeInt 8 0
 %_ptr_CrossWorkgroup_uchar = OpTypePointer CrossWorkgroup %uchar
       %float = OpTypeFloat 32
 %_ptr_CrossWorkgroup_float = OpTypePointer CrossWorkgroup %float
          %16 = OpTypeFunction %void %_ptr_CrossWorkgroup_uchar %_ptr_CrossWorkgroup_float %_ptr_CrossWorkgroup_float
-   %ulong_32 = OpConstant %ulong 32
-%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3ulong Input
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
           %1 = OpFunction %void None %16
         %res = OpFunctionParameter %_ptr_CrossWorkgroup_uchar
         %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_float
         %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_float
       %entry = OpLabel
-         %18 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
-         %19 = OpCompositeExtract %ulong %18 0
-         %20 = OpShiftLeftLogical %ulong %19 %ulong_32
-         %21 = OpShiftRightArithmetic %ulong %20 %ulong_32
-         %22 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %lhs %21
-         %23 = OpLoad %float %22 Aligned 4
-         %24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %rhs %21
-         %25 = OpLoad %float %24 Aligned 4
-         %26 = OpFMul %float %23 %25
-          %7 = OpConvertFToU %uchar %26
-         %27 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %res %21
-               OpStore %27 %7
+         %17 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %18 = OpCompositeExtract %uint %17 0
+         %19 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %lhs %18
+         %20 = OpLoad %float %19 Aligned 4
+         %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %rhs %18
+         %22 = OpLoad %float %21 Aligned 4
+         %23 = OpFMul %float %20 %22
+          %7 = OpConvertFToU %uchar %23
+         %24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %res %18
+               OpStore %24 %7
                OpReturn
                OpFunctionEnd

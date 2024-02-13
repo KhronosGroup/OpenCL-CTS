@@ -7,8 +7,9 @@
                OpCapability Linkage
                OpCapability Kernel
                OpCapability Int8
+               OpCapability Float16
                OpMemoryModel Physical32 OpenCL
-               OpEntryPoint Kernel %1 "decorate_saturated_conversion_uchar" %gl_GlobalInvocationID
+               OpEntryPoint Kernel %1 "decorate_saturated_conversion_half_to_uchar" %gl_GlobalInvocationID
                OpName %res "res"
                OpName %lhs "lhs"
                OpName %rhs "rhs"
@@ -23,22 +24,22 @@
        %void = OpTypeVoid
       %uchar = OpTypeInt 8 0
 %_ptr_CrossWorkgroup_uchar = OpTypePointer CrossWorkgroup %uchar
-      %float = OpTypeFloat 32
-%_ptr_CrossWorkgroup_float = OpTypePointer CrossWorkgroup %float
-         %16 = OpTypeFunction %void %_ptr_CrossWorkgroup_uchar %_ptr_CrossWorkgroup_float %_ptr_CrossWorkgroup_float
+      %half = OpTypeFloat 16
+%_ptr_CrossWorkgroup_half = OpTypePointer CrossWorkgroup %half
+         %16 = OpTypeFunction %void %_ptr_CrossWorkgroup_uchar %_ptr_CrossWorkgroup_half %_ptr_CrossWorkgroup_half
 %gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
           %1 = OpFunction %void None %16
         %res = OpFunctionParameter %_ptr_CrossWorkgroup_uchar
-        %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_float
-        %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_float
+        %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_half
+        %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_half
       %entry = OpLabel
          %17 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
          %18 = OpCompositeExtract %uint %17 0
-         %19 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %lhs %18
-         %20 = OpLoad %float %19 Aligned 4
-         %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %rhs %18
-         %22 = OpLoad %float %21 Aligned 4
-         %23 = OpFMul %float %20 %22
+         %19 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_half %lhs %18
+         %20 = OpLoad %half %19 Aligned 2
+         %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_half %rhs %18
+         %22 = OpLoad %half %21 Aligned 2
+         %23 = OpFMul %half %20 %22
           %7 = OpConvertFToU %uchar %23
          %24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %res %18
                OpStore %24 %7
