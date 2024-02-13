@@ -120,6 +120,9 @@ bufferStruct *newBufferStruct(size_t inSize, size_t outSize, clState *pClState)
 
     pResult->m_pIn = malloc(inSize);
     pResult->m_pOut = malloc(outSize);
+    // Initialized output buffers to zero to prevent undefined behavior
+    // As their sizes exceed the number of work items in the kernel.
+    memset(pResult->m_pOut, 0, outSize);
 #if DEBUG_MEM_ALLOC
     log_info("malloc m_pIn %x\n", pResult->m_pIn);
     log_info("malloc m_pOut %x\n", pResult->m_pOut);
@@ -137,7 +140,8 @@ bufferStruct *newBufferStruct(size_t inSize, size_t outSize, clState *pClState)
 #endif
 
     pResult->m_outBuffer = clCreateBuffer(
-        pClState->m_context, CL_MEM_WRITE_ONLY, outSize, NULL, &error);
+        pClState->m_context, CL_MEM_COPY_HOST_PTR | CL_MEM_WRITE_ONLY, outSize,
+        pResult->m_pOut, &error);
     if (pResult->m_outBuffer == NULL)
     {
         vlog_error("clCreateArray failed for output (%d)\n", error);

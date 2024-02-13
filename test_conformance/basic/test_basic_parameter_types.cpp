@@ -52,7 +52,7 @@ int test_parameter_types_long(cl_device_id device, cl_context context,
     clMemWrapper results;
     int error;
     size_t global[3] = { 1, 1, 1 };
-    float results_back[2 * 16];
+    float results_back[2 * 16] = { 0.0f };
     int count, index;
     const char *types[] = { "long", "ulong" };
     char kernel_string[8192];
@@ -85,8 +85,8 @@ int test_parameter_types_long(cl_device_id device, cl_context context,
     test_error(error, "Unable to get max parameter size from device");
 
     // Create the results buffer
-    results = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                             sizeof(cl_float) * 2 * 16, NULL, &error);
+    results = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_WRITE,
+                             sizeof(cl_float) * 2 * 16, results_back, &error);
     test_error(error, "clCreateBuffer failed");
 
     // Go over all the vector sizes
@@ -202,7 +202,7 @@ int test_parameter_types(cl_device_id device, cl_context context,
     clMemWrapper results;
     int error;
     size_t global[3] = { 1, 1, 1 };
-    float results_back[7 * 16];
+    float results_back[7 * 16] = { 0.0f };
     int count, index;
     const char *types[] = { "char", "uchar", "short", "ushort",
                             "int",  "uint",  "float" };
@@ -248,8 +248,8 @@ int test_parameter_types(cl_device_id device, cl_context context,
     test_error(error, "Unable to get max parameter size from device");
 
     // Create the results buffer
-    results = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                             sizeof(cl_float) * 7 * 16, NULL, &error);
+    results = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_WRITE,
+                             sizeof(cl_float) * 7 * 16, results_back, &error);
     test_error(error, "clCreateBuffer failed");
 
     // Go over all the vector sizes

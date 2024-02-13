@@ -199,13 +199,18 @@ int test_unary_fn(cl_device_id device, cl_context context,
 
     input_ptr.resize(num_elements);
     output_ptr.resize(num_elements);
+    // Initialized output buffers to zero to prevent undefined behavior
+    // As their sizes exceed the number of work items in the kernel.
+    output_ptr.assign(num_elements, 0);
 
-    for (i = 0; i < 2; i++)
-    {
-        streams[i] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                    sizeof(T) * num_elements, NULL, &err);
-        test_error(err, "clCreateBuffer failed");
-    }
+    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                sizeof(T) * num_elements, NULL, &err);
+    test_error(err, "clCreateBuffer failed");
+
+    streams[1] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_WRITE,
+                       sizeof(T) * num_elements, &output_ptr[0], &err);
+    test_error(err, "clCreateBuffer failed");
 
     std::string pragma_str;
     if (std::is_same<T, float>::value)

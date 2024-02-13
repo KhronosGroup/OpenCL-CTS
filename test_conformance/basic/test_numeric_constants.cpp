@@ -226,12 +226,12 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
     cl_mem    streams[3];
 
     size_t    threads[] = {1,1,1};
-    cl_float float_out[16];
-    cl_int int_out[19];
-    cl_uint uint_out[1];
-    cl_long long_out[7];
-    cl_ulong ulong_out[1];
-    cl_double double_out[16];
+    cl_float float_out[16] = { 0.0f };
+    cl_int int_out[19] = { 0 };
+    cl_uint uint_out[1] = { 0 };
+    cl_long long_out[7] = { 0 };
+    cl_ulong ulong_out[1] = { 0 };
+    cl_double double_out[16] = { 0.0 };
 
     /** INTs and FLOATs **/
 
@@ -242,14 +242,17 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
     }
 
     /* Create some I/O streams */
-    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(float_out),
-                                NULL, &error);
+    streams[0] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_WRITE,
+                       sizeof(float_out), float_out, &error);
     test_error( error, "Creating test array failed" );
-    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(int_out),
-                                NULL, &error);
+    streams[1] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_WRITE,
+                       sizeof(int_out), int_out, &error);
     test_error( error, "Creating test array failed" );
-    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(uint_out),
-                                NULL, &error);
+    streams[2] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_WRITE,
+                       sizeof(uint_out), uint_out, &error);
     test_error( error, "Creating test array failed" );
 
     error = clSetKernelArg(kernel, 1, sizeof( streams[1] ), &streams[1]);
@@ -534,17 +537,19 @@ int test_kernel_limit_constants(cl_device_id deviceID, cl_context context, cl_co
     int error;
     size_t              threads[] = {1,1,1};
     clMemWrapper        intStream, floatStream, doubleStream;
-    cl_int              intOut[ 32 ];
-    cl_float            floatOut[ 3 ];
-    cl_double           doubleOut[ 1 ];
+    cl_int intOut[32] = { 0 };
+    cl_float floatOut[3] = { 0.0f };
+    cl_double doubleOut[1] = { 0.0 };
 
 
     /* Create some I/O streams */
-    intStream = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(intOut), NULL,
-                               &error);
+    intStream =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_WRITE,
+                       sizeof(intOut), intOut, &error);
     test_error( error, "Creating test array failed" );
-    floatStream = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(floatOut),
-                                 NULL, &error);
+    floatStream =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_WRITE,
+                       sizeof(floatOut), floatOut, &error);
     test_error( error, "Creating test array failed" );
 
     // Stage 1: basic limits on MAXFLOAT
