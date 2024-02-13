@@ -278,7 +278,8 @@ VulkanImage1DList::VulkanImage1DList(
     size_t numImages, std::vector<VulkanDeviceMemory *> &deviceMemory,
     uint64_t baseOffset, uint64_t interImageOffset, const VulkanDevice &device,
     VulkanFormat format, uint32_t width, uint32_t mipLevels,
-    VulkanImageTiling vulkanImageTiling, VulkanExternalMemoryHandleType externalMemoryHandleType,
+    VulkanImageTiling vulkanImageTiling, 
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
     VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
     VulkanSharingMode sharingMode)
 {

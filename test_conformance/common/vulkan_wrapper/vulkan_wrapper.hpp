@@ -501,8 +501,7 @@ protected:
 public:
     VulkanImage1D(
         const VulkanDevice &device, VulkanFormat format, uint32_t width,
-        VulkanImageTiling imageTiling,
-        uint32_t numMipLevels = 1,
+        VulkanImageTiling imageTiling, uint32_t numMipLevels = 1,
         VulkanExternalMemoryHandleType externalMemoryHandleType =
             VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
         VulkanImageCreateFlag imageCreateFlag = VULKAN_IMAGE_CREATE_FLAG_NONE,

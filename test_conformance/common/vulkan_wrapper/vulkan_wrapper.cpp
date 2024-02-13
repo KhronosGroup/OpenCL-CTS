@@ -1879,7 +1879,8 @@ VulkanImage3D::VulkanImage3D(const VulkanImage3D &image3D): VulkanImage(image3D)
 
 VulkanImage3D::VulkanImage3D(
     const VulkanDevice &device, VulkanFormat format, uint32_t width,
-    uint32_t height, uint32_t depth, VulkanImageTiling imageTiling, uint32_t numMipLevels,
+    uint32_t height, uint32_t depth, VulkanImageTiling imageTiling,
+    uint32_t numMipLevels, 
     VulkanExternalMemoryHandleType externalMemoryHandleType,
     VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
     VulkanSharingMode sharingMode)
