@@ -218,12 +218,13 @@ int test_get_buffer_info( cl_device_id deviceID, cl_context context, cl_command_
             bufferObject = clCreateBuffer( context, bufferFlags[ i ], addressAlign * 4, NULL, &error );
             test_error( error, "Unable to create buffer to test with" );
         }
-	
+
         // Perform buffer object queries.
         void *ptr;
-        TEST_MEM_OBJECT_PARAM(bufferObject, CL_MEM_HOST_PTR, ptr, 
-                              ((bufferFlags[ i ] & CL_MEM_USE_HOST_PTR) ? buffer : NULL),
-                              "host pointer", "%p", void *)
+        TEST_MEM_OBJECT_PARAM(
+            bufferObject, CL_MEM_HOST_PTR, ptr,
+            ((bufferFlags[i] & CL_MEM_USE_HOST_PTR) ? buffer : NULL),
+            "host pointer", "%p", void *)
 
         cl_mem_object_type type;
         TEST_MEM_OBJECT_PARAM( bufferObject, CL_MEM_TYPE, type, CL_MEM_OBJECT_BUFFER, "type", "%d", int )
