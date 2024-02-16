@@ -50,9 +50,8 @@
       %v1v16 = OpCompositeInsert %uchar16 %v1e %uchar16_0 0
                OpStore %dst %v1v16 Aligned 64
                   ; vec2 expect:
-                  ; scalar expect:
                   ;     char2 v2 = (char2)(value);
-                  ;     char2 v1e = __builtin_expect(v2, 0);
+                  ;     char2 v2e = __builtin_expect(v2, 0);
                   ;     dst[1] = (char16)(v2e, 0, ...);
          %v2 = OpVectorShuffle %uchar2 %value_vec %value_vec 0 0
         %v2e = OpExpectKHR %uchar2 %v2 %uchar2_0
