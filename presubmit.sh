@@ -4,6 +4,10 @@ set -e
 
 export TOP=$(pwd)
 
+GLSLANG_URL_Windows="https://github.com/KhronosGroup/glslang/releases/download/main-tot/glslang-master-windows-Release.zip"
+GLSLANG_URL_Linux="https://github.com/KhronosGroup/glslang/releases/download/main-tot/glslang-main-linux-Release.zip"
+GLSLANG_URL_macOS="https://github.com/KhronosGroup/glslang/releases/download/main-tot/glslang-main-osx-Release.zip"
+
 TOOLCHAIN_URL_arm="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz"
 TOOLCHAIN_URL_aarch64="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/aarch64-linux-gnu/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.tar.xz"
 
@@ -84,16 +88,10 @@ cmake --build . -j2
 cd ${TOP}
 mkdir spirvTools
 cd spirvTools
-if [[ ${RUNNER_OS} == "Windows" ]]; then
-  curl -Lo glslang.zip https://github.com/KhronosGroup/glslang/releases/download/main-tot/glslang-master-windows-Release.zip
-  unzip glslang.zip
-elif [[ ${RUNNER_OS} == "Linux" ]]; then
-  curl -Lo glslang.zip https://github.com/KhronosGroup/glslang/releases/download/main-tot/glslang-main-linux-Release.zip
-  unzip glslang.zip
-else
-  curl -Lo glslang.zip https://github.com/KhronosGroup/glslang/releases/download/main-tot/glslang-main-osx-Release.zip
-  unzip glslang.zip
-fi
+GLSLANG_URL_VAR=GLSLANG_URL_${RUNNER_OS}
+GLSLANG_URL=${!GLSLANG_URL_VAR}
+curl -Lo glslang.zip ${GLSLANG_URL}
+unzip glslang.zip
 
 # Build CTS
 cd ${TOP}
