@@ -28,7 +28,8 @@ else()
         execute_process(
             COMMAND ${Vulkan_glslangValidator_binary} --target-env vulkan1.0 -o ${SHADER_DIR_NAME}/image2D_${GLSL_FORMAT}.spv ${IMAGE2D_SHADER_TMP_OUT_FILE}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            RESULT_VARIABLE commandStatus)
+            RESULT_VARIABLE commandStatus
+            OUTPUT_QUIET)
         if(commandStatus AND NOT commandStatus EQUAL 0)
             message(FATAL_ERROR "shader -> spir-v compilation failed")
         endif()
@@ -36,7 +37,8 @@ else()
     execute_process(
         COMMAND ${Vulkan_glslangValidator_binary} --target-env vulkan1.0 -o ${BUFFER_SHADER_INPUT_FILE}.spv ${BUFFER_SHADER_INPUT_FILE}.comp
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        RESULT_VARIABLE commandStatus)
+        RESULT_VARIABLE commandStatus
+        OUTPUT_QUIET)
     if(commandStatus AND NOT commandStatus EQUAL 0)
         message(FATAL_ERROR "shader -> spir-v compilation failed")
     endif()
