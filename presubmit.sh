@@ -80,6 +80,21 @@ cmake .. -G Ninja \
       -C helper.cmake ..
 cmake --build . -j2
 
+#glslangValidator tool (prebuilt)
+cd ${TOP}
+mkdir spirvTools
+cd spirvTools
+if [[ ${RUNNER_OS} == "Windows" ]]; then
+  curl -Lo glslang.zip https://github.com/KhronosGroup/glslang/releases/download/main-tot/glslang-master-windows-Release.zip
+  unzip glslang.zip
+elif [[ ${RUNNER_OS} == "Linux" ]]; then
+  curl -Lo glslang.zip https://github.com/KhronosGroup/glslang/releases/download/main-tot/glslang-main-linux-Release.zip
+  unzip glslang.zip
+else
+  curl -Lo glslang.zip https://github.com/KhronosGroup/glslang/releases/download/main-tot/glslang-main-osx-Release.zip
+  unzip glslang.zip
+fi
+
 # Build CTS
 cd ${TOP}
 ls -l
@@ -104,5 +119,6 @@ cmake .. -G Ninja \
       -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST} \
       -DVULKAN_IS_SUPPORTED=${BUILD_VULKAN_TEST} \
       -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/ \
-      -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/
+      -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/ \
+      -DGLSLANG_VALIDATOR_DIR=${TOP}/spirvTools/bin/
 cmake --build . -j3
