@@ -614,32 +614,34 @@ clExternalMemory::clExternalMemory(
                 (cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
             extMemProperties.push_back((cl_mem_properties)fd);
             break;
-        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
-            {
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT: {
 #ifndef _WIN32
-                log_info(" Opaque NT handles are only supported on Windows\n");
-                ASSERT(0);
+            log_info(" Opaque NT handles are only supported on Windows\n");
+            ASSERT(0);
 #else
-                const std::wstring &name = deviceMemory->getName();
-                if (name.size() && useNameForImport)
-                {
-                    err = check_external_memory_handle_type(
-                        devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR);
-                    extMemProperties.push_back(
-                        (cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR);
-                    extMemProperties.push_back((cl_mem_properties)name.c_str());
-                }
-                else
-                {
-                    handle = deviceMemory->getHandle(externalMemoryHandleType);
-                    err = check_external_memory_handle_type(
-                        devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
-                    extMemProperties.push_back(
-                        (cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
-                    extMemProperties.push_back((cl_mem_properties)handle);
-                }
-#endif
+            const std::wstring &name = deviceMemory->getName();
+            if (name.size() && useNameForImport)
+            {
+                err = check_external_memory_handle_type(
+                    devList[0],
+                    CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR);
+                extMemProperties.push_back(
+                    (cl_mem_properties)
+                        CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR);
+                extMemProperties.push_back((cl_mem_properties)name.c_str());
             }
+            else
+            {
+                handle = deviceMemory->getHandle(externalMemoryHandleType);
+                err = check_external_memory_handle_type(
+                    devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
+                extMemProperties.push_back(
+                    (cl_mem_properties)
+                        CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
+                extMemProperties.push_back((cl_mem_properties)handle);
+            }
+#endif
+        }
             break;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
 #ifndef _WIN32
@@ -709,28 +711,30 @@ clExternalMemoryImage::clExternalMemoryImage(
     switch (externalMemoryHandleType)
     {
 #ifdef _WIN32
-        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT: {
+            log_info("Opaque NT handles are only supported on Windows\n");
+            const std::wstring &name = deviceMemory.getName();
+            if (name.size() && useNameForImport)
             {
-                log_info("Opaque NT handles are only supported on Windows\n");
-                const std::wstring &name = deviceMemory.getName();
-                if (name.size() && useNameForImport)
-                {
-                    errcode_ret = check_external_memory_handle_type(
-                        devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR);
-                    extMemProperties1.push_back(
-                        (cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR);
-                    extMemProperties1.push_back((cl_mem_properties)name.c_str());
-                }
-                else
-                {
-                    handle = deviceMemory.getHandle(externalMemoryHandleType);
-                    errcode_ret = check_external_memory_handle_type(
-                        devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
-                    extMemProperties1.push_back(
-                        (cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
-                    extMemProperties1.push_back((cl_mem_properties)handle);
-                }
+                errcode_ret = check_external_memory_handle_type(
+                    devList[0],
+                    CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR);
+                extMemProperties1.push_back(
+                    (cl_mem_properties)
+                        CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR);
+                extMemProperties1.push_back((cl_mem_properties)name.c_str());
             }
+            else
+            {
+                handle = deviceMemory.getHandle(externalMemoryHandleType);
+                errcode_ret = check_external_memory_handle_type(
+                    devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
+                extMemProperties1.push_back(
+                    (cl_mem_properties)
+                        CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
+                extMemProperties1.push_back((cl_mem_properties)handle);
+            }
+        }
             break;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
             log_info("Opaque D3DKMT handles are only supported on Windows\n");
@@ -847,33 +851,32 @@ clExternalImportableSemaphore::clExternalImportableSemaphore(
             sema_props.push_back((cl_semaphore_properties_khr)fd);
 #endif
             break;
-        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT:
-            {
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT: {
 #ifndef _WIN32
-                log_info(" Opaque NT handles are only supported on Windows\n");
-                ASSERT(0);
+            log_info(" Opaque NT handles are only supported on Windows\n");
+            ASSERT(0);
 #else
-                const std::wstring &name = semaphore.getName();
-                if (name.size() && useNameForImport)
-                {
-                    err = check_external_semaphore_handle_type(
-                        devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_NAME_KHR);
-                    sema_props.push_back((cl_semaphore_properties_khr)
-                                            CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_NAME_KHR);
-                    sema_props.push_back(
-                        (cl_semaphore_properties_khr)name.c_str());
-                }
-                else
-                {
-                    handle = semaphore.getHandle(externalSemaphoreHandleType);
-                    err = check_external_semaphore_handle_type(
-                        devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
-                    sema_props.push_back((cl_semaphore_properties_khr)
-                                             CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
-                    sema_props.push_back((cl_semaphore_properties_khr)handle);
-                }
-#endif
+            const std::wstring &name = semaphore.getName();
+            if (name.size() && useNameForImport)
+            {
+                err = check_external_semaphore_handle_type(
+                    devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_NAME_KHR);
+                sema_props.push_back(
+                    (cl_semaphore_properties_khr)
+                        CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_NAME_KHR);
+                sema_props.push_back((cl_semaphore_properties_khr)name.c_str());
             }
+            else
+            {
+                handle = semaphore.getHandle(externalSemaphoreHandleType);
+                err = check_external_semaphore_handle_type(
+                    devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
+                sema_props.push_back((cl_semaphore_properties_khr)
+                                         CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
+                sema_props.push_back((cl_semaphore_properties_khr)handle);
+            }
+#endif
+        }
             break;
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT:
 #ifndef _WIN32
