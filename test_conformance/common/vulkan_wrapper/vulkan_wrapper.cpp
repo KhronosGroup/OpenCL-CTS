@@ -1907,9 +1907,10 @@ public:
 
 WindowsSecurityAttributes::WindowsSecurityAttributes()
 {
-#define CHECK(ok, msg)                  \
-    if (!ok) {                          \
-        throw std::runtime_error(msg);  \
+#define CHECK(ok, msg)                                                         \
+    if (!ok)                                                                   \
+    {                                                                          \
+        throw std::runtime_error(msg);                                         \
     }
 
     BOOL ok;
@@ -1919,25 +1920,33 @@ WindowsSecurityAttributes::WindowsSecurityAttributes()
     CHECK(ok, "Failed to open process access token");
 
     DWORD tokenInformationLength = 0;
-    GetTokenInformation(tokenHandle, TokenDefaultDacl, NULL, 0, &tokenInformationLength);
-    CHECK(tokenInformationLength, "Failed to retrieve TokenDefaultDacl info buffer length");
+    GetTokenInformation(tokenHandle, TokenDefaultDacl, NULL, 0,
+                        &tokenInformationLength);
+    CHECK(tokenInformationLength,
+          "Failed to retrieve TokenDefaultDacl info buffer length");
 
-    m_winPSecurityDescriptor = (PSECURITY_DESCRIPTOR)calloc(1, SECURITY_DESCRIPTOR_MIN_LENGTH + tokenInformationLength);
+    m_winPSecurityDescriptor = (PSECURITY_DESCRIPTOR)calloc(
+        1, SECURITY_DESCRIPTOR_MIN_LENGTH + tokenInformationLength);
     assert(m_winPSecurityDescriptor != (PSECURITY_DESCRIPTOR)NULL);
 
-    TOKEN_DEFAULT_DACL* pTokenDefaultDacl = reinterpret_cast<TOKEN_DEFAULT_DACL*>((PBYTE)m_winPSecurityDescriptor + SECURITY_DESCRIPTOR_MIN_LENGTH);
-    ok = GetTokenInformation(tokenHandle, TokenDefaultDacl, pTokenDefaultDacl, tokenInformationLength, &tokenInformationLength);
+    TOKEN_DEFAULT_DACL *pTokenDefaultDacl =
+        reinterpret_cast<TOKEN_DEFAULT_DACL *>(
+            (PBYTE)m_winPSecurityDescriptor + SECURITY_DESCRIPTOR_MIN_LENGTH);
+    ok = GetTokenInformation(tokenHandle, TokenDefaultDacl, pTokenDefaultDacl,
+                             tokenInformationLength, &tokenInformationLength);
     CHECK(ok, "Failed to retrieve TokenDefaultDacl info of access token");
 
-    ok = InitializeSecurityDescriptor(m_winPSecurityDescriptor, SECURITY_DESCRIPTOR_REVISION);
+    ok = InitializeSecurityDescriptor(m_winPSecurityDescriptor,
+                                      SECURITY_DESCRIPTOR_REVISION);
     CHECK(ok, "Failed to init security descriptor");
 
-    ok = SetSecurityDescriptorDacl(m_winPSecurityDescriptor, TRUE, pTokenDefaultDacl->DefaultDacl, FALSE);
+    ok = SetSecurityDescriptorDacl(m_winPSecurityDescriptor, TRUE,
+                                   pTokenDefaultDacl->DefaultDacl, FALSE);
     CHECK(ok, "Failed to set DACL info for given security descriptor");
 
-    m_winSecurityAttributes.nLength              = sizeof(m_winSecurityAttributes);
+    m_winSecurityAttributes.nLength = sizeof(m_winSecurityAttributes);
     m_winSecurityAttributes.lpSecurityDescriptor = m_winPSecurityDescriptor;
-    m_winSecurityAttributes.bInheritHandle       = TRUE;
+    m_winSecurityAttributes.bInheritHandle = TRUE;
 
     CloseHandle(tokenHandle);
 #undef CHECK_WIN
@@ -1964,7 +1973,8 @@ VulkanDeviceMemory::VulkanDeviceMemory(const VulkanDeviceMemory &deviceMemory)
 VulkanDeviceMemory::VulkanDeviceMemory(
     const VulkanDevice &device, uint64_t size,
     const VulkanMemoryType &memoryType,
-    VulkanExternalMemoryHandleType externalMemoryHandleType, const std::wstring name)
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    const std::wstring name)
     : m_device(device), m_size(size), m_isDedicated(false), m_name(name)
 {
 #if defined(_WIN32) || defined(_WIN64)
@@ -2009,7 +2019,8 @@ VulkanDeviceMemory::VulkanDeviceMemory(
 VulkanDeviceMemory::VulkanDeviceMemory(
     const VulkanDevice &device, const VulkanImage &image,
     const VulkanMemoryType &memoryType,
-    VulkanExternalMemoryHandleType externalMemoryHandleType, const std::wstring name)
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    const std::wstring name)
     : m_device(device), m_size(image.getSize()),
       m_isDedicated(image.isDedicated()), m_name(name)
 {
@@ -2072,7 +2083,8 @@ VulkanDeviceMemory::VulkanDeviceMemory(
 VulkanDeviceMemory::VulkanDeviceMemory(
     const VulkanDevice &device, const VulkanBuffer &buffer,
     const VulkanMemoryType &memoryType,
-    VulkanExternalMemoryHandleType externalMemoryHandleType, const std::wstring name)
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    const std::wstring name)
     : m_device(device), m_size(buffer.getSize()),
       m_isDedicated(buffer.isDedicated()), m_name(name)
 {
