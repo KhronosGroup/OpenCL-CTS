@@ -76,7 +76,9 @@ cl_int check_external_memory_handle_type(
     cl_external_memory_handle_type_khr requiredHandleType);
 cl_int check_external_semaphore_handle_type(
     cl_device_id deviceID,
-    cl_external_semaphore_handle_type_khr requiredHandleType);
+    cl_external_semaphore_handle_type_khr requiredHandleType,
+    cl_device_info queryParamName =
+        CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR);
 cl_int setMaxImageDimensions(cl_device_id deviceID, size_t &width,
                              size_t &height);
 

@@ -508,7 +508,8 @@ cl_int check_external_memory_handle_type(
 
 cl_int check_external_semaphore_handle_type(
     cl_device_id deviceID,
-    cl_external_semaphore_handle_type_khr requiredHandleType)
+    cl_external_semaphore_handle_type_khr requiredHandleType,
+    cl_device_info queryParamName)
 {
     unsigned int i;
     cl_external_semaphore_handle_type_khr *handle_type;
@@ -516,18 +517,27 @@ cl_int check_external_semaphore_handle_type(
     cl_int errNum = CL_SUCCESS;
 
     errNum =
-        clGetDeviceInfo(deviceID, CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR,
+        clGetDeviceInfo(deviceID, queryParamName,
                         0, NULL, &handle_type_size);
+
+    if (handle_type_size == 0)
+    {
+        log_error("Device does not support %s semaphore\n",
+                  queryParamName == CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR
+                  ? "importing"
+                  : "exporting");
+        return CL_INVALID_VALUE;
+    }
+
     handle_type =
         (cl_external_semaphore_handle_type_khr *)malloc(handle_type_size);
 
     errNum =
-        clGetDeviceInfo(deviceID, CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR,
+        clGetDeviceInfo(deviceID, queryParamName,
                         handle_type_size, handle_type, NULL);
 
-    test_error(
-        errNum,
-        "Unable to query CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR \n");
+    test_error(errNum,
+               "Unable to query supported device semaphore handle types list");
 
     for (i = 0; i < handle_type_size; i++)
     {
