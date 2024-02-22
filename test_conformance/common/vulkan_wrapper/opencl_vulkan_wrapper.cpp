@@ -517,24 +517,22 @@ cl_int check_external_semaphore_handle_type(
     cl_int errNum = CL_SUCCESS;
 
     errNum =
-        clGetDeviceInfo(deviceID, queryParamName,
-                        0, NULL, &handle_type_size);
+        clGetDeviceInfo(deviceID, queryParamName, 0, NULL, &handle_type_size);
 
     if (handle_type_size == 0)
     {
         log_error("Device does not support %s semaphore\n",
                   queryParamName == CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR
-                  ? "importing"
-                  : "exporting");
+                      ? "importing"
+                      : "exporting");
         return CL_INVALID_VALUE;
     }
 
     handle_type =
         (cl_external_semaphore_handle_type_khr *)malloc(handle_type_size);
 
-    errNum =
-        clGetDeviceInfo(deviceID, queryParamName,
-                        handle_type_size, handle_type, NULL);
+    errNum = clGetDeviceInfo(deviceID, queryParamName, handle_type_size,
+                             handle_type, NULL);
 
     test_error(errNum,
                "Unable to query supported device semaphore handle types list");
@@ -972,7 +970,7 @@ clExternalExportableSemaphore::clExternalExportableSemaphore(
         err = clGetSemaphoreHandleForTypeKHRptr(
             m_externalSemaphore, m_device,
             getCLSemaphoreTypeFromVulkanType(m_externalHandleType),
-            sizeof(void*), (void*)&handle, nullptr);
+            sizeof(void *), (void *)&handle, nullptr);
         if (err != CL_SUCCESS)
         {
             throw std::runtime_error("Failed to export OpenCL semaphore\n");
@@ -986,7 +984,7 @@ clExternalExportableSemaphore::clExternalExportableSemaphore(
         vkImportSemaphoreWin32HandleInfoKHR.semaphore = m_deviceSemaphore;
         vkImportSemaphoreWin32HandleInfoKHR.flags = 0;
         vkImportSemaphoreWin32HandleInfoKHR.handleType =
-            (VkExternalSemaphoreHandleTypeFlagsKHR)m_externalHandleType;
+            (VkExternalSemaphoreHandleTypeFlagBits)m_externalHandleType;
         vkImportSemaphoreWin32HandleInfoKHR.handle = (HANDLE)handle;
         vkImportSemaphoreWin32HandleInfoKHR.name = nullptr;
 
