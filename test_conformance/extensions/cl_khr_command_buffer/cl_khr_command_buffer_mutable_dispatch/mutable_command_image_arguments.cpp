@@ -92,6 +92,7 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         imageInfo.type = CL_MEM_OBJECT_IMAGE1D;
         imageInfo.format = &formats;
         imageInfo.width = 4;
+        imageInfo.rowPitch = imageInfo.width * get_pixel_size(imageInfo.format);
 
         BufferOwningPtr<char> imageValues_input, imageValues_output, outputData;
         MTdataHolder d(gRandomSeed);
@@ -285,6 +286,7 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         imageInfo.width = 4;
         imageInfo.height = 4;
         imageInfo.format = &formats;
+        imageInfo.rowPitch = imageInfo.width * get_pixel_size(imageInfo.format);
 
         BufferOwningPtr<char> imageValues_input, imageValues_output;
 

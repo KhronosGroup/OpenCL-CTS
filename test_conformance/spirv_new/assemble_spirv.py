@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #####################################################################
-# Copyright (c) 2020 The Khronos Group Inc. All Rights Reserved.
+# Copyright (c) 2020-2023 The Khronos Group Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,6 +30,16 @@ import subprocess
 import sys
 from textwrap import wrap
 
+# sub-directories for specific SPIR-V environments
+spirv_envs = [
+    '', # all files in the root directory are considered SPIR-V 1.0
+    'spv1.1',
+    'spv1.2',
+    'spv1.3',
+    'spv1.4',
+    'spv1.5',
+    'spv1.6',
+]
 
 def fatal(message):
     """Print an error message and exit with a non-zero status, to
@@ -39,7 +49,7 @@ def fatal(message):
     sys.exit(1)
 
 
-def assemble_spirv(asm_dir, bin_dir, spirv_as, verbose):
+def assemble_spirv(asm_dir, bin_dir, spirv_as, spirv_env, verbose):
     """Assemble SPIR-V source into binaries."""
 
     if not os.path.exists(bin_dir):
@@ -57,8 +67,8 @@ def assemble_spirv(asm_dir, bin_dir, spirv_as, verbose):
             bin_file = asm_file_root + asm_file_ext.replace('asm', '')
             bin_file_path = os.path.join(bin_dir, bin_file)
 
-            command = '"{}" --target-env spv1.0 "{}" -o "{}"'.format(
-                spirv_as, asm_file_path, bin_file_path)
+            command = '"{}" --target-env "{}" "{}" -o "{}"'.format(
+                spirv_as, spirv_env, asm_file_path, bin_file_path)
             if subprocess.call(command, shell=True) != 0:
                 assembly_failures = True
                 print('ERROR: Failure assembling {}: '
@@ -72,7 +82,7 @@ def assemble_spirv(asm_dir, bin_dir, spirv_as, verbose):
             'messages from the assembler, if any.')))
 
 
-def validate_spirv(bin_dir, spirv_val, verbose):
+def validate_spirv(bin_dir, spirv_val, spirv_env, verbose):
     """Validates SPIR-V binaries.  Ignores known failures."""
 
     validation_failures = False
@@ -83,8 +93,8 @@ def validate_spirv(bin_dir, spirv_val, verbose):
             if verbose:
                 print(' Validating {}'.format(bin_file))
 
-            command = '"{}" "{}"'.format(
-                spirv_val, bin_file_path)
+            command = '"{}" --target-env "{}" "{}"'.format(
+                spirv_val, spirv_env, bin_file_path)
             if subprocess.call(command, shell=True) != 0:
                 print('ERROR: Failure validating {}: '
                       'see above output.'.format(
@@ -95,8 +105,6 @@ def validate_spirv(bin_dir, spirv_val, verbose):
     if validation_failures:
         fatal('ERROR: Validation failure(s) found.  '
               'See above for validation output.')
-    else:
-        print('All SPIR-V binaries validated successfully.')
 
 
 def parse_args():
@@ -144,18 +152,26 @@ def main():
 
     args = parse_args()
 
-    print('Assembling SPIR-V source into binaries...')
-    assemble_spirv(args.source_dir, args.output_dir, args.assembler,
-                   args.verbose)
-    print('Finished assembling SPIR-V binaries.')
-    print()
+    for subdir in spirv_envs:
+        src_dir = os.path.join(args.source_dir, subdir)
+        out_dir = os.path.join(args.output_dir, subdir)
+        spirv_env = 'spv1.0' if subdir == '' else subdir
+        print('Assembling SPIR-V source into binaries for target {}...'.
+              format(spirv_env))
+        assemble_spirv(src_dir, out_dir, args.assembler,
+                    spirv_env, args.verbose)
+        print('Finished assembling SPIR-V binaries.')
+        print()
 
-    if args.skip_validation:
-        print('Skipping validation of SPIR-V binaries as requested.')
-    else:
-        print('Validating SPIR-V binaries...')
-        validate_spirv(args.output_dir, args.validator, args.verbose)
-    print()
+        if args.skip_validation:
+            print('Skipping validation of SPIR-V binaries as requested.')
+        else:
+            print('Validating SPIR-V binaries for target {}...'.
+                  format(spirv_env))
+            validate_spirv(out_dir, args.validator,
+                    spirv_env, args.verbose)
+            print('All SPIR-V binaries validated successfully.')
+        print()
 
     print('Done.')
 

@@ -6,9 +6,9 @@
                OpCapability Addresses
                OpCapability Linkage
                OpCapability Kernel
-               OpCapability Int8
+               OpCapability Int16
                OpMemoryModel Physical32 OpenCL
-               OpEntryPoint Kernel %1 "decorate_saturated_conversion_char" %gl_GlobalInvocationID
+               OpEntryPoint Kernel %1 "decorate_saturated_conversion_float_to_ushort" %gl_GlobalInvocationID
                OpName %res "res"
                OpName %lhs "lhs"
                OpName %rhs "rhs"
@@ -21,14 +21,14 @@
      %v3uint = OpTypeVector %uint 3
 %_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
-      %uchar = OpTypeInt 8 0
-%_ptr_CrossWorkgroup_uchar = OpTypePointer CrossWorkgroup %uchar
+     %ushort = OpTypeInt 16 0
+%_ptr_CrossWorkgroup_ushort = OpTypePointer CrossWorkgroup %ushort
       %float = OpTypeFloat 32
 %_ptr_CrossWorkgroup_float = OpTypePointer CrossWorkgroup %float
-         %16 = OpTypeFunction %void %_ptr_CrossWorkgroup_uchar %_ptr_CrossWorkgroup_float %_ptr_CrossWorkgroup_float
+         %16 = OpTypeFunction %void %_ptr_CrossWorkgroup_ushort %_ptr_CrossWorkgroup_float %_ptr_CrossWorkgroup_float
 %gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
           %1 = OpFunction %void None %16
-        %res = OpFunctionParameter %_ptr_CrossWorkgroup_uchar
+        %res = OpFunctionParameter %_ptr_CrossWorkgroup_ushort
         %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_float
         %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_float
       %entry = OpLabel
@@ -39,8 +39,8 @@
          %21 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %rhs %18
          %22 = OpLoad %float %21 Aligned 4
          %23 = OpFMul %float %20 %22
-          %7 = OpConvertFToS %uchar %23
-         %24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %res %18
+          %7 = OpConvertFToU %ushort %23
+         %24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ushort %res %18
                OpStore %24 %7
                OpReturn
                OpFunctionEnd

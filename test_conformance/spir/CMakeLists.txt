@@ -1,6 +1,3 @@
-# Import function list from math_brute_force
-add_definitions(-DFUNCTION_LIST_ULPS_ONLY)
-
 set(SPIR_OUT ${CONFORMANCE_PREFIX}spir${CONFORMANCE_SUFFIX})
 
 set (SPIR_SOURCES
@@ -9,25 +6,18 @@ set (SPIR_SOURCES
     run_build_test.cpp
     run_services.cpp
     kernelargs.cpp
-    ../math_brute_force/function_list.cpp
 )
 
 add_executable(${SPIR_OUT}
     ${SPIR_SOURCES})
 
 if(UNIX)
-    set_target_properties(${SPIR_OUT} PROPERTIES
-       COMPILE_FLAGS "-fexceptions -frtti")
+    target_compile_options(${SPIR_OUT} PRIVATE -fexceptions -frtti)
 elseif(MSVC)
-    set_target_properties(${SPIR_OUT} PROPERTIES
-       COMPILE_FLAGS "/GR /EHs /EHc")
+    target_compile_options(${SPIR_OUT} PRIVATE /GR /EHs /EHc)
 endif()
 
-TARGET_LINK_LIBRARIES(${SPIR_OUT} harness
-    ${CLConform_LIBRARIES})
-
-
-set_source_files_properties(${SPIR_SOURCES} PROPERTIES LANGUAGE CXX)
+target_link_libraries(${SPIR_OUT} harness ${CLConform_LIBRARIES})
 
 # Need to copy the spir zips to sit beside the executable
 

@@ -64,7 +64,7 @@ static void log_info_semaphore_type(
     log_info("%s", semaphore_type_description.str().c_str());
 }
 
-static int init_vuikan_device()
+static int init_vuikan_device(cl_uint num_devices, cl_device_id* deviceIds)
 {
     cl_platform_id platform = nullptr;
 
@@ -77,7 +77,7 @@ static int init_vuikan_device()
         return err;
     }
 
-    init_cl_vk_ext(platform);
+    init_cl_vk_ext(platform, num_devices, deviceIds);
 
     return CL_SUCCESS;
 }
@@ -101,7 +101,7 @@ int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device())
+    if (init_vuikan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -130,8 +130,8 @@ int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
         VulkanSemaphore vkVk2CLSemaphore(vkDevice,
                                          vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore sema_ext(vkVk2CLSemaphore, context,
-                                     vkExternalSemaphoreHandleType, deviceID);
+        clExternalImportableSemaphore sema_ext(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceID);
 
         // Needed by the macro
         cl_semaphore_khr sema = sema_ext.getCLSemaphore();
@@ -181,7 +181,7 @@ int test_external_semaphores_multi_context(cl_device_id deviceID,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device())
+    if (init_vuikan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -219,10 +219,11 @@ int test_external_semaphores_multi_context(cl_device_id deviceID,
             return TEST_FAIL;
         }
 
-        clExternalSemaphore sema_ext_1(vkVk2CLSemaphore, context,
-                                       vkExternalSemaphoreHandleType, deviceID);
-        clExternalSemaphore sema_ext_2(vkVk2CLSemaphore, context2,
-                                       vkExternalSemaphoreHandleType, deviceID);
+        clExternalExportableSemaphore sema_ext_1(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceID);
+        clExternalExportableSemaphore sema_ext_2(vkVk2CLSemaphore, context2,
+                                                 vkExternalSemaphoreHandleType,
+                                                 deviceID);
 
         clCommandQueueWrapper queue1 =
             clCreateCommandQueue(context, deviceID, 0, &err);
@@ -288,7 +289,7 @@ static int semaphore_external_cross_queue_helper(cl_device_id deviceID,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device())
+    if (init_vuikan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -313,8 +314,8 @@ static int semaphore_external_cross_queue_helper(cl_device_id deviceID,
         VulkanSemaphore vkVk2CLSemaphore(vkDevice,
                                          vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore sema_ext(vkVk2CLSemaphore, context,
-                                     vkExternalSemaphoreHandleType, deviceID);
+        clExternalExportableSemaphore sema_ext(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceID);
 
         // Obtain pointers to semaphore's API
         GET_PFN(deviceID, clEnqueueSignalSemaphoresKHR);
@@ -362,7 +363,7 @@ int test_external_semaphores_simple_1(cl_device_id deviceID, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device())
+    if (init_vuikan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -392,8 +393,8 @@ int test_external_semaphores_simple_1(cl_device_id deviceID, cl_context context,
         VulkanSemaphore vkVk2CLSemaphore(vkDevice,
                                          vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore sema_ext(vkVk2CLSemaphore, context,
-                                     vkExternalSemaphoreHandleType, deviceID);
+        clExternalExportableSemaphore sema_ext(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceID);
 
         cl_int err = CL_SUCCESS;
 
@@ -439,7 +440,7 @@ int test_external_semaphores_simple_2(cl_device_id deviceID, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device())
+    if (init_vuikan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -468,8 +469,8 @@ int test_external_semaphores_simple_2(cl_device_id deviceID, cl_context context,
         VulkanSemaphore vkVk2CLSemaphore(vkDevice,
                                          vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore sema_ext(vkVk2CLSemaphore, context,
-                                     vkExternalSemaphoreHandleType, deviceID);
+        clExternalExportableSemaphore sema_ext(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceID);
 
         cl_int err = CL_SUCCESS;
 
@@ -545,7 +546,7 @@ int test_external_semaphores_reuse(cl_device_id deviceID, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device())
+    if (init_vuikan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -574,8 +575,8 @@ int test_external_semaphores_reuse(cl_device_id deviceID, cl_context context,
         VulkanSemaphore vkVk2CLSemaphore(vkDevice,
                                          vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore sema_ext(vkVk2CLSemaphore, context,
-                                     vkExternalSemaphoreHandleType, deviceID);
+        clExternalExportableSemaphore sema_ext(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceID);
 
         cl_int err = CL_SUCCESS;
 
@@ -668,7 +669,7 @@ static int external_semaphore_cross_queue_helper(cl_device_id deviceID,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device())
+    if (init_vuikan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -697,8 +698,8 @@ static int external_semaphore_cross_queue_helper(cl_device_id deviceID,
         VulkanSemaphore vkVk2CLSemaphore(vkDevice,
                                          vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore sema_ext(vkVk2CLSemaphore, context,
-                                     vkExternalSemaphoreHandleType, deviceID);
+        clExternalExportableSemaphore sema_ext(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceID);
 
         cl_int err = CL_SUCCESS;
 
@@ -785,7 +786,7 @@ int test_external_semaphores_cross_queues_io2(cl_device_id deviceID,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device())
+    if (init_vuikan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -823,10 +824,11 @@ int test_external_semaphores_cross_queues_io2(cl_device_id deviceID,
         VulkanSemaphore vkVk2CLSemaphore(vkDevice,
                                          vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore sema_ext_1(vkVk2CLSemaphore, context,
-                                       vkExternalSemaphoreHandleType, deviceID);
-        clExternalSemaphore sema_ext_2(vkVk2CLSemaphore, context2,
-                                       vkExternalSemaphoreHandleType, deviceID);
+        clExternalExportableSemaphore sema_ext_1(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceID);
+        clExternalExportableSemaphore sema_ext_2(vkVk2CLSemaphore, context2,
+                                                 vkExternalSemaphoreHandleType,
+                                                 deviceID);
 
         clCommandQueueWrapper queue1 =
             clCreateCommandQueue(context, deviceID, 0, &err);
@@ -891,7 +893,7 @@ int test_external_semaphores_multi_signal(cl_device_id deviceID,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device())
+    if (init_vuikan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -922,10 +924,12 @@ int test_external_semaphores_multi_signal(cl_device_id deviceID,
         VulkanSemaphore vkVk2CLSemaphore2(vkDevice,
                                           vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore sema_ext_1(vkVk2CLSemaphore1, context,
-                                       vkExternalSemaphoreHandleType, deviceID);
-        clExternalSemaphore sema_ext_2(vkVk2CLSemaphore2, context,
-                                       vkExternalSemaphoreHandleType, deviceID);
+        clExternalExportableSemaphore sema_ext_1(vkVk2CLSemaphore1, context,
+                                                 vkExternalSemaphoreHandleType,
+                                                 deviceID);
+        clExternalExportableSemaphore sema_ext_2(vkVk2CLSemaphore2, context,
+                                                 vkExternalSemaphoreHandleType,
+                                                 deviceID);
 
         cl_int err = CL_SUCCESS;
 
@@ -980,7 +984,7 @@ int test_external_semaphores_multi_wait(cl_device_id deviceID,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device())
+    if (init_vuikan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -1011,10 +1015,12 @@ int test_external_semaphores_multi_wait(cl_device_id deviceID,
         VulkanSemaphore vkVk2CLSemaphore2(vkDevice,
                                           vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore sema_ext_1(vkVk2CLSemaphore1, context,
-                                       vkExternalSemaphoreHandleType, deviceID);
-        clExternalSemaphore sema_ext_2(vkVk2CLSemaphore2, context,
-                                       vkExternalSemaphoreHandleType, deviceID);
+        clExternalExportableSemaphore sema_ext_1(vkVk2CLSemaphore1, context,
+                                                 vkExternalSemaphoreHandleType,
+                                                 deviceID);
+        clExternalExportableSemaphore sema_ext_2(vkVk2CLSemaphore2, context,
+                                                 vkExternalSemaphoreHandleType,
+                                                 deviceID);
 
         cl_int err = CL_SUCCESS;
 
