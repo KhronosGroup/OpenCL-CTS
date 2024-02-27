@@ -1392,7 +1392,7 @@ int test_computeinfo(cl_device_id deviceID, cl_context context,
             for (size_t onDevice = 0;
                  onDevice < device_infos[onInfo].num_devices; onDevice++)
             {
-                log_info("%s Device %d of %d Info:\n",
+                log_info("%s Device %zu of %d Info:\n",
                          device_infos[onInfo].device_type_name, onDevice + 1,
                          device_infos[onInfo].num_devices);
                 total_errors +=
