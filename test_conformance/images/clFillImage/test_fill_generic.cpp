@@ -78,12 +78,16 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             if (gDebugTrace)
                 log_info(" - Creating 1D buffer image %d ...\n",
                          (int)imageInfo->width);
-            if (gEnablePitch) host_ptr = malloc(imageInfo->rowPitch);
             {
                 cl_int err;
-                cl_mem buffer =
-                    clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                   imageInfo->rowPitch, host_ptr, &err);
+                cl_mem_flags buffer_flags = CL_MEM_READ_WRITE;
+                if (gEnablePitch)
+                {
+                    host_ptr = malloc(imageInfo->rowPitch);
+                    buffer_flags |= CL_MEM_USE_HOST_PTR;
+                }
+                cl_mem buffer = clCreateBuffer(
+                    context, buffer_flags, imageInfo->rowPitch, host_ptr, &err);
                 if (err != CL_SUCCESS)
                 {
                     log_error("ERROR: Could not create buffer for 1D buffer "
@@ -103,10 +107,22 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             log_error( "ERROR: Unable to create backing store for pitched 3D image. %ld bytes\n",  imageInfo->depth * imageInfo->slicePitch );
             return NULL;
         }
-        mem_flags = CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR;
+        if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
+        {
+            mem_flags = CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR;
+        }
     }
 
-    img = clCreateImage(context, mem_flags, imageInfo->format, &imageDesc, host_ptr, error);
+    if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
+    {
+        img = clCreateImage(context, mem_flags, imageInfo->format, &imageDesc,
+                            host_ptr, error);
+    }
+    else
+    {
+        img = clCreateImage(context, mem_flags, imageInfo->format, &imageDesc,
+                            nullptr, error);
+    }
 
     if (gEnablePitch)
     {
