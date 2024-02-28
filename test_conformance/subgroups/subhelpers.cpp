@@ -16,6 +16,7 @@
 
 #include "subhelpers.h"
 
+#include <algorithm>
 #include <random>
 
 // Define operator<< for cl_ types, accessing the .s member.
