@@ -644,8 +644,8 @@ public:
     }
 
 private:
-    TExplicitMemoryOrderType _memoryOrder;
-    TExplicitMemoryScopeType _memoryScope;
+    TExplicitMemoryOrderType _memoryOrder = MEMORY_ORDER_EMPTY;
+    TExplicitMemoryScopeType _memoryScope = MEMORY_SCOPE_EMPTY;
 };
 
 template <typename HostAtomicType, typename HostDataType>

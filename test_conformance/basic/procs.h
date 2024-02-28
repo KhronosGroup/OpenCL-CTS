@@ -91,16 +91,8 @@ extern int      test_vstore_global(cl_device_id deviceID, cl_context context, cl
 extern int      test_vstore_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_vstore_private(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
-extern int      test_explicit_s2v_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_explicit_s2v_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_explicit_s2v_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_explicit_s2v_ushort(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_explicit_s2v_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_explicit_s2v_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_explicit_s2v_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_explicit_s2v_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_explicit_s2v_float(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int      test_explicit_s2v_double(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_explicit_s2v(cl_device_id deviceID, cl_context context,
+                             cl_command_queue queue, int num_elements);
 
 extern int      test_enqueue_map_buffer(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int      test_enqueue_map_image(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

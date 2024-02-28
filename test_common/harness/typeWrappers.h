@@ -145,6 +145,48 @@ using clSamplerWrapper =
 using clEventWrapper =
     wrapper_details::Wrapper<cl_event, clRetainEvent, clReleaseEvent>;
 
+class clSVMWrapper {
+    void *Ptr = nullptr;
+    cl_context Ctx = nullptr;
+
+public:
+    clSVMWrapper() = default;
+
+    clSVMWrapper(cl_context C, size_t Size,
+                 cl_svm_mem_flags F = CL_MEM_READ_WRITE)
+        : Ctx(C)
+    {
+        Ptr = clSVMAlloc(C, F, Size, 0);
+    }
+
+    clSVMWrapper &operator=(void *other) = delete;
+    clSVMWrapper(clSVMWrapper const &other) = delete;
+    clSVMWrapper &operator=(clSVMWrapper const &other) = delete;
+    clSVMWrapper(clSVMWrapper &&other)
+    {
+        Ptr = other.Ptr;
+        Ctx = other.Ctx;
+        other.Ptr = nullptr;
+        other.Ctx = nullptr;
+    }
+    clSVMWrapper &operator=(clSVMWrapper &&other)
+    {
+        Ptr = other.Ptr;
+        Ctx = other.Ctx;
+        other.Ptr = nullptr;
+        other.Ctx = nullptr;
+        return *this;
+    }
+
+    ~clSVMWrapper()
+    {
+        if (Ptr) clSVMFree(Ctx, Ptr);
+    }
+
+    void *operator()() const { return Ptr; }
+};
+
+
 class clProtectedImage {
 public:
     clProtectedImage()

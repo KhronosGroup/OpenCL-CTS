@@ -217,6 +217,9 @@ int test_get_buffer_info( cl_device_id deviceID, cl_context context, cl_command_
             // Create a buffer object to test against.
             bufferObject = clCreateBuffer( context, bufferFlags[ i ], addressAlign * 4, NULL, &error );
             test_error( error, "Unable to create buffer to test with" );
+            void *ptr;
+            TEST_MEM_OBJECT_PARAM(bufferObject, CL_MEM_HOST_PTR, ptr, NULL,
+                                  "host pointer", "%p", void *)
         }
 
         // Perform buffer object queries.
@@ -473,7 +476,8 @@ int test_get_image_info( cl_device_id deviceID, cl_context context, cl_mem_objec
         CL_MEM_HOST_NO_ACCESS | CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR,
         CL_MEM_HOST_NO_ACCESS | CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,
     };
-    MTdata d;
+    MTdataHolder d_holder(gRandomSeed);
+    MTdata d = static_cast<MTdata>(d_holder);
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT( deviceID )
 
@@ -491,8 +495,6 @@ int test_get_image_info( cl_device_id deviceID, cl_context context, cl_mem_objec
 #else
     imageInfo.buffer = NULL;
 #endif
-
-    d = init_genrand( gRandomSeed );
 
     for ( unsigned int i = 0; i < sizeof(imageFlags) / sizeof(cl_mem_flags); ++i )
     {

@@ -185,6 +185,9 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
         else if (strcmp(env_mode, "accelerator") == 0
                  || strcmp(env_mode, "CL_DEVICE_TYPE_ACCELERATOR") == 0)
             device_type = CL_DEVICE_TYPE_ACCELERATOR;
+        else if (strcmp(env_mode, "custom") == 0
+                 || strcmp(env_mode, "CL_DEVICE_TYPE_CUSTOM") == 0)
+            device_type = CL_DEVICE_TYPE_CUSTOM;
         else if (strcmp(env_mode, "default") == 0
                  || strcmp(env_mode, "CL_DEVICE_TYPE_DEFAULT") == 0)
             device_type = CL_DEVICE_TYPE_DEFAULT;
@@ -314,6 +317,12 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
             device_type = CL_DEVICE_TYPE_ACCELERATOR;
             argc--;
         }
+        else if (strcmp(argv[argc - 1], "custom") == 0
+                 || strcmp(argv[argc - 1], "CL_DEVICE_TYPE_CUSTOM") == 0)
+        {
+            device_type = CL_DEVICE_TYPE_CUSTOM;
+            argc--;
+        }
         else if (strcmp(argv[argc - 1], "CL_DEVICE_TYPE_DEFAULT") == 0)
         {
             device_type = CL_DEVICE_TYPE_DEFAULT;
@@ -350,6 +359,9 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
         case CL_DEVICE_TYPE_CPU: log_info("Requesting CPU device "); break;
         case CL_DEVICE_TYPE_ACCELERATOR:
             log_info("Requesting Accelerator device ");
+            break;
+        case CL_DEVICE_TYPE_CUSTOM:
+            log_info("Requesting Custom device ");
             break;
         case CL_DEVICE_TYPE_DEFAULT:
             log_info("Requesting Default device ");
@@ -1196,18 +1208,21 @@ Version get_device_spirv_il_version(cl_device_id device)
         ASSERT_SUCCESS(err, "clGetDeviceInfo");
     }
 
-    if (strstr(str.data(), "SPIR-V_1.0") != NULL)
-        return Version(1, 0);
-    else if (strstr(str.data(), "SPIR-V_1.1") != NULL)
-        return Version(1, 1);
-    else if (strstr(str.data(), "SPIR-V_1.2") != NULL)
-        return Version(1, 2);
-    else if (strstr(str.data(), "SPIR-V_1.3") != NULL)
-        return Version(1, 3);
+    // Because this query returns a space-separated list of IL version strings
+    // we should check for SPIR-V versions in reverse order, to return the
+    // highest version supported.
+    if (strstr(str.data(), "SPIR-V_1.5") != NULL)
+        return Version(1, 5);
     else if (strstr(str.data(), "SPIR-V_1.4") != NULL)
         return Version(1, 4);
-    else if (strstr(str.data(), "SPIR-V_1.5") != NULL)
-        return Version(1, 5);
+    else if (strstr(str.data(), "SPIR-V_1.3") != NULL)
+        return Version(1, 3);
+    else if (strstr(str.data(), "SPIR-V_1.2") != NULL)
+        return Version(1, 2);
+    else if (strstr(str.data(), "SPIR-V_1.1") != NULL)
+        return Version(1, 1);
+    else if (strstr(str.data(), "SPIR-V_1.0") != NULL)
+        return Version(1, 0);
 
     throw std::runtime_error(std::string("Unknown SPIR-V version: ")
                              + str.data());
@@ -1298,6 +1313,8 @@ void PrintArch(void)
     vlog("ARCH:\taarch64\n");
 #elif defined(_WIN32)
     vlog("ARCH:\tWindows\n");
+#elif defined(__mips__)
+    vlog("ARCH:\tmips\n");
 #else
 #error unknown arch
 #endif

@@ -170,7 +170,7 @@ int test_image_format_methods(cl_device_id device, cl_context context,
     }
 
     // Construct testing source
-    log_info(" - Creating image %d by %d...\n", width, height);
+    log_info(" - Creating image %zu by %zu...\n", width, height);
     // Create a CL image from the supplied GL texture
     image = (*clCreateFromGLTexture_ptr)(context, CL_MEM_READ_ONLY, target, 0,
                                          glTexture, &error);

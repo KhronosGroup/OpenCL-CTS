@@ -50,6 +50,13 @@ typedef cl_int (*pfnclEnqueueReleaseExternalMemObjectsKHR)(
     const cl_mem *mem_objects, cl_uint num_events_in_wait_list,
     const cl_event *event_wait_list, cl_event *event);
 typedef cl_int (*pfnclReleaseSemaphoreKHR)(cl_semaphore_khr sema_object);
+typedef cl_int (*pfnclGetSemaphoreHandleForTypeKHR)(
+    cl_semaphore_khr sema_object, cl_device_id device,
+    cl_external_semaphore_handle_type_khr handleType, size_t handle_size,
+    void *handle, size_t *handleSize);
+typedef cl_int (*pfnclReImportSemaphoreSyncFdKHR)(
+    cl_semaphore_khr sema_object,
+    cl_semaphore_reimport_properties_khr *reimport_props, int fd);
 
 extern pfnclCreateSemaphoreWithPropertiesKHR
     clCreateSemaphoreWithPropertiesKHRptr;
@@ -60,6 +67,7 @@ extern pfnclEnqueueAcquireExternalMemObjectsKHR
 extern pfnclEnqueueReleaseExternalMemObjectsKHR
     clEnqueueReleaseExternalMemObjectsKHRptr;
 extern pfnclReleaseSemaphoreKHR clReleaseSemaphoreKHRptr;
+extern pfnclReImportSemaphoreSyncFdKHR pfnclReImportSemaphoreSyncFdKHRptr;
 
 cl_int getCLImageInfoFromVkImageInfo(const VkImageCreateInfo *, size_t,
                                      cl_image_format *, cl_image_desc *);
@@ -83,8 +91,7 @@ public:
     clExternalMemory();
     clExternalMemory(const VulkanDeviceMemory *deviceMemory,
                      VulkanExternalMemoryHandleType externalMemoryHandleType,
-                     uint64_t offset, uint64_t size, cl_context context,
-                     cl_device_id deviceId);
+                     uint64_t size, cl_context context, cl_device_id deviceId);
 
     virtual ~clExternalMemory();
     cl_mem getExternalMemoryBuffer();
@@ -94,7 +101,6 @@ protected:
     cl_mem m_externalMemory;
     int fd;
     void *handle;
-    cl_command_queue cmd_queue;
     clExternalMemoryImage();
 
 public:
@@ -109,25 +115,58 @@ public:
 };
 
 class clExternalSemaphore {
+public:
+    virtual int signal(cl_command_queue command_queue) = 0;
+    virtual int wait(cl_command_queue command_queue) = 0;
+    virtual cl_semaphore_khr &getCLSemaphore() = 0;
+    virtual ~clExternalSemaphore() = 0;
+};
+
+
+class clExternalImportableSemaphore : public virtual clExternalSemaphore {
 protected:
     cl_semaphore_khr m_externalSemaphore;
+    VulkanExternalSemaphoreHandleType m_externalHandleType;
+    cl_device_id m_device;
+    cl_context m_context;
+    const VulkanSemaphore &m_deviceSemaphore;
     int fd;
     void *handle;
-    clExternalSemaphore(const clExternalSemaphore &externalSemaphore);
 
 public:
-    clExternalSemaphore(
+    clExternalImportableSemaphore(
         const VulkanSemaphore &deviceSemaphore, cl_context context,
         VulkanExternalSemaphoreHandleType externalSemaphoreHandleType,
         cl_device_id deviceId);
-    virtual ~clExternalSemaphore() noexcept(false);
-    void signal(cl_command_queue command_queue);
-    void wait(cl_command_queue command_queue);
-    cl_semaphore_khr &getCLSemaphore();
-    // operator openclExternalSemaphore_t() const;
+    ~clExternalImportableSemaphore() override;
+    int wait(cl_command_queue command_queue) override;
+    int signal(cl_command_queue command_queue) override;
+    cl_semaphore_khr &getCLSemaphore() override;
 };
 
-extern void init_cl_vk_ext(cl_platform_id);
+class clExternalExportableSemaphore : public virtual clExternalSemaphore {
+protected:
+    cl_semaphore_khr m_externalSemaphore;
+    VulkanExternalSemaphoreHandleType m_externalHandleType;
+    cl_device_id m_device;
+    cl_context m_context;
+    const VulkanSemaphore &m_deviceSemaphore;
+    int fd;
+    void *handle;
+
+public:
+    clExternalExportableSemaphore(
+        const VulkanSemaphore &deviceSemaphore, cl_context context,
+        VulkanExternalSemaphoreHandleType externalSemaphoreHandleType,
+        cl_device_id deviceId);
+    ~clExternalExportableSemaphore() override;
+    int signal(cl_command_queue command_queue) override;
+    int wait(cl_command_queue command_queue) override;
+    cl_semaphore_khr &getCLSemaphore() override;
+};
+
+extern void init_cl_vk_ext(cl_platform_id, cl_uint num_devices,
+                           cl_device_id *deviceIds);
 
 VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
     cl_device_id deviceId,

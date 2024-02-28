@@ -7,9 +7,9 @@
                OpCapability Linkage
                OpCapability Kernel
                OpCapability Int64
-               OpCapability Float64
+               OpCapability Int8
                OpMemoryModel Physical64 OpenCL
-               OpEntryPoint Kernel %1 "decorate_saturated_conversion_uint" %gl_GlobalInvocationID
+               OpEntryPoint Kernel %1 "decorate_saturated_conversion_float_to_uchar" %gl_GlobalInvocationID
                OpName %res "res"
                OpName %lhs "lhs"
                OpName %rhs "rhs"
@@ -22,29 +22,29 @@
     %v3ulong = OpTypeVector %ulong 3
 %_ptr_Input_v3ulong = OpTypePointer Input %v3ulong
        %void = OpTypeVoid
-       %uint = OpTypeInt 32 0
-%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
-     %double = OpTypeFloat 64
-%_ptr_CrossWorkgroup_double = OpTypePointer CrossWorkgroup %double
-         %16 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_double %_ptr_CrossWorkgroup_double
+      %uchar = OpTypeInt 8 0
+%_ptr_CrossWorkgroup_uchar = OpTypePointer CrossWorkgroup %uchar
+      %float = OpTypeFloat 32
+%_ptr_CrossWorkgroup_float = OpTypePointer CrossWorkgroup %float
+         %16 = OpTypeFunction %void %_ptr_CrossWorkgroup_uchar %_ptr_CrossWorkgroup_float %_ptr_CrossWorkgroup_float
    %ulong_32 = OpConstant %ulong 32
 %gl_GlobalInvocationID = OpVariable %_ptr_Input_v3ulong Input
           %1 = OpFunction %void None %16
-        %res = OpFunctionParameter %_ptr_CrossWorkgroup_uint
-        %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_double
-        %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_double
+        %res = OpFunctionParameter %_ptr_CrossWorkgroup_uchar
+        %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_float
+        %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_float
       %entry = OpLabel
          %18 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
          %19 = OpCompositeExtract %ulong %18 0
          %20 = OpShiftLeftLogical %ulong %19 %ulong_32
          %21 = OpShiftRightArithmetic %ulong %20 %ulong_32
-         %22 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_double %lhs %21
-         %23 = OpLoad %double %22
-         %24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_double %rhs %21
-         %25 = OpLoad %double %24
-         %26 = OpFMul %double %23 %25
-          %7 = OpConvertFToS %uint %26
-         %27 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %res %21
+         %22 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %lhs %21
+         %23 = OpLoad %float %22 Aligned 4
+         %24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %rhs %21
+         %25 = OpLoad %float %24 Aligned 4
+         %26 = OpFMul %float %23 %25
+          %7 = OpConvertFToU %uchar %26
+         %27 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uchar %res %21
                OpStore %27 %7
                OpReturn
                OpFunctionEnd

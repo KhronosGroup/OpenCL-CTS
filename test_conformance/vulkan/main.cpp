@@ -53,7 +53,7 @@ static void params_reset()
 
 extern int test_buffer_common(cl_device_id device_, cl_context context_,
                               cl_command_queue queue_, int numElements_,
-                              float use_fence);
+                              bool use_fence);
 extern int test_image_common(cl_device_id device_, cl_context context_,
                              cl_command_queue queue_, int numElements_);
 
@@ -227,10 +227,6 @@ size_t parseParams(int argc, const char *argv[], const char **argList)
             {
                 disableNTHandleType = true;
             }
-            if (!strcmp(argv[i], "--enableOffset"))
-            {
-                enableOffset = true;
-            }
             if (strcmp(argv[i], "-h") == 0)
             {
                 printUsage(argv[0]);
@@ -373,7 +369,7 @@ int main(int argc, const char *argv[])
         log_info(" TEST SKIPPED\n");
         return CL_SUCCESS;
     }
-    init_cl_vk_ext(platform);
+    init_cl_vk_ext(platform, num_devices, devices);
 
     // Execute tests.
     // Note: don't use the entire harness, because we have a different way of

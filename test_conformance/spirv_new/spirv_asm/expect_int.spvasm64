@@ -1,0 +1,85 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 58
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Vector16
+               OpCapability Int64
+               OpCapability ExpectAssumeKHR
+               OpExtension "SPV_KHR_expect_assume"
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %expect_int "expect_int"
+               OpSource OpenCL_C 102000
+               OpDecorate %dst FuncParamAttr NoCapture
+               OpDecorate %dst Alignment 64
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+      %uint2 = OpTypeVector %uint 2
+      %uint3 = OpTypeVector %uint 3
+      %uint4 = OpTypeVector %uint 4
+      %uint8 = OpTypeVector %uint 8
+     %uint16 = OpTypeVector %uint 16
+      %ulong = OpTypeInt 64 0
+     %uint_0 = OpConstantNull %uint
+    %uint2_0 = OpConstantNull %uint2
+    %uint3_0 = OpConstantNull %uint3
+    %uint4_0 = OpConstantNull %uint4
+    %uint8_0 = OpConstantNull %uint8
+   %uint16_0 = OpConstantNull %uint16
+    %index_1 = OpConstant %ulong 1
+    %index_2 = OpConstant %ulong 2
+    %index_3 = OpConstant %ulong 3
+    %index_4 = OpConstant %ulong 4
+    %index_5 = OpConstant %ulong 5
+%_ptr_CrossWorkgroup_uint16 = OpTypePointer CrossWorkgroup %uint16
+          %6 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint16 %uint
+ %expect_int = OpFunction %void None %6
+        %dst = OpFunctionParameter %_ptr_CrossWorkgroup_uint16
+      %value = OpFunctionParameter %uint
+         %10 = OpLabel
+                  ; setup
+  %value_vec = OpCompositeInsert %uint2 %value %uint2_0 0
+                  ; scalar expect:
+                  ;     int v1e = __builtin_expect(value, 0);
+                  ;     dst[0] = (int16)(v1e, 0, ...);
+        %v1e = OpExpectKHR %uint %value %uint_0
+      %v1v16 = OpCompositeInsert %uint16 %v1e %uint16_0 0
+               OpStore %dst %v1v16 Aligned 64
+                  ; vec2 expect:
+                  ;     int2 v2 = (int2)(value);
+                  ;     int2 v2e = __builtin_expect(v2, 0);
+                  ;     dst[1] = (int16)(v2e, 0, ...);
+         %v2 = OpVectorShuffle %uint2 %value_vec %value_vec 0 0
+        %v2e = OpExpectKHR %uint2 %v2 %uint2_0
+      %v2v16 = OpVectorShuffle %uint16 %v2e %uint2_0 0 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 
+      %dst_1 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint16 %dst %index_1
+               OpStore %dst_1 %v2v16 Aligned 64
+                  ; vec3 expect
+         %v3 = OpVectorShuffle %uint3 %value_vec %value_vec 0 0 0
+        %v3e = OpExpectKHR %uint3 %v3 %uint3_0
+      %v3v16 = OpVectorShuffle %uint16 %v3e %uint2_0 0 1 2 3 3 3 3 3 3 3 3 3 3 3 3 3
+      %dst_2 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint16 %dst %index_2
+               OpStore %dst_2 %v3v16 Aligned 64
+                  ; vec4 expect
+         %v4 = OpVectorShuffle %uint4 %value_vec %value_vec 0 0 0 0
+        %v4e = OpExpectKHR %uint4 %v4 %uint4_0
+      %v4v16 = OpVectorShuffle %uint16 %v4e %uint2_0 0 1 2 3 4 4 4 4 4 4 4 4 4 4 4 4
+      %dst_3 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint16 %dst %index_3
+               OpStore %dst_3 %v4v16 Aligned 64
+                  ; vec8 expect
+         %v8 = OpVectorShuffle %uint8 %value_vec %value_vec 0 0 0 0 0 0 0 0
+        %v8e = OpExpectKHR %uint8 %v8 %uint8_0
+      %v8v16 = OpVectorShuffle %uint16 %v8e %uint2_0 0 1 2 3 4 5 6 7 8 8 8 8 8 8 8 8
+      %dst_4 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint16 %dst %index_4
+               OpStore %dst_4 %v8v16 Aligned 64
+                  ; vec16 expect
+        %v16 = OpVectorShuffle %uint16 %value_vec %value_vec 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+       %v16e = OpExpectKHR %uint16 %v16 %uint16_0
+      %dst_5 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint16 %dst %index_5
+               OpStore %dst_5 %v16e Aligned 64
+               OpReturn
+               OpFunctionEnd

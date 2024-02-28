@@ -16,6 +16,8 @@
 #include "allocation_execute.h"
 #include "allocation_functions.h"
 
+#include <vector>
+
 
 const char *buffer_kernel_pattern = {
     "__kernel void sample_test(%s __global uint *result, __global %s *array_sizes, uint per_item)\n"
@@ -140,7 +142,7 @@ int check_image(cl_command_queue queue, cl_mem mem) {
 }
 
 
-#define NUM_OF_WORK_ITEMS 8192*2
+#define NUM_OF_WORK_ITEMS (8192 * 32)
 
 int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id device_id, int test, cl_mem mems[], int number_of_mems_used, int verify_checksum) {
 
@@ -155,7 +157,8 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
     size_t global_dims[3];
     cl_uint per_item;
     cl_uint per_item_uint;
-    cl_uint returned_results[NUM_OF_WORK_ITEMS], final_result;
+    cl_uint final_result;
+    std::vector<cl_uint> returned_results(NUM_OF_WORK_ITEMS);
     clEventWrapper event;
     cl_int event_status;
 
@@ -236,7 +239,9 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
     }
 
     // Set the result
-    result_mem = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(cl_uint)*NUM_OF_WORK_ITEMS, &returned_results, &error);
+    result_mem = clCreateBuffer(
+        context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+        sizeof(cl_uint) * NUM_OF_WORK_ITEMS, returned_results.data(), &error);
     test_error(error, "clCreateBuffer failed");
     error = clSetKernelArg(kernel, i, sizeof(result_mem), &result_mem);
     test_error(error, "clSetKernelArg failed");
@@ -342,7 +347,9 @@ int execute_kernel(cl_context context, cl_command_queue *queue, cl_device_id dev
 
     // Verify the checksum.
     // Read back the result
-    error = clEnqueueReadBuffer(*queue, result_mem, CL_TRUE, 0, sizeof(cl_uint)*NUM_OF_WORK_ITEMS, &returned_results, 0, NULL, NULL);
+    error = clEnqueueReadBuffer(*queue, result_mem, CL_TRUE, 0,
+                                sizeof(cl_uint) * NUM_OF_WORK_ITEMS,
+                                returned_results.data(), 0, NULL, NULL);
     test_error_abort(error, "clEnqueueReadBuffer failed");
     final_result = 0;
     if (test == BUFFER || test == IMAGE_READ || test == BUFFER_NON_BLOCKING || test == IMAGE_READ_NON_BLOCKING) {

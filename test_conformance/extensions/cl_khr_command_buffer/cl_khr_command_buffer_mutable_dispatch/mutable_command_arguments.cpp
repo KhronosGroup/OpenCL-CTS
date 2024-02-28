@@ -664,8 +664,8 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
 
         // Allocate and initialize SVM for modified execution
 
-        cl_int *newWrapper =
-            (cl_int *)clSVMAlloc(context, CL_MEM_READ_WRITE, sizeof(cl_int), 0);
+        cl_int *newWrapper = (cl_int *)clSVMAlloc(context, CL_MEM_READ_WRITE,
+                                                  sizeof(cl_int *), 0);
         cl_int *newBuffer = (cl_int *)clSVMAlloc(
             context, CL_MEM_READ_WRITE, num_elements * sizeof(cl_int), 0);
         test_assert_error(newWrapper != nullptr && newBuffer != nullptr,

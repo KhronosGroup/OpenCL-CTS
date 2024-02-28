@@ -46,7 +46,10 @@ getDefaultVulkanQueueFamilyToQueueCountMap();
 const std::vector<VulkanExternalMemoryHandleType>
 getSupportedVulkanExternalMemoryHandleTypeList();
 const std::vector<VulkanExternalSemaphoreHandleType>
-getSupportedVulkanExternalSemaphoreHandleTypeList();
+getSupportedVulkanExternalSemaphoreHandleTypeList(const VulkanDevice& vkDevice);
+std::vector<VulkanExternalSemaphoreHandleType>
+getSupportedInteropExternalSemaphoreHandleTypes(cl_device_id device,
+                                                VulkanDevice& vkDevice);
 const std::vector<VulkanFormat> getSupportedVulkanFormatList();
 
 uint32_t getVulkanFormatElementSize(VulkanFormat format);

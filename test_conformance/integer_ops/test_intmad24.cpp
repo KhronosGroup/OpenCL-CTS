@@ -139,8 +139,10 @@ verify_int_mad24(int *inptrA, int *inptrB, int *inptrC, int *outptr, size_t n, s
         r = a * b + inptrC[i];
         if (r != outptr[i])
         {
-            log_error( "Failed at %ld)  0x%8.8x * 0x%8.8x + 0x%8.8x = *0x%8.8x vs 0x%8.8x\n", i, a, b, inptrC[i], r, outptr[i] );
-             return -1;
+            log_error("Failed at %zu)  0x%8.8x * 0x%8.8x + 0x%8.8x = *0x%8.8x "
+                      "vs 0x%8.8x\n",
+                      i, a, b, inptrC[i], r, outptr[i]);
+            return -1;
         }
     }
 
@@ -160,8 +162,10 @@ verify_uint_mad24(cl_uint *inptrA, cl_uint *inptrB, cl_uint *inptrC, cl_uint *ou
         r = a * b + inptrC[i];
         if (r != outptr[i])
         {
-            log_error( "Failed at %ld)  0x%8.8x * 0x%8.8x + 0x%8.8x = *0x%8.8x vs 0x%8.8x\n", i, a, b, inptrC[i], r, outptr[i] );
-             return -1;
+            log_error("Failed at %zu)  0x%8.8x * 0x%8.8x + 0x%8.8x = *0x%8.8x "
+                      "vs 0x%8.8x\n",
+                      i, a, b, inptrC[i], r, outptr[i]);
+            return -1;
         }
     }
 

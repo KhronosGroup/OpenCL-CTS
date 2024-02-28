@@ -644,6 +644,13 @@ int test_get_device_info(cl_device_id deviceID, cl_context context, cl_command_q
     }
     log_info( "\tReported device profile: %s \n", profile );
 
+    if (strcmp(profile, "FULL_PROFILE") == 0 && compilerAvail != CL_TRUE)
+    {
+        log_error("ERROR: Returned profile of device is FULL , but "
+                  "CL_DEVICE_COMPILER_AVAILABLE is not CL_TRUE as required by "
+                  "OpenCL 1.2!");
+        return -1;
+    }
 
     return 0;
 }

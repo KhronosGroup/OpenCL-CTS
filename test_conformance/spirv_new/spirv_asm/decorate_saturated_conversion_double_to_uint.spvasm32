@@ -8,7 +8,7 @@
                OpCapability Kernel
                OpCapability Float64
                OpMemoryModel Physical32 OpenCL
-               OpEntryPoint Kernel %1 "decorate_saturated_conversion_int" %gl_GlobalInvocationID
+               OpEntryPoint Kernel %1 "decorate_saturated_conversion_double_to_uint" %gl_GlobalInvocationID
                OpName %res "res"
                OpName %lhs "lhs"
                OpName %rhs "rhs"
@@ -38,7 +38,7 @@
          %20 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_double %rhs %17
          %21 = OpLoad %double %20
          %22 = OpFMul %double %19 %21
-          %7 = OpConvertFToS %uint %22
+          %7 = OpConvertFToU %uint %22
          %23 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %res %17
                OpStore %23 %7
                OpReturn

@@ -571,6 +571,7 @@ static int test_image_format_write(cl_context context, cl_command_queue queue,
                       "%s (%s):%d",
                       GetGLTargetName(target), __FUNCTION__, __FILE__,
                       __LINE__);
+            return -1;
     }
 
     // If there was a problem during creation, make sure it isn't a known

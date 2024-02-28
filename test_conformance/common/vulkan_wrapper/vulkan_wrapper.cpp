@@ -335,6 +335,16 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice vkPhysicalDevice)
             memoryHeap);
         m_memoryTypeList.add(*memoryType);
     }
+
+    uint32_t num_extensions = 0;
+    vkEnumerateDeviceExtensionProperties(m_vkPhysicalDevice, nullptr,
+                                         &num_extensions, nullptr);
+    if (num_extensions)
+    {
+        m_extensions.resize(num_extensions);
+        vkEnumerateDeviceExtensionProperties(
+            m_vkPhysicalDevice, nullptr, &num_extensions, m_extensions.data());
+    }
 }
 
 VulkanPhysicalDevice::~VulkanPhysicalDevice()
@@ -386,6 +396,18 @@ uint32_t VulkanPhysicalDevice::getNodeMask() const
 VulkanPhysicalDevice::operator VkPhysicalDevice() const
 {
     return m_vkPhysicalDevice;
+}
+
+bool VulkanPhysicalDevice::hasExtension(const char *extension_name) const
+{
+    for (const auto &m_extension : m_extensions)
+    {
+        if (!strcmp(m_extension.extensionName, extension_name))
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool operator<(const VulkanQueueFamily &queueFamilyA,
@@ -2256,6 +2278,8 @@ VulkanSemaphore::VulkanSemaphore(
     vkCreateSemaphore(m_device, &vkSemaphoreCreateInfo, NULL, &m_vkSemaphore);
 }
 
+const VulkanDevice &VulkanSemaphore::getDevice() const { return m_device; }
+
 VulkanSemaphore::~VulkanSemaphore()
 {
     vkDestroySemaphore(m_device, m_vkSemaphore, NULL);
@@ -2296,6 +2320,23 @@ int VulkanSemaphore::getHandle(
         vkSemaphoreGetFdInfoKHR.semaphore = m_vkSemaphore;
         vkSemaphoreGetFdInfoKHR.handleType =
             VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
+
+        vkGetSemaphoreFdKHR(m_device, &vkSemaphoreGetFdInfoKHR, &fd);
+
+        return fd;
+    }
+    else if (externalSemaphoreHandleType
+             == VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD)
+    {
+        int fd;
+
+        VkSemaphoreGetFdInfoKHR vkSemaphoreGetFdInfoKHR = {};
+        vkSemaphoreGetFdInfoKHR.sType =
+            VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR;
+        vkSemaphoreGetFdInfoKHR.pNext = NULL;
+        vkSemaphoreGetFdInfoKHR.semaphore = m_vkSemaphore;
+        vkSemaphoreGetFdInfoKHR.handleType =
+            VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR;
 
         vkGetSemaphoreFdKHR(m_device, &vkSemaphoreGetFdInfoKHR, &fd);
 
