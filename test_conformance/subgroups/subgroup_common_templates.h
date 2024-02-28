@@ -29,7 +29,7 @@
 // subgroup takes only one value from only one chosen (the smallest subgroup ID)
 // work_item
 // sub_group_non_uniform_broadcast - same as type 0 but
-// only 4 work_items from subgroup enter the code (are active)
+// only half of work_items from subgroup enter the code (are active)
 template <typename Ty, SubgroupsBroadcastOp operation> struct BC
 {
     static void log_test(const WorkGroupParams &test_params,
@@ -83,9 +83,11 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
                 // broadcasted (one the same value for whole subgroup)
                 if (operation != SubgroupsBroadcastOp::broadcast)
                 {
-                    bcast_if = bcast_index % num_of_active_items;
-                    bcast_elseif = num_of_active_items
-                        + bcast_index % (n - num_of_active_items);
+                    if (num_of_active_items != 0)
+                        bcast_if = bcast_index % num_of_active_items;
+                    if (num_of_active_items != n)
+                        bcast_elseif = num_of_active_items
+                            + bcast_index % (n - num_of_active_items);
                 }
 
                 for (i = 0; i < n; ++i)
