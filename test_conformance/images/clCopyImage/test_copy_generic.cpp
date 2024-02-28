@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "../testBase.h"
+#include <CL/cl.h>
 
 static void CL_CALLBACK free_pitch_buffer( cl_mem image, void *buf )
 {
@@ -591,6 +592,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
             secondDim = dstImageInfo->height;
             break;
         }
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
         case CL_MEM_OBJECT_IMAGE1D: {
             break;
         }
