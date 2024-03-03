@@ -303,15 +303,14 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
                     if (strcmp(fname, "exp") == 0 || strcmp(fname, "exp2") == 0)
                     {
-                        float exp_error = ulps;
-
+                        // For full profile, ULP depends on input value.
+                        // For embedded profile, ULP comes from functionList.
                         if (!gIsEmbedded)
                         {
-                            exp_error += floor(fabs(2 * s[j]));
+                            ulps = 3.0f + floor(fabs(2 * s[j]));
                         }
 
-                        fail = !(fabsf(err) <= exp_error);
-                        ulps = exp_error;
+                        fail = !(fabsf(err) <= ulps);
                     }
                     if (strcmp(fname, "tan") == 0)
                     {

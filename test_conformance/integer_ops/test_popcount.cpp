@@ -20,6 +20,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <cinttypes>
+
 #include "procs.h"
 
 #define str(s) #s
@@ -36,26 +38,29 @@
         } \
     }
 
-#define __verify_popcount_func(__T) \
-    static int verify_popcount_##__T( const void *p, const void *r, size_t n, const char *sizeName, size_t vecSize ) \
-    { \
-        const __T *inA = (const __T *) p; \
-        const __T *outptr = (const __T *) r; \
-        size_t i; \
-        int _n = sizeof(__T)*8; \
-        __T ref; \
-        for(i = 0; i < n; i++) \
-        { \
-            __T x = inA[i]; \
-            __T res = outptr[i]; \
-            __popcnt(x, __T, _n, ref); \
-            if(res != ref) \
-            { \
-                log_info( "%ld) Failure for popcount( (%s%s) 0x%x ) = *%d vs %d\n", i, str(__T), sizeName, x, (int)ref, (int)res ); \
-                return -1; \
-            }\
-        } \
-        return 0; \
+#define __verify_popcount_func(__T)                                            \
+    static int verify_popcount_##__T(const void *p, const void *r, size_t n,   \
+                                     const char *sizeName, size_t vecSize)     \
+    {                                                                          \
+        const __T *inA = (const __T *)p;                                       \
+        const __T *outptr = (const __T *)r;                                    \
+        size_t i;                                                              \
+        int _n = sizeof(__T) * 8;                                              \
+        __T ref;                                                               \
+        for (i = 0; i < n; i++)                                                \
+        {                                                                      \
+            __T x = inA[i];                                                    \
+            __T res = outptr[i];                                               \
+            __popcnt(x, __T, _n, ref);                                         \
+            if (res != ref)                                                    \
+            {                                                                  \
+                log_info(                                                      \
+                    "%zu) Failure for popcount( (%s%s) 0x%x ) = *%d vs %d\n",  \
+                    i, str(__T), sizeName, (int)x, (int)ref, (int)res);        \
+                return -1;                                                     \
+            }                                                                  \
+        }                                                                      \
+        return 0;                                                              \
     }
 
 __verify_popcount_func(cl_char);

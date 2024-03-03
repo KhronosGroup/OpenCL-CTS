@@ -9,7 +9,7 @@
                OpCapability Int64
                OpCapability Float64
                OpMemoryModel Physical64 OpenCL
-               OpEntryPoint Kernel %1 "decorate_saturated_conversion_int" %gl_GlobalInvocationID
+               OpEntryPoint Kernel %1 "decorate_saturated_conversion_double_to_uint" %gl_GlobalInvocationID
                OpName %res "res"
                OpName %lhs "lhs"
                OpName %rhs "rhs"

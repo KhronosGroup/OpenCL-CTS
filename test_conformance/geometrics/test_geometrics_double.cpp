@@ -189,7 +189,7 @@ int test_geom_cross_double(cl_device_id deviceID, cl_context context, cl_command
         clKernelWrapper kernel;
         clMemWrapper streams[3];
         cl_double testVector[4];
-        int error, i;
+        int error;
         size_t threads[1], localThreads[1];
         BufferOwningPtr<cl_double> A(malloc(bufSize));
         BufferOwningPtr<cl_double> B(malloc(bufSize));
@@ -203,7 +203,7 @@ int test_geom_cross_double(cl_device_id deviceID, cl_context context, cl_command
             return -1;
 
         /* Generate some streams. Note: deliberately do some random data in w to verify that it gets ignored */
-        for( i = 0; i < size * vecsize; i++ )
+        for (unsigned int i = 0; i < size * vecsize; i++)
         {
             inDataA[ i ] = get_random_double( -512.f, 512.f, d );
             inDataB[ i ] = get_random_double( -512.f, 512.f, d );
@@ -233,7 +233,7 @@ int test_geom_cross_double(cl_device_id deviceID, cl_context context, cl_command
         }
 
         /* Assign streams and execute */
-        for( i = 0; i < 3; i++ )
+        for (unsigned int i = 0; i < 3; i++)
         {
             error = clSetKernelArg(kernel, i, sizeof( streams[i] ), &streams[i]);
             test_error( error, "Unable to set indexed kernel arguments" );
@@ -253,7 +253,7 @@ int test_geom_cross_double(cl_device_id deviceID, cl_context context, cl_command
         test_error( error, "Unable to read output array!" );
 
         /* And verify! */
-        for( i = 0; i < size; i++ )
+        for (unsigned int i = 0; i < size; i++)
         {
             double errorTolerances[ 4 ];
             // On an embedded device w/ round-to-zero, 3 ulps is the worst-case tolerance for cross product
@@ -265,9 +265,12 @@ int test_geom_cross_double(cl_device_id deviceID, cl_context context, cl_command
 
             if( errs[ 0 ] > errorTolerances[ 0 ] || errs[ 1 ] > errorTolerances[ 1 ] || errs[ 2 ] > errorTolerances[ 2 ] )
             {
-                log_error( "ERROR: Data sample %d does not validate! Expected (%a,%a,%a,%a), got (%a,%a,%a,%a)\n",
-                          i, testVector[0], testVector[1], testVector[2], testVector[3],
-                          outData[i*vecsize], outData[i*vecsize+1], outData[i*vecsize+2], outData[i*vecsize+3] );
+                log_error("ERROR: Data sample %u does not validate! Expected "
+                          "(%a,%a,%a,%a), got (%a,%a,%a,%a)\n",
+                          i, testVector[0], testVector[1], testVector[2],
+                          testVector[3], outData[i * vecsize],
+                          outData[i * vecsize + 1], outData[i * vecsize + 2],
+                          outData[i * vecsize + 3]);
                 log_error( "    Input: (%a %a %a) and (%a %a %a)\n",
                           inDataA[ i * vecsize + 0 ], inDataA[ i * vecsize + 1 ], inDataA[ i * vecsize + 2 ],
                           inDataB[ i * vecsize + 0 ], inDataB[ i * vecsize + 1 ], inDataB[ i * vecsize + 2 ] );
