@@ -79,10 +79,56 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             if (gDebugTrace)
                 log_info(" - Creating 1D buffer image %d ...\n",
                          (int)imageInfo->width);
-            if (gEnablePitch) host_ptr = malloc(imageInfo->rowPitch);
             {
                 cl_int err;
-                cl_mem buffer = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                cl_mem_flags buffer_flags = CL_MEM_READ_WRITE;
+                if (gEnablePitch)
+                {
+                    cl_device_id device;
+                    err =
+                        clGetCommandQueueInfo(queue, CL_QUEUE_DEVICE,
+                                              sizeof(device), &device, nullptr);
+                    if (err != CL_SUCCESS)
+                    {
+                        log_error(
+                            "Error: Could not get CL_QUEUE_DEVICE from queue");
+                        return NULL;
+                    }
+                    char major_version;
+                    err = clGetDeviceInfo(device, CL_DEVICE_VERSION,
+                                          sizeof(major_version), &major_version,
+                                          nullptr);
+                    if (err != CL_SUCCESS)
+                    {
+                        log_error("Error: Could not get CL_DEVICE_VERSION from "
+                                  "device");
+                        return NULL;
+                    }
+                    if (major_version == '1')
+                    {
+                        host_ptr = malloc(imageInfo->rowPitch);
+                    }
+                    else
+                    {
+                        cl_uint base_address_alignment = 0;
+                        err = clGetDeviceInfo(
+                            device, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT,
+                            sizeof(base_address_alignment),
+                            &base_address_alignment, nullptr);
+                        if (err != CL_SUCCESS)
+                        {
+                            log_error("ERROR: Could not get "
+                                      "CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT "
+                                      "from device");
+                            return NULL;
+                        }
+                        host_ptr = align_malloc(imageInfo->rowPitch,
+                                                base_address_alignment);
+                    }
+                    buffer_flags |= CL_MEM_USE_HOST_PTR;
+                }
+
+                cl_mem buffer = clCreateBuffer(context, buffer_flags,
                                                imageInfo->rowPitch, NULL, &err);
                 if (err != CL_SUCCESS)
                 {
@@ -106,7 +152,10 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             log_error( "ERROR: Unable to create backing store for pitched 3D image. %ld bytes\n",  imageInfo->depth * imageInfo->slicePitch );
             return NULL;
         }
-        mem_flags = CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR;
+        if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
+        {
+            mem_flags = CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR;
+        }
     }
 
     img = clCreateImage(context, mem_flags, imageInfo->format, &imageDesc, host_ptr, error);
