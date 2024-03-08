@@ -193,7 +193,7 @@ int test_copy3D(const cl_device_id deviceID, const cl_context context,
     test_error(error,
                "clGetDeviceInfo failed for CL_DEVICE_MAX_WORK_ITEM_SIZES");
 
-    cl_long max_work_group_size;
+    size_t max_work_group_size;
     error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_WORK_GROUP_SIZE,
                             sizeof(max_work_group_size), &max_work_group_size,
                             NULL);
