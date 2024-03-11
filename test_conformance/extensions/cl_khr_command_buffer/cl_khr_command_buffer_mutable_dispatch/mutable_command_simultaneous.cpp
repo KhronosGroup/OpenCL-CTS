@@ -44,7 +44,7 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
 
     cl_int SetUpKernel() override
     {
-        cl_int error = BasicMutableCommandBufferTest::SetUpKernel();
+        cl_int error = BasicCommandBufferTest::SetUpKernel();
         test_error(error, "BasicMutableCommandBufferTest::SetUpKernel failed");
 
         // create additional kernel to properly prepare output buffer for test
@@ -74,7 +74,7 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
 
     cl_int SetUpKernelArgs() override
     {
-        cl_int error = BasicMutableCommandBufferTest::SetUpKernelArgs();
+        cl_int error = BasicCommandBufferTest::SetUpKernelArgs();
         test_error(error,
                    "BasicMutableCommandBufferTest::SetUpKernelArgs failed");
 
@@ -95,9 +95,6 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
     {
         cl_int error = BasicMutableCommandBufferTest::SetUp(elements);
         test_error(error, "BasicMutableCommandBufferTest::SetUp failed");
-
-        error = SetUpKernel();
-        test_error(error, "SetUpKernel failed");
 
         if (out_of_order_request)
         {
@@ -125,6 +122,8 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
 
     bool Skip() override
     {
+        if (BasicMutableCommandBufferTest::Skip()) return true;
+
         cl_mutable_dispatch_fields_khr mutable_capabilities;
 
         bool mutable_support =
@@ -135,7 +134,7 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
 
         return (out_of_order_request && !out_of_order_support)
             || (simultaneous_use_requested && !simultaneous_use_support)
-            || !mutable_support || BasicMutableCommandBufferTest::Skip();
+            || !mutable_support;
     }
 
     cl_int Run() override
@@ -444,7 +443,6 @@ struct CrossQueueSimultaneousMutableDispatchTest
 
     cl_int SetUpKernel() override
     {
-        // create additional kernel to properly prepare output buffer for test
         const char* kernel_str =
             R"(
           __kernel void fill(int pattern, __global int* out)
@@ -495,6 +493,8 @@ struct CrossQueueSimultaneousMutableDispatchTest
 
     bool Skip() override
     {
+        if (BasicMutableCommandBufferTest::Skip()) return true;
+
         cl_mutable_dispatch_fields_khr mutable_capabilities = { 0 };
 
         bool mutable_support =
@@ -503,8 +503,7 @@ struct CrossQueueSimultaneousMutableDispatchTest
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
             && mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
 
-        return !simultaneous_use_support || !mutable_support
-            || BasicMutableCommandBufferTest::Skip();
+        return !simultaneous_use_support || !mutable_support;
     }
 
     cl_int Run() override
@@ -567,6 +566,7 @@ struct CrossQueueSimultaneousMutableDispatchTest
         error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
+        // enqueue command buffer to non-default queue
         error = clEnqueueCommandBufferKHR(1, &queue_sec, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
@@ -578,9 +578,10 @@ struct CrossQueueSimultaneousMutableDispatchTest
         std::vector<cl_int> output_data(num_elements);
         error =
             clEnqueueReadBuffer(queue_sec, new_out_mem, CL_TRUE, 0, data_size(),
-                                output_data.data(), 1, nullptr, nullptr);
+                                output_data.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
+        // verify the result
         for (size_t i = 0; i < num_elements; i++)
         {
             CHECK_VERIFICATION_ERROR(pattern_sec, output_data[i], i);
