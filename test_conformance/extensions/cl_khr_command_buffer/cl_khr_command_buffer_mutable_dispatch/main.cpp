@@ -30,6 +30,8 @@ test_definition test_list[] = {
     ADD_TEST(mutable_dispatch_image_2d_arguments),
     ADD_TEST(mutable_dispatch_out_of_order),
     ADD_TEST(mutable_dispatch_simultaneous_out_of_order),
+    ADD_TEST(mutable_dispatch_simultaneous_in_order),
+    ADD_TEST(mutable_dispatch_simultaneous_cross_queue),
     ADD_TEST(mutable_dispatch_global_size),
     ADD_TEST(mutable_dispatch_local_size),
     ADD_TEST(mutable_dispatch_global_offset),
