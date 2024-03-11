@@ -4,10 +4,6 @@ set -e
 
 export TOP=$(pwd)
 
-GLSLANG_URL_Windows="https://github.com/KhronosGroup/glslang/releases/download/main-tot/glslang-master-windows-Release.zip"
-GLSLANG_URL_Linux="https://github.com/KhronosGroup/glslang/releases/download/main-tot/glslang-main-linux-Release.zip"
-GLSLANG_URL_macOS="https://github.com/KhronosGroup/glslang/releases/download/main-tot/glslang-main-osx-Release.zip"
-
 TOOLCHAIN_URL_arm="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz"
 TOOLCHAIN_URL_aarch64="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/aarch64-linux-gnu/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.tar.xz"
 
@@ -84,15 +80,6 @@ cmake .. -G Ninja \
       -C helper.cmake ..
 cmake --build . -j2
 
-#glslangValidator tool (prebuilt)
-cd ${TOP}
-mkdir spirvTools
-cd spirvTools
-GLSLANG_URL_VAR=GLSLANG_URL_${RUNNER_OS}
-GLSLANG_URL=${!GLSLANG_URL_VAR}
-curl -Lo glslang.zip ${GLSLANG_URL}
-unzip glslang.zip
-
 # Build CTS
 cd ${TOP}
 ls -l
@@ -117,6 +104,5 @@ cmake .. -G Ninja \
       -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST} \
       -DVULKAN_IS_SUPPORTED=${BUILD_VULKAN_TEST} \
       -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/ \
-      -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/ \
-      -DGLSLANG_VALIDATOR_DIR=${TOP}/spirvTools/bin/
+      -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/
 cmake --build . -j3

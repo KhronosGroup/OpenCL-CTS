@@ -43,6 +43,6 @@ set_source_files_properties(
     PROPERTIES LANGUAGE CXX)
 include_directories("../common/vulkan_wrapper")
 
-include(shaders/CMakeLists.txt)
+add_subdirectory(shaders)
 
 include(../CMakeCommon.txt)
