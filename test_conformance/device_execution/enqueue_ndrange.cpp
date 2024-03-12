@@ -641,7 +641,9 @@ int test_enqueue_ndrange(cl_device_id device, cl_context context, cl_command_que
     };
 
     dev_queue = clCreateCommandQueueWithProperties(context, device, queue_prop_def, &err_ret);
-    test_error(err_ret, "clCreateCommandQueueWithProperties(CL_QUEUE_DEVICE|CL_QUEUE_DEFAULT) failed");
+    test_error(err_ret,
+               "clCreateCommandQueueWithProperties(CL_QUEUE_ON_DEVICE | "
+               "CL_QUEUE_ON_DEVICE_DEFAULT) failed");
 
     max_local_size = (max_local_size > MAX_GWS)? MAX_GWS: max_local_size;
     if(gWimpyMode)
