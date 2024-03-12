@@ -42,6 +42,26 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
     imageDesc.image_row_pitch = gEnablePitch ? imageInfo->rowPitch : 0;
     imageDesc.image_slice_pitch = gEnablePitch ? imageInfo->slicePitch : 0;
 
+    cl_version version;
+    cl_device_id device;
+    {
+        cl_int err = clGetCommandQueueInfo(queue, CL_QUEUE_DEVICE,
+                                           sizeof(device), &device, nullptr);
+        if (err != CL_SUCCESS)
+        {
+            log_error("Error: Could not get CL_QUEUE_DEVICE from queue");
+            return NULL;
+        }
+        err = clGetDeviceInfo(device, CL_DEVICE_NUMERIC_VERSION,
+                              sizeof(version), &version, nullptr);
+        if (err != CL_SUCCESS)
+        {
+            log_error("Error: Could not get CL_DEVICE_VERSION from "
+                      "device");
+            return NULL;
+        }
+    }
+
     switch (imageInfo->type)
     {
         case CL_MEM_OBJECT_IMAGE1D:
@@ -83,27 +103,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
                 cl_mem_flags buffer_flags = CL_MEM_READ_WRITE;
                 if (gEnablePitch)
                 {
-                    cl_device_id device;
-                    err =
-                        clGetCommandQueueInfo(queue, CL_QUEUE_DEVICE,
-                                              sizeof(device), &device, nullptr);
-                    if (err != CL_SUCCESS)
-                    {
-                        log_error(
-                            "Error: Could not get CL_QUEUE_DEVICE from queue");
-                        return NULL;
-                    }
-                    char major_version;
-                    err = clGetDeviceInfo(device, CL_DEVICE_VERSION,
-                                          sizeof(major_version), &major_version,
-                                          nullptr);
-                    if (err != CL_SUCCESS)
-                    {
-                        log_error("Error: Could not get CL_DEVICE_VERSION from "
-                                  "device");
-                        return NULL;
-                    }
-                    if (major_version == '1')
+                    if (CL_VERSION_MAJOR(version) == 1)
                     {
                         host_ptr = malloc(imageInfo->rowPitch);
                     }
@@ -171,14 +171,32 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             int callbackError = clSetMemObjectDestructorCallback( img, free_pitch_buffer, host_ptr );
             if ( CL_SUCCESS != callbackError )
             {
-                free( host_ptr );
-                log_error( "ERROR: Unable to attach destructor callback to pitched 3D image. Err: %d\n", callbackError );
+                if (CL_VERSION_MAJOR(version) == 1)
+                {
+                    free(host_ptr);
+                }
+                else
+                {
+                    align_free(host_ptr);
+                }
+                log_error("ERROR: Unable to attach destructor callback to "
+                          "pitched 3D image. Err: %d\n",
+                          callbackError);
                 clReleaseMemObject( img );
                 return NULL;
             }
         }
         else
-            free(host_ptr);
+        {
+            if (CL_VERSION_MAJOR(version) == 1)
+            {
+                free(host_ptr);
+            }
+            else
+            {
+                align_free(host_ptr);
+            }
+        }
     }
 
     if (imageDesc.buffer != NULL)
