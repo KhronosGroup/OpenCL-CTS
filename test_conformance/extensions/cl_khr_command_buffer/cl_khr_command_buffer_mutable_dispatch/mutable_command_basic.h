@@ -26,6 +26,28 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
         : BasicCommandBufferTest(device, context, queue)
     {}
 
+    virtual cl_int SetUpKernel() override
+    {
+        cl_int error = CL_SUCCESS;
+        clProgramWrapper program = clCreateProgramWithSource(
+            context, 1, &kernelString, nullptr, &error);
+        test_error(error, "Unable to create program");
+
+        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
+        test_error(error, "Unable to build program");
+
+        kernel = clCreateKernel(program, "empty", &error);
+        test_error(error, "Unable to create kernel");
+
+        return CL_SUCCESS;
+    }
+
+    virtual cl_int SetUpKernelArgs() override
+    {
+        /* Left blank intentionally */
+        return CL_SUCCESS;
+    }
+
     virtual cl_int SetUp(int elements) override
     {
         BasicCommandBufferTest::SetUp(elements);
@@ -41,16 +63,6 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
 
         command_buffer = clCreateCommandBufferKHR(1, &queue, props, &error);
         test_error(error, "Unable to create command buffer");
-
-        clProgramWrapper program = clCreateProgramWithSource(
-            context, 1, &kernelString, nullptr, &error);
-        test_error(error, "Unable to create program");
-
-        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-        test_error(error, "Unable to build program");
-
-        kernel = clCreateKernel(program, "empty", &error);
-        test_error(error, "Unable to create kernel");
 
         return error;
     }
