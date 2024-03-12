@@ -45,7 +45,7 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
     cl_int SetUpKernel() override
     {
         cl_int error = BasicCommandBufferTest::SetUpKernel();
-        test_error(error, "BasicMutableCommandBufferTest::SetUpKernel failed");
+        test_error(error, "BasicCommandBufferTest::SetUpKernel failed");
 
         // create additional kernel to properly prepare output buffer for test
         const char* kernel_str =
@@ -75,8 +75,7 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
     cl_int SetUpKernelArgs() override
     {
         cl_int error = BasicCommandBufferTest::SetUpKernelArgs();
-        test_error(error,
-                   "BasicMutableCommandBufferTest::SetUpKernelArgs failed");
+        test_error(error, "BasicCommandBufferTest::SetUpKernelArgs failed");
 
         error = clSetKernelArg(kernel_fill, 0, sizeof(cl_int),
                                &overwritten_pattern);
@@ -103,12 +102,21 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
                 &error);
             test_error(error, "Unable to create command queue to test with");
 
-            cl_command_buffer_properties_khr properties[3] = {
-                CL_COMMAND_BUFFER_FLAGS_KHR, CL_COMMAND_BUFFER_MUTABLE_KHR, 0
+            cl_command_buffer_properties_khr prop =
+                CL_COMMAND_BUFFER_MUTABLE_KHR;
+            if (simultaneous_use_support)
+            {
+                prop |= CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
+            }
+
+            const cl_command_buffer_properties_khr props[] = {
+                CL_COMMAND_BUFFER_FLAGS_KHR,
+                prop,
+                0,
             };
 
             work_command_buffer =
-                clCreateCommandBufferKHR(1, &work_queue, properties, &error);
+                clCreateCommandBufferKHR(1, &work_queue, props, &error);
             test_error(error, "clCreateCommandBufferKHR failed");
         }
         else
