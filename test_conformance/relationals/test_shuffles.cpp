@@ -245,7 +245,7 @@ const char *get_order_string( ShuffleOrder &order, size_t vecSize, cl_uint lengt
 char * get_order_name( ExplicitType vecType, size_t inVecSize, size_t outVecSize, ShuffleOrder &inOrder, ShuffleOrder &outOrder, cl_uint lengthToUse, MTdata d, bool inUseNumerics, bool outUseNumerics )
 {
     static char orderName[ 512 ] = "";
-    char inOrderStr[ 512 ], outOrderStr[ 512 ];
+    char inOrderStr[64], outOrderStr[64];
 
     if( inVecSize == 1 )
         inOrderStr[ 0 ] = 0;
