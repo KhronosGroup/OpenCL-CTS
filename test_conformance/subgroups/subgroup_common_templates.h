@@ -29,7 +29,7 @@
 // subgroup takes only one value from only one chosen (the smallest subgroup ID)
 // work_item
 // sub_group_non_uniform_broadcast - same as type 0 but
-// only 4 work_items from subgroup enter the code (are active)
+// only half of work_items from subgroup enter the code (are active)
 template <typename Ty, SubgroupsBroadcastOp operation> struct BC
 {
     static void log_test(const WorkGroupParams &test_params,
@@ -78,24 +78,16 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
                 int bcast_elseif = 0;
                 int bcast_index = (int)(genrand_int32(gMTdata) & 0x7fffffff)
                     % (d > n ? n : d);
+                int num_of_active_items = n >> 1;
                 // l - calculate subgroup local id from which value will be
                 // broadcasted (one the same value for whole subgroup)
                 if (operation != SubgroupsBroadcastOp::broadcast)
                 {
-                    // reduce brodcasting index in case of non_uniform and
-                    // last workgroup last subgroup
-                    if (last_subgroup_size && j == nj - 1
-                        && last_subgroup_size < NR_OF_ACTIVE_WORK_ITEMS)
-                    {
-                        bcast_if = bcast_index % last_subgroup_size;
-                        bcast_elseif = bcast_if;
-                    }
-                    else
-                    {
-                        bcast_if = bcast_index % NR_OF_ACTIVE_WORK_ITEMS;
-                        bcast_elseif = NR_OF_ACTIVE_WORK_ITEMS
-                            + bcast_index % (n - NR_OF_ACTIVE_WORK_ITEMS);
-                    }
+                    if (num_of_active_items != 0)
+                        bcast_if = bcast_index % num_of_active_items;
+                    if (num_of_active_items != n)
+                        bcast_elseif = num_of_active_items
+                            + bcast_index % (n - num_of_active_items);
                 }
 
                 for (i = 0; i < n; ++i)
@@ -107,7 +99,7 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
                     }
                     else
                     {
-                        if (i < NR_OF_ACTIVE_WORK_ITEMS)
+                        if (i < num_of_active_items)
                         {
                             // index of the third
                             // element int the vector.
@@ -182,15 +174,15 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
                 }
 
                 // Check result
+                int num_of_active_items = n >> 1;
                 if (operation == SubgroupsBroadcastOp::broadcast_first)
                 {
                     int lowest_active_id = -1;
                     for (i = 0; i < n; ++i)
                     {
 
-                        lowest_active_id = i < NR_OF_ACTIVE_WORK_ITEMS
-                            ? 0
-                            : NR_OF_ACTIVE_WORK_ITEMS;
+                        lowest_active_id =
+                            i < num_of_active_items ? 0 : num_of_active_items;
                         //  findout if broadcasted
                         //  value is the same
                         tr = mx[ii + lowest_active_id];
@@ -221,7 +213,7 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
                         }
                         else
                         {
-                            if (i < NR_OF_ACTIVE_WORK_ITEMS)
+                            if (i < num_of_active_items)
                             { // take index of array where info
                               // which work_item will be
                               // broadcast its value is stored

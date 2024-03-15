@@ -623,7 +623,9 @@ int test_enqueue_block(cl_device_id device, cl_context context, cl_command_queue
     };
 
     dev_queue = clCreateCommandQueueWithProperties(context, device, queue_prop_def, &err_ret);
-    test_error(err_ret, "clCreateCommandQueueWithProperties(CL_QUEUE_DEVICE|CL_QUEUE_DEFAULT) failed");
+    test_error(err_ret,
+               "clCreateCommandQueueWithProperties(CL_QUEUE_ON_DEVICE | "
+               "CL_QUEUE_ON_DEVICE_DEFAULT) failed");
 
     size_t global_size = MAX_GWS;
     size_t local_size = (max_local_size > global_size/16) ? global_size/16 : max_local_size;
