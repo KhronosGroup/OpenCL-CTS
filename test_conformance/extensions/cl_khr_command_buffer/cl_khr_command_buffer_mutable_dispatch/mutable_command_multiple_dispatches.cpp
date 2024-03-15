@@ -27,11 +27,11 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 // command buffer with multiple command handles dispatch tests
 
-struct MultipleCommandsDispatch : InfoMutableCommandBufferTest
+struct MultipleCommandsDispatch : BasicMutableCommandBufferTest
 {
     MultipleCommandsDispatch(cl_device_id device, cl_context context,
                              cl_command_queue queue)
-        : InfoMutableCommandBufferTest(device, context, queue),
+        : BasicMutableCommandBufferTest(device, context, queue),
           command_pri(nullptr), command_sec(nullptr)
     {
         simultaneous_use_requested = false;
@@ -124,18 +124,16 @@ struct MultipleCommandsDispatch : InfoMutableCommandBufferTest
     // run command buffer with multiple command dispatches test
     cl_int Run() override
     {
-        size_t work_offset = 0;
-
         // record fill kernel and collect first mutable command handle
         cl_int error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel_fill, 1, &work_offset,
+            command_buffer, nullptr, nullptr, kernel_fill, 1, nullptr,
             &num_elements, nullptr, 0, nullptr, nullptr, &command_pri);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         // record default kernel and collect second mutable command handle
         error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 1, &work_offset,
-            &num_elements, nullptr, 0, nullptr, nullptr, &command_sec);
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
+            nullptr, 0, nullptr, nullptr, &command_sec);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);
