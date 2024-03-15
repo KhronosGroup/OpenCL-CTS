@@ -99,7 +99,7 @@ struct MultipleCommandsDispatch : InfoMutableCommandBufferTest
     }
 
     // Check the results of command buffer execution
-    bool verify_result(const cl_mem & buffer, const cl_int pattern)
+    bool verify_result(const cl_mem &buffer, const cl_int pattern)
     {
         cl_int error = CL_SUCCESS;
         std::vector<cl_int> data(num_elements);
