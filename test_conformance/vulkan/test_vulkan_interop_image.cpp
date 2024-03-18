@@ -668,28 +668,28 @@ int run_test_with_two_queue(
                                     "Failed to enqueue updateKernelCQ1\n");
 
                                 err = clEnqueueReleaseExternalMemObjectsKHRptr(
-                                        cmd_queue1, num2DImages,
-                                        external_mem_image1, 0, nullptr, nullptr);
+                                    cmd_queue1, num2DImages,
+                                    external_mem_image1, 0, nullptr, nullptr);
                                 test_error_and_cleanup(
-                                        err, CLEANUP, "Failed to release images");
+                                    err, CLEANUP, "Failed to release images");
 
                                 err = clEnqueueReleaseExternalMemObjectsKHRptr(
-                                        cmd_queue1, num2DImages,
-                                        external_mem_image2, 0, nullptr, nullptr);
+                                    cmd_queue1, num2DImages,
+                                    external_mem_image2, 0, nullptr, nullptr);
                                 test_error_and_cleanup(
-                                        err, CLEANUP, "Failed to release images");
+                                    err, CLEANUP, "Failed to release images");
 
                                 err = clEnqueueAcquireExternalMemObjectsKHRptr(
-                                        cmd_queue2, num2DImages,
-                                        external_mem_image1, 0, nullptr, nullptr);
+                                    cmd_queue2, num2DImages,
+                                    external_mem_image1, 0, nullptr, nullptr);
                                 test_error_and_cleanup(
-                                        err, CLEANUP, "Failed to acquire images");
+                                    err, CLEANUP, "Failed to acquire images");
 
                                 err = clEnqueueAcquireExternalMemObjectsKHRptr(
-                                        cmd_queue2, num2DImages,
-                                        external_mem_image2, 0, nullptr, nullptr);
+                                    cmd_queue2, num2DImages,
+                                    external_mem_image2, 0, nullptr, nullptr);
                                 test_error_and_cleanup(
-                                        err, CLEANUP, "Failed to acquire images");
+                                    err, CLEANUP, "Failed to acquire images");
 
                                 err = clEnqueueNDRangeKernel(
                                     cmd_queue2, updateKernelCQ2, 2, NULL,

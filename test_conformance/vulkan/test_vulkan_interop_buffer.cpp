@@ -296,14 +296,14 @@ int run_test_with_two_queue(
                     "error\n");
 
                 err = clEnqueueReleaseExternalMemObjectsKHRptr(
-                        cmd_queue1, vkBufferList.size(), buffers, 0, nullptr,
-                        nullptr);
+                    cmd_queue1, vkBufferList.size(), buffers, 0, nullptr,
+                    nullptr);
                 test_error_and_cleanup(err, CLEANUP,
                                        "Failed to release buffers");
 
                 err = clEnqueueAcquireExternalMemObjectsKHRptr(
-                        cmd_queue2, vkBufferList.size(), buffers, 0, nullptr,
-                        nullptr);
+                    cmd_queue2, vkBufferList.size(), buffers, 0, nullptr,
+                    nullptr);
                 test_error_and_cleanup(err, CLEANUP,
                                        "Failed to acquire buffers");
 
