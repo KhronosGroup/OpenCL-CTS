@@ -33,9 +33,9 @@
 #include "mingw_compat.h"
 #include <process.h>
 #else // !_WIN32
+#include <errno.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <sys/errno.h>
 #ifdef __linux__
 #include <sched.h>
 #endif
