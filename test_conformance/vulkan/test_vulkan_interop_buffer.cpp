@@ -286,11 +286,6 @@ int run_test_with_two_queue(
                     nullptr);
                 test_error_and_cleanup(err, CLEANUP,
                                        "Failed to acquire buffers");
-                err = clEnqueueAcquireExternalMemObjectsKHRptr(
-                    cmd_queue2, vkBufferList.size(), buffers, 0, nullptr,
-                    nullptr);
-                test_error_and_cleanup(err, CLEANUP,
-                                       "Failed to acquire buffers");
 
                 err = clEnqueueNDRangeKernel(cmd_queue1, update_buffer_kernel,
                                              1, NULL, global_work_size, NULL, 0,
@@ -300,6 +295,18 @@ int run_test_with_two_queue(
                     "Error: Failed to launch update_buffer_kernel,"
                     "error\n");
 
+                err = clEnqueueReleaseExternalMemObjectsKHRptr(
+                        cmd_queue1, vkBufferList.size(), buffers, 0, nullptr,
+                        nullptr);
+                test_error_and_cleanup(err, CLEANUP,
+                                       "Failed to release buffers");
+
+                err = clEnqueueAcquireExternalMemObjectsKHRptr(
+                        cmd_queue2, vkBufferList.size(), buffers, 0, nullptr,
+                        nullptr);
+                test_error_and_cleanup(err, CLEANUP,
+                                       "Failed to acquire buffers");
+
                 err = clEnqueueNDRangeKernel(cmd_queue2, kernel_cq, 1, NULL,
                                              global_work_size, NULL, 1,
                                              &first_launch, NULL);
@@ -308,11 +315,6 @@ int run_test_with_two_queue(
                     "Error: Failed to launch update_buffer_kernel,"
                     "error\n");
 
-                err = clEnqueueReleaseExternalMemObjectsKHRptr(
-                    cmd_queue1, vkBufferList.size(), buffers, 0, nullptr,
-                    nullptr);
-                test_error_and_cleanup(err, CLEANUP,
-                                       "Failed to release buffers");
                 err = clEnqueueReleaseExternalMemObjectsKHRptr(
                     cmd_queue2, vkBufferList.size(), buffers, 0, nullptr,
                     nullptr);
