@@ -135,6 +135,14 @@ cl_int cImage_check_mem_host_no_access<T>::verify_RW_Image_Mapping()
         err = FAILURE;
         return err;
     }
+    else if (dataPtr != nullptr)
+    {
+        log_error("Calling clEnqueueMapImage (CL_MAP_WRITE) on a memory object "
+                  "created with the CL_MEM_HOST_NO_ACCESS flag should fail "
+                  "and return NULL\n");
+        err = FAILURE;
+        return err;
+    }
     else
     {
         log_info("Test succeeded\n\n");
@@ -151,6 +159,14 @@ cl_int cImage_check_mem_host_no_access<T>::verify_RW_Image_Mapping()
         log_error("Calling clEnqueueMapImage (CL_MAP_READ) on a memory object "
                   "created with the CL_MEM_HOST_NO_ACCESS flag should not "
                   "return CL_SUCCESS\n");
+        err = FAILURE;
+        return err;
+    }
+    else if (dataPtr != nullptr)
+    {
+        log_error("Calling clEnqueueMapImage (CL_MAP_READ) on a memory object "
+                  "created with the CL_MEM_HOST_NO_ACCESS flag should fail "
+                  "and return NULL\n");
         err = FAILURE;
         return err;
     }
