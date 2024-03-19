@@ -30,7 +30,7 @@ namespace {
 struct IterativeArgUpdateDispatch : BasicMutableCommandBufferTest
 {
     IterativeArgUpdateDispatch(cl_device_id device, cl_context context,
-                            cl_command_queue queue)
+                               cl_command_queue queue)
         : BasicMutableCommandBufferTest(device, context, queue),
           command(nullptr)
     {
@@ -211,10 +211,10 @@ struct IterativeArgUpdateDispatch : BasicMutableCommandBufferTest
 }
 
 int test_mutable_command_iterative_arg_update(cl_device_id device,
-                                          cl_context context,
-                                          cl_command_queue queue,
-                                          int num_elements)
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements)
 {
     return MakeAndRunTest<IterativeArgUpdateDispatch>(device, context, queue,
-                                                   num_elements);
+                                                      num_elements);
 }
