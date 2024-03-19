@@ -25,7 +25,7 @@
 namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
-// command buffer with multiple command handles dispatch tests
+// command buffer with multiple command handles dispatch test
 
 struct MultipleCommandsDispatch : BasicMutableCommandBufferTest
 {
@@ -47,7 +47,7 @@ struct MultipleCommandsDispatch : BasicMutableCommandBufferTest
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
             && mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
 
-        // require at least mutable arguments capabillity
+        // require mutable arguments capabillity
         return !mutable_support;
     }
 
@@ -188,13 +188,13 @@ struct MultipleCommandsDispatch : BasicMutableCommandBufferTest
         error = clFinish(queue);
         test_error(error, "clFinish failed");
 
-        // Check the results of the modified execution
+        // check the results of the modified execution
         if (!verify_result(new_out_mem, pattern_sec)) return TEST_FAIL;
 
         return TEST_PASS;
     }
 
-    // all available command mutable dispatch test attributes
+    // mutable dispatch test attributes
     cl_mutable_command_khr command_pri;
     cl_mutable_command_khr command_sec;
 

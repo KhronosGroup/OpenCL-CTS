@@ -10,7 +10,7 @@ set(${MODULE_NAME}_SOURCES
     mutable_command_local_size.cpp
     mutable_command_global_offset.cpp
     mutable_command_full_dispatch.cpp
-	mutable_command_multiple_dispatches.cpp
+    mutable_command_multiple_dispatches.cpp
     ../basic_command_buffer.cpp
 )
 
