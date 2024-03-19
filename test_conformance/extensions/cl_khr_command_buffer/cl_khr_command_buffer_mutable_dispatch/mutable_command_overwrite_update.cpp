@@ -25,7 +25,7 @@
 namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
-// command buffer with overwritten mutable dispatch tests
+// command buffer with overwritten mutable dispatch test
 
 struct OverwriteUpdateDispatch : BasicMutableCommandBufferTest
 {
@@ -47,7 +47,7 @@ struct OverwriteUpdateDispatch : BasicMutableCommandBufferTest
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
             && mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
 
-        // require at least mutable arguments capabillity
+        // require mutable arguments capabillity
         return !mutable_support;
     }
 
@@ -92,7 +92,7 @@ struct OverwriteUpdateDispatch : BasicMutableCommandBufferTest
         return CL_SUCCESS;
     }
 
-    // Check the results of command buffer execution
+    // check the results of command buffer execution
     bool verify_result(const cl_mem &buffer, const cl_int pattern)
     {
         cl_int error = CL_SUCCESS;
@@ -199,13 +199,13 @@ struct OverwriteUpdateDispatch : BasicMutableCommandBufferTest
         error = clFinish(queue);
         test_error(error, "clFinish failed");
 
-        // Check the results of the modified execution
+        // check the results of the modified execution
         if (!verify_result(new_out_mem, pattern_sec)) return TEST_FAIL;
 
         return TEST_PASS;
     }
 
-    // all available command mutable dispatch test attributes
+    // mutable dispatch test attributes
     cl_mutable_command_khr command;
 
     const cl_int pattern_pri = 0xACDC;
