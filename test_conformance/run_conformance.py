@@ -10,12 +10,16 @@
 
 from __future__ import print_function
 
+import multiprocessing
 import os
 import re
 import sys
 import subprocess
 import time
 import tempfile
+from itertools import repeat
+
+from distlib.compat import raw_input
 
 DEBUG = 0
 
@@ -206,6 +210,71 @@ def run_test_checking_output(current_directory, test_dir, log_file):
     return p.returncode
 
 
+def run_specific_test(test_iter, arg_list):
+    failures, previous_test, test_number = arg_list
+    # Print the name of the test we're running and the time
+    (test_name, test_dir) = test_iter
+    if test_dir != previous_test:
+        print("==========   " + test_dir)
+        log_file.write("========================================================================================\n")
+        log_file.write("========================================================================================\n")
+        log_file.write("(" + get_time() + ")     Running Tests: " + test_dir + "\n")
+        log_file.write("========================================================================================\n")
+        log_file.write("========================================================================================\n")
+        previous_test = test_dir
+    print("(" + get_time() + ")     BEGIN  " + test_name.ljust(40) + ": ", end='')
+    log_file.write("     ----------------------------------------------------------------------------------------\n")
+    log_file.write("     (" + get_time() + ")     Running Sub Test: " + test_name + "\n")
+    log_file.write("     ----------------------------------------------------------------------------------------\n")
+    log_file.flush()
+    sys.stdout.flush()
+
+    # Run the test
+    result = 0
+    start_time = time.time()
+    try:
+        process_pid = 0
+        result = run_test_checking_output(current_directory, test_dir, log_file)
+    except KeyboardInterrupt:
+        # Catch an interrupt from the user
+        write_screen_log("\nFAILED: Execution interrupted.  Killing test process, but not aborting full test run.")
+        os.kill(process_pid, 9)
+        if sys.version_info[0] < 3:
+            answer = raw_input("Abort all tests? (y/n)")
+        else:
+            answer = input("Abort all tests? (y/n)")
+        if answer.find("y") != -1:
+            write_screen_log("\nUser chose to abort all tests.")
+            log_file.close()
+            sys.exit(-1)
+        else:
+            write_screen_log("\nUser chose to continue with other tests. Reporting this test as failed.")
+            result = 1
+    run_time = (time.time() - start_time)
+
+    # Move print the finish status
+    if result == 0:
+        print("(" + get_time() + ")     PASSED " + test_name.ljust(40) + ": (" + str(int(run_time)).rjust(3) + "s, test " + str(test_number).rjust(3) + os.sep + str(len(tests)) + ")", end='')
+    else:
+        print("(" + get_time() + ")     FAILED " + test_name.ljust(40) + ": (" + str(int(run_time)).rjust(3) + "s, test " + str(test_number).rjust(3) + os.sep + str(len(tests)) + ")", end='')
+
+    test_number = test_number + 1
+    log_file.write("     ----------------------------------------------------------------------------------------\n")
+    log_file.flush()
+
+    print("")
+    if result != 0:
+        log_file.write("  *******************************************************************************************\n")
+        log_file.write("  *  (" + get_time() + ")     Test " + test_name + " ==> FAILED: " + str(result) + "\n")
+        log_file.write("  *******************************************************************************************\n")
+        failures = failures + 1
+    else:
+        log_file.write("     (" + get_time() + ")     Test " + test_name + " passed in " + str(run_time) + "s\n")
+
+    log_file.write("     ----------------------------------------------------------------------------------------\n")
+    log_file.write("\n")
+    return failures, previous_test, test_number
+
 def run_tests(tests):
     global curent_directory
     global process_pid
@@ -213,68 +282,18 @@ def run_tests(tests):
     failures = 0
     previous_test = None
     test_number = 1
-    for test in tests:
-        # Print the name of the test we're running and the time
-        (test_name, test_dir) = test
-        if test_dir != previous_test:
-            print("==========   " + test_dir)
-            log_file.write("========================================================================================\n")
-            log_file.write("========================================================================================\n")
-            log_file.write("(" + get_time() + ")     Running Tests: " + test_dir + "\n")
-            log_file.write("========================================================================================\n")
-            log_file.write("========================================================================================\n")
-            previous_test = test_dir
-        print("(" + get_time() + ")     BEGIN  " + test_name.ljust(40) + ": ", end='')
-        log_file.write("     ----------------------------------------------------------------------------------------\n")
-        log_file.write("     (" + get_time() + ")     Running Sub Test: " + test_name + "\n")
-        log_file.write("     ----------------------------------------------------------------------------------------\n")
-        log_file.flush()
-        sys.stdout.flush()
-
-        # Run the test
-        result = 0
-        start_time = time.time()
-        try:
-            process_pid = 0
-            result = run_test_checking_output(current_directory, test_dir, log_file)
-        except KeyboardInterrupt:
-            # Catch an interrupt from the user
-            write_screen_log("\nFAILED: Execution interrupted.  Killing test process, but not aborting full test run.")
-            os.kill(process_pid, 9)
-            if sys.version_info[0] < 3:
-                answer = raw_input("Abort all tests? (y/n)")
-            else:
-                answer = input("Abort all tests? (y/n)")
-            if answer.find("y") != -1:
-                write_screen_log("\nUser chose to abort all tests.")
-                log_file.close()
-                sys.exit(-1)
-            else:
-                write_screen_log("\nUser chose to continue with other tests. Reporting this test as failed.")
-                result = 1
-        run_time = (time.time() - start_time)
-
-        # Move print the finish status
-        if result == 0:
-            print("(" + get_time() + ")     PASSED " + test_name.ljust(40) + ": (" + str(int(run_time)).rjust(3) + "s, test " + str(test_number).rjust(3) + os.sep + str(len(tests)) + ")", end='')
-        else:
-            print("(" + get_time() + ")     FAILED " + test_name.ljust(40) + ": (" + str(int(run_time)).rjust(3) + "s, test " + str(test_number).rjust(3) + os.sep + str(len(tests)) + ")", end='')
-
-        test_number = test_number + 1
-        log_file.write("     ----------------------------------------------------------------------------------------\n")
-        log_file.flush()
-
-        print("")
-        if result != 0:
-            log_file.write("  *******************************************************************************************\n")
-            log_file.write("  *  (" + get_time() + ")     Test " + test_name + " ==> FAILED: " + str(result) + "\n")
-            log_file.write("  *******************************************************************************************\n")
-            failures = failures + 1
-        else:
-            log_file.write("     (" + get_time() + ")     Test " + test_name + " passed in " + str(run_time) + "s\n")
-
-        log_file.write("     ----------------------------------------------------------------------------------------\n")
-        log_file.write("\n")
+    run_in_parallel = False
+    # Open the log file
+    for arg in sys.argv:
+        match = re.search("RUN_PARALLEL", arg)
+        if match:
+            run_in_parallel = True
+    if run_in_parallel:
+        pool = multiprocessing.Pool(4)
+        failures, previous_test, test_number = pool.starmap(run_specific_test, zip(tests, repeat([failures, previous_test, test_number])))
+    else:
+        for test_itr in tests:
+            failures, previous_test, test_number = run_specific_test(test_itr, [failures, previous_test, test_number])
     return failures
 
 
