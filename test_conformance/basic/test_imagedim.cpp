@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,504 +21,277 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <algorithm>
+#include <vector>
 
 #include "procs.h"
 
-static const char *image_dim_kernel_code =
-"\n"
-"__kernel void test_image_dim(read_only image2d_t srcimg, write_only image2d_t dstimg, sampler_t sampler)\n"
-"{\n"
-"    int    tid_x = get_global_id(0);\n"
-"    int    tid_y = get_global_id(1);\n"
-"    float4 color;\n"
-"\n"
-"    color = read_imagef(srcimg, sampler, (int2)(tid_x, tid_y));\n"
-"     write_imagef(dstimg, (int2)(tid_x, tid_y), color);\n"
-"\n"
-"}\n";
-
-
-static unsigned char *generate_8888_image(size_t w, size_t h, MTdata d)
+namespace {
+const char *image_dim_kernel_code = R"(
+__kernel void test_image_dim(read_only image2d_t srcimg, write_only image2d_t dstimg, sampler_t sampler)
 {
-    unsigned char *ptr = new unsigned char[4 * w * h];
-    size_t i;
+    int    tid_x = get_global_id(0);
+    int    tid_y = get_global_id(1);
+    float4 color;
 
-    for (i = 0; i < w * h * 4; i++)
-    {
-        ptr[i] = (unsigned char)genrand_int32(d);
-    }
+    color = read_imagef(srcimg, sampler, (int2)(tid_x, tid_y));
+    write_imagef(dstimg, (int2)(tid_x, tid_y), color);
+}
+)";
 
-    return ptr;
+void generate_random_inputs(std::vector<cl_uchar> &v)
+{
+    RandomSeed seed(gRandomSeed);
+
+    auto random_generator = [&seed]() { return genrand_int32(seed); };
+
+    std::generate(v.begin(), v.end(), random_generator);
 }
 
-static int verify_8888_image(unsigned char *image, unsigned char *outptr,
-                             size_t w, size_t h)
+int get_max_image_dimensions(cl_device_id device, size_t &max_img_width,
+                             size_t &max_img_height)
 {
-    size_t i;
+    int err = 0;
 
-    for (i = 0; i < w * h; i++)
-    {
-        if (outptr[i] != image[i])
-            return -1;
-    }
-
-    return 0;
-}
-
-
-int
-test_imagedim_pow2(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
-{
-    cl_mem streams[2];
-    cl_image_format img_format;
-    unsigned char *input_ptr, *output_ptr;
-    cl_program program;
-    cl_kernel kernel;
-    size_t threads[2];
     cl_ulong max_mem_size;
-    size_t img_width, max_img_width;
-    size_t img_height, max_img_height;
-    size_t max_img_dim;
-    int i, j, i2, j2, err = 0;
     size_t max_image2d_width, max_image2d_height;
-    int total_errors = 0;
-    MTdata  d;
 
-    PASSIVE_REQUIRE_IMAGE_SUPPORT( device )
+    err = clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE,
+                          sizeof(max_mem_size), &max_mem_size, nullptr);
+    test_error(err, "clGetDeviceInfo for CL_DEVICE_GLOBAL_MEM_SIZE failed");
+    err =
+        clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_WIDTH,
+                        sizeof(max_image2d_width), &max_image2d_width, nullptr);
+    test_error(err, "clGetDeviceInfo for CL_DEVICE_IMAGE2D_MAX_WIDTH failed");
+    err = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_HEIGHT,
+                          sizeof(max_image2d_width), &max_image2d_height,
+                          nullptr);
+    test_error(err, "clGetDeviceInfo for CL_DEVICE_IMAGE2D_MAX_HEIGHT failed");
 
-    err = create_single_kernel_helper( context, &program, &kernel, 1, &image_dim_kernel_code, "test_image_dim" );
-    if (err)
-    {
-        log_error("create_program_and_kernel_with_sources failed\n");
-        return -1;
-    }
+    log_info("Device reported max image sizes of %lu x %lu, and max mem size "
+             "of %gMB.\n",
+             max_image2d_width, max_image2d_height,
+             max_mem_size / (1024.0 * 1024.0));
 
-    err = clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE,sizeof(max_mem_size), &max_mem_size, NULL);
-    if (err)
-    {
-        log_error("clGetDeviceInfo for CL_DEVICE_GLOBAL_MEM_SIZE failed (%d)\n", err);
-        return -1;
-    }
-    err = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_WIDTH, sizeof(max_image2d_width), &max_image2d_width, NULL);
-    if (err)
-    {
-        log_error("clGetDeviceInfo for CL_DEVICE_IMAGE2D_MAX_WIDTH failed (%d)\n", err);
-        return -1;
-    }
-    err = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_HEIGHT, sizeof(max_image2d_width), &max_image2d_height, NULL);
-    if (err)
-    {
-        log_error("clGetDeviceInfo for CL_DEVICE_IMAGE2D_MAX_HEIGHT failed (%d)\n", err);
-        return -1;
-    }
-    log_info("Device reported max image sizes of %lu x %lu, and max mem size of %gMB.\n",
-           max_image2d_width, max_image2d_height, max_mem_size/(1024.0*1024.0));
 
-    if (max_mem_size > (cl_ulong)SIZE_MAX) {
-        max_mem_size = (cl_ulong)SIZE_MAX;
-    }
+    max_mem_size = std::min(max_mem_size, (cl_ulong)SIZE_MAX);
 
-    cl_sampler sampler = clCreateSampler(context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err);
-    test_error(err, "clCreateSampler failed");
-
-    max_img_width = max_image2d_width;
-    max_img_height = max_image2d_height;
-
-    // determine max image dim we can allocate - assume RGBA image, 4 bytes per pixel,
-  //  and we want to consume 1/4 of global memory (this is the minimum required to be
-  //  supported by the spec)
+    // determine max image dim we can allocate - assume RGBA image, 4 bytes per
+    // pixel, and we want to consume 1/4 of global memory (this is the minimum
+    // required to be supported by the spec)
     max_mem_size /= 4; // use 1/4
     max_mem_size /= 4; // 4 bytes per pixel
-    max_img_dim = (size_t)sqrt((double)max_mem_size);
+
+    size_t max_img_dim =
+        static_cast<size_t>(sqrt(static_cast<double>(max_mem_size)));
     // convert to a power of 2
     {
-        unsigned int    n = (unsigned int)max_img_dim;
-        unsigned int    m = 0x80000000;
+        unsigned int n = static_cast<unsigned int>(max_img_dim);
+        unsigned int m = 0x80000000;
 
         // round-down to the nearest power of 2
-        while (m > n)
-            m >>= 1;
+        while (m > n) m >>= 1;
 
         max_img_dim = m;
     }
 
-    if (max_img_width > max_img_dim)
-        max_img_width = max_img_dim;
-    if (max_img_height > max_img_dim)
-        max_img_height = max_img_dim;
+    max_img_width = std::min(max_image2d_width, max_img_dim);
+    max_img_height = std::min(max_image2d_height, max_img_dim);
 
-    log_info("Adjusted maximum image size to test is %d x %d, which is a max mem size of %gMB.\n",
-                max_img_width, max_img_height, (max_img_width*max_img_height*4)/(1024.0*1024.0));
+    log_info("Adjusted maximum image size to test is %d x %d, which is a max "
+             "mem size of %gMB.\n",
+             max_img_width, max_img_height,
+             (max_img_width * max_img_height * 4) / (1024.0 * 1024.0));
+    return err;
+}
 
-    d = init_genrand( gRandomSeed );
-    input_ptr = generate_8888_image(max_img_width, max_img_height, d);
+int test_imagedim_common(cl_context context, cl_command_queue queue,
+                         cl_kernel kernel, size_t *local_threads,
+                         size_t img_width, size_t img_height)
+{
 
-    output_ptr = new unsigned char[4 * max_img_width * max_img_height];
+    int err;
+    int total_errors = 0;
+
+    clMemWrapper streams[2];
+
+    std::vector<cl_uchar> input(4 * img_width * img_height);
+    std::vector<cl_uchar> output(4 * img_width * img_height);
+
+    generate_random_inputs(input);
+
+    const cl_image_format img_format = { CL_RGBA, CL_UNORM_INT8 };
+
+    streams[0] = create_image_2d(context, CL_MEM_READ_WRITE, &img_format,
+                                 img_width, img_height, 0, nullptr, &err);
+    test_error(err, "create_image_2d failed");
+
+    streams[1] = create_image_2d(context, CL_MEM_READ_WRITE, &img_format,
+                                 img_width, img_height, 0, nullptr, &err);
+    test_error(err, "create_image_2d failed");
+
+    size_t origin[3] = { 0, 0, 0 };
+    size_t region[3] = { img_width, img_height, 1 };
+    err = clEnqueueWriteImage(queue, streams[0], CL_FALSE, origin, region, 0, 0,
+                              input.data(), 0, nullptr, nullptr);
+    test_error(err, "clEnqueueWriteImage failed");
+
+    clSamplerWrapper sampler = clCreateSampler(
+        context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err);
+    test_error(err, "clCreateSampler failed");
+
+    err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
+    err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1]);
+    err |= clSetKernelArg(kernel, 2, sizeof sampler, &sampler);
+    test_error(err, "clSetKernelArg failed");
+
+    size_t threads[] = { img_width, img_height };
+    if (local_threads)
+        log_info(
+            "Testing image dimensions %d x %d with local threads %d x %d.\n",
+            img_width, img_height, local_threads[0], local_threads[1]);
+    else
+        log_info(
+            "Testing image dimensions %d x %d with local threads nullptr.\n",
+            img_width, img_height);
+    err = clEnqueueNDRangeKernel(queue, kernel, 2, nullptr, threads,
+                                 local_threads, 0, nullptr, nullptr);
+    test_error(err, "clEnqueueNDRangeKernel failed");
+
+    err = clEnqueueReadImage(queue, streams[1], CL_TRUE, origin, region, 0, 0,
+                             output.data(), 0, nullptr, nullptr);
+    test_error(err, "clEnqueueReadImage failed");
+
+    if (0 != memcmp(input.data(), output.data(), 4 * img_width * img_height))
+    {
+        total_errors++;
+        log_error("Image Dimension test failed.  image width = %d, "
+                  "image height = %d\n",
+                  img_width, img_height);
+    }
+    return total_errors;
+}
+}
+
+int test_imagedim_pow2(cl_device_id device, cl_context context,
+                       cl_command_queue queue, int n_elems)
+{
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+
+    size_t max_img_width;
+    size_t max_img_height;
+
+    int err = 0;
+    int total_errors = 0;
+
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &image_dim_kernel_code, "test_image_dim");
+    test_error(err, "create_single_kernel_helper failed");
+
+    err = get_max_image_dimensions(device, max_img_width, max_img_height);
+    test_error(err, "get_max_image_dimensions failed");
 
     // test power of 2 width, height starting at 1 to 4K
-    for (i = 1, i2 = 0; i <= max_img_height; i <<= 1, i2++)
+    for (size_t i = 1, i2 = 0; i <= max_img_height; i <<= 1, i2++)
     {
-        img_height = (1 << i2);
-        for (j = 1, j2 = 0; j <= max_img_width; j <<= 1, j2++)
+        size_t img_height = (1 << i2);
+        for (size_t j = 1, j2 = 0; j <= max_img_width; j <<= 1, j2++)
         {
-            img_width = (1 << j2);
+            size_t img_width = (1 << j2);
 
-            img_format.image_channel_order = CL_RGBA;
-            img_format.image_channel_data_type = CL_UNORM_INT8;
-            streams[0] =
-                create_image_2d(context, CL_MEM_READ_WRITE, &img_format,
-                                img_width, img_height, 0, NULL, NULL);
-            if (!streams[0])
-            {
-                log_error("create_image_2d failed.  width = %d, height = %d\n", img_width, img_height);
-                delete[] input_ptr;
-                delete[] output_ptr;
-                free_mtdata(d);
-                return -1;
-            }
-            img_format.image_channel_order = CL_RGBA;
-            img_format.image_channel_data_type = CL_UNORM_INT8;
-            streams[1] =
-                create_image_2d(context, CL_MEM_READ_WRITE, &img_format,
-                                img_width, img_height, 0, NULL, NULL);
-            if (!streams[1])
-            {
-                log_error("create_image_2d failed.  width = %d, height = %d\n", img_width, img_height);
-                clReleaseMemObject(streams[0]);
-                delete[] input_ptr;
-                delete[] output_ptr;
-                free_mtdata(d);
-                return -1;
-            }
-
-            size_t origin[3] = {0,0,0};
-            size_t region[3] = {img_width, img_height, 1};
-            err = clEnqueueWriteImage(queue, streams[0], CL_FALSE, origin, region, 0, 0, input_ptr, 0, NULL, NULL);
-            if (err != CL_SUCCESS)
-            {
-                log_error("clWriteImage failed\n");
-                clReleaseMemObject(streams[0]);
-                clReleaseMemObject(streams[1]);
-                delete[] input_ptr;
-                delete[] output_ptr;
-                free_mtdata(d);
-                return -1;
-            }
-
-            err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
-            err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1]);
-            err |= clSetKernelArg(kernel, 2, sizeof sampler, &sampler);
-            if (err != CL_SUCCESS)
-            {
-                log_error("clSetKernelArgs failed\n");
-                clReleaseMemObject(streams[0]);
-                clReleaseMemObject(streams[1]);
-                delete[] input_ptr;
-                delete[] output_ptr;
-                free_mtdata(d);
-                return -1;
-            }
-
-            threads[0] = (size_t)img_width;
-            threads[1] = (size_t)img_height;
-            log_info("Testing image dimensions %d x %d with local threads NULL.\n", img_width, img_height);
-            err = clEnqueueNDRangeKernel( queue, kernel, 2, NULL, threads, NULL, 0, NULL, NULL );
-            if (err != CL_SUCCESS)
-            {
-                log_error("clEnqueueNDRangeKernel failed\n");
-                log_error("Image Dimension test failed.  image width = %d, image height = %d, local NULL\n",
-                            img_width, img_height);
-                clReleaseMemObject(streams[0]);
-                clReleaseMemObject(streams[1]);
-                delete[] input_ptr;
-                delete[] output_ptr;
-                free_mtdata(d);
-                return -1;
-            }
-            err = clEnqueueReadImage(queue, streams[1], CL_TRUE, origin, region, 0, 0, output_ptr, 0, NULL, NULL);
-            if (err != CL_SUCCESS)
-            {
-                log_error("clReadImage failed\n");
-                log_error("Image Dimension test failed.  image width = %d, image height = %d, local NULL\n",
-                            img_width, img_height);
-                clReleaseMemObject(streams[0]);
-                clReleaseMemObject(streams[1]);
-                delete[] input_ptr;
-                delete[] output_ptr;
-                free_mtdata(d);
-                return -1;
-            }
-            err = verify_8888_image(input_ptr, output_ptr, img_width, img_height);
-            if (err)
-            {
-                total_errors++;
-                log_error("Image Dimension test failed.  image width = %d, image height = %d\n", img_width, img_height);
-            }
-
-            clReleaseMemObject(streams[0]);
-            clReleaseMemObject(streams[1]);
+            total_errors += test_imagedim_common(
+                context, queue, kernel, nullptr, img_width, img_height);
         }
     }
-
-    // cleanup
-    delete[] input_ptr;
-    delete[] output_ptr;
-    free_mtdata(d);
-    clReleaseSampler(sampler);
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
 
     return total_errors;
 }
 
 
-
-int
-test_imagedim_non_pow2(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+int test_imagedim_non_pow2(cl_device_id device, cl_context context,
+                           cl_command_queue queue, int n_elems)
 {
-    cl_mem streams[2];
-    cl_image_format img_format;
-    unsigned char *input_ptr, *output_ptr;
-    cl_program program;
-    cl_kernel kernel;
-    size_t threads[2], local_threads[2];
-    cl_ulong max_mem_size;
-    size_t img_width, max_img_width;
-    size_t img_height, max_img_height;
-    size_t max_img_dim;
-    int i, j, i2, j2, err = 0;
-    size_t max_image2d_width, max_image2d_height;
-    int total_errors = 0;
-    size_t max_local_workgroup_size[3];
-    MTdata d;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
 
-    PASSIVE_REQUIRE_IMAGE_SUPPORT( device )
-
-    err = create_single_kernel_helper( context, &program, &kernel, 1, &image_dim_kernel_code, "test_image_dim" );
-    if (err)
-    {
-        log_error("create_program_and_kernel_with_sources failed\n");
-        return -1;
-    }
-
+    size_t max_img_width;
+    size_t max_img_height;
+    size_t max_local_workgroup_size[3] = {};
     size_t work_group_size = 0;
-    err = clGetKernelWorkGroupInfo(kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(work_group_size), &work_group_size, NULL);
-    test_error(err, "clGetKerenlWorkgroupInfo failed for CL_KERNEL_WORK_GROUP_SIZE");
+    int err = 0;
+    int total_errors = 0;
 
-    err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(max_local_workgroup_size), max_local_workgroup_size, NULL);
+
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &image_dim_kernel_code, "test_image_dim");
+    test_error(err, "create_single_kernel_helper failed");
+
+    err = get_max_image_dimensions(device, max_img_width, max_img_height);
+    test_error(err, "get_max_image_dimensions failed");
+
+    err = clGetKernelWorkGroupInfo(kernel, device, CL_KERNEL_WORK_GROUP_SIZE,
+                                   sizeof(work_group_size), &work_group_size,
+                                   nullptr);
+    test_error(err,
+               "clGetKernelWorkgroupInfo failed for CL_KERNEL_WORK_GROUP_SIZE");
+
+    err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
+                          sizeof(max_local_workgroup_size),
+                          max_local_workgroup_size, nullptr);
     test_error(err, "clGetDeviceInfo failed for CL_DEVICE_MAX_WORK_ITEM_SIZES");
 
-    err = clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE,sizeof(max_mem_size), &max_mem_size, NULL);
-    if (err)
-    {
-        log_error("clGetDeviceInfo for CL_DEVICE_GLOBAL_MEM_SIZE failed (%d)\n", err);
-        return -1;
-    }
-    err = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_WIDTH, sizeof(max_image2d_width), &max_image2d_width, NULL);
-    if (err)
-    {
-        log_error("clGetDeviceInfo for CL_DEVICE_IMAGE2D_MAX_WIDTH failed (%d)\n", err);
-        return -1;
-    }
-    err = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_HEIGHT, sizeof(max_image2d_width), &max_image2d_height, NULL);
-    if (err)
-    {
-        log_error("clGetDeviceInfo for CL_DEVICE_IMAGE2D_MAX_HEIGHT failed (%d)\n", err);
-        return -1;
-    }
-    log_info("Device reported max image sizes of %lu x %lu, and max mem size of %gMB.\n",
-           max_image2d_width, max_image2d_height, max_mem_size/(1024.0*1024.0));
+    // clamp max_local_workgroup_size to CL_KERNEL_WORK_GROUP_SIZE
+    for (auto &max_lws : max_local_workgroup_size)
+        max_lws = std::min(max_lws, work_group_size);
 
-    cl_sampler sampler = clCreateSampler(context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err);
-    test_error(err, "clCreateSampler failed");
-
-    max_img_width = (int)max_image2d_width;
-    max_img_height = (int)max_image2d_height;
-
-  if (max_mem_size > (cl_ulong)SIZE_MAX) {
-    max_mem_size = (cl_ulong)SIZE_MAX;
-  }
-
-    // determine max image dim we can allocate - assume RGBA image, 4 bytes per pixel,
-    //  and we want to consume 1/4 of global memory (this is the minimum required to be
-    //  supported by the spec)
-    max_mem_size /= 4; // use 1/4
-    max_mem_size /= 4; // 4 bytes per pixel
-    max_img_dim = (int)sqrt((double)max_mem_size);
-    // convert to a power of 2
-    {
-        unsigned int    n = (unsigned int)max_img_dim;
-        unsigned int    m = 0x80000000;
-
-        // round-down to the nearest power of 2
-        while (m > n)
-            m >>= 1;
-
-        max_img_dim = (int)m;
-    }
-
-    if (max_img_width > max_img_dim)
-        max_img_width = max_img_dim;
-    if (max_img_height > max_img_dim)
-        max_img_height = max_img_dim;
-
-    log_info("Adjusted maximum image size to test is %d x %d, which is a max mem size of %gMB.\n",
-            max_img_width, max_img_height, (max_img_width*max_img_height*4)/(1024.0*1024.0));
-
-    d = init_genrand( gRandomSeed );
-    input_ptr = generate_8888_image(max_img_width, max_img_height, d);
-    output_ptr = new unsigned char[4 * max_img_width * max_img_height];
-
-    int plus_minus;
-    for (plus_minus = 0; plus_minus < 3; plus_minus++)
+    for (int plus_minus = 0; plus_minus < 3; plus_minus++)
     {
 
-    // test power of 2 width, height starting at 1 to 4K
-        for (i=2,i2=1; i<=max_img_height; i<<=1,i2++)
+        // test power of 2 width, height starting at 1 to 4K
+        for (size_t i = 2, i2 = 1; i <= max_img_height; i <<= 1, i2++)
         {
-            img_height = (1 << i2);
-            for (j=2,j2=1; j<=max_img_width; j<<=1,j2++)
+            size_t img_height = (1 << i2);
+            for (size_t j = 2, j2 = 1; j <= max_img_width; j <<= 1, j2++)
             {
-                img_width = (1 << j2);
+                size_t img_width = (1 << j2);
 
                 size_t effective_img_height = img_height;
                 size_t effective_img_width = img_width;
 
-                local_threads[0] = 1;
-                local_threads[1] = 1;
+                size_t local_threads[] = { 1, 1 };
 
-                switch (plus_minus) {
+                switch (plus_minus)
+                {
                     case 0:
-                      effective_img_height--;
-                      local_threads[0] = work_group_size > max_local_workgroup_size[0] ? max_local_workgroup_size[0] : work_group_size;
-                      while (img_width%local_threads[0] != 0)
-                        local_threads[0]--;
-                      break;
+                        effective_img_height--;
+                        local_threads[0] = max_local_workgroup_size[0];
+                        while (img_width % local_threads[0] != 0)
+                            local_threads[0]--;
+                        break;
                     case 1:
-                      effective_img_width--;
-                      local_threads[1] = work_group_size > max_local_workgroup_size[1] ? max_local_workgroup_size[1] : work_group_size;
-                      while (img_height%local_threads[1] != 0)
-                        local_threads[1]--;
-                      break;
+                        effective_img_width--;
+                        local_threads[1] = max_local_workgroup_size[1];
+                        while (img_height % local_threads[1] != 0)
+                            local_threads[1]--;
+                        break;
                     case 2:
-                      effective_img_width--;
-                      effective_img_height--;
-                      break;
-                    default:
-                      break;
+                        effective_img_width--;
+                        effective_img_height--;
+                        break;
+                    default: break;
                 }
 
-                img_format.image_channel_order = CL_RGBA;
-                img_format.image_channel_data_type = CL_UNORM_INT8;
-                streams[0] = create_image_2d(
-                    context, CL_MEM_READ_WRITE, &img_format,
-                    effective_img_width, effective_img_height, 0, NULL, NULL);
-                if (!streams[0])
-                {
-                    log_error("create_image_2d failed.  width = %d, height = %d\n", effective_img_width, effective_img_height);
-                    delete[] input_ptr;
-                    delete[] output_ptr;
-                    free_mtdata(d);
-                    return -1;
-                }
-                img_format.image_channel_order = CL_RGBA;
-                img_format.image_channel_data_type = CL_UNORM_INT8;
-                streams[1] = create_image_2d(
-                    context, CL_MEM_READ_WRITE, &img_format,
-                    effective_img_width, effective_img_height, 0, NULL, NULL);
-                if (!streams[1])
-                {
-                    log_error("create_image_2d failed.  width = %d, height = %d\n", effective_img_width, effective_img_height);
-                    clReleaseMemObject(streams[0]);
-                    delete[] input_ptr;
-                    delete[] output_ptr;
-                    free_mtdata(d);
-                    return -1;
-                }
-
-                  size_t origin[3] = {0,0,0};
-                  size_t region[3] = {effective_img_width, effective_img_height, 1};
-                  err = clEnqueueWriteImage(queue, streams[0], CL_FALSE, origin, region, 0, 0, input_ptr, 0, NULL, NULL);
-                if (err != CL_SUCCESS)
-                {
-                    log_error("clWriteImage failed\n");
-                    clReleaseMemObject(streams[0]);
-                    clReleaseMemObject(streams[1]);
-                    delete[] input_ptr;
-                    delete[] output_ptr;
-                    free_mtdata(d);
-                    return -1;
-                }
-
-                err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
-                err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1]);
-                err |= clSetKernelArg(kernel, 2, sizeof sampler, &sampler);
-                if (err != CL_SUCCESS)
-                {
-                    log_error("clSetKernelArgs failed\n");
-                    clReleaseMemObject(streams[0]);
-                    clReleaseMemObject(streams[1]);
-                    delete[] input_ptr;
-                    delete[] output_ptr;
-                    free_mtdata(d);
-                    return -1;
-                }
-
-                threads[0] = (size_t)effective_img_width;
-                threads[1] = (size_t)effective_img_height;
-                log_info("Testing image dimensions %d x %d with local threads %d x %d.\n",
-                            effective_img_width, effective_img_height, (int)local_threads[0], (int)local_threads[1]);
-                err = clEnqueueNDRangeKernel( queue, kernel, 2, NULL, threads, local_threads, 0, NULL, NULL );
-                if (err != CL_SUCCESS)
-                {
-                    log_error("clEnqueueNDRangeKernel failed\n");
-                    log_error("Image Dimension test failed.  image width = %d, image height = %d, local %d x %d\n",
-                                effective_img_width, effective_img_height, (int)local_threads[0], (int)local_threads[1]);
-                    clReleaseMemObject(streams[0]);
-                    clReleaseMemObject(streams[1]);
-                    delete[] input_ptr;
-                    delete[] output_ptr;
-                    free_mtdata(d);
-                    return -1;
-                }
-                err = clEnqueueReadImage(queue, streams[1], CL_TRUE, origin, region, 0, 0, output_ptr, 0, NULL, NULL);
-                if (err != CL_SUCCESS)
-                {
-                    log_error("clReadImage failed\n");
-                    log_error("Image Dimension test failed.  image width = %d, image height = %d, local %d x %d\n",
-                                effective_img_width, effective_img_height, (int)local_threads[0], (int)local_threads[1]);
-                    clReleaseMemObject(streams[0]);
-                    clReleaseMemObject(streams[1]);
-                    delete[] input_ptr;
-                    delete[] output_ptr;
-                    free_mtdata(d);
-                    return -1;
-                }
-                err = verify_8888_image(input_ptr, output_ptr, effective_img_width, effective_img_height);
-                if (err)
-                {
-                    total_errors++;
-                    log_error("Image Dimension test failed.  image width = %d, image height = %d\n", effective_img_width, effective_img_height);
-                }
-
-                clReleaseMemObject(streams[0]);
-                clReleaseMemObject(streams[1]);
+                total_errors += test_imagedim_common(
+                    context, queue, kernel, local_threads, effective_img_width,
+                    effective_img_height);
             }
         }
+    }
 
-  }
-
-  // cleanup
-  delete[] input_ptr;
-  delete[] output_ptr;
-  free_mtdata(d);
-  clReleaseSampler(sampler);
-  clReleaseKernel(kernel);
-  clReleaseProgram(program);
-
-  return total_errors;
+    return total_errors;
 }
-
-
-
-
