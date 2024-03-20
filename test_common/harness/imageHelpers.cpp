@@ -286,6 +286,7 @@ uint32_t get_pixel_size(const cl_image_format *format)
 
         case CL_FLOAT:
             return get_format_channel_count(format) * sizeof(cl_float);
+        case CL_UNORM_INT_101010_2: return 4;
 
         default: return 0;
     }
