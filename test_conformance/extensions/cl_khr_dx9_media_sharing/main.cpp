@@ -31,12 +31,12 @@ test_definition test_list[] = { ADD_TEST(context_create),
 
 const int test_num = ARRAY_SIZE(test_list);
 
-clGetDeviceIDsFromDX9MediaAdapterKHR_fn clGetDeviceIDsFromDX9MediaAdapterKHR =
+clGetDeviceIDsFromDX9MediaAdapterKHR_fn clGetDeviceIDsFromDX9MediaAdapterKHR_ =
     NULL;
-clCreateFromDX9MediaSurfaceKHR_fn clCreateFromDX9MediaSurfaceKHR = NULL;
-clEnqueueAcquireDX9MediaSurfacesKHR_fn clEnqueueAcquireDX9MediaSurfacesKHR =
+clCreateFromDX9MediaSurfaceKHR_fn clCreateFromDX9MediaSurfaceKHR_ = NULL;
+clEnqueueAcquireDX9MediaSurfacesKHR_fn clEnqueueAcquireDX9MediaSurfacesKHR_ =
     NULL;
-clEnqueueReleaseDX9MediaSurfacesKHR_fn clEnqueueReleaseDX9MediaSurfacesKHR =
+clEnqueueReleaseDX9MediaSurfacesKHR_fn clEnqueueReleaseDX9MediaSurfacesKHR_ =
     NULL;
 
 cl_platform_id gPlatformIDdetected;
@@ -45,43 +45,43 @@ cl_device_type gDeviceTypeSelected = CL_DEVICE_TYPE_DEFAULT;
 
 bool MediaSurfaceSharingExtensionInit()
 {
-    clGetDeviceIDsFromDX9MediaAdapterKHR =
+    clGetDeviceIDsFromDX9MediaAdapterKHR_ =
         (clGetDeviceIDsFromDX9MediaAdapterKHR_fn)
             clGetExtensionFunctionAddressForPlatform(
                 gPlatformIDdetected, "clGetDeviceIDsFromDX9MediaAdapterKHR");
-    if (clGetDeviceIDsFromDX9MediaAdapterKHR == NULL)
+    if (clGetDeviceIDsFromDX9MediaAdapterKHR_ == NULL)
     {
         log_error("clGetExtensionFunctionAddressForPlatform("
                   "clGetDeviceIDsFromDX9MediaAdapterKHR) returned NULL.\n");
         return false;
     }
 
-    clCreateFromDX9MediaSurfaceKHR = (clCreateFromDX9MediaSurfaceKHR_fn)
+    clCreateFromDX9MediaSurfaceKHR_ = (clCreateFromDX9MediaSurfaceKHR_fn)
         clGetExtensionFunctionAddressForPlatform(
             gPlatformIDdetected, "clCreateFromDX9MediaSurfaceKHR");
-    if (clCreateFromDX9MediaSurfaceKHR == NULL)
+    if (clCreateFromDX9MediaSurfaceKHR_ == NULL)
     {
         log_error("clGetExtensionFunctionAddressForPlatform("
                   "clCreateFromDX9MediaSurfaceKHR) returned NULL.\n");
         return false;
     }
 
-    clEnqueueAcquireDX9MediaSurfacesKHR =
+    clEnqueueAcquireDX9MediaSurfacesKHR_ =
         (clEnqueueAcquireDX9MediaSurfacesKHR_fn)
             clGetExtensionFunctionAddressForPlatform(
                 gPlatformIDdetected, "clEnqueueAcquireDX9MediaSurfacesKHR");
-    if (clEnqueueAcquireDX9MediaSurfacesKHR == NULL)
+    if (clEnqueueAcquireDX9MediaSurfacesKHR_ == NULL)
     {
         log_error("clGetExtensionFunctionAddressForPlatform("
                   "clEnqueueAcquireDX9MediaSurfacesKHR) returned NULL.\n");
         return false;
     }
 
-    clEnqueueReleaseDX9MediaSurfacesKHR =
+    clEnqueueReleaseDX9MediaSurfacesKHR_ =
         (clEnqueueReleaseDX9MediaSurfacesKHR_fn)
             clGetExtensionFunctionAddressForPlatform(
                 gPlatformIDdetected, "clEnqueueReleaseDX9MediaSurfacesKHR");
-    if (clEnqueueReleaseDX9MediaSurfacesKHR == NULL)
+    if (clEnqueueReleaseDX9MediaSurfacesKHR_ == NULL)
     {
         log_error("clGetExtensionFunctionAddressForPlatform("
                   "clEnqueueReleaseDX9MediaSurfacesKHR) returned NULL.\n");
