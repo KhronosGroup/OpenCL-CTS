@@ -261,20 +261,21 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
 }
 
 test_definition test_list[] = {
-    ADD_TEST( svm_byte_granularity),
-    ADD_TEST( svm_set_kernel_exec_info_svm_ptrs ),
-    ADD_TEST( svm_fine_grain_memory_consistency ),
-    ADD_TEST( svm_fine_grain_sync_buffers ),
-    ADD_TEST( svm_shared_address_space_fine_grain ),
-    ADD_TEST( svm_shared_sub_buffers ),
-    ADD_TEST( svm_shared_address_space_fine_grain_buffers ),
-    ADD_TEST( svm_allocate_shared_buffer ),
-    ADD_TEST( svm_shared_address_space_coarse_grain_old_api ),
-    ADD_TEST( svm_shared_address_space_coarse_grain_new_api ),
-    ADD_TEST( svm_cross_buffer_pointers_coarse_grain ),
-    ADD_TEST( svm_pointer_passing ),
-    ADD_TEST( svm_enqueue_api ),
-    ADD_TEST_VERSION( svm_migrate, Version(2, 1)),
+    ADD_TEST(svm_byte_granularity),
+    ADD_TEST(svm_set_kernel_exec_info_svm_ptrs),
+    ADD_TEST(svm_fine_grain_memory_consistency),
+    ADD_TEST(svm_fine_grain_sync_buffers),
+    ADD_TEST(svm_shared_address_space_fine_grain),
+    ADD_TEST(svm_shared_sub_buffers),
+    ADD_TEST(svm_shared_address_space_fine_grain_buffers),
+    ADD_TEST(svm_allocate_shared_buffer),
+    ADD_TEST(svm_allocate_shared_buffer_negative),
+    ADD_TEST(svm_shared_address_space_coarse_grain_old_api),
+    ADD_TEST(svm_shared_address_space_coarse_grain_new_api),
+    ADD_TEST(svm_cross_buffer_pointers_coarse_grain),
+    ADD_TEST(svm_pointer_passing),
+    ADD_TEST(svm_enqueue_api),
+    ADD_TEST_VERSION(svm_migrate, Version(2, 1)),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
