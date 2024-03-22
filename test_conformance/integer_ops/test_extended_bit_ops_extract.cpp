@@ -44,7 +44,7 @@ template <typename T>
 static typename std::make_unsigned<T>::type
 cpu_bit_extract_signed(T tbase, cl_uint offset, cl_uint count)
 {
-    typedef typename std::make_signed<T>::type unsigned_t;
+    typedef typename std::make_unsigned<T>::type unsigned_t;
 
     assert(offset <= sizeof(T) * 8);
     assert(count <= sizeof(T) * 8);
