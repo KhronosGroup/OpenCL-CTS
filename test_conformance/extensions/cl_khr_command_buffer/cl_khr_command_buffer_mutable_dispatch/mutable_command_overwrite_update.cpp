@@ -25,7 +25,8 @@
 namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
-// command buffer with overwritten mutable dispatch test
+// Test calling clUpdateMutableCommandsKHR() several times on the same
+// command-handle and make sure that the most recent value persists.
 
 struct OverwriteUpdateDispatch : BasicMutableCommandBufferTest
 {
@@ -70,7 +71,7 @@ struct OverwriteUpdateDispatch : BasicMutableCommandBufferTest
         test_error(error, "Failed to build program");
 
         kernel = clCreateKernel(program, "fill", &error);
-        test_error(error, "Failed to create copy kernel");
+        test_error(error, "Failed to create fill kernel");
 
         return CL_SUCCESS;
     }
