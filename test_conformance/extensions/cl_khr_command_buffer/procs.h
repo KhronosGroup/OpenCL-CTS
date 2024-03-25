@@ -141,4 +141,8 @@ extern int test_finalize_invalid(cl_device_id device, cl_context context,
 extern int test_finalize_empty(cl_device_id device, cl_context context,
                                cl_command_queue queue, int num_elements);
 
+extern int test_invalid_command_handle(cl_device_id device, cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
+
 #endif // CL_KHR_COMMAND_BUFFER_PROCS_H
