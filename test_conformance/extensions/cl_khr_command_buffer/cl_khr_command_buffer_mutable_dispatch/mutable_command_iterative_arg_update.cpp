@@ -25,7 +25,9 @@
 namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
-// command buffer with iterative update of mutable parameters test
+// Test clUpdateMutableCommandsKHR() being called twice on the same command
+// before an enqueue, but with different arguments. Verifies that the combined
+// updates are made correctly.
 
 struct IterativeArgUpdateDispatch : BasicMutableCommandBufferTest
 {
@@ -70,7 +72,7 @@ struct IterativeArgUpdateDispatch : BasicMutableCommandBufferTest
         test_error(error, "Failed to build program");
 
         kernel = clCreateKernel(program, "fill", &error);
-        test_error(error, "Failed to create copy kernel");
+        test_error(error, "Failed to create fill kernel");
 
         return CL_SUCCESS;
     }
