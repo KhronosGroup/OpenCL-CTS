@@ -93,6 +93,7 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
         // due to possible out-of-order command queue copy the kernel for below
         // case scenarios
         if (event_mode == EventMode::RET_COMBUF_WAIT_FOR_SEC_COMBUF
+            || event_mode == EventMode::RET_WAIT_FOR_SEC_QUEUE_EVENT
             || event_mode == EventMode::RET_CLWAITFOREVENTS)
         {
             kernel_sec = clCreateKernel(program, "copy", &error);
@@ -108,6 +109,7 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
         // due to possible out-of-order command queue it is necessary to create
         // separate set of kernel args for below cases
         if (event_mode == EventMode::RET_COMBUF_WAIT_FOR_SEC_COMBUF
+            || event_mode == EventMode::RET_WAIT_FOR_SEC_QUEUE_EVENT
             || event_mode == EventMode::RET_CLWAITFOREVENTS)
         {
             // setup arguments for secondary kernel
@@ -570,13 +572,13 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
         test_error(error, "clCreateCommandBufferKHR failed");
 
         // record secondary command buffer
-        error = RecordCommandBuffer(command_buffer_sec, kernel);
+        error = RecordCommandBuffer(command_buffer_sec, kernel_sec);
         test_error(error, "RecordCommandBuffer failed");
 
         // process secondary queue
-        error =
-            clEnqueueFillBuffer(queue_sec, in_mem, &pattern_pri, sizeof(cl_int),
-                                0, data_size(), 0, nullptr, nullptr);
+        error = clEnqueueFillBuffer(queue_sec, in_mem_sec, &pattern_pri,
+                                    sizeof(cl_int), 0, data_size(), 0, nullptr,
+                                    nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
 
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer_sec, 0,
