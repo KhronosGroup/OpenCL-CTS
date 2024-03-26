@@ -103,7 +103,8 @@
     VK_FUNC_DECL(vkGetPhysicalDeviceExternalSemaphorePropertiesKHR)
 #define VK_WINDOWS_FUNC_LIST                                                   \
     VK_FUNC_DECL(vkGetMemoryWin32HandleKHR)                                    \
-    VK_FUNC_DECL(vkGetSemaphoreWin32HandleKHR)
+    VK_FUNC_DECL(vkGetSemaphoreWin32HandleKHR)                                 \
+    VK_FUNC_DECL(vkImportSemaphoreWin32HandleKHR)
 
 #define vkEnumerateInstanceVersion _vkEnumerateInstanceVersion
 #define vkEnumerateInstanceExtensionProperties                                 \
@@ -198,5 +199,6 @@
     _vkGetPhysicalDeviceExternalSemaphorePropertiesKHR
 #define vkGetMemoryWin32HandleKHR _vkGetMemoryWin32HandleKHR
 #define vkGetSemaphoreWin32HandleKHR _vkGetSemaphoreWin32HandleKHR
+#define vkImportSemaphoreWin32HandleKHR _vkImportSemaphoreWin32HandleKHR
 
 #endif //_vulkan_api_list_hpp_
