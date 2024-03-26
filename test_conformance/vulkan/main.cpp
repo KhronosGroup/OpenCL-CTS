@@ -157,6 +157,8 @@ test_definition test_list[] = { ADD_TEST(buffer_single_queue),
                                 ADD_TEST(image_multiple_queue),
                                 ADD_TEST(consistency_external_buffer),
                                 ADD_TEST(consistency_external_image),
+                                ADD_TEST(consistency_external_for_3dimage),
+                                ADD_TEST(consistency_external_for_1dimage),
                                 ADD_TEST(consistency_external_semaphore),
                                 ADD_TEST(platform_info),
                                 ADD_TEST(device_info) };

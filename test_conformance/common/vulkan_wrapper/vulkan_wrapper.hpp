@@ -494,6 +494,47 @@ public:
     operator VkImage() const;
 };
 
+class VulkanImage1D : public VulkanImage {
+protected:
+    VkImageView m_vkImageView;
+
+public:
+    VulkanImage1D(
+        const VulkanDevice &device, VulkanFormat format, uint32_t width,
+        VulkanImageTiling imageTiling, uint32_t numMipLevels = 1,
+        VulkanExternalMemoryHandleType externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
+        VulkanImageCreateFlag imageCreateFlag = VULKAN_IMAGE_CREATE_FLAG_NONE,
+        VulkanImageUsage imageUsage =
+            VULKAN_IMAGE_USAGE_SAMPLED_STORAGE_TRANSFER_SRC_DST,
+        VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
+    virtual ~VulkanImage1D();
+    virtual VulkanExtent3D getExtent3D(uint32_t mipLevel = 0) const;
+
+    VulkanImage1D(const VulkanImage1D &image1D);
+};
+
+class VulkanImage3D : public VulkanImage {
+protected:
+    VkImageView m_vkImageView;
+
+public:
+    VulkanImage3D(
+        const VulkanDevice &device, VulkanFormat format, uint32_t width,
+        uint32_t height, uint32_t depth, VulkanImageTiling imageTiling,
+        uint32_t numMipLevels = 1,
+        VulkanExternalMemoryHandleType externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
+        VulkanImageCreateFlag imageCreateFlag = VULKAN_IMAGE_CREATE_FLAG_NONE,
+        VulkanImageUsage imageUsage =
+            VULKAN_IMAGE_USAGE_SAMPLED_STORAGE_TRANSFER_SRC_DST,
+        VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
+    virtual ~VulkanImage3D();
+    virtual VulkanExtent3D getExtent3D(uint32_t mipLevel = 0) const;
+
+    VulkanImage3D(const VulkanImage3D &image3D);
+};
+
 class VulkanImage2D : public VulkanImage {
 protected:
     VkImageView m_vkImageView;

@@ -25,6 +25,8 @@ set (${MODULE_NAME}_SOURCES
         test_vulkan_interop_buffer.cpp
         test_vulkan_interop_image.cpp
         test_vulkan_api_consistency.cpp
+        test_vulkan_api_consistency_for_3dimages.cpp
+        test_vulkan_api_consistency_for_1dimages.cpp
         test_vulkan_platform_device_info.cpp
         vulkan_interop_common.cpp
         ../../test_common/harness/genericThread.cpp

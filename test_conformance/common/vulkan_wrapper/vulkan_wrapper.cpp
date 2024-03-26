@@ -1811,6 +1811,36 @@ const VulkanMemoryTypeList &VulkanImage::getMemoryTypeList() const
 VulkanImage::operator VkImage() const { return m_vkImage; }
 
 //////////////////////////////////
+// VulkanImage1D implementation //
+//////////////////////////////////
+
+VulkanImage1D::VulkanImage1D(const VulkanImage1D &image1D): VulkanImage(image1D)
+{}
+
+VulkanImage1D::VulkanImage1D(
+    const VulkanDevice &device, VulkanFormat format, uint32_t width,
+    VulkanImageTiling imageTiling, uint32_t numMipLevels,
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
+    VulkanSharingMode sharingMode)
+    : VulkanImage(device, VULKAN_IMAGE_TYPE_1D, format,
+                  VulkanExtent3D(width, 1, 1), numMipLevels, 1,
+                  externalMemoryHandleType, imageCreateFlag, imageTiling,
+                  imageUsage, sharingMode)
+{}
+
+VulkanImage1D::~VulkanImage1D() {}
+
+VulkanExtent3D VulkanImage1D::getExtent3D(uint32_t mipLevel) const
+{
+    uint32_t width = std::max(m_extent3D.getWidth() >> mipLevel, uint32_t(1));
+    uint32_t height = 1;
+    uint32_t depth = 1;
+
+    return VulkanExtent3D(width, height, depth);
+}
+
+//////////////////////////////////
 // VulkanImage2D implementation //
 //////////////////////////////////
 
@@ -1836,6 +1866,37 @@ VulkanExtent3D VulkanImage2D::getExtent3D(uint32_t mipLevel) const
     uint32_t width = std::max(m_extent3D.getWidth() >> mipLevel, uint32_t(1));
     uint32_t height = std::max(m_extent3D.getHeight() >> mipLevel, uint32_t(1));
     uint32_t depth = 1;
+
+    return VulkanExtent3D(width, height, depth);
+}
+
+//////////////////////////////////
+// VulkanImage3D implementation //
+//////////////////////////////////
+
+VulkanImage3D::VulkanImage3D(const VulkanImage3D &image3D): VulkanImage(image3D)
+{}
+
+VulkanImage3D::VulkanImage3D(
+    const VulkanDevice &device, VulkanFormat format, uint32_t width,
+    uint32_t height, uint32_t depth, VulkanImageTiling imageTiling,
+    uint32_t numMipLevels,
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
+    VulkanSharingMode sharingMode)
+    : VulkanImage(device, VULKAN_IMAGE_TYPE_3D, format,
+                  VulkanExtent3D(width, height, depth), numMipLevels, 1,
+                  externalMemoryHandleType, imageCreateFlag, imageTiling,
+                  imageUsage, sharingMode)
+{}
+
+VulkanImage3D::~VulkanImage3D() {}
+
+VulkanExtent3D VulkanImage3D::getExtent3D(uint32_t mipLevel) const
+{
+    uint32_t width = std::max(m_extent3D.getWidth() >> mipLevel, uint32_t(1));
+    uint32_t height = std::max(m_extent3D.getHeight() >> mipLevel, uint32_t(1));
+    uint32_t depth = std::max(m_extent3D.getDepth() >> mipLevel, uint32_t(1));
 
     return VulkanExtent3D(width, height, depth);
 }
