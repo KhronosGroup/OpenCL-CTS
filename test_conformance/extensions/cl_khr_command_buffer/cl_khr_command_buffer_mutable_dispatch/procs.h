@@ -117,6 +117,10 @@ extern int test_mutable_command_full_dispatch(cl_device_id device,
                                               cl_context context,
                                               cl_command_queue queue,
                                               int num_elements);
+extern int test_mutable_command_overwrite_update(cl_device_id device,
+                                                 cl_context context,
+                                                 cl_command_queue queue,
+                                                 int num_elements);
 extern int test_mutable_command_multiple_dispatches(cl_device_id device,
                                                     cl_context context,
                                                     cl_command_queue queue,
