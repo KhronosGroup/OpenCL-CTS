@@ -16,6 +16,7 @@ set(${MODULE_NAME}_SOURCES
     command_buffer_test_barrier.cpp
     command_buffer_test_event_info.cpp
     command_buffer_finalize.cpp
+    negative_command_buffer_get_info.cpp
 )
 
 set_gnulike_module_compile_flags("-Wno-sign-compare")
