@@ -50,6 +50,11 @@ jobs:
           cd OpenCL-Headers
           ln -s CL OpenCL # For OSX builds
           cd ..
+      - name: Install Vulkan SDK
+        uses: humbletim/install-vulkan-sdk@main
+        with:
+          version: 1.3.275.0
+          cache: true
       - name: Build
         shell: bash
         run: ./presubmit.sh
