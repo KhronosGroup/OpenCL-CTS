@@ -63,7 +63,14 @@ test_definition test_list[] = {
     ADD_TEST(event_info_context),
     ADD_TEST(event_info_reference_count),
     ADD_TEST(finalize_invalid),
-    ADD_TEST(finalize_empty)
+    ADD_TEST(finalize_empty),
+    ADD_TEST(negative_create_command_buffer_num_queues),
+    ADD_TEST(negative_create_command_buffer_null_queues),
+    ADD_TEST(negative_create_command_buffer_repeated_properties),
+    ADD_TEST(negative_create_command_buffer_not_supported_properties),
+    ADD_TEST(negative_create_command_buffer_queue_without_min_properties),
+    ADD_TEST(
+        negative_create_command_buffer_device_does_not_support_out_of_order_queue)
 };
 
 int main(int argc, const char *argv[])
