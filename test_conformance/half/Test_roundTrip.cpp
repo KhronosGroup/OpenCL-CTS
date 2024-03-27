@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <cinttypes>
 
 #include "cl_utils.h"
 #include "tests.h"
@@ -232,7 +233,10 @@ int test_roundTrip( cl_device_id device, cl_context context, cl_command_queue qu
                         if( IsHalfSubnormal(u2[j]) && ( (u1[j] == 0) || (u1[j] == 0x8000) ) )
                             continue;
 
-                        vlog_error( "%lld) (of %lld)  Failure at 0x%4.4x:  0x%4.4x   vector_size = %d \n", j, (uint64_t)count, u2[j], u1[j], (g_arrVecSizes[vectorSize]) );
+                        vlog_error("%" PRId64 ") (of %u)  Failure at 0x%4.4x:  "
+                                   "0x%4.4x   vector_size = %d \n",
+                                   j, count, u2[j], u1[j],
+                                   (g_arrVecSizes[vectorSize]));
                         gFailCount++;
                         error = -1;
                         goto exit;
@@ -282,7 +286,10 @@ int test_roundTrip( cl_device_id device, cl_context context, cl_command_queue qu
                             if( IsHalfSubnormal(u2[j]) && ( (u1[j] == 0) || (u1[j] == 0x8000) ) )
                                 continue;
 
-                            vlog_error( "%lld) Failure at 0x%4.4x:  0x%4.4x   vector_size = %d (double precsion)\n", j, u2[j], u1[j], (g_arrVecSizes[vectorSize]) );
+                            vlog_error(
+                                "%" PRId64 ") Failure at 0x%4.4x:  0x%4.4x   "
+                                "vector_size = %d (double precision)\n",
+                                j, u2[j], u1[j], (g_arrVecSizes[vectorSize]));
                             gFailCount++;
                             error = -1;
                             goto exit;
