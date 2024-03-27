@@ -63,7 +63,19 @@ test_definition test_list[] = {
     ADD_TEST(event_info_context),
     ADD_TEST(event_info_reference_count),
     ADD_TEST(finalize_invalid),
-    ADD_TEST(finalize_empty)
+    ADD_TEST(finalize_empty),
+    ADD_TEST(negative_enqueue_command_buffer_invalid_command_buffer),
+    ADD_TEST(negative_enqueue_command_buffer_not_finalized),
+    ADD_TEST(
+        negative_enqueue_command_buffer_without_simultaneous_no_pending_state),
+    ADD_TEST(negative_enqueue_command_buffer_null_queues_num_queues),
+    ADD_TEST(
+        negative_enqueue_command_buffer_num_queues_not_zero_different_while_buffer_creation),
+    ADD_TEST(negative_enqueue_command_buffer_not_valid_queue_in_queues),
+    ADD_TEST(negative_enqueue_queue_not_compatible),
+    ADD_TEST(negative_enqueue_queue_with_different_context),
+    ADD_TEST(negative_enqueue_command_buffer_different_context_than_event),
+    ADD_TEST(negative_enqueue_event_wait_list_null_or_events_null)
 };
 
 int main(int argc, const char *argv[])
