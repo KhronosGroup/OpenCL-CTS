@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -204,3 +204,16 @@ extern int test_negative_get_platform_ids(cl_device_id deviceID,
                                           int num_elements);
 extern int test_kernel_attributes(cl_device_id deviceID, cl_context context,
                                   cl_command_queue queue, int num_elements);
+
+extern int test_work_group_suggested_local_size_1D(cl_device_id device,
+                                                   cl_context context,
+                                                   cl_command_queue queue,
+                                                   int n_elems);
+extern int test_work_group_suggested_local_size_2D(cl_device_id device,
+                                                   cl_context context,
+                                                   cl_command_queue queue,
+                                                   int n_elems);
+extern int test_work_group_suggested_local_size_3D(cl_device_id device,
+                                                   cl_context context,
+                                                   cl_command_queue queue,
+                                                   int n_elems);

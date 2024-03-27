@@ -148,6 +148,10 @@ test_definition test_list[] = {
     ADD_TEST(min_image_formats),
     ADD_TEST(negative_get_platform_info),
     ADD_TEST(negative_get_platform_ids),
+
+    ADD_TEST(work_group_suggested_local_size_1D),
+    ADD_TEST(work_group_suggested_local_size_2D),
+    ADD_TEST(work_group_suggested_local_size_3D),
 };
 
 const int test_num = ARRAY_SIZE(test_list);

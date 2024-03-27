@@ -72,7 +72,7 @@ const char* wg_scan_local_work_group_size = R"(
                                             global uint *output)
     {
         __local char c[LOCAL_MEM_SIZE];
-    
+
         if(!is_zero_linear_id()) return;
         for (uint i = 0; i < 3; i++)
         {
