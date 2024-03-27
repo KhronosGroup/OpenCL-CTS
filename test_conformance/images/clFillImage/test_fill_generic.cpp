@@ -17,9 +17,19 @@
 
 extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo, int x, int y, int z, float *outData );
 
-static void CL_CALLBACK free_pitch_buffer( cl_mem image, void *buf )
+struct pitch_buffer_data {
+    void *buf;
+    bool is_aligned;
+};
+static void CL_CALLBACK free_pitch_buffer( cl_mem image, void *data )
 {
-    free( buf );
+    struct pitch_buffer_data *d = (struct pitch_buffer_data *)data;
+    if (d->is_aligned) {
+        align_free(d->buf);
+    } else {
+        free(d->buf);
+    }
+    free(d);
 }
 static void CL_CALLBACK release_cl_buffer(cl_mem image, void *buf)
 {
@@ -56,7 +66,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
                               sizeof(version), &version, nullptr);
         if (err != CL_SUCCESS)
         {
-            log_error("Error: Could not get CL_DEVICE_VERSION from "
+            log_error("Error: Could not get CL_DEVICE_NUMERIC_VERSION from "
                       "device");
             return NULL;
         }
@@ -166,36 +176,28 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
 
     if (gEnablePitch)
     {
-        if ( *error == CL_SUCCESS )
+        struct pitch_buffer_data *data = (struct pitch_buffer_data *)malloc(
+            sizeof(struct pitch_buffer_data));
+        data->buf = host_ptr;
+        data->is_aligned = CL_VERSION_MAJOR(version) == 1
+            && imageInfo->type == CL_MEM_OBJECT_IMAGE1D_BUFFER;
+        if (*error == CL_SUCCESS)
         {
-            int callbackError = clSetMemObjectDestructorCallback( img, free_pitch_buffer, host_ptr );
-            if ( CL_SUCCESS != callbackError )
+            int callbackError =
+                clSetMemObjectDestructorCallback(img, free_pitch_buffer, data);
+            if (CL_SUCCESS != callbackError)
             {
-                if (CL_VERSION_MAJOR(version) == 1)
-                {
-                    free(host_ptr);
-                }
-                else
-                {
-                    align_free(host_ptr);
-                }
+                free_pitch_buffer(img, data);
                 log_error("ERROR: Unable to attach destructor callback to "
                           "pitched 3D image. Err: %d\n",
                           callbackError);
-                clReleaseMemObject( img );
+                clReleaseMemObject(img);
                 return NULL;
             }
         }
         else
         {
-            if (CL_VERSION_MAJOR(version) == 1)
-            {
-                free(host_ptr);
-            }
-            else
-            {
-                align_free(host_ptr);
-            }
+            free_pitch_buffer(img, data);
         }
     }
 
