@@ -19,4 +19,5 @@
 
 int execute_kernel(cl_context context, cl_command_queue *queue,
                    cl_device_id device_id, int test, cl_mem mems[],
-                   int number_of_mems_used, int verify_checksum);
+                   int number_of_mems_used, int verify_checksum,
+                   unsigned int number_of_work_items);

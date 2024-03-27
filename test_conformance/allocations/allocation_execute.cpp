@@ -156,11 +156,10 @@ int check_image(cl_command_queue queue, cl_mem mem)
 }
 
 
-#define NUM_OF_WORK_ITEMS (8192 * 32)
-
 int execute_kernel(cl_context context, cl_command_queue *queue,
                    cl_device_id device_id, int test, cl_mem mems[],
-                   int number_of_mems_used, int verify_checksum)
+                   int number_of_mems_used, int verify_checksum,
+                   unsigned int number_of_work_itmes)
 {
 
     char *argument_string;
@@ -175,7 +174,7 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
     cl_uint per_item;
     cl_uint per_item_uint;
     cl_uint final_result;
-    std::vector<cl_uint> returned_results(NUM_OF_WORK_ITEMS);
+    std::vector<cl_uint> returned_results(number_of_work_itmes);
     clEventWrapper event;
     cl_int event_status;
 
@@ -192,7 +191,7 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
     kernel_string[0] = '\0';
 
     // Zero the results.
-    for (i = 0; i < NUM_OF_WORK_ITEMS; i++) returned_results[i] = 0;
+    for (i = 0; i < number_of_work_itmes; i++) returned_results[i] = 0;
 
     // detect if device supports ulong/int64
     // detect whether profile of the device is embedded
@@ -281,15 +280,16 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
     }
 
     // Set the result
-    result_mem = clCreateBuffer(
-        context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-        sizeof(cl_uint) * NUM_OF_WORK_ITEMS, returned_results.data(), &error);
+    result_mem =
+        clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                       sizeof(cl_uint) * number_of_work_itmes,
+                       returned_results.data(), &error);
     test_error(error, "clCreateBuffer failed");
     error = clSetKernelArg(kernel, i, sizeof(result_mem), &result_mem);
     test_error(error, "clSetKernelArg failed");
 
     // Thread dimensions for execution
-    global_dims[0] = NUM_OF_WORK_ITEMS;
+    global_dims[0] = number_of_work_itmes;
     global_dims[1] = 1;
     global_dims[2] = 1;
 
@@ -427,7 +427,7 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
     // Verify the checksum.
     // Read back the result
     error = clEnqueueReadBuffer(*queue, result_mem, CL_TRUE, 0,
-                                sizeof(cl_uint) * NUM_OF_WORK_ITEMS,
+                                sizeof(cl_uint) * number_of_work_itmes,
                                 returned_results.data(), 0, NULL, NULL);
     test_error_abort(error, "clEnqueueReadBuffer failed");
     final_result = 0;
@@ -436,7 +436,7 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
     {
         // For buffers or read images we are just looking at the sum of what
         // each thread summed up
-        for (i = 0; i < NUM_OF_WORK_ITEMS; i++)
+        for (i = 0; i < number_of_work_itmes; i++)
         {
             final_result += returned_results[i];
         }
