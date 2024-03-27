@@ -24,6 +24,18 @@ extern int test_copy_image_set_2D_array( cl_device_id device, cl_context context
 extern int test_copy_image_set_2D_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, bool reverse );
 extern int test_copy_image_set_2D_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, bool reverse );
 extern int test_copy_image_set_3D_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, bool reverse );
+extern int test_copy_image_set_1D_buffer(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         cl_image_format *format);
+extern int test_copy_image_set_1D_1D_buffer(cl_device_id device,
+                                            cl_context context,
+                                            cl_command_queue queue,
+                                            cl_image_format *format);
+extern int test_copy_image_set_1D_buffer_1D(cl_device_id device,
+                                            cl_context context,
+                                            cl_command_queue queue,
+                                            cl_image_format *format);
 
 int test_image_type( cl_device_id device, cl_context context, cl_command_queue queue, MethodsToTest testMethod, cl_mem_flags flags )
 {
@@ -87,6 +99,18 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
             name = "3D -> 2D array";
             imageType = CL_MEM_OBJECT_IMAGE3D;
             break;
+        case k1DBuffer:
+            name = "1D buffer -> 1D buffer";
+            imageType = CL_MEM_OBJECT_IMAGE1D_BUFFER;
+            break;
+        case k1DTo1DBuffer:
+            name = "1D -> 1D buffer";
+            imageType = CL_MEM_OBJECT_IMAGE1D_BUFFER;
+            break;
+        case k1DBufferTo1D:
+            name = "1D buffer -> 1D";
+            imageType = CL_MEM_OBJECT_IMAGE1D_BUFFER;
+            break;
     }
 
     if(gTestMipmaps)
@@ -138,6 +162,16 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
             test_return = test_copy_image_set_3D_2D_array( device, context, queue, &formatList[ i ], true);
         else if( testMethod == k3DTo2DArray)
             test_return = test_copy_image_set_3D_2D_array( device, context, queue, &formatList[ i ], false);
+        else if (testMethod == k1DBuffer)
+            test_return = test_copy_image_set_1D_buffer(device, context, queue,
+                                                        &formatList[i]);
+        else if (testMethod == k1DBufferTo1D)
+            test_return = test_copy_image_set_1D_buffer_1D(
+                device, context, queue, &formatList[i]);
+        else if (testMethod == k1DTo1DBuffer)
+            test_return = test_copy_image_set_1D_1D_buffer(
+                device, context, queue, &formatList[i]);
+
 
         if (test_return) {
             gFailCount++;

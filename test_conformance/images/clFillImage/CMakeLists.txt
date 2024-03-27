@@ -4,6 +4,7 @@ set(MODULE_NAME CL_FILL_IMAGES)
 set(${MODULE_NAME}_SOURCES
     main.cpp
     test_fill_1D.cpp
+    test_fill_1D_buffer.cpp
     test_fill_1D_array.cpp
     test_fill_2D.cpp
     test_fill_2D_array.cpp

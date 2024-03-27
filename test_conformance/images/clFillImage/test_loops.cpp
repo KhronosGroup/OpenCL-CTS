@@ -23,6 +23,11 @@ extern int test_fill_image_set_2D( cl_device_id device, cl_context context, cl_c
 extern int test_fill_image_set_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType outputType );
 extern int test_fill_image_set_1D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType outputType );
 extern int test_fill_image_set_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, ExplicitType outputType );
+extern int test_fill_image_set_1D_buffer(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         cl_image_format *format,
+                                         ExplicitType outputType);
 typedef int (*test_func)(cl_device_id device, cl_context context,
                          cl_command_queue queue, cl_image_format *format,
                          ExplicitType outputType);
@@ -59,6 +64,11 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
             name = "3D Image Fill";
             imageType = CL_MEM_OBJECT_IMAGE3D;
             test_fn = &test_fill_image_set_3D;
+            break;
+        case k1DBuffer:
+            name = "1D Image Buffer Fill";
+            imageType = CL_MEM_OBJECT_IMAGE1D_BUFFER;
+            test_fn = &test_fill_image_set_1D_buffer;
             break;
         default: log_error("Unhandled method\n"); return -1;
     }

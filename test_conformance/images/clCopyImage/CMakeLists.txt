@@ -10,6 +10,7 @@ set(${MODULE_NAME}_SOURCES
     test_copy_2D_array.cpp
     test_copy_3D.cpp
     test_copy_3D_2D_array.cpp
+    test_copy_1D_buffer.cpp
     test_copy_generic.cpp
     test_loops.cpp
     ../common.cpp
