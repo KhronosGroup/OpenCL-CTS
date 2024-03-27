@@ -17,16 +17,20 @@
 
 extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo, int x, int y, int z, float *outData );
 
-struct pitch_buffer_data {
+struct pitch_buffer_data
+{
     void *buf;
     bool is_aligned;
 };
 static void CL_CALLBACK free_pitch_buffer( cl_mem image, void *data )
 {
     struct pitch_buffer_data *d = (struct pitch_buffer_data *)data;
-    if (d->is_aligned) {
+    if (d->is_aligned)
+    {
         align_free(d->buf);
-    } else {
+    }
+    else
+    {
         free(d->buf);
     }
     free(d);
