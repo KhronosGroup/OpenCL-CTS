@@ -22,7 +22,7 @@ struct pitch_buffer_data
     void *buf;
     bool is_aligned;
 };
-static void CL_CALLBACK free_pitch_buffer( cl_mem image, void *data )
+static void CL_CALLBACK free_pitch_buffer(cl_mem image, void *data)
 {
     struct pitch_buffer_data *d = (struct pitch_buffer_data *)data;
     if (d->is_aligned)
