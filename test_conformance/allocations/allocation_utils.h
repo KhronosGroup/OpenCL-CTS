@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,7 +20,9 @@
 
 extern cl_uint checksum;
 
-int check_allocation_error(cl_context context, cl_device_id device_id, int error, cl_command_queue *queue, cl_event *event = 0);
+int check_allocation_error(cl_context context, cl_device_id device_id,
+                           int error, cl_command_queue *queue,
+                           cl_event *event = 0);
 double toMB(cl_ulong size_in);
 size_t get_actual_allocation_size(cl_mem mem);
 
