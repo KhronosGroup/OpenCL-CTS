@@ -23,13 +23,13 @@
 
 namespace {
 
-cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
+cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
     BuildKernelInfo &info = *(BuildKernelInfo *)p;
     auto generator = [](const std::string &kernel_name, const char *builtin,
                         cl_uint vector_size_index) {
-        return GetBinaryKernel(kernel_name, builtin, ParameterType::Float,
-                               ParameterType::Float, ParameterType::Float,
+        return GetBinaryKernel(kernel_name, builtin, ParameterType::Half,
+                               ParameterType::Half, ParameterType::Half,
                                vector_size_index);
     };
     return BuildKernels(info, job_id, generator);
@@ -43,11 +43,12 @@ struct ThreadInfo
     clMemWrapper inBuf2;
     Buffers outBuf;
 
-    float maxError; // max error value. Init to 0.
-    double
-        maxErrorValue; // position of the max error value (param 1).  Init to 0.
-    double maxErrorValue2; // position of the max error value (param 2).  Init
-                           // to 0.
+    // max error value. Init to 0.
+    float maxError;
+    // position of the max error value (param 1).  Init to 0.
+    double maxErrorValue;
+    // position of the max error value (param 2).  Init to 0.
+    double maxErrorValue2;
     MTdataHolder d;
 
     // Per thread command queue to improve performance
@@ -75,151 +76,59 @@ struct TestInfo
     cl_uint scale; // stride between individual test values
     float ulps; // max_allowed ulps
     int ftz; // non-zero if running in flush to zero mode
-    bool relaxedMode; // True if the test is being run in relaxed mode, false
-                      // otherwise.
 
     // no special fields
 };
 
 // A table of more difficult cases to get right
-const float specialValues[] = {
-    -NAN,
-    -INFINITY,
-    -FLT_MAX,
-    MAKE_HEX_FLOAT(-0x1.000002p64f, -0x1000002L, 40),
-    MAKE_HEX_FLOAT(-0x1.0p64f, -0x1L, 64),
-    MAKE_HEX_FLOAT(-0x1.fffffep63f, -0x1fffffeL, 39),
-    MAKE_HEX_FLOAT(-0x1.000002p63f, -0x1000002L, 39),
-    MAKE_HEX_FLOAT(-0x1.0p63f, -0x1L, 63),
-    MAKE_HEX_FLOAT(-0x1.fffffep62f, -0x1fffffeL, 38),
-    MAKE_HEX_FLOAT(-0x1.000002p32f, -0x1000002L, 8),
-    MAKE_HEX_FLOAT(-0x1.0p32f, -0x1L, 32),
-    MAKE_HEX_FLOAT(-0x1.fffffep31f, -0x1fffffeL, 7),
-    MAKE_HEX_FLOAT(-0x1.000002p31f, -0x1000002L, 7),
-    MAKE_HEX_FLOAT(-0x1.0p31f, -0x1L, 31),
-    MAKE_HEX_FLOAT(-0x1.fffffep30f, -0x1fffffeL, 6),
-    -1000.f,
-    -100.f,
-    -4.0f,
-    -3.5f,
-    -3.0f,
-    MAKE_HEX_FLOAT(-0x1.800002p1f, -0x1800002L, -23),
-    -2.5f,
-    MAKE_HEX_FLOAT(-0x1.7ffffep1f, -0x17ffffeL, -23),
-    -2.0f,
-    MAKE_HEX_FLOAT(-0x1.800002p0f, -0x1800002L, -24),
-    -1.5f,
-    MAKE_HEX_FLOAT(-0x1.7ffffep0f, -0x17ffffeL, -24),
-    MAKE_HEX_FLOAT(-0x1.000002p0f, -0x1000002L, -24),
-    -1.0f,
-    MAKE_HEX_FLOAT(-0x1.fffffep-1f, -0x1fffffeL, -25),
-    MAKE_HEX_FLOAT(-0x1.000002p-1f, -0x1000002L, -25),
-    -0.5f,
-    MAKE_HEX_FLOAT(-0x1.fffffep-2f, -0x1fffffeL, -26),
-    MAKE_HEX_FLOAT(-0x1.000002p-2f, -0x1000002L, -26),
-    -0.25f,
-    MAKE_HEX_FLOAT(-0x1.fffffep-3f, -0x1fffffeL, -27),
-    MAKE_HEX_FLOAT(-0x1.000002p-126f, -0x1000002L, -150),
-    -FLT_MIN,
-    MAKE_HEX_FLOAT(-0x0.fffffep-126f, -0x0fffffeL, -150),
-    MAKE_HEX_FLOAT(-0x0.000ffep-126f, -0x0000ffeL, -150),
-    MAKE_HEX_FLOAT(-0x0.0000fep-126f, -0x00000feL, -150),
-    MAKE_HEX_FLOAT(-0x0.00000ep-126f, -0x000000eL, -150),
-    MAKE_HEX_FLOAT(-0x0.00000cp-126f, -0x000000cL, -150),
-    MAKE_HEX_FLOAT(-0x0.00000ap-126f, -0x000000aL, -150),
-    MAKE_HEX_FLOAT(-0x0.000008p-126f, -0x0000008L, -150),
-    MAKE_HEX_FLOAT(-0x0.000006p-126f, -0x0000006L, -150),
-    MAKE_HEX_FLOAT(-0x0.000004p-126f, -0x0000004L, -150),
-    MAKE_HEX_FLOAT(-0x0.000002p-126f, -0x0000002L, -150),
-    -0.0f,
-
-    +NAN,
-    +INFINITY,
-    +FLT_MAX,
-    MAKE_HEX_FLOAT(+0x1.000002p64f, +0x1000002L, 40),
-    MAKE_HEX_FLOAT(+0x1.0p64f, +0x1L, 64),
-    MAKE_HEX_FLOAT(+0x1.fffffep63f, +0x1fffffeL, 39),
-    MAKE_HEX_FLOAT(+0x1.000002p63f, +0x1000002L, 39),
-    MAKE_HEX_FLOAT(+0x1.0p63f, +0x1L, 63),
-    MAKE_HEX_FLOAT(+0x1.fffffep62f, +0x1fffffeL, 38),
-    MAKE_HEX_FLOAT(+0x1.000002p32f, +0x1000002L, 8),
-    MAKE_HEX_FLOAT(+0x1.0p32f, +0x1L, 32),
-    MAKE_HEX_FLOAT(+0x1.fffffep31f, +0x1fffffeL, 7),
-    MAKE_HEX_FLOAT(+0x1.000002p31f, +0x1000002L, 7),
-    MAKE_HEX_FLOAT(+0x1.0p31f, +0x1L, 31),
-    MAKE_HEX_FLOAT(+0x1.fffffep30f, +0x1fffffeL, 6),
-    +1000.f,
-    +100.f,
-    +4.0f,
-    +3.5f,
-    +3.0f,
-    MAKE_HEX_FLOAT(+0x1.800002p1f, +0x1800002L, -23),
-    2.5f,
-    MAKE_HEX_FLOAT(+0x1.7ffffep1f, +0x17ffffeL, -23),
-    +2.0f,
-    MAKE_HEX_FLOAT(+0x1.800002p0f, +0x1800002L, -24),
-    1.5f,
-    MAKE_HEX_FLOAT(+0x1.7ffffep0f, +0x17ffffeL, -24),
-    MAKE_HEX_FLOAT(+0x1.000002p0f, +0x1000002L, -24),
-    +1.0f,
-    MAKE_HEX_FLOAT(+0x1.fffffep-1f, +0x1fffffeL, -25),
-    MAKE_HEX_FLOAT(+0x1.000002p-1f, +0x1000002L, -25),
-    +0.5f,
-    MAKE_HEX_FLOAT(+0x1.fffffep-2f, +0x1fffffeL, -26),
-    MAKE_HEX_FLOAT(+0x1.000002p-2f, +0x1000002L, -26),
-    +0.25f,
-    MAKE_HEX_FLOAT(+0x1.fffffep-3f, +0x1fffffeL, -27),
-    MAKE_HEX_FLOAT(0x1.000002p-126f, 0x1000002L, -150),
-    +FLT_MIN,
-    MAKE_HEX_FLOAT(+0x0.fffffep-126f, +0x0fffffeL, -150),
-    MAKE_HEX_FLOAT(+0x0.000ffep-126f, +0x0000ffeL, -150),
-    MAKE_HEX_FLOAT(+0x0.0000fep-126f, +0x00000feL, -150),
-    MAKE_HEX_FLOAT(+0x0.00000ep-126f, +0x000000eL, -150),
-    MAKE_HEX_FLOAT(+0x0.00000cp-126f, +0x000000cL, -150),
-    MAKE_HEX_FLOAT(+0x0.00000ap-126f, +0x000000aL, -150),
-    MAKE_HEX_FLOAT(+0x0.000008p-126f, +0x0000008L, -150),
-    MAKE_HEX_FLOAT(+0x0.000006p-126f, +0x0000006L, -150),
-    MAKE_HEX_FLOAT(+0x0.000004p-126f, +0x0000004L, -150),
-    MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150),
-    +0.0f,
+const cl_half specialValuesHalf[] = {
+    0xffff, 0x0000, 0x0001, 0x7c00, /*INFINITY*/
+    0xfc00, /*-INFINITY*/
+    0x8000, /*-0*/
+    0x7bff, /*HALF_MAX*/
+    0x0400, /*HALF_MIN*/
+    0x03ff, /* Largest denormal */
+    0x3c00, /* 1 */
+    0xbc00, /* -1 */
+    0x3555, /*nearest value to 1/3*/
+    0x3bff, /*largest number less than one*/
+    0xc000, /* -2 */
+    0xfbff, /* -HALF_MAX */
+    0x8400, /* -HALF_MIN */
+    0x4248, /* M_PI_H */
+    0xc248, /* -M_PI_H */
+    0xbbff, /* Largest negative fraction */
 };
 
-constexpr size_t specialValuesCount = ARRAY_SIZE(specialValues);
+constexpr size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
 
-cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
+cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 {
     TestInfo *job = (TestInfo *)data;
     size_t buffer_elements = job->subBufferSize;
-    size_t buffer_size = buffer_elements * sizeof(cl_float);
+    size_t buffer_size = buffer_elements * sizeof(cl_half);
     cl_uint base = job_id * (cl_uint)job->step;
     ThreadInfo *tinfo = &(job->tinfo[thread_id]);
+    float ulps = job->ulps;
     fptr func = job->f->func;
     int ftz = job->ftz;
-    bool relaxedMode = job->relaxedMode;
-    float ulps = getAllowedUlpError(job->f, relaxedMode);
     MTdata d = tinfo->d;
     cl_int error;
-    std::vector<bool> overflow(buffer_elements, false);
+
     const char *name = job->f->name;
-    cl_uint *t = 0;
-    cl_float *r = 0;
-    cl_float *s = 0;
-    cl_float *s2 = 0;
+    cl_half *r = 0;
+    std::vector<float> s(0), s2(0);
     RoundingMode oldRoundMode;
 
-    if (relaxedMode)
-    {
-        func = job->f->rfunc;
-    }
-
     cl_event e[VECTOR_SIZE_COUNT];
-    cl_uint *out[VECTOR_SIZE_COUNT];
+    cl_half *out[VECTOR_SIZE_COUNT];
+
     if (gHostFill)
     {
         // start the map of the output arrays
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
-            out[j] = (cl_uint *)clEnqueueMapBuffer(
+            out[j] = (cl_ushort *)clEnqueueMapBuffer(
                 tinfo->tQueue, tinfo->outBuf[j], CL_FALSE, CL_MAP_WRITE, 0,
                 buffer_size, 0, NULL, e + j, &error);
             if (error || NULL == out[j])
@@ -234,11 +143,14 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
     }
 
+    bool divide = strcmp(name, "divide") == 0;
+
     // Init input array
-    cl_uint *p = (cl_uint *)gIn + thread_id * buffer_elements;
-    cl_uint *p2 = (cl_uint *)gIn2 + thread_id * buffer_elements;
+    cl_half *p = (cl_half *)gIn + thread_id * buffer_elements;
+    cl_half *p2 = (cl_half *)gIn2 + thread_id * buffer_elements;
     cl_uint idx = 0;
-    int totalSpecialValueCount = specialValuesCount * specialValuesCount;
+    int totalSpecialValueCount =
+        specialValuesHalfCount * specialValuesHalfCount;
     int lastSpecialJobIndex = (totalSpecialValueCount - 1) / buffer_elements;
 
     if (job_id <= (cl_uint)lastSpecialJobIndex)
@@ -246,27 +158,27 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         // Insert special values
         uint32_t x, y;
 
-        x = (job_id * buffer_elements) % specialValuesCount;
-        y = (job_id * buffer_elements) / specialValuesCount;
+        x = (job_id * buffer_elements) % specialValuesHalfCount;
+        y = (job_id * buffer_elements) / specialValuesHalfCount;
 
         for (; idx < buffer_elements; idx++)
         {
-            p[idx] = ((cl_uint *)specialValues)[x];
-            p2[idx] = ((cl_uint *)specialValues)[y];
-            ++x;
-            if (x >= specialValuesCount)
+            p[idx] = specialValuesHalf[x];
+            p2[idx] = specialValuesHalf[y];
+            if (++x >= specialValuesHalfCount)
             {
                 x = 0;
                 y++;
-                if (y >= specialValuesCount) break;
+                if (y >= specialValuesHalfCount) break;
             }
-            if (relaxedMode && strcmp(name, "divide") == 0)
+
+            if (divide)
             {
-                cl_uint pj = p[idx] & 0x7fffffff;
-                cl_uint p2j = p2[idx] & 0x7fffffff;
-                // Replace values outside [2^-62, 2^62] with QNaN
-                if (pj < 0x20800000 || pj > 0x5e800000) p[idx] = 0x7fc00000;
-                if (p2j < 0x20800000 || p2j > 0x5e800000) p2[idx] = 0x7fc00000;
+                cl_half pj = p[idx] & 0x7fff;
+                cl_half p2j = p2[idx] & 0x7fff;
+                // Replace values outside [2^-7, 2^7] with QNaN
+                if (pj < 0x2000 || pj > 0x5800) p[idx] = 0x7e00; // HALF_NAN
+                if (p2j < 0x2000 || p2j > 0x5800) p2[idx] = 0x7e00;
             }
         }
     }
@@ -274,16 +186,16 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     // Init any remaining values
     for (; idx < buffer_elements; idx++)
     {
-        p[idx] = genrand_int32(d);
-        p2[idx] = genrand_int32(d);
+        p[idx] = (cl_half)genrand_int32(d);
+        p2[idx] = (cl_half)genrand_int32(d);
 
-        if (relaxedMode && strcmp(name, "divide") == 0)
+        if (divide)
         {
-            cl_uint pj = p[idx] & 0x7fffffff;
-            cl_uint p2j = p2[idx] & 0x7fffffff;
-            // Replace values outside [2^-62, 2^62] with QNaN
-            if (pj < 0x20800000 || pj > 0x5e800000) p[idx] = 0x7fc00000;
-            if (p2j < 0x20800000 || p2j > 0x5e800000) p2[idx] = 0x7fc00000;
+            cl_half pj = p[idx] & 0x7fff;
+            cl_half p2j = p2[idx] & 0x7fff;
+            // Replace values outside [2^-7, 2^7] with QNaN
+            if (pj < 0x2000 || pj > 0x5800) p[idx] = 0x7e00; // HALF_NAN
+            if (p2j < 0x2000 || p2j > 0x5800) p2[idx] = 0x7e00;
         }
     }
 
@@ -320,28 +232,20 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
         // Fill the result buffer with garbage, so that old results don't carry
         // over
-        uint32_t pattern = 0xffffdead;
+        uint32_t pattern = 0xacdcacdc;
         if (gHostFill)
         {
             memset_pattern4(out[j], &pattern, buffer_size);
-            if ((error = clEnqueueUnmapMemObject(
-                     tinfo->tQueue, tinfo->outBuf[j], out[j], 0, NULL, NULL)))
-            {
-                vlog_error("Error: clEnqueueUnmapMemObject failed! err: %d\n",
-                           error);
-                return error;
-            }
+            error = clEnqueueUnmapMemObject(tinfo->tQueue, tinfo->outBuf[j],
+                                            out[j], 0, NULL, NULL);
+            test_error(error, "clEnqueueUnmapMemObject failed!\n");
         }
         else
         {
-            if ((error = clEnqueueFillBuffer(tinfo->tQueue, tinfo->outBuf[j],
-                                             &pattern, sizeof(pattern), 0,
-                                             buffer_size, 0, NULL, NULL)))
-            {
-                vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
-                           error);
-                return error;
-            }
+            error = clEnqueueFillBuffer(tinfo->tQueue, tinfo->outBuf[j],
+                                        &pattern, sizeof(pattern), 0,
+                                        buffer_size, 0, NULL, NULL);
+            test_error(error, "clEnqueueFillBuffer failed!\n");
         }
 
         // Run the kernel
@@ -389,42 +293,32 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     // Calculate the correctly rounded reference result
     FPU_mode_type oldMode;
     memset(&oldMode, 0, sizeof(oldMode));
-    if (ftz || relaxedMode) ForceFTZ(&oldMode);
+    if (ftz) ForceFTZ(&oldMode);
 
     // Set the rounding mode to match the device
     oldRoundMode = kRoundToNearestEven;
     if (gIsInRTZMode) oldRoundMode = set_round(kRoundTowardZero, kfloat);
 
     // Calculate the correctly rounded reference result
-    r = (float *)gOut_Ref + thread_id * buffer_elements;
-    s = (float *)gIn + thread_id * buffer_elements;
-    s2 = (float *)gIn2 + thread_id * buffer_elements;
-    if (gInfNanSupport)
+    r = (cl_half *)gOut_Ref + thread_id * buffer_elements;
+    s.resize(buffer_elements);
+    s2.resize(buffer_elements);
+
+    for (size_t j = 0; j < buffer_elements; j++)
     {
-        for (size_t j = 0; j < buffer_elements; j++)
-            r[j] = (float)func.f_ff(s[j], s2[j]);
-    }
-    else
-    {
-        for (size_t j = 0; j < buffer_elements; j++)
-        {
-            feclearexcept(FE_OVERFLOW);
-            r[j] = (float)func.f_ff(s[j], s2[j]);
-            overflow[j] =
-                FE_OVERFLOW == (FE_OVERFLOW & fetestexcept(FE_OVERFLOW));
-        }
+        s[j] = HTF(p[j]);
+        s2[j] = HTF(p2[j]);
+        r[j] = HFF(func.f_ff(s[j], s2[j]));
     }
 
-    if (gIsInRTZMode) (void)set_round(oldRoundMode, kfloat);
-
-    if (ftz || relaxedMode) RestoreFPState(&oldMode);
+    if (ftz) RestoreFPState(&oldMode);
 
     // Read the data back -- no need to wait for the first N-1 buffers but wait
     // for the last buffer. This is an in order queue.
     for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
         cl_bool blocking = (j + 1 < gMaxVectorSizeIndex) ? CL_FALSE : CL_TRUE;
-        out[j] = (cl_uint *)clEnqueueMapBuffer(
+        out[j] = (cl_ushort *)clEnqueueMapBuffer(
             tinfo->tQueue, tinfo->outBuf[j], blocking, CL_MAP_READ, 0,
             buffer_size, 0, NULL, NULL, &error);
         if (error || NULL == out[j])
@@ -436,18 +330,18 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     }
 
     // Verify data
-    t = (cl_uint *)r;
+
     for (size_t j = 0; j < buffer_elements; j++)
     {
         for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
         {
-            cl_uint *q = out[k];
+            cl_half *q = out[k];
 
             // If we aren't getting the correctly rounded result
-            if (t[j] != q[j])
+            if (r[j] != q[j])
             {
-                float test = ((float *)q)[j];
-                double correct = func.f_ff(s[j], s2[j]);
+                float test = HTF(q[j]);
+                float correct = func.f_ff(s[j], s2[j]);
 
                 // Per section 10 paragraph 6, accept any result if an input or
                 // output is a infinity or NaN or overflow
@@ -455,51 +349,38 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 {
                     // Note: no double rounding here.  Reference functions
                     // calculate in single precision.
-                    if (overflow[j] || IsFloatInfinity(correct)
-                        || IsFloatNaN(correct) || IsFloatInfinity(s2[j])
-                        || IsFloatNaN(s2[j]) || IsFloatInfinity(s[j])
-                        || IsFloatNaN(s[j]))
+                    if (IsFloatInfinity(correct) || IsFloatNaN(correct)
+                        || IsFloatInfinity(s2[j]) || IsFloatNaN(s2[j])
+                        || IsFloatInfinity(s[j]) || IsFloatNaN(s[j]))
                         continue;
                 }
 
-                // Per section 10 paragraph 6, accept embedded devices always
-                // returning positive 0.0.
-                if (gIsEmbedded && (t[j] == 0x80000000) && (q[j] == 0x00000000))
-                    continue;
+                float err = Ulp_Error_Half(q[j], correct);
 
-                float err = Ulp_Error(test, correct);
-                float errB = Ulp_Error(test, (float)correct);
+                int fail = !(fabsf(err) <= ulps);
 
-                int fail =
-                    ((!(fabsf(err) <= ulps)) && (!(fabsf(errB) <= ulps)));
-                if (fabsf(errB) < fabsf(err)) err = errB;
-
-                if (fail && (ftz || relaxedMode))
+                if (fail && ftz)
                 {
                     // retry per section 6.5.3.2
-                    if (IsFloatResultSubnormal(correct, ulps))
+                    if (IsHalfResultSubnormal(correct, ulps))
                     {
                         fail = fail && (test != 0.0f);
                         if (!fail) err = 0.0f;
                     }
 
                     // retry per section 6.5.3.3
-                    if (IsFloatSubnormal(s[j]))
+                    if (IsHalfSubnormal(p[j]))
                     {
                         double correct2, correct3;
                         float err2, err3;
 
-                        if (!gInfNanSupport) feclearexcept(FE_OVERFLOW);
-
-                        correct2 = func.f_ff(0.0, s2[j]);
-                        correct3 = func.f_ff(-0.0, s2[j]);
+                        correct2 = HTF(func.f_ff(0.0, s2[j]));
+                        correct3 = HTF(func.f_ff(-0.0, s2[j]));
 
                         // Per section 10 paragraph 6, accept any result if an
                         // input or output is a infinity or NaN or overflow
                         if (!gInfNanSupport)
                         {
-                            if (fetestexcept(FE_OVERFLOW)) continue;
-
                             // Note: no double rounding here.  Reference
                             // functions calculate in single precision.
                             if (IsFloatInfinity(correct2)
@@ -509,42 +390,39 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                                 continue;
                         }
 
-                        err2 = Ulp_Error(test, correct2);
-                        err3 = Ulp_Error(test, correct3);
+                        err2 = Ulp_Error_Half(q[j], correct2);
+                        err3 = Ulp_Error_Half(q[j], correct3);
                         fail = fail
                             && ((!(fabsf(err2) <= ulps))
                                 && (!(fabsf(err3) <= ulps)));
+
                         if (fabsf(err2) < fabsf(err)) err = err2;
                         if (fabsf(err3) < fabsf(err)) err = err3;
 
                         // retry per section 6.5.3.4
-                        if (IsFloatResultSubnormal(correct2, ulps)
-                            || IsFloatResultSubnormal(correct3, ulps))
+                        if (IsHalfResultSubnormal(correct2, ulps)
+                            || IsHalfResultSubnormal(correct3, ulps))
                         {
                             fail = fail && (test != 0.0f);
                             if (!fail) err = 0.0f;
                         }
 
                         // try with both args as zero
-                        if (IsFloatSubnormal(s2[j]))
+                        if (IsHalfSubnormal(p2[j]))
                         {
                             double correct4, correct5;
                             float err4, err5;
 
-                            if (!gInfNanSupport) feclearexcept(FE_OVERFLOW);
-
-                            correct2 = func.f_ff(0.0, 0.0);
-                            correct3 = func.f_ff(-0.0, 0.0);
-                            correct4 = func.f_ff(0.0, -0.0);
-                            correct5 = func.f_ff(-0.0, -0.0);
+                            correct2 = HTF(func.f_ff(0.0, 0.0));
+                            correct3 = HTF(func.f_ff(-0.0, 0.0));
+                            correct4 = HTF(func.f_ff(0.0, -0.0));
+                            correct5 = HTF(func.f_ff(-0.0, -0.0));
 
                             // Per section 10 paragraph 6, accept any result if
                             // an input or output is a infinity or NaN or
                             // overflow
                             if (!gInfNanSupport)
                             {
-                                if (fetestexcept(FE_OVERFLOW)) continue;
-
                                 // Note: no double rounding here.  Reference
                                 // functions calculate in single precision.
                                 if (IsFloatInfinity(correct2)
@@ -558,10 +436,10 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                                     continue;
                             }
 
-                            err2 = Ulp_Error(test, correct2);
-                            err3 = Ulp_Error(test, correct3);
-                            err4 = Ulp_Error(test, correct4);
-                            err5 = Ulp_Error(test, correct5);
+                            err2 = Ulp_Error_Half(q[j], correct2);
+                            err3 = Ulp_Error_Half(q[j], correct3);
+                            err4 = Ulp_Error_Half(q[j], correct4);
+                            err5 = Ulp_Error_Half(q[j], correct5);
                             fail = fail
                                 && ((!(fabsf(err2) <= ulps))
                                     && (!(fabsf(err3) <= ulps))
@@ -573,25 +451,23 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                             if (fabsf(err5) < fabsf(err)) err = err5;
 
                             // retry per section 6.5.3.4
-                            if (IsFloatResultSubnormal(correct2, ulps)
-                                || IsFloatResultSubnormal(correct3, ulps)
-                                || IsFloatResultSubnormal(correct4, ulps)
-                                || IsFloatResultSubnormal(correct5, ulps))
+                            if (IsHalfResultSubnormal(correct2, ulps)
+                                || IsHalfResultSubnormal(correct3, ulps)
+                                || IsHalfResultSubnormal(correct4, ulps)
+                                || IsHalfResultSubnormal(correct5, ulps))
                             {
                                 fail = fail && (test != 0.0f);
                                 if (!fail) err = 0.0f;
                             }
                         }
                     }
-                    else if (IsFloatSubnormal(s2[j]))
+                    else if (IsHalfSubnormal(p2[j]))
                     {
                         double correct2, correct3;
                         float err2, err3;
 
-                        if (!gInfNanSupport) feclearexcept(FE_OVERFLOW);
-
-                        correct2 = func.f_ff(s[j], 0.0);
-                        correct3 = func.f_ff(s[j], -0.0);
+                        correct2 = HTF(func.f_ff(s[j], 0.0));
+                        correct3 = HTF(func.f_ff(s[j], -0.0));
 
                         // Per section 10 paragraph 6, accept any result if an
                         // input or output is a infinity or NaN or overflow
@@ -599,15 +475,14 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                         {
                             // Note: no double rounding here.  Reference
                             // functions calculate in single precision.
-                            if (overflow[j] || IsFloatInfinity(correct)
-                                || IsFloatNaN(correct)
+                            if (IsFloatInfinity(correct) || IsFloatNaN(correct)
                                 || IsFloatInfinity(correct2)
                                 || IsFloatNaN(correct2))
                                 continue;
                         }
 
-                        err2 = Ulp_Error(test, correct2);
-                        err3 = Ulp_Error(test, correct3);
+                        err2 = Ulp_Error_Half(q[j], correct2);
+                        err3 = Ulp_Error_Half(q[j], correct3);
                         fail = fail
                             && ((!(fabsf(err2) <= ulps))
                                 && (!(fabsf(err3) <= ulps)));
@@ -615,15 +490,14 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                         if (fabsf(err3) < fabsf(err)) err = err3;
 
                         // retry per section 6.5.3.4
-                        if (IsFloatResultSubnormal(correct2, ulps)
-                            || IsFloatResultSubnormal(correct3, ulps))
+                        if (IsHalfResultSubnormal(correct2, ulps)
+                            || IsHalfResultSubnormal(correct3, ulps))
                         {
                             fail = fail && (test != 0.0f);
                             if (!fail) err = 0.0f;
                         }
                     }
                 }
-
 
                 if (fabsf(err) > tinfo->maxError)
                 {
@@ -633,15 +507,18 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 }
                 if (fail)
                 {
-                    vlog_error("\nERROR: %s%s: %f ulp error at {%a, %a}: *%a "
-                               "vs. %a (0x%8.8x) at index: %zu\n",
-                               name, sizeNames[k], err, s[j], s2[j], r[j], test,
-                               ((cl_uint *)&test)[0], j);
+                    vlog_error("\nERROR: %s%s: %f ulp error at {%a (0x%04x), "
+                               "%a (0x%04x)}\nExpected: %a  (half 0x%04x) "
+                               "\nActual: %a (half 0x%04x) at index: %zu\n",
+                               name, sizeNames[k], err, s[j], p[j], s2[j],
+                               p2[j], HTF(r[j]), r[j], test, q[j], j);
                     return -1;
                 }
             }
         }
     }
+
+    if (gIsInRTZMode) (void)set_round(oldRoundMode, kfloat);
 
     for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {
@@ -678,8 +555,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
 } // anonymous namespace
 
-int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
-                                        bool relaxedMode)
+int TestFunc_Half_Half_Half_Operator(const Func *f, MTdata d, bool relaxedMode)
 {
     TestInfo test_info{};
     cl_int error;
@@ -687,13 +563,13 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
     double maxErrorVal = 0.0;
     double maxErrorVal2 = 0.0;
 
-    logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
+    logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
 
     // Init test_info
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE
-        / (sizeof(cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    test_info.scale = getTestScale(sizeof(cl_float));
+        / (sizeof(cl_half) * RoundUpToNextPowerOfTwo(test_info.threadCount));
+    test_info.scale = getTestScale(sizeof(cl_half));
 
     test_info.step = (cl_uint)test_info.subBufferSize * test_info.scale;
     if (test_info.step / test_info.subBufferSize != test_info.scale)
@@ -707,18 +583,16 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
     }
 
     test_info.f = f;
-    test_info.ulps = gIsEmbedded ? f->float_embedded_ulps : f->float_ulps;
+    test_info.ulps = f->half_ulps;
     test_info.ftz =
-        f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gFloatCapabilities);
-    test_info.relaxedMode = relaxedMode;
+        f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gHalfCapabilities);
 
     test_info.tinfo.resize(test_info.threadCount);
     for (cl_uint i = 0; i < test_info.threadCount; i++)
     {
-        cl_buffer_region region = {
-            i * test_info.subBufferSize * sizeof(cl_float),
-            test_info.subBufferSize * sizeof(cl_float)
-        };
+        cl_buffer_region region = { i * test_info.subBufferSize
+                                        * sizeof(cl_half),
+                                    test_info.subBufferSize * sizeof(cl_half) };
         test_info.tinfo[i].inBuf =
             clCreateSubBuffer(gInBuffer, CL_MEM_READ_ONLY,
                               CL_BUFFER_CREATE_TYPE_REGION, &region, &error);
@@ -765,19 +639,19 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
     }
 
     // Init the kernels
-    BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
-                                test_info.programs, f->nameInCode,
-                                relaxedMode };
-    if ((error = ThreadPool_Do(BuildKernelFn,
-                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                               &build_info)))
-        return error;
+    {
+        BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
+                                    test_info.programs, f->nameInCode };
+        error = ThreadPool_Do(BuildKernel_HalfFn,
+                              gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                              &build_info);
 
+        test_error(error, "ThreadPool_Do: BuildKernel_HalfFn failed\n");
+    }
     // Run the kernels
     if (!gSkipCorrectnessTesting)
     {
-        error = ThreadPool_Do(Test, test_info.jobCount, &test_info);
-        if (error) return error;
+        error = ThreadPool_Do(TestHalf, test_info.jobCount, &test_info);
 
         // Accumulate the arithmetic errors
         for (cl_uint i = 0; i < test_info.threadCount; i++)
@@ -790,6 +664,8 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
             }
         }
 
+        test_error(error, "ThreadPool_Do: TestHalf failed\n");
+
         if (gWimpyMode)
             vlog("Wimp pass");
         else
@@ -800,5 +676,5 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
 
     vlog("\n");
 
-    return CL_SUCCESS;
+    return error;
 }
