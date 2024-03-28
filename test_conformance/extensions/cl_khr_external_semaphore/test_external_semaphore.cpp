@@ -4,6 +4,7 @@
 #include "opencl_vulkan_wrapper.hpp"
 #include <thread>
 #include <chrono>
+#include <unordered_set>
 
 #define FLUSH_DELAY_S 5
 
@@ -79,6 +80,34 @@ static int init_vuikan_device(cl_uint num_devices, cl_device_id* deviceIds)
 
     init_cl_vk_ext(platform, num_devices, deviceIds);
 
+    return CL_SUCCESS;
+}
+
+static cl_int get_device_semaphore_handle_types(
+    cl_device_id deviceID, cl_device_info param,
+    std::vector<cl_external_semaphore_handle_type_khr>& handle_types)
+{
+    int err = CL_SUCCESS;
+    // Query for export support
+    size_t size_handle_types = 0;
+    size_t num_handle_types = 0;
+    err = clGetDeviceInfo(deviceID, param, 0, nullptr, &size_handle_types);
+    test_error(err, "Failed to get number of exportable handle types");
+
+    num_handle_types =
+        size_handle_types / sizeof(cl_external_semaphore_handle_type_khr);
+    std::vector<cl_external_semaphore_handle_type_khr>
+        handle_types_query_result(num_handle_types);
+    err = clGetDeviceInfo(deviceID, param,
+                          handle_types_query_result.size()
+                              * sizeof(cl_external_semaphore_handle_type_khr),
+                          handle_types_query_result.data(), nullptr);
+    test_error(err, "Failed to get exportable handle types");
+
+    for (auto handle_type : handle_types_query_result)
+    {
+        handle_types.push_back(handle_type);
+    }
     return CL_SUCCESS;
 }
 
@@ -169,11 +198,12 @@ int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-int test_external_semaphores_multi_context(cl_device_id deviceID,
+int test_external_semaphores_cross_context(cl_device_id deviceID,
                                            cl_context context,
                                            cl_command_queue defaultQueue,
                                            int num_elements)
 {
+    cl_int err = CL_SUCCESS;
     if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
     {
         log_info("cl_khr_semaphore is not supported on this platoform. "
@@ -181,96 +211,115 @@ int test_external_semaphores_multi_context(cl_device_id deviceID,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device(1, &deviceID))
+    GET_PFN(deviceID, clEnqueueSignalSemaphoresKHR);
+    GET_PFN(deviceID, clEnqueueWaitSemaphoresKHR);
+    GET_PFN(deviceID, clCreateSemaphoreWithPropertiesKHR);
+    GET_PFN(deviceID, clGetSemaphoreHandleForTypeKHR);
+    GET_PFN(deviceID, clReleaseSemaphoreKHR);
+
+
+    std::vector<cl_external_semaphore_handle_type_khr> import_handle_types;
+    std::vector<cl_external_semaphore_handle_type_khr> export_handle_types;
+
+    err = get_device_semaphore_handle_types(
+        deviceID, CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR,
+        import_handle_types);
+    test_error(err, "Failed to query import handle types");
+
+    err = get_device_semaphore_handle_types(
+        deviceID, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
+        export_handle_types);
+    test_error(err, "Failed to query export handle types");
+
+    // Find handles that support both import and export
+    std::unordered_set<cl_external_semaphore_handle_type_khr>
+        import_export_handle_types;
+
+    std::copy(import_handle_types.begin(), import_handle_types.end(),
+              std::inserter(import_export_handle_types,
+                            import_export_handle_types.end()));
+    std::copy(export_handle_types.begin(), export_handle_types.end(),
+              std::inserter(import_export_handle_types,
+                            import_export_handle_types.end()));
+
+    cl_context context2 =
+        clCreateContext(NULL, 1, &deviceID, notify_callback, NULL, &err);
+    test_error(err, "Failed to create context2");
+
+    clCommandQueueWrapper queue1 =
+        clCreateCommandQueue(context, deviceID, 0, &err);
+    test_error(err, "Could not create command queue");
+
+    clCommandQueueWrapper queue2 =
+        clCreateCommandQueue(context2, deviceID, 0, &err);
+    test_error(err, "Could not create command queue");
+
+    if (import_export_handle_types.empty())
     {
-        log_info("Cannot initialise Vulkan. "
-                 "Skipping test.\n");
+        log_info("Could not find a handle type that supports both import and "
+                 "export");
         return TEST_SKIPPED_ITSELF;
     }
 
-    VulkanDevice vkDevice;
-
-    GET_PFN(deviceID, clEnqueueSignalSemaphoresKHR);
-    GET_PFN(deviceID, clEnqueueWaitSemaphoresKHR);
-
-    std::vector<VulkanExternalSemaphoreHandleType>
-        vkExternalSemaphoreHandleTypeList =
-            getSupportedInteropExternalSemaphoreHandleTypes(deviceID, vkDevice);
-
-    if (vkExternalSemaphoreHandleTypeList.empty())
+    for (auto handle_type : import_export_handle_types)
     {
-        test_fail("No external semaphore handle types found\n");
-    }
+        cl_semaphore_properties_khr export_props[] = {
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
+            (cl_semaphore_properties_khr)handle_type,
+            (cl_semaphore_properties_khr)
+                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR,
+            (cl_semaphore_properties_khr)0
+        };
 
-    for (VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType :
-         vkExternalSemaphoreHandleTypeList)
-    {
-        log_info_semaphore_type(vkExternalSemaphoreHandleType);
-        VulkanSemaphore vkVk2CLSemaphore(vkDevice,
-                                         vkExternalSemaphoreHandleType);
+        // Signal semaphore on context1
+        cl_semaphore_khr exportable_semaphore =
+            clCreateSemaphoreWithPropertiesKHR(context, export_props, &err);
+        test_error(err, "Failed to create exportable semaphore");
 
-        cl_int err = CL_SUCCESS;
+        err = clEnqueueSignalSemaphoresKHR(queue1, 1, &exportable_semaphore,
+                                           nullptr, 0, nullptr, nullptr);
+        test_error(err, "Failed to signal semaphore on context1");
 
-        cl_context context2 =
-            clCreateContext(NULL, 1, &deviceID, notify_callback, NULL, &err);
-        if (!context2)
-        {
-            print_error(err, "Unable to create testing context");
-            return TEST_FAIL;
-        }
+        cl_semaphore_properties_khr handle =
+            0; // The handle must fit in cl_semaphore_properties_khr
+        err = clGetSemaphoreHandleForTypeKHR(exportable_semaphore, deviceID,
+                                             handle_type, sizeof(handle),
+                                             &handle, nullptr);
+        test_error(err, "Failed to export handle from semaphore");
 
-        clExternalExportableSemaphore sema_ext_1(
-            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceID);
-        clExternalExportableSemaphore sema_ext_2(vkVk2CLSemaphore, context2,
-                                                 vkExternalSemaphoreHandleType,
-                                                 deviceID);
+        // Import semaphore into context2
+        cl_semaphore_properties_khr import_props[] = {
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+            (cl_semaphore_properties_khr)handle_type,
+            (cl_semaphore_properties_khr)handle, (cl_semaphore_properties_khr)0
+        };
 
-        clCommandQueueWrapper queue1 =
-            clCreateCommandQueue(context, deviceID, 0, &err);
-        test_error(err, "Could not create command queue");
+        cl_semaphore_khr imported_semaphore =
+            clCreateSemaphoreWithPropertiesKHR(context2, import_props, &err);
+        test_error(err, "Failed to import semaphore into context2 semaphore");
 
-        clCommandQueueWrapper queue2 =
-            clCreateCommandQueue(context2, deviceID, 0, &err);
-        test_error(err, "Could not create command queue");
+        err = clEnqueueWaitSemaphoresKHR(queue2, 1, &imported_semaphore,
+                                         nullptr, 0, nullptr, nullptr);
+        test_error(err, "Failed to signal semaphore on context1");
 
-        // Signal semaphore 1 and 2
-        clEventWrapper signal_event;
-        err = clEnqueueSignalSemaphoresKHR(queue1, 1,
-                                           &sema_ext_1.getCLSemaphore(),
-                                           nullptr, 0, nullptr, &signal_event);
-        test_error(err, "Could not signal semaphore");
-
-        // Wait semaphore 1
-        clEventWrapper wait_1_event;
-        err =
-            clEnqueueWaitSemaphoresKHR(queue1, 1, &sema_ext_1.getCLSemaphore(),
-                                       nullptr, 0, nullptr, &wait_1_event);
-        test_error(err, "Could not wait semaphore");
-
-        err = clEnqueueSignalSemaphoresKHR(queue2, 1,
-                                           &sema_ext_2.getCLSemaphore(),
-                                           nullptr, 0, nullptr, &signal_event);
-        test_error(err, "Could not signal semaphore");
-
-        // Wait semaphore 2
-        clEventWrapper wait_2_event;
-        err =
-            clEnqueueWaitSemaphoresKHR(queue2, 1, &sema_ext_2.getCLSemaphore(),
-                                       nullptr, 0, nullptr, &wait_2_event);
-        test_error(err, "Could not wait semaphore");
-
-        // Finish
-        err = clFinish(queue1);
-        test_error(err, "Could not finish queue");
+        err = clFlush(queue1);
+        test_error(err, "Failed to flush queue1");
 
         err = clFinish(queue2);
-        test_error(err, "Could not finish queue");
+        test_error(err, "Failed to finish queue2");
 
-        // Ensure all events are completed
-        test_assert_event_complete(signal_event);
-        test_assert_event_complete(wait_1_event);
-        test_assert_event_complete(wait_2_event);
+        err = clReleaseSemaphoreKHR(exportable_semaphore);
+        test_error(err, "Failed to release semaphore");
+
+        err = clReleaseSemaphoreKHR(imported_semaphore);
+        test_error(err, "Failed to release semaphore");
     }
+
+    err = clReleaseContext(context2);
+    test_error(err, "Failed to release context2");
 
     return TEST_PASS;
 }
