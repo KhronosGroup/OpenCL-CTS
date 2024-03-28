@@ -157,9 +157,6 @@ struct MutableDispatchGlobalArguments : public MutableDispatchArgumentsTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
-
         // check the results of the initial execution
         if (!verify_result(dst_buf_0)) return TEST_FAIL;
 
@@ -194,9 +191,6 @@ struct MutableDispatchGlobalArguments : public MutableDispatchArgumentsTest
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
 
         // Check the results of the modified execution
         if (!verify_result(dst_buf_1)) return TEST_FAIL;
@@ -557,9 +551,6 @@ struct MutableDispatchNullArguments : public MutableDispatchArgumentsTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
-
         // Check the results of the initial execution
         std::vector<cl_int> dst_data_0(num_elements);
         error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0,
@@ -607,9 +598,6 @@ struct MutableDispatchNullArguments : public MutableDispatchArgumentsTest
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
 
         // Check the results of the modified execution
         std::vector<cl_int> dst_data_1(num_elements);
@@ -810,9 +798,6 @@ struct MutableDispatchSVMArguments : public MutableDispatchArgumentsTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
-
         // Check the results of the modified execution
         error =
             clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, new_buffer,
@@ -832,6 +817,9 @@ struct MutableDispatchSVMArguments : public MutableDispatchArgumentsTest
 
         error = clEnqueueSVMUnmap(queue, new_buffer, 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMUnmap failed for new_buffer");
+
+        error = clFinish(queue);
+        test_error(error, "clFinish failed");
 
         // Clean up
         clSVMFree(context, init_wrapper);
