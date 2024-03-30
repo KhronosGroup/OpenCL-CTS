@@ -183,8 +183,8 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
         struct pitch_buffer_data *data = (struct pitch_buffer_data *)malloc(
             sizeof(struct pitch_buffer_data));
         data->buf = host_ptr;
-        data->is_aligned = CL_VERSION_MAJOR(version) == 1
-            && imageInfo->type == CL_MEM_OBJECT_IMAGE1D_BUFFER;
+        data->is_aligned = (CL_VERSION_MAJOR(version) != 1)
+            && (imageInfo->type == CL_MEM_OBJECT_IMAGE1D_BUFFER);
         if (*error == CL_SUCCESS)
         {
             int callbackError =
