@@ -63,7 +63,16 @@ test_definition test_list[] = {
     ADD_TEST(event_info_context),
     ADD_TEST(event_info_reference_count),
     ADD_TEST(finalize_invalid),
-    ADD_TEST(finalize_empty)
+    ADD_TEST(finalize_empty),
+    ADD_TEST(negative_command_ndrange_queue_not_null),
+    ADD_TEST(negative_command_ndrange_kernel_with_different_context),
+    ADD_TEST(negative_command_ndrange_kernel_sync_points_null_or_num_zero),
+    ADD_TEST(negative_command_ndrange_kernel_invalid_command_buffer),
+    ADD_TEST(negative_command_ndrange_kernel_invalid_properties),
+    ADD_TEST(negative_command_ndrange_kernel_command_buffer_finalized),
+    ADD_TEST(negative_command_ndrange_kernel_mutable_handle_not_null),
+    ADD_TEST(
+        negative_command_ndrange_kernel_with_print_device_does_not_support_print)
 };
 
 int main(int argc, const char *argv[])
