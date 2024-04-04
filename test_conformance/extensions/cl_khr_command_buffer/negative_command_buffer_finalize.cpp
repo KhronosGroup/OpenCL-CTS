@@ -42,7 +42,22 @@ struct FinalizeCommandBufferInvalidCommandBuffer : public BasicCommandBufferTest
 // CL_INVALID_OPERATION if command_buffer is not in the Recording state.
 struct FinalizeCommandBufferNotRecordingState : public BasicCommandBufferTest
 {
-    using BasicCommandBufferTest::BasicCommandBufferTest;
+    FinalizeCommandBufferNotRecordingState(cl_device_id device,
+                                           cl_context context,
+                                           cl_command_queue queue)
+        : BasicCommandBufferTest(device, context, queue), user_event(nullptr)
+    {}
+
+    cl_int SetUp(int elements) override
+    {
+        cl_int error = BasicCommandBufferTest::SetUp(elements);
+        test_error(error, "BasicCommandBufferTest::SetUp failed");
+
+        user_event = clCreateUserEvent(context, &error);
+        test_error(error, "clCreateUserEvent failed");
+
+        return CL_SUCCESS;
+    }
 
     cl_int Run() override
     {
@@ -84,6 +99,9 @@ struct FinalizeCommandBufferNotRecordingState : public BasicCommandBufferTest
                                "CL_INVALID_OPERATION",
                                TEST_FAIL);
 
+        clSetUserEventStatus(user_event, CL_COMPLETE);
+        clFinish(queue);
+
         return CL_SUCCESS;
     }
 
@@ -108,12 +126,13 @@ struct FinalizeCommandBufferNotRecordingState : public BasicCommandBufferTest
                                 data_size(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
 
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
-                                          nullptr, nullptr);
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 1,
+                                          &user_event, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         return CL_SUCCESS;
     }
+    cl_event user_event;
 };
 };
 
