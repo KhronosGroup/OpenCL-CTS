@@ -15,6 +15,7 @@
 //
 #include "basic_command_buffer.h"
 #include "procs.h"
+#include <vector>
 
 //--------------------------------------------------------------------------
 
@@ -135,16 +136,17 @@ struct GetCommandBufferInfo : public BasicCommandBufferTest
         cl_uint ret_val = 0;
 
         error = clGetCommandBufferInfoKHR(
-            command_buffer, CL_COMMAND_BUFFER_FLAGS_KHR, 0, &ret_val, nullptr);
+            command_buffer, CL_COMMAND_BUFFER_FLAGS_KHR, sizeof(ret_val) - 1,
+            &ret_val, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clGetCommandBufferInfoKHR should return "
                                "CL_INVALID_VALUE",
                                TEST_FAIL);
 
-        error = clGetCommandBufferInfoKHR(command_buffer,
-                                          CL_COMMAND_BUFFER_NUM_QUEUES_KHR, 0,
-                                          &ret_val, nullptr);
+        error = clGetCommandBufferInfoKHR(
+            command_buffer, CL_COMMAND_BUFFER_NUM_QUEUES_KHR,
+            sizeof(ret_val) - 1, &ret_val, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clGetCommandBufferInfoKHR should return "
@@ -159,17 +161,22 @@ struct GetCommandBufferInfo : public BasicCommandBufferTest
         cl_uint num_queues = 0;
 
         cl_int error = clGetCommandBufferInfoKHR(
-            command_buffer, CL_COMMAND_BUFFER_NUM_QUEUES_KHR, 0, &num_queues,
-            nullptr);
+            command_buffer, CL_COMMAND_BUFFER_NUM_QUEUES_KHR,
+            sizeof(num_queues) - 1, &num_queues, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clGetCommandBufferInfoKHR should return "
                                "CL_INVALID_VALUE",
                                TEST_FAIL);
 
-        cl_command_queue queues[number_of_queues];
+        // cl_command_queue queues[number_of_queues];
+        std::vector<cl_command_queue> queues;
+        queues.resize(number_of_queues);
+
         error = clGetCommandBufferInfoKHR(
-            command_buffer, CL_COMMAND_BUFFER_QUEUES_KHR, 0, queues, nullptr);
+            command_buffer, CL_COMMAND_BUFFER_QUEUES_KHR,
+            number_of_queues * sizeof(cl_command_queue) - 1, queues.data(),
+            nullptr);
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clGetCommandBufferInfoKHR should return "
@@ -184,8 +191,8 @@ struct GetCommandBufferInfo : public BasicCommandBufferTest
         cl_uint ref_count = 0;
 
         cl_int error = clGetCommandBufferInfoKHR(
-            command_buffer, CL_COMMAND_BUFFER_REFERENCE_COUNT_KHR, 0,
-            &ref_count, nullptr);
+            command_buffer, CL_COMMAND_BUFFER_REFERENCE_COUNT_KHR,
+            sizeof(ref_count) - 1, &ref_count, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clGetCommandBufferInfoKHR should return "
@@ -199,7 +206,8 @@ struct GetCommandBufferInfo : public BasicCommandBufferTest
         cl_uint state = 0;
 
         cl_int error = clGetCommandBufferInfoKHR(
-            command_buffer, CL_COMMAND_BUFFER_STATE_KHR, 0, &state, nullptr);
+            command_buffer, CL_COMMAND_BUFFER_STATE_KHR, sizeof(state) - 1,
+            &state, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clGetCommandBufferInfoKHR should return "
@@ -210,11 +218,13 @@ struct GetCommandBufferInfo : public BasicCommandBufferTest
 
     cl_int RunPropArrayInfoTest()
     {
-        cl_command_buffer_properties_khr properties[number_of_properties];
+        std::vector<cl_command_buffer_properties_khr> properties;
+        properties.resize(number_of_properties);
 
         cl_int error = clGetCommandBufferInfoKHR(
-            command_buffer, CL_COMMAND_BUFFER_PROPERTIES_ARRAY_KHR, 0,
-            properties, nullptr);
+            command_buffer, CL_COMMAND_BUFFER_PROPERTIES_ARRAY_KHR,
+            number_of_properties * sizeof(cl_command_buffer_properties_khr) - 1,
+            properties.data(), nullptr);
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clGetCommandBufferInfoKHR should return "
@@ -228,9 +238,9 @@ struct GetCommandBufferInfo : public BasicCommandBufferTest
     {
         cl_context context = nullptr;
 
-        cl_int error = clGetCommandBufferInfoKHR(command_buffer,
-                                                 CL_COMMAND_BUFFER_CONTEXT_KHR,
-                                                 0, &context, nullptr);
+        cl_int error = clGetCommandBufferInfoKHR(
+            command_buffer, CL_COMMAND_BUFFER_CONTEXT_KHR, sizeof(context) - 1,
+            &context, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clGetCommandBufferInfoKHR should return "
