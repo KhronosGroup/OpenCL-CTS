@@ -281,31 +281,20 @@ int run_test_with_two_queue(
 
                 cl_event first_launch;
 
+                cl_event acquire_event = nullptr;
                 err = clEnqueueAcquireExternalMemObjectsKHRptr(
                     cmd_queue1, vkBufferList.size(), buffers, 0, nullptr,
-                    nullptr);
+                    &acquire_event);
                 test_error_and_cleanup(err, CLEANUP,
                                        "Failed to acquire buffers");
 
                 err = clEnqueueNDRangeKernel(cmd_queue1, update_buffer_kernel,
-                                             1, NULL, global_work_size, NULL, 0,
-                                             NULL, &first_launch);
+                                             1, NULL, global_work_size, NULL, 1,
+                                             &acquire_event, &first_launch);
                 test_error_and_cleanup(
                     err, CLEANUP,
                     "Error: Failed to launch update_buffer_kernel,"
                     "error\n");
-
-                err = clEnqueueReleaseExternalMemObjectsKHRptr(
-                    cmd_queue1, vkBufferList.size(), buffers, 0, nullptr,
-                    nullptr);
-                test_error_and_cleanup(err, CLEANUP,
-                                       "Failed to release buffers");
-
-                err = clEnqueueAcquireExternalMemObjectsKHRptr(
-                    cmd_queue2, vkBufferList.size(), buffers, 0, nullptr,
-                    nullptr);
-                test_error_and_cleanup(err, CLEANUP,
-                                       "Failed to acquire buffers");
 
                 err = clEnqueueNDRangeKernel(cmd_queue2, kernel_cq, 1, NULL,
                                              global_work_size, NULL, 1,
@@ -334,6 +323,9 @@ int run_test_with_two_queue(
                     test_error_and_cleanup(err, CLEANUP,
                                            "Failed to signal CL semaphore\n");
                 }
+                err = clReleaseEvent(acquire_event);
+                test_error_and_cleanup(err, CLEANUP,
+                                       "Failed to release acquire event\n");
             }
             error_2 = (uint8_t *)malloc(sizeof(uint8_t));
             if (NULL == error_2)
