@@ -140,5 +140,24 @@ extern int test_finalize_invalid(cl_device_id device, cl_context context,
                                  cl_command_queue queue, int num_elements);
 extern int test_finalize_empty(cl_device_id device, cl_context context,
                                cl_command_queue queue, int num_elements);
+// Command-buffer negative tests
+extern int test_negative_command_buffer_copy_queue_not_null(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_command_buffer_copy_different_contexts(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_command_buffer_copy_sync_points_null_or_num_zero(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_command_buffer_copy_invalid_command_buffer(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_command_buffer_copy_finalized_command_buffer(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_command_buffer_copy_mutable_handle_not_null(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
 
 #endif // CL_KHR_COMMAND_BUFFER_PROCS_H

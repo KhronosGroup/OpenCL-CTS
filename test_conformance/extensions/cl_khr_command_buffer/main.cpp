@@ -63,7 +63,13 @@ test_definition test_list[] = {
     ADD_TEST(event_info_context),
     ADD_TEST(event_info_reference_count),
     ADD_TEST(finalize_invalid),
-    ADD_TEST(finalize_empty)
+    ADD_TEST(finalize_empty),
+    ADD_TEST(negative_command_buffer_copy_queue_not_null),
+    ADD_TEST(negative_command_buffer_copy_different_contexts),
+    ADD_TEST(negative_command_buffer_copy_sync_points_null_or_num_zero),
+    ADD_TEST(negative_command_buffer_copy_invalid_command_buffer),
+    ADD_TEST(negative_command_buffer_copy_finalized_command_buffer),
+    ADD_TEST(negative_command_buffer_copy_mutable_handle_not_null),
 };
 
 int main(int argc, const char *argv[])
