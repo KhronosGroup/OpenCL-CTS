@@ -73,7 +73,10 @@ struct EnqueueCommandBufferNotFinalized : public BasicCommandBufferTest
 struct EnqueueCommandBufferWithoutSimultaneousUseNotInPendingState
     : public BasicCommandBufferTest
 {
-    using BasicCommandBufferTest::BasicCommandBufferTest;
+    EnqueueCommandBufferWithoutSimultaneousUseNotInPendingState(
+        cl_device_id device, cl_context context, cl_command_queue queue)
+        : BasicCommandBufferTest(device, context, queue), user_event(nullptr)
+    {}
 
     cl_int Run() override
     {
@@ -85,8 +88,8 @@ struct EnqueueCommandBufferWithoutSimultaneousUseNotInPendingState
                                "CL_INVALID_OPERATION",
                                TEST_FAIL);
 
-        cl_int signal_error = clSetUserEventStatus(trigger_event, CL_COMPLETE);
-        test_error(signal_error, "clSetUserEventStatus failed");
+        error = clSetUserEventStatus(user_event, CL_COMPLETE);
+        test_error(error, "clSetUserEventStatus failed");
         clFinish(queue);
 
         return CL_SUCCESS;
@@ -151,16 +154,16 @@ struct EnqueueCommandBufferWithoutSimultaneousUseNotInPendingState
                                 data_size(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
 
-        trigger_event = clCreateUserEvent(context, &error);
+        user_event = clCreateUserEvent(context, &error);
         test_error(error, "clCreateUserEvent failed");
 
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 1,
-                                          &trigger_event, nullptr);
+                                          &user_event, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         return CL_SUCCESS;
     }
-    clEventWrapper trigger_event;
+    clEventWrapper user_event;
 };
 
 // CL_INVALID_VALUE if queues is NULL and num_queues is > 0, or queues is not
