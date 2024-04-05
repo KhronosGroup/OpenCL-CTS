@@ -242,74 +242,6 @@ struct CommandNDRangeKernelMutableHandleNotNull : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 };
-
-// CL_INVALID_OPERATION if the device associated with command_queue does not
-// support CL_COMMAND_BUFFER_CAPABILITY_KERNEL_PRINTF_KHR and kernel contains a
-// printf call.
-struct CommandNDRangeKernelWithPrintDeviceDoesNotSupportPrint
-    : public BasicCommandBufferTest
-{
-    using BasicCommandBufferTest::BasicCommandBufferTest;
-
-    cl_int Run() override
-    {
-        cl_int error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
-            nullptr, 0, nullptr, nullptr, nullptr);
-
-        test_failure_error_ret(error, CL_INVALID_OPERATION,
-                               "clCommandNDRangeKernelKHR should return "
-                               "CL_INVALID_OPERATION",
-                               TEST_FAIL);
-
-        return CL_SUCCESS;
-    }
-
-    bool Skip() override
-    {
-        cl_device_command_buffer_capabilities_khr capabilities;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
-                            sizeof(capabilities), &capabilities, NULL);
-        test_error(error,
-                   "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
-
-        bool printf_support =
-            (capabilities & CL_COMMAND_BUFFER_CAPABILITY_KERNEL_PRINTF_KHR)
-            != 0;
-
-        return !printf_support;
-    }
-
-    cl_int SetUpKernel() override
-    {
-        cl_int error = CL_SUCCESS;
-
-        const char* kernel_str =
-            R"(
-      __kernel void print(__global char* in, __global char* out, __global int* offset)
-      {
-          size_t id = get_global_id(0);
-          int ind = offset[0] + offset[1] * id;
-          for(int i=0; i<offset[1]; i++) {
-              out[ind+i] = in[i];
-              printf("%c", in[i]);
-          }
-      })";
-
-        error = create_single_kernel_helper_create_program(context, &program, 1,
-                                                           &kernel_str);
-        test_error(error, "Failed to create program with source");
-
-        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-        test_error(error, "Failed to build program");
-
-        kernel = clCreateKernel(program, "print", &error);
-        test_error(error, "Failed to create print kernel");
-
-        return CL_SUCCESS;
-    }
-};
 };
 
 int test_negative_command_ndrange_queue_not_null(cl_device_id device,
@@ -366,14 +298,5 @@ int test_negative_command_ndrange_kernel_mutable_handle_not_null(
     int num_elements)
 {
     return MakeAndRunTest<CommandNDRangeKernelMutableHandleNotNull>(
-        device, context, queue, num_elements);
-}
-
-int test_negative_command_ndrange_kernel_with_print_device_does_not_support_print(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
-{
-    return MakeAndRunTest<
-        CommandNDRangeKernelWithPrintDeviceDoesNotSupportPrint>(
         device, context, queue, num_elements);
 }
