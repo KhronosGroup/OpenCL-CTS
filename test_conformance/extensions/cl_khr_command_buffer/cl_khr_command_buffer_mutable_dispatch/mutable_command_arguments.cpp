@@ -741,9 +741,6 @@ struct MutableDispatchSVMArguments : public MutableDispatchArgumentsTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
-
         // Check the results of the initial execution
         error =
             clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, init_buffer,
@@ -763,9 +760,6 @@ struct MutableDispatchSVMArguments : public MutableDispatchArgumentsTest
 
         error = clEnqueueSVMUnmap(queue, init_buffer, 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMUnmap failed for init_buffer");
-
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
 
         // Modify and execute the command buffer
 
