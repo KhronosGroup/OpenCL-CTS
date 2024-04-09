@@ -24,7 +24,7 @@ extern int test_external_semaphores_queries(cl_device_id deviceID,
                                             cl_context context,
                                             cl_command_queue defaultQueue,
                                             int num_elements);
-extern int test_external_semaphores_multi_context(cl_device_id deviceID,
+extern int test_external_semaphores_cross_context(cl_device_id deviceID,
                                                   cl_context context,
                                                   cl_command_queue defaultQueue,
                                                   int num_elements);
