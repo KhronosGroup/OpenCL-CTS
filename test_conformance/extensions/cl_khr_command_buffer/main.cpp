@@ -66,7 +66,6 @@ test_definition test_list[] = {
     ADD_TEST(finalize_empty),
     ADD_TEST(negative_command_buffer_barrier_not_null_queue),
     ADD_TEST(negative_command_buffer_barrier_invalid_command_buffer),
-    ADD_TEST(negative_command_buffer_barrier_context_not_same_with_queue),
     ADD_TEST(negative_command_buffer_barrier_buffer_finalized),
     ADD_TEST(negative_command_buffer_barrier_mutable_handle_not_null),
     ADD_TEST(negative_command_buffer_barrier_sync_points_null_or_num_zero)

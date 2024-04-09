@@ -147,9 +147,6 @@ extern int test_negative_command_buffer_barrier_not_null_queue(
 extern int test_negative_command_buffer_barrier_invalid_command_buffer(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
-extern int test_negative_command_buffer_barrier_context_not_same_with_queue(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements);
 extern int test_negative_command_buffer_barrier_buffer_finalized(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);

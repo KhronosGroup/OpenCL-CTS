@@ -59,44 +59,6 @@ struct CommandBufferBarrierInvalidCommandBuffer : public BasicCommandBufferTest
     }
 };
 
-// CL_INVALID_CONTEXT if the context associated with command_queue and
-// command_buffer is not the same.
-struct CommandBufferBarrierContextNotSameWithQueue
-    : public BasicCommandBufferTest
-{
-    using BasicCommandBufferTest::BasicCommandBufferTest;
-
-    cl_int Run() override
-    {
-        //        cl_int error;
-
-        //        clContextWrapper new_context =
-        //            clCreateContext(0, 1, &device, nullptr, nullptr, &error);
-        //        test_error(error, "Failed to create context");
-        //        clCommandQueueWrapper queue1 =
-        //            clCreateCommandQueue(new_context, device, 0, &error);
-        //        test_error(error, "clCreateCommandQueue failed");
-
-        //        std::vector<cl_command_queue> queues;
-        //        queues.push_back(queue);
-        //        queues.push_back(queue1);
-        //        command_buffer = clCreateCommandBufferKHR(2, queues.data(), 0,
-        //        &error);
-
-        //        error = clCommandBarrierWithWaitListKHR(command_buffer,
-        //        queue1, 0,
-        //                                                nullptr, nullptr,
-        //                                                nullptr);
-
-        //        test_failure_error_ret(error, CL_INVALID_CONTEXT,
-        //                               "clCommandBarrierWithWaitListKHR should
-        //                               return " "CL_INVALID_CONTEXT",
-        //                               TEST_FAIL);
-
-        return CL_SUCCESS;
-    }
-};
-
 // CL_INVALID_OPERATION if command_buffer has been finalized.
 struct CommandBufferBarrierBufferFinalized : public BasicCommandBufferTest
 {
@@ -203,14 +165,6 @@ int test_negative_command_buffer_barrier_invalid_command_buffer(
     int num_elements)
 {
     return MakeAndRunTest<CommandBufferBarrierInvalidCommandBuffer>(
-        device, context, queue, num_elements);
-}
-
-int test_negative_command_buffer_barrier_context_not_same_with_queue(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
-{
-    return MakeAndRunTest<CommandBufferBarrierContextNotSameWithQueue>(
         device, context, queue, num_elements);
 }
 
