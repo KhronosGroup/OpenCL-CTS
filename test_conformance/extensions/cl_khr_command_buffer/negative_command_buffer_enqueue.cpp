@@ -179,15 +179,18 @@ struct EnqueueCommandBufferNullQueuesNumQueues : public BasicCommandBufferTest
 
     cl_int Run() override
     {
-        cl_int error = clEnqueueCommandBufferKHR(1, nullptr, command_buffer, 0,
-                                                 nullptr, nullptr);
+        cl_int error = clFinalizeCommandBufferKHR(command_buffer);
+        test_error(error, "clFinalizeCommandBufferKHR failed");
+
+        error = clEnqueueCommandBufferKHR(1, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clEnqueueCommandBufferKHR should return "
                                "CL_INVALID_VALUE",
                                TEST_FAIL);
 
-        cl_command_queue queues[2] = { queue1, queue2 };
+        cl_command_queue queues[1] = { queue1 };
         error = clEnqueueCommandBufferKHR(0, queues, command_buffer, 0, nullptr,
                                           nullptr);
 
@@ -233,6 +236,8 @@ struct EnqueueCommandBufferNumQueuesNotZeroAndDifferentThanWhileBufferCreation
 
         command_buffer = clCreateCommandBufferKHR(1, &queue, nullptr, &error);
         test_error(error, "clCreateCommandBufferKHR failed");
+        error = clFinalizeCommandBufferKHR(command_buffer);
+        test_error(error, "clFinalizeCommandBufferKHR failed");
 
         const auto num_queues = 2;
         cl_command_queue queues[num_queues] = { queue1, queue2 };
@@ -273,8 +278,11 @@ struct EnqueueCommandBufferNotValidQueueInQueues : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_command_queue queues[1] = { nullptr };
-        cl_int error = clEnqueueCommandBufferKHR(1, queues, command_buffer, 0,
-                                                 nullptr, nullptr);
+        cl_int error = clFinalizeCommandBufferKHR(command_buffer);
+        test_error(error, "clFinalizeCommandBufferKHR failed");
+
+        error = clEnqueueCommandBufferKHR(1, queues, command_buffer, 0, nullptr,
+                                          nullptr);
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_QUEUE,
                                "clEnqueueCommandBufferKHR should return "
@@ -298,8 +306,11 @@ struct EnqueueCommandBufferQueueNotCompatible : public BasicCommandBufferTest
 
     cl_int Run() override
     {
-        cl_int error = clEnqueueCommandBufferKHR(
-            1, &queue_not_compatible, command_buffer, 0, nullptr, nullptr);
+        cl_int error = clFinalizeCommandBufferKHR(command_buffer);
+        test_error(error, "clFinalizeCommandBufferKHR failed");
+
+        error = clEnqueueCommandBufferKHR(1, &queue_not_compatible,
+                                          command_buffer, 0, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INCOMPATIBLE_COMMAND_QUEUE_KHR,
                                "clEnqueueCommandBufferKHR should return "
@@ -315,7 +326,7 @@ struct EnqueueCommandBufferQueueNotCompatible : public BasicCommandBufferTest
         test_error(error, "BasicCommandBufferTest::SetUp failed");
 
         queue_not_compatible = clCreateCommandQueue(
-            context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &error);
+            context, device, CL_QUEUE_PROFILING_ENABLE, &error);
         test_error(error, "clCreateCommandQueue failed");
 
         cl_command_queue_properties queue_properties;
@@ -361,6 +372,9 @@ struct EnqueueCommandBufferQueueWithDifferentContext
         command_buffer = clCreateCommandBufferKHR(1, queues, nullptr, &error);
         test_error(error, "clCreateCommandBufferKHR failed");
 
+        error = clFinalizeCommandBufferKHR(command_buffer);
+        test_error(error, "clFinalizeCommandBufferKHR failed");
+
         error = clEnqueueCommandBufferKHR(1, queues1, command_buffer, 0,
                                           nullptr, nullptr);
 
@@ -400,7 +414,8 @@ struct EnqueueCommandBufferWithDiferentContextThanEvent
 
     cl_int Run() override
     {
-        cl_int error = CL_SUCCESS;
+        cl_int error = clFinalizeCommandBufferKHR(command_buffer);
+        test_error(error, "clFinalizeCommandBufferKHR failed");
 
         clContextWrapper context1 =
             clCreateContext(0, 1, &device, nullptr, nullptr, &error);
@@ -440,7 +455,8 @@ struct EnqueueCommandBufferEventWaitListNullOrEventsNull
 
     cl_int Run() override
     {
-        cl_int error = CL_SUCCESS;
+        cl_int error = clFinalizeCommandBufferKHR(command_buffer);
+        test_error(error, "clFinalizeCommandBufferKHR failed");
 
         clEventWrapper invalid_event_list[2] = { nullptr, nullptr };
         clEventWrapper event = clCreateUserEvent(context, &error);
