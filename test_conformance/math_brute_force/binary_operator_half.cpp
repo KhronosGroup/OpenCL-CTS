@@ -143,8 +143,6 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
         if ((error = clFlush(tinfo->tQueue))) vlog("clFlush failed\n");
     }
 
-    bool divide = strcmp(name, "divide") == 0;
-
     // Init input array
     cl_half *p = (cl_half *)gIn + thread_id * buffer_elements;
     cl_half *p2 = (cl_half *)gIn2 + thread_id * buffer_elements;
@@ -171,15 +169,6 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                 y++;
                 if (y >= specialValuesHalfCount) break;
             }
-
-            if (divide)
-            {
-                cl_half pj = p[idx] & 0x7fff;
-                cl_half p2j = p2[idx] & 0x7fff;
-                // Replace values outside [2^-7, 2^7] with QNaN
-                if (pj < 0x2000 || pj > 0x5800) p[idx] = 0x7e00; // HALF_NAN
-                if (p2j < 0x2000 || p2j > 0x5800) p2[idx] = 0x7e00;
-            }
         }
     }
 
@@ -188,15 +177,6 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     {
         p[idx] = (cl_half)genrand_int32(d);
         p2[idx] = (cl_half)genrand_int32(d);
-
-        if (divide)
-        {
-            cl_half pj = p[idx] & 0x7fff;
-            cl_half p2j = p2[idx] & 0x7fff;
-            // Replace values outside [2^-7, 2^7] with QNaN
-            if (pj < 0x2000 || pj > 0x5800) p[idx] = 0x7e00; // HALF_NAN
-            if (p2j < 0x2000 || p2j > 0x5800) p2[idx] = 0x7e00;
-        }
     }
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
                                       buffer_size, p, 0, NULL, NULL)))
