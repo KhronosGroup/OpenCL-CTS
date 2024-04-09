@@ -673,14 +673,8 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
 
     // Confirm that querying CL_SEMAPHORE_PROPERTIES_KHR returns the same
     // properties the semaphore was created with
-    size_t size;
-    err = clGetSemaphoreInfoKHR(sema, CL_SEMAPHORE_PROPERTIES_KHR, 0, nullptr,
-                                &size);
-    test_error(err, "Unable to get CL_SEMAPHORE_PROPERTIES_KHR from semaphore");
-
-    SEMAPHORE_PARAM_TEST_ARRAY(
-        CL_SEMAPHORE_PROPERTIES_KHR, cl_semaphore_properties_khr,
-        size / sizeof(cl_semaphore_properties_khr), sema_props);
+    SEMAPHORE_PARAM_TEST_ARRAY(CL_SEMAPHORE_PROPERTIES_KHR,
+                               cl_semaphore_properties_khr, 5, sema_props);
 
     // Confirm that querying CL_SEMAPHORE_PAYLOAD_KHR returns the unsignaled
     // state
