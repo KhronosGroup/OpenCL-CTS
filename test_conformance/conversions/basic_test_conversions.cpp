@@ -1005,14 +1005,6 @@ double SubtractTime(uint64_t endTime, uint64_t startTime)
 }
 #endif
 
-static void setAllowZ(uint8_t *allow, uint32_t *x, cl_uint count)
-{
-    cl_uint i;
-    for (i = 0; i < count; ++i)
-        allow[i] |= (uint8_t)((x[i] & 0x7f800000U) == 0);
-}
-
-
 void MapResultValuesComplete(const std::unique_ptr<CalcRefValsBase> &ptr);
 
 void CL_CALLBACK CalcReferenceValuesComplete(cl_event e, cl_int status,
@@ -1337,15 +1329,13 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
         // Decide if we allow a zero result in addition to the correctly rounded
         // one
         memset(a, 0, count);
-        if (gForceFTZ)
+        if (gForceFTZ && (inType == kfloat || outType == kfloat))
         {
-            if (inType == kfloat || outType == kfloat)
-                setAllowZ((uint8_t *)a, (uint32_t *)s, count);
+            info->set_allow_zero_array((uint8_t *)a, d, s, count);
         }
-        if (gForceHalfFTZ)
+        if (gForceHalfFTZ && (inType == khalf || outType == khalf))
         {
-            if (inType == khalf || outType == khalf)
-                setAllowZ((uint8_t *)a, (uint32_t *)s, count);
+            info->set_allow_zero_array((uint8_t *)a, d, s, count);
         }
     }
     else

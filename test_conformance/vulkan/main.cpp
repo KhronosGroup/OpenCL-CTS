@@ -369,7 +369,7 @@ int main(int argc, const char *argv[])
         log_info(" TEST SKIPPED\n");
         return CL_SUCCESS;
     }
-    init_cl_vk_ext(platform);
+    init_cl_vk_ext(platform, num_devices, devices);
 
     // Execute tests.
     // Note: don't use the entire harness, because we have a different way of

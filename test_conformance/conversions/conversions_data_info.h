@@ -30,6 +30,7 @@ extern roundingMode qcom_rm;
 
 #include <CL/cl_half.h>
 
+#include "harness/conversions.h"
 #include "harness/mt19937.h"
 #include "harness/rounding_mode.h"
 #include "harness/typeWrappers.h"
@@ -82,6 +83,7 @@ struct DataInitBase : public DataInitInfo
     virtual void conv_array(void *out, void *in, size_t n) {}
     virtual void conv_array_sat(void *out, void *in, size_t n) {}
     virtual void init(const cl_uint &, const cl_uint &) {}
+    virtual void set_allow_zero_array(uint8_t *allow, void *out, void *in, size_t n) {}
 };
 
 template <typename InType, typename OutType, bool InFP, bool OutFP>
@@ -98,6 +100,9 @@ struct DataInfoSpec : public DataInitBase
     // actual conversion of reference values
     void conv(OutType *out, InType *in);
     void conv_sat(OutType *out, InType *in);
+
+    // Decide if we allow a zero result in addition to the correctly rounded one
+    void set_allow_zero(uint8_t *allow, OutType *out, InType *in);
 
     // min/max ranges for output type of data
     std::pair<OutType, OutType> ranges;
@@ -130,6 +135,10 @@ struct DataInfoSpec : public DataInitBase
     }
 
     void init(const cl_uint &, const cl_uint &) override;
+    void set_allow_zero_array(uint8_t *allow, void *out, void *in, size_t n) override {
+        for (size_t i = 0; i < n; i++)
+            set_allow_zero(&allow[i], &((OutType *)out)[i], &((InType *)in)[i]);
+    }
     InType clamp(const InType &);
     inline float fclamp(float lo, float v, float hi)
     {
@@ -467,11 +476,11 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
         if (std::is_same<cl_double, OutType>::value)
         {
 #if defined(_MSC_VER)
-            cl_ulong l = ((cl_ulong *)in)[0];
             double result;
 
             if (std::is_same<cl_ulong, InType>::value)
             {
+                cl_ulong l = ((cl_ulong *)in)[0];
                 cl_long sl = ((cl_long)l < 0) ? (cl_long)((l >> 1) | (l & 1))
                                               : (cl_long)l;
 #if defined(_M_X64)
@@ -484,6 +493,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
             }
             else
             {
+                cl_long l = ((cl_long *)in)[0];
 #if defined(_M_X64)
                 _mm_store_sd(&result, _mm_cvtsi64_sd(_mm_setzero_pd(), l));
 #else
@@ -504,10 +514,10 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
             cl_float outVal = 0.f;
 
 #if defined(_MSC_VER) && defined(_M_X64)
-            cl_ulong l = ((cl_ulong *)in)[0];
             float result;
             if (std::is_same<cl_ulong, InType>::value)
             {
+                cl_ulong l = ((cl_ulong *)in)[0];
                 cl_long sl = ((cl_long)l < 0) ? (cl_long)((l >> 1) | (l & 1))
                                               : (cl_long)l;
                 _mm_store_ss(&result, _mm_cvtsi64_ss(_mm_setzero_ps(), sl));
@@ -516,6 +526,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
             }
             else
             {
+                cl_long l = ((cl_long *)in)[0];
                 _mm_store_ss(&result, _mm_cvtsi64_ss(_mm_setzero_ps(), l));
                 outVal = (l == 0 ? 0.0f : result); // Per IEEE-754-2008 5.4.1,
                                                    // 0's always convert to +0.0
@@ -713,6 +724,33 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
         *out = std::is_signed<InType>::value ? (OutType)*in
                                              : absolute((OutType)*in);
     }
+}
+
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+void DataInfoSpec<InType, OutType, InFP, OutFP>::set_allow_zero(uint8_t *allow,
+                                                                OutType *out,
+                                                                InType *in)
+{
+  // from double
+  if (std::is_same<InType, cl_double>::value)
+    *allow |= IsDoubleSubnormal(*in);
+  // from float
+  if (std::is_same<InType, cl_float>::value)
+    *allow |= IsFloatSubnormal(*in);
+  // from half
+  if (is_in_half())
+    *allow |= IsHalfSubnormal(*in);
+
+  // handle the cases that the converted result is subnormal
+  // from double
+  if (std::is_same<OutType, cl_double>::value)
+    *allow |= IsDoubleSubnormal(*out);
+  // from float
+  if (std::is_same<OutType, cl_float>::value)
+    *allow |= IsFloatSubnormal(*out);
+  // from half
+  if (is_out_half())
+    *allow |= IsHalfSubnormal(*out);
 }
 
 template <typename InType, typename OutType, bool InFP, bool OutFP>

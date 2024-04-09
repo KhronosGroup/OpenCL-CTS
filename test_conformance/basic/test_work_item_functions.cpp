@@ -20,7 +20,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
+#include <vector>
 
 #include "procs.h"
 #include "harness/conversions.h"
@@ -72,7 +72,7 @@ int test_work_item_functions(cl_device_id deviceID, cl_context context, cl_comma
     clProgramWrapper program;
     clKernelWrapper kernel;
     clMemWrapper outData;
-    work_item_data    testData[ 10240 ];
+    std::vector<work_item_data> testData(10240);
     size_t threads[3], localThreads[3];
     MTdata d;
 
@@ -80,7 +80,9 @@ int test_work_item_functions(cl_device_id deviceID, cl_context context, cl_comma
     error = create_single_kernel_helper( context, &program, &kernel, 1, &workItemKernelCode, "sample_kernel" );
     test_error( error, "Unable to create testing kernel" );
 
-    outData = clCreateBuffer( context, CL_MEM_READ_WRITE, sizeof( testData ), NULL, &error );
+    outData =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       sizeof(work_item_data) * testData.size(), NULL, &error);
     test_error( error, "Unable to create output buffer" );
 
     error = clSetKernelArg( kernel, 0, sizeof( outData ), &outData );
@@ -105,7 +107,10 @@ int test_work_item_functions(cl_device_id deviceID, cl_context context, cl_comma
             error = clEnqueueNDRangeKernel( queue, kernel, (cl_uint)dim, NULL, threads, localThreads, 0, NULL, NULL );
             test_error( error, "Unable to run kernel" );
 
-            error = clEnqueueReadBuffer( queue, outData, CL_TRUE, 0, sizeof( testData ), testData, 0, NULL, NULL );
+            error =
+                clEnqueueReadBuffer(queue, outData, CL_TRUE, 0,
+                                    sizeof(work_item_data) * testData.size(),
+                                    testData.data(), 0, NULL, NULL);
             test_error( error, "Unable to read results" );
 
             // Validate

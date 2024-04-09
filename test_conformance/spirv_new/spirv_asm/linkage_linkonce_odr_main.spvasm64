@@ -1,0 +1,51 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 30
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpExtension "SPV_KHR_linkonce_odr"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %18 "test_linkonce_odr" %__spirv_BuiltInGlobalInvocationId
+               OpDecorate %__spirv_BuiltInGlobalInvocationId BuiltIn GlobalInvocationId
+               OpDecorate %__spirv_BuiltInGlobalInvocationId Constant
+               OpDecorate %19 FuncParamAttr NoCapture
+               OpDecorate %a LinkageAttributes "a" LinkOnceODR
+               OpDecorate %b LinkageAttributes "b" Import
+               OpDecorate %__spirv_BuiltInGlobalInvocationId LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+      %ulong = OpTypeInt 64 0
+       %uint = OpTypeInt 32 0
+     %uint_5 = OpConstant %uint 5
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_Input_v3ulong = OpTypePointer Input %v3ulong
+          %7 = OpTypeFunction %uint %uint
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+         %17 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint
+%__spirv_BuiltInGlobalInvocationId = OpVariable %_ptr_Input_v3ulong Input
+          %b = OpFunction %uint None %7
+          %9 = OpFunctionParameter %uint
+               OpFunctionEnd
+          %a = OpFunction %uint Pure %7
+         %11 = OpFunctionParameter %uint
+         %12 = OpLabel
+         %14 = OpIAdd %uint %11 %uint_5
+               OpReturnValue %14
+               OpFunctionEnd
+         %18 = OpFunction %void None %17
+         %19 = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+         %20 = OpLabel
+         %21 = OpLoad %v3ulong %__spirv_BuiltInGlobalInvocationId Aligned 32
+         %22 = OpCompositeExtract %ulong %21 0
+         %23 = OpUConvert %uint %22
+         %24 = OpFunctionCall %uint %a %23
+         %25 = OpFunctionCall %uint %b %23
+         %26 = OpIAdd %uint %24 %25
+         %27 = OpSConvert %ulong %23
+         %28 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %19 %27
+               OpStore %28 %26 Aligned 4
+               OpReturn
+               OpFunctionEnd

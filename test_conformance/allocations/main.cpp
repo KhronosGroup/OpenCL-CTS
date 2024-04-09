@@ -93,6 +93,11 @@ test_status init_cl( cl_device_id device ) {
         // queue, kernel code on GPU.
         g_global_mem_size *= 0.60;
     }
+    /* Cap the allocation size as the global size was deduced */
+    if (g_max_individual_allocation_size > g_global_mem_size)
+    {
+        g_max_individual_allocation_size = g_global_mem_size;
+    }
 
     if( gReSeed )
     {

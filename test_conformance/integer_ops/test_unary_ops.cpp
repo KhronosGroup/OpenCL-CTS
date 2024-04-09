@@ -16,6 +16,8 @@
 #include "testBase.h"
 #include "harness/conversions.h"
 
+#include <cinttypes>
+
 #define TEST_SIZE 512
 
 enum OpKonstants
@@ -71,8 +73,8 @@ int test_unary_op( cl_command_queue queue, cl_context context, OpKonstants which
     }
     else
     {
-        sprintf( loadLine, "vload%ld( tid, inOut )", vecSize );
-        sprintf( storeLine, "vstore%ld( inOutVal, tid, inOut )", vecSize );
+        sprintf(loadLine, "vload%zu( tid, inOut )", vecSize);
+        sprintf(storeLine, "vstore%zu( inOutVal, tid, inOut )", vecSize);
     }
 
     char sizeNames[][4] = { "", "", "2", "3", "4", "", "", "", "8", "", "", "", "", "", "", "", "16" };
@@ -159,8 +161,9 @@ template<typename T> int VerifyFn( void * actualPtr, void * inputPtr, size_t vec
 
             if( actualData[ index ] != nextVal )
             {
-                log_error( "ERROR: Validation failed on vector %ld:%ld (expected %lld, got %lld)", i, j,
-                          (cl_long)nextVal, (cl_long)actualData[ index ] );
+                log_error("ERROR: Validation failed on vector %zu:%zu "
+                          "(expected %" PRId64 ", got %" PRId64 ")",
+                          i, j, (cl_long)nextVal, (cl_long)actualData[index]);
                 return -1;
             }
         }
