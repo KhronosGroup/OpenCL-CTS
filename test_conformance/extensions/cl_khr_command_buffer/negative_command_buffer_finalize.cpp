@@ -132,7 +132,7 @@ struct FinalizeCommandBufferNotRecordingState : public BasicCommandBufferTest
 
         return CL_SUCCESS;
     }
-    cl_event user_event;
+    clEventWrapper user_event;
 };
 };
 
