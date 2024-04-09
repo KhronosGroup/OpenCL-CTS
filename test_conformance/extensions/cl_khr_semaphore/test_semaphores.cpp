@@ -21,6 +21,7 @@
 #include <system_error>
 #include <thread>
 #include <chrono>
+#include <vector>
 
 #define FLUSH_DELAY_S 5
 
@@ -115,7 +116,7 @@ static int semaphore_cross_queue_helper(cl_device_id deviceID,
                                      &wait_event);
     test_error(err, "Could not wait semaphore");
 
-    // Finish queue_1 and queue_2
+    // Finish queue_1 and queue_2
     err = clFinish(queue_1);
     test_error(err, "Could not finish queue");
 
@@ -133,7 +134,7 @@ static int semaphore_cross_queue_helper(cl_device_id deviceID,
     return TEST_PASS;
 }
 
-// Confirm that a signal followed by a wait will complete successfully
+// Confirm that a signal followed by a wait will complete successfully
 int test_semaphores_simple_1(cl_device_id deviceID, cl_context context,
                              cl_command_queue defaultQueue, int num_elements)
 {
@@ -586,9 +587,39 @@ int test_semaphores_multi_wait(cl_device_id deviceID, cl_context context,
 int test_semaphores_queries(cl_device_id deviceID, cl_context context,
                             cl_command_queue defaultQueue, int num_elements)
 {
-    cl_int err;
+    cl_int err = CL_SUCCESS;
 
-    if (!is_extension_available(deviceID, "cl_khr_semaphore"))
+    cl_platform_id platform_id = 0;
+    cl_uint num_devices = 0;
+    // find out what platform the harness is using.
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
+                          &platform_id, nullptr);
+    test_error(err, "clGetDeviceInfo failed");
+
+    err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, 0, nullptr,
+                         &num_devices);
+    test_error(err, "clGetDeviceIDs failed");
+
+    std::vector<cl_device_id> devices(num_devices);
+    cl_device_id capable_device = deviceID;
+
+    err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, num_devices,
+                         &devices[0], nullptr);
+    test_error(err, "clGetDeviceIDs failed");
+
+    // if possible use device other than the one from harness
+    for (size_t i = 0; i < devices.size(); ++i)
+    {
+        if (deviceID != devices[i]
+            && is_extension_available(capable_device, "cl_khr_semaphore"))
+        {
+            capable_device = devices[i];
+            break;
+        }
+    }
+
+    if (deviceID == capable_device
+        && !is_extension_available(capable_device, "cl_khr_semaphore"))
     {
         log_info("cl_khr_semaphore is not supported on this platoform. "
                  "Skipping test.\n");
@@ -596,15 +627,19 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
     }
 
     // Obtain pointers to semaphore's API
-    GET_PFN(deviceID, clCreateSemaphoreWithPropertiesKHR);
-    GET_PFN(deviceID, clGetSemaphoreInfoKHR);
-    GET_PFN(deviceID, clRetainSemaphoreKHR);
-    GET_PFN(deviceID, clReleaseSemaphoreKHR);
+    GET_PFN(capable_device, clCreateSemaphoreWithPropertiesKHR);
+    GET_PFN(capable_device, clGetSemaphoreInfoKHR);
+    GET_PFN(capable_device, clRetainSemaphoreKHR);
+    GET_PFN(capable_device, clReleaseSemaphoreKHR);
 
     // Create binary semaphore
     cl_semaphore_properties_khr sema_props[] = {
         static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
         static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_BINARY_KHR),
+        static_cast<cl_semaphore_properties_khr>(
+            CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR),
+        (cl_semaphore_properties_khr)capable_device,
+        CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR,
         0
     };
     cl_semaphore_khr sema =
@@ -623,6 +658,11 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
     // value
     SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, 1);
 
+    // Confirm that querying CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR returns the
+    // same device id the semaphore was created with
+    SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR, cl_device_id,
+                         capable_device);
+
     err = clRetainSemaphoreKHR(sema);
     test_error(err, "Could not retain semaphore");
     SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, 2);
@@ -633,8 +673,14 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
 
     // Confirm that querying CL_SEMAPHORE_PROPERTIES_KHR returns the same
     // properties the semaphore was created with
-    SEMAPHORE_PARAM_TEST_ARRAY(CL_SEMAPHORE_PROPERTIES_KHR,
-                               cl_semaphore_properties_khr, 3, sema_props);
+    size_t size;
+    err = clGetSemaphoreInfoKHR(sema, CL_SEMAPHORE_PROPERTIES_KHR, 0, nullptr,
+                                &size);
+    test_error(err, "Unable to get CL_SEMAPHORE_PROPERTIES_KHR from semaphore");
+
+    SEMAPHORE_PARAM_TEST_ARRAY(
+        CL_SEMAPHORE_PROPERTIES_KHR, cl_semaphore_properties_khr,
+        size / sizeof(cl_semaphore_properties_khr), sema_props);
 
     // Confirm that querying CL_SEMAPHORE_PAYLOAD_KHR returns the unsignaled
     // state
