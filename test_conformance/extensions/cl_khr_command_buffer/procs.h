@@ -163,5 +163,11 @@ extern int test_negative_command_ndrange_kernel_command_buffer_finalized(
 extern int test_negative_command_ndrange_kernel_mutable_handle_not_null(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
+extern int test_negative_command_ndrange_kernel_not_support_printf(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_command_ndrange_kernel_with_enqueue_call(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
 
 #endif // CL_KHR_COMMAND_BUFFER_PROCS_H

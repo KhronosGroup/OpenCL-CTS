@@ -15,7 +15,7 @@
 //
 #include "basic_command_buffer.h"
 #include "procs.h"
-
+#include "harness/featureHelpers.h"
 
 //--------------------------------------------------------------------------
 namespace {
@@ -242,6 +242,214 @@ struct CommandNDRangeKernelMutableHandleNotNull : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 };
+
+// CL_INVALID_OPERATION if the device associated with command_queue does not
+// support CL_COMMAND_BUFFER_CAPABILITY_KERNEL_PRINTF_KHR and kernel contains a
+// printf call.
+struct CommandNDRangeKernelNotSupportPrintf : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    bool Skip() override
+    {
+        cl_device_command_buffer_capabilities_khr capabilities;
+        cl_int error =
+            clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
+                            sizeof(capabilities), &capabilities, NULL);
+        test_error(error,
+                   "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
+
+        bool device_does_not_support_printf =
+            (capabilities & CL_COMMAND_BUFFER_CAPABILITY_KERNEL_PRINTF_KHR)
+            == 0;
+
+        return device_does_not_support_printf;
+    }
+
+    cl_int SetUpKernel() override
+    {
+        cl_int error = CL_SUCCESS;
+
+        const char* kernel_str =
+            R"(
+__kernel void printf_kernel() {
+    printf("Hello World\n");
+  }
+)";
+
+        error = create_single_kernel_helper_create_program(context, &program, 1,
+                                                           &kernel_str);
+        test_error(error, "Failed to create program with source");
+
+        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
+        test_error(error, "Failed to build program");
+
+        kernel = clCreateKernel(program, "printf_kernel", &error);
+        test_error(error, "Failed to create printf_kernel kernel");
+
+        return CL_SUCCESS;
+    }
+
+    cl_int SetUp(int elements) override
+    {
+        cl_int error = init_extension_functions();
+        if (error != CL_SUCCESS)
+        {
+            return error;
+        }
+
+        if (elements <= 0)
+        {
+            return CL_INVALID_VALUE;
+        }
+        num_elements = static_cast<size_t>(elements);
+
+        error = SetUpKernel();
+        test_error(error, "SetUpKernel failed");
+
+        command_buffer = clCreateCommandBufferKHR(1, &queue, nullptr, &error);
+        test_error(error, "clCreateCommandBufferKHR failed");
+
+        return CL_SUCCESS;
+    }
+
+    cl_int Run() override
+    {
+        cl_int error = clCommandNDRangeKernelKHR(
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
+            nullptr, 0, nullptr, nullptr, nullptr);
+
+        test_failure_error_ret(error, CL_INVALID_OPERATION,
+                               "clCommandNDRangeKernelKHR should return "
+                               "CL_INVALID_OPERATION",
+                               TEST_FAIL);
+
+        return CL_SUCCESS;
+    }
+};
+
+// CL_INVALID_OPERATION if the device associated with command_queue does not
+// support CL_COMMAND_BUFFER_CAPABILITY_DEVICE_SIDE_ENQUEUE_KHR and kernel
+// contains a kernel-enqueue call.
+struct CommandNDRangeKernelWithKernelEnqueueCall : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    bool Skip() override
+    {
+        bool has_device_enqueue = false;
+        bool cl_version_2_0 = false;
+
+        OpenCLCFeatures features;
+        get_device_cl_c_features(device, features);
+
+        const Version clc_version = get_device_cl_c_version(device);
+        if (clc_version >= Version(2, 0))
+        {
+            has_device_enqueue = features.supports__opencl_c_device_enqueue;
+            cl_version_2_0 = true;
+        }
+
+        cl_device_command_buffer_capabilities_khr capabilities;
+        cl_int error =
+            clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
+                            sizeof(capabilities), &capabilities, NULL);
+        test_error(error,
+                   "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
+
+        bool device_does_not_enqueue_call =
+            (capabilities
+             & CL_COMMAND_BUFFER_CAPABILITY_DEVICE_SIDE_ENQUEUE_KHR)
+            != 0;
+
+        if (!cl_version_2_0 || !has_device_enqueue) return true;
+        return device_does_not_enqueue_call;
+    }
+
+    cl_int SetUpKernel() override
+    {
+        cl_int error = CL_SUCCESS;
+
+        const char* kernel_str =
+            R"(
+__kernel void enqueue_call_func() {
+  }
+
+__kernel void enqueue_call_kernel() {
+queue_t def_q = get_default_queue();
+ndrange_t ndrange = ndrange_1D(1);
+enqueue_kernel(def_q, ndrange,
+                   ^{enqueue_call_func();});
+  }
+)";
+
+        error = create_single_kernel_helper_create_program(context, &program, 1,
+                                                           &kernel_str);
+        test_error(error, "Failed to create program with source");
+
+        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
+        test_error(error, "Failed to build program");
+//        if (error == CL_BUILD_PROGRAM_FAILURE)
+//        {
+//            // Determine the size of the log
+//            size_t log_size;
+//            clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0,
+//                                  NULL, &log_size);
+
+//            // Allocate memory for the log
+//            char* log = (char*)malloc(log_size);
+
+//            // Get the log
+//            clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG,
+//                                  log_size, log, NULL);
+
+//            // Print the log
+//            printf("%s\n", log);
+//        }
+
+        kernel = clCreateKernel(program, "enqueue_call_kernel", &error);
+        test_error(error, "Failed to create enqueue_call_kernel kernel");
+
+        return CL_SUCCESS;
+    }
+
+    cl_int SetUp(int elements) override
+    {
+        cl_int error = init_extension_functions();
+        if (error != CL_SUCCESS)
+        {
+            return error;
+        }
+
+        if (elements <= 0)
+        {
+            return CL_INVALID_VALUE;
+        }
+        num_elements = static_cast<size_t>(elements);
+
+        error = SetUpKernel();
+        test_error(error, "SetUpKernel failed");
+
+        command_buffer = clCreateCommandBufferKHR(1, &queue, nullptr, &error);
+        test_error(error, "clCreateCommandBufferKHR failed");
+
+        return CL_SUCCESS;
+    }
+
+    cl_int Run() override
+    {
+        cl_int error = clCommandNDRangeKernelKHR(
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
+            nullptr, 0, nullptr, nullptr, nullptr);
+
+        test_failure_error_ret(error, CL_INVALID_OPERATION,
+                               "clCommandNDRangeKernelKHR should return "
+                               "CL_INVALID_OPERATION",
+                               TEST_FAIL);
+
+        return CL_SUCCESS;
+    }
+};
 };
 
 int test_negative_command_ndrange_queue_not_null(cl_device_id device,
@@ -298,5 +506,21 @@ int test_negative_command_ndrange_kernel_mutable_handle_not_null(
     int num_elements)
 {
     return MakeAndRunTest<CommandNDRangeKernelMutableHandleNotNull>(
+        device, context, queue, num_elements);
+}
+
+int test_negative_command_ndrange_kernel_not_support_printf(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements)
+{
+    return MakeAndRunTest<CommandNDRangeKernelNotSupportPrintf>(
+        device, context, queue, num_elements);
+}
+
+int test_negative_command_ndrange_kernel_with_enqueue_call(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements)
+{
+    return MakeAndRunTest<CommandNDRangeKernelWithKernelEnqueueCall>(
         device, context, queue, num_elements);
 }
