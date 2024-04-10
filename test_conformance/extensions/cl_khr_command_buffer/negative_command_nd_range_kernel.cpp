@@ -397,23 +397,6 @@ enqueue_kernel(def_q, ndrange,
 
         error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
         test_error(error, "Failed to build program");
-//        if (error == CL_BUILD_PROGRAM_FAILURE)
-//        {
-//            // Determine the size of the log
-//            size_t log_size;
-//            clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0,
-//                                  NULL, &log_size);
-
-//            // Allocate memory for the log
-//            char* log = (char*)malloc(log_size);
-
-//            // Get the log
-//            clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG,
-//                                  log_size, log, NULL);
-
-//            // Print the log
-//            printf("%s\n", log);
-//        }
 
         kernel = clCreateKernel(program, "enqueue_call_kernel", &error);
         test_error(error, "Failed to create enqueue_call_kernel kernel");
