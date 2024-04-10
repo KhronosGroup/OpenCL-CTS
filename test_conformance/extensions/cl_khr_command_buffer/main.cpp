@@ -72,7 +72,14 @@ test_definition test_list[] = {
     ADD_TEST(negative_command_ndrange_kernel_command_buffer_finalized),
     ADD_TEST(negative_command_ndrange_kernel_mutable_handle_not_null),
     ADD_TEST(negative_command_ndrange_kernel_not_support_printf),
-    ADD_TEST(negative_command_ndrange_kernel_with_enqueue_call)
+    ADD_TEST(negative_command_ndrange_kernel_with_enqueue_call),
+    ADD_TEST(negative_get_command_buffer_info_invalid_command_buffer),
+    ADD_TEST(negative_get_command_buffer_info_not_supported_param_name),
+    ADD_TEST(negative_get_command_buffer_info_queues),
+    ADD_TEST(negative_get_command_buffer_info_ref_count),
+    ADD_TEST(negative_get_command_buffer_info_state),
+    ADD_TEST(negative_get_command_buffer_info_prop_array),
+    ADD_TEST(negative_get_command_buffer_info_context),
 };
 
 int main(int argc, const char *argv[])

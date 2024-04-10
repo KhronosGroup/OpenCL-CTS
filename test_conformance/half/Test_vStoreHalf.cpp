@@ -433,7 +433,7 @@ int Test_vStoreHalf_private(cl_device_id device, f2h referenceFunc,
         };
 
         char local_buf_size[10];
-        sprintf(local_buf_size, "%lld", (uint64_t)gWorkGroupSize);
+        sprintf(local_buf_size, "%zu", gWorkGroupSize);
 
 
         const char *source_local_store[] = {
@@ -1308,7 +1308,7 @@ int Test_vStoreaHalf_private(cl_device_id device, f2h referenceFunc,
         };
 
         char local_buf_size[10];
-        sprintf(local_buf_size, "%lld", (uint64_t)gWorkGroupSize);
+        sprintf(local_buf_size, "%zu", gWorkGroupSize);
         const char *source_local[] = { "__kernel void test( __global float",
                                        vector_size_name_extensions[vectorSize],
                                        " *p, __global half *f )\n"
