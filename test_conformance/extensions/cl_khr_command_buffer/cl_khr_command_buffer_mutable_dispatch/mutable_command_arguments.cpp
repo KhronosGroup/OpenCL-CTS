@@ -15,11 +15,15 @@
 //
 
 #include "testHarness.h"
-#include "imageHelpers.h"
 #include "mutable_command_basic.h"
 
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
+
+#include <vector>
+
+namespace {
+
 ////////////////////////////////////////////////////////////////////////////////
 // mutable dispatch tests which handle following cases for
 // CL_MUTABLE_DISPATCH_ARGUMENTS_KHR:
@@ -29,28 +33,41 @@
 // - NULL arguments
 // - SVM arguments
 
-struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
+struct MutableDispatchArgumentsTest : public BasicMutableCommandBufferTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
-
-    MutableDispatchGlobalArguments(cl_device_id device, cl_context context,
-                                   cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+    MutableDispatchArgumentsTest(cl_device_id device, cl_context context,
+                                 cl_command_queue queue)
+        : BasicMutableCommandBufferTest(device, context, queue),
+          command(nullptr)
     {}
 
-    virtual cl_int SetUp(int elements) override
+    bool Skip() override
     {
-        BasicMutableCommandBufferTest::SetUp(elements);
+        if (BasicMutableCommandBufferTest::Skip()) return true;
+        cl_mutable_dispatch_fields_khr mutable_capabilities;
+        bool mutable_support =
+            !clGetDeviceInfo(
+                device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
+                sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
+            && mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
 
-        return 0;
+        // require mutable arguments capabillity
+        return !mutable_support;
     }
 
-    cl_int Run() override
+    cl_mutable_command_khr command;
+};
+
+struct MutableDispatchGlobalArguments : public MutableDispatchArgumentsTest
+{
+    MutableDispatchGlobalArguments(cl_device_id device, cl_context context,
+                                   cl_command_queue queue)
+        : MutableDispatchArgumentsTest(device, context, queue)
+    {}
+
+    cl_int SetUpKernel() override
     {
-        cl_int error;
-
         // Create kernel
-
         const char *sample_const_arg_kernel =
             R"(
             __kernel void sample_test(__constant int *src, __global int *dst)
@@ -59,48 +76,76 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
                 dst[tid] = src[tid];
             })";
 
-        error = create_single_kernel_helper(context, &program, &kernel, 1,
-                                            &sample_const_arg_kernel,
-                                            "sample_test");
+        cl_int error = create_single_kernel_helper(context, &program, &kernel,
+                                                   1, &sample_const_arg_kernel,
+                                                   "sample_test");
         test_error(error, "Creating kernel failed");
+        return CL_SUCCESS;
+    }
 
+    cl_int SetUpKernelArgs() override
+    {
         // Create and initialize buffers
-
         MTdataHolder d(gRandomSeed);
 
-        std::vector<cl_int> srcData(num_elements);
+        src_data.resize(num_elements);
         for (size_t i = 0; i < num_elements; i++)
-            srcData[i] = (cl_int)genrand_int32(d);
+            src_data[i] = (cl_int)genrand_int32(d);
 
-        clMemWrapper srcBuf = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                                             num_elements * sizeof(cl_int),
-                                             srcData.data(), &error);
+        cl_int error = CL_SUCCESS;
+        in_mem = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                num_elements * sizeof(cl_int), src_data.data(),
+                                &error);
         test_error(error, "Creating src buffer");
 
-        clMemWrapper dstBuf0 =
-            clCreateBuffer(context, CL_MEM_READ_WRITE,
-                           num_elements * sizeof(cl_int), NULL, &error);
+        dst_buf_0 = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                   num_elements * sizeof(cl_int), NULL, &error);
         test_error(error, "Creating initial dst buffer failed");
 
-        clMemWrapper dstBuf1 =
-            clCreateBuffer(context, CL_MEM_READ_WRITE,
-                           num_elements * sizeof(cl_int), NULL, &error);
+        dst_buf_1 = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                   num_elements * sizeof(cl_int), NULL, &error);
         test_error(error, "Creating updated dst buffer failed");
 
         // Build and execute the command buffer for the initial execution
 
-        error = clSetKernelArg(kernel, 0, sizeof(srcBuf), &srcBuf);
+        error = clSetKernelArg(kernel, 0, sizeof(in_mem), &in_mem);
         test_error(error, "Unable to set src kernel arguments");
 
-        error = clSetKernelArg(kernel, 1, sizeof(dstBuf0), &dstBuf0);
+        error = clSetKernelArg(kernel, 1, sizeof(dst_buf_0), &dst_buf_0);
         test_error(error, "Unable to set initial dst kernel argument");
+        return CL_SUCCESS;
+    }
 
+    // verify the result
+    bool verify_result(const cl_mem &buffer)
+    {
+        std::vector<cl_int> data(num_elements);
+        cl_int error =
+            clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, data_size(),
+                                data.data(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        for (size_t i = 0; i < num_elements; i++)
+        {
+            if (data[i] != src_data[i])
+            {
+                log_error("Modified verification failed at index %zu: Got %d, "
+                          "wanted %d\n",
+                          i, data[i], src_data[i]);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    cl_int Run() override
+    {
         cl_ndrange_kernel_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
 
-        error = clCommandNDRangeKernelKHR(
+        cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, props, kernel, 1, nullptr, &num_elements,
             nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
@@ -112,28 +157,12 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        // Check the results of the initial execution
-
-        std::vector<cl_int> dstData0(num_elements);
-        error = clEnqueueReadBuffer(queue, dstBuf0, CL_TRUE, 0,
-                                    num_elements * sizeof(cl_int),
-                                    dstData0.data(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueReadBuffer for initial dst failed");
-
-        for (size_t i = 0; i < num_elements; i++)
-        {
-            if (srcData[i] != dstData0[i])
-            {
-                log_error("Initial data failed to verify: src[%zu]=%d != "
-                          "dst[%zu]=%d\n",
-                          i, srcData[i], i, dstData0[i]);
-                return TEST_FAIL;
-            }
-        }
+        // check the results of the initial execution
+        if (!verify_result(dst_buf_0)) return TEST_FAIL;
 
         // Modify and execute the command buffer
 
-        cl_mutable_dispatch_arg_khr arg{ 1, sizeof(dstBuf1), &dstBuf1 };
+        cl_mutable_dispatch_arg_khr arg{ 1, sizeof(dst_buf_1), &dst_buf_1 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
             CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
@@ -164,48 +193,28 @@ struct MutableDispatchGlobalArguments : public BasicMutableCommandBufferTest
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         // Check the results of the modified execution
-
-        std::vector<cl_int> dstData1(num_elements);
-        error = clEnqueueReadBuffer(queue, dstBuf1, CL_TRUE, 0,
-                                    num_elements * sizeof(cl_int),
-                                    dstData1.data(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueReadBuffer for modified dst failed");
-
-        for (size_t i = 0; i < num_elements; i++)
-        {
-            if (srcData[i] != dstData1[i])
-            {
-                log_error("Initial data failed to verify: src[%zu]=%d != "
-                          "dst[%zu]=%d\n",
-                          i, srcData[i], i, dstData1[i]);
-                return TEST_FAIL;
-            }
-        }
+        if (!verify_result(dst_buf_1)) return TEST_FAIL;
 
         return TEST_PASS;
     }
 
-    cl_mutable_command_khr command = nullptr;
+    std::vector<cl_int> src_data;
+
+    clMemWrapper dst_buf_0;
+    clMemWrapper dst_buf_1;
 };
 
-struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
+struct MutableDispatchLocalArguments : public MutableDispatchArgumentsTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
-
     MutableDispatchLocalArguments(cl_device_id device, cl_context context,
                                   cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : MutableDispatchArgumentsTest(device, context, queue),
+          number_of_ints(0), size_to_allocate(0)
     {}
 
-    virtual cl_int SetUp(int elements) override
+    cl_int SetUpKernel() override
     {
-        BasicMutableCommandBufferTest::SetUp(elements);
-
-        return 0;
-    }
-
-    cl_int Run() override
-    {
+        // Create kernel
         const char *sample_const_arg_kernel =
             R"(
             __kernel void sample_test(__constant int *src1, __local int
@@ -216,58 +225,60 @@ struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
                 dst[tid] = src[tid];
             })";
 
-        cl_int error;
-        clProgramWrapper program;
-        clKernelWrapper kernel;
-        size_t threads[1], localThreads[1];
-        std::vector<cl_int> constantData;
-        std::vector<cl_int> resultData;
-
-        error = create_single_kernel_helper(context, &program, &kernel, 1,
-                                            &sample_const_arg_kernel,
-                                            "sample_test");
+        cl_int error = create_single_kernel_helper(context, &program, &kernel,
+                                                   1, &sample_const_arg_kernel,
+                                                   "sample_test");
         test_error(error, "Creating kernel failed");
+        return CL_SUCCESS;
+    }
 
+    cl_int SetUpKernelArgs() override
+    {
         MTdataHolder d(gRandomSeed);
+        size_to_allocate = ((size_t)max_size / sizeof(cl_int)) * sizeof(cl_int);
+        number_of_ints = size_to_allocate / sizeof(cl_int);
+        constant_data.resize(size_to_allocate / sizeof(cl_int));
+        result_data.resize(size_to_allocate / sizeof(cl_int));
 
-        size_t sizeToAllocate =
-            ((size_t)max_size / sizeof(cl_int)) * sizeof(cl_int);
-        size_t numberOfInts = sizeToAllocate / sizeof(cl_int);
-        constantData.resize(sizeToAllocate / sizeof(cl_int));
-        resultData.resize(sizeToAllocate / sizeof(cl_int));
+        for (size_t i = 0; i < number_of_ints; i++)
+            constant_data[i] = (cl_int)genrand_int32(d);
 
-        for (size_t i = 0; i < numberOfInts; i++)
-            constantData[i] = (cl_int)genrand_int32(d);
-
-        clMemWrapper streams[2];
+        cl_int error = CL_SUCCESS;
         streams[0] =
-            clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, sizeToAllocate,
-                           constantData.data(), &error);
+            clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, size_to_allocate,
+                           constant_data.data(), &error);
         test_error(error, "Creating test array failed");
-        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
-                                    nullptr, &error);
+        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    size_to_allocate, nullptr, &error);
         test_error(error, "Creating test array failed");
 
         /* Set the arguments */
         error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &streams[0]);
         test_error(error, "Unable to set indexed kernel arguments");
         error =
-            clSetKernelArg(kernel, 1, numberOfInts * sizeof(cl_int), nullptr);
+            clSetKernelArg(kernel, 1, number_of_ints * sizeof(cl_int), nullptr);
         test_error(error, "Unable to set indexed kernel arguments");
         error = clSetKernelArg(kernel, 2, sizeof(cl_mem), &streams[1]);
         test_error(error, "Unable to set indexed kernel arguments");
 
-        threads[0] = numberOfInts;
-        localThreads[0] = 1;
+        return CL_SUCCESS;
+    }
+
+    cl_int Run() override
+    {
+        size_t threads[1], local_threads[1];
+
+        threads[0] = number_of_ints;
+        local_threads[0] = 1;
 
         cl_ndrange_kernel_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
 
-        error = clCommandNDRangeKernelKHR(
+        cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, props, kernel, 1, nullptr, threads,
-            localThreads, 0, nullptr, nullptr, &command);
+            local_threads, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);
@@ -307,37 +318,44 @@ struct MutableDispatchLocalArguments : public BasicMutableCommandBufferTest
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         error =
-            clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, sizeToAllocate,
-                                resultData.data(), 0, nullptr, nullptr);
+            clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, size_to_allocate,
+                                result_data.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        for (size_t i = 0; i < numberOfInts; i++)
-            if (constantData[i] != resultData[i])
+        for (size_t i = 0; i < number_of_ints; i++)
+            if (constant_data[i] != result_data[i])
             {
-                log_error("Data failed to verify: constantData[%d]=%d != "
-                          "resultData[%d]=%d\n",
-                          i, constantData[i], i, resultData[i]);
+                log_error("Data failed to verify: constant_data[%d]=%d != "
+                          "result_data[%d]=%d\n",
+                          i, constant_data[i], i, result_data[i]);
                 return TEST_FAIL;
             }
 
         return TEST_PASS;
     }
 
-    cl_mutable_command_khr command = nullptr;
     const cl_ulong max_size = 16;
+
+    std::vector<cl_int> constant_data;
+    std::vector<cl_int> result_data;
+
+    size_t number_of_ints;
+    size_t size_to_allocate;
+
+    clMemWrapper streams[2];
 };
 
-struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
+struct MutableDispatchPODArguments : public MutableDispatchArgumentsTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
-
     MutableDispatchPODArguments(cl_device_id device, cl_context context,
                                 cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : MutableDispatchArgumentsTest(device, context, queue),
+          number_of_ints(0), size_to_allocate(0), int_arg(10)
     {}
 
-    cl_int Run() override
+    cl_int SetUpKernel() override
     {
+        // Create kernel
         const char *sample_const_arg_kernel =
             R"(
                 __kernel void sample_test(__constant int *src, int dst)
@@ -346,53 +364,54 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
                 dst = src[tid];
             })";
 
-        cl_int error;
-        clProgramWrapper program;
-        clKernelWrapper kernel;
-        size_t threads[1], localThreads[1];
-        std::vector<cl_int> constantData;
-        std::vector<cl_int> resultData;
-
-        error = create_single_kernel_helper(context, &program, &kernel, 1,
-                                            &sample_const_arg_kernel,
-                                            "sample_test");
+        cl_int error = create_single_kernel_helper(context, &program, &kernel,
+                                                   1, &sample_const_arg_kernel,
+                                                   "sample_test");
         test_error(error, "Creating kernel failed");
+        return CL_SUCCESS;
+    }
 
+    cl_int SetUpKernelArgs() override
+    {
         MTdataHolder d(gRandomSeed);
+        size_to_allocate = ((size_t)max_size / sizeof(cl_int)) * sizeof(cl_int);
+        number_of_ints = size_to_allocate / sizeof(cl_int);
+        constant_data.resize(size_to_allocate / sizeof(cl_int));
+        result_data.resize(size_to_allocate / sizeof(cl_int));
 
-        size_t sizeToAllocate =
-            ((size_t)max_size / sizeof(cl_int)) * sizeof(cl_int);
-        size_t numberOfInts = sizeToAllocate / sizeof(cl_int);
-        constantData.resize(sizeToAllocate / sizeof(cl_int));
-        resultData.resize(sizeToAllocate / sizeof(cl_int));
+        for (size_t i = 0; i < number_of_ints; i++)
+            constant_data[i] = (cl_int)genrand_int32(d);
 
-        for (size_t i = 0; i < numberOfInts; i++)
-            constantData[i] = (cl_int)genrand_int32(d);
-
-        clMemWrapper stream;
-        stream = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, sizeToAllocate,
-                                constantData.data(), &error);
+        cl_int error = CL_SUCCESS;
+        stream = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, size_to_allocate,
+                                constant_data.data(), &error);
         test_error(error, "Creating test array failed");
-
 
         /* Set the arguments */
         error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &stream);
         test_error(error, "Unable to set indexed kernel arguments");
-        cl_int intarg = 10;
-        error = clSetKernelArg(kernel, 1, sizeof(cl_int), &intarg);
+
+        error = clSetKernelArg(kernel, 1, sizeof(cl_int), &int_arg);
         test_error(error, "Unable to set indexed kernel arguments");
 
-        threads[0] = numberOfInts;
-        localThreads[0] = 1;
+        return CL_SUCCESS;
+    }
+
+    cl_int Run() override
+    {
+        size_t threads[1], local_threads[1];
+
+        threads[0] = number_of_ints;
+        local_threads[0] = 1;
 
         cl_ndrange_kernel_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
 
-        error = clCommandNDRangeKernelKHR(
+        cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, props, kernel, 1, nullptr, threads,
-            localThreads, 0, nullptr, nullptr, &command);
+            local_threads, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);
@@ -402,8 +421,8 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        intarg = 20;
-        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(cl_int), &intarg };
+        int_arg = 20;
+        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(cl_int), &int_arg };
         cl_mutable_dispatch_arg_khr args[] = { arg_1 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
@@ -432,41 +451,44 @@ struct MutableDispatchPODArguments : public BasicMutableCommandBufferTest
         error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
-        error = clEnqueueReadBuffer(queue, stream, CL_TRUE, 0, sizeToAllocate,
-                                    resultData.data(), 0, nullptr, nullptr);
+        error = clEnqueueReadBuffer(queue, stream, CL_TRUE, 0, size_to_allocate,
+                                    result_data.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        for (size_t i = 0; i < numberOfInts; i++)
-            if (constantData[i] != resultData[i])
+        for (size_t i = 0; i < number_of_ints; i++)
+            if (constant_data[i] != result_data[i])
             {
-                log_error("Data failed to verify: constantData[%d]=%d != "
-                          "resultData[%d]=%d\n",
-                          i, constantData[i], i, resultData[i]);
+                log_error("Data failed to verify: constant_data[%d]=%d != "
+                          "result_data[%d]=%d\n",
+                          i, constant_data[i], i, result_data[i]);
                 return TEST_FAIL;
             }
 
         return TEST_PASS;
     }
 
-    cl_mutable_command_khr command = nullptr;
     const cl_ulong max_size = 16;
+
+    size_t number_of_ints;
+    size_t size_to_allocate;
+    cl_int int_arg;
+
+    std::vector<cl_int> constant_data;
+    std::vector<cl_int> result_data;
+
+    clMemWrapper stream;
 };
 
-struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
+struct MutableDispatchNullArguments : public MutableDispatchArgumentsTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
-
     MutableDispatchNullArguments(cl_device_id device, cl_context context,
                                  cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : MutableDispatchArgumentsTest(device, context, queue)
     {}
 
-    cl_int Run() override
+    cl_int SetUpKernel() override
     {
-        cl_int error;
-
         // Create kernel
-
         const char *sample_const_arg_kernel =
             R"(
             __kernel void sample_test(__constant int *src, __global int *dst)
@@ -475,41 +497,49 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
                 dst[tid] = src ? src[tid] : 12345;
             })";
 
-        error = create_single_kernel_helper(context, &program, &kernel, 1,
-                                            &sample_const_arg_kernel,
-                                            "sample_test");
+        cl_int error = create_single_kernel_helper(context, &program, &kernel,
+                                                   1, &sample_const_arg_kernel,
+                                                   "sample_test");
         test_error(error, "Creating kernel failed");
+        return CL_SUCCESS;
+    }
 
+    cl_int SetUpKernelArgs() override
+    {
         MTdataHolder d(gRandomSeed);
-
-        std::vector<cl_int> srcData(num_elements);
+        src_data.resize(num_elements);
         for (size_t i = 0; i < num_elements; i++)
-            srcData[i] = (cl_int)genrand_int32(d);
+            src_data[i] = (cl_int)genrand_int32(d);
 
-        clMemWrapper srcBuf = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                                             num_elements * sizeof(cl_int),
-                                             srcData.data(), &error);
+        cl_int error = CL_SUCCESS;
+        in_mem = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                num_elements * sizeof(cl_int), src_data.data(),
+                                &error);
         test_error(error, "Creating src buffer");
 
-        clMemWrapper dstBuf =
-            clCreateBuffer(context, CL_MEM_READ_WRITE,
-                           num_elements * sizeof(cl_int), NULL, &error);
+        out_mem = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                 num_elements * sizeof(cl_int), NULL, &error);
         test_error(error, "Creating dst buffer failed");
 
         // Build and execute the command buffer for the initial execution
 
-        error = clSetKernelArg(kernel, 0, sizeof(srcBuf), &srcBuf);
+        error = clSetKernelArg(kernel, 0, sizeof(in_mem), &in_mem);
         test_error(error, "Unable to set src kernel arguments");
 
-        error = clSetKernelArg(kernel, 1, sizeof(dstBuf), &dstBuf);
+        error = clSetKernelArg(kernel, 1, sizeof(out_mem), &out_mem);
         test_error(error, "Unable to set initial dst kernel argument");
 
+        return CL_SUCCESS;
+    }
+
+    cl_int Run() override
+    {
         cl_ndrange_kernel_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
 
-        error = clCommandNDRangeKernelKHR(
+        cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, props, kernel, 1, nullptr, &num_elements,
             nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
@@ -522,28 +552,25 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         // Check the results of the initial execution
-
-        std::vector<cl_int> dstData0(num_elements);
-        error = clEnqueueReadBuffer(queue, dstBuf, CL_TRUE, 0,
+        std::vector<cl_int> dst_data_0(num_elements);
+        error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0,
                                     num_elements * sizeof(cl_int),
-                                    dstData0.data(), 0, nullptr, nullptr);
+                                    dst_data_0.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer for initial dst failed");
 
         for (size_t i = 0; i < num_elements; i++)
         {
-            if (srcData[i] != dstData0[i])
+            if (src_data[i] != dst_data_0[i])
             {
                 log_error("Initial data failed to verify: src[%zu]=%d != "
                           "dst[%zu]=%d\n",
-                          i, srcData[i], i, dstData0[i]);
+                          i, src_data[i], i, dst_data_0[i]);
                 return TEST_FAIL;
             }
         }
 
         // Modify and execute the command buffer
-
         cl_mutable_dispatch_arg_khr arg{ 0, sizeof(cl_mem), nullptr };
-
         cl_mutable_dispatch_config_khr dispatch_config{
             CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
             nullptr,
@@ -573,19 +600,18 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         // Check the results of the modified execution
-
-        std::vector<cl_int> dstData1(num_elements);
-        error = clEnqueueReadBuffer(queue, dstBuf, CL_TRUE, 0,
+        std::vector<cl_int> dst_data_1(num_elements);
+        error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0,
                                     num_elements * sizeof(cl_int),
-                                    dstData1.data(), 0, nullptr, nullptr);
+                                    dst_data_1.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer for modified dst failed");
 
         for (size_t i = 0; i < num_elements; i++)
         {
-            if (12345 != dstData1[i])
+            if (12345 != dst_data_1[i])
             {
                 log_error("Modified data failed to verify: %d != dst[%zu]=%d\n",
-                          12345, i, dstData1[i]);
+                          12345, i, dst_data_1[i]);
                 return TEST_FAIL;
             }
         }
@@ -593,28 +619,37 @@ struct MutableDispatchNullArguments : public BasicMutableCommandBufferTest
         return TEST_PASS;
     }
 
-    cl_mutable_command_khr command = nullptr;
     const cl_ulong max_size = 16;
+
+    std::vector<cl_int> src_data;
 };
 
-struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
+struct MutableDispatchSVMArguments : public MutableDispatchArgumentsTest
 {
-    using BasicMutableCommandBufferTest::BasicMutableCommandBufferTest;
-
     MutableDispatchSVMArguments(cl_device_id device, cl_context context,
                                 cl_command_queue queue)
-        : BasicMutableCommandBufferTest(device, context, queue)
+        : MutableDispatchArgumentsTest(device, context, queue)
     {}
 
     bool Skip() override
     {
+        if (BasicMutableCommandBufferTest::Skip()) return true;
+
+        cl_mutable_dispatch_fields_khr mutable_capabilities;
+        bool mutable_support =
+            !clGetDeviceInfo(
+                device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
+                sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
+            && mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
+
         cl_device_svm_capabilities svm_caps;
         bool svm_capabilities =
             !clGetDeviceInfo(device, CL_DEVICE_SVM_CAPABILITIES,
                              sizeof(svm_caps), &svm_caps, NULL)
             && svm_caps != 0;
 
-        return !svm_capabilities || BasicMutableCommandBufferTest::Skip();
+        // require mutable arguments capabillity
+        return !svm_capabilities || !mutable_support;
     }
 
     virtual cl_int SetUp(int elements) override
@@ -642,52 +677,51 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
     cl_int Run() override
     {
         const cl_int zero = 0;
-        cl_int error;
 
         // Allocate and initialize SVM for initial execution
-
-        cl_int *initWrapper = (cl_int *)clSVMAlloc(context, CL_MEM_READ_WRITE,
-                                                   sizeof(cl_int *), 0);
-        cl_int *initBuffer = (cl_int *)clSVMAlloc(
+        cl_int *init_wrapper = (cl_int *)clSVMAlloc(context, CL_MEM_READ_WRITE,
+                                                    sizeof(cl_int *), 0);
+        cl_int *init_buffer = (cl_int *)clSVMAlloc(
             context, CL_MEM_READ_WRITE, num_elements * sizeof(cl_int), 0);
-        test_assert_error(initWrapper != nullptr && initBuffer != nullptr,
+        test_assert_error(init_wrapper != nullptr && init_buffer != nullptr,
                           "clSVMAlloc failed for initial execution");
 
-        error = clEnqueueSVMMemcpy(queue, CL_TRUE, initWrapper, &initBuffer,
-                                   sizeof(cl_int *), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueSVMMemcpy failed for initWrapper");
+        cl_int error =
+            clEnqueueSVMMemcpy(queue, CL_TRUE, init_wrapper, &init_buffer,
+                               sizeof(cl_int *), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueSVMMemcpy failed for init_wrapper");
 
-        error = clEnqueueSVMMemFill(queue, initBuffer, &zero, sizeof(zero),
+        error = clEnqueueSVMMemFill(queue, init_buffer, &zero, sizeof(zero),
                                     num_elements * sizeof(cl_int), 0, nullptr,
                                     nullptr);
-        test_error(error, "clEnqueueSVMMemFill failed for initBuffer");
+        test_error(error, "clEnqueueSVMMemFill failed for init_buffer");
 
         // Allocate and initialize SVM for modified execution
 
-        cl_int *newWrapper = (cl_int *)clSVMAlloc(context, CL_MEM_READ_WRITE,
-                                                  sizeof(cl_int *), 0);
-        cl_int *newBuffer = (cl_int *)clSVMAlloc(
+        cl_int *new_wrapper = (cl_int *)clSVMAlloc(context, CL_MEM_READ_WRITE,
+                                                   sizeof(cl_int *), 0);
+        cl_int *new_buffer = (cl_int *)clSVMAlloc(
             context, CL_MEM_READ_WRITE, num_elements * sizeof(cl_int), 0);
-        test_assert_error(newWrapper != nullptr && newBuffer != nullptr,
+        test_assert_error(new_wrapper != nullptr && new_buffer != nullptr,
                           "clSVMAlloc failed for modified execution");
 
-        error = clEnqueueSVMMemcpy(queue, CL_TRUE, newWrapper, &newBuffer,
+        error = clEnqueueSVMMemcpy(queue, CL_TRUE, new_wrapper, &new_buffer,
                                    sizeof(cl_int *), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueSVMMemcpy failed for newWrapper");
+        test_error(error, "clEnqueueSVMMemcpy failed for new_wrapper");
 
-        error = clEnqueueSVMMemFill(queue, newBuffer, &zero, sizeof(zero),
+        error = clEnqueueSVMMemFill(queue, new_buffer, &zero, sizeof(zero),
                                     num_elements * sizeof(cl_int), 0, nullptr,
                                     nullptr);
         test_error(error, "clEnqueueSVMMemFill failed for newB");
 
         // Build and execute the command buffer for the initial execution
 
-        error = clSetKernelArgSVMPointer(kernel, 0, initWrapper);
-        test_error(error, "clSetKernelArg failed for initWrapper");
+        error = clSetKernelArgSVMPointer(kernel, 0, init_wrapper);
+        test_error(error, "clSetKernelArg failed for init_wrapper");
 
         error = clSetKernelExecInfo(kernel, CL_KERNEL_EXEC_INFO_SVM_PTRS,
-                                    sizeof(initBuffer), &initBuffer);
-        test_error(error, "clSetKernelExecInfo failed for initBuffer");
+                                    sizeof(init_buffer), &init_buffer);
+        test_error(error, "clSetKernelExecInfo failed for init_buffer");
 
         cl_ndrange_kernel_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
@@ -707,43 +741,36 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
                                           nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
-
         // Check the results of the initial execution
-
         error =
-            clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, initBuffer,
+            clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, init_buffer,
                             num_elements * sizeof(cl_int), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueSVMMap failed for initBuffer");
+        test_error(error, "clEnqueueSVMMap failed for init_buffer");
 
         for (size_t i = 0; i < num_elements; i++)
         {
-            if (initBuffer[i] != 1)
+            if (init_buffer[i] != 1)
             {
                 log_error("Initial verification failed at index %zu: Got %d, "
                           "wanted 1\n",
-                          i, initBuffer[i]);
+                          i, init_buffer[i]);
                 return TEST_FAIL;
             }
         }
 
-        error = clEnqueueSVMUnmap(queue, initBuffer, 0, nullptr, nullptr);
-        test_error(error, "clEnqueueSVMUnmap failed for initBuffer");
-
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
+        error = clEnqueueSVMUnmap(queue, init_buffer, 0, nullptr, nullptr);
+        test_error(error, "clEnqueueSVMUnmap failed for init_buffer");
 
         // Modify and execute the command buffer
 
         cl_mutable_dispatch_arg_khr arg_svm{};
         arg_svm.arg_index = 0;
-        arg_svm.arg_value = newWrapper;
+        arg_svm.arg_value = new_wrapper;
 
         cl_mutable_dispatch_exec_info_khr exec_info{};
         exec_info.param_name = CL_KERNEL_EXEC_INFO_SVM_PTRS;
-        exec_info.param_value_size = sizeof(newBuffer);
-        exec_info.param_value = &newBuffer;
+        exec_info.param_value_size = sizeof(new_buffer);
+        exec_info.param_value = &new_buffer;
 
         cl_mutable_dispatch_config_khr dispatch_config{};
         dispatch_config.type = CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR;
@@ -766,42 +793,39 @@ struct MutableDispatchSVMArguments : public BasicMutableCommandBufferTest
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         // Check the results of the modified execution
-
         error =
-            clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, newBuffer,
+            clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, new_buffer,
                             num_elements * sizeof(cl_int), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueSVMMap failed for newBuffer");
+        test_error(error, "clEnqueueSVMMap failed for new_buffer");
 
         for (size_t i = 0; i < num_elements; i++)
         {
-            if (newBuffer[i] != 1)
+            if (new_buffer[i] != 1)
             {
                 log_error("Modified verification failed at index %zu: Got %d, "
                           "wanted 1\n",
-                          i, newBuffer[i]);
+                          i, new_buffer[i]);
                 return TEST_FAIL;
             }
         }
 
-        error = clEnqueueSVMUnmap(queue, newBuffer, 0, nullptr, nullptr);
-        test_error(error, "clEnqueueSVMUnmap failed for newBuffer");
+        error = clEnqueueSVMUnmap(queue, new_buffer, 0, nullptr, nullptr);
+        test_error(error, "clEnqueueSVMUnmap failed for new_buffer");
 
         error = clFinish(queue);
         test_error(error, "clFinish failed");
 
         // Clean up
-
-        clSVMFree(context, initWrapper);
-        clSVMFree(context, initBuffer);
-        clSVMFree(context, newWrapper);
-        clSVMFree(context, newBuffer);
+        clSVMFree(context, init_wrapper);
+        clSVMFree(context, init_buffer);
+        clSVMFree(context, new_wrapper);
+        clSVMFree(context, new_buffer);
 
         return TEST_PASS;
     }
-
-    cl_mutable_command_khr command = nullptr;
 };
 
+}
 
 int test_mutable_dispatch_local_arguments(cl_device_id device,
                                           cl_context context,

@@ -100,7 +100,7 @@ test_status InitCL( cl_device_id device )
     gTestDouble ^= hasDouble;
 
     vlog( "%d compute devices at %f GHz\n", gComputeDevices, (double) gDeviceFrequency / 1000. );
-    vlog( "Max thread group size is %lld.\n", (uint64_t) gMaxThreadGroupSize );
+    vlog("Max thread group size is %zu.\n", gMaxThreadGroupSize);
 
     gContext = clCreateContext( NULL, 1, &device, notify_callback, NULL, &error );
     if( NULL == gContext )
