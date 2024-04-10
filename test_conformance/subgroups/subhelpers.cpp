@@ -102,8 +102,9 @@ cl_uint4 generate_bit_mask(cl_uint subgroup_local_id,
         if (mask_type == "gt") mask128.reset(pos);
     }
 
-    // convert std::bitset<128> to uint4
-    auto const uint_mask = bs128{ static_cast<unsigned long>(-1) };
+    // convert std::bitset<128> to uint4.
+    // Use a mask to avoid std::overflow_error from to_ulong().
+    auto const uint_mask = bs128{ 0xffffffff };
     mask.s0 = (mask128 & uint_mask).to_ulong();
     mask128 >>= 32;
     mask.s1 = (mask128 & uint_mask).to_ulong();
