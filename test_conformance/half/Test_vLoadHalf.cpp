@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <cinttypes>
 
 #include "cl_utils.h"
 #include "tests.h"
@@ -157,7 +158,8 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
 
         char local_buf_size[10];
 
-        sprintf(local_buf_size, "%lld", (uint64_t)((effectiveVectorSize))*gWorkGroupSize);
+        sprintf(local_buf_size, "%" PRIu64,
+                (uint64_t)(effectiveVectorSize)*gWorkGroupSize);
         const char *source_local1[] = {
             "__kernel void test( const __global half *p, __global float *f )\n"
             "{\n"
@@ -522,10 +524,17 @@ int Test_vLoadHalf_private( cl_device_id device, bool aligned )
                             continue;
                         if( u1[j] != u2[j])
                         {
-                            vlog_error( " %lld)  (of %lld) Failure at 0x%4.4x:  %a vs *%a  (0x%8.8x vs *0x%8.8x)  vector_size = %d (%s) address space = %s, load is %s\n",
-                                       j, (uint64_t)count, ((unsigned short*)gIn_half)[j], f1[j], f2[j], u1[j], u2[j], (g_arrVecSizes[vectorSize]),
-                                       vector_size_names[vectorSize], addressSpaceNames[addressSpace],
-                                       (aligned?"aligned":"unaligned"));
+                            vlog_error(
+                                " %" PRId64
+                                ")  (of %u) Failure at 0x%4.4x:  %a vs *%a  "
+                                "(0x%8.8x vs *0x%8.8x)  vector_size = %d (%s) "
+                                "address space = %s, load is %s\n",
+                                j, count, ((unsigned short *)gIn_half)[j],
+                                f1[j], f2[j], u1[j], u2[j],
+                                (g_arrVecSizes[vectorSize]),
+                                vector_size_names[vectorSize],
+                                addressSpaceNames[addressSpace],
+                                (aligned ? "aligned" : "unaligned"));
                             gFailCount++;
                             error = -1;
                             goto exit;
