@@ -66,6 +66,11 @@ test_definition test_list[] = {
     ADD_TEST(finalize_empty),
     // Command-buffer negative tests
     ADD_TEST(negative_command_buffer_copy_image_queue_not_null),
+    ADD_TEST(negative_command_buffer_copy_image_context_not_same),
+    ADD_TEST(negative_command_buffer_copy_image_sync_points_null_or_num_zero),
+    ADD_TEST(negative_command_buffer_copy_image_invalid_command_buffer),
+    ADD_TEST(negative_command_buffer_copy_image_finalized_command_buffer),
+    ADD_TEST(negative_command_buffer_copy_image_mutable_handle_not_null),
     ADD_TEST(negative_get_command_buffer_info_invalid_command_buffer),
     ADD_TEST(negative_get_command_buffer_info_not_supported_param_name),
     ADD_TEST(negative_get_command_buffer_info_queues),
