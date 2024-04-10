@@ -338,16 +338,23 @@ struct CommandNDRangeKernelWithKernelEnqueueCall : public BasicCommandBufferTest
     bool Skip() override
     {
         bool has_device_enqueue = false;
-        bool cl_version_2_0 = false;
+        bool cl_version_2_0_or_higher = false;
 
         OpenCLCFeatures features;
         get_device_cl_c_features(device, features);
 
         const Version clc_version = get_device_cl_c_version(device);
-        if (clc_version >= Version(2, 0))
+        if (clc_version >= Version(3, 0))
         {
+            cl_std = "-cl-std=CL3.0";
             has_device_enqueue = features.supports__opencl_c_device_enqueue;
-            cl_version_2_0 = true;
+            cl_version_2_0_or_higher = true;
+        }
+        else if (clc_version >= Version(2, 0) && clc_version < Version(3, 0))
+        {
+            cl_std = "-cl-std=CL2.0";
+            has_device_enqueue = features.supports__opencl_c_device_enqueue;
+            cl_version_2_0_or_higher = true;
         }
 
         cl_device_command_buffer_capabilities_khr capabilities;
@@ -362,7 +369,7 @@ struct CommandNDRangeKernelWithKernelEnqueueCall : public BasicCommandBufferTest
              & CL_COMMAND_BUFFER_CAPABILITY_DEVICE_SIDE_ENQUEUE_KHR)
             != 0;
 
-        if (!cl_version_2_0 || !has_device_enqueue) return true;
+        if (!cl_version_2_0_or_higher || !has_device_enqueue) return true;
         return device_does_not_enqueue_call;
     }
 
@@ -382,9 +389,10 @@ enqueue_kernel(def_q, ndrange,
                    ^{enqueue_call_func();});
   }
 )";
+        std::string buildOptions = std::string(" ") + cl_std;
 
-        error = create_single_kernel_helper_create_program(context, &program, 1,
-                                                           &kernel_str);
+        error = create_single_kernel_helper_create_program(
+            context, &program, 1, &kernel_str, buildOptions.c_str());
         test_error(error, "Failed to create program with source");
 
         error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
@@ -449,6 +457,7 @@ enqueue_kernel(def_q, ndrange,
 
         return CL_SUCCESS;
     }
+    std::string cl_std = "";
 };
 };
 
