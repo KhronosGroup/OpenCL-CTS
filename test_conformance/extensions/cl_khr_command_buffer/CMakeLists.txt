@@ -18,6 +18,7 @@ set(${MODULE_NAME}_SOURCES
     command_buffer_finalize.cpp
     negative_command_buffer_finalize.cpp
     negative_command_buffer_retain_release.cpp
+    negative_command_buffer_get_info.cpp
 )
 
 set_gnulike_module_compile_flags("-Wno-sign-compare")

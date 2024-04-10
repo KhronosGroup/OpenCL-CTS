@@ -439,9 +439,12 @@ int test_fp_rounding(cl_device_id deviceID,
     {
         if (h_res[i] != h_out[i])
         {
-            log_error("Values do not match at location %d. Original :%lf, "
-                      "Expected: %ld, Found %ld\n",
-                      i, h_in[i], h_out[i], h_res[i]);
+            std::stringstream sstr;
+            sstr << "Values do not match at location " << i << ". "
+                 << "Original: " << h_in[i] << ", "
+                 << "Expected: " << h_out[i] << ", "
+                 << "Found: " << h_res[i];
+            log_error("%s\n", sstr.str().c_str());
             return -1;
         }
     }

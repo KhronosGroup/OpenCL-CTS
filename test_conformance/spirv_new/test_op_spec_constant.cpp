@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 
+#include <sstream>
+
 #include "testBase.h"
 #include "types.hpp"
 
@@ -63,8 +65,10 @@ int run_case(cl_device_id deviceID, cl_context context, cl_command_queue queue,
     use_spec_constant ? reference = final_value : reference = init_buffer;
     if (device_results != reference)
     {
-        log_error("Values do not match. Expected %d obtained %d\n", reference,
-                  device_results);
+        std::stringstream sstr;
+        sstr << "Values do not match. Expected " << reference << " obtained "
+             << device_results;
+        log_error("%s\n", sstr.str().c_str());
         err = -1;
     }
     return err;

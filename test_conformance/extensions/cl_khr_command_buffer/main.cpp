@@ -67,7 +67,14 @@ test_definition test_list[] = {
     ADD_TEST(negative_retain_command_buffer_invalid_command_buffer),
     ADD_TEST(negative_release_command_buffer_invalid_command_buffer),
     ADD_TEST(negative_finalize_command_buffer_invalid_command_buffer),
-    ADD_TEST(negative_finalize_command_buffer_not_recording_state)
+    ADD_TEST(negative_finalize_command_buffer_not_recording_state),
+    ADD_TEST(negative_get_command_buffer_info_invalid_command_buffer),
+    ADD_TEST(negative_get_command_buffer_info_not_supported_param_name),
+    ADD_TEST(negative_get_command_buffer_info_queues),
+    ADD_TEST(negative_get_command_buffer_info_ref_count),
+    ADD_TEST(negative_get_command_buffer_info_state),
+    ADD_TEST(negative_get_command_buffer_info_prop_array),
+    ADD_TEST(negative_get_command_buffer_info_context),
 };
 
 int main(int argc, const char *argv[])
