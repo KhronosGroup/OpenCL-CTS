@@ -26,22 +26,9 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
         : BasicCommandBufferTest(device, context, queue)
     {}
 
-    virtual cl_int SetUp(int elements) override
+    virtual cl_int SetUpKernel() override
     {
-        BasicCommandBufferTest::SetUp(elements);
-
-        cl_int error = init_extension_functions();
-        test_error(error, "Unable to initialise extension functions");
-
-        const cl_command_buffer_properties_khr props[] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR,
-            CL_COMMAND_BUFFER_MUTABLE_KHR,
-            0,
-        };
-
-        command_buffer = clCreateCommandBufferKHR(1, &queue, props, &error);
-        test_error(error, "Unable to create command buffer");
-
+        cl_int error = CL_SUCCESS;
         clProgramWrapper program = clCreateProgramWithSource(
             context, 1, &kernelString, nullptr, &error);
         test_error(error, "Unable to create program");
@@ -51,6 +38,37 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
 
         kernel = clCreateKernel(program, "empty", &error);
         test_error(error, "Unable to create kernel");
+
+        return CL_SUCCESS;
+    }
+
+    virtual cl_int SetUpKernelArgs() override
+    {
+        /* Left blank intentionally */
+        return CL_SUCCESS;
+    }
+
+    virtual cl_int SetUp(int elements) override
+    {
+        BasicCommandBufferTest::SetUp(elements);
+
+        cl_int error = init_extension_functions();
+        test_error(error, "Unable to initialise extension functions");
+
+        cl_command_buffer_properties_khr prop = CL_COMMAND_BUFFER_MUTABLE_KHR;
+        if (simultaneous_use_support)
+        {
+            prop |= CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
+        }
+
+        const cl_command_buffer_properties_khr props[] = {
+            CL_COMMAND_BUFFER_FLAGS_KHR,
+            prop,
+            0,
+        };
+
+        command_buffer = clCreateCommandBufferKHR(1, &queue, props, &error);
+        test_error(error, "Unable to create command buffer");
 
         return error;
     }

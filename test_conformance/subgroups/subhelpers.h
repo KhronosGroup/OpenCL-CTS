@@ -28,8 +28,6 @@
 #include <regex>
 #include <map>
 
-#define NR_OF_ACTIVE_WORK_ITEMS 4
-
 extern MTdata gMTdata;
 typedef std::bitset<128> bs128;
 extern cl_half_rounding_mode g_rounding_mode;
@@ -1474,8 +1472,6 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
 
         Fns::log_test(test_params, "");
 
-        kernel_sstr << "#define NR_OF_ACTIVE_WORK_ITEMS ";
-        kernel_sstr << NR_OF_ACTIVE_WORK_ITEMS << "\n";
         // Make sure a test of type Ty is supported by the device
         if (!TypeManager<Ty>::type_supported(device))
         {
