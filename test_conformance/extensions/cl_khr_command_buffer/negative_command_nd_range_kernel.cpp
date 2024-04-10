@@ -226,6 +226,13 @@ struct CommandNDRangeKernelMutableHandleNotNull : public BasicCommandBufferTest
 {
     using BasicCommandBufferTest::BasicCommandBufferTest;
 
+    bool Skip() override
+    {
+        return BasicCommandBufferTest::Skip()
+            || is_extension_available(device,
+                                      "cl_khr_command_buffer_mutable_dispatch");
+    }
+
     cl_int Run() override
     {
         cl_mutable_command_khr mutable_handle;
@@ -263,7 +270,7 @@ struct CommandNDRangeKernelNotSupportPrintf : public BasicCommandBufferTest
             (capabilities & CL_COMMAND_BUFFER_CAPABILITY_KERNEL_PRINTF_KHR)
             == 0;
 
-        return device_does_not_support_printf;
+        return !device_does_not_support_printf;
     }
 
     cl_int SetUpKernel() override
@@ -343,7 +350,7 @@ struct CommandNDRangeKernelWithKernelEnqueueCall : public BasicCommandBufferTest
         OpenCLCFeatures features;
         get_device_cl_c_features(device, features);
 
-        const Version clc_version = get_device_cl_c_version(device);
+        const Version clc_version = get_device_latest_cl_c_version(device);
         if (clc_version >= Version(3, 0))
         {
             cl_std = "-cl-std=CL3.0";
