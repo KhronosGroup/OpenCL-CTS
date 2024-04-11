@@ -853,7 +853,7 @@ clExternalImportableSemaphore::~clExternalImportableSemaphore()
     cl_int err = clReleaseSemaphoreKHRptr(m_externalSemaphore);
     if (err != CL_SUCCESS)
     {
-        throw std::runtime_error("clReleaseSemaphoreKHR failed!");
+        log_error("clReleaseSemaphoreKHR failed with %d\n", err);
     }
 }
 
@@ -935,7 +935,7 @@ clExternalExportableSemaphore::~clExternalExportableSemaphore()
     cl_int err = clReleaseSemaphoreKHRptr(m_externalSemaphore);
     if (err != CL_SUCCESS)
     {
-        throw std::runtime_error("clReleaseSemaphoreKHR failed!");
+        log_error("clReleaseSemaphoreKHR failed with %d\n", err);
     }
 }
 
