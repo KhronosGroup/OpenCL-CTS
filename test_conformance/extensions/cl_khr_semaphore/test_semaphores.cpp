@@ -604,16 +604,16 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
     cl_device_id capable_device = deviceID;
 
     err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, num_devices,
-                         &devices[0], nullptr);
+                         devices.data(), nullptr);
     test_error(err, "clGetDeviceIDs failed");
 
     // if possible use device other than the one from harness
-    for (size_t i = 0; i < devices.size(); ++i)
+    for (auto device : devices)
     {
-        if (deviceID != devices[i]
+        if (deviceID != device
             && is_extension_available(capable_device, "cl_khr_semaphore"))
         {
-            capable_device = devices[i];
+            capable_device = device;
             break;
         }
     }
