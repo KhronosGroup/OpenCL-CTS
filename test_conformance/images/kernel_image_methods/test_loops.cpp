@@ -34,6 +34,11 @@ extern int test_get_image_info_2D_array(cl_device_id device, cl_context context,
                                         cl_command_queue queue,
                                         cl_image_format *format,
                                         cl_mem_flags flags);
+extern int test_get_image_info_1D_buffer(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         cl_image_format *format,
+                                         cl_mem_flags flags);
 
 int test_image_type( cl_device_id device, cl_context context, cl_command_queue queue, cl_mem_object_type imageType, cl_mem_flags flags )
 {
@@ -84,6 +89,10 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
                 test_return = test_get_image_info_2D_array(
                     device, context, queue, &formatList[i], flags);
                 break;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+                test_return = test_get_image_info_1D_buffer(
+                    device, context, queue, &formatList[i], flags);
+                break;
         }
 
         if (test_return) {
@@ -109,6 +118,8 @@ int test_image_set( cl_device_id device, cl_context context, cl_command_queue qu
         switch (imageType) {
             case CL_MEM_OBJECT_IMAGE1D:
             test_missing_feature(version_check, "image_1D");
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+                test_missing_feature(version_check, "image_1D_buffer");
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
             test_missing_feature(version_check, "image_1D_array");
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
