@@ -125,8 +125,8 @@ struct CommandNDRangeKerneSyncPointsNullOrNumZero
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
-        cl_sync_point_khr* invalid_point = nullptr;
-        cl_sync_point_khr* invalid_sync_points[] = { invalid_point };
+        cl_sync_point_khr invalid_point = 0;
+        cl_sync_point_khr* invalid_sync_points[] = { &invalid_point };
         error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, nullptr, kernel, 0, nullptr, &num_elements,
             nullptr, 0, invalid_sync_points[0], nullptr, nullptr);
