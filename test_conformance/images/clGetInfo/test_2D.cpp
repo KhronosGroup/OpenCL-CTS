@@ -19,6 +19,7 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
 {
     int error;
     clMemWrapper image;
+    clMemWrapper buffer;
     cl_image_desc imageDesc;
     void *host_ptr = NULL;
 
@@ -69,6 +70,24 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
             if ( gDebugTrace )
                 log_info( " - Creating 2D image array %d by %d by %d with flags=0x%lx row_pitch=%d slice_pitch=%d host_ptr=%p...\n", (int)imageInfo->width, (int)imageInfo->height, (int)imageInfo->arraySize, (unsigned long)flags, (int)row_pitch, (int)slice_pitch, host_ptr );
             break;
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+            if (gDebugTrace)
+                log_info(" - Creating 1D buffer image %d with flags=0x%lx "
+                         "row_pitch=%d slice_pitch=%d host_ptr=%p...\n",
+                         (int)imageInfo->width, (unsigned long)flags,
+                         (int)row_pitch, (int)slice_pitch, host_ptr);
+            int err;
+            buffer = clCreateBuffer(context, flags, imageInfo->rowPitch,
+                                    host_ptr, &err);
+            if (err != CL_SUCCESS)
+            {
+                log_error("ERROR: Unable to create buffer for 1D image buffer "
+                          "of size %d (%s)",
+                          (int)imageInfo->rowPitch, IGetErrorString(err));
+                return -1;
+            }
+            imageDesc.buffer = imageInfo->buffer = buffer;
+            break;
     }
 
     image = clCreateImage(context, flags, imageInfo->format, &imageDesc, host_ptr, &error);
@@ -91,6 +110,11 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
                 break;
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
                 log_error( "ERROR: Unable to create 2D image array of size %d x %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->height, (int)imageInfo->arraySize, IGetErrorString( error ) );
+                break;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+                log_error(
+                    "ERROR: Unable to create 1D image buffer of size %d (%s)",
+                    (int)imageInfo->width, IGetErrorString(error));
                 break;
         }
         return -1;
@@ -148,6 +172,7 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
   switch (imageInfo->type)
   {
     case CL_MEM_OBJECT_IMAGE1D:
+    case CL_MEM_OBJECT_IMAGE1D_BUFFER:
     case CL_MEM_OBJECT_IMAGE1D_ARRAY:
       required_height = 0;
       break;
@@ -175,8 +200,7 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
     case CL_MEM_OBJECT_IMAGE2D:
     case CL_MEM_OBJECT_IMAGE1D_ARRAY:
     case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-      required_depth = 0;
-      break;
+    case CL_MEM_OBJECT_IMAGE1D_BUFFER: required_depth = 0; break;
     case CL_MEM_OBJECT_IMAGE3D:
       required_depth = imageInfo->depth;
       break;
@@ -198,8 +222,7 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
     case CL_MEM_OBJECT_IMAGE1D:
     case CL_MEM_OBJECT_IMAGE2D:
     case CL_MEM_OBJECT_IMAGE3D:
-      required_array_size = 0;
-      break;
+    case CL_MEM_OBJECT_IMAGE1D_BUFFER: required_array_size = 0; break;
     case CL_MEM_OBJECT_IMAGE1D_ARRAY:
     case CL_MEM_OBJECT_IMAGE2D_ARRAY:
       required_array_size = imageInfo->arraySize;
