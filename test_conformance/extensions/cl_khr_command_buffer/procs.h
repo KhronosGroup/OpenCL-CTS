@@ -156,6 +156,25 @@ extern int test_negative_command_buffer_barrier_mutable_handle_not_null(
 extern int test_negative_command_buffer_barrier_sync_points_null_or_num_zero(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
+extern int test_negative_create_command_buffer_num_queues(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_create_command_buffer_null_queues(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_create_command_buffer_repeated_properties(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_create_command_buffer_not_supported_properties(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_create_command_buffer_queue_without_min_properties(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int
+test_negative_create_command_buffer_device_does_not_support_out_of_order_queue(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
 extern int test_negative_get_command_buffer_info_invalid_command_buffer(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
@@ -180,5 +199,6 @@ extern int test_negative_get_command_buffer_info_context(cl_device_id device,
                                                          cl_context context,
                                                          cl_command_queue queue,
                                                          int num_elements);
+
 
 #endif // CL_KHR_COMMAND_BUFFER_PROCS_H
