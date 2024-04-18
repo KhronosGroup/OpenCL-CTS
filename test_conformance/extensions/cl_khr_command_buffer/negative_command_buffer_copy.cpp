@@ -72,12 +72,7 @@ struct CommandBufferCopyQueueNotNull : public BasicCommandBufferTest
 // command_buffer, src_buffer, and dst_buffer are not the same.
 struct CommandBufferCopyDifferentContexts : public BasicCommandBufferTest
 {
-    CommandBufferCopyDifferentContexts(cl_device_id device, cl_context context,
-                                       cl_command_queue queue)
-        : BasicCommandBufferTest(device, context, queue), in_mem_ctx(nullptr),
-          out_mem_ctx(nullptr), image_ctx(nullptr), buffer_ctx(nullptr),
-          image(nullptr), buffer(nullptr), context1(nullptr)
-    {}
+    using BasicCommandBufferTest::BasicCommandBufferTest;
 
     cl_int SetUp(int elements) override
     {
@@ -178,13 +173,13 @@ struct CommandBufferCopyDifferentContexts : public BasicCommandBufferTest
 
         return CL_SUCCESS;
     }
-    clMemWrapper in_mem_ctx;
-    clMemWrapper out_mem_ctx;
-    clMemWrapper image_ctx;
-    clMemWrapper buffer_ctx;
-    clMemWrapper image;
-    clMemWrapper buffer;
-    clContextWrapper context1;
+    clMemWrapper in_mem_ctx = nullptr;
+    clMemWrapper out_mem_ctx = nullptr;
+    clMemWrapper image_ctx = nullptr;
+    clMemWrapper buffer_ctx = nullptr;
+    clMemWrapper image = nullptr;
+    clMemWrapper buffer = nullptr;
+    clContextWrapper context1 = nullptr;
 };
 
 // CL_INVALID_SYNC_POINT_WAIT_LIST_KHR if sync_point_wait_list is NULL and
