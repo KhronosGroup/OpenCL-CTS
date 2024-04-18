@@ -641,7 +641,9 @@ int test_enqueue_block(cl_device_id device, cl_context context, cl_command_queue
         if (!gKernelName.empty() && gKernelName != sources_enqueue_block[i].kernel_name)
             continue;
 
-        log_info("Running '%s' kernel (%d of %d) ...\n", sources_enqueue_block[i].kernel_name, i + 1, num_kernels_enqueue_block);
+        log_info("Running '%s' kernel (%d of %zu) ...\n",
+                 sources_enqueue_block[i].kernel_name, i + 1,
+                 num_kernels_enqueue_block);
         err_ret = run_n_kernel_args(context, queue, sources_enqueue_block[i].lines, sources_enqueue_block[i].num_lines, sources_enqueue_block[i].kernel_name, local_size, global_size, kernel_results, sizeof(kernel_results), 0, NULL);
         if(check_error(err_ret, "'%s' kernel execution failed", sources_enqueue_block[i].kernel_name)) { ++failCnt; res = -1; }
         else if((n = check_kernel_results(kernel_results, arr_size(kernel_results))) >= 0 && check_error(-1, "'%s' kernel results validation failed: [%d] returned %d expected 0", sources_enqueue_block[i].kernel_name, n, kernel_results[n])) res = -1;
@@ -650,7 +652,8 @@ int test_enqueue_block(cl_device_id device, cl_context context, cl_command_queue
 
     if (failCnt > 0)
     {
-      log_error("ERROR: %d of %d kernels failed.\n", failCnt, num_kernels_enqueue_block);
+        log_error("ERROR: %zu of %zu kernels failed.\n", failCnt,
+                  num_kernels_enqueue_block);
     }
 
     return res;
