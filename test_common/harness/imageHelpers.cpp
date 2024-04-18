@@ -769,10 +769,14 @@ void get_max_sizes(
 
     (*numberOfSizes) = 0;
 
-    if (image_type == CL_MEM_OBJECT_IMAGE1D)
+    if (image_type == CL_MEM_OBJECT_IMAGE1D
+        || image_type == CL_MEM_OBJECT_IMAGE1D_BUFFER)
     {
 
         size_t M = maximum_sizes[0];
+        size_t A = max_pixels;
+
+        M = static_cast<size_t>(fmax(1, fmin(A / M, M)));
 
         // Store the size
         sizes[(*numberOfSizes)][0] = M;
@@ -860,6 +864,7 @@ void get_max_sizes(
     {
         switch (image_type)
         {
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D:
                 log_info(" size[%d] = [%zu] (%g MB image)\n", j, sizes[j][0],
                          raw_pixel_size * sizes[j][0] * sizes[j][1]
@@ -1080,6 +1085,7 @@ cl_ulong get_image_size(image_descriptor const *imageInfo)
     {
         switch (imageInfo->type)
         {
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D: imageSize = imageInfo->rowPitch; break;
             case CL_MEM_OBJECT_IMAGE2D:
                 imageSize = imageInfo->height * imageInfo->rowPitch;
@@ -2317,6 +2323,7 @@ int debug_find_vector_in_image(void *imagePtr, image_descriptor *imageInfo,
 
     switch (imageInfo->type)
     {
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
         case CL_MEM_OBJECT_IMAGE1D:
             width = (imageInfo->width >> lod) ? (imageInfo->width >> lod) : 1;
             height = 1;
@@ -3513,6 +3520,7 @@ void copy_image_data(image_descriptor *srcImageInfo,
 
         switch (srcImageInfo->type)
         {
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D:
                 src_lod = sourcePos[1];
                 sourcePos_lod[1] = sourcePos_lod[2] = 0;
@@ -3558,6 +3566,7 @@ void copy_image_data(image_descriptor *srcImageInfo,
         size_t dst_height_lod = 1 /*dstImageInfo->height*/;
         switch (dstImageInfo->type)
         {
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D:
                 dst_lod = destPos[1];
                 destPos_lod[1] = destPos_lod[2] = 0;
@@ -4022,6 +4031,7 @@ cl_ulong compute_mipmapped_image_size(image_descriptor imageInfo)
                 retSize += (cl_ulong)curr_width * curr_height
                     * get_pixel_size(imageInfo.format);
                 break;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D:
                 retSize +=
                     (cl_ulong)curr_width * get_pixel_size(imageInfo.format);
@@ -4043,6 +4053,7 @@ cl_ulong compute_mipmapped_image_size(image_descriptor imageInfo)
             case CL_MEM_OBJECT_IMAGE2D:
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
                 curr_height = curr_height >> 1 ? curr_height >> 1 : 1;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D:
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
                 curr_width = curr_width >> 1 ? curr_width >> 1 : 1;
@@ -4080,6 +4091,7 @@ size_t compute_mip_level_offset(image_descriptor *imageInfo, size_t lod)
                 retOffset +=
                     (size_t)width * height * get_pixel_size(imageInfo->format);
                 break;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D:
                 retOffset += (size_t)width * get_pixel_size(imageInfo->format);
                 break;
@@ -4092,6 +4104,7 @@ size_t compute_mip_level_offset(image_descriptor *imageInfo, size_t lod)
             case CL_MEM_OBJECT_IMAGE2D:
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
                 height = (height >> 1) ? (height >> 1) : 1;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
             case CL_MEM_OBJECT_IMAGE1D: width = (width >> 1) ? (width >> 1) : 1;
         }

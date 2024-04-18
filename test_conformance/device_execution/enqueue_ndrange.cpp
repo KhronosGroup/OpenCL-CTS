@@ -700,7 +700,9 @@ int test_enqueue_ndrange(cl_device_id device, cl_context context, cl_command_que
             { sizeof(cl_mem), &mem4 },
         };
 
-        log_info("Running '%s' kernel (%d of %d) ...\n",  sources_ndrange_Xd[i].src.kernel_name, i + 1, num_kernels_ndrange_Xd);
+        log_info("Running '%s' kernel (%d of %zu) ...\n",
+                 sources_ndrange_Xd[i].src.kernel_name, i + 1,
+                 num_kernels_ndrange_Xd);
         err_ret = run_single_kernel_args(context, queue, sources_ndrange_Xd[i].src.lines, sources_ndrange_Xd[i].src.num_lines, sources_ndrange_Xd[i].src.kernel_name, kernel_results, sizeof(kernel_results), arr_size(args), args);
 
         cl_int *ptr = (cl_int *)clEnqueueMapBuffer(queue, mem3, CL_TRUE, CL_MAP_READ, 0, glob_results.size() * sizeof(cl_int), 0, 0, 0, &err_ret);
@@ -718,7 +720,8 @@ int test_enqueue_ndrange(cl_device_id device, cl_context context, cl_command_que
 
     if (failCnt > 0)
     {
-        log_error("ERROR: %d of %d kernels failed.\n", failCnt, num_kernels_ndrange_Xd);
+        log_error("ERROR: %zu of %zu kernels failed.\n", failCnt,
+                  num_kernels_ndrange_Xd);
     }
 
     return res;
