@@ -472,8 +472,13 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
     // cleanup
     free(data);
     free(kernel_code);
-    for(i=0; i<num_of_supported_extensions; i++) {
-      free(extensions_supported[i]);
+    for (i = 0; i < num_of_supported_extensions; i++)
+    {
+        free(extensions_supported[i]);
+    }
+    for (i = 0; i < num_not_supported_extensions; i++)
+    {
+        free(extensions_not_supported[i]);
     }
     free(extensions);
 
