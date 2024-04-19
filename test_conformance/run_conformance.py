@@ -19,6 +19,7 @@ import tempfile
 
 DEBUG = 0
 retry=0
+RETRY_COUNT=3
 
 
 log_file_name = "opencl_conformance_results_" + time.strftime("%Y-%m-%d_%H-%M", time.localtime()) + ".log"
@@ -269,7 +270,6 @@ def run_tests(tests):
 
         print("")
         if result != 0:
-            #retry once again for failures
             log_file.write("  *******************************************************************************************\n")
             log_file.write("  *  (" + get_time() + ")     Test " + test_name + " ==> FAILED: " + str(result) + "\n")
             log_file.write("  *******************************************************************************************\n")
@@ -367,9 +367,9 @@ for device_to_test in devices_to_test:
     else:
         write_screen_log(">> TEST on " + device_to_test + " FAILED (" + str(failures) + " FAILURES)")
         write_screen_log("Failed tests are"+ str(failed_tests))
-        #if retry <2 then retry the failed tests
+        #if retry < RETRY_COUNT then retry the failed tests
         write_screen_log("Retrying failed tests")
-        if retry < 2:
+        if retry < RETRY_COUNT:
                 failures,failed_tests = run_tests(failed_tests)
                 retry=retry+1
                 
