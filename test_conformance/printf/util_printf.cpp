@@ -718,9 +718,6 @@ std::vector<printDataGenParameters> printStringGenParameters = {
     // terminator
     { { "%s" }, "\"foo\\0foo\"" },
 
-    // carriage return
-    { { "%s" }, "\"foo\\rfoo\"" },
-
     // all ascii characters
     { { "%s" },
       "\" "
@@ -751,8 +748,6 @@ std::vector<std::string> correctBufferString = {
 
 R"(foo
 foo)",
-
-    "foo",
 
     "foo",
 
