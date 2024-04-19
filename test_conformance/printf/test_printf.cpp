@@ -162,12 +162,13 @@ static void getAnalysisBuffer(char* analysisBuffer)
     FILE *fp;
     memset(analysisBuffer,0,ANALYSIS_BUFFER_SIZE);
 
-    fp = fopen(gFileName,"r");
-    if(NULL == fp)
+    fp = fopen(gFileName, "r");
+    if (NULL == fp)
         log_error("Failed to open analysis buffer ('%s')\n", strerror(errno));
-    else
-        std::fread(analysisBuffer, sizeof(analysisBuffer[0]),
-                   ANALYSIS_BUFFER_SIZE, fp);
+    else if (0
+             == std::fread(analysisBuffer, sizeof(analysisBuffer[0]),
+                           ANALYSIS_BUFFER_SIZE, fp))
+        log_error("Failed to read analysis buffer\n");
 
     fclose(fp);
 }
