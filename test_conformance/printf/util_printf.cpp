@@ -1090,7 +1090,7 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
     if(pTestCase->_type == TYPE_ADDRESS_SPACE && strcmp(pTestCase->_genParameters[testId].addrSpacePAdd,""))
 
     {
-        char analysisBufferTmp[ANALYSIS_BUFFER_SIZE];
+        char analysisBufferTmp[ANALYSIS_BUFFER_SIZE+1];
 
         if(strstr(analysisBuffer,"0x") == NULL)
         // Need to prepend 0x to ASCII number before calling strtol.
