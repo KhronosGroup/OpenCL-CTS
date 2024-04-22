@@ -141,19 +141,16 @@ extern int test_finalize_invalid(cl_device_id device, cl_context context,
 extern int test_finalize_empty(cl_device_id device, cl_context context,
                                cl_command_queue queue, int num_elements);
 // Command-buffer negative tests
-extern int test_negative_command_buffer_barrier_not_null_queue(
+extern int test_negative_retain_command_buffer_invalid_command_buffer(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
-extern int test_negative_command_buffer_barrier_invalid_command_buffer(
+extern int test_negative_release_command_buffer_invalid_command_buffer(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
-extern int test_negative_command_buffer_barrier_buffer_finalized(
+extern int test_negative_finalize_command_buffer_invalid_command_buffer(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
-extern int test_negative_command_buffer_barrier_mutable_handle_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements);
-extern int test_negative_command_buffer_barrier_sync_points_null_or_num_zero(
+extern int test_negative_finalize_command_buffer_not_recording_state(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
 extern int test_negative_create_command_buffer_num_queues(
@@ -199,6 +196,54 @@ extern int test_negative_get_command_buffer_info_context(cl_device_id device,
                                                          cl_context context,
                                                          cl_command_queue queue,
                                                          int num_elements);
+extern int test_negative_command_buffer_barrier_not_null_queue(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_command_buffer_barrier_invalid_command_buffer(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_command_buffer_barrier_buffer_finalized(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_command_buffer_barrier_mutable_handle_not_null(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_command_buffer_barrier_sync_points_null_or_num_zero(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_enqueue_command_buffer_invalid_command_buffer(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_enqueue_command_buffer_not_finalized(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int
+test_negative_enqueue_command_buffer_without_simultaneous_no_pending_state(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_enqueue_command_buffer_null_queues_num_queues(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int
+test_negative_enqueue_command_buffer_num_queues_not_zero_different_while_buffer_creation(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_enqueue_command_buffer_not_valid_queue_in_queues(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_enqueue_queue_not_compatible(cl_device_id device,
+                                                      cl_context context,
+                                                      cl_command_queue queue,
+                                                      int num_elements);
+extern int test_negative_enqueue_queue_with_different_context(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_enqueue_command_buffer_different_context_than_event(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_enqueue_event_wait_list_null_or_events_null(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
 
 
 #endif // CL_KHR_COMMAND_BUFFER_PROCS_H
