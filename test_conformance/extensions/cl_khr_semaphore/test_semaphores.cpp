@@ -83,7 +83,7 @@ static int semaphore_cross_queue_helper(cl_device_id deviceID,
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -142,7 +142,7 @@ int test_semaphores_simple_1(cl_device_id deviceID, cl_context context,
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -204,7 +204,7 @@ int test_semaphores_simple_2(cl_device_id deviceID, cl_context context,
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -296,7 +296,7 @@ int test_semaphores_reuse(cl_device_id deviceID, cl_context context,
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -439,7 +439,7 @@ int test_semaphores_multi_signal(cl_device_id deviceID, cl_context context,
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -515,7 +515,7 @@ int test_semaphores_multi_wait(cl_device_id deviceID, cl_context context,
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -621,7 +621,7 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
     if (deviceID == capable_device
         && !is_extension_available(capable_device, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -696,7 +696,7 @@ int test_semaphores_import_export_fd(cl_device_id deviceID, cl_context context,
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -704,7 +704,7 @@ int test_semaphores_import_export_fd(cl_device_id deviceID, cl_context context,
     if (!is_extension_available(deviceID, "cl_khr_external_semaphore_sync_fd"))
     {
         log_info("cl_khr_external_semaphore_sync_fd is not supported on this "
-                 "platoform. Skipping test.\n");
+                 "platform. Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
 
