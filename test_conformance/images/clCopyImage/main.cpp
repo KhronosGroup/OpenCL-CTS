@@ -45,6 +45,21 @@ int test_3D(cl_device_id device, cl_context context, cl_command_queue queue, int
 {
     return test_image_set( device, context, queue, k3D );
 }
+int test_1Dbuffer(cl_device_id device, cl_context context,
+                  cl_command_queue queue, int num_elements)
+{
+    return test_image_set(device, context, queue, k1DBuffer);
+}
+int test_1DTo1Dbuffer(cl_device_id device, cl_context context,
+                      cl_command_queue queue, int num_elements)
+{
+    return test_image_set(device, context, queue, k1DTo1DBuffer);
+}
+int test_1DbufferTo1D(cl_device_id device, cl_context context,
+                      cl_command_queue queue, int num_elements)
+{
+    return test_image_set(device, context, queue, k1DBufferTo1D);
+}
 int test_1Darray(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
 {
     return test_image_set( device, context, queue, k1DArray );
@@ -79,17 +94,11 @@ int test_3Dto2Darray(cl_device_id device, cl_context context, cl_command_queue q
 }
 
 test_definition test_list[] = {
-    ADD_TEST( 1D ),
-    ADD_TEST( 2D ),
-    ADD_TEST( 3D ),
-    ADD_TEST( 1Darray ),
-    ADD_TEST( 2Darray ),
-    ADD_TEST( 2Dto3D ),
-    ADD_TEST( 3Dto2D ),
-    ADD_TEST( 2Darrayto2D ),
-    ADD_TEST( 2Dto2Darray ),
-    ADD_TEST( 2Darrayto3D ),
-    ADD_TEST( 3Dto2Darray ),
+    ADD_TEST(1D),           ADD_TEST(2D),           ADD_TEST(3D),
+    ADD_TEST(1Darray),      ADD_TEST(2Darray),      ADD_TEST(2Dto3D),
+    ADD_TEST(3Dto2D),       ADD_TEST(2Darrayto2D),  ADD_TEST(2Dto2Darray),
+    ADD_TEST(2Darrayto3D),  ADD_TEST(3Dto2Darray),  ADD_TEST(1Dbuffer),
+    ADD_TEST(1DTo1Dbuffer), ADD_TEST(1DbufferTo1D),
 };
 
 const int test_num = ARRAY_SIZE( test_list );

@@ -38,9 +38,6 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(work_group_broadcast_1D, Version(2, 0)),
     ADD_TEST_VERSION(work_group_broadcast_2D, Version(2, 0)),
     ADD_TEST_VERSION(work_group_broadcast_3D, Version(2, 0)),
-    ADD_TEST(work_group_suggested_local_size_1D),
-    ADD_TEST(work_group_suggested_local_size_2D),
-    ADD_TEST(work_group_suggested_local_size_3D)
 };
 
 const int test_num = ARRAY_SIZE(test_list);

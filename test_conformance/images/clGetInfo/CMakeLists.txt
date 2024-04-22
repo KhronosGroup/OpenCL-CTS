@@ -7,6 +7,7 @@ set(${MODULE_NAME}_SOURCES
     test_2D.cpp
     test_loops.cpp
     test_3D.cpp
+    test_1D_buffer.cpp
     ../common.cpp
 )
 
