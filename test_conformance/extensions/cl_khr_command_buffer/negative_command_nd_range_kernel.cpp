@@ -114,7 +114,12 @@ struct CommandNDRangeKerneSyncPointsNullOrNumZero
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
-        cl_sync_point_khr point = 1;
+
+        cl_sync_point_khr point = 0;
+        error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
+                                                nullptr, &point, nullptr);
+        test_error(error, "clCommandBarrierWithWaitListKHR failed");
+
         cl_sync_point_khr* sync_points[] = { &point };
         error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, nullptr, kernel, 0, nullptr, &num_elements,
@@ -168,7 +173,7 @@ struct CommandNDRangeKernelInvalidProperties : public BasicCommandBufferTest
 
     cl_int Run() override
     {
-        cl_ndrange_kernel_command_properties_khr empty_properties;
+        cl_ndrange_kernel_command_properties_khr empty_properties = 0;
 
         cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, &empty_properties, kernel, 1, nullptr,
@@ -284,15 +289,10 @@ __kernel void printf_kernel() {
   }
 )";
 
-        error = create_single_kernel_helper_create_program(context, &program, 1,
-                                                           &kernel_str);
-        test_error(error, "Failed to create program with source");
-
-        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-        test_error(error, "Failed to build program");
-
-        kernel = clCreateKernel(program, "printf_kernel", &error);
-        test_error(error, "Failed to create printf_kernel kernel");
+        error = build_program_create_kernel_helper(context, &program, &kernel,
+                                                   1, &kernel_str,
+                                                   "printf_kernel", nullptr);
+        test_error(error, "build_program_create_kernel_helper failed");
 
         return CL_SUCCESS;
     }
@@ -371,13 +371,13 @@ struct CommandNDRangeKernelWithKernelEnqueueCall : public BasicCommandBufferTest
         test_error(error,
                    "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
 
-        bool device_does_not_enqueue_call =
+        bool device_does_support_enqueue_call =
             (capabilities
              & CL_COMMAND_BUFFER_CAPABILITY_DEVICE_SIDE_ENQUEUE_KHR)
             != 0;
 
         if (!cl_version_2_0_or_higher || !has_device_enqueue) return true;
-        return device_does_not_enqueue_call;
+        return device_does_support_enqueue_call;
     }
 
     cl_int SetUpKernel() override
@@ -396,17 +396,12 @@ enqueue_kernel(def_q, ndrange,
                    ^{enqueue_call_func();});
   }
 )";
-        std::string buildOptions = std::string(" ") + cl_std;
+        std::string build_options = std::string(" ") + cl_std;
 
-        error = create_single_kernel_helper_create_program(
-            context, &program, 1, &kernel_str, buildOptions.c_str());
-        test_error(error, "Failed to create program with source");
-
-        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-        test_error(error, "Failed to build program");
-
-        kernel = clCreateKernel(program, "enqueue_call_kernel", &error);
-        test_error(error, "Failed to create enqueue_call_kernel kernel");
+        error = build_program_create_kernel_helper(
+            context, &program, &kernel, 1, &kernel_str, "enqueue_call_kernel",
+            build_options.c_str());
+        test_error(error, "build_program_create_kernel_helper failed");
 
         return CL_SUCCESS;
     }
