@@ -611,7 +611,7 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
     for (auto device : devices)
     {
         if (deviceID != device
-            && is_extension_available(capable_device, "cl_khr_semaphore"))
+            && is_extension_available(device, "cl_khr_semaphore"))
         {
             capable_device = device;
             break;
