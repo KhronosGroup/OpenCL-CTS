@@ -39,10 +39,10 @@ public:
          // Create a GLUT window to render into
          if (!m_glut_init)
          {
-             glutInit( argc, argv );
-             glutInitWindowSize( 512, 512 );
-             glutInitDisplayMode( GLUT_RGB | GLUT_DOUBLE );
-             glutCreateWindow( "OpenCL <-> OpenGL Test" );
+             glutInit(argc, argv);
+             glutInitWindowSize(512, 512);
+             glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
+             glutCreateWindow("OpenCL <-> OpenGL Test");
              glewInit();
              m_glut_init = true;
          }
