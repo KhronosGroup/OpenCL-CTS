@@ -415,7 +415,7 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
     test_error( error, "Error obtaining device name" );
 
 #if !(defined(_WIN32) && defined(_MSC_VER))
-    char device_name[param_size];
+    char* device_name = new char[param_size];
 #else
     char* device_name = (char*)_malloca(param_size);
 #endif
@@ -453,7 +453,9 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
     test_error( error, "Unable to get secondary device's address alignment" );
 
     cl_uint addressAlign1 = std::max(addressAlign1Bits, addressAlign2Bits) / 8;
-
+#if !(defined (_WIN32) && defined (_MSC_VER))
+    delete [] device_name;
+#endif
     // Finally time to run!
     return test_sub_buffers_read_write_core( testingContext, queue1, queue2, maxBuffer1, addressAlign1 );
 }
