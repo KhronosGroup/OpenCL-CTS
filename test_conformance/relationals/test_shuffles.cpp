@@ -624,7 +624,8 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
     std::vector<cl_long> outData(outRealVecSize * numOrders * sizeof(cl_long));
 
     outData.clear();
-    generate_random_data( vecType, (unsigned int)( numOrders * inVecSize ), d, inData.data() );
+    generate_random_data(vecType, (unsigned int)(numOrders * inVecSize), d,
+                         inData.data());
     if( shuffleMode == kBuiltInDualInputFnMode )
         generate_random_data( vecType, (unsigned int)( numOrders * inVecSize ), d, inSecondData.data() );
 
@@ -633,9 +634,9 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
                        typeSize * inVecSize * numOrders, inData.data(), &error);
     test_error( error, "Unable to create input stream" );
 
-    streams[1] =
-        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                       typeSize * outRealVecSize * numOrders, outData.data(), &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                typeSize * outRealVecSize * numOrders,
+                                outData.data(), &error);
     test_error( error, "Unable to create output stream" );
 
     int argIndex = 0;
@@ -668,7 +669,9 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
 
 
     // Read the results back
-    error = clEnqueueReadBuffer( queue, streams[ 1 ], CL_TRUE, 0, typeSize * numOrders * outRealVecSize, outData.data(), 0, NULL, NULL );
+    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0,
+                                typeSize * numOrders * outRealVecSize,
+                                outData.data(), 0, NULL, NULL);
     test_error( error, "Unable to read results" );
 
     unsigned char *inDataPtr = (unsigned char *)inData.data();

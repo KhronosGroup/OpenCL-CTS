@@ -46,7 +46,8 @@ int test_native_kernel(cl_device_id device, cl_context context, cl_command_queue
     }
 
     clMemWrapper streams[ 2 ];
-    std::vector<cl_int> inBuffer(n_elems * sizeof(cl_int)), outBuffer(n_elems * sizeof(cl_int));
+    std::vector<cl_int> inBuffer(n_elems * sizeof(cl_int)),
+        outBuffer(n_elems * sizeof(cl_int));
     clEventWrapper finishEvent;
 
     struct arg_struct
@@ -58,11 +59,12 @@ int test_native_kernel(cl_device_id device, cl_context context, cl_command_queue
 
 
     // Create some input values
-    generate_random_data( kInt, n_elems, seed, inBuffer.data() );
-
+    generate_random_data(kInt, n_elems, seed, inBuffer.data());
 
     // Create I/O streams
-    streams[ 0 ] = clCreateBuffer( context, CL_MEM_COPY_HOST_PTR, n_elems * sizeof(cl_int), inBuffer.data(), &error );
+    streams[0] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, n_elems * sizeof(cl_int),
+                       inBuffer.data(), &error);
     test_error( error, "Unable to create I/O stream" );
     streams[ 1 ] = clCreateBuffer( context, 0, n_elems * sizeof(cl_int), NULL, &error );
     test_error( error, "Unable to create I/O stream" );
@@ -92,15 +94,19 @@ int test_native_kernel(cl_device_id device, cl_context context, cl_command_queue
     test_error(error, "clWaitForEvents failed");
 
     // Now read the results and verify
-    error = clEnqueueReadBuffer( queue, streams[ 1 ], CL_TRUE, 0, n_elems * sizeof(cl_int), outBuffer.data(), 0, NULL, NULL );
+    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0,
+                                n_elems * sizeof(cl_int), outBuffer.data(), 0,
+                                NULL, NULL);
     test_error( error, "Unable to read results" );
 
     for( int i = 0; i < n_elems; i++ )
     {
-        if( inBuffer[ i * sizeof(cl_int) ] != outBuffer[ i * sizeof(cl_int) ] )
+        if (inBuffer[i * sizeof(cl_int)] != outBuffer[i * sizeof(cl_int)])
         {
-            log_error( "ERROR: Data sample %d for native kernel did not validate (expected %d, got %d)\n",
-                      i, (int)inBuffer[ i * sizeof(cl_int) ], (int)outBuffer[ i * sizeof(cl_int) ] );
+            log_error("ERROR: Data sample %d for native kernel did not "
+                      "validate (expected %d, got %d)\n",
+                      i, (int)inBuffer[i * sizeof(cl_int)],
+                      (int)outBuffer[i * sizeof(cl_int)]);
             return 1;
         }
     }

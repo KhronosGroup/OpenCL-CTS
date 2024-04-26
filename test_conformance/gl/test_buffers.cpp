@@ -127,7 +127,8 @@ int test_buffer_kernel(cl_context context, cl_command_queue queue,
     clKernelWrapper kernel;
     clMemWrapper streams[3];
     size_t dataSize = numElements * 16 * sizeof(cl_long);
-    std::vector<cl_long> inData(dataSize), outDataCL(dataSize), outDataGL(dataSize);
+    std::vector<cl_long> inData(dataSize), outDataCL(dataSize),
+        outDataGL(dataSize);
 
     glBufferWrapper inGLBuffer, outGLBuffer;
     int i;

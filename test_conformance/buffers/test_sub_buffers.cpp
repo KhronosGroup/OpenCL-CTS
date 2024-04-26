@@ -419,7 +419,8 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
     error = clGetDeviceInfo(otherDevice, CL_DEVICE_NAME, param_size, &device_name[0], NULL );
     test_error( error, "Error obtaining device name" );
 
-    log_info( "\tOther device obtained for dual device test is type %s\n", device_name.data() );
+    log_info("\tOther device obtained for dual device test is type %s\n",
+             device_name.data());
 
     // Create a shared context for these two devices
     cl_device_id devices[ 2 ] = { deviceID, otherDevice };
