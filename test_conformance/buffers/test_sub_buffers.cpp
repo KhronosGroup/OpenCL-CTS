@@ -453,7 +453,7 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
     test_error( error, "Unable to get secondary device's address alignment" );
 
     cl_uint addressAlign1 = std::max(addressAlign1Bits, addressAlign2Bits) / 8;
-#if !(defined (_WIN32) && defined (_MSC_VER))
+#if !(defined(_WIN32) && defined(_MSC_VER))
     delete[] device_name;
 #endif
     // Finally time to run!

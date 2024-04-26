@@ -47,8 +47,8 @@ int test_native_kernel(cl_device_id device, cl_context context, cl_command_queue
 
     clMemWrapper streams[ 2 ];
 #if !(defined (_WIN32) && defined (_MSC_VER))
-    cl_int* inBuffer = new cl_int[n_elems * sizeof(cl_int)];
-    cl_int* outBuffer = new cl_int[n_elems * sizeof(cl_int)];
+    cl_int *inBuffer = new cl_int[n_elems * sizeof(cl_int)];
+    cl_int *outBuffer = new cl_int[n_elems * sizeof(cl_int)];
 #else
     cl_int* inBuffer  = (cl_int *)_malloca( n_elems * sizeof(cl_int) );
     cl_int* outBuffer = (cl_int *)_malloca( n_elems * sizeof(cl_int) );
@@ -110,7 +110,11 @@ int test_native_kernel(cl_device_id device, cl_context context, cl_command_queue
             return 1;
         }
     }
+<<<<<<< HEAD
 #if !(defined (_WIN32) && defined (_MSC_VER))
+=======
+#if !(defined(_WIN32) && defined(_MSC_VER))
+>>>>>>> 24d321a (Fix build errors related with variable defined array length and gl tests logged error)
     delete[] inBuffer;
     delete[] outBuffer;
 #endif

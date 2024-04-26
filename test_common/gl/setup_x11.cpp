@@ -37,14 +37,15 @@ public:
     virtual int Init( int *argc, char **argv, int use_opencl_32 )
     {
          // Create a GLUT window to render into
-        if (!m_glut_init) {
-            glutInit( argc, argv );
-            glutInitWindowSize( 512, 512 );
-            glutInitDisplayMode( GLUT_RGB | GLUT_DOUBLE );
-            glutCreateWindow( "OpenCL <-> OpenGL Test" );
-            glewInit();
-            m_glut_init = true;
-        }
+         if (!m_glut_init)
+         {
+             glutInit( argc, argv );
+             glutInitWindowSize( 512, 512 );
+             glutInitDisplayMode( GLUT_RGB | GLUT_DOUBLE );
+             glutCreateWindow( "OpenCL <-> OpenGL Test" );
+             glewInit();
+             m_glut_init = true;
+         }
         return 0;
     }
 

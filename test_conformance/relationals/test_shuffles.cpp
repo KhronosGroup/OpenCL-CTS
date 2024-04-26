@@ -728,7 +728,7 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
         inSecondDataPtr += inVecSize * typeSize;
         outDataPtr += outRealVecSize * typeSize;
     }
-#if !(defined(_WIN32) && defined (_MSC_VER))
+#if !(defined(_WIN32) && defined(_MSC_VER))
     delete[] inData;
     delete[] inSecondData;
     delete[] outData;
