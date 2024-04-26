@@ -618,10 +618,10 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
     if( error != 0 )
         return error;
 
-    typeSize = get_explicit_type_size( vecType );
-    std::vector<cl_long> inData(inVecSize * numOrders * sizeof(cl_long));
-    std::vector<cl_long> inSecondData(inVecSize * numOrders * sizeof(cl_long));
-    std::vector<cl_long> outData(outRealVecSize * numOrders * sizeof(cl_long));
+    typeSize = get_explicit_type_size(vecType);
+    std::vector<cl_long> inData(inVecSize * numOrders);
+    std::vector<cl_long> inSecondData(inVecSize * numOrders);
+    std::vector<cl_long> outData(outRealVecSize * numOrders);
 
     outData.clear();
     generate_random_data(vecType, (unsigned int)(numOrders * inVecSize), d,

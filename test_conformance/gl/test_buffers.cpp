@@ -126,7 +126,7 @@ int test_buffer_kernel(cl_context context, cl_command_queue queue,
     clProgramWrapper program;
     clKernelWrapper kernel;
     clMemWrapper streams[3];
-    size_t dataSize = numElements * 16 * sizeof(cl_long);
+    size_t dataSize = numElements * 16;
     std::vector<cl_long> inData(dataSize), outDataCL(dataSize),
         outDataGL(dataSize);
 
@@ -164,8 +164,8 @@ int test_buffer_kernel(cl_context context, cl_command_queue queue,
 
     /* Generate some almost-random input data */
     gen_input_data(vecType, vecSize * numElements, d, inData.data());
-    outDataCL.clear();
-    outDataGL.clear();
+    std::fill(outDataCL.begin(), outDataCL.end(), 0);
+    std::fill(outDataGL.begin(), outDataGL.end(), 0);
 
     /* Generate some GL buffers to go against */
     glGenBuffers(1, &inGLBuffer);
