@@ -104,8 +104,7 @@ int test_native_kernel(cl_device_id device, cl_context context, cl_command_queue
         {
             log_error("ERROR: Data sample %d for native kernel did not "
                       "validate (expected %d, got %d)\n",
-                      i, (int)inBuffer[i],
-                      (int)outBuffer[i]);
+                      i, (int)inBuffer[i], (int)outBuffer[i]);
             return 1;
         }
     }
