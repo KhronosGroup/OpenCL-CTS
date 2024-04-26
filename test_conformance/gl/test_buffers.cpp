@@ -164,8 +164,11 @@ int test_buffer_kernel(cl_context context, cl_command_queue queue,
 
     /* Generate some almost-random input data */
     gen_input_data(vecType, vecSize * numElements, d, inData.data());
+<<<<<<< HEAD
     std::fill(outDataCL.begin(), outDataCL.end(), 0);
     std::fill(outDataGL.begin(), outDataGL.end(), 0);
+=======
+>>>>>>> 8f9f8e0 (Fix build errors related with variable defined array length and gl tests logged error)
 
     /* Generate some GL buffers to go against */
     glGenBuffers(1, &inGLBuffer);

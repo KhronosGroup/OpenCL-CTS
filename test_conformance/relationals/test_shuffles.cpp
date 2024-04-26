@@ -623,7 +623,6 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
     std::vector<cl_long> inSecondData(inVecSize * numOrders);
     std::vector<cl_long> outData(outRealVecSize * numOrders);
 
-    outData.clear();
     generate_random_data(vecType, (unsigned int)(numOrders * inVecSize), d,
                          inData.data());
     if( shuffleMode == kBuiltInDualInputFnMode )
