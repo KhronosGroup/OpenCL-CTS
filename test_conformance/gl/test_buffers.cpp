@@ -128,8 +128,9 @@ int test_buffer_kernel(cl_context context, cl_command_queue queue,
     clMemWrapper streams[3];
     size_t dataSize = numElements * 16 * sizeof(cl_long);
 #if !(defined(_WIN32) && defined(_MSC_VER))
-    cl_long inData[numElements * 16], outDataCL[numElements * 16],
-        outDataGL[numElements * 16];
+    cl_long *inData = (cl_long *)malloc(dataSize);
+    cl_long *outDataCL = (cl_long *)malloc(dataSize);
+    cl_long *outDataGL = (cl_long *)malloc(dataSize);
 #else
     cl_long *inData = (cl_long *)_malloca(dataSize);
     cl_long *outDataCL = (cl_long *)_malloca(dataSize);

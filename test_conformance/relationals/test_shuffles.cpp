@@ -621,9 +621,9 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
     typeSize = get_explicit_type_size( vecType );
 
 #if !(defined(_WIN32) && defined (_MSC_VER))
-    cl_long inData[ inVecSize * numOrders ];
-    cl_long inSecondData[ inVecSize * numOrders ];
-    cl_long outData[ outRealVecSize * numOrders ];
+    cl_long* inData  = new cl_long[inVecSize * numOrders * sizeof(cl_long)];
+    cl_long* inSecondData  = new cl_long[inVecSize * numOrders * sizeof(cl_long)];
+    cl_long* outData = new cl_long[outRealVecSize * numOrders * sizeof(cl_long)];
 #else
     cl_long* inData  = (cl_long*)_malloca(inVecSize * numOrders * sizeof(cl_long));
     cl_long* inSecondData  = (cl_long*)_malloca(inVecSize * numOrders * sizeof(cl_long));
@@ -726,7 +726,11 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
         inSecondDataPtr += inVecSize * typeSize;
         outDataPtr += outRealVecSize * typeSize;
     }
-
+#if !(defined(_WIN32) && defined (_MSC_VER))
+    delete [] inData;
+    delete [] inSecondData;
+    delete [] outData;
+#endif        
     return ret;
 }
 
