@@ -46,8 +46,7 @@ int test_native_kernel(cl_device_id device, cl_context context, cl_command_queue
     }
 
     clMemWrapper streams[ 2 ];
-    std::vector<cl_int> inBuffer(n_elems * sizeof(cl_int)),
-        outBuffer(n_elems * sizeof(cl_int));
+    std::vector<cl_int> inBuffer(n_elems), outBuffer(n_elems);
     clEventWrapper finishEvent;
 
     struct arg_struct
@@ -101,12 +100,12 @@ int test_native_kernel(cl_device_id device, cl_context context, cl_command_queue
 
     for( int i = 0; i < n_elems; i++ )
     {
-        if (inBuffer[i * sizeof(cl_int)] != outBuffer[i * sizeof(cl_int)])
+        if (inBuffer[i] != outBuffer[i])
         {
             log_error("ERROR: Data sample %d for native kernel did not "
                       "validate (expected %d, got %d)\n",
-                      i, (int)inBuffer[i * sizeof(cl_int)],
-                      (int)outBuffer[i * sizeof(cl_int)]);
+                      i, (int)inBuffer[i],
+                      (int)outBuffer[i]);
             return 1;
         }
     }
