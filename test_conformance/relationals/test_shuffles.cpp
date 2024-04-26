@@ -732,7 +732,7 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
     delete[] inData;
     delete[] inSecondData;
     delete[] outData;
-#endif        
+#endif
     return ret;
 }
 
