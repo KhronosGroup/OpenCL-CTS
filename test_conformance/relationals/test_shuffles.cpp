@@ -621,9 +621,17 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
     typeSize = get_explicit_type_size( vecType );
 
 #if !(defined(_WIN32) && defined (_MSC_VER))
+<<<<<<< HEAD
     cl_long* inData  = new cl_long[inVecSize * numOrders * sizeof(cl_long)];
     cl_long* inSecondData  = new cl_long[inVecSize * numOrders * sizeof(cl_long)];
     cl_long* outData = new cl_long[outRealVecSize * numOrders * sizeof(cl_long)];
+=======
+    cl_long *inData = new cl_long[inVecSize * numOrders * sizeof(cl_long)];
+    cl_long *inSecondData =
+        new cl_long[inVecSize * numOrders * sizeof(cl_long)];
+    cl_long *outData =
+        new cl_long[outRealVecSize * numOrders * sizeof(cl_long)];
+>>>>>>> 8ba7788 (Fix build errors related with variable defined array length and gl tests logged error)
 #else
     cl_long* inData  = (cl_long*)_malloca(inVecSize * numOrders * sizeof(cl_long));
     cl_long* inSecondData  = (cl_long*)_malloca(inVecSize * numOrders * sizeof(cl_long));
@@ -727,9 +735,15 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
         outDataPtr += outRealVecSize * typeSize;
     }
 #if !(defined(_WIN32) && defined (_MSC_VER))
+<<<<<<< HEAD
     delete [] inData;
     delete [] inSecondData;
     delete [] outData;
+=======
+    delete[] inData;
+    delete[] inSecondData;
+    delete[] outData;
+>>>>>>> 8ba7788 (Fix build errors related with variable defined array length and gl tests logged error)
 #endif        
     return ret;
 }

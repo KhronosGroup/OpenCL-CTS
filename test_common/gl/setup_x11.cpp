@@ -37,6 +37,7 @@ public:
     virtual int Init( int *argc, char **argv, int use_opencl_32 )
     {
          // Create a GLUT window to render into
+<<<<<<< HEAD
       if (!m_glut_init) {
         glutInit( argc, argv );
         glutInitWindowSize( 512, 512 );
@@ -46,6 +47,17 @@ public:
         m_glut_init = true;
       }
       return 0;
+=======
+        if (!m_glut_init) {
+            glutInit( argc, argv );
+            glutInitWindowSize( 512, 512 );
+            glutInitDisplayMode( GLUT_RGB | GLUT_DOUBLE );
+            glutCreateWindow( "OpenCL <-> OpenGL Test" );
+            glewInit();
+            m_glut_init = true;
+        }
+        return 0;
+>>>>>>> 8ba7788 (Fix build errors related with variable defined array length and gl tests logged error)
     }
 
     virtual cl_context CreateCLContext( void )

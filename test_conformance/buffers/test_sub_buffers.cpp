@@ -415,7 +415,11 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
     test_error( error, "Error obtaining device name" );
 
 #if !(defined(_WIN32) && defined(_MSC_VER))
+<<<<<<< HEAD
     char* device_name = new char[param_size];
+=======
+    char *device_name = new char[param_size];
+>>>>>>> 8ba7788 (Fix build errors related with variable defined array length and gl tests logged error)
 #else
     char* device_name = (char*)_malloca(param_size);
 #endif
@@ -454,7 +458,11 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
 
     cl_uint addressAlign1 = std::max(addressAlign1Bits, addressAlign2Bits) / 8;
 #if !(defined (_WIN32) && defined (_MSC_VER))
+<<<<<<< HEAD
     delete [] device_name;
+=======
+    delete[] device_name;
+>>>>>>> 8ba7788 (Fix build errors related with variable defined array length and gl tests logged error)
 #endif
     // Finally time to run!
     return test_sub_buffers_read_write_core( testingContext, queue1, queue2, maxBuffer1, addressAlign1 );
