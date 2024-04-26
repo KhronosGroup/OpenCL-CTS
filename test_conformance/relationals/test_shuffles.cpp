@@ -627,7 +627,8 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
     generate_random_data(vecType, (unsigned int)(numOrders * inVecSize), d,
                          inData.data());
     if( shuffleMode == kBuiltInDualInputFnMode )
-        generate_random_data( vecType, (unsigned int)( numOrders * inVecSize ), d, inSecondData.data() );
+        generate_random_data(vecType, (unsigned int)(numOrders * inVecSize), d,
+                             inSecondData.data());
 
     streams[0] =
         clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
