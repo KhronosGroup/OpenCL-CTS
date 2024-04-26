@@ -719,15 +719,7 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
         inSecondDataPtr += inVecSize * typeSize;
         outDataPtr += outRealVecSize * typeSize;
     }
-<<<<<<< HEAD
-#if !(defined(_WIN32) && defined(_MSC_VER))
-    delete[] inData;
-    delete[] inSecondData;
-    delete[] outData;
-#endif
-=======
 
->>>>>>> d6d7693 (Fix build errors related with variable defined array length and gl tests logged error)
     return ret;
 }
 
