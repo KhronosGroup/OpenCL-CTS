@@ -127,15 +127,8 @@ int test_buffer_kernel(cl_context context, cl_command_queue queue,
     clKernelWrapper kernel;
     clMemWrapper streams[3];
     size_t dataSize = numElements * 16 * sizeof(cl_long);
-#if !(defined(_WIN32) && defined(_MSC_VER))
-    cl_long *inData = (cl_long *)malloc(dataSize);
-    cl_long *outDataCL = (cl_long *)malloc(dataSize);
-    cl_long *outDataGL = (cl_long *)malloc(dataSize);
-#else
-    cl_long *inData = (cl_long *)_malloca(dataSize);
-    cl_long *outDataCL = (cl_long *)_malloca(dataSize);
-    cl_long *outDataGL = (cl_long *)_malloca(dataSize);
-#endif
+    std::vector<cl_long> inData(dataSize), outDataCL(dataSize), outDataGL(dataSize);
+
     glBufferWrapper inGLBuffer, outGLBuffer;
     int i;
     size_t bufferSize;
@@ -169,21 +162,21 @@ int test_buffer_kernel(cl_context context, cl_command_queue queue,
     bufferSize = numElements * vecSize * get_explicit_type_size(vecType);
 
     /* Generate some almost-random input data */
-    gen_input_data(vecType, vecSize * numElements, d, inData);
-    memset(outDataCL, 0, dataSize);
-    memset(outDataGL, 0, dataSize);
+    gen_input_data(vecType, vecSize * numElements, d, inData.data());
+    outDataCL.clear();
+    outDataGL.clear();
 
     /* Generate some GL buffers to go against */
     glGenBuffers(1, &inGLBuffer);
     glGenBuffers(1, &outGLBuffer);
 
     glBindBuffer(GL_ARRAY_BUFFER, inGLBuffer);
-    glBufferData(GL_ARRAY_BUFFER, bufferSize, inData, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, bufferSize, inData.data(), GL_STATIC_DRAW);
 
     // Note: we need to bind the output buffer, even though we don't care about
     // its values yet, because CL needs it to get the buffer size
     glBindBuffer(GL_ARRAY_BUFFER, outGLBuffer);
-    glBufferData(GL_ARRAY_BUFFER, bufferSize, outDataGL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, bufferSize, outDataGL.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glFinish();
@@ -258,16 +251,16 @@ int test_buffer_kernel(cl_context context, cl_command_queue queue,
     // Get the results from both CL and GL and make sure everything looks
     // correct
     error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, bufferSize,
-                                outDataCL, 0, NULL, NULL);
+                                outDataCL.data(), 0, NULL, NULL);
     test_error(error, "Unable to read output CL array!");
 
     glBindBuffer(GL_ARRAY_BUFFER, outGLBuffer);
     void *glMem = glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
-    memcpy(outDataGL, glMem, bufferSize);
+    memcpy(outDataGL.data(), glMem, bufferSize);
     glUnmapBuffer(GL_ARRAY_BUFFER);
 
-    char *inP = (char *)inData, *glP = (char *)outDataGL,
-         *clP = (char *)outDataCL;
+    char *inP = (char *)inData.data(), *glP = (char *)outDataGL.data(),
+         *clP = (char *)outDataCL.data();
     error = 0;
     for (size_t i = 0; i < numElements * vecSize; i++)
     {
