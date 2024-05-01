@@ -56,9 +56,10 @@ public:
     bool Skip()
     {
         cl_device_kernel_clock_capabilities_khr capabilities;
-        cl_int error = clGetDeviceInfo(
-            device, CL_DEVICE_KERNEL_CLOCK_CAPABILITIES_KHR,
-            sizeof(cl_device_kernel_clock_capabilities_khr), &capabilities, NULL);
+        cl_int error =
+            clGetDeviceInfo(device, CL_DEVICE_KERNEL_CLOCK_CAPABILITIES_KHR,
+                            sizeof(cl_device_kernel_clock_capabilities_khr),
+                            &capabilities, NULL);
         test_error(error,
                    "Unable to query "
                    "CL_DEVICE_KERNEL_CLOCK_CAPABILITIES_KHR");
