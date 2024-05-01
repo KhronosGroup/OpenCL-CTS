@@ -49,16 +49,16 @@ class KernelClockTest {
 public:
     KernelClockTest(cl_device_id device, cl_context context,
                     cl_command_queue queue,
-                    cl_kernel_clock_capabilities capability)
+                    cl_device_kernel_clock_capabilities_khr capability)
         : device(device), context(context), queue(queue), capability(capability)
     {}
 
     bool Skip()
     {
-        cl_kernel_clock_capabilities capabilities;
+        cl_device_kernel_clock_capabilities_khr capabilities;
         cl_int error = clGetDeviceInfo(
             device, CL_DEVICE_KERNEL_CLOCK_CAPABILITIES_KHR,
-            sizeof(cl_kernel_clock_capabilities), &capabilities, NULL);
+            sizeof(cl_device_kernel_clock_capabilities_khr), &capabilities, NULL);
         test_error(error,
                    "Unable to query "
                    "CL_DEVICE_KERNEL_CLOCK_CAPABILITIES_KHR");
@@ -151,12 +151,12 @@ private:
     cl_device_id device;
     cl_context context;
     cl_command_queue queue;
-    cl_kernel_clock_capabilities capability;
+    cl_device_kernel_clock_capabilities_khr capability;
 };
 
 int MakeAndRunTest(cl_device_id device, cl_context context,
                    cl_command_queue queue,
-                   cl_kernel_clock_capabilities capability)
+                   cl_device_kernel_clock_capabilities_khr capability)
 {
     if (!is_extension_available(device, "cl_khr_kernel_clock"))
     {
