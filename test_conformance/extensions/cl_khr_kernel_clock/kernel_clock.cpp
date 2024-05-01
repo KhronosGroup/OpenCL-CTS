@@ -17,31 +17,27 @@
 
 // write 1 to the output if the clock did not increase
 static const char *kernel_sources[2] = {
-    {
-        "__kernel void SampleClock(__global uint* buf)\n"
-        "{\n"
-        "   ulong time1, time2;\n"
-        "   time1 = clock_read_%s();\n"
-        "   time2 = clock_read_%s();\n"
-        "   if(time1 > time2)\n"
-        "   {\n"
-        "       buf[0] = 1;\n"
-        "    }\n"
-        "}\n",
-    },
-    {
-        "__kernel void SampleClock(__global uint* buf)\n"
-        "{\n"
-        "   uint2 time1, time2;\n"
-        "   time1 = clock_read_hilo_%s();\n"
-        "   time2 = clock_read_hilo_%s();\n"
-        "   if (time1.hi > time2.hi || (time1.hi == time2.hi && time1.lo > "
-        "time2.lo))\n"
-        "   {\n"
-        "        buf[0] = 1;\n"
-        "   }\n"
-        "}\n",
-    }
+    "__kernel void SampleClock(__global uint* buf)\n"
+    "{\n"
+    "   ulong time1, time2;\n"
+    "   time1 = clock_read_%s();\n"
+    "   time2 = clock_read_%s();\n"
+    "   if(time1 > time2)\n"
+    "   {\n"
+    "       buf[0] = 1;\n"
+    "    }\n"
+    "}\n",
+    "__kernel void SampleClock(__global uint* buf)\n"
+    "{\n"
+    "   uint2 time1, time2;\n"
+    "   time1 = clock_read_hilo_%s();\n"
+    "   time2 = clock_read_hilo_%s();\n"
+    "   if (time1.hi > time2.hi || (time1.hi == time2.hi && time1.lo > "
+    "time2.lo))\n"
+    "   {\n"
+    "        buf[0] = 1;\n"
+    "   }\n"
+    "}\n",
 };
 
 class KernelClockTest {
