@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _CL_KHR_KERNEL_CLOCK_PROCS_H
-#define _CL_KHR_KERNEL_CLOCK_PROCS_H
+#ifndef CL_KHR_KERNEL_CLOCK_PROCS_H
+#define CL_KHR_KERNEL_CLOCK_PROCS_H
 
 #include <CL/cl.h>
 
-extern int test_device_scope(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements);
-extern int test_workgroup_scope(cl_device_id device, cl_context context,
-                                cl_command_queue queue, int num_elements);
-extern int test_subgroup_scope(cl_device_id device, cl_context context,
-                               cl_command_queue queue, int num_elements);
+int test_device_scope(cl_device_id device, cl_context context,
+                      cl_command_queue queue, int num_elements);
+int test_workgroup_scope(cl_device_id device, cl_context context,
+                         cl_command_queue queue, int num_elements);
+int test_subgroup_scope(cl_device_id device, cl_context context,
+                        cl_command_queue queue, int num_elements);
 
-#endif /*_CL_KHR_KERNEL_CLOCK_PROCS_H*/
+#endif /*CL_KHR_KERNEL_CLOCK_PROCS_H*/

@@ -15,29 +15,31 @@
 #include "procs.h"
 #include "harness/typeWrappers.h"
 
+namespace {
+
 // write 1 to the output if the clock did not increase
 static const char *kernel_sources[2] = {
-    "__kernel void SampleClock(__global uint* buf)\n"
-    "{\n"
-    "   ulong time1, time2;\n"
-    "   time1 = clock_read_%s();\n"
-    "   time2 = clock_read_%s();\n"
-    "   if(time1 > time2)\n"
-    "   {\n"
-    "       buf[0] = 1;\n"
-    "    }\n"
-    "}\n",
-    "__kernel void SampleClock(__global uint* buf)\n"
-    "{\n"
-    "   uint2 time1, time2;\n"
-    "   time1 = clock_read_hilo_%s();\n"
-    "   time2 = clock_read_hilo_%s();\n"
-    "   if (time1.hi > time2.hi || (time1.hi == time2.hi && time1.lo > "
-    "time2.lo))\n"
-    "   {\n"
-    "        buf[0] = 1;\n"
-    "   }\n"
-    "}\n",
+    R"(__kernel void SampleClock(__global uint* buf)
+    {
+        ulong time1, time2;
+        time1 = clock_read_%s();
+        time2 = clock_read_%s();
+        if(time1 > time2)
+        {
+            buf[0] = 1;
+        }
+    })",
+    R"(__kernel void SampleClock(__global uint* buf)
+    {
+       uint2 time1, time2;
+       time1 = clock_read_hilo_%s();
+       time2 = clock_read_hilo_%s();
+       if(time1.hi > time2.hi || (time1.hi == time2.hi && time1.lo > 
+         time2.lo))
+       {
+            buf[0] = 1;
+       }
+    })",
 };
 
 class KernelClockTest {
@@ -174,6 +176,8 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
     test_error_ret(error, "Test Failed", TEST_FAIL);
 
     return TEST_PASS;
+}
+
 }
 
 int test_device_scope(cl_device_id device, cl_context context,
