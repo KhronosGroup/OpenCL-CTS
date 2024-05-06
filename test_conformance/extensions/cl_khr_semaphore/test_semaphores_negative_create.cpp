@@ -337,7 +337,7 @@ struct CreateImportExternalWithInvalidDevice : public SemaphoreTestBase
     cl_int Run() override
     {
         if (!is_extension_available(device,
-                                    "cl_khr_external_semaphore_sync_fd"))
+                                    "cl_khr_external_semaphore_opaque_fd"))
         {
             log_info(
                 "cl_khr_external_semaphore_opaque_fd is not supported on this "
@@ -412,7 +412,7 @@ struct CreateImportExternalWithInvalidDevice : public SemaphoreTestBase
             static_cast<cl_semaphore_properties_khr>(
                 CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
             static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_HANDLE_SYNC_FD_KHR),
+                CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR),
             static_cast<cl_semaphore_properties_khr>(
                 CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
             0
@@ -431,7 +431,7 @@ struct CreateImportExternalWithInvalidDevice : public SemaphoreTestBase
         int handle = -1;
         size_t handle_size;
         err = clGetSemaphoreHandleForTypeKHR(
-            semaphore, device, CL_SEMAPHORE_HANDLE_SYNC_FD_KHR, sizeof(handle),
+            semaphore, device, CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR, sizeof(handle),
             &handle, &handle_size);
         test_error(err, "Could not extract semaphore handle");
         test_assert_error(sizeof(handle) == handle_size, "Invalid handle size");
@@ -448,7 +448,7 @@ struct CreateImportExternalWithInvalidDevice : public SemaphoreTestBase
             static_cast<cl_semaphore_properties_khr>(
                 CL_SEMAPHORE_TYPE_BINARY_KHR),
             static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_HANDLE_SYNC_FD_KHR),
+                CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR),
             static_cast<cl_semaphore_properties_khr>(handle),
             static_cast<cl_semaphore_properties_khr>(
                 CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR),
@@ -505,15 +505,6 @@ struct CreateInvalidValue : public SemaphoreTestBase
         // (3)
         {
             if (!is_extension_available(device,
-                                        "cl_khr_external_semaphore_sync_fd"))
-            {
-                log_info("cl_khr_external_semaphore_opaque_fd is not supported "
-                         "on this "
-                         "platoform. Skipping test.\n");
-                return TEST_SKIPPED_ITSELF;
-            }
-
-            if (!is_extension_available(device,
                                         "cl_khr_external_semaphore_opaque_fd"))
             {
                 log_info("cl_khr_external_semaphore_opaque_fd is not supported "
@@ -530,7 +521,7 @@ struct CreateInvalidValue : public SemaphoreTestBase
                 static_cast<cl_semaphore_properties_khr>(
                     CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
                 static_cast<cl_semaphore_properties_khr>(
-                    CL_SEMAPHORE_HANDLE_SYNC_FD_KHR),
+                    CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR),
                 static_cast<cl_semaphore_properties_khr>(
                     CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR),
                 static_cast<cl_semaphore_properties_khr>(
@@ -560,10 +551,10 @@ struct CreateInvalidOperation : public SemaphoreTestBase
     cl_int Run() override
     {
         if (!is_extension_available(device,
-                                    "cl_khr_external_semaphore_sync_fd"))
+                                    "cl_khr_external_semaphore_opaque_fd"))
         {
             log_info(
-                "cl_khr_external_semaphore_sync_fd is not supported on this "
+                "cl_khr_external_semaphore_opaque_fd is not supported on this "
                 "platoform. Skipping test.\n");
             return TEST_SKIPPED_ITSELF;
         }
@@ -581,7 +572,7 @@ struct CreateInvalidOperation : public SemaphoreTestBase
             static_cast<cl_semaphore_properties_khr>(
                 CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
             static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_HANDLE_SYNC_FD_KHR),
+                CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR),
             static_cast<cl_semaphore_properties_khr>(
                 CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
             0
@@ -600,7 +591,7 @@ struct CreateInvalidOperation : public SemaphoreTestBase
         int handle = -1;
         size_t handle_size;
         err = clGetSemaphoreHandleForTypeKHR(
-            semaphore, device, CL_SEMAPHORE_HANDLE_SYNC_FD_KHR, sizeof(handle),
+            semaphore, device, CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR, sizeof(handle),
             &handle, &handle_size);
         test_error(err, "Could not extract semaphore handle");
         test_assert_error(sizeof(handle) == handle_size, "Invalid handle size");
@@ -614,12 +605,12 @@ struct CreateInvalidOperation : public SemaphoreTestBase
             static_cast<cl_semaphore_properties_khr>(
                 CL_SEMAPHORE_TYPE_BINARY_KHR),
             static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_HANDLE_SYNC_FD_KHR),
+                CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR),
             static_cast<cl_semaphore_properties_khr>(handle),
             static_cast<cl_semaphore_properties_khr>(
                 CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
             static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_HANDLE_SYNC_FD_KHR),
+                CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR),
             static_cast<cl_semaphore_properties_khr>(
                 CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
             0
