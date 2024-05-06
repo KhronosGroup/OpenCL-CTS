@@ -127,4 +127,84 @@ int test_create_context_from_type(cl_device_id deviceID, cl_context context, cl_
   return 0;
 }
 
+int test_create_context_from_type_device_type_all(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    cl_device_type type;
+    cl_int error = clGetDeviceInfo(deviceID, CL_DEVICE_TYPE, sizeof(type), &type, NULL);
+    test_error(error, "clGetDeviceInfo for CL_DEVICE_TYPE failed\n");
+
+    if(type == CL_DEVICE_TYPE_ALL || type == CL_DEVICE_TYPE_DEFAULT)
+    {
+        log_error("clGetDeviceInfo(CL_DEVICE_TYPE) must report a single device type, which must not be CL_DEVICE_TYPE_DEFAULT or CL_DEVICE_TYPE_ALL.\n");
+        return -1;
+    }
+    cl_platform_id platform;
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform), &platform, NULL);
+    test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed\n");
+
+    cl_context_properties properties[3] = {
+      (cl_context_properties)CL_CONTEXT_PLATFORM,
+      (cl_context_properties)platform,
+      0
+    };
+
+    clContextWrapper context_to_test = clCreateContextFromType(properties, CL_DEVICE_TYPE_ALL, notify_callback, NULL, &error);
+    test_error(error, "clCreateContextFromType failed");
+
+    if (context_to_test != nullptr)
+    {
+        cl_uint num_devices = 0;
+        error = clGetContextInfo(context_to_test, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &num_devices, nullptr);
+        test_error(error, "clGetContextInfo CL_CONTEXT_NUM_DEVICES failed\n");
+
+        std::vector<cl_device_id> devices(num_devices);
+        error = clGetContextInfo(context_to_test, CL_CONTEXT_DEVICES, num_devices * sizeof(cl_device_id), devices.data(), nullptr);
+        test_error(error, "clGetContextInfo CL_CONTEXT_DEVICES failed\n");
+
+        test_assert_error(devices.size() >= 1, "Context must contain at least one device\n");
+    }
+
+    return 0;
+}
+
+int test_create_context_from_type_device_type_default(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+{
+    cl_device_type type;
+    cl_int error = clGetDeviceInfo(deviceID, CL_DEVICE_TYPE, sizeof(type), &type, NULL);
+    test_error(error, "clGetDeviceInfo for CL_DEVICE_TYPE failed\n");
+
+    if(type == CL_DEVICE_TYPE_ALL || type == CL_DEVICE_TYPE_DEFAULT)
+    {
+        log_error("clGetDeviceInfo(CL_DEVICE_TYPE) must report a single device type, which must not be CL_DEVICE_TYPE_DEFAULT or CL_DEVICE_TYPE_ALL.\n");
+        return -1;
+    }
+    cl_platform_id platform;
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform), &platform, NULL);
+    test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed\n");
+
+    cl_context_properties properties[3] = {
+      (cl_context_properties)CL_CONTEXT_PLATFORM,
+      (cl_context_properties)platform,
+      0
+    };
+
+    clContextWrapper context_to_test = clCreateContextFromType(properties, CL_DEVICE_TYPE_DEFAULT, notify_callback, NULL, &error);
+    test_error(error, "clCreateContextFromType failed");
+
+    if (context_to_test != nullptr)
+    {
+        cl_uint num_devices = 0;
+        error = clGetContextInfo(context_to_test, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &num_devices, nullptr);
+        test_error(error, "clGetContextInfo CL_CONTEXT_NUM_DEVICES failed\n");
+
+        std::vector<cl_device_id> devices(num_devices);
+        error = clGetContextInfo(context_to_test, CL_CONTEXT_DEVICES, num_devices * sizeof(cl_device_id), devices.data(), nullptr);
+        test_error(error, "clGetContextInfo CL_CONTEXT_DEVICES failed\n");
+
+        test_assert_error(devices.size() == 1, "Context must contain exacly one device\n");
+    }
+
+    return 0;
+}
+
 

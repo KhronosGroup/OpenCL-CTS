@@ -230,14 +230,22 @@ int test_get_platform_ids(cl_device_id deviceID, cl_context context, cl_command_
     }
 
     err = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, 0, NULL, &num_devices);
-    test_error(err, "clGetDeviceIDs size failed.\n");
+    test_error(err, "clGetDeviceIDs failed.\n");
+    if(num_devices == 0)
+    {
+        log_error("clGetDeviceIDs must return at least one device\n");
+        total_errors++;
+    }
+    test_assert_error(num_devices > 1,
+                      "clGetDeviceIDs must return at least one device");
     devices = (cl_device_id *)malloc(num_devices*sizeof(cl_device_id));
     memset(devices, 0, sizeof(cl_device_id)*num_devices);
     err = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, num_devices, devices, NULL);
     test_error(err, "clGetDeviceIDs failed.\n");
 
     log_info("\tPlatform has %d devices.\n", (int)num_devices);
-    for (int d=0; d<(int)num_devices; d++) {
+    for (int d=0; d<(int)num_devices; d++)
+    {
       size_t returned_size;
       cl_platform_id returned_platform;
       cl_context context;
@@ -281,6 +289,15 @@ int test_get_platform_ids(cl_device_id deviceID, cl_context context, cl_command_
       test_error(err, "clReleaseContext failed");
     }
     free(devices);
+
+    err = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_DEFAULT, 0, NULL, &num_devices);
+    test_error(err, "clGetDeviceIDs failed.\n");
+    if (num_devices != 1)
+    {
+        log_error("clGetDeviceIDs must return exacly one device\n");
+        total_errors++;
+    }
+    test_assert_error(num_devices == 1, "clGetDeviceIDs must return exacly one device");
   }
 
   free(string_returned);
