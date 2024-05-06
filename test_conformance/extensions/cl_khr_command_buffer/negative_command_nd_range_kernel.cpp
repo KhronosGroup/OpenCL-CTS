@@ -115,7 +115,7 @@ struct CommandNDRangeKerneSyncPointsNullOrNumZero
                                TEST_FAIL);
 
 
-        cl_sync_point_khr point = 0;
+        cl_sync_point_khr point;
         error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
                                                 nullptr, &point, nullptr);
         test_error(error, "clCommandBarrierWithWaitListKHR failed");
@@ -134,7 +134,7 @@ struct CommandNDRangeKerneSyncPointsNullOrNumZero
         cl_sync_point_khr* invalid_sync_points[] = { &invalid_point };
         error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, nullptr, kernel, 0, nullptr, &num_elements,
-            nullptr, 0, invalid_sync_points[0], nullptr, nullptr);
+            nullptr, 1, invalid_sync_points[0], nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandNDRangeKernelKHR should return "
@@ -392,7 +392,7 @@ __kernel void enqueue_call_func() {
 __kernel void enqueue_call_kernel() {
 queue_t def_q = get_default_queue();
 ndrange_t ndrange = ndrange_1D(1);
-enqueue_kernel(def_q, ndrange,
+enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange,
                    ^{enqueue_call_func();});
   }
 )";
