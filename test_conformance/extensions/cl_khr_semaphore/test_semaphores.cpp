@@ -84,7 +84,6 @@ struct SimpleSemaphore1 : public SemaphoreTestBase
     cl_int Run() override
     {
         cl_int err = CL_SUCCESS;
-
         // Create ooo queue
         clCommandQueueWrapper queue = clCreateCommandQueue(
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
@@ -135,7 +134,6 @@ struct SimpleSemaphore2 : public SemaphoreTestBase
     cl_int Run() override
     {
         cl_int err = CL_SUCCESS;
-
         // Create ooo queue
         clCommandQueueWrapper queue = clCreateCommandQueue(
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
@@ -217,7 +215,6 @@ struct SemaphoreReuse : public SemaphoreTestBase
     cl_int Run() override
     {
         cl_int err = CL_SUCCESS;
-
         // Create ooo queue
         clCommandQueueWrapper queue = clCreateCommandQueue(
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
@@ -314,8 +311,7 @@ template <bool in_order> struct SemaphoreCrossQueue : public SemaphoreTestBase
                                      cl_command_queue queue_1,
                                      cl_command_queue queue_2)
     {
-        cl_int err;
-
+        cl_int err = CL_SUCCESS;
         // Create semaphore
         cl_semaphore_properties_khr sema_props[] = {
             static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
@@ -355,8 +351,7 @@ template <bool in_order> struct SemaphoreCrossQueue : public SemaphoreTestBase
 
     cl_int run_in_order()
     {
-        cl_int err;
-
+        cl_int err = CL_SUCCESS;
         // Create in-order queues
         clCommandQueueWrapper queue_1 =
             clCreateCommandQueue(context, device, 0, &err);
@@ -371,8 +366,7 @@ template <bool in_order> struct SemaphoreCrossQueue : public SemaphoreTestBase
 
     cl_int run_out_of_order()
     {
-        cl_int err;
-
+        cl_int err = CL_SUCCESS;
         // Create ooo queues
         clCommandQueueWrapper queue_1 = clCreateCommandQueue(
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
@@ -404,7 +398,6 @@ struct SemaphoreMultiSignal : public SemaphoreTestBase
     cl_int Run() override
     {
         cl_int err = CL_SUCCESS;
-
         // Create ooo queue
         clCommandQueueWrapper queue = clCreateCommandQueue(
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
@@ -455,7 +448,6 @@ struct SemaphoreMultiSignal : public SemaphoreTestBase
 
         return CL_SUCCESS;
     }
-
     clSemaphoreWrapper semaphore_second = nullptr;
 };
 
@@ -469,7 +461,6 @@ struct SemaphoreMultiWait : public SemaphoreTestBase
     cl_int Run() override
     {
         cl_int err = CL_SUCCESS;
-
         // Create ooo queue
         clCommandQueueWrapper queue = clCreateCommandQueue(
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
@@ -520,7 +511,6 @@ struct SemaphoreMultiWait : public SemaphoreTestBase
 
         return CL_SUCCESS;
     }
-
     clSemaphoreWrapper semaphore_second = nullptr;
 };
 
@@ -534,7 +524,6 @@ struct SemaphoreQueries : public SemaphoreTestBase
     cl_int Run() override
     {
         cl_int err = CL_SUCCESS;
-
         // Create binary semaphore
         cl_semaphore_properties_khr sema_props[] = {
             static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
@@ -590,8 +579,7 @@ struct SemaphoreImportExportFD : public SemaphoreTestBase
 
     cl_int Run() override
     {
-        cl_int err;
-
+        cl_int err = CL_SUCCESS;
         if (!is_extension_available(device,
                                     "cl_khr_external_semaphore_sync_fd"))
         {
@@ -670,8 +658,7 @@ struct SemaphoreImportExportFD : public SemaphoreTestBase
     }
     clSemaphoreWrapper semaphore_second = nullptr;
 };
-
-}
+} // anonymous namespace
 
 // Confirm that a signal followed by a wait will complete successfully
 int test_semaphores_simple_1(cl_device_id deviceID, cl_context context,
