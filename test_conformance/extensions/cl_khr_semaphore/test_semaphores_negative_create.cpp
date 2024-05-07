@@ -22,7 +22,6 @@
 #include <thread>
 #include <vector>
 
-
 namespace {
 
 // CL_INVALID_CONTEXT if context is nullptr.
@@ -37,10 +36,8 @@ struct CreateInvalidContext : public SemaphoreTestBase
     {
         // Create semaphore
         cl_semaphore_properties_khr sema_props[] = {
-            static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_TYPE_BINARY_KHR),
-            0
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR, 0
         };
 
         cl_int err = CL_SUCCESS;
@@ -91,11 +88,8 @@ struct CreateInvalidProperty : public SemaphoreTestBase
         // 1) Property name in sema_props is not a supported property name
         {
             cl_semaphore_properties_khr sema_props[] = {
-                static_cast<cl_semaphore_properties_khr>(
-                    CL_INVALID_SEMAPHORE_KHR),
-                static_cast<cl_semaphore_properties_khr>(
-                    CL_SEMAPHORE_TYPE_BINARY_KHR),
-                0
+                (cl_semaphore_properties_khr)CL_INVALID_SEMAPHORE_KHR,
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR, 0
             };
 
             semaphore =
@@ -108,10 +102,8 @@ struct CreateInvalidProperty : public SemaphoreTestBase
         // 2) Value specified for a supported property name is not valid
         {
             cl_semaphore_properties_khr sema_props[] = {
-                static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-                static_cast<cl_semaphore_properties_khr>(
-                    CL_INVALID_SEMAPHORE_KHR),
-                0
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+                (cl_semaphore_properties_khr)CL_INVALID_SEMAPHORE_KHR, 0
             };
 
             semaphore =
@@ -124,11 +116,9 @@ struct CreateInvalidProperty : public SemaphoreTestBase
         // 3) The same property name is specified more than once
         {
             cl_semaphore_properties_khr sema_props[] = {
-                static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-                static_cast<cl_semaphore_properties_khr>(
-                    CL_SEMAPHORE_TYPE_BINARY_KHR),
-                static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-                0
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR, 0
             };
 
             semaphore =
@@ -198,10 +188,8 @@ struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
         test_error_ret(err, "Unable to create testing context", CL_SUCCESS);
 
         cl_semaphore_properties_khr sema_props[] = {
-            static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_TYPE_BINARY_KHR),
-            0
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR, 0
         };
 
         // Try to create semaphore with multi device context - expect
@@ -270,14 +258,14 @@ struct CreateInvalidDevice : public SemaphoreTestBase
         // sema_props, but it does not identify exactly one valid device;
         {
             cl_semaphore_properties_khr sema_props[] = {
-                static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-                static_cast<cl_semaphore_properties_khr>(
-                    CL_SEMAPHORE_TYPE_BINARY_KHR),
-                static_cast<cl_semaphore_properties_khr>(
-                    CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR),
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+                (cl_semaphore_properties_khr)
+                    CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR,
                 (cl_semaphore_properties_khr)device,
                 (cl_semaphore_properties_khr)scope_guard.sub_devices.front(),
-                CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR,
+                (cl_semaphore_properties_khr)
+                    CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR,
                 0
             };
 
@@ -300,13 +288,13 @@ struct CreateInvalidDevice : public SemaphoreTestBase
             test_error_ret(err, "Unable to create testing context", CL_SUCCESS);
 
             cl_semaphore_properties_khr sema_props[] = {
-                static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-                static_cast<cl_semaphore_properties_khr>(
-                    CL_SEMAPHORE_TYPE_BINARY_KHR),
-                static_cast<cl_semaphore_properties_khr>(
-                    CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR),
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+                (cl_semaphore_properties_khr)
+                    CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR,
                 (cl_semaphore_properties_khr)device,
-                CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR,
+                (cl_semaphore_properties_khr)
+                    CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR,
                 0
             };
 
@@ -370,20 +358,19 @@ struct CreateImportExternalWithInvalidDevice : public SemaphoreTestBase
         {
             if (platform_id == platforms[p]) continue;
 
-            err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, 0, nullptr,
+            err = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, 0, nullptr,
                                  &num_devices);
             test_error(err, "clGetDeviceIDs failed");
 
             std::vector<cl_device_id> devices(num_devices);
-            err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, num_devices,
+            err = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, num_devices,
                                  devices.data(), nullptr);
             test_error(err, "clGetDeviceIDs failed");
 
             // try to find invalid device
             for (auto did : devices)
             {
-                if (did != device
-                    && !is_extension_available(device, "cl_khr_semaphore"))
+                if (!is_extension_available(did, "cl_khr_semaphore"))
                 {
                     invalid_device = did;
                     break;
@@ -395,7 +382,7 @@ struct CreateImportExternalWithInvalidDevice : public SemaphoreTestBase
 
         if (invalid_device == nullptr)
         {
-            log_info("Can't find appropriate resources. Skipping test.\n");
+            log_info("Can't find needed resources. Skipping test.\n");
             return TEST_SKIPPED_ITSELF;
         }
 
@@ -406,15 +393,12 @@ struct CreateImportExternalWithInvalidDevice : public SemaphoreTestBase
 
         // Create semaphore
         cl_semaphore_properties_khr sema_1_props[] = {
-            static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_TYPE_BINARY_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR,
+            (cl_semaphore_properties_khr)
+                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR,
             0
         };
         semaphore =
@@ -444,16 +428,14 @@ struct CreateImportExternalWithInvalidDevice : public SemaphoreTestBase
 
         // Create semaphore from sync fd
         cl_semaphore_properties_khr sema_2_props[] = {
-            static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_TYPE_BINARY_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR),
-            static_cast<cl_semaphore_properties_khr>(handle),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR),
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR,
+            (cl_semaphore_properties_khr)handle,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR,
             (cl_semaphore_properties_khr)invalid_device,
-            CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR,
+            (cl_semaphore_properties_khr)
+                CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR,
             0
         };
 
@@ -515,17 +497,14 @@ struct CreateInvalidValue : public SemaphoreTestBase
 
             // Create semaphore
             cl_semaphore_properties_khr sema_1_props[] = {
-                static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-                static_cast<cl_semaphore_properties_khr>(
-                    CL_SEMAPHORE_TYPE_BINARY_KHR),
-                static_cast<cl_semaphore_properties_khr>(
-                    CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
-                static_cast<cl_semaphore_properties_khr>(
-                    CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR),
-                static_cast<cl_semaphore_properties_khr>(
-                    CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR),
-                static_cast<cl_semaphore_properties_khr>(
-                    CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+                (cl_semaphore_properties_khr)
+                    CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR,
+                (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR,
+                (cl_semaphore_properties_khr)
+                    CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR,
                 0
             };
             semaphore =
@@ -566,15 +545,12 @@ struct CreateInvalidOperation : public SemaphoreTestBase
 
         // Create semaphore
         cl_semaphore_properties_khr sema_1_props[] = {
-            static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_TYPE_BINARY_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR,
+            (cl_semaphore_properties_khr)
+                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR,
             0
         };
         semaphore =
@@ -601,18 +577,14 @@ struct CreateInvalidOperation : public SemaphoreTestBase
         // a semaphore that was created by importing an external semaphore
         // handle is not permitted.
         cl_semaphore_properties_khr sema_2_props[] = {
-            static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_TYPE_BINARY_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR),
-            static_cast<cl_semaphore_properties_khr>(handle),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR,
+            (cl_semaphore_properties_khr)(handle),
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
+            (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR,
+            (cl_semaphore_properties_khr)
+                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR,
             0
         };
 
@@ -656,6 +628,16 @@ int test_semaphores_negative_create_invalid_device(cl_device_id device, cl_conte
                              cl_command_queue queue, int num_elements)
 {
     return MakeAndRunTest<CreateInvalidDevice>(device, context, queue);
+}
+
+// Confirm that creation semaphore with invalid device(s) return
+// CL_INVALID_DEVICE
+int test_semaphores_negative_create_import_invalid_device(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements)
+{
+    return MakeAndRunTest<CreateImportExternalWithInvalidDevice>(
+        device, context, queue);
 }
 
 // Confirm that creation semaphore with invalid props values return CL_INVALID_VALUE
