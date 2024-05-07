@@ -137,7 +137,7 @@ struct CreateInvalidProperty : public SemaphoreTestBase
 struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
 {
     CreateInvalidMultiDeviceProperty(cl_device_id device, cl_context context,
-                          cl_command_queue queue)
+                                     cl_command_queue queue)
         : SemaphoreTestBase(device, context, queue)
     {}
 
@@ -145,9 +145,9 @@ struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
     {
         // partition device and create new context if possible
         cl_uint maxComputeUnits = 0;
-        cl_int err = clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS,
-                                  sizeof(maxComputeUnits), &maxComputeUnits,
-                                  NULL);
+        cl_int err =
+            clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS,
+                            sizeof(maxComputeUnits), &maxComputeUnits, NULL);
         test_error(err, "Unable to get maximal number of compute units");
 
         cl_device_partition_property partitionProp[] = {
@@ -156,9 +156,9 @@ struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
 
         cl_uint deviceCount = 0;
         // how many sub-devices can we create?
-        err = clCreateSubDevices(device, partitionProp, 0, nullptr,
-                                 &deviceCount);
-        if(err!=CL_SUCCESS)
+        err =
+            clCreateSubDevices(device, partitionProp, 0, nullptr, &deviceCount);
+        if (err != CL_SUCCESS)
         {
             log_info("Can't partition device, test not supported\n");
             return TEST_SKIPPED_ITSELF;
@@ -173,9 +173,8 @@ struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
         // get the list of subDevices
         SubDevicesScopeGuarded scope_guard(deviceCount);
         err = clCreateSubDevices(device, partitionProp, deviceCount,
-                                 scope_guard.sub_devices.data(),
-                                 &deviceCount);
-        if(err!=CL_SUCCESS)
+                                 scope_guard.sub_devices.data(), &deviceCount);
+        if (err != CL_SUCCESS)
         {
             log_info("Can't partition device, test not supported\n");
             return TEST_SKIPPED_ITSELF;
@@ -183,8 +182,8 @@ struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
 
         /* Create a multi device context */
         clContextWrapper multi_device_context = clCreateContext(
-            NULL, (cl_uint)deviceCount, scope_guard.sub_devices.data(),
-            nullptr, nullptr, &err);
+            NULL, (cl_uint)deviceCount, scope_guard.sub_devices.data(), nullptr,
+            nullptr, &err);
         test_error_ret(err, "Unable to create testing context", CL_SUCCESS);
 
         cl_semaphore_properties_khr sema_props[] = {
@@ -232,7 +231,7 @@ struct CreateInvalidDevice : public SemaphoreTestBase
         // how many sub-devices can we create?
         err =
             clCreateSubDevices(device, partitionProp, 0, nullptr, &deviceCount);
-        if(err!=CL_SUCCESS)
+        if (err != CL_SUCCESS)
         {
             log_info("Can't partition device, test not supported\n");
             return TEST_SKIPPED_ITSELF;
@@ -248,7 +247,7 @@ struct CreateInvalidDevice : public SemaphoreTestBase
         SubDevicesScopeGuarded scope_guard(deviceCount);
         err = clCreateSubDevices(device, partitionProp, deviceCount,
                                  scope_guard.sub_devices.data(), &deviceCount);
-        if(err!=CL_SUCCESS)
+        if (err != CL_SUCCESS)
         {
             log_info("Can't partition device, test not supported\n");
             return TEST_SKIPPED_ITSELF;
@@ -415,8 +414,8 @@ struct CreateImportExternalWithInvalidDevice : public SemaphoreTestBase
         int handle = -1;
         size_t handle_size;
         err = clGetSemaphoreHandleForTypeKHR(
-            semaphore, device, CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR, sizeof(handle),
-            &handle, &handle_size);
+            semaphore, device, CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR,
+            sizeof(handle), &handle, &handle_size);
         test_error(err, "Could not extract semaphore handle");
         test_assert_error(sizeof(handle) == handle_size, "Invalid handle size");
         test_assert_error(handle >= 0, "Invalid handle");
@@ -567,8 +566,8 @@ struct CreateInvalidOperation : public SemaphoreTestBase
         int handle = -1;
         size_t handle_size;
         err = clGetSemaphoreHandleForTypeKHR(
-            semaphore, device, CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR, sizeof(handle),
-            &handle, &handle_size);
+            semaphore, device, CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR,
+            sizeof(handle), &handle, &handle_size);
         test_error(err, "Could not extract semaphore handle");
         test_assert_error(sizeof(handle) == handle_size, "Invalid handle size");
         test_assert_error(handle >= 0, "Invalid handle");
@@ -602,30 +601,42 @@ struct CreateInvalidOperation : public SemaphoreTestBase
 
 }
 
-// Confirm that creation semaphore with nullptr context would return CL_INVALID_CONTEXT
-int test_semaphores_negative_create_invalid_context(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+// Confirm that creation semaphore with nullptr context would return
+// CL_INVALID_CONTEXT
+int test_semaphores_negative_create_invalid_context(cl_device_id device,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements)
 {
     return MakeAndRunTest<CreateInvalidContext>(device, context, queue);
 }
 
-// Confirm that creation semaphore with invalid properties return CL_INVALID_PROPERTY
-int test_semaphores_negative_create_invalid_property(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+// Confirm that creation semaphore with invalid properties return
+// CL_INVALID_PROPERTY
+int test_semaphores_negative_create_invalid_property(cl_device_id device,
+                                                     cl_context context,
+                                                     cl_command_queue queue,
+                                                     int num_elements)
 {
     return MakeAndRunTest<CreateInvalidProperty>(device, context, queue);
 }
 
-// Confirm that creation semaphore with multi device property return CL_INVALID_PROPERTY
-int test_semaphores_negative_create_multi_device_property(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+// Confirm that creation semaphore with multi device property return
+// CL_INVALID_PROPERTY
+int test_semaphores_negative_create_multi_device_property(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements)
 {
-    return MakeAndRunTest<CreateInvalidMultiDeviceProperty>(device, context, queue);
+    return MakeAndRunTest<CreateInvalidMultiDeviceProperty>(device, context,
+                                                            queue);
 }
 
-// Confirm that creation semaphore with invalid device(s) return CL_INVALID_DEVICE
-int test_semaphores_negative_create_invalid_device(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+// Confirm that creation semaphore with invalid device(s) return
+// CL_INVALID_DEVICE
+int test_semaphores_negative_create_invalid_device(cl_device_id device,
+                                                   cl_context context,
+                                                   cl_command_queue queue,
+                                                   int num_elements)
 {
     return MakeAndRunTest<CreateInvalidDevice>(device, context, queue);
 }
@@ -640,16 +651,22 @@ int test_semaphores_negative_create_import_invalid_device(
         device, context, queue);
 }
 
-// Confirm that creation semaphore with invalid props values return CL_INVALID_VALUE
-int test_semaphores_negative_create_invalid_value(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+// Confirm that creation semaphore with invalid props values return
+// CL_INVALID_VALUE
+int test_semaphores_negative_create_invalid_value(cl_device_id device,
+                                                  cl_context context,
+                                                  cl_command_queue queue,
+                                                  int num_elements)
 {
     return MakeAndRunTest<CreateInvalidValue>(device, context, queue);
 }
 
-// Confirm that creation semaphore with invalid props values return CL_INVALID_VALUE
-int test_semaphores_negative_create_invalid_operation(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+// Confirm that creation semaphore with invalid props values return
+// CL_INVALID_VALUE
+int test_semaphores_negative_create_invalid_operation(cl_device_id device,
+                                                      cl_context context,
+                                                      cl_command_queue queue,
+                                                      int num_elements)
 {
     return MakeAndRunTest<CreateInvalidOperation>(device, context, queue);
 }

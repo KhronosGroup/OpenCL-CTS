@@ -24,7 +24,7 @@
 
 struct SemaphoreBase
 {
-    SemaphoreBase(cl_device_id device) : device(device) {}
+    SemaphoreBase(cl_device_id device): device(device) {}
 
     cl_int init_extension_functions()
     {
@@ -59,7 +59,8 @@ struct SemaphoreBase
         return CL_SUCCESS;
     }
 
-    clCreateSemaphoreWithPropertiesKHR_fn clCreateSemaphoreWithPropertiesKHR = nullptr;
+    clCreateSemaphoreWithPropertiesKHR_fn clCreateSemaphoreWithPropertiesKHR =
+        nullptr;
     clEnqueueSignalSemaphoresKHR_fn clEnqueueSignalSemaphoresKHR = nullptr;
     clEnqueueWaitSemaphoresKHR_fn clEnqueueWaitSemaphoresKHR = nullptr;
     clReleaseSemaphoreKHR_fn clReleaseSemaphoreKHR = nullptr;
@@ -146,7 +147,7 @@ public:
     }
 
     operator cl_semaphore_khr() const { return object; }
-    operator const cl_semaphore_khr*() { return &object; }
+    operator const cl_semaphore_khr *() { return &object; }
 };
 
 struct SemaphoreTestBase : public SemaphoreBase
@@ -168,7 +169,6 @@ struct SemaphoreTestBase : public SemaphoreBase
     virtual cl_int Run() = 0;
 
 protected:
-
     cl_context context = nullptr;
     clCommandQueueWrapper queue = nullptr;
     clSemaphoreWrapper semaphore = nullptr;
@@ -190,8 +190,7 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
     {
         auto test_fixture = T(device, context, queue);
         status = test_fixture.Run();
-    }
-    catch (const std::runtime_error &e)
+    } catch (const std::runtime_error &e)
     {
         log_error("%s", e.what());
         return TEST_FAIL;
