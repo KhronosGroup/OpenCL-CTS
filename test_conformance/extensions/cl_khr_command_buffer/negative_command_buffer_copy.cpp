@@ -193,16 +193,58 @@ struct CommandBufferCopySyncPointsNullOrNumZero : public BasicCommandBufferTest
 
     cl_int Run() override
     {
-        cl_int error = clCommandCopyBufferKHR(command_buffer, nullptr, in_mem,
-                                              out_mem, 0, 0, data_size(), 1,
-                                              nullptr, nullptr, nullptr);
+        cl_int error = CL_SUCCESS;
+        const size_t origin[3] = { 0, 0, 0 }, region[3] = { 512, 512, 1 };
+        const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
+        clMemWrapper image = create_image_2d(
+            context, CL_MEM_READ_WRITE, &formats, 512, 512, 0, NULL, &error);
+        test_error(error, "create_image_2d failed");
+        clMemWrapper buffer = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                             data_size(), nullptr, &error);
+        test_error(error, "Unable to create buffer");
+
+
+        cl_sync_point_khr invalid_point = 0;
+        std::vector<cl_sync_point_khr*> invalid_sync_points;
+        invalid_sync_points.push_back(&invalid_point);
+
+        error = clCommandCopyBufferKHR(
+            command_buffer, nullptr, in_mem, out_mem, 0, 0, data_size(), 1,
+            *invalid_sync_points.data(), nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyBufferKHR should return "
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
-        const size_t origin[3] = { 0, 0, 0 }, region[3] = { 512, 512, 1 };
+        error = clCommandCopyBufferRectKHR(
+            command_buffer, nullptr, in_mem, out_mem, origin, origin, region, 0,
+            0, 0, 0, 1, *invalid_sync_points.data(), nullptr, nullptr);
+
+        test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
+                               "clCommandCopyBufferRectKHR should return "
+                               "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
+                               TEST_FAIL);
+
+        error = clCommandCopyImageToBufferKHR(
+            command_buffer, nullptr, image, buffer, origin, region, 0, 1,
+            *invalid_sync_points.data(), nullptr, nullptr);
+
+        test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
+                               "clCommandCopyImageToBufferKHR should return "
+                               "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
+                               TEST_FAIL);
+
+
+        error = clCommandCopyBufferKHR(command_buffer, nullptr, in_mem, out_mem,
+                                       0, 0, data_size(), 1, nullptr, nullptr,
+                                       nullptr);
+
+        test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
+                               "clCommandCopyBufferKHR should return "
+                               "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
+                               TEST_FAIL);
+
 
         error = clCommandCopyBufferRectKHR(
             command_buffer, nullptr, in_mem, out_mem, origin, origin, region, 0,
@@ -213,13 +255,6 @@ struct CommandBufferCopySyncPointsNullOrNumZero : public BasicCommandBufferTest
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
-        const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
-        clMemWrapper image = create_image_2d(
-            context, CL_MEM_READ_WRITE, &formats, 512, 512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
-        clMemWrapper buffer = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                             data_size(), nullptr, &error);
-        test_error(error, "Unable to create buffer");
 
         error = clCommandCopyImageToBufferKHR(command_buffer, nullptr, image,
                                               buffer, origin, region, 0, 1,
@@ -230,8 +265,12 @@ struct CommandBufferCopySyncPointsNullOrNumZero : public BasicCommandBufferTest
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
-        cl_sync_point_khr point = 1;
+
+        cl_sync_point_khr point;
         std::vector<cl_sync_point_khr> sync_points;
+        error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
+                                                nullptr, &point, nullptr);
+        test_error(error, "clCommandBarrierWithWaitListKHR failed");
         sync_points.push_back(point);
 
         error = clCommandCopyBufferKHR(command_buffer, nullptr, in_mem, out_mem,
@@ -255,37 +294,6 @@ struct CommandBufferCopySyncPointsNullOrNumZero : public BasicCommandBufferTest
         error = clCommandCopyImageToBufferKHR(
             command_buffer, nullptr, image, buffer, origin, region, 0, 0,
             sync_points.data(), nullptr, nullptr);
-
-        test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
-                               "clCommandCopyImageToBufferKHR should return "
-                               "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
-                               TEST_FAIL);
-
-        cl_sync_point_khr* invalid_point = nullptr;
-        std::vector<cl_sync_point_khr*> invalid_sync_points;
-        invalid_sync_points.push_back(invalid_point);
-
-        error = clCommandCopyBufferKHR(
-            command_buffer, nullptr, in_mem, out_mem, 0, 0, data_size(), 1,
-            *invalid_sync_points.data(), nullptr, nullptr);
-
-        test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
-                               "clCommandCopyBufferKHR should return "
-                               "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
-                               TEST_FAIL);
-
-        error = clCommandCopyBufferRectKHR(
-            command_buffer, nullptr, in_mem, out_mem, origin, origin, region, 0,
-            0, 0, 0, 1, *invalid_sync_points.data(), nullptr, nullptr);
-
-        test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
-                               "clCommandCopyBufferRectKHR should return "
-                               "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
-                               TEST_FAIL);
-
-        error = clCommandCopyImageToBufferKHR(
-            command_buffer, nullptr, image, buffer, origin, region, 0, 1,
-            *invalid_sync_points.data(), nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyImageToBufferKHR should return "
