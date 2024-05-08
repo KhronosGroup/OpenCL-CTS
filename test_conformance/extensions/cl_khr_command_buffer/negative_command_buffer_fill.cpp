@@ -168,9 +168,32 @@ struct CommandBufferCommandFillSyncPointsNullOrNumZero
 
     cl_int Run() override
     {
+        cl_sync_point_khr invalid_point = 0;
+        std::vector<cl_sync_point_khr*> invalid_sync_points;
+        invalid_sync_points.push_back(&invalid_point);
+
         cl_int error = clCommandFillBufferKHR(
             command_buffer, nullptr, out_mem, &pattern, sizeof(cl_int), 0,
-            data_size(), 1, nullptr, nullptr, nullptr);
+            data_size(), 1, *invalid_sync_points.data(), nullptr, nullptr);
+
+        test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
+                               "clCommandFillBufferKHR should return "
+                               "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
+                               TEST_FAIL);
+
+        error = clCommandFillImageKHR(
+            command_buffer, nullptr, dst_image, fill_color_1, origin, region, 1,
+            *invalid_sync_points.data(), nullptr, nullptr);
+
+        test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
+                               "clCommandFillImageKHR should return "
+                               "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
+                               TEST_FAIL);
+
+
+        error = clCommandFillBufferKHR(command_buffer, nullptr, out_mem,
+                                       &pattern, sizeof(cl_int), 0, data_size(),
+                                       1, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandFillBufferKHR should return "
@@ -186,7 +209,10 @@ struct CommandBufferCommandFillSyncPointsNullOrNumZero
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
-        cl_sync_point_khr point = 1;
+        cl_sync_point_khr point;
+        error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
+                                                nullptr, &point, nullptr);
+        test_error(error, "clCommandBarrierWithWaitListKHR failed");
         std::vector<cl_sync_point_khr> sync_points;
         sync_points.push_back(point);
 
@@ -202,28 +228,6 @@ struct CommandBufferCommandFillSyncPointsNullOrNumZero
         error = clCommandFillImageKHR(command_buffer, nullptr, dst_image,
                                       fill_color_1, origin, region, 0,
                                       sync_points.data(), nullptr, nullptr);
-
-        test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
-                               "clCommandFillImageKHR should return "
-                               "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
-                               TEST_FAIL);
-
-        cl_sync_point_khr* invalid_point = nullptr;
-        std::vector<cl_sync_point_khr*> invalid_sync_points;
-        invalid_sync_points.push_back(invalid_point);
-
-        error = clCommandFillBufferKHR(
-            command_buffer, nullptr, out_mem, &pattern, sizeof(cl_int), 0,
-            data_size(), 1, *invalid_sync_points.data(), nullptr, nullptr);
-
-        test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
-                               "clCommandFillBufferKHR should return "
-                               "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
-                               TEST_FAIL);
-
-        error = clCommandFillImageKHR(
-            command_buffer, nullptr, dst_image, fill_color_1, origin, region, 1,
-            *invalid_sync_points.data(), nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandFillImageKHR should return "
