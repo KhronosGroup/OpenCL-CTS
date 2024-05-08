@@ -105,7 +105,19 @@ struct CommandNDRangeKerneSyncPointsNullOrNumZero
 
     cl_int Run() override
     {
+        cl_sync_point_khr invalid_point = 0;
+        cl_sync_point_khr* invalid_sync_points[] = { &invalid_point };
         cl_int error = clCommandNDRangeKernelKHR(
+            command_buffer, nullptr, nullptr, kernel, 0, nullptr, &num_elements,
+            nullptr, 1, invalid_sync_points[0], nullptr, nullptr);
+
+        test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
+                               "clCommandNDRangeKernelKHR should return "
+                               "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
+                               TEST_FAIL);
+
+
+        error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
             nullptr, 1, nullptr, nullptr, nullptr);
 
@@ -130,16 +142,6 @@ struct CommandNDRangeKerneSyncPointsNullOrNumZero
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
-        cl_sync_point_khr invalid_point = 0;
-        cl_sync_point_khr* invalid_sync_points[] = { &invalid_point };
-        error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 0, nullptr, &num_elements,
-            nullptr, 1, invalid_sync_points[0], nullptr, nullptr);
-
-        test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
-                               "clCommandNDRangeKernelKHR should return "
-                               "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
-                               TEST_FAIL);
 
         return CL_SUCCESS;
     }
@@ -173,7 +175,8 @@ struct CommandNDRangeKernelInvalidProperties : public BasicCommandBufferTest
 
     cl_int Run() override
     {
-        cl_ndrange_kernel_command_properties_khr empty_properties = 0;
+        cl_ndrange_kernel_command_properties_khr empty_properties =
+            ~cl_ndrange_kernel_command_properties_khr(0);
 
         cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, &empty_properties, kernel, 1, nullptr,
