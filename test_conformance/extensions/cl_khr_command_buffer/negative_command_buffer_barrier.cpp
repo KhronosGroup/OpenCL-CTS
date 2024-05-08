@@ -114,12 +114,9 @@ struct CommandBufferBarrierSyncPointsNullOrNumZero
     cl_int Run() override
     {
         cl_sync_point_khr invalid_point = 0;
-        std::vector<cl_sync_point_khr*> invalid_sync_points;
-        invalid_sync_points.push_back(&invalid_point);
 
         cl_int error = clCommandBarrierWithWaitListKHR(
-            command_buffer, nullptr, 1, *invalid_sync_points.data(), nullptr,
-            nullptr);
+            command_buffer, nullptr, 1, &invalid_point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandBarrierWithWaitListKHR should return "
@@ -141,11 +138,9 @@ struct CommandBufferBarrierSyncPointsNullOrNumZero
             clCommandCopyBufferKHR(command_buffer, nullptr, in_mem, out_mem, 0,
                                    0, data_size(), 0, nullptr, &point, nullptr);
         test_error(error, "clCommandCopyBufferKHR failed");
-        std::vector<cl_sync_point_khr> sync_points;
-        sync_points.push_back(point);
 
-        error = clCommandBarrierWithWaitListKHR(
-            command_buffer, nullptr, 0, sync_points.data(), nullptr, nullptr);
+        error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
+                                                &point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandBarrierWithWaitListKHR should return "
