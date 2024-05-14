@@ -224,6 +224,21 @@ extern int test_negative_get_command_buffer_info_context(cl_device_id device,
                                                          cl_context context,
                                                          cl_command_queue queue,
                                                          int num_elements);
+extern int test_negative_command_buffer_barrier_not_null_queue(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_command_buffer_barrier_invalid_command_buffer(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_command_buffer_barrier_buffer_finalized(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_command_buffer_barrier_mutable_handle_not_null(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_command_buffer_barrier_sync_points_null_or_num_zero(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
 extern int test_negative_enqueue_command_buffer_invalid_command_buffer(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);

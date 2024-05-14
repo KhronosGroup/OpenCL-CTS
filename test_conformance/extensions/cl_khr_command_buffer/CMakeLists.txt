@@ -21,6 +21,7 @@ set(${MODULE_NAME}_SOURCES
     negative_command_buffer_create.cpp
     negative_command_nd_range_kernel.cpp
     negative_command_buffer_get_info.cpp
+    negative_command_buffer_barrier.cpp
     negative_command_buffer_enqueue.cpp
 )
 
