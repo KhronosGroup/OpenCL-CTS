@@ -63,7 +63,7 @@ enum PrintfTestType
 
 struct printDataGenParameters
 {
-    std::vector<std::string> genericFormats;
+    const char* genericFormat;
     const char* dataRepresentation;
     const char* vectorFormatFlag;
     const char* vectorFormatSpecifier;
