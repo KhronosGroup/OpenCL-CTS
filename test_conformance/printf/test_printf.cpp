@@ -426,7 +426,7 @@ static int doTest(cl_command_queue queue, cl_context context,
                   const unsigned int testId, const unsigned int testNum,
                   cl_device_id device)
 {
-    int err = CL_SUCCESS;
+    int err = TEST_FAIL;
     for (unsigned formatNum = 0; formatNum
          < allTestCase[testId]->_genParameters[testNum].genericFormats.size();
          formatNum++)

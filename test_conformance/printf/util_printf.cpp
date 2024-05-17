@@ -780,27 +780,27 @@ std::vector<printDataGenParameters> printVectorGenParameters = {
 
     //(Minimum)Two-wide,two positions after decimal
 
-    { {}, "(1.0f,2.0f,3.0f,4.0f)", "%2.2", "hlf", "float", "4" },
+    { { "" }, "(1.0f,2.0f,3.0f,4.0f)", "%2.2", "hlf", "float", "4" },
 
     // Alternative form,uchar argument
 
-    { {}, "(0xFA,0xFB)", "%#", "hhx", "uchar", "2" },
+    { { "" }, "(0xFA,0xFB)", "%#", "hhx", "uchar", "2" },
 
     // Alternative form,ushort argument
 
-    { {}, "(0x1234,0x8765)", "%#", "hx", "ushort", "2" },
+    { { "" }, "(0x1234,0x8765)", "%#", "hx", "ushort", "2" },
 
     // Alternative form,uint argument
 
-    { {}, "(0x12345678,0x87654321)", "%#", "hlx", "uint", "2" },
+    { { "" }, "(0x12345678,0x87654321)", "%#", "hlx", "uint", "2" },
 
     // Alternative form,long argument
 
-    { {}, "(12345678,98765432)", "%", "ld", "long", "2" },
+    { { "" }, "(12345678,98765432)", "%", "ld", "long", "2" },
 
     //(Minimum)Two-wide,two positions after decimal
 
-    { {}, "(1.0h,2.0h,3.0h,4.0h)", "%2.2", "hf", "half", "4" }
+    { { "" }, "(1.0h,2.0h,3.0h,4.0h)", "%2.2", "hf", "half", "4" }
 };
 
 //------------------------------------------------------------
