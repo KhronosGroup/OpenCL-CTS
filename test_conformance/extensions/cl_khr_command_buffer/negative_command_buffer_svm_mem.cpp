@@ -49,107 +49,7 @@ struct CommandBufferCommandSVMQueueNotNull : public BasicSVMCommandBufferTest
         return CL_SUCCESS;
     }
 
-    bool Skip() override
-    {
-        return BasicSVMCommandBufferTest::Skip()
-            || is_extension_available(device,
-                                      "cl_khr_command_buffer_multi_device");
-    }
-
     const cl_char pattern_1 = 0x14;
-};
-
-// CL_INVALID_CONTEXT if the context associated with command_queue,
-// command_buffer, and kernel are not the same.
-struct CommandBufferCommandSVMDifferentContext
-    : public BasicSVMCommandBufferTest
-{
-    using BasicSVMCommandBufferTest::BasicSVMCommandBufferTest;
-
-    cl_int Run() override
-    {
-        cl_int error = clCommandSVMMemcpyKHR(
-            command_buffer, nullptr, svm_out_mem(), svm_in_mem(), data_size(),
-            0, nullptr, nullptr, nullptr);
-
-        test_failure_error_ret(
-            error, CL_INVALID_CONTEXT,
-            "clCommandSVMMemcpyKHR should return CL_INVALID_CONTEXT",
-            TEST_FAIL);
-
-        error = clCommandSVMMemFillKHR(command_buffer, nullptr, svm_in_mem(),
-                                       &pattern_1, sizeof(cl_char), data_size(),
-                                       0, nullptr, nullptr, nullptr);
-
-        test_failure_error_ret(
-            error, CL_INVALID_CONTEXT,
-            "clCommandSVMMemFillKHR should return CL_INVALID_CONTEXT",
-            TEST_FAIL);
-
-        return CL_SUCCESS;
-    }
-
-    bool Skip() override
-    {
-        return BasicSVMCommandBufferTest::Skip()
-            || is_extension_available(device,
-                                      "cl_khr_command_buffer_multi_device");
-    }
-
-    cl_int SetUp(int elements) override
-    {
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        error = CreateKernelWithDifferentContext();
-        test_error(error, "Failed to create kernel");
-
-        size_t size = sizeof(cl_int) * num_elements * buffer_size_multiplier;
-        svm_in_mem = clSVMWrapper(new_context, size);
-        if (svm_in_mem() == nullptr)
-        {
-            test_error(CL_OUT_OF_RESOURCES, "Unable to allocate SVM memory");
-        }
-        svm_out_mem = clSVMWrapper(new_context, size);
-        if (svm_out_mem() == nullptr)
-        {
-            test_error(CL_OUT_OF_RESOURCES, "Unable to allocate SVM memory");
-        }
-
-
-        return CL_SUCCESS;
-    }
-
-    cl_int CreateKernelWithDifferentContext()
-    {
-        cl_int error = CL_SUCCESS;
-
-        new_context = clCreateContext(0, 1, &device, nullptr, nullptr, &error);
-        test_error(error, "Failed to create context");
-
-        const char* kernel_str =
-            R"(
-          __kernel void copy(__global int* in, __global int* out, __global int* offset) {
-              size_t id = get_global_id(0);
-              int ind = offset[0] + id;
-              out[ind] = in[ind];
-          })";
-
-        error = create_single_kernel_helper_create_program(
-            new_context, &program, 1, &kernel_str);
-        test_error(error, "Failed to create program with source");
-
-        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-        test_error(error, "Failed to build program");
-
-        kernel = clCreateKernel(program, "copy", &error);
-        test_error(error, "Failed to create copy kernel");
-
-        return CL_SUCCESS;
-    }
-
-    const cl_char pattern_1 = 0x14;
-    clContextWrapper new_context = nullptr;
 };
 
 // CL_INVALID_SYNC_POINT_WAIT_LIST_KHR if sync_point_wait_list is NULL and
@@ -164,20 +64,19 @@ struct CommandBufferCommandSVMSyncPointsNullOrNumZero
     cl_int Run() override
     {
         cl_sync_point_khr invalid_point = 0;
-        cl_sync_point_khr* invalid_sync_points[] = { &invalid_point };
 
         cl_int error = clCommandSVMMemcpyKHR(
             command_buffer, nullptr, svm_out_mem(), svm_in_mem(), data_size(),
-            1, invalid_sync_points[0], nullptr, nullptr);
+            1, &invalid_point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandSVMMemcpyKHR should return "
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
-        error = clCommandSVMMemFillKHR(
-            command_buffer, nullptr, svm_in_mem(), &pattern_1, sizeof(cl_char),
-            data_size(), 1, invalid_sync_points[0], nullptr, nullptr);
+        error = clCommandSVMMemFillKHR(command_buffer, nullptr, svm_in_mem(),
+                                       &pattern_1, sizeof(cl_char), data_size(),
+                                       1, &invalid_point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandSVMMemFillKHR should return "
@@ -208,11 +107,10 @@ struct CommandBufferCommandSVMSyncPointsNullOrNumZero
         error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
                                                 nullptr, &point, nullptr);
         test_error(error, "clCommandBarrierWithWaitListKHR failed");
-        cl_sync_point_khr* sync_points[] = { &point };
 
         error = clCommandSVMMemcpyKHR(command_buffer, nullptr, svm_out_mem(),
-                                      svm_in_mem(), data_size(), 0,
-                                      sync_points[0], nullptr, nullptr);
+                                      svm_in_mem(), data_size(), 0, &point,
+                                      nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandSVMMemcpyKHR should return "
@@ -221,7 +119,7 @@ struct CommandBufferCommandSVMSyncPointsNullOrNumZero
 
         error = clCommandSVMMemFillKHR(command_buffer, nullptr, svm_in_mem(),
                                        &pattern_1, sizeof(cl_char), data_size(),
-                                       0, sync_points[0], nullptr, nullptr);
+                                       0, &point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandSVMMemFillKHR should return "
@@ -230,13 +128,6 @@ struct CommandBufferCommandSVMSyncPointsNullOrNumZero
 
 
         return CL_SUCCESS;
-    }
-
-    bool Skip() override
-    {
-        return BasicSVMCommandBufferTest::Skip()
-            || is_extension_available(device,
-                                      "cl_khr_command_buffer_multi_device");
     }
 
     const cl_char pattern_1 = 0x14;
@@ -270,13 +161,6 @@ struct CommandBufferCommandSVMInvalidCommandBuffer
                                TEST_FAIL);
 
         return CL_SUCCESS;
-    }
-
-    bool Skip() override
-    {
-        return BasicSVMCommandBufferTest::Skip()
-            || is_extension_available(device,
-                                      "cl_khr_command_buffer_multi_device");
     }
 
     const cl_char pattern_1 = 0x14;
@@ -314,13 +198,6 @@ struct CommandBufferCommandSVMFinalizedCommandBuffer
         return CL_SUCCESS;
     }
 
-    bool Skip() override
-    {
-        return BasicSVMCommandBufferTest::Skip()
-            || is_extension_available(device,
-                                      "cl_khr_command_buffer_multi_device");
-    }
-
     const cl_char pattern_1 = 0x14;
 };
 
@@ -353,30 +230,15 @@ struct CommandBufferCommandSVMMutableHandleNotNull
         return CL_SUCCESS;
     }
 
-    bool Skip() override
-    {
-        return BasicSVMCommandBufferTest::Skip()
-            || is_extension_available(device,
-                                      "cl_khr_command_buffer_multi_device");
-    }
-
     const cl_char pattern_1 = 0x14;
 };
-};
+}
 
 int test_negative_command_buffer_command_svm_queue_not_null(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements)
 {
     return MakeAndRunTest<CommandBufferCommandSVMQueueNotNull>(
-        device, context, queue, num_elements);
-}
-
-int test_negative_command_buffer_command_svm_different_context(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
-{
-    return MakeAndRunTest<CommandBufferCommandSVMDifferentContext>(
         device, context, queue, num_elements);
 }
 
