@@ -1663,7 +1663,9 @@ int test_read_image_set_2D(cl_device_id device, cl_context context,
     {
         for( imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++ )
         {
-            imageInfo.rowPitch = imageInfo.width * pixelSize;
+            if (!is_width_compatible(imageInfo)) continue;
+            imageInfo.rowPitch = calculate_row_pitch(imageInfo, pixelSize);
+
             for( imageInfo.height = 1; imageInfo.height < 9; imageInfo.height++ )
             {
                 if( gTestMipmaps )
@@ -1688,10 +1690,28 @@ int test_read_image_set_2D(cl_device_id device, cl_context context,
 
         for( size_t idx = 0; idx < numbeOfSizes; idx++ )
         {
-            imageInfo.width = sizes[ idx ][ 0 ];
-            imageInfo.height = sizes[ idx ][ 1 ];
-            imageInfo.rowPitch = imageInfo.width * pixelSize;
-            log_info("Testing %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ]);
+            if (imageInfo.format->image_channel_data_type
+                == CL_UNSIGNED_INT_RAW10_EXT)
+            {
+                imageInfo.width = sizes[idx][0] & ~0x3ULL;
+            }
+            else if (imageInfo.format->image_channel_data_type
+                     == CL_UNSIGNED_INT_RAW12_EXT)
+            {
+                imageInfo.width = sizes[idx][0] & ~0x1ULL;
+            }
+            else
+            {
+                imageInfo.width = sizes[idx][0];
+            }
+
+            imageInfo.height = sizes[idx][1];
+            imageInfo.rowPitch = calculate_row_pitch(imageInfo, pixelSize);
+
+            if (0 == imageInfo.width) continue;
+
+            log_info("Testing %d x %d\n", (int)imageInfo.width,
+                     (int)imageInfo.height);
 
             if( gTestMipmaps )
                 imageInfo.num_mip_levels = (size_t) random_in_range(2, compute_max_mip_levels(imageInfo.width, imageInfo.height, 0)-1, seed);
@@ -1759,7 +1779,8 @@ int test_read_image_set_2D(cl_device_id device, cl_context context,
                 imageInfo.width = (size_t)random_log_in_range( 16, maxWidthRange, seed );
                 imageInfo.height = (size_t)random_log_in_range( 16, maxHeightRange, seed );
 
-                imageInfo.rowPitch = imageInfo.width * pixelSize;
+                imageInfo.rowPitch = calculate_row_pitch(imageInfo, pixelSize);
+
                 if( gTestMipmaps )
                 {
                     imageInfo.num_mip_levels = (size_t) random_in_range(2, compute_max_mip_levels(imageInfo.width, imageInfo.height, 0)-1, seed);
@@ -1782,7 +1803,8 @@ int test_read_image_set_2D(cl_device_id device, cl_context context,
 
                     size = (size_t)imageInfo.rowPitch * (size_t)imageInfo.height * 4;
                 }
-            } while(  size > maxAllocSize || ( size * 3 ) > memSize );
+            } while (size > maxAllocSize || (size * 3) > memSize
+                     || !is_width_compatible(imageInfo));
 
             if( gDebugTrace )
                 log_info( "   at size %d,%d (row pitch %d) out of %d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.rowPitch, (int)maxWidth, (int)maxHeight );
