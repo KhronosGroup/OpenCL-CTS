@@ -202,6 +202,8 @@ const char *GetChannelTypeName(cl_channel_type type)
         case CL_SFIXED14_APPLE: return "CL_SFIXED14_APPLE";
 #endif
         case CL_UNORM_INT24: return "CL_UNORM_INT24";
+        case CL_UNSIGNED_INT_RAW10_EXT: return "CL_UNSIGNED_INT_RAW10_EXT";
+        case CL_UNSIGNED_INT_RAW12_EXT: return "CL_UNSIGNED_INT_RAW12_EXT";
         default: return NULL;
     }
 }
