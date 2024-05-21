@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,4 +16,6 @@
 #include "testBase.h"
 #include "allocation_utils.h"
 
-int fill_mem_with_data(cl_context context, cl_device_id device_id, cl_command_queue *queue, cl_mem mem, MTdata d, cl_bool blocking_write);
+int fill_mem_with_data(cl_context context, cl_device_id device_id,
+                       cl_command_queue *queue, cl_mem mem, MTdata d,
+                       cl_bool blocking_write);
