@@ -18,36 +18,13 @@
 #include <vector>
 
 //--------------------------------------------------------------------------
-namespace {
 
-// CL_INVALID_COMMAND_QUEUE if command_queue is not NULL.
-struct CommandBufferCopyImageQueueNotNull : public BasicCommandBufferTest
+struct CommandCopyBaseTest : BasicCommandBufferTest
 {
-    using BasicCommandBufferTest::BasicCommandBufferTest;
-
-    cl_int Run() override
-    {
-        cl_int error = clCommandCopyImageKHR(command_buffer, queue, src_image,
-                                             dst_image, origin, origin, region,
-                                             0, nullptr, nullptr, nullptr);
-
-        test_failure_error_ret(error, CL_INVALID_COMMAND_QUEUE,
-                               "clCommandCopyImageKHR should return "
-                               "CL_INVALID_COMMAND_QUEUE",
-                               TEST_FAIL);
-
-        error = clCommandCopyImageToBufferKHR(command_buffer, queue, src_image,
-                                              dst_image, origin, origin, 0, 0,
-                                              nullptr, nullptr, nullptr);
-
-        test_failure_error_ret(error, CL_INVALID_COMMAND_QUEUE,
-                               "clCommandCopyImageKHR should return "
-                               "CL_INVALID_COMMAND_QUEUE",
-                               TEST_FAIL);
-
-
-        return CL_SUCCESS;
-    }
+    CommandCopyBaseTest(cl_device_id device, cl_context context,
+                        cl_command_queue queue)
+        : BasicCommandBufferTest(device, context, queue)
+    {}
 
     cl_int SetUp(int elements) override
     {
@@ -65,6 +42,19 @@ struct CommandBufferCopyImageQueueNotNull : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
+    bool Skip() override
+    {
+        cl_bool image_support;
+
+        cl_int error =
+            clGetDeviceInfo(device, CL_DEVICE_IMAGE_SUPPORT,
+                            sizeof(image_support), &image_support, nullptr);
+        test_error(error, "clGetDeviceInfo for CL_DEVICE_IMAGE_SUPPORT failed");
+
+        return (!image_support || BasicCommandBufferTest::Skip());
+    }
+
+protected:
     clMemWrapper src_image;
     clMemWrapper dst_image;
     const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
@@ -72,11 +62,50 @@ struct CommandBufferCopyImageQueueNotNull : public BasicCommandBufferTest
     const size_t region[3] = { 512, 512, 1 };
 };
 
+namespace {
+
+// CL_INVALID_COMMAND_QUEUE if command_queue is not NULL.
+struct CommandBufferCopyImageQueueNotNull : public CommandCopyBaseTest
+{
+    using CommandCopyBaseTest::CommandCopyBaseTest;
+
+    cl_int Run() override
+    {
+        cl_int error = clCommandCopyImageKHR(command_buffer, queue, src_image,
+                                             dst_image, origin, origin, region,
+                                             0, nullptr, nullptr, nullptr);
+
+        test_failure_error_ret(error, CL_INVALID_COMMAND_QUEUE,
+                               "clCommandCopyImageKHR should return "
+                               "CL_INVALID_COMMAND_QUEUE",
+                               TEST_FAIL);
+
+        error = clCommandCopyImageToBufferKHR(command_buffer, queue, src_image,
+                                              dst_image, origin, region, 0, 0,
+                                              nullptr, nullptr, nullptr);
+
+        test_failure_error_ret(error, CL_INVALID_COMMAND_QUEUE,
+                               "clCommandCopyImageToBufferKHR should return "
+                               "CL_INVALID_COMMAND_QUEUE",
+                               TEST_FAIL);
+
+
+        return CL_SUCCESS;
+    }
+
+    bool Skip() override
+    {
+        return CommandCopyBaseTest::Skip()
+            || is_extension_available(device,
+                                      "cl_khr_command_buffer_multi_device");
+    }
+};
+
 // CL_INVALID_CONTEXT if the context associated with command_queue,
 // command_buffer, src_image, and dst_image are not the same.
-struct CommandBufferCopyImageContextNotSame : public BasicCommandBufferTest
+struct CommandBufferCopyImageContextNotSame : public CommandCopyBaseTest
 {
-    using BasicCommandBufferTest::BasicCommandBufferTest;
+    using CommandCopyBaseTest::CommandCopyBaseTest;
 
     cl_int Run() override
     {
@@ -90,11 +119,11 @@ struct CommandBufferCopyImageContextNotSame : public BasicCommandBufferTest
                                TEST_FAIL);
 
         error = clCommandCopyImageToBufferKHR(
-            command_buffer, nullptr, src_image_ctx, dst_image, origin, origin,
+            command_buffer, nullptr, src_image_ctx, dst_image, origin, region,
             0, 0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_CONTEXT,
-                               "clCommandCopyImageKHR should return "
+                               "clCommandCopyImageToBufferKHR should return "
                                "CL_INVALID_CONTEXT",
                                TEST_FAIL);
 
@@ -108,11 +137,11 @@ struct CommandBufferCopyImageContextNotSame : public BasicCommandBufferTest
                                TEST_FAIL);
 
         error = clCommandCopyImageToBufferKHR(
-            command_buffer, nullptr, src_image, dst_image_ctx, origin, origin,
+            command_buffer, nullptr, src_image, dst_image_ctx, origin, region,
             0, 0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_CONTEXT,
-                               "clCommandCopyImageKHR should return "
+                               "clCommandCopyImageToBufferKHR should return "
                                "CL_INVALID_CONTEXT",
                                TEST_FAIL);
 
@@ -130,11 +159,11 @@ struct CommandBufferCopyImageContextNotSame : public BasicCommandBufferTest
                                TEST_FAIL);
 
         error = clCommandCopyImageToBufferKHR(
-            command_buffer, nullptr, src_image, dst_image, origin, origin, 0, 0,
+            command_buffer, nullptr, src_image, dst_image, origin, region, 0, 0,
             nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_CONTEXT,
-                               "clCommandCopyImageKHR should return "
+                               "clCommandCopyImageToBufferKHR should return "
                                "CL_INVALID_CONTEXT",
                                TEST_FAIL);
 
@@ -143,7 +172,7 @@ struct CommandBufferCopyImageContextNotSame : public BasicCommandBufferTest
 
     cl_int SetUp(int elements) override
     {
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
+        cl_int error = CommandCopyBaseTest::SetUp(elements);
         test_error(error, "BasicCommandBufferTest::SetUp failed");
 
         context1 = clCreateContext(0, 1, &device, nullptr, nullptr, &error);
@@ -160,45 +189,30 @@ struct CommandBufferCopyImageContextNotSame : public BasicCommandBufferTest
         queue1 = clCreateCommandQueue(context1, device, 0, &error);
         test_error(error, "clCreateCommandQueue failed");
 
-        src_image = create_image_2d(context, CL_MEM_READ_ONLY, &formats, 512,
-                                    512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
-
-        dst_image = create_image_2d(context, CL_MEM_WRITE_ONLY, &formats, 512,
-                                    512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
-
         return CL_SUCCESS;
     }
 
     clContextWrapper context1;
     clCommandQueueWrapper queue1;
-    clMemWrapper src_image;
-    clMemWrapper dst_image;
     clMemWrapper src_image_ctx;
     clMemWrapper dst_image_ctx;
-    const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
-    const size_t origin[3] = { 0, 0, 0 };
-    const size_t region[3] = { 512, 512, 1 };
 };
 
 // CL_INVALID_SYNC_POINT_WAIT_LIST_KHR if sync_point_wait_list is NULL and
 // num_sync_points_in_wait_list is > 0, or sync_point_wait_list is not NULL and
 // num_sync_points_in_wait_list is 0, or if synchronization-point objects in
 // sync_point_wait_list are not valid synchronization-points.
-struct CommandBufferCopySyncPointsNullOrNumZero : public BasicCommandBufferTest
+struct CommandBufferCopySyncPointsNullOrNumZero : public CommandCopyBaseTest
 {
-    using BasicCommandBufferTest::BasicCommandBufferTest;
+    using CommandCopyBaseTest::CommandCopyBaseTest;
 
     cl_int Run() override
     {
         cl_sync_point_khr invalid_point = 0;
-        std::vector<cl_sync_point_khr*> invalid_sync_points;
-        invalid_sync_points.push_back(&invalid_point);
 
         cl_int error = clCommandCopyImageKHR(
             command_buffer, nullptr, src_image, dst_image, origin, origin,
-            region, 1, *invalid_sync_points.data(), nullptr, nullptr);
+            region, 1, &invalid_point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyImageKHR should return "
@@ -206,11 +220,11 @@ struct CommandBufferCopySyncPointsNullOrNumZero : public BasicCommandBufferTest
                                TEST_FAIL);
 
         error = clCommandCopyImageToBufferKHR(
-            command_buffer, nullptr, src_image, dst_image, origin, origin, 0, 1,
-            *invalid_sync_points.data(), nullptr, nullptr);
+            command_buffer, nullptr, src_image, dst_image, origin, region, 0, 1,
+            &invalid_point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
-                               "clCommandCopyImageKHR should return "
+                               "clCommandCopyImageToBufferKHR should return "
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
@@ -225,11 +239,11 @@ struct CommandBufferCopySyncPointsNullOrNumZero : public BasicCommandBufferTest
                                TEST_FAIL);
 
         error = clCommandCopyImageToBufferKHR(
-            command_buffer, nullptr, src_image, dst_image, origin, origin, 0, 1,
+            command_buffer, nullptr, src_image, dst_image, origin, region, 0, 1,
             nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
-                               "clCommandCopyImageKHR should return "
+                               "clCommandCopyImageToBufferKHR should return "
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
@@ -238,12 +252,10 @@ struct CommandBufferCopySyncPointsNullOrNumZero : public BasicCommandBufferTest
         error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
                                                 nullptr, &point, nullptr);
         test_error(error, "clCommandBarrierWithWaitListKHR failed");
-        std::vector<cl_sync_point_khr> sync_points;
-        sync_points.push_back(point);
 
         error = clCommandCopyImageKHR(command_buffer, nullptr, src_image,
                                       dst_image, origin, origin, region, 0,
-                                      sync_points.data(), nullptr, nullptr);
+                                      &point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyImageKHR should return "
@@ -251,47 +263,24 @@ struct CommandBufferCopySyncPointsNullOrNumZero : public BasicCommandBufferTest
                                TEST_FAIL);
 
         error = clCommandCopyImageToBufferKHR(
-            command_buffer, nullptr, src_image, dst_image, origin, origin, 0, 0,
-            sync_points.data(), nullptr, nullptr);
+            command_buffer, nullptr, src_image, dst_image, origin, region, 0, 0,
+            &point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
-                               "clCommandCopyImageKHR should return "
+                               "clCommandCopyImageToBufferKHR should return "
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
 
         return CL_SUCCESS;
     }
-
-    cl_int SetUp(int elements) override
-    {
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        src_image = create_image_2d(context, CL_MEM_READ_ONLY, &formats, 512,
-                                    512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
-
-        dst_image = create_image_2d(context, CL_MEM_WRITE_ONLY, &formats, 512,
-                                    512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
-
-        return CL_SUCCESS;
-    }
-
-    clMemWrapper src_image;
-    clMemWrapper dst_image;
-    const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
-    const size_t origin[3] = { 0, 0, 0 };
-    const size_t region[3] = { 512, 512, 1 };
 };
 
 // CL_INVALID_COMMAND_BUFFER_KHR if command_buffer is not a valid
 // command-buffer.
-struct CommandBufferCopyImageInvalidCommandBuffer
-    : public BasicCommandBufferTest
+struct CommandBufferCopyImageInvalidCommandBuffer : public CommandCopyBaseTest
 {
-    using BasicCommandBufferTest::BasicCommandBufferTest;
+    using CommandCopyBaseTest::CommandCopyBaseTest;
 
     cl_int Run() override
     {
@@ -305,46 +294,23 @@ struct CommandBufferCopyImageInvalidCommandBuffer
                                TEST_FAIL);
 
         error = clCommandCopyImageToBufferKHR(nullptr, nullptr, src_image,
-                                              dst_image, origin, origin, 0, 0,
+                                              dst_image, origin, region, 0, 0,
                                               nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_BUFFER_KHR,
-                               "clCommandCopyImageKHR should return "
+                               "clCommandCopyImageToBufferKHR should return "
                                "CL_INVALID_COMMAND_BUFFER_KHR",
                                TEST_FAIL);
 
 
         return CL_SUCCESS;
     }
-
-    cl_int SetUp(int elements) override
-    {
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        src_image = create_image_2d(context, CL_MEM_READ_ONLY, &formats, 512,
-                                    512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
-
-        dst_image = create_image_2d(context, CL_MEM_WRITE_ONLY, &formats, 512,
-                                    512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
-
-        return CL_SUCCESS;
-    }
-
-    clMemWrapper src_image;
-    clMemWrapper dst_image;
-    const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
-    const size_t origin[3] = { 0, 0, 0 };
-    const size_t region[3] = { 512, 512, 1 };
 };
 
 // CL_INVALID_OPERATION if command_buffer has been finalized.
-struct CommandBufferCopyImageFinalizedCommandBuffer
-    : public BasicCommandBufferTest
+struct CommandBufferCopyImageFinalizedCommandBuffer : public CommandCopyBaseTest
 {
-    using BasicCommandBufferTest::BasicCommandBufferTest;
+    using CommandCopyBaseTest::CommandCopyBaseTest;
 
     cl_int Run() override
     {
@@ -361,46 +327,23 @@ struct CommandBufferCopyImageFinalizedCommandBuffer
                                TEST_FAIL);
 
         error = clCommandCopyImageToBufferKHR(
-            command_buffer, nullptr, src_image, dst_image, origin, origin, 0, 0,
+            command_buffer, nullptr, src_image, dst_image, origin, region, 0, 0,
             nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_OPERATION,
-                               "clCommandCopyImageKHR should return "
+                               "clCommandCopyImageToBufferKHR should return "
                                "CL_INVALID_OPERATION",
                                TEST_FAIL);
 
 
         return CL_SUCCESS;
     }
-
-    cl_int SetUp(int elements) override
-    {
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        src_image = create_image_2d(context, CL_MEM_READ_ONLY, &formats, 512,
-                                    512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
-
-        dst_image = create_image_2d(context, CL_MEM_WRITE_ONLY, &formats, 512,
-                                    512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
-
-        return CL_SUCCESS;
-    }
-
-    clMemWrapper src_image;
-    clMemWrapper dst_image;
-    const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
-    const size_t origin[3] = { 0, 0, 0 };
-    const size_t region[3] = { 512, 512, 1 };
 };
 
 // CL_INVALID_VALUE if mutable_handle is not NULL.
-struct CommandBufferCopyImageMutableHandleNotNull
-    : public BasicCommandBufferTest
+struct CommandBufferCopyImageMutableHandleNotNull : public CommandCopyBaseTest
 {
-    using BasicCommandBufferTest::BasicCommandBufferTest;
+    using CommandCopyBaseTest::CommandCopyBaseTest;
 
     cl_int Run() override
     {
@@ -415,41 +358,19 @@ struct CommandBufferCopyImageMutableHandleNotNull
                                TEST_FAIL);
 
         error = clCommandCopyImageToBufferKHR(
-            command_buffer, nullptr, src_image, dst_image, origin, origin, 0, 0,
+            command_buffer, nullptr, src_image, dst_image, origin, region, 0, 0,
             nullptr, nullptr, &mutable_handle);
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
-                               "clCommandCopyImageKHR should return "
+                               "clCommandCopyImageToBufferKHR should return "
                                "CL_INVALID_VALUE",
                                TEST_FAIL);
 
 
         return CL_SUCCESS;
     }
-
-    cl_int SetUp(int elements) override
-    {
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        src_image = create_image_2d(context, CL_MEM_READ_ONLY, &formats, 512,
-                                    512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
-
-        dst_image = create_image_2d(context, CL_MEM_WRITE_ONLY, &formats, 512,
-                                    512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
-
-        return CL_SUCCESS;
-    }
-
-    clMemWrapper src_image;
-    clMemWrapper dst_image;
-    const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
-    const size_t origin[3] = { 0, 0, 0 };
-    const size_t region[3] = { 512, 512, 1 };
 };
-};
+}
 
 int test_negative_command_buffer_copy_image_queue_not_null(
     cl_device_id device, cl_context context, cl_command_queue queue,
