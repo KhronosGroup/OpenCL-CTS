@@ -46,39 +46,41 @@ std::vector<printDataGenParameters> printIntGenParameters = {
 
     //(Minimum)Five-wide,default(right)-justified
 
-    {"%5d","10"},
+    { { "%5d" }, "10" },
 
-        //(Minimum)Five-wide,left-justified
+    //(Minimum)Five-wide,left-justified
 
-    {"%-5d","10"},
+    { { "%-5d" }, "10" },
 
-        //(Minimum)Five-wide,default(right)-justified,zero-filled
+    //(Minimum)Five-wide,default(right)-justified,zero-filled
 
-    {"%05d","10"},
+    { { "%05d" }, "10" },
 
-        //(Minimum)Five-wide,default(right)-justified,with sign
+    //(Minimum)Five-wide,default(right)-justified,with sign
 
-    {"%+5d","10"},
+    { { "%+5d" }, "10" },
 
-         //(Minimum)Five-wide ,left-justified,with sign
+    //(Minimum)Five-wide ,left-justified,with sign
 
-    {"%-+5d","10"},
+    { { "%-+5d" }, "10" },
 
-        //(Minimum)Five-digit(zero-filled in absent digits),default(right)-justified
+    //(Minimum)Five-digit(zero-filled in absent digits),default(right)-justified
 
-    {"%.5i","100"},
+    { { "%.5i" }, "100" },
 
-        //(Minimum)Six-wide,Five-digit(zero-filled in absent digits),default(right)-justified
+    //(Minimum)Six-wide,Five-digit(zero-filled in absent
+    // digits),default(right)-justified
 
-    {"%6.5i","100"},
+    { { "%6.5i" }, "100" },
 
-        //0 and - flag both apper ==>0 is ignored,left-justified,capital I
+    // 0 and - flag both apper ==>0 is ignored,left-justified,capital I
 
-    {"%-06i","100"},
+    { { "%-06i" }, "100" },
 
-        //(Minimum)Six-wide,Five-digit(zero-filled in absent digits),default(right)-justified
+    //(Minimum)Six-wide,Five-digit(zero-filled in absent
+    // digits),default(right)-justified
 
-    {"%06.5i","100"}
+    { { "%06.5i" }, "100" }
 
 };
 
@@ -119,50 +121,50 @@ std::vector<printDataGenParameters> printHalfGenParameters = {
 
     // Default(right)-justified
 
-    { "%f", "1.234h" },
+    { { "%f" }, "1.234h" },
 
     // One position after the decimal,default(right)-justified
 
-    { "%4.2f", "1.2345h" },
+    { { "%4.2f" }, "1.2345h" },
 
     // Zero positions after the
     // decimal([floor]rounding),default(right)-justified
 
-    { "%.0f", "0.1h" },
+    { { "%.0f" }, "0.1h" },
 
     // Zero positions after the decimal([ceil]rounding),default(right)-justified
 
-    { "%.0f", "0.6h" },
+    { { "%.0f" }, "0.6h" },
 
     // Zero-filled,default positions number after the
     // decimal,default(right)-justified
 
-    { "%0f", "0.6h" },
+    { { "%0f" }, "0.6h" },
 
     // Double argument representing floating-point,used by f
     // style,default(right)-justified
 
-    { "%4g", "5.678h" },
+    { { "%4g" }, "5.678h" },
 
     // Double argument representing floating-point,used by e
     // style,default(right)-justified
 
-    { "%4.2g", "5.678h" },
+    { { "%4.2g" }, "5.678h" },
 
     // Double argument representing floating-point,used by e
     // style,default(right)-justified
 
-    { "%4G", "0.000062h" },
+    { { "%4G" }, "0.000062h" },
 
     // Double argument representing floating-point,with
     // exponent,left-justified,default(right)-justified
 
-    { "%-#20.15e", "65504.0h" },
+    { { "%-#20.15e" }, "65504.0h" },
 
     // Double argument representing floating-point,with
     // exponent,left-justified,with sign,capital E,default(right)-justified
 
-    { "%+#21.15E", "-65504.0h" },
+    { { "%+#21.15E" }, "-65504.0h" },
 };
 
 //---------------------------------------------------------
@@ -203,16 +205,22 @@ testCase testCaseHalf = {
 std::vector<printDataGenParameters> printHalfLimitsGenParameters = {
 
     // Infinity (1.0/0.0)
-
-    { "%f", "1.0h/0.0h" },
-
-    // NaN
-
-    { "%f", "sqrt(-1.0h)" },
+    { { "%f", "%e", "%g", "%a" }, "1.0h/0.0h" },
 
     // NaN
-    { "%f", "acospi(2.0h)" }
+    { { "%f", "%e", "%g", "%a" }, "nan((ushort)0)" },
 
+    // NaN
+    { { "%f", "%e", "%g", "%a" }, "acospi(2.0h)" },
+
+    // Infinity (1.0/0.0)
+    { { "%F", "%E", "%G", "%A" }, "1.0h/0.0h" },
+
+    // NaN
+    { { "%F", "%E", "%G", "%A" }, "nan((ushort)0)" },
+
+    // NaN
+    { { "%F", "%E", "%G", "%A" }, "acospi(2.0h)" }
 };
 //--------------------------------------------------------
 
@@ -224,9 +232,15 @@ std::vector<std::string> correctBufferHalfLimits = {
 
     "inf",
 
-    "-nan",
+    "nan",
 
-    "nan"
+    "nan",
+
+    "INF",
+
+    "NAN",
+
+    "NAN"
 
 };
 
@@ -265,77 +279,89 @@ testCase testCaseHalfLimits = {
 
 std::vector<printDataGenParameters> printFloatGenParameters = {
 
-    //Default(right)-justified
+    // Default(right)-justified
 
-    {"%f","10.3456"},
+    { { "%f" }, "10.3456" },
 
-    //One position after the decimal,default(right)-justified
+    // One position after the decimal,default(right)-justified
 
-    {"%.1f","10.3456"},
+    { { "%.1f" }, "10.3456" },
 
-    //Two positions after the decimal,default(right)-justified
+    // Two positions after the decimal,default(right)-justified
 
-    {"%.2f","10.3456"},
+    { { "%.2f" }, "10.3456" },
 
-    //(Minimum)Eight-wide,three positions after the decimal,default(right)-justified
+    //(Minimum)Eight-wide,three positions after the
+    // decimal,default(right)-justified
 
-    {"%8.3f","10.3456"},
+    { { "%8.3f" }, "10.3456" },
 
-    //(Minimum)Eight-wide,two positions after the decimal,zero-filled,default(right)-justified
+    //(Minimum)Eight-wide,two positions after the
+    // decimal,zero-filled,default(right)-justified
 
-    {"%08.2f","10.3456"},
+    { { "%08.2f" }, "10.3456" },
 
     //(Minimum)Eight-wide,two positions after the decimal,left-justified
 
-    {"%-8.2f","10.3456"},
+    { { "%-8.2f" }, "10.3456" },
 
-    //(Minimum)Eight-wide,two positions after the decimal,with sign,default(right)-justified
+    //(Minimum)Eight-wide,two positions after the decimal,with
+    // sign,default(right)-justified
 
-    {"%+8.2f","-10.3456"},
+    { { "%+8.2f" }, "-10.3456" },
 
-    //Zero positions after the decimal([floor]rounding),default(right)-justified
+    // Zero positions after the
+    // decimal([floor]rounding),default(right)-justified
 
-    {"%.0f","0.1"},
+    { { "%.0f" }, "0.1" },
 
-    //Zero positions after the decimal([ceil]rounding),default(right)-justified
+    // Zero positions after the decimal([ceil]rounding),default(right)-justified
 
-    {"%.0f","0.6"},
+    { { "%.0f" }, "0.6" },
 
-    //Zero-filled,default positions number after the decimal,default(right)-justified
+    // Zero-filled,default positions number after the
+    // decimal,default(right)-justified
 
-    {"%0f","0.6"},
+    { { "%0f" }, "0.6" },
 
-    //Double argument representing floating-point,used by f style,default(right)-justified
+    // Double argument representing floating-point,used by f
+    // style,default(right)-justified
 
-    {"%4g","12345.6789"},
+    { { "%4g" }, "12345.6789" },
 
-    //Double argument representing floating-point,used by e style,default(right)-justified
+    // Double argument representing floating-point,used by e
+    // style,default(right)-justified
 
-    {"%4.2g","12345.6789"},
+    { { "%4.2g" }, "12345.6789" },
 
-    //Double argument representing floating-point,used by f style,default(right)-justified
+    // Double argument representing floating-point,used by f
+    // style,default(right)-justified
 
-    {"%4G","0.0000023"},
+    { { "%4G" }, "0.0000023" },
 
-    //Double argument representing floating-point,used by e style,default(right)-justified
+    // Double argument representing floating-point,used by e
+    // style,default(right)-justified
 
-    {"%4G","0.023"},
+    { { "%4G" }, "0.023" },
 
-    //Double argument representing floating-point,with exponent,left-justified,default(right)-justified
+    // Double argument representing floating-point,with
+    // exponent,left-justified,default(right)-justified
 
-    {"%-#20.15e","789456123.0"},
+    { { "%-#20.15e" }, "789456123.0" },
 
-    //Double argument representing floating-point,with exponent,left-justified,with sign,capital E,default(right)-justified
+    // Double argument representing floating-point,with
+    // exponent,left-justified,with sign,capital E,default(right)-justified
 
-    {"%+#21.15E","789456123.0"},
+    { { "%+#21.15E" }, "789456123.0" },
 
-    //Double argument representing floating-point,in [-]xh.hhhhpAd style
+    // Double argument representing floating-point,in [-]xh.hhhhpAd style
 
-    {"%.6a","0.1"},
+    { { "%.6a" }, "0.1" },
 
-    //(Minimum)Ten-wide,Double argument representing floating-point,in xh.hhhhpAd style,default(right)-justified
+    //(Minimum)Ten-wide,Double argument representing floating-point,in
+    // xh.hhhhpAd style,default(right)-justified
 
-    {"%10.2a","9990.235"},
+    { { "%10.2a" }, "9990.235" },
 };
 
 //---------------------------------------------------------
@@ -376,16 +402,22 @@ testCase testCaseFloat = {
 std::vector<printDataGenParameters> printFloatLimitsGenParameters = {
 
     // Infinity (1.0/0.0)
-
-    { "%f", "1.0f/0.0f" },
-
-    // NaN
-
-    { "%f", "sqrt(-1.0f)" },
+    { { "%f", "%e", "%g", "%a" }, "1.0f/0.0f" },
 
     // NaN
-    { "%f", "acospi(2.0f)" }
+    { { "%f", "%e", "%g", "%a" }, "nan(0U)" },
 
+    // NaN
+    { { "%f", "%e", "%g", "%a" }, "acospi(2.0f)" },
+
+    // Infinity (1.0/0.0)
+    { { "%F", "%E", "%G", "%A" }, "1.0f/0.0f" },
+
+    // NaN
+    { { "%F", "%E", "%G", "%A" }, "nan(0U)" },
+
+    // NaN
+    { { "%F", "%E", "%G", "%A" }, "acospi(2.0f)" }
 };
 //--------------------------------------------------------
 
@@ -397,9 +429,15 @@ std::vector<std::string> correctBufferFloatLimits = {
 
     "inf",
 
-    "-nan",
+    "nan",
 
-    "nan"
+    "nan",
+
+    "INF",
+
+    "NAN",
+
+    "NAN"
 
 };
 
@@ -437,21 +475,22 @@ testCase testCaseFloatLimits = {
 
 std::vector<printDataGenParameters> printOctalGenParameters = {
 
-    //Default(right)-justified
+    // Default(right)-justified
 
-    {"%o","10"},
+    { { "%o" }, "10" },
 
-    //Five-digit,default(right)-justified
+    // Five-digit,default(right)-justified
 
-    {"%.5o","10"},
+    { { "%.5o" }, "10" },
 
-    //Default(right)-justified,increase precision
+    // Default(right)-justified,increase precision
 
-    {"%#o","100000000"},
+    { { "%#o" }, "100000000" },
 
-    //(Minimum)Four-wide,Five-digit,0-flag ignored(because of precision),default(right)-justified
+    //(Minimum)Four-wide,Five-digit,0-flag ignored(because of
+    // precision),default(right)-justified
 
-    {"%04.5o","10"}
+    { { "%04.5o" }, "10" }
 
 };
 
@@ -493,19 +532,19 @@ testCase testCaseOctal = {
 
 std::vector<printDataGenParameters> printUnsignedGenParameters = {
 
-    //Default(right)-justified
+    // Default(right)-justified
 
-    {"%u","10"},
+    { { "%u" }, "10" },
 
-    //Zero precision for zero,default(right)-justified
+    // Zero precision for zero,default(right)-justified
 
-    {"%.0u","0"},
+    { { "%.0u" }, "0" },
 
 };
 
 //-------------------------------------------------------
 
-//Test case for octal                                   |
+// Test case for unsigned                                 |
 
 //-------------------------------------------------------
 
@@ -541,25 +580,25 @@ testCase testCaseUnsigned = {
 
 std::vector<printDataGenParameters> printHexadecimalGenParameters = {
 
-    //Add 0x,low x,default(right)-justified
+    // Add 0x,low x,default(right)-justified
 
-    {"%#x","0xABCDEF"},
+    { { "%#x" }, "0xABCDEF" },
 
-    //Add 0x,capital X,default(right)-justified
+    // Add 0x,capital X,default(right)-justified
 
-    {"%#X","0xABCDEF"},
+    { { "%#X" }, "0xABCDEF" },
 
-    //Not add 0x,if zero,default(right)-justified
+    // Not add 0x,if zero,default(right)-justified
 
-    {"%#X","0"},
+    { { "%#X" }, "0" },
 
     //(Minimum)Eight-wide,default(right)-justified
 
-    {"%8x","399"},
+    { { "%8x" }, "399" },
 
     //(Minimum)Four-wide,zero-filled,default(right)-justified
 
-    {"%04x","399"}
+    { { "%04x" }, "399" }
 
 };
 
@@ -601,17 +640,17 @@ testCase testCaseHexadecimal = {
 
 std::vector<printDataGenParameters> printCharGenParameters = {
 
-    //Four-wide,zero-filled,default(right)-justified
+    // Four-wide,zero-filled,default(right)-justified
 
-    {"%4c","\'1\'"},
+    { { "%4c" }, "\'1\'" },
 
-        //Four-wide,left-justified
+    // Four-wide,left-justified
 
-    {"%-4c","\'1\'"},
+    { { "%-4c" }, "\'1\'" },
 
-        //(unsigned) int argument,default(right)-justified
+    //(unsigned) int argument,default(right)-justified
 
-    {"%c","66"}
+    { { "%c" }, "66" }
 
 };
 
@@ -674,15 +713,15 @@ std::vector<printDataGenParameters> printStringGenParameters = {
 
     //(Minimum)Four-wide,zero-filled,default(right)-justified
 
-    {"%4s","\"foo\""},
+    { { "%4s" }, "\"foo\"" },
 
-    //One-digit(precision ignored),left-justified
+    // One-digit(precision ignored),left-justified
 
-    {"%.1s","\"foo\""},
+    { { "%.1s" }, "\"foo\"" },
 
     //%% specification
 
-    {"%s","\"%%\""},
+    { { "%s" }, "\"%%\"" },
 };
 
 //---------------------------------------------------------
@@ -741,27 +780,27 @@ std::vector<printDataGenParameters> printVectorGenParameters = {
 
     //(Minimum)Two-wide,two positions after decimal
 
-    { NULL, "(1.0f,2.0f,3.0f,4.0f)", "%2.2", "hlf", "float", "4" },
+    { { "" }, "(1.0f,2.0f,3.0f,4.0f)", "%2.2", "hlf", "float", "4" },
 
     // Alternative form,uchar argument
 
-    { NULL, "(0xFA,0xFB)", "%#", "hhx", "uchar", "2" },
+    { { "" }, "(0xFA,0xFB)", "%#", "hhx", "uchar", "2" },
 
     // Alternative form,ushort argument
 
-    { NULL, "(0x1234,0x8765)", "%#", "hx", "ushort", "2" },
+    { { "" }, "(0x1234,0x8765)", "%#", "hx", "ushort", "2" },
 
     // Alternative form,uint argument
 
-    { NULL, "(0x12345678,0x87654321)", "%#", "hlx", "uint", "2" },
+    { { "" }, "(0x12345678,0x87654321)", "%#", "hlx", "uint", "2" },
 
     // Alternative form,long argument
 
-    { NULL, "(12345678,98765432)", "%", "ld", "long", "2" },
+    { { "" }, "(12345678,98765432)", "%", "ld", "long", "2" },
 
     //(Minimum)Two-wide,two positions after decimal
 
-    { NULL, "(1.0h,2.0h,3.0h,4.0h)", "%2.2", "hf", "half", "4" }
+    { { "" }, "(1.0h,2.0h,3.0h,4.0h)", "%2.2", "hf", "half", "4" }
 };
 
 //------------------------------------------------------------
@@ -821,28 +860,72 @@ testCase testCaseVector = {
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-
 std::vector<printDataGenParameters> printAddrSpaceGenParameters = {
 
-    //Global memory region
+    // Global memory region
 
-    {"\"%d\\n\"",NULL,NULL,NULL,NULL,NULL,"__global int* x","","*x",""},
+    { { "\"%d\\n\"" },
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      "__global int* x",
+      "",
+      "*x",
+      "" },
 
-    //Global,constant, memory region
+    // Global,constant, memory region
 
-    {"\"%d\\n\"",NULL,NULL,NULL,NULL,NULL,"constant int* x","","*x",""},
+    { { "\"%d\\n\"" },
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      "constant int* x",
+      "",
+      "*x",
+      "" },
 
-    //Local memory region
+    // Local memory region
 
-    {"\"%+d\\n\"",NULL,NULL,NULL,NULL,NULL,"","local int x;\n x= (int)3;\n","x",""},
+    { { "\"%+d\\n\"" },
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      "",
+      "local int x;\n x= (int)3;\n",
+      "x",
+      "" },
 
-    //Private memory region
+    // Private memory region
 
-    {"\"%i\\n\"",NULL,NULL,NULL,NULL,NULL,"","private int x;\n x = (int)-1;\n","x",""},
+    { { "\"%i\\n\"" },
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      "",
+      "private int x;\n x = (int)-1;\n",
+      "x",
+      "" },
 
-    //Address of void * from global memory region
+    // Address of void * from global memory region
 
-    {"\"%p\\n\"",NULL,NULL,NULL,NULL,NULL,"__global void* x,__global intptr_t*  xAddr","","x","*xAddr = (intptr_t)x;\n"}
+    { { "\"%p\\n\"" },
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      "__global void* x,__global intptr_t*  xAddr",
+      "",
+      "x",
+      "*xAddr = (intptr_t)x;\n" }
 
 };
 
@@ -955,17 +1038,25 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
             ++eCorrectBuffer;
         return strcmp(eCorrectBuffer,exp);
     }
-    if(!strcmp(pTestCase->_correctBuffer[testId].c_str(),"inf"))
-    return strcmp(analysisBuffer,"inf")&&strcmp(analysisBuffer,"infinity")&&strcmp(analysisBuffer,"1.#INF00")&&strcmp(analysisBuffer,"Inf");
-    if(!strcmp(pTestCase->_correctBuffer[testId].c_str(),"nan") || !strcmp(pTestCase->_correctBuffer[testId].c_str(),"-nan")) {
-       return strcmp(analysisBuffer,"nan")&&strcmp(analysisBuffer,"-nan")&&strcmp(analysisBuffer,"1.#IND00")&&strcmp(analysisBuffer,"-1.#IND00")&&strcmp(analysisBuffer,"NaN")&&strcmp(analysisBuffer,"nan(ind)")&&strcmp(analysisBuffer,"nan(snan)")&&strcmp(analysisBuffer,"-nan(ind)");
-    }
-    return strcmp(analysisBuffer,pTestCase->_correctBuffer[testId].c_str());
+
+    if (pTestCase->_correctBuffer[testId] == "inf")
+        return strcmp(analysisBuffer, "inf")
+            && strcmp(analysisBuffer, "infinity");
+    else if (pTestCase->_correctBuffer[testId] == "INF")
+        return strcmp(analysisBuffer, "INF")
+            && strcmp(analysisBuffer, "INFINITY");
+    else if (pTestCase->_correctBuffer[testId] == "nan")
+        return strcmp(analysisBuffer, "nan") && strcmp(analysisBuffer, "-nan");
+    else if (pTestCase->_correctBuffer[testId] == "NAN")
+        return strcmp(analysisBuffer, "NAN") && strcmp(analysisBuffer, "-NAN");
+
+    return strcmp(analysisBuffer, pTestCase->_correctBuffer[testId].c_str());
 }
 
 static void intRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
 {
-    snprintf(refResult, refSize, params.genericFormat, atoi(params.dataRepresentation));
+    snprintf(refResult, refSize, params.genericFormats.front().c_str(),
+             atoi(params.dataRepresentation));
 }
 
 static void halfRefBuilder(printDataGenParameters& params, char* refResult,
@@ -973,30 +1064,32 @@ static void halfRefBuilder(printDataGenParameters& params, char* refResult,
 {
     cl_half val = cl_half_from_float(strtof(params.dataRepresentation, NULL),
                                      half_rounding_mode);
-    snprintf(refResult, refSize, params.genericFormat, cl_half_to_float(val));
+    snprintf(refResult, refSize, params.genericFormats.front().c_str(),
+             cl_half_to_float(val));
 }
 
 static void floatRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
 {
-    snprintf(refResult, refSize, params.genericFormat, strtof(params.dataRepresentation, NULL));
+    snprintf(refResult, refSize, params.genericFormats.front().c_str(),
+             strtof(params.dataRepresentation, NULL));
 }
 
 static void octalRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
 {
     const unsigned long int data = strtoul(params.dataRepresentation, NULL, 10);
-    snprintf(refResult, refSize, params.genericFormat, data);
+    snprintf(refResult, refSize, params.genericFormats.front().c_str(), data);
 }
 
 static void unsignedRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
 {
     const unsigned long int data = strtoul(params.dataRepresentation, NULL, 10);
-    snprintf(refResult, refSize, params.genericFormat, data);
+    snprintf(refResult, refSize, params.genericFormats.front().c_str(), data);
 }
 
 static void hexRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
 {
     const unsigned long int data = strtoul(params.dataRepresentation, NULL, 0);
-    snprintf(refResult, refSize, params.genericFormat, data);
+    snprintf(refResult, refSize, params.genericFormats.front().c_str(), data);
 }
 
 /*
