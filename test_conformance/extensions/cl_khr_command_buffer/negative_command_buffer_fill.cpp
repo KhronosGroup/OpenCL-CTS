@@ -56,7 +56,7 @@ struct CommandFillBaseTest : BasicCommandBufferTest
 
             return (!image_support || BasicCommandBufferTest::Skip());
         }
-        return check_image_support;
+        return BasicCommandBufferTest::Skip();
     }
 
 protected:
