@@ -20,6 +20,8 @@
 #include "conversions.h"
 #include "testHarness.h"
 
+#include <vector>
+
 // TODO: expand usage to other tests.
 
 template <typename T> struct TestInfo
