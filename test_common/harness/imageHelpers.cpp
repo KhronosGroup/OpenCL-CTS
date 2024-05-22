@@ -1125,13 +1125,15 @@ cl_ulong get_image_size_mb(image_descriptor const *imageInfo)
 uint64_t gRoundingStartValue = 0;
 
 
-void escape_inf_nan_values(char *data, size_t allocSize)
+void escape_inf_nan_subnormal_values(char *data, size_t allocSize)
 {
     // filter values with 8 not-quite-highest bits
     unsigned int *intPtr = (unsigned int *)data;
     for (size_t i = 0; i<allocSize>> 2; i++)
     {
         if ((intPtr[i] & 0x7F800000) == 0x7F800000) intPtr[i] ^= 0x40000000;
+        else if ((intPtr[i] & 0x7F800000) == 0)
+            intPtr[i] ^= 0x40000000;
     }
 
     // Ditto with half floats (16-bit numbers with the 5 not-quite-highest bits
@@ -1140,6 +1142,8 @@ void escape_inf_nan_values(char *data, size_t allocSize)
     for (size_t i = 0; i<allocSize>> 1; i++)
     {
         if ((shortPtr[i] & 0x7C00) == 0x7C00) shortPtr[i] ^= 0x4000;
+        else if ((shortPtr[i] & 0x7C00) == 0)
+            shortPtr[i] ^= 0x4000;
     }
 }
 
@@ -1218,7 +1222,7 @@ char *generate_random_image_data(image_descriptor *imageInfo,
 
         // Note: inf or nan float values would cause problems, although we don't
         // know this will actually be a float, so we just know what to look for
-        escape_inf_nan_values(data, allocSize);
+        escape_inf_nan_subnormal_values(data, allocSize);
         return data;
     }
 
@@ -1230,7 +1234,7 @@ char *generate_random_image_data(image_descriptor *imageInfo,
 
     // Note: inf or nan float values would cause problems, although we don't
     // know this will actually be a float, so we just know what to look for
-    escape_inf_nan_values(data, allocSize);
+    escape_inf_nan_subnormal_values(data, allocSize);
 
     if (/*!gTestMipmaps*/ imageInfo->num_mip_levels < 2)
     {
