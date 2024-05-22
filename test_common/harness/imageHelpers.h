@@ -191,6 +191,42 @@ cl_uint compute_max_mip_levels(size_t width, size_t height, size_t depth);
 cl_ulong compute_mipmapped_image_size(image_descriptor imageInfo);
 size_t compute_mip_level_offset(image_descriptor *imageInfo, size_t lod);
 
+constexpr size_t RAW10_EXT_CLUMP_SIZE = 5;
+constexpr size_t RAW10_EXT_CLUMP_NUM_PIXELS = 4;
+constexpr size_t RAW12_EXT_CLUMP_SIZE = 3;
+constexpr size_t RAW12_EXT_CLUMP_NUM_PIXELS = 2;
+
+inline bool is_width_compatible(image_descriptor imageInfo)
+{
+    if (imageInfo.format->image_channel_data_type == CL_UNSIGNED_INT_RAW10_EXT
+        && (imageInfo.width % RAW10_EXT_CLUMP_NUM_PIXELS) != 0)
+    {
+        return false;
+    }
+    if (imageInfo.format->image_channel_data_type == CL_UNSIGNED_INT_RAW12_EXT
+        && (imageInfo.width % RAW12_EXT_CLUMP_NUM_PIXELS) != 0)
+    {
+        return false;
+    }
+    return true;
+}
+
+inline size_t calculate_row_pitch(image_descriptor imageInfo, size_t pixelSize)
+{
+    if (imageInfo.format->image_channel_data_type == CL_UNSIGNED_INT_RAW10_EXT)
+    {
+        return (imageInfo.width * RAW10_EXT_CLUMP_SIZE)
+            / RAW10_EXT_CLUMP_NUM_PIXELS;
+    }
+    if (imageInfo.format->image_channel_data_type == CL_UNSIGNED_INT_RAW12_EXT)
+    {
+        return (imageInfo.width * RAW12_EXT_CLUMP_SIZE)
+            / RAW12_EXT_CLUMP_NUM_PIXELS;
+    }
+
+    return imageInfo.width * pixelSize;
+}
+
 template <class T>
 void read_image_pixel(void *imageData, image_descriptor *imageInfo, int x,
                       int y, int z, T *outData, int lod)
@@ -255,10 +291,24 @@ void read_image_pixel(void *imageData, image_descriptor *imageInfo, int x,
 
     // Advance to the right spot
     char *ptr = (char *)imageData;
-    size_t pixelSize = get_pixel_size(format);
-
-    ptr += z * slice_pitch_lod + y * row_pitch_lod + x * pixelSize;
-
+    switch (format->image_channel_data_type)
+    {
+        case CL_UNSIGNED_INT_RAW10_EXT: {
+            ptr += z * slice_pitch_lod + y * row_pitch_lod
+                + (x / RAW10_EXT_CLUMP_NUM_PIXELS) * RAW10_EXT_CLUMP_SIZE;
+            break;
+        }
+        case CL_UNSIGNED_INT_RAW12_EXT: {
+            ptr += z * slice_pitch_lod + y * row_pitch_lod
+                + (x / RAW12_EXT_CLUMP_NUM_PIXELS) * RAW12_EXT_CLUMP_SIZE;
+            break;
+        }
+        default: {
+            size_t pixelSize = get_pixel_size(format);
+            ptr += z * slice_pitch_lod + y * row_pitch_lod + x * pixelSize;
+            break;
+        }
+    }
     // OpenCL only supports reading floats from certain formats
     switch (format->image_channel_data_type)
     {
@@ -377,6 +427,26 @@ void read_image_pixel(void *imageData, image_descriptor *imageInfo, int x,
             break;
         }
 #endif
+        case CL_UNSIGNED_INT_RAW10_EXT: {
+            cl_uchar *dPtr = (cl_uchar *)ptr;
+            i = x % RAW10_EXT_CLUMP_NUM_PIXELS;
+            uint8_t bit_index = i << 1;
+            uint16_t hi_val = dPtr[i] << 2;
+            uint16_t lo_val = (dPtr[4] & (0x3 << bit_index)) >> bit_index;
+
+            tempData[0] = (T)(hi_val | lo_val);
+            break;
+        }
+        case CL_UNSIGNED_INT_RAW12_EXT: {
+            cl_uchar *dPtr = (cl_uchar *)ptr;
+            i = x % RAW12_EXT_CLUMP_NUM_PIXELS;
+            uint8_t bit_index = i << 2;
+            uint16_t hi_val = dPtr[i] << 4;
+            uint16_t lo_val = (dPtr[2] & (0xF << bit_index)) >> bit_index;
+
+            tempData[0] = (T)(hi_val | lo_val);
+            break;
+        }
     }
 
 

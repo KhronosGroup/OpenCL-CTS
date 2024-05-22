@@ -3,6 +3,7 @@ set(MODULE_NAME SVM)
 set(${MODULE_NAME}_SOURCES
     main.cpp
     test_allocate_shared_buffer.cpp
+    test_allocate_shared_buffer_negative.cpp
     test_byte_granularity.cpp
     test_cross_buffer_pointers.cpp
     test_enqueue_api.cpp
