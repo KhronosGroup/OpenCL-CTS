@@ -30,13 +30,16 @@ struct CommandBufferCopyBaseTest : BasicCommandBufferTest
         cl_int error = BasicCommandBufferTest::SetUp(elements);
         test_error(error, "BasicCommandBufferTest::SetUp failed");
 
-        image = create_image_2d(context, CL_MEM_READ_WRITE, &formats, 512, 512,
-                                0, NULL, &error);
-        test_error(error, "create_image_2d failed");
+        if (check_image_support)
+        {
+            image = create_image_2d(context, CL_MEM_READ_WRITE, &formats, 512,
+                                    512, 0, NULL, &error);
+            test_error(error, "create_image_2d failed");
 
-        buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, data_size(),
-                                nullptr, &error);
-        test_error(error, "Unable to create buffer");
+            buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, data_size(),
+                                    nullptr, &error);
+            test_error(error, "Unable to create buffer");
+        }
 
         return CL_SUCCESS;
     }
