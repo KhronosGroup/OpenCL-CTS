@@ -30,14 +30,16 @@ struct CommandFillBaseTest : BasicCommandBufferTest
     {
         cl_int error = BasicCommandBufferTest::SetUp(elements);
         test_error(error, "BasicCommandBufferTest::SetUp failed");
+        if (check_image_support)
+        {
+            src_image = create_image_2d(context, CL_MEM_WRITE_ONLY, &formats,
+                                        512, 512, 0, NULL, &error);
+            test_error(error, "create_image_2d failed");
 
-        src_image = create_image_2d(context, CL_MEM_WRITE_ONLY, &formats, 512,
-                                    512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
-
-        dst_image = create_image_2d(context, CL_MEM_READ_ONLY, &formats, 512,
-                                    512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
+            dst_image = create_image_2d(context, CL_MEM_READ_ONLY, &formats,
+                                        512, 512, 0, NULL, &error);
+            test_error(error, "create_image_2d failed");
+        }
 
         return CL_SUCCESS;
     }
