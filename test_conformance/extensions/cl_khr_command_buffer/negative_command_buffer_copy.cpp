@@ -147,15 +147,6 @@ struct CommandBufferCopyBufferDifferentContexts
                            sizeof(cl_int) * num_elements, nullptr, &error);
         test_error(error, "clCreateBuffer failed");
 
-        const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
-        image_ctx = create_image_2d(context1, CL_MEM_READ_WRITE, &formats, 512,
-                                    512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
-
-        buffer_ctx = clCreateBuffer(context1, CL_MEM_READ_WRITE, data_size(),
-                                    nullptr, &error);
-        test_error(error, "Unable to create buffer");
-
         return CL_SUCCESS;
     }
 
@@ -204,8 +195,6 @@ struct CommandBufferCopyBufferDifferentContexts
     }
     clMemWrapper in_mem_ctx = nullptr;
     clMemWrapper out_mem_ctx = nullptr;
-    clMemWrapper image_ctx = nullptr;
-    clMemWrapper buffer_ctx = nullptr;
     clContextWrapper context1 = nullptr;
 };
 
@@ -223,16 +212,6 @@ struct CommandBufferCopyImageDifferentContexts
 
         context1 = clCreateContext(0, 1, &device, nullptr, nullptr, &error);
         test_error(error, "Failed to create context");
-
-        in_mem_ctx =
-            clCreateBuffer(context1, CL_MEM_READ_ONLY,
-                           sizeof(cl_int) * num_elements, nullptr, &error);
-        test_error(error, "clCreateBuffer failed");
-
-        out_mem_ctx =
-            clCreateBuffer(context1, CL_MEM_WRITE_ONLY,
-                           sizeof(cl_int) * num_elements, nullptr, &error);
-        test_error(error, "clCreateBuffer failed");
 
         image_ctx = create_image_2d(context1, CL_MEM_READ_WRITE, &formats, 512,
                                     512, 0, NULL, &error);
@@ -270,8 +249,6 @@ struct CommandBufferCopyImageDifferentContexts
 
         return CL_SUCCESS;
     }
-    clMemWrapper in_mem_ctx = nullptr;
-    clMemWrapper out_mem_ctx = nullptr;
     clMemWrapper image_ctx = nullptr;
     clMemWrapper buffer_ctx = nullptr;
     clContextWrapper context1 = nullptr;
