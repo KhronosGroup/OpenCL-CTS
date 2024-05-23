@@ -90,15 +90,6 @@ struct CommandBufferCommandFillBufferQueueNotNull
                                "CL_INVALID_COMMAND_QUEUE",
                                TEST_FAIL);
 
-        error = clCommandFillImageKHR(command_buffer, queue, src_image,
-                                      fill_color_1, origin, region, 0, nullptr,
-                                      nullptr, nullptr);
-
-        test_failure_error_ret(error, CL_INVALID_COMMAND_QUEUE,
-                               "clCommandFillImageKHR should return "
-                               "CL_INVALID_COMMAND_QUEUE",
-                               TEST_FAIL);
-
         return CL_SUCCESS;
     }
 
@@ -172,16 +163,12 @@ struct CommandBufferCommandFillBufferContextNotSame
                            sizeof(cl_int) * num_elements, nullptr, &error);
         test_error(error, "clCreateBuffer failed");
 
-        dst_image_ctx = create_image_2d(context1, CL_MEM_WRITE_ONLY, &formats,
-                                        512, 512, 0, NULL, &error);
-        test_error(error, "create_image_2d failed");
 
         return CL_SUCCESS;
     }
 
     clContextWrapper context1;
     clMemWrapper out_mem_ctx;
-    clMemWrapper dst_image_ctx;
 };
 
 // CL_INVALID_CONTEXT if the context associated with command_queue,
@@ -213,11 +200,6 @@ struct CommandBufferCommandFillImageContextNotSame
         context1 = clCreateContext(0, 1, &device, nullptr, nullptr, &error);
         test_error(error, "Failed to create context");
 
-        out_mem_ctx =
-            clCreateBuffer(context1, CL_MEM_WRITE_ONLY,
-                           sizeof(cl_int) * num_elements, nullptr, &error);
-        test_error(error, "clCreateBuffer failed");
-
         dst_image_ctx = create_image_2d(context1, CL_MEM_WRITE_ONLY, &formats,
                                         512, 512, 0, NULL, &error);
         test_error(error, "create_image_2d failed");
@@ -226,7 +208,6 @@ struct CommandBufferCommandFillImageContextNotSame
     }
 
     clContextWrapper context1;
-    clMemWrapper out_mem_ctx;
     clMemWrapper dst_image_ctx;
 };
 
