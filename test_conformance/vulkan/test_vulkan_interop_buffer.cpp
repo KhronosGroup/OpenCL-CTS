@@ -140,10 +140,12 @@ int run_test_with_two_queue(
     }
     else
     {
-        clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
-            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
-        clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
-            vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, false);
+        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, true);
     }
 
     const uint32_t maxIter = innerIterations;
@@ -469,10 +471,12 @@ int run_test_with_one_queue(
     }
     else
     {
-        clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
-            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
-        clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
-            vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, false);
+        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, true);
     }
 
     const uint32_t maxIter = innerIterations;
@@ -770,10 +774,12 @@ int run_test_with_multi_import_same_ctx(
     }
     else
     {
-        clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
-            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
-        clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
-            vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, false);
+        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, true);
     }
 
     const uint32_t maxIter = innerIterations;
@@ -1113,17 +1119,19 @@ int run_test_with_multi_import_diff_ctx(
     }
     else
     {
-        clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
-            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
-        clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
-            vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, false);
+        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, false);
 
-        clVk2CLExternalSemaphore2 = new clExternalImportableSemaphore(
-            vkVk2CLSemaphore, context2, vkExternalSemaphoreHandleType,
-            deviceId);
-        clCl2VkExternalSemaphore2 = new clExternalExportableSemaphore(
-            vkCl2VkSemaphore, context2, vkExternalSemaphoreHandleType,
-            deviceId);
+        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore2, vkVk2CLSemaphore,
+                                context2, vkExternalSemaphoreHandleType,
+                                deviceId, false);
+        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore2, vkCl2VkSemaphore,
+                                context2, vkExternalSemaphoreHandleType,
+                                deviceId, false);
     }
 
     const uint32_t maxIter = innerIterations;

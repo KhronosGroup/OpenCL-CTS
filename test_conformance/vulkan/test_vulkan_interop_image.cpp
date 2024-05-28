@@ -251,10 +251,10 @@ int run_test_with_two_queue(
     clExternalSemaphore *clVk2CLExternalSemaphore = NULL;
     clExternalSemaphore *clCl2VkExternalSemaphore = NULL;
 
-    clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
-        vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
-    clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
-        vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+    CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore, context,
+                            vkExternalSemaphoreHandleType, deviceId, false);
+    CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore, context,
+                            vkExternalSemaphoreHandleType, deviceId, true);
 
     std::vector<VulkanDeviceMemory *> vkImage2DListDeviceMemory1;
     std::vector<VulkanDeviceMemory *> vkImage2DListDeviceMemory2;
@@ -863,10 +863,10 @@ int run_test_with_one_queue(
     clExternalSemaphore *clVk2CLExternalSemaphore = NULL;
     clExternalSemaphore *clCl2VkExternalSemaphore = NULL;
 
-    clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
-        vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
-    clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
-        vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+    CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore, context,
+                            vkExternalSemaphoreHandleType, deviceId, false);
+    CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore, context,
+                            vkExternalSemaphoreHandleType, deviceId, true);
 
     std::vector<VulkanDeviceMemory *> vkImage2DListDeviceMemory1;
     std::vector<VulkanDeviceMemory *> vkImage2DListDeviceMemory2;
