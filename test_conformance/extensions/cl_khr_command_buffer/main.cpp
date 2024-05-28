@@ -69,6 +69,25 @@ test_definition test_list[] = {
     ADD_TEST(negative_release_command_buffer_invalid_command_buffer),
     ADD_TEST(negative_finalize_command_buffer_invalid_command_buffer),
     ADD_TEST(negative_finalize_command_buffer_not_recording_state),
+    ADD_TEST(negative_command_buffer_command_fill_buffer_queue_not_null),
+    ADD_TEST(negative_command_buffer_command_fill_buffer_context_not_same),
+    ADD_TEST(
+        negative_command_buffer_command_fill_buffer_sync_points_null_or_num_zero),
+    ADD_TEST(
+        negative_command_buffer_command_fill_buffer_invalid_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_fill_buffer_finalized_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_fill_buffer_mutable_handle_not_null),
+    ADD_TEST(negative_command_buffer_command_fill_image_queue_not_null),
+    ADD_TEST(negative_command_buffer_command_fill_image_context_not_same),
+    ADD_TEST(
+        negative_command_buffer_command_fill_image_sync_points_null_or_num_zero),
+    ADD_TEST(negative_command_buffer_command_fill_image_invalid_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_fill_image_finalized_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_fill_image_mutable_handle_not_null),
     ADD_TEST(negative_create_command_buffer_num_queues),
     ADD_TEST(negative_create_command_buffer_null_queues),
     ADD_TEST(negative_create_command_buffer_repeated_properties),
