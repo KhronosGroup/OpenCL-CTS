@@ -1,5 +1,4 @@
-//
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _allocation_utils_h
-#define _allocation_utils_h
+#include "procs.h"
+#include "harness/testHarness.h"
 
-#include "testBase.h"
+test_definition test_list[] = {
+    ADD_TEST(device_scope),
+    ADD_TEST(workgroup_scope),
+    ADD_TEST(subgroup_scope),
+};
 
-extern cl_uint checksum;
 
-int check_allocation_error(cl_context context, cl_device_id device_id,
-                           int error, cl_command_queue *queue,
-                           cl_event *event = 0);
-double toMB(cl_ulong size_in);
-size_t get_actual_allocation_size(cl_mem mem);
-
-#endif // _allocation_utils_h
+int main(int argc, const char *argv[])
+{
+    return runTestHarness(argc, argv, ARRAY_SIZE(test_list), test_list, false,
+                          0);
+}

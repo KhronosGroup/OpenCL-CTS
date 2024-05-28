@@ -83,7 +83,8 @@ static int isKernelPFormat(testCase* pTestCase,size_t testId);
 static cl_program
 makePrintfProgram(cl_kernel* kernel_ptr, const cl_context context,
                   const unsigned int testId, const unsigned int testNum,
-                  bool isLongSupport = true, bool is64bAddrSpace = false);
+                  const unsigned int formatNum, bool isLongSupport = true,
+                  bool is64bAddrSpace = false);
 
 // Creates and execute the printf test for the given device, context, type/format
 static int doTest(cl_command_queue queue, cl_context context,
@@ -220,6 +221,7 @@ static cl_program makePrintfProgram(cl_kernel* kernel_ptr,
                                     const cl_context context,
                                     const unsigned int testId,
                                     const unsigned int testNum,
+                                    const unsigned int formatNum,
                                     bool isLongSupport, bool is64bAddrSpace)
 {
     int err;
@@ -229,6 +231,23 @@ static cl_program makePrintfProgram(cl_kernel* kernel_ptr,
     char addrSpacePAddArgument[256] = {0};
     char extension[128] = { 0 };
 
+    //Program Source code for int,float,octal,hexadecimal,char,string
+    const char* sourceGen[] = {
+        extension,
+        "__kernel void ",
+        testname,
+        "(void)\n",
+        "{\n"
+        "   printf(\"",
+        allTestCase[testId]
+            ->_genParameters[testNum]
+            .genericFormats[formatNum]
+            .c_str(),
+        "\\n\",",
+        allTestCase[testId]->_genParameters[testNum].dataRepresentation,
+        ");",
+        "}\n"
+    };
     //Program Source code for vector
     const char* sourceVec[] = {
         extension,
@@ -264,7 +283,10 @@ static cl_program makePrintfProgram(cl_kernel* kernel_ptr,
             ->_genParameters[testNum]
             .addrSpaceVariableTypeQualifier,
         "printf(",
-        allTestCase[testId]->_genParameters[testNum].genericFormat,
+        allTestCase[testId]
+            ->_genParameters[testNum]
+            .genericFormats[formatNum]
+            .c_str(),
         ",",
         allTestCase[testId]->_genParameters[testNum].addrSpaceParameter,
         "); ",
@@ -319,30 +341,9 @@ static cl_program makePrintfProgram(cl_kernel* kernel_ptr,
     }
     else
     {
-        // Program Source code for int,float,octal,hexadecimal,char,string
-        std::ostringstream sourceGen;
-        sourceGen << extension << "__kernel void " << testname
-                  << "(void)\n"
-                     "{\n"
-                     "   printf(\""
-                  << allTestCase[testId]->_genParameters[testNum].genericFormat
-                  << "\\n\"";
-
-        if (allTestCase[testId]->_genParameters[testNum].dataRepresentation)
-        {
-            sourceGen << ","
-                      << allTestCase[testId]
-                             ->_genParameters[testNum]
-                             .dataRepresentation;
-        }
-
-        sourceGen << ");\n}\n";
-
-        std::string kernel_source = sourceGen.str();
-        const char* ptr = kernel_source.c_str();
-
-        err = create_single_kernel_helper(context, &program, kernel_ptr, 1,
-                                          &ptr, testname);
+        err = create_single_kernel_helper(
+            context, &program, kernel_ptr,
+            sizeof(sourceGen) / sizeof(sourceGen[0]), sourceGen, testname);
     }
 
     if (!program || err) {
@@ -445,7 +446,7 @@ void subtest_fail(const char* msg, ...)
 static int doTest(cl_command_queue queue, cl_context context,
                   const unsigned int testId, cl_device_id device)
 {
-    int err = CL_SUCCESS;
+    int err = TEST_FAIL;
 
     if ((allTestCase[testId]->_type == TYPE_HALF
          || allTestCase[testId]->_type == TYPE_HALF_LIMITS)
@@ -464,6 +465,13 @@ static int doTest(cl_command_queue queue, cl_context context,
 
     for (unsigned testNum = 0; testNum < genParams.size(); testNum++)
     {
+
+
+    for (unsigned formatNum = 0; formatNum
+         < allTestCase[testId]->_genParameters[testNum].genericFormats.size();
+         formatNum++)
+    {
+
         if (allTestCase[testId]->_type == TYPE_VECTOR)
         {
             if ((strcmp(allTestCase[testId]->_genParameters[testNum].dataType,
@@ -494,35 +502,42 @@ static int doTest(cl_command_queue queue, cl_context context,
         {
             if (isKernelArgument(allTestCase[testId], testNum))
             {
-                log_info(
-                    "%d)testing kernel //argument %s \n   printf(%s,%s)\n",
-                    testNum,
-                    allTestCase[testId]
-                        ->_genParameters[testNum]
-                        .addrSpaceArgumentTypeQualifier,
-                    allTestCase[testId]->_genParameters[testNum].genericFormat,
-                    allTestCase[testId]
-                        ->_genParameters[testNum]
-                        .addrSpaceParameter);
+                log_info("%d)testing kernel //argument %s \n   printf(%s,%s)\n",
+                         testNum,
+                         allTestCase[testId]
+                             ->_genParameters[testNum]
+                             .addrSpaceArgumentTypeQualifier,
+                         allTestCase[testId]
+                             ->_genParameters[testNum]
+                             .genericFormats[formatNum]
+                             .c_str(),
+                         allTestCase[testId]
+                             ->_genParameters[testNum]
+                             .addrSpaceParameter);
             }
             else
             {
-                log_info(
-                    "%d)testing kernel //variable %s \n   printf(%s,%s)\n",
-                    testNum,
-                    allTestCase[testId]
-                        ->_genParameters[testNum]
-                        .addrSpaceVariableTypeQualifier,
-                    allTestCase[testId]->_genParameters[testNum].genericFormat,
-                    allTestCase[testId]
-                        ->_genParameters[testNum]
-                        .addrSpaceParameter);
+                log_info("%d)testing kernel //variable %s \n   printf(%s,%s)\n",
+                         testNum,
+                         allTestCase[testId]
+                             ->_genParameters[testNum]
+                             .addrSpaceVariableTypeQualifier,
+                         allTestCase[testId]
+                             ->_genParameters[testNum]
+                             .genericFormats[formatNum]
+                             .c_str(),
+                         allTestCase[testId]
+                             ->_genParameters[testNum]
+                             .addrSpaceParameter);
             }
         }
         else
         {
             log_info("%d)testing printf(\"%s\",%s)\n", testNum,
-                     allTestCase[testId]->_genParameters[testNum].genericFormat,
+                     allTestCase[testId]
+                         ->_genParameters[testNum]
+                         .genericFormats[formatNum]
+                         .c_str(),
                      allTestCase[testId]
                          ->_genParameters[testNum]
                          .dataRepresentation);
@@ -560,12 +575,12 @@ static int doTest(cl_command_queue queue, cl_context context,
         cl_ulong out64 = 0;
         int fd = -1;
 
-        // Define an index space (global work size) of threads for
-        // execution.
+        // Define an index space (global work size) of threads for execution.
         size_t globalWorkSize[1];
 
-        program = makePrintfProgram(&kernel, context, testId, testNum,
-                                    isLongSupport, is64bAddressSpace(device));
+        program =
+            makePrintfProgram(&kernel, context, testId, testNum, formatNum,
+                              isLongSupport, is64bAddressSpace(device));
         if (!program || !kernel)
         {
             subtest_fail(nullptr);
@@ -653,8 +668,8 @@ static int doTest(cl_command_queue queue, cl_context context,
         if (allTestCase[testId]->_type == TYPE_ADDRESS_SPACE
             && isKernelPFormat(allTestCase[testId], testNum))
         {
-            // Read the OpenCL output buffer (d_out) to the host output
-            // array (out)
+            // Read the OpenCL output buffer (d_out) to the host output array
+            // (out)
             if (!is64bAddressSpace(device)) // 32-bit address space
             {
                 clEnqueueReadBuffer(queue, d_out, CL_TRUE, 0, sizeof(cl_int),
@@ -681,7 +696,7 @@ static int doTest(cl_command_queue queue, cl_context context,
                 continue;
             }
         }
-        else // 64-bit address space
+        else //64-bit address space
         {
             if (0
                 != verifyOutputBuffer(_analysisBuffer, allTestCase[testId],
@@ -691,6 +706,8 @@ static int doTest(cl_command_queue queue, cl_context context,
                 continue;
             }
         }
+
+    }
         ++s_test_cnt;
     }
 
