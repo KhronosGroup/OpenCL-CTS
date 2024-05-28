@@ -338,7 +338,7 @@ struct WaitInvalidEventStatus : public SemaphoreTestBase
         // Wait semaphore
         err = clEnqueueWaitSemaphoresKHR(queue, 1, semaphore, nullptr, 1,
                                          &user_event, nullptr);
-        test_failure_error(err, CL_INVALID_EVENT_WAIT_LIST,
+        test_failure_error(err, CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST,
                            "Unexpected clEnqueueWaitSemaphoresKHR return");
 
         return CL_SUCCESS;
