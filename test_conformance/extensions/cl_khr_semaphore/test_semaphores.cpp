@@ -674,7 +674,7 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
     // Confirm that querying CL_SEMAPHORE_PROPERTIES_KHR returns the same
     // properties the semaphore was created with
     SEMAPHORE_PARAM_TEST_ARRAY(CL_SEMAPHORE_PROPERTIES_KHR,
-                               cl_semaphore_properties_khr, 5, sema_props);
+                               cl_semaphore_properties_khr, 6, sema_props);
 
     // Confirm that querying CL_SEMAPHORE_PAYLOAD_KHR returns the unsignaled
     // state
