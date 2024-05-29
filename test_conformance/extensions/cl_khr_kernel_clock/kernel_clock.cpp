@@ -96,13 +96,13 @@ public:
                     break;
                 }
                 case CL_DEVICE_KERNEL_CLOCK_SCOPE_WORK_GROUP_KHR: {
-                    sprintf(kernel_src, kernel_sources[i], "workgroup",
-                            "workgroup");
+                    sprintf(kernel_src, kernel_sources[i], "work_group",
+                            "work_group");
                     break;
                 }
                 case CL_DEVICE_KERNEL_CLOCK_SCOPE_SUB_GROUP_KHR: {
-                    sprintf(kernel_src, kernel_sources[i], "subgroup",
-                            "subgroup");
+                    sprintf(kernel_src, kernel_sources[i], "sub_group",
+                            "sub_group");
                     break;
                 }
             }
