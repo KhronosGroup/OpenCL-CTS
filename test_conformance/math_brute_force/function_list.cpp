@@ -73,6 +73,8 @@
 #define binaryF_two_results_i NULL
 #define mad_function NULL
 
+#define reference_copysignf NULL
+#define reference_copysign NULL
 #define reference_sqrt NULL
 #define reference_sqrtl NULL
 #define reference_divide NULL
@@ -250,7 +252,20 @@ const Func functionList[] = {
     ENTRY(atan2pi, 6.0f, 6.0f, 2.0f, FTZ_OFF, binaryF),
     ENTRY(cbrt, 2.0f, 4.0f, 2.f, FTZ_OFF, unaryF),
     ENTRY(ceil, 0.0f, 0.0f, 0.f, FTZ_OFF, unaryF),
-    ENTRY(copysign, 0.0f, 0.0f, 0.f, FTZ_OFF, binaryF),
+    { "copysign",
+      "copysign",
+      { (void*)reference_copysignf },
+      { (void*)reference_copysign },
+      { (void*)reference_copysignf },
+      0.0f,
+      0.0f,
+      0.0f,
+      0.0f,
+      INFINITY,
+      INFINITY,
+      FTZ_OFF,
+      RELAXED_OFF,
+      binaryF },
     ENTRY_EXT(cos, 4.0f, 4.0f, 2.f, 0.00048828125f, FTZ_OFF, unaryF,
               0.00048828125f), // relaxed ulp 2^-11
     ENTRY(cosh, 4.0f, 4.0f, 2.f, FTZ_OFF, unaryF),
