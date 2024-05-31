@@ -36,8 +36,11 @@ using Buffers = std::array<clMemWrapper, VECTOR_SIZE_COUNT>;
 // Types supported for kernel code generation.
 enum class ParameterType
 {
+    Half,
     Float,
     Double,
+    Short,
+    UShort,
     Int,
     UInt,
     Long,
@@ -90,5 +93,6 @@ using SourceGenerator = std::string (*)(const std::string &kernel_name,
 /// Build kernels for all threads in "info" for the given job_id.
 cl_int BuildKernels(BuildKernelInfo &info, cl_uint job_id,
                     SourceGenerator generator);
+
 
 #endif /* COMMON_H */

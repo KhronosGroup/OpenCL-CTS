@@ -70,6 +70,9 @@ struct vtbl
     int (*DoubleTestFunc)(
         const struct Func *, MTdata,
         bool); // may be NULL if function is single precision only
+    int (*HalfTestFunc)(
+        const struct Func *, MTdata,
+        bool); // may be NULL if function is single precision only
 };
 
 struct Func
@@ -82,6 +85,7 @@ struct Func
     fptr rfunc;
     float float_ulps;
     float double_ulps;
+    float half_ulps;
     float float_embedded_ulps;
     float relaxed_error;
     float relaxed_embedded_error;
