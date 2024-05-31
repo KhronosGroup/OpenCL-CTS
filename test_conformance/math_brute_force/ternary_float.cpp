@@ -118,7 +118,8 @@ const float specialValues[] = {
     +0.0f,
 };
 
-constexpr size_t specialValuesCount = ARRAY_SIZE(specialValues);
+constexpr size_t specialValuesCount =
+    sizeof(specialValues) / sizeof(specialValues[0]);
 
 } // anonymous namespace
 

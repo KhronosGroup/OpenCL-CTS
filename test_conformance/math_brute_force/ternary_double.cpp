@@ -108,7 +108,8 @@ const double specialValues[] = {
     +0.0,
 };
 
-constexpr size_t specialValuesCount = ARRAY_SIZE(specialValues);
+constexpr size_t specialValuesCount =
+    sizeof(specialValues) / sizeof(specialValues[0]);
 
 } // anonymous namespace
 

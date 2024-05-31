@@ -184,7 +184,8 @@ const float specialValues[] = {
     +0.0f,
 };
 
-constexpr size_t specialValuesCount = ARRAY_SIZE(specialValues);
+constexpr size_t specialValuesCount =
+    sizeof(specialValues) / sizeof(specialValues[0]);
 
 const int specialValuesInt[] = {
     0,           1,           2,           3,          126,        127,
@@ -193,7 +194,9 @@ const int specialValuesInt[] = {
     -0x04000001, -1465264071, -1488522147,
 };
 
-constexpr size_t specialValuesIntCount = ARRAY_SIZE(specialValuesInt);
+constexpr size_t specialValuesIntCount =
+    sizeof(specialValuesInt) / sizeof(specialValuesInt[0]);
+
 cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 {
     TestInfo *job = (TestInfo *)data;

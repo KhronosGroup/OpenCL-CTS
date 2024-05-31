@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -235,6 +235,7 @@ static constexpr vtbl _mad_tbl = {
 
 #endif // FUNCTION_LIST_ULPS_ONLY
 
+// clang-format off
 const Func functionList[] = {
     ENTRY_EXT(acos, 4.0f, 4.0f, 2.0f, 4096.0f, FTZ_OFF, unaryF, 4096.0f),
     ENTRY(acosh, 4.0f, 4.0f, 2.0f, FTZ_OFF, unaryF),
@@ -432,5 +433,6 @@ const Func functionList[] = {
                    unaryF), // A simple copy operation
     OPERATOR_ENTRY(not, "!", 0.0f, 0.0f, 0.0f, FTZ_OFF, macro_unaryF),
 };
+// clang-format on
 
 const size_t functionListCount = sizeof(functionList) / sizeof(functionList[0]);

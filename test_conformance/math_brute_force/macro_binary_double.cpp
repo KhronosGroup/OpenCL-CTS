@@ -185,7 +185,8 @@ const double specialValues[] = {
     +0.0,
 };
 
-constexpr size_t specialValuesCount = ARRAY_SIZE(specialValues);
+constexpr size_t specialValuesCount =
+    sizeof(specialValues) / sizeof(specialValues[0]);
 
 cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 {

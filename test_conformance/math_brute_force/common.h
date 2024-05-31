@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 The Khronos Group Inc.
+// Copyright (c) 2021-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -93,6 +93,5 @@ using SourceGenerator = std::string (*)(const std::string &kernel_name,
 /// Build kernels for all threads in "info" for the given job_id.
 cl_int BuildKernels(BuildKernelInfo &info, cl_uint job_id,
                     SourceGenerator generator);
-
 
 #endif /* COMMON_H */
