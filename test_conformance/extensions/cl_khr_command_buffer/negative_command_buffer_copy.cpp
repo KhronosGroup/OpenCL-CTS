@@ -46,6 +46,8 @@ struct CommandBufferCopyBaseTest : BasicCommandBufferTest
 
     bool Skip() override
     {
+        bool command_buffer_multi_device = is_extension_available(
+            device, "cl_khr_command_buffer_multi_device");
         if (check_image_support)
         {
             cl_bool image_support;
@@ -56,9 +58,10 @@ struct CommandBufferCopyBaseTest : BasicCommandBufferTest
             test_error(error,
                        "clGetDeviceInfo for CL_DEVICE_IMAGE_SUPPORT failed");
 
-            return (!image_support || BasicCommandBufferTest::Skip());
+            return (!image_support || BasicCommandBufferTest::Skip()
+                    || command_buffer_multi_device);
         }
-        return BasicCommandBufferTest::Skip();
+        return BasicCommandBufferTest::Skip() || command_buffer_multi_device;
     }
 
 protected:
