@@ -589,37 +589,7 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
 {
     cl_int err = CL_SUCCESS;
 
-    cl_platform_id platform_id = 0;
-    cl_uint num_devices = 0;
-    // find out what platform the harness is using.
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
-                          &platform_id, nullptr);
-    test_error(err, "clGetDeviceInfo failed");
-
-    err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, 0, nullptr,
-                         &num_devices);
-    test_error(err, "clGetDeviceIDs failed");
-
-    std::vector<cl_device_id> devices(num_devices);
-    cl_device_id capable_device = deviceID;
-
-    err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, num_devices,
-                         devices.data(), nullptr);
-    test_error(err, "clGetDeviceIDs failed");
-
-    // if possible use device other than the one from harness
-    for (auto device : devices)
-    {
-        if (deviceID != device
-            && is_extension_available(device, "cl_khr_semaphore"))
-        {
-            capable_device = device;
-            break;
-        }
-    }
-
-    if (deviceID == capable_device
-        && !is_extension_available(capable_device, "cl_khr_semaphore"))
+    if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
         log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
@@ -627,10 +597,10 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
     }
 
     // Obtain pointers to semaphore's API
-    GET_PFN(capable_device, clCreateSemaphoreWithPropertiesKHR);
-    GET_PFN(capable_device, clGetSemaphoreInfoKHR);
-    GET_PFN(capable_device, clRetainSemaphoreKHR);
-    GET_PFN(capable_device, clReleaseSemaphoreKHR);
+    GET_PFN(deviceID, clCreateSemaphoreWithPropertiesKHR);
+    GET_PFN(deviceID, clGetSemaphoreInfoKHR);
+    GET_PFN(deviceID, clRetainSemaphoreKHR);
+    GET_PFN(deviceID, clReleaseSemaphoreKHR);
 
     // Create binary semaphore
     cl_semaphore_properties_khr sema_props[] = {
@@ -638,7 +608,7 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
         static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_BINARY_KHR),
         static_cast<cl_semaphore_properties_khr>(
             CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR),
-        (cl_semaphore_properties_khr)capable_device,
+        (cl_semaphore_properties_khr)deviceID,
         CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR,
         0
     };
@@ -661,7 +631,7 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
     // Confirm that querying CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR returns the
     // same device id the semaphore was created with
     SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR, cl_device_id,
-                         capable_device);
+                         deviceID);
 
     err = clRetainSemaphoreKHR(sema);
     test_error(err, "Could not retain semaphore");
