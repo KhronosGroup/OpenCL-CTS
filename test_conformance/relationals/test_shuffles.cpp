@@ -882,7 +882,8 @@ int test_shuffle_random(cl_device_id device, cl_context context, cl_command_queu
                 int numTests = NUM_TESTS*NUM_ITERATIONS_PER_TEST;
                 for( int i = 0; i < numTests /*&& error == 0*/; i++ )
                 {
-                    ShuffleOrder src, dst;
+                    ShuffleOrder src{ 0 };
+                    ShuffleOrder dst;
                     if( shuffleMode == kBuiltInFnMode )
                     {
                         build_random_shuffle_order( dst, vecSizes[ dstIdx ], vecSizes[ srcIdx ], true, d );
