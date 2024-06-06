@@ -40,6 +40,7 @@ struct CommandBufferBarrierNotNullQueue : public BasicCommandBufferTest
 
     bool Skip() override
     {
+        if (BasicCommandBufferTest::Skip()) return true;
         return is_extension_available(device,
                                       "cl_khr_command_buffer_multi_device");
     }

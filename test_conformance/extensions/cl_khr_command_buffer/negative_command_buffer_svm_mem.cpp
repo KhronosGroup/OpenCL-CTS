@@ -53,6 +53,7 @@ struct CommandBufferCommandSVMQueueNotNull : public BasicSVMCommandBufferTest
 
     bool Skip() override
     {
+        if (BasicSVMCommandBufferTest::Skip()) return true;
         return is_extension_available(device,
                                       "cl_khr_command_buffer_multi_device");
     }
