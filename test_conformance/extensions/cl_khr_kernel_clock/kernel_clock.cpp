@@ -117,9 +117,6 @@ public:
                                      sizeof(cl_uint), nullptr, &error);
             test_error(error, "clCreateBuffer failed");
 
-            kernel = clCreateKernel(program, "SampleClock", &error);
-            test_error(error, "Failed to create kernel");
-
             error = clSetKernelArg(kernel, 0, sizeof(out_mem), &out_mem);
             test_error(error, "clSetKernelArg failed");
 
