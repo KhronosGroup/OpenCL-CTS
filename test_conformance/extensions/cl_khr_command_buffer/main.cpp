@@ -104,6 +104,25 @@ test_definition test_list[] = {
     ADD_TEST(negative_command_ndrange_kernel_mutable_handle_not_null),
     ADD_TEST(negative_command_ndrange_kernel_not_support_printf),
     ADD_TEST(negative_command_ndrange_kernel_with_enqueue_call),
+    ADD_TEST(negative_command_buffer_command_copy_buffer_queue_not_null),
+    ADD_TEST(negative_command_buffer_command_copy_buffer_different_contexts),
+    ADD_TEST(
+        negative_command_buffer_command_copy_buffer_sync_points_null_or_num_zero),
+    ADD_TEST(
+        negative_command_buffer_command_copy_buffer_invalid_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_copy_buffer_finalized_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_copy_buffer_mutable_handle_not_null),
+    ADD_TEST(negative_command_buffer_command_copy_image_queue_not_null),
+    ADD_TEST(negative_command_buffer_command_copy_image_different_contexts),
+    ADD_TEST(
+        negative_command_buffer_command_copy_image_sync_points_null_or_num_zero),
+    ADD_TEST(negative_command_buffer_command_copy_image_invalid_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_copy_image_finalized_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_copy_image_mutable_handle_not_null),
     ADD_TEST(negative_get_command_buffer_info_invalid_command_buffer),
     ADD_TEST(negative_get_command_buffer_info_not_supported_param_name),
     ADD_TEST(negative_get_command_buffer_info_queues),
