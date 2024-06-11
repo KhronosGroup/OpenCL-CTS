@@ -32,11 +32,11 @@ struct CommandBufferCopyBaseTest : BasicCommandBufferTest
 
         if (check_image_support)
         {
-            image = create_image_2d(context, CL_MEM_READ_WRITE, &formats, 512,
-                                    512, 0, NULL, &error);
+            image = create_image_2d(context, CL_MEM_READ_WRITE, &formats,
+                                    img_width, img_height, 0, NULL, &error);
             test_error(error, "create_image_2d failed");
 
-            buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, data_size(),
+            buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, data_size,
                                     nullptr, &error);
             test_error(error, "Unable to create buffer");
         }
@@ -65,11 +65,16 @@ struct CommandBufferCopyBaseTest : BasicCommandBufferTest
     }
 
 protected:
+    const size_t img_width = 512;
+    const size_t img_height = 512;
     const size_t origin[3] = { 0, 0, 0 };
-    const size_t region[3] = { 512, 512, 1 };
+    const size_t region[3] = { img_width, img_height, 1 };
     const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
     clMemWrapper image;
     clMemWrapper buffer;
+    const size_t data_size = img_width * img_height * sizeof(cl_char);
+    clMemWrapper in_mem;
+    clMemWrapper out_mem;
 };
 
 namespace {
@@ -84,7 +89,7 @@ struct CommandBufferCopyBufferQueueNotNull
     {
         cl_int error =
             clCommandCopyBufferKHR(command_buffer, queue, in_mem, out_mem, 0, 0,
-                                   data_size(), 0, nullptr, nullptr, nullptr);
+                                   data_size, 0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_QUEUE,
                                "clCommandCopyBufferKHR should return "
@@ -140,14 +145,12 @@ struct CommandBufferCopyBufferDifferentContexts
         context1 = clCreateContext(0, 1, &device, nullptr, nullptr, &error);
         test_error(error, "Failed to create context");
 
-        in_mem_ctx =
-            clCreateBuffer(context1, CL_MEM_READ_ONLY,
-                           sizeof(cl_int) * num_elements, nullptr, &error);
+        in_mem_ctx = clCreateBuffer(context1, CL_MEM_READ_ONLY, data_size,
+                                    nullptr, &error);
         test_error(error, "clCreateBuffer failed");
 
-        out_mem_ctx =
-            clCreateBuffer(context1, CL_MEM_WRITE_ONLY,
-                           sizeof(cl_int) * num_elements, nullptr, &error);
+        out_mem_ctx = clCreateBuffer(context1, CL_MEM_WRITE_ONLY, data_size,
+                                     nullptr, &error);
         test_error(error, "clCreateBuffer failed");
 
         return CL_SUCCESS;
@@ -156,7 +159,7 @@ struct CommandBufferCopyBufferDifferentContexts
     cl_int Run() override
     {
         cl_int error = clCommandCopyBufferKHR(
-            command_buffer, nullptr, in_mem_ctx, out_mem, 0, 0, data_size(), 0,
+            command_buffer, nullptr, in_mem_ctx, out_mem, 0, 0, data_size, 0,
             nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_CONTEXT,
@@ -176,8 +179,8 @@ struct CommandBufferCopyBufferDifferentContexts
 
 
         error = clCommandCopyBufferKHR(command_buffer, nullptr, in_mem,
-                                       out_mem_ctx, 0, 0, data_size(), 0,
-                                       nullptr, nullptr, nullptr);
+                                       out_mem_ctx, 0, 0, data_size, 0, nullptr,
+                                       nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_CONTEXT,
                                "clCommandCopyBufferKHR should return "
@@ -216,11 +219,11 @@ struct CommandBufferCopyImageDifferentContexts
         context1 = clCreateContext(0, 1, &device, nullptr, nullptr, &error);
         test_error(error, "Failed to create context");
 
-        image_ctx = create_image_2d(context1, CL_MEM_READ_WRITE, &formats, 512,
-                                    512, 0, NULL, &error);
+        image_ctx = create_image_2d(context1, CL_MEM_READ_WRITE, &formats,
+                                    img_width, img_height, 0, NULL, &error);
         test_error(error, "create_image_2d failed");
 
-        buffer_ctx = clCreateBuffer(context1, CL_MEM_READ_WRITE, data_size(),
+        buffer_ctx = clCreateBuffer(context1, CL_MEM_READ_WRITE, data_size,
                                     nullptr, &error);
         test_error(error, "Unable to create buffer");
 
@@ -272,7 +275,7 @@ struct CommandBufferCopyBufferSyncPointsNullOrNumZero
         cl_sync_point_khr invalid_point = 0;
 
         cl_int error = clCommandCopyBufferKHR(command_buffer, nullptr, in_mem,
-                                              out_mem, 0, 0, data_size(), 1,
+                                              out_mem, 0, 0, data_size, 1,
                                               &invalid_point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
@@ -290,9 +293,9 @@ struct CommandBufferCopyBufferSyncPointsNullOrNumZero
                                TEST_FAIL);
 
 
-        error = clCommandCopyBufferKHR(command_buffer, nullptr, in_mem, out_mem,
-                                       0, 0, data_size(), 1, nullptr, nullptr,
-                                       nullptr);
+        error =
+            clCommandCopyBufferKHR(command_buffer, nullptr, in_mem, out_mem, 0,
+                                   0, data_size, 1, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyBufferKHR should return "
@@ -317,7 +320,7 @@ struct CommandBufferCopyBufferSyncPointsNullOrNumZero
 
         error =
             clCommandCopyBufferKHR(command_buffer, nullptr, in_mem, out_mem, 0,
-                                   0, data_size(), 0, &point, nullptr, nullptr);
+                                   0, data_size, 0, &point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyBufferKHR should return "
@@ -400,7 +403,7 @@ struct CommandBufferCopyBufferInvalidCommandBuffer
     {
         cl_int error =
             clCommandCopyBufferKHR(nullptr, nullptr, in_mem, out_mem, 0, 0,
-                                   data_size(), 0, nullptr, nullptr, nullptr);
+                                   data_size, 0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_BUFFER_KHR,
                                "clCommandCopyBufferKHR should return "
@@ -453,9 +456,9 @@ struct CommandBufferCopyBufferFinalizedCommandBuffer
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clCommandCopyBufferKHR(command_buffer, nullptr, in_mem, out_mem,
-                                       0, 0, data_size(), 0, nullptr, nullptr,
-                                       nullptr);
+        error =
+            clCommandCopyBufferKHR(command_buffer, nullptr, in_mem, out_mem, 0,
+                                   0, data_size, 0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_OPERATION,
                                "clCommandCopyBufferKHR should return "
@@ -512,7 +515,7 @@ struct CommandBufferCopyBufferMutableHandleNotNull
         cl_mutable_command_khr mutable_handle;
 
         cl_int error = clCommandCopyBufferKHR(
-            command_buffer, nullptr, in_mem, out_mem, 0, 0, data_size(), 0,
+            command_buffer, nullptr, in_mem, out_mem, 0, 0, data_size, 0,
             nullptr, nullptr, &mutable_handle);
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
