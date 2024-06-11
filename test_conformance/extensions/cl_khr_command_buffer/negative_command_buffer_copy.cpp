@@ -30,6 +30,14 @@ struct CommandBufferCopyBaseTest : BasicCommandBufferTest
         cl_int error = BasicCommandBufferTest::SetUp(elements);
         test_error(error, "BasicCommandBufferTest::SetUp failed");
 
+        in_mem = clCreateBuffer(context, CL_MEM_READ_WRITE, data_size, nullptr,
+                                &error);
+        test_error(error, "clCreateBuffer failed");
+
+        out_mem = clCreateBuffer(context, CL_MEM_READ_WRITE, data_size, nullptr,
+                                 &error);
+        test_error(error, "Unable to create buffer");
+
         if (check_image_support)
         {
             image = create_image_2d(context, CL_MEM_READ_WRITE, &formats,
@@ -140,7 +148,7 @@ struct CommandBufferCopyBufferDifferentContexts
     cl_int SetUp(int elements) override
     {
         cl_int error = CommandBufferCopyBaseTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
+        test_error(error, "CommandBufferCopyBaseTest::SetUp failed");
 
         context1 = clCreateContext(0, 1, &device, nullptr, nullptr, &error);
         test_error(error, "Failed to create context");
@@ -214,7 +222,7 @@ struct CommandBufferCopyImageDifferentContexts
     cl_int SetUp(int elements) override
     {
         cl_int error = CommandBufferCopyBaseTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
+        test_error(error, "CommandBufferCopyBaseTest::SetUp failed");
 
         context1 = clCreateContext(0, 1, &device, nullptr, nullptr, &error);
         test_error(error, "Failed to create context");
