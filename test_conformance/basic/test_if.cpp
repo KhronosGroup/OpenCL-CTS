@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,146 +21,119 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <algorithm>
+#include <vector>
 
 #include "procs.h"
 
-const char *conditional_kernel_code =
-"__kernel void test_if(__global int *src, __global int *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    if (src[tid] == 0)\n"
-"        dst[tid] = 0x12345678;\n"
-"    else if (src[tid] == 1)\n"
-"        dst[tid] = 0x23456781;\n"
-"    else if (src[tid] == 2)\n"
-"        dst[tid] = 0x34567812;\n"
-"    else if (src[tid] == 3)\n"
-"        dst[tid] = 0x45678123;\n"
-"    else if (src[tid] == 4)\n"
-"        dst[tid] = 0x56781234;\n"
-"    else if (src[tid] == 5)\n"
-"        dst[tid] = 0x67812345;\n"
-"    else if (src[tid] == 6)\n"
-"        dst[tid] = 0x78123456;\n"
-"    else if (src[tid] == 7)\n"
-"        dst[tid] = 0x81234567;\n"
-"    else\n"
-"        dst[tid] = 0x7FFFFFFF;\n"
-"\n"
-"}\n";
-
-const int results[] = {
-    0x12345678,
-    0x23456781,
-    0x34567812,
-    0x45678123,
-    0x56781234,
-    0x67812345,
-    0x78123456,
-    0x81234567,
-};
-
-int
-verify_if(int *inptr, int *outptr, int n)
+namespace {
+const char *conditional_kernel_code = R"(
+__kernel void test_if(__global int *src, __global int *dst)
 {
-    int     r, i;
+    int  tid = get_global_id(0);
 
-    for (i=0; i<n; i++)
-    {
-        if (inptr[i] <= 7)
-            r = results[inptr[i]];
+    if (src[tid] == 0)
+        dst[tid] = 0x12345678;
+    else if (src[tid] == 1)
+        dst[tid] = 0x23456781;
+    else if (src[tid] == 2)
+        dst[tid] = 0x34567812;
+    else if (src[tid] == 3)
+        dst[tid] = 0x45678123;
+    else if (src[tid] == 4)
+        dst[tid] = 0x56781234;
+    else if (src[tid] == 5)
+        dst[tid] = 0x67812345;
+    else if (src[tid] == 6)
+        dst[tid] = 0x78123456;
+    else if (src[tid] == 7)
+        dst[tid] = 0x81234567;
+    else
+        dst[tid] = 0x7FFFFFFF;
+}
+)";
+
+int verify_if(std::vector<cl_int> input, std::vector<cl_int> output)
+{
+    const cl_int results[] = {
+        0x12345678, 0x23456781, 0x34567812, 0x45678123,
+        0x56781234, 0x67812345, 0x78123456, 0x81234567,
+    };
+
+    auto predicate = [&results](cl_int a, cl_int b) {
+        if (a <= 7)
+            return b == results[a];
         else
-            r = 0x7FFFFFFF;
+            return b == 0x7FFFFFFF;
+    };
 
-        if (r != outptr[i])
-        {
-            log_error("IF test failed\n");
-            return -1;
-        }
+    if (!std::equal(input.begin(), input.end(), output.begin(), predicate))
+    {
+        log_error("IF test failed\n");
+        return -1;
     }
 
     log_info("IF test passed\n");
     return 0;
 }
 
-int test_if(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+void generate_random_inputs(std::vector<cl_int> &v)
 {
-    cl_mem streams[2];
-    cl_int *input_ptr, *output_ptr;
-    cl_program program;
-    cl_kernel kernel;
-    size_t threads[1];
-    int err, i;
-    MTdata d = init_genrand( gRandomSeed );
+    RandomSeed seed(gRandomSeed);
+
+    auto random_generator = [&seed]() {
+        return static_cast<cl_int>(get_random_float(0, 32, seed));
+    };
+
+    std::generate(v.begin(), v.end(), random_generator);
+}
+}
+int test_if(cl_device_id device, cl_context context, cl_command_queue queue,
+            int num_elements)
+{
+    clMemWrapper streams[2];
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+
+    int err;
 
     size_t length = sizeof(cl_int) * num_elements;
-    input_ptr  = (cl_int*)malloc(length);
-    output_ptr = (cl_int*)malloc(length);
 
-    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, NULL);
-    if (!streams[0])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
-    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, NULL);
-    if (!streams[1])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
+    std::vector<cl_int> input(num_elements);
+    std::vector<cl_int> output(num_elements);
 
-    for (i=0; i<num_elements; i++)
-        input_ptr[i] = (int)get_random_float(0, 32, d);
 
-    free_mtdata(d); d = NULL;
+    streams[0] =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, length, nullptr, &err);
+    test_error(err, "clCreateBuffer failed.");
+    streams[1] =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, length, nullptr, &err);
+    test_error(err, "clCreateBuffer failed.");
 
-  err = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, length, input_ptr, 0, NULL, NULL);
-  if (err != CL_SUCCESS)
-  {
-    log_error("clEnqueueWriteBuffer failed\n");
-    return -1;
-  }
+    generate_random_inputs(input);
 
-  err = create_single_kernel_helper(context, &program, &kernel, 1, &conditional_kernel_code, "test_if" );
-  if (err)
-    return -1;
+    err = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, length,
+                               input.data(), 0, nullptr, nullptr);
+    test_error(err, "clEnqueueWriteBuffer failed.");
 
-  err  = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
-  err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1]);
-    if (err != CL_SUCCESS)
-    {
-        log_error("clSetKernelArgs failed\n");
-        return -1;
-    }
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &conditional_kernel_code, "test_if");
+    test_error(err, "create_single_kernel_helper failed.");
 
-    threads[0] = (unsigned int)num_elements;
-  err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL);
-  if (err != CL_SUCCESS)
-  {
-    log_error("clEnqueueNDRangeKernel failed\n");
-    return -1;
-  }
+    err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0]);
+    err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1]);
+    test_error(err, "clSetKernelArg failed.");
 
-  err = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, length, output_ptr, 0, NULL, NULL);
-  if (err != CL_SUCCESS)
-  {
-    log_error("clReadArray failed\n");
-    return -1;
-  }
+    size_t threads[] = { (size_t)num_elements };
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, threads, nullptr, 0,
+                                 nullptr, nullptr);
+    test_error(err, "clEnqueueNDRangeKernel failed.");
 
-  err = verify_if(input_ptr, output_ptr, num_elements);
+    err = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, length,
+                              output.data(), 0, nullptr, nullptr);
+    test_error(err, "clEnqueueReadBuffer failed.");
 
-    // cleanup
-    clReleaseMemObject(streams[0]);
-    clReleaseMemObject(streams[1]);
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
-    free(input_ptr);
-    free(output_ptr);
+    err = verify_if(input, output);
 
     return err;
 }
-
-
