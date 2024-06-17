@@ -188,26 +188,14 @@ int allocate_size(cl_context context, cl_command_queue *queue,
     // one we don't end up returning a garbage value
     *number_of_mems = 0;
 
-    error = clGetDeviceInfo(device_id, CL_DEVICE_MAX_MEM_ALLOC_SIZE,
-                            sizeof(max_individual_allocation_size),
-                            &max_individual_allocation_size, NULL);
-    test_error_abort(error,
-                     "clGetDeviceInfo failed for CL_DEVICE_MAX_MEM_ALLOC_SIZE");
-    error = clGetDeviceInfo(device_id, CL_DEVICE_GLOBAL_MEM_SIZE,
-                            sizeof(global_mem_size), &global_mem_size, NULL);
-    test_error_abort(error,
-                     "clGetDeviceInfo failed for CL_DEVICE_GLOBAL_MEM_SIZE");
+    max_individual_allocation_size =
+        get_device_info_max_mem_alloc_size(device_id);
+    global_mem_size = get_device_info_global_mem_size(device_id);
 
     if (global_mem_size > (cl_ulong)SIZE_MAX)
     {
         global_mem_size = (cl_ulong)SIZE_MAX;
     }
-
-    //  log_info("Device reports CL_DEVICE_MAX_MEM_ALLOC_SIZE=%llu bytes (%gMB),
-    //  CL_DEVICE_GLOBAL_MEM_SIZE=%llu bytes (%gMB).\n",
-    //           max_individual_allocation_size,
-    //           toMB(max_individual_allocation_size), global_mem_size,
-    //           toMB(global_mem_size));
 
     if (size_to_allocate > global_mem_size)
     {
