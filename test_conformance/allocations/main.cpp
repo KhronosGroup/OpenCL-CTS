@@ -24,8 +24,10 @@
 
 typedef long long unsigned llu;
 
+#define REDUCTION_PERCENTAGE_DEFAULT 50
+
 int g_repetition_count = 1;
-int g_reduction_percentage = 100;
+int g_reduction_percentage = REDUCTION_PERCENTAGE_DEFAULT;
 int g_write_allocations = 1;
 int g_multiple_allocations = 0;
 int g_execute_kernel = 1;
@@ -44,24 +46,9 @@ test_status init_cl(cl_device_id device)
 {
     int error;
 
-    error = clGetDeviceInfo(device, CL_DEVICE_MAX_MEM_ALLOC_SIZE,
-                            sizeof(g_max_individual_allocation_size),
-                            &g_max_individual_allocation_size, NULL);
-    if (error)
-    {
-        print_error(error,
-                    "clGetDeviceInfo failed for CL_DEVICE_MAX_MEM_ALLOC_SIZE");
-        return TEST_FAIL;
-    }
-    error =
-        clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE,
-                        sizeof(g_global_mem_size), &g_global_mem_size, NULL);
-    if (error)
-    {
-        print_error(error,
-                    "clGetDeviceInfo failed for CL_DEVICE_GLOBAL_MEM_SIZE");
-        return TEST_FAIL;
-    }
+    g_max_individual_allocation_size =
+        get_device_info_max_mem_alloc_size(device);
+    g_global_mem_size = get_device_info_global_mem_size(device);
 
     log_info("Device reports CL_DEVICE_MAX_MEM_ALLOC_SIZE=%llu bytes (%gMB), "
              "CL_DEVICE_GLOBAL_MEM_SIZE=%llu bytes (%gMB).\n",
