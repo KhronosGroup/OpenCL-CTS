@@ -590,7 +590,7 @@ struct CreateInvalidOperation : public SemaphoreTestBase
         semaphore_second =
             clCreateSemaphoreWithPropertiesKHR(context, sema_2_props, &err);
         test_failure_error(
-            err, CL_INVALID_DEVICE,
+            err, CL_INVALID_OPERATION,
             "Unexpected clCreateSemaphoreWithPropertiesKHR return");
 
         return CL_SUCCESS;
