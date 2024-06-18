@@ -494,10 +494,11 @@ int image_from_buffer_alignment_negative(cl_device_id device,
                 test_error(err, "Unable to create buffer");
 
                 /* Test Row pitch images */
-                if (imageType == CL_MEM_OBJECT_IMAGE2D
-                    || imageType == CL_MEM_OBJECT_IMAGE3D
-                    || imageType == CL_MEM_OBJECT_IMAGE1D_ARRAY
-                    || imageType == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                if ((imageType == CL_MEM_OBJECT_IMAGE2D
+                     || imageType == CL_MEM_OBJECT_IMAGE3D
+                     || imageType == CL_MEM_OBJECT_IMAGE1D_ARRAY
+                     || imageType == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                    && row_pitch_alignment != 1)
                 {
                     image_desc.buffer = buffer;
                     image_desc.image_row_pitch =
@@ -510,8 +511,9 @@ int image_from_buffer_alignment_negative(cl_device_id device,
                 }
 
                 /* Test Slice pitch images */
-                if (imageType == CL_MEM_OBJECT_IMAGE3D
-                    || imageType == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                if ((imageType == CL_MEM_OBJECT_IMAGE3D
+                     || imageType == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                    && slice_pitch_alignment != 1)
                 {
                     image_desc.buffer = buffer;
                     image_desc.image_row_pitch = row_pitch;
@@ -524,36 +526,39 @@ int image_from_buffer_alignment_negative(cl_device_id device,
                                        "Unexpected clCreateImage return");
                 }
 
-                /* Test buffer from host ptr to test base address alignment */
-                const size_t aligned_buffer_size =
-                    aligned_size(buffer_size, base_address_alignment);
-                /* Create buffer with host ptr and additional size for the wrong
-                 * alignment */
-                void* const host_ptr =
-                    malloc(aligned_buffer_size + base_address_alignment);
-                void* non_aligned_host_ptr =
-                    (void*)((char*)(aligned_ptr(host_ptr,
-                                                base_address_alignment))
-                            + 1); /* wrong alignment */
+                if (base_address_alignment != 1)
+                {
+                    /* Test buffer from host ptr to test base address alignment
+                     */
+                    const size_t aligned_buffer_size =
+                        aligned_size(buffer_size, base_address_alignment);
+                    /* Create buffer with host ptr and additional size for the
+                     * wrong alignment */
+                    void* const host_ptr =
+                        malloc(aligned_buffer_size + base_address_alignment);
+                    void* non_aligned_host_ptr =
+                        (void*)((char*)(aligned_ptr(host_ptr,
+                                                    base_address_alignment))
+                                + 1); /* wrong alignment */
 
-                cl_mem buffer_host = clCreateBuffer(
-                    context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE,
-                    buffer_size, non_aligned_host_ptr, &err);
-                test_error(err, "Unable to create buffer");
+                    cl_mem buffer_host = clCreateBuffer(
+                        context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE,
+                        buffer_size, non_aligned_host_ptr, &err);
+                    test_error(err, "Unable to create buffer");
 
-                image_desc.buffer = buffer_host;
+                    image_desc.buffer = buffer_host;
 
-                clCreateImage(context, flag, &format, &image_desc, nullptr,
-                              &err);
-                test_failure_error(err, CL_INVALID_IMAGE_FORMAT_DESCRIPTOR,
-                                   "Unexpected clCreateImage return");
+                    clCreateImage(context, flag, &format, &image_desc, nullptr,
+                                  &err);
+                    test_failure_error(err, CL_INVALID_IMAGE_FORMAT_DESCRIPTOR,
+                                       "Unexpected clCreateImage return");
 
-                free(host_ptr);
+                    free(host_ptr);
+                    err = clReleaseMemObject(buffer_host);
+                    test_error(err, "Unable to release buffer");
+                }
 
                 err = clReleaseMemObject(buffer);
-                test_error(err, "Unable to release buffer");
-
-                err = clReleaseMemObject(buffer_host);
                 test_error(err, "Unable to release buffer");
             }
         }
