@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 The Khronos Group Inc.
+// Copyright (c) 2023-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,8 +28,12 @@ extern bool qcom_sat;
 extern roundingMode qcom_rm;
 #endif
 
+#include <CL/cl_half.h>
+
+#include "harness/conversions.h"
 #include "harness/mt19937.h"
 #include "harness/rounding_mode.h"
+#include "harness/typeWrappers.h"
 
 #include <vector>
 
@@ -60,10 +64,16 @@ struct DataInitInfo
     RoundingMode round;
     cl_uint threads;
 
+    static cl_half_rounding_mode halfRoundingMode;
     static std::vector<uint32_t> specialValuesUInt;
     static std::vector<float> specialValuesFloat;
     static std::vector<double> specialValuesDouble;
+    static std::vector<cl_half> specialValuesHalf;
 };
+
+#define HFF(num) cl_half_from_float(num, DataInitInfo::halfRoundingMode)
+#define HTF(num) cl_half_to_float(num)
+#define HFD(num) cl_half_from_double(num, DataInitInfo::halfRoundingMode)
 
 struct DataInitBase : public DataInitInfo
 {
@@ -73,9 +83,12 @@ struct DataInitBase : public DataInitInfo
     virtual void conv_array(void *out, void *in, size_t n) {}
     virtual void conv_array_sat(void *out, void *in, size_t n) {}
     virtual void init(const cl_uint &, const cl_uint &) {}
+    virtual void set_allow_zero_array(uint8_t *allow, void *out, void *in,
+                                      size_t n)
+    {}
 };
 
-template <typename InType, typename OutType>
+template <typename InType, typename OutType, bool InFP, bool OutFP>
 struct DataInfoSpec : public DataInitBase
 {
     explicit DataInfoSpec(const DataInitInfo &agg);
@@ -90,6 +103,9 @@ struct DataInfoSpec : public DataInitBase
     void conv(OutType *out, InType *in);
     void conv_sat(OutType *out, InType *in);
 
+    // Decide if we allow a zero result in addition to the correctly rounded one
+    void set_allow_zero(uint8_t *allow, OutType *out, InType *in);
+
     // min/max ranges for output type of data
     std::pair<OutType, OutType> ranges;
 
@@ -97,6 +113,16 @@ struct DataInfoSpec : public DataInitBase
     std::vector<std::pair<InType, InType>> clamp_ranges;
 
     std::vector<MTdataHolder> mdv;
+
+    constexpr bool is_in_half() const
+    {
+        return (std::is_same<InType, cl_half>::value && InFP);
+    }
+
+    constexpr bool is_out_half() const
+    {
+        return (std::is_same<OutType, cl_half>::value && OutFP);
+    }
 
     void conv_array(void *out, void *in, size_t n) override
     {
@@ -111,6 +137,12 @@ struct DataInfoSpec : public DataInitBase
     }
 
     void init(const cl_uint &, const cl_uint &) override;
+    void set_allow_zero_array(uint8_t *allow, void *out, void *in,
+                              size_t n) override
+    {
+        for (size_t i = 0; i < n; i++)
+            set_allow_zero(&allow[i], &((OutType *)out)[i], &((InType *)in)[i]);
+    }
     InType clamp(const InType &);
     inline float fclamp(float lo, float v, float hi)
     {
@@ -125,19 +157,22 @@ struct DataInfoSpec : public DataInitBase
     }
 };
 
-template <typename InType, typename OutType>
-DataInfoSpec<InType, OutType>::DataInfoSpec(const DataInitInfo &agg)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+DataInfoSpec<InType, OutType, InFP, OutFP>::DataInfoSpec(
+    const DataInitInfo &agg)
     : DataInitBase(agg), mdv(0)
 {
     if (std::is_same<cl_float, OutType>::value)
         ranges = std::make_pair(CL_FLT_MIN, CL_FLT_MAX);
     else if (std::is_same<cl_double, OutType>::value)
         ranges = std::make_pair(CL_DBL_MIN, CL_DBL_MAX);
+    else if (std::is_same<cl_half, OutType>::value && OutFP)
+        ranges = std::make_pair(HFF(CL_HALF_MIN), HFF(CL_HALF_MAX));
     else if (std::is_same<cl_uchar, OutType>::value)
         ranges = std::make_pair(0, CL_UCHAR_MAX);
     else if (std::is_same<cl_char, OutType>::value)
         ranges = std::make_pair(CL_CHAR_MIN, CL_CHAR_MAX);
-    else if (std::is_same<cl_ushort, OutType>::value)
+    else if (std::is_same<cl_ushort, OutType>::value && !OutFP)
         ranges = std::make_pair(0, CL_USHRT_MAX);
     else if (std::is_same<cl_short, OutType>::value)
         ranges = std::make_pair(CL_SHRT_MIN, CL_SHRT_MAX);
@@ -158,12 +193,12 @@ DataInfoSpec<InType, OutType>::DataInfoSpec(const DataInitInfo &agg)
         InType outMax = static_cast<InType>(ranges.second);
 
         InType eps = std::is_same<InType, cl_float>::value ? (InType) FLT_EPSILON : (InType) DBL_EPSILON;
-        if (std::is_integral<OutType>::value)
+        if (std::is_integral<OutType>::value && !OutFP)
         { // to char/uchar/short/ushort/int/uint/long/ulong
             if (sizeof(OutType)<=sizeof(cl_short))
             { // to char/uchar/short/ushort
                 clamp_ranges=
-                {{outMin-0.5f, outMax + 0.5f - outMax * 0.5f * eps},
+                 {{outMin-0.5f, outMax + 0.5f - outMax * 0.5f * eps},
                   {outMin-0.5f, outMax + 0.5f - outMax * 0.5f * eps},
                   {outMin-1.0f+(std::is_signed<OutType>::value?outMax:0.5f)*eps, outMax-1.f},
                   {outMin-0.0f, outMax - outMax * 0.5f * eps },
@@ -249,11 +284,55 @@ DataInfoSpec<InType, OutType>::DataInfoSpec(const DataInitInfo &agg)
             }
         }
     }
+    else if (is_in_half())
+    {
+        float outMin = static_cast<float>(ranges.first);
+        float outMax = static_cast<float>(ranges.second);
+        float eps = CL_HALF_EPSILON;
+        cl_half_rounding_mode prev_half_round = DataInitInfo::halfRoundingMode;
+        DataInitInfo::halfRoundingMode = CL_HALF_RTZ;
+
+        if (std::is_integral<OutType>::value)
+        { // to char/uchar/short/ushort/int/uint/long/ulong
+            if (sizeof(OutType)<=sizeof(cl_char) || std::is_same<OutType, cl_short>::value)
+            { // to char/uchar
+                clamp_ranges=
+                 {{HFF(outMin-0.5f), HFF(outMax + 0.5f - outMax * 0.5f * eps)},
+                  {HFF(outMin-0.5f), HFF(outMax + 0.5f - outMax * 0.5f * eps)},
+                  {HFF(outMin-1.0f+(std::is_signed<OutType>::value?outMax:0.5f)*eps), HFF(outMax-1.f)},
+                  {HFF(outMin-0.0f), HFF(outMax - outMax * 0.5f * eps) },
+                  {HFF(outMin-1.0f+(std::is_signed<OutType>::value?outMax:0.5f)*eps), HFF(outMax - outMax * 0.5f * eps)}};
+            }
+            else
+            { // to ushort/int/uint/long/ulong
+                if (std::is_signed<OutType>::value)
+                {
+                    clamp_ranges=
+                    { {HFF(-CL_HALF_MAX), HFF(CL_HALF_MAX)},
+                      {HFF(-CL_HALF_MAX), HFF(CL_HALF_MAX)},
+                      {HFF(-CL_HALF_MAX), HFF(CL_HALF_MAX)},
+                      {HFF(-CL_HALF_MAX), HFF(CL_HALF_MAX)},
+                      {HFF(-CL_HALF_MAX), HFF(CL_HALF_MAX)}};
+                }
+                else
+                {
+                    clamp_ranges=
+                    { {HFF(outMin), HFF(CL_HALF_MAX)},
+                      {HFF(outMin), HFF(CL_HALF_MAX)},
+                      {HFF(outMin), HFF(CL_HALF_MAX)},
+                      {HFF(outMin), HFF(CL_HALF_MAX)},
+                      {HFF(outMin), HFF(CL_HALF_MAX)}};
+                }
+            }
+        }
+
+        DataInitInfo::halfRoundingMode = prev_half_round;
+    }
     // clang-format on
 }
 
-template <typename InType, typename OutType>
-float DataInfoSpec<InType, OutType>::round_to_int(float f)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+float DataInfoSpec<InType, OutType, InFP, OutFP>::round_to_int(float f)
 {
     static const float magic[2] = { MAKE_HEX_FLOAT(0x1.0p23f, 0x1, 23),
                                     -MAKE_HEX_FLOAT(0x1.0p23f, 0x1, 23) };
@@ -281,8 +360,9 @@ float DataInfoSpec<InType, OutType>::round_to_int(float f)
     return f;
 }
 
-template <typename InType, typename OutType>
-long long DataInfoSpec<InType, OutType>::round_to_int_and_clamp(double f)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+long long
+DataInfoSpec<InType, OutType, InFP, OutFP>::round_to_int_and_clamp(double f)
 {
     static const double magic[2] = { MAKE_HEX_DOUBLE(0x1.0p52, 0x1LL, 52),
                                      MAKE_HEX_DOUBLE(-0x1.0p52, -0x1LL, 52) };
@@ -313,8 +393,8 @@ long long DataInfoSpec<InType, OutType>::round_to_int_and_clamp(double f)
     return (long long)f;
 }
 
-template <typename InType, typename OutType>
-OutType DataInfoSpec<InType, OutType>::absolute(const OutType &x)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+OutType DataInfoSpec<InType, OutType, InFP, OutFP>::absolute(const OutType &x)
 {
     union {
         cl_uint u;
@@ -331,16 +411,29 @@ OutType DataInfoSpec<InType, OutType>::absolute(const OutType &x)
     return u.f;
 }
 
-template <typename InType, typename OutType>
-void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
+template <typename T, bool fp> constexpr bool is_half()
 {
-    if (std::is_same<cl_float, InType>::value)
+    return (std::is_same<cl_half, T>::value && fp);
+}
+
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+void DataInfoSpec<InType, OutType, InFP, OutFP>::conv(OutType *out, InType *in)
+{
+    if (std::is_same<cl_float, InType>::value || is_in_half())
     {
         cl_float inVal = *in;
+        if (std::is_same<cl_half, InType>::value)
+        {
+            inVal = HTF(*in);
+        }
 
         if (std::is_floating_point<OutType>::value)
         {
             *out = (OutType)inVal;
+        }
+        else if (is_out_half())
+        {
+            *out = HFF(*in);
         }
         else if (std::is_same<cl_ulong, OutType>::value)
         {
@@ -376,6 +469,8 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
     {
         if (std::is_same<cl_float, OutType>::value)
             *out = (OutType)*in;
+        else if (is_out_half())
+            *out = static_cast<OutType>(HFD(*in));
         else
             *out = rint(*in);
     }
@@ -418,7 +513,7 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
             *out = (vi == 0 ? 0.0 : static_cast<OutType>(vi));
 #endif
         }
-        else if (std::is_same<cl_float, OutType>::value)
+        else if (std::is_same<cl_float, OutType>::value || is_out_half())
         {
             cl_float outVal = 0.f;
 
@@ -465,7 +560,9 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
 #endif
 #endif
 
-            *out = outVal;
+            *out = std::is_same<cl_half, OutType>::value
+                ? static_cast<OutType>(HFF(outVal))
+                : outVal;
         }
         else
         {
@@ -486,6 +583,8 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
             // Per IEEE-754-2008 5.4.1, 0 always converts to +0.0
             *out = (*in == 0 ? 0.0 : *in);
         }
+        else if (is_out_half())
+            *out = static_cast<OutType>(HFF(*in == 0 ? 0.f : *in));
         else
         {
             *out = (OutType)*in;
@@ -496,19 +595,26 @@ void DataInfoSpec<InType, OutType>::conv(OutType *out, InType *in)
 #define CLAMP(_lo, _x, _hi)                                                    \
     ((_x) < (_lo) ? (_lo) : ((_x) > (_hi) ? (_hi) : (_x)))
 
-template <typename InType, typename OutType>
-void DataInfoSpec<InType, OutType>::conv_sat(OutType *out, InType *in)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
+                                                          InType *in)
 {
-    if (std::is_floating_point<InType>::value)
+    if (std::is_floating_point<InType>::value || is_in_half())
     {
-        if (std::is_floating_point<OutType>::value)
-        { // in float/double, out float/double
-            *out = (OutType)(*in);
+        cl_float inVal = *in;
+        if (is_in_half()) inVal = HTF(*in);
+
+        if (std::is_floating_point<OutType>::value || is_out_half())
+        { // in half/float/double, out half/float/double
+            if (is_out_half())
+                *out = static_cast<OutType>(HFF(inVal));
+            else
+                *out = (OutType)(is_in_half() ? inVal : *in);
         }
-        else if ((std::is_same<InType, cl_float>::value)
+        else if ((std::is_same<InType, cl_float>::value || is_in_half())
                  && std::is_same<cl_ulong, OutType>::value)
         {
-            cl_float x = round_to_int(*in);
+            cl_float x = round_to_int(is_in_half() ? HTF(*in) : *in);
 
 #if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
             // VS2005 (at least) on x86 uses fistp to store the float as a
@@ -536,47 +642,57 @@ void DataInfoSpec<InType, OutType>::conv_sat(OutType *out, InType *in)
             }
 #else
             *out = x >= MAKE_HEX_DOUBLE(0x1.0p64, 0x1LL, 64)
-                ? 0xFFFFFFFFFFFFFFFFULL
-                : x < 0 ? 0 : (OutType)x;
+                ? (OutType)0xFFFFFFFFFFFFFFFFULL
+                : x < 0 ? 0
+                        : (OutType)x;
 #endif
         }
-        else if ((std::is_same<InType, cl_float>::value)
+        else if ((std::is_same<InType, cl_float>::value || is_in_half())
                  && std::is_same<cl_long, OutType>::value)
         {
-            cl_float f = round_to_int(*in);
+            cl_float f = round_to_int(is_in_half() ? HTF(*in) : *in);
             *out = f >= MAKE_HEX_DOUBLE(0x1.0p63, 0x1LL, 63)
-                ? 0x7FFFFFFFFFFFFFFFULL
+                ? (OutType)0x7FFFFFFFFFFFFFFFULL
                 : f < MAKE_HEX_DOUBLE(-0x1.0p63, -0x1LL, 63)
-                    ? 0x8000000000000000LL
-                    : (OutType)f;
+                ? (OutType)0x8000000000000000LL
+                : (OutType)f;
         }
         else if (std::is_same<InType, cl_double>::value
                  && std::is_same<cl_ulong, OutType>::value)
         {
             InType f = rint(*in);
             *out = f >= MAKE_HEX_DOUBLE(0x1.0p64, 0x1LL, 64)
-                ? 0xFFFFFFFFFFFFFFFFULL
-                : f < 0 ? 0 : (OutType)f;
+                ? (OutType)0xFFFFFFFFFFFFFFFFULL
+                : f < 0 ? 0
+                        : (OutType)f;
         }
         else if (std::is_same<InType, cl_double>::value
                  && std::is_same<cl_long, OutType>::value)
         {
             InType f = rint(*in);
             *out = f >= MAKE_HEX_DOUBLE(0x1.0p63, 0x1LL, 63)
-                ? 0x7FFFFFFFFFFFFFFFULL
+                ? (OutType)0x7FFFFFFFFFFFFFFFULL
                 : f < MAKE_HEX_DOUBLE(-0x1.0p63, -0x1LL, 63)
-                    ? 0x8000000000000000LL
-                    : (OutType)f;
+                ? (OutType)0x8000000000000000LL
+                : (OutType)f;
         }
         else
-        { // in float/double, out char/uchar/short/ushort/int/uint
-            *out =
-                CLAMP(ranges.first, round_to_int_and_clamp(*in), ranges.second);
+        { // in half/float/double, out char/uchar/short/ushort/int/uint
+            *out = CLAMP(ranges.first,
+                         round_to_int_and_clamp(is_in_half() ? inVal : *in),
+                         ranges.second);
         }
     }
     else if (std::is_integral<InType>::value
              && std::is_integral<OutType>::value)
     {
+        if (is_out_half())
+        {
+            *out = std::is_signed<InType>::value
+                ? static_cast<OutType>(HFF((cl_float)*in))
+                : absolute(static_cast<OutType>(HFF((cl_float)*in)));
+        }
+        else
         {
             if ((std::is_signed<InType>::value
                  && std::is_signed<OutType>::value)
@@ -614,14 +730,64 @@ void DataInfoSpec<InType, OutType>::conv_sat(OutType *out, InType *in)
     }
 }
 
-template <typename InType, typename OutType>
-void DataInfoSpec<InType, OutType>::init(const cl_uint &job_id,
-                                         const cl_uint &thread_id)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+void DataInfoSpec<InType, OutType, InFP, OutFP>::set_allow_zero(uint8_t *allow,
+                                                                OutType *out,
+                                                                InType *in)
+{
+    // from double
+    if (std::is_same<InType, cl_double>::value)
+        *allow |= IsDoubleSubnormal(*in);
+    // from float
+    if (std::is_same<InType, cl_float>::value) *allow |= IsFloatSubnormal(*in);
+    // from half
+    if (is_in_half()) *allow |= IsHalfSubnormal(*in);
+
+    // handle the cases that the converted result is subnormal
+    // from double
+    if (std::is_same<OutType, cl_double>::value)
+        *allow |= IsDoubleSubnormal(*out);
+    // from float
+    if (std::is_same<OutType, cl_float>::value)
+        *allow |= IsFloatSubnormal(*out);
+    // from half
+    if (is_out_half()) *allow |= IsHalfSubnormal(*out);
+}
+
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
+                                                      const cl_uint &thread_id)
 {
     uint64_t ulStart = start;
     void *pIn = (char *)gIn + job_id * size * gTypeSizes[inType];
 
-    if (std::is_integral<InType>::value)
+    if (is_in_half())
+    {
+        cl_half *o = (cl_half *)pIn;
+        int i;
+
+        if (gIsEmbedded)
+            for (i = 0; i < size; i++)
+                o[i] = (cl_half)genrand_int32(mdv[thread_id]);
+        else
+            for (i = 0; i < size; i++) o[i] = (cl_half)((i + ulStart) % 0xffff);
+
+        if (0 == ulStart)
+        {
+            size_t tableSize = specialValuesHalf.size()
+                * sizeof(decltype(specialValuesHalf)::value_type);
+            if (sizeof(InType) * size < tableSize)
+                tableSize = sizeof(InType) * size;
+            memcpy((char *)(o + i) - tableSize, &specialValuesHalf.front(),
+                   tableSize);
+        }
+
+        if (kUnsaturated == sat)
+        {
+            for (i = 0; i < size; i++) o[i] = clamp(o[i]);
+        }
+    }
+    else if (std::is_integral<InType>::value)
     {
         InType *o = (InType *)pIn;
         if (sizeof(InType) <= sizeof(cl_short))
@@ -776,10 +942,10 @@ void DataInfoSpec<InType, OutType>::init(const cl_uint &job_id,
     }
 }
 
-template <typename InType, typename OutType>
-InType DataInfoSpec<InType, OutType>::clamp(const InType &in)
+template <typename InType, typename OutType, bool InFP, bool OutFP>
+InType DataInfoSpec<InType, OutType, InFP, OutFP>::clamp(const InType &in)
 {
-    if (std::is_integral<OutType>::value)
+    if (std::is_integral<OutType>::value && !OutFP)
     {
         if (std::is_same<InType, cl_float>::value)
         {
@@ -790,6 +956,11 @@ InType DataInfoSpec<InType, OutType>::clamp(const InType &in)
         {
             return dclamp(clamp_ranges[round].first, in,
                           clamp_ranges[round].second);
+        }
+        else if (std::is_same<InType, cl_half>::value && InFP)
+        {
+            return HFF(fclamp(HTF(clamp_ranges[round].first), HTF(in),
+                              HTF(clamp_ranges[round].second)));
         }
     }
     return in;
