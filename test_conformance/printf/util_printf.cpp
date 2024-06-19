@@ -724,6 +724,12 @@ std::vector<printDataGenParameters> printStringGenParameters = {
 
     { {"%s"}, "\"%%\"" },
 
+    { {"%s"}, "\"foo%%bar%%bar%%foo\"" },
+
+    { {"%%%s%%"}, "\"foo\"" },
+
+    { {"%%s%s"}, "\"foo\"" },
+
     // special symbols
     // nested
 
@@ -763,6 +769,12 @@ std::vector<std::string> correctBufferString = {
     "f",
 
     "%%",
+
+    "foo%%bar%%bar%%foo",
+
+    "%foo%",
+
+    "%sfoo",
 
     "\"%%\"",
 
@@ -819,6 +831,8 @@ std::vector<printDataGenParameters> printFormatStringGenParameters = {
 
     { {"\'%%\'"} },
 
+    { {"\'foo%%bar%%bar%%foo\'"} },
+
     // tabs
 
     { {"foo\\t\\t\\tfoo"} },
@@ -848,6 +862,8 @@ std::vector<std::string> correctBufferFormatString = {
     "\"%\"",
 
     "\'%\'",
+
+    "\'foo%bar%bar%foo\'",
 
     "foo\t\t\tfoo",
 
