@@ -153,7 +153,7 @@ int sampler_param_test(cl_sampler sampler, cl_sampler_info param_name,
     return 0;
 }
 
-static cl_int normalized_coord_values[] = { CL_TRUE, CL_FALSE };
+static cl_bool normalized_coord_values[] = { CL_TRUE, CL_FALSE };
 static cl_addressing_mode addressing_mode_values[] = {
     CL_ADDRESS_NONE, CL_ADDRESS_CLAMP_TO_EDGE, CL_ADDRESS_CLAMP,
     CL_ADDRESS_REPEAT, CL_ADDRESS_MIRRORED_REPEAT
