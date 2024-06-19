@@ -1,0 +1,111 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 58
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Vector16
+               OpCapability ExpectAssumeKHR
+               OpExtension "SPV_KHR_expect_assume"
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %expect_bool "expect_bool"
+               OpSource OpenCL_C 102000
+               OpDecorate %dst FuncParamAttr NoCapture
+               OpDecorate %dst Alignment 64
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+      %bool2 = OpTypeVector %bool 2
+      %bool3 = OpTypeVector %bool 3
+      %bool4 = OpTypeVector %bool 4
+      %bool8 = OpTypeVector %bool 8
+     %bool16 = OpTypeVector %bool 16
+       %uint = OpTypeInt 32 0
+      %uint2 = OpTypeVector %uint 2
+      %uint3 = OpTypeVector %uint 3
+      %uint4 = OpTypeVector %uint 4
+      %uint8 = OpTypeVector %uint 8
+     %uint16 = OpTypeVector %uint 16
+     %uint_0 = OpConstantNull %uint
+    %uint2_0 = OpConstantNull %uint2
+    %uint3_0 = OpConstantNull %uint3
+    %uint4_0 = OpConstantNull %uint4
+    %uint8_0 = OpConstantNull %uint8
+   %uint16_0 = OpConstantNull %uint16
+ %bool_false = OpConstantNull %bool
+%bool2_false = OpConstantNull %bool2
+%bool3_false = OpConstantNull %bool3
+%bool4_false = OpConstantNull %bool4
+%bool8_false = OpConstantNull %bool8
+%bool16_false = OpConstantNull %bool16
+    %index_1 = OpConstant %uint 1
+    %index_2 = OpConstant %uint 2
+    %index_3 = OpConstant %uint 3
+    %index_4 = OpConstant %uint 4
+    %index_5 = OpConstant %uint 5
+%_ptr_CrossWorkgroup_uint16 = OpTypePointer CrossWorkgroup %uint16
+          %6 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint16 %uint
+%expect_bool = OpFunction %void None %6
+        %dst = OpFunctionParameter %_ptr_CrossWorkgroup_uint16
+      %value = OpFunctionParameter %uint
+         %10 = OpLabel
+                  ; setup
+  %value_vec = OpCompositeInsert %uint2 %value %uint2_0 0
+                  ; scalar expect:
+                  ;     bool test = value == 0
+                  ;     bool t1e = __builtin_expect(test, false);
+                  ;     int v1e = t1e ? 0 : value
+                  ;     dst[0] = (int16)(v1e, 0, ...);
+       %test = OpIEqual %bool %value %uint_0
+        %t1e = OpExpectKHR %bool %test %bool_false
+        %v1e = OpSelect %uint %t1e %uint_0 %value
+      %v1v16 = OpCompositeInsert %uint16 %v1e %uint16_0 0
+               OpStore %dst %v1v16 Aligned 64
+                  ; vec2 expect:
+                  ;     int2 v2 = (int2)(value);
+                  ;     bool2 test2 = v2 == 0
+                  ;     bool2 t2e = __builtin_expect(test2, false2)
+                  ;     int2 v2e = t2e ? : v2;
+                  ;     dst[1] = (int16)(v2e, 0, ...);
+         %v2 = OpVectorShuffle %uint2 %value_vec %value_vec 0 0
+      %test2 = OpIEqual %bool2 %v2 %uint2_0
+        %t2e = OpExpectKHR %bool2 %test2 %bool2_false
+        %v2e = OpSelect %uint2 %t2e %uint2_0 %v2
+      %v2v16 = OpVectorShuffle %uint16 %v2e %uint2_0 0 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 
+      %dst_1 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint16 %dst %index_1
+               OpStore %dst_1 %v2v16 Aligned 64
+                  ; vec3 expect
+         %v3 = OpVectorShuffle %uint3 %value_vec %value_vec 0 0 0
+      %test3 = OpIEqual %bool3 %v3 %uint3_0
+        %t3e = OpExpectKHR %bool3 %test3 %bool3_false
+        %v3e = OpSelect %uint3 %t3e %uint3_0 %v3
+      %v3v16 = OpVectorShuffle %uint16 %v3e %uint2_0 0 1 2 3 3 3 3 3 3 3 3 3 3 3 3 3
+      %dst_2 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint16 %dst %index_2
+               OpStore %dst_2 %v3v16 Aligned 64
+                  ; vec4 expect
+         %v4 = OpVectorShuffle %uint4 %value_vec %value_vec 0 0 0 0
+      %test4 = OpIEqual %bool4 %v4 %uint4_0
+        %t4e = OpExpectKHR %bool4 %test4 %bool4_false
+        %v4e = OpSelect %uint4 %t4e %uint4_0 %v4
+      %v4v16 = OpVectorShuffle %uint16 %v4e %uint2_0 0 1 2 3 4 4 4 4 4 4 4 4 4 4 4 4
+      %dst_3 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint16 %dst %index_3
+               OpStore %dst_3 %v4v16 Aligned 64
+                  ; vec8 expect
+         %v8 = OpVectorShuffle %uint8 %value_vec %value_vec 0 0 0 0 0 0 0 0
+      %test8 = OpIEqual %bool8 %v8 %uint8_0
+        %t8e = OpExpectKHR %bool8 %test8 %bool8_false
+        %v8e = OpSelect %uint8 %t8e %uint8_0 %v8
+      %v8v16 = OpVectorShuffle %uint16 %v8e %uint2_0 0 1 2 3 4 5 6 7 8 8 8 8 8 8 8 8
+      %dst_4 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint16 %dst %index_4
+               OpStore %dst_4 %v8v16 Aligned 64
+                  ; vec16 expect
+        %v16 = OpVectorShuffle %uint16 %value_vec %value_vec 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+     %test16 = OpIEqual %bool16 %v16 %uint16_0
+       %t16e = OpExpectKHR %bool16 %test16 %bool16_false
+       %v16e = OpSelect %uint16 %t16e %uint16_0 %v16
+      %dst_5 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint16 %dst %index_5
+               OpStore %dst_5 %v16e Aligned 64
+               OpReturn
+               OpFunctionEnd
