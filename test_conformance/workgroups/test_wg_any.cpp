@@ -71,12 +71,10 @@ test_work_group_any(cl_device_id device, cl_context context, cl_command_queue qu
     cl_int       *output_ptr;
     cl_program   program;
     cl_kernel    kernel;
-    void         *values[2];
     size_t       threads[1];
     size_t       wg_size[1];
     size_t       num_elements;
     int          err;
-    int          i;
     MTdata       d;
 
     err = create_single_kernel_helper(context, &program, &kernel, 1,
@@ -111,7 +109,7 @@ test_work_group_any(cl_device_id device, cl_context context, cl_command_queue qu
 
     p = input_ptr[0];
     d = init_genrand( gRandomSeed );
-    for (i=0; i<(num_elements+1); i++)
+    for (size_t i = 0; i < (num_elements + 1); i++)
     {
         p[i] = get_random_float((float)(-100000.f * M_PI), (float)(100000.f * M_PI) ,d);
     }
@@ -124,8 +122,6 @@ test_work_group_any(cl_device_id device, cl_context context, cl_command_queue qu
         return -1;
     }
 
-    values[0] = streams[0];
-    values[1] = streams[1];
     err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0] );
     err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1] );
     if (err != CL_SUCCESS)

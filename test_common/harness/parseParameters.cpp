@@ -36,6 +36,7 @@ std::string gCompilationCachePath = ".";
 std::string gCompilationProgram = DEFAULT_COMPILATION_PROGRAM;
 bool gDisableSPIRVValidation = false;
 std::string gSPIRVValidator = DEFAULT_SPIRV_VALIDATOR;
+unsigned gNumWorkerThreads;
 
 void helpInfo()
 {
@@ -48,6 +49,8 @@ void helpInfo()
             online     Use online compilation (default)
             binary     Use binary offline compilation
             spir-v     Use SPIR-V offline compilation
+    --num-worker-threads <num>
+        Select parallel execution with the specified number of worker threads.
 
 For offline compilation (binary and spir-v modes) only:
     --compilation-cache-mode <cache-mode>
@@ -134,6 +137,23 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
             {
                 log_error("Compilation mode parameters are incorrect. Usage:\n"
                           "  --compilation-mode <online|binary|spir-v>\n");
+                return -1;
+            }
+        }
+        else if (!strcmp(argv[i], "--num-worker-threads"))
+        {
+            delArg++;
+            if ((i + 1) < argc)
+            {
+                delArg++;
+                const char *numthstr = argv[i + 1];
+
+                gNumWorkerThreads = atoi(numthstr);
+            }
+            else
+            {
+                log_error(
+                    "A parameter to --num-worker-threads must be provided!\n");
                 return -1;
             }
         }

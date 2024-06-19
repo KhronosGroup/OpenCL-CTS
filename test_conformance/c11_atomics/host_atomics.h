@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _HOST_ATOMICS_H_
-#define _HOST_ATOMICS_H_
+#ifndef HOST_ATOMICS_H_
+#define HOST_ATOMICS_H_
 
 #include "harness/testHarness.h"
 
@@ -53,12 +53,12 @@ enum TExplicitMemoryOrderType
 #endif
 
 #define HOST_ATOMIC_INTPTR_T32  HOST_ATOMIC_INT
-#define HOST_ATOMIC_UINTPTR_T32 HOST_ATOMIC_INT
+#define HOST_ATOMIC_UINTPTR_T32 HOST_ATOMIC_UINT
 #define HOST_ATOMIC_SIZE_T32    HOST_ATOMIC_UINT
 #define HOST_ATOMIC_PTRDIFF_T32 HOST_ATOMIC_INT
 
 #define HOST_ATOMIC_INTPTR_T64  HOST_ATOMIC_LONG
-#define HOST_ATOMIC_UINTPTR_T64 HOST_ATOMIC_LONG
+#define HOST_ATOMIC_UINTPTR_T64 HOST_ATOMIC_ULONG
 #define HOST_ATOMIC_SIZE_T64    HOST_ATOMIC_ULONG
 #define HOST_ATOMIC_PTRDIFF_T64 HOST_ATOMIC_LONG
 
@@ -82,7 +82,7 @@ enum TExplicitMemoryOrderType
 #define HOST_SIZE_T64           cl_ulong
 #define HOST_PTRDIFF_T64        cl_long
 
-#define HOST_FLAG               cl_uint
+#define HOST_FLAG cl_int
 
 // host atomic functions
 void host_atomic_thread_fence(TExplicitMemoryOrderType order);
@@ -247,4 +247,4 @@ CorrespondingType host_atomic_fetch_max(volatile AtomicType *a, CorrespondingTyp
 bool host_atomic_flag_test_and_set(volatile HOST_ATOMIC_FLAG *a, TExplicitMemoryOrderType order);
 void host_atomic_flag_clear(volatile HOST_ATOMIC_FLAG *a, TExplicitMemoryOrderType order);
 
-#endif //_HOST_ATOMICS_H_
+#endif // HOST_ATOMICS_H_

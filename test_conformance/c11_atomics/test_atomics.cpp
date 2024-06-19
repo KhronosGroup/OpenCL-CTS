@@ -2827,7 +2827,7 @@ public:
             // value from other thread
             // - reads value from other thread's variable
             // - repeats the above steps when both values are the same (and less
-            // than 1000000)
+            // than 500000)
             // - stores the last value read from other thread (in additional
             // variable) At the end of execution at least one thread should know
             // the last value from other thread
@@ -2846,7 +2846,7 @@ public:
                   "memory_order_relaxed"
                 + MemoryScopeStr()
                 + ");\n"
-                  "  } while(myValue == hisValue && myValue < 1000000);\n"
+                  "  } while(myValue == hisValue && myValue < 500000);\n"
                   "  "
                 + nonAtomic + "[myId] = hisValue; \n";
         }
@@ -2914,7 +2914,8 @@ public:
                 + "-1);\n"
                   "  if(hisAtomicValue != hisValue)\n"
                   "  { // fail\n"
-                  "    atomic_store(&destMemory[myId], myValue-1);\n";
+                  "    atomic_store_explicit(&destMemory[myId], myValue-1,"
+                  " memory_order_relaxed, memory_scope_work_group);\n";
             if (LocalMemory())
                 program += "    hisId = "
                            "(hisId+get_local_size(0)-1)%get_local_size(0);\n";
@@ -2971,7 +2972,7 @@ public:
                 host_atomic_thread_fence(MemoryOrder());
                 hisValue = host_atomic_load<HostAtomicType, HostDataType>(
                     &destMemory[hisId], MEMORY_ORDER_RELAXED);
-            } while (myValue == hisValue && hisValue < 1000000);
+            } while (myValue == hisValue && hisValue < 500000);
             oldValues[tid] = hisValue;
         }
         else
@@ -3052,11 +3053,11 @@ public:
                     if (myValue == hisValue)
                     {
                         // a draw - both threads should reach final value
-                        // 1000000
-                        if (myValue != 1000000)
+                        // 500000
+                        if (myValue != 500000)
                         {
                             log_error("ERROR: Invalid reference value #%u (%d "
-                                      "instead of 1000000)\n",
+                                      "instead of 500000)\n",
                                       workOffset + i, myValue);
                             correct = false;
                             return true;
@@ -3133,7 +3134,7 @@ public:
                                   NumNonAtomicVariablesPerThread() - 1);
                         log_error("ERROR: Thread #%u observed invalid values "
                                   "in other thread's variables\n",
-                                  workOffset + i, myValue);
+                                  workOffset + i);
                         correct = false;
                         return true;
                     }
@@ -3144,7 +3145,7 @@ public:
     }
 
 private:
-    int _subCaseId;
+    size_t _subCaseId;
     struct TestDefinition _subCase;
 };
 

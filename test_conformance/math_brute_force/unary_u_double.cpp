@@ -24,102 +24,15 @@
 
 namespace {
 
-int BuildKernel(const char *name, int vectorSize, cl_kernel *k, cl_program *p,
-                bool relaxedMode)
-{
-    const char *c[] = { "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-                        "__kernel void math_kernel",
-                        sizeNames[vectorSize],
-                        "( __global double",
-                        sizeNames[vectorSize],
-                        "* out, __global ulong",
-                        sizeNames[vectorSize],
-                        "* in )\n"
-                        "{\n"
-                        "   size_t i = get_global_id(0);\n"
-                        "   out[i] = ",
-                        name,
-                        "( in[i] );\n"
-                        "}\n" };
-
-    const char *c3[] = {
-        "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
-        "__kernel void math_kernel",
-        sizeNames[vectorSize],
-        "( __global double* out, __global ulong* in                 )\n"
-        "{\n"
-        "   size_t i = get_global_id(0);\n"
-        "   if( i + 1 < get_global_size(0) )\n"
-        "   {\n"
-        "       ulong3 u0 = vload3( 0, in + 3 * i );\n"
-        "       double3 f0 = ",
-        name,
-        "( u0 );\n"
-        "       vstore3( f0, 0, out + 3*i );\n"
-        "   }\n"
-        "   else\n"
-        "   {\n"
-        "       size_t parity = i & 1;   // Figure out how many elements are "
-        "left over after BUFFER_SIZE % (3*sizeof(float)). Assume power of two "
-        "buffer size \n"
-        "       ulong3 u0;\n"
-        "       switch( parity )\n"
-        "       {\n"
-        "           case 1:\n"
-        "               u0 = (ulong3)( in[3*i], 0xdeaddeaddeaddeadUL, "
-        "0xdeaddeaddeaddeadUL ); \n"
-        "               break;\n"
-        "           case 0:\n"
-        "               u0 = (ulong3)( in[3*i], in[3*i+1], "
-        "0xdeaddeaddeaddeadUL ); \n"
-        "               break;\n"
-        "       }\n"
-        "       double3 f0 = ",
-        name,
-        "( u0 );\n"
-        "       switch( parity )\n"
-        "       {\n"
-        "           case 0:\n"
-        "               out[3*i+1] = f0.y; \n"
-        "               // fall through\n"
-        "           case 1:\n"
-        "               out[3*i] = f0.x; \n"
-        "               break;\n"
-        "       }\n"
-        "   }\n"
-        "}\n"
-    };
-
-    const char **kern = c;
-    size_t kernSize = sizeof(c) / sizeof(c[0]);
-
-    if (sizeValues[vectorSize] == 3)
-    {
-        kern = c3;
-        kernSize = sizeof(c3) / sizeof(c3[0]);
-    }
-
-    char testName[32];
-    snprintf(testName, sizeof(testName) - 1, "math_kernel%s",
-             sizeNames[vectorSize]);
-
-    return MakeKernel(kern, (cl_uint)kernSize, testName, k, p, relaxedMode);
-}
-
-struct BuildKernelInfo2
-{
-    cl_kernel *kernels;
-    Programs &programs;
-    const char *nameInCode;
-    bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
-};
-
 cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
-    BuildKernelInfo2 *info = (BuildKernelInfo2 *)p;
-    cl_uint vectorSize = gMinVectorSizeIndex + job_id;
-    return BuildKernel(info->nameInCode, vectorSize, info->kernels + vectorSize,
-                       &(info->programs[vectorSize]), info->relaxedMode);
+    BuildKernelInfo &info = *(BuildKernelInfo *)p;
+    auto generator = [](const std::string &kernel_name, const char *builtin,
+                        cl_uint vector_size_index) {
+        return GetUnaryKernel(kernel_name, builtin, ParameterType::Double,
+                              ParameterType::ULong, vector_size_index);
+    };
+    return BuildKernels(info, job_id, generator);
 }
 
 cl_ulong random64(MTdata d)
@@ -133,7 +46,8 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
 {
     int error;
     Programs programs;
-    cl_kernel kernels[VECTOR_SIZE_COUNT];
+    const unsigned thread_id = 0; // Test is currently not multithreaded.
+    KernelMatrix kernels;
     float maxError = 0.0f;
     int ftz = f->ftz || gForceFTZ;
     double maxErrorVal = 0.0f;
@@ -144,14 +58,12 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
     Force64BitFPUPrecision();
 
     // Init the kernels
-    {
-        BuildKernelInfo2 build_info{ kernels, programs, f->nameInCode,
-                                     relaxedMode };
-        if ((error = ThreadPool_Do(BuildKernelFn,
-                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                                   &build_info)))
-            return error;
-    }
+    BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode,
+                                relaxedMode };
+    if ((error = ThreadPool_Do(BuildKernelFn,
+                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                               &build_info)))
+        return error;
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
@@ -167,18 +79,33 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
             return error;
         }
 
-        // write garbage into output arrays
+        // Write garbage into output arrays
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
-            memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
-            if ((error =
-                     clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
-                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
+            if (gHostFill)
             {
-                vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
-                           error, j);
-                goto exit;
+                memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
+                if ((error = clEnqueueWriteBuffer(gQueue, gOutBuffer[j],
+                                                  CL_FALSE, 0, BUFFER_SIZE,
+                                                  gOut[j], 0, NULL, NULL)))
+                {
+                    vlog_error(
+                        "\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
+                        error, j);
+                    return error;
+                }
+            }
+            else
+            {
+                if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer[j],
+                                                 &pattern, sizeof(pattern), 0,
+                                                 BUFFER_SIZE, 0, NULL, NULL)))
+                {
+                    vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
+                               error);
+                    return error;
+                }
             }
         }
 
@@ -187,25 +114,25 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_double);
             size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
-            if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
-                                        &gOutBuffer[j])))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 0,
+                                        sizeof(gOutBuffer[j]), &gOutBuffer[j])))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
-            if ((error = clSetKernelArg(kernels[j], 1, sizeof(gInBuffer),
-                                        &gInBuffer)))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 1,
+                                        sizeof(gInBuffer), &gInBuffer)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
 
-            if ((error =
-                     clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
-                                            &localCount, NULL, 0, NULL, NULL)))
+            if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j][thread_id],
+                                                1, NULL, &localCount, NULL, 0,
+                                                NULL, NULL)))
             {
                 vlog_error("FAILED -- could not execute kernel\n");
-                goto exit;
+                return error;
             }
         }
 
@@ -226,7 +153,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
-                goto exit;
+                return error;
             }
         }
 
@@ -273,8 +200,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
                             "*%.13la vs. %.13la\n",
                             f->name, sizeNames[k], err, ((uint64_t *)gIn)[j],
                             ((double *)gOut_Ref)[j], test);
-                        error = -1;
-                        goto exit;
+                        return -1;
                     }
                 }
             }
@@ -308,12 +234,5 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
 
     vlog("\n");
 
-exit:
-    // Release
-    for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
-    {
-        clReleaseKernel(kernels[k]);
-    }
-
-    return error;
+    return CL_SUCCESS;
 }

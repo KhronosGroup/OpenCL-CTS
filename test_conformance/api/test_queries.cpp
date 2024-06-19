@@ -162,8 +162,8 @@ static cl_filter_mode filter_mode_values[] = { CL_FILTER_NEAREST,
                                                CL_FILTER_LINEAR };
 
 int test_sampler_params(cl_device_id deviceID, cl_context context,
-                        bool is_compatibility, int norm_coord_num,
-                        int addr_mod_num, int filt_mod_num)
+                        bool is_compatibility, size_t norm_coord_num,
+                        size_t addr_mod_num, size_t filt_mod_num)
 {
     cl_uint refCount;
     size_t size;
@@ -272,10 +272,10 @@ int test_sampler_params(cl_device_id deviceID, cl_context context,
 int get_sampler_info_params(cl_device_id deviceID, cl_context context,
                             bool is_compatibility)
 {
-    for (int norm_coord_num = 0;
+    for (size_t norm_coord_num = 0;
          norm_coord_num < ARRAY_SIZE(normalized_coord_values); norm_coord_num++)
     {
-        for (int addr_mod_num = 0;
+        for (size_t addr_mod_num = 0;
              addr_mod_num < ARRAY_SIZE(addressing_mode_values); addr_mod_num++)
         {
             if ((normalized_coord_values[norm_coord_num] == CL_FALSE)
@@ -285,7 +285,7 @@ int get_sampler_info_params(cl_device_id deviceID, cl_context context,
             {
                 continue;
             }
-            for (int filt_mod_num = 0;
+            for (size_t filt_mod_num = 0;
                  filt_mod_num < ARRAY_SIZE(filter_mode_values); filt_mod_num++)
             {
                 int err = test_sampler_params(deviceID, context,
@@ -644,6 +644,13 @@ int test_get_device_info(cl_device_id deviceID, cl_context context, cl_command_q
     }
     log_info( "\tReported device profile: %s \n", profile );
 
+    if (strcmp(profile, "FULL_PROFILE") == 0 && compilerAvail != CL_TRUE)
+    {
+        log_error("ERROR: Returned profile of device is FULL , but "
+                  "CL_DEVICE_COMPILER_AVAILABLE is not CL_TRUE as required by "
+                  "OpenCL 1.2!");
+        return -1;
+    }
 
     return 0;
 }
@@ -799,8 +806,8 @@ int test_kernel_required_group_size(cl_device_id deviceID, cl_context context, c
         test_error(error, "clFinish failed");
 
         if (max_dimensions == 2) {
-            return 0;
             free(source);
+            return 0;
         }
 
         local[1]--; local[2]++;

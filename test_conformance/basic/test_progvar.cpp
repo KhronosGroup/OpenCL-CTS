@@ -25,7 +25,6 @@
 
 #define ALIGNMENT 128
 
-#define OPTIONS "-cl-std=CL2.0"
 
 // NUM_ROUNDS must be at least 1.
 // It determines how many sets of random data we push through the global
@@ -49,6 +48,7 @@
 #include <sys/stat.h>
 #include "harness/typeWrappers.h"
 #include "harness/errorHelpers.h"
+#include "harness/featureHelpers.h"
 #include "harness/mt19937.h"
 #include "procs.h"
 
@@ -58,6 +58,7 @@
 static int l_has_double = 0;
 static int l_has_half = 0;
 static int l_64bit_device = 0;
+static int l_has_atomics = 1;
 static int l_has_int64_atomics = 0;
 static int l_has_intptr_atomics = 0;
 static int l_has_cles_int64 = 0;
@@ -81,20 +82,20 @@ class TypeInfo {
 
 public:
     TypeInfo()
-        : name(""), m_buf_elem_type(""), m_is_vecbase(false),
+        : name(""), m_elem_type(0), m_num_elem(0), m_is_vecbase(false),
           m_is_atomic(false), m_is_like_size_t(false), m_is_bool(false),
-          m_elem_type(0), m_num_elem(0), m_size(0), m_value_size(0)
+          m_size(0), m_value_size(0), m_buf_elem_type("")
     {}
     TypeInfo(const char* name_arg)
-        : name(name_arg), m_buf_elem_type(name_arg), m_is_vecbase(false),
+        : name(name_arg), m_elem_type(0), m_num_elem(0), m_is_vecbase(false),
           m_is_atomic(false), m_is_like_size_t(false), m_is_bool(false),
-          m_elem_type(0), m_num_elem(0), m_size(0), m_value_size(0)
+          m_size(0), m_value_size(0), m_buf_elem_type(name_arg)
     {}
 
     // Vectors
     TypeInfo(TypeInfo* elem_type, int num_elem)
-        : m_is_vecbase(false), m_is_atomic(false), m_is_like_size_t(false),
-          m_is_bool(false), m_elem_type(elem_type), m_num_elem(num_elem)
+        : m_elem_type(elem_type), m_num_elem(num_elem), m_is_vecbase(false),
+          m_is_atomic(false), m_is_like_size_t(false), m_is_bool(false)
     {
         char
             the_name[10]; // long enough for longest vector type name "double16"
@@ -325,7 +326,7 @@ static int num_type_info = 0; // Number of valid entries in type_info[]
 // A helper class to form kernel source arguments for clCreateProgramWithSource.
 class StringTable {
 public:
-    StringTable(): m_c_strs(NULL), m_lengths(NULL), m_frozen(false), m_strings()
+    StringTable(): m_strings(), m_c_strs(NULL), m_lengths(NULL), m_frozen(false)
     {}
     ~StringTable() { release_frozen(); }
 
@@ -399,7 +400,7 @@ private:
 ////////////////////
 // File scope function declarations
 
-static void l_load_abilities(cl_device_id device);
+static int l_load_abilities(cl_device_id device);
 static const char* l_get_fp64_pragma(void);
 static const char* l_get_cles_int64_pragma(void);
 static int l_build_type_table(cl_device_id device);
@@ -409,8 +410,9 @@ static int l_get_device_info(cl_device_id device, size_t* max_size_ret,
 
 static void l_set_randomly(cl_uchar* buf, size_t buf_size,
                            RandomSeed& rand_state);
-static int l_compare(const cl_uchar* expected, const cl_uchar* received,
-                     unsigned num_values, const TypeInfo& ti);
+static int l_compare(const char* test_name, const cl_uchar* expected,
+                     const cl_uchar* received, size_t num_values,
+                     const TypeInfo& ti);
 static int l_copy(cl_uchar* dest, unsigned dest_idx, const cl_uchar* src,
                   unsigned src_idx, const TypeInfo& ti);
 
@@ -436,9 +438,9 @@ static int l_init_write_read_for_type(cl_device_id device, cl_context context,
 static int l_capacity(cl_device_id device, cl_context context,
                       cl_command_queue queue, size_t max_size);
 static int l_user_type(cl_device_id device, cl_context context,
-                       cl_command_queue queue, size_t max_size,
-                       bool separate_compilation);
+                       cl_command_queue queue, bool separate_compile);
 
+static std::string get_build_options(cl_device_id device);
 
 ////////////////////
 // File scope function definitions
@@ -539,7 +541,7 @@ static cl_int print_build_log(cl_program program, cl_uint num_devices,
                 log_error("clGetProgramBuildInfo returned an empty log.\n");
             else
             {
-                log_error("Build log:\n", deviceName);
+                log_error("Build log for device \"%s\":\n", deviceName);
                 log_error("%s\n", log.c_str());
             }
         }
@@ -547,11 +549,25 @@ static cl_int print_build_log(cl_program program, cl_uint num_devices,
     return error;
 }
 
-static void l_load_abilities(cl_device_id device)
+static int l_load_abilities(cl_device_id device)
 {
     l_has_half = is_extension_available(device, "cl_khr_fp16");
     l_has_double = is_extension_available(device, "cl_khr_fp64");
     l_has_cles_int64 = is_extension_available(device, "cles_khr_int64");
+
+    if (get_device_cl_version(device) >= Version(3, 0))
+    {
+        OpenCLCFeatures features;
+        int ret = get_device_cl_c_features(device, features);
+        if (ret)
+        {
+            log_error("Couldn't query OpenCL C features for the device!\n");
+            return ret;
+        }
+
+        l_has_atomics = features.supports__opencl_c_atomic_order_seq_cst
+            && features.supports__opencl_c_atomic_scope_device;
+    }
 
     l_has_int64_atomics =
         is_extension_available(device, "cl_khr_int64_base_atomics")
@@ -566,7 +582,8 @@ static void l_load_abilities(cl_device_id device)
     }
 
     // 32-bit devices always have intptr atomics.
-    l_has_intptr_atomics = !l_64bit_device || l_has_int64_atomics;
+    l_has_intptr_atomics =
+        l_has_atomics && (!l_64bit_device || l_has_int64_atomics);
 
     union {
         char c[4];
@@ -581,13 +598,19 @@ static void l_load_abilities(cl_device_id device)
         cl_uint max_dim = 0;
         status = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,
                                  sizeof(max_dim), &max_dim, 0);
-        assert(status == CL_SUCCESS);
+        if (check_error(status,
+                        "clGetDeviceInfo for "
+                        "CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS failed."))
+            return TEST_FAIL;
         assert(max_dim > 0);
         size_t max_id[3];
         max_id[0] = 0;
         status = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
                                  max_dim * sizeof(size_t), &max_id[0], 0);
-        assert(status == CL_SUCCESS);
+        if (check_error(status,
+                        "clGetDeviceInfo for "
+                        "CL_DEVICE_MAX_WORK_ITEM_SIZES failed."))
+            return TEST_FAIL;
         l_max_global_id0 = max_id[0];
     }
 
@@ -597,8 +620,13 @@ static void l_load_abilities(cl_device_id device)
         status =
             clGetDeviceInfo(device, CL_DEVICE_LINKER_AVAILABLE,
                             sizeof(l_linker_available), &l_linker_available, 0);
-        assert(status == CL_SUCCESS);
+        if (check_error(status,
+                        "clGetDeviceInfo for "
+                        "CL_DEVICE_LINKER_AVAILABLE failed."))
+            return TEST_FAIL;
     }
+
+    return TEST_PASS;
 }
 
 
@@ -640,7 +668,9 @@ static int l_build_type_table(cl_device_id device)
     const char* intptr_atomics[] = { "atomic_intptr_t", "atomic_uintptr_t",
                                      "atomic_size_t", "atomic_ptrdiff_t" };
 
-    l_load_abilities(device);
+    int ret = l_load_abilities(device);
+    if (ret) return CL_INVALID_DEVICE;
+
     num_type_info = 0;
 
     // Boolean.
@@ -679,6 +709,7 @@ static int l_build_type_table(cl_device_id device)
     // Atomic types.
     for (iscalar = 0; iscalar < sizeof(atomics) / sizeof(atomics[0]); ++iscalar)
     {
+        if (!l_has_atomics) continue;
         if (!l_has_int64_atomics && strstr(atomics[iscalar], "long")) continue;
         if (!(l_has_int64_atomics && l_has_double)
             && strstr(atomics[iscalar], "double"))
@@ -903,6 +934,7 @@ static std::string global_decls(const TypeInfo& ti, bool with_init)
                                vol, tn, vol, tn, vol, tn, vol, tn);
     }
     assert(num_printed < sizeof(decls));
+    (void)num_printed;
     return std::string(decls);
 }
 
@@ -983,6 +1015,7 @@ static std::string writer_function(const TypeInfo& ti)
                                writer_template_atomic, ti.get_buf_elem_type());
     }
     assert(num_printed < sizeof(writer_src));
+    (void)num_printed;
     std::string result = writer_src;
     return result;
 }
@@ -1024,6 +1057,7 @@ static std::string reader_function(const TypeInfo& ti)
                      ti.get_buf_elem_type(), ti.get_buf_elem_type());
     }
     assert(num_printed < sizeof(reader_src));
+    (void)num_printed;
     std::string result = reader_src;
     return result;
 }
@@ -1116,9 +1150,8 @@ static int l_write_read_for_type(cl_device_id device, cl_context context,
     clProgramWrapper program;
     clKernelWrapper writer;
 
-    status = create_single_kernel_helper_with_build_options(
-        context, &program, &writer, ksrc.num_str(), ksrc.strs(), "writer",
-        OPTIONS);
+    status = create_single_kernel_helper(context, &program, &writer,
+                                         ksrc.num_str(), ksrc.strs(), "writer");
     test_error_ret(status, "Failed to create program for read-after-write test",
                    status);
 
@@ -1326,9 +1359,8 @@ static int l_init_write_read_for_type(cl_device_id device, cl_context context,
     clProgramWrapper program;
     clKernelWrapper writer;
 
-    status = create_single_kernel_helper_with_build_options(
-        context, &program, &writer, ksrc.num_str(), ksrc.strs(), "writer",
-        OPTIONS);
+    status = create_single_kernel_helper(context, &program, &writer,
+                                         ksrc.num_str(), ksrc.strs(), "writer");
     test_error_ret(status,
                    "Failed to create program for init-read-after-write test",
                    status);
@@ -1581,9 +1613,9 @@ static int l_capacity(cl_device_id device, cl_context context,
     clProgramWrapper program;
     clKernelWrapper get_max_size;
 
-    status = create_single_kernel_helper_with_build_options(
-        context, &program, &get_max_size, ksrc.num_str(), ksrc.strs(),
-        "get_max_size", OPTIONS);
+    status = create_single_kernel_helper(context, &program, &get_max_size,
+                                         ksrc.num_str(), ksrc.strs(),
+                                         "get_max_size");
     test_error_ret(status, "Failed to create program for capacity test",
                    status);
 
@@ -1737,6 +1769,8 @@ static int l_user_type(cl_device_id device, cl_context context,
 
     clProgramWrapper program;
 
+    const std::string options = get_build_options(device);
+
     if (separate_compile)
     {
         // Separate compilation flow.
@@ -1757,15 +1791,15 @@ static int l_user_type(cl_device_id device, cl_context context,
                        "Failed to create writer program for user type test",
                        status);
 
-        status = clCompileProgram(writer_program, 1, &device, OPTIONS, 0, 0, 0,
-                                  0, 0);
+        status = clCompileProgram(writer_program, 1, &device, options.c_str(),
+                                  0, 0, 0, 0, 0);
         if (check_error(
                 status,
                 "Failed to compile writer program for user type test (%s)",
                 IGetErrorString(status)))
         {
             print_build_log(writer_program, 1, &device, wksrc.num_str(),
-                            wksrc.strs(), wksrc.lengths(), OPTIONS);
+                            wksrc.strs(), wksrc.lengths(), options.c_str());
             return status;
         }
 
@@ -1775,15 +1809,15 @@ static int l_user_type(cl_device_id device, cl_context context,
                        "Failed to create reader program for user type test",
                        status);
 
-        status = clCompileProgram(reader_program, 1, &device, OPTIONS, 0, 0, 0,
-                                  0, 0);
+        status = clCompileProgram(reader_program, 1, &device, options.c_str(),
+                                  0, 0, 0, 0, 0);
         if (check_error(
                 status,
                 "Failed to compile reader program for user type test (%s)",
                 IGetErrorString(status)))
         {
             print_build_log(reader_program, 1, &device, rksrc.num_str(),
-                            rksrc.strs(), rksrc.lengths(), OPTIONS);
+                            rksrc.strs(), rksrc.lengths(), options.c_str());
             return status;
         }
 
@@ -1813,23 +1847,23 @@ static int l_user_type(cl_device_id device, cl_context context,
         int status = CL_SUCCESS;
 
         status = create_single_kernel_helper_create_program(
-            context, &program, ksrc.num_str(), ksrc.strs(), OPTIONS);
+            context, &program, ksrc.num_str(), ksrc.strs(), options.c_str());
         if (check_error(status,
                         "Failed to build program for user type test (%s)",
                         IGetErrorString(status)))
         {
             print_build_log(program, 1, &device, ksrc.num_str(), ksrc.strs(),
-                            ksrc.lengths(), OPTIONS);
+                            ksrc.lengths(), options.c_str());
             return status;
         }
 
-        status = clBuildProgram(program, 1, &device, OPTIONS, 0, 0);
+        status = clBuildProgram(program, 1, &device, options.c_str(), 0, 0);
         if (check_error(status,
                         "Failed to compile program for user type test (%s)",
                         IGetErrorString(status)))
         {
             print_build_log(program, 1, &device, ksrc.num_str(), ksrc.strs(),
-                            ksrc.lengths(), OPTIONS);
+                            ksrc.lengths(), options.c_str());
             return status;
         }
     }
@@ -1933,6 +1967,14 @@ static int l_user_type(cl_device_id device, cl_context context,
     align_free(uchar_data);
     align_free(uint_data);
     return err;
+}
+
+static std::string get_build_options(cl_device_id device)
+{
+    std::string options = "-cl-std=CL";
+    Version latest_cl_c_version = get_device_latest_cl_c_version(device);
+    options += latest_cl_c_version.to_string();
+    return options;
 }
 
 // Determines whether its valid to skip this test based on the driver version
@@ -2102,9 +2144,9 @@ int test_progvar_func_scope(cl_device_id device, cl_context context,
     clProgramWrapper program;
     clKernelWrapper test_bump;
 
-    status = create_single_kernel_helper_with_build_options(
-        context, &program, &test_bump, ksrc.num_str(), ksrc.strs(), "test_bump",
-        OPTIONS);
+    status =
+        create_single_kernel_helper(context, &program, &test_bump,
+                                    ksrc.num_str(), ksrc.strs(), "test_bump");
     test_error_ret(status,
                    "Failed to create program for function static variable test",
                    status);

@@ -70,13 +70,15 @@ verify_wg_broadcast_1D(float *inptr, float *outptr, size_t n, size_t wg_size)
 
     for (i=0,group_id=0; i<n; i+=wg_size,group_id++)
     {
-        int local_size = (n-i) > wg_size ? wg_size : (n-i);
+        size_t local_size = (n - i) > wg_size ? wg_size : (n - i);
         float broadcast_result = inptr[i + (group_id % local_size)];
         for (j=0; j<local_size; j++)
         {
             if ( broadcast_result != outptr[i+j] )
             {
-                log_info("work_group_broadcast: Error at %u: expected = %f, got = %f\n", i+j, broadcast_result, outptr[i+j]);
+                log_info("work_group_broadcast: Error at %zu: expected = %f, "
+                         "got = %f\n",
+                         i + j, broadcast_result, outptr[i + j]);
                 return -1;
             }
         }
@@ -107,7 +109,10 @@ verify_wg_broadcast_2D(float *inptr, float *outptr, size_t nx, size_t ny, size_t
                     size_t indx = (i + _i) * nx + (j + _j);
                     if ( broadcast_result != outptr[indx] )
                     {
-                        log_info("work_group_broadcast: Error at (%u, %u): expected = %f, got = %f\n", j+_j, i+_i, broadcast_result, outptr[indx]);
+                        log_info("work_group_broadcast: Error at (%zu, %zu): "
+                                 "expected = %f, got = %f\n",
+                                 j + _j, i + _i, broadcast_result,
+                                 outptr[indx]);
                         return -1;
                     }
                 }
@@ -146,7 +151,10 @@ verify_wg_broadcast_3D(float *inptr, float *outptr, size_t nx, size_t ny, size_t
                             size_t indx = (i + _i) * ny * nx + (j + _j) * nx + (k + _k);
                             if ( broadcast_result != outptr[indx] )
                             {
-                                log_info("work_group_broadcast: Error at (%u, %u, %u): expected = %f, got = %f\n", k+_k, j+_j, i+_i, broadcast_result, outptr[indx]);
+                                log_info("work_group_broadcast: Error at (%zu, "
+                                         "%zu, %zu): expected = %f, got = %f\n",
+                                         k + _k, j + _j, i + _i,
+                                         broadcast_result, outptr[indx]);
                                 return -1;
                             }
                         }
@@ -168,12 +176,10 @@ test_work_group_broadcast_1D(cl_device_id device, cl_context context, cl_command
     cl_float     *output_ptr;
     cl_program   program;
     cl_kernel    kernel;
-    void         *values[2];
     size_t       globalsize[1];
     size_t       wg_size[1];
     size_t       num_elements;
     int          err;
-    int          i;
     MTdata       d;
 
     err = create_single_kernel_helper(context, &program, &kernel, 1,
@@ -208,7 +214,7 @@ test_work_group_broadcast_1D(cl_device_id device, cl_context context, cl_command
 
     p = input_ptr[0];
     d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
+    for (size_t i = 0; i < num_elements; i++)
     {
         p[i] = get_random_float((float)(-100000.f * M_PI), (float)(100000.f * M_PI) ,d);
     }
@@ -221,8 +227,6 @@ test_work_group_broadcast_1D(cl_device_id device, cl_context context, cl_command
         return -1;
     }
 
-    values[0] = streams[0];
-    values[1] = streams[1];
     err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0] );
     err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1] );
     if (err != CL_SUCCESS)
@@ -275,14 +279,12 @@ test_work_group_broadcast_2D(cl_device_id device, cl_context context, cl_command
     cl_float     *output_ptr;
     cl_program   program;
     cl_kernel    kernel;
-    void         *values[2];
     size_t       globalsize[2];
     size_t       localsize[2];
     size_t       wg_size[1];
     size_t       num_workgroups;
     size_t       num_elements;
     int          err;
-    int          i;
     MTdata       d;
 
     err = create_single_kernel_helper(context, &program, &kernel, 1,
@@ -337,7 +339,7 @@ test_work_group_broadcast_2D(cl_device_id device, cl_context context, cl_command
 
     p = input_ptr[0];
     d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
+    for (size_t i = 0; i < num_elements; i++)
     {
         p[i] = get_random_float((float)(-100000.f * M_PI), (float)(100000.f * M_PI) ,d);
     }
@@ -350,8 +352,6 @@ test_work_group_broadcast_2D(cl_device_id device, cl_context context, cl_command
         return -1;
     }
 
-    values[0] = streams[0];
-    values[1] = streams[1];
     err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0] );
     err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1] );
     if (err != CL_SUCCESS)
@@ -402,14 +402,12 @@ test_work_group_broadcast_3D(cl_device_id device, cl_context context, cl_command
     cl_float     *output_ptr;
     cl_program   program;
     cl_kernel    kernel;
-    void         *values[2];
     size_t       globalsize[3];
     size_t       localsize[3];
     size_t       wg_size[1];
     size_t       num_workgroups;
     size_t       num_elements;
     int          err;
-    int          i;
     MTdata       d;
 
     err = create_single_kernel_helper(context, &program, &kernel, 1,
@@ -465,7 +463,7 @@ test_work_group_broadcast_3D(cl_device_id device, cl_context context, cl_command
 
     p = input_ptr[0];
     d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
+    for (size_t i = 0; i < num_elements; i++)
     {
         p[i] = get_random_float((float)(-100000.f * M_PI), (float)(100000.f * M_PI) ,d);
     }
@@ -478,8 +476,6 @@ test_work_group_broadcast_3D(cl_device_id device, cl_context context, cl_command
         return -1;
     }
 
-    values[0] = streams[0];
-    values[1] = streams[1];
     err = clSetKernelArg(kernel, 0, sizeof streams[0], &streams[0] );
     err |= clSetKernelArg(kernel, 1, sizeof streams[1], &streams[1] );
     if (err != CL_SUCCESS)

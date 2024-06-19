@@ -214,15 +214,15 @@ static const char *export_after_import_aliased_local_kernel =
     "    event_t events;\n"
     "    events = async_work_group_copy( (__local %s*)localBuffer, (__global "
     "const %s*)(importSrc+importSrcLocalSize*get_group_id(0)), "
-    "(size_t)importSrcLocalSize, events );\n"
+    "(size_t)importSrcLocalSize, 0 );\n"
     "    async_work_group_copy_fence( CLK_LOCAL_MEM_FENCE );\n"
     "    events = async_work_group_copy((__global "
     "%s*)(exportDst+exportSrcLocalSize*get_group_id(0)), (__local const "
     "%s*)(localBuffer + (importSrcLocalSize - exportSrcLocalSize)), "
-    "(size_t)exportSrcLocalSize, 0 );\n"
+    "(size_t)exportSrcLocalSize, events );\n"
     // Wait for the import and export to complete, then verify by manually
     // copying to the dest
-    "    wait_group_events( 2, &events );\n"
+    "    wait_group_events( 1, &events );\n"
     "    for(i=0; i<importCopiesPerWorkItem; i++) {\n"
     "        importDst[ get_global_id( 0 )*importCopiesPerWorkItem+i ] = "
     "localBuffer[ get_local_id( 0 )*importCopiesPerWorkItem+i ];\n"

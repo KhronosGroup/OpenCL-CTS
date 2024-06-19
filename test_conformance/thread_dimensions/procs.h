@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,17 +21,52 @@
 
 extern const int kVectorSizeCount;
 
-extern int test_quick_1d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_quick_2d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_quick_3d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_quick_1d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_quick_2d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_quick_3d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_quick_1d_explicit_local(cl_device_id deviceID,
+                                        cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements);
+extern int test_quick_2d_explicit_local(cl_device_id deviceID,
+                                        cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements);
+extern int test_quick_3d_explicit_local(cl_device_id deviceID,
+                                        cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements);
+extern int test_quick_1d_implicit_local(cl_device_id deviceID,
+                                        cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements);
+extern int test_quick_2d_implicit_local(cl_device_id deviceID,
+                                        cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements);
+extern int test_quick_3d_implicit_local(cl_device_id deviceID,
+                                        cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements);
 
-extern int test_full_1d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_full_2d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_full_3d_explicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_full_1d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_full_2d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_full_3d_implicit_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-
+extern int test_full_1d_explicit_local(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
+extern int test_full_2d_explicit_local(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
+extern int test_full_3d_explicit_local(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
+extern int test_full_1d_implicit_local(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
+extern int test_full_2d_implicit_local(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);
+extern int test_full_3d_implicit_local(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue,
+                                       int num_elements);

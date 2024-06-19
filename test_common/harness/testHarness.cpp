@@ -20,9 +20,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cassert>
+#include <deque>
+#include <mutex>
 #include <stdexcept>
+#include <thread>
 #include <vector>
-#include "threadTesting.h"
 #include "errorHelpers.h"
 #include "kernelHelpers.h"
 #include "fpcontrol.h"
@@ -183,6 +185,9 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
         else if (strcmp(env_mode, "accelerator") == 0
                  || strcmp(env_mode, "CL_DEVICE_TYPE_ACCELERATOR") == 0)
             device_type = CL_DEVICE_TYPE_ACCELERATOR;
+        else if (strcmp(env_mode, "custom") == 0
+                 || strcmp(env_mode, "CL_DEVICE_TYPE_CUSTOM") == 0)
+            device_type = CL_DEVICE_TYPE_CUSTOM;
         else if (strcmp(env_mode, "default") == 0
                  || strcmp(env_mode, "CL_DEVICE_TYPE_DEFAULT") == 0)
             device_type = CL_DEVICE_TYPE_DEFAULT;
@@ -312,6 +317,12 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
             device_type = CL_DEVICE_TYPE_ACCELERATOR;
             argc--;
         }
+        else if (strcmp(argv[argc - 1], "custom") == 0
+                 || strcmp(argv[argc - 1], "CL_DEVICE_TYPE_CUSTOM") == 0)
+        {
+            device_type = CL_DEVICE_TYPE_CUSTOM;
+            argc--;
+        }
         else if (strcmp(argv[argc - 1], "CL_DEVICE_TYPE_DEFAULT") == 0)
         {
             device_type = CL_DEVICE_TYPE_DEFAULT;
@@ -348,6 +359,9 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
         case CL_DEVICE_TYPE_CPU: log_info("Requesting CPU device "); break;
         case CL_DEVICE_TYPE_ACCELERATOR:
             log_info("Requesting Accelerator device ");
+            break;
+        case CL_DEVICE_TYPE_CUSTOM:
+            log_info("Requesting Custom device ");
             break;
         case CL_DEVICE_TYPE_DEFAULT:
             log_info("Requesting Default device ");
@@ -584,10 +598,12 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 #endif
+    extern unsigned gNumWorkerThreads;
+    test_harness_config config = { forceNoContextCreation, num_elements,
+                                   queueProps, gNumWorkerThreads };
 
     int error = parseAndCallCommandLineTests(argc, argv, device, testNum,
-                                             testList, forceNoContextCreation,
-                                             queueProps, num_elements);
+                                             testList, config);
 
 #if defined(__APPLE__) && defined(__arm__)
     // Restore the old FP mode before leaving.
@@ -678,9 +694,7 @@ static void print_results(int failed, int count, const char *name)
 int parseAndCallCommandLineTests(int argc, const char *argv[],
                                  cl_device_id device, int testNum,
                                  test_definition testList[],
-                                 int forceNoContextCreation,
-                                 cl_command_queue_properties queueProps,
-                                 int num_elements)
+                                 const test_harness_config &config)
 {
     int ret = EXIT_SUCCESS;
 
@@ -726,8 +740,7 @@ int parseAndCallCommandLineTests(int argc, const char *argv[],
         std::vector<test_status> resultTestList(testNum, TEST_PASS);
 
         callTestFunctions(testList, selectedTestList, resultTestList.data(),
-                          testNum, device, forceNoContextCreation, num_elements,
-                          queueProps);
+                          testNum, device, config);
 
         print_results(gFailCount, gTestCount, "sub-test");
         print_results(gTestsFailed, gTestsFailed + gTestsPassed, "test");
@@ -755,21 +768,97 @@ int parseAndCallCommandLineTests(int argc, const char *argv[],
     return ret;
 }
 
+struct test_harness_state
+{
+    test_definition *tests;
+    test_status *results;
+    cl_device_id device;
+    test_harness_config config;
+};
+
+static std::deque<int> gTestQueue;
+static std::mutex gTestStateMutex;
+
+void test_function_runner(test_harness_state *state)
+{
+    int testID;
+    test_definition test;
+    while (true)
+    {
+        // Attempt to get a test
+        {
+            std::lock_guard<std::mutex> lock(gTestStateMutex);
+
+            // The queue is empty, we're done
+            if (gTestQueue.size() == 0)
+            {
+                return;
+            }
+
+            // Get the test at the front of the queue
+            testID = gTestQueue.front();
+            gTestQueue.pop_front();
+            test = state->tests[testID];
+        }
+
+        // Execute test
+        auto status =
+            callSingleTestFunction(test, state->device, state->config);
+
+        // Store result
+        {
+            std::lock_guard<std::mutex> lock(gTestStateMutex);
+            state->results[testID] = status;
+        }
+    }
+}
+
 void callTestFunctions(test_definition testList[],
                        unsigned char selectedTestList[],
                        test_status resultTestList[], int testNum,
-                       cl_device_id deviceToUse, int forceNoContextCreation,
-                       int numElementsToUse,
-                       cl_command_queue_properties queueProps)
+                       cl_device_id deviceToUse,
+                       const test_harness_config &config)
 {
-    for (int i = 0; i < testNum; ++i)
+    // Execute tests serially
+    if (config.numWorkerThreads == 0)
     {
-        if (selectedTestList[i])
+        for (int i = 0; i < testNum; ++i)
         {
-            resultTestList[i] = callSingleTestFunction(
-                testList[i], deviceToUse, forceNoContextCreation,
-                numElementsToUse, queueProps);
+            if (selectedTestList[i])
+            {
+                resultTestList[i] =
+                    callSingleTestFunction(testList[i], deviceToUse, config);
+            }
         }
+        // Execute tests in parallel with the specified number of worker threads
+    }
+    else
+    {
+        // Queue all tests that need to run
+        for (int i = 0; i < testNum; ++i)
+        {
+            if (selectedTestList[i])
+            {
+                gTestQueue.push_back(i);
+            }
+        }
+
+        // Spawn thread pool
+        std::vector<std::thread *> threads;
+        test_harness_state state = { testList, resultTestList, deviceToUse,
+                                     config };
+        for (unsigned i = 0; i < config.numWorkerThreads; i++)
+        {
+            log_info("Spawning worker thread %u\n", i);
+            threads.push_back(new std::thread(test_function_runner, &state));
+        }
+
+        // Wait for all threads to complete
+        for (auto th : threads)
+        {
+            th->join();
+        }
+        assert(gTestQueue.size() == 0);
     }
 }
 
@@ -782,9 +871,7 @@ void CL_CALLBACK notify_callback(const char *errinfo, const void *private_info,
 // Actual function execution
 test_status callSingleTestFunction(test_definition test,
                                    cl_device_id deviceToUse,
-                                   int forceNoContextCreation,
-                                   int numElementsToUse,
-                                   const cl_queue_properties queueProps)
+                                   const test_harness_config &config)
 {
     test_status status;
     cl_int error;
@@ -812,27 +899,30 @@ test_status callSingleTestFunction(test_definition test,
     }
 
     /* Create a context to work with, unless we're told not to */
-    if (!forceNoContextCreation)
+    if (!config.forceNoContextCreation)
     {
         context = clCreateContext(NULL, 1, &deviceToUse, notify_callback, NULL,
                                   &error);
         if (!context)
         {
             print_error(error, "Unable to create testing context");
+            gFailCount++;
+            gTestsFailed++;
             return TEST_FAIL;
         }
 
         if (device_version < Version(2, 0))
         {
-            queue =
-                clCreateCommandQueue(context, deviceToUse, queueProps, &error);
+            queue = clCreateCommandQueue(context, deviceToUse,
+                                         config.queueProps, &error);
         }
         else
         {
             const cl_command_queue_properties cmd_queueProps =
-                (queueProps) ? CL_QUEUE_PROPERTIES : 0;
-            cl_command_queue_properties queueCreateProps[] = { cmd_queueProps,
-                                                               queueProps, 0 };
+                (config.queueProps) ? CL_QUEUE_PROPERTIES : 0;
+            cl_command_queue_properties queueCreateProps[] = {
+                cmd_queueProps, config.queueProps, 0
+            };
             queue = clCreateCommandQueueWithProperties(
                 context, deviceToUse, &queueCreateProps[0], &error);
         }
@@ -841,6 +931,8 @@ test_status callSingleTestFunction(test_definition test,
         {
             print_error(error, "Unable to create testing command queue");
             clReleaseContext(context);
+            gFailCount++;
+            gTestsFailed++;
             return TEST_FAIL;
         }
     }
@@ -855,7 +947,8 @@ test_status callSingleTestFunction(test_definition test,
     }
     else
     {
-        int ret = test.func(deviceToUse, context, queue, numElementsToUse);
+        int ret =
+            test.func(deviceToUse, context, queue, config.numElementsToUse);
         if (ret == TEST_SKIPPED_ITSELF)
         {
             /* Tests can also let us know they're not supported by the
@@ -882,12 +975,14 @@ test_status callSingleTestFunction(test_definition test,
     }
 
     /* Release the context */
-    if (!forceNoContextCreation)
+    if (!config.forceNoContextCreation)
     {
         int error = clFinish(queue);
         if (error)
         {
             log_error("clFinish failed: %s\n", IGetErrorString(error));
+            gFailCount++;
+            gTestsFailed++;
             status = TEST_FAIL;
         }
         clReleaseCommandQueue(queue);
@@ -1113,18 +1208,21 @@ Version get_device_spirv_il_version(cl_device_id device)
         ASSERT_SUCCESS(err, "clGetDeviceInfo");
     }
 
-    if (strstr(str.data(), "SPIR-V_1.0") != NULL)
-        return Version(1, 0);
-    else if (strstr(str.data(), "SPIR-V_1.1") != NULL)
-        return Version(1, 1);
-    else if (strstr(str.data(), "SPIR-V_1.2") != NULL)
-        return Version(1, 2);
-    else if (strstr(str.data(), "SPIR-V_1.3") != NULL)
-        return Version(1, 3);
+    // Because this query returns a space-separated list of IL version strings
+    // we should check for SPIR-V versions in reverse order, to return the
+    // highest version supported.
+    if (strstr(str.data(), "SPIR-V_1.5") != NULL)
+        return Version(1, 5);
     else if (strstr(str.data(), "SPIR-V_1.4") != NULL)
         return Version(1, 4);
-    else if (strstr(str.data(), "SPIR-V_1.5") != NULL)
-        return Version(1, 5);
+    else if (strstr(str.data(), "SPIR-V_1.3") != NULL)
+        return Version(1, 3);
+    else if (strstr(str.data(), "SPIR-V_1.2") != NULL)
+        return Version(1, 2);
+    else if (strstr(str.data(), "SPIR-V_1.1") != NULL)
+        return Version(1, 1);
+    else if (strstr(str.data(), "SPIR-V_1.0") != NULL)
+        return Version(1, 0);
 
     throw std::runtime_error(std::string("Unknown SPIR-V version: ")
                              + str.data());
@@ -1215,6 +1313,8 @@ void PrintArch(void)
     vlog("ARCH:\taarch64\n");
 #elif defined(_WIN32)
     vlog("ARCH:\tWindows\n");
+#elif defined(__mips__)
+    vlog("ARCH:\tmips\n");
 #else
 #error unknown arch
 #endif

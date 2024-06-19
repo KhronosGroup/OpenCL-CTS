@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef _TEST_CL_EXT_IMAGE_BUFFER
-#define _TEST_CL_EXT_IMAGE_BUFFER
+#ifndef TEST_CL_EXT_IMAGE_BUFFER
+#define TEST_CL_EXT_IMAGE_BUFFER
 
 #define TEST_IMAGE_SIZE 20
 
@@ -48,8 +48,10 @@ static inline size_t get_format_size(cl_context context,
     cl_image_desc image_desc = { 0 };
     image_desc.image_type = imageType;
 
-    /* Size 1 only to query element size */
-    image_desc.image_width = 1;
+    /* We use a width of 4 to query element size, as this is
+       the smallest possible value that satisfies the requirements
+       of all image formats (including extensions). */
+    image_desc.image_width = 4;
     if (CL_MEM_OBJECT_IMAGE1D_BUFFER != imageType
         && CL_MEM_OBJECT_IMAGE1D != imageType)
     {
@@ -121,4 +123,4 @@ static inline void image_desc_init(cl_image_desc* desc,
     }
 }
 
-#endif /* _TEST_CL_EXT_IMAGE_BUFFER */
+#endif // TEST_CL_EXT_IMAGE_BUFFER

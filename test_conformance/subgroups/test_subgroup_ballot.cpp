@@ -75,7 +75,7 @@ template <typename Ty> struct BALLOT
                     {
                         v = genrand_int32(gMTdata);
                     }
-                    cl_uint4 v4 = { v, 0, 0, 0 };
+                    cl_uint4 v4 = { { v, 0, 0, 0 } };
                     t[wi_id + wg_offset] = v4;
                 }
             }
@@ -307,13 +307,13 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
 
                     if (wi_id & 1)
                     {
-                        bit_value ? expected_result = { 1, 0, 0, 1 }
-                                  : expected_result = { 0, 0, 0, 1 };
+                        bit_value ? expected_result = { { 1, 0, 0, 1 } }
+                                  : expected_result = { { 0, 0, 0, 1 } };
                     }
                     else
                     {
-                        bit_value ? expected_result = { 1, 0, 0, 2 }
-                                  : expected_result = { 0, 0, 0, 2 };
+                        bit_value ? expected_result = { { 1, 0, 0, 2 } }
+                                  : expected_result = { { 0, 0, 0, 2 } };
                     }
 
                     device_result = my[wg_offset + wi_id];
@@ -398,8 +398,8 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
                 for (wi_id = 0; wi_id < current_sbs; ++wi_id)
                 { // for each subgroup work item
 
-                    wi_id & 1 ? expected_result = { 1, 0, 0, 1 }
-                              : expected_result = { 1, 0, 0, 2 };
+                    wi_id & 1 ? expected_result = { { 1, 0, 0, 1 } }
+                              : expected_result = { { 1, 0, 0, 2 } };
 
                     device_result = my[wg_offset + wi_id];
                     if (!compare(device_result, expected_result))
@@ -691,7 +691,7 @@ template <typename Ty, BallotOp operation> struct SMASK
                 {
                     int midx = 4 * wg_offset + 4 * wi_id;
                     cl_uint max_sub_group_size = m[midx + 2];
-                    cl_uint4 expected_mask = { 0 };
+                    cl_uint4 expected_mask = { { 0 } };
                     expected_mask = generate_bit_mask(
                         wi_id, operation_names(operation), max_sub_group_size);
                     set_value(t[wg_offset + wi_id], expected_mask);
@@ -744,9 +744,12 @@ template <typename Ty, BallotOp operation> struct SMASK
                     {
                         log_error("ERROR:  get_sub_group_%s_mask... mismatch "
                                   "for local id %d in sub group %d in group "
-                                  "%d, obtained %d, expected %d\n",
+                                  "%d, %s\n",
                                   operation_names(operation), wi_id, sb_id,
-                                  wg_id, device_result, expected_result);
+                                  wg_id,
+                                  print_expected_obtained(expected_result,
+                                                          device_result)
+                                      .c_str());
                         return TEST_FAIL;
                     }
                 }
@@ -764,7 +767,7 @@ __kernel void test_sub_group_non_uniform_broadcast(const __global Type *in, __gl
     int gid = get_global_id(0);
     XY(xy,gid);
     Type x = in[gid];
-    if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {
+    if (xy[gid].x < (get_sub_group_size() >> 1)) {
         out[gid] = sub_group_non_uniform_broadcast(x, xy[gid].z);
     } else {
         out[gid] = sub_group_non_uniform_broadcast(x, xy[gid].w);
@@ -776,7 +779,7 @@ __kernel void test_sub_group_broadcast_first(const __global Type *in, __global i
     int gid = get_global_id(0);
     XY(xy,gid);
     Type x = in[gid];
-    if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {
+    if (xy[gid].x < (get_sub_group_size() >> 1)) {
         out[gid] = sub_group_broadcast_first(x);;
     } else {
         out[gid] = sub_group_broadcast_first(x);;

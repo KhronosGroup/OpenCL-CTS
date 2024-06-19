@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -4699,6 +4699,49 @@ double reference_nextafter(double xx, double yy)
     return a.f;
 }
 
+cl_half reference_nanh(cl_ushort x)
+{
+    cl_ushort u;
+    cl_half h;
+    u = x | 0x7e00U;
+    memcpy(&h, &u, sizeof(cl_half));
+    return h;
+}
+
+float reference_nextafterh(float xx, float yy, bool allow_denorms)
+{
+    cl_half tmp_a = cl_half_from_float(xx, CL_HALF_RTE);
+    cl_half tmp_b = cl_half_from_float(yy, CL_HALF_RTE);
+    float x = cl_half_to_float(tmp_a);
+    float y = cl_half_to_float(tmp_b);
+
+    // take care of nans
+    if (x != x) return x;
+
+    if (y != y) return y;
+
+    if (x == y) return y;
+
+    short a_h = cl_half_from_float(x, CL_HALF_RTE);
+    short b_h = cl_half_from_float(y, CL_HALF_RTE);
+    short oa_h = a_h;
+
+    if (a_h & 0x8000) a_h = 0x8000 - a_h;
+    if (b_h & 0x8000) b_h = 0x8000 - b_h;
+
+    a_h += (a_h < b_h) ? 1 : -1;
+    a_h = (a_h < 0) ? (cl_short)0x8000 - a_h : a_h;
+
+    if (!allow_denorms && IsHalfSubnormal(a_h))
+    {
+        if (cl_half_to_float(0x7fff & oa_h) < cl_half_to_float(0x7fff & a_h))
+            a_h = (a_h & 0x8000) ? 0x8400 : 0x0400;
+        else
+            a_h = 0;
+    }
+
+    return cl_half_to_float(a_h);
+}
 
 long double reference_nextafterl(long double xx, long double yy)
 {

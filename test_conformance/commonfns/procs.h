@@ -37,18 +37,13 @@ extern int        test_maxf(cl_device_id device, cl_context context, cl_command_
 extern int        test_min(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_minf(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_mix(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_mixf(cl_device_id device, cl_context context,
+                     cl_command_queue queue, int num_elements);
 extern int        test_radians(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_step(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_stepf(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_smoothstep(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_smoothstepf(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_sign(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements);
-
-typedef int     (*binary_verify_float_fn)( float *x, float *y, float *out, int numElements, int vecSize );
-typedef int     (*binary_verify_double_fn)( double *x, double *y, double *out, int numElements, int vecSize );
-
-extern int      test_binary_fn( cl_device_id device, cl_context context, cl_command_queue queue, int n_elems,
-                           const char *fnName, bool vectorSecondParam,
-                           binary_verify_float_fn floatVerifyFn, binary_verify_double_fn doubleVerifyFn );
 
 

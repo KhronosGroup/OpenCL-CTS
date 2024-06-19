@@ -17,6 +17,7 @@ add_definitions(-DCL_USE_DEPRECATED_OPENCL_2_0_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_1_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_0_APIS=1)
+add_definitions(-DCL_NO_EXTENSION_PROTOTYPES)
 
 option(USE_CL_EXPERIMENTAL "Use Experimental definitions" OFF)
 if(USE_CL_EXPERIMENTAL)
@@ -30,6 +31,7 @@ option(D3D10_IS_SUPPORTED "Run DirectX 10 interop tests" OFF)
 option(D3D11_IS_SUPPORTED "Run DirectX 11 interop tests" OFF)
 option(GL_IS_SUPPORTED "Run OpenGL interop tests" OFF)
 option(GLES_IS_SUPPORTED "Run OpenGL ES interop tests" OFF)
+option(VULKAN_IS_SUPPORTED "Run Vulkan interop tests" OFF)
 
 
 #-----------------------------------------------------------
@@ -81,20 +83,31 @@ endif()
 
 macro(add_cxx_flag_if_supported flag)
     string(REGEX REPLACE "[-=+]" "" FLAG_NO_SIGNS ${flag})
-    check_cxx_compiler_flag(${flag} COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
+    set(FLAG_TO_TEST ${flag})
+    if((${flag} MATCHES "^-Wno-") AND NOT (${flag} MATCHES "^-Wno-error="))
+        # -Wno-... only causes a diagnostic if another diagnostic is emitted.
+        # Change such flags into a -W... flag to test if the warning is known.
+        string(REGEX REPLACE "^-Wno-" "-W" FLAG_TO_TEST ${flag})
+    endif()
+    check_cxx_compiler_flag(${FLAG_TO_TEST} COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
     if(COMPILER_SUPPORTS_${FLAG_NO_SIGNS})
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}")
     endif()
 endmacro(add_cxx_flag_if_supported)
 
 if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
     add_cxx_flag_if_supported(-Wmisleading-indentation)
+    add_cxx_flag_if_supported(-Wunused-function)
     add_cxx_flag_if_supported(-Wunused-variable)
+    add_cxx_flag_if_supported(-Werror)
+    if(NOT CMAKE_BUILD_TYPE MATCHES "Release|RelWithDebInfo|MinSizeRel")
+        # Enable more warnings if not doing a release build.
+        add_cxx_flag_if_supported(-Wall)
+    endif()
     add_cxx_flag_if_supported(-Wno-narrowing)
     add_cxx_flag_if_supported(-Wno-format)
-    add_cxx_flag_if_supported(-Werror)
     add_cxx_flag_if_supported(-Wno-error=cpp) # Allow #warning directive
-    add_cxx_flag_if_supported(-Wno-error=unknown-pragmas) # Issue #785
+    add_cxx_flag_if_supported(-Wno-unknown-pragmas) # Issue #785
     add_cxx_flag_if_supported(-Wno-error=asm-operand-widths) # Issue #784
 
     # -msse -mfpmath=sse to force gcc to use sse for float math,
@@ -124,6 +137,12 @@ macro(set_gnulike_module_compile_flags flags)
     endif()
 endmacro(set_gnulike_module_compile_flags)
 
+# Xcode 14.1 deprecated functions such as sprintf.
+# Suppress such warnings for now, see Issue #1626
+if(APPLE)
+    add_cxx_flag_if_supported(-Wno-deprecated-declarations)
+endif(APPLE)
+
 if(MSVC)
     # Don't warn when using standard non-secure functions.
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
@@ -136,6 +155,11 @@ endif()
 if( WIN32 AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" )
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
+endif()
+
+# To handle addresses larger than 2 gigabytes for 32bit targets
+if(WIN32 AND ${CLConform_TARGET_ARCH} STREQUAL "x86")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
 endif()
 
 list(APPEND CLConform_LIBRARIES ${OPENCL_LIBRARIES})

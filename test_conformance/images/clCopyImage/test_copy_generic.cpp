@@ -14,10 +14,16 @@
 // limitations under the License.
 //
 #include "../testBase.h"
+#include <CL/cl.h>
 
 static void CL_CALLBACK free_pitch_buffer( cl_mem image, void *buf )
 {
     free( buf );
+}
+
+static void CL_CALLBACK release_cl_buffer(cl_mem image, void *buf)
+{
+    clReleaseMemObject((cl_mem)buf);
 }
 
 cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr<char>& data, image_descriptor *imageInfo, int *error )
@@ -69,6 +75,71 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             if ( gEnablePitch )
                 host_ptr = malloc( imageInfo->arraySize * imageInfo->slicePitch );
             break;
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+            if (gDebugTrace)
+                log_info(" - Creating 1D buffer image %d ...\n",
+                         (int)imageInfo->width);
+            {
+                cl_int err;
+                cl_mem_flags buffer_flags = CL_MEM_READ_WRITE;
+                if (gEnablePitch)
+                {
+                    cl_device_id device;
+                    err =
+                        clGetCommandQueueInfo(queue, CL_QUEUE_DEVICE,
+                                              sizeof(device), &device, nullptr);
+                    if (err != CL_SUCCESS)
+                    {
+                        log_error(
+                            "Error: Could not get CL_QUEUE_DEVICE from queue");
+                        return NULL;
+                    }
+                    char major_version;
+                    err = clGetDeviceInfo(device, CL_DEVICE_VERSION,
+                                          sizeof(major_version), &major_version,
+                                          nullptr);
+                    if (err != CL_SUCCESS)
+                    {
+                        log_error("Error: Could not get CL_DEVICE_VERSION from "
+                                  "device");
+                        return NULL;
+                    }
+                    if (major_version == '1')
+                    {
+                        host_ptr = malloc(imageInfo->rowPitch);
+                    }
+                    else
+                    {
+                        cl_uint base_address_alignment = 0;
+                        err = clGetDeviceInfo(
+                            device, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT,
+                            sizeof(base_address_alignment),
+                            &base_address_alignment, nullptr);
+                        if (err != CL_SUCCESS)
+                        {
+                            log_error("ERROR: Could not get "
+                                      "CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT "
+                                      "from device");
+                            return NULL;
+                        }
+                        host_ptr = align_malloc(imageInfo->rowPitch,
+                                                base_address_alignment);
+                    }
+                    buffer_flags |= CL_MEM_USE_HOST_PTR;
+                }
+
+                cl_mem buffer = clCreateBuffer(context, buffer_flags,
+                                               imageInfo->rowPitch, NULL, &err);
+                if (err != CL_SUCCESS)
+                {
+                    log_error("ERROR: Could not create buffer for 1D buffer "
+                              "image. %ld bytes\n",
+                              imageInfo->width);
+                    return NULL;
+                }
+                imageDesc.buffer = buffer;
+            }
+            break;
     }
 
     if ( gDebugTrace && gTestMipmaps )
@@ -81,7 +152,10 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             log_error( "ERROR: Unable to create backing store for pitched 3D image. %ld bytes\n",  imageInfo->depth * imageInfo->slicePitch );
             return NULL;
         }
-        mem_flags = CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR;
+        if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
+        {
+            mem_flags = CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR;
+        }
     }
 
     img = clCreateImage(context, mem_flags, imageInfo->format, &imageDesc, host_ptr, error);
@@ -101,6 +175,21 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
         }
         else
             free(host_ptr);
+    }
+
+    if (imageDesc.buffer != NULL)
+    {
+        int callbackError = clSetMemObjectDestructorCallback(
+            img, release_cl_buffer, imageDesc.buffer);
+        if (callbackError != CL_SUCCESS)
+        {
+            log_error("Error: Unable to attach destructor callback to 1d "
+                      "buffer image. Err: %d\n",
+                      callbackError);
+            clReleaseMemObject(imageDesc.buffer);
+            clReleaseMemObject(img);
+            return NULL;
+        }
     }
 
     if ( *error != CL_SUCCESS )
@@ -141,6 +230,12 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
                           (int)imageInfo->arraySize, imageSize,
                           IGetErrorString(*error));
                 break;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+                log_error(
+                    "ERROR: Unable to create 1D buffer image of size %d (%llu "
+                    "MB):(%s)",
+                    (int)imageInfo->width, imageSize, IGetErrorString(*error));
+                break;
         }
         log_error("ERROR: and %llu mip levels\n", (unsigned long long) imageInfo->num_mip_levels);
         return NULL;
@@ -161,6 +256,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             height = imageInfo->arraySize;
             depth = 1;
             break;
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
         case CL_MEM_OBJECT_IMAGE1D:
             height = depth = 1;
             break;
@@ -196,6 +292,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
                 case CL_MEM_OBJECT_IMAGE1D_ARRAY:
                     origin[ 2 ] =  lod;
                     break;
+                case CL_MEM_OBJECT_IMAGE1D_BUFFER:
                 case CL_MEM_OBJECT_IMAGE1D:
                     origin[ 1 ] = lod;
                     break;
@@ -210,6 +307,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
                 case CL_MEM_OBJECT_IMAGE2D:
                     height = ( imageInfo->height >> lod ) ? (imageInfo->height >> lod) : 1;
                 case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+                case CL_MEM_OBJECT_IMAGE1D_BUFFER:
                 case CL_MEM_OBJECT_IMAGE1D:
                     width = ( imageInfo->width >> lod ) ? (imageInfo->width >> lod) : 1;
             }
@@ -260,6 +358,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
                     break;
                 case CL_MEM_OBJECT_IMAGE1D_ARRAY:
                 case CL_MEM_OBJECT_IMAGE1D:
+                case CL_MEM_OBJECT_IMAGE1D_BUFFER:
                     dstPitch2D = mappedSlice;
                     break;
             }
@@ -289,18 +388,17 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
     return img;
 }
 
-// WARNING -- not thread safe
-BufferOwningPtr<char> srcData;
-BufferOwningPtr<char> dstData;
-BufferOwningPtr<char> srcHost;
-BufferOwningPtr<char> dstHost;
-
 int test_copy_image_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
                             const size_t sourcePos[], const size_t destPos[], const size_t regionSize[], MTdata d )
 {
     int error;
 
     clMemWrapper srcImage, dstImage;
+
+    BufferOwningPtr<char> srcData;
+    BufferOwningPtr<char> dstData;
+    BufferOwningPtr<char> srcHost;
+    BufferOwningPtr<char> dstHost;
 
     if( gDebugTrace )
         log_info( " ++ Entering inner test loop...\n" );
@@ -392,8 +490,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
         switch(dstImageInfo->type)
         {
             case CL_MEM_OBJECT_IMAGE1D:
-                dst_lod = destPos[1];
-                break;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER: dst_lod = destPos[1]; break;
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
             case CL_MEM_OBJECT_IMAGE2D:
                 dst_lod = destPos[2];
@@ -408,6 +505,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     }
     switch (dstImageInfo->type)
     {
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
         case CL_MEM_OBJECT_IMAGE1D:
             if( gTestMipmaps )
                 origin[ 1 ] = dst_lod;
@@ -520,32 +618,54 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     if( gDebugTrace )
         log_info( " - Scanline verification...\n" );
 
-    size_t thirdDim;
-    size_t secondDim;
-    if (dstImageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY)
+    size_t thirdDim = 1;
+    size_t secondDim = 1;
+
+    switch (dstImageInfo->type)
     {
-        secondDim = dstImageInfo->arraySize;
-        thirdDim = 1;
-    }
-    else if (dstImageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
-    {
-        secondDim = dstImageInfo->height;
-        if( gTestMipmaps )
-            secondDim = (dstImageInfo->height >> dst_lod) ? (dstImageInfo->height >> dst_lod):1;
-        thirdDim = dstImageInfo->arraySize;
-    }
-    else
-    {
-        secondDim = dstImageInfo->height;
-        thirdDim = dstImageInfo->depth;
-        if( gTestMipmaps )
-        {
-            secondDim = (dstImageInfo->height >> dst_lod) ? (dstImageInfo->height >> dst_lod):1;
-            if(dstImageInfo->type == CL_MEM_OBJECT_IMAGE3D)
-                thirdDim = (dstImageInfo->depth >> dst_lod) ? (dstImageInfo->depth >> dst_lod):1;
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY: {
+            secondDim = dstImageInfo->arraySize;
+            break;
+        }
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY: {
+            secondDim = dstImageInfo->height;
+            thirdDim = dstImageInfo->arraySize;
+            break;
+        }
+        case CL_MEM_OBJECT_IMAGE3D: {
+            secondDim = dstImageInfo->height;
+            thirdDim = dstImageInfo->depth;
+            break;
+        }
+        case CL_MEM_OBJECT_IMAGE2D: {
+            secondDim = dstImageInfo->height;
+            break;
+        }
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+        case CL_MEM_OBJECT_IMAGE1D: {
+            break;
+        }
+        default: {
+            log_error("ERROR: Unsupported Image type. \n");
+            return error;
+            break;
         }
     }
-
+    if (gTestMipmaps)
+    {
+        switch (dstImageInfo->type)
+        {
+            case CL_MEM_OBJECT_IMAGE3D:
+                thirdDim = (dstImageInfo->depth >> dst_lod) ? (dstImageInfo->depth >> dst_lod):1;
+                /* Fallthrough */
+            case CL_MEM_OBJECT_IMAGE2D:
+            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+                secondDim = (dstImageInfo->height >> dst_lod)
+                    ? (dstImageInfo->height >> dst_lod)
+                    : 1;
+                break;
+        }
+    }
     for( size_t z = 0; z < thirdDim; z++ )
     {
         for( size_t y = 0; y < secondDim; y++ )

@@ -15,6 +15,8 @@
 //
 #include "harness/compat.h"
 
+#include <cinttypes>
+
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
@@ -35,7 +37,12 @@ static int verify_abs_char( const void *p, const void *q, size_t n, const char *
         if( inA[i] < 0 )
             r = -inA[i];
         if( r != outptr[i] )
-        { log_info( "%ld) Failure for abs( (char%s) 0x%2.2x) = *0x%2.2x vs 0x%2.2x\n", i, sizeName, inA[i],r, outptr[i] ); return -1; }
+        {
+            log_info("%zu) Failure for abs( (char%s) 0x%2.2x) = *0x%2.2x vs "
+                     "0x%2.2x\n",
+                     i, sizeName, inA[i], r, outptr[i]);
+            return -1;
+        }
     }
     return 0;
 }
@@ -52,7 +59,12 @@ static int verify_abs_short( const void *p, const void *q, size_t n, const char 
         if( inA[i] < 0 )
             r = -inA[i];
         if( r != outptr[i] )
-        { log_info( "%ld) Failure for abs( (short%s) 0x%4.4x) = *0x%4.4x vs 0x%4.4x\n", i, sizeName, inA[i],r, outptr[i] ); return -1; }
+        {
+            log_info("%zu) Failure for abs( (short%s) 0x%4.4x) = *0x%4.4x vs "
+                     "0x%4.4x\n",
+                     i, sizeName, inA[i], r, outptr[i]);
+            return -1;
+        }
     }
     return 0;
 }
@@ -68,7 +80,12 @@ static int verify_abs_int( const void *p, const void *q, size_t n, const char *s
         if( inA[i] < 0 )
             r = -inA[i];
         if( r != outptr[i] )
-        { log_info( "%ld) Failure for abs( (int%s) 0x%2.2x) = *0x%8.8x vs 0x%8.8x\n", i, sizeName, inA[i],r, outptr[i] ); return -1; }
+        {
+            log_info("%zu) Failure for abs( (int%s) 0x%2.2x) = *0x%8.8x vs "
+                     "0x%8.8x\n",
+                     i, sizeName, inA[i], r, outptr[i]);
+            return -1;
+        }
     }
     return 0;
 }
@@ -84,7 +101,12 @@ static int verify_abs_long( const void *p, const void *q, size_t n, const char *
         if( inA[i] < 0 )
             r = -inA[i];
         if( r != outptr[i] )
-        { log_info( "%ld) Failure for abs( (long%s) 0x%16.16llx) = *0x%16.16llx vs 0x%16.16llx\n", i, sizeName, inA[i],r, outptr[i] ); return -1; }
+        {
+            log_info("%zu) Failure for abs( (long%s) 0x%16.16" PRIx64
+                     ") = *0x%16.16" PRIx64 " vs 0x%16.16" PRIx64 "\n",
+                     i, sizeName, inA[i], r, outptr[i]);
+            return -1;
+        }
     }
     return 0;
 }
@@ -100,7 +122,12 @@ static int verify_abs_uchar( const void *p, const void *q, size_t n, const char 
     {
         cl_uchar r = inA[i];
         if( r != outptr[i] )
-        { log_info( "%ld) Failure for abs( (uchar%s) 0x%2.2x) = *0x%2.2x vs 0x%2.2x\n", i, sizeName, inA[i],r, outptr[i] ); return -1; }
+        {
+            log_info("%zu) Failure for abs( (uchar%s) 0x%2.2x) = *0x%2.2x vs "
+                     "0x%2.2x\n",
+                     i, sizeName, inA[i], r, outptr[i]);
+            return -1;
+        }
     }
     return 0;
 }
@@ -115,7 +142,12 @@ static int verify_abs_ushort( const void *p, const void *q, size_t n, const char
     {
         cl_ushort r = inA[i];
         if( r != outptr[i] )
-        { log_info( "%ld) Failure for abs( (short%s) 0x%4.4x) = *0x%4.4x vs 0x%4.4x\n", i, sizeName, inA[i],r, outptr[i] ); return -1; }
+        {
+            log_info("%zu) Failure for abs( (short%s) 0x%4.4x) = *0x%4.4x vs "
+                     "0x%4.4x\n",
+                     i, sizeName, inA[i], r, outptr[i]);
+            return -1;
+        }
     }
     return 0;
 }
@@ -129,7 +161,12 @@ static int verify_abs_uint( const void *p, const void *q, size_t n, const char *
     {
         cl_uint r = inA[i];
         if( r != outptr[i] )
-        { log_info( "%ld) Failure for abs( (int%s) 0x%2.2x) = *0x%8.8x vs 0x%8.8x\n", i, sizeName, inA[i],r, outptr[i] ); return -1; }
+        {
+            log_info("%zu) Failure for abs( (int%s) 0x%2.2x) = *0x%8.8x vs "
+                     "0x%8.8x\n",
+                     i, sizeName, inA[i], r, outptr[i]);
+            return -1;
+        }
     }
     return 0;
 }
@@ -143,7 +180,12 @@ static int verify_abs_ulong( const void *p, const void *q, size_t n, const char 
     {
         cl_ulong r = inA[i];
         if( r != outptr[i] )
-        { log_info( "%ld) Failure for abs( (long%s) 0x%16.16llx) = *0x%16.16llx vs 0x%16.16llx\n", i, sizeName, inA[i],r, outptr[i] ); return -1; }
+        {
+            log_info("%zu) Failure for abs( (long%s) 0x%16.16" PRIx64
+                     ") = *0x%16.16" PRIx64 " vs 0x%16.16" PRIx64 "\n",
+                     i, sizeName, inA[i], r, outptr[i]);
+            return -1;
+        }
     }
     return 0;
 }

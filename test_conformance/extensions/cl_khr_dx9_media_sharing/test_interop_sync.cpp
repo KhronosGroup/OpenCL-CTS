@@ -233,7 +233,7 @@ int interop_user_sync(cl_device_id deviceID, cl_context context,
 
         error = clEnqueueAcquireDX9MediaSurfacesKHR(
             cmdQueue, static_cast<cl_uint>(memObjList.size()),
-            &memObjList.at(0), 0, 0, 0);
+            &memObjList.at(0), 0, NULL, NULL);
         if (error != CL_SUCCESS)
         {
             log_error("clEnqueueAcquireDX9MediaSurfacesKHR failed: %s\n",
@@ -273,7 +273,7 @@ int interop_user_sync(cl_device_id deviceID, cl_context context,
 
         error = clEnqueueReleaseDX9MediaSurfacesKHR(
             cmdQueue, static_cast<cl_uint>(memObjList.size()),
-            &memObjList.at(0), 0, 0, 0);
+            &memObjList.at(0), 0, NULL, NULL);
         if (error != CL_SUCCESS)
         {
             log_error("clEnqueueReleaseDX9MediaSurfacesKHR failed: %s\n",

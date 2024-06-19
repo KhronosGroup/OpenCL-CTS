@@ -1,0 +1,85 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 58
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Vector16
+               OpCapability Int16
+               OpCapability ExpectAssumeKHR
+               OpExtension "SPV_KHR_expect_assume"
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %expect_short "expect_short"
+               OpSource OpenCL_C 102000
+               OpDecorate %dst FuncParamAttr NoCapture
+               OpDecorate %dst Alignment 64
+       %void = OpTypeVoid
+     %ushort = OpTypeInt 16 0
+    %ushort2 = OpTypeVector %ushort 2
+    %ushort3 = OpTypeVector %ushort 3
+    %ushort4 = OpTypeVector %ushort 4
+    %ushort8 = OpTypeVector %ushort 8
+   %ushort16 = OpTypeVector %ushort 16
+       %uint = OpTypeInt 32 0
+   %ushort_0 = OpConstantNull %ushort
+  %ushort2_0 = OpConstantNull %ushort2
+  %ushort3_0 = OpConstantNull %ushort3
+  %ushort4_0 = OpConstantNull %ushort4
+  %ushort8_0 = OpConstantNull %ushort8
+ %ushort16_0 = OpConstantNull %ushort16
+    %index_1 = OpConstant %uint 1
+    %index_2 = OpConstant %uint 2
+    %index_3 = OpConstant %uint 3
+    %index_4 = OpConstant %uint 4
+    %index_5 = OpConstant %uint 5
+%_ptr_CrossWorkgroup_ushort16 = OpTypePointer CrossWorkgroup %ushort16
+          %6 = OpTypeFunction %void %_ptr_CrossWorkgroup_ushort16 %ushort
+ %expect_short = OpFunction %void None %6
+        %dst = OpFunctionParameter %_ptr_CrossWorkgroup_ushort16
+      %value = OpFunctionParameter %ushort
+         %10 = OpLabel
+                  ; setup
+  %value_vec = OpCompositeInsert %ushort2 %value %ushort2_0 0
+                  ; scalar expect:
+                  ;     short v1e = __builtin_expect(value, 0);
+                  ;     dst[0] = (short16)(v1e, 0, ...);
+        %v1e = OpExpectKHR %ushort %value %ushort_0
+      %v1v16 = OpCompositeInsert %ushort16 %v1e %ushort16_0 0
+               OpStore %dst %v1v16 Aligned 64
+                  ; vec2 expect:
+                  ;     short2 v2 = (short2)(value);
+                  ;     short2 v2e = __builtin_expect(v2, 0);
+                  ;     dst[1] = (short16)(v2e, 0, ...);
+         %v2 = OpVectorShuffle %ushort2 %value_vec %value_vec 0 0
+        %v2e = OpExpectKHR %ushort2 %v2 %ushort2_0
+      %v2v16 = OpVectorShuffle %ushort16 %v2e %ushort2_0 0 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 
+      %dst_1 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ushort16 %dst %index_1
+               OpStore %dst_1 %v2v16 Aligned 64
+                  ; vec3 expect
+         %v3 = OpVectorShuffle %ushort3 %value_vec %value_vec 0 0 0
+        %v3e = OpExpectKHR %ushort3 %v3 %ushort3_0
+      %v3v16 = OpVectorShuffle %ushort16 %v3e %ushort2_0 0 1 2 3 3 3 3 3 3 3 3 3 3 3 3 3
+      %dst_2 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ushort16 %dst %index_2
+               OpStore %dst_2 %v3v16 Aligned 64
+                  ; vec4 expect
+         %v4 = OpVectorShuffle %ushort4 %value_vec %value_vec 0 0 0 0
+        %v4e = OpExpectKHR %ushort4 %v4 %ushort4_0
+      %v4v16 = OpVectorShuffle %ushort16 %v4e %ushort2_0 0 1 2 3 4 4 4 4 4 4 4 4 4 4 4 4
+      %dst_3 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ushort16 %dst %index_3
+               OpStore %dst_3 %v4v16 Aligned 64
+                  ; vec8 expect
+         %v8 = OpVectorShuffle %ushort8 %value_vec %value_vec 0 0 0 0 0 0 0 0
+        %v8e = OpExpectKHR %ushort8 %v8 %ushort8_0
+      %v8v16 = OpVectorShuffle %ushort16 %v8e %ushort2_0 0 1 2 3 4 5 6 7 8 8 8 8 8 8 8 8
+      %dst_4 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ushort16 %dst %index_4
+               OpStore %dst_4 %v8v16 Aligned 64
+                  ; vec16 expect
+        %v16 = OpVectorShuffle %ushort16 %value_vec %value_vec 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+       %v16e = OpExpectKHR %ushort16 %v16 %ushort16_0
+      %dst_5 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ushort16 %dst %index_5
+               OpStore %dst_5 %v16e Aligned 64
+               OpReturn
+               OpFunctionEnd

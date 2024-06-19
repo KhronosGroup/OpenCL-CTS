@@ -52,7 +52,10 @@ add_subdirectory( pipes )
 add_subdirectory( device_timer )
 add_subdirectory( spirv_new )
 add_subdirectory( spir )
-add_subdirectory( vulkan )
+if(VULKAN_IS_SUPPORTED)
+    add_subdirectory( common/vulkan_wrapper )
+    add_subdirectory( vulkan )
+endif()
 
 file(GLOB CSV_FILES "opencl_conformance_tests_*.csv")
 

@@ -92,6 +92,10 @@ extern int    test_svm_shared_address_space_fine_grain(cl_device_id deviceID, cl
 extern int    test_svm_cross_buffer_pointers_coarse_grain(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int    test_svm_pointer_passing(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int    test_svm_allocate_shared_buffer(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_svm_allocate_shared_buffer_negative(cl_device_id deviceID,
+                                                    cl_context context,
+                                                    cl_command_queue queue,
+                                                    int num_elements);
 extern int    test_svm_shared_sub_buffers(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int    test_svm_enqueue_api(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int    test_svm_migrate(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

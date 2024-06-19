@@ -171,8 +171,8 @@ cl_int check_compiler_feature_info(cl_device_id deviceID, cl_context context,
     }
     else
     {
-        log_error("Error: The macro feature is defined and undefined "
-                  "in the same time\n");
+        log_error("Error: The feature macro is defined and undefined "
+                  "at the same time\n");
         error = OutputBuildLogs(program_supported, 1, &deviceID);
         test_error(error, "OutputBuildLogs failed.\n");
         error = OutputBuildLogs(program_not_supported, 1, &deviceID);

@@ -16,12 +16,13 @@ set(${MODULE_NAME}_SOURCES
     test_write_3D.cpp
     test_cl_ext_image_requirements_info.cpp
     test_cl_ext_image_from_buffer.cpp
+    test_cl_ext_image_raw10_raw12.cpp
     ../common.cpp
 )
 
 # Make unused variables not fatal in this module; see
 # https://github.com/KhronosGroup/OpenCL-CTS/issues/1484
-set_gnulike_module_compile_flags("-Wno-error=unused-variable")
+set_gnulike_module_compile_flags("-Wno-error=unused-variable -Wno-unused-but-set-variable -Wno-sign-compare")
 
 include(../../CMakeCommon.txt)
 

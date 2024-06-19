@@ -27,32 +27,16 @@
 
 namespace {
 
-int BuildKernel(const char *name, int vectorSize, cl_kernel *k, cl_program *p,
-                bool relaxedMode)
-{
-    auto kernel_name = GetKernelName(vectorSize);
-    auto source = GetTernaryKernel(kernel_name, name, ParameterType::Double,
-                                   ParameterType::Double, ParameterType::Double,
-                                   ParameterType::Double, vectorSize);
-    std::array<const char *, 1> sources{ source.c_str() };
-    return MakeKernel(sources.data(), sources.size(), kernel_name.c_str(), k, p,
-                      relaxedMode);
-}
-
-struct BuildKernelInfo2
-{
-    cl_kernel *kernels;
-    Programs &programs;
-    const char *nameInCode;
-    bool relaxedMode; // Whether to build with -cl-fast-relaxed-math.
-};
-
 cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
 {
-    BuildKernelInfo2 *info = (BuildKernelInfo2 *)p;
-    cl_uint vectorSize = gMinVectorSizeIndex + job_id;
-    return BuildKernel(info->nameInCode, vectorSize, info->kernels + vectorSize,
-                       &(info->programs[vectorSize]), info->relaxedMode);
+    BuildKernelInfo &info = *(BuildKernelInfo *)p;
+    auto generator = [](const std::string &kernel_name, const char *builtin,
+                        cl_uint vector_size_index) {
+        return GetTernaryKernel(kernel_name, builtin, ParameterType::Double,
+                                ParameterType::Double, ParameterType::Double,
+                                ParameterType::Double, vector_size_index);
+    };
+    return BuildKernels(info, job_id, generator);
 }
 
 // A table of more difficult cases to get right
@@ -134,7 +118,8 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
 {
     int error;
     Programs programs;
-    cl_kernel kernels[VECTOR_SIZE_COUNT];
+    const unsigned thread_id = 0; // Test is currently not multithreaded.
+    KernelMatrix kernels;
     float maxError = 0.0f;
     int ftz = f->ftz || gForceFTZ;
     double maxErrorVal = 0.0f;
@@ -147,14 +132,12 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
     Force64BitFPUPrecision();
 
     // Init the kernels
-    {
-        BuildKernelInfo2 build_info{ kernels, programs, f->nameInCode,
-                                     relaxedMode };
-        if ((error = ThreadPool_Do(BuildKernelFn,
-                                   gMaxVectorSizeIndex - gMinVectorSizeIndex,
-                                   &build_info)))
-            return error;
-    }
+    BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode,
+                                relaxedMode };
+    if ((error = ThreadPool_Do(BuildKernelFn,
+                               gMaxVectorSizeIndex - gMinVectorSizeIndex,
+                               &build_info)))
+        return error;
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
@@ -215,18 +198,33 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
             return error;
         }
 
-        // write garbage into output arrays
+        // Write garbage into output arrays
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             uint32_t pattern = 0xffffdead;
-            memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
-            if ((error =
-                     clEnqueueWriteBuffer(gQueue, gOutBuffer[j], CL_FALSE, 0,
-                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
+            if (gHostFill)
             {
-                vlog_error("\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
-                           error, j);
-                goto exit;
+                memset_pattern4(gOut[j], &pattern, BUFFER_SIZE);
+                if ((error = clEnqueueWriteBuffer(gQueue, gOutBuffer[j],
+                                                  CL_FALSE, 0, BUFFER_SIZE,
+                                                  gOut[j], 0, NULL, NULL)))
+                {
+                    vlog_error(
+                        "\n*** Error %d in clEnqueueWriteBuffer2(%d) ***\n",
+                        error, j);
+                    return error;
+                }
+            }
+            else
+            {
+                if ((error = clEnqueueFillBuffer(gQueue, gOutBuffer[j],
+                                                 &pattern, sizeof(pattern), 0,
+                                                 BUFFER_SIZE, 0, NULL, NULL)))
+                {
+                    vlog_error("Error: clEnqueueFillBuffer failed! err: %d\n",
+                               error);
+                    return error;
+                }
             }
         }
 
@@ -236,37 +234,37 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
             size_t vectorSize = sizeof(cl_double) * sizeValues[j];
             size_t localCount = (BUFFER_SIZE + vectorSize - 1)
                 / vectorSize; // BUFFER_SIZE / vectorSize  rounded up
-            if ((error = clSetKernelArg(kernels[j], 0, sizeof(gOutBuffer[j]),
-                                        &gOutBuffer[j])))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 0,
+                                        sizeof(gOutBuffer[j]), &gOutBuffer[j])))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
-            if ((error = clSetKernelArg(kernels[j], 1, sizeof(gInBuffer),
-                                        &gInBuffer)))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 1,
+                                        sizeof(gInBuffer), &gInBuffer)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
-            if ((error = clSetKernelArg(kernels[j], 2, sizeof(gInBuffer2),
-                                        &gInBuffer2)))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 2,
+                                        sizeof(gInBuffer2), &gInBuffer2)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
-            if ((error = clSetKernelArg(kernels[j], 3, sizeof(gInBuffer3),
-                                        &gInBuffer3)))
+            if ((error = clSetKernelArg(kernels[j][thread_id], 3,
+                                        sizeof(gInBuffer3), &gInBuffer3)))
             {
                 LogBuildError(programs[j]);
-                goto exit;
+                return error;
             }
 
-            if ((error =
-                     clEnqueueNDRangeKernel(gQueue, kernels[j], 1, NULL,
-                                            &localCount, NULL, 0, NULL, NULL)))
+            if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j][thread_id],
+                                                1, NULL, &localCount, NULL, 0,
+                                                NULL, NULL)))
             {
                 vlog_error("FAILED -- could not execute kernel\n");
-                goto exit;
+                return error;
             }
         }
 
@@ -289,7 +287,7 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                                          BUFFER_SIZE, gOut[j], 0, NULL, NULL)))
             {
                 vlog_error("ReadArray failed %d\n", error);
-                goto exit;
+                return error;
             }
         }
 
@@ -617,8 +615,7 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                                    "%.13la, %.13la}: *%.13la vs. %.13la\n",
                                    f->name, sizeNames[k], err, s[j], s2[j],
                                    s3[j], ((double *)gOut_Ref)[j], test);
-                        error = -1;
-                        goto exit;
+                        return -1;
                     }
                 }
             }
@@ -653,12 +650,5 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
 
     vlog("\n");
 
-exit:
-    // Release
-    for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
-    {
-        clReleaseKernel(kernels[k]);
-    }
-
-    return error;
+    return CL_SUCCESS;
 }
