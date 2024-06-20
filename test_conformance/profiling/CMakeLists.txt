@@ -9,6 +9,7 @@ set(${MODULE_NAME}_SOURCES
     copy.cpp
     execute.cpp
     execute_multipass.cpp
+    profiling_timebase.cpp
 )
 
 include(../CMakeCommon.txt)
