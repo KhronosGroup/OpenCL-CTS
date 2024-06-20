@@ -328,7 +328,8 @@ int verify_saturated_results(cl_device_id deviceID, cl_context context,
 
     for (int i = 0; i < num; i++)
     {
-        To val = compute_saturated_output<Ti, Tl, To>(h_lhs[i], h_rhs[i], half_rounding);
+        To val = compute_saturated_output<Ti, Tl, To>(h_lhs[i], h_rhs[i],
+                                                      half_rounding);
 
         if (val != h_res[i])
         {
