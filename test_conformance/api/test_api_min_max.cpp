@@ -1569,7 +1569,7 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
     size_t threads[1], localThreads[1];
     cl_int *constantData, *resultData;
     cl_ulong maxSize, stepSize, currentSize, maxGlobalSize, maxAllocSize;
-    int i;
+    size_t i;
     cl_event event;
     cl_int event_status;
     MTdata d;
@@ -1599,6 +1599,7 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
     error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_MEM_ALLOC_SIZE,
                             sizeof(maxAllocSize), &maxAllocSize, 0);
     test_error(error, "Unable to get CL_DEVICE_MAX_MEM_ALLOC_SIZE ");
+    log_info("Reported max alloc size of %lld bytes.\n", maxAllocSize);
 
     if (maxSize > maxAllocSize) maxSize = maxAllocSize;
 
@@ -1632,7 +1633,7 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
             return EXIT_FAILURE;
         }
 
-        for (i = 0; i < (int)(numberOfInts); i++)
+        for (i = 0; i < numberOfInts; i++)
             constantData[i] = (int)genrand_int32(d);
 
         clMemWrapper streams[3];
@@ -1654,8 +1655,8 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
         /* Test running the kernel and verifying it */
         threads[0] = numberOfInts;
         localThreads[0] = 1;
-        log_info("Filling constant buffer with %d cl_ints (%d bytes).\n",
-                 (int)threads[0], (int)(threads[0] * sizeof(cl_int)));
+        log_info("Filling constant buffer with %lld cl_ints (%lld bytes).\n",
+                 threads[0], threads[0] * sizeof(cl_int));
 
         error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads,
                                        localThreads, 0, NULL, &event);
@@ -1720,12 +1721,13 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
                                     sizeToAllocate, resultData, 0, NULL, NULL);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        for (i = 0; i < (int)(numberOfInts); i++)
+        for (i = 0; i < numberOfInts; i++)
             if (constantData[i] != resultData[i])
             {
-                log_error("Data failed to verify: constantData[%d]=%d != "
-                          "resultData[%d]=%d\n",
-                          i, constantData[i], i, resultData[i]);
+                log_error("Data failed to verify: constantData[%zu]=%d != "
+                          "resultData[%zu]=%d\n",
+                          "resultData[%d]=%d\n", i, constantData[i], i,
+                          resultData[i]);
                 free(constantData);
                 free(resultData);
                 free_mtdata(d);
