@@ -324,10 +324,11 @@ int verify_saturated_results(cl_device_id deviceID, cl_context context,
     err = clEnqueueReadBuffer(queue, res, CL_TRUE, 0, out_bytes, &h_res[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read to output");
 
+    cl_half_rounding_mode half_rounding = get_half_rounding_mode(deviceID);
+
     for (int i = 0; i < num; i++)
     {
-        To val = compute_saturated_output<Ti, Tl, To>(h_lhs[i], h_rhs[i],
-                                                      get_half_rounding_mode(deviceID));
+        To val = compute_saturated_output<Ti, Tl, To>(h_lhs[i], h_rhs[i], half_rounding);
 
         if (val != h_res[i])
         {
