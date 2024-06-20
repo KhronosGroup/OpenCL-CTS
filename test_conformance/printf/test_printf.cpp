@@ -18,10 +18,12 @@
 #include "harness/stringHelpers.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdarg>
-#include <string.h>
 #include <errno.h>
 #include <memory>
+#include <string.h>
+#include <vector>
 
 #if ! defined( _WIN32)
 #if defined(__APPLE__)
