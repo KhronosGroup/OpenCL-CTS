@@ -19,6 +19,10 @@
 #include <ctype.h>
 #include <string.h>
 
+// Minimum limit for OpFunctionCall actual arguments is 255 according to
+// https://www.khronos.org/registry/SPIR-V/specs/unified1/SPIRV.html#_universal_validation_rules
+const unsigned int SPIRVMinLimitForFuncArgSize = 255;
+
 const char *sample_single_param_kernel[] = {
     "__kernel void sample_test(__global int *src)\n"
     "{\n"
@@ -340,6 +344,7 @@ int test_min_max_read_image_args(cl_device_id deviceID, cl_context context,
                  (int)(maxParameterSize / deviceAddressSize));
         maxReadImages = (unsigned int)(maxParameterSize / deviceAddressSize);
     }
+    maxReadImages = std::min(maxReadImages, SPIRVMinLimitForFuncArgSize);
 
     /* Create a program with that many read args */
     programSrc = (char *)malloc(strlen(sample_read_image_kernel_pattern[0])
@@ -349,13 +354,13 @@ int test_min_max_read_image_args(cl_device_id deviceID, cl_context context,
 
     strcpy(programSrc, sample_read_image_kernel_pattern[0]);
     strcat(programSrc, "read_only image2d_t srcimg0");
-    for (i = 0; i < maxReadImages - 1; i++)
+    for (i = 0; i < maxReadImages - 2; i++)
     {
         sprintf(readArgLine, readArgPattern, i + 1);
         strcat(programSrc, readArgLine);
     }
     strcat(programSrc, sample_read_image_kernel_pattern[1]);
-    for (i = 0; i < maxReadImages; i++)
+    for (i = 0; i < maxReadImages - 1; i++)
     {
         sprintf(
             readArgLine,
@@ -377,7 +382,7 @@ int test_min_max_read_image_args(cl_device_id deviceID, cl_context context,
 
     /* Create some I/O streams */
     streams = new clMemWrapper[maxReadImages + 1];
-    for (i = 0; i < maxReadImages; i++)
+    for (i = 0; i < maxReadImages - 1; i++)
     {
         image_data[0] = i;
         image_result += image_data[0];
@@ -391,7 +396,7 @@ int test_min_max_read_image_args(cl_device_id deviceID, cl_context context,
     test_error(error, "Unable to set kernel arguments");
 
     /* Set the arguments */
-    for (i = 1; i < maxReadImages + 1; i++)
+    for (i = 1; i < maxReadImages; i++)
     {
         error =
             clSetKernelArg(kernel, i, sizeof(streams[i - 1]), &streams[i - 1]);
@@ -490,6 +495,7 @@ int test_min_max_write_image_args(cl_device_id deviceID, cl_context context,
                  (int)(maxParameterSize / sizeof(cl_mem)));
         maxWriteImages = (unsigned int)(maxParameterSize / sizeof(cl_mem));
     }
+    maxWriteImages = std::min(maxWriteImages, SPIRVMinLimitForFuncArgSize);
 
     /* Create a program with that many write args + 1 */
     programSrc = (char *)malloc(
@@ -1190,7 +1196,7 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context,
     char *programSrc;
     char *ptr;
     size_t numberExpected;
-    long numberOfIntParametersToTry;
+    unsigned int numberOfIntParametersToTry;
     char *argumentLine, *codeLines;
     void *data;
     cl_long long_result, expectedResult;
@@ -1219,12 +1225,14 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context,
     /* The embedded profile without cles_khr_int64 extension does not require
      * longs, so use ints */
     if (embeddedNoLong)
-        numberOfIntParametersToTry = numberExpected =
+        numberOfIntParametersToTry =
             (maxSize - sizeof(cl_mem)) / sizeof(cl_int);
     else
-        numberOfIntParametersToTry = numberExpected =
+        numberOfIntParametersToTry =
             (maxSize - sizeof(cl_mem)) / sizeof(cl_long);
 
+    numberOfIntParametersToTry = numberExpected =
+        std::min(numberOfIntParametersToTry, SPIRVMinLimitForFuncArgSize) - 1;
     decrement = (size_t)(numberOfIntParametersToTry / 8);
     if (decrement < 1) decrement = 1;
     log_info("Reported max parameter size of %d bytes.\n", (int)maxSize);
@@ -1482,7 +1490,7 @@ int test_min_max_samplers(cl_device_id deviceID, cl_context context,
                  (int)(maxParameterSize / sizeof(cl_sampler)));
         maxSamplers = (unsigned int)(maxParameterSize / sizeof(cl_sampler));
     }
-
+    maxSamplers = std::min(maxSamplers, SPIRVMinLimitForFuncArgSize);
     /* Create a kernel to test with */
     programSrc = (char *)malloc(
         (strlen(sample_sampler_kernel_pattern[1]) + 8) * (maxSamplers)
@@ -1491,13 +1499,13 @@ int test_min_max_samplers(cl_device_id deviceID, cl_context context,
         + (strlen(sample_sampler_kernel_pattern[3]) + 8) * maxSamplers
         + strlen(sample_sampler_kernel_pattern[4]));
     strcpy(programSrc, sample_sampler_kernel_pattern[0]);
-    for (i = 0; i < maxSamplers; i++)
+    for (i = 0; i < maxSamplers - 2; i++)
     {
         sprintf(samplerLine, sample_sampler_kernel_pattern[1], i);
         strcat(programSrc, samplerLine);
     }
     strcat(programSrc, sample_sampler_kernel_pattern[2]);
-    for (i = 0; i < maxSamplers; i++)
+    for (i = 0; i < maxSamplers - 2; i++)
     {
         sprintf(samplerLine, sample_sampler_kernel_pattern[3], i);
         strcat(programSrc, samplerLine);
@@ -1526,7 +1534,7 @@ int test_min_max_samplers(cl_device_id deviceID, cl_context context,
     error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &image);
     error |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &stream);
     test_error(error, "Unable to set kernel arguments");
-    for (i = 0; i < maxSamplers; i++)
+    for (i = 0; i < maxSamplers - 2; i++)
     {
         samplers[i] = clCreateSampler(context, CL_FALSE, CL_ADDRESS_NONE,
                                       CL_FILTER_NEAREST, &error);
@@ -1798,7 +1806,7 @@ int test_min_max_constant_args(cl_device_id deviceID, cl_context context,
                  (int)(maxParameterSize / sizeof(cl_mem)));
         maxArgs = (unsigned int)(maxParameterSize / sizeof(cl_mem));
     }
-
+    maxArgs = std::min(maxArgs, SPIRVMinLimitForFuncArgSize);
 
     if (maxArgs < (gIsEmbedded ? 4 : 8))
     {
@@ -1826,7 +1834,7 @@ int test_min_max_constant_args(cl_device_id deviceID, cl_context context,
     /* Create a test program */
     constArgs[0] = 0;
     str2[0] = 0;
-    for (i = 0; i < maxArgs - 1; i++)
+    for (i = 0; i < maxArgs - 2; i++)
     {
         sprintf(str, ", __constant int *src%d", (int)(i + 2));
         strcat(constArgs, str);
@@ -1853,8 +1861,8 @@ int test_min_max_constant_args(cl_device_id deviceID, cl_context context,
     }
 
     /* Create some I/O streams */
-    streams = new clMemWrapper[maxArgs + 1];
-    for (i = 0; i < maxArgs + 1; i++)
+    streams = new clMemWrapper[maxArgs];
+    for (i = 0; i < maxArgs; i++)
     {
         streams[i] = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                     individualBufferSize, NULL, &error);
@@ -1862,7 +1870,7 @@ int test_min_max_constant_args(cl_device_id deviceID, cl_context context,
     }
 
     /* Set the arguments */
-    for (i = 0; i < maxArgs + 1; i++)
+    for (i = 0; i < maxArgs; i++)
     {
         error = clSetKernelArg(kernel, i, sizeof(streams[i]), &streams[i]);
         test_error(error, "Unable to set kernel argument");
