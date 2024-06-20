@@ -146,6 +146,8 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(consistency_3d_image_writes, Version(3, 0)),
 
     ADD_TEST(min_image_formats),
+    ADD_TEST(set_command_queue_property),
+
     ADD_TEST(negative_get_platform_info),
     ADD_TEST(negative_get_platform_ids),
 
