@@ -592,7 +592,7 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                                                   test_value[0] & 0x1F,
                                                   (test_value[0] >> 5) & 0x3F,
                                                   (test_value[0] >> 11) & 0x1F);
-                                        log_error("    Error:    %f %f %f %f\n",
+                                        log_error("    Error:    %f %f %f\n",
                                                   errors[0], errors[1],
                                                   errors[2]);
                                         break;
@@ -618,7 +618,7 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                                                   test_value[0] & 0x1F,
                                                   (test_value[0] >> 5) & 0x1F,
                                                   (test_value[0] >> 10) & 0x1F);
-                                        log_error("    Error:    %f %f %f %f\n",
+                                        log_error("    Error:    %f %f %f\n",
                                                   errors[0], errors[1],
                                                   errors[2]);
                                         break;

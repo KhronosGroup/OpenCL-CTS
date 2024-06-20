@@ -542,8 +542,7 @@ int test_read_image_2D_array( cl_context context, cl_command_queue queue, cl_ker
         float lod_float = (float)lod;
         if( gTestMipmaps )
         {
-            if(gDebugTrace)
-                log_info(" - Working at mip level %d\n", lod);
+            if (gDebugTrace) log_info(" - Working at mip level %zu\n", lod);
             error = clSetKernelArg( kernel, idx, sizeof(float), &lod_float);
         }
     for( int q = 0; q < loopCount; q++ )

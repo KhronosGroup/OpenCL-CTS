@@ -17,6 +17,7 @@
 #include <float.h>
 
 #include <algorithm>
+#include <cinttypes>
 
 #if defined( __APPLE__ )
     #include <signal.h>
@@ -1481,8 +1482,7 @@ int test_read_image_2D( cl_context context, cl_command_queue queue, cl_kernel ke
         char *imagePtr = (char *)imageValues + nextLevelOffset;
         if( gTestMipmaps )
         {
-            if(gDebugTrace)
-                log_info("\t- Working at mip level %d\n", lod);
+            if (gDebugTrace) log_info("\t- Working at mip level %zu\n", lod);
             error = clSetKernelArg( kernel, idx, sizeof(float), &lod_float);
         }
 
@@ -1743,7 +1743,10 @@ int test_read_image_set_2D(cl_device_id device, cl_context context,
         do
         {
             if( gDebugTrace )
-                log_info( "   at size %d,%d, starting round ramp at %llu for range %llu\n", (int)imageInfo.width, (int)imageInfo.height, gRoundingStartValue, typeRange );
+                log_info("   at size %d,%d, starting round ramp at %" PRIu64
+                         " for range %" PRIu64 "\n",
+                         (int)imageInfo.width, (int)imageInfo.height,
+                         gRoundingStartValue, typeRange);
             int retCode = test_read_image_2D( context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
             if( retCode )
                 return retCode;
