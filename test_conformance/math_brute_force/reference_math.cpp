@@ -691,7 +691,7 @@ double reference_rootn(double x, int i)
     double sign = x;
     x = reference_fabs(x);
     x = reference_exp2(reference_log2(x) / (double)i);
-    return reference_copysignd(x, sign);
+    return reference_copysign(x, sign);
 }
 
 double reference_rsqrt(double x) { return 1.0 / reference_sqrt(x); }
@@ -707,7 +707,7 @@ double reference_sinpi(double x)
         r = 1 - r;
 
     // sinPi zeros have the same sign as x
-    if (r == 0.0) return reference_copysignd(0.0, x);
+    if (r == 0.0) return reference_copysign(0.0, x);
 
     return reference_sin(r * M_PI);
 }
@@ -717,7 +717,7 @@ double reference_relaxed_sinpi(double x) { return reference_sinpi(x); }
 double reference_tanpi(double x)
 {
     // set aside the sign  (allows us to preserve sign of -0)
-    double sign = reference_copysignd(1.0, x);
+    double sign = reference_copysign(1.0, x);
     double z = reference_fabs(x);
 
     // if big and even  -- caution: only works if x only has single precision
@@ -725,7 +725,7 @@ double reference_tanpi(double x)
     {
         if (z == INFINITY) return x - x; // nan
 
-        return reference_copysignd(
+        return reference_copysign(
             0.0, x); // tanpi ( n ) is copysign( 0.0, n)  for even integers n.
     }
 
@@ -739,7 +739,7 @@ double reference_tanpi(double x)
     if ((i & 1) && z == 0.0) sign = -sign;
 
     // track changes to the sign
-    sign *= reference_copysignd(1.0, z); // really should just be an xor
+    sign *= reference_copysign(1.0, z); // really should just be an xor
     z = reference_fabs(z); // remove the sign again
 
     // reduce once more
@@ -1070,7 +1070,7 @@ int reference_signbit(float x) { return 0 != signbit(x); }
 // Missing functions for win32
 
 
-float reference_copysign(float x, float y)
+float reference_copysignf(float x, float y)
 {
     union {
         float f;
@@ -1084,7 +1084,7 @@ float reference_copysign(float x, float y)
 }
 
 
-double reference_copysignd(double x, double y)
+double reference_copysign(double x, double y)
 {
     union {
         double f;
@@ -1101,10 +1101,10 @@ double reference_copysignd(double x, double y)
 double reference_round(double x)
 {
     double absx = reference_fabs(x);
-    if (absx < 0.5) return reference_copysignd(0.0, x);
+    if (absx < 0.5) return reference_copysign(0.0, x);
 
     if (absx < HEX_DBL(+, 1, 0, +, 53))
-        x = reference_trunc(x + reference_copysignd(0.5, x));
+        x = reference_trunc(x + reference_copysign(0.5, x));
 
     return x;
 }
@@ -1115,7 +1115,7 @@ double reference_trunc(double x)
     {
         cl_long l = (cl_long)x;
 
-        return reference_copysignd((double)l, x);
+        return reference_copysign((double)l, x);
     }
 
     return x;
@@ -1132,16 +1132,16 @@ double reference_trunc(double x)
 
 double reference_cbrt(double x)
 {
-    return reference_copysignd(reference_pow(reference_fabs(x), 1.0 / 3.0), x);
+    return reference_copysign(reference_pow(reference_fabs(x), 1.0 / 3.0), x);
 }
 
 double reference_rint(double x)
 {
     if (reference_fabs(x) < HEX_DBL(+, 1, 0, +, 52))
     {
-        double magic = reference_copysignd(HEX_DBL(+, 1, 0, +, 52), x);
+        double magic = reference_copysign(HEX_DBL(+, 1, 0, +, 52), x);
         double rounded = (x + magic) - magic;
-        x = reference_copysignd(rounded, x);
+        x = reference_copysign(rounded, x);
     }
 
     return x;
@@ -1174,7 +1174,7 @@ double reference_asinh(double x)
     double absx = reference_fabs(x);
     if (absx < HEX_DBL(+, 1, 0, -, 28)) return x;
 
-    double sign = reference_copysignd(1.0, x);
+    double sign = reference_copysign(1.0, x);
 
     if (absx > HEX_DBL(+, 1, 0, +, 28))
         return sign
@@ -1206,7 +1206,7 @@ double reference_atanh(double x)
      */
     if (isnan(x)) return x + x;
 
-    double signed_half = reference_copysignd(0.5, x);
+    double signed_half = reference_copysign(0.5, x);
     x = reference_fabs(x);
     if (x > 1.0) return cl_make_nan();
 
@@ -5333,7 +5333,7 @@ double reference_pow(double x, double y)
     __log2_ep(&hi, &lo, fabsx);
     double prod = y * hi;
     double result = reference_exp2(prod);
-    return isOddInt ? reference_copysignd(result, x) : result;
+    return isOddInt ? reference_copysign(result, x) : result;
 }
 
 double reference_sqrt(double x) { return sqrt(x); }
