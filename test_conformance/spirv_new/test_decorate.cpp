@@ -229,7 +229,7 @@ static inline To compute_saturated_output(Ti lhs, Ti rhs)
         f = cl_half_to_float(cl_half_from_float(f, CL_HALF_RTE));
 
         To val = (To)std::min<float>(std::max<float>(f, loVal), hiVal);
-        if (isnan(cl_half_from_float(rhs, CL_HALF_RTE)))
+        if (isnan(cl_half_to_float(rhs)))
         {
             val = 0;
         }
@@ -309,7 +309,7 @@ int verify_saturated_results(cl_device_id deviceID, cl_context context,
 
         if (val != h_res[i])
         {
-            log_error("Value error at %d: got %d, want %d\n", i, val, h_res[i]);
+            log_error("Value error at %d: got %d, want %d\n", i, h_res[i], val);
             return -1;
         }
     }
