@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Install packages
-        run: sudo apt install -y clang-format clang-format-11
+        run: sudo apt install -y clang-format clang-format-14
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
