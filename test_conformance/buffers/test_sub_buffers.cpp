@@ -16,6 +16,7 @@
 #include "procs.h"
 
 #include <algorithm>
+#include <vector>
 
 // Design:
 // To test sub buffers, we first create one main buffer. We then create several sub-buffers and
@@ -413,16 +414,13 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
     size_t param_size;
     error = clGetDeviceInfo(otherDevice, CL_DEVICE_NAME, 0, NULL, &param_size );
     test_error( error, "Error obtaining device name" );
+    std::vector<char> device_name(param_size);
 
-#if !(defined(_WIN32) && defined(_MSC_VER))
-    char device_name[param_size];
-#else
-    char* device_name = (char*)_malloca(param_size);
-#endif
     error = clGetDeviceInfo(otherDevice, CL_DEVICE_NAME, param_size, &device_name[0], NULL );
     test_error( error, "Error obtaining device name" );
 
-    log_info( "\tOther device obtained for dual device test is type %s\n", device_name );
+    log_info("\tOther device obtained for dual device test is type %s\n",
+             device_name.data());
 
     // Create a shared context for these two devices
     cl_device_id devices[ 2 ] = { deviceID, otherDevice };
@@ -453,7 +451,6 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
     test_error( error, "Unable to get secondary device's address alignment" );
 
     cl_uint addressAlign1 = std::max(addressAlign1Bits, addressAlign2Bits) / 8;
-
     // Finally time to run!
     return test_sub_buffers_read_write_core( testingContext, queue1, queue2, maxBuffer1, addressAlign1 );
 }

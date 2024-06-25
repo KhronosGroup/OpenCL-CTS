@@ -15,7 +15,7 @@
 //
 
 #include <iomanip>
-
+#include <vector>
 #include "testBase.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
@@ -618,31 +618,25 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
     if( error != 0 )
         return error;
 
-    typeSize = get_explicit_type_size( vecType );
+    typeSize = get_explicit_type_size(vecType);
+    std::vector<cl_long> inData(inVecSize * numOrders);
+    std::vector<cl_long> inSecondData(inVecSize * numOrders);
+    std::vector<cl_long> outData(outRealVecSize * numOrders);
 
-#if !(defined(_WIN32) && defined (_MSC_VER))
-    cl_long inData[ inVecSize * numOrders ];
-    cl_long inSecondData[ inVecSize * numOrders ];
-    cl_long outData[ outRealVecSize * numOrders ];
-#else
-    cl_long* inData  = (cl_long*)_malloca(inVecSize * numOrders * sizeof(cl_long));
-    cl_long* inSecondData  = (cl_long*)_malloca(inVecSize * numOrders * sizeof(cl_long));
-    cl_long* outData = (cl_long*)_malloca(outRealVecSize * numOrders * sizeof(cl_long));
-#endif
-    memset(outData, 0, outRealVecSize * numOrders * sizeof(cl_long) );
-
-    generate_random_data( vecType, (unsigned int)( numOrders * inVecSize ), d, inData );
+    generate_random_data(vecType, (unsigned int)(numOrders * inVecSize), d,
+                         inData.data());
     if( shuffleMode == kBuiltInDualInputFnMode )
-        generate_random_data( vecType, (unsigned int)( numOrders * inVecSize ), d, inSecondData );
+        generate_random_data(vecType, (unsigned int)(numOrders * inVecSize), d,
+                             inSecondData.data());
 
     streams[0] =
         clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                       typeSize * inVecSize * numOrders, inData, &error);
+                       typeSize * inVecSize * numOrders, inData.data(), &error);
     test_error( error, "Unable to create input stream" );
 
-    streams[1] =
-        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                       typeSize * outRealVecSize * numOrders, outData, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                typeSize * outRealVecSize * numOrders,
+                                outData.data(), &error);
     test_error( error, "Unable to create output stream" );
 
     int argIndex = 0;
@@ -650,7 +644,7 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
     {
         streams[2] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
                                     typeSize * inVecSize * numOrders,
-                                    inSecondData, &error);
+                                    inSecondData.data(), &error);
         test_error( error, "Unable to create second input stream" );
 
         error = clSetKernelArg( kernel, argIndex++, sizeof( streams[ 2 ] ), &streams[ 2 ] );
@@ -675,12 +669,14 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
 
 
     // Read the results back
-    error = clEnqueueReadBuffer( queue, streams[ 1 ], CL_TRUE, 0, typeSize * numOrders * outRealVecSize, outData, 0, NULL, NULL );
+    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0,
+                                typeSize * numOrders * outRealVecSize,
+                                outData.data(), 0, NULL, NULL);
     test_error( error, "Unable to read results" );
 
-    unsigned char *inDataPtr = (unsigned char *)inData;
-    unsigned char *inSecondDataPtr = (unsigned char *)inSecondData;
-    unsigned char *outDataPtr = (unsigned char *)outData;
+    unsigned char *inDataPtr = (unsigned char *)inData.data();
+    unsigned char *inSecondDataPtr = (unsigned char *)inSecondData.data();
+    unsigned char *outDataPtr = (unsigned char *)outData.data();
     int ret = 0;
     int errors_printed = 0;
     for( size_t i = 0; i < numOrders; i++ )
