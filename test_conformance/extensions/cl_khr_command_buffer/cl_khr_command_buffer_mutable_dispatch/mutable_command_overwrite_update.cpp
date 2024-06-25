@@ -156,6 +156,8 @@ struct OverwriteUpdateDispatch : BasicMutableCommandBufferTest
                                                { 1, sizeof(unused_mem),
                                                  &unused_mem } };
 
+#if CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_VERSION                   \
+    < CL_MAKE_VERSION(0, 9, 2)
         cl_mutable_dispatch_config_khr dispatch_config{
             CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
             nullptr,
@@ -179,13 +181,46 @@ struct OverwriteUpdateDispatch : BasicMutableCommandBufferTest
 
         error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
+#else
+        cl_mutable_dispatch_config_khr dispatch_config{
+            command,
+            2 /* num_args */,
+            0 /* num_svm_arg */,
+            0 /* num_exec_infos */,
+            0 /* work_dim - 0 means no change to dimensions */,
+            args /* arg_list */,
+            nullptr /* arg_svm_list - nullptr means no change*/,
+            nullptr /* exec_info_list */,
+            nullptr /* global_work_offset */,
+            nullptr /* global_work_size */,
+            nullptr /* local_work_size */
+        };
+
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
+        };
+        const void *configs[1] = { &dispatch_config };
+
+        error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
+                                           config_types, configs);
+        test_error(error, "clUpdateMutableCommandsKHR failed");
+#endif // CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_VERSION
+
 
         // overwrite previous update of mutable arguments
         args[0].arg_value = &pattern_sec;
         args[1].arg_value = &new_out_mem;
 
+#if CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_VERSION                   \
+    < CL_MAKE_VERSION(0, 9, 2)
         error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
         test_error(error, "clUpdateMutableCommandsKHR failed");
+#else
+        error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
+                                           config_types, configs);
+        test_error(error, "clUpdateMutableCommandsKHR failed");
+#endif // CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_VERSION
 
         error = clEnqueueFillBuffer(queue, new_out_mem, &pattern_pri,
                                     sizeof(cl_int), 0, data_size(), 0, nullptr,
