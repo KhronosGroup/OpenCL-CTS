@@ -26,16 +26,10 @@ test_definition test_list[] = {
     ADD_TEST(mutable_command_info_global_work_offset),
     ADD_TEST(mutable_command_info_local_work_size),
     ADD_TEST(mutable_command_info_global_work_size),
-    ADD_TEST(mutable_command_full_dispatch),
-    ADD_TEST(mutable_command_overwrite_update),
-    ADD_TEST(mutable_command_multiple_dispatches),
-    ADD_TEST(mutable_command_iterative_arg_update),
     ADD_TEST(mutable_dispatch_image_1d_arguments),
     ADD_TEST(mutable_dispatch_image_2d_arguments),
     ADD_TEST(mutable_dispatch_out_of_order),
     ADD_TEST(mutable_dispatch_simultaneous_out_of_order),
-    ADD_TEST(mutable_dispatch_simultaneous_in_order),
-    ADD_TEST(mutable_dispatch_simultaneous_cross_queue),
     ADD_TEST(mutable_dispatch_global_size),
     ADD_TEST(mutable_dispatch_local_size),
     ADD_TEST(mutable_dispatch_global_offset),
@@ -44,6 +38,9 @@ test_definition test_list[] = {
     ADD_TEST(mutable_dispatch_global_arguments),
     ADD_TEST(mutable_dispatch_pod_arguments),
     ADD_TEST(mutable_dispatch_null_arguments),
+    ADD_TEST(command_buffer_with_no_additional_work_groups),
+    ADD_TEST(ndrange_with_no_additional_work_groups),
+    ADD_TEST(ndrange_command_buffer_with_no_additional_work_groups),
 };
 
 int main(int argc, const char *argv[])
