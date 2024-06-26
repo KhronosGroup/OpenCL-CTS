@@ -44,6 +44,9 @@ test_definition test_list[] = {
     ADD_TEST(mutable_dispatch_global_arguments),
     ADD_TEST(mutable_dispatch_pod_arguments),
     ADD_TEST(mutable_dispatch_null_arguments),
+    ADD_TEST(command_buffer_with_no_additional_work_groups),
+    ADD_TEST(ndrange_with_no_additional_work_groups),
+    ADD_TEST(ndrange_command_buffer_with_no_additional_work_groups),
 };
 
 int main(int argc, const char *argv[])
