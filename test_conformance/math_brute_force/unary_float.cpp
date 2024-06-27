@@ -489,7 +489,6 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     cl_int error;
     float maxError = 0.0f;
     double maxErrorVal = 0.0;
-    int skipTestingRelaxed = (relaxedMode && strcmp(f->name, "tan") == 0);
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
@@ -583,7 +582,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         return error;
 
     // Run the kernels
-    if (!gSkipCorrectnessTesting || skipTestingRelaxed)
+    if (!gSkipCorrectnessTesting)
     {
         error = ThreadPool_Do(Test, test_info.jobCount, &test_info);
         if (error) return error;
@@ -602,12 +601,6 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             vlog("Wimp pass");
         else
             vlog("passed");
-
-        if (skipTestingRelaxed)
-        {
-            vlog(" (rlx skip correctness testing)\n");
-            return error;
-        }
 
         vlog("\t%8.2f @ %a", maxError, maxErrorVal);
     }
