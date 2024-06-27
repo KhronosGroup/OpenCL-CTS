@@ -324,7 +324,11 @@ int verify_saturated_results(cl_device_id deviceID, cl_context context,
     err = clEnqueueReadBuffer(queue, res, CL_TRUE, 0, out_bytes, &h_res[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read to output");
 
-    cl_half_rounding_mode half_rounding = get_half_rounding_mode(deviceID);
+    cl_half_rounding_mode half_rounding = CL_HALF_RTE;
+    if (std::is_same<Ti, cl_half>::value)
+    {
+        half_rounding = get_half_rounding_mode(deviceID);
+    }
 
     for (int i = 0; i < num; i++)
     {
