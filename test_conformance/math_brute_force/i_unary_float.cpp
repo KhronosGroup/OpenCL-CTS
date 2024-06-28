@@ -63,6 +63,8 @@ int TestFunc_Int_Float(const Func *f, MTdata d, bool relaxedMode)
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
+        if (gSkipCorrectnessTesting) break;
+
         // Init input array
         cl_uint *p = (cl_uint *)gIn;
         if (gWimpyMode)
@@ -161,8 +163,6 @@ int TestFunc_Int_Float(const Func *f, MTdata d, bool relaxedMode)
                 return error;
             }
         }
-
-        if (gSkipCorrectnessTesting) break;
 
         // Verify data
         uint32_t *t = (uint32_t *)gOut_Ref;
