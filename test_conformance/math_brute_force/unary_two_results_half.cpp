@@ -72,6 +72,8 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
 
     for (uint64_t i = 0; i < (1ULL << 16); i += step)
     {
+        if (gSkipCorrectnessTesting) break;
+
         // Init input array
         cl_half *pIn = (cl_half *)gIn;
         for (size_t j = 0; j < bufferElements; j++) pIn[j] = (cl_ushort)i + j;
@@ -229,12 +231,6 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
                 vlog_error("ReadArray2 failed %d\n", error);
                 return error;
             }
-        }
-
-        if (gSkipCorrectnessTesting)
-        {
-            if (isFract && gIsInRTZMode) (void)set_round(oldRoundMode, kfloat);
-            break;
         }
 
         // Verify data

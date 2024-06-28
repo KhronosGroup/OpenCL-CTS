@@ -63,6 +63,8 @@ int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
     }
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
+        if (gSkipCorrectnessTesting) break;
+
         // Init input array
         cl_ushort *p = (cl_ushort *)gIn;
         cl_ushort *p2 = (cl_ushort *)gIn2;
@@ -172,8 +174,6 @@ int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
                 return error;
             }
         }
-
-        if (gSkipCorrectnessTesting) break;
 
         // Verify data - no verification possible. MAD is a random number
         // generator.

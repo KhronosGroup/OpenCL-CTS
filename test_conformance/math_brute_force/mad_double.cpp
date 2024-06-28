@@ -61,6 +61,8 @@ int TestFunc_mad_Double(const Func *f, MTdata d, bool relaxedMode)
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
+        if (gSkipCorrectnessTesting) break;
+
         // Init input array
         double *p = (double *)gIn;
         double *p2 = (double *)gIn2;
@@ -185,8 +187,6 @@ int TestFunc_mad_Double(const Func *f, MTdata d, bool relaxedMode)
                 return error;
             }
         }
-
-        if (gSkipCorrectnessTesting) break;
 
         // Verify data -- No verification possible.
         // MAD is a random number generator.

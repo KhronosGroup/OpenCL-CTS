@@ -84,6 +84,8 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
 
     for (uint64_t i = 0; i < (1ULL << 16); i += step)
     {
+        if (gSkipCorrectnessTesting) break;
+
         // Init input array
         cl_half *pIn = (cl_half *)gIn;
         for (size_t j = 0; j < bufferElements; j++) pIn[j] = (cl_ushort)i + j;
@@ -205,8 +207,6 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
                 return error;
             }
         }
-
-        if (gSkipCorrectnessTesting) break;
 
         // Verify data
         for (size_t j = 0; j < bufferElements; j++)

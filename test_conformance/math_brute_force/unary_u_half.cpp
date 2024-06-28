@@ -67,6 +67,8 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
+        if (gSkipCorrectnessTesting) break;
+
         // Init input array
         cl_ushort *p = (cl_ushort *)gIn;
         for (size_t j = 0; j < bufferElements; j++) p[j] = (uint16_t)i + j;
@@ -154,8 +156,6 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
                 return error;
             }
         }
-
-        if (gSkipCorrectnessTesting) break;
 
         // Verify data
         cl_ushort *t = (cl_ushort *)gOut_Ref;

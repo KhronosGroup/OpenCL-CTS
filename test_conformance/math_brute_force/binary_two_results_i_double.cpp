@@ -104,6 +104,8 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
+        if (gSkipCorrectnessTesting) break;
+
         // Init input array
         double *p = (double *)gIn;
         double *p2 = (double *)gIn2;
@@ -263,8 +265,6 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                 return error;
             }
         }
-
-        if (gSkipCorrectnessTesting) break;
 
         // Verify data
         uint64_t *t = (uint64_t *)gOut_Ref;

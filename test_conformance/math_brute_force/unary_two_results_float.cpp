@@ -68,6 +68,8 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
+        if (gSkipCorrectnessTesting) break;
+
         // Init input array
         uint32_t *p = (uint32_t *)gIn;
         if (gWimpyMode)
@@ -256,12 +258,6 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
                 vlog_error("ReadArray2 failed %d\n", error);
                 return error;
             }
-        }
-
-        if (gSkipCorrectnessTesting)
-        {
-            if (isFract && gIsInRTZMode) (void)set_round(oldRoundMode, kfloat);
-            break;
         }
 
         // Verify data
