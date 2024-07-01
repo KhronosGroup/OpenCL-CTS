@@ -95,6 +95,8 @@ test_definition test_list[] = {
     ADD_TEST(native_kernel),
 
     ADD_TEST(create_context_from_type),
+    ADD_TEST(create_context_from_type_device_type_all),
+    ADD_TEST(create_context_from_type_device_type_default),
 
     ADD_TEST(platform_extensions),
     ADD_TEST(get_platform_ids),
