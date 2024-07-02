@@ -38,10 +38,7 @@ values, followed by a few billion random values. If an error is found in a funct
 the test for that function terminates early, reports an error, and moves on to the 
 next test, if any.
 
-The test currently doesn't support half precision math functions covered in section 
-9 of the OpenCL 1.0 specification, but does cover the half_func functions covered in 
-section six. It also doesn't test the native_<funcname> functions, for which any result 
-is conformant.  
+This test doesn't test the native_<funcname> functions, for which any result is conformant.
 
 For the OpenCL 1.0 time frame, the reference library shall be the operating system 
 math library, as modified by the test itself to conform to the OpenCL specification. 
