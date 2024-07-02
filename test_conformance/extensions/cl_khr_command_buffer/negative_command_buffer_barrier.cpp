@@ -37,6 +37,13 @@ struct CommandBufferBarrierNotNullQueue : public BasicCommandBufferTest
 
         return CL_SUCCESS;
     }
+
+    bool Skip() override
+    {
+        if (BasicCommandBufferTest::Skip()) return true;
+        return is_extension_available(device,
+                                      "cl_khr_command_buffer_multi_device");
+    }
 };
 
 // CL_INVALID_COMMAND_BUFFER_KHR if command_buffer is not a valid

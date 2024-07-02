@@ -50,6 +50,13 @@ struct CommandBufferCommandSVMQueueNotNull : public BasicSVMCommandBufferTest
     }
 
     const cl_char pattern_1 = 0x14;
+
+    bool Skip() override
+    {
+        if (BasicSVMCommandBufferTest::Skip()) return true;
+        return is_extension_available(device,
+                                      "cl_khr_command_buffer_multi_device");
+    }
 };
 
 // CL_INVALID_SYNC_POINT_WAIT_LIST_KHR if sync_point_wait_list is NULL and

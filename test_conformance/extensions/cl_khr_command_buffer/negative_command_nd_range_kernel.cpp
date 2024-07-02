@@ -38,6 +38,13 @@ struct CommandNDRangeKernelQueueNotNull : public BasicCommandBufferTest
 
         return CL_SUCCESS;
     }
+
+    bool Skip() override
+    {
+        if (BasicCommandBufferTest::Skip()) return true;
+        return is_extension_available(device,
+                                      "cl_khr_command_buffer_multi_device");
+    }
 };
 
 // CL_INVALID_CONTEXT if the context associated with command_queue,
@@ -108,7 +115,7 @@ struct CommandNDRangeKerneSyncPointsNullOrNumZero
         cl_sync_point_khr invalid_point = 0;
         cl_sync_point_khr* invalid_sync_points[] = { &invalid_point };
         cl_int error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 0, nullptr, &num_elements,
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
             nullptr, 1, invalid_sync_points[0], nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
@@ -134,7 +141,7 @@ struct CommandNDRangeKerneSyncPointsNullOrNumZero
 
         cl_sync_point_khr* sync_points[] = { &point };
         error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 0, nullptr, &num_elements,
+            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
             nullptr, 0, sync_points[0], nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
