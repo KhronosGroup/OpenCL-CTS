@@ -35,6 +35,15 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(semaphores_multi_wait, Version(1, 2)),
     ADD_TEST_VERSION(semaphores_queries, Version(1, 2)),
     ADD_TEST_VERSION(semaphores_import_export_fd, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_negative_wait_invalid_command_queue,
+                     Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_negative_wait_invalid_value, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_negative_wait_invalid_semaphore, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_negative_wait_invalid_context, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_negative_wait_invalid_event_wait_list,
+                     Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_negative_wait_invalid_event_status,
+                     Version(1, 2)),
 };
 
 const int test_num = ARRAY_SIZE(test_list);
