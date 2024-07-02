@@ -24,19 +24,6 @@
 #include "procs.h"
 #include <CL/cl_ext.h>
 
-/** @brief Gets the number of elements of type s in a fixed length array of s */
-#define NELEMS(s) (sizeof(s) / sizeof((s)[0]))
-#define test_error_ret_and_free(errCode, msg, retValue, ptr)                   \
-    {                                                                          \
-        auto errCodeResult = errCode;                                          \
-        if (errCodeResult != CL_SUCCESS)                                       \
-        {                                                                      \
-            print_error(errCodeResult, msg);                                   \
-            free(ptr);                                                         \
-            return retValue;                                                   \
-        }                                                                      \
-    }
-
 const char* wg_scan_local_work_group_size = R"(
     bool is_zero_linear_id()
     {
@@ -107,7 +94,6 @@ bool is_not_even(size_t a) { return (is_prime(a) || (a % 2 == 1)); }
 
 bool is_not_odd(size_t a) { return (is_prime(a) || (a % 2 == 0)); }
 
-#define NELEMS(s) (sizeof(s) / sizeof((s)[0]))
 /* The value_range_nD contains numbers to be used for the experiments with 2D
    and 3D global work sizes. This is because we need smaller numbers so that the
    resulting number of work items is meaningful and does not become too large.
@@ -265,7 +251,7 @@ int do_test_work_group_suggested_local_size(
         // return error if no number is found due to the skip condition
         err = -1;
         unsigned int j = 0;
-        size_t num_elems = NELEMS(value_range_nD);
+        size_t num_elems = ARRAY_SIZE(value_range_nD);
         for (size_t i = start; i < end; i += incr)
         {
             if (skip_cond(i)) continue;

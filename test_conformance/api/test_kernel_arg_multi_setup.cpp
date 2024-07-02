@@ -27,8 +27,6 @@ const char *multi_arg_kernel_source_pattern =
 "    dst3[tid] = src3[tid];\n"
 "}\n";
 
-#define MAX_ERROR_TOLERANCE 0.0005f
-
 int test_multi_arg_set(cl_device_id device, cl_context context, cl_command_queue queue,
                        ExplicitType vec1Type, int vec1Size,
                        ExplicitType vec2Type, int vec2Size,

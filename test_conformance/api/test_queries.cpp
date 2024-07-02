@@ -507,20 +507,6 @@ int test_get_context_info(cl_device_id deviceID, cl_context context, cl_command_
     return -1;
 }
 
-#define TEST_MEM_OBJECT_PARAM( mem, paramName, val, expected, name, type, cast )    \
-error = clGetMemObjectInfo( mem, paramName, sizeof( val ), &val, &size );        \
-test_error( error, "Unable to get mem object " name );                            \
-if( val != expected )                                                                \
-{                                                                                    \
-log_error( "ERROR: Mem object " name " did not validate! (expected " type ", got " type ")\n", (cast)(expected), (cast)val );    \
-return -1;                                                                        \
-}            \
-if( size != sizeof( val ) )                \
-{                                        \
-log_error( "ERROR: Returned size of mem object " name " does not validate! (expected %d, got %d)\n", (int)sizeof( val ), (int)size );    \
-return -1;    \
-}
-
 void CL_CALLBACK mem_obj_destructor_callback( cl_mem, void *data )
 {
     free( data );
