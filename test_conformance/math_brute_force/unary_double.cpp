@@ -288,9 +288,8 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 {
                     vlog_error("\nERROR: %s%s: %f ulp error at %.13la "
                                "(0x%16.16" PRIx64 "): *%.13la vs. %.13la\n",
-                               job->f->name, sizeNames[k], err,
-                               ((cl_double *)gIn)[j], ((cl_ulong *)gIn)[j],
-                               ((cl_double *)gOut_Ref)[j], test);
+                               job->f->name, sizeNames[k], err, s[j],
+                               ((cl_ulong *)s)[j], ((cl_double *)t)[j], test);
                     return -1;
                 }
             }

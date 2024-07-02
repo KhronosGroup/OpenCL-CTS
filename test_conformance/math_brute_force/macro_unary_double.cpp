@@ -241,7 +241,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             if (q[j] > t[j]) err = q[j] - t[j];
             vlog_error("\nERROR: %sD: %" PRId64
                        " ulp error at %.13la: *%" PRId64 " vs. %" PRId64 "\n",
-                       name, err, ((double *)gIn)[j], t[j], q[j]);
+                       name, err, s[j], t[j], q[j]);
             return -1;
         }
 
@@ -265,10 +265,10 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
                 cl_ulong err = -t[j] - q[j];
                 if (q[j] > -t[j]) err = q[j] + t[j];
-                vlog_error(
-                    "\nERROR: %sD%s: %" PRId64 " ulp error at %.13la: *%" PRId64
-                    " vs. %" PRId64 "\n",
-                    name, sizeNames[k], err, ((double *)gIn)[j], -t[j], q[j]);
+                vlog_error("\nERROR: %sD%s: %" PRId64
+                           " ulp error at %.13la: *%" PRId64 " vs. %" PRId64
+                           "\n",
+                           name, sizeNames[k], err, s[j], -t[j], q[j]);
                 return -1;
             }
         }
