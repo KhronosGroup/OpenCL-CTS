@@ -15,12 +15,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 include_directories (${CLConform_INCLUDE_DIR})
 
-# needed by Vulkan wrapper to link
-if(WIN32)
-    list(APPEND CLConform_LIBRARIES vulkan-1 vulkan_wrapper)
-else(WIN32)
-    list(APPEND CLConform_LIBRARIES vulkan dl vulkan_wrapper)
-endif(WIN32)
+list(APPEND CLConform_LIBRARIES vulkan_wrapper)
 set(CMAKE_CXX_FLAGS "-fpermissive")
 
 include_directories("../../common/vulkan_wrapper")
