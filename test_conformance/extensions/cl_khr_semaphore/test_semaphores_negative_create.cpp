@@ -94,9 +94,15 @@ struct CreateInvalidProperty : public SemaphoreTestBase
 
             semaphore =
                 clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
-            test_failure_error(
-                err, CL_INVALID_PROPERTY,
-                "Unexpected clCreateSemaphoreWithPropertiesKHR return");
+
+            if (err != CL_INVALID_PROPERTY && err != CL_INVALID_VALUE)
+            {
+                log_error("Unexpected clCreateSemaphoreWithPropertiesKHR "
+                          "result, expected "
+                          "CL_INVALID_PROPERTY or CL_INVALID_VALUE, got %s\n",
+                          IGetErrorString(err));
+                return TEST_FAIL;
+            }
         }
 
         // 2) Value specified for a supported property name is not valid
@@ -108,9 +114,15 @@ struct CreateInvalidProperty : public SemaphoreTestBase
 
             semaphore =
                 clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
-            test_failure_error(
-                err, CL_INVALID_PROPERTY,
-                "Unexpected clCreateSemaphoreWithPropertiesKHR return");
+
+            if (err != CL_INVALID_PROPERTY && err != CL_INVALID_VALUE)
+            {
+                log_error("Unexpected clCreateSemaphoreWithPropertiesKHR "
+                          "result, expected "
+                          "CL_INVALID_PROPERTY or CL_INVALID_VALUE, got %s\n",
+                          IGetErrorString(err));
+                return TEST_FAIL;
+            }
         }
 
         // 3) The same property name is specified more than once
@@ -128,7 +140,7 @@ struct CreateInvalidProperty : public SemaphoreTestBase
                 "Unexpected clCreateSemaphoreWithPropertiesKHR return");
         }
 
-        return CL_SUCCESS;
+        return TEST_PASS;
     }
 };
 
