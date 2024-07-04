@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,6 +49,8 @@
 #include "harness/testHarness.h"
 
 #define kPageSize 4096
+#define HALF_REQUIRED_FEATURES_1 (CL_FP_ROUND_TO_ZERO)
+#define HALF_REQUIRED_FEATURES_2 (CL_FP_ROUND_TO_NEAREST | CL_FP_INF_NAN)
 #define DOUBLE_REQUIRED_FEATURES                                               \
     (CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO                  \
      | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM)
@@ -81,6 +83,8 @@ static int gTestFastRelaxed = 1;
 */
 int gFastRelaxedDerived = 1;
 static int gToggleCorrectlyRoundedDivideSqrt = 0;
+int gHasHalf = 0;
+cl_device_fp_config gHalfCapabilities = 0;
 int gDeviceILogb0 = 1;
 int gDeviceILogbNaN = 1;
 int gCheckTininessBeforeRounding = 1;
@@ -103,6 +107,8 @@ static MTdataHolder gMTdata;
 cl_device_fp_config gFloatCapabilities = 0;
 int gWimpyReductionFactor = 32;
 int gVerboseBruteForce = 0;
+
+cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
 
 static int ParseArgs(int argc, const char **argv);
 static void PrintUsage(void);
@@ -167,7 +173,6 @@ static int doTest(const char *name)
             return 0;
         }
     }
-
     {
         if (0 == strcmp("ilogb", func_data->name))
         {
@@ -226,6 +231,23 @@ static int doTest(const char *name)
             // Don't test with relaxed requirements.
             if (func_data->vtbl_ptr->DoubleTestFunc(func_data, gMTdata,
                                                     false /* relaxed mode*/))
+            {
+                gFailCount++;
+                error++;
+                if (gStopOnError)
+                {
+                    gSkipRestOfTests = true;
+                    return error;
+                }
+            }
+        }
+
+        if (gHasHalf && NULL != func_data->vtbl_ptr->HalfTestFunc)
+        {
+            gTestCount++;
+            vlog("%3d: ", gTestCount);
+            if (func_data->vtbl_ptr->HalfTestFunc(func_data, gMTdata,
+                                                  false /* relaxed mode*/))
             {
                 gFailCount++;
                 error++;
@@ -408,6 +430,8 @@ static int ParseArgs(int argc, const char **argv)
 
                     case 'm': singleThreaded ^= 1; break;
 
+                    case 'g': gHasHalf ^= 1; break;
+
                     case 'r': gTestFastRelaxed ^= 1; break;
 
                     case 's': gStopOnError ^= 1; break;
@@ -540,6 +564,8 @@ static void PrintUsage(void)
     vlog("\t\t-d\tToggle double precision testing. (Default: on iff khr_fp_64 "
          "on)\n");
     vlog("\t\t-f\tToggle float precision testing. (Default: on)\n");
+    vlog("\t\t-g\tToggle half precision testing. (Default: on if khr_fp_16 "
+         "on)\n");
     vlog("\t\t-r\tToggle fast relaxed math precision testing. (Default: on)\n");
     vlog("\t\t-e\tToggle test as derived implementations for fast relaxed math "
          "precision. (Default: on)\n");
@@ -639,6 +665,54 @@ test_status InitCL(cl_device_id device)
         return TEST_FAIL;
 #endif
     }
+
+    gFloatToHalfRoundingMode = kRoundToNearestEven;
+    if (is_extension_available(gDevice, "cl_khr_fp16"))
+    {
+        gHasHalf ^= 1;
+#if defined(CL_DEVICE_HALF_FP_CONFIG)
+        if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_HALF_FP_CONFIG,
+                                     sizeof(gHalfCapabilities),
+                                     &gHalfCapabilities, NULL)))
+        {
+            vlog_error(
+                "ERROR: Unable to get device CL_DEVICE_HALF_FP_CONFIG. (%d)\n",
+                error);
+            return TEST_FAIL;
+        }
+        if (HALF_REQUIRED_FEATURES_1
+                != (gHalfCapabilities & HALF_REQUIRED_FEATURES_1)
+            && HALF_REQUIRED_FEATURES_2
+                != (gHalfCapabilities & HALF_REQUIRED_FEATURES_2))
+        {
+            char list[300] = "";
+            if (0 == (gHalfCapabilities & CL_FP_ROUND_TO_NEAREST))
+                strncat(list, "CL_FP_ROUND_TO_NEAREST, ", sizeof(list) - 1);
+            if (0 == (gHalfCapabilities & CL_FP_ROUND_TO_ZERO))
+                strncat(list, "CL_FP_ROUND_TO_ZERO, ", sizeof(list) - 1);
+            if (0 == (gHalfCapabilities & CL_FP_INF_NAN))
+                strncat(list, "CL_FP_INF_NAN, ", sizeof(list) - 1);
+            vlog_error("ERROR: required half features are missing: %s\n", list);
+
+            return TEST_FAIL;
+        }
+
+        if ((gHalfCapabilities & CL_FP_ROUND_TO_NEAREST) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTE;
+        }
+        else // due to above condition it must be RTZ
+        {
+            gHalfRoundingMode = CL_HALF_RTZ;
+        }
+
+#else
+        vlog_error("FAIL: device says it supports cl_khr_fp16 but "
+                   "CL_DEVICE_HALF_FP_CONFIG is not in the headers!\n");
+        return TEST_FAIL;
+#endif
+    }
+
 
     uint32_t deviceFrequency = 0;
     size_t configSize = sizeof(deviceFrequency);
@@ -829,6 +903,7 @@ test_status InitCL(cl_device_id device)
              "Bruteforce_Ulp_Error_Double() for more details.\n\n");
     }
 
+    vlog("\tTesting half precision? %s\n", no_yes[0 != gHasHalf]);
     vlog("\tIs Embedded? %s\n", no_yes[0 != gIsEmbedded]);
     if (gIsEmbedded)
         vlog("\tRunning in RTZ mode? %s\n", no_yes[0 != gIsInRTZMode]);

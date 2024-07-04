@@ -18,6 +18,7 @@
 #include <float.h>
 
 #include <algorithm>
+#include <cinttypes>
 
 #if defined( __APPLE__ )
     #include <signal.h>
@@ -1151,7 +1152,9 @@ int test_read_image_set_1D(cl_device_id device, cl_context context,
         do
         {
             if( gDebugTrace )
-                log_info( "   at size %d, starting round ramp at %llu for range %llu\n", (int)imageInfo.width, gRoundingStartValue, typeRange );
+                log_info("   at size %d, starting round ramp at %" PRIu64
+                         " for range %" PRIu64 "\n",
+                         (int)imageInfo.width, gRoundingStartValue, typeRange);
             int retCode = test_read_image_1D( context, queue, kernel, &imageInfo, imageSampler, floatCoords, outputType, seed );
             if( retCode )
                 return retCode;

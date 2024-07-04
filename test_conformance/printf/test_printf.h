@@ -55,6 +55,7 @@ enum PrintfTestType
     TYPE_HEXADEC,
     TYPE_CHAR,
     TYPE_STRING,
+    TYPE_FORMAT_STRING,
     TYPE_VECTOR,
     TYPE_ADDRESS_SPACE,
     TYPE_COUNT
@@ -62,7 +63,7 @@ enum PrintfTestType
 
 struct printDataGenParameters
 {
-    const char* genericFormat;
+    std::vector<std::string> genericFormats;
     const char* dataRepresentation;
     const char* vectorFormatFlag;
     const char* vectorFormatSpecifier;

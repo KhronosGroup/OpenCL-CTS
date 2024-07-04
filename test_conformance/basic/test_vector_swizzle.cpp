@@ -516,8 +516,7 @@ static void makeReference(std::vector<T>& ref)
     // single channel lvalue
     for (size_t i = 0; i < N; i++)
     {
-        ref[dstIndex * S + i] = 0;
-        ++dstIndex;
+        ref[dstIndex++ * S + i] = 0;
     }
 
     // normal lvalue

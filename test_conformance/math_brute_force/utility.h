@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include "harness/testHarness.h"
 #include "harness/ThreadPool.h"
 #include "harness/conversions.h"
+#include "CL/cl_half.h"
 
 #define BUFFER_SIZE (1024 * 1024 * 2)
 #define EMBEDDED_REDUCTION_FACTOR (64)
@@ -61,10 +62,21 @@ extern int gFastRelaxedDerived;
 extern int gWimpyMode;
 extern int gHostFill;
 extern int gIsInRTZMode;
+extern int gHasHalf;
+extern int gInfNanSupport;
+extern int gIsEmbedded;
 extern int gVerboseBruteForce;
 extern uint32_t gMaxVectorSizeIndex;
 extern uint32_t gMinVectorSizeIndex;
 extern cl_device_fp_config gFloatCapabilities;
+extern cl_device_fp_config gHalfCapabilities;
+extern RoundingMode gFloatToHalfRoundingMode;
+
+extern cl_half_rounding_mode gHalfRoundingMode;
+
+#define HFF(num) cl_half_from_float(num, gHalfRoundingMode)
+#define HFD(num) cl_half_from_double(num, gHalfRoundingMode)
+#define HTF(num) cl_half_to_float(num)
 
 #define LOWER_IS_BETTER 0
 #define HIGHER_IS_BETTER 1
@@ -115,6 +127,12 @@ inline int IsFloatResultSubnormal(double x, float ulps)
     return x < MAKE_HEX_DOUBLE(0x1.0p-126, 0x1, -126);
 }
 
+inline int IsHalfResultSubnormal(float x, float ulps)
+{
+    x = fabs(x) - MAKE_HEX_FLOAT(0x1.0p-24, 0x1, -24) * ulps;
+    return x < MAKE_HEX_FLOAT(0x1.0p-14, 0x1, -14);
+}
+
 inline int IsFloatResultSubnormalAbsError(double x, float abs_err)
 {
     x = x - abs_err;
@@ -155,6 +173,26 @@ inline int IsFloatNaN(double x)
     } u;
     u.d = (cl_float)x;
     return ((u.u & 0x7fffffffU) > 0x7F800000U);
+}
+
+inline bool IsHalfNaN(const cl_half v)
+{
+    // Extract FP16 exponent and mantissa
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+
+    // NaN test
+    return (h_exp == 0x1F && h_mant != 0);
+}
+
+inline bool IsHalfInfinity(const cl_half v)
+{
+    // Extract FP16 exponent and mantissa
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+
+    // Inf test
+    return (h_exp == 0x1F && h_mant == 0);
 }
 
 cl_uint RoundUpToNextPowerOfTwo(cl_uint x);

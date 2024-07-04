@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -39,9 +39,10 @@
 #define FAILED_CORRUPTED_QUEUE -2
 #define FAILED_ABORT -1
 #define FAILED_TOO_BIG 1
-// On Windows macro `SUCCEEDED' is defined in `WinError.h'. It causes compiler warnings. Let us avoid them.
-#if defined( _WIN32 ) && defined( SUCCEEDED )
-    #undef SUCCEEDED
+// On Windows macro `SUCCEEDED' is defined in `WinError.h'. It causes compiler
+// warnings. Let us avoid them.
+#if defined(_WIN32) && defined(SUCCEEDED)
+#undef SUCCEEDED
 #endif
 #define SUCCEEDED 0
 
@@ -55,11 +56,16 @@ enum AllocType
     IMAGE_WRITE_NON_BLOCKING,
 };
 
-#define test_error_abort(errCode,msg)    test_error_ret_abort(errCode,msg,errCode)
-#define test_error_ret_abort(errCode,msg,retValue)    { if( errCode != CL_SUCCESS ) { print_error( errCode, msg ); return FAILED_ABORT ; } }
+#define test_error_abort(errCode, msg)                                         \
+    test_error_ret_abort(errCode, msg, errCode)
+#define test_error_ret_abort(errCode, msg, retValue)                           \
+    {                                                                          \
+        if (errCode != CL_SUCCESS)                                             \
+        {                                                                      \
+            print_error(errCode, msg);                                         \
+            return FAILED_ABORT;                                               \
+        }                                                                      \
+    }
 
 
 #endif // _testBase_h
-
-
-

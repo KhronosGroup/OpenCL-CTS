@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 The Khronos Group Inc.
+// Copyright (c) 2022-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,8 +27,11 @@ const char *GetTypeName(ParameterType type)
 {
     switch (type)
     {
+        case ParameterType::Half: return "half";
         case ParameterType::Float: return "float";
         case ParameterType::Double: return "double";
+        case ParameterType::Short: return "short";
+        case ParameterType::UShort: return "ushort";
         case ParameterType::Int: return "int";
         case ParameterType::UInt: return "uint";
         case ParameterType::Long: return "long";
@@ -41,8 +44,12 @@ const char *GetUndefValue(ParameterType type)
 {
     switch (type)
     {
+        case ParameterType::Half:
         case ParameterType::Float:
         case ParameterType::Double: return "NAN";
+
+        case ParameterType::Short:
+        case ParameterType::UShort: return "0x5678";
 
         case ParameterType::Int:
         case ParameterType::UInt: return "0x12345678";
@@ -71,14 +78,17 @@ void EmitEnableExtension(std::ostringstream &kernel,
                          const std::initializer_list<ParameterType> &types)
 {
     bool needsFp64 = false;
+    bool needsFp16 = false;
 
     for (const auto &type : types)
     {
         switch (type)
         {
             case ParameterType::Double: needsFp64 = true; break;
-
+            case ParameterType::Half: needsFp16 = true; break;
             case ParameterType::Float:
+            case ParameterType::Short:
+            case ParameterType::UShort:
             case ParameterType::Int:
             case ParameterType::UInt:
             case ParameterType::Long:
@@ -89,6 +99,7 @@ void EmitEnableExtension(std::ostringstream &kernel,
     }
 
     if (needsFp64) kernel << "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+    if (needsFp16) kernel << "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
 }
 
 std::string GetBuildOptions(bool relaxed_mode)

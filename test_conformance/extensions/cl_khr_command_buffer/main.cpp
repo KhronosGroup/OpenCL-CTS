@@ -64,10 +64,30 @@ test_definition test_list[] = {
     ADD_TEST(event_info_reference_count),
     ADD_TEST(finalize_invalid),
     ADD_TEST(finalize_empty),
+    // Command-buffer negative tests
     ADD_TEST(negative_retain_command_buffer_invalid_command_buffer),
     ADD_TEST(negative_release_command_buffer_invalid_command_buffer),
     ADD_TEST(negative_finalize_command_buffer_invalid_command_buffer),
     ADD_TEST(negative_finalize_command_buffer_not_recording_state),
+    ADD_TEST(negative_command_buffer_command_fill_buffer_queue_not_null),
+    ADD_TEST(negative_command_buffer_command_fill_buffer_context_not_same),
+    ADD_TEST(
+        negative_command_buffer_command_fill_buffer_sync_points_null_or_num_zero),
+    ADD_TEST(
+        negative_command_buffer_command_fill_buffer_invalid_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_fill_buffer_finalized_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_fill_buffer_mutable_handle_not_null),
+    ADD_TEST(negative_command_buffer_command_fill_image_queue_not_null),
+    ADD_TEST(negative_command_buffer_command_fill_image_context_not_same),
+    ADD_TEST(
+        negative_command_buffer_command_fill_image_sync_points_null_or_num_zero),
+    ADD_TEST(negative_command_buffer_command_fill_image_invalid_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_fill_image_finalized_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_fill_image_mutable_handle_not_null),
     ADD_TEST(negative_create_command_buffer_num_queues),
     ADD_TEST(negative_create_command_buffer_null_queues),
     ADD_TEST(negative_create_command_buffer_repeated_properties),
@@ -75,6 +95,34 @@ test_definition test_list[] = {
     ADD_TEST(negative_create_command_buffer_queue_without_min_properties),
     ADD_TEST(
         negative_create_command_buffer_device_does_not_support_out_of_order_queue),
+    ADD_TEST(negative_command_ndrange_queue_not_null),
+    ADD_TEST(negative_command_ndrange_kernel_with_different_context),
+    ADD_TEST(negative_command_ndrange_kernel_sync_points_null_or_num_zero),
+    ADD_TEST(negative_command_ndrange_kernel_invalid_command_buffer),
+    ADD_TEST(negative_command_ndrange_kernel_invalid_properties),
+    ADD_TEST(negative_command_ndrange_kernel_command_buffer_finalized),
+    ADD_TEST(negative_command_ndrange_kernel_mutable_handle_not_null),
+    ADD_TEST(negative_command_ndrange_kernel_not_support_printf),
+    ADD_TEST(negative_command_ndrange_kernel_with_enqueue_call),
+    ADD_TEST(negative_command_buffer_command_copy_buffer_queue_not_null),
+    ADD_TEST(negative_command_buffer_command_copy_buffer_different_contexts),
+    ADD_TEST(
+        negative_command_buffer_command_copy_buffer_sync_points_null_or_num_zero),
+    ADD_TEST(
+        negative_command_buffer_command_copy_buffer_invalid_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_copy_buffer_finalized_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_copy_buffer_mutable_handle_not_null),
+    ADD_TEST(negative_command_buffer_command_copy_image_queue_not_null),
+    ADD_TEST(negative_command_buffer_command_copy_image_different_contexts),
+    ADD_TEST(
+        negative_command_buffer_command_copy_image_sync_points_null_or_num_zero),
+    ADD_TEST(negative_command_buffer_command_copy_image_invalid_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_copy_image_finalized_command_buffer),
+    ADD_TEST(
+        negative_command_buffer_command_copy_image_mutable_handle_not_null),
     ADD_TEST(negative_get_command_buffer_info_invalid_command_buffer),
     ADD_TEST(negative_get_command_buffer_info_not_supported_param_name),
     ADD_TEST(negative_get_command_buffer_info_queues),
@@ -82,6 +130,22 @@ test_definition test_list[] = {
     ADD_TEST(negative_get_command_buffer_info_state),
     ADD_TEST(negative_get_command_buffer_info_prop_array),
     ADD_TEST(negative_get_command_buffer_info_context),
+    ADD_TEST(negative_command_buffer_command_svm_queue_not_null),
+    ADD_TEST(negative_command_buffer_command_svm_sync_points_null_or_num_zero),
+    ADD_TEST(negative_command_buffer_command_svm_invalid_command_buffer),
+    ADD_TEST(negative_command_buffer_command_svm_finalized_command_buffer),
+    ADD_TEST(negative_command_buffer_command_svm_mutable_handle_not_null),
+    ADD_TEST(negative_command_buffer_copy_image_queue_not_null),
+    ADD_TEST(negative_command_buffer_copy_image_context_not_same),
+    ADD_TEST(negative_command_buffer_copy_image_sync_points_null_or_num_zero),
+    ADD_TEST(negative_command_buffer_copy_image_invalid_command_buffer),
+    ADD_TEST(negative_command_buffer_copy_image_finalized_command_buffer),
+    ADD_TEST(negative_command_buffer_copy_image_mutable_handle_not_null),
+    ADD_TEST(negative_command_buffer_barrier_not_null_queue),
+    ADD_TEST(negative_command_buffer_barrier_invalid_command_buffer),
+    ADD_TEST(negative_command_buffer_barrier_buffer_finalized),
+    ADD_TEST(negative_command_buffer_barrier_mutable_handle_not_null),
+    ADD_TEST(negative_command_buffer_barrier_sync_points_null_or_num_zero),
     ADD_TEST(negative_enqueue_command_buffer_invalid_command_buffer),
     ADD_TEST(negative_enqueue_command_buffer_not_finalized),
     ADD_TEST(
