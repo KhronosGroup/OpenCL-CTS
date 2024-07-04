@@ -38,10 +38,15 @@ struct ReleaseInvalidSemaphore : public SemaphoreTestBase
         // Release invalid semaphore
         cl_int err = CL_SUCCESS;
         err = clReleaseSemaphoreKHR(nullptr);
-        test_failure_error(err, CL_INVALID_SEMAPHORE_KHR,
-                           "Unexpected clReleaseSemaphoreKHR return");
+        if (err != CL_INVALID_SEMAPHORE_KHR)
+        {
+            log_error("Unexpected clReleaseSemaphoreKHR result, expected "
+                      "CL_INVALID_SEMAPHORE_KHR, get %s\n",
+                      IGetErrorString(err));
+            return TEST_FAIL;
+        }
 
-        return CL_SUCCESS;
+        return TEST_PASS;
     }
 };
 
@@ -57,10 +62,15 @@ struct RetainInvalidSemaphore : public SemaphoreTestBase
         // Release invalid semaphore
         cl_int err = CL_SUCCESS;
         err = clRetainSemaphoreKHR(nullptr);
-        test_failure_error(err, CL_INVALID_SEMAPHORE_KHR,
-                           "Unexpected clRetainSemaphoreKHR return");
+        if (err != CL_INVALID_SEMAPHORE_KHR)
+        {
+            log_error("Unexpected clRetainSemaphoreKHR result, expected "
+                      "CL_INVALID_SEMAPHORE_KHR, get %s\n",
+                      IGetErrorString(err));
+            return TEST_FAIL;
+        }
 
-        return CL_SUCCESS;
+        return TEST_PASS;
     }
 };
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <OpenCL/opencl.h>
 #else
 #include <CL/cl.h>
+#include "CL/cl_half.h"
 #endif
 
 // --  for testing float --
@@ -87,8 +88,8 @@ double reference_acosh(double x);
 double reference_asinh(double x);
 double reference_atanh(double x);
 double reference_cbrt(double x);
-float reference_copysign(float x, float y);
-double reference_copysignd(double x, double y);
+float reference_copysignf(float x, float y);
+double reference_copysign(double x, double y);
 double reference_exp10(double);
 double reference_exp2(double x);
 double reference_expm1(double x);
@@ -160,6 +161,8 @@ long double reference_fractl(long double, long double*);
 long double reference_fmal(long double, long double, long double);
 long double reference_madl(long double, long double, long double);
 long double reference_nextafterl(long double, long double);
+float reference_nextafterh(float, float, bool allow_denormals = true);
+cl_half reference_nanh(cl_ushort);
 long double reference_recipl(long double);
 long double reference_rootnl(long double, int);
 long double reference_rsqrtl(long double);

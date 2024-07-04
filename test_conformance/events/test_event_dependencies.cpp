@@ -97,7 +97,7 @@ int test_event_enqueue_wait_for_events_run_test(
         error = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 2, two_device_ids,
                                &number_returned);
         test_error(error, "clGetDeviceIDs for CL_DEVICE_TYPE_ALL failed.");
-        if (number_returned != 2)
+        if (number_returned < 2)
         {
             log_info("Failed to obtain two devices. Test can not run.\n");
             free(two_device_ids);

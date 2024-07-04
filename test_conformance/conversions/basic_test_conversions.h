@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 The Khronos Group Inc.
+// Copyright (c) 2023-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@
 #else
     #include <CL/opencl.h>
 #endif
+
+#include <CL/cl_half.h>
 
 #include "harness/mt19937.h"
 #include "harness/testHarness.h"
@@ -76,6 +78,8 @@ extern cl_mem gInBuffer;
 extern cl_mem gOutBuffers[];
 extern int gHasDouble;
 extern int gTestDouble;
+extern int gHasHalfs;
+extern int gTestHalfs;
 extern int gWimpyMode;
 extern int gWimpyReductionFactor;
 extern int gSkipTesting;
@@ -87,6 +91,8 @@ extern int gReportAverageTimes;
 extern int gStartTestNumber;
 extern int gEndTestNumber;
 extern int gIsRTZ;
+extern int gForceHalfFTZ;
+extern int gIsHalfRTZ;
 extern void *gIn;
 extern void *gRef;
 extern void *gAllowZ;
@@ -135,7 +141,7 @@ struct CalcRefValsBase
     cl_int result;
 };
 
-template <typename InType, typename OutType>
+template <typename InType, typename OutType, bool InFP, bool OutFP>
 struct CalcRefValsPat : CalcRefValsBase
 {
     int check_result(void *, uint32_t, int) override;
@@ -162,8 +168,12 @@ struct WriteInputBufferInfo
 };
 
 // Must be aligned with Type enums!
-using TypeIter = std::tuple<cl_uchar, cl_char, cl_ushort, cl_short, cl_uint,
-                            cl_int, cl_float, cl_double, cl_ulong, cl_long>;
+using TypeIter =
+    std::tuple<cl_uchar, cl_char, cl_ushort, cl_short, cl_uint, cl_int, cl_half,
+               cl_float, cl_double, cl_ulong, cl_long>;
+
+// hardcoded solution needed due to typeid confusing cl_ushort/cl_half
+constexpr bool isTypeFp[] = { 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0 };
 
 // Helper test fixture for constructing OpenCL objects used in testing
 // a variety of simple command-buffer enqueue scenarios.
@@ -179,13 +189,13 @@ struct ConversionsTest
     // Test body returning an OpenCL error code
     cl_int Run();
 
-    template <typename InType, typename OutType>
+    template <typename InType, typename OutType, bool InFP, bool OutFP>
     int DoTest(Type outType, Type inType, SaturationMode sat,
                RoundingMode round);
 
-    template <typename InType, typename OutType>
+    template <typename InType, typename OutType, bool InFP, bool OutFP>
     void TestTypesConversion(const Type &inType, const Type &outType, int &tn,
-                             const int smvs);
+                             int startMinVectorSize);
 
 protected:
     cl_context context;
@@ -195,6 +205,9 @@ protected:
     size_t num_elements;
 
     TypeIter typeIterator;
+
+public:
+    static cl_half_rounding_mode defaultHalfRoundingMode;
 };
 
 struct CustomConversionsTest : ConversionsTest
@@ -221,17 +234,18 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
 
 struct TestType
 {
-    template <typename T> bool testType(Type in)
+    template <typename T, bool FP> bool testType(Type in)
     {
         switch (in)
         {
             default: return false;
             case kuchar: return std::is_same<cl_uchar, T>::value;
             case kchar: return std::is_same<cl_char, T>::value;
-            case kushort: return std::is_same<cl_ushort, T>::value;
+            case kushort: return std::is_same<cl_ushort, T>::value && !FP;
             case kshort: return std::is_same<cl_short, T>::value;
             case kuint: return std::is_same<cl_uint, T>::value;
             case kint: return std::is_same<cl_int, T>::value;
+            case khalf: return std::is_same<cl_half, T>::value && FP;
             case kfloat: return std::is_same<cl_float, T>::value;
             case kdouble: return std::is_same<cl_double, T>::value;
             case kulong: return std::is_same<cl_ulong, T>::value;
@@ -263,13 +277,15 @@ protected:
               typename InType>
     void iterate_in_type(const InType &t)
     {
-        if (!testType<InType>(inType)) vlog_error("Unexpected data type!\n");
+        if (!testType<InType, isTypeFp[In]>(inType))
+            vlog_error("Unexpected data type!\n");
 
-        if (!testType<OutType>(outType)) vlog_error("Unexpected data type!\n");
+        if (!testType<OutType, isTypeFp[Out]>(outType))
+            vlog_error("Unexpected data type!\n");
 
         // run the conversions
-        test.TestTypesConversion<InType, OutType>(inType, outType, testNumber,
-                                                  startMinVectorSize);
+        test.TestTypesConversion<InType, OutType, isTypeFp[In], isTypeFp[Out]>(
+            inType, outType, testNumber, startMinVectorSize);
         inType = (Type)(inType + 1);
     }
 
@@ -337,11 +353,13 @@ protected:
               typename InType>
     void iterate_in_type(const InType &t)
     {
-        if (testType<InType>(inType) && testType<OutType>(outType))
+        if (testType<InType, isTypeFp[In]>(inType)
+            && testType<OutType, isTypeFp[Out]>(outType))
         {
             // run selected conversion
             // testing of the result will happen afterwards
-            test.DoTest<InType, OutType>(outType, inType, saturation, rounding);
+            test.DoTest<InType, OutType, isTypeFp[In], isTypeFp[Out]>(
+                outType, inType, saturation, rounding);
         }
     }
 

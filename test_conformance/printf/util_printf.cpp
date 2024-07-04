@@ -708,6 +708,7 @@ testCase testCaseChar = {
 // [string]format | [string] string-data representation  |
 
 //--------------------------------------------------------
+// clang-format off
 
 std::vector<printDataGenParameters> printStringGenParameters = {
 
@@ -721,7 +722,38 @@ std::vector<printDataGenParameters> printStringGenParameters = {
 
     //%% specification
 
-    { { "%s" }, "\"%%\"" },
+    { {"%s"}, "\"%%\"" },
+
+    { {"%s"}, "\"foo%%bar%%bar%%foo\"" },
+
+    { {"%%%s%%"}, "\"foo\"" },
+
+    { {"%%s%s"}, "\"foo\"" },
+
+    // special symbols
+    // nested
+
+    { {"%s"}, "\"\\\"%%\\\"\"" },
+
+    { {"%s"}, "\"\\\'%%\\\'\"" },
+
+    // tabs
+
+    { {"%s"}, "\"foo\\tfoo\"" },
+
+    // newlines
+
+    { {"%s"}, "\"foo\\nfoo\"" },
+
+    // terminator
+    { {"%s"}, "\"foo\\0foo\"" },
+
+    // all ascii characters
+    { {"%s"},
+      "\" "
+      "!\\\"#$%&\'()*+,-./"
+      "0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]^_`"
+      "abcdefghijklmnopqrstuvwxyz{|}~\"" }
 };
 
 //---------------------------------------------------------
@@ -737,8 +769,28 @@ std::vector<std::string> correctBufferString = {
     "f",
 
     "%%",
-};
 
+    "foo%%bar%%bar%%foo",
+
+    "%foo%",
+
+    "%sfoo",
+
+    "\"%%\"",
+
+    "\'%%\'",
+
+    "foo\tfoo",
+
+R"(foo
+foo)",
+
+    "foo",
+
+    " !\"#$%&\'()*+,-./"
+    "0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`"
+    "abcdefghijklmnopqrstuvwxyz{|}~"
+};
 
 //---------------------------------------------------------
 
@@ -760,7 +812,90 @@ testCase testCaseString = {
 
 };
 
+//--------------------------------------------------------
 
+// [string]format |
+
+//--------------------------------------------------------
+
+std::vector<printDataGenParameters> printFormatStringGenParameters = {
+
+    //%% specification
+
+    { {"%%"} },
+
+    // special symbols
+    // nested
+
+    { {"\\\"%%\\\""} },
+
+    { {"\'%%\'"} },
+
+    { {"\'foo%%bar%%bar%%foo\'"} },
+
+    // tabs
+
+    { {"foo\\t\\t\\tfoo"} },
+
+    // newlines
+
+    { {"foo\\nfoo"} },
+
+    // all ascii characters
+    { {
+          " !\\\"#$%%&\'()*+,-./"
+          "0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]^_`"
+          "abcdefghijklmnopqrstuvwxyz{|}~"
+      } }
+};
+
+//---------------------------------------------------------
+
+// Lookup table -[string] string-correct buffer           |
+
+//---------------------------------------------------------
+
+std::vector<std::string> correctBufferFormatString = {
+
+    "%",
+
+    "\"%\"",
+
+    "\'%\'",
+
+    "\'foo%bar%bar%foo\'",
+
+    "foo\t\t\tfoo",
+
+R"(foo
+foo)",
+
+    " !\"#$%&\'()*+,-./"
+    "0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`"
+    "abcdefghijklmnopqrstuvwxyz{|}~"
+};
+
+//---------------------------------------------------------
+
+//Test case for string                                    |
+
+//---------------------------------------------------------
+
+testCase testCaseFormatString = {
+
+    TYPE_FORMAT_STRING,
+
+    correctBufferFormatString,
+
+    printFormatStringGenParameters,
+
+    NULL,
+
+    kchar
+
+};
+
+// clang-format on
 
 //=========================================================
 
@@ -968,10 +1103,11 @@ testCase testCaseAddrSpace = {
 //-------------------------------------------------------------------------------
 
 std::vector<testCase*> allTestCase = {
-    &testCaseInt,      &testCaseHalf,        &testCaseHalfLimits,
-    &testCaseFloat,    &testCaseFloatLimits, &testCaseOctal,
-    &testCaseUnsigned, &testCaseHexadecimal, &testCaseChar,
-    &testCaseString,   &testCaseVector,      &testCaseAddrSpace
+    &testCaseInt,      &testCaseHalf,         &testCaseHalfLimits,
+    &testCaseFloat,    &testCaseFloatLimits,  &testCaseOctal,
+    &testCaseUnsigned, &testCaseHexadecimal,  &testCaseChar,
+    &testCaseString,   &testCaseFormatString, &testCaseVector,
+    &testCaseAddrSpace
 };
 
 //-----------------------------------------
@@ -996,14 +1132,14 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
     if(pTestCase->_type == TYPE_ADDRESS_SPACE && strcmp(pTestCase->_genParameters[testId].addrSpacePAdd,""))
 
     {
-        char analysisBufferTmp[ANALYSIS_BUFFER_SIZE];
+        char analysisBufferTmp[ANALYSIS_BUFFER_SIZE + 1];
 
         if(strstr(analysisBuffer,"0x") == NULL)
         // Need to prepend 0x to ASCII number before calling strtol.
         strcpy(analysisBufferTmp,"0x");
 
         else analysisBufferTmp[0]='\0';
-        strcat(analysisBufferTmp,analysisBuffer);
+        strncat(analysisBufferTmp, analysisBuffer, ANALYSIS_BUFFER_SIZE);
         if (sizeof(long) == 8) {
             if(strtoul(analysisBufferTmp,NULL,0) == pAddr) return 0;
         }

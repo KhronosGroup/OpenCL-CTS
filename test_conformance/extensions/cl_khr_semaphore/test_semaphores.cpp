@@ -21,6 +21,7 @@
 #include <system_error>
 #include <thread>
 #include <chrono>
+#include <vector>
 
 #define FLUSH_DELAY_S 5
 
@@ -82,7 +83,7 @@ static int semaphore_cross_queue_helper(cl_device_id deviceID,
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -115,7 +116,7 @@ static int semaphore_cross_queue_helper(cl_device_id deviceID,
                                      &wait_event);
     test_error(err, "Could not wait semaphore");
 
-    // Finish queue_1 and queue_2
+    // Finish queue_1 and queue_2
     err = clFinish(queue_1);
     test_error(err, "Could not finish queue");
 
@@ -133,7 +134,7 @@ static int semaphore_cross_queue_helper(cl_device_id deviceID,
     return TEST_PASS;
 }
 
-// Confirm that a signal followed by a wait will complete successfully
+// Confirm that a signal followed by a wait will complete successfully
 int test_semaphores_simple_1(cl_device_id deviceID, cl_context context,
                              cl_command_queue defaultQueue, int num_elements)
 {
@@ -141,7 +142,7 @@ int test_semaphores_simple_1(cl_device_id deviceID, cl_context context,
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -203,7 +204,7 @@ int test_semaphores_simple_2(cl_device_id deviceID, cl_context context,
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -295,7 +296,7 @@ int test_semaphores_reuse(cl_device_id deviceID, cl_context context,
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -438,7 +439,7 @@ int test_semaphores_multi_signal(cl_device_id deviceID, cl_context context,
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -514,7 +515,7 @@ int test_semaphores_multi_wait(cl_device_id deviceID, cl_context context,
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -586,11 +587,11 @@ int test_semaphores_multi_wait(cl_device_id deviceID, cl_context context,
 int test_semaphores_queries(cl_device_id deviceID, cl_context context,
                             cl_command_queue defaultQueue, int num_elements)
 {
-    cl_int err;
+    cl_int err = CL_SUCCESS;
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -605,6 +606,10 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
     cl_semaphore_properties_khr sema_props[] = {
         static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
         static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_BINARY_KHR),
+        static_cast<cl_semaphore_properties_khr>(
+            CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR),
+        (cl_semaphore_properties_khr)deviceID,
+        CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR,
         0
     };
     cl_semaphore_khr sema =
@@ -623,6 +628,11 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
     // value
     SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, 1);
 
+    // Confirm that querying CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR returns the
+    // same device id the semaphore was created with
+    SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR, cl_device_id,
+                         deviceID);
+
     err = clRetainSemaphoreKHR(sema);
     test_error(err, "Could not retain semaphore");
     SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, 2);
@@ -634,7 +644,7 @@ int test_semaphores_queries(cl_device_id deviceID, cl_context context,
     // Confirm that querying CL_SEMAPHORE_PROPERTIES_KHR returns the same
     // properties the semaphore was created with
     SEMAPHORE_PARAM_TEST_ARRAY(CL_SEMAPHORE_PROPERTIES_KHR,
-                               cl_semaphore_properties_khr, 3, sema_props);
+                               cl_semaphore_properties_khr, 6, sema_props);
 
     // Confirm that querying CL_SEMAPHORE_PAYLOAD_KHR returns the unsignaled
     // state
@@ -656,7 +666,7 @@ int test_semaphores_import_export_fd(cl_device_id deviceID, cl_context context,
 
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -664,7 +674,7 @@ int test_semaphores_import_export_fd(cl_device_id deviceID, cl_context context,
     if (!is_extension_available(deviceID, "cl_khr_external_semaphore_sync_fd"))
     {
         log_info("cl_khr_external_semaphore_sync_fd is not supported on this "
-                 "platoform. Skipping test.\n");
+                 "platform. Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
 

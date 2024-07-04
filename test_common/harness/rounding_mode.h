@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,10 +42,11 @@ typedef enum
     kshort = 3,
     kuint = 4,
     kint = 5,
-    kfloat = 6,
-    kdouble = 7,
-    kulong = 8,
-    klong = 9,
+    khalf = 6,
+    kfloat = 7,
+    kdouble = 8,
+    kulong = 9,
+    klong = 10,
 
     // This goes last
     kTypeCount
