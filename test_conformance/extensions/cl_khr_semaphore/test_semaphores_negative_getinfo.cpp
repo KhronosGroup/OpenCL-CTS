@@ -89,8 +89,7 @@ struct GetInfoInvalidValue : public SemaphoreTestBase
         test_error(err, "Could not query semaphore");
 
         // make sure that first test provides too small param size
-        if (size != sizeof(sema_props)
-            && size <= sizeof(cl_semaphore_properties_khr))
+        if (size != sizeof(sema_props))
             test_fail("Error: expected size %d, returned %d",
                       sizeof(sema_props), size);
 
