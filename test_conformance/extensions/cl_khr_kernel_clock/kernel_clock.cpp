@@ -109,20 +109,13 @@ public:
 
             ptr = kernel_src;
 
-            error = create_single_kernel_helper_create_program(
-                context, &program, 1, &ptr);
+            error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                                &ptr, "SampleClock");
             test_error(error, "Failed to create program with source");
-
-            error =
-                clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-            test_error(error, "Failed to build program");
 
             out_mem = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
                                      sizeof(cl_uint), nullptr, &error);
             test_error(error, "clCreateBuffer failed");
-
-            kernel = clCreateKernel(program, "SampleClock", &error);
-            test_error(error, "Failed to create kernel");
 
             error = clSetKernelArg(kernel, 0, sizeof(out_mem), &out_mem);
             test_error(error, "clSetKernelArg failed");

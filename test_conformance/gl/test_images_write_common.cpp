@@ -37,6 +37,7 @@ static const char *kernelpattern_image_write_1D =
 "}\n";
 
 static const char *kernelpattern_image_write_1D_half =
+"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
 "__kernel void sample_test( __global half4 *source, write_only image1d_t dest )\n"
 "{\n"
 "    uint index = get_global_id(0);\n"
@@ -52,6 +53,7 @@ static const char *kernelpattern_image_write_1D_buffer =
 "}\n";
 
 static const char *kernelpattern_image_write_1D_buffer_half =
+"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
 "__kernel void sample_test( __global half4 *source, write_only image1d_buffer_t dest )\n"
 "{\n"
 "    uint index = get_global_id(0);\n"
@@ -69,6 +71,7 @@ static const char *kernelpattern_image_write_2D =
 "}\n";
 
 static const char *kernelpattern_image_write_2D_half =
+"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
 "__kernel void sample_test( __global half4 *source, write_only image2d_t dest )\n"
 "{\n"
 "    int  tidX = get_global_id(0);\n"
@@ -88,6 +91,7 @@ static const char *kernelpattern_image_write_1Darray =
 "}\n";
 
 static const char *kernelpattern_image_write_1Darray_half =
+"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
 "__kernel void sample_test( __global half4 *source, write_only image1d_array_t dest )\n"
 "{\n"
 "    int  tidX = get_global_id(0);\n"
@@ -111,6 +115,7 @@ static const char *kernelpattern_image_write_3D =
 "}\n";
 
 static const char *kernelpattern_image_write_3D_half =
+"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
 "#pragma OPENCL EXTENSION cl_khr_3d_image_writes : enable\n"
 "__kernel void sample_test( __global half4 *source, write_only image3d_t dest )\n"
 "{\n"
@@ -137,6 +142,7 @@ static const char *kernelpattern_image_write_2Darray =
 "}\n";
 
 static const char *kernelpattern_image_write_2Darray_half =
+"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
 "__kernel void sample_test( __global half4 *source, write_only image2d_array_t dest )\n"
 "{\n"
 "    int  tidX   = get_global_id(0);\n"

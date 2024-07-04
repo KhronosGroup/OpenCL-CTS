@@ -16,6 +16,7 @@
 #include "harness/os_helpers.h"
 #include "harness/typeWrappers.h"
 
+#include <cstdarg>
 #include <string.h>
 #include <errno.h>
 #include <memory>
@@ -87,8 +88,7 @@ makePrintfProgram(cl_kernel* kernel_ptr, const cl_context context,
 
 // Creates and execute the printf test for the given device, context, type/format
 static int doTest(cl_command_queue queue, cl_context context,
-                  const unsigned int testId, const unsigned int testNum,
-                  cl_device_id device);
+                  const unsigned int testId, cl_device_id device);
 
 // Check if device supports long
 static bool isLongSupported(cl_device_id  device_id);
@@ -109,6 +109,7 @@ int waitForEvent(cl_event* event);
 // tracks the subtests
 int s_test_cnt = 0;
 int s_test_fail = 0;
+int s_test_skip = 0;
 
 
 static cl_context        gContext;
@@ -162,11 +163,14 @@ static void getAnalysisBuffer(char* analysisBuffer)
     FILE *fp;
     memset(analysisBuffer,0,ANALYSIS_BUFFER_SIZE);
 
-    fp = fopen(gFileName,"r");
-    if(NULL == fp)
+    fp = fopen(gFileName, "r");
+    if (NULL == fp)
         log_error("Failed to open analysis buffer ('%s')\n", strerror(errno));
-    else
-        while(fgets(analysisBuffer, ANALYSIS_BUFFER_SIZE, fp) != NULL );
+    else if (0
+             == std::fread(analysisBuffer, sizeof(analysisBuffer[0]),
+                           ANALYSIS_BUFFER_SIZE, fp))
+        log_error("No data read from analysis buffer\n");
+
     fclose(fp);
 }
 
@@ -227,69 +231,6 @@ static cl_program makePrintfProgram(cl_kernel* kernel_ptr,
     char addrSpacePAddArgument[256] = {0};
     char extension[128] = { 0 };
 
-    //Program Source code for int,float,octal,hexadecimal,char,string
-    const char* sourceGen[] = {
-        extension,
-        "__kernel void ",
-        testname,
-        "(void)\n",
-        "{\n"
-        "   printf(\"",
-        allTestCase[testId]
-            ->_genParameters[testNum]
-            .genericFormats[formatNum]
-            .c_str(),
-        "\\n\",",
-        allTestCase[testId]->_genParameters[testNum].dataRepresentation,
-        ");",
-        "}\n"
-    };
-    //Program Source code for vector
-    const char* sourceVec[] = {
-        extension,
-        "__kernel void ",
-        testname,
-        "(void)\n",
-        "{\n",
-        allTestCase[testId]->_genParameters[testNum].dataType,
-        allTestCase[testId]->_genParameters[testNum].vectorSize,
-        " tmp = (",
-        allTestCase[testId]->_genParameters[testNum].dataType,
-        allTestCase[testId]->_genParameters[testNum].vectorSize,
-        ")",
-        allTestCase[testId]->_genParameters[testNum].dataRepresentation,
-        ";",
-        "   printf(\"",
-        allTestCase[testId]->_genParameters[testNum].vectorFormatFlag,
-        "v",
-        allTestCase[testId]->_genParameters[testNum].vectorSize,
-        allTestCase[testId]->_genParameters[testNum].vectorFormatSpecifier,
-        "\\n\",",
-        "tmp);",
-        "}\n"
-    };
-    //Program Source code for address space
-    const char* sourceAddrSpace[] = {
-        "__kernel void ",
-        testname,
-        "(",
-        addrSpaceArgument,
-        ")\n{\n",
-        allTestCase[testId]
-            ->_genParameters[testNum]
-            .addrSpaceVariableTypeQualifier,
-        "printf(",
-        allTestCase[testId]
-            ->_genParameters[testNum]
-            .genericFormats[formatNum]
-            .c_str(),
-        ",",
-        allTestCase[testId]->_genParameters[testNum].addrSpaceParameter,
-        "); ",
-        addrSpacePAddArgument,
-        "\n}\n"
-    };
-
     //Update testname
     std::snprintf(testname, sizeof(testname), "%s%d", "test", testId);
 
@@ -324,12 +265,59 @@ static cl_program makePrintfProgram(cl_kernel* kernel_ptr,
             strcpy(extension,
                    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n");
 
+        // Program Source code for vector
+        const char* sourceVec[] = {
+            extension,
+            "__kernel void ",
+            testname,
+            "(void)\n",
+            "{\n",
+            allTestCase[testId]->_genParameters[testNum].dataType,
+            allTestCase[testId]->_genParameters[testNum].vectorSize,
+            " tmp = (",
+            allTestCase[testId]->_genParameters[testNum].dataType,
+            allTestCase[testId]->_genParameters[testNum].vectorSize,
+            ")",
+            allTestCase[testId]->_genParameters[testNum].dataRepresentation,
+            ";",
+            "   printf(\"",
+            allTestCase[testId]->_genParameters[testNum].vectorFormatFlag,
+            "v",
+            allTestCase[testId]->_genParameters[testNum].vectorSize,
+            allTestCase[testId]->_genParameters[testNum].vectorFormatSpecifier,
+            "\\n\",",
+            "tmp);",
+            "}\n"
+        };
+
         err = create_single_kernel_helper(
             context, &program, kernel_ptr,
             sizeof(sourceVec) / sizeof(sourceVec[0]), sourceVec, testname);
     }
     else if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
     {
+        // Program Source code for address space
+        const char* sourceAddrSpace[] = {
+            "__kernel void ",
+            testname,
+            "(",
+            addrSpaceArgument,
+            ")\n{\n",
+            allTestCase[testId]
+                ->_genParameters[testNum]
+                .addrSpaceVariableTypeQualifier,
+            "printf(",
+            allTestCase[testId]
+                ->_genParameters[testNum]
+                .genericFormats[formatNum]
+                .c_str(),
+            ",",
+            allTestCase[testId]->_genParameters[testNum].addrSpaceParameter,
+            "); ",
+            addrSpacePAddArgument,
+            "\n}\n"
+        };
+
         err = create_single_kernel_helper(context, &program, kernel_ptr,
                                           sizeof(sourceAddrSpace)
                                               / sizeof(sourceAddrSpace[0]),
@@ -337,9 +325,33 @@ static cl_program makePrintfProgram(cl_kernel* kernel_ptr,
     }
     else
     {
-        err = create_single_kernel_helper(
-            context, &program, kernel_ptr,
-            sizeof(sourceGen) / sizeof(sourceGen[0]), sourceGen, testname);
+        // Program Source code for int,float,octal,hexadecimal,char,string
+        std::ostringstream sourceGen;
+        sourceGen << extension << "__kernel void " << testname
+                  << "(void)\n"
+                     "{\n"
+                     "   printf(\""
+                  << allTestCase[testId]
+                         ->_genParameters[testNum]
+                         .genericFormats[formatNum]
+                         .c_str()
+                  << "\\n\"";
+
+        if (allTestCase[testId]->_genParameters[testNum].dataRepresentation)
+        {
+            sourceGen << ","
+                      << allTestCase[testId]
+                             ->_genParameters[testNum]
+                             .dataRepresentation;
+        }
+
+        sourceGen << ");\n}\n";
+
+        std::string kernel_source = sourceGen.str();
+        const char* ptr = kernel_source.c_str();
+
+        err = create_single_kernel_helper(context, &program, kernel_ptr, 1,
+                                          &ptr, testname);
     }
 
     if (!program || err) {
@@ -419,27 +431,48 @@ static bool is64bAddressSpace(cl_device_id  device_id)
     else
         return false;
 }
+
+//-----------------------------------------
+// subtest_fail
+//-----------------------------------------
+void subtest_fail(const char* msg, ...)
+{
+    if (msg)
+    {
+        va_list argptr;
+        va_start(argptr, msg);
+        vfprintf(stderr, msg, argptr);
+        va_end(argptr);
+    }
+    ++s_test_fail;
+    ++s_test_cnt;
+}
+
 //-----------------------------------------
 // doTest
 //-----------------------------------------
 static int doTest(cl_command_queue queue, cl_context context,
-                  const unsigned int testId, const unsigned int testNum,
-                  cl_device_id device)
+                  const unsigned int testId, cl_device_id device)
 {
     int err = TEST_FAIL;
-    for (unsigned formatNum = 0; formatNum
-         < allTestCase[testId]->_genParameters[testNum].genericFormats.size();
-         formatNum++)
-    {
-        if ((allTestCase[testId]->_type == TYPE_HALF
-             || allTestCase[testId]->_type == TYPE_HALF_LIMITS)
-            && !is_extension_available(device, "cl_khr_fp16"))
-        {
-            log_info("Skipping half because cl_khr_fp16 extension is not "
-                     "supported.\n");
-            return TEST_SKIPPED_ITSELF;
-        }
 
+    if ((allTestCase[testId]->_type == TYPE_HALF
+         || allTestCase[testId]->_type == TYPE_HALF_LIMITS)
+        && !is_extension_available(device, "cl_khr_fp16"))
+    {
+        log_info("Skipping half because cl_khr_fp16 extension is not "
+                 "supported.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    auto& genParams = allTestCase[testId]->_genParameters;
+
+    auto fail_count = s_test_fail;
+    auto pass_count = s_test_cnt;
+    auto skip_count = s_test_skip;
+
+    for (unsigned testNum = 0; testNum < genParams.size(); testNum++)
+    {
         if (allTestCase[testId]->_type == TYPE_VECTOR)
         {
             if ((strcmp(allTestCase[testId]->_genParameters[testNum].dataType,
@@ -449,546 +482,336 @@ static int doTest(cl_command_queue queue, cl_context context,
             {
                 log_info("Skipping half because cl_khr_fp16 extension is not "
                          "supported.\n");
-                return TEST_SKIPPED_ITSELF;
+
+                s_test_skip++;
+                s_test_cnt++;
+                continue;
             }
 
-            log_info(
-                "%d)testing printf(\"%sv%s%s\",%s)\n", testNum,
-                allTestCase[testId]->_genParameters[testNum].vectorFormatFlag,
-                allTestCase[testId]->_genParameters[testNum].vectorSize,
-                allTestCase[testId]
-                    ->_genParameters[testNum]
-                    .vectorFormatSpecifier,
-                allTestCase[testId]
-                    ->_genParameters[testNum]
-                    .dataRepresentation);
-        }
-        else if (allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
-        {
-            if (isKernelArgument(allTestCase[testId], testNum))
+            // Long support for varible type
+            if (!strcmp(allTestCase[testId]->_genParameters[testNum].dataType,
+                        "long")
+                && !isLongSupported(device))
             {
-                log_info("%d)testing kernel //argument %s \n   printf(%s,%s)\n",
-                         testNum,
-                         allTestCase[testId]
-                             ->_genParameters[testNum]
-                             .addrSpaceArgumentTypeQualifier,
-                         allTestCase[testId]
-                             ->_genParameters[testNum]
-                             .genericFormats[formatNum]
-                             .c_str(),
-                         allTestCase[testId]
-                             ->_genParameters[testNum]
-                             .addrSpaceParameter);
+                log_info("Long is not supported, test not run.\n");
+                s_test_skip++;
+                s_test_cnt++;
+                continue;
+            }
+        }
+
+        for (unsigned formatNum = 0; formatNum < allTestCase[testId]
+                                                     ->_genParameters[testNum]
+                                                     .genericFormats.size();
+             formatNum++)
+        {
+            if (allTestCase[testId]->_type == TYPE_VECTOR)
+            {
+                log_info(
+                    "%d)testing printf(\"%sv%s%s\",%s)\n", testNum,
+                    allTestCase[testId]
+                        ->_genParameters[testNum]
+                        .vectorFormatFlag,
+                    allTestCase[testId]->_genParameters[testNum].vectorSize,
+                    allTestCase[testId]
+                        ->_genParameters[testNum]
+                        .vectorFormatSpecifier,
+                    allTestCase[testId]
+                        ->_genParameters[testNum]
+                        .dataRepresentation);
+            }
+            else if (allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
+            {
+                if (isKernelArgument(allTestCase[testId], testNum))
+                {
+                    log_info(
+                        "%d)testing kernel //argument %s \n   printf(%s,%s)\n",
+                        testNum,
+                        allTestCase[testId]
+                            ->_genParameters[testNum]
+                            .addrSpaceArgumentTypeQualifier,
+                        allTestCase[testId]
+                            ->_genParameters[testNum]
+                            .genericFormats[formatNum]
+                            .c_str(),
+                        allTestCase[testId]
+                            ->_genParameters[testNum]
+                            .addrSpaceParameter);
+                }
+                else
+                {
+                    log_info(
+                        "%d)testing kernel //variable %s \n   printf(%s,%s)\n",
+                        testNum,
+                        allTestCase[testId]
+                            ->_genParameters[testNum]
+                            .addrSpaceVariableTypeQualifier,
+                        allTestCase[testId]
+                            ->_genParameters[testNum]
+                            .genericFormats[formatNum]
+                            .c_str(),
+                        allTestCase[testId]
+                            ->_genParameters[testNum]
+                            .addrSpaceParameter);
+                }
             }
             else
             {
-                log_info("%d)testing kernel //variable %s \n   printf(%s,%s)\n",
-                         testNum,
-                         allTestCase[testId]
-                             ->_genParameters[testNum]
-                             .addrSpaceVariableTypeQualifier,
+                log_info("%d)testing printf(\"%s\"", testNum,
                          allTestCase[testId]
                              ->_genParameters[testNum]
                              .genericFormats[formatNum]
-                             .c_str(),
-                         allTestCase[testId]
-                             ->_genParameters[testNum]
-                             .addrSpaceParameter);
+                             .c_str());
+                if (allTestCase[testId]
+                        ->_genParameters[testNum]
+                        .dataRepresentation)
+                    log_info(",%s",
+                             allTestCase[testId]
+                                 ->_genParameters[testNum]
+                                 .dataRepresentation);
+                log_info(")\n");
             }
-        }
-        else
-        {
-            log_info("%d)testing printf(\"%s\",%s)\n", testNum,
-                     allTestCase[testId]
-                         ->_genParameters[testNum]
-                         .genericFormats[formatNum]
-                         .c_str(),
-                     allTestCase[testId]
-                         ->_genParameters[testNum]
-                         .dataRepresentation);
-        }
 
-        // Long support for varible type
-        if (allTestCase[testId]->_type == TYPE_VECTOR
-            && !strcmp(allTestCase[testId]->_genParameters[testNum].dataType,
-                       "long")
-            && !isLongSupported(device))
-        {
-            log_info("Long is not supported, test not run.\n");
-            return 0;
-        }
+            fflush(stdout);
 
-        // Long support for address in FULL_PROFILE/EMBEDDED_PROFILE
-        bool isLongSupport = true;
-        if (allTestCase[testId]->_type == TYPE_ADDRESS_SPACE
-            && isKernelPFormat(allTestCase[testId], testNum)
-            && !isLongSupported(device))
-        {
-            isLongSupport = false;
-        }
-
-        clProgramWrapper program;
-        clKernelWrapper kernel;
-        clMemWrapper d_out;
-        clMemWrapper d_a;
-        char _analysisBuffer[ANALYSIS_BUFFER_SIZE];
-        cl_uint out32 = 0;
-        cl_ulong out64 = 0;
-        int fd = -1;
-
-        // Define an index space (global work size) of threads for execution.
-        size_t globalWorkSize[1];
-
-        program =
-            makePrintfProgram(&kernel, context, testId, testNum, formatNum,
-                              isLongSupport, is64bAddressSpace(device));
-        if (!program || !kernel)
-        {
-            ++s_test_fail;
-            ++s_test_cnt;
-            return -1;
-        }
-
-        // For address space test if there is kernel argument - set it
-        if (allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
-        {
-            if (isKernelArgument(allTestCase[testId], testNum))
+            // Long support for address in FULL_PROFILE/EMBEDDED_PROFILE
+            bool isLongSupport = true;
+            if (allTestCase[testId]->_type == TYPE_ADDRESS_SPACE
+                && isKernelPFormat(allTestCase[testId], testNum)
+                && !isLongSupported(device))
             {
-                int a = 2;
-                d_a = clCreateBuffer(context,
-                                     CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                     sizeof(int), &a, &err);
-                if (err != CL_SUCCESS || d_a == NULL)
-                {
-                    log_error("clCreateBuffer failed\n");
-                    continue;
-                }
-                err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_a);
-                if (err != CL_SUCCESS)
-                {
-                    log_error("clSetKernelArg failed\n");
-                    continue;
-                }
+                isLongSupport = false;
             }
-            // For address space test if %p is tested
-            if (isKernelPFormat(allTestCase[testId], testNum))
+
+            clProgramWrapper program;
+            clKernelWrapper kernel;
+            clMemWrapper d_out;
+            clMemWrapper d_a;
+            char _analysisBuffer[ANALYSIS_BUFFER_SIZE];
+            cl_uint out32 = 0;
+            cl_ulong out64 = 0;
+            int fd = -1;
+
+            // Define an index space (global work size) of threads for
+            // execution.
+            size_t globalWorkSize[1];
+
+            program =
+                makePrintfProgram(&kernel, context, testId, testNum, formatNum,
+                                  isLongSupport, is64bAddressSpace(device));
+            if (!program || !kernel)
             {
-                d_out = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                       sizeof(cl_ulong), NULL, &err);
-                if (err != CL_SUCCESS || d_out == NULL)
+                subtest_fail(nullptr);
+                continue;
+            }
+
+            // For address space test if there is kernel argument - set it
+            if (allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
+            {
+                if (isKernelArgument(allTestCase[testId], testNum))
                 {
-                    log_error("clCreateBuffer failed\n");
-                    continue;
+                    int a = 2;
+                    d_a = clCreateBuffer(
+                        context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                        sizeof(int), &a, &err);
+                    if (err != CL_SUCCESS || d_a == NULL)
+                    {
+                        subtest_fail("clCreateBuffer failed\n");
+                        continue;
+                    }
+                    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_a);
+                    if (err != CL_SUCCESS)
+                    {
+                        subtest_fail("clSetKernelArg failed\n");
+                        continue;
+                    }
                 }
-                err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_out);
-                if (err != CL_SUCCESS)
+                // For address space test if %p is tested
+                if (isKernelPFormat(allTestCase[testId], testNum))
                 {
-                    log_error("clSetKernelArg failed\n");
-                    continue;
+                    d_out = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                           sizeof(cl_ulong), NULL, &err);
+                    if (err != CL_SUCCESS || d_out == NULL)
+                    {
+                        subtest_fail("clCreateBuffer failed\n");
+                        continue;
+                    }
+                    err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_out);
+                    if (err != CL_SUCCESS)
+                    {
+                        subtest_fail("clSetKernelArg failed\n");
+                        continue;
+                    }
                 }
             }
-        }
 
-        fd = acquireOutputStream(&err);
-        if (err != 0)
-        {
-            log_error("Error while redirection stdout to file");
-            continue;
-        }
-        globalWorkSize[0] = 1;
-        cl_event ndrEvt;
-        err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, globalWorkSize,
-                                     NULL, 0, NULL, &ndrEvt);
-        if (err != CL_SUCCESS)
-        {
+            fd = acquireOutputStream(&err);
+            if (err != 0)
+            {
+                subtest_fail("Error while redirection stdout to file");
+                continue;
+            }
+            globalWorkSize[0] = 1;
+            cl_event ndrEvt;
+            err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, globalWorkSize,
+                                         NULL, 0, NULL, &ndrEvt);
+            if (err != CL_SUCCESS)
+            {
+                releaseOutputStream(fd);
+                subtest_fail("\n clEnqueueNDRangeKernel failed errcode:%d\n",
+                             err);
+                continue;
+            }
+
+            fflush(stdout);
+            err = clFlush(queue);
+            if (err != CL_SUCCESS)
+            {
+                releaseOutputStream(fd);
+                subtest_fail("clFlush failed : %d\n", err);
+                continue;
+            }
+            // Wait until kernel finishes its execution and (thus) the output
+            // printed from the kernel is immediately printed
+            err = waitForEvent(&ndrEvt);
+
             releaseOutputStream(fd);
-            log_error("\n clEnqueueNDRangeKernel failed errcode:%d\n", err);
-            ++s_test_fail;
-            continue;
-        }
 
-        fflush(stdout);
-        err = clFlush(queue);
-        if (err != CL_SUCCESS)
-        {
-            releaseOutputStream(fd);
-            log_error("clFlush failed\n");
-            continue;
-        }
-        // Wait until kernel finishes its execution and (thus) the output
-        // printed from the kernel is immediately printed
-        err = waitForEvent(&ndrEvt);
+            if (err != CL_SUCCESS)
+            {
+                subtest_fail("waitforEvent failed : %d\n", err);
+                continue;
+            }
+            fflush(stdout);
 
-        releaseOutputStream(fd);
+            if (allTestCase[testId]->_type == TYPE_ADDRESS_SPACE
+                && isKernelPFormat(allTestCase[testId], testNum))
+            {
+                // Read the OpenCL output buffer (d_out) to the host output
+                // array (out)
+                if (!is64bAddressSpace(device)) // 32-bit address space
+                {
+                    clEnqueueReadBuffer(queue, d_out, CL_TRUE, 0,
+                                        sizeof(cl_int), &out32, 0, NULL, NULL);
+                }
+                else // 64-bit address space
+                {
+                    clEnqueueReadBuffer(queue, d_out, CL_TRUE, 0,
+                                        sizeof(cl_ulong), &out64, 0, NULL,
+                                        NULL);
+                }
+            }
 
-        if (err != CL_SUCCESS)
-        {
-            log_error("waitforEvent failed\n");
-            continue;
-        }
-        fflush(stdout);
-
-        if (allTestCase[testId]->_type == TYPE_ADDRESS_SPACE
-            && isKernelPFormat(allTestCase[testId], testNum))
-        {
-            // Read the OpenCL output buffer (d_out) to the host output array
-            // (out)
+            //
+            // Get the output printed from the kernel to _analysisBuffer
+            // and verify its correctness
+            getAnalysisBuffer(_analysisBuffer);
             if (!is64bAddressSpace(device)) // 32-bit address space
             {
-                clEnqueueReadBuffer(queue, d_out, CL_TRUE, 0, sizeof(cl_int),
-                                    &out32, 0, NULL, NULL);
+                if (0
+                    != verifyOutputBuffer(_analysisBuffer, allTestCase[testId],
+                                          testNum, (cl_ulong)out32))
+                {
+                    subtest_fail("verifyOutputBuffer failed\n");
+                    continue;
+                }
             }
             else // 64-bit address space
             {
-                clEnqueueReadBuffer(queue, d_out, CL_TRUE, 0, sizeof(cl_ulong),
-                                    &out64, 0, NULL, NULL);
+                if (0
+                    != verifyOutputBuffer(_analysisBuffer, allTestCase[testId],
+                                          testNum, out64))
+                {
+                    subtest_fail("verifyOutputBuffer failed\n");
+                    continue;
+                }
             }
         }
-
-        //
-        // Get the output printed from the kernel to _analysisBuffer
-        // and verify its correctness
-        getAnalysisBuffer(_analysisBuffer);
-        if (!is64bAddressSpace(device)) // 32-bit address space
-        {
-            if (0
-                != verifyOutputBuffer(_analysisBuffer, allTestCase[testId],
-                                      testNum, (cl_ulong)out32))
-                err = ++s_test_fail;
-        }
-        else //64-bit address space
-        {
-            if (0
-                != verifyOutputBuffer(_analysisBuffer, allTestCase[testId],
-                                      testNum, out64))
-                err = ++s_test_fail;
-        }
+        ++s_test_cnt;
     }
 
-    ++s_test_cnt;
-    return err;
+    // all subtests skipped ?
+    if (s_test_skip - skip_count == s_test_cnt - pass_count)
+        return TEST_SKIPPED_ITSELF;
+    return s_test_fail - fail_count;
 }
 
-
-int test_int_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_int(cl_device_id deviceID, cl_context context, cl_command_queue queue,
+             int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_INT, 0, deviceID);
-}
-int test_int_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_INT, 1, deviceID);
-}
-int test_int_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_INT, 2, deviceID);
-}
-int test_int_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_INT, 3, deviceID);
-}
-int test_int_4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_INT, 4, deviceID);
-}
-int test_int_5(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_INT, 5, deviceID);
-}
-int test_int_6(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_INT, 6, deviceID);
-}
-int test_int_7(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_INT, 7, deviceID);
-}
-int test_int_8(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_INT, 8, deviceID);
+    return doTest(gQueue, gContext, TYPE_INT, deviceID);
 }
 
-
-int test_half_0(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
+int test_half(cl_device_id deviceID, cl_context context, cl_command_queue queue,
+              int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_HALF, 0, deviceID);
-}
-int test_half_1(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HALF, 1, deviceID);
-}
-int test_half_2(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HALF, 2, deviceID);
-}
-int test_half_3(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HALF, 3, deviceID);
-}
-int test_half_4(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HALF, 4, deviceID);
-}
-int test_half_5(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HALF, 5, deviceID);
-}
-int test_half_6(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HALF, 6, deviceID);
-}
-int test_half_7(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HALF, 7, deviceID);
-}
-int test_half_8(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HALF, 8, deviceID);
-}
-int test_half_9(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HALF, 9, deviceID);
+    return doTest(gQueue, gContext, TYPE_HALF, deviceID);
 }
 
-
-int test_half_limits_0(cl_device_id deviceID, cl_context context,
-                       cl_command_queue queue, int num_elements)
+int test_half_limits(cl_device_id deviceID, cl_context context,
+                     cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_HALF_LIMITS, 0, deviceID);
-}
-int test_half_limits_1(cl_device_id deviceID, cl_context context,
-                       cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HALF_LIMITS, 1, deviceID);
-}
-int test_half_limits_2(cl_device_id deviceID, cl_context context,
-                       cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HALF_LIMITS, 2, deviceID);
+    return doTest(gQueue, gContext, TYPE_HALF_LIMITS, deviceID);
 }
 
-
-int test_float_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_float(cl_device_id deviceID, cl_context context,
+               cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_FLOAT, 0, deviceID);
-}
-int test_float_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 1, deviceID);
-}
-int test_float_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 2, deviceID);
-}
-int test_float_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 3, deviceID);
-}
-int test_float_4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 4, deviceID);
-}
-int test_float_5(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 5, deviceID);
-}
-int test_float_6(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 6, deviceID);
-}
-int test_float_7(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 7, deviceID);
-}
-int test_float_8(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 8, deviceID);
-}
-int test_float_9(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 9, deviceID);
-}
-int test_float_10(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 10, deviceID);
-}
-int test_float_11(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 11, deviceID);
-}
-int test_float_12(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 12, deviceID);
-}
-int test_float_13(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 13, deviceID);
-}
-int test_float_14(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 14, deviceID);
-}
-int test_float_15(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 15, deviceID);
-}
-int test_float_16(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 16, deviceID);
-}
-int test_float_17(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT, 17, deviceID);
+    return doTest(gQueue, gContext, TYPE_FLOAT, deviceID);
 }
 
-
-int test_float_limits_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_float_limits(cl_device_id deviceID, cl_context context,
+                      cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, 0, deviceID);
-}
-int test_float_limits_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, 1, deviceID);
-}
-int test_float_limits_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, 2, deviceID);
+    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, deviceID);
 }
 
-
-int test_octal_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_octal(cl_device_id deviceID, cl_context context,
+               cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_OCTAL, 0, deviceID);
-}
-int test_octal_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_OCTAL, 1, deviceID);
-}
-int test_octal_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_OCTAL, 2, deviceID);
-}
-int test_octal_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_OCTAL, 3, deviceID);
+    return doTest(gQueue, gContext, TYPE_OCTAL, deviceID);
 }
 
-
-int test_unsigned_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_UNSIGNED, 0, deviceID);
-}
-int test_unsigned_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_UNSIGNED, 1, deviceID);
-}
-
-
-int test_hexadecimal_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HEXADEC, 0, deviceID);
-}
-int test_hexadecimal_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HEXADEC, 1, deviceID);
-}
-int test_hexadecimal_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HEXADEC, 2, deviceID);
-}
-int test_hexadecimal_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HEXADEC, 3, deviceID);
-}
-int test_hexadecimal_4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HEXADEC, 4, deviceID);
-}
-
-
-int test_char_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_CHAR, 0, deviceID);
-}
-int test_char_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_CHAR, 1, deviceID);
-}
-int test_char_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_CHAR, 2, deviceID);
-}
-
-
-int test_string_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_STRING, 0, deviceID);
-}
-int test_string_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_STRING, 1, deviceID);
-}
-int test_string_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_STRING, 2, deviceID);
-}
-
-
-int test_vector_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_VECTOR, 0, deviceID);
-}
-int test_vector_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_VECTOR, 1, deviceID);
-}
-int test_vector_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_VECTOR, 2, deviceID);
-}
-int test_vector_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_VECTOR, 3, deviceID);
-}
-int test_vector_4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_VECTOR, 4, deviceID);
-}
-int test_vector_5(cl_device_id deviceID, cl_context context,
+int test_unsigned(cl_device_id deviceID, cl_context context,
                   cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_VECTOR, 5, deviceID);
+    return doTest(gQueue, gContext, TYPE_UNSIGNED, deviceID);
 }
 
+int test_hexadecimal(cl_device_id deviceID, cl_context context,
+                     cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_HEXADEC, deviceID);
+}
 
-int test_address_space_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_char(cl_device_id deviceID, cl_context context, cl_command_queue queue,
+              int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, 0, deviceID);
+    return doTest(gQueue, gContext, TYPE_CHAR, deviceID);
 }
-int test_address_space_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+
+int test_string(cl_device_id deviceID, cl_context context,
+                cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, 1, deviceID);
+    return doTest(gQueue, gContext, TYPE_STRING, deviceID);
 }
-int test_address_space_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+
+int test_format_string(cl_device_id deviceID, cl_context context,
+                       cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, 2, deviceID);
+    return doTest(gQueue, gContext, TYPE_FORMAT_STRING, deviceID);
 }
-int test_address_space_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+
+int test_vector(cl_device_id deviceID, cl_context context,
+                cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, 3, deviceID);
+    return doTest(gQueue, gContext, TYPE_VECTOR, deviceID);
 }
-int test_address_space_4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+
+int test_address_space(cl_device_id deviceID, cl_context context,
+                       cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, 4, deviceID);
+    return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, deviceID);
 }
 
 int test_buffer_size(cl_device_id deviceID, cl_context context,
@@ -1017,58 +840,11 @@ int test_buffer_size(cl_device_id deviceID, cl_context context,
 }
 
 test_definition test_list[] = {
-    ADD_TEST(int_0),           ADD_TEST(int_1),
-    ADD_TEST(int_2),           ADD_TEST(int_3),
-    ADD_TEST(int_4),           ADD_TEST(int_5),
-    ADD_TEST(int_6),           ADD_TEST(int_7),
-    ADD_TEST(int_8),
-
-    ADD_TEST(half_0),          ADD_TEST(half_1),
-    ADD_TEST(half_2),          ADD_TEST(half_3),
-    ADD_TEST(half_4),          ADD_TEST(half_5),
-    ADD_TEST(half_6),          ADD_TEST(half_7),
-    ADD_TEST(half_8),          ADD_TEST(half_9),
-
-    ADD_TEST(half_limits_0),   ADD_TEST(half_limits_1),
-    ADD_TEST(half_limits_2),
-
-    ADD_TEST(float_0),         ADD_TEST(float_1),
-    ADD_TEST(float_2),         ADD_TEST(float_3),
-    ADD_TEST(float_4),         ADD_TEST(float_5),
-    ADD_TEST(float_6),         ADD_TEST(float_7),
-    ADD_TEST(float_8),         ADD_TEST(float_9),
-    ADD_TEST(float_10),        ADD_TEST(float_11),
-    ADD_TEST(float_12),        ADD_TEST(float_13),
-    ADD_TEST(float_14),        ADD_TEST(float_15),
-    ADD_TEST(float_16),        ADD_TEST(float_17),
-
-    ADD_TEST(float_limits_0),  ADD_TEST(float_limits_1),
-    ADD_TEST(float_limits_2),
-
-    ADD_TEST(octal_0),         ADD_TEST(octal_1),
-    ADD_TEST(octal_2),         ADD_TEST(octal_3),
-
-    ADD_TEST(unsigned_0),      ADD_TEST(unsigned_1),
-
-    ADD_TEST(hexadecimal_0),   ADD_TEST(hexadecimal_1),
-    ADD_TEST(hexadecimal_2),   ADD_TEST(hexadecimal_3),
-    ADD_TEST(hexadecimal_4),
-
-    ADD_TEST(char_0),          ADD_TEST(char_1),
-    ADD_TEST(char_2),
-
-    ADD_TEST(string_0),        ADD_TEST(string_1),
-    ADD_TEST(string_2),
-
-    ADD_TEST(vector_0),        ADD_TEST(vector_1),
-    ADD_TEST(vector_2),        ADD_TEST(vector_3),
-    ADD_TEST(vector_4),        ADD_TEST(vector_5),
-
-    ADD_TEST(address_space_0), ADD_TEST(address_space_1),
-    ADD_TEST(address_space_2), ADD_TEST(address_space_3),
-    ADD_TEST(address_space_4),
-
-    ADD_TEST(buffer_size),
+    ADD_TEST(int),           ADD_TEST(half),          ADD_TEST(half_limits),
+    ADD_TEST(float),         ADD_TEST(float_limits),  ADD_TEST(octal),
+    ADD_TEST(unsigned),      ADD_TEST(hexadecimal),   ADD_TEST(char),
+    ADD_TEST(string),        ADD_TEST(format_string), ADD_TEST(vector),
+    ADD_TEST(address_space), ADD_TEST(buffer_size),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
