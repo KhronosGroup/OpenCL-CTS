@@ -152,6 +152,11 @@ test_definition test_list[] = {
     ADD_TEST(work_group_suggested_local_size_1D),
     ADD_TEST(work_group_suggested_local_size_2D),
     ADD_TEST(work_group_suggested_local_size_3D),
+
+    ADD_TEST(negative_create_command_queue),
+    ADD_TEST_VERSION(negative_create_command_queue_with_properties,
+                     Version(2, 0)),
+    ADD_TEST(negative_create_command_queue_with_properties_khr),
 };
 
 const int test_num = ARRAY_SIZE(test_list);

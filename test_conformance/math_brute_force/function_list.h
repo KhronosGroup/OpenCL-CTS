@@ -52,6 +52,7 @@ union dptr {
     long double (*f_f)(long double);
     long double (*f_u)(cl_ulong);
     int (*i_f)(long double);
+    double (*f_ff_d)(double, double);
     long double (*f_ff)(long double, long double);
     int (*i_ff)(long double, long double);
     long double (*f_fi)(long double, int);

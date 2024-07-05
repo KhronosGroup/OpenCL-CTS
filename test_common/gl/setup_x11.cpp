@@ -26,20 +26,26 @@ class X11GLEnvironment : public GLEnvironment
 private:
     cl_device_id m_devices[64];
     cl_uint m_device_count;
+    bool m_glut_init;
 
 public:
     X11GLEnvironment()
     {
         m_device_count = 0;
+        m_glut_init = false;
     }
     virtual int Init( int *argc, char **argv, int use_opencl_32 )
     {
          // Create a GLUT window to render into
-        glutInit( argc, argv );
-        glutInitWindowSize( 512, 512 );
-        glutInitDisplayMode( GLUT_RGB | GLUT_DOUBLE );
-        glutCreateWindow( "OpenCL <-> OpenGL Test" );
-        glewInit();
+         if (!m_glut_init)
+         {
+             glutInit(argc, argv);
+             glutInitWindowSize(512, 512);
+             glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
+             glutCreateWindow("OpenCL <-> OpenGL Test");
+             glewInit();
+             m_glut_init = true;
+         }
         return 0;
     }
 

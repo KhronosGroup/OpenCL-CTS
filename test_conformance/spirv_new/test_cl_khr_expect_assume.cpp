@@ -23,36 +23,48 @@ template <typename T> struct TestInfo
 };
 template <> struct TestInfo<cl_char>
 {
+    using argType = cl_char;
     static constexpr const char* typeName = "char";
     static constexpr const char* testName = "expect_char";
 };
 template <> struct TestInfo<cl_short>
 {
+    using argType = cl_short;
     static constexpr const char* typeName = "short";
     static constexpr const char* testName = "expect_short";
 };
 template <> struct TestInfo<cl_int>
 {
+    using argType = cl_int;
     static constexpr const char* typeName = "int";
     static constexpr const char* testName = "expect_int";
 };
 template <> struct TestInfo<cl_long>
 {
+    using argType = cl_long;
     static constexpr const char* typeName = "long";
     static constexpr const char* testName = "expect_long";
+};
+template <> struct TestInfo<cl_bool>
+{
+    using argType = cl_int;
+    static constexpr const char* typeName = "bool";
+    static constexpr const char* testName = "expect_bool";
 };
 
 template <typename T>
 static int test_expect_type(cl_device_id device, cl_context context,
                             cl_command_queue queue)
 {
+    using ArgType = typename TestInfo<T>::argType;
+
     log_info("    testing type %s\n", TestInfo<T>::typeName);
 
-    const T value = 42;
+    const ArgType value = 42;
     cl_int error = CL_SUCCESS;
 
     std::vector<size_t> vecSizes({ 1, 2, 3, 4, 8, 16 });
-    std::vector<T> testData;
+    std::vector<ArgType> testData;
     testData.reserve(16 * vecSizes.size());
 
     for (auto v : vecSizes)
@@ -69,8 +81,8 @@ static int test_expect_type(cl_device_id device, cl_context context,
     }
 
     clMemWrapper dst =
-        clCreateBuffer(context, CL_MEM_WRITE_ONLY, testData.size() * sizeof(T),
-                       nullptr, &error);
+        clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+                       testData.size() * sizeof(ArgType), nullptr, &error);
     test_error(error, "Unable to create destination buffer");
 
     clProgramWrapper prog;
@@ -90,10 +102,10 @@ static int test_expect_type(cl_device_id device, cl_context context,
                                    NULL, NULL);
     test_error(error, "Unable to enqueue kernel");
 
-    std::vector<T> resData(testData.size());
-    error =
-        clEnqueueReadBuffer(queue, dst, CL_TRUE, 0, resData.size() * sizeof(T),
-                            resData.data(), 0, NULL, NULL);
+    std::vector<ArgType> resData(testData.size());
+    error = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0,
+                                resData.size() * sizeof(ArgType),
+                                resData.data(), 0, NULL, NULL);
     test_error(error, "Unable to read destination buffer");
 
     if (resData != testData)
@@ -122,6 +134,7 @@ TEST_SPIRV_FUNC(op_expect)
     {
         result |= test_expect_type<cl_long>(deviceID, context, queue);
     }
+    result |= test_expect_type<cl_bool>(deviceID, context, queue);
 
     return result;
 }

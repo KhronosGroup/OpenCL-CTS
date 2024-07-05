@@ -217,3 +217,14 @@ extern int test_work_group_suggested_local_size_3D(cl_device_id device,
                                                    cl_context context,
                                                    cl_command_queue queue,
                                                    int n_elems);
+
+extern int test_negative_create_command_queue(cl_device_id deviceID,
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements);
+extern int test_negative_create_command_queue_with_properties(
+    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_create_command_queue_with_properties_khr(
+    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    int num_elements);

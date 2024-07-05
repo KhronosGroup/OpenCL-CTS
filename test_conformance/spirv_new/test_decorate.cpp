@@ -216,7 +216,8 @@ static inline Ti generate_saturated_rhs_input(RandomSeed &seed)
 }
 
 template <typename Ti, typename Tl, typename To>
-static inline To compute_saturated_output(Ti lhs, Ti rhs)
+static inline To compute_saturated_output(Ti lhs, Ti rhs,
+                                          cl_half_rounding_mode half_rounding)
 {
     constexpr auto loVal = std::numeric_limits<To>::min();
     constexpr auto hiVal = std::numeric_limits<To>::max();
@@ -226,10 +227,10 @@ static inline To compute_saturated_output(Ti lhs, Ti rhs)
         cl_float f = cl_half_to_float(lhs) * cl_half_to_float(rhs);
 
         // Quantize to fp16:
-        f = cl_half_to_float(cl_half_from_float(f, CL_HALF_RTE));
+        f = cl_half_to_float(cl_half_from_float(f, half_rounding));
 
         To val = (To)std::min<float>(std::max<float>(f, loVal), hiVal);
-        if (isnan(cl_half_from_float(rhs, CL_HALF_RTE)))
+        if (isnan(cl_half_to_float(rhs)))
         {
             val = 0;
         }
@@ -244,6 +245,26 @@ static inline To compute_saturated_output(Ti lhs, Ti rhs)
         val = 0;
     }
     return val;
+}
+
+static cl_half_rounding_mode get_half_rounding_mode(cl_device_id deviceID)
+{
+    const cl_device_fp_config fpConfigHalf =
+        get_default_rounding_mode(deviceID, CL_DEVICE_HALF_FP_CONFIG);
+
+    if (fpConfigHalf == CL_FP_ROUND_TO_NEAREST)
+    {
+        return CL_HALF_RTE;
+    }
+    else if (fpConfigHalf == CL_FP_ROUND_TO_ZERO)
+    {
+        return CL_HALF_RTZ;
+    }
+    else
+    {
+        log_error("Error while acquiring half rounding mode");
+    }
+    return CL_HALF_RTE;
 }
 
 template <typename Ti, typename Tl, typename To>
@@ -303,13 +324,20 @@ int verify_saturated_results(cl_device_id deviceID, cl_context context,
     err = clEnqueueReadBuffer(queue, res, CL_TRUE, 0, out_bytes, &h_res[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read to output");
 
+    cl_half_rounding_mode half_rounding = CL_HALF_RTE;
+    if (std::is_same<Ti, cl_half>::value)
+    {
+        half_rounding = get_half_rounding_mode(deviceID);
+    }
+
     for (int i = 0; i < num; i++)
     {
-        To val = compute_saturated_output<Ti, Tl, To>(h_lhs[i], h_rhs[i]);
+        To val = compute_saturated_output<Ti, Tl, To>(h_lhs[i], h_rhs[i],
+                                                      half_rounding);
 
         if (val != h_res[i])
         {
-            log_error("Value error at %d: got %d, want %d\n", i, val, h_res[i]);
+            log_error("Value error at %d: got %d, want %d\n", i, h_res[i], val);
             return -1;
         }
     }
