@@ -1101,7 +1101,8 @@ testCase testCaseAddrSpace = {
 //----------------------------------------------------------
 // placeholders for mixed-args-data test
 //----------------------------------------------------------
-// empty slots specifies number of tests
+// number of records with empty objects is the number of tests during which the
+// format string and reference string are generated
 std::vector<printDataGenParameters> printMixedFormatGenParameters(64,
                                                                   { { "" } });
 
@@ -1110,7 +1111,8 @@ std::vector<std::string> correctBufferMixedFormat;
 //----------------------------------------------------------
 // Test case for mixed-args
 //----------------------------------------------------------
-testCase testCaseMixedFormat = { TYPE_MIXED_FORMAT, correctBufferMixedFormat,
+testCase testCaseMixedFormat = { TYPE_MIXED_FORMAT_RANDOM,
+                                 correctBufferMixedFormat,
                                  printMixedFormatGenParameters, NULL };
 
 //-------------------------------------------------------------------------------

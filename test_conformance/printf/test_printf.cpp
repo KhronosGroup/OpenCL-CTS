@@ -16,6 +16,7 @@
 #include "harness/os_helpers.h"
 #include "harness/typeWrappers.h"
 #include "harness/stringHelpers.h"
+#include "harness/conversions.h"
 
 #include <algorithm>
 #include <array>
@@ -220,27 +221,24 @@ int waitForEvent(cl_event* event)
 }
 
 //-----------------------------------------
-// Static helper functions definition
-//-----------------------------------------
-
-float get_random_float(float low, float high, MTdata d)
-{
-    float t = (float)((double)genrand_int32(d) / (double)0xFFFFFFFF);
-    return (1.0f - t) * low + t * high;
-}
-
-//-----------------------------------------
 // makeMixedFormatPrintfProgram
+// Generates in-flight printf kernel with format string including:
+//     -data before conversion flags (randomly generated ascii string)
+//     -randomly generated conversion flags (integer of floating point)
+//     -data after conversion flags (randomly generated ascii string).
+// Moreover it generates suitable arguments.
+// example: printf("zH, %u, %a, D+{gy\n", -929240879, 24295.671875f)
 //-----------------------------------------
 cl_program makeMixedFormatPrintfProgram(cl_kernel* kernel_ptr,
                                         const cl_context context,
                                         const cl_device_id device,
                                         const unsigned int testId,
+                                        const unsigned int testNum,
                                         const std::string& testname)
 {
     auto gen_char = [&]() {
         static const char dict[] = {
-            " !#$&()*+,-./"
+            " 	!#$&()*+,-./"
             "123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`"
             "abcdefghijklmnopqrstuvwxyz{|}~"
         };
@@ -249,12 +247,12 @@ cl_program makeMixedFormatPrintfProgram(cl_kernel* kernel_ptr,
 
     std::array<std::vector<std::string>, 2> formats = {
         { { "%f", "%e", "%g", "%a", "%F", "%E", "%G", "%A" },
-          { "%d", "%i", "%u", "%x" } }
+          { "%d", "%i", "%u", "%x", "%o" } }
     };
-    std::vector<char> data_befor(2 + genrand_int32(gMTdata) % 8);
+    std::vector<char> data_before(2 + genrand_int32(gMTdata) % 8);
     std::vector<char> data_after(2 + genrand_int32(gMTdata) % 8);
 
-    std::generate(data_befor.begin(), data_befor.end(), gen_char);
+    std::generate(data_before.begin(), data_before.end(), gen_char);
     std::generate(data_after.begin(), data_after.end(), gen_char);
 
     cl_uint num_args = 2 + genrand_int32(gMTdata) % 4;
@@ -288,7 +286,7 @@ cl_program makeMixedFormatPrintfProgram(cl_kernel* kernel_ptr,
                << "(void)\n"
                   "{\n"
                   "   printf(\"";
-    for (auto it : data_befor)
+    for (auto it : data_before)
     {
         format_str << it;
         ref_str << it;
@@ -299,16 +297,16 @@ cl_program makeMixedFormatPrintfProgram(cl_kernel* kernel_ptr,
 
     for (cl_uint i = 0; i < num_args; i++)
     {
-        std::uint8_t type_ind = genrand_int32(gMTdata) % 2;
+        std::uint8_t is_int = genrand_int32(gMTdata) % 2;
 
         // Set CPU rounding mode to match that of the device
-        set_round(deviceRound, type_ind != 0 ? kint : kfloat);
+        set_round(deviceRound, is_int != 0 ? kint : kfloat);
 
-        std::string format = formats[type_ind][genrand_int32(gMTdata)
-                                               % formats[type_ind].size()];
+        std::string format =
+            formats[is_int][genrand_int32(gMTdata) % formats[is_int].size()];
         format_str << format << ", ";
 
-        if (type_ind)
+        if (is_int)
         {
             int arg = genrand_int32(gMTdata);
             args_str << str_sprintf("%d", arg) << ", ";
@@ -325,14 +323,25 @@ cl_program makeMixedFormatPrintfProgram(cl_kernel* kernel_ptr,
     // Restore the original CPU rounding mode
     set_round(hostRound, kfloat);
 
-    args_str.seekp(-2, std::ios_base::end);
-    args_str << ");\n}\n";
-
     for (auto it : data_after)
     {
         format_str << it;
         ref_str << it;
     }
+
+    {
+        std::ostringstream args_cpy;
+        args_cpy << args_str.str();
+        args_cpy.seekp(-2, std::ios_base::end);
+        args_cpy << ")\n";
+        log_info("%d) testing printf(\"%s\\n\", %s", testNum,
+                 format_str.str().c_str(), args_cpy.str().c_str());
+    }
+
+    args_str.seekp(-2, std::ios_base::end);
+    args_str << ");\n}\n";
+
+
     source_gen << format_str.str() << "\\n\""
                << ", " << args_str.str();
 
@@ -472,10 +481,10 @@ cl_program makePrintfProgram(cl_kernel* kernel_ptr, const cl_context context,
             concat_kernel(sourceAddrSpace,
                           sizeof(sourceAddrSpace) / sizeof(sourceAddrSpace[0]));
     }
-    else if (allTestCase[testId]->_type == TYPE_MIXED_FORMAT)
+    else if (allTestCase[testId]->_type == TYPE_MIXED_FORMAT_RANDOM)
     {
         return makeMixedFormatPrintfProgram(kernel_ptr, context, device, testId,
-                                            testname);
+                                            testNum, testname);
     }
     else
     {
@@ -653,11 +662,7 @@ void logTestType(const unsigned testId, const unsigned testNum,
                          .addrSpaceParameter);
         }
     }
-    else if (allTestCase[testId]->_type == TYPE_MIXED_FORMAT)
-    {
-        log_info("%d) testing printf with mixed format string\n", testNum);
-    }
-    else
+    else if (allTestCase[testId]->_type != TYPE_MIXED_FORMAT_RANDOM)
     {
         log_info("%d)testing printf(\"%s\"", testNum,
                  allTestCase[testId]
@@ -980,7 +985,7 @@ int test_address_space(cl_device_id deviceID, cl_context context,
 int test_mixed_format(cl_device_id deviceID, cl_context context,
                       cl_command_queue queue, int num_elements)
 {
-    return doTest(gQueue, gContext, TYPE_MIXED_FORMAT, deviceID);
+    return doTest(gQueue, gContext, TYPE_MIXED_FORMAT_RANDOM, deviceID);
 }
 
 int test_buffer_size(cl_device_id deviceID, cl_context context,
