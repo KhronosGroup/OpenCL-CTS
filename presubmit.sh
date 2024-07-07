@@ -62,7 +62,7 @@ cmake .. -G Ninja \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
       -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/
-cmake --build . -j2
+cmake --build . --parallel
 
 #Vulkan Loader
 cd ${TOP}
@@ -78,7 +78,7 @@ cmake .. -G Ninja \
       -DBUILD_WSI_XCB_SUPPORT=OFF \
       -DBUILD_WSI_WAYLAND_SUPPORT=OFF \
       -C helper.cmake ..
-cmake --build . -j2
+cmake --build . --parallel
 
 # Build CTS
 cd ${TOP}
@@ -105,4 +105,4 @@ cmake .. -G Ninja \
       -DVULKAN_IS_SUPPORTED=${BUILD_VULKAN_TEST} \
       -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/ \
       -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/
-cmake --build . -j3
+cmake --build . --parallel
