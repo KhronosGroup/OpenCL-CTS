@@ -1452,5 +1452,9 @@ int main(int argc, const char** argv)
         }
     }
 
-    return runTestHarness(argCount, argList, test_num, test_list, true, 0);
+    int error = runTestHarness(argCount, argList, test_num, test_list, true, 0);
+
+    free(argList);
+
+    return error;
 }
