@@ -1099,10 +1099,9 @@ testCase testCaseAddrSpace = {
 //=========================================================
 
 //----------------------------------------------------------
-// placeholders for mixed-args-data test
-//----------------------------------------------------------
-// number of records with empty objects is the number of tests during which the
-// format string and reference string are generated
+// Container related to mixed format tests.
+// Empty records for which the format string and reference string are generated at run time.
+// The size of this vector specifies the number of random tests that will be run.
 std::vector<printDataGenParameters> printMixedFormatGenParameters(64,
                                                                   { { "" } });
 

@@ -224,7 +224,7 @@ int waitForEvent(cl_event* event)
 // makeMixedFormatPrintfProgram
 // Generates in-flight printf kernel with format string including:
 //     -data before conversion flags (randomly generated ascii string)
-//     -randomly generated conversion flags (integer of floating point)
+//     -randomly generated conversion flags (integer or floating point)
 //     -data after conversion flags (randomly generated ascii string).
 // Moreover it generates suitable arguments.
 // example: printf("zH, %u, %a, D+{gy\n", -929240879, 24295.671875f)
@@ -238,7 +238,7 @@ cl_program makeMixedFormatPrintfProgram(cl_kernel* kernel_ptr,
 {
     auto gen_char = [&]() {
         static const char dict[] = {
-            " 	!#$&()*+,-./"
+            " \t!#$&()*+,-./"
             "123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`"
             "abcdefghijklmnopqrstuvwxyz{|}~"
         };
@@ -247,7 +247,7 @@ cl_program makeMixedFormatPrintfProgram(cl_kernel* kernel_ptr,
 
     std::array<std::vector<std::string>, 2> formats = {
         { { "%f", "%e", "%g", "%a", "%F", "%E", "%G", "%A" },
-          { "%d", "%i", "%u", "%x", "%o" } }
+          { "%d", "%i", "%u", "%x", "%o", "%X" } }
     };
     std::vector<char> data_before(2 + genrand_int32(gMTdata) % 8);
     std::vector<char> data_after(2 + genrand_int32(gMTdata) % 8);
@@ -982,7 +982,7 @@ int test_address_space(cl_device_id deviceID, cl_context context,
     return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, deviceID);
 }
 
-int test_mixed_format(cl_device_id deviceID, cl_context context,
+int test_mixed_format_random(cl_device_id deviceID, cl_context context,
                       cl_command_queue queue, int num_elements)
 {
     return doTest(gQueue, gContext, TYPE_MIXED_FORMAT_RANDOM, deviceID);
@@ -1018,7 +1018,7 @@ test_definition test_list[] = {
     ADD_TEST(float),         ADD_TEST(float_limits),  ADD_TEST(octal),
     ADD_TEST(unsigned),      ADD_TEST(hexadecimal),   ADD_TEST(char),
     ADD_TEST(string),        ADD_TEST(format_string), ADD_TEST(vector),
-    ADD_TEST(address_space), ADD_TEST(buffer_size),   ADD_TEST(mixed_format),
+    ADD_TEST(address_space), ADD_TEST(buffer_size),   ADD_TEST(mixed_format_random),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
