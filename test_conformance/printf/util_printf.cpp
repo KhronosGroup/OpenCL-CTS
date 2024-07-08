@@ -1100,8 +1100,9 @@ testCase testCaseAddrSpace = {
 
 //----------------------------------------------------------
 // Container related to mixed format tests.
-// Empty records for which the format string and reference string are generated at run time.
-// The size of this vector specifies the number of random tests that will be run.
+// Empty records for which the format string and reference string are generated
+// at run time. The size of this vector specifies the number of random tests
+// that will be run.
 std::vector<printDataGenParameters> printMixedFormatGenParameters(64,
                                                                   { { "" } });
 
