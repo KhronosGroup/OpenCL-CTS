@@ -30,6 +30,26 @@ enum class RunMode
     RM_SIGNAL
 };
 
+// scope guard helper to ensure proper releasing of sub devices
+struct SubDevicesScopeGuarded
+{
+    SubDevicesScopeGuarded(const cl_int dev_count)
+    {
+        sub_devices.resize(dev_count);
+    }
+    ~SubDevicesScopeGuarded()
+    {
+        for (auto& device : sub_devices)
+        {
+            cl_int err = clReleaseDevice(device);
+            if (err != CL_SUCCESS)
+                log_error("\n Releasing sub-device failed \n");
+        }
+    }
+
+    std::vector<cl_device_id> sub_devices;
+};
+
 // the device associated with command_queue is not same as one of the devices
 // specified by CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR at the time of creating one
 // or more of sema_objects.
@@ -43,6 +63,66 @@ template <RunMode mode> struct InvalidCommandQueue : public SemaphoreTestBase
 
     cl_int Run() override
     {
+        cl_int err = CL_SUCCESS;
+
+        // Below test makes sense only if semaphore and command queue share the
+        // same context, otherwise CL_INVALID_CONTEXT could be the result. Thus,
+        // multi device context must be created, then semaphore and command
+        // queue with the same associated context but different devices.
+
+        // partition device and create new context if possible
+        cl_uint maxComputeUnits = 0;
+        err = clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS,
+                              sizeof(maxComputeUnits), &maxComputeUnits, NULL);
+        test_error(err, "Unable to get maximal number of compute units");
+
+        cl_uint maxSubDevices = 0;
+        err = clGetDeviceInfo(device, CL_DEVICE_PARTITION_MAX_SUB_DEVICES,
+                              sizeof(maxSubDevices), &maxSubDevices, NULL);
+        test_error(err, "Unable to get maximal number of sub-devices");
+
+        if (maxSubDevices < 2)
+        {
+            log_info("Can't partition device, test not supported\n");
+            return TEST_SKIPPED_ITSELF;
+        }
+
+        cl_device_partition_property partitionProp[] = {
+            CL_DEVICE_PARTITION_EQUALLY, maxComputeUnits / 2, 0
+        };
+
+        cl_uint deviceCount = 0;
+        // how many sub-devices can we create?
+        err =
+            clCreateSubDevices(device, partitionProp, 0, nullptr, &deviceCount);
+        if (err != CL_SUCCESS)
+        {
+            log_info("Can't partition device, test not supported\n");
+            return TEST_SKIPPED_ITSELF;
+        }
+
+        if (deviceCount < 2)
+            test_error_ret(
+                CL_INVALID_VALUE,
+                "Multi context test for CL_INVALID_COMMAND_QUEUE not supported",
+                TEST_SKIPPED_ITSELF);
+
+        // get the list of subDevices
+        SubDevicesScopeGuarded scope_guard(deviceCount);
+        err = clCreateSubDevices(device, partitionProp, deviceCount,
+                                 scope_guard.sub_devices.data(), &deviceCount);
+        if (err != CL_SUCCESS)
+        {
+            log_info("Can't partition device, test not supported\n");
+            return TEST_SKIPPED_ITSELF;
+        }
+
+        /* Create a multi device context */
+        clContextWrapper multi_device_context = clCreateContext(
+            NULL, (cl_uint)deviceCount, scope_guard.sub_devices.data(), nullptr,
+            nullptr, &err);
+        test_error_ret(err, "Unable to create testing context", CL_SUCCESS);
+
         // Create semaphore
         cl_semaphore_properties_khr sema_props[] = {
             static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
@@ -50,65 +130,19 @@ template <RunMode mode> struct InvalidCommandQueue : public SemaphoreTestBase
                 CL_SEMAPHORE_TYPE_BINARY_KHR),
             static_cast<cl_semaphore_properties_khr>(
                 CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR),
-            (cl_semaphore_properties_khr)device,
+            (cl_semaphore_properties_khr)scope_guard.sub_devices.front(),
             CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR,
             0
         };
 
-        cl_int err = CL_SUCCESS;
-        semaphore =
-            clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
+        semaphore = clCreateSemaphoreWithPropertiesKHR(multi_device_context,
+                                                       sema_props, &err);
         test_error(err, "Could not create semaphore");
 
-        // find other device
-        cl_platform_id platform_id = 0;
-        // find out what platform the harness is using.
-        err = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
-                              sizeof(cl_platform_id), &platform_id, nullptr);
-        test_error(err, "clGetDeviceInfo failed");
-
-        cl_uint num_platforms = 0;
-        err = clGetPlatformIDs(16, nullptr, &num_platforms);
-        test_error(err, "clGetPlatformIDs failed");
-
-        std::vector<cl_platform_id> platforms(num_platforms);
-
-        err = clGetPlatformIDs(num_platforms, platforms.data(), &num_platforms);
-        test_error(err, "clGetPlatformIDs failed");
-
-        cl_device_id device_sec = nullptr;
-        cl_uint num_devices = 0;
-        for (int p = 0; p < (int)num_platforms; p++)
-        {
-            if (platform_id == platforms[p]) continue;
-
-            err = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, 0, nullptr,
-                                 &num_devices);
-            test_error(err, "clGetDeviceIDs failed");
-
-            std::vector<cl_device_id> devices(num_devices);
-            err = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, num_devices,
-                                 devices.data(), nullptr);
-            test_error(err, "clGetDeviceIDs failed");
-
-            device_sec = devices.front();
-            break;
-        }
-
-        if (device_sec == nullptr)
-        {
-            log_info("Can't find needed resources. Skipping the test.\n");
-            return TEST_SKIPPED_ITSELF;
-        }
-
-        // Create secondary context
-        clContextWrapper context_sec =
-            clCreateContext(0, 1, &device_sec, nullptr, nullptr, &err);
-        test_error(err, "Failed to create context");
-
-        // Create secondary queue
-        clCommandQueueWrapper queue_sec =
-            clCreateCommandQueue(context_sec, device_sec, 0, &err);
+        // Create secondary queue associated with device not the same as one
+        // associated with semaphore
+        clCommandQueueWrapper queue_sec = clCreateCommandQueue(
+            multi_device_context, scope_guard.sub_devices.back(), 0, &err);
         test_error(err, "Could not create command queue");
 
         if (mode == RunMode::RM_SIGNAL)
