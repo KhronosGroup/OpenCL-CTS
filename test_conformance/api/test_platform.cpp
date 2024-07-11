@@ -236,7 +236,7 @@ int test_get_platform_ids(cl_device_id deviceID, cl_context context, cl_command_
         log_error("clGetDeviceIDs must return at least one device\n");
         total_errors++;
     }
-    test_assert_error(num_devices > 1,
+    test_assert_error(num_devices >= 1,
                       "clGetDeviceIDs must return at least one device");
     devices = (cl_device_id *)malloc(num_devices*sizeof(cl_device_id));
     memset(devices, 0, sizeof(cl_device_id)*num_devices);
