@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdarg>
+#include <cstdint>
 #include <errno.h>
 #include <memory>
 #include <string.h>
