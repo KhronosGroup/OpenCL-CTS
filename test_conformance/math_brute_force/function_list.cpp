@@ -271,23 +271,19 @@ const Func functionList[] = {
     ENTRY(cosh, 4.0f, 4.0f, 2.f, FTZ_OFF, unaryF),
     ENTRY_EXT(cospi, 4.0f, 4.0f, 2.f, 0.00048828125f, FTZ_OFF, unaryF,
               0.00048828125f), // relaxed ulp 2^-11
-    //                                  ENTRY( erfc,                  16.0f,
-    //                                  16.0f,         FTZ_OFF,     unaryF),
-    //                                  //disabled for 1.0 due to lack of
-    //                                  reference implementation ENTRY( erf,
-    //                                  16.0f,         16.0f,         FTZ_OFF,
-    //                                  unaryF), //disabled for 1.0 due to lack
-    //                                  of reference implementation
-    ENTRY_EXT(exp, 3.0f, 4.0f, 2.f, 3.0f, FTZ_OFF, unaryF,
-              4.0f), // relaxed error is actually overwritten in unary.c as it
-                     // is 3+floor(fabs(2*x))
-    ENTRY_EXT(exp2, 3.0f, 4.0f, 2.f, 3.0f, FTZ_OFF, unaryF,
-              4.0f), // relaxed error is actually overwritten in unary.c as it
-                     // is 3+floor(fabs(2*x))
-    ENTRY_EXT(exp10, 3.0f, 4.0f, 2.f, 8192.0f, FTZ_OFF, unaryF,
-              8192.0f), // relaxed error is actually overwritten in unary.c as
-                        // it is 3+floor(fabs(2*x)) in derived mode,
+    //ENTRY(erfc, 16.0f, 16.0f, FTZ_OFF, unaryF), //disabled for 1.0 due to lack of reference implementation
+    //ENTRY(erf,  16.0f, 16.0f, FTZ_OFF, unaryF), //disabled for 1.0 due to lack of reference implementation
+
+    // relaxed error is overwritten in unary.c as it is 3+floor(fabs(2*x))
+    ENTRY_EXT(exp, 3.0f, 4.0f, 2.f, 3.0f, FTZ_OFF, unaryF, 4.0f),
+
+    // relaxed error is overwritten in unary.c as it is 3+floor(fabs(2*x))
+    ENTRY_EXT(exp2, 3.0f, 4.0f, 2.f, 3.0f, FTZ_OFF, unaryF, 4.0f),
+
+    // relaxed error is overwritten in unary.c as it is 3+floor(fabs(2*x)) in derived mode;
     // in non-derived mode it uses the ulp error for half_exp10.
+    ENTRY_EXT(exp10, 3.0f, 4.0f, 2.f, 8192.0f, FTZ_OFF, unaryF, 8192.0f),
+
     ENTRY(expm1, 3.0f, 4.0f, 2.f, FTZ_OFF, unaryF),
     ENTRY(fabs, 0.0f, 0.0f, 0.0f, FTZ_OFF, unaryF),
     ENTRY(fdim, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryF),
@@ -325,23 +321,23 @@ const Func functionList[] = {
               4.76837158203125e-7f), // relaxed ulp 2^-21
     ENTRY(log1p, 2.0f, 4.0f, 2.0f, FTZ_OFF, unaryF),
     ENTRY(logb, 0.0f, 0.0f, 0.0f, FTZ_OFF, unaryF),
-    ENTRY_EXT(mad, INFINITY, INFINITY, INFINITY, INFINITY, FTZ_OFF,
-              mad_function,
-              INFINITY), // in fast-relaxed-math mode it has to be either
-                         // exactly rounded fma or exactly rounded a*b+c
+
+    // In fast-relaxed-math mode it has to be either exactly rounded fma or exactly rounded a*b+c
+    ENTRY_EXT(mad, INFINITY, INFINITY, INFINITY, INFINITY, FTZ_OFF, mad_function, INFINITY),
+
     ENTRY(maxmag, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryF),
     ENTRY(minmag, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryF),
     ENTRY(modf, 0.0f, 0.0f, 0.0f, FTZ_OFF, unaryF_two_results),
     ENTRY(nan, 0.0f, 0.0f, 0.0f, FTZ_OFF, unaryF_u),
     ENTRY(nextafter, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryF_nextafter),
-    ENTRY_EXT(pow, 16.0f, 16.0f, 4.0f, 8192.0f, FTZ_OFF, binaryF,
-              8192.0f), // in derived mode the ulp error is calculated as
-                        // exp2(y*log2(x)) and in non-derived it is the same as
-                        // half_pow
+
+    // In derived mode the ulp error is calculated as exp2(y*log2(x)).
+    // In non-derived it is the same as half_pow.
+    ENTRY_EXT(pow, 16.0f, 16.0f, 4.0f, 8192.0f, FTZ_OFF, binaryF, 8192.0f),
+
     ENTRY(pown, 16.0f, 16.0f, 4.0f, FTZ_OFF, binaryF_i),
     ENTRY(powr, 16.0f, 16.0f, 4.0f, FTZ_OFF, binaryF),
-    //                                  ENTRY( reciprocal,            1.0f,
-    //                                  1.0f,         FTZ_OFF,     unaryF),
+    //ENTRY(reciprocal, 1.0f, 1.0f, FTZ_OFF, unaryF),
     ENTRY(remainder, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryF),
     ENTRY(remquo, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryF_two_results_i),
     ENTRY(rint, 0.0f, 0.0f, 0.0f, FTZ_OFF, unaryF),
@@ -385,16 +381,14 @@ const Func functionList[] = {
       FTZ_OFF,
       RELAXED_OFF,
       unaryF },
-    ENTRY_EXT(
-        tan, 5.0f, 5.0f, 2.0f, 8192.0f, FTZ_OFF, unaryF,
-        8192.0f), // in derived mode it the ulp error is calculated as sin/cos
-                  // and in non-derived mode it is the same as half_tan.
+
+    // In derived mode it the ulp error is calculated as sin/cos.
+    // In non-derived mode it is the same as half_tan.
+    ENTRY_EXT(tan, 5.0f, 5.0f, 2.0f, 8192.0f, FTZ_OFF, unaryF, 8192.0f),
+
     ENTRY(tanh, 5.0f, 5.0f, 2.0f, FTZ_OFF, unaryF),
     ENTRY(tanpi, 6.0f, 6.0f, 2.0f, FTZ_OFF, unaryF),
-    //                                    ENTRY( tgamma,                 16.0f,
-    //                                    16.0f,         FTZ_OFF,     unaryF),
-    //                                    // Commented this out until we can be
-    //                                    sure this requirement is realistic
+    //ENTRY(tgamma, 16.0f, 16.0f, FTZ_OFF, unaryF), Commented this out until we can be sure this requirement is realistic
     ENTRY(trunc, 0.0f, 0.0f, 0.0f, FTZ_OFF, unaryF),
 
     HALF_ENTRY(cos, 8192.0f, 8192.0f, FTZ_ON, unaryOF),

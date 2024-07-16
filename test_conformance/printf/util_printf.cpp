@@ -1094,7 +1094,26 @@ testCase testCaseAddrSpace = {
 
 };
 
+//=========================================================
+// mixed format
+//=========================================================
 
+//----------------------------------------------------------
+// Container related to mixed format tests.
+// Empty records for which the format string and reference string are generated
+// at run time. The size of this vector specifies the number of random tests
+// that will be run.
+std::vector<printDataGenParameters> printMixedFormatGenParameters(64,
+                                                                  { { "" } });
+
+std::vector<std::string> correctBufferMixedFormat;
+
+//----------------------------------------------------------
+// Test case for mixed-args
+//----------------------------------------------------------
+testCase testCaseMixedFormat = { TYPE_MIXED_FORMAT_RANDOM,
+                                 correctBufferMixedFormat,
+                                 printMixedFormatGenParameters, NULL };
 
 //-------------------------------------------------------------------------------
 
@@ -1103,11 +1122,11 @@ testCase testCaseAddrSpace = {
 //-------------------------------------------------------------------------------
 
 std::vector<testCase*> allTestCase = {
-    &testCaseInt,      &testCaseHalf,         &testCaseHalfLimits,
-    &testCaseFloat,    &testCaseFloatLimits,  &testCaseOctal,
-    &testCaseUnsigned, &testCaseHexadecimal,  &testCaseChar,
-    &testCaseString,   &testCaseFormatString, &testCaseVector,
-    &testCaseAddrSpace
+    &testCaseInt,       &testCaseHalf,         &testCaseHalfLimits,
+    &testCaseFloat,     &testCaseFloatLimits,  &testCaseOctal,
+    &testCaseUnsigned,  &testCaseHexadecimal,  &testCaseChar,
+    &testCaseString,    &testCaseFormatString, &testCaseVector,
+    &testCaseAddrSpace, &testCaseMixedFormat
 };
 
 //-----------------------------------------
@@ -1150,14 +1169,29 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
 
     }
 
-    char* exp;
-    //Exponenent representation
-    if((exp = strstr(analysisBuffer,"E+")) != NULL || (exp = strstr(analysisBuffer,"e+")) != NULL || (exp = strstr(analysisBuffer,"E-")) != NULL || (exp = strstr(analysisBuffer,"e-")) != NULL)
+    char* exp = nullptr;
+    std::string copy_str;
+    std::vector<char> staging(strlen(analysisBuffer) + 1);
+    std::vector<char> staging_correct(pTestCase->_correctBuffer[testId].size()
+                                      + 1);
+    std::snprintf(staging.data(), staging.size(), "%s", analysisBuffer);
+    std::snprintf(staging_correct.data(), staging_correct.size(), "%s",
+                  pTestCase->_correctBuffer[testId].c_str());
+    // Exponenent representation
+    while ((exp = strstr(staging.data(), "E+")) != NULL
+           || (exp = strstr(staging.data(), "e+")) != NULL
+           || (exp = strstr(staging.data(), "E-")) != NULL
+           || (exp = strstr(staging.data(), "e-")) != NULL)
     {
         char correctExp[3]={0};
         strncpy(correctExp,exp,2);
 
-        char* eCorrectBuffer = strstr((char*)pTestCase->_correctBuffer[testId].c_str(),correctExp);
+        // check if leading data is equal
+        int ret = strncmp(staging_correct.data(), staging.data(),
+                          exp - staging.data());
+        if (ret) return ret;
+
+        char* eCorrectBuffer = strstr(staging_correct.data(), correctExp);
         if(eCorrectBuffer == NULL)
             return 1;
 
@@ -1172,7 +1206,21 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
             ++exp;
         while(*eCorrectBuffer == '0')
             ++eCorrectBuffer;
-        return strcmp(eCorrectBuffer,exp);
+
+        copy_str = std::string(eCorrectBuffer);
+        std::snprintf(staging_correct.data(), staging_correct.size(), "%s",
+                      copy_str.c_str());
+
+        copy_str = std::string(exp);
+        std::snprintf(staging.data(), staging.size(), "%s", copy_str.c_str());
+
+        if (strstr(staging.data(), "E+") != NULL
+            || strstr(staging.data(), "e+") != NULL
+            || strstr(staging.data(), "E-") != NULL
+            || strstr(staging.data(), "e-") != NULL)
+            continue;
+
+        return strcmp(staging_correct.data(), copy_str.c_str());
     }
 
     if (pTestCase->_correctBuffer[testId] == "inf")
