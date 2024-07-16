@@ -47,6 +47,8 @@ test_definition test_list[] = {
                      Version(1, 2)),
     ADD_TEST_VERSION(semaphores_negative_wait_invalid_event_status,
                      Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_negative_release, Version(1, 2)),
+    ADD_TEST_VERSION(semaphores_negative_retain, Version(1, 2)),
 };
 
 const int test_num = ARRAY_SIZE(test_list);
