@@ -87,8 +87,9 @@ struct CreateInvalidProperty : public SemaphoreTestBase
         // Create semaphore with invalid properties:
         // 1) Property name in sema_props is not a supported property name
         {
+            cl_semaphore_properties_khr invalid_property_name = ~0UL;
             cl_semaphore_properties_khr sema_props[] = {
-                (cl_semaphore_properties_khr)CL_INVALID_SEMAPHORE_KHR,
+                invalid_property_name,
                 (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR, 0
             };
 
@@ -107,9 +108,10 @@ struct CreateInvalidProperty : public SemaphoreTestBase
 
         // 2) Value specified for a supported property name is not valid
         {
+            cl_semaphore_properties_khr invalid_property_value = ~0UL;
             cl_semaphore_properties_khr sema_props[] = {
                 (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
-                (cl_semaphore_properties_khr)CL_INVALID_SEMAPHORE_KHR, 0
+                invalid_property_value, 0
             };
 
             semaphore =
