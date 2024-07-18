@@ -346,13 +346,15 @@ std::vector<printDataGenParameters> printFloatGenParameters = {
 
     // Double argument representing floating-point,with
     // exponent,left-justified,default(right)-justified
+    // Use a value that is exactly representable as 32-bit float.
 
-    { { "%-#20.15e" }, "789456123.0" },
+    { { "%-#20.15e" }, "789456128.0" },
 
     // Double argument representing floating-point,with
     // exponent,left-justified,with sign,capital E,default(right)-justified
+    // Use a value that is exactly representable as 32-bit float.
 
-    { { "%+#21.15E" }, "789456123.0" },
+    { { "%+#21.15E" }, "789456128.0" },
 
     // Double argument representing floating-point,in [-]xh.hhhhpAd style
 
