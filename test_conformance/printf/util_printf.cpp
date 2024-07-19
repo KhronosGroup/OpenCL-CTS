@@ -935,7 +935,42 @@ std::vector<printDataGenParameters> printVectorGenParameters = {
 
     //(Minimum)Two-wide,two positions after decimal
 
-    { { "" }, "(1.0h,2.0h,3.0h,4.0h)", "%2.2", "hf", "half", "4" }
+    { { "" }, "(1.0h,2.0h,3.0h,4.0h)", "%2.2", "hf", "half", "4" },
+
+    // Three component vector in scientific notation
+
+    { { "" }, "(1234.56f,9876543.21f,0.000005f)", "%.2", "e", "float", "3" },
+
+    // Four component vector in hexadecimal floating point, lowercase format
+
+    { { "" }, "(0.25f,0.5f,1.f,1.5f)", "%", "a", "float", "4" },
+
+    // Eight component vector in the shortest float representation
+
+    { { "" },
+      "(1.f,2.f,3.f,4.f,2.7182f,3.14152f,6.62607f,9.78f)",
+      "%",
+      "g",
+      "float",
+      "8" },
+
+    // Sixteen component vector in unsigned octal format
+
+    { { "" },
+      "(1,2,3,4,5,6,7,8,9,0,32,64,128,256,512,1024)",
+      "%",
+      "o",
+      "uint",
+      "16" },
+
+    // Eight component vector in signed decimal integer format
+
+    { { "" }, "(1,-2,3,-4,5,-6,7,-8)", "%+", "i", "int", "8" },
+
+    // Four component vector in unsigned decimal integer format
+
+    { { "" }, "(512,1024,262144,1048576)", "%05", "u", "uint", "4" },
+
 };
 
 //------------------------------------------------------------
@@ -956,8 +991,19 @@ std::vector<std::string> correctBufferVector = {
 
     "12345678,98765432",
 
-    "1.00,2.00,3.00,4.00"
+    "1.00,2.00,3.00,4.00",
 
+    "1.23e+03,9.88e+06,5.00e-06",
+
+    "0x1p-2,0x1p-1,0x1p+0,0x1.8p+0",
+
+    "1,2,3,4,2.7182,3.14152,6.62607,9.78",
+
+    "1,2,3,4,5,6,7,10,11,0,40,100,200,400,1000,2000",
+
+    "+1,-2,+3,-4,+5,-6,+7,-8",
+
+    "00512,01024,262144,1048576"
 };
 
 //-----------------------------------------------------------
