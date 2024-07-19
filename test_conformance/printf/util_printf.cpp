@@ -82,7 +82,7 @@ std::vector<printDataGenParameters> printIntGenParameters = {
 
     { { "%06.5i" }, "100" },
 
-    //(Minimum)Ten-wide ,left-justified, with a blank spaces inserted before the
+    //(Minimum)Ten-wide, left-justified, with a blank space inserted before the
     // value
 
     { { "% 10d" }, "42" },
@@ -171,14 +171,14 @@ std::vector<printDataGenParameters> printHalfGenParameters = {
     { { "%+#21.15E" }, "-65504.0h" },
 
     //(Minimum)Ten-wide,two positions after the decimal,with
-    // a blank spaces inserted before the value, default(right)-justified
+    // a blank space inserted before the value, default(right)-justified
 
-    { { "% 10.2f" }, "1.2345h" },
+    { { "% 10.2f" }, "1.25h" },
 
     //(Minimum)Eight-wide,two positions after the decimal, with
-    // a zeros inserted before the value, default(right)-justified
+    // zeros inserted before the value, default(right)-justified
 
-    { { "%08.2f" }, "3.1415h" },
+    { { "%08.2f" }, "3.14h" },
 };
 
 //---------------------------------------------------------
@@ -378,14 +378,14 @@ std::vector<printDataGenParameters> printFloatGenParameters = {
     { { "%10.2a" }, "9990.235" },
 
     //(Minimum)Ten-wide,two positions after the decimal,with
-    // a blank spaces inserted before the value, default(right)-justified
+    // a blank space inserted before the value, default(right)-justified
 
-    { { "% 10.2f" }, "1.2345" },
+    { { "% 10.2f" }, "1.25" },
 
     //(Minimum)Eight-wide,two positions after the decimal,with
-    // a zeros inserted before the value, default(right)-justified
+    // zeros inserted before the value, default(right)-justified
 
-    { { "%08.2f" }, "3.1415" },
+    { { "%08.2f" }, "3.14" },
 };
 
 //---------------------------------------------------------
@@ -516,7 +516,7 @@ std::vector<printDataGenParameters> printOctalGenParameters = {
 
     { { "%04.5o" }, "10" },
 
-    //(Minimum)Ten-wide, a zeros inserted before the value,
+    //(Minimum)Ten-wide, zeros inserted before the value,
     // default(right)-justified
 
     { { "%010o" }, "10" }
