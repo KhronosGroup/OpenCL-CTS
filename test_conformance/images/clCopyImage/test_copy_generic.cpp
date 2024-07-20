@@ -94,17 +94,10 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
                             "Error: Could not get CL_QUEUE_DEVICE from queue");
                         return NULL;
                     }
-                    char major_version;
-                    err = clGetDeviceInfo(device, CL_DEVICE_VERSION,
-                                          sizeof(major_version), &major_version,
-                                          nullptr);
-                    if (err != CL_SUCCESS)
-                    {
-                        log_error("Error: Could not get CL_DEVICE_VERSION from "
-                                  "device");
-                        return NULL;
-                    }
-                    if (major_version == '1')
+
+                    auto ocl_version = get_device_cl_version(device);
+
+                    if (ocl_version < Version(2, 0))
                     {
                         host_ptr = malloc(imageInfo->rowPitch);
                     }
