@@ -714,6 +714,12 @@ testCase testCaseChar = {
 
 std::vector<printDataGenParameters> printStringGenParameters = {
 
+    // empty format
+    { {""}, "\"foo\"" },
+
+    // empty argument
+    { {"%s"}, "\"\"" },
+
     //(Minimum)Four-wide,zero-filled,default(right)-justified
 
     { { "%4s" }, "\"foo\"" },
@@ -765,6 +771,10 @@ std::vector<printDataGenParameters> printStringGenParameters = {
 //---------------------------------------------------------
 
 std::vector<std::string> correctBufferString = {
+
+    "",
+
+    "",
 
     " foo",
 
