@@ -4,7 +4,7 @@
 #include "opencl_vulkan_wrapper.hpp"
 #include <thread>
 #include <chrono>
-#include <unordered_set>
+#include <algorithm>
 
 #define FLUSH_DELAY_S 5
 
@@ -96,18 +96,24 @@ static cl_int get_device_semaphore_handle_types(
 
     num_handle_types =
         size_handle_types / sizeof(cl_external_semaphore_handle_type_khr);
-    std::vector<cl_external_semaphore_handle_type_khr>
-        handle_types_query_result(num_handle_types);
-    err = clGetDeviceInfo(deviceID, param,
-                          handle_types_query_result.size()
-                              * sizeof(cl_external_semaphore_handle_type_khr),
-                          handle_types_query_result.data(), nullptr);
-    test_error(err, "Failed to get exportable handle types");
 
-    for (auto handle_type : handle_types_query_result)
-    {
-        handle_types.push_back(handle_type);
+    // Empty list (size_handle_types:0) is a valid value denoting that
+    // implementation is incapable to import/export semaphore
+    if (num_handle_types > 0) {
+        std::vector<cl_external_semaphore_handle_type_khr>
+            handle_types_query_result(num_handle_types);
+        err = clGetDeviceInfo(deviceID, param,
+                              handle_types_query_result.size()
+                                  * sizeof(cl_external_semaphore_handle_type_khr),
+                              handle_types_query_result.data(), nullptr);
+        test_error(err, "Failed to get exportable handle types");
+
+        for (auto handle_type : handle_types_query_result)
+        {
+            handle_types.push_back(handle_type);
+        }
     }
+
     return CL_SUCCESS;
 }
 
@@ -231,16 +237,20 @@ int test_external_semaphores_cross_context(cl_device_id deviceID,
         export_handle_types);
     test_error(err, "Failed to query export handle types");
 
+    // If cl_khr_external_semaphore is reported, implementation must
+    // support any of import, export or maybe both.
+    if (import_handle_types.empty() && export_handle_types.empty()) {
+        test_fail("No support for import/export semaphore.\n");
+    }
+
     // Find handles that support both import and export
-    std::unordered_set<cl_external_semaphore_handle_type_khr>
+    std::vector<cl_external_semaphore_handle_type_khr>
         import_export_handle_types;
 
-    std::copy(import_handle_types.begin(), import_handle_types.end(),
-              std::inserter(import_export_handle_types,
-                            import_export_handle_types.end()));
-    std::copy(export_handle_types.begin(), export_handle_types.end(),
-              std::inserter(import_export_handle_types,
-                            import_export_handle_types.end()));
+    std::set_intersection(
+        import_handle_types.begin(), import_handle_types.end(),
+        export_handle_types.begin(), export_handle_types.end(),
+        std::back_inserter(import_export_handle_types));
 
     cl_context context2 =
         clCreateContext(NULL, 1, &deviceID, notify_callback, NULL, &err);
@@ -257,7 +267,7 @@ int test_external_semaphores_cross_context(cl_device_id deviceID,
     if (import_export_handle_types.empty())
     {
         log_info("Could not find a handle type that supports both import and "
-                 "export");
+                 "export.\n");
         return TEST_SKIPPED_ITSELF;
     }
 
