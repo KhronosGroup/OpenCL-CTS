@@ -381,7 +381,7 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
         clGetDeviceInfo(deviceID, host_queue_query, sizeof(host_queue_props),
                         &host_queue_props, NULL);
     test_error(error, "clGetDeviceInfo failed");
-    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %" PRId64 "\n",
+    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %" PRIu64 "\n",
              host_queue_props);
 
     cl_queue_properties device_queue_props = 0;
@@ -391,7 +391,7 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
                                 sizeof(device_queue_props), &device_queue_props,
                                 NULL);
         test_error(error, "clGetDeviceInfo failed");
-        log_info("CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES is %" PRId64 "\n",
+        log_info("CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES is %" PRIu64 "\n",
                  device_queue_props);
     }
 
