@@ -15,6 +15,8 @@
 //
 #include <stdio.h>
 #include <string.h>
+#include <bitset>
+
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 
@@ -102,7 +104,9 @@ int test_device_info(cl_device_id device, cl_context context, cl_command_queue q
     cl_device_type device_type;
     err_ret = clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(cl_device_type), &device_type, &ret_len);
     test_error(err_ret, "clGetDeviceInfo(CL_DEVICE_TYPE) failed");
-    if(device_type == CL_DEVICE_TYPE_ALL || device_type == CL_DEVICE_TYPE_DEFAULT)
+    std::bitset<sizeof(cl_device_type)> type_bits(device_type);
+
+    if (type_bits.count() > 1 || (device_type & CL_DEVICE_TYPE_DEFAULT))
     {
         log_error("clGetDeviceInfo(CL_DEVICE_TYPE) must report a single device type, which must not be CL_DEVICE_TYPE_DEFAULT or CL_DEVICE_TYPE_ALL.\n");
         return -1;
