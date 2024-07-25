@@ -89,6 +89,8 @@ extern int image_from_buffer_fill_positive(cl_device_id device,
 extern int image_from_buffer_read_positive(cl_device_id device,
                                            cl_context context,
                                            cl_command_queue queue);
+extern int ext_image_raw10_raw12(cl_device_id device, cl_context context,
+                                 cl_command_queue queue);
 
 /** read_write images only support sampler-less read buildt-ins which require special settings
   * for some global parameters. This pair of functions temporarily overwrite those global parameters
@@ -367,6 +369,12 @@ int test_image_from_buffer_read_positive(cl_device_id device,
     return image_from_buffer_read_positive(device, context, queue);
 }
 
+int test_cl_ext_image_raw10_raw12(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, int num_elements)
+{
+    return ext_image_raw10_raw12(device, context, queue);
+}
+
 test_definition test_list[] = {
     ADD_TEST(1D),
     ADD_TEST(2D),
@@ -385,6 +393,7 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(image_from_small_buffer_negative, Version(3, 0)),
     ADD_TEST_VERSION(image_from_buffer_fill_positive, Version(3, 0)),
     ADD_TEST_VERSION(image_from_buffer_read_positive, Version(3, 0)),
+    ADD_TEST_VERSION(cl_ext_image_raw10_raw12, Version(1, 2)),
 };
 
 const int test_num = ARRAY_SIZE( test_list );

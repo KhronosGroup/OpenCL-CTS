@@ -269,6 +269,57 @@ VulkanBufferList::~VulkanBufferList()
 }
 
 //////////////////////////////////////
+// VulkanImage1DList implementation //
+//////////////////////////////////////
+
+VulkanImage1DList::VulkanImage1DList(const VulkanImage1DList &image1DList) {}
+
+VulkanImage1DList::VulkanImage1DList(
+    size_t numImages, std::vector<VulkanDeviceMemory *> &deviceMemory,
+    uint64_t baseOffset, uint64_t interImageOffset, const VulkanDevice &device,
+    VulkanFormat format, uint32_t width, uint32_t mipLevels,
+    VulkanImageTiling vulkanImageTiling,
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
+    VulkanSharingMode sharingMode)
+{
+    for (size_t i2DIdx = 0; i2DIdx < numImages; i2DIdx++)
+    {
+        VulkanImage1D *image2D = new VulkanImage1D(
+            device, format, width, vulkanImageTiling, mipLevels,
+            externalMemoryHandleType, imageCreateFlag, imageUsage, sharingMode);
+        add(*image2D);
+        deviceMemory[i2DIdx]->bindImage(
+            *image2D, baseOffset + (i2DIdx * interImageOffset));
+    }
+}
+
+VulkanImage1DList::VulkanImage1DList(
+    size_t numImages, const VulkanDevice &device, VulkanFormat format,
+    uint32_t width, VulkanImageTiling vulkanImageTiling, uint32_t mipLevels,
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
+    VulkanSharingMode sharingMode)
+{
+    for (size_t bIdx = 0; bIdx < numImages; bIdx++)
+    {
+        VulkanImage1D *image2D = new VulkanImage1D(
+            device, format, width, vulkanImageTiling, mipLevels,
+            externalMemoryHandleType, imageCreateFlag, imageUsage, sharingMode);
+        add(*image2D);
+    }
+}
+
+VulkanImage1DList::~VulkanImage1DList()
+{
+    for (size_t i2DIdx = 0; i2DIdx < m_wrapperList.size(); i2DIdx++)
+    {
+        VulkanImage1D &image2D = m_wrapperList[i2DIdx];
+        delete &image2D;
+    }
+}
+
+//////////////////////////////////////
 // VulkanImage2DList implementation //
 //////////////////////////////////////
 
@@ -319,6 +370,57 @@ VulkanImage2DList::~VulkanImage2DList()
     }
 }
 
+//////////////////////////////////////
+// VulkanImage3DList implementation //
+//////////////////////////////////////
+
+VulkanImage3DList::VulkanImage3DList(const VulkanImage3DList &image3DList) {}
+
+VulkanImage3DList::VulkanImage3DList(
+    size_t numImages, std::vector<VulkanDeviceMemory *> &deviceMemory,
+    uint64_t baseOffset, uint64_t interImageOffset, const VulkanDevice &device,
+    VulkanFormat format, uint32_t width, uint32_t height, uint32_t depth,
+    uint32_t mipLevels, VulkanImageTiling vulkanImageTiling,
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
+    VulkanSharingMode sharingMode)
+{
+    for (size_t i2DIdx = 0; i2DIdx < numImages; i2DIdx++)
+    {
+        VulkanImage3D *image3D = new VulkanImage3D(
+            device, format, width, height, depth, vulkanImageTiling, mipLevels,
+            externalMemoryHandleType, imageCreateFlag, imageUsage, sharingMode);
+        add(*image3D);
+        deviceMemory[i2DIdx]->bindImage(
+            *image3D, baseOffset + (i2DIdx * interImageOffset));
+    }
+}
+
+VulkanImage3DList::VulkanImage3DList(
+    size_t numImages, const VulkanDevice &device, VulkanFormat format,
+    uint32_t width, uint32_t height, uint32_t depth,
+    VulkanImageTiling vulkanImageTiling, uint32_t mipLevels,
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    VulkanImageCreateFlag imageCreateFlag, VulkanImageUsage imageUsage,
+    VulkanSharingMode sharingMode)
+{
+    for (size_t bIdx = 0; bIdx < numImages; bIdx++)
+    {
+        VulkanImage3D *image3D = new VulkanImage3D(
+            device, format, width, height, depth, vulkanImageTiling, mipLevels,
+            externalMemoryHandleType, imageCreateFlag, imageUsage, sharingMode);
+        add(*image3D);
+    }
+}
+
+VulkanImage3DList::~VulkanImage3DList()
+{
+    for (size_t i2DIdx = 0; i2DIdx < m_wrapperList.size(); i2DIdx++)
+    {
+        VulkanImage3D &image3D = m_wrapperList[i2DIdx];
+        delete &image3D;
+    }
+}
 ////////////////////////////////////////
 // VulkanImageViewList implementation //
 ////////////////////////////////////////

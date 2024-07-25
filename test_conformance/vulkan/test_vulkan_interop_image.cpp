@@ -251,10 +251,10 @@ int run_test_with_two_queue(
     clExternalSemaphore *clVk2CLExternalSemaphore = NULL;
     clExternalSemaphore *clCl2VkExternalSemaphore = NULL;
 
-    clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
-        vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
-    clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
-        vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+    CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore, context,
+                            vkExternalSemaphoreHandleType, deviceId, false);
+    CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore, context,
+                            vkExternalSemaphoreHandleType, deviceId, true);
 
     std::vector<VulkanDeviceMemory *> vkImage2DListDeviceMemory1;
     std::vector<VulkanDeviceMemory *> vkImage2DListDeviceMemory2;
@@ -644,7 +644,18 @@ int run_test_with_two_queue(
                                     err, CLEANUP,
                                     "Error: Failed to set arg values \n");
 
-                                // clVk2CLExternalSemaphore->wait(cmd_queue1);
+                                err = clEnqueueAcquireExternalMemObjectsKHRptr(
+                                    cmd_queue1, num2DImages,
+                                    external_mem_image1, 0, nullptr, nullptr);
+                                test_error_and_cleanup(
+                                    err, CLEANUP, "Failed to acquire images");
+
+                                err = clEnqueueAcquireExternalMemObjectsKHRptr(
+                                    cmd_queue1, num2DImages,
+                                    external_mem_image2, 0, nullptr, nullptr);
+                                test_error_and_cleanup(
+                                    err, CLEANUP, "Failed to acquire images");
+
                                 size_t global_work_size[3] = { width, height,
                                                                1 };
                                 cl_event first_launch;
@@ -656,6 +667,30 @@ int run_test_with_two_queue(
                                     err, CLEANUP,
                                     "Failed to enqueue updateKernelCQ1\n");
 
+                                err = clEnqueueReleaseExternalMemObjectsKHRptr(
+                                    cmd_queue1, num2DImages,
+                                    external_mem_image1, 0, nullptr, nullptr);
+                                test_error_and_cleanup(
+                                    err, CLEANUP, "Failed to release images");
+
+                                err = clEnqueueReleaseExternalMemObjectsKHRptr(
+                                    cmd_queue1, num2DImages,
+                                    external_mem_image2, 0, nullptr, nullptr);
+                                test_error_and_cleanup(
+                                    err, CLEANUP, "Failed to release images");
+
+                                err = clEnqueueAcquireExternalMemObjectsKHRptr(
+                                    cmd_queue2, num2DImages,
+                                    external_mem_image1, 0, nullptr, nullptr);
+                                test_error_and_cleanup(
+                                    err, CLEANUP, "Failed to acquire images");
+
+                                err = clEnqueueAcquireExternalMemObjectsKHRptr(
+                                    cmd_queue2, num2DImages,
+                                    external_mem_image2, 0, nullptr, nullptr);
+                                test_error_and_cleanup(
+                                    err, CLEANUP, "Failed to acquire images");
+
                                 err = clEnqueueNDRangeKernel(
                                     cmd_queue2, updateKernelCQ2, 2, NULL,
                                     global_work_size, NULL, 1, &first_launch,
@@ -663,6 +698,18 @@ int run_test_with_two_queue(
                                 test_error_and_cleanup(
                                     err, CLEANUP,
                                     "Failed to enqueue updateKernelCQ2\n");
+
+                                err = clEnqueueReleaseExternalMemObjectsKHRptr(
+                                    cmd_queue2, num2DImages,
+                                    external_mem_image1, 0, nullptr, nullptr);
+                                test_error_and_cleanup(
+                                    err, CLEANUP, "Failed to release images");
+
+                                err = clEnqueueReleaseExternalMemObjectsKHRptr(
+                                    cmd_queue2, num2DImages,
+                                    external_mem_image2, 0, nullptr, nullptr);
+                                test_error_and_cleanup(
+                                    err, CLEANUP, "Failed to release images");
 
                                 clFinish(cmd_queue2);
                                 err = clCl2VkExternalSemaphore->signal(
@@ -816,10 +863,10 @@ int run_test_with_one_queue(
     clExternalSemaphore *clVk2CLExternalSemaphore = NULL;
     clExternalSemaphore *clCl2VkExternalSemaphore = NULL;
 
-    clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
-        vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
-    clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
-        vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+    CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore, context,
+                            vkExternalSemaphoreHandleType, deviceId, false);
+    CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore, context,
+                            vkExternalSemaphoreHandleType, deviceId, true);
 
     std::vector<VulkanDeviceMemory *> vkImage2DListDeviceMemory1;
     std::vector<VulkanDeviceMemory *> vkImage2DListDeviceMemory2;
@@ -1182,6 +1229,18 @@ int run_test_with_one_queue(
                                     "Error: Failed to set arg "
                                     "values for kernel-1\n");
 
+                                err = clEnqueueAcquireExternalMemObjectsKHRptr(
+                                    cmd_queue1, num2DImages,
+                                    external_mem_image1, 0, nullptr, nullptr);
+                                test_error_and_cleanup(
+                                    err, CLEANUP, "Failed to acquire images");
+
+                                err = clEnqueueAcquireExternalMemObjectsKHRptr(
+                                    cmd_queue1, num2DImages,
+                                    external_mem_image2, 0, nullptr, nullptr);
+                                test_error_and_cleanup(
+                                    err, CLEANUP, "Failed to acquire images");
+
                                 size_t global_work_size[3] = { width, height,
                                                                1 };
                                 err = clEnqueueNDRangeKernel(
@@ -1190,6 +1249,18 @@ int run_test_with_one_queue(
                                 test_error_and_cleanup(
                                     err, CLEANUP,
                                     "Failed to enqueue updateKernelCQ1\n");
+
+                                err = clEnqueueReleaseExternalMemObjectsKHRptr(
+                                    cmd_queue1, num2DImages,
+                                    external_mem_image1, 0, nullptr, nullptr);
+                                test_error_and_cleanup(
+                                    err, CLEANUP, "Failed to release images");
+
+                                err = clEnqueueReleaseExternalMemObjectsKHRptr(
+                                    cmd_queue1, num2DImages,
+                                    external_mem_image2, 0, nullptr, nullptr);
+                                test_error_and_cleanup(
+                                    err, CLEANUP, "Failed to release images");
 
                                 err = clCl2VkExternalSemaphore->signal(
                                     cmd_queue1);

@@ -26,6 +26,23 @@
 #include <OpenCL/cl_ext.h>
 #endif
 
+#define CREATE_OPENCL_SEMAPHORE(clSemaphore, vkSemaphore, ctx, handleType,     \
+                                devIdx, createExportable)                      \
+    if (!(createExportable                                                     \
+          && (check_external_semaphore_handle_type(                            \
+                  devIdx, getCLSemaphoreTypeFromVulkanType(handleType),        \
+                  CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR)                 \
+              == CL_SUCCESS)))                                                 \
+    {                                                                          \
+        clSemaphore = new clExternalImportableSemaphore(vkSemaphore, ctx,      \
+                                                        handleType, devIdx);   \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+        clSemaphore = new clExternalExportableSemaphore(vkSemaphore, ctx,      \
+                                                        handleType, devIdx);   \
+    }
+
 typedef cl_semaphore_khr (*pfnclCreateSemaphoreWithPropertiesKHR)(
     cl_context context, cl_semaphore_properties_khr *sema_props,
     cl_int *errcode_ret);
@@ -76,7 +93,9 @@ cl_int check_external_memory_handle_type(
     cl_external_memory_handle_type_khr requiredHandleType);
 cl_int check_external_semaphore_handle_type(
     cl_device_id deviceID,
-    cl_external_semaphore_handle_type_khr requiredHandleType);
+    cl_external_semaphore_handle_type_khr requiredHandleType,
+    cl_device_info queryParamName =
+        CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR);
 cl_int setMaxImageDimensions(cl_device_id deviceID, size_t &width,
                              size_t &height);
 

@@ -53,6 +53,7 @@ const char *known_extensions[] = {
     "cl_khr_extended_bit_ops",
     "cl_khr_integer_dot_product",
     "cl_khr_subgroup_rotate",
+    "cl_khr_kernel_clock",
     // API-only extensions after this point.  If you add above here, modify
     // first_API_extension below.
     "cl_khr_icd",
@@ -94,7 +95,7 @@ const char *known_extensions[] = {
 };
 
 size_t num_known_extensions = ARRAY_SIZE(known_extensions);
-size_t first_API_extension = 31;
+size_t first_API_extension = 32;
 
 const char *known_embedded_extensions[] = {
     "cles_khr_int64",
@@ -472,8 +473,13 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
     // cleanup
     free(data);
     free(kernel_code);
-    for(i=0; i<num_of_supported_extensions; i++) {
-      free(extensions_supported[i]);
+    for (i = 0; i < num_of_supported_extensions; i++)
+    {
+        free(extensions_supported[i]);
+    }
+    for (i = 0; i < num_not_supported_extensions; i++)
+    {
+        free(extensions_not_supported[i]);
     }
     free(extensions);
 

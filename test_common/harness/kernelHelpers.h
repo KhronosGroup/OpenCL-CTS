@@ -16,9 +16,6 @@
 #ifndef _kernelHelpers_h
 #define _kernelHelpers_h
 
-// Configuration
-#include "../config.hpp"
-
 #include "compat.h"
 #include "testHarness.h"
 

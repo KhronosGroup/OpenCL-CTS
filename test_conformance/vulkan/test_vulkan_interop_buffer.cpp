@@ -140,10 +140,12 @@ int run_test_with_two_queue(
     }
     else
     {
-        clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
-            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
-        clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
-            vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, false);
+        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, true);
     }
 
     const uint32_t maxIter = innerIterations;
@@ -281,9 +283,16 @@ int run_test_with_two_queue(
 
                 cl_event first_launch;
 
+                cl_event acquire_event = nullptr;
+                err = clEnqueueAcquireExternalMemObjectsKHRptr(
+                    cmd_queue1, vkBufferList.size(), buffers, 0, nullptr,
+                    &acquire_event);
+                test_error_and_cleanup(err, CLEANUP,
+                                       "Failed to acquire buffers");
+
                 err = clEnqueueNDRangeKernel(cmd_queue1, update_buffer_kernel,
-                                             1, NULL, global_work_size, NULL, 0,
-                                             NULL, &first_launch);
+                                             1, NULL, global_work_size, NULL, 1,
+                                             &acquire_event, &first_launch);
                 test_error_and_cleanup(
                     err, CLEANUP,
                     "Error: Failed to launch update_buffer_kernel,"
@@ -296,6 +305,12 @@ int run_test_with_two_queue(
                     err, CLEANUP,
                     "Error: Failed to launch update_buffer_kernel,"
                     "error\n");
+
+                err = clEnqueueReleaseExternalMemObjectsKHRptr(
+                    cmd_queue2, vkBufferList.size(), buffers, 0, nullptr,
+                    nullptr);
+                test_error_and_cleanup(err, CLEANUP,
+                                       "Failed to release buffers");
 
                 if (use_fence)
                 {
@@ -310,6 +325,9 @@ int run_test_with_two_queue(
                     test_error_and_cleanup(err, CLEANUP,
                                            "Failed to signal CL semaphore\n");
                 }
+                err = clReleaseEvent(acquire_event);
+                test_error_and_cleanup(err, CLEANUP,
+                                       "Failed to release acquire event\n");
             }
             error_2 = (uint8_t *)malloc(sizeof(uint8_t));
             if (NULL == error_2)
@@ -453,10 +471,12 @@ int run_test_with_one_queue(
     }
     else
     {
-        clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
-            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
-        clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
-            vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, false);
+        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, true);
     }
 
     const uint32_t maxIter = innerIterations;
@@ -585,6 +605,12 @@ int run_test_with_one_queue(
                     err, CLEANUP,
                     "Error: Failed to set arg values for kernel\n");
 
+                err = clEnqueueAcquireExternalMemObjectsKHRptr(
+                    cmd_queue1, vkBufferList.size(), buffers, 0, nullptr,
+                    nullptr);
+                test_error_and_cleanup(err, CLEANUP,
+                                       "Failed to acquire buffers");
+
                 err = clEnqueueNDRangeKernel(cmd_queue1, update_buffer_kernel,
                                              1, NULL, global_work_size, NULL, 0,
                                              NULL, NULL);
@@ -592,6 +618,12 @@ int run_test_with_one_queue(
                     err, CLEANUP,
                     "Error: Failed to launch update_buffer_kernel,"
                     " error\n");
+
+                err = clEnqueueReleaseExternalMemObjectsKHRptr(
+                    cmd_queue1, vkBufferList.size(), buffers, 0, nullptr,
+                    nullptr);
+                test_error_and_cleanup(err, CLEANUP,
+                                       "Failed to release buffers");
 
                 if (use_fence)
                 {
@@ -742,10 +774,12 @@ int run_test_with_multi_import_same_ctx(
     }
     else
     {
-        clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
-            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
-        clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
-            vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, false);
+        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, true);
     }
 
     const uint32_t maxIter = innerIterations;
@@ -883,6 +917,11 @@ int run_test_with_multi_import_same_ctx(
                             err |= clSetKernelArg(
                                 update_buffer_kernel, i + 1, sizeof(cl_mem),
                                 (void *)&(buffers[i][launchIter]));
+                            err = clEnqueueAcquireExternalMemObjectsKHRptr(
+                                cmd_queue1, 1, &buffers[i][launchIter], 0,
+                                nullptr, nullptr);
+                            test_error_and_cleanup(err, CLEANUP,
+                                                   "Failed to acquire buffers");
                         }
                         test_error_and_cleanup(
                             err, CLEANUP,
@@ -896,6 +935,15 @@ int run_test_with_multi_import_same_ctx(
                             err, CLEANUP,
                             "Error: Failed to launch "
                             "update_buffer_kernel, error\n ");
+
+                        for (int i = 0; i < numBuffers; i++)
+                        {
+                            err = clEnqueueReleaseExternalMemObjectsKHRptr(
+                                cmd_queue1, 1, &buffers[i][launchIter], 0,
+                                nullptr, nullptr);
+                            test_error_and_cleanup(err, CLEANUP,
+                                                   "Failed to release buffers");
+                        }
                     }
                     if (use_fence)
                     {
@@ -1071,17 +1119,19 @@ int run_test_with_multi_import_diff_ctx(
     }
     else
     {
-        clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
-            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
-        clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
-            vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, false);
+        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore,
+                                context, vkExternalSemaphoreHandleType,
+                                deviceId, false);
 
-        clVk2CLExternalSemaphore2 = new clExternalImportableSemaphore(
-            vkVk2CLSemaphore, context2, vkExternalSemaphoreHandleType,
-            deviceId);
-        clCl2VkExternalSemaphore2 = new clExternalExportableSemaphore(
-            vkCl2VkSemaphore, context2, vkExternalSemaphoreHandleType,
-            deviceId);
+        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore2, vkVk2CLSemaphore,
+                                context2, vkExternalSemaphoreHandleType,
+                                deviceId, false);
+        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore2, vkCl2VkSemaphore,
+                                context2, vkExternalSemaphoreHandleType,
+                                deviceId, false);
     }
 
     const uint32_t maxIter = innerIterations;
@@ -1229,11 +1279,22 @@ int run_test_with_multi_import_diff_ctx(
                     err =
                         clSetKernelArg(update_buffer_kernel1[launchIter], 0,
                                        sizeof(uint32_t), (void *)&pBufferSize);
+                    test_error_and_cleanup(err, CLEANUP,
+                                           "Failed to set kernel arg");
+
                     for (int i = 0; i < numBuffers; i++)
                     {
-                        err |= clSetKernelArg(
+                        err = clSetKernelArg(
                             update_buffer_kernel1[launchIter], i + 1,
                             sizeof(cl_mem), (void *)&(buffers1[i][launchIter]));
+                        test_error_and_cleanup(err, CLEANUP,
+                                               "Failed to set kernel arg");
+
+                        err = clEnqueueAcquireExternalMemObjectsKHRptr(
+                            cmd_queue1, 1, &buffers1[i][launchIter], 0, nullptr,
+                            nullptr);
+                        test_error_and_cleanup(err, CLEANUP,
+                                               "Failed to acquire buffers");
                     }
                     test_error_and_cleanup(
                         err, CLEANUP,
@@ -1246,6 +1307,14 @@ int run_test_with_multi_import_diff_ctx(
                     test_error_and_cleanup(err, CLEANUP,
                                            "Error: Failed to launch "
                                            "update_buffer_kernel, error\n");
+                    for (int i = 0; i < numBuffers; i++)
+                    {
+                        err = clEnqueueReleaseExternalMemObjectsKHRptr(
+                            cmd_queue1, 1, &buffers1[i][launchIter], 0, nullptr,
+                            nullptr);
+                        test_error_and_cleanup(err, CLEANUP,
+                                               "Failed to release buffers");
+                    }
                 }
                 if (use_fence)
                 {
@@ -1298,12 +1367,23 @@ int run_test_with_multi_import_diff_ctx(
                         err = clSetKernelArg(update_buffer_kernel2[launchIter],
                                              0, sizeof(uint32_t),
                                              (void *)&bufferSize);
+                        test_error_and_cleanup(err, CLEANUP,
+                                               "Failed to set kernel arg");
+
                         for (int i = 0; i < numBuffers; i++)
                         {
-                            err |= clSetKernelArg(
+                            err = clSetKernelArg(
                                 update_buffer_kernel2[launchIter], i + 1,
                                 sizeof(cl_mem),
                                 (void *)&(buffers2[i][launchIter]));
+                            test_error_and_cleanup(err, CLEANUP,
+                                                   "Failed to set kernel arg");
+
+                            err = clEnqueueAcquireExternalMemObjectsKHRptr(
+                                cmd_queue1, 1, &buffers2[i][launchIter], 0,
+                                nullptr, nullptr);
+                            test_error_and_cleanup(err, CLEANUP,
+                                                   "Failed to acquire buffers");
                         }
                         test_error_and_cleanup(
                             err, CLEANUP,
@@ -1317,6 +1397,14 @@ int run_test_with_multi_import_diff_ctx(
                             err, CLEANUP,
                             "Error: Failed to launch "
                             "update_buffer_kernel, error\n ");
+                        for (int i = 0; i < numBuffers; i++)
+                        {
+                            err = clEnqueueReleaseExternalMemObjectsKHRptr(
+                                cmd_queue1, 1, &buffers2[i][launchIter], 0,
+                                nullptr, nullptr);
+                            test_error_and_cleanup(err, CLEANUP,
+                                                   "Failed to release buffers");
+                        }
                     }
                     if (use_fence)
                     {

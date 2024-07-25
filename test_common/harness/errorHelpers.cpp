@@ -202,6 +202,8 @@ const char *GetChannelTypeName(cl_channel_type type)
         case CL_SFIXED14_APPLE: return "CL_SFIXED14_APPLE";
 #endif
         case CL_UNORM_INT24: return "CL_UNORM_INT24";
+        case CL_UNSIGNED_INT_RAW10_EXT: return "CL_UNSIGNED_INT_RAW10_EXT";
+        case CL_UNSIGNED_INT_RAW12_EXT: return "CL_UNSIGNED_INT_RAW12_EXT";
         default: return NULL;
     }
 }
@@ -369,7 +371,7 @@ static float Ulp_Error_Half_Float(float test, double reference)
     return (float)scalbn(testVal - reference, ulp_exp);
 }
 
-float Ulp_Error_Half(cl_half test, float reference)
+float Ulp_Error_Half(cl_half test, double reference)
 {
     return Ulp_Error_Half_Float(cl_half_to_float(test), reference);
 }
