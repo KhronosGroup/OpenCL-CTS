@@ -248,42 +248,58 @@ int test_get_platform_ids(cl_device_id deviceID, cl_context context, cl_command_
         size_t returned_size;
         cl_platform_id returned_platform;
         cl_context context;
-        cl_context_properties properties[] = { CL_CONTEXT_PLATFORM, (cl_context_properties)platforms[p], 0 };
+        cl_context_properties properties[] = {
+            CL_CONTEXT_PLATFORM, (cl_context_properties)platforms[p], 0
+        };
 
-        err = clGetDeviceInfo(devices[d], CL_DEVICE_PLATFORM, sizeof(cl_platform_id), &returned_platform, &returned_size);
+        err = clGetDeviceInfo(devices[d], CL_DEVICE_PLATFORM,
+                              sizeof(cl_platform_id), &returned_platform,
+                              &returned_size);
         test_error(err, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM\n");
         if (returned_size != sizeof(cl_platform_id))
         {
-            log_error("Reported return size (%ld) does not match expected size (%ld).\n", returned_size, sizeof(cl_platform_id));
+            log_error("Reported return size (%ld) does not match expected size "
+                      "(%ld).\n",
+                      returned_size, sizeof(cl_platform_id));
             total_errors++;
         }
 
         memset(string_returned, 0, 8192);
-        err = clGetDeviceInfo(devices[d], CL_DEVICE_NAME, 8192, string_returned, NULL);
+        err = clGetDeviceInfo(devices[d], CL_DEVICE_NAME, 8192, string_returned,
+                              NULL);
         test_error(err, "clGetDeviceInfo failed for CL_DEVICE_NAME\n");
 
-        log_info("\t\tPlatform for device %d (%s) is %p.\n", d, string_returned, returned_platform);
+        log_info("\t\tPlatform for device %d (%s) is %p.\n", d, string_returned,
+                 returned_platform);
 
         log_info("\t\t\tTesting clCreateContext for the platform/device...\n");
         // Try creating a context for the platform
         context = clCreateContext(properties, 1, &devices[d], NULL, NULL, &err);
-        test_error(err, "\t\tclCreateContext failed for device with platform properties\n");
+        test_error(
+            err,
+            "\t\tclCreateContext failed for device with platform properties\n");
 
-        memset(properties, 0, sizeof(cl_context_properties)*3);
+        memset(properties, 0, sizeof(cl_context_properties) * 3);
 
-        err = clGetContextInfo(context, CL_CONTEXT_PROPERTIES, sizeof(cl_context_properties)*3, properties, &returned_size);
+        err = clGetContextInfo(context, CL_CONTEXT_PROPERTIES,
+                               sizeof(cl_context_properties) * 3, properties,
+                               &returned_size);
         test_error(err, "clGetContextInfo for CL_CONTEXT_PROPERTIES failed");
-        if (returned_size != sizeof(cl_context_properties)*3)
+        if (returned_size != sizeof(cl_context_properties) * 3)
         {
-            log_error("Invalid size returned from clGetContextInfo for CL_CONTEXT_PROPERTIES. Got %ld, expected %ld.\n",
-                  returned_size, sizeof(cl_context_properties)*3);
+            log_error("Invalid size returned from clGetContextInfo for "
+                      "CL_CONTEXT_PROPERTIES. Got %ld, expected %ld.\n",
+                      returned_size, sizeof(cl_context_properties) * 3);
             total_errors++;
         }
 
-        if (properties[0] != (cl_context_properties)CL_CONTEXT_PLATFORM || properties[1] != (cl_context_properties)platforms[p])
+        if (properties[0] != (cl_context_properties)CL_CONTEXT_PLATFORM
+            || properties[1] != (cl_context_properties)platforms[p])
         {
-            log_error("Wrong properties returned. Expected: [%p %p], got [%p %p]\n",
-                  (void*)CL_CONTEXT_PLATFORM, platforms[p], (void*)properties[0], (void*)properties[1]);
+            log_error(
+                "Wrong properties returned. Expected: [%p %p], got [%p %p]\n",
+                (void *)CL_CONTEXT_PLATFORM, platforms[p],
+                (void *)properties[0], (void *)properties[1]);
             total_errors++;
         }
 

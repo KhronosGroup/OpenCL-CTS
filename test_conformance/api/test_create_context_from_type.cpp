@@ -178,7 +178,10 @@ int test_create_context_from_type_device_type_all(cl_device_id deviceID,
     return 0;
 }
 
-int test_create_context_from_type_device_type_default(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_create_context_from_type_device_type_default(cl_device_id deviceID,
+                                                      cl_context context,
+                                                      cl_command_queue queue,
+                                                      int num_elements)
 {
     cl_device_type type;
     cl_int error =
