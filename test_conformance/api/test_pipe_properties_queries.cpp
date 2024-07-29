@@ -60,7 +60,7 @@ static int create_pipe_and_check_array_properties(
     }
     if (set_size != test_case.properties.size() * sizeof(cl_pipe_properties))
     {
-        log_error("ERROR: CL_PIPE_PROPERTIES size is %d, expected %d.\n",
+        log_error("ERROR: CL_PIPE_PROPERTIES size is %zu, expected %zu.\n",
                   set_size,
                   test_case.properties.size() * sizeof(cl_pipe_properties));
         return TEST_FAIL;

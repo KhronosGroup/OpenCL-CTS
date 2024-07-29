@@ -142,9 +142,10 @@ static int create_queue_and_check_array_properties(
     }
     if (set_size != test_case.properties.size() * sizeof(cl_queue_properties))
     {
-        log_error("ERROR: CL_QUEUE_PROPERTIES_ARRAY size is %d, expected %d.\n",
-                  set_size,
-                  test_case.properties.size() * sizeof(cl_queue_properties));
+        log_error(
+            "ERROR: CL_QUEUE_PROPERTIES_ARRAY size is %zu, expected %zu.\n",
+            set_size,
+            test_case.properties.size() * sizeof(cl_queue_properties));
         return TEST_FAIL;
     }
 
