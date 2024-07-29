@@ -157,6 +157,11 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(negative_create_command_queue_with_properties,
                      Version(2, 0)),
     ADD_TEST(negative_create_command_queue_with_properties_khr),
+    ADD_TEST_VERSION(negative_set_default_device_command_queue, Version(2, 1)),
+    ADD_TEST(negative_retain_command_queue),
+    ADD_TEST(negative_release_command_queue),
+    ADD_TEST(negative_get_command_queue_info),
+    ADD_TEST(negative_set_command_queue_property)
 };
 
 const int test_num = ARRAY_SIZE(test_list);
