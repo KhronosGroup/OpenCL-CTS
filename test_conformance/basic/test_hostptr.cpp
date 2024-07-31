@@ -32,8 +32,6 @@ const char *hostptr_kernel_code =
 "    dst[tid] = srcA[tid] + srcB[tid];\n"
 "}\n";
 
-static const float    MAX_ERR = 1e-5f;
-
 static int verify_hostptr(cl_float *inptrA, cl_float *inptrB, cl_float *outptr, int n)
 {
     cl_float       r;

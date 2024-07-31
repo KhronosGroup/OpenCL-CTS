@@ -68,13 +68,15 @@ static int check_single(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if(i == 0 && results[i] != nestingLevel)
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], nestingLevel, i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], nestingLevel, i);
             return (int)i;
         }
 
         if(i > 0 && results[i] != 0)
         {
-            log_error("ERROR: Kernel returned %d vs. expected 0, index: %d\n", results[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected 0, index: %zu\n",
+                      results[i], i);
             return (int)i;
         }
     }
@@ -142,7 +144,8 @@ static int check_some_eq_1D(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -216,7 +219,8 @@ static int check_some_diff_1D(cl_int* results, cl_int maxGlobalWorkSize, cl_int 
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -278,7 +282,8 @@ static int check_all_eq_1D(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -346,7 +351,8 @@ static int check_all_diff_1D(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -455,7 +461,8 @@ static int check_some_eq_2D(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -535,7 +542,8 @@ static int check_some_diff_2D(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -603,7 +611,8 @@ static int check_all_eq_2D(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -677,7 +686,8 @@ static int check_all_diff_2D(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -794,7 +804,8 @@ static int check_some_eq_3D(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -879,7 +890,8 @@ static int check_some_diff_3D(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -952,7 +964,8 @@ static int check_all_eq_3D(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -1031,7 +1044,8 @@ static int check_all_diff_3D(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -1217,7 +1231,8 @@ static int check_some_eq_mix(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -1346,7 +1361,8 @@ static int check_some_diff_mix(cl_int* results, cl_int len, cl_int nesting_level
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -1462,7 +1478,8 @@ static int check_all_eq_mix(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -1584,7 +1601,8 @@ static int check_all_diff_mix(cl_int* results, cl_int len, cl_int nesting_level)
     {
         if (results[i] != referenceResults[i])
         {
-            log_error("ERROR: Kernel returned %d vs. expected %d, index: %d\n", results[i], referenceResults[i], i);
+            log_error("ERROR: Kernel returned %d vs. expected %d, index: %zu\n",
+                      results[i], referenceResults[i], i);
             return (int)i;
         }
     }
@@ -1659,7 +1677,9 @@ int test_enqueue_wg_size(cl_device_id device, cl_context context, cl_command_que
     };
 
     dev_queue = clCreateCommandQueueWithProperties(context, device, queue_prop_def, &err_ret);
-    test_error(err_ret, "clCreateCommandQueueWithProperties(CL_QUEUE_DEVICE|CL_QUEUE_DEFAULT) failed");
+    test_error(err_ret,
+               "clCreateCommandQueueWithProperties(CL_QUEUE_ON_DEVICE | "
+               "CL_QUEUE_ON_DEVICE_DEFAULT) failed");
 
 
     size_t failCnt = 0;
@@ -1668,7 +1688,9 @@ int test_enqueue_wg_size(cl_device_id device, cl_context context, cl_command_que
         if (!gKernelName.empty() && gKernelName != sources_enqueue_wg_size[k].src.kernel_name)
             continue;
 
-        log_info("Running '%s' kernel (%d of %d) ...\n", sources_enqueue_wg_size[k].src.kernel_name, k + 1, arr_size(sources_enqueue_wg_size));
+        log_info("Running '%s' kernel (%d of %zu) ...\n",
+                 sources_enqueue_wg_size[k].src.kernel_name, k + 1,
+                 arr_size(sources_enqueue_wg_size));
         for(i = 0; i < MAX_GLOBAL_WORK_SIZE; ++i)
         {
             kernel_results[i] = 0;
@@ -1712,7 +1734,8 @@ int test_enqueue_wg_size(cl_device_id device, cl_context context, cl_command_que
 
     if (failCnt > 0)
     {
-        log_error("ERROR: %d of %d kernels failed.\n", failCnt, arr_size(sources_enqueue_wg_size));
+        log_error("ERROR: %zu of %zu kernels failed.\n", failCnt,
+                  arr_size(sources_enqueue_wg_size));
     }
 
     free_mtdata(d);

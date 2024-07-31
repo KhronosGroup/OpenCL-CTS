@@ -1,0 +1,39 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 22
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpCapability ExpectAssumeKHR
+               OpExtension "SPV_KHR_expect_assume"
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %test_assume "test_assume" %gl_GlobalInvocationID
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_BuiltInGlobalInvocationId" Import
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+     %uint_0 = OpConstantNull %uint
+%_ptr_Input_v3ulong = OpTypePointer Input %v3ulong
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+   %functype = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %uint
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3ulong Input
+%test_assume = OpFunction %void None %functype
+        %dst = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %value = OpFunctionParameter %uint
+         %13 = OpLabel
+       %test = OpSGreaterThan %bool %value %uint_0
+               OpAssumeTrueKHR %test
+  %global_id = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 32
+      %gid_0 = OpCompositeExtract %ulong %global_id 0
+  %dst_gid_0 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %dst %gid_0
+               OpStore %dst_gid_0 %value Aligned 4
+               OpReturn
+               OpFunctionEnd

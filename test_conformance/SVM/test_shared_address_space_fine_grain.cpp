@@ -47,7 +47,7 @@ int test_svm_shared_address_space_fine_grain(cl_device_id deviceID, cl_context c
   test_error2(error, pNodes, "malloc failed");
 
   // this allocation holds an index into the nodes buffer, it is used for node allocation
-  size_t* pAllocator = (size_t*) align_malloc(sizeof(cl_int), 128);
+  size_t *pAllocator = (size_t *)align_malloc(sizeof(size_t), 128);
   test_error2(error, pAllocator, "malloc failed");
 
   // this allocation holds the count of correct nodes, which is computed by the verify kernel.

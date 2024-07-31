@@ -16,9 +16,6 @@
 #ifndef _deviceInfo_h
 #define _deviceInfo_h
 
-// Configuration
-#include "../config.hpp"
-
 #include <string>
 
 #include <CL/opencl.h>

@@ -22,11 +22,8 @@
 
 #define MINIMUM_OPENCL_PIPE_VERSION Version(2, 0)
 
-static constexpr size_t CL_VERSION_LENGTH = 128;
 static constexpr size_t KERNEL_ARGUMENT_LENGTH = 128;
 static constexpr char KERNEL_ARGUMENT_NAME[] = "argument";
-static constexpr size_t KERNEL_ARGUMENT_NAME_LENGTH =
-    sizeof(KERNEL_ARGUMENT_NAME) + 1;
 static constexpr int SINGLE_KERNEL_ARG_NUMBER = 0;
 static constexpr int MAX_NUMBER_OF_KERNEL_ARGS = 128;
 
@@ -181,9 +178,8 @@ static std::string generate_kernel(const std::vector<KernelArgInfo>& all_args,
         ret += "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
     }
     ret += "kernel void get_kernel_arg_info(\n";
-    for (int i = 0; i < all_args.size(); ++i)
+    for (size_t i = 0; i < all_args.size(); ++i)
     {
-        const KernelArgInfo& arg = all_args[i];
         ret += generate_argument(all_args[i]);
         if (i == all_args.size() - 1)
         {
@@ -496,7 +492,7 @@ compare_kernel_with_expected(cl_context context, cl_device_id deviceID,
         context, &program, &kernel, 1, &kernel_src, "get_kernel_arg_info",
         get_build_options(deviceID).c_str());
     test_error(err, "create_single_kernel_helper_with_build_options");
-    for (int i = 0; i < expected_args.size(); ++i)
+    for (size_t i = 0; i < expected_args.size(); ++i)
     {
         KernelArgInfo actual;
         err = clGetKernelArgInfo(kernel, i, CL_KERNEL_ARG_ADDRESS_QUALIFIER,
@@ -542,6 +538,7 @@ size_t get_param_size(const std::string& arg_type, cl_device_id deviceID,
         cl_int err = clGetDeviceInfo(deviceID, CL_DEVICE_ADDRESS_BITS,
                                      sizeof(device_address_bits),
                                      &device_address_bits, NULL);
+        test_error_ret(err, "clGetDeviceInfo", 0);
         return (device_address_bits / 8);
     }
 
@@ -814,8 +811,34 @@ static int run_image_tests(cl_context context, cl_device_id deviceID)
     cl_kernel_arg_address_qualifier address_qualifier =
         CL_KERNEL_ARG_ADDRESS_GLOBAL;
 
+    Version version = get_device_cl_version(deviceID);
+    bool supports_read_write_images = false;
+    if (version >= Version(3, 0))
+    {
+        cl_uint maxReadWriteImageArgs = 0;
+        cl_int error = clGetDeviceInfo(
+            deviceID, CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS,
+            sizeof(maxReadWriteImageArgs), &maxReadWriteImageArgs, NULL);
+        test_error(error,
+                   "Unable to query "
+                   "CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS");
+
+        // read-write images are supported if MAX_READ_WRITE_IMAGE_ARGS is
+        // nonzero
+        supports_read_write_images = maxReadWriteImageArgs != 0;
+    }
+    else if (version >= Version(2, 0))
+    {
+        // read-write images are required for OpenCL 2.x
+        supports_read_write_images = true;
+    }
+
     for (auto access_qualifier : access_qualifiers)
     {
+        if (access_qualifier == CL_KERNEL_ARG_ACCESS_READ_WRITE
+            && !supports_read_write_images)
+            continue;
+
         bool is_write =
             (access_qualifier == CL_KERNEL_ARG_ACCESS_WRITE_ONLY
              || access_qualifier == CL_KERNEL_ARG_ACCESS_READ_WRITE);

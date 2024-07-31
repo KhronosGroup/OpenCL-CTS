@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "harness/imageHelpers.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,272 +22,356 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <algorithm>
+#include <string>
+#include <vector>
 
 #include "procs.h"
 
-static const char *bgra8888_kernel_code =
-"\n"
-"__kernel void test_bgra8888(read_only image2d_t srcimg, __global uchar4 *dst, sampler_t sampler)\n"
-"{\n"
-"    int    tid_x = get_global_id(0);\n"
-"    int    tid_y = get_global_id(1);\n"
-"    int    indx = tid_y * get_image_width(srcimg) + tid_x;\n"
-"    float4 color;\n"
-"\n"
-"    color = read_imagef(srcimg, sampler, (int2)(tid_x, tid_y)) * 255.0f;\n"
-"    dst[indx] = convert_uchar4_rte(color.zyxw);\n"
-"\n"
-"}\n";
+#define TEST_IMAGE_WIDTH_2D (512)
+#define TEST_IMAGE_HEIGHT_2D (512)
 
+#define TEST_IMAGE_WIDTH_3D (64)
+#define TEST_IMAGE_HEIGHT_3D (64)
+#define TEST_IMAGE_DEPTH_3D (64)
 
-static const char *rgba8888_kernel_code =
-"\n"
-"__kernel void test_rgba8888(read_only image2d_t srcimg, __global uchar4 *dst, sampler_t sampler)\n"
-"{\n"
-"    int    tid_x = get_global_id(0);\n"
-"    int    tid_y = get_global_id(1);\n"
-"    int    indx = tid_y * get_image_width(srcimg) + tid_x;\n"
-"    float4 color;\n"
-"\n"
-"    color = read_imagef(srcimg, sampler, (int2)(tid_x, tid_y)) * 255.0f;\n"
-"    dst[indx] = convert_uchar4_rte(color);\n"
-"\n"
-"}\n";
+#define TEST_IMAGE_WIDTH(TYPE)                                                 \
+    ((CL_MEM_OBJECT_IMAGE2D == TYPE) ? TEST_IMAGE_WIDTH_2D                     \
+                                     : TEST_IMAGE_WIDTH_3D)
+#define TEST_IMAGE_HEIGHT(TYPE)                                                \
+    ((CL_MEM_OBJECT_IMAGE2D == TYPE) ? TEST_IMAGE_HEIGHT_2D                    \
+                                     : TEST_IMAGE_HEIGHT_3D)
+#define TEST_IMAGE_DEPTH(TYPE)                                                 \
+    ((CL_MEM_OBJECT_IMAGE2D == TYPE) ? 1 : TEST_IMAGE_DEPTH_3D)
 
-
-static unsigned char *
-generate_8888_image(int w, int h, MTdata d)
+namespace {
+const char *kernel_source_2d = R"(
+__kernel void test_CL_BGRACL_UNORM_INT8(read_only image2d_t srcimg, __global uchar4 *dst, sampler_t sampler)
 {
-    unsigned char   *ptr = (unsigned char*)malloc(w * h * 4);
-    int             i;
+    int    tid_x = get_global_id(0);
+    int    tid_y = get_global_id(1);
+    int    indx = tid_y * get_image_width(srcimg) + tid_x;
+    float4 color;
 
-    for (i=0; i<w*h*4; i++)
-        ptr[i] = (unsigned char)genrand_int32( d);
-
-    return ptr;
+    color = read_imagef(srcimg, sampler, (int2)(tid_x, tid_y)) * 255.0f;
+    dst[indx] = convert_uchar4_rte(color.zyxw);
 }
 
-static int
-verify_bgra8888_image(unsigned char *image, unsigned char *outptr, int w, int h)
+__kernel void test_CL_RGBACL_UNORM_INT8(read_only image2d_t srcimg, __global uchar4 *dst, sampler_t sampler)
 {
-    int     i;
+    int    tid_x = get_global_id(0);
+    int    tid_y = get_global_id(1);
+    int    indx = tid_y * get_image_width(srcimg) + tid_x;
+    float4 color;
 
-    for (i=0; i<w*h; i++)
-    {
-        if (outptr[i] != image[i])
-        {
-            log_error("READ_IMAGE_BGRA_UNORM_INT8 test failed\n");
-            return -1;
-        }
-    }
-
-    log_info("READ_IMAGE_BGRA_UNORM_INT8 test passed\n");
-    return 0;
+    color = read_imagef(srcimg, sampler, (int2)(tid_x, tid_y)) * 255.0f;
+    dst[indx] = convert_uchar4_rte(color);
 }
 
-static int
-verify_rgba8888_image(unsigned char *image, unsigned char *outptr, int w, int h)
+__kernel void test_CL_RGBACL_UNORM_INT16(read_only image2d_t srcimg, __global ushort4 *dst, sampler_t smp)
 {
-    int     i;
+    int    tid_x = get_global_id(0);
+    int    tid_y = get_global_id(1);
+    int    indx = tid_y * get_image_width(srcimg) + tid_x;
+    float4 color;
 
-    for (i=0; i<w*h*4; i++)
-    {
-        if (outptr[i] != image[i])
-        {
-            log_error("READ_IMAGE_RGBA_UNORM_INT8 test failed\n");
-            return -1;
-        }
-    }
-
-    log_info("READ_IMAGE_RGBA_UNORM_INT8 test passed\n");
-    return 0;
+    color = read_imagef(srcimg, smp, (int2)(tid_x, tid_y));
+    ushort4 dst_write;
+    dst_write.x = convert_ushort_rte(color.x * 65535.0f);
+    dst_write.y = convert_ushort_rte(color.y * 65535.0f);
+    dst_write.z = convert_ushort_rte(color.z * 65535.0f);
+    dst_write.w = convert_ushort_rte(color.w * 65535.0f);
+    dst[indx] = dst_write;
 }
 
-
-int test_readimage(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+__kernel void test_CL_RGBACL_FLOAT(read_only image2d_t srcimg, __global float4 *dst, sampler_t smp)
 {
-    cl_mem streams[3];
-    cl_program program[2];
-    cl_kernel kernel[2];
-    cl_image_format    img_format;
-    cl_image_format *supported_formats;
-    unsigned char    *input_ptr[2], *output_ptr;
-    size_t threads[2];
-    int img_width = 512;
-    int img_height = 512;
-    int i, err;
-    size_t origin[3] = {0, 0, 0};
-    size_t region[3] = {img_width, img_height, 1};
-    size_t length = img_width * img_height * 4 * sizeof(unsigned char);
-    MTdata d = init_genrand( gRandomSeed );
-    int supportsBGRA = 0;
-    cl_uint numFormats = 0;
+    int    tid_x = get_global_id(0);
+    int    tid_y = get_global_id(1);
+    int    indx = tid_y * get_image_width(srcimg) + tid_x;
+    float4 color;
 
-    PASSIVE_REQUIRE_IMAGE_SUPPORT( device )
+    color = read_imagef(srcimg, smp, (int2)(tid_x, tid_y));
+    
+    dst[indx].x = color.x;
+    dst[indx].y = color.y;
+    dst[indx].z = color.z;
+    dst[indx].w = color.w;
 
-    PASSIVE_REQUIRE_IMAGE_SUPPORT( device )
+}
+)";
 
-    d = init_genrand( gRandomSeed );
-    input_ptr[0] = generate_8888_image(img_width, img_height, d);
-    input_ptr[1] = generate_8888_image(img_width, img_height, d);
-    free_mtdata(d); d = NULL;
+static const char *kernel_source_3d = R"(
+__kernel void test_CL_BGRACL_UNORM_INT8(read_only image3d_t srcimg, __global uchar4 *dst, sampler_t sampler)
+{
+    int    tid_x = get_global_id(0);
+    int    tid_y = get_global_id(1);
+    int    tid_z = get_global_id(2);
+    int    indx = (tid_z * get_image_height(srcimg) + tid_y) * get_image_width(srcimg) + tid_x;
+    float4 color;
 
-    output_ptr = (unsigned char*)malloc(length);
+    color = read_imagef(srcimg, sampler, (int4)(tid_x, tid_y, tid_z, 0))* 255.0f;
+    dst[indx].x = color.z;
+    dst[indx].y = color.y;
+    dst[indx].z = color.x;
+    dst[indx].w = color.w;
 
-    if(gIsEmbedded)
+}
+
+__kernel void test_CL_RGBACL_UNORM_INT8(read_only image3d_t srcimg, __global uchar4 *dst, sampler_t sampler)
+{
+    int    tid_x = get_global_id(0);
+    int    tid_y = get_global_id(1);
+    int    tid_z = get_global_id(2);
+    int    indx = (tid_z * get_image_height(srcimg) + tid_y) * get_image_width(srcimg) + tid_x;
+    float4 color;
+
+    color = read_imagef(srcimg, sampler, (int4)(tid_x, tid_y, tid_z, 0))* 255.0f;
+
+    dst[indx].x = color.x;
+    dst[indx].y = color.y;
+    dst[indx].z = color.z;
+    dst[indx].w = color.w;
+
+}
+
+__kernel void test_CL_RGBACL_UNORM_INT16(read_only image3d_t srcimg, __global ushort4 *dst, sampler_t sampler)
+{
+    int    tid_x = get_global_id(0);
+    int    tid_y = get_global_id(1);
+    int    tid_z = get_global_id(2);
+    int    indx = (tid_z * get_image_height(srcimg) + tid_y) * get_image_width(srcimg) + tid_x;
+    float4 color;
+
+    color = read_imagef(srcimg, sampler, (int4)(tid_x, tid_y, tid_z, 0));
+    ushort4 dst_write;
+    dst_write.x = convert_ushort_rte(color.x * 65535.0f);
+    dst_write.y = convert_ushort_rte(color.y * 65535.0f);
+    dst_write.z = convert_ushort_rte(color.z * 65535.0f);
+    dst_write.w = convert_ushort_rte(color.w * 65535.0f);
+    dst[indx] = dst_write;
+
+}
+
+__kernel void test_CL_RGBACL_FLOAT(read_only image3d_t srcimg, __global float *dst, sampler_t sampler)
+{
+    int    tid_x = get_global_id(0);
+    int    tid_y = get_global_id(1);
+    int    tid_z = get_global_id(2);
+    int    indx = (tid_z * get_image_height(srcimg) + tid_y) * get_image_width(srcimg) + tid_x;
+    float4 color;
+
+    color = read_imagef(srcimg, sampler, (int4)(tid_x, tid_y, tid_z, 0));
+    indx *= 4;
+    dst[indx+0] = color.x;
+    dst[indx+1] = color.y;
+    dst[indx+2] = color.z;
+    dst[indx+3] = color.w;
+
+}
+)";
+
+template <typename T> void generate_random_inputs(std::vector<T> &v)
+{
+    RandomSeed seed(gRandomSeed);
+
+    auto random_generator = [&seed]() {
+        return static_cast<T>(genrand_int32(seed));
+    };
+
+    std::generate(v.begin(), v.end(), random_generator);
+}
+
+template <> void generate_random_inputs<float>(std::vector<float> &v)
+{
+    RandomSeed seed(gRandomSeed);
+
+    auto random_generator = [&seed]() {
+        return get_random_float(-0x40000000, 0x40000000, seed);
+    };
+
+    std::generate(v.begin(), v.end(), random_generator);
+}
+
+cl_mem create_image_xd(cl_context context, cl_mem_flags flags,
+                       cl_mem_object_type type, const cl_image_format *fmt,
+                       size_t x, size_t y, size_t z, cl_int *err)
+{
+
+    return (CL_MEM_OBJECT_IMAGE2D == type)
+        ? create_image_2d(context, flags, fmt, x, y, 0, nullptr, err)
+        : create_image_3d(context, flags, fmt, x, y, z, 0, 0, nullptr, err);
+}
+
+template <cl_mem_object_type IMG_TYPE, typename T>
+int test_readimage(cl_device_id device, cl_context context,
+                   cl_command_queue queue, const cl_image_format *img_format)
+{
+    clMemWrapper streams[2];
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+    clSamplerWrapper sampler;
+
+    std::string kernel_name("test_");
+
+    size_t img_width = TEST_IMAGE_WIDTH(IMG_TYPE);
+    size_t img_height = TEST_IMAGE_HEIGHT(IMG_TYPE);
+    size_t img_depth = TEST_IMAGE_DEPTH(IMG_TYPE);
+
+    int err;
+
+    const size_t origin[3] = { 0, 0, 0 };
+    const size_t region[3] = { img_width, img_height, img_depth };
+
+    const size_t num_elements = img_width * img_height * img_depth * 4;
+    const size_t length = num_elements * sizeof(T);
+
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+
+    std::vector<T> input(num_elements);
+    std::vector<T> output(num_elements);
+
+    generate_random_inputs(input);
+
+    streams[0] =
+        create_image_xd(context, CL_MEM_READ_ONLY, IMG_TYPE, img_format,
+                        img_width, img_height, img_depth, &err);
+    test_error(err, "create_image failed.");
+
+    streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, &err);
+    test_error(err, "clCreateBuffer failed.");
+
+    sampler = clCreateSampler(context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE,
+                              CL_FILTER_NEAREST, &err);
+    test_error(err, "clCreateSampler failed");
+
+    err = clEnqueueWriteImage(queue, streams[0], CL_TRUE, origin, region, 0, 0,
+                              input.data(), 0, NULL, NULL);
+    test_error(err, "clEnqueueWriteImage failed.");
+
+    kernel_name += GetChannelOrderName(img_format->image_channel_order);
+    kernel_name += GetChannelTypeName(img_format->image_channel_data_type);
+
+    const char **kernel_source = (CL_MEM_OBJECT_IMAGE2D == IMG_TYPE)
+        ? &kernel_source_2d
+        : &kernel_source_3d;
+
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      kernel_source, kernel_name.c_str());
+    test_error(err, "create_single_kernel_helper failed.");
+
+    err = clSetKernelArg(kernel, 0, sizeof(streams[0]), &streams[0]);
+    err |= clSetKernelArg(kernel, 1, sizeof(streams[1]), &streams[1]);
+    err |= clSetKernelArg(kernel, 2, sizeof(sampler), &sampler);
+    test_error(err, "clSetKernelArgs failed\n");
+
+    err = clEnqueueNDRangeKernel(queue, kernel, 3, NULL, region, NULL, 0, NULL,
+                                 NULL);
+    test_error(err, "clEnqueueNDRangeKernel failed\n");
+
+    err = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, length,
+                              output.data(), 0, NULL, NULL);
+    test_error(err, "clEnqueueReadBuffer failed\n");
+
+    if (0 != memcmp(input.data(), output.data(), length))
     {
-        /* Get the supported image formats to see if BGRA is supported */
-        clGetSupportedImageFormats (context, CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D, 0, NULL, &numFormats);
-        supported_formats = (cl_image_format *) malloc(sizeof(cl_image_format) * numFormats);
-        clGetSupportedImageFormats (context, CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D, numFormats, supported_formats, NULL);
-
-        for(i = 0; i < numFormats; i++)
-        {
-            if(supported_formats[i].image_channel_order == CL_BGRA)
-            {
-                supportsBGRA = 1;
-                break;
-            }
-        }
+        log_error("READ_IMAGE_%s_%s test failed\n",
+                  GetChannelOrderName(img_format->image_channel_order),
+                  GetChannelTypeName(img_format->image_channel_data_type));
+        err = -1;
     }
     else
     {
-        supportsBGRA = 1;
+        log_info("READ_IMAGE_%s_%s test passed\n",
+                 GetChannelOrderName(img_format->image_channel_order),
+                 GetChannelTypeName(img_format->image_channel_data_type));
     }
-
-    if(supportsBGRA)
-    {
-        img_format.image_channel_order = CL_BGRA;
-        img_format.image_channel_data_type = CL_UNORM_INT8;
-        streams[0] = clCreateImage2D(context, CL_MEM_READ_WRITE, &img_format, img_width, img_height, 0, NULL, NULL);
-        if (!streams[0])
-        {
-            log_error("clCreateImage2D failed\n");
-            return -1;
-        }
-    }
-
-    img_format.image_channel_order = CL_RGBA;
-    img_format.image_channel_data_type = CL_UNORM_INT8;
-    streams[1] = clCreateImage2D(context, CL_MEM_READ_WRITE, &img_format, img_width, img_height, 0, NULL, NULL);
-    if (!streams[1])
-    {
-        log_error("clCreateImage2D failed\n");
-        return -1;
-    }
-    streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE, length, NULL, NULL);
-    if (!streams[2])
-    {
-        log_error("clCreateBuffer failed\n");
-        return -1;
-    }
-
-    if(supportsBGRA)
-    {
-        err = clEnqueueWriteImage(queue, streams[0], CL_TRUE, origin, region, 0, 0, input_ptr[0], 0, NULL, NULL);
-        if (err != CL_SUCCESS)
-        {
-            log_error("clEnqueueWriteImage failed\n");
-            return -1;
-        }
-    }
-
-    err = clEnqueueWriteImage(queue, streams[1], CL_TRUE, origin, region, 0, 0, input_ptr[1], 0, NULL, NULL);
-    if (err != CL_SUCCESS)
-    {
-        log_error("clEnqueueWriteImage failed\n");
-        return -1;
-    }
-
-    if(supportsBGRA)
-    {
-        err = create_single_kernel_helper(context, &program[0], &kernel[0], 1, &bgra8888_kernel_code, "test_bgra8888" );
-        if (err)
-            return -1;
-    }
-
-    err = create_single_kernel_helper(context, &program[1], &kernel[1], 1, &rgba8888_kernel_code, "test_rgba8888" );
-    if (err)
-        return -1;
-
-    cl_sampler sampler = clCreateSampler(context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err);
-    test_error(err, "clCreateSampler failed");
-
-    if(supportsBGRA)
-    {
-        err  = clSetKernelArg(kernel[0], 0, sizeof streams[0], &streams[0]);
-        err |= clSetKernelArg(kernel[0], 1, sizeof streams[2], &streams[2]);
-        err |= clSetKernelArg(kernel[0], 2, sizeof sampler, &sampler);
-        if (err != CL_SUCCESS)
-        {
-            log_error("clSetKernelArg failed\n");
-            return -1;
-        }
-    }
-
-    err  = clSetKernelArg(kernel[1], 0, sizeof streams[1], &streams[1]);
-    err |= clSetKernelArg(kernel[1], 1, sizeof streams[2], &streams[2]);
-    err |= clSetKernelArg(kernel[1], 2, sizeof sampler, &sampler);
-    if (err != CL_SUCCESS)
-    {
-        log_error("clSetKernelArg failed\n");
-        return -1;
-    }
-
-    threads[0] = (unsigned int)img_width;
-    threads[1] = (unsigned int)img_height;
-
-    for (i=0; i<2; i++)
-    {
-        if(i == 0 && !supportsBGRA)
-            continue;
-
-        err = clEnqueueNDRangeKernel(queue, kernel[i], 2, NULL, threads, NULL, 0, NULL, NULL);
-        if (err != CL_SUCCESS)
-        {
-            log_error("%s clEnqueueNDRangeKernel failed\n", __FUNCTION__);
-            return -1;
-        }
-        err = clEnqueueReadBuffer(queue, streams[2], CL_TRUE, 0, length, output_ptr, 0, NULL, NULL);
-        if (err != CL_SUCCESS)
-        {
-            log_error("clEnqueueReadBuffer failed\n");
-            return -1;
-        }
-
-        switch (i)
-        {
-            case 0:
-                err = verify_bgra8888_image(input_ptr[i], output_ptr, img_width, img_height);
-                break;
-            case 1:
-                err = verify_rgba8888_image(input_ptr[i], output_ptr, img_width, img_height);
-                break;
-        }
-
-        if (err)
-            break;
-    }
-
-    // cleanup
-    clReleaseSampler(sampler);
-
-    if(supportsBGRA)
-            clReleaseMemObject(streams[0]);
-
-    clReleaseMemObject(streams[1]);
-    clReleaseMemObject(streams[2]);
-    for (i=0; i<2; i++)
-    {
-        if(i == 0 && !supportsBGRA)
-            continue;
-
-        clReleaseKernel(kernel[i]);
-        clReleaseProgram(program[i]);
-    }
-    free(input_ptr[0]);
-    free(input_ptr[1]);
-    free(output_ptr);
 
     return err;
+}
+
+bool check_format(cl_device_id device, cl_context context,
+                  cl_mem_object_type image_type,
+                  const cl_image_format img_format)
+{
+    return is_image_format_required(img_format, CL_MEM_READ_ONLY, image_type,
+                                    device)
+        || is_image_format_supported(context, CL_MEM_READ_ONLY, image_type,
+                                     &img_format);
+}
+
+}
+int test_readimage(cl_device_id device, cl_context context,
+                   cl_command_queue queue, int num_elements)
+{
+    const cl_image_format format[] = { { CL_RGBA, CL_UNORM_INT8 },
+                                       { CL_BGRA, CL_UNORM_INT8 } };
+
+    int err = test_readimage<CL_MEM_OBJECT_IMAGE2D, cl_uchar>(
+        device, context, queue, &format[0]);
+
+    if (check_format(device, context, CL_MEM_OBJECT_IMAGE2D, format[1]))
+    {
+        err |= test_readimage<CL_MEM_OBJECT_IMAGE2D, cl_uchar>(
+            device, context, queue, &format[1]);
+    }
+
+    return err;
+}
+
+int test_readimage_int16(cl_device_id device, cl_context context,
+                         cl_command_queue queue, int num_elements)
+{
+    const cl_image_format format = { CL_RGBA, CL_UNORM_INT16 };
+    return test_readimage<CL_MEM_OBJECT_IMAGE2D, cl_ushort>(device, context,
+                                                            queue, &format);
+}
+
+int test_readimage_fp32(cl_device_id device, cl_context context,
+                        cl_command_queue queue, int num_elements)
+{
+    const cl_image_format format = { CL_RGBA, CL_FLOAT };
+    return test_readimage<CL_MEM_OBJECT_IMAGE2D, cl_float>(device, context,
+                                                           queue, &format);
+}
+
+int test_readimage3d(cl_device_id device, cl_context context,
+                     cl_command_queue queue, int num_elements)
+{
+    const cl_image_format format[] = { { CL_RGBA, CL_UNORM_INT8 },
+                                       { CL_BGRA, CL_UNORM_INT8 } };
+
+    PASSIVE_REQUIRE_3D_IMAGE_SUPPORT(device)
+
+    int err = test_readimage<CL_MEM_OBJECT_IMAGE3D, cl_uchar>(
+        device, context, queue, &format[0]);
+
+    if (check_format(device, context, CL_MEM_OBJECT_IMAGE3D, format[1]))
+    {
+        err |= test_readimage<CL_MEM_OBJECT_IMAGE3D, cl_uchar>(
+            device, context, queue, &format[1]);
+    }
+
+    return err;
+}
+
+int test_readimage3d_int16(cl_device_id device, cl_context context,
+                           cl_command_queue queue, int num_elements)
+{
+    const cl_image_format format = { CL_RGBA, CL_UNORM_INT16 };
+
+    PASSIVE_REQUIRE_3D_IMAGE_SUPPORT(device)
+
+    return test_readimage<CL_MEM_OBJECT_IMAGE3D, cl_ushort>(device, context,
+                                                            queue, &format);
+}
+int test_readimage3d_fp32(cl_device_id device, cl_context context,
+                          cl_command_queue queue, int num_elements)
+{
+    const cl_image_format format = { CL_RGBA, CL_FLOAT };
+
+    PASSIVE_REQUIRE_3D_IMAGE_SUPPORT(device)
+
+    return test_readimage<CL_MEM_OBJECT_IMAGE3D, cl_float>(device, context,
+                                                           queue, &format);
 }

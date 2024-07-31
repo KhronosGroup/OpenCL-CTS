@@ -95,8 +95,8 @@ typedef struct _version version_t;
 
 struct _extensions
 {
-    int cl_khr_fp64;
-    int cl_khr_fp16;
+    int has_cl_khr_fp64;
+    int has_cl_khr_fp16;
 };
 typedef struct _extensions extensions_t;
 
@@ -188,6 +188,7 @@ config_info config_infos[] = {
     CONFIG_INFO(2, 0, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT, cl_uint),
 
     CONFIG_INFO(1, 1, CL_DEVICE_MEM_BASE_ADDR_ALIGN, cl_uint),
+    CONFIG_INFO(1, 1, CL_DEVICE_HALF_FP_CONFIG, cl_device_fp_config),
     CONFIG_INFO(1, 1, CL_DEVICE_SINGLE_FP_CONFIG, cl_device_fp_config),
     CONFIG_INFO(1, 1, CL_DEVICE_DOUBLE_FP_CONFIG, cl_device_fp_config),
     CONFIG_INFO(1, 1, CL_DEVICE_GLOBAL_MEM_CACHE_TYPE,
@@ -439,8 +440,8 @@ int getPlatformConfigInfo(cl_platform_id platform, config_info* info)
                 err = clGetPlatformInfo(platform, info->opcode, config_size_set,
                                         &info->config.cl_name_version_single,
                                         &config_size_ret);
+                size_err = config_size_set != config_size_ret;
             }
-            size_err = config_size_set != config_size_ret;
             break;
         default:
             log_error("Unknown config type: %d\n", info->config_type);
@@ -585,8 +586,8 @@ int getConfigInfo(cl_device_id device, config_info* info)
                 err = clGetDeviceInfo(device, info->opcode, config_size_set,
                                       &info->config.cl_name_version_single,
                                       &config_size_ret);
+                size_err = config_size_set != config_size_ret;
             }
-            size_err = config_size_set != config_size_ret;
             break;
         default:
             log_error("Unknown config type: %d\n", info->config_type);
@@ -908,12 +909,6 @@ void dumpConfigInfo(config_info* info)
                 {
                     cl_name_version new_version_item =
                         info->config.cl_name_version_array[f];
-                    cl_version new_version_major =
-                        CL_VERSION_MAJOR_KHR(new_version_item.version);
-                    cl_version new_version_minor =
-                        CL_VERSION_MINOR_KHR(new_version_item.version);
-                    cl_version new_version_patch =
-                        CL_VERSION_PATCH_KHR(new_version_item.version);
                     log_info("\t\t\"%s\" %d.%d.%d\n", new_version_item.name,
                              CL_VERSION_MAJOR_KHR(new_version_item.version),
                              CL_VERSION_MINOR_KHR(new_version_item.version),
@@ -1069,11 +1064,11 @@ int parseExtensions(char const* str, extensions_t* extensions)
         }
         if (strncmp(begin, "cl_khr_fp64", length) == 0)
         {
-            extensions->cl_khr_fp64 = 1;
+            extensions->has_cl_khr_fp64 = 1;
         }
         if (strncmp(begin, "cl_khr_fp16", length) == 0)
         {
-            extensions->cl_khr_fp16 = 1;
+            extensions->has_cl_khr_fp16 = 1;
         }
         begin += length; // Skip word.
         if (begin[0] == ' ')
@@ -1112,13 +1107,13 @@ int getConfigInfos(cl_device_id device)
             // version 1.1, we have to check doubles are sopported. In
             // OpenCL 1.2 CL_DEVICE_DOUBLE_FP_CONFIG should be reported
             // unconditionally.
-            get = extensions.cl_khr_fp64;
+            get = extensions.has_cl_khr_fp64;
         };
         if (info.opcode == CL_DEVICE_HALF_FP_CONFIG)
         {
             // CL_DEVICE_HALF_FP_CONFIG should be reported only when cl_khr_fp16
             // extension is available
-            get = extensions.cl_khr_fp16;
+            get = extensions.has_cl_khr_fp16;
         };
         if (get)
         {
@@ -1368,8 +1363,7 @@ int test_computeinfo(cl_device_id deviceID, cl_context context,
     else
     {
         // print device info
-        int onInfo;
-        for (onInfo = 0;
+        for (size_t onInfo = 0;
              onInfo < sizeof(device_infos) / sizeof(device_infos[0]); onInfo++)
         {
             log_info("Getting device IDs for %s devices\n",
@@ -1396,11 +1390,10 @@ int test_computeinfo(cl_device_id deviceID, cl_context context,
                 test_error(err, "clGetDeviceIDs failed");
             }
 
-            int onDevice;
-            for (onDevice = 0; onDevice < device_infos[onInfo].num_devices;
-                 onDevice++)
+            for (size_t onDevice = 0;
+                 onDevice < device_infos[onInfo].num_devices; onDevice++)
             {
-                log_info("%s Device %d of %d Info:\n",
+                log_info("%s Device %zu of %d Info:\n",
                          device_infos[onInfo].device_type_name, onDevice + 1,
                          device_infos[onInfo].num_devices);
                 total_errors +=
@@ -1460,5 +1453,9 @@ int main(int argc, const char** argv)
         }
     }
 
-    return runTestHarness(argCount, argList, test_num, test_list, true, 0);
+    int error = runTestHarness(argCount, argList, test_num, test_list, true, 0);
+
+    free(argList);
+
+    return error;
 }

@@ -3,6 +3,7 @@ set(MODULE_NAME API)
 set(${MODULE_NAME}_SOURCES
          main.cpp
          negative_platform.cpp
+         negative_queue.cpp
          test_api_consistency.cpp
          test_bool.cpp
          test_retain.cpp
@@ -35,6 +36,7 @@ set(${MODULE_NAME}_SOURCES
          test_mem_object_properties_queries.cpp
          test_queue_properties_queries.cpp
          test_pipe_properties_queries.cpp
+         test_wg_suggested_local_work_size.cpp
 )
 
 include(../CMakeCommon.txt)

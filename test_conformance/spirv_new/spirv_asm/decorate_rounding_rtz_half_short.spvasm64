@@ -1,0 +1,46 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 23
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpCapability Float16
+               OpCapability Int16
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %1 "decorate_rounding_rtz_half_short" %gl_GlobalInvocationID
+               OpName %res "res"
+               OpName %in "in"
+               OpName %entry "entry"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+               OpDecorate %gl_GlobalInvocationID LinkageAttributes "__spirv_GlobalInvocationId" Import
+               OpDecorate %6 FPRoundingMode RTZ
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_Input_v3ulong = OpTypePointer Input %v3ulong
+       %void = OpTypeVoid
+       %ushort = OpTypeInt 16 0
+%_ptr_CrossWorkgroup_ushort = OpTypePointer CrossWorkgroup %ushort
+       %half = OpTypeFloat 16
+%_ptr_CrossWorkgroup_half = OpTypePointer CrossWorkgroup %half
+         %14 = OpTypeFunction %void %_ptr_CrossWorkgroup_ushort %_ptr_CrossWorkgroup_half
+   %ulong_32 = OpConstant %ulong 32
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3ulong Input
+          %1 = OpFunction %void None %14
+        %res = OpFunctionParameter %_ptr_CrossWorkgroup_ushort
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_half
+      %entry = OpLabel
+         %16 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %17 = OpCompositeExtract %ulong %16 0
+         %18 = OpShiftLeftLogical %ulong %17 %ulong_32
+         %19 = OpShiftRightArithmetic %ulong %18 %ulong_32
+         %20 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_half %in %19
+         %21 = OpLoad %half %20 Aligned 2
+          %6 = OpConvertFToS %ushort %21
+         %22 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ushort %res %19
+               OpStore %22 %6
+               OpReturn
+               OpFunctionEnd

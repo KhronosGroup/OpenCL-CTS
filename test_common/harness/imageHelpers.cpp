@@ -23,6 +23,7 @@
 #include <malloc.h>
 #endif
 #include <algorithm>
+#include <cinttypes>
 #include <iterator>
 #if !defined(_WIN32)
 #include <cmath>
@@ -96,23 +97,9 @@ uint32_t get_channel_data_type_size(cl_channel_type channelType)
         case CL_UNSIGNED_INT32: return sizeof(cl_int);
 
         case CL_UNORM_SHORT_565:
-        case CL_UNORM_SHORT_555:
-#ifdef OBSOLETE_FORAMT
-        case CL_UNORM_SHORT_565_REV:
-        case CL_UNORM_SHORT_555_REV:
-#endif
-            return 2;
+        case CL_UNORM_SHORT_555: return 2;
 
-#ifdef OBSOLETE_FORAMT
-        case CL_UNORM_INT_8888:
-        case CL_UNORM_INT_8888_REV: return 4;
-#endif
-
-        case CL_UNORM_INT_101010:
-#ifdef OBSOLETE_FORAMT
-        case CL_UNORM_INT_101010_REV:
-#endif
-            return 4;
+        case CL_UNORM_INT_101010: return 4;
 
         case CL_FLOAT: return sizeof(cl_float);
 
@@ -293,26 +280,16 @@ uint32_t get_pixel_size(const cl_image_format *format)
             return get_format_channel_count(format) * sizeof(cl_int);
 
         case CL_UNORM_SHORT_565:
-        case CL_UNORM_SHORT_555:
-#ifdef OBSOLETE_FORAMT
-        case CL_UNORM_SHORT_565_REV:
-        case CL_UNORM_SHORT_555_REV:
-#endif
-            return 2;
+        case CL_UNORM_SHORT_555: return 2;
 
-#ifdef OBSOLETE_FORAMT
-        case CL_UNORM_INT_8888:
-        case CL_UNORM_INT_8888_REV: return 4;
-#endif
-
-        case CL_UNORM_INT_101010:
-#ifdef OBSOLETE_FORAMT
-        case CL_UNORM_INT_101010_REV:
-#endif
-            return 4;
+        case CL_UNORM_INT_101010: return 4;
 
         case CL_FLOAT:
             return get_format_channel_count(format) * sizeof(cl_float);
+        case CL_UNORM_INT_101010_2: return 4;
+
+        case CL_UNSIGNED_INT_RAW10_EXT:
+        case CL_UNSIGNED_INT_RAW12_EXT: return 2;
 
         default: return 0;
     }
@@ -421,7 +398,7 @@ void print_first_pixel_difference_error(size_t where, const char *sourcePixel,
               (int)thirdDim, (int)imageInfo->rowPitch,
               (int)imageInfo->rowPitch
                   - (int)imageInfo->width * (int)pixel_size);
-    log_error("Failed at column: %ld   ", where);
+    log_error("Failed at column: %zu   ", where);
 
     switch (pixel_size)
     {
@@ -454,7 +431,7 @@ void print_first_pixel_difference_error(size_t where, const char *sourcePixel,
                 ((cl_ushort *)destPixel)[1], ((cl_ushort *)destPixel)[2]);
             break;
         case 8:
-            log_error("*0x%16.16llx vs. 0x%16.16llx\n",
+            log_error("*0x%16.16" PRIx64 " vs. 0x%16.16" PRIx64 "\n",
                       ((cl_ulong *)sourcePixel)[0], ((cl_ulong *)destPixel)[0]);
             break;
         case 12:
@@ -473,7 +450,7 @@ void print_first_pixel_difference_error(size_t where, const char *sourcePixel,
                       ((cl_uint *)destPixel)[2], ((cl_uint *)destPixel)[3]);
             break;
         default:
-            log_error("Don't know how to print pixel size of %ld\n",
+            log_error("Don't know how to print pixel size of %zu\n",
                       pixel_size);
             break;
     }
@@ -795,10 +772,14 @@ void get_max_sizes(
 
     (*numberOfSizes) = 0;
 
-    if (image_type == CL_MEM_OBJECT_IMAGE1D)
+    if (image_type == CL_MEM_OBJECT_IMAGE1D
+        || image_type == CL_MEM_OBJECT_IMAGE1D_BUFFER)
     {
 
         size_t M = maximum_sizes[0];
+        size_t A = max_pixels;
+
+        M = static_cast<size_t>(fmax(1, fmin(A / M, M)));
 
         // Store the size
         sizes[(*numberOfSizes)][0] = M;
@@ -886,6 +867,7 @@ void get_max_sizes(
     {
         switch (image_type)
         {
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D:
                 log_info(" size[%d] = [%zu] (%g MB image)\n", j, sizes[j][0],
                          raw_pixel_size * sizes[j][0] * sizes[j][1]
@@ -924,6 +906,8 @@ float get_max_absolute_error(const cl_image_format *format,
 #ifdef CL_SFIXED14_APPLE
         case CL_SFIXED14_APPLE: return 0x1.0p-14f;
 #endif
+        case CL_UNORM_SHORT_555:
+        case CL_UNORM_SHORT_565: return 1.0f / 31.0f;
         default: return 0.0f;
     }
 }
@@ -1104,6 +1088,7 @@ cl_ulong get_image_size(image_descriptor const *imageInfo)
     {
         switch (imageInfo->type)
         {
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D: imageSize = imageInfo->rowPitch; break;
             case CL_MEM_OBJECT_IMAGE2D:
                 imageSize = imageInfo->height * imageInfo->rowPitch;
@@ -1143,13 +1128,15 @@ cl_ulong get_image_size_mb(image_descriptor const *imageInfo)
 uint64_t gRoundingStartValue = 0;
 
 
-void escape_inf_nan_values(char *data, size_t allocSize)
+void escape_inf_nan_subnormal_values(char *data, size_t allocSize)
 {
     // filter values with 8 not-quite-highest bits
     unsigned int *intPtr = (unsigned int *)data;
     for (size_t i = 0; i<allocSize>> 2; i++)
     {
         if ((intPtr[i] & 0x7F800000) == 0x7F800000) intPtr[i] ^= 0x40000000;
+        else if ((intPtr[i] & 0x7F800000) == 0)
+            intPtr[i] ^= 0x40000000;
     }
 
     // Ditto with half floats (16-bit numbers with the 5 not-quite-highest bits
@@ -1158,6 +1145,8 @@ void escape_inf_nan_values(char *data, size_t allocSize)
     for (size_t i = 0; i<allocSize>> 1; i++)
     {
         if ((shortPtr[i] & 0x7C00) == 0x7C00) shortPtr[i] ^= 0x4000;
+        else if ((shortPtr[i] & 0x7C00) == 0)
+            shortPtr[i] ^= 0x4000;
     }
 }
 
@@ -1236,7 +1225,7 @@ char *generate_random_image_data(image_descriptor *imageInfo,
 
         // Note: inf or nan float values would cause problems, although we don't
         // know this will actually be a float, so we just know what to look for
-        escape_inf_nan_values(data, allocSize);
+        escape_inf_nan_subnormal_values(data, allocSize);
         return data;
     }
 
@@ -1248,7 +1237,7 @@ char *generate_random_image_data(image_descriptor *imageInfo,
 
     // Note: inf or nan float values would cause problems, although we don't
     // know this will actually be a float, so we just know what to look for
-    escape_inf_nan_values(data, allocSize);
+    escape_inf_nan_subnormal_values(data, allocSize);
 
     if (/*!gTestMipmaps*/ imageInfo->num_mip_levels < 2)
     {
@@ -1992,7 +1981,7 @@ FloatPixel sample_image_pixel_float_offset(
                 break;
             case CL_MEM_OBJECT_IMAGE1D:
             case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-                log_info("Starting coordinate: %f\b", x);
+                log_info("Starting coordinate: %f\n", x);
                 break;
             case CL_MEM_OBJECT_IMAGE2D:
                 log_info("Starting coordinate: %f, %f\n", x, y);
@@ -2148,14 +2137,6 @@ FloatPixel sample_image_pixel_float_offset(
                 log_info("\t\tp11: %f, %f, %f, %f\n", lowRight[0], lowRight[1],
                          lowRight[2], lowRight[3]);
             }
-
-            bool printMe = false;
-            if (x1 <= 0 || x2 <= 0 || x1 >= (int)width - 1
-                || x2 >= (int)width - 1)
-                printMe = true;
-            if (y1 <= 0 || y2 <= 0 || y1 >= (int)height - 1
-                || y2 >= (int)height - 1)
-                printMe = true;
 
             double weights[2][2];
 
@@ -2349,6 +2330,7 @@ int debug_find_vector_in_image(void *imagePtr, image_descriptor *imageInfo,
 
     switch (imageInfo->type)
     {
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
         case CL_MEM_OBJECT_IMAGE1D:
             width = (imageInfo->width >> lod) ? (imageInfo->width >> lod) : 1;
             height = 1;
@@ -2624,11 +2606,11 @@ void pack_image_pixel(int *srcVector, const cl_image_format *imageFormat,
     }
 }
 
-int round_to_even(float v)
+cl_int round_to_even(float v)
 {
     // clamp overflow
-    if (v >= -(float)INT_MIN) return INT_MAX;
-    if (v <= (float)INT_MIN) return INT_MIN;
+    if (v >= -(float)CL_INT_MIN) return CL_INT_MAX;
+    if (v <= (float)CL_INT_MIN) return CL_INT_MIN;
 
     // round fractional values to integer value
     if (fabsf(v) < MAKE_HEX_FLOAT(0x1.0p23f, 0x1L, 23))
@@ -2640,7 +2622,7 @@ int round_to_even(float v)
         v -= magicVal;
     }
 
-    return (int)v;
+    return (cl_int)v;
 }
 
 void pack_image_pixel(float *srcVector, const cl_image_format *imageFormat,
@@ -2765,10 +2747,7 @@ void pack_image_pixel(float *srcVector, const cl_image_format *imageFormat,
         case CL_SIGNED_INT32: {
             cl_int *ptr = (cl_int *)outData;
             for (unsigned int i = 0; i < channelCount; i++)
-                ptr[i] = (int)CONVERT_INT(
-                    srcVector[i], MAKE_HEX_FLOAT(-0x1.0p31f, -1, 31),
-                    MAKE_HEX_FLOAT(0x1.fffffep30f, 0x1fffffe, 30 - 23),
-                    CL_INT_MAX);
+                ptr[i] = round_to_even(srcVector[i]);
             break;
         }
         case CL_UNSIGNED_INT8: {
@@ -2932,12 +2911,8 @@ void pack_image_pixel_error(const float *srcVector,
         case CL_SIGNED_INT32: {
             const cl_int *ptr = (const cl_int *)results;
             for (unsigned int i = 0; i < channelCount; i++)
-                errors[i] = (cl_float)(
-                    (cl_long)ptr[i]
-                    - (cl_long)CONVERT_INT(
-                        srcVector[i], MAKE_HEX_FLOAT(-0x1.0p31f, -1, 31),
-                        MAKE_HEX_FLOAT(0x1.fffffep30f, 0x1fffffe, 30 - 23),
-                        CL_INT_MAX));
+                errors[i] = (cl_float)((cl_long)ptr[i]
+                                       - (cl_long)round_to_even(srcVector[i]));
             break;
         }
         case CL_UNSIGNED_INT8: {
@@ -3549,10 +3524,10 @@ void copy_image_data(image_descriptor *srcImageInfo,
     {
         size_t src_width_lod = 1 /*srcImageInfo->width*/;
         size_t src_height_lod = 1 /*srcImageInfo->height*/;
-        size_t src_depth_lod = 1 /*srcImageInfo->depth*/;
 
         switch (srcImageInfo->type)
         {
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D:
                 src_lod = sourcePos[1];
                 sourcePos_lod[1] = sourcePos_lod[2] = 0;
@@ -3584,10 +3559,6 @@ void copy_image_data(image_descriptor *srcImageInfo,
                 src_height_lod = (srcImageInfo->height >> src_lod)
                     ? (srcImageInfo->height >> src_lod)
                     : 1;
-                if (srcImageInfo->type == CL_MEM_OBJECT_IMAGE3D)
-                    src_depth_lod = (srcImageInfo->depth >> src_lod)
-                        ? (srcImageInfo->depth >> src_lod)
-                        : 1;
                 break;
         }
         src_mip_level_offset = compute_mip_level_offset(srcImageInfo, src_lod);
@@ -3600,9 +3571,9 @@ void copy_image_data(image_descriptor *srcImageInfo,
     {
         size_t dst_width_lod = 1 /*dstImageInfo->width*/;
         size_t dst_height_lod = 1 /*dstImageInfo->height*/;
-        size_t dst_depth_lod = 1 /*dstImageInfo->depth*/;
         switch (dstImageInfo->type)
         {
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D:
                 dst_lod = destPos[1];
                 destPos_lod[1] = destPos_lod[2] = 0;
@@ -3634,10 +3605,6 @@ void copy_image_data(image_descriptor *srcImageInfo,
                 dst_height_lod = (dstImageInfo->height >> dst_lod)
                     ? (dstImageInfo->height >> dst_lod)
                     : 1;
-                if (dstImageInfo->type == CL_MEM_OBJECT_IMAGE3D)
-                    dst_depth_lod = (dstImageInfo->depth >> dst_lod)
-                        ? (dstImageInfo->depth >> dst_lod)
-                        : 1;
                 break;
         }
         dst_mip_level_offset = compute_mip_level_offset(dstImageInfo, dst_lod);
@@ -4071,6 +4038,7 @@ cl_ulong compute_mipmapped_image_size(image_descriptor imageInfo)
                 retSize += (cl_ulong)curr_width * curr_height
                     * get_pixel_size(imageInfo.format);
                 break;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D:
                 retSize +=
                     (cl_ulong)curr_width * get_pixel_size(imageInfo.format);
@@ -4092,6 +4060,7 @@ cl_ulong compute_mipmapped_image_size(image_descriptor imageInfo)
             case CL_MEM_OBJECT_IMAGE2D:
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
                 curr_height = curr_height >> 1 ? curr_height >> 1 : 1;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D:
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
                 curr_width = curr_width >> 1 ? curr_width >> 1 : 1;
@@ -4129,6 +4098,7 @@ size_t compute_mip_level_offset(image_descriptor *imageInfo, size_t lod)
                 retOffset +=
                     (size_t)width * height * get_pixel_size(imageInfo->format);
                 break;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D:
                 retOffset += (size_t)width * get_pixel_size(imageInfo->format);
                 break;
@@ -4141,6 +4111,7 @@ size_t compute_mip_level_offset(image_descriptor *imageInfo, size_t lod)
             case CL_MEM_OBJECT_IMAGE2D:
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
                 height = (height >> 1) ? (height >> 1) : 1;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
             case CL_MEM_OBJECT_IMAGE1D: width = (width >> 1) ? (width >> 1) : 1;
         }

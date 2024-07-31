@@ -24,6 +24,18 @@ extern int test_copy_image_set_2D_array( cl_device_id device, cl_context context
 extern int test_copy_image_set_2D_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, bool reverse );
 extern int test_copy_image_set_2D_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, bool reverse );
 extern int test_copy_image_set_3D_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format, bool reverse );
+extern int test_copy_image_set_1D_buffer(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         cl_image_format *format);
+extern int test_copy_image_set_1D_1D_buffer(cl_device_id device,
+                                            cl_context context,
+                                            cl_command_queue queue,
+                                            cl_image_format *format);
+extern int test_copy_image_set_1D_buffer_1D(cl_device_id device,
+                                            cl_context context,
+                                            cl_command_queue queue,
+                                            cl_image_format *format);
 
 int test_image_type( cl_device_id device, cl_context context, cl_command_queue queue, MethodsToTest testMethod, cl_mem_flags flags )
 {
@@ -41,60 +53,64 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
         }
     }
 
-    if( testMethod == k1D )
+    switch (testMethod)
     {
-        name = "1D -> 1D";
-        imageType = CL_MEM_OBJECT_IMAGE1D;
-    }
-    else if( testMethod == k2D )
-    {
-        name = "2D -> 2D";
-        imageType = CL_MEM_OBJECT_IMAGE2D;
-    }
-    else if( testMethod == k3D )
-    {
-        name = "3D -> 3D";
-        imageType = CL_MEM_OBJECT_IMAGE3D;
-    }
-    else if( testMethod == k1DArray )
-    {
-        name = "1D array -> 1D array";
-        imageType = CL_MEM_OBJECT_IMAGE1D_ARRAY;
-    }
-    else if( testMethod == k2DArray )
-    {
-        name = "2D array -> 2D array";
-        imageType = CL_MEM_OBJECT_IMAGE2D_ARRAY;
-    }
-    else if( testMethod == k2DTo3D )
-    {
-        name = "2D -> 3D";
-        imageType = CL_MEM_OBJECT_IMAGE3D;
-    }
-    else if( testMethod == k3DTo2D )
-    {
-        name = "3D -> 2D";
-        imageType = CL_MEM_OBJECT_IMAGE3D;
-    }
-    else if( testMethod == k2DArrayTo2D )
-    {
-        name = "2D array -> 2D";
-        imageType = CL_MEM_OBJECT_IMAGE2D_ARRAY;
-    }
-    else if( testMethod == k2DTo2DArray )
-    {
-        name = "2D -> 2D array";
-        imageType = CL_MEM_OBJECT_IMAGE2D_ARRAY;
-    }
-    else if( testMethod == k2DArrayTo3D )
-    {
-        name = "2D array -> 3D";
-        imageType = CL_MEM_OBJECT_IMAGE3D;
-    }
-    else if( testMethod == k3DTo2DArray )
-    {
-        name = "3D -> 2D array";
-        imageType = CL_MEM_OBJECT_IMAGE3D;
+        case k1D:
+            name = "1D -> 1D";
+            imageType = CL_MEM_OBJECT_IMAGE1D;
+            break;
+        case k2D:
+            name = "2D -> 2D";
+            imageType = CL_MEM_OBJECT_IMAGE2D;
+            break;
+        case k3D:
+            name = "3D -> 3D";
+            imageType = CL_MEM_OBJECT_IMAGE3D;
+            break;
+        case k1DArray:
+            name = "1D array -> 1D array";
+            imageType = CL_MEM_OBJECT_IMAGE1D_ARRAY;
+            break;
+        case k2DArray:
+            name = "2D array -> 2D array";
+            imageType = CL_MEM_OBJECT_IMAGE2D_ARRAY;
+            break;
+        case k2DTo3D:
+            name = "2D -> 3D";
+            imageType = CL_MEM_OBJECT_IMAGE3D;
+            break;
+        case k3DTo2D:
+            name = "3D -> 2D";
+            imageType = CL_MEM_OBJECT_IMAGE3D;
+            break;
+        case k2DArrayTo2D:
+            name = "2D array -> 2D";
+            imageType = CL_MEM_OBJECT_IMAGE2D_ARRAY;
+            break;
+        case k2DTo2DArray:
+            name = "2D -> 2D array";
+            imageType = CL_MEM_OBJECT_IMAGE2D_ARRAY;
+            break;
+        case k2DArrayTo3D:
+            name = "2D array -> 3D";
+            imageType = CL_MEM_OBJECT_IMAGE3D;
+            break;
+        case k3DTo2DArray:
+            name = "3D -> 2D array";
+            imageType = CL_MEM_OBJECT_IMAGE3D;
+            break;
+        case k1DBuffer:
+            name = "1D buffer -> 1D buffer";
+            imageType = CL_MEM_OBJECT_IMAGE1D_BUFFER;
+            break;
+        case k1DTo1DBuffer:
+            name = "1D -> 1D buffer";
+            imageType = CL_MEM_OBJECT_IMAGE1D_BUFFER;
+            break;
+        case k1DBufferTo1D:
+            name = "1D buffer -> 1D";
+            imageType = CL_MEM_OBJECT_IMAGE1D_BUFFER;
+            break;
     }
 
     if(gTestMipmaps)
@@ -146,6 +162,16 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
             test_return = test_copy_image_set_3D_2D_array( device, context, queue, &formatList[ i ], true);
         else if( testMethod == k3DTo2DArray)
             test_return = test_copy_image_set_3D_2D_array( device, context, queue, &formatList[ i ], false);
+        else if (testMethod == k1DBuffer)
+            test_return = test_copy_image_set_1D_buffer(device, context, queue,
+                                                        &formatList[i]);
+        else if (testMethod == k1DBufferTo1D)
+            test_return = test_copy_image_set_1D_buffer_1D(
+                device, context, queue, &formatList[i]);
+        else if (testMethod == k1DTo1DBuffer)
+            test_return = test_copy_image_set_1D_1D_buffer(
+                device, context, queue, &formatList[i]);
+
 
         if (test_return) {
             gFailCount++;

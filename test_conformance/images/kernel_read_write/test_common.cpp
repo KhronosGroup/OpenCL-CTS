@@ -34,122 +34,210 @@ cl_sampler create_sampler(cl_context context, image_sampler_data *sdata, bool te
     return sampler;
 }
 
-void InitFloatCoordsCommon(image_descriptor *imageInfo,
-                           image_sampler_data *imageSampler, float *xOffsets,
-                           float *yOffsets, float *zOffsets, float xfract,
-                           float yfract, float zfract, int normalized_coords,
-                           MTdata d, int lod)
+bool get_image_dimensions(image_descriptor *imageInfo, size_t &width,
+                          size_t &height, size_t &depth)
+{
+    width = imageInfo->width;
+    height = 1;
+    depth = 1;
+    switch (imageInfo->type)
+    {
+        case CL_MEM_OBJECT_IMAGE1D: break;
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY: height = imageInfo->arraySize; break;
+        case CL_MEM_OBJECT_IMAGE2D: height = imageInfo->height; break;
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+            height = imageInfo->height;
+            depth = imageInfo->arraySize;
+            break;
+        case CL_MEM_OBJECT_IMAGE3D:
+            height = imageInfo->height;
+            depth = imageInfo->depth;
+            break;
+        default:
+            log_error("ERROR: Test does not support image type");
+            return TEST_FAIL;
+    }
+    return 0;
+}
+
+static bool InitFloatCoordsCommon(image_descriptor *imageInfo,
+                                  image_sampler_data *imageSampler,
+                                  float *xOffsets, float *yOffsets,
+                                  float *zOffsets, float xfract, float yfract,
+                                  float zfract, int normalized_coords, MTdata d,
+                                  int lod)
 {
     size_t i = 0;
-    if (gDisableOffsets)
+    size_t width_loop, height_loop, depth_loop;
+    bool error =
+        get_image_dimensions(imageInfo, width_loop, height_loop, depth_loop);
+    if (!error)
     {
-        for (size_t z = 0; z < imageInfo->depth; z++)
+        if (gDisableOffsets)
         {
-            for (size_t y = 0; y < imageInfo->height; y++)
+            for (size_t z = 0; z < depth_loop; z++)
             {
-                for (size_t x = 0; x < imageInfo->width; x++, i++)
+                for (size_t y = 0; y < height_loop; y++)
                 {
-                    xOffsets[i] = (float)(xfract + (double)x);
-                    yOffsets[i] = (float)(yfract + (double)y);
-                    zOffsets[i] = (float)(zfract + (double)z);
-                }
-            }
-        }
-    }
-    else
-    {
-        for (size_t z = 0; z < imageInfo->depth; z++)
-        {
-            for (size_t y = 0; y < imageInfo->height; y++)
-            {
-                for (size_t x = 0; x < imageInfo->width; x++, i++)
-                {
-                    xOffsets[i] =
-                        (float)(xfract
-                                + (double)((int)x
-                                           + random_in_range(-10, 10, d)));
-                    yOffsets[i] =
-                        (float)(yfract
-                                + (double)((int)y
-                                           + random_in_range(-10, 10, d)));
-                    zOffsets[i] =
-                        (float)(zfract
-                                + (double)((int)z
-                                           + random_in_range(-10, 10, d)));
-                }
-            }
-        }
-    }
-
-    if (imageSampler->addressing_mode == CL_ADDRESS_NONE)
-    {
-        i = 0;
-        for (size_t z = 0; z < imageInfo->depth; z++)
-        {
-            for (size_t y = 0; y < imageInfo->height; y++)
-            {
-                for (size_t x = 0; x < imageInfo->width; x++, i++)
-                {
-                    xOffsets[i] = (float)CLAMP((double)xOffsets[i], 0.0,
-                                               (double)imageInfo->width - 1.0);
-                    yOffsets[i] = (float)CLAMP((double)yOffsets[i], 0.0,
-                                               (double)imageInfo->height - 1.0);
-                    zOffsets[i] = (float)CLAMP((double)zOffsets[i], 0.0,
-                                               (double)imageInfo->depth - 1.0);
-                }
-            }
-        }
-    }
-
-    if (normalized_coords || gTestMipmaps)
-    {
-        i = 0;
-        if (lod == 0)
-        {
-            for (size_t z = 0; z < imageInfo->depth; z++)
-            {
-                for (size_t y = 0; y < imageInfo->height; y++)
-                {
-                    for (size_t x = 0; x < imageInfo->width; x++, i++)
+                    for (size_t x = 0; x < width_loop; x++, i++)
                     {
-                        xOffsets[i] = (float)((double)xOffsets[i]
-                                              / (double)imageInfo->width);
-                        yOffsets[i] = (float)((double)yOffsets[i]
-                                              / (double)imageInfo->height);
-                        zOffsets[i] = (float)((double)zOffsets[i]
-                                              / (double)imageInfo->depth);
+                        xOffsets[i] = (float)(xfract + (double)x);
+                        yOffsets[i] = (float)(yfract + (double)y);
+                        zOffsets[i] = (float)(zfract + (double)z);
                     }
                 }
             }
         }
-        else if (gTestMipmaps)
+        else
         {
-            size_t width_lod, height_lod, depth_lod;
-
-            width_lod =
-                (imageInfo->width >> lod) ? (imageInfo->width >> lod) : 1;
-            height_lod =
-                (imageInfo->height >> lod) ? (imageInfo->height >> lod) : 1;
-            depth_lod =
-                (imageInfo->depth >> lod) ? (imageInfo->depth >> lod) : 1;
-
-            for (size_t z = 0; z < depth_lod; z++)
+            for (size_t z = 0; z < depth_loop; z++)
             {
-                for (size_t y = 0; y < height_lod; y++)
+                for (size_t y = 0; y < height_loop; y++)
                 {
-                    for (size_t x = 0; x < width_lod; x++, i++)
+                    for (size_t x = 0; x < width_loop; x++, i++)
                     {
                         xOffsets[i] =
-                            (float)((double)xOffsets[i] / (double)width_lod);
+                            (float)(xfract
+                                    + (double)((int)x
+                                               + random_in_range(-10, 10, d)));
                         yOffsets[i] =
-                            (float)((double)yOffsets[i] / (double)height_lod);
+                            (float)(yfract
+                                    + (double)((int)y
+                                               + random_in_range(-10, 10, d)));
                         zOffsets[i] =
-                            (float)((double)zOffsets[i] / (double)depth_lod);
+                            (float)(zfract
+                                    + (double)((int)z
+                                               + random_in_range(-10, 10, d)));
+                    }
+                }
+            }
+        }
+
+        if (imageSampler->addressing_mode == CL_ADDRESS_NONE)
+        {
+            i = 0;
+            for (size_t z = 0; z < depth_loop; z++)
+            {
+                for (size_t y = 0; y < height_loop; y++)
+                {
+                    for (size_t x = 0; x < width_loop; x++, i++)
+                    {
+                        xOffsets[i] = (float)CLAMP((double)xOffsets[i], 0.0,
+                                                   (double)width_loop - 1.0);
+                        yOffsets[i] = (float)CLAMP((double)yOffsets[i], 0.0,
+                                                   (double)height_loop - 1.0);
+                        zOffsets[i] = (float)CLAMP((double)zOffsets[i], 0.0,
+                                                   (double)depth_loop - 1.0);
+                    }
+                }
+            }
+        }
+
+        if (normalized_coords || gTestMipmaps)
+        {
+            i = 0;
+            if (lod == 0)
+            {
+                for (size_t z = 0; z < depth_loop; z++)
+                {
+                    for (size_t y = 0; y < height_loop; y++)
+                    {
+                        for (size_t x = 0; x < width_loop; x++, i++)
+                        {
+                            xOffsets[i] = (float)((double)xOffsets[i]
+                                                  / (double)width_loop);
+                            if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
+                            {
+                                yOffsets[i] = (float)((double)yOffsets[i]
+                                                      / (double)height_loop);
+                            }
+                            if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                            {
+                                zOffsets[i] = (float)((double)zOffsets[i]
+                                                      / (double)depth_loop);
+                            }
+                        }
+                    }
+                }
+            }
+            else if (gTestMipmaps)
+            {
+                size_t width_lod =
+                    (width_loop >> lod) ? (width_loop >> lod) : 1;
+                size_t height_lod = height_loop;
+                size_t depth_lod = depth_loop;
+                if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
+                {
+                    height_lod =
+                        (height_loop >> lod) ? (height_loop >> lod) : 1;
+                }
+                if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                {
+                    depth_lod = (depth_loop >> lod) ? (depth_loop >> lod) : 1;
+                }
+
+                for (size_t z = 0; z < depth_lod; z++)
+                {
+                    for (size_t y = 0; y < height_lod; y++)
+                    {
+                        for (size_t x = 0; x < width_lod; x++, i++)
+                        {
+                            xOffsets[i] = (float)((double)xOffsets[i]
+                                                  / (double)width_lod);
+                            if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
+                            {
+                                yOffsets[i] = (float)((double)yOffsets[i]
+                                                      / (double)height_lod);
+                            }
+                            if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                            {
+                                zOffsets[i] = (float)((double)zOffsets[i]
+                                                      / (double)depth_lod);
+                            }
+                        }
                     }
                 }
             }
         }
     }
+    return error;
+}
+
+cl_mem create_image_of_type(cl_context context, cl_mem_flags mem_flags,
+                            image_descriptor *imageInfo, size_t row_pitch,
+                            size_t slice_pitch, void *host_ptr, cl_int *error)
+{
+    cl_mem image;
+    switch (imageInfo->type)
+    {
+        case CL_MEM_OBJECT_IMAGE3D:
+            image = create_image_3d(context, mem_flags, imageInfo->format,
+                                    imageInfo->width, imageInfo->height,
+                                    imageInfo->depth, row_pitch, slice_pitch,
+                                    host_ptr, error);
+            break;
+        default:
+            log_error("Implementation is incomplete, only 3D images are "
+                      "supported so far");
+            return nullptr;
+    }
+    return image;
+}
+
+static size_t get_image_num_pixels(image_descriptor *imageInfo, size_t width,
+                                   size_t height, size_t depth,
+                                   size_t array_size)
+{
+    size_t image_size;
+    switch (imageInfo->type)
+    {
+        case CL_MEM_OBJECT_IMAGE3D: image_size = width * height * depth; break;
+        default:
+            log_error("Implementation is incomplete, only 3D images are "
+                      "supported so far");
+            return 0;
+    }
+    return image_size;
 }
 
 int test_read_image(cl_context context, cl_command_queue queue,
@@ -161,6 +249,17 @@ int test_read_image(cl_context context, cl_command_queue queue,
     size_t threads[3];
     static int initHalf = 0;
 
+    size_t image_size =
+        get_image_num_pixels(imageInfo, imageInfo->width, imageInfo->height,
+                             imageInfo->depth, imageInfo->arraySize);
+    test_assert_error(0 != image_size, "Invalid image size");
+    size_t width_size, height_size, depth_size;
+    if (get_image_dimensions(imageInfo, width_size, height_size, depth_size))
+    {
+        log_error("ERROR: invalid image dimensions");
+        return CL_INVALID_VALUE;
+    }
+
     cl_mem_flags image_read_write_flags = CL_MEM_READ_ONLY;
 
     clMemWrapper xOffsets, yOffsets, zOffsets, results;
@@ -169,14 +268,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
 
     // Create offset data
     BufferOwningPtr<cl_float> xOffsetValues(
-        malloc(sizeof(cl_float) * imageInfo->width * imageInfo->height
-               * imageInfo->depth));
+        malloc(sizeof(cl_float) * image_size));
     BufferOwningPtr<cl_float> yOffsetValues(
-        malloc(sizeof(cl_float) * imageInfo->width * imageInfo->height
-               * imageInfo->depth));
+        malloc(sizeof(cl_float) * image_size));
     BufferOwningPtr<cl_float> zOffsetValues(
-        malloc(sizeof(cl_float) * imageInfo->width * imageInfo->height
-               * imageInfo->depth));
+        malloc(sizeof(cl_float) * image_size));
 
     if (imageInfo->format->image_channel_data_type == CL_HALF_FLOAT)
         if (DetectFloatToHalfRoundingMode(queue)) return 1;
@@ -207,26 +303,27 @@ int test_read_image(cl_context context, cl_command_queue queue,
         {
             generate_random_image_data(imageInfo,
                                        maxImageUseHostPtrBackingStore, d);
-            unprotImage = create_image_3d(
+            unprotImage = create_image_of_type(
                 context, image_read_write_flags | CL_MEM_USE_HOST_PTR,
-                imageInfo->format, imageInfo->width, imageInfo->height,
-                imageInfo->depth, (gEnablePitch ? imageInfo->rowPitch : 0),
+                imageInfo, (gEnablePitch ? imageInfo->rowPitch : 0),
                 (gEnablePitch ? imageInfo->slicePitch : 0),
                 maxImageUseHostPtrBackingStore, &error);
         }
         else
         {
-            error = protImage.Create(context, image_read_write_flags,
-                                     imageInfo->format, imageInfo->width,
-                                     imageInfo->height, imageInfo->depth);
+            error = protImage.Create(context, imageInfo->type,
+                                     image_read_write_flags, imageInfo->format,
+                                     imageInfo->width, imageInfo->height,
+                                     imageInfo->depth, imageInfo->arraySize);
         }
         if (error != CL_SUCCESS)
         {
-            log_error("ERROR: Unable to create 3D image of size %d x %d x %d "
+            log_error("ERROR: Unable to create image of size %d x %d x %d x %d "
                       "(pitch %d, %d ) (%s)",
                       (int)imageInfo->width, (int)imageInfo->height,
-                      (int)imageInfo->depth, (int)imageInfo->rowPitch,
-                      (int)imageInfo->slicePitch, IGetErrorString(error));
+                      (int)imageInfo->depth, (int)imageInfo->arraySize,
+                      (int)imageInfo->rowPitch, (int)imageInfo->slicePitch,
+                      IGetErrorString(error));
             return error;
         }
         if (gTestMaxImages)
@@ -238,18 +335,18 @@ int test_read_image(cl_context context, cl_command_queue queue,
     {
         // Don't use clEnqueueWriteImage; just use copy host ptr to get the data
         // in
-        unprotImage = create_image_3d(
-            context, image_read_write_flags | CL_MEM_COPY_HOST_PTR,
-            imageInfo->format, imageInfo->width, imageInfo->height,
-            imageInfo->depth, (gEnablePitch ? imageInfo->rowPitch : 0),
+        unprotImage = create_image_of_type(
+            context, image_read_write_flags | CL_MEM_COPY_HOST_PTR, imageInfo,
+            (gEnablePitch ? imageInfo->rowPitch : 0),
             (gEnablePitch ? imageInfo->slicePitch : 0), imageValues, &error);
         if (error != CL_SUCCESS)
         {
-            log_error("ERROR: Unable to create 3D image of size %d x %d x %d "
+            log_error("ERROR: Unable to create image of size %d x %d x %d x %d "
                       "(pitch %d, %d ) (%s)",
                       (int)imageInfo->width, (int)imageInfo->height,
-                      (int)imageInfo->depth, (int)imageInfo->rowPitch,
-                      (int)imageInfo->slicePitch, IGetErrorString(error));
+                      (int)imageInfo->depth, (int)imageInfo->arraySize,
+                      (int)imageInfo->rowPitch, (int)imageInfo->slicePitch,
+                      IGetErrorString(error));
             return error;
         }
         image = unprotImage;
@@ -261,19 +358,19 @@ int test_read_image(cl_context context, cl_command_queue queue,
         // specified, so we just do the same thing either way
         if (!gTestMipmaps)
         {
-            unprotImage = create_image_3d(
-                context, image_read_write_flags | gMemFlagsToUse,
-                imageInfo->format, imageInfo->width, imageInfo->height,
-                imageInfo->depth, (gEnablePitch ? imageInfo->rowPitch : 0),
+            unprotImage = create_image_of_type(
+                context, image_read_write_flags | gMemFlagsToUse, imageInfo,
+                (gEnablePitch ? imageInfo->rowPitch : 0),
                 (gEnablePitch ? imageInfo->slicePitch : 0), imageValues,
                 &error);
             if (error != CL_SUCCESS)
             {
-                log_error("ERROR: Unable to create 3D image of size %d x %d x "
-                          "%d (pitch %d, %d ) (%s)",
+                log_error("ERROR: Unable to create image of size %d x %d x "
+                          "%d x %d (pitch %d, %d ) (%s)",
                           (int)imageInfo->width, (int)imageInfo->height,
-                          (int)imageInfo->depth, (int)imageInfo->rowPitch,
-                          (int)imageInfo->slicePitch, IGetErrorString(error));
+                          (int)imageInfo->depth, (int)imageInfo->arraySize,
+                          (int)imageInfo->rowPitch, (int)imageInfo->slicePitch,
+                          IGetErrorString(error));
                 return error;
             }
             image = unprotImage;
@@ -281,10 +378,11 @@ int test_read_image(cl_context context, cl_command_queue queue,
         else
         {
             cl_image_desc image_desc = { 0 };
-            image_desc.image_type = CL_MEM_OBJECT_IMAGE3D;
+            image_desc.image_type = imageInfo->type;
             image_desc.image_width = imageInfo->width;
             image_desc.image_height = imageInfo->height;
             image_desc.image_depth = imageInfo->depth;
+            image_desc.image_array_size = imageInfo->arraySize;
             image_desc.num_mip_levels = imageInfo->num_mip_levels;
 
 
@@ -293,23 +391,24 @@ int test_read_image(cl_context context, cl_command_queue queue,
                               imageInfo->format, &image_desc, NULL, &error);
             if (error != CL_SUCCESS)
             {
-                log_error("ERROR: Unable to create %d level mipmapped 3D image "
-                          "of size %d x %d x %d (pitch %d, %d ) (%s)",
+                log_error("ERROR: Unable to create %d level mipmapped image "
+                          "of size %d x %d x %d x %d (pitch %d, %d ) (%s)",
                           (int)imageInfo->num_mip_levels, (int)imageInfo->width,
                           (int)imageInfo->height, (int)imageInfo->depth,
-                          (int)imageInfo->rowPitch, (int)imageInfo->slicePitch,
-                          IGetErrorString(error));
+                          (int)imageInfo->arraySize, (int)imageInfo->rowPitch,
+                          (int)imageInfo->slicePitch, IGetErrorString(error));
                 return error;
             }
             image = unprotImage;
         }
     }
 
+    test_assert_error(nullptr != image, "Image creation failed");
+
     if (gMemFlagsToUse != CL_MEM_COPY_HOST_PTR)
     {
         size_t origin[4] = { 0, 0, 0, 0 };
-        size_t region[3] = { imageInfo->width, imageInfo->height,
-                             imageInfo->depth };
+        size_t region[3] = { width_size, height_size, depth_size };
 
         if (gDebugTrace) log_info(" - Writing image...\n");
 
@@ -324,10 +423,10 @@ int test_read_image(cl_context context, cl_command_queue queue,
 
             if (error != CL_SUCCESS)
             {
-                log_error("ERROR: Unable to write to 3D image of size %d x %d "
-                          "x %d \n",
+                log_error("ERROR: Unable to write to image of size %d x %d "
+                          "x %d x %d\n",
                           (int)imageInfo->width, (int)imageInfo->height,
-                          (int)imageInfo->depth);
+                          (int)imageInfo->depth, (int)imageInfo->arraySize);
                 return error;
             }
         }
@@ -339,17 +438,15 @@ int test_read_image(cl_context context, cl_command_queue queue,
             {
                 origin[3] = i;
                 error = clEnqueueWriteImage(
-                    queue, image, CL_TRUE, origin, region,
-                    /*gEnablePitch ? imageInfo->rowPitch :*/ 0,
-                    /*gEnablePitch ? imageInfo->slicePitch :*/ 0,
+                    queue, image, CL_TRUE, origin, region, 0, 0,
                     ((char *)imageValues + nextLevelOffset), 0, NULL, NULL);
                 if (error != CL_SUCCESS)
                 {
-                    log_error("ERROR: Unable to write to %d level mipmapped 3D "
-                              "image of size %d x %d x %d\n",
+                    log_error("ERROR: Unable to write to %d level mipmapped "
+                              "image of size %d x %d x %d x %d\n",
                               (int)imageInfo->num_mip_levels,
                               (int)imageInfo->width, (int)imageInfo->height,
-                              (int)imageInfo->depth);
+                              (int)imageInfo->arraySize, (int)imageInfo->depth);
                     return error;
                 }
                 nextLevelOffset += region[0] * region[1] * region[2]
@@ -362,26 +459,21 @@ int test_read_image(cl_context context, cl_command_queue queue,
         }
     }
 
-    xOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                              sizeof(cl_float) * imageInfo->width
-                                  * imageInfo->height * imageInfo->depth,
-                              xOffsetValues, &error);
+    xOffsets =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       sizeof(cl_float) * image_size, xOffsetValues, &error);
     test_error(error, "Unable to create x offset buffer");
-    yOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                              sizeof(cl_float) * imageInfo->width
-                                  * imageInfo->height * imageInfo->depth,
-                              yOffsetValues, &error);
+    yOffsets =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       sizeof(cl_float) * image_size, yOffsetValues, &error);
     test_error(error, "Unable to create y offset buffer");
-    zOffsets = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                              sizeof(cl_float) * imageInfo->width
-                                  * imageInfo->height * imageInfo->depth,
-                              zOffsetValues, &error);
+    zOffsets =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                       sizeof(cl_float) * image_size, zOffsetValues, &error);
     test_error(error, "Unable to create y offset buffer");
-    results =
-        clCreateBuffer(context, CL_MEM_READ_WRITE,
-                       get_explicit_type_size(outputType) * 4 * imageInfo->width
-                           * imageInfo->height * imageInfo->depth,
-                       NULL, &error);
+    results = clCreateBuffer(
+        context, CL_MEM_READ_WRITE,
+        get_explicit_type_size(outputType) * 4 * image_size, NULL, &error);
     test_error(error, "Unable to create result buffer");
 
     // Create sampler to use
@@ -444,16 +536,19 @@ int test_read_image(cl_context context, cl_command_queue queue,
     }
 
     int nextLevelOffset = 0;
-    size_t width_lod = imageInfo->width, height_lod = imageInfo->height,
-           depth_lod = imageInfo->depth;
+    size_t width_lod = width_size, height_lod = height_size,
+           depth_lod = depth_size;
 
     // Loop over all mipmap levels, if we are testing mipmapped images.
     for (int lod = 0; (gTestMipmaps && lod < imageInfo->num_mip_levels)
          || (!gTestMipmaps && lod < 1);
          lod++)
     {
-        size_t resultValuesSize = width_lod * height_lod * depth_lod
-            * get_explicit_type_size(outputType) * 4;
+        size_t image_lod_size = get_image_num_pixels(
+            imageInfo, width_lod, height_lod, depth_lod, imageInfo->arraySize);
+        test_assert_error(0 != image_lod_size, "Invalid image size");
+        size_t resultValuesSize =
+            image_lod_size * get_explicit_type_size(outputType) * 4;
         BufferOwningPtr<char> resultValues(malloc(resultValuesSize));
         float lod_float = (float)lod;
         if (gTestMipmaps)
@@ -469,30 +564,25 @@ int test_read_image(cl_context context, cl_command_queue queue,
             float offset = float_offsets[q % float_offset_count];
 
             // Init the coordinates
-            InitFloatCoordsCommon(imageInfo, imageSampler, xOffsetValues,
-                                  yOffsetValues, zOffsetValues,
-                                  q >= float_offset_count ? -offset : offset,
-                                  q >= float_offset_count ? offset : -offset,
-                                  q >= float_offset_count ? -offset : offset,
-                                  imageSampler->normalized_coords, d, lod);
+            error = InitFloatCoordsCommon(
+                imageInfo, imageSampler, xOffsetValues, yOffsetValues,
+                zOffsetValues, q >= float_offset_count ? -offset : offset,
+                q >= float_offset_count ? offset : -offset,
+                q >= float_offset_count ? -offset : offset,
+                imageSampler->normalized_coords, d, lod);
+            test_error(error, "Unable to initialise coordinates");
 
-            error =
-                clEnqueueWriteBuffer(queue, xOffsets, CL_TRUE, 0,
-                                     sizeof(cl_float) * imageInfo->height
-                                         * imageInfo->width * imageInfo->depth,
-                                     xOffsetValues, 0, NULL, NULL);
+            error = clEnqueueWriteBuffer(queue, xOffsets, CL_TRUE, 0,
+                                         sizeof(cl_float) * image_size,
+                                         xOffsetValues, 0, NULL, NULL);
             test_error(error, "Unable to write x offsets");
-            error =
-                clEnqueueWriteBuffer(queue, yOffsets, CL_TRUE, 0,
-                                     sizeof(cl_float) * imageInfo->height
-                                         * imageInfo->width * imageInfo->depth,
-                                     yOffsetValues, 0, NULL, NULL);
+            error = clEnqueueWriteBuffer(queue, yOffsets, CL_TRUE, 0,
+                                         sizeof(cl_float) * image_size,
+                                         yOffsetValues, 0, NULL, NULL);
             test_error(error, "Unable to write y offsets");
-            error =
-                clEnqueueWriteBuffer(queue, zOffsets, CL_TRUE, 0,
-                                     sizeof(cl_float) * imageInfo->height
-                                         * imageInfo->width * imageInfo->depth,
-                                     zOffsetValues, 0, NULL, NULL);
+            error = clEnqueueWriteBuffer(queue, zOffsets, CL_TRUE, 0,
+                                         sizeof(cl_float) * image_size,
+                                         zOffsetValues, 0, NULL, NULL);
             test_error(error, "Unable to write z offsets");
 
 
@@ -511,11 +601,10 @@ int test_read_image(cl_context context, cl_command_queue queue,
             test_error(error, "Unable to run kernel");
 
             // Get results
-            error = clEnqueueReadBuffer(queue, results, CL_TRUE, 0,
-                                        width_lod * height_lod * depth_lod
-                                            * get_explicit_type_size(outputType)
-                                            * 4,
-                                        resultValues, 0, NULL, NULL);
+            error = clEnqueueReadBuffer(
+                queue, results, CL_TRUE, 0,
+                image_lod_size * get_explicit_type_size(outputType) * 4,
+                resultValues, 0, NULL, NULL);
             test_error(error, "Unable to read results from kernel");
             if (gDebugTrace) log_info("    results read\n");
 
@@ -557,7 +646,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                 // Apple requires its CPU implementation to do
                                 // correctly rounded address arithmetic in all
                                 // modes
-                                || gDeviceType != CL_DEVICE_TYPE_GPU
+                                || !(gDeviceType & CL_DEVICE_TYPE_GPU)
 #endif
                             )
                                 offset = 0.0f; // Loop only once
@@ -875,7 +964,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                 // Apple requires its CPU implementation to do
                                 // correctly rounded address arithmetic in all
                                 // modes
-                                || gDeviceType != CL_DEVICE_TYPE_GPU
+                                || !(gDeviceType & CL_DEVICE_TYPE_GPU)
 #endif
                             )
                                 offset = 0.0f; // Loop only once
@@ -1214,7 +1303,8 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                         // offsets (0.0, 0.0) E.g., test one
                                         // pixel.
                                         if (!imageSampler->normalized_coords
-                                            || gDeviceType != CL_DEVICE_TYPE_GPU
+                                            || !(gDeviceType
+                                                 & CL_DEVICE_TYPE_GPU)
                                             || NORM_OFFSET == 0)
                                         {
                                             norm_offset_x = 0.0f;
@@ -1396,7 +1486,8 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                         // offsets (0.0, 0.0) E.g., test one
                                         // pixel.
                                         if (!imageSampler->normalized_coords
-                                            || gDeviceType != CL_DEVICE_TYPE_GPU
+                                            || !(gDeviceType
+                                                 & CL_DEVICE_TYPE_GPU)
                                             || NORM_OFFSET == 0)
                                         {
                                             norm_offset_x = 0.0f;
@@ -1538,8 +1629,14 @@ int test_read_image(cl_context context, cl_command_queue queue,
             nextLevelOffset += width_lod * height_lod * depth_lod
                 * get_pixel_size(imageInfo->format);
             width_lod = (width_lod >> 1) ? (width_lod >> 1) : 1;
-            height_lod = (height_lod >> 1) ? (height_lod >> 1) : 1;
-            depth_lod = (depth_lod >> 1) ? (depth_lod >> 1) : 1;
+            if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_ARRAY)
+            {
+                height_lod = (height_lod >> 1) ? (height_lod >> 1) : 1;
+            }
+            if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D_ARRAY)
+            {
+                depth_lod = (depth_lod >> 1) ? (depth_lod >> 1) : 1;
+            }
         }
     }
 

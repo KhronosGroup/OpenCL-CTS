@@ -17,9 +17,27 @@
 
 extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo, int x, int y, int z, float *outData );
 
-static void CL_CALLBACK free_pitch_buffer( cl_mem image, void *buf )
+struct pitch_buffer_data
 {
-    free( buf );
+    void *buf;
+    bool is_aligned;
+};
+static void CL_CALLBACK free_pitch_buffer(cl_mem image, void *data)
+{
+    struct pitch_buffer_data *d = (struct pitch_buffer_data *)data;
+    if (d->is_aligned)
+    {
+        align_free(d->buf);
+    }
+    else
+    {
+        free(d->buf);
+    }
+    free(d);
+}
+static void CL_CALLBACK release_cl_buffer(cl_mem image, void *buf)
+{
+    clReleaseMemObject((cl_mem)buf);
 }
 
 cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr<char>& data, image_descriptor *imageInfo, int *error )
@@ -37,6 +55,26 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
     imageDesc.image_array_size = imageInfo->arraySize;
     imageDesc.image_row_pitch = gEnablePitch ? imageInfo->rowPitch : 0;
     imageDesc.image_slice_pitch = gEnablePitch ? imageInfo->slicePitch : 0;
+
+    cl_version version;
+    cl_device_id device;
+    {
+        cl_int err = clGetCommandQueueInfo(queue, CL_QUEUE_DEVICE,
+                                           sizeof(device), &device, nullptr);
+        if (err != CL_SUCCESS)
+        {
+            log_error("Error: Could not get CL_QUEUE_DEVICE from queue");
+            return NULL;
+        }
+        err = clGetDeviceInfo(device, CL_DEVICE_NUMERIC_VERSION,
+                              sizeof(version), &version, nullptr);
+        if (err != CL_SUCCESS)
+        {
+            log_error("Error: Could not get CL_DEVICE_NUMERIC_VERSION from "
+                      "device");
+            return NULL;
+        }
+    }
 
     switch (imageInfo->type)
     {
@@ -70,6 +108,50 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             if ( gEnablePitch )
                 host_ptr = malloc( imageInfo->arraySize * imageInfo->slicePitch );
             break;
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+            if (gDebugTrace)
+                log_info(" - Creating 1D buffer image %d ...\n",
+                         (int)imageInfo->width);
+            {
+                cl_int err;
+                cl_mem_flags buffer_flags = CL_MEM_READ_WRITE;
+                if (gEnablePitch)
+                {
+                    if (CL_VERSION_MAJOR(version) == 1)
+                    {
+                        host_ptr = malloc(imageInfo->rowPitch);
+                    }
+                    else
+                    {
+                        cl_uint base_address_alignment = 0;
+                        err = clGetDeviceInfo(
+                            device, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT,
+                            sizeof(base_address_alignment),
+                            &base_address_alignment, nullptr);
+                        if (err != CL_SUCCESS)
+                        {
+                            log_error("ERROR: Could not get "
+                                      "CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT "
+                                      "from device");
+                            return NULL;
+                        }
+                        host_ptr = align_malloc(imageInfo->rowPitch,
+                                                base_address_alignment);
+                    }
+                    buffer_flags |= CL_MEM_USE_HOST_PTR;
+                }
+                cl_mem buffer = clCreateBuffer(
+                    context, buffer_flags, imageInfo->rowPitch, host_ptr, &err);
+                if (err != CL_SUCCESS)
+                {
+                    log_error("ERROR: Could not create buffer for 1D buffer "
+                              "image. %ld bytes\n",
+                              imageInfo->rowPitch);
+                    return NULL;
+                }
+                imageDesc.buffer = buffer;
+            }
+            break;
     }
 
     if (gEnablePitch)
@@ -79,26 +161,63 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             log_error( "ERROR: Unable to create backing store for pitched 3D image. %ld bytes\n",  imageInfo->depth * imageInfo->slicePitch );
             return NULL;
         }
-        mem_flags = CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR;
+        if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
+        {
+            mem_flags = CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR;
+        }
     }
 
-    img = clCreateImage(context, mem_flags, imageInfo->format, &imageDesc, host_ptr, error);
+    if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
+    {
+        img = clCreateImage(context, mem_flags, imageInfo->format, &imageDesc,
+                            host_ptr, error);
+    }
+    else
+    {
+        img = clCreateImage(context, mem_flags, imageInfo->format, &imageDesc,
+                            nullptr, error);
+    }
 
     if (gEnablePitch)
     {
-        if ( *error == CL_SUCCESS )
+        struct pitch_buffer_data *data = (struct pitch_buffer_data *)malloc(
+            sizeof(struct pitch_buffer_data));
+        data->buf = host_ptr;
+        data->is_aligned = (CL_VERSION_MAJOR(version) != 1)
+            && (imageInfo->type == CL_MEM_OBJECT_IMAGE1D_BUFFER);
+        if (*error == CL_SUCCESS)
         {
-            int callbackError = clSetMemObjectDestructorCallback( img, free_pitch_buffer, host_ptr );
-            if ( CL_SUCCESS != callbackError )
+            int callbackError =
+                clSetMemObjectDestructorCallback(img, free_pitch_buffer, data);
+            if (CL_SUCCESS != callbackError)
             {
-                free( host_ptr );
-                log_error( "ERROR: Unable to attach destructor callback to pitched 3D image. Err: %d\n", callbackError );
-                clReleaseMemObject( img );
+                free_pitch_buffer(img, data);
+                log_error("ERROR: Unable to attach destructor callback to "
+                          "pitched 3D image. Err: %d\n",
+                          callbackError);
+                clReleaseMemObject(img);
                 return NULL;
             }
         }
         else
-            free(host_ptr);
+        {
+            free_pitch_buffer(img, data);
+        }
+    }
+
+    if (imageDesc.buffer != NULL)
+    {
+        int callbackError = clSetMemObjectDestructorCallback(
+            img, release_cl_buffer, imageDesc.buffer);
+        if (callbackError != CL_SUCCESS)
+        {
+            log_error("Error: Unable to attach destructor callback to 1d "
+                      "buffer image. Err: %d\n",
+                      callbackError);
+            clReleaseMemObject(imageDesc.buffer);
+            clReleaseMemObject(img);
+            return NULL;
+        }
     }
 
     if ( *error != CL_SUCCESS )
@@ -122,6 +241,12 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
                 log_error( "ERROR: Unable to create 2D image array of size %d x %d x %d (%llu MB): %s\n", (int)imageInfo->width, (int)imageInfo->height, (int)imageInfo->arraySize, imageSize, IGetErrorString( *error ) );
                 break;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+                log_error(
+                    "ERROR: Unable to create 1D buffer image of size %d (%llu "
+                    "MB):(%s)",
+                    (int)imageInfo->width, imageSize, IGetErrorString(*error));
+                break;
         }
         return NULL;
     }
@@ -139,6 +264,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             depth = 1;
             imageSize = imageInfo->rowPitch * imageInfo->arraySize;
             break;
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
         case CL_MEM_OBJECT_IMAGE1D:
             height = depth = 1;
             imageSize = imageInfo->rowPitch;
@@ -194,8 +320,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
                 break;
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
             case CL_MEM_OBJECT_IMAGE1D:
-                dstPitch2D = mappedSlice;
-                break;
+            case CL_MEM_OBJECT_IMAGE1D_BUFFER: dstPitch2D = mappedSlice; break;
         }
 
         for ( size_t z = 0; z < depth; z++ )
@@ -285,6 +410,9 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
             break;
         case CL_MEM_OBJECT_IMAGE2D_ARRAY:
             dataBytes = imageInfo->arraySize * imageInfo->slicePitch;
+            break;
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+            dataBytes = imageInfo->rowPitch;
             break;
     }
 
@@ -398,6 +526,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     size_t imageRegion[ 3 ] = { imageInfo->width, 1, 1 };
     switch (imageInfo->type)
     {
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
         case CL_MEM_OBJECT_IMAGE1D:
             break;
         case CL_MEM_OBJECT_IMAGE2D:
@@ -437,28 +566,30 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     size_t secondDim = 1;
 
     switch (imageInfo->type) {
-      case CL_MEM_OBJECT_IMAGE1D:
-        secondDim = 1;
-        thirdDim = 1;
-        break;
-      case CL_MEM_OBJECT_IMAGE2D:
-        secondDim = imageInfo->height;
-        thirdDim = 1;
-        break;
-      case CL_MEM_OBJECT_IMAGE3D:
-        secondDim = imageInfo->height;
-        thirdDim = imageInfo->depth;
-        break;
-      case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-        secondDim = imageInfo->arraySize;
-        thirdDim = 1;
-        break;
-      case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-        secondDim = imageInfo->height;
-        thirdDim = imageInfo->arraySize;
-        break;
-      default:
-        log_error("Test error: unhandled image type at %s:%d\n",__FILE__,__LINE__);
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+        case CL_MEM_OBJECT_IMAGE1D:
+            secondDim = 1;
+            thirdDim = 1;
+            break;
+        case CL_MEM_OBJECT_IMAGE2D:
+            secondDim = imageInfo->height;
+            thirdDim = 1;
+            break;
+        case CL_MEM_OBJECT_IMAGE3D:
+            secondDim = imageInfo->height;
+            thirdDim = imageInfo->depth;
+            break;
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+            secondDim = imageInfo->arraySize;
+            thirdDim = 1;
+            break;
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+            secondDim = imageInfo->height;
+            thirdDim = imageInfo->arraySize;
+            break;
+        default:
+            log_error("Test error: unhandled image type at %s:%d\n", __FILE__,
+                      __LINE__);
     };
 
     // Count the number of bytes successfully matched
@@ -485,8 +616,10 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
 
             total_matched += scanlineSize;
             sourcePtr += imageInfo->rowPitch;
-            if((imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY || imageInfo->type == CL_MEM_OBJECT_IMAGE1D))
-            destPtr += mappedSlice;
+            if ((imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY
+                 || imageInfo->type == CL_MEM_OBJECT_IMAGE1D
+                 || imageInfo->type == CL_MEM_OBJECT_IMAGE1D_BUFFER))
+                destPtr += mappedSlice;
             else
             destPtr += mappedRow;
         }

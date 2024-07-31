@@ -60,7 +60,7 @@ int enqueue_kernel(cl_context context, const cl_queue_properties_khr *queue_prop
     clCommandQueueWrapper queue = clCreateCommandQueueWithPropertiesKHR(context, deviceID, queue_prop_def, &error);
     test_error(error, "clCreateCommandQueueWithPropertiesKHR failed");
 
-    for (int i = 0; i < num_elements; ++i)
+    for (size_t i = 0; i < num_elements; ++i)
     {
         buf[i] = i;
     }
@@ -85,9 +85,9 @@ int enqueue_kernel(cl_context context, const cl_queue_properties_khr *queue_prop
     error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, num_elements, buf.data(), 0, NULL, NULL);
     test_error( error, "clEnqueueReadBuffer failed." );
 
-    for (int i = 0; i < num_elements; ++i)
+    for (size_t i = 0; i < num_elements; ++i)
     {
-        if (buf[i] != i)
+        if (static_cast<size_t>(buf[i]) != i)
         {
             log_error("ERROR: Incorrect vector copy result.");
             return -1;
@@ -107,8 +107,9 @@ int test_queue_properties(cl_device_id deviceID, cl_context context, cl_command_
 
     clProgramWrapper program;
     clKernelWrapper kernel;
-    cl_queue_properties_khr device_props = 0;
-    cl_queue_properties_khr queue_prop_def[] = { CL_QUEUE_PROPERTIES, 0, 0 };
+    cl_command_queue_properties device_props = 0;
+    cl_command_queue_properties queue_prop_def[] = { CL_QUEUE_PROPERTIES, 0,
+                                                     0 };
 
     // Query extension
     if (!is_extension_available(deviceID, "cl_khr_create_command_queue"))

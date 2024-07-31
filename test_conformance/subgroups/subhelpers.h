@@ -28,20 +28,31 @@
 #include <regex>
 #include <map>
 
-#define NR_OF_ACTIVE_WORK_ITEMS 4
-
 extern MTdata gMTdata;
 typedef std::bitset<128> bs128;
 extern cl_half_rounding_mode g_rounding_mode;
 
+bs128 cl_uint4_to_bs128(cl_uint4 v);
+cl_uint4 bs128_to_cl_uint4(bs128 v);
+cl_uint4 generate_bit_mask(cl_uint subgroup_local_id,
+                           const std::string &mask_type,
+                           cl_uint max_sub_group_size);
+
+// limit possible input values to avoid arithmetic rounding/overflow issues.
+// for each subgroup values defined different values
+// for rest of workitems set 1 shuffle values
+void fill_and_shuffle_safe_values(std::vector<cl_ulong> &safe_values,
+                                  size_t sb_size);
+
 struct WorkGroupParams
 {
-    WorkGroupParams(size_t gws, size_t lws,
-                    bool use_mask = false)
+
+    WorkGroupParams(size_t gws, size_t lws, int dm_arg = -1, int cs_arg = -1)
         : global_workgroup_size(gws), local_workgroup_size(lws),
-          use_masks(use_mask)
+          divergence_mask_arg(dm_arg), cluster_size_arg(cs_arg)
     {
         subgroup_size = 0;
+        cluster_size = 0;
         work_items_mask = 0;
         use_core_subgroups = true;
         dynsc = 0;
@@ -50,11 +61,13 @@ struct WorkGroupParams
     size_t global_workgroup_size;
     size_t local_workgroup_size;
     size_t subgroup_size;
+    cl_uint cluster_size;
     bs128 work_items_mask;
-    int dynsc;
+    size_t dynsc;
     bool use_core_subgroups;
     std::vector<bs128> all_work_item_masks;
-    bool use_masks;
+    int divergence_mask_arg;
+    int cluster_size_arg;
     void save_kernel_source(const std::string &source, std::string name = "")
     {
         if (name == "")
@@ -64,7 +77,7 @@ struct WorkGroupParams
         if (kernel_function_name.find(name) != kernel_function_name.end())
         {
             log_info("Kernel definition duplication. Source will be "
-                     "overwritten for function name %s",
+                     "overwritten for function name %s\n",
                      name.c_str());
         }
         kernel_function_name[name] = source;
@@ -84,7 +97,7 @@ private:
     std::map<std::string, std::string> kernel_function_name;
     void load_masks()
     {
-        if (use_masks)
+        if (divergence_mask_arg != -1)
         {
             // 1 in string will be set 1, 0 will be set 0
             bs128 mask_0xf0f0f0f0("11110000111100001111000011110000"
@@ -229,7 +242,9 @@ enum class ShuffleOp
     shuffle,
     shuffle_up,
     shuffle_down,
-    shuffle_xor
+    shuffle_xor,
+    rotate,
+    clustered_rotate,
 };
 
 enum class ArithmeticOp
@@ -246,85 +261,11 @@ enum class ArithmeticOp
     logical_xor
 };
 
-static const char *const operation_names(ArithmeticOp operation)
-{
-    switch (operation)
-    {
-        case ArithmeticOp::add_: return "add";
-        case ArithmeticOp::max_: return "max";
-        case ArithmeticOp::min_: return "min";
-        case ArithmeticOp::mul_: return "mul";
-        case ArithmeticOp::and_: return "and";
-        case ArithmeticOp::or_: return "or";
-        case ArithmeticOp::xor_: return "xor";
-        case ArithmeticOp::logical_and: return "logical_and";
-        case ArithmeticOp::logical_or: return "logical_or";
-        case ArithmeticOp::logical_xor: return "logical_xor";
-        default: log_error("Unknown operation request"); break;
-    }
-    return "";
-}
-
-static const char *const operation_names(BallotOp operation)
-{
-    switch (operation)
-    {
-        case BallotOp::ballot: return "ballot";
-        case BallotOp::inverse_ballot: return "inverse_ballot";
-        case BallotOp::ballot_bit_extract: return "bit_extract";
-        case BallotOp::ballot_bit_count: return "bit_count";
-        case BallotOp::ballot_inclusive_scan: return "inclusive_scan";
-        case BallotOp::ballot_exclusive_scan: return "exclusive_scan";
-        case BallotOp::ballot_find_lsb: return "find_lsb";
-        case BallotOp::ballot_find_msb: return "find_msb";
-        case BallotOp::eq_mask: return "eq";
-        case BallotOp::ge_mask: return "ge";
-        case BallotOp::gt_mask: return "gt";
-        case BallotOp::le_mask: return "le";
-        case BallotOp::lt_mask: return "lt";
-        default: log_error("Unknown operation request"); break;
-    }
-    return "";
-}
-
-static const char *const operation_names(ShuffleOp operation)
-{
-    switch (operation)
-    {
-        case ShuffleOp::shuffle: return "shuffle";
-        case ShuffleOp::shuffle_up: return "shuffle_up";
-        case ShuffleOp::shuffle_down: return "shuffle_down";
-        case ShuffleOp::shuffle_xor: return "shuffle_xor";
-        default: log_error("Unknown operation request"); break;
-    }
-    return "";
-}
-
-static const char *const operation_names(NonUniformVoteOp operation)
-{
-    switch (operation)
-    {
-        case NonUniformVoteOp::all: return "all";
-        case NonUniformVoteOp::all_equal: return "all_equal";
-        case NonUniformVoteOp::any: return "any";
-        case NonUniformVoteOp::elect: return "elect";
-        default: log_error("Unknown operation request"); break;
-    }
-    return "";
-}
-
-static const char *const operation_names(SubgroupsBroadcastOp operation)
-{
-    switch (operation)
-    {
-        case SubgroupsBroadcastOp::broadcast: return "broadcast";
-        case SubgroupsBroadcastOp::broadcast_first: return "broadcast_first";
-        case SubgroupsBroadcastOp::non_uniform_broadcast:
-            return "non_uniform_broadcast";
-        default: log_error("Unknown operation request"); break;
-    }
-    return "";
-}
+const char *const operation_names(ArithmeticOp operation);
+const char *const operation_names(BallotOp operation);
+const char *const operation_names(ShuffleOp operation);
+const char *const operation_names(NonUniformVoteOp operation);
+const char *const operation_names(SubgroupsBroadcastOp operation);
 
 class subgroupsAPI {
 public:
@@ -430,6 +371,52 @@ struct cl_half16
 };
 }
 
+// Declare operator<< for cl_ types, accessing the .s member.
+#define OP_OSTREAM(Ty, VecSize)                                                \
+    std::ostream &operator<<(std::ostream &os, const Ty##VecSize &val);
+
+// Declare operator<< for subgroups::cl_ types, accessing the .data member and
+// forwarding to operator<< for the cl_ types.
+#define OP_OSTREAM_SUBGROUP(Ty, VecSize)                                       \
+    std::ostream &operator<<(std::ostream &os, const Ty##VecSize &val);
+
+// Declare operator<< for all vector sizes.
+#define OP_OSTREAM_ALL_VEC(Ty)                                                 \
+    OP_OSTREAM(Ty, 2)                                                          \
+    OP_OSTREAM(Ty, 4)                                                          \
+    OP_OSTREAM(Ty, 8)                                                          \
+    OP_OSTREAM(Ty, 16)                                                         \
+    OP_OSTREAM_SUBGROUP(subgroups::Ty, 3)
+
+OP_OSTREAM_ALL_VEC(cl_char)
+OP_OSTREAM_ALL_VEC(cl_uchar)
+OP_OSTREAM_ALL_VEC(cl_short)
+OP_OSTREAM_ALL_VEC(cl_ushort)
+OP_OSTREAM_ALL_VEC(cl_int)
+OP_OSTREAM_ALL_VEC(cl_uint)
+OP_OSTREAM_ALL_VEC(cl_long)
+OP_OSTREAM_ALL_VEC(cl_ulong)
+OP_OSTREAM_ALL_VEC(cl_float)
+OP_OSTREAM_ALL_VEC(cl_double)
+OP_OSTREAM_ALL_VEC(cl_half)
+OP_OSTREAM_SUBGROUP(subgroups::cl_half, )
+OP_OSTREAM_SUBGROUP(subgroups::cl_half, 2)
+OP_OSTREAM_SUBGROUP(subgroups::cl_half, 4)
+OP_OSTREAM_SUBGROUP(subgroups::cl_half, 8)
+OP_OSTREAM_SUBGROUP(subgroups::cl_half, 16)
+
+#undef OP_OSTREAM
+#undef OP_OSTREAM_SUBGROUP
+#undef OP_OSTREAM_ALL_VEC
+
+template <typename Ty>
+std::string print_expected_obtained(const Ty &expected, const Ty &obtained)
+{
+    std::ostringstream oss;
+    oss << "Expected: " << expected << " Obtained: " << obtained;
+    return oss.str();
+}
+
 static bool int64_ok(cl_device_id device)
 {
     char profile[128];
@@ -498,7 +485,7 @@ template <typename Ty> struct CommonTypeManager
             case ArithmeticOp::and_: return (Ty)~0;
             case ArithmeticOp::or_: return (Ty)0;
             case ArithmeticOp::xor_: return (Ty)0;
-            default: log_error("Unknown operation request"); break;
+            default: log_error("Unknown operation request\n"); break;
         }
         return 0;
     }
@@ -526,7 +513,7 @@ template <> struct TypeManager<cl_int> : public CommonTypeManager<cl_int>
             case ArithmeticOp::logical_and: return (cl_int)1;
             case ArithmeticOp::logical_or: return (cl_int)0;
             case ArithmeticOp::logical_xor: return (cl_int)0;
-            default: log_error("Unknown operation request"); break;
+            default: log_error("Unknown operation request\n"); break;
         }
         return 0;
     }
@@ -940,7 +927,7 @@ template <> struct TypeManager<cl_float> : public CommonTypeManager<cl_float>
             case ArithmeticOp::min_:
                 return std::numeric_limits<float>::infinity();
             case ArithmeticOp::mul_: return (cl_float)1;
-            default: log_error("Unknown operation request"); break;
+            default: log_error("Unknown operation request\n"); break;
         }
         return 0;
     }
@@ -999,7 +986,7 @@ template <> struct TypeManager<cl_double> : public CommonTypeManager<cl_double>
             case ArithmeticOp::min_:
                 return std::numeric_limits<double>::infinity();
             case ArithmeticOp::mul_: return (cl_double)1;
-            default: log_error("Unknown operation request"); break;
+            default: log_error("Unknown operation request\n"); break;
         }
         return 0;
     }
@@ -1086,7 +1073,7 @@ struct TypeManager<subgroups::cl_half>
             case ArithmeticOp::max_: return { 0xfc00 };
             case ArithmeticOp::min_: return { 0x7c00 };
             case ArithmeticOp::mul_: return { 0x3c00 };
-            default: log_error("Unknown operation request"); break;
+            default: log_error("Unknown operation request\n"); break;
         }
         return { 0 };
     }
@@ -1304,126 +1291,172 @@ inline bool compare_ordered(const subgroups::cl_half &lhs, const int &rhs)
     return cl_half_to_float(lhs.data) == rhs;
 }
 
-// Run a test kernel to compute the result of a built-in on an input
-static int run_kernel(cl_context context, cl_command_queue queue,
-                      cl_kernel kernel, size_t global, size_t local,
-                      void *idata, size_t isize, void *mdata, size_t msize,
-                      void *odata, size_t osize, size_t tsize = 0)
-{
-    clMemWrapper in;
-    clMemWrapper xy;
-    clMemWrapper out;
-    clMemWrapper tmp;
-    int error;
-
-    in = clCreateBuffer(context, CL_MEM_READ_ONLY, isize, NULL, &error);
-    test_error(error, "clCreateBuffer failed");
-
-    xy = clCreateBuffer(context, CL_MEM_WRITE_ONLY, msize, NULL, &error);
-    test_error(error, "clCreateBuffer failed");
-
-    out = clCreateBuffer(context, CL_MEM_WRITE_ONLY, osize, NULL, &error);
-    test_error(error, "clCreateBuffer failed");
-
-    if (tsize)
+template <typename Ty, typename Fns> class KernelExecutor {
+public:
+    KernelExecutor(cl_context c, cl_command_queue q, cl_kernel k, size_t g,
+                   size_t l, Ty *id, size_t is, Ty *mid, Ty *mod, cl_int *md,
+                   size_t ms, Ty *od, size_t os, size_t ts = 0)
+        : context(c), queue(q), kernel(k), global(g), local(l), idata(id),
+          isize(is), mapin_data(mid), mapout_data(mod), mdata(md), msize(ms),
+          odata(od), osize(os), tsize(ts)
     {
-        tmp = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS,
-                             tsize, NULL, &error);
+        has_status = false;
+        run_failed = false;
+    }
+    cl_context context;
+    cl_command_queue queue;
+    cl_kernel kernel;
+    size_t global;
+    size_t local;
+    Ty *idata;
+    size_t isize;
+    Ty *mapin_data;
+    Ty *mapout_data;
+    cl_int *mdata;
+    size_t msize;
+    Ty *odata;
+    size_t osize;
+    size_t tsize;
+    bool run_failed;
+
+private:
+    bool has_status;
+    test_status status;
+
+public:
+    // Run a test kernel to compute the result of a built-in on an input
+    int run()
+    {
+        clMemWrapper in;
+        clMemWrapper xy;
+        clMemWrapper out;
+        clMemWrapper tmp;
+        int error;
+
+        in = clCreateBuffer(context, CL_MEM_READ_ONLY, isize, NULL, &error);
         test_error(error, "clCreateBuffer failed");
-    }
 
-    error = clSetKernelArg(kernel, 0, sizeof(in), (void *)&in);
-    test_error(error, "clSetKernelArg failed");
+        xy = clCreateBuffer(context, CL_MEM_WRITE_ONLY, msize, NULL, &error);
+        test_error(error, "clCreateBuffer failed");
 
-    error = clSetKernelArg(kernel, 1, sizeof(xy), (void *)&xy);
-    test_error(error, "clSetKernelArg failed");
+        out = clCreateBuffer(context, CL_MEM_WRITE_ONLY, osize, NULL, &error);
+        test_error(error, "clCreateBuffer failed");
 
-    error = clSetKernelArg(kernel, 2, sizeof(out), (void *)&out);
-    test_error(error, "clSetKernelArg failed");
+        if (tsize)
+        {
+            tmp = clCreateBuffer(context,
+                                 CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS,
+                                 tsize, NULL, &error);
+            test_error(error, "clCreateBuffer failed");
+        }
 
-    if (tsize)
-    {
-        error = clSetKernelArg(kernel, 3, sizeof(tmp), (void *)&tmp);
+        error = clSetKernelArg(kernel, 0, sizeof(in), (void *)&in);
         test_error(error, "clSetKernelArg failed");
+
+        error = clSetKernelArg(kernel, 1, sizeof(xy), (void *)&xy);
+        test_error(error, "clSetKernelArg failed");
+
+        error = clSetKernelArg(kernel, 2, sizeof(out), (void *)&out);
+        test_error(error, "clSetKernelArg failed");
+
+        if (tsize)
+        {
+            error = clSetKernelArg(kernel, 3, sizeof(tmp), (void *)&tmp);
+            test_error(error, "clSetKernelArg failed");
+        }
+
+        error = clEnqueueWriteBuffer(queue, in, CL_FALSE, 0, isize, idata, 0,
+                                     NULL, NULL);
+        test_error(error, "clEnqueueWriteBuffer failed");
+
+        error = clEnqueueWriteBuffer(queue, xy, CL_FALSE, 0, msize, mdata, 0,
+                                     NULL, NULL);
+        test_error(error, "clEnqueueWriteBuffer failed");
+        error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, &local,
+                                       0, NULL, NULL);
+        test_error(error, "clEnqueueNDRangeKernel failed");
+
+        error = clEnqueueReadBuffer(queue, xy, CL_FALSE, 0, msize, mdata, 0,
+                                    NULL, NULL);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        error = clEnqueueReadBuffer(queue, out, CL_FALSE, 0, osize, odata, 0,
+                                    NULL, NULL);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        error = clFinish(queue);
+        test_error(error, "clFinish failed");
+
+        return error;
     }
 
-    error = clEnqueueWriteBuffer(queue, in, CL_FALSE, 0, isize, idata, 0, NULL,
-                                 NULL);
-    test_error(error, "clEnqueueWriteBuffer failed");
+private:
+    test_status
+    run_and_check_with_cluster_size(const WorkGroupParams &test_params)
+    {
+        cl_int error = run();
+        if (error != CL_SUCCESS)
+        {
+            print_error(error, "Failed to run subgroup test kernel");
+            status = TEST_FAIL;
+            run_failed = true;
+            return status;
+        }
 
-    error = clEnqueueWriteBuffer(queue, xy, CL_FALSE, 0, msize, mdata, 0, NULL,
-                                 NULL);
-    test_error(error, "clEnqueueWriteBuffer failed");
-    error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, &local, 0,
-                                   NULL, NULL);
-    test_error(error, "clEnqueueNDRangeKernel failed");
+        test_status tmp_status =
+            Fns::chk(idata, odata, mapin_data, mapout_data, mdata, test_params);
 
-    error = clEnqueueReadBuffer(queue, xy, CL_FALSE, 0, msize, mdata, 0, NULL,
-                                NULL);
-    test_error(error, "clEnqueueReadBuffer failed");
+        if (!has_status || tmp_status == TEST_FAIL
+            || (tmp_status == TEST_PASS && status != TEST_FAIL))
+        {
+            status = tmp_status;
+            has_status = true;
+        }
 
-    error = clEnqueueReadBuffer(queue, out, CL_FALSE, 0, osize, odata, 0, NULL,
-                                NULL);
-    test_error(error, "clEnqueueReadBuffer failed");
+        return status;
+    }
 
-    error = clFinish(queue);
-    test_error(error, "clFinish failed");
+public:
+    test_status run_and_check(WorkGroupParams &test_params)
+    {
+        test_status tmp_status = TEST_SKIPPED_ITSELF;
 
-    return error;
-}
+        if (test_params.cluster_size_arg != -1)
+        {
+            for (cl_uint cluster_size = 1;
+                 cluster_size <= test_params.subgroup_size; cluster_size *= 2)
+            {
+                test_params.cluster_size = cluster_size;
+                cl_int error =
+                    clSetKernelArg(kernel, test_params.cluster_size_arg,
+                                   sizeof(cl_uint), &cluster_size);
+                test_error_fail(error, "Unable to set cluster size");
+
+                tmp_status = run_and_check_with_cluster_size(test_params);
+
+                if (tmp_status == TEST_FAIL) break;
+            }
+        }
+        else
+        {
+            tmp_status = run_and_check_with_cluster_size(test_params);
+        }
+
+        return tmp_status;
+    }
+};
 
 // Driver for testing a single built in function
 template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
 {
-    static test_status mrun(cl_device_id device, cl_context context,
-                            cl_command_queue queue, int num_elements,
-                            const char *kname, const char *src,
-                            WorkGroupParams test_params)
-    {
-        Fns::log_test(test_params, "");
-
-        test_status combined_error = TEST_SKIPPED_ITSELF;
-        for (auto &mask : test_params.all_work_item_masks)
-        {
-            test_params.work_items_mask = mask;
-            test_status error = do_run(device, context, queue, num_elements,
-                                       kname, src, test_params);
-
-            if (error == TEST_FAIL
-                || (error == TEST_PASS && combined_error != TEST_FAIL))
-                combined_error = error;
-        }
-
-        if (combined_error == TEST_PASS)
-        {
-            Fns::log_test(test_params, " passed");
-        }
-        return combined_error;
-    };
-    static int run(cl_device_id device, cl_context context,
-                   cl_command_queue queue, int num_elements, const char *kname,
-                   const char *src, WorkGroupParams test_params)
-    {
-        Fns::log_test(test_params, "");
-
-        int error = do_run(device, context, queue, num_elements, kname, src,
-                           test_params);
-
-        if (error == TEST_PASS)
-        {
-            Fns::log_test(test_params, " passed");
-        }
-        return error;
-    };
-    static test_status do_run(cl_device_id device, cl_context context,
-                              cl_command_queue queue, int num_elements,
-                              const char *kname, const char *src,
-                              WorkGroupParams test_params)
+    static test_status run(cl_device_id device, cl_context context,
+                           cl_command_queue queue, int num_elements,
+                           const char *kname, const char *src,
+                           WorkGroupParams test_params)
     {
         size_t tmp;
         cl_int error;
-        int subgroup_size, num_subgroups;
-        size_t realSize;
+        size_t subgroup_size, num_subgroups;
         size_t global = test_params.global_workgroup_size;
         size_t local = test_params.local_workgroup_size;
         clProgramWrapper program;
@@ -1436,28 +1469,9 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         std::vector<Ty> mapout;
         mapout.resize(local);
         std::stringstream kernel_sstr;
-        if (test_params.use_masks)
-        {
-            // Prapare uint4 type to store bitmask on kernel OpenCL C side
-            // To keep order the first characet in string is the lowest bit
-            // there was a need to give such offset to bitset constructor
-            // (first highest offset = 96)
-            std::bitset<32> bits_1_32(test_params.work_items_mask.to_string(),
-                                      96, 32);
-            std::bitset<32> bits_33_64(test_params.work_items_mask.to_string(),
-                                       64, 32);
-            std::bitset<32> bits_65_96(test_params.work_items_mask.to_string(),
-                                       32, 32);
-            std::bitset<32> bits_97_128(test_params.work_items_mask.to_string(),
-                                        0, 32);
-            kernel_sstr << "global uint4 work_item_mask_vector = (uint4)(0b"
-                        << bits_1_32 << ",0b" << bits_33_64 << ",0b"
-                        << bits_65_96 << ",0b" << bits_97_128 << ");\n";
-        }
 
+        Fns::log_test(test_params, "");
 
-        kernel_sstr << "#define NR_OF_ACTIVE_WORK_ITEMS ";
-        kernel_sstr << NR_OF_ACTIVE_WORK_ITEMS << "\n";
         // Make sure a test of type Ty is supported by the device
         if (!TypeManager<Ty>::type_supported(device))
         {
@@ -1510,7 +1524,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
             subgroupsApiSet.clGetKernelSubGroupInfo_ptr();
         if (clGetKernelSubGroupInfo_ptr == NULL)
         {
-            log_error("ERROR: %s function not available",
+            log_error("ERROR: %s function not available\n",
                       subgroupsApiSet.clGetKernelSubGroupInfo_name);
             return TEST_FAIL;
         }
@@ -1520,12 +1534,12 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         if (error != CL_SUCCESS)
         {
             log_error("ERROR: %s function error for "
-                      "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE",
+                      "CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE\n",
                       subgroupsApiSet.clGetKernelSubGroupInfo_name);
             return TEST_FAIL;
         }
 
-        subgroup_size = (int)tmp;
+        subgroup_size = tmp;
 
         error = clGetKernelSubGroupInfo_ptr(
             kernel, device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE,
@@ -1533,16 +1547,16 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         if (error != CL_SUCCESS)
         {
             log_error("ERROR: %s function error for "
-                      "CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE",
+                      "CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE\n",
                       subgroupsApiSet.clGetKernelSubGroupInfo_name);
             return TEST_FAIL;
         }
 
-        num_subgroups = (int)tmp;
+        num_subgroups = tmp;
         // Make sure the number of sub groups is what we expect
         if (num_subgroups != (local + subgroup_size - 1) / subgroup_size)
         {
-            log_error("ERROR: unexpected number of subgroups (%d) returned\n",
+            log_error("ERROR: unexpected number of subgroups (%zu) returned\n",
                       num_subgroups);
             return TEST_FAIL;
         }
@@ -1551,42 +1565,79 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
         std::vector<Ty> odata;
         size_t input_array_size = global;
         size_t output_array_size = global;
-        int dynscl = test_params.dynsc;
+        size_t dynscl = test_params.dynsc;
 
         if (dynscl != 0)
         {
-            input_array_size =
-                (int)global / (int)local * num_subgroups * dynscl;
-            output_array_size = (int)global / (int)local * dynscl;
+            input_array_size = global / local * num_subgroups * dynscl;
+            output_array_size = global / local * dynscl;
         }
 
         idata.resize(input_array_size);
         odata.resize(output_array_size);
 
+        if (test_params.divergence_mask_arg != -1)
+        {
+            cl_uint4 mask_vector;
+            mask_vector.x = 0xffffffffU;
+            mask_vector.y = 0xffffffffU;
+            mask_vector.z = 0xffffffffU;
+            mask_vector.w = 0xffffffffU;
+            error = clSetKernelArg(kernel, test_params.divergence_mask_arg,
+                                   sizeof(cl_uint4), &mask_vector);
+            test_error_fail(error, "Unable to set divergence mask argument");
+        }
+
+        if (test_params.cluster_size_arg != -1)
+        {
+            cl_uint dummy_cluster_size = 1;
+            error = clSetKernelArg(kernel, test_params.cluster_size_arg,
+                                   sizeof(cl_uint), &dummy_cluster_size);
+            test_error_fail(error, "Unable to set dummy cluster size");
+        }
+
+        KernelExecutor<Ty, Fns> executor(
+            context, queue, kernel, global, local, idata.data(),
+            input_array_size * sizeof(Ty), mapin.data(), mapout.data(),
+            sgmap.data(), global * sizeof(cl_int4), odata.data(),
+            output_array_size * sizeof(Ty), TSIZE * sizeof(Ty));
+
         // Run the kernel once on zeroes to get the map
         memset(idata.data(), 0, input_array_size * sizeof(Ty));
-        error = run_kernel(context, queue, kernel, global, local, idata.data(),
-                           input_array_size * sizeof(Ty), sgmap.data(),
-                           global * sizeof(cl_int4), odata.data(),
-                           output_array_size * sizeof(Ty), TSIZE * sizeof(Ty));
+        error = executor.run();
         test_error_fail(error, "Running kernel first time failed");
 
         // Generate the desired input for the kernel
-
         test_params.subgroup_size = subgroup_size;
         Fns::gen(idata.data(), mapin.data(), sgmap.data(), test_params);
-        error = run_kernel(context, queue, kernel, global, local, idata.data(),
-                           input_array_size * sizeof(Ty), sgmap.data(),
-                           global * sizeof(cl_int4), odata.data(),
-                           output_array_size * sizeof(Ty), TSIZE * sizeof(Ty));
-        test_error_fail(error, "Running kernel second time failed");
 
-        // Check the result
-        test_status status = Fns::chk(idata.data(), odata.data(), mapin.data(),
-                                      mapout.data(), sgmap.data(), test_params);
-        // Detailed failure and skip messages should be logged by Fns::gen
-        // and Fns::chk.
-        if (status == TEST_FAIL)
+        test_status status;
+
+        if (test_params.divergence_mask_arg != -1)
+        {
+            for (auto &mask : test_params.all_work_item_masks)
+            {
+                test_params.work_items_mask = mask;
+                cl_uint4 mask_vector = bs128_to_cl_uint4(mask);
+                clSetKernelArg(kernel, test_params.divergence_mask_arg,
+                               sizeof(cl_uint4), &mask_vector);
+
+                status = executor.run_and_check(test_params);
+
+                if (status == TEST_FAIL) break;
+            }
+        }
+        else
+        {
+            status = executor.run_and_check(test_params);
+        }
+        // Detailed failure and skip messages should be logged by
+        // run_and_check.
+        if (status == TEST_PASS)
+        {
+            Fns::log_test(test_params, " passed");
+        }
+        else if (!executor.run_failed && status == TEST_FAIL)
         {
             test_fail("Data verification failed\n");
         }
@@ -1594,15 +1645,9 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct test
     }
 };
 
-static void set_last_workgroup_params(int non_uniform_size,
-                                      int &number_of_subgroups,
-                                      int subgroup_size, int &workgroup_size,
-                                      int &last_subgroup_size)
-{
-    number_of_subgroups = 1 + non_uniform_size / subgroup_size;
-    last_subgroup_size = non_uniform_size % subgroup_size;
-    workgroup_size = non_uniform_size;
-}
+void set_last_workgroup_params(int non_uniform_size, int &number_of_subgroups,
+                               int subgroup_size, int &workgroup_size,
+                               int &last_subgroup_size);
 
 template <typename Ty>
 static void set_randomdata_for_subgroup(Ty *workgroup, int wg_offset,
@@ -1643,18 +1688,9 @@ struct RunTestForType
             std::regex_replace(test_params_.get_kernel_source(function_name),
                                std::regex("\\%s"), function_name);
         std::string kernel_name = "test_" + function_name;
-        if (test_params_.all_work_item_masks.size() > 0)
-        {
-            error = test<T, U>::mrun(device_, context_, queue_, num_elements_,
-                                     kernel_name.c_str(), source.c_str(),
-                                     test_params_);
-        }
-        else
-        {
-            error = test<T, U>::run(device_, context_, queue_, num_elements_,
-                                    kernel_name.c_str(), source.c_str(),
-                                    test_params_);
-        }
+        error =
+            test<T, U>::run(device_, context_, queue_, num_elements_,
+                            kernel_name.c_str(), source.c_str(), test_params_);
 
         // If we return TEST_SKIPPED_ITSELF here, then an entire suite may be
         // reported as having been skipped even if some tests within it

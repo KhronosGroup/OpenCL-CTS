@@ -153,8 +153,10 @@ verify_uint_mul24(cl_uint *inptrA, cl_uint *inptrB, cl_uint *outptr, size_t n, s
         r = (inptrA[i] & 0xffffffU) * (inptrB[i] & 0xffffffU);
         if (r != outptr[i])
         {
-            log_error( "failed at %ld: 0x%8.8x * 0x%8.8x = *0x%8.8x vs 0x%8.8x\n", i, inptrA[i], inptrB[i], r, outptr[i] );
-             return -1;
+            log_error(
+                "failed at %zu: 0x%8.8x * 0x%8.8x = *0x%8.8x vs 0x%8.8x\n", i,
+                inptrA[i], inptrB[i], r, outptr[i]);
+            return -1;
         }
     }
 
