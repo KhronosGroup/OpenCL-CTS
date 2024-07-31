@@ -1,15 +1,18 @@
-/******************************************************************
-Copyright (c) 2016 The Khronos Group Inc. All Rights Reserved.
-
-This code is protected by copyright laws and contains material proprietary to the Khronos Group, Inc.
-This is UNPUBLISHED PROPRIETARY SOURCE CODE that may not be disclosed in whole or in part to
-third parties, and may not be reproduced, republished, distributed, transmitted, displayed,
-broadcast or otherwise exploited in any manner without the express prior written permission
-of Khronos Group. The receipt or possession of this code does not convey any rights to reproduce,
-disclose, or distribute its contents, or to manufacture, use, or sell anything that it may describe,
-in whole or in part other than under the terms of the Khronos Adopters Agreement
-or Khronos Conformance Test Source License Agreement as executed between Khronos and the recipient.
-******************************************************************/
+//
+// Copyright (c) 2016-2023 The Khronos Group Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 #pragma once
 #include <CL/cl.h>
@@ -43,6 +46,8 @@ VEC_NOT_EQ_FUNC(cl_float, 2)
 VEC_NOT_EQ_FUNC(cl_float, 4)
 VEC_NOT_EQ_FUNC(cl_double, 2)
 VEC_NOT_EQ_FUNC(cl_double, 4)
+VEC_NOT_EQ_FUNC(cl_half, 2)
+VEC_NOT_EQ_FUNC(cl_half, 4)
 
 template<typename T>
 bool isNotEqual(const T &lhs, const T &rhs)
@@ -89,6 +94,13 @@ T genrandReal(RandomSeed &seed)
     return genrand_real1(seed);
 }
 
+// Longer-term this could be refactored out and replace random_float():
+template <typename T> T genrandReal_range(T low, T high, RandomSeed &seed)
+{
+    T t = genrand_real1(seed);
+    return (1.0 - t) * low + t * high;
+}
+
 template<typename T, int N>
 T genrandRealVec(RandomSeed &seed)
 {
@@ -109,6 +121,9 @@ GENRAND_REAL_FUNC(cl_float, 2)
 GENRAND_REAL_FUNC(cl_float, 4)
 GENRAND_REAL_FUNC(cl_double, 2)
 GENRAND_REAL_FUNC(cl_double, 4)
+GENRAND_REAL_FUNC(cl_half, 2)
+GENRAND_REAL_FUNC(cl_half, 4)
+GENRAND_REAL_FUNC(cl_half, 8)
 
 template<> inline cl_half genrandReal<cl_half>(RandomSeed &seed)
 {
@@ -156,6 +171,8 @@ Tv negOp(Tv in)
 {
     return -in;
 }
+
+inline cl_half negOpHalf(cl_half v) { return v ^ 0x8000; }
 
 template<typename Tv>
 Tv notOp(Tv in)

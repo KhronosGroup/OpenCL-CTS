@@ -25,118 +25,118 @@
 #include "../../test_common/harness/conversions.h"
 #include "procs.h"
 
-static const char *async_global_to_local_kernel3D =
-    "#pragma OPENCL EXTENSION cl_khr_extended_async_copies : enable\n"
-    "%s\n" // optional pragma string
-    "__kernel void test_fn( const __global %s *src, __global %s *dst, __local "
-    "%s *localBuffer, int numElementsPerLine, int numLines, int "
-    "planesCopiesPerWorkgroup, int planesCopiesPerWorkItem, int srcLineStride, "
-    "int dstLineStride, int srcPlaneStride, int dstPlaneStride )\n"
-    "{\n"
-    " int i, j, k;\n"
-    // Zero the local storage first
-    " for(i=0; i<planesCopiesPerWorkItem; i++)\n"
-    "   for(j=0; j<numLines; j++)\n"
-    "     for(k=0; k<numElementsPerLine; k++)\n"
-    "       localBuffer[ (get_local_id( 0 "
-    ")*planesCopiesPerWorkItem+i)*(numLines*numElementsPerLine + "
-    "numLines*dstLineStride + dstPlaneStride) + j*(numElementsPerLine + "
-    "dstLineStride) + k ] = (%s)(%s)0;\n"
-    // Do this to verify all kernels are done zeroing the local buffer before we
-    // try the copy
-    "    barrier( CLK_LOCAL_MEM_FENCE );\n"
-    "    event_t event;\n"
-    "    event = async_work_group_copy_3D3D( (__local %s*)localBuffer, "
-    "(__global const "
-    "%s*)(src+planesCopiesPerWorkgroup*get_group_id(0)*(numLines*"
-    "numElementsPerLine + numLines*srcLineStride + srcPlaneStride)), "
-    "(size_t)numElementsPerLine, (size_t)numLines, srcLineStride, "
-    "dstLineStride, planesCopiesPerWorkgroup, srcPlaneStride, dstPlaneStride, "
-    "0 );\n"
-    // Wait for the copy to complete, then verify by manually copying to the
-    // dest
-    " wait_group_events( 1, &event );\n"
-    " for(i=0; i<planesCopiesPerWorkItem; i++)\n"
-    "   for(j=0; j<numLines; j++)\n"
-    "     for(k=0; k<numElementsPerLine; k++)\n"
-    "       dst[ (get_global_id( 0 "
-    ")*planesCopiesPerWorkItem+i)*(numLines*numElementsPerLine + "
-    "numLines*dstLineStride + dstPlaneStride) + j*(numElementsPerLine + "
-    "dstLineStride) + k ] = localBuffer[ (get_local_id( 0 "
-    ")*planesCopiesPerWorkItem+i)*(numLines*numElementsPerLine + "
-    "numLines*dstLineStride + dstPlaneStride) + j*(numElementsPerLine + "
-    "dstLineStride) + k ];\n"
-    "}\n";
+static const char *async_global_to_local_kernel3D = R"OpenCLC(
+#pragma OPENCL EXTENSION cl_khr_extended_async_copies : enable
 
-static const char *async_local_to_global_kernel3D =
-    "#pragma OPENCL EXTENSION cl_khr_extended_async_copies : enable\n"
-    "%s\n" // optional pragma string
-    "__kernel void test_fn( const __global %s *src, __global %s *dst, __local "
-    "%s *localBuffer, int numElementsPerLine, int numLines, int "
-    "planesCopiesPerWorkgroup, int planesCopiesPerWorkItem, int srcLineStride, "
-    "int dstLineStride, int srcPlaneStride, int dstPlaneStride )\n"
-    "{\n"
-    " int i, j, k;\n"
-    // Zero the local storage first
-    " for(i=0; i<planesCopiesPerWorkItem; i++)\n"
-    "   for(j=0; j<numLines; j++)\n"
-    "     for(k=0; k<numElementsPerLine; k++)\n"
-    "       localBuffer[ (get_local_id( 0 "
-    ")*planesCopiesPerWorkItem+i)*(numLines*numElementsPerLine + "
-    "numLines*srcLineStride + srcPlaneStride) + j*(numElementsPerLine + "
-    "srcLineStride) + k ] = (%s)(%s)0;\n"
-    // Do this to verify all kernels are done zeroing the local buffer before we
-    // try the copy
-    "    barrier( CLK_LOCAL_MEM_FENCE );\n"
-    " for(i=0; i<planesCopiesPerWorkItem; i++)\n"
-    "   for(j=0; j<numLines; j++)\n"
-    "     for(k=0; k<numElementsPerLine; k++)\n"
-    "       localBuffer[ (get_local_id( 0 "
-    ")*planesCopiesPerWorkItem+i)*(numLines*numElementsPerLine + "
-    "numLines*srcLineStride + srcPlaneStride) + j*(numElementsPerLine + "
-    "srcLineStride) + k ] = src[ (get_global_id( 0 "
-    ")*planesCopiesPerWorkItem+i)*(numLines*numElementsPerLine + "
-    "numLines*srcLineStride + srcPlaneStride) + j*(numElementsPerLine + "
-    "srcLineStride) + k ];\n"
-    // Do this to verify all kernels are done copying to the local buffer before
-    // we try the copy
-    "    barrier( CLK_LOCAL_MEM_FENCE );\n"
-    "    event_t event;\n"
-    "    event = async_work_group_copy_3D3D((__global "
-    "%s*)(dst+planesCopiesPerWorkgroup*get_group_id(0)*(numLines*"
-    "numElementsPerLine + numLines*dstLineStride + dstPlaneStride)), (__local "
-    "const %s*)localBuffer, (size_t)numElementsPerLine, (size_t)numLines, "
-    "srcLineStride, dstLineStride, planesCopiesPerWorkgroup, srcPlaneStride, "
-    "dstPlaneStride, 0 );\n"
-    "    wait_group_events( 1, &event );\n"
-    "}\n";
+#define STRUCT_SIZE %d
+typedef struct __attribute__((packed))
+{
+    uchar byte[STRUCT_SIZE];
+} VarSizeStruct __attribute__((aligned(1)));
 
-int test_copy3D(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, const char *kernelCode,
-                ExplicitType vecType, int vecSize, int srcLineStride,
-                int dstLineStride, int srcPlaneStride, int dstPlaneStride,
-                bool localIsDst)
+__kernel void test_fn(const __global VarSizeStruct *src, __global VarSizeStruct *dst, __local VarSizeStruct *localBuffer,
+                      int numElementsPerLine, int numLines, int planesCopiesPerWorkgroup,
+                      int planesCopiesPerWorkItem, int srcLineStride,
+                      int dstLineStride, int srcPlaneStride, int dstPlaneStride ) {
+  // Zero the local storage first
+  for (int i = 0; i < planesCopiesPerWorkItem; i++) {
+    for (int j = 0; j < numLines; j++) {
+      for (int k = 0; k < numElementsPerLine; k++) {
+        const int index = (get_local_id(0) * planesCopiesPerWorkItem + i) * dstPlaneStride + j * dstLineStride + k;
+        for (int k = 0; k < STRUCT_SIZE; k++) {
+          localBuffer[index].byte[k] = 0;
+        }
+      }
+    }
+  }
+
+  // Do this to verify all kernels are done zeroing the local buffer before we try the copy
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  event_t event = async_work_group_copy_3D3D(localBuffer, 0, src,
+    planesCopiesPerWorkgroup * get_group_id(0) * srcPlaneStride,
+    sizeof(VarSizeStruct), (size_t)numElementsPerLine, (size_t)numLines,
+    planesCopiesPerWorkgroup, srcLineStride, srcPlaneStride, dstLineStride,
+    dstPlaneStride, 0);
+
+  // Wait for the copy to complete, then verify by manually copying to the dest
+  wait_group_events(1, &event);
+
+  for (int i = 0; i < planesCopiesPerWorkItem; i++) {
+    for (int j = 0; j < numLines; j++) {
+      for(int k = 0; k < numElementsPerLine; k++) {
+        const int local_index = (get_local_id(0) * planesCopiesPerWorkItem + i) * dstPlaneStride + j * dstLineStride + k;
+        const int global_index = (get_global_id(0) * planesCopiesPerWorkItem + i) * dstPlaneStride + j * dstLineStride + k;
+        dst[global_index] = localBuffer[local_index];
+      }
+    }
+  }
+}
+)OpenCLC";
+
+static const char *async_local_to_global_kernel3D = R"OpenCLC(
+#pragma OPENCL EXTENSION cl_khr_extended_async_copies : enable
+
+#define STRUCT_SIZE %d
+typedef struct __attribute__((packed))
+{
+    uchar byte[STRUCT_SIZE];
+} VarSizeStruct __attribute__((aligned(1)));
+
+__kernel void test_fn(const __global VarSizeStruct *src, __global VarSizeStruct *dst, __local VarSizeStruct *localBuffer,
+                      int numElementsPerLine, int numLines, int planesCopiesPerWorkgroup,
+                      int planesCopiesPerWorkItem, int srcLineStride,
+                      int dstLineStride, int srcPlaneStride, int dstPlaneStride) {
+  // Zero the local storage first
+  for (int i = 0; i < planesCopiesPerWorkItem; i++) {
+    for (int j = 0; j < numLines; j++) {
+      for (int k = 0; k < numElementsPerLine; k++) {
+        const int index = (get_local_id(0) * planesCopiesPerWorkItem + i) * srcPlaneStride + j * srcLineStride + k;
+        for (int k = 0; k < STRUCT_SIZE; k++) {
+          localBuffer[index].byte[k] = 0;
+        }
+      }
+    }
+  }
+
+  // Do this to verify all kernels are done zeroing the local buffer before we try the copy
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  for (int i=0; i < planesCopiesPerWorkItem; i++) {
+    for (int j=0; j < numLines; j++) {
+      for (int k=0; k < numElementsPerLine; k++) {
+        const int local_index = (get_local_id(0) * planesCopiesPerWorkItem + i) * srcPlaneStride + j * srcLineStride + k;
+        const int global_index = (get_global_id(0) * planesCopiesPerWorkItem + i) * srcPlaneStride + j*srcLineStride + k;
+        localBuffer[local_index] = src[global_index];
+      }
+    }
+  }
+
+  // Do this to verify all kernels are done copying to the local buffer before we try the copy
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+  event_t event = async_work_group_copy_3D3D(dst,
+    planesCopiesPerWorkgroup * get_group_id(0) * dstPlaneStride, localBuffer, 0,
+    sizeof(VarSizeStruct), (size_t)numElementsPerLine, (size_t)numLines, planesCopiesPerWorkgroup,
+    srcLineStride, srcPlaneStride, dstLineStride, dstPlaneStride, 0);
+
+  wait_group_events(1, &event);
+}
+)OpenCLC";
+
+int test_copy3D(const cl_device_id deviceID, const cl_context context,
+                const cl_command_queue queue, const char *const kernelCode,
+                const size_t elementSize, const int srcLineMargin,
+                const int dstLineMargin, const int srcPlaneMargin,
+                const int dstPlaneMargin, const bool localIsDst)
 {
     int error;
-    clProgramWrapper program;
-    clKernelWrapper kernel;
-    clMemWrapper streams[2];
-    size_t threads[1], localThreads[1];
-    void *inBuffer, *outBuffer, *outBufferCopy;
-    MTdata d;
-    char vecNameString[64];
-    vecNameString[0] = 0;
-    if (vecSize == 1)
-        sprintf(vecNameString, "%s", get_explicit_type_name(vecType));
-    else
-        sprintf(vecNameString, "%s%d", get_explicit_type_name(vecType),
-                vecSize);
 
-    size_t elementSize = get_explicit_type_size(vecType) * vecSize;
-    log_info("Testing %s with srcLineStride = %d, dstLineStride = %d, "
-             "srcPlaneStride = %d, dstPlaneStride = %d\n",
-             vecNameString, srcLineStride, dstLineStride, srcPlaneStride,
-             dstPlaneStride);
+    log_info(
+        "Testing %d byte element with srcLineMargin = %d, dstLineMargin = %d, "
+        "srcPlaneMargin = %d, dstPlaneMargin = %d\n",
+        elementSize, srcLineMargin, dstLineMargin, srcPlaneMargin,
+        dstPlaneMargin);
 
     cl_long max_local_mem_size;
     error =
@@ -166,20 +166,16 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
     test_error(error,
                "clGetDeviceInfo for CL_DEVICE_MAX_COMPUTE_UNITS failed.");
 
-    char programSource[4096];
-    programSource[0] = 0;
-    char *programPtr;
+    char programSource[4096] = { 0 };
+    const char *programPtr = programSource;
 
-    sprintf(programSource, kernelCode,
-            vecType == kDouble ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable"
-                               : "",
-            vecNameString, vecNameString, vecNameString, vecNameString,
-            get_explicit_type_name(vecType), vecNameString, vecNameString);
+    sprintf(programSource, kernelCode, elementSize);
     // log_info("program: %s\n", programSource);
-    programPtr = programSource;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
 
     error = create_single_kernel_helper(context, &program, &kernel, 1,
-                                        (const char **)&programPtr, "test_fn");
+                                        &programPtr, "test_fn");
     test_error(error, "Unable to create testing kernel");
 
     size_t max_workgroup_size;
@@ -197,20 +193,29 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
     test_error(error,
                "clGetDeviceInfo failed for CL_DEVICE_MAX_WORK_ITEM_SIZES");
 
+    size_t max_work_group_size;
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_WORK_GROUP_SIZE,
+                            sizeof(max_work_group_size), &max_work_group_size,
+                            NULL);
+    test_error(error,
+               "clGetDeviceInfo for CL_DEVICE_MAX_WORK_GROUP_SIZE failed.");
+
     // Pick the minimum of the device and the kernel
     if (max_workgroup_size > max_local_workgroup_size[0])
         max_workgroup_size = max_local_workgroup_size[0];
 
-    size_t numElementsPerLine = 10;
-    size_t numLines = 13;
-    size_t planesCopiesPerWorkItem = 2;
-    elementSize =
-        get_explicit_type_size(vecType) * ((vecSize == 3) ? 4 : vecSize);
-    size_t localStorageSpacePerWorkitem = elementSize
-        * (planesCopiesPerWorkItem
-           * (numLines * numElementsPerLine
-              + numLines * (localIsDst ? dstLineStride : srcLineStride)
-              + (localIsDst ? dstPlaneStride : srcPlaneStride)));
+    const size_t numElementsPerLine = 10;
+    const cl_int dstLineStride = numElementsPerLine + dstLineMargin;
+    const cl_int srcLineStride = numElementsPerLine + srcLineMargin;
+
+    const size_t numLines = 13;
+    const cl_int dstPlaneStride = (numLines * dstLineStride) + dstPlaneMargin;
+    const cl_int srcPlaneStride = (numLines * srcLineStride) + srcPlaneMargin;
+
+    const size_t planesCopiesPerWorkItem = 2;
+    const size_t localStorageSpacePerWorkitem = elementSize
+        * planesCopiesPerWorkItem
+        * (localIsDst ? dstPlaneStride : srcPlaneStride);
     size_t maxLocalWorkgroupSize =
         (((int)max_local_mem_size / 2) / localStorageSpacePerWorkitem);
 
@@ -224,42 +229,49 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
     if (maxLocalWorkgroupSize > max_workgroup_size)
         localWorkgroupSize = max_workgroup_size;
 
-    size_t maxTotalPlanesIn = ((max_alloc_size / elementSize) + srcPlaneStride)
-        / ((numLines * numElementsPerLine + numLines * srcLineStride)
-           + srcPlaneStride);
-    size_t maxTotalPlanesOut = ((max_alloc_size / elementSize) + dstPlaneStride)
-        / ((numLines * numElementsPerLine + numLines * dstLineStride)
-           + dstPlaneStride);
-    size_t maxTotalPlanes = std::min(maxTotalPlanesIn, maxTotalPlanesOut);
-    size_t maxLocalWorkgroups =
+    const size_t maxTotalPlanesIn =
+        ((max_alloc_size / elementSize) + srcPlaneMargin) / srcPlaneStride;
+    const size_t maxTotalPlanesOut =
+        ((max_alloc_size / elementSize) + dstPlaneMargin) / dstPlaneStride;
+    const size_t maxTotalPlanes = std::min(maxTotalPlanesIn, maxTotalPlanesOut);
+    const size_t maxLocalWorkgroups =
         maxTotalPlanes / (localWorkgroupSize * planesCopiesPerWorkItem);
 
-    size_t localBufferSize = localWorkgroupSize * localStorageSpacePerWorkitem
-        - (localIsDst ? dstPlaneStride : srcPlaneStride);
-    size_t numberOfLocalWorkgroups = std::min(1111, (int)maxLocalWorkgroups);
-    size_t totalPlanes =
+    const size_t localBufferSize =
+        localWorkgroupSize * localStorageSpacePerWorkitem
+        - (localIsDst ? dstPlaneMargin : srcPlaneMargin);
+    const size_t numberOfLocalWorkgroups =
+        std::min(1111, (int)maxLocalWorkgroups);
+    const size_t totalPlanes =
         numberOfLocalWorkgroups * localWorkgroupSize * planesCopiesPerWorkItem;
-    size_t inBufferSize = elementSize
-        * (totalPlanes
-               * (numLines * numElementsPerLine + numLines * srcLineStride)
-           + (totalPlanes - 1) * srcPlaneStride);
-    size_t outBufferSize = elementSize
-        * (totalPlanes
-               * (numLines * numElementsPerLine + numLines * dstLineStride)
-           + (totalPlanes - 1) * dstPlaneStride);
-    size_t globalWorkgroupSize = numberOfLocalWorkgroups * localWorkgroupSize;
+    const size_t inBufferSize = elementSize
+        * (totalPlanes * numLines * srcLineStride
+           + (totalPlanes - 1) * srcPlaneMargin);
+    const size_t outBufferSize = elementSize
+        * (totalPlanes * numLines * dstLineStride
+           + (totalPlanes - 1) * dstPlaneMargin);
+    const size_t globalWorkgroupSize =
+        numberOfLocalWorkgroups * localWorkgroupSize;
 
-    inBuffer = (void *)malloc(inBufferSize);
-    outBuffer = (void *)malloc(outBufferSize);
-    outBufferCopy = (void *)malloc(outBufferSize);
+    if ((localBufferSize / 4) > max_work_group_size)
+    {
+        log_info("Skipping due to resource requirements local:%db  "
+                 "max_work_group_size:%d\n",
+                 localBufferSize, max_work_group_size);
+        return 0;
+    }
 
-    cl_int planesCopiesPerWorkItemInt, numElementsPerLineInt, numLinesInt,
-        planesCopiesPerWorkgroup;
-    planesCopiesPerWorkItemInt = (int)planesCopiesPerWorkItem;
-    numElementsPerLineInt = (int)numElementsPerLine;
-    numLinesInt = (int)numLines;
-    planesCopiesPerWorkgroup =
-        (int)(planesCopiesPerWorkItem * localWorkgroupSize);
+    void *const inBuffer = (void *)malloc(inBufferSize);
+    void *const outBuffer = (void *)malloc(outBufferSize);
+    void *const outBufferCopy = (void *)malloc(outBufferSize);
+
+    const cl_int planesCopiesPerWorkItemInt =
+        static_cast<cl_int>(planesCopiesPerWorkItem);
+    const cl_int numElementsPerLineInt =
+        static_cast<cl_int>(numElementsPerLine);
+    const cl_int numLinesInt = static_cast<cl_int>(numLines);
+    const cl_int planesCopiesPerWorkgroup =
+        static_cast<cl_int>(planesCopiesPerWorkItem * localWorkgroupSize);
 
     log_info("Global: %d, local %d, local buffer %db, global in buffer %db, "
              "global out buffer %db, each work group will copy %d planes and "
@@ -268,17 +280,19 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
              (int)localBufferSize, (int)inBufferSize, (int)outBufferSize,
              planesCopiesPerWorkgroup, planesCopiesPerWorkItemInt);
 
+    size_t threads[1], localThreads[1];
+
     threads[0] = globalWorkgroupSize;
     localThreads[0] = localWorkgroupSize;
 
-    d = init_genrand(gRandomSeed);
-    generate_random_data(
-        vecType, inBufferSize / get_explicit_type_size(vecType), d, inBuffer);
-    generate_random_data(
-        vecType, outBufferSize / get_explicit_type_size(vecType), d, outBuffer);
+    MTdata d = init_genrand(gRandomSeed);
+    generate_random_data(kChar, inBufferSize, d, inBuffer);
+    generate_random_data(kChar, outBufferSize, d, outBuffer);
     free_mtdata(d);
     d = NULL;
     memcpy(outBufferCopy, outBuffer, outBufferSize);
+
+    clMemWrapper streams[2];
 
     streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, inBufferSize,
                                 inBuffer, &error);
@@ -325,8 +339,7 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
 
     // Verify
     int failuresPrinted = 0;
-    // Verify
-    size_t typeSize = get_explicit_type_size(vecType) * vecSize;
+
     for (int i = 0;
          i < (int)globalWorkgroupSize * planesCopiesPerWorkItem * elementSize;
          i += elementSize)
@@ -336,23 +349,16 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
             for (int k = 0; k < (int)numElementsPerLine * elementSize;
                  k += elementSize)
             {
-                int inIdx = i
-                        * (numLines * numElementsPerLine
-                           + numLines * srcLineStride + srcPlaneStride)
-                    + j * (numElementsPerLine + srcLineStride) + k;
-                int outIdx = i
-                        * (numLines * numElementsPerLine
-                           + numLines * dstLineStride + dstPlaneStride)
-                    + j * (numElementsPerLine + dstLineStride) + k;
+                int inIdx = i * srcPlaneStride + j * srcLineStride + k;
+                int outIdx = i * dstPlaneStride + j * dstLineStride + k;
                 if (memcmp(((char *)inBuffer) + inIdx,
-                           ((char *)outBuffer) + outIdx, typeSize)
+                           ((char *)outBuffer) + outIdx, elementSize)
                     != 0)
                 {
                     unsigned char *inchar = (unsigned char *)inBuffer + inIdx;
                     unsigned char *outchar =
                         (unsigned char *)outBuffer + outIdx;
-                    char values[4096];
-                    values[0] = 0;
+                    char values[4096] = { 0 };
 
                     if (failuresPrinted == 0)
                     {
@@ -378,14 +384,11 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
             }
             if (j < (int)numLines * elementSize)
             {
-                int outIdx = i
-                        * (numLines * numElementsPerLine
-                           + numLines * dstLineStride + dstPlaneStride)
-                    + j * (numElementsPerLine + dstLineStride)
+                int outIdx = i * dstPlaneStride + j * dstLineStride
                     + numElementsPerLine * elementSize;
                 if (memcmp(((char *)outBuffer) + outIdx,
                            ((char *)outBufferCopy) + outIdx,
-                           dstLineStride * elementSize)
+                           dstLineMargin * elementSize)
                     != 0)
                 {
                     if (failuresPrinted == 0)
@@ -409,14 +412,11 @@ int test_copy3D(cl_device_id deviceID, cl_context context,
         if (i < (int)(globalWorkgroupSize * planesCopiesPerWorkItem - 1)
                 * elementSize)
         {
-            int outIdx = i
-                    * (numLines * numElementsPerLine + numLines * dstLineStride
-                       + dstPlaneStride)
-                + (numLines * elementSize) * (numElementsPerLine)
-                + (numLines * elementSize) * (dstLineStride);
+            int outIdx =
+                i * dstPlaneStride + numLines * dstLineStride * elementSize;
             if (memcmp(((char *)outBuffer) + outIdx,
                        ((char *)outBufferCopy) + outIdx,
-                       dstPlaneStride * elementSize)
+                       dstPlaneMargin * elementSize)
                 != 0)
             {
                 if (failuresPrinted == 0)
@@ -449,14 +449,14 @@ int test_copy3D_all_types(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue, const char *kernelCode,
                           bool localIsDst)
 {
-    ExplicitType vecType[] = {
-        kChar,  kUChar, kShort,  kUShort,          kInt, kUInt, kLong,
-        kULong, kFloat, kDouble, kNumExplicitTypes
-    };
-    unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
-    unsigned int smallTypesStrideSizes[] = { 0, 10, 100 };
-    unsigned int size, typeIndex, srcLineStride, dstLineStride, srcPlaneStride,
-        dstPlaneStride;
+    const unsigned int elemSizes[] = { 1, 2,  3,  4,  5,  6, 7,
+                                       8, 13, 16, 32, 47, 64 };
+    // The margins below represent the number of elements between the end of
+    // one line and the start of the next. The strides are equivalent to the
+    // size of the line or plane plus the chosen margin.
+    // These have to be multipliers, because the margin must be a multiple of
+    // element size.
+    const unsigned int marginMultipliers[] = { 0, 10, 100 };
 
     int errors = 0;
 
@@ -464,66 +464,35 @@ int test_copy3D_all_types(cl_device_id deviceID, cl_context context,
     {
         log_info(
             "Device does not support extended async copies. Skipping test.\n");
-        return 0;
     }
-
-    for (typeIndex = 0; vecType[typeIndex] != kNumExplicitTypes; typeIndex++)
+    else
     {
-        if (vecType[typeIndex] == kDouble
-            && !is_extension_available(deviceID, "cl_khr_fp64"))
-            continue;
-
-        if ((vecType[typeIndex] == kLong || vecType[typeIndex] == kULong)
-            && !gHasLong)
-            continue;
-
-        for (size = 0; vecSizes[size] != 0; size++)
+        for (const unsigned int elemSize : elemSizes)
         {
-            if (get_explicit_type_size(vecType[typeIndex]) * vecSizes[size]
-                <= 2) // small type
+            for (const unsigned int srcLineMarginMultiplier : marginMultipliers)
             {
-                for (srcLineStride = 0;
-                     srcLineStride < sizeof(smallTypesStrideSizes)
-                         / sizeof(smallTypesStrideSizes[0]);
-                     srcLineStride++)
+                for (const unsigned int dstLineMarginMultiplier :
+                     marginMultipliers)
                 {
-                    for (dstLineStride = 0;
-                         dstLineStride < sizeof(smallTypesStrideSizes)
-                             / sizeof(smallTypesStrideSizes[0]);
-                         dstLineStride++)
+                    for (const unsigned int srcPlaneMarginMultiplier :
+                         marginMultipliers)
                     {
-                        for (srcPlaneStride = 0;
-                             srcPlaneStride < sizeof(smallTypesStrideSizes)
-                                 / sizeof(smallTypesStrideSizes[0]);
-                             srcPlaneStride++)
+                        for (const unsigned int dstPlaneMarginMultiplier :
+                             marginMultipliers)
                         {
-                            for (dstPlaneStride = 0;
-                                 dstPlaneStride < sizeof(smallTypesStrideSizes)
-                                     / sizeof(smallTypesStrideSizes[0]);
-                                 dstPlaneStride++)
+                            if (test_copy3D(deviceID, context, queue,
+                                            kernelCode, elemSize,
+                                            srcLineMarginMultiplier * elemSize,
+                                            dstLineMarginMultiplier * elemSize,
+                                            srcPlaneMarginMultiplier * elemSize,
+                                            dstPlaneMarginMultiplier * elemSize,
+                                            localIsDst))
                             {
-                                if (test_copy3D(
-                                        deviceID, context, queue, kernelCode,
-                                        vecType[typeIndex], vecSizes[size],
-                                        smallTypesStrideSizes[srcLineStride],
-                                        smallTypesStrideSizes[dstLineStride],
-                                        smallTypesStrideSizes[srcPlaneStride],
-                                        smallTypesStrideSizes[dstPlaneStride],
-                                        localIsDst))
-                                {
-                                    errors++;
-                                }
+                                errors++;
                             }
                         }
                     }
                 }
-            }
-            // not a small type, check only zero stride
-            else if (test_copy3D(deviceID, context, queue, kernelCode,
-                                 vecType[typeIndex], vecSizes[size], 0, 0, 0, 0,
-                                 localIsDst))
-            {
-                errors++;
             }
         }
     }

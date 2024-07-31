@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+#include <iomanip>
+#include <vector>
 #include "testBase.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
@@ -201,14 +204,13 @@ const char *get_order_string( ShuffleOrder &order, size_t vecSize, cl_uint lengt
 
     size_t j, idx;
 
-    // Assume we don't have to use numbers
-    byNumber = 0;
-    // Check to see
+    // Assume we don't have to use numbered indices (.s0123...).
+    byNumber = false;
+    // Check if any index is beyond xyzw, which requires to use numbers.
     for( j = 0; j < lengthToUse; j++ )
     {
         if (order[j] > 3) {
-            // An index is > xyzw so we need to use numbers
-            byNumber = 1;
+            byNumber = true;
             break;
         }
     }
@@ -216,14 +218,11 @@ const char *get_order_string( ShuffleOrder &order, size_t vecSize, cl_uint lengt
     if (!byNumber) {
         byNumber = (useNumbersFlip++)%2;
     }
-    // Do not use xyzw for vectors whose length is not 2 or 4 per the spec.
-    if (vecSize != 2 || vecSize != 4 || vecSize != 3)
-        byNumber = 1;
 
-    if( byNumber || vecSize > 4 )
+    if (byNumber)
     {
         idx = 0;
-        // Randomly chose upper and lower case S
+        // Randomly chose upper and lower case S.
         orderString[ idx++ ] = random_in_range(0, 1, d) ? 's' : 'S';
         for( j = 0; j < vecSize && j < lengthToUse; j++ ) {
             // Randomly choose upper and lower case.
@@ -233,8 +232,8 @@ const char *get_order_string( ShuffleOrder &order, size_t vecSize, cl_uint lengt
     }
     else
     {
+        // Use xyzw.
         for( j = 0; j < vecSize && j < lengthToUse; j++ ) {
-            // Randomly choose upper and lower case.
             orderString[ j ] = names2[ (int)order[ j ] ];
         }
         orderString[ j ] = 0;
@@ -246,12 +245,14 @@ const char *get_order_string( ShuffleOrder &order, size_t vecSize, cl_uint lengt
 char * get_order_name( ExplicitType vecType, size_t inVecSize, size_t outVecSize, ShuffleOrder &inOrder, ShuffleOrder &outOrder, cl_uint lengthToUse, MTdata d, bool inUseNumerics, bool outUseNumerics )
 {
     static char orderName[ 512 ] = "";
-    char inOrderStr[ 512 ], outOrderStr[ 512 ];
+    char inOrderStr[64], outOrderStr[64];
 
     if( inVecSize == 1 )
         inOrderStr[ 0 ] = 0;
     else
-        sprintf( inOrderStr, "%d.%s", (int)inVecSize, get_order_string( inOrder, outVecSize, lengthToUse, inUseNumerics, d ) );
+        sprintf(inOrderStr, "%d.%s", (int)inVecSize,
+                get_order_string(inOrder, inVecSize, lengthToUse, inUseNumerics,
+                                 d));
     if( outVecSize == 1 )
         outOrderStr[ 0 ] = 0;
     else
@@ -262,33 +263,48 @@ char * get_order_name( ExplicitType vecType, size_t inVecSize, size_t outVecSize
     return orderName;
 }
 
-void    print_hex_mem_dump( const unsigned char *inDataPtr, const unsigned char * inDataPtr2, const unsigned char *expected, const unsigned char *outDataPtr, size_t inVecSize, size_t outVecSize, size_t typeSize )
+void print_hex_mem_dump(const unsigned char *inDataPtr,
+                        const unsigned char *inDataPtr2,
+                        const unsigned char *expected,
+                        const unsigned char *outDataPtr, size_t inVecSize,
+                        size_t outVecSize, size_t typeSize)
 {
-    char error [4096] = "";
-    strcat(error, "      Source: ");
-    for( unsigned int j = 0; j < inVecSize * typeSize; j++ )
+    auto byte_to_hex_str = [](unsigned char v) {
+        // Use a new stream to avoid manipulating state of outer stream.
+        std::ostringstream ss;
+        ss << std::setfill('0') << std::setw(2) << std::right << std::hex << +v;
+        return ss.str();
+    };
+
+    std::ostringstream error;
+    error << "      Source: ";
+    for (size_t j = 0; j < inVecSize * typeSize; j++)
     {
-        sprintf(error, "%s%s%02x ",error, ( j % typeSize ) ? "" : " ", (cl_uchar)inDataPtr[ j ] );
+        error << (j % typeSize ? "" : " ") << byte_to_hex_str(inDataPtr[j])
+              << " ";
     }
-    if( inDataPtr2 != NULL )
+    if (inDataPtr2 != NULL)
     {
-        strcat(error, "\n    Source 2: ");
-        for( unsigned int j = 0; j < inVecSize * typeSize; j++ )
+        error << "\n    Source 2: ";
+        for (size_t j = 0; j < inVecSize * typeSize; j++)
         {
-            sprintf(error, "%s%s%02x ",error, ( j % typeSize ) ? "" : " ", (cl_uchar)inDataPtr2[ j ] );
+            error << (j % typeSize ? "" : " ") << byte_to_hex_str(inDataPtr2[j])
+                  << " ";
         }
     }
-    strcat(error, "\n    Expected: " );
-    for( unsigned int j = 0; j < outVecSize * typeSize; j++ )
+    error << "\n    Expected: ";
+    for (size_t j = 0; j < outVecSize * typeSize; j++)
     {
-        sprintf(error, "%s%s%02x ",error, ( j % typeSize ) ? "" : " ", (cl_uchar)expected[ j ] );
+        error << (j % typeSize ? "" : " ") << byte_to_hex_str(expected[j])
+              << " ";
     }
-    strcat(error, "\n      Actual: " );
-    for( unsigned int j = 0; j < outVecSize * typeSize; j++ )
+    error << "\n      Actual: ";
+    for (size_t j = 0; j < outVecSize * typeSize; j++)
     {
-        sprintf(error, "%s%s%02x ",error, ( j % typeSize ) ? "" : " ", (cl_uchar)outDataPtr[ j ] );
+        error << (j % typeSize ? "" : " ") << byte_to_hex_str(outDataPtr[j])
+              << " ";
     }
-    log_info("%s\n", error);
+    log_info("%s\n", error.str().c_str());
 }
 
 void generate_shuffle_mask( char *outMaskString, size_t maskSize, const ShuffleOrder *order )
@@ -321,7 +337,6 @@ static int create_shuffle_kernel( cl_context context, cl_program *outProgram, cl
                                  MTdata d, ShuffleMode shuffleMode = kNormalMode )
 {
     char inOrder[18], shuffledOrder[18];
-    size_t typeSize;
     char kernelSource[MAX_PROGRAM_SIZE], progLine[ 10240 ];
     char *programPtr;
     char inSizeName[4], outSizeName[4], outRealSizeName[4], inSizeArgName[4];
@@ -337,9 +352,6 @@ static int create_shuffle_kernel( cl_context context, cl_program *outProgram, cl
         inSizeArgName[ 0 ] = 0;
     else
         strcpy( inSizeArgName, inSizeName );
-
-
-    typeSize = get_explicit_type_size( vecType );
 
     *outRealVecSize = outVecSize;
 
@@ -398,7 +410,9 @@ static int create_shuffle_kernel( cl_context context, cl_program *outProgram, cl
     for( unsigned int i = 0; i < numOrders; i++ )
     {
         if( inOrders != NULL )
-            strcpy( inOrder, get_order_string( inOrders[ i ], outVecSize, lengthToUse[i], inUseNumerics, d ) );
+            strcpy(inOrder,
+                   get_order_string(inOrders[i], inVecSize, lengthToUse[i],
+                                    inUseNumerics, d));
         strcpy( shuffledOrder, get_order_string( outOrders[ i ], outVecSize, lengthToUse[i], outUseNumerics, d ) );
 
 
@@ -604,31 +618,25 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
     if( error != 0 )
         return error;
 
-    typeSize = get_explicit_type_size( vecType );
+    typeSize = get_explicit_type_size(vecType);
+    std::vector<cl_long> inData(inVecSize * numOrders);
+    std::vector<cl_long> inSecondData(inVecSize * numOrders);
+    std::vector<cl_long> outData(outRealVecSize * numOrders);
 
-#if !(defined(_WIN32) && defined (_MSC_VER))
-    cl_long inData[ inVecSize * numOrders ];
-    cl_long inSecondData[ inVecSize * numOrders ];
-    cl_long outData[ outRealVecSize * numOrders ];
-#else
-    cl_long* inData  = (cl_long*)_malloca(inVecSize * numOrders * sizeof(cl_long));
-    cl_long* inSecondData  = (cl_long*)_malloca(inVecSize * numOrders * sizeof(cl_long));
-    cl_long* outData = (cl_long*)_malloca(outRealVecSize * numOrders * sizeof(cl_long));
-#endif
-    memset(outData, 0, outRealVecSize * numOrders * sizeof(cl_long) );
-
-    generate_random_data( vecType, (unsigned int)( numOrders * inVecSize ), d, inData );
+    generate_random_data(vecType, (unsigned int)(numOrders * inVecSize), d,
+                         inData.data());
     if( shuffleMode == kBuiltInDualInputFnMode )
-        generate_random_data( vecType, (unsigned int)( numOrders * inVecSize ), d, inSecondData );
+        generate_random_data(vecType, (unsigned int)(numOrders * inVecSize), d,
+                             inSecondData.data());
 
     streams[0] =
         clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                       typeSize * inVecSize * numOrders, inData, &error);
+                       typeSize * inVecSize * numOrders, inData.data(), &error);
     test_error( error, "Unable to create input stream" );
 
-    streams[1] =
-        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                       typeSize * outRealVecSize * numOrders, outData, &error);
+    streams[1] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                typeSize * outRealVecSize * numOrders,
+                                outData.data(), &error);
     test_error( error, "Unable to create output stream" );
 
     int argIndex = 0;
@@ -636,7 +644,7 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
     {
         streams[2] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
                                     typeSize * inVecSize * numOrders,
-                                    inSecondData, &error);
+                                    inSecondData.data(), &error);
         test_error( error, "Unable to create second input stream" );
 
         error = clSetKernelArg( kernel, argIndex++, sizeof( streams[ 2 ] ), &streams[ 2 ] );
@@ -661,12 +669,14 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
 
 
     // Read the results back
-    error = clEnqueueReadBuffer( queue, streams[ 1 ], CL_TRUE, 0, typeSize * numOrders * outRealVecSize, outData, 0, NULL, NULL );
+    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0,
+                                typeSize * numOrders * outRealVecSize,
+                                outData.data(), 0, NULL, NULL);
     test_error( error, "Unable to read results" );
 
-    unsigned char *inDataPtr = (unsigned char *)inData;
-    unsigned char *inSecondDataPtr = (unsigned char *)inSecondData;
-    unsigned char *outDataPtr = (unsigned char *)outData;
+    unsigned char *inDataPtr = (unsigned char *)inData.data();
+    unsigned char *inSecondDataPtr = (unsigned char *)inSecondData.data();
+    unsigned char *outDataPtr = (unsigned char *)outData.data();
     int ret = 0;
     int errors_printed = 0;
     for( size_t i = 0; i < numOrders; i++ )
@@ -868,7 +878,8 @@ int test_shuffle_random(cl_device_id device, cl_context context, cl_command_queu
                 int numTests = NUM_TESTS*NUM_ITERATIONS_PER_TEST;
                 for( int i = 0; i < numTests /*&& error == 0*/; i++ )
                 {
-                    ShuffleOrder src, dst;
+                    ShuffleOrder src{ 0 };
+                    ShuffleOrder dst;
                     if( shuffleMode == kBuiltInFnMode )
                     {
                         build_random_shuffle_order( dst, vecSizes[ dstIdx ], vecSizes[ srcIdx ], true, d );

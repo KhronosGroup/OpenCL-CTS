@@ -22,19 +22,11 @@
 const char *sample_single_param_kernel[] = {
     "__kernel void sample_test(__global int *src)\n"
     "{\n"
-    "    int  tid = get_global_id(0);\n"
+    "    size_t  tid = get_global_id(0);\n"
     "\n"
     "}\n"
 };
 
-const char *sample_single_param_write_kernel[] = {
-    "__kernel void sample_test(__global int *src)\n"
-    "{\n"
-    "    int  tid = get_global_id(0);\n"
-    "     src[tid] = tid;\n"
-    "\n"
-    "}\n"
-};
 
 const char *sample_read_image_kernel_pattern[] = {
     "__kernel void sample_test( __global float *result, ",
@@ -42,7 +34,7 @@ const char *sample_read_image_kernel_pattern[] = {
     "{\n"
     "  sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP | "
     "CLK_FILTER_NEAREST;\n"
-    "    int  tid = get_global_id(0);\n"
+    "    size_t  tid = get_global_id(0);\n"
     "    result[0] = 0.0f;\n",
     "\n"
     "}\n"
@@ -52,7 +44,7 @@ const char *sample_write_image_kernel_pattern[] = {
     "__kernel void sample_test( ",
     " )\n"
     "{\n"
-    "    int  tid = get_global_id(0);\n",
+    "    size_t  tid = get_global_id(0);\n",
     "\n"
     "}\n"
 };
@@ -81,8 +73,8 @@ const char *sample_sampler_kernel_pattern[] = {
     ", sampler_t sampler%d",
     ")\n"
     "{\n"
-    "    int  tid = get_global_id(0);\n",
-    "     dst[ 0 ] = read_imagei( src, sampler%d, (int2)( 0, 0 ) );\n",
+    "    size_t  tid = get_global_id(0);\n",
+    "    dst[ 0 ] = read_imagei( src, sampler%d, (int2)( 0, 0 ) );\n",
     "\n"
     "}\n"
 };
@@ -90,7 +82,7 @@ const char *sample_sampler_kernel_pattern[] = {
 const char *sample_const_arg_kernel[] = {
     "__kernel void sample_test(__constant int *src1, __global int *dst)\n"
     "{\n"
-    "    int  tid = get_global_id(0);\n"
+    "    size_t  tid = get_global_id(0);\n"
     "\n"
     "    dst[tid] = src1[tid];\n"
     "\n"
@@ -101,7 +93,7 @@ const char *sample_local_arg_kernel[] = {
     "__kernel void sample_test(__local int *src1, __global int *global_src, "
     "__global int *dst)\n"
     "{\n"
-    "    int  tid = get_global_id(0);\n"
+    "    size_t  tid = get_global_id(0);\n"
     "\n"
     "    src1[tid] = global_src[tid];\n"
     "    barrier(CLK_GLOBAL_MEM_FENCE);\n"
@@ -673,8 +665,6 @@ int test_min_max_image_2d_width(cl_device_id deviceID, cl_context context,
     cl_image_format image_format_desc;
     cl_ulong maxAllocSize;
     cl_uint minRequiredDimension;
-    size_t length;
-
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT(deviceID)
 
@@ -754,7 +744,6 @@ int test_min_max_image_2d_height(cl_device_id deviceID, cl_context context,
     cl_image_format image_format_desc;
     cl_ulong maxAllocSize;
     cl_uint minRequiredDimension;
-    size_t length;
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT(deviceID)
 
@@ -1196,7 +1185,7 @@ int test_min_max_image_buffer_size(cl_device_id deviceID, cl_context context,
 int test_min_max_parameter_size(cl_device_id deviceID, cl_context context,
                                 cl_command_queue queue, int num_elements)
 {
-    int error, retVal, i;
+    int error, i;
     size_t maxSize;
     char *programSrc;
     char *ptr;
@@ -1331,8 +1320,6 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context,
         }
 
         /* Try to set a large argument to the kernel */
-        retVal = 0;
-
         mem = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_long), NULL,
                              &error);
         test_error(error, "clCreateBuffer failed");
@@ -2303,7 +2290,7 @@ int test_min_max_device_version(cl_device_id deviceID, cl_context context,
     {
         log_info("Checking for required extensions for OpenCL 1.1 and later "
                  "devices...\n");
-        for (int i = 0; i < ARRAY_SIZE(requiredExtensions11); i++)
+        for (size_t i = 0; i < ARRAY_SIZE(requiredExtensions11); i++)
         {
             if (!is_extension_available(deviceID, requiredExtensions11[i]))
             {
@@ -2348,7 +2335,7 @@ int test_min_max_device_version(cl_device_id deviceID, cl_context context,
         {
             log_info("Checking for required extensions for OpenCL 2.0, 2.1 and "
                      "2.2 devices...\n");
-            for (int i = 0; i < ARRAY_SIZE(requiredExtensions2x); i++)
+            for (size_t i = 0; i < ARRAY_SIZE(requiredExtensions2x); i++)
             {
                 if (!is_extension_available(deviceID, requiredExtensions2x[i]))
                 {

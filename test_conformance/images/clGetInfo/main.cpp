@@ -54,13 +54,15 @@ int test_2Darray(cl_device_id device, cl_context context, cl_command_queue queue
 {
     return test_image_set( device, context, CL_MEM_OBJECT_IMAGE2D_ARRAY );
 }
+int test_1Dbuffer(cl_device_id device, cl_context context,
+                  cl_command_queue queue, int num_elements)
+{
+    return test_image_set(device, context, CL_MEM_OBJECT_IMAGE1D_BUFFER);
+}
 
 test_definition test_list[] = {
-    ADD_TEST( 1D ),
-    ADD_TEST( 2D ),
-    ADD_TEST( 3D ),
-    ADD_TEST( 1Darray ),
-    ADD_TEST( 2Darray ),
+    ADD_TEST(1D),      ADD_TEST(2D),      ADD_TEST(3D),
+    ADD_TEST(1Darray), ADD_TEST(2Darray), ADD_TEST(1Dbuffer),
 };
 
 const int test_num = ARRAY_SIZE( test_list );

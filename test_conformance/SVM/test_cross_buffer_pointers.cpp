@@ -162,7 +162,8 @@ int test_svm_cross_buffer_pointers_coarse_grain(cl_device_id deviceID, cl_contex
     test_error(error, "clCreateBuffer failed.");
 
     // this buffer holds the index into the nodes buffer that is used for node allocation
-    clMemWrapper allocator = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int), NULL, &error);
+    clMemWrapper allocator = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                            sizeof(size_t), NULL, &error);
     test_error(error, "clCreateBuffer failed.");
 
     // this buffer holds the count of correct nodes which is computed by the verify kernel.

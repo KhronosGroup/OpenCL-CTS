@@ -696,7 +696,9 @@ int test_enqueue_flags(cl_device_id device, cl_context context, cl_command_queue
     };
 
     dev_queue = clCreateCommandQueueWithProperties(context, device, queue_prop_def, &err_ret);
-    test_error(err_ret, "clCreateCommandQueueWithProperties(CL_QUEUE_DEVICE|CL_QUEUE_DEFAULT) failed");
+    test_error(err_ret,
+               "clCreateCommandQueueWithProperties(CL_QUEUE_ON_DEVICE | "
+               "CL_QUEUE_ON_DEVICE_DEFAULT) failed");
 
     size_t global_size = MAX_GWS;
     size_t local_size = (max_local_size > global_size/16) ? global_size/16 : max_local_size;
@@ -712,7 +714,9 @@ int test_enqueue_flags(cl_device_id device, cl_context context, cl_command_queue
         if (!gKernelName.empty() && gKernelName != sources_enqueue_block_flags[i].kernel_name)
             continue;
 
-        log_info("Running '%s' kernel (%d of %d) ...\n", sources_enqueue_block_flags[i].kernel_name, i + 1, num_enqueue_block_flags);
+        log_info("Running '%s' kernel (%d of %zu) ...\n",
+                 sources_enqueue_block_flags[i].kernel_name, i + 1,
+                 num_enqueue_block_flags);
 
         clMemWrapper mem = clCreateBuffer(context, CL_MEM_READ_WRITE|CL_MEM_COPY_HOST_PTR, global_size * BITS_DEPTH * sizeof(cl_int), buff, &err_ret);
         test_error(err_ret, "clCreateBuffer() failed");
@@ -747,7 +751,8 @@ int test_enqueue_flags(cl_device_id device, cl_context context, cl_command_queue
 
     if (failCnt > 0)
     {
-        log_error("ERROR: %d of %d kernels failed.\n", failCnt, num_enqueue_block_flags);
+        log_error("ERROR: %zu of %zu kernels failed.\n", failCnt,
+                  num_enqueue_block_flags);
     }
 
     return res;

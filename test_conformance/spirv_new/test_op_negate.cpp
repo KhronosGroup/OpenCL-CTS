@@ -1,15 +1,18 @@
-/******************************************************************
-Copyright (c) 2016 The Khronos Group Inc. All Rights Reserved.
-
-This code is protected by copyright laws and contains material proprietary to the Khronos Group, Inc.
-This is UNPUBLISHED PROPRIETARY SOURCE CODE that may not be disclosed in whole or in part to
-third parties, and may not be reproduced, republished, distributed, transmitted, displayed,
-broadcast or otherwise exploited in any manner without the express prior written permission
-of Khronos Group. The receipt or possession of this code does not convey any rights to reproduce,
-disclose, or distribute its contents, or to manufacture, use, or sell anything that it may describe,
-in whole or in part other than under the terms of the Khronos Adopters Agreement
-or Khronos Conformance Test Source License Agreement as executed between Khronos and the recipient.
-******************************************************************/
+//
+// Copyright (c) 2016-2023 The Khronos Group Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 #include "testBase.h"
 #include "types.hpp"
@@ -32,6 +35,15 @@ int test_negation(cl_device_id deviceID,
             return 0;
         }
     }
+    if (std::string(Tname).find("half") != std::string::npos)
+    {
+        if (!is_extension_available(deviceID, "cl_khr_fp16"))
+        {
+            log_info(
+                "Extension cl_khr_fp16 not supported; skipping half tests.\n");
+            return 0;
+        }
+    }
 
     cl_int err = CL_SUCCESS;
     int num = (int)h_in.size();
@@ -43,7 +55,6 @@ int test_negation(cl_device_id deviceID,
     err = clEnqueueWriteBuffer(queue, in, CL_TRUE, 0, bytes, &h_in[0], 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to copy to in buffer");
 
-    cl_uint bits = sizeof(void *) * 8;
     std::string spvStr = std::string(funcName) + "_" + std::string(Tname);
     const char *spvName = spvStr.c_str();
 
@@ -74,29 +85,28 @@ int test_negation(cl_device_id deviceID,
     return 0;
 }
 
-#define TEST_NEGATION(TYPE, Tv, OP, FUNC)       \
-    TEST_SPIRV_FUNC(OP##_##TYPE)                \
-    {                                           \
-        int num = 1 << 20;                      \
-        std::vector<Tv> in(num);                \
-        RandomSeed seed(gRandomSeed);           \
-        for (int i = 0; i < num; i++) {         \
-            in[i] = genrand<Tv>(seed);          \
-        }                                       \
-        return test_negation<Tv>(deviceID,      \
-                                 context,       \
-                                 queue,         \
-                                 #TYPE,         \
-                                 #OP,           \
-                                 in, FUNC);     \
-    }                                           \
+#define TEST_NEGATION(TYPE, Tv, OP, FUNC)                                      \
+    TEST_SPIRV_FUNC(OP##_##TYPE)                                               \
+    {                                                                          \
+        int num = 1 << 20;                                                     \
+        std::vector<Tv> in(num);                                               \
+        RandomSeed seed(gRandomSeed);                                          \
+        for (int i = 0; i < num; i++)                                          \
+        {                                                                      \
+            in[i] = genrand<Tv>(seed);                                         \
+        }                                                                      \
+        return test_negation<Tv>(deviceID, context, queue, #TYPE, #OP, in,     \
+                                 FUNC);                                        \
+    }
 
 
+#define TEST_NEG_HALF TEST_NEGATION(half, cl_half, op_neg, negOpHalf)
 #define TEST_NEG(TYPE)        TEST_NEGATION(TYPE, cl_##TYPE, op_neg, negOp<cl_##TYPE>)
 #define TEST_NOT(TYPE)        TEST_NEGATION(TYPE, cl_##TYPE, op_not, notOp<cl_##TYPE>)
 #define TEST_NEG_VEC(TYPE, N) TEST_NEGATION(TYPE##N, cl_##TYPE##N, op_neg, (negOpVec<cl_##TYPE##N, N>))
 #define TEST_NOT_VEC(TYPE, N) TEST_NEGATION(TYPE##N, cl_##TYPE##N, op_not, (notOpVec<cl_##TYPE##N, N>))
 
+TEST_NEG_HALF
 TEST_NEG(float)
 TEST_NEG(double)
 TEST_NEG(int)

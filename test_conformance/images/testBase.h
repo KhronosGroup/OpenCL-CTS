@@ -42,17 +42,20 @@ enum TypesToTest
 // For the clCopyImage test
 enum MethodsToTest
 {
-    k1D = ( 1 << 0 ),
-    k2D    = ( 1 << 1 ),
-    k1DArray = ( 1 << 2 ),
-    k2DArray = ( 1 << 3 ),
-    k3D = ( 1 << 4 ),
-    k2DTo3D = ( 1 << 5 ),
-    k3DTo2D = ( 1 << 6 ),
-    k2DArrayTo2D = ( 1 << 7 ),
-    k2DTo2DArray = ( 1 << 8 ),
-    k2DArrayTo3D = ( 1 << 9 ),
-    k3DTo2DArray = ( 1 << 10 ),
+    k1D = (1 << 0),
+    k2D = (1 << 1),
+    k1DArray = (1 << 2),
+    k2DArray = (1 << 3),
+    k3D = (1 << 4),
+    k2DTo3D = (1 << 5),
+    k3DTo2D = (1 << 6),
+    k2DArrayTo2D = (1 << 7),
+    k2DTo2DArray = (1 << 8),
+    k2DArrayTo3D = (1 << 9),
+    k3DTo2DArray = (1 << 10),
+    k1DBuffer = (1 << 11),
+    k1DTo1DBuffer = (1 << 12),
+    k1DBufferTo1D = (1 << 13),
 };
 
 

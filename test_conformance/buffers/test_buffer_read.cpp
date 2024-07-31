@@ -763,13 +763,11 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
 {
     clProgramWrapper program[5];
     clKernelWrapper kernel[5];
-    clEventWrapper event;
     void        *outptr[5];
     void        *inptr[5];
     size_t      global_work_size[3];
     cl_int      err;
     int         i;
-    size_t      lastIndex;
     size_t      ptrSizes[5];
     int         src_flag_id;
     int         total_errors = 0;
@@ -805,6 +803,7 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
             clMemWrapper buffer;
+            clEventWrapper event;
             outptr[i] = align_malloc(ptrSizes[i] * num_elements, min_alignment);
             if ( ! outptr[i] ){
                 log_error( " unable to allocate %d bytes for outptr\n", (int)(ptrSizes[i] * num_elements) );
@@ -849,11 +848,11 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
                 return -1;
             }
 
-            lastIndex = ( num_elements * ( 1 << i ) - 1 ) * ptrSizes[0];
             err = clEnqueueReadBuffer(queue, buffer, false, 0,
                                       ptrSizes[i] * num_elements, outptr[i], 0,
                                       NULL, &event);
 #ifdef CHECK_FOR_NON_WAIT
+            size_t lastIndex = (num_elements * (1 << i) - 1) * ptrSizes[0];
             if ( ((uchar *)outptr[i])[lastIndex] ){
                 log_error( "    clEnqueueReadBuffer() possibly returned only after inappropriately waiting for execution to be finished\n" );
                 log_error( "    Function was run asynchornously, but last value in array was set in code line following clEnqueueReadBuffer()\n" );
@@ -900,12 +899,10 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
 {
     clProgramWrapper program[5];
     clKernelWrapper kernel[5];
-    clEventWrapper event;
     void        *outptr[5], *inptr[5];
     size_t      global_work_size[3];
     cl_int      err;
     int         i;
-    size_t      lastIndex;
     size_t      ptrSizes[5];
     int         src_flag_id;
     int         total_errors = 0;
@@ -941,6 +938,7 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
             clMemWrapper buffer;
+            clEventWrapper event;
             outptr[i] = align_malloc(ptrSizes[i] * num_elements, min_alignment);
             if ( ! outptr[i] ){
                 log_error( " unable to allocate %d bytes for outptr\n", (int)(ptrSizes[i] * num_elements) );
@@ -984,11 +982,11 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
                 return -1;
             }
 
-            lastIndex = ( num_elements * ( 1 << i ) - 1 ) * ptrSizes[0];
             err = clEnqueueReadBuffer(queue, buffer, false, 0,
                                       ptrSizes[i] * num_elements,
                                       (void *)(outptr[i]), 0, NULL, &event);
 #ifdef CHECK_FOR_NON_WAIT
+            size_t lastIndex = (num_elements * (1 << i) - 1) * ptrSizes[0];
             if ( ((uchar *)outptr[i])[lastIndex] ){
                 log_error( "    clEnqueueReadBuffer() possibly returned only after inappropriately waiting for execution to be finished\n" );
                 log_error( "    Function was run asynchornously, but last value in array was set in code line following clEnqueueReadBuffer()\n" );

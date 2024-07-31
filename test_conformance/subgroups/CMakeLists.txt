@@ -2,6 +2,7 @@ set(MODULE_NAME SUBGROUPS)
 
 set(${MODULE_NAME}_SOURCES
     main.cpp
+    subhelpers.cpp
     test_barrier.cpp
     test_queries.cpp
     test_workitem.cpp
@@ -15,6 +16,7 @@ set(${MODULE_NAME}_SOURCES
     test_subgroup_clustered_reduce.cpp
     test_subgroup_shuffle.cpp
     test_subgroup_shuffle_relative.cpp
+    test_subgroup_rotate.cpp
 )
 
 include(../CMakeCommon.txt)

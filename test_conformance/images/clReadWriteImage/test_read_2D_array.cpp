@@ -83,9 +83,8 @@ int test_read_image_2D_array(cl_context context, cl_command_queue queue,
 
     for(size_t lod = 0; (gTestMipmaps && lod < imageInfo->num_mip_levels) || (!gTestMipmaps && lod < 1); lod++)
     {
-        float lod_float = (float) lod;
         origin[3] = lod;
-        size_t width_lod, height_lod, depth_lod, row_pitch_lod, slice_pitch_lod;
+        size_t width_lod, height_lod, row_pitch_lod, slice_pitch_lod;
 
         width_lod = (imageInfo->width >> lod) ? (imageInfo->width >> lod) : 1;
         height_lod = (imageInfo->height >> lod) ? (imageInfo->height >> lod) : 1;
@@ -170,6 +169,7 @@ int test_read_image_set_2D_array(cl_device_id device, cl_context context,
 
     if (memSize > (cl_ulong)SIZE_MAX) {
         memSize = (cl_ulong)SIZE_MAX;
+        maxAllocSize = (cl_ulong)SIZE_MAX;
     }
 
     if( gTestSmallImages )

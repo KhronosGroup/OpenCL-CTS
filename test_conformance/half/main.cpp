@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -131,8 +131,7 @@ exit:
 static int ParseArgs( int argc, const char **argv )
 {
     int i;
-    argList = (const char **)calloc( argc - 1, sizeof( char*) );
-
+    argList = (const char **)calloc(argc, sizeof(char *));
     if( NULL == argList )
     {
         vlog_error( "Failed to allocate memory for argList.\n" );
@@ -195,6 +194,8 @@ static int ParseArgs( int argc, const char **argv )
                         gReportTimes ^= 1;
                         break;
 
+                    case 'r': gHostReset = true; break;
+
                     case 'w':  // Wimpy mode
                         gWimpyMode = true;
                         break;
@@ -222,7 +223,6 @@ static int ParseArgs( int argc, const char **argv )
       gWimpyMode = 1;
     }
 
-    vlog( "Test binary built %s %s\n", __DATE__, __TIME__ );
     PrintArch();
     if( gWimpyMode )
     {
@@ -237,15 +237,18 @@ static int ParseArgs( int argc, const char **argv )
 
 static void PrintUsage( void )
 {
-    vlog( "%s [-dthw]: <optional: test names>\n", appName );
-    vlog( "\t\t-d\tToggle double precision testing (default: on if double supported)\n" );
-    vlog( "\t\t-t\tToggle reporting performance data.\n" );
-    vlog( "\t\t-w\tRun in wimpy mode\n" );
-    vlog( "\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", gWimpyReductionFactor);
-    vlog( "\t\t-h\tHelp\n" );
-    for( int i = 0; i < test_num; i++ )
+    vlog("%s [-dthw]: <optional: test names>\n", appName);
+    vlog("\t\t-d\tToggle double precision testing (default: on if double "
+         "supported)\n");
+    vlog("\t\t-t\tToggle reporting performance data.\n");
+    vlog("\t\t-r\tReset buffers on host instead of on device.\n");
+    vlog("\t\t-w\tRun in wimpy mode\n");
+    vlog("\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
+         "1-12, default factor(%u)\n",
+         gWimpyReductionFactor);
+    vlog("\t\t-h\tHelp\n");
+    for (int i = 0; i < test_num; i++)
     {
         vlog("\t\t%s\n", test_list[i].name );
     }
 }
-

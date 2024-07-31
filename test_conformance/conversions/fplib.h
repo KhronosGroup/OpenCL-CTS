@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef CONVERSIONS_FPLIB_H
+#define CONVERSIONS_FPLIB_H
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -28,3 +31,5 @@ typedef enum
 
 float qcom_u64_2_f32(uint64_t data, bool sat, roundingMode rnd);
 float qcom_s64_2_f32(int64_t data, bool sat, roundingMode rnd);
+
+#endif
