@@ -237,8 +237,8 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
             for (size_t j = 0; j < bufferElements; j++)
             {
                 feclearexcept(FE_OVERFLOW);
-                res[j] = HFD((double)f->dfunc.f_fff(HTF(hp0[j]), HTF(hp1[j]),
-                                                    HTF(hp2[j])));
+                res[j] = HFF(f->func.f_fma(
+                     HTF(hp0[j]), HTF(hp1[j]), HTF(hp2[j]), CORRECTLY_ROUNDED));
                 overflow[j] =
                     FE_OVERFLOW == (FE_OVERFLOW & fetestexcept(FE_OVERFLOW));
             }
@@ -246,8 +246,8 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
         else
         {
             for (size_t j = 0; j < bufferElements; j++)
-                res[j] = HFD((double)f->dfunc.f_fff(HTF(hp0[j]), HTF(hp1[j]),
-                                                    HTF(hp2[j])));
+                res[j] = HFF(f->func.f_fma(
+                        HTF(hp0[j]), HTF(hp1[j]), HTF(hp2[j]), CORRECTLY_ROUNDED));
         }
 
         // Read the data back
@@ -297,13 +297,19 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                         test != correct ? Ulp_Error_Half(test, ref1) : 0.f;
                     fail = !(fabsf(err) <= half_ulps);
 
+                    if (fail && ftz && IsHalfSubnormal(correct)) {
+                        fail = fail && (HTF(test) != 0.0f);
+                        if (!fail) err = 0.0f;
+                    }
+
                     if (fail && ftz)
                     {
                         // retry per section 6.5.3.2  with flushing on
-                        if (0.0f == test
-                            && 0.0f
-                                == f->func.f_fma(HTF(hp0[j]), HTF(hp1[j]),
-                                                 HTF(hp2[j]), FLUSHED))
+                        float r = f->func.f_fma(HTF(hp0[j]), HTF(hp1[j]), HTF(hp2[j]), FLUSHED);
+                        cl_half c = HFF(r);
+
+                        if (0.0f == HTF(test) && IsHalfSubnormal(c))
+
                         {
                             fail = 0;
                             err = 0.0f;
