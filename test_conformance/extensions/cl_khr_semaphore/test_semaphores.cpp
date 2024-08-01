@@ -530,6 +530,10 @@ struct SemaphoreQueries : public SemaphoreTestBase
             static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
             static_cast<cl_semaphore_properties_khr>(
                 CL_SEMAPHORE_TYPE_BINARY_KHR),
+            static_cast<cl_semaphore_properties_khr>(
+                CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR),
+            (cl_semaphore_properties_khr)device,
+            CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR,
             0
         };
         semaphore =
@@ -557,10 +561,15 @@ struct SemaphoreQueries : public SemaphoreTestBase
         test_error(err, "Could not release semaphore");
         SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, 1);
 
+        // Confirm that querying CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR returns the
+        // same device id the semaphore was created with
+        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR, cl_device_id,
+                             device);
+
         // Confirm that querying CL_SEMAPHORE_PROPERTIES_KHR returns the same
         // properties the semaphore was created with
         SEMAPHORE_PARAM_TEST_ARRAY(CL_SEMAPHORE_PROPERTIES_KHR,
-                                   cl_semaphore_properties_khr, 3, sema_props);
+                                   cl_semaphore_properties_khr, 6, sema_props);
 
         // Confirm that querying CL_SEMAPHORE_PAYLOAD_KHR returns the unsignaled
         // state
@@ -586,7 +595,7 @@ struct SemaphoreImportExportFD : public SemaphoreTestBase
         {
             log_info(
                 "cl_khr_external_semaphore_sync_fd is not supported on this "
-                "platoform. Skipping test.\n");
+                "platform. Skipping test.\n");
             return TEST_SKIPPED_ITSELF;
         }
 
