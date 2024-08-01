@@ -202,6 +202,35 @@ public:
     virtual ~VulkanBufferList();
 };
 
+class VulkanImage1DList : public VulkanList<VulkanImage1D, VkImage> {
+protected:
+    VulkanImage1DList(const VulkanImage1DList &image1DList);
+
+public:
+    VulkanImage1DList(
+        size_t numImages, std::vector<VulkanDeviceMemory *> &deviceMemory,
+        uint64_t baseOffset, uint64_t interImageOffset,
+        const VulkanDevice &device, VulkanFormat format, uint32_t width,
+        uint32_t mipLevels, VulkanImageTiling vulkanImageTiling,
+        VulkanExternalMemoryHandleType externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
+        VulkanImageCreateFlag imageCreateFlag = VULKAN_IMAGE_CREATE_FLAG_NONE,
+        VulkanImageUsage imageUsage =
+            VULKAN_IMAGE_USAGE_SAMPLED_STORAGE_TRANSFER_SRC_DST,
+        VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
+    VulkanImage1DList(
+        size_t numImages, const VulkanDevice &device, VulkanFormat format,
+        uint32_t width, VulkanImageTiling vulkanImageTiling,
+        uint32_t mipLevels = 1,
+        VulkanExternalMemoryHandleType externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
+        VulkanImageCreateFlag imageCreateFlag = VULKAN_IMAGE_CREATE_FLAG_NONE,
+        VulkanImageUsage imageUsage =
+            VULKAN_IMAGE_USAGE_SAMPLED_STORAGE_TRANSFER_SRC_DST,
+        VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
+    virtual ~VulkanImage1DList();
+};
+
 class VulkanImage2DList : public VulkanList<VulkanImage2D, VkImage> {
 protected:
     VulkanImage2DList(const VulkanImage2DList &image2DList);
@@ -230,6 +259,36 @@ public:
             VULKAN_IMAGE_USAGE_SAMPLED_STORAGE_TRANSFER_SRC_DST,
         VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
     virtual ~VulkanImage2DList();
+};
+
+class VulkanImage3DList : public VulkanList<VulkanImage3D, VkImage> {
+protected:
+    VulkanImage3DList(const VulkanImage3DList &image3DList);
+
+public:
+    VulkanImage3DList(
+        size_t numImages, std::vector<VulkanDeviceMemory *> &deviceMemory,
+        uint64_t baseOffset, uint64_t interImageOffset,
+        const VulkanDevice &device, VulkanFormat format, uint32_t width,
+        uint32_t height, uint32_t depth, uint32_t mipLevels,
+        VulkanImageTiling vulkanImageTiling,
+        VulkanExternalMemoryHandleType externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
+        VulkanImageCreateFlag imageCreateFlag = VULKAN_IMAGE_CREATE_FLAG_NONE,
+        VulkanImageUsage imageUsage =
+            VULKAN_IMAGE_USAGE_SAMPLED_STORAGE_TRANSFER_SRC_DST,
+        VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
+    VulkanImage3DList(
+        size_t numImages, const VulkanDevice &device, VulkanFormat format,
+        uint32_t width, uint32_t height, uint32_t depth,
+        VulkanImageTiling vulkanImageTiling, uint32_t mipLevels = 1,
+        VulkanExternalMemoryHandleType externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
+        VulkanImageCreateFlag imageCreateFlag = VULKAN_IMAGE_CREATE_FLAG_NONE,
+        VulkanImageUsage imageUsage =
+            VULKAN_IMAGE_USAGE_SAMPLED_STORAGE_TRANSFER_SRC_DST,
+        VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
+    virtual ~VulkanImage3DList();
 };
 
 class VulkanImageViewList : public VulkanList<VulkanImageView, VkImageView> {

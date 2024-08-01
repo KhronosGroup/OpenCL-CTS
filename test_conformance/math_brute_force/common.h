@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 The Khronos Group Inc.
+// Copyright (c) 2021-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,8 +36,11 @@ using Buffers = std::array<clMemWrapper, VECTOR_SIZE_COUNT>;
 // Types supported for kernel code generation.
 enum class ParameterType
 {
+    Half,
     Float,
     Double,
+    Short,
+    UShort,
     Int,
     UInt,
     Long,

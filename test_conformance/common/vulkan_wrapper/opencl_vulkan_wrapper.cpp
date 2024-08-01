@@ -96,6 +96,26 @@ void init_cl_vk_ext(cl_platform_id opencl_platform, cl_uint num_devices,
                                      "clReImportSemaphoreSyncFdKHR!");
         }
     }
+
+    clEnqueueAcquireExternalMemObjectsKHRptr =
+        (pfnclEnqueueAcquireExternalMemObjectsKHR)
+            clGetExtensionFunctionAddressForPlatform(
+                opencl_platform, "clEnqueueAcquireExternalMemObjectsKHR");
+    if (nullptr == clEnqueueAcquireExternalMemObjectsKHRptr)
+    {
+        throw std::runtime_error("Failed to get the function pointer of "
+                                 "clEnqueueAcquireExternalMemObjectsKHR!");
+    }
+
+    clEnqueueReleaseExternalMemObjectsKHRptr =
+        (pfnclEnqueueReleaseExternalMemObjectsKHR)
+            clGetExtensionFunctionAddressForPlatform(
+                opencl_platform, "clEnqueueReleaseExternalMemObjectsKHR");
+    if (nullptr == clEnqueueReleaseExternalMemObjectsKHRptr)
+    {
+        throw std::runtime_error("Failed to get the function pointer of "
+                                 "clEnqueueReleaseExternalMemObjectsKHR!");
+    }
 }
 
 cl_int setMaxImageDimensions(cl_device_id deviceID, size_t &max_width,
@@ -508,7 +528,8 @@ cl_int check_external_memory_handle_type(
 
 cl_int check_external_semaphore_handle_type(
     cl_device_id deviceID,
-    cl_external_semaphore_handle_type_khr requiredHandleType)
+    cl_external_semaphore_handle_type_khr requiredHandleType,
+    cl_device_info queryParamName)
 {
     unsigned int i;
     cl_external_semaphore_handle_type_khr *handle_type;
@@ -516,18 +537,26 @@ cl_int check_external_semaphore_handle_type(
     cl_int errNum = CL_SUCCESS;
 
     errNum =
-        clGetDeviceInfo(deviceID, CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR,
-                        0, NULL, &handle_type_size);
+        clGetDeviceInfo(deviceID, queryParamName, 0, NULL, &handle_type_size);
+
+    if (handle_type_size == 0)
+    {
+        log_error("Device does not support %s semaphore\n",
+                  queryParamName == CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR
+                      ? "importing"
+                      : "exporting");
+        return CL_INVALID_VALUE;
+    }
+
     handle_type =
         (cl_external_semaphore_handle_type_khr *)malloc(handle_type_size);
 
-    errNum =
-        clGetDeviceInfo(deviceID, CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR,
-                        handle_type_size, handle_type, NULL);
+    errNum = clGetDeviceInfo(deviceID, queryParamName, handle_type_size,
+                             handle_type, NULL);
 
     test_error(
         errNum,
-        "Unable to query CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR \n");
+        "Unable to query supported device semaphore handle types list\n");
 
     for (i = 0; i < handle_type_size; i++)
     {
@@ -897,6 +926,8 @@ clExternalExportableSemaphore::clExternalExportableSemaphore(
 
     cl_int err = 0;
     cl_device_id devList[] = { deviceId, NULL };
+    cl_external_semaphore_handle_type_khr clSemaphoreHandleType =
+        getCLSemaphoreTypeFromVulkanType(externalSemaphoreHandleType);
     m_externalHandleType = externalSemaphoreHandleType;
     m_externalSemaphore = nullptr;
     m_device = deviceId;
@@ -908,9 +939,7 @@ clExternalExportableSemaphore::clExternalExportableSemaphore(
     };
     sema_props.push_back(
         (cl_semaphore_properties_khr)CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR);
-    sema_props.push_back(
-        (cl_semaphore_properties_khr)getCLSemaphoreTypeFromVulkanType(
-            externalSemaphoreHandleType));
+    sema_props.push_back((cl_semaphore_properties_khr)clSemaphoreHandleType);
     sema_props.push_back((cl_semaphore_properties_khr)
                              CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR);
     sema_props.push_back(
@@ -927,6 +956,83 @@ clExternalExportableSemaphore::clExternalExportableSemaphore(
                   err);
         throw std::runtime_error(
             "clCreateSemaphoreWithPropertiesKHRptr failed! ");
+    }
+
+    switch (m_externalHandleType)
+    {
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD: {
+            err = clGetSemaphoreHandleForTypeKHRptr(
+                m_externalSemaphore, m_device, clSemaphoreHandleType,
+                sizeof(int), &fd, nullptr);
+            if (err != CL_SUCCESS)
+            {
+                throw std::runtime_error("Failed to export OpenCL semaphore\n");
+            }
+
+            VkImportSemaphoreFdInfoKHR vkImportSemaphoreFdInfoKHR = {};
+            vkImportSemaphoreFdInfoKHR.sType =
+                VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR;
+            vkImportSemaphoreFdInfoKHR.semaphore = m_deviceSemaphore;
+            vkImportSemaphoreFdInfoKHR.fd = fd;
+            vkImportSemaphoreFdInfoKHR.pNext = nullptr;
+            vkImportSemaphoreFdInfoKHR.handleType =
+                VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
+            vkImportSemaphoreFdInfoKHR.flags = 0;
+
+            if (vkImportSemaphoreFdKHR(m_deviceSemaphore.getDevice(),
+                                       &vkImportSemaphoreFdInfoKHR)
+                != VK_SUCCESS)
+            {
+                throw std::runtime_error(
+                    "Failed to import semaphore in Vulkan\n");
+            }
+            break;
+        }
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT:
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT: {
+            err = clGetSemaphoreHandleForTypeKHRptr(
+                m_externalSemaphore, m_device, clSemaphoreHandleType,
+                sizeof(void *), (void *)&handle, nullptr);
+            if (err != CL_SUCCESS)
+            {
+                throw std::runtime_error("Failed to export OpenCL semaphore\n");
+            }
+
+#ifdef _WIN32
+            VkImportSemaphoreWin32HandleInfoKHR
+                vkImportSemaphoreWin32HandleInfoKHR = {};
+            vkImportSemaphoreWin32HandleInfoKHR.sType =
+                VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR;
+            vkImportSemaphoreWin32HandleInfoKHR.pNext = nullptr;
+            vkImportSemaphoreWin32HandleInfoKHR.semaphore = m_deviceSemaphore;
+            vkImportSemaphoreWin32HandleInfoKHR.flags = 0;
+            vkImportSemaphoreWin32HandleInfoKHR.handleType =
+                (VkExternalSemaphoreHandleTypeFlagBits)m_externalHandleType;
+            vkImportSemaphoreWin32HandleInfoKHR.handle = (HANDLE)handle;
+            vkImportSemaphoreWin32HandleInfoKHR.name = nullptr;
+
+            if (vkImportSemaphoreWin32HandleKHR(
+                    m_deviceSemaphore.getDevice(),
+                    &vkImportSemaphoreWin32HandleInfoKHR)
+                != VK_SUCCESS)
+            {
+                throw std::runtime_error(
+                    "Failed to import semaphore in Vulkan\n");
+            }
+#else
+            log_error(
+                "Opaque D3DKMT and NT handles are only supported on Windows\n");
+            ASSERT(0);
+#endif
+            break;
+        }
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD:
+            // Do nothing, imported after each signal from OpenCL
+            break;
+        default:
+            log_error("Unsupported external semaphore handle type\n");
+            ASSERT(0);
+            break;
     }
 }
 

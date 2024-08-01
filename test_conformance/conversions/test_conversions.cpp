@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -73,9 +73,9 @@ static void PrintUsage(void);
 test_status InitCL(cl_device_id device);
 
 
-const char *gTypeNames[kTypeCount] = { "uchar", "char", "ushort", "short",
-                                       "uint",  "int",  "float",  "double",
-                                       "ulong", "long" };
+const char *gTypeNames[kTypeCount] = { "uchar",  "char",  "ushort", "short",
+                                       "uint",   "int",   "half",   "float",
+                                       "double", "ulong", "long" };
 
 const char *gRoundingModeNames[kRoundingModeCount] = { "", "_rte", "_rtp",
                                                        "_rtn", "_rtz" };
@@ -83,9 +83,9 @@ const char *gRoundingModeNames[kRoundingModeCount] = { "", "_rte", "_rtp",
 const char *gSaturationNames[2] = { "", "_sat" };
 
 size_t gTypeSizes[kTypeCount] = {
-    sizeof(cl_uchar), sizeof(cl_char), sizeof(cl_ushort), sizeof(cl_short),
-    sizeof(cl_uint),  sizeof(cl_int),  sizeof(cl_float),  sizeof(cl_double),
-    sizeof(cl_ulong), sizeof(cl_long),
+    sizeof(cl_uchar),  sizeof(cl_char),  sizeof(cl_ushort), sizeof(cl_short),
+    sizeof(cl_uint),   sizeof(cl_int),   sizeof(cl_half),   sizeof(cl_float),
+    sizeof(cl_double), sizeof(cl_ulong), sizeof(cl_long),
 };
 
 char appName[64] = "ctest";
@@ -221,13 +221,17 @@ static int ParseArgs(int argc, const char **argv)
                 switch (*arg)
                 {
                     case 'd': gTestDouble ^= 1; break;
+                    case 'h': gTestHalfs ^= 1; break;
                     case 'l': gSkipTesting ^= 1; break;
                     case 'm': gMultithread ^= 1; break;
                     case 'w': gWimpyMode ^= 1; break;
                     case '[':
                         parseWimpyReductionFactor(arg, gWimpyReductionFactor);
                         break;
-                    case 'z': gForceFTZ ^= 1; break;
+                    case 'z':
+                        gForceFTZ ^= 1;
+                        gForceHalfFTZ ^= 1;
+                        break;
                     case 't': gTimeResults ^= 1; break;
                     case 'a': gReportAverageTimes ^= 1; break;
                     case '1':
@@ -355,7 +359,6 @@ static void PrintUsage(void)
 }
 
 
-
 test_status InitCL(cl_device_id device)
 {
     int error, i;
@@ -411,6 +414,50 @@ test_status InitCL(cl_device_id device)
         gHasDouble = 1;
     }
     gTestDouble &= gHasDouble;
+
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        gHasHalfs = 1;
+
+        cl_device_fp_config floatCapabilities = 0;
+        if ((error = clGetDeviceInfo(device, CL_DEVICE_HALF_FP_CONFIG,
+                                     sizeof(floatCapabilities),
+                                     &floatCapabilities, NULL)))
+            floatCapabilities = 0;
+
+        if (0 == (CL_FP_DENORM & floatCapabilities)) gForceHalfFTZ ^= 1;
+
+        if (0 == (floatCapabilities & CL_FP_ROUND_TO_NEAREST))
+        {
+            char profileStr[128] = "";
+            // Verify that we are an embedded profile device
+            if ((error = clGetDeviceInfo(device, CL_DEVICE_PROFILE,
+                                         sizeof(profileStr), profileStr, NULL)))
+            {
+                vlog_error("FAILURE: Could not get device profile: error %d\n",
+                           error);
+                return TEST_FAIL;
+            }
+
+            if (strcmp(profileStr, "EMBEDDED_PROFILE"))
+            {
+                vlog_error(
+                    "FAILURE: non-embedded profile device does not support "
+                    "CL_FP_ROUND_TO_NEAREST\n");
+                return TEST_FAIL;
+            }
+
+            if (0 == (floatCapabilities & CL_FP_ROUND_TO_ZERO))
+            {
+                vlog_error("FAILURE: embedded profile device supports neither "
+                           "CL_FP_ROUND_TO_NEAREST or CL_FP_ROUND_TO_ZERO\n");
+                return TEST_FAIL;
+            }
+
+            gIsHalfRTZ = 1;
+        }
+    }
+    gTestHalfs &= gHasHalfs;
 
     // detect whether profile of the device is embedded
     char profile[1024] = "";
@@ -492,8 +539,12 @@ test_status InitCL(cl_device_id device)
     vlog("\tSubnormal values supported for floats? %s\n",
          no_yes[0 != (CL_FP_DENORM & floatCapabilities)]);
     vlog("\tTesting with FTZ mode ON for floats? %s\n", no_yes[0 != gForceFTZ]);
+    vlog("\tTesting with FTZ mode ON for halfs? %s\n",
+         no_yes[0 != gForceHalfFTZ]);
     vlog("\tTesting with default RTZ mode for floats? %s\n",
          no_yes[0 != gIsRTZ]);
+    vlog("\tTesting with default RTZ mode for halfs? %s\n",
+         no_yes[0 != gIsHalfRTZ]);
     vlog("\tHas Double? %s\n", no_yes[0 != gHasDouble]);
     if (gHasDouble) vlog("\tTest Double? %s\n", no_yes[0 != gTestDouble]);
     vlog("\tHas Long? %s\n", no_yes[0 != gHasLong]);
@@ -503,5 +554,3 @@ test_status InitCL(cl_device_id device)
     vlog("\n");
     return TEST_PASS;
 }
-
-

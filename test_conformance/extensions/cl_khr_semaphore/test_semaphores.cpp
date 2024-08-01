@@ -20,6 +20,7 @@
 #include <system_error>
 #include <thread>
 #include <chrono>
+#include <vector>
 
 #include "semaphore_base.h"
 

@@ -190,6 +190,14 @@ cl_int cBuffer_check_mem_host_no_access<T>::verify_RW_Buffer_mapping()
         err = FAILURE;
         return FAILURE;
     }
+    else if (dataPtr != nullptr)
+    {
+        log_error("Calling clEnqueueMapBuffer (CL_MAP_READ) on a memory object "
+                  "created with the CL_MEM_HOST_NO_ACCESS flag should fail "
+                  "and return NULL\n");
+        err = FAILURE;
+        return err;
+    }
     else
     {
         log_info("Test succeeded\n\n");
@@ -206,6 +214,15 @@ cl_int cBuffer_check_mem_host_no_access<T>::verify_RW_Buffer_mapping()
                   "not return CL_SUCCESS\n");
         err = FAILURE;
         return FAILURE;
+    }
+    else if (dataPtr != nullptr)
+    {
+        log_error(
+            "Calling clEnqueueMapBuffer (CL_MAP_WRITE) on a memory object "
+            "created with the CL_MEM_HOST_NO_ACCESS flag should fail "
+            "and return NULL\n");
+        err = FAILURE;
+        return err;
     }
     else
     {

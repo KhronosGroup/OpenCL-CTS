@@ -209,7 +209,7 @@ static std::string _err_msg(int err, int level)
 
 #if (defined(__ANDROID__) && __ANDROID_API__ < 23)                             \
     || ((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !_GNU_SOURCE)  \
-    || (defined(_GNU_SOURCE) && !defined(__GLIBC__))
+    || (defined(_GNU_SOURCE) && !defined(__GLIBC__) && !defined(__USE_GNU))
 
 // XSI version of strerror_r.
 #warning Not tested!
