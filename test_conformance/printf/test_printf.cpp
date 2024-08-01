@@ -722,10 +722,9 @@ int doTest(cl_command_queue queue, cl_context context,
                 if ((strcmp(genParams[testNum].dataType, type_name) == 0)
                     && !is_extension_available(device, ext_name))
                 {
-                    log_info("Skipping half because %s extension "
-                             "is not "
-                             "supported.\n",
-                             ext_name);
+                    log_info("Skipping %s because %s extension "
+                             "is not supported.\n",
+                             type_name, ext_name);
 
                     s_test_skip++;
                     s_test_cnt++;
