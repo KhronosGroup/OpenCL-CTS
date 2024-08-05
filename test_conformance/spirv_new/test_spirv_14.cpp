@@ -132,3 +132,108 @@ TEST_SPIRV_FUNC(spirv14_image_operand_zeroextend)
 
     return test_image_operand_helper(deviceID, context, queue, false);
 }
+
+static int test_loop_control_helper(cl_device_id deviceID, cl_context context,
+                                    cl_command_queue queue,
+                                    const char* filename)
+{
+    const int count = 10;
+    const int value = 5;
+
+    cl_int error = CL_SUCCESS;
+
+    clProgramWrapper prog;
+    std::string full_filename = "spv1.4/" + std::string(filename);
+    error = get_program_with_il(prog, deviceID, context, full_filename.c_str());
+    SPIRV_CHECK_ERROR(error, "Failed to compile spv program");
+
+    clKernelWrapper kernel = clCreateKernel(prog, "loop_control_test", &error);
+    SPIRV_CHECK_ERROR(error, "Failed to create spv kernel");
+
+    int h_dst = 0;
+    clMemWrapper dst = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
+                                      sizeof(h_dst), &h_dst, &error);
+    SPIRV_CHECK_ERROR(error, "Failed to create dst buffer");
+
+    error |= clSetKernelArg(kernel, 0, sizeof(dst), &dst);
+    error |= clSetKernelArg(kernel, 1, sizeof(count), &count);
+    error |= clSetKernelArg(kernel, 2, sizeof(value), &value);
+    SPIRV_CHECK_ERROR(error, "Failed to set kernel args");
+
+    size_t global = 1;
+    error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0,
+                                   NULL, NULL);
+    SPIRV_CHECK_ERROR(error, "Failed to enqueue kernel");
+
+    error = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0, sizeof(h_dst), &h_dst,
+                                0, NULL, NULL);
+    SPIRV_CHECK_ERROR(error, "Unable to read destination buffer");
+
+    if (h_dst != count * value)
+    {
+        log_error("Mismatch! Got: %i, Wanted: %i\n", h_dst, count * value);
+        return TEST_FAIL;
+    }
+
+    return TEST_PASS;
+}
+
+TEST_SPIRV_FUNC(spirv14_loop_control_miniterations)
+{
+    int check = check_spirv_14_support(deviceID);
+    if (check != TEST_PASS)
+    {
+        return check;
+    }
+
+    return test_loop_control_helper(deviceID, context, queue,
+                                    "loop_control_miniterations");
+}
+
+TEST_SPIRV_FUNC(spirv14_loop_control_maxiterations)
+{
+    int check = check_spirv_14_support(deviceID);
+    if (check != TEST_PASS)
+    {
+        return check;
+    }
+
+    return test_loop_control_helper(deviceID, context, queue,
+                                    "loop_control_maxiterations");
+}
+
+TEST_SPIRV_FUNC(spirv14_loop_control_iterationmultiple)
+{
+    int check = check_spirv_14_support(deviceID);
+    if (check != TEST_PASS)
+    {
+        return check;
+    }
+
+    return test_loop_control_helper(deviceID, context, queue,
+                                    "loop_control_iterationmultiple");
+}
+
+TEST_SPIRV_FUNC(spirv14_loop_control_peelcount)
+{
+    int check = check_spirv_14_support(deviceID);
+    if (check != TEST_PASS)
+    {
+        return check;
+    }
+
+    return test_loop_control_helper(deviceID, context, queue,
+                                    "loop_control_peelcount");
+}
+
+TEST_SPIRV_FUNC(spirv14_loop_control_partialcount)
+{
+    int check = check_spirv_14_support(deviceID);
+    if (check != TEST_PASS)
+    {
+        return check;
+    }
+
+    return test_loop_control_helper(deviceID, context, queue,
+                                    "loop_control_partialcount");
+}
