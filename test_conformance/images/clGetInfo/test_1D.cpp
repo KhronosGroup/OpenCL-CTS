@@ -39,15 +39,20 @@ int test_get_image_info_1D( cl_device_id device, cl_context context, cl_image_fo
     imageInfo.format = format;
     pixelSize = get_pixel_size( imageInfo.format );
 
-    int error = clGetDeviceInfo( device, CL_DEVICE_IMAGE2D_MAX_WIDTH, sizeof( maxWidth ), &maxWidth, NULL );
-    error |= clGetDeviceInfo( device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof( maxAllocSize ), &maxAllocSize, NULL );
-    error |= clGetDeviceInfo( device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof( memSize ), &memSize, NULL );
+    int error = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_WIDTH,
+                                sizeof(maxWidth), &maxWidth, NULL);
     test_error( error, "Unable to get max image 1D size from device" );
 
-  if (memSize > (cl_ulong)SIZE_MAX) {
-    memSize = (cl_ulong)SIZE_MAX;
-    maxAllocSize = (cl_ulong)SIZE_MAX;
-  }
+    /* Reduce the size used by the test by half */
+    maxAllocSize = get_device_info_max_mem_alloc_size(
+        device, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
+    memSize =
+        get_device_info_global_mem_size(device, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
+
+    if (memSize > (cl_ulong)SIZE_MAX)
+    {
+        memSize = (cl_ulong)SIZE_MAX;
+    }
 
     if( gTestSmallImages )
     {

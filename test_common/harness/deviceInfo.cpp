@@ -132,3 +132,42 @@ size_t get_max_param_size(cl_device_id device)
     }
     return ret;
 }
+
+static cl_ulong get_device_info_max_size(cl_device_id device,
+                                         cl_device_info info,
+                                         unsigned int divisor)
+{
+    cl_ulong max_size;
+
+    if (divisor == 0)
+    {
+        throw std::runtime_error("Allocation divisor should not be 0\n");
+    }
+
+    if (clGetDeviceInfo(device, info, sizeof(max_size), &max_size, NULL)
+        != CL_SUCCESS)
+    {
+        throw std::runtime_error("clGetDeviceInfo failed\n");
+    }
+    return max_size / divisor;
+}
+
+cl_ulong get_device_info_max_mem_alloc_size(cl_device_id device,
+                                            unsigned int divisor)
+{
+    return get_device_info_max_size(device, CL_DEVICE_MAX_MEM_ALLOC_SIZE,
+                                    divisor);
+}
+
+cl_ulong get_device_info_global_mem_size(cl_device_id device,
+                                         unsigned int divisor)
+{
+    return get_device_info_max_size(device, CL_DEVICE_GLOBAL_MEM_SIZE, divisor);
+}
+
+cl_ulong get_device_info_max_constant_buffer_size(cl_device_id device,
+                                                  unsigned int divisor)
+{
+    return get_device_info_max_size(device, CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE,
+                                    divisor);
+}
