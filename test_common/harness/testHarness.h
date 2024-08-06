@@ -25,22 +25,28 @@
 class Version {
 public:
     Version(): m_major(0), m_minor(0) {}
-    Version(int major, int minor): m_major(major), m_minor(minor) {}
-    bool operator>(const Version &rhs) const { return to_int() > rhs.to_int(); }
-    bool operator<(const Version &rhs) const { return to_int() < rhs.to_int(); }
+    Version(cl_uint major, cl_uint minor): m_major(major), m_minor(minor) {}
+    bool operator>(const Version &rhs) const
+    {
+        return to_uint() > rhs.to_uint();
+    }
+    bool operator<(const Version &rhs) const
+    {
+        return to_uint() < rhs.to_uint();
+    }
     bool operator<=(const Version &rhs) const
     {
-        return to_int() <= rhs.to_int();
+        return to_uint() <= rhs.to_uint();
     }
     bool operator>=(const Version &rhs) const
     {
-        return to_int() >= rhs.to_int();
+        return to_uint() >= rhs.to_uint();
     }
     bool operator==(const Version &rhs) const
     {
-        return to_int() == rhs.to_int();
+        return to_uint() == rhs.to_uint();
     }
-    int to_int() const { return m_major * 10 + m_minor; }
+    cl_uint to_uint() const { return m_major * 10 + m_minor; }
     std::string to_string() const
     {
         std::stringstream ss;
@@ -49,8 +55,8 @@ public:
     }
 
 private:
-    int m_major;
-    int m_minor;
+    cl_uint m_major;
+    cl_uint m_minor;
 };
 
 Version get_device_cl_version(cl_device_id device);

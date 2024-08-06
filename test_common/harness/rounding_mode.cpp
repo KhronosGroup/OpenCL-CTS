@@ -240,7 +240,7 @@ void UnFlushToZero(void *p)
 #if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)
     union {
         void *p;
-        int i;
+        unsigned int i;
     } u = { p };
     _mm_setcsr(u.i);
 #elif defined(__arm__) || defined(__aarch64__)

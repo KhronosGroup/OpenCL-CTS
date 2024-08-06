@@ -1,5 +1,9 @@
 set(MODULE_NAME BASIC)
 
+if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+    add_cxx_flag_if_supported(-Wno-narrowing)
+endif()
+
 set(${MODULE_NAME}_SOURCES
     main.cpp
     test_fpmath.cpp
