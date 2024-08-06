@@ -1064,9 +1064,9 @@ template <typename T> static bool isnan_fp(const T &v)
 }
 
 template <typename InType>
-void ZeroNanToIntCases(cl_uint count, void *mapped, Type outType)
+void ZeroNanToIntCases(cl_uint count, void *mapped, Type outType, void *input)
 {
-    InType *inp = (InType *)gIn;
+    InType *inp = (InType *)input;
     for (auto j = 0; j < count; j++)
     {
         if (isnan_fp<InType>(inp[j]))
@@ -1091,16 +1091,17 @@ void FixNanToFltConversions(InType *inp, OutType *outp, cl_uint count)
     }
 }
 
-void FixNanConversions(Type outType, Type inType, void *d, cl_uint count)
+void FixNanConversions(Type outType, Type inType, void *d, cl_uint count,
+                       void *inp)
 {
     if (outType != kfloat && outType != kdouble && outType != khalf)
     {
         if (inType == kfloat)
-            ZeroNanToIntCases<float>(count, d, outType);
+            ZeroNanToIntCases<float>(count, d, outType, inp);
         else if (inType == kdouble)
-            ZeroNanToIntCases<double>(count, d, outType);
+            ZeroNanToIntCases<double>(count, d, outType, inp);
         else if (inType == khalf)
-            ZeroNanToIntCases<cl_half>(count, d, outType);
+            ZeroNanToIntCases<cl_half>(count, d, outType, inp);
     }
     else if (inType == kfloat || inType == kdouble || inType == khalf)
     {
@@ -1184,7 +1185,7 @@ void CL_CALLBACK CalcReferenceValuesComplete(cl_event e, cl_int status,
 
     // Patch up NaNs conversions to integer to zero -- these can be converted to
     // any integer
-    FixNanConversions(outType, inType, mapped, count);
+    FixNanConversions(outType, inType, mapped, count, gIn);
 
     if (memcmp(mapped, gRef, count * gTypeSizes[outType]))
         info->result =
@@ -1346,7 +1347,7 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
 
     // Patch up NaNs conversions to integer to zero -- these can be converted to
     // any integer
-    FixNanConversions(outType, inType, d, count);
+    FixNanConversions(outType, inType, d, count, s);
 
     return CL_SUCCESS;
 }
