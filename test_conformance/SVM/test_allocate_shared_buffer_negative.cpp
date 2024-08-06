@@ -60,7 +60,7 @@ int test_svm_allocate_shared_buffer_negative(cl_device_id deviceID,
     // under construction...
     err = create_cl_objects(deviceID, NULL, &context, &program, &queues[0],
                             &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
-    if (err) return -1;
+    if (err) return err;
 
     size_t size = 1024;
 
@@ -98,5 +98,5 @@ int test_svm_allocate_shared_buffer_negative(cl_device_id deviceID,
         clSVMFree(context, pBufData1);
     }
 
-    return 0;
+    return TEST_PASS;
 }
