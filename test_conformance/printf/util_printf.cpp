@@ -23,6 +23,7 @@
 
 // Helpers for generating runtime reference results
 static void intRefBuilder(printDataGenParameters&, char*, const size_t);
+static void longRefBuilder(printDataGenParameters&, char*, const size_t);
 static void halfRefBuilder(printDataGenParameters&, char* rResult,
                            const size_t);
 static void floatRefBuilder(printDataGenParameters&, char* rResult, const size_t);
@@ -101,6 +102,73 @@ testCase testCaseInt = {
     intRefBuilder,
 
     kint
+
+};
+
+
+//==================================
+
+// long
+
+//==================================
+
+//------------------------------------------------------
+
+// [string] format  | [string] int-data representation |
+
+//------------------------------------------------------
+
+std::vector<printDataGenParameters> printLongGenParameters = {
+
+    //(Minimum) fifteen-wide,default(right)-justified
+
+    { { "%5d" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,left-justified
+
+    { { "%-15d" }, "-10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified,zero-filled
+
+    { { "%015d" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified,with sign
+
+    { { "%+15d" }, "-10000000000L" },
+
+    //(Minimum) fifteen-wide ,left-justified,with sign
+
+    { { "%-+15d" }, "10000000000L" },
+
+    //(Minimum) fifteen-digit(zero-filled in absent
+    // digits),default(right)-justified
+
+    { { "%.15i" }, "10000000000L" },
+
+    //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
+    // digits),default(right)-justified
+
+    { { "%-+16.15i" }, "-10000000000L" },
+
+};
+
+//-----------------------------------------------
+
+// test case for long                             |
+
+//-----------------------------------------------
+
+testCase testCaseLong = {
+
+    TYPE_LONG,
+
+    correctBufferLong,
+
+    printLongGenParameters,
+
+    longRefBuilder,
+
+    klong
 
 };
 
@@ -1134,11 +1202,11 @@ testCase testCaseMixedFormat = { TYPE_MIXED_FORMAT_RANDOM,
 //-------------------------------------------------------------------------------
 
 std::vector<testCase*> allTestCase = {
-    &testCaseInt,       &testCaseHalf,         &testCaseHalfLimits,
-    &testCaseFloat,     &testCaseFloatLimits,  &testCaseOctal,
-    &testCaseUnsigned,  &testCaseHexadecimal,  &testCaseChar,
-    &testCaseString,    &testCaseFormatString, &testCaseVector,
-    &testCaseAddrSpace, &testCaseMixedFormat
+    &testCaseInt,        &testCaseLong,      &testCaseHalf,
+    &testCaseHalfLimits, &testCaseFloat,     &testCaseFloatLimits,
+    &testCaseOctal,      &testCaseUnsigned,  &testCaseHexadecimal,
+    &testCaseChar,       &testCaseString,    &testCaseFormatString,
+    &testCaseVector,     &testCaseAddrSpace, &testCaseMixedFormat
 };
 
 //-----------------------------------------
@@ -1253,6 +1321,13 @@ static void intRefBuilder(printDataGenParameters& params, char* refResult, const
 {
     snprintf(refResult, refSize, params.genericFormats.front().c_str(),
              atoi(params.dataRepresentation));
+}
+
+static void longRefBuilder(printDataGenParameters& params, char* refResult,
+                           const size_t refSize)
+{
+    snprintf(refResult, refSize, params.genericFormats.front().c_str(),
+             atoll(params.dataRepresentation));
 }
 
 static void halfRefBuilder(printDataGenParameters& params, char* refResult,
