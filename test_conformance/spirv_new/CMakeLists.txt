@@ -4,7 +4,6 @@ set(${MODULE_NAME}_SOURCES
   main.cpp
   test_basic_versions.cpp
   test_cl_khr_expect_assume.cpp
-  test_cl_khr_spirv_no_integer_wrap_decoration.cpp
   test_decorate.cpp
   test_get_program_il.cpp
   test_linkage.cpp
@@ -27,6 +26,7 @@ set(${MODULE_NAME}_SOURCES
   test_op_vector_extract.cpp
   test_op_vector_insert.cpp
   test_op_vector_times_scalar.cpp
+  test_no_integer_wrap_decoration.cpp
 )
 
 set(TEST_HARNESS_SOURCES
