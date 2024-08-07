@@ -15,31 +15,12 @@
 //
 
 #include "testBase.h"
+#include "spirvInfo.hpp"
 #include "types.hpp"
 
 #include <string>
 
 extern bool gVersionSkip;
-
-static int check_spirv_14_support(cl_device_id deviceID)
-{
-    const char* cVersionString = "SPIR-V 1.4";
-
-    std::string ilVersions = get_device_il_version_string(deviceID);
-
-    if (gVersionSkip)
-    {
-        log_info("    Skipping version check for %s.\n", cVersionString);
-    }
-    else if (ilVersions.find(cVersionString) == std::string::npos)
-    {
-        log_info("    Version %s is not supported; skipping test.\n",
-                 cVersionString);
-        return TEST_SKIPPED_ITSELF;
-    }
-
-    return TEST_PASS;
-}
 
 static int test_image_operand_helper(cl_device_id deviceID, cl_context context,
                                      cl_command_queue queue, bool signExtend)
@@ -113,23 +94,21 @@ static int test_image_operand_helper(cl_device_id deviceID, cl_context context,
 
 TEST_SPIRV_FUNC(spirv14_image_operand_signextend)
 {
-    int check = check_spirv_14_support(deviceID);
-    if (check != TEST_PASS)
+    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
-        return check;
+        log_info("SPIR-V 1.4 not supported; skipping tests.\n");
+        return TEST_SKIPPED_ITSELF;
     }
-
     return test_image_operand_helper(deviceID, context, queue, true);
 }
 
 TEST_SPIRV_FUNC(spirv14_image_operand_zeroextend)
 {
-    int check = check_spirv_14_support(deviceID);
-    if (check != TEST_PASS)
+    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
-        return check;
+        log_info("SPIR-V 1.4 not supported; skipping tests.\n");
+        return TEST_SKIPPED_ITSELF;
     }
-
     return test_image_operand_helper(deviceID, context, queue, false);
 }
 
@@ -180,60 +159,55 @@ static int test_loop_control_helper(cl_device_id deviceID, cl_context context,
 
 TEST_SPIRV_FUNC(spirv14_loop_control_miniterations)
 {
-    int check = check_spirv_14_support(deviceID);
-    if (check != TEST_PASS)
+    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
-        return check;
+        log_info("SPIR-V 1.4 not supported; skipping tests.\n");
+        return TEST_SKIPPED_ITSELF;
     }
-
     return test_loop_control_helper(deviceID, context, queue,
                                     "loop_control_miniterations");
 }
 
 TEST_SPIRV_FUNC(spirv14_loop_control_maxiterations)
 {
-    int check = check_spirv_14_support(deviceID);
-    if (check != TEST_PASS)
+    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
-        return check;
+        log_info("SPIR-V 1.4 not supported; skipping tests.\n");
+        return TEST_SKIPPED_ITSELF;
     }
-
     return test_loop_control_helper(deviceID, context, queue,
                                     "loop_control_maxiterations");
 }
 
 TEST_SPIRV_FUNC(spirv14_loop_control_iterationmultiple)
 {
-    int check = check_spirv_14_support(deviceID);
-    if (check != TEST_PASS)
+    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
-        return check;
+        log_info("SPIR-V 1.4 not supported; skipping tests.\n");
+        return TEST_SKIPPED_ITSELF;
     }
-
     return test_loop_control_helper(deviceID, context, queue,
                                     "loop_control_iterationmultiple");
 }
 
 TEST_SPIRV_FUNC(spirv14_loop_control_peelcount)
 {
-    int check = check_spirv_14_support(deviceID);
-    if (check != TEST_PASS)
+    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
-        return check;
+        log_info("SPIR-V 1.4 not supported; skipping tests.\n");
+        return TEST_SKIPPED_ITSELF;
     }
-
     return test_loop_control_helper(deviceID, context, queue,
                                     "loop_control_peelcount");
 }
 
 TEST_SPIRV_FUNC(spirv14_loop_control_partialcount)
 {
-    int check = check_spirv_14_support(deviceID);
-    if (check != TEST_PASS)
+    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
-        return check;
+        log_info("SPIR-V 1.4 not supported; skipping tests.\n");
+        return TEST_SKIPPED_ITSELF;
     }
-
     return test_loop_control_helper(deviceID, context, queue,
                                     "loop_control_partialcount");
 }
