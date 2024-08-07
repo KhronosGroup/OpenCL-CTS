@@ -201,7 +201,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     fptr func = job->f->func;
     int ftz = job->ftz;
     bool relaxedMode = job->relaxedMode;
-    float ulps = getAllowedUlpError(job->f, relaxedMode);
+    float ulps = getAllowedUlpError(job->f, kfloat, relaxedMode);
     MTdata d = tinfo->d;
     cl_int error;
     std::vector<bool> overflow(buffer_elements, false);
