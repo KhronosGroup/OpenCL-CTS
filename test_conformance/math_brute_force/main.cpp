@@ -1043,12 +1043,13 @@ int IsTininessDetectedBeforeRounding(void)
 {
     int error;
     const char *kernelSource =
-        R"(__kernel void IsTininessDetectedBeforeRounding( __global float *out )
+        R"(__kernel void IsTininessDetectedBeforeRounding( __global float *out, float a, float b )
         {
-           volatile float a = 0x1.000002p-126f;
-           volatile float b = 0x1.fffffcp-1f;
            out[0] = a * b; // product is 0x1.fffffffffff8p-127
         })";
+
+    float a = 0x1.000002p-126f;
+    float b = 0x1.fffffcp-1f;
 
     clProgramWrapper query;
     clKernelWrapper kernel;
@@ -1066,6 +1067,22 @@ int IsTininessDetectedBeforeRounding(void)
     if ((error =
              clSetKernelArg(kernel, 0, sizeof(gOutBuffer[gMinVectorSizeIndex]),
                             &gOutBuffer[gMinVectorSizeIndex])))
+    {
+        vlog_error("Error: Unable to set kernel arg to detect how tininess is "
+                   "detected  for the device. Err = %d",
+                   error);
+        return error;
+    }
+
+    if ((error = clSetKernelArg(kernel, 1, sizeof(a), &a)))
+    {
+        vlog_error("Error: Unable to set kernel arg to detect how tininess is "
+                   "detected  for the device. Err = %d",
+                   error);
+        return error;
+    }
+
+    if ((error = clSetKernelArg(kernel, 2, sizeof(b), &b)))
     {
         vlog_error("Error: Unable to set kernel arg to detect how tininess is "
                    "detected  for the device. Err = %d",
