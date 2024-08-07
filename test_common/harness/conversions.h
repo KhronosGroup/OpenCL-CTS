@@ -25,6 +25,8 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include <CL/cl_half.h>
+
 /* Note: the next three all have to match in size and order!! */
 
 enum ExplicitTypes
@@ -71,6 +73,7 @@ extern const char *get_explicit_type_name(ExplicitType type);
 extern void convert_explicit_value(void *inRaw, void *outRaw,
                                    ExplicitType inType, bool saturate,
                                    RoundingType roundType,
+                                   cl_half_rounding_mode halfRoundingMode,
                                    ExplicitType outType);
 
 extern void generate_random_data(ExplicitType type, size_t count, MTdata d,

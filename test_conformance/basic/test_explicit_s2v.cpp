@@ -24,9 +24,13 @@ using std::isnan;
 #include <sys/stat.h>
 #include <vector>
 
+#include <CL/cl_half.h>
+
 #include "procs.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
+
+extern cl_half_rounding_mode halfRoundingMode;
 
 namespace {
 
@@ -123,53 +127,60 @@ int test_explicit_s2v_function(cl_context context, cl_command_queue queue,
     unsigned char *inPtr, *outPtr;
     size_t paramSize, destTypeSize;
 
-    paramSize = get_explicit_type_size( srcType );
-    destTypeSize = get_explicit_type_size( destType );
+    paramSize = get_explicit_type_size(srcType);
+    destTypeSize = get_explicit_type_size(destType);
 
     size_t destStride = destTypeSize * vecSize;
     std::vector<char> outData(destStride * count);
 
     streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
                                 paramSize * count, inputData, &error);
-    test_error( error, "clCreateBuffer failed");
+    test_error(error, "clCreateBuffer failed");
     streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, destStride * count,
                                 NULL, &error);
-    test_error( error, "clCreateBuffer failed");
+    test_error(error, "clCreateBuffer failed");
 
     /* Set the arguments */
-    error = clSetKernelArg(kernel, 0, sizeof( streams[0] ), &streams[0] );
-    test_error( error, "Unable to set indexed kernel arguments" );
-    error = clSetKernelArg(kernel, 1, sizeof( streams[1] ), &streams[1] );
-    test_error( error, "Unable to set indexed kernel arguments" );
+    error = clSetKernelArg(kernel, 0, sizeof(streams[0]), &streams[0]);
+    test_error(error, "Unable to set indexed kernel arguments");
+    error = clSetKernelArg(kernel, 1, sizeof(streams[1]), &streams[1]);
+    test_error(error, "Unable to set indexed kernel arguments");
 
     /* Run the kernel */
     threadSize[0] = count;
 
-    error = get_max_common_work_group_size( context, kernel, threadSize[0], &groupSize[0] );
-    test_error( error, "Unable to get work group size to use" );
+    error = get_max_common_work_group_size(context, kernel, threadSize[0],
+                                           &groupSize[0]);
+    test_error(error, "Unable to get work group size to use");
 
-    error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threadSize, groupSize, 0, NULL, NULL );
-    test_error( error, "Unable to execute test kernel" );
+    error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threadSize,
+                                   groupSize, 0, NULL, NULL);
+    test_error(error, "Unable to execute test kernel");
 
-    /* Now verify the results. Each value should have been duplicated four times, and we should be able to just
+    /* Now verify the results. Each value should have been duplicated four
+     times, and we should be able to just
      do a memcpy instead of relying on the actual type of data */
     error =
         clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, destStride * count,
                             outData.data(), 0, NULL, NULL);
-    test_error( error, "Unable to read output values!" );
+    test_error(error, "Unable to read output values!");
 
     inPtr = (unsigned char *)inputData;
     outPtr = (unsigned char *)outData.data();
 
-    for( i = 0; i < count; i++ )
+    for (i = 0; i < count; i++)
     {
-        /* Convert the input data element to our output data type to compare against */
-        convert_explicit_value( (void *)inPtr, (void *)convertedData, srcType, false, kDefaultRoundingType, destType );
+        /* Convert the input data element to our output data type to compare
+         * against */
+        convert_explicit_value((void *)inPtr, (void *)convertedData, srcType,
+                               false, kDefaultRoundingType, halfRoundingMode,
+                               destType);
 
         /* Now compare every element of the vector */
-        for( s = 0; s < vecSize; s++ )
+        for (s = 0; s < vecSize; s++)
         {
-            if( memcmp( convertedData, outPtr + destTypeSize * s, destTypeSize ) != 0 )
+            if (memcmp(convertedData, outPtr + destTypeSize * s, destTypeSize)
+                != 0)
             {
                 bool isSrcNaN =
                     (((srcType == kHalf)
@@ -194,9 +205,14 @@ int test_explicit_s2v_function(cl_context context, cl_command_queue queue,
                 }
 
                 unsigned int *p = (unsigned int *)outPtr;
-                log_error( "ERROR: Output value %d:%d does not validate for size %d:%d!\n", i, s, vecSize, (int)destTypeSize );
-                log_error( "       Input:   0x%0*x\n", (int)( paramSize * 2 ), *(unsigned int *)inPtr & ( 0xffffffff >> ( 32 - paramSize * 8 ) ) );
-                log_error( "       Actual:  0x%08x 0x%08x 0x%08x 0x%08x\n", p[ 0 ], p[ 1 ], p[ 2 ], p[ 3 ] );
+                log_error("ERROR: Output value %d:%d does not validate for "
+                          "size %d:%d!\n",
+                          i, s, vecSize, (int)destTypeSize);
+                log_error("       Input:   0x%0*x\n", (int)(paramSize * 2),
+                          *(unsigned int *)inPtr
+                              & (0xffffffff >> (32 - paramSize * 8)));
+                log_error("       Actual:  0x%08x 0x%08x 0x%08x 0x%08x\n", p[0],
+                          p[1], p[2], p[3]);
                 return -1;
             }
         }
