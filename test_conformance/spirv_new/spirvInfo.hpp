@@ -22,7 +22,8 @@
 
 extern bool gVersionSkip;
 
-static bool is_spirv_version_supported(cl_device_id deviceID, const char* version)
+static bool is_spirv_version_supported(cl_device_id deviceID,
+                                       const char* version)
 {
     std::string ilVersions = get_device_il_version_string(deviceID);
 

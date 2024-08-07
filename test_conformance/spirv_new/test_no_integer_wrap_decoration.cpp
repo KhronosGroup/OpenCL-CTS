@@ -23,14 +23,11 @@
 #include <type_traits>
 
 
-template<typename T>
-int test_no_integer_wrap_decoration(cl_device_id deviceID,
-               cl_context context,
-               cl_command_queue queue,
-               bool test_extension,
-               const char *spvName,
-               const char *funcName,
-               const char *Tname)
+template <typename T>
+int test_no_integer_wrap_decoration(cl_device_id deviceID, cl_context context,
+                                    cl_command_queue queue, bool test_extension,
+                                    const char *spvName, const char *funcName,
+                                    const char *Tname)
 {
 
     cl_int err = CL_SUCCESS;
@@ -39,20 +36,28 @@ int test_no_integer_wrap_decoration(cl_device_id deviceID,
     std::vector<T> h_rhs(num);
     std::vector<T> expected_results(num);
     std::vector<T> h_ref(num);
-    if (test_extension) {
-        if (!is_extension_available(deviceID, "cl_khr_spirv_no_integer_wrap_decoration")) {
-            log_info("Extension cl_khr_spirv_no_integer_wrap_decoration not supported; skipping tests.\n");
+    if (test_extension)
+    {
+        if (!is_extension_available(deviceID,
+                                    "cl_khr_spirv_no_integer_wrap_decoration"))
+        {
+            log_info("Extension cl_khr_spirv_no_integer_wrap_decoration not "
+                     "supported; skipping tests.\n");
             return TEST_SKIPPED_ITSELF;
         }
-    } else {
-        if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4")) {
+    }
+    else
+    {
+        if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+        {
             log_info("SPIR-V 1.4 not supported; skipping tests.\n");
             return TEST_SKIPPED_ITSELF;
         }
     }
 
     /*Test with some values that do not cause overflow*/
-    if (std::is_signed<T>::value == true) {
+    if (std::is_signed<T>::value == true)
+    {
         h_lhs.push_back((T)-25000);
         h_lhs.push_back((T)-3333);
         h_lhs.push_back((T)-7);
@@ -63,7 +68,9 @@ int test_no_integer_wrap_decoration(cl_device_id deviceID,
         h_lhs.push_back(2048);
         h_lhs.push_back(4094);
         h_lhs.push_back(10000);
-    } else {
+    }
+    else
+    {
         h_lhs.push_back(0);
         h_lhs.push_back(1);
         h_lhs.push_back(3);
@@ -88,16 +95,20 @@ int test_no_integer_wrap_decoration(cl_device_id deviceID,
     h_rhs.push_back(9);
     size_t bytes = num * sizeof(T);
 
-    clMemWrapper lhs = clCreateBuffer(context, CL_MEM_READ_ONLY, bytes, NULL, &err);
+    clMemWrapper lhs =
+        clCreateBuffer(context, CL_MEM_READ_ONLY, bytes, NULL, &err);
     SPIRV_CHECK_ERROR(err, "Failed to create lhs buffer");
 
-    err = clEnqueueWriteBuffer(queue, lhs, CL_TRUE, 0, bytes, &h_lhs[0], 0, NULL, NULL);
+    err = clEnqueueWriteBuffer(queue, lhs, CL_TRUE, 0, bytes, &h_lhs[0], 0,
+                               NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to copy to lhs buffer");
 
-    clMemWrapper rhs = clCreateBuffer(context, CL_MEM_READ_ONLY, bytes, NULL, &err);
+    clMemWrapper rhs =
+        clCreateBuffer(context, CL_MEM_READ_ONLY, bytes, NULL, &err);
     SPIRV_CHECK_ERROR(err, "Failed to create rhs buffer");
 
-    err = clEnqueueWriteBuffer(queue, rhs, CL_TRUE, 0, bytes, &h_rhs[0], 0, NULL, NULL);
+    err = clEnqueueWriteBuffer(queue, rhs, CL_TRUE, 0, bytes, &h_rhs[0], 0,
+                               NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to copy to rhs buffer");
 
     std::string kernelStr;
@@ -110,8 +121,8 @@ int test_no_integer_wrap_decoration(cl_device_id deviceID,
         kernelStream << "#define spirv_fshiftleft(a, b) (a) << (b)        \n";
         kernelStream << "#define spirv_fnegate(a, b)  (-a)                \n";
 
-        kernelStream << "#define T " << Tname                         << "\n";
-        kernelStream << "#define FUNC spirv_" << funcName             << "\n";
+        kernelStream << "#define T " << Tname << "\n";
+        kernelStream << "#define FUNC spirv_" << funcName << "\n";
         kernelStream << "__kernel void fmath_cl(__global T *out,          \n";
         kernelStream << "const __global T *lhs, const __global T *rhs)    \n";
         kernelStream << "{                                                \n";
@@ -123,16 +134,26 @@ int test_no_integer_wrap_decoration(cl_device_id deviceID,
 
     const char *kernelBuf = kernelStr.c_str();
 
-    for (int i = 0; i < num; i++) {
-        if (std::string(funcName) == std::string("fadd")) {
+    for (int i = 0; i < num; i++)
+    {
+        if (std::string(funcName) == std::string("fadd"))
+        {
             expected_results[i] = h_lhs[i] + h_rhs[i];
-        } else if (std::string(funcName) == std::string("fsub")) {
+        }
+        else if (std::string(funcName) == std::string("fsub"))
+        {
             expected_results[i] = h_lhs[i] - h_rhs[i];
-        } else if (std::string(funcName) == std::string("fmul")) {
+        }
+        else if (std::string(funcName) == std::string("fmul"))
+        {
             expected_results[i] = h_lhs[i] * h_rhs[i];
-        } else if (std::string(funcName) == std::string("fshiftleft")) {
+        }
+        else if (std::string(funcName) == std::string("fshiftleft"))
+        {
             expected_results[i] = h_lhs[i] << h_rhs[i];
-        } else if (std::string(funcName) == std::string("fnegate")) {
+        }
+        else if (std::string(funcName) == std::string("fnegate"))
+        {
             expected_results[i] = 0 - h_lhs[i];
         }
     }
@@ -145,7 +166,8 @@ int test_no_integer_wrap_decoration(cl_device_id deviceID,
                                           &kernelBuf, "fmath_cl");
         SPIRV_CHECK_ERROR(err, "Failed to create cl kernel");
 
-        clMemWrapper ref = clCreateBuffer(context, CL_MEM_READ_WRITE, bytes, NULL, &err);
+        clMemWrapper ref =
+            clCreateBuffer(context, CL_MEM_READ_WRITE, bytes, NULL, &err);
         SPIRV_CHECK_ERROR(err, "Failed to create ref buffer");
 
         err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &ref);
@@ -158,16 +180,22 @@ int test_no_integer_wrap_decoration(cl_device_id deviceID,
         SPIRV_CHECK_ERROR(err, "Failed to set arg 2");
 
         size_t global = num;
-        err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL, NULL);
+        err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0,
+                                     NULL, NULL);
         SPIRV_CHECK_ERROR(err, "Failed to enqueue cl kernel");
 
-        err = clEnqueueReadBuffer(queue, ref, CL_TRUE, 0, bytes, &h_ref[0], 0, NULL, NULL);
+        err = clEnqueueReadBuffer(queue, ref, CL_TRUE, 0, bytes, &h_ref[0], 0,
+                                  NULL, NULL);
         SPIRV_CHECK_ERROR(err, "Failed to read from ref");
     }
 
-    for (int i = 0; i < num; i++) {
-        if (expected_results[i] != h_ref[i]) {
-            log_error("Values do not match at index %d expected = %d got = %d\n", i, expected_results[i], h_ref[i]);
+    for (int i = 0; i < num; i++)
+    {
+        if (expected_results[i] != h_ref[i])
+        {
+            log_error(
+                "Values do not match at index %d expected = %d got = %d\n", i,
+                expected_results[i], h_ref[i]);
             return -1;
         }
     }
@@ -179,7 +207,8 @@ int test_no_integer_wrap_decoration(cl_device_id deviceID,
     clKernelWrapper kernel = clCreateKernel(prog, "fmath_cl", &err);
     SPIRV_CHECK_ERROR(err, "Failed to create spv kernel");
 
-    clMemWrapper res = clCreateBuffer(context, CL_MEM_READ_WRITE, bytes, NULL, &err);
+    clMemWrapper res =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, bytes, NULL, &err);
     SPIRV_CHECK_ERROR(err, "Failed to create res buffer");
 
     err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &res);
@@ -192,16 +221,22 @@ int test_no_integer_wrap_decoration(cl_device_id deviceID,
     SPIRV_CHECK_ERROR(err, "Failed to set arg 2");
 
     size_t global = num;
-    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL, NULL);
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0, NULL,
+                                 NULL);
     SPIRV_CHECK_ERROR(err, "Failed to enqueue cl kernel");
 
     std::vector<T> h_res(num);
-    err = clEnqueueReadBuffer(queue, res, CL_TRUE, 0, bytes, &h_res[0], 0, NULL, NULL);
+    err = clEnqueueReadBuffer(queue, res, CL_TRUE, 0, bytes, &h_res[0], 0, NULL,
+                              NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read from ref");
 
-    for (int i = 0; i < num; i++) {
-        if (expected_results[i] != h_res[i]) {
-            log_error("Values do not match at location %d expected = %d got = %d\n", i, expected_results[i], h_res[i]);
+    for (int i = 0; i < num; i++)
+    {
+        if (expected_results[i] != h_res[i])
+        {
+            log_error(
+                "Values do not match at location %d expected = %d got = %d\n",
+                i, expected_results[i], h_res[i]);
             return -1;
         }
     }
@@ -209,14 +244,14 @@ int test_no_integer_wrap_decoration(cl_device_id deviceID,
     return TEST_PASS;
 }
 
-#define TEST_FMATH_FUNC_KHR(TYPE, FUNC)                                                          \
-    TEST_SPIRV_FUNC(ext_cl_khr_spirv_no_integer_wrap_decoration_##FUNC##_##TYPE)                 \
-    {                                                                                            \
-        return test_no_integer_wrap_decoration<cl_##TYPE>(deviceID, context, queue, true,        \
-                          "ext_cl_khr_spirv_no_integer_wrap_decoration_"#FUNC"_"#TYPE,           \
-                          #FUNC,                                                                 \
-                          #TYPE                                                                  \
-                          );                                                                     \
+#define TEST_FMATH_FUNC_KHR(TYPE, FUNC)                                        \
+    TEST_SPIRV_FUNC(                                                           \
+        ext_cl_khr_spirv_no_integer_wrap_decoration_##FUNC##_##TYPE)           \
+    {                                                                          \
+        return test_no_integer_wrap_decoration<cl_##TYPE>(                     \
+            deviceID, context, queue, true,                                    \
+            "ext_cl_khr_spirv_no_integer_wrap_decoration_" #FUNC "_" #TYPE,    \
+            #FUNC, #TYPE);                                                     \
     }
 
 TEST_FMATH_FUNC_KHR(int, fadd)
@@ -229,14 +264,13 @@ TEST_FMATH_FUNC_KHR(uint, fsub)
 TEST_FMATH_FUNC_KHR(uint, fmul)
 TEST_FMATH_FUNC_KHR(uint, fshiftleft)
 
-#define TEST_FMATH_FUNC_14(TYPE, FUNC)                                                           \
-    TEST_SPIRV_FUNC(spirv14_no_integer_wrap_decoration_##FUNC##_##TYPE)                          \
-    {                                                                                            \
-        return test_no_integer_wrap_decoration<cl_##TYPE>(deviceID, context, queue, false,       \
-                          "spv1.4/no_integer_wrap_decoration_"#FUNC"_"#TYPE,                     \
-                          #FUNC,                                                                 \
-                          #TYPE                                                                  \
-                          );                                                                     \
+#define TEST_FMATH_FUNC_14(TYPE, FUNC)                                         \
+    TEST_SPIRV_FUNC(spirv14_no_integer_wrap_decoration_##FUNC##_##TYPE)        \
+    {                                                                          \
+        return test_no_integer_wrap_decoration<cl_##TYPE>(                     \
+            deviceID, context, queue, false,                                   \
+            "spv1.4/no_integer_wrap_decoration_" #FUNC "_" #TYPE, #FUNC,       \
+            #TYPE);                                                            \
     }
 
 TEST_FMATH_FUNC_14(int, fadd)
