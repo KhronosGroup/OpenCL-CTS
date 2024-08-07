@@ -16,12 +16,14 @@
 #include "common.h"
 
 cl_channel_type floatFormats[] = {
-    CL_UNORM_SHORT_565, CL_UNORM_SHORT_555, CL_UNORM_INT_101010,
+    CL_UNORM_SHORT_565,    CL_UNORM_SHORT_555, CL_UNORM_INT_101010,
+    CL_UNORM_INT_101010_2,
 #ifdef CL_SFIXED14_APPLE
     CL_SFIXED14_APPLE,
 #endif
-    CL_UNORM_INT8,      CL_SNORM_INT8,      CL_UNORM_INT16,      CL_SNORM_INT16,
-    CL_FLOAT,           CL_HALF_FLOAT,      (cl_channel_type)-1,
+    CL_UNORM_INT8,         CL_SNORM_INT8,      CL_UNORM_INT16,
+    CL_SNORM_INT16,        CL_FLOAT,           CL_HALF_FLOAT,
+    (cl_channel_type)-1,
 };
 
 cl_channel_type intFormats[] = {
