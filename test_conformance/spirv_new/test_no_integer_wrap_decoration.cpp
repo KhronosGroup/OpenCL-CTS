@@ -15,6 +15,7 @@
 //
 
 #include "testBase.h"
+#include "spirvInfo.hpp"
 #include "types.hpp"
 
 #include <sstream>
@@ -23,9 +24,10 @@
 
 
 template<typename T>
-int test_ext_cl_khr_spirv_no_integer_wrap_decoration(cl_device_id deviceID,
+int test_no_integer_wrap_decoration(cl_device_id deviceID,
                cl_context context,
                cl_command_queue queue,
+               bool test_extension,
                const char *spvName,
                const char *funcName,
                const char *Tname)
@@ -37,9 +39,16 @@ int test_ext_cl_khr_spirv_no_integer_wrap_decoration(cl_device_id deviceID,
     std::vector<T> h_rhs(num);
     std::vector<T> expected_results(num);
     std::vector<T> h_ref(num);
-    if (!is_extension_available(deviceID, "cl_khr_spirv_no_integer_wrap_decoration")) {
-        log_info("Extension cl_khr_spirv_no_integer_wrap_decoration not supported; skipping tests.\n");
-        return 0;
+    if (test_extension) {
+        if (!is_extension_available(deviceID, "cl_khr_spirv_no_integer_wrap_decoration")) {
+            log_info("Extension cl_khr_spirv_no_integer_wrap_decoration not supported; skipping tests.\n");
+            return TEST_SKIPPED_ITSELF;
+        }
+    } else {
+        if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4")) {
+            log_info("SPIR-V 1.4 not supported; skipping tests.\n");
+            return TEST_SKIPPED_ITSELF;
+        }
     }
 
     /*Test with some values that do not cause overflow*/
@@ -197,25 +206,45 @@ int test_ext_cl_khr_spirv_no_integer_wrap_decoration(cl_device_id deviceID,
         }
     }
 
-    return 0;
+    return TEST_PASS;
 }
 
-#define TEST_FMATH_FUNC(TYPE, FUNC)                                                              \
+#define TEST_FMATH_FUNC_KHR(TYPE, FUNC)                                                          \
     TEST_SPIRV_FUNC(ext_cl_khr_spirv_no_integer_wrap_decoration_##FUNC##_##TYPE)                 \
     {                                                                                            \
-        return test_ext_cl_khr_spirv_no_integer_wrap_decoration<cl_##TYPE>(deviceID, context, queue, \
+        return test_no_integer_wrap_decoration<cl_##TYPE>(deviceID, context, queue, true,        \
                           "ext_cl_khr_spirv_no_integer_wrap_decoration_"#FUNC"_"#TYPE,           \
                           #FUNC,                                                                 \
                           #TYPE                                                                  \
                           );                                                                     \
     }
 
-TEST_FMATH_FUNC(int, fadd)
-TEST_FMATH_FUNC(int, fsub)
-TEST_FMATH_FUNC(int, fmul)
-TEST_FMATH_FUNC(int, fshiftleft)
-TEST_FMATH_FUNC(int, fnegate)
-TEST_FMATH_FUNC(uint, fadd)
-TEST_FMATH_FUNC(uint, fsub)
-TEST_FMATH_FUNC(uint, fmul)
-TEST_FMATH_FUNC(uint, fshiftleft)
+TEST_FMATH_FUNC_KHR(int, fadd)
+TEST_FMATH_FUNC_KHR(int, fsub)
+TEST_FMATH_FUNC_KHR(int, fmul)
+TEST_FMATH_FUNC_KHR(int, fshiftleft)
+TEST_FMATH_FUNC_KHR(int, fnegate)
+TEST_FMATH_FUNC_KHR(uint, fadd)
+TEST_FMATH_FUNC_KHR(uint, fsub)
+TEST_FMATH_FUNC_KHR(uint, fmul)
+TEST_FMATH_FUNC_KHR(uint, fshiftleft)
+
+#define TEST_FMATH_FUNC_14(TYPE, FUNC)                                                           \
+    TEST_SPIRV_FUNC(spirv14_no_integer_wrap_decoration_##FUNC##_##TYPE)                          \
+    {                                                                                            \
+        return test_no_integer_wrap_decoration<cl_##TYPE>(deviceID, context, queue, false,       \
+                          "spv1.4/no_integer_wrap_decoration_"#FUNC"_"#TYPE,                     \
+                          #FUNC,                                                                 \
+                          #TYPE                                                                  \
+                          );                                                                     \
+    }
+
+TEST_FMATH_FUNC_14(int, fadd)
+TEST_FMATH_FUNC_14(int, fsub)
+TEST_FMATH_FUNC_14(int, fmul)
+TEST_FMATH_FUNC_14(int, fshiftleft)
+TEST_FMATH_FUNC_14(int, fnegate)
+TEST_FMATH_FUNC_14(uint, fadd)
+TEST_FMATH_FUNC_14(uint, fsub)
+TEST_FMATH_FUNC_14(uint, fmul)
+TEST_FMATH_FUNC_14(uint, fshiftleft)
