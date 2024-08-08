@@ -496,8 +496,8 @@ size_t compare_scanlines(const image_descriptor *imageInfo, const char *aPtr,
             break;
 
             case CL_SNORM_INT16: {
-                cl_short aPixel = *(cl_short *)aPtr;
-                cl_short bPixel = *(cl_short *)bPtr;
+                cl_ushort aPixel = *(cl_ushort *)aPtr;
+                cl_ushort bPixel = *(cl_ushort *)bPtr;
                 // -1.0 is defined as 0x8000 and 0x8001
                 if ((aPixel != bPixel) && ((aPixel | bPixel) != 0x8001))
                 {
