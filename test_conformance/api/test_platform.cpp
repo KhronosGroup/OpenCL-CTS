@@ -313,7 +313,7 @@ int test_get_platform_ids(cl_device_id deviceID, cl_context context, cl_command_
     test_error(err, "clGetDeviceIDs failed.\n");
     if (num_devices != 1)
     {
-        log_error("clGetDeviceIDs must return exacly one device\n");
+        log_error("clGetDeviceIDs must return exactly one device\n");
         total_errors++;
     }
   }

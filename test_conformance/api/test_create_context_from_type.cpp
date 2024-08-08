@@ -166,13 +166,7 @@ int test_create_context_from_type_device_type_all(cl_device_id deviceID,
                              sizeof(cl_uint), &num_devices, nullptr);
     test_error(error, "clGetContextInfo CL_CONTEXT_NUM_DEVICES failed\n");
 
-    std::vector<cl_device_id> devices(num_devices);
-    error = clGetContextInfo(context_to_test, CL_CONTEXT_DEVICES,
-                             num_devices * sizeof(cl_device_id), devices.data(),
-                             nullptr);
-    test_error(error, "clGetContextInfo CL_CONTEXT_DEVICES failed\n");
-
-    test_assert_error(devices.size() >= 1,
+    test_assert_error(num_devices >= 1,
                       "Context must contain at least one device\n");
 
     return 0;
@@ -224,6 +218,23 @@ int test_create_context_from_type_device_type_default(cl_device_id deviceID,
 
     test_assert_error(devices.size() == 1,
                       "Context must contain exactly one device\n");
+
+    cl_uint num_platform_devices;
+
+    error = clGetDeviceIDs(platform, CL_DEVICE_TYPE_DEFAULT, 0, NULL,
+                           &num_platform_devices);
+    test_error(error, "clGetDeviceIDs failed.\n");
+    test_assert_error(num_platform_devices == 1,
+                      "clGetDeviceIDs must return exactly one device\n");
+
+    std::vector<cl_device_id> platform_devices(num_platform_devices);
+    error = clGetDeviceIDs(platform, CL_DEVICE_TYPE_DEFAULT,
+                           num_platform_devices, platform_devices.data(), NULL);
+    test_error(error, "clGetDeviceIDs failed.\n");
+
+    test_assert_error(platform_devices[0] == devices[0],
+                      "device in the context must be equivalent to device "
+                      "returned by clGetDeviceIDs\n");
 
     return 0;
 }
