@@ -91,7 +91,13 @@ int test_imagearraycopy_single_format(cl_device_id device, cl_context context,
     err = clReleaseEvent(copyevent);
     test_error(err, "clReleaseEvent failed");
 
-    if (memcmp(imgptr, bufptr, buffer_size) != 0)
+    image_descriptor compareImageInfo = { 0 };
+    compareImageInfo.format = format;
+    compareImageInfo.width = buffer_size / get_pixel_size(format);
+    size_t where = compare_scanlines(&compareImageInfo,
+                                     reinterpret_cast<const char *>(imgptr),
+                                     reinterpret_cast<const char *>(bufptr));
+    if (where < compareImageInfo.width)
     {
         log_error("ERROR: Results did not validate!\n");
         auto inchar = static_cast<unsigned char *>(imgptr);
