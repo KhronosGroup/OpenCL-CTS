@@ -56,8 +56,8 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
     imageDesc.image_row_pitch = gEnablePitch ? imageInfo->rowPitch : 0;
     imageDesc.image_slice_pitch = gEnablePitch ? imageInfo->slicePitch : 0;
 
-    cl_version version;
     cl_device_id device;
+    char major_version;
     {
         cl_int err = clGetCommandQueueInfo(queue, CL_QUEUE_DEVICE,
                                            sizeof(device), &device, nullptr);
@@ -66,14 +66,17 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             log_error("Error: Could not get CL_QUEUE_DEVICE from queue");
             return NULL;
         }
-        err = clGetDeviceInfo(device, CL_DEVICE_NUMERIC_VERSION,
-                              sizeof(version), &version, nullptr);
+
+        char dev_version[96] = { 0 };
+        err = clGetDeviceInfo(device, CL_DEVICE_VERSION, sizeof(dev_version),
+                              &dev_version, nullptr);
         if (err != CL_SUCCESS)
         {
-            log_error("Error: Could not get CL_DEVICE_NUMERIC_VERSION from "
-                      "device");
+            log_error("Error: Could not get CL_DEVICE_VERSION from device");
             return NULL;
         }
+
+        major_version = dev_version[7];
     }
 
     switch (imageInfo->type)
@@ -117,7 +120,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
                 cl_mem_flags buffer_flags = CL_MEM_READ_WRITE;
                 if (gEnablePitch)
                 {
-                    if (CL_VERSION_MAJOR(version) == 1)
+                    if (major_version == '1')
                     {
                         host_ptr = malloc(imageInfo->rowPitch);
                     }
@@ -183,7 +186,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
         struct pitch_buffer_data *data = (struct pitch_buffer_data *)malloc(
             sizeof(struct pitch_buffer_data));
         data->buf = host_ptr;
-        data->is_aligned = (CL_VERSION_MAJOR(version) != 1)
+        data->is_aligned = (major_version == '1')
             && (imageInfo->type == CL_MEM_OBJECT_IMAGE1D_BUFFER);
         if (*error == CL_SUCCESS)
         {
