@@ -7,7 +7,6 @@
                OpCapability Linkage
                OpCapability Kernel
                OpCapability Int64
-          %1 = OpExtInstImport "OpenCL.std"
                OpMemoryModel Physical64 OpenCL
                OpEntryPoint Kernel %loop_control_test "loop_control_test"
                OpSource OpenCL_C 102000

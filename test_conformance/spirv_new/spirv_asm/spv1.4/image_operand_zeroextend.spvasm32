@@ -8,7 +8,6 @@
                OpCapability Kernel
                OpCapability ImageBasic
                OpCapability LiteralSampler
-          %1 = OpExtInstImport "OpenCL.std"
                OpMemoryModel Physical64 OpenCL
                OpEntryPoint Kernel %read_image_test "read_image_test"
                OpSource OpenCL_C 102000
