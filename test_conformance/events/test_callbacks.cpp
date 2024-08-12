@@ -418,9 +418,11 @@ int test_callback_not_called_enqueue_command(cl_device_id deviceID,
                                              int num_elements)
 {
     cl_int error = CL_SUCCESS;
+    bool confirmation = false;
 
     clEventWrapper user_event = clCreateUserEvent(context, &error);
     test_error(error, "clCreateUserEvent failed");
+    clEventWrapper fill_event;
 
     const cl_int pattern_pri = 0xA;
     clMemWrapper in_mem =
@@ -428,15 +430,14 @@ int test_callback_not_called_enqueue_command(cl_device_id deviceID,
                        nullptr, &error);
     test_error(error, "clCreateBuffer failed");
 
-    bool confirmation = false;
-    error = clSetEventCallback(user_event, CL_COMPLETE,
-                               combuf_event_callback_function, &confirmation);
-    test_error(error, "clSetEventCallback failed");
-
     error = clEnqueueFillBuffer(queue, in_mem, &pattern_pri, sizeof(cl_int), 0,
                                 num_elements * sizeof(cl_int), 1, &user_event,
-                                nullptr);
+                                &fill_event);
     test_error(error, "clEnqueueFillBuffer failed");
+
+    error = clSetEventCallback(fill_event, CL_COMPLETE,
+                               combuf_event_callback_function, &confirmation);
+    test_error(error, "clSetEventCallback failed");
 
     error = clSetUserEventStatus(user_event, CL_INVALID_VALUE);
     test_error(error, "clSetUserEventStatus failed");
