@@ -20,8 +20,6 @@
 
 #include <string>
 
-extern bool gVersionSkip;
-
 static int test_image_operand_helper(cl_device_id deviceID, cl_context context,
                                      cl_command_queue queue, bool signExtend)
 {
