@@ -19,6 +19,7 @@
 #include "types.hpp"
 
 #include <string>
+#include <vector>
 
 static int test_image_operand_helper(cl_device_id deviceID, cl_context context,
                                      cl_command_queue queue, bool signExtend)
@@ -59,10 +60,9 @@ static int test_image_operand_helper(cl_device_id deviceID, cl_context context,
                        h_dst.size() * sizeof(cl_uint), h_dst.data(), &error);
     SPIRV_CHECK_ERROR(error, "Failed to create dst buffer");
 
-    std::vector<cl_uchar> h_imgdata({ 0x1, 0x80, 0xFF, 0x0 });
     clMemWrapper src =
         clCreateImage2D(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                        &image_format, 1, 1, 0, h_imgdata.data(), &error);
+                        &image_format, 1, 1, 0, imgData.data(), &error);
     SPIRV_CHECK_ERROR(error, "Failed to create src image");
 
     error |= clSetKernelArg(kernel, 0, sizeof(dst), &dst);
