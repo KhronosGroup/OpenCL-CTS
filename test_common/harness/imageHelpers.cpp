@@ -1020,7 +1020,8 @@ size_t get_format_max_int(const cl_image_format *format)
         case CL_UNORM_SHORT_565:
         case CL_UNORM_SHORT_555: return 31;
 
-        case CL_UNORM_INT_101010: return 1023;
+        case CL_UNORM_INT_101010:
+        case CL_UNORM_INT_101010_2: return 1023;
 
         case CL_HALF_FLOAT: return 1 << 10;
 
@@ -1052,7 +1053,8 @@ int get_format_min_int(const cl_image_format *format)
 
         case CL_UNORM_SHORT_565:
         case CL_UNORM_SHORT_555:
-        case CL_UNORM_INT_101010: return 0;
+        case CL_UNORM_INT_101010:
+        case CL_UNORM_INT_101010_2: return 0;
 
         case CL_HALF_FLOAT: return -(1 << 10);
 
