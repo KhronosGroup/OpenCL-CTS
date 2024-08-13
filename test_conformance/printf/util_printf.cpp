@@ -80,8 +80,12 @@ std::vector<printDataGenParameters> printIntGenParameters = {
     //(Minimum)Six-wide,Five-digit(zero-filled in absent
     // digits),default(right)-justified
 
-    { { "%06.5i" }, "100" }
+    { { "%06.5i" }, "100" },
 
+    //(Minimum)Ten-wide, left-justified, with a blank space inserted before the
+    // value
+
+    { { "% 10d" }, "42" },
 };
 
 //-----------------------------------------------
@@ -165,6 +169,16 @@ std::vector<printDataGenParameters> printHalfGenParameters = {
     // exponent,left-justified,with sign,capital E,default(right)-justified
 
     { { "%+#21.15E" }, "-65504.0h" },
+
+    //(Minimum)Ten-wide,two positions after the decimal,with
+    // a blank space inserted before the value, default(right)-justified
+
+    { { "% 10.2f" }, "1.25h" },
+
+    //(Minimum)Eight-wide,two positions after the decimal, with
+    // zeros inserted before the value, default(right)-justified
+
+    { { "%08.2f" }, "3.14h" },
 };
 
 //---------------------------------------------------------
@@ -364,6 +378,16 @@ std::vector<printDataGenParameters> printFloatGenParameters = {
     // xh.hhhhpAd style,default(right)-justified
 
     { { "%10.2a" }, "9990.235" },
+
+    //(Minimum)Ten-wide,two positions after the decimal,with
+    // a blank space inserted before the value, default(right)-justified
+
+    { { "% 10.2f" }, "1.25" },
+
+    //(Minimum)Eight-wide,two positions after the decimal,with
+    // zeros inserted before the value, default(right)-justified
+
+    { { "%08.2f" }, "3.14" },
 };
 
 //---------------------------------------------------------
@@ -492,8 +516,12 @@ std::vector<printDataGenParameters> printOctalGenParameters = {
     //(Minimum)Four-wide,Five-digit,0-flag ignored(because of
     // precision),default(right)-justified
 
-    { { "%04.5o" }, "10" }
+    { { "%04.5o" }, "10" },
 
+    //(Minimum)Ten-wide, zeros inserted before the value,
+    // default(right)-justified
+
+    { { "%010o" }, "10" }
 };
 
 //-------------------------------------------------------
