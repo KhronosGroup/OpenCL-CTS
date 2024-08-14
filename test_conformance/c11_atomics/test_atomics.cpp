@@ -31,7 +31,7 @@ bool host_atomic_compare_exchange<float, float>(
 {
     union FloatInt {
         float f;
-        int i;
+        uint32_t i;
     };
     FloatInt a2{ *a };
     FloatInt expected2{ *expected };
@@ -62,7 +62,7 @@ bool host_atomic_compare_exchange<double, double>(
 {
     union DoubleInt64 {
         double d;
-        int64_t i;
+        uint64_t i;
     };
     DoubleInt64 a2{ *a };
     DoubleInt64 expected2{ *expected };
@@ -1056,6 +1056,8 @@ int test_atomic_compare_exchange_weak_generic(cl_device_id deviceID,
                  test_long.Execute(deviceID, context, queue, num_elements));
     CBasicTestCompareWeak<HOST_ATOMIC_ULONG, HOST_ULONG> test_ulong(
         TYPE_ATOMIC_ULONG, useSVM);
+    EXECUTE_TEST(error,
+                 test_ulong.Execute(deviceID, context, queue, num_elements));
     CBasicTestCompareWeak<HOST_ATOMIC_FLOAT, HOST_FLOAT> test_float(
         TYPE_ATOMIC_FLOAT, useSVM);
     EXECUTE_TEST(error,
@@ -1064,8 +1066,6 @@ int test_atomic_compare_exchange_weak_generic(cl_device_id deviceID,
         TYPE_ATOMIC_DOUBLE, useSVM);
     EXECUTE_TEST(error,
                  test_double.Execute(deviceID, context, queue, num_elements));
-    EXECUTE_TEST(error,
-                 test_ulong.Execute(deviceID, context, queue, num_elements));
     if (AtomicTypeInfo(TYPE_ATOMIC_SIZE_T).Size(deviceID) == 4)
     {
         CBasicTestCompareWeak<HOST_ATOMIC_INTPTR_T32, HOST_INTPTR_T32>
