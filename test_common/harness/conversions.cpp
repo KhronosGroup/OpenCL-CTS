@@ -263,10 +263,11 @@ static Long sLowerLimits[kNumExplicitTypes] = {
         }                                                                      \
         break;
 
-#define TO_HALF_CASE(inType)                                                   \
+#define TO_HALF_CASE(inType, halfRoundingMode)                                 \
     case kHalf:                                                                \
         halfPtr = (cl_half *)outRaw;                                           \
-        *halfPtr = cl_half_from_float((float)(*inType##Ptr), CL_HALF_RTE);     \
+        *halfPtr =                                                             \
+            cl_half_from_float((float)(*inType##Ptr), halfRoundingMode);       \
         break;
 #define TO_FLOAT_CASE(inType)                                                  \
     case kFloat:                                                               \
@@ -453,6 +454,7 @@ typedef unsigned long ulong;
 
 void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                             bool saturate, RoundingType roundType,
+                            cl_half_rounding_mode halfRoundingMode,
                             ExplicitType outType)
 {
     bool *boolPtr;
@@ -537,7 +539,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(schar, kULong, ULong)
                     SIMPLE_CAST_CASE(schar, kUnsignedLong, ULong)
 
-                    TO_HALF_CASE(schar)
+                    TO_HALF_CASE(schar, halfRoundingMode)
                     TO_FLOAT_CASE(schar)
                     TO_DOUBLE_CASE(schar)
 
@@ -570,7 +572,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(uchar, kULong, ULong)
                     SIMPLE_CAST_CASE(uchar, kUnsignedLong, ULong)
 
-                    TO_HALF_CASE(uchar)
+                    TO_HALF_CASE(uchar, halfRoundingMode)
                     TO_FLOAT_CASE(uchar)
                     TO_DOUBLE_CASE(uchar)
 
@@ -603,7 +605,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(uchar, kULong, ULong)
                     SIMPLE_CAST_CASE(uchar, kUnsignedLong, ULong)
 
-                    TO_HALF_CASE(uchar)
+                    TO_HALF_CASE(uchar, halfRoundingMode)
                     TO_FLOAT_CASE(uchar)
                     TO_DOUBLE_CASE(uchar)
 
@@ -636,7 +638,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(short, kULong, ULong)
                     SIMPLE_CAST_CASE(short, kUnsignedLong, ULong)
 
-                    TO_HALF_CASE(short)
+                    TO_HALF_CASE(short, halfRoundingMode)
                     TO_FLOAT_CASE(short)
                     TO_DOUBLE_CASE(short)
 
@@ -669,7 +671,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(ushort, kULong, ULong)
                     SIMPLE_CAST_CASE(ushort, kUnsignedLong, ULong)
 
-                    TO_HALF_CASE(ushort)
+                    TO_HALF_CASE(ushort, halfRoundingMode)
                     TO_FLOAT_CASE(ushort)
                     TO_DOUBLE_CASE(ushort)
 
@@ -702,7 +704,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(ushort, kULong, ULong)
                     SIMPLE_CAST_CASE(ushort, kUnsignedLong, ULong)
 
-                    TO_HALF_CASE(ushort)
+                    TO_HALF_CASE(ushort, halfRoundingMode)
                     TO_FLOAT_CASE(ushort)
                     TO_DOUBLE_CASE(ushort)
 
@@ -735,7 +737,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(int, kULong, ULong)
                     SIMPLE_CAST_CASE(int, kUnsignedLong, ULong)
 
-                    TO_HALF_CASE(int)
+                    TO_HALF_CASE(int, halfRoundingMode)
                     TO_FLOAT_CASE(int)
                     TO_DOUBLE_CASE(int)
 
@@ -768,7 +770,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(uint, kULong, ULong)
                     SIMPLE_CAST_CASE(uint, kUnsignedLong, ULong)
 
-                    TO_HALF_CASE(uint)
+                    TO_HALF_CASE(uint, halfRoundingMode)
                     TO_FLOAT_CASE(uint)
                     TO_DOUBLE_CASE(uint)
 
@@ -801,7 +803,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     SIMPLE_CAST_CASE(uint, kULong, ULong)
                     SIMPLE_CAST_CASE(uint, kUnsignedLong, ULong)
 
-                    TO_HALF_CASE(uint)
+                    TO_HALF_CASE(uint, halfRoundingMode)
                     TO_FLOAT_CASE(uint)
                     TO_DOUBLE_CASE(uint)
 
@@ -834,7 +836,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     DOWN_CAST_CASE(Long, kULong, ULong, saturate)
                     DOWN_CAST_CASE(Long, kUnsignedLong, ULong, saturate)
 
-                    TO_HALF_CASE(Long)
+                    TO_HALF_CASE(Long, halfRoundingMode)
                     TO_FLOAT_CASE(Long)
                     TO_DOUBLE_CASE(Long)
 
@@ -867,7 +869,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     U_DOWN_CAST_CASE(ULong, kUnsignedInt, uint, saturate)
                     U_DOWN_CAST_CASE(ULong, kLong, Long, saturate)
 
-                    TO_HALF_CASE(ULong)
+                    TO_HALF_CASE(ULong, halfRoundingMode)
                     TO_FLOAT_CASE(ULong)
                     TO_DOUBLE_CASE(ULong)
 
@@ -900,7 +902,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                     U_DOWN_CAST_CASE(ULong, kUnsignedInt, uint, saturate)
                     U_DOWN_CAST_CASE(ULong, kLong, Long, saturate)
 
-                    TO_HALF_CASE(ULong)
+                    TO_HALF_CASE(ULong, halfRoundingMode)
                     TO_FLOAT_CASE(ULong)
                     TO_DOUBLE_CASE(ULong)
 
@@ -969,7 +971,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                 FLOAT_ROUND_CASE(kULong, ULong, roundType, saturate)
                 FLOAT_ROUND_CASE(kUnsignedLong, ULong, roundType, saturate)
 
-                TO_HALF_CASE(float)
+                TO_HALF_CASE(float, halfRoundingMode)
 
                 case kFloat:
                     memcpy(outRaw, inRaw, get_explicit_type_size(inType));
@@ -1003,7 +1005,7 @@ void convert_explicit_value(void *inRaw, void *outRaw, ExplicitType inType,
                 DOUBLE_ROUND_CASE(kULong, ULong, roundType, saturate)
                 DOUBLE_ROUND_CASE(kUnsignedLong, ULong, roundType, saturate)
 
-                TO_HALF_CASE(double)
+                TO_HALF_CASE(double, halfRoundingMode)
 
                 TO_FLOAT_CASE(double);
 
