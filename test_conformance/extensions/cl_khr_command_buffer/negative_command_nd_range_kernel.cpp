@@ -298,10 +298,10 @@ __kernel void printf_kernel() {
   }
 )";
 
-        error = build_program_create_kernel_helper(context, &program, &kernel,
-                                                   1, &kernel_str,
-                                                   "printf_kernel", nullptr);
-        test_error(error, "build_program_create_kernel_helper failed");
+        error =
+            create_single_kernel_helper(context, &program, &kernel, 1,
+                                        &kernel_str, "printf_kernel", nullptr);
+        test_error(error, "create_single_kernel_helper failed");
 
         return CL_SUCCESS;
     }
@@ -407,10 +407,10 @@ enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange,
 )";
         std::string build_options = std::string(" ") + cl_std;
 
-        error = build_program_create_kernel_helper(
-            context, &program, &kernel, 1, &kernel_str, "enqueue_call_kernel",
-            build_options.c_str());
-        test_error(error, "build_program_create_kernel_helper failed");
+        error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &kernel_str, "enqueue_call_kernel",
+                                            build_options.c_str());
+        test_error(error, "create_single_kernel_helper failed");
 
         return CL_SUCCESS;
     }
