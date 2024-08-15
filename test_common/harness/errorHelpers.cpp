@@ -105,6 +105,10 @@ const char *IGetErrorString(int clErrorCode)
         case CL_INVALID_SPEC_ID: return "CL_INVALID_SPEC_ID";
         case CL_MAX_SIZE_RESTRICTION_EXCEEDED:
             return "CL_MAX_SIZE_RESTRICTION_EXCEEDED";
+        case CL_INCOMPATIBLE_COMMAND_QUEUE_KHR:
+            return "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR";
+        case CL_INVALID_SYNC_POINT_WAIT_LIST_KHR:
+            return "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR";
         default: return "(unknown)";
     }
 }
