@@ -36,8 +36,14 @@ struct FillImageKHR : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_int error =
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            clCommandFillImageKHR(command_buffer, nullptr, nullptr, image,
+                                  fill_color_1, origin, region, 0, nullptr,
+                                  nullptr, nullptr);
+#else
             clCommandFillImageKHR(command_buffer, nullptr, image, fill_color_1,
                                   origin, region, 0, nullptr, nullptr, nullptr);
+#endif
 
         test_error(error, "clCommandFillImageKHR failed");
 
@@ -123,9 +129,15 @@ struct FillBufferKHR : public BasicCommandBufferTest
 
     cl_int Run() override
     {
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        cl_int error = clCommandFillBufferKHR(
+            command_buffer, nullptr, nullptr, in_mem, &pattern_1,
+            sizeof(cl_char), 0, data_size(), 0, nullptr, nullptr, nullptr);
+#else
         cl_int error = clCommandFillBufferKHR(
             command_buffer, nullptr, in_mem, &pattern_1, sizeof(cl_char), 0,
             data_size(), 0, nullptr, nullptr, nullptr);
+#endif
 
         test_error(error, "clCommandFillBufferKHR failed");
 
@@ -178,9 +190,15 @@ struct FillSVMBufferKHR : public BasicSVMCommandBufferTest
 
     cl_int Run() override
     {
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        cl_int error = clCommandSVMMemFillKHR(
+            command_buffer, nullptr, nullptr, svm_in_mem(), &pattern_1,
+            sizeof(cl_char), data_size(), 0, nullptr, nullptr, nullptr);
+#else
         cl_int error = clCommandSVMMemFillKHR(
             command_buffer, nullptr, svm_in_mem(), &pattern_1, sizeof(cl_char),
             data_size(), 0, nullptr, nullptr, nullptr);
+#endif
         test_error(error, "clCommandSVMMemFillKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);

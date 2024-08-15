@@ -28,7 +28,11 @@ struct CommandBufferBarrierNotNullQueue : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandBarrierWithWaitListKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, queue, nullptr, 0, nullptr, nullptr, nullptr);
+#else
             command_buffer, queue, 0, nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_QUEUE,
                                "clCommandBarrierWithWaitListKHR should return "
@@ -55,7 +59,11 @@ struct CommandBufferBarrierInvalidCommandBuffer : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandBarrierWithWaitListKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            nullptr, queue, nullptr, 0, nullptr, nullptr, nullptr);
+#else
             nullptr, queue, 0, nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_BUFFER_KHR,
                                "clCommandBarrierWithWaitListKHR should return "
@@ -76,8 +84,13 @@ struct CommandBufferBarrierBufferFinalized : public BasicCommandBufferTest
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandBarrierWithWaitListKHR(
+            command_buffer, nullptr, nullptr, 0, nullptr, nullptr, nullptr);
+#else
         error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
                                                 nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_OPERATION,
                                "clCommandBarrierWithWaitListKHR should return "
@@ -98,7 +111,12 @@ struct CommandBufferBarrierMutableHandleNotNull : public BasicCommandBufferTest
         cl_mutable_command_khr mutable_handle;
 
         cl_int error = clCommandBarrierWithWaitListKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, nullptr, nullptr, 0, nullptr, nullptr,
+            &mutable_handle);
+#else
             command_buffer, nullptr, 0, nullptr, nullptr, &mutable_handle);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clCommandBarrierWithWaitListKHR should return "
@@ -123,7 +141,12 @@ struct CommandBufferBarrierSyncPointsNullOrNumZero
         cl_sync_point_khr invalid_point = 0;
 
         cl_int error = clCommandBarrierWithWaitListKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, nullptr, nullptr, 1, &invalid_point, nullptr,
+            nullptr);
+#else
             command_buffer, nullptr, 1, &invalid_point, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandBarrierWithWaitListKHR should return "
@@ -131,8 +154,13 @@ struct CommandBufferBarrierSyncPointsNullOrNumZero
                                TEST_FAIL);
 
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandBarrierWithWaitListKHR(
+            command_buffer, nullptr, nullptr, 1, nullptr, nullptr, nullptr);
+#else
         error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 1,
                                                 nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandBarrierWithWaitListKHR should return "
@@ -142,12 +170,23 @@ struct CommandBufferBarrierSyncPointsNullOrNumZero
 
         cl_sync_point_khr point;
         error =
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            clCommandCopyBufferKHR(command_buffer, nullptr, nullptr, in_mem,
+                                   out_mem, 0, 0, data_size(), 0, nullptr,
+                                   &point, nullptr);
+#else
             clCommandCopyBufferKHR(command_buffer, nullptr, in_mem, out_mem, 0,
                                    0, data_size(), 0, nullptr, &point, nullptr);
+#endif
         test_error(error, "clCommandCopyBufferKHR failed");
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandBarrierWithWaitListKHR(
+            command_buffer, nullptr, nullptr, 0, &point, nullptr, nullptr);
+#else
         error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
                                                 &point, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandBarrierWithWaitListKHR should return "

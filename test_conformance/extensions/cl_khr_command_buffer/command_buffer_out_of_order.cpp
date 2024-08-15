@@ -162,15 +162,29 @@ struct OutOfOrderTest : public BasicCommandBufferTest
         cl_sync_point_khr sync_points[2];
         const cl_int pattern = pattern_pri;
         cl_int error =
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            clCommandFillBufferKHR(out_of_order_command_buffer, nullptr,
+                                   nullptr, in_mem, &pattern, sizeof(cl_int), 0,
+                                   data_size(), 0, nullptr, &sync_points[0],
+                                   nullptr);
+#else
             clCommandFillBufferKHR(out_of_order_command_buffer, nullptr, in_mem,
                                    &pattern, sizeof(cl_int), 0, data_size(), 0,
                                    nullptr, &sync_points[0], nullptr);
+#endif
         test_error(error, "clCommandFillBufferKHR failed");
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandFillBufferKHR(out_of_order_command_buffer, nullptr,
+                                       nullptr, out_mem, &overwritten_pattern,
+                                       sizeof(cl_int), 0, data_size(), 0,
+                                       nullptr, &sync_points[1], nullptr);
+#else
         error = clCommandFillBufferKHR(out_of_order_command_buffer, nullptr,
                                        out_mem, &overwritten_pattern,
                                        sizeof(cl_int), 0, data_size(), 0,
                                        nullptr, &sync_points[1], nullptr);
+#endif
         test_error(error, "clCommandFillBufferKHR failed");
 
         error = clCommandNDRangeKernelKHR(
@@ -214,9 +228,15 @@ struct OutOfOrderTest : public BasicCommandBufferTest
         cl_sync_point_khr sync_points[2];
         // for both simultaneous passes this call will fill entire in_mem buffer
         cl_int error = clCommandFillBufferKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            out_of_order_command_buffer, nullptr, nullptr, in_mem, &pattern_pri,
+            sizeof(cl_int), 0, data_size() * buffer_size_multiplier, 0, nullptr,
+            &sync_points[0], nullptr);
+#else
             out_of_order_command_buffer, nullptr, in_mem, &pattern_pri,
             sizeof(cl_int), 0, data_size() * buffer_size_multiplier, 0, nullptr,
             &sync_points[0], nullptr);
+#endif
         test_error(error, "clCommandFillBufferKHR failed");
 
         // to avoid overwriting the entire result buffer instead of filling only

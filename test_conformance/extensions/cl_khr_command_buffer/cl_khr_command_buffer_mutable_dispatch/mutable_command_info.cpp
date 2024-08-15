@@ -119,9 +119,14 @@ struct PropertiesArray : public InfoMutableCommandBufferTest
 
     cl_int Run() override
     {
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        cl_command_properties_khr props[] = {
+#else
         cl_ndrange_kernel_command_properties_khr props[] = {
+#endif
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
-            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
+            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR,
+            0
         };
 
         cl_int error = clCommandNDRangeKernelKHR(
@@ -129,7 +134,11 @@ struct PropertiesArray : public InfoMutableCommandBufferTest
             &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        cl_command_properties_khr test_props[] = { 0, 0, 0 };
+#else
         cl_ndrange_kernel_command_properties_khr test_props[] = { 0, 0, 0 };
+#endif
         size_t size;
 
         error = clGetMutableCommandInfoKHR(

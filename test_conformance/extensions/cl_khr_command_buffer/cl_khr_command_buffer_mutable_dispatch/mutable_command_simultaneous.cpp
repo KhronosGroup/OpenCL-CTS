@@ -170,14 +170,27 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
         cl_sync_point_khr sync_points[2];
         const cl_int pattern = pattern_pri;
         cl_int error = clCommandFillBufferKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            work_command_buffer, nullptr, nullptr, in_mem, &pattern,
+            sizeof(cl_int), 0, data_size(), 0, nullptr, &sync_points[0],
+            nullptr);
+#else
             work_command_buffer, nullptr, in_mem, &pattern, sizeof(cl_int), 0,
             data_size(), 0, nullptr, &sync_points[0], nullptr);
+#endif
         test_error(error, "clCommandFillBufferKHR failed");
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandFillBufferKHR(work_command_buffer, nullptr, nullptr,
+                                       out_mem, &overwritten_pattern,
+                                       sizeof(cl_int), 0, data_size(), 0,
+                                       nullptr, &sync_points[1], nullptr);
+#else
         error = clCommandFillBufferKHR(work_command_buffer, nullptr, out_mem,
                                        &overwritten_pattern, sizeof(cl_int), 0,
                                        data_size(), 0, nullptr, &sync_points[1],
                                        nullptr);
+#endif
         test_error(error, "clCommandFillBufferKHR failed");
 
         error = clCommandNDRangeKernelKHR(
@@ -269,9 +282,15 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
         cl_sync_point_khr sync_points[2];
         // for both simultaneous passes this call will fill entire in_mem buffer
         cl_int error = clCommandFillBufferKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            work_command_buffer, nullptr, nullptr, in_mem, &pattern_pri,
+            sizeof(cl_int), 0, data_size() * buffer_size_multiplier, 0, nullptr,
+            &sync_points[0], nullptr);
+#else
             work_command_buffer, nullptr, in_mem, &pattern_pri, sizeof(cl_int),
             0, data_size() * buffer_size_multiplier, 0, nullptr,
             &sync_points[0], nullptr);
+#endif
         test_error(error, "clCommandFillBufferKHR failed");
 
         // to avoid overwriting the entire result buffer instead of filling
@@ -519,13 +538,24 @@ struct CrossQueueSimultaneousMutableDispatchTest
         // record command buffer
         cl_int pattern = 0;
         cl_int error = clCommandFillBufferKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, nullptr, nullptr, out_mem, &pattern, sizeof(cl_int),
+            0, data_size(), 0, nullptr, nullptr, nullptr);
+#else
             command_buffer, nullptr, out_mem, &pattern, sizeof(cl_int), 0,
             data_size(), 0, nullptr, nullptr, nullptr);
+#endif
         test_error(error, "clCommandFillBufferKHR failed");
 
+
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        cl_command_properties_khr props[] = {
+#else
         cl_ndrange_kernel_command_properties_khr props[] = {
+#endif
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
-            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
+            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR,
+            0
         };
 
         error = clCommandNDRangeKernelKHR(

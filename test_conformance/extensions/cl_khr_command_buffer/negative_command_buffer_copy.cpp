@@ -96,8 +96,14 @@ struct CommandBufferCopyBufferQueueNotNull
     cl_int Run() override
     {
         cl_int error =
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            clCommandCopyBufferKHR(command_buffer, queue, nullptr, in_mem,
+                                   out_mem, 0, 0, data_size, 0, nullptr,
+                                   nullptr, nullptr);
+#else
             clCommandCopyBufferKHR(command_buffer, queue, in_mem, out_mem, 0, 0,
                                    data_size, 0, nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_QUEUE,
                                "clCommandCopyBufferKHR should return "
@@ -105,8 +111,13 @@ struct CommandBufferCopyBufferQueueNotNull
                                TEST_FAIL);
 
         error = clCommandCopyBufferRectKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, queue, nullptr, in_mem, out_mem, origin, origin,
+            region, 0, 0, 0, 0, 0, nullptr, nullptr, nullptr);
+#else
             command_buffer, queue, in_mem, out_mem, origin, origin, region, 0,
             0, 0, 0, 0, nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_QUEUE,
                                "clCommandCopyBufferRectKHR should return "
@@ -126,8 +137,13 @@ struct CommandBufferCopyImageQueueNotNull
     cl_int Run() override
     {
         cl_int error = clCommandCopyImageToBufferKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, queue, nullptr, image, buffer, origin, region, 0, 0,
+            nullptr, nullptr, nullptr);
+#else
             command_buffer, queue, image, buffer, origin, region, 0, 0, nullptr,
             nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_QUEUE,
                                "clCommandCopyImageToBufferKHR should return "
@@ -167,8 +183,13 @@ struct CommandBufferCopyBufferDifferentContexts
     cl_int Run() override
     {
         cl_int error = clCommandCopyBufferKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, nullptr, nullptr, in_mem_ctx, out_mem, 0, 0,
+            data_size, 0, nullptr, nullptr, nullptr);
+#else
             command_buffer, nullptr, in_mem_ctx, out_mem, 0, 0, data_size, 0,
             nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_CONTEXT,
                                "clCommandCopyBufferKHR should return "
@@ -177,8 +198,13 @@ struct CommandBufferCopyBufferDifferentContexts
 
 
         error = clCommandCopyBufferRectKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, nullptr, nullptr, in_mem_ctx, out_mem, origin,
+            origin, region, 0, 0, 0, 0, 0, nullptr, nullptr, nullptr);
+#else
             command_buffer, nullptr, in_mem_ctx, out_mem, origin, origin,
             region, 0, 0, 0, 0, 0, nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_CONTEXT,
                                "clCommandCopyBufferRectKHR should return "
@@ -186,9 +212,15 @@ struct CommandBufferCopyBufferDifferentContexts
                                TEST_FAIL);
 
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandCopyBufferKHR(command_buffer, nullptr, nullptr, in_mem,
+                                       out_mem_ctx, 0, 0, data_size, 0, nullptr,
+                                       nullptr, nullptr);
+#else
         error = clCommandCopyBufferKHR(command_buffer, nullptr, in_mem,
                                        out_mem_ctx, 0, 0, data_size, 0, nullptr,
                                        nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_CONTEXT,
                                "clCommandCopyBufferKHR should return "
@@ -196,8 +228,13 @@ struct CommandBufferCopyBufferDifferentContexts
                                TEST_FAIL);
 
         error = clCommandCopyBufferRectKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, nullptr, nullptr, in_mem, out_mem_ctx, origin,
+            origin, region, 0, 0, 0, 0, 0, nullptr, nullptr, nullptr);
+#else
             command_buffer, nullptr, in_mem, out_mem_ctx, origin, origin,
             region, 0, 0, 0, 0, 0, nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_CONTEXT,
                                "clCommandCopyBufferRectKHR should return "
@@ -242,8 +279,13 @@ struct CommandBufferCopyImageDifferentContexts
     cl_int Run() override
     {
         cl_int error = clCommandCopyImageToBufferKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, nullptr, nullptr, image_ctx, buffer, origin, region,
+            0, 0, nullptr, nullptr, nullptr);
+#else
             command_buffer, nullptr, image_ctx, buffer, origin, region, 0, 0,
             nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_CONTEXT,
                                "clCommandCopyImageToBufferKHR should return "
@@ -251,9 +293,15 @@ struct CommandBufferCopyImageDifferentContexts
                                TEST_FAIL);
 
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandCopyImageToBufferKHR(command_buffer, nullptr, nullptr,
+                                              image, buffer_ctx, origin, region,
+                                              0, 0, nullptr, nullptr, nullptr);
+#else
         error = clCommandCopyImageToBufferKHR(command_buffer, nullptr, image,
                                               buffer_ctx, origin, region, 0, 0,
                                               nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_CONTEXT,
                                "clCommandCopyImageToBufferKHR should return "
@@ -282,9 +330,15 @@ struct CommandBufferCopyBufferSyncPointsNullOrNumZero
     {
         cl_sync_point_khr invalid_point = 0;
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        cl_int error = clCommandCopyBufferKHR(
+            command_buffer, nullptr, nullptr, in_mem, out_mem, 0, 0, data_size,
+            1, &invalid_point, nullptr, nullptr);
+#else
         cl_int error = clCommandCopyBufferKHR(command_buffer, nullptr, in_mem,
                                               out_mem, 0, 0, data_size, 1,
                                               &invalid_point, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyBufferKHR should return "
@@ -292,8 +346,13 @@ struct CommandBufferCopyBufferSyncPointsNullOrNumZero
                                TEST_FAIL);
 
         error = clCommandCopyBufferRectKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, nullptr, nullptr, in_mem, out_mem, origin, origin,
+            region, 0, 0, 0, 0, 1, &invalid_point, nullptr, nullptr);
+#else
             command_buffer, nullptr, in_mem, out_mem, origin, origin, region, 0,
             0, 0, 0, 1, &invalid_point, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyBufferRectKHR should return "
@@ -302,8 +361,14 @@ struct CommandBufferCopyBufferSyncPointsNullOrNumZero
 
 
         error =
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            clCommandCopyBufferKHR(command_buffer, nullptr, nullptr, in_mem,
+                                   out_mem, 0, 0, data_size, 1, nullptr,
+                                   nullptr, nullptr);
+#else
             clCommandCopyBufferKHR(command_buffer, nullptr, in_mem, out_mem, 0,
                                    0, data_size, 1, nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyBufferKHR should return "
@@ -312,8 +377,13 @@ struct CommandBufferCopyBufferSyncPointsNullOrNumZero
 
 
         error = clCommandCopyBufferRectKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, nullptr, nullptr, in_mem, out_mem, origin, origin,
+            region, 0, 0, 0, 0, 1, nullptr, nullptr, nullptr);
+#else
             command_buffer, nullptr, in_mem, out_mem, origin, origin, region, 0,
             0, 0, 0, 1, nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyBufferRectKHR should return "
@@ -322,22 +392,39 @@ struct CommandBufferCopyBufferSyncPointsNullOrNumZero
 
 
         cl_sync_point_khr point;
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandBarrierWithWaitListKHR(
+            command_buffer, nullptr, nullptr, 0, nullptr, &point, nullptr);
+#else
         error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
                                                 nullptr, &point, nullptr);
+#endif
         test_error(error, "clCommandBarrierWithWaitListKHR failed");
 
         error =
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            clCommandCopyBufferKHR(command_buffer, nullptr, nullptr, in_mem,
+                                   out_mem, 0, 0, data_size, 0, &point, nullptr,
+                                   nullptr);
+#else
             clCommandCopyBufferKHR(command_buffer, nullptr, in_mem, out_mem, 0,
                                    0, data_size, 0, &point, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyBufferKHR should return "
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandCopyBufferRectKHR(
+            command_buffer, nullptr, nullptr, in_mem, out_mem, origin, origin,
+            region, 0, 0, 0, 0, 0, &point, nullptr, nullptr);
+#else
         error = clCommandCopyBufferRectKHR(
             command_buffer, nullptr, in_mem, out_mem, origin, origin, region, 0,
             0, 0, 0, 0, &point, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyBufferRectKHR should return "
@@ -363,8 +450,13 @@ struct CommandBufferCopyImageSyncPointsNullOrNumZero
         cl_sync_point_khr invalid_point = 0;
 
         cl_int error = clCommandCopyImageToBufferKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, nullptr, nullptr, image, buffer, origin, region, 0,
+            1, &invalid_point, nullptr, nullptr);
+#else
             command_buffer, nullptr, image, buffer, origin, region, 0, 1,
             &invalid_point, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyImageToBufferKHR should return "
@@ -372,9 +464,15 @@ struct CommandBufferCopyImageSyncPointsNullOrNumZero
                                TEST_FAIL);
 
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandCopyImageToBufferKHR(command_buffer, nullptr, nullptr,
+                                              image, buffer, origin, region, 0,
+                                              1, nullptr, nullptr, nullptr);
+#else
         error = clCommandCopyImageToBufferKHR(command_buffer, nullptr, image,
                                               buffer, origin, region, 0, 1,
                                               nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyImageToBufferKHR should return "
@@ -383,13 +481,24 @@ struct CommandBufferCopyImageSyncPointsNullOrNumZero
 
 
         cl_sync_point_khr point;
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandBarrierWithWaitListKHR(
+            command_buffer, nullptr, nullptr, 0, nullptr, &point, nullptr);
+#else
         error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
                                                 nullptr, &point, nullptr);
+#endif
         test_error(error, "clCommandBarrierWithWaitListKHR failed");
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandCopyImageToBufferKHR(command_buffer, nullptr, nullptr,
+                                              image, buffer, origin, region, 0,
+                                              0, &point, nullptr, nullptr);
+#else
         error = clCommandCopyImageToBufferKHR(command_buffer, nullptr, image,
                                               buffer, origin, region, 0, 0,
                                               &point, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandCopyImageToBufferKHR should return "
@@ -410,17 +519,29 @@ struct CommandBufferCopyBufferInvalidCommandBuffer
     cl_int Run() override
     {
         cl_int error =
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            clCommandCopyBufferKHR(nullptr, nullptr, nullptr, in_mem, out_mem,
+                                   0, 0, data_size, 0, nullptr, nullptr,
+                                   nullptr);
+#else
             clCommandCopyBufferKHR(nullptr, nullptr, in_mem, out_mem, 0, 0,
                                    data_size, 0, nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_BUFFER_KHR,
                                "clCommandCopyBufferKHR should return "
                                "CL_INVALID_COMMAND_BUFFER_KHR",
                                TEST_FAIL);
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandCopyBufferRectKHR(
+            nullptr, nullptr, nullptr, in_mem, out_mem, origin, origin, region,
+            0, 0, 0, 0, 0, nullptr, nullptr, nullptr);
+#else
         error = clCommandCopyBufferRectKHR(nullptr, nullptr, in_mem, out_mem,
                                            origin, origin, region, 0, 0, 0, 0,
                                            0, nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_BUFFER_KHR,
                                "clCommandCopyBufferRectKHR should return "
@@ -441,8 +562,13 @@ struct CommandBufferCopyImageInvalidCommandBuffer
     cl_int Run() override
     {
         cl_int error = clCommandCopyImageToBufferKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            nullptr, nullptr, nullptr, image, buffer, origin, region, 0, 0,
+            nullptr, nullptr, nullptr);
+#else
             nullptr, nullptr, image, buffer, origin, region, 0, 0, nullptr,
             nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_BUFFER_KHR,
                                "clCommandCopyImageToBufferKHR should return "
@@ -465,8 +591,14 @@ struct CommandBufferCopyBufferFinalizedCommandBuffer
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
         error =
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            clCommandCopyBufferKHR(command_buffer, nullptr, nullptr, in_mem,
+                                   out_mem, 0, 0, data_size, 0, nullptr,
+                                   nullptr, nullptr);
+#else
             clCommandCopyBufferKHR(command_buffer, nullptr, in_mem, out_mem, 0,
                                    0, data_size, 0, nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_OPERATION,
                                "clCommandCopyBufferKHR should return "
@@ -475,8 +607,13 @@ struct CommandBufferCopyBufferFinalizedCommandBuffer
 
 
         error = clCommandCopyBufferRectKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, nullptr, nullptr, in_mem, out_mem, origin, origin,
+            region, 0, 0, 0, 0, 0, nullptr, nullptr, nullptr);
+#else
             command_buffer, nullptr, in_mem, out_mem, origin, origin, region, 0,
             0, 0, 0, 0, nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_OPERATION,
                                "clCommandCopyBufferRectKHR should return "
@@ -499,9 +636,15 @@ struct CommandBufferCopyImageFinalizedCommandBuffer
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandCopyImageToBufferKHR(command_buffer, nullptr, nullptr,
+                                              image, buffer, origin, region, 0,
+                                              0, nullptr, nullptr, nullptr);
+#else
         error = clCommandCopyImageToBufferKHR(command_buffer, nullptr, image,
                                               buffer, origin, region, 0, 0,
                                               nullptr, nullptr, nullptr);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_OPERATION,
                                "clCommandCopyImageToBufferKHR should return "
@@ -523,8 +666,13 @@ struct CommandBufferCopyBufferMutableHandleNotNull
         cl_mutable_command_khr mutable_handle;
 
         cl_int error = clCommandCopyBufferKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, nullptr, nullptr, in_mem, out_mem, 0, 0, data_size,
+            0, nullptr, nullptr, &mutable_handle);
+#else
             command_buffer, nullptr, in_mem, out_mem, 0, 0, data_size, 0,
             nullptr, nullptr, &mutable_handle);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clCommandCopyBufferKHR should return "
@@ -533,8 +681,13 @@ struct CommandBufferCopyBufferMutableHandleNotNull
 
 
         error = clCommandCopyBufferRectKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, nullptr, nullptr, in_mem, out_mem, origin, origin,
+            region, 0, 0, 0, 0, 0, nullptr, nullptr, &mutable_handle);
+#else
             command_buffer, nullptr, in_mem, out_mem, origin, origin, region, 0,
             0, 0, 0, 0, nullptr, nullptr, &mutable_handle);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clCommandCopyBufferRectKHR should return "
@@ -557,8 +710,13 @@ struct CommandBufferCopyImageMutableHandleNotNull
         cl_mutable_command_khr mutable_handle;
 
         cl_int error = clCommandCopyImageToBufferKHR(
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+            command_buffer, nullptr, nullptr, image, buffer, origin, region, 0,
+            0, nullptr, nullptr, &mutable_handle);
+#else
             command_buffer, nullptr, image, buffer, origin, region, 0, 0,
             nullptr, nullptr, &mutable_handle);
+#endif
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clCommandCopyImageToBufferKHR should return "

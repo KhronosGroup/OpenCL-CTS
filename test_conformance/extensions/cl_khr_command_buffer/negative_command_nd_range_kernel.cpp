@@ -135,8 +135,13 @@ struct CommandNDRangeKerneSyncPointsNullOrNumZero
 
 
         cl_sync_point_khr point;
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        error = clCommandBarrierWithWaitListKHR(
+            command_buffer, nullptr, nullptr, 0, nullptr, &point, nullptr);
+#else
         error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
                                                 nullptr, &point, nullptr);
+#endif
         test_error(error, "clCommandBarrierWithWaitListKHR failed");
 
         cl_sync_point_khr* sync_points[] = { &point };
@@ -182,8 +187,14 @@ struct CommandNDRangeKernelInvalidProperties : public BasicCommandBufferTest
 
     cl_int Run() override
     {
+
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        cl_command_properties_khr empty_properties =
+            ~cl_command_properties_khr(0);
+#else
         cl_ndrange_kernel_command_properties_khr empty_properties =
             ~cl_ndrange_kernel_command_properties_khr(0);
+#endif
 
         cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, &empty_properties, kernel, 1, nullptr,
@@ -194,9 +205,14 @@ struct CommandNDRangeKernelInvalidProperties : public BasicCommandBufferTest
                                "CL_INVALID_VALUE",
                                TEST_FAIL);
 
+#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
+        cl_command_properties_khr props_invalid[3] = {
+#else
         cl_ndrange_kernel_command_properties_khr props_invalid[3] = {
+#endif
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
-            CL_MEM_USE_CACHED_CPU_MEMORY_IMG, 1
+            CL_MEM_USE_CACHED_CPU_MEMORY_IMG,
+            1
         };
 
         error = clCommandNDRangeKernelKHR(
