@@ -517,9 +517,9 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
 
     // Pass invalid object to release call
     errNum = clReleaseSemaphoreKHRptr(NULL);
-    test_failure_error(errNum, CL_INVALID_VALUE,
+    test_failure_error(errNum, CL_INVALID_SEMAPHORE_KHR,
                        "clReleaseSemaphoreKHRptr fails with "
-                       "CL_INVALID_VALUE when NULL semaphore object is passed");
+                       "CL_INVALID_SEMAPHORE_KHR when NULL semaphore object is passed");
 
     // Release both semaphore objects
     errNum = clReleaseSemaphoreKHRptr(clVk2Clsemaphore);
