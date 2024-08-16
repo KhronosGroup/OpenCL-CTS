@@ -27,6 +27,7 @@ set(${MODULE_NAME}_SOURCES
   test_op_vector_extract.cpp
   test_op_vector_insert.cpp
   test_op_vector_times_scalar.cpp
+  test_spirv_14.cpp
 )
 
 set(TEST_HARNESS_SOURCES
