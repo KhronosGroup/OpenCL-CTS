@@ -7,7 +7,6 @@
                OpCapability Linkage
                OpCapability Kernel
                OpCapability Int64
-          %1 = OpExtInstImport "OpenCL.std"
                OpMemoryModel Physical64 OpenCL
                OpEntryPoint Kernel %usersemantic_test "usersemantic_test" %global_id
                OpDecorate %global_id LinkageAttributes "global_id" Import

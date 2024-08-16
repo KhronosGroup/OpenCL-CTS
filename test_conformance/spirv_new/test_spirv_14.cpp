@@ -44,11 +44,6 @@ static int test_usersemantic_decoration(cl_device_id deviceID,
     SPIRV_CHECK_ERROR(error, "Failed to create dst buffer");
 
     error |= clSetKernelArg(kernel, 0, sizeof(dst), &dst);
-    if (test_memberdecoratestring)
-    {
-        // TODO: fixme
-        error |= clSetKernelArg(kernel, 1, sizeof(h_dst), &h_dst);
-    }
     SPIRV_CHECK_ERROR(error, "Failed to set kernel args");
 
     size_t global = 1;
@@ -76,5 +71,34 @@ TEST_SPIRV_FUNC(spirv14_usersemantic_decoratestring)
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
+    if (true)
+    {
+        log_info(
+            "The SPIR-V LLVM Translator currently doesn't handle this case.\n"
+            "See: "
+            "https://github.com/KhronosGroup/SPIRV-LLVM-Translator/issues/"
+            "2670\n"
+            "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
     return test_usersemantic_decoration(deviceID, context, queue, false);
+}
+
+TEST_SPIRV_FUNC(spirv14_usersemantic_memberdecoratestring)
+{
+    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    {
+        log_info("SPIR-V 1.4 not supported; skipping tests.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+    if (true)
+    {
+        log_info(
+            "The SPIR-V LLVM Translator currently doesn't handle this case.\n"
+            "See: "
+            "https://github.com/KhronosGroup/SPIRV-LLVM-Translator/pull/2677\n"
+            "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+    return test_usersemantic_decoration(deviceID, context, queue, true);
 }
