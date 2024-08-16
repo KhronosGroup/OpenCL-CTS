@@ -1323,9 +1323,11 @@ std::string get_platform_info_string(cl_platform_id platform,
     return std::string(info.data(), size - 1);
 }
 
-bool is_platform_extension_available(cl_platform_id platform, const char* extensionName)
+bool is_platform_extension_available(cl_platform_id platform,
+                                     const char *extensionName)
 {
-    std::string extString = get_platform_info_string(platform, CL_PLATFORM_EXTENSIONS);
+    std::string extString =
+        get_platform_info_string(platform, CL_PLATFORM_EXTENSIONS);
     return extString.find(extensionName) != std::string::npos;
 }
 
