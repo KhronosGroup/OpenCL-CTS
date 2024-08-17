@@ -87,7 +87,7 @@ TEST_SPIRV_FUNC(spirv14_ptrops)
     SPIRV_CHECK_ERROR(error, "Unable to read destination buffer");
 
     if (results[0] != (dst == dst) || results[1] != (dst != dst)
-        || results[2] != (dst - dst))
+        || results[2] != 0 /* dst - dst */)
     {
         log_error("Results mismatch with equal pointers!  Got: %i, %i, %i\n",
                   results[0], results[1], results[2]);
