@@ -25,9 +25,8 @@
 
 template <typename T>
 int test_no_integer_wrap_decoration(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue queue, bool test_extension,
-                                    const char *spvName, const char *funcName,
-                                    const char *Tname)
+                                    cl_command_queue queue, const char *spvName,
+                                    const char *funcName, const char *Tname)
 {
 
     cl_int err = CL_SUCCESS;
@@ -36,24 +35,6 @@ int test_no_integer_wrap_decoration(cl_device_id deviceID, cl_context context,
     std::vector<T> h_rhs(num);
     std::vector<T> expected_results(num);
     std::vector<T> h_ref(num);
-    if (test_extension)
-    {
-        if (!is_extension_available(deviceID,
-                                    "cl_khr_spirv_no_integer_wrap_decoration"))
-        {
-            log_info("Extension cl_khr_spirv_no_integer_wrap_decoration not "
-                     "supported; skipping tests.\n");
-            return TEST_SKIPPED_ITSELF;
-        }
-    }
-    else
-    {
-        if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
-        {
-            log_info("SPIR-V 1.4 not supported; skipping tests.\n");
-            return TEST_SKIPPED_ITSELF;
-        }
-    }
 
     /*Test with some values that do not cause overflow*/
     if (std::is_signed<T>::value == true)
@@ -248,8 +229,15 @@ int test_no_integer_wrap_decoration(cl_device_id deviceID, cl_context context,
     TEST_SPIRV_FUNC(                                                           \
         ext_cl_khr_spirv_no_integer_wrap_decoration_##FUNC##_##TYPE)           \
     {                                                                          \
+        if (!is_extension_available(                                           \
+                deviceID, "cl_khr_spirv_no_integer_wrap_decoration"))          \
+        {                                                                      \
+            log_info("Extension cl_khr_spirv_no_integer_wrap_decoration not "  \
+                     "supported; skipping tests.\n");                          \
+            return TEST_SKIPPED_ITSELF;                                        \
+        }                                                                      \
         return test_no_integer_wrap_decoration<cl_##TYPE>(                     \
-            deviceID, context, queue, true,                                    \
+            deviceID, context, queue,                                          \
             "ext_cl_khr_spirv_no_integer_wrap_decoration_" #FUNC "_" #TYPE,    \
             #FUNC, #TYPE);                                                     \
     }
@@ -267,8 +255,13 @@ TEST_FMATH_FUNC_KHR(uint, fshiftleft)
 #define TEST_FMATH_FUNC_14(TYPE, FUNC)                                         \
     TEST_SPIRV_FUNC(spirv14_no_integer_wrap_decoration_##FUNC##_##TYPE)        \
     {                                                                          \
+        if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))               \
+        {                                                                      \
+            log_info("SPIR-V 1.4 not supported; skipping tests.\n");           \
+            return TEST_SKIPPED_ITSELF;                                        \
+        }                                                                      \
         return test_no_integer_wrap_decoration<cl_##TYPE>(                     \
-            deviceID, context, queue, false,                                   \
+            deviceID, context, queue,                                          \
             "spv1.4/no_integer_wrap_decoration_" #FUNC "_" #TYPE, #FUNC,       \
             #TYPE);                                                            \
     }
