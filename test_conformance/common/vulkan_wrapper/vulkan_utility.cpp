@@ -752,10 +752,11 @@ std::ostream &operator<<(std::ostream &os, VulkanFormat format)
     return os;
 }
 
-static std::string findFilePath(const std::string& filename, const std::string& startdir)
+static std::string findFilePath(const std::string &filename,
+                                const std::string &startdir)
 {
     const char *searchPath[] = {
-        "/shaders/",    // shaders directory, for most builds
+        "/shaders/", // shaders directory, for most builds
         "/../shaders/", // one directory up, for multi-config builds
     };
     for (unsigned int i = 0; i < sizeof(searchPath) / sizeof(char *); ++i)
@@ -777,7 +778,8 @@ static std::string findFilePath(const std::string& filename, const std::string& 
     return "";
 }
 
-std::vector<char> readFile(const std::string &filename, const std::string& startdir = "")
+std::vector<char> readFile(const std::string &filename,
+                           const std::string &startdir = "")
 {
     std::string filepath = findFilePath(filename, startdir);
     std::ifstream file(filepath, std::ios::ate | std::ios::binary);
