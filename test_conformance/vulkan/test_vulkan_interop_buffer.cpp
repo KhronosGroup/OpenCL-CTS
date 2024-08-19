@@ -116,8 +116,7 @@ int run_test_with_two_queue(
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
-    std::string filepath = exe_dir() + "/shaders/buffer.spv";
-    std::vector<char> vkBufferShader = readFile(filepath);
+    std::vector<char> vkBufferShader = readFile("buffer.spv", exe_dir());
 
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
@@ -449,8 +448,7 @@ int run_test_with_one_queue(
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
-    std::string filepath = exe_dir() + "/shaders/buffer.spv";
-    std::vector<char> vkBufferShader = readFile(filepath);
+    std::vector<char> vkBufferShader = readFile("buffer.spv", exe_dir());
 
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
@@ -753,8 +751,7 @@ int run_test_with_multi_import_same_ctx(
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
-    std::string filepath = exe_dir() + "/shaders/buffer.spv";
-    std::vector<char> vkBufferShader = readFile(filepath);
+    std::vector<char> vkBufferShader = readFile("buffer.spv", exe_dir());
 
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
@@ -1102,8 +1099,7 @@ int run_test_with_multi_import_diff_ctx(
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
-    std::string filepath = exe_dir() + "/shaders/buffer.spv";
-    std::vector<char> vkBufferShader = readFile(filepath);
+    std::vector<char> vkBufferShader = readFile("buffer.spv", exe_dir());
 
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
