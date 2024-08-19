@@ -384,8 +384,8 @@ int test_callbacks_simultaneous(cl_device_id deviceID, cl_context context,
     return -1;
 }
 
-int test_callback_not_called_simple(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+int test_callback_on_error_simple(cl_device_id deviceID, cl_context context,
+                                  cl_command_queue queue, int num_elements)
 {
     cl_int error = CL_SUCCESS;
     clEventWrapper user_event = clCreateUserEvent(context, &error);
@@ -412,10 +412,10 @@ int test_callback_not_called_simple(cl_device_id deviceID, cl_context context,
     return CL_SUCCESS;
 }
 
-int test_callback_not_called_enqueue_command(cl_device_id deviceID,
-                                             cl_context context,
-                                             cl_command_queue queue,
-                                             int num_elements)
+int test_callback_on_error_enqueue_command(cl_device_id deviceID,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements)
 {
     cl_int error = CL_SUCCESS;
     bool confirmation = false;
