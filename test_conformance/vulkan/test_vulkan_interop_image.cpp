@@ -17,6 +17,7 @@
 #include <vulkan_interop_common.hpp>
 #include <string>
 #include "harness/errorHelpers.h"
+#include "harness/os_helpers.h"
 #include <algorithm>
 #include "deviceInfo.h"
 
@@ -270,10 +271,10 @@ int run_test_with_two_queue(
         ASSERT_LEQ(elementSize, (uint32_t)MAX_2D_IMAGE_ELEMENT_SIZE);
         log_info("elementSize= %d\n", elementSize);
 
-        std::string fileName = "image2D_"
+        std::string filepath = exe_dir() + "/shaders/image2D_"
             + std::string(getVulkanFormatGLSLFormat(vkFormat)) + ".spv";
-        log_info("Load %s file", fileName.c_str());
-        vkImage2DShader = readFile(fileName);
+        log_info("Load file: %s\n", filepath.c_str());
+        vkImage2DShader = readFile(filepath);
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
 
         VulkanComputePipeline vkComputePipeline(vkDevice, vkPipelineLayout,
@@ -882,10 +883,10 @@ int run_test_with_one_queue(
         ASSERT_LEQ(elementSize, (uint32_t)MAX_2D_IMAGE_ELEMENT_SIZE);
         log_info("elementSize= %d\n", elementSize);
 
-        std::string fileName = "image2D_"
+        std::string filepath = exe_dir() + "/shaders/image2D_"
             + std::string(getVulkanFormatGLSLFormat(vkFormat)) + ".spv";
-        log_info("Load %s file", fileName.c_str());
-        vkImage2DShader = readFile(fileName);
+        log_info("Load file: %s\n", filepath.c_str());
+        vkImage2DShader = readFile(filepath);
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
 
         VulkanComputePipeline vkComputePipeline(vkDevice, vkPipelineLayout,
