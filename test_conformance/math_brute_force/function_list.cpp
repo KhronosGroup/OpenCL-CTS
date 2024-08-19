@@ -65,6 +65,7 @@
 #define binaryOF NULL
 #define binaryF_nextafter NULL
 #define binaryOperatorF NULL
+#define binaryOperatorOF NULL
 #define binaryF_i NULL
 #define macro_binaryF NULL
 #define ternaryF NULL
@@ -169,6 +170,13 @@ static constexpr vtbl _binary_operator = {
     TestFunc_Half_Half_Half_Operator,
 };
 
+static constexpr vtbl _binary_operator_of = {
+    "binaryOperator_of",
+    TestFunc_Float_Float_Float_Operator,
+    nullptr,
+    nullptr,
+};
+
 static constexpr vtbl _binary_i = {
     "binary_i",
     TestFunc_Float_Float_Int,
@@ -227,6 +235,7 @@ static constexpr vtbl _mad_tbl = {
 #define binaryF_nextafter &_binary_nextafter
 #define binaryOF &_binaryof
 #define binaryOperatorF &_binary_operator
+#define binaryOperatorOF &_binary_operator_of
 #define binaryF_i &_binary_i
 #define macro_binaryF &_macro_binary
 #define ternaryF &_ternary
@@ -370,17 +379,17 @@ const Func functionList[] = {
     { "sqrt_cr",
       "sqrt",
       { (void*)reference_sqrt },
-      { (void*)reference_sqrtl },
+      { nullptr },
       { NULL },
       0.0f,
-      0.0f,
-      0.0f,
-      0.0f,
+      INFINITY,
+      INFINITY,
+      INFINITY,
       INFINITY,
       INFINITY,
       FTZ_OFF,
       RELAXED_OFF,
-      unaryF },
+      unaryOF /* only for single precision */ },
 
     // In derived mode it the ulp error is calculated as sin/cos.
     // In non-derived mode it is the same as half_tan.
@@ -426,17 +435,17 @@ const Func functionList[] = {
     { "divide_cr",
       "/",
       { (void*)reference_divide },
-      { (void*)reference_dividel },
-      { (void*)reference_relaxed_divide },
+      { nullptr },
+      { nullptr },
       0.0f,
-      0.0f,
-      0.0f,
-      0.0f,
-      0.f,
+      INFINITY,
+      INFINITY,
+      INFINITY,
+      INFINITY,
       INFINITY,
       FTZ_OFF,
       RELAXED_OFF,
-      binaryOperatorF },
+      binaryOperatorOF /* only for single precision */ },
     OPERATOR_ENTRY(multiply, "*", 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryOperatorF),
     OPERATOR_ENTRY(assignment, "", 0.0f, 0.0f, 0.0f, FTZ_OFF,
                    unaryF), // A simple copy operation

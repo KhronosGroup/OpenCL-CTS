@@ -67,6 +67,8 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
+        if (gSkipCorrectnessTesting) break;
+
         // Init input array
         cl_ulong *p = (cl_ulong *)gIn;
         for (size_t j = 0; j < BUFFER_SIZE / sizeof(cl_ulong); j++)
@@ -156,8 +158,6 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
                 return error;
             }
         }
-
-        if (gSkipCorrectnessTesting) break;
 
         // Verify data
         uint64_t *t = (uint64_t *)gOut_Ref;

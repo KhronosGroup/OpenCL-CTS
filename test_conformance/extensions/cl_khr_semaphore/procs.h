@@ -45,6 +45,28 @@ extern int test_semaphores_import_export_fd(cl_device_id deviceID,
                                             cl_context context,
                                             cl_command_queue queue,
                                             int num_elements);
+extern int test_semaphores_negative_create_invalid_context(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_semaphores_negative_create_invalid_property(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_semaphores_negative_create_multi_device_property(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_semaphores_negative_create_invalid_device(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_semaphores_negative_create_import_invalid_device(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_semaphores_negative_create_invalid_value(cl_device_id device,
+                                                         cl_context context,
+                                                         cl_command_queue queue,
+                                                         int num_elements);
+extern int test_semaphores_negative_create_invalid_operation(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
 extern int test_semaphores_negative_get_info_invalid_semaphore(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
