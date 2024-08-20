@@ -57,6 +57,8 @@ test_definition test_list[] = {
     ADD_TEST(callbacks),
     ADD_TEST(callbacks_simultaneous),
     ADD_TEST(userevents_multithreaded),
+    ADD_TEST(callback_on_error_simple),
+    ADD_TEST(callback_on_error_enqueue_command)
 };
 
 const int test_num = ARRAY_SIZE(test_list);
