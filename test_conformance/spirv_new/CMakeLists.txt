@@ -7,6 +7,7 @@ set(${MODULE_NAME}_SOURCES
   test_decorate.cpp
   test_get_program_il.cpp
   test_linkage.cpp
+  test_no_integer_wrap_decoration.cpp
   test_op_atomic.cpp
   test_op_branch_conditional.cpp
   test_op_branch.cpp
@@ -26,7 +27,6 @@ set(${MODULE_NAME}_SOURCES
   test_op_vector_extract.cpp
   test_op_vector_insert.cpp
   test_op_vector_times_scalar.cpp
-  test_no_integer_wrap_decoration.cpp
 )
 
 set(TEST_HARNESS_SOURCES
