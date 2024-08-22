@@ -100,21 +100,17 @@ struct MutableCommandFullDispatch : InfoMutableCommandBufferTest
 
         if ((available_caps & CL_MUTABLE_DISPATCH_EXEC_INFO_KHR) == 0)
         {
-            error = create_single_kernel_helper_create_program(
-                context, &program, 1, &kernel_str_no_svm);
+            error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                                &kernel_str_no_svm,
+                                                "full_dispatch");
         }
         else
         {
-            error = create_single_kernel_helper_create_program(
-                context, &program, 1, &kernel_str_svm);
+            error =
+                create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &kernel_str_svm, "full_dispatch");
         }
         test_error(error, "Failed to create program with source");
-
-        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-        test_error(error, "Failed to build program");
-
-        kernel = clCreateKernel(program, "full_dispatch", &error);
-        test_error(error, "Failed to create copy kernel");
 
         return CL_SUCCESS;
     }
