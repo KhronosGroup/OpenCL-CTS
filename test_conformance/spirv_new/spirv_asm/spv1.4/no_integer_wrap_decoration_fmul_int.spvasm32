@@ -6,7 +6,6 @@
                OpCapability Addresses
                OpCapability Linkage
                OpCapability Kernel
-          %1 = OpExtInstImport "OpenCL.std"
                OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %2 "fmath_cl" %__spirv_BuiltInGlobalInvocationId
                OpSource OpenCL_C 200000
