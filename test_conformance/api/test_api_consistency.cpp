@@ -1149,8 +1149,9 @@ int test_consistency_3d_image_writes(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-int test_consistency_requirments_fp64(cl_device_id deviceID, cl_context context,
-                                      cl_command_queue queue, int num_elements)
+int test_consistency_requirements_fp64(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue, int num_elements)
 {
     cl_int error = CL_SUCCESS;
     cl_device_fp_config value = 0;
@@ -1196,21 +1197,23 @@ int test_consistency_requirments_fp64(cl_device_id deviceID, cl_context context,
             error,
             "Unable to get device CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE");
         test_assert_error(
-            value > 0, "CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0");
+            value == 0,
+            "CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0");
 
         error = clGetDeviceInfo(deviceID, CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE,
                                 sizeof(value), &value, nullptr);
         test_error(error,
                    "Unable to get device CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE");
-        test_assert_error(value > 0,
+        test_assert_error(value == 0,
                           "CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE must return 0");
     }
 
     return TEST_PASS;
 }
 
-int test_consistency_requirments_fp16(cl_device_id deviceID, cl_context context,
-                                      cl_command_queue queue, int num_elements)
+int test_consistency_requirements_fp16(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue, int num_elements)
 {
     cl_int error = CL_SUCCESS;
     cl_device_fp_config value = 0;
