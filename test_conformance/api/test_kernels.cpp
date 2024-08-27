@@ -389,8 +389,8 @@ int test_set_kernel_arg_constant(cl_device_id deviceID, cl_context context, cl_c
     std::vector<cl_int> randomTestDataB(num_elements);
 
     /* Verify our test buffer won't be bigger than allowed */
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE, sizeof( maxSize ), &maxSize, 0 );
-    test_error( error, "Unable to get max constant buffer size" );
+    maxSize = get_device_info_max_constant_buffer_size(
+        deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     if (maxSize < sizeof(cl_int) * num_elements)
     {
         log_error( "ERROR: Unable to test constant argument to kernel: max size of constant buffer is reported as %d!\n", (int)maxSize );

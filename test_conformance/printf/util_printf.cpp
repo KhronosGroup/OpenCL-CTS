@@ -82,8 +82,12 @@ std::vector<printDataGenParameters> printIntGenParameters = {
     //(Minimum)Six-wide,Five-digit(zero-filled in absent
     // digits),default(right)-justified
 
-    { { "%06.5i" }, "100" }
+    { { "%06.5i" }, "100" },
 
+    //(Minimum)Ten-wide, left-justified, with a blank space inserted before the
+    // value
+
+    { { "% 10d" }, "42" },
 };
 
 //-----------------------------------------------
@@ -167,6 +171,16 @@ std::vector<printDataGenParameters> printHalfGenParameters = {
     // exponent,left-justified,with sign,capital E,default(right)-justified
 
     { { "%+#21.15E" }, "-65504.0h" },
+
+    //(Minimum)Ten-wide,two positions after the decimal,with
+    // a blank space inserted before the value, default(right)-justified
+
+    { { "% 10.2f" }, "1.25h" },
+
+    //(Minimum)Eight-wide,two positions after the decimal, with
+    // zeros inserted before the value, default(right)-justified
+
+    { { "%08.2f" }, "3.14h" },
 };
 
 //---------------------------------------------------------
@@ -366,6 +380,16 @@ std::vector<printDataGenParameters> printFloatGenParameters = {
     // xh.hhhhpAd style,default(right)-justified
 
     { { "%10.2a" }, "9990.235f" },
+
+    //(Minimum)Ten-wide,two positions after the decimal,with
+    // a blank space inserted before the value, default(right)-justified
+
+    { { "% 10.2f" }, "1.25f" },
+
+    //(Minimum)Eight-wide,two positions after the decimal,with
+    // zeros inserted before the value, default(right)-justified
+
+    { { "%08.2f" }, "3.14f" },
 };
 
 //---------------------------------------------------------
@@ -688,8 +712,12 @@ std::vector<printDataGenParameters> printOctalGenParameters = {
     //(Minimum)Four-wide,Five-digit,0-flag ignored(because of
     // precision),default(right)-justified
 
-    { { "%04.5o" }, "10" }
+    { { "%04.5o" }, "10" },
 
+    //(Minimum)Ten-wide, zeros inserted before the value,
+    // default(right)-justified
+
+    { { "%010o" }, "10" }
 };
 
 //-------------------------------------------------------
@@ -910,6 +938,12 @@ testCase testCaseChar = {
 
 std::vector<printDataGenParameters> printStringGenParameters = {
 
+    // empty format
+    { {""}, "\"foo\"" },
+
+    // empty argument
+    { {"%s"}, "\"\"" },
+
     //(Minimum)Four-wide,zero-filled,default(right)-justified
 
     { { "%4s" }, "\"foo\"" },
@@ -961,6 +995,10 @@ std::vector<printDataGenParameters> printStringGenParameters = {
 //---------------------------------------------------------
 
 std::vector<std::string> correctBufferString = {
+
+    "",
+
+    "",
 
     " foo",
 
@@ -1133,7 +1171,42 @@ std::vector<printDataGenParameters> printVectorGenParameters = {
 
     //(Minimum)Two-wide,two positions after decimal
 
-    { { "" }, "(1.0h,2.0h,3.0h,4.0h)", "%2.2", "hf", "half", "4" }
+    { { "" }, "(1.0h,2.0h,3.0h,4.0h)", "%2.2", "hf", "half", "4" },
+
+    // Three component vector in scientific notation
+
+    { { "" }, "(1234.25f,987654.5f,0.0005f)", "%.2", "e", "float", "3" },
+
+    // Four component vector in hexadecimal floating point, lowercase format
+
+    { { "" }, "(0.25f,0.5f,1.f,1.5f)", "%", "a", "float", "4" },
+
+    // Eight component vector in the shortest float representation
+
+    { { "" },
+      "(1.f,2.f,3.f,4.f,1.5f,3.14f,2.5f,3.5f)",
+      "%",
+      "g",
+      "float",
+      "8" },
+
+    // Sixteen component vector in unsigned octal format
+
+    { { "" },
+      "(1,2,3,4,5,6,7,8,9,0,32,64,128,256,512,1024)",
+      "%",
+      "o",
+      "uint",
+      "16" },
+
+    // Eight component vector in signed decimal integer format
+
+    { { "" }, "(1,-2,3,-4,5,-6,7,-8)", "%+", "i", "int", "8" },
+
+    // Four component vector in unsigned decimal integer format
+
+    { { "" }, "(512,1024,262144,1048576)", "%05", "u", "uint", "4" },
+
 };
 
 //------------------------------------------------------------
@@ -1154,8 +1227,19 @@ std::vector<std::string> correctBufferVector = {
 
     "12345678,98765432",
 
-    "1.00,2.00,3.00,4.00"
+    "1.00,2.00,3.00,4.00",
 
+    "1.23e+03,9.88e+05,5.00e-04",
+
+    "0x1p-2,0x1p-1,0x1p+0,0x1.8p+0",
+
+    "1,2,3,4,1.5,3.14,2.5,3.5",
+
+    "1,2,3,4,5,6,7,10,11,0,40,100,200,400,1000,2000",
+
+    "+1,-2,+3,-4,+5,-6,+7,-8",
+
+    "00512,01024,262144,1048576"
 };
 
 //-----------------------------------------------------------
