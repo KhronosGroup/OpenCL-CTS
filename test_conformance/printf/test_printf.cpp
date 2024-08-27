@@ -698,6 +698,15 @@ int doTest(cl_command_queue queue, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
+    if ((allTestCase[testId]->_type == TYPE_DOUBLE
+         || allTestCase[testId]->_type == TYPE_DOUBLE_LIMITS)
+        && !is_extension_available(device, "cl_khr_fp64"))
+    {
+        log_info("Skipping double because cl_khr_fp64 extension is not "
+                 "supported.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
     auto& genParams = allTestCase[testId]->_genParameters;
 
     auto fail_count = s_test_fail;
@@ -708,18 +717,25 @@ int doTest(cl_command_queue queue, cl_context context,
     {
         if (allTestCase[testId]->_type == TYPE_VECTOR)
         {
-            if ((strcmp(allTestCase[testId]->_genParameters[testNum].dataType,
-                        "half")
-                 == 0)
-                && !is_extension_available(device, "cl_khr_fp16"))
-            {
-                log_info("Skipping half because cl_khr_fp16 extension is not "
-                         "supported.\n");
+            auto is_vector_type_supported = [&](const char* type_name,
+                                                const char* ext_name) {
+                if ((strcmp(genParams[testNum].dataType, type_name) == 0)
+                    && !is_extension_available(device, ext_name))
+                {
+                    log_info("Skipping %s because %s extension "
+                             "is not supported.\n",
+                             type_name, ext_name);
 
-                s_test_skip++;
-                s_test_cnt++;
-                continue;
-            }
+                    s_test_skip++;
+                    s_test_cnt++;
+                    return false;
+                }
+                return true;
+            };
+
+            if (!is_vector_type_supported("half", "cl_khr_fp16")) continue;
+
+            if (!is_vector_type_supported("double", "cl_khr_fp64")) continue;
 
             // Long support for varible type
             if (!strcmp(allTestCase[testId]->_genParameters[testNum].dataType,
@@ -935,6 +951,18 @@ int test_float_limits(cl_device_id deviceID, cl_context context,
     return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, deviceID);
 }
 
+int test_double(cl_device_id deviceID, cl_context context,
+                cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_DOUBLE, deviceID);
+}
+
+int test_double_limits(cl_device_id deviceID, cl_context context,
+                       cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_DOUBLE_LIMITS, deviceID);
+}
+
 int test_octal(cl_device_id deviceID, cl_context context,
                cl_command_queue queue, int num_elements)
 {
@@ -1020,6 +1048,8 @@ test_definition test_list[] = {
     ADD_TEST(half_limits),
     ADD_TEST(float),
     ADD_TEST(float_limits),
+    ADD_TEST(double),
+    ADD_TEST(double_limits),
     ADD_TEST(octal),
     ADD_TEST(unsigned),
     ADD_TEST(hexadecimal),
