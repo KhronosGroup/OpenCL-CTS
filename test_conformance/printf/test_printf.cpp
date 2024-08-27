@@ -15,11 +15,17 @@
 //
 #include "harness/os_helpers.h"
 #include "harness/typeWrappers.h"
+#include "harness/stringHelpers.h"
+#include "harness/conversions.h"
 
+#include <algorithm>
+#include <array>
 #include <cstdarg>
-#include <string.h>
+#include <cstdint>
 #include <errno.h>
 #include <memory>
+#include <string.h>
+#include <vector>
 
 #if ! defined( _WIN32)
 #if defined(__APPLE__)
@@ -43,6 +49,7 @@
 #include "harness/errorHelpers.h"
 #include "harness/kernelHelpers.h"
 #include "harness/parseParameters.h"
+#include "harness/rounding_mode.h"
 
 #include <CL/cl_ext.h>
 
@@ -51,50 +58,49 @@ typedef  unsigned int uint32_t;
 
 test_status InitCL( cl_device_id device );
 
-//-----------------------------------------
-// Static helper functions declaration
-//-----------------------------------------
+namespace {
 
-static void printUsage( void );
+//-----------------------------------------
+// helper functions declaration
+//-----------------------------------------
 
 //Stream helper functions
 
 //Associate stdout stream with the file(gFileName):i.e redirect stdout stream to the specific files (gFileName)
-static int acquireOutputStream(int* error);
+int acquireOutputStream(int* error);
 
 //Close the file(gFileName) associated with the stdout stream and disassociates it.
-static void releaseOutputStream(int fd);
+void releaseOutputStream(int fd);
 
 //Get analysis buffer to verify the correctess of printed data
-static void getAnalysisBuffer(char* analysisBuffer);
+void getAnalysisBuffer(char* analysisBuffer);
 
 //Kernel builder helper functions
 
 //Check if the test case is for kernel that has argument
-static int isKernelArgument(testCase* pTestCase,size_t testId);
+int isKernelArgument(testCase* pTestCase, size_t testId);
 
 //Check if the test case treats %p format for void*
-static int isKernelPFormat(testCase* pTestCase,size_t testId);
+int isKernelPFormat(testCase* pTestCase, size_t testId);
 
 //-----------------------------------------
 // Static functions declarations
 //-----------------------------------------
 // Make a program that uses printf for the given type/format,
-static cl_program
-makePrintfProgram(cl_kernel* kernel_ptr, const cl_context context,
-                  const unsigned int testId, const unsigned int testNum,
-                  const unsigned int formatNum, bool isLongSupport = true,
-                  bool is64bAddrSpace = false);
+cl_program makePrintfProgram(cl_kernel* kernel_ptr, const cl_context context,
+                             cl_device_id device, const unsigned int testId,
+                             const unsigned int testNum,
+                             const unsigned int formatNum);
 
 // Creates and execute the printf test for the given device, context, type/format
-static int doTest(cl_command_queue queue, cl_context context,
-                  const unsigned int testId, cl_device_id device);
+int doTest(cl_command_queue queue, cl_context context,
+           const unsigned int testId, cl_device_id device);
 
 // Check if device supports long
-static bool isLongSupported(cl_device_id  device_id);
+bool isLongSupported(cl_device_id device_id);
 
 // Check if device address space is 64 bits
-static bool is64bAddressSpace(cl_device_id  device_id);
+bool is64bAddressSpace(cl_device_id device_id);
 
 //Wait until event status is CL_COMPLETE
 int waitForEvent(cl_event* event);
@@ -111,21 +117,25 @@ int s_test_cnt = 0;
 int s_test_fail = 0;
 int s_test_skip = 0;
 
+cl_context gContext;
+cl_command_queue gQueue;
+int gFd;
 
-static cl_context        gContext;
-static cl_command_queue  gQueue;
-static int               gFd;
+char gFileName[256];
 
-static char gFileName[256];
+MTdataHolder gMTdata;
+
+// For the sake of proper logging of negative results
+std::string gLatestKernelSource;
 
 //-----------------------------------------
-// Static helper functions definition
+// helper functions definition
 //-----------------------------------------
 
 //-----------------------------------------
 // acquireOutputStream
 //-----------------------------------------
-static int acquireOutputStream(int* error)
+int acquireOutputStream(int* error)
 {
     int fd = streamDup(fileno(stdout));
     *error = 0;
@@ -140,7 +150,7 @@ static int acquireOutputStream(int* error)
 //-----------------------------------------
 // releaseOutputStream
 //-----------------------------------------
-static void releaseOutputStream(int fd)
+void releaseOutputStream(int fd)
 {
     fflush(stdout);
     streamDup2(fd,fileno(stdout));
@@ -150,7 +160,8 @@ static void releaseOutputStream(int fd)
 //-----------------------------------------
 // printfCallBack
 //-----------------------------------------
-static void CL_CALLBACK printfCallBack(const char *printf_data, size_t len, size_t final, void *user_data)
+void CL_CALLBACK printfCallBack(const char* printf_data, size_t len,
+                                size_t final, void* user_data)
 {
     fwrite(printf_data, 1, len, stdout);
 }
@@ -158,7 +169,7 @@ static void CL_CALLBACK printfCallBack(const char *printf_data, size_t len, size
 //-----------------------------------------
 // getAnalysisBuffer
 //-----------------------------------------
-static void getAnalysisBuffer(char* analysisBuffer)
+void getAnalysisBuffer(char* analysisBuffer)
 {
     FILE *fp;
     memset(analysisBuffer,0,ANALYSIS_BUFFER_SIZE);
@@ -177,14 +188,14 @@ static void getAnalysisBuffer(char* analysisBuffer)
 //-----------------------------------------
 // isKernelArgument
 //-----------------------------------------
-static int isKernelArgument(testCase* pTestCase,size_t testId)
+int isKernelArgument(testCase* pTestCase, size_t testId)
 {
     return strcmp(pTestCase->_genParameters[testId].addrSpaceArgumentTypeQualifier,"");
 }
 //-----------------------------------------
 // isKernelPFormat
 //-----------------------------------------
-static int isKernelPFormat(testCase* pTestCase,size_t testId)
+int isKernelPFormat(testCase* pTestCase, size_t testId)
 {
     return strcmp(pTestCase->_genParameters[testId].addrSpacePAdd,"");
 }
@@ -211,18 +222,159 @@ int waitForEvent(cl_event* event)
 }
 
 //-----------------------------------------
-// Static helper functions definition
+// makeMixedFormatPrintfProgram
+// Generates in-flight printf kernel with format string including:
+//     -data before conversion flags (randomly generated ascii string)
+//     -randomly generated conversion flags (integer or floating point)
+//     -data after conversion flags (randomly generated ascii string).
+// Moreover it generates suitable arguments.
+// example: printf("zH, %u, %a, D+{gy\n", -929240879, 24295.671875f)
 //-----------------------------------------
+cl_program makeMixedFormatPrintfProgram(cl_kernel* kernel_ptr,
+                                        const cl_context context,
+                                        const cl_device_id device,
+                                        const unsigned int testId,
+                                        const unsigned int testNum,
+                                        const std::string& testname)
+{
+    auto gen_char = [&]() {
+        static const char dict[] = {
+            " \t!#$&()*+,-./"
+            "123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`"
+            "abcdefghijklmnopqrstuvwxyz{|}~"
+        };
+        return dict[genrand_int32(gMTdata) % ((int)sizeof(dict) - 1)];
+    };
+
+    std::array<std::vector<std::string>, 2> formats = {
+        { { "%f", "%e", "%g", "%a", "%F", "%E", "%G", "%A" },
+          { "%d", "%i", "%u", "%x", "%o", "%X" } }
+    };
+    std::vector<char> data_before(2 + genrand_int32(gMTdata) % 8);
+    std::vector<char> data_after(2 + genrand_int32(gMTdata) % 8);
+
+    std::generate(data_before.begin(), data_before.end(), gen_char);
+    std::generate(data_after.begin(), data_after.end(), gen_char);
+
+    cl_uint num_args = 2 + genrand_int32(gMTdata) % 4;
+
+    // Map device rounding to CTS rounding type
+    // get_default_rounding_mode supports RNE and RTZ
+    auto get_rounding = [](const cl_device_fp_config& fpConfig) {
+        if (fpConfig == CL_FP_ROUND_TO_NEAREST)
+        {
+            return kRoundToNearestEven;
+        }
+        else if (fpConfig == CL_FP_ROUND_TO_ZERO)
+        {
+            return kRoundTowardZero;
+        }
+        else
+        {
+            assert(false && "Unreachable");
+        }
+        return kDefaultRoundingMode;
+    };
+
+    const RoundingMode hostRound = get_round();
+    RoundingMode deviceRound = get_rounding(get_default_rounding_mode(device));
+
+    std::ostringstream format_str;
+    std::ostringstream ref_str;
+    std::ostringstream source_gen;
+    std::ostringstream args_str;
+    source_gen << "__kernel void " << testname
+               << "(void)\n"
+                  "{\n"
+                  "   printf(\"";
+    for (auto it : data_before)
+    {
+        format_str << it;
+        ref_str << it;
+    }
+    format_str << ", ";
+    ref_str << ", ";
+
+
+    for (cl_uint i = 0; i < num_args; i++)
+    {
+        std::uint8_t is_int = genrand_int32(gMTdata) % 2;
+
+        // Set CPU rounding mode to match that of the device
+        set_round(deviceRound, is_int != 0 ? kint : kfloat);
+
+        std::string format =
+            formats[is_int][genrand_int32(gMTdata) % formats[is_int].size()];
+        format_str << format << ", ";
+
+        if (is_int)
+        {
+            int arg = genrand_int32(gMTdata);
+            args_str << str_sprintf("%d", arg) << ", ";
+            ref_str << str_sprintf(format, arg) << ", ";
+        }
+        else
+        {
+            const float max_range = 100000.f;
+            float arg = get_random_float(-max_range, max_range, gMTdata);
+            args_str << str_sprintf("%f", arg) << "f, ";
+            ref_str << str_sprintf(format, arg) << ", ";
+        }
+    }
+    // Restore the original CPU rounding mode
+    set_round(hostRound, kfloat);
+
+    for (auto it : data_after)
+    {
+        format_str << it;
+        ref_str << it;
+    }
+
+    {
+        std::ostringstream args_cpy;
+        args_cpy << args_str.str();
+        args_cpy.seekp(-2, std::ios_base::end);
+        args_cpy << ")\n";
+        log_info("%d) testing printf(\"%s\\n\", %s", testNum,
+                 format_str.str().c_str(), args_cpy.str().c_str());
+    }
+
+    args_str.seekp(-2, std::ios_base::end);
+    args_str << ");\n}\n";
+
+
+    source_gen << format_str.str() << "\\n\""
+               << ", " << args_str.str();
+
+    std::string kernel_source = source_gen.str();
+    const char* ptr = kernel_source.c_str();
+
+    cl_program program;
+    cl_int err = create_single_kernel_helper(context, &program, kernel_ptr, 1,
+                                             &ptr, testname.c_str());
+
+    gLatestKernelSource = kernel_source.c_str();
+
+    // Save the reference result
+    allTestCase[testId]->_correctBuffer.push_back(ref_str.str());
+
+    if (!program || err)
+    {
+        log_error("create_single_kernel_helper failed\n");
+        return NULL;
+    }
+
+    return program;
+}
 
 //-----------------------------------------
 // makePrintfProgram
 //-----------------------------------------
-static cl_program makePrintfProgram(cl_kernel* kernel_ptr,
-                                    const cl_context context,
-                                    const unsigned int testId,
-                                    const unsigned int testNum,
-                                    const unsigned int formatNum,
-                                    bool isLongSupport, bool is64bAddrSpace)
+cl_program makePrintfProgram(cl_kernel* kernel_ptr, const cl_context context,
+                             const cl_device_id device,
+                             const unsigned int testId,
+                             const unsigned int testNum,
+                             const unsigned int formatNum)
 {
     int err;
     cl_program program;
@@ -293,6 +445,9 @@ static cl_program makePrintfProgram(cl_kernel* kernel_ptr,
         err = create_single_kernel_helper(
             context, &program, kernel_ptr,
             sizeof(sourceVec) / sizeof(sourceVec[0]), sourceVec, testname);
+
+        gLatestKernelSource =
+            concat_kernel(sourceVec, sizeof(sourceVec) / sizeof(sourceVec[0]));
     }
     else if(allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
     {
@@ -322,6 +477,15 @@ static cl_program makePrintfProgram(cl_kernel* kernel_ptr,
                                           sizeof(sourceAddrSpace)
                                               / sizeof(sourceAddrSpace[0]),
                                           sourceAddrSpace, testname);
+
+        gLatestKernelSource =
+            concat_kernel(sourceAddrSpace,
+                          sizeof(sourceAddrSpace) / sizeof(sourceAddrSpace[0]));
+    }
+    else if (allTestCase[testId]->_type == TYPE_MIXED_FORMAT_RANDOM)
+    {
+        return makeMixedFormatPrintfProgram(kernel_ptr, context, device, testId,
+                                            testNum, testname);
     }
     else
     {
@@ -352,6 +516,8 @@ static cl_program makePrintfProgram(cl_kernel* kernel_ptr,
 
         err = create_single_kernel_helper(context, &program, kernel_ptr, 1,
                                           &ptr, testname);
+
+        gLatestKernelSource = kernel_source.c_str();
     }
 
     if (!program || err) {
@@ -365,7 +531,7 @@ static cl_program makePrintfProgram(cl_kernel* kernel_ptr,
 //-----------------------------------------
 // isLongSupported
 //-----------------------------------------
-static bool isLongSupported(cl_device_id device_id)
+bool isLongSupported(cl_device_id device_id)
 {
     size_t tempSize = 0;
     cl_int status;
@@ -409,7 +575,7 @@ static bool isLongSupported(cl_device_id device_id)
 //-----------------------------------------
 // is64bAddressSpace
 //-----------------------------------------
-static bool is64bAddressSpace(cl_device_id  device_id)
+bool is64bAddressSpace(cl_device_id device_id)
 {
     cl_int status;
     cl_uint addrSpaceB;
@@ -449,10 +615,77 @@ void subtest_fail(const char* msg, ...)
 }
 
 //-----------------------------------------
+// logTestType - printout test details
+//-----------------------------------------
+
+void logTestType(const unsigned testId, const unsigned testNum,
+                 unsigned formatNum)
+{
+    if (allTestCase[testId]->_type == TYPE_VECTOR)
+    {
+        log_info(
+            "%d)testing printf(\"%sv%s%s\",%s)\n", testNum,
+            allTestCase[testId]->_genParameters[testNum].vectorFormatFlag,
+            allTestCase[testId]->_genParameters[testNum].vectorSize,
+            allTestCase[testId]->_genParameters[testNum].vectorFormatSpecifier,
+            allTestCase[testId]->_genParameters[testNum].dataRepresentation);
+    }
+    else if (allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
+    {
+        if (isKernelArgument(allTestCase[testId], testNum))
+        {
+            log_info("%d)testing kernel //argument %s \n   printf(%s,%s)\n",
+                     testNum,
+                     allTestCase[testId]
+                         ->_genParameters[testNum]
+                         .addrSpaceArgumentTypeQualifier,
+                     allTestCase[testId]
+                         ->_genParameters[testNum]
+                         .genericFormats[formatNum]
+                         .c_str(),
+                     allTestCase[testId]
+                         ->_genParameters[testNum]
+                         .addrSpaceParameter);
+        }
+        else
+        {
+            log_info("%d)testing kernel //variable %s \n   printf(%s,%s)\n",
+                     testNum,
+                     allTestCase[testId]
+                         ->_genParameters[testNum]
+                         .addrSpaceVariableTypeQualifier,
+                     allTestCase[testId]
+                         ->_genParameters[testNum]
+                         .genericFormats[formatNum]
+                         .c_str(),
+                     allTestCase[testId]
+                         ->_genParameters[testNum]
+                         .addrSpaceParameter);
+        }
+    }
+    else if (allTestCase[testId]->_type != TYPE_MIXED_FORMAT_RANDOM)
+    {
+        log_info("%d)testing printf(\"%s\"", testNum,
+                 allTestCase[testId]
+                     ->_genParameters[testNum]
+                     .genericFormats[formatNum]
+                     .c_str());
+        if (allTestCase[testId]->_genParameters[testNum].dataRepresentation)
+            log_info(",%s",
+                     allTestCase[testId]
+                         ->_genParameters[testNum]
+                         .dataRepresentation);
+        log_info(")\n");
+    }
+
+    fflush(stdout);
+}
+
+//-----------------------------------------
 // doTest
 //-----------------------------------------
-static int doTest(cl_command_queue queue, cl_context context,
-                  const unsigned int testId, cl_device_id device)
+int doTest(cl_command_queue queue, cl_context context,
+           const unsigned int testId, cl_device_id device)
 {
     int err = TEST_FAIL;
 
@@ -500,88 +733,13 @@ static int doTest(cl_command_queue queue, cl_context context,
             }
         }
 
-        for (unsigned formatNum = 0; formatNum < allTestCase[testId]
-                                                     ->_genParameters[testNum]
-                                                     .genericFormats.size();
+        auto genParamsVec = allTestCase[testId]->_genParameters;
+        auto genFormatVec = genParamsVec[testNum].genericFormats;
+
+        for (unsigned formatNum = 0; formatNum < genFormatVec.size();
              formatNum++)
         {
-            if (allTestCase[testId]->_type == TYPE_VECTOR)
-            {
-                log_info(
-                    "%d)testing printf(\"%sv%s%s\",%s)\n", testNum,
-                    allTestCase[testId]
-                        ->_genParameters[testNum]
-                        .vectorFormatFlag,
-                    allTestCase[testId]->_genParameters[testNum].vectorSize,
-                    allTestCase[testId]
-                        ->_genParameters[testNum]
-                        .vectorFormatSpecifier,
-                    allTestCase[testId]
-                        ->_genParameters[testNum]
-                        .dataRepresentation);
-            }
-            else if (allTestCase[testId]->_type == TYPE_ADDRESS_SPACE)
-            {
-                if (isKernelArgument(allTestCase[testId], testNum))
-                {
-                    log_info(
-                        "%d)testing kernel //argument %s \n   printf(%s,%s)\n",
-                        testNum,
-                        allTestCase[testId]
-                            ->_genParameters[testNum]
-                            .addrSpaceArgumentTypeQualifier,
-                        allTestCase[testId]
-                            ->_genParameters[testNum]
-                            .genericFormats[formatNum]
-                            .c_str(),
-                        allTestCase[testId]
-                            ->_genParameters[testNum]
-                            .addrSpaceParameter);
-                }
-                else
-                {
-                    log_info(
-                        "%d)testing kernel //variable %s \n   printf(%s,%s)\n",
-                        testNum,
-                        allTestCase[testId]
-                            ->_genParameters[testNum]
-                            .addrSpaceVariableTypeQualifier,
-                        allTestCase[testId]
-                            ->_genParameters[testNum]
-                            .genericFormats[formatNum]
-                            .c_str(),
-                        allTestCase[testId]
-                            ->_genParameters[testNum]
-                            .addrSpaceParameter);
-                }
-            }
-            else
-            {
-                log_info("%d)testing printf(\"%s\"", testNum,
-                         allTestCase[testId]
-                             ->_genParameters[testNum]
-                             .genericFormats[formatNum]
-                             .c_str());
-                if (allTestCase[testId]
-                        ->_genParameters[testNum]
-                        .dataRepresentation)
-                    log_info(",%s",
-                             allTestCase[testId]
-                                 ->_genParameters[testNum]
-                                 .dataRepresentation);
-                log_info(")\n");
-            }
-
-            fflush(stdout);
-
-            // Long support for address in FULL_PROFILE/EMBEDDED_PROFILE
-            bool isLongSupport = true;
-            if (allTestCase[testId]->_type == TYPE_ADDRESS_SPACE
-                && isKernelPFormat(allTestCase[testId], testNum)
-                && !isLongSupported(device))
-            {
-                isLongSupport = false;
-            }
+            logTestType(testId, testNum, formatNum);
 
             clProgramWrapper program;
             clKernelWrapper kernel;
@@ -596,9 +754,8 @@ static int doTest(cl_command_queue queue, cl_context context,
             // execution.
             size_t globalWorkSize[1];
 
-            program =
-                makePrintfProgram(&kernel, context, testId, testNum, formatNum,
-                                  isLongSupport, is64bAddressSpace(device));
+            program = makePrintfProgram(&kernel, context, device, testId,
+                                        testNum, formatNum);
             if (!program || !kernel)
             {
                 subtest_fail(nullptr);
@@ -712,7 +869,12 @@ static int doTest(cl_command_queue queue, cl_context context,
                     != verifyOutputBuffer(_analysisBuffer, allTestCase[testId],
                                           testNum, (cl_ulong)out32))
                 {
-                    subtest_fail("verifyOutputBuffer failed\n");
+                    subtest_fail(
+                        "verifyOutputBuffer failed with kernel: "
+                        "\n%s\n expected: %s\n got:      %s\n",
+                        gLatestKernelSource.c_str(),
+                        allTestCase[testId]->_correctBuffer[testNum].c_str(),
+                        _analysisBuffer);
                     continue;
                 }
             }
@@ -722,7 +884,12 @@ static int doTest(cl_command_queue queue, cl_context context,
                     != verifyOutputBuffer(_analysisBuffer, allTestCase[testId],
                                           testNum, out64))
                 {
-                    subtest_fail("verifyOutputBuffer failed\n");
+                    subtest_fail(
+                        "verifyOutputBuffer failed with kernel: "
+                        "\n%s\n expected: %s\n got:      %s\n",
+                        gLatestKernelSource.c_str(),
+                        allTestCase[testId]->_correctBuffer[testNum].c_str(),
+                        _analysisBuffer);
                     continue;
                 }
             }
@@ -734,6 +901,8 @@ static int doTest(cl_command_queue queue, cl_context context,
     if (s_test_skip - skip_count == s_test_cnt - pass_count)
         return TEST_SKIPPED_ITSELF;
     return s_test_fail - fail_count;
+}
+
 }
 
 int test_int(cl_device_id deviceID, cl_context context, cl_command_queue queue,
@@ -814,6 +983,12 @@ int test_address_space(cl_device_id deviceID, cl_context context,
     return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, deviceID);
 }
 
+int test_mixed_format_random(cl_device_id deviceID, cl_context context,
+                             cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_MIXED_FORMAT_RANDOM, deviceID);
+}
+
 int test_buffer_size(cl_device_id deviceID, cl_context context,
                      cl_command_queue queue, int num_elements)
 {
@@ -840,14 +1015,38 @@ int test_buffer_size(cl_device_id deviceID, cl_context context,
 }
 
 test_definition test_list[] = {
-    ADD_TEST(int),           ADD_TEST(half),          ADD_TEST(half_limits),
-    ADD_TEST(float),         ADD_TEST(float_limits),  ADD_TEST(octal),
-    ADD_TEST(unsigned),      ADD_TEST(hexadecimal),   ADD_TEST(char),
-    ADD_TEST(string),        ADD_TEST(format_string), ADD_TEST(vector),
-    ADD_TEST(address_space), ADD_TEST(buffer_size),
+    ADD_TEST(int),
+    ADD_TEST(half),
+    ADD_TEST(half_limits),
+    ADD_TEST(float),
+    ADD_TEST(float_limits),
+    ADD_TEST(octal),
+    ADD_TEST(unsigned),
+    ADD_TEST(hexadecimal),
+    ADD_TEST(char),
+    ADD_TEST(string),
+    ADD_TEST(format_string),
+    ADD_TEST(vector),
+    ADD_TEST(address_space),
+    ADD_TEST(buffer_size),
+    ADD_TEST(mixed_format_random),
 };
 
 const int test_num = ARRAY_SIZE( test_list );
+
+//-----------------------------------------
+// printUsage
+//-----------------------------------------
+static void printUsage(void)
+{
+    log_info("test_printf: <optional: testnames> \n");
+    log_info("\tdefault is to run the full test on the default device\n");
+    log_info("\n");
+    for (int i = 0; i < test_num; i++)
+    {
+        log_info("\t%s\n", test_list[i].name);
+    }
+}
 
 //-----------------------------------------
 // main
@@ -913,6 +1112,8 @@ int main(int argc, const char* argv[])
         return -1;
     }
 
+    gMTdata = MTdataHolder(gRandomSeed);
+
     int err = runTestHarnessWithCheck( argCount, argList, test_num, test_list, true, 0, InitCL );
 
     if(gQueue)
@@ -932,20 +1133,6 @@ int main(int argc, const char* argv[])
     free(argList);
     remove(gFileName);
     return err;
-}
-
-//-----------------------------------------
-// printUsage
-//-----------------------------------------
-static void printUsage( void )
-{
-    log_info("test_printf: <optional: testnames> \n");
-    log_info("\tdefault is to run the full test on the default device\n");
-    log_info("\n");
-    for( int i = 0; i < test_num; i++ )
-    {
-        log_info( "\t%s\n", test_list[i].name );
-    }
 }
 
 test_status InitCL( cl_device_id device )

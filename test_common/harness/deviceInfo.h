@@ -16,9 +16,6 @@
 #ifndef _deviceInfo_h
 #define _deviceInfo_h
 
-// Configuration
-#include "../config.hpp"
-
 #include <string>
 
 #include <CL/opencl.h>
@@ -50,5 +47,17 @@ std::string get_device_name(cl_device_id device);
 
 // Returns the maximum size in bytes for Kernel Parameters
 size_t get_max_param_size(cl_device_id device);
+
+/* We need to use a portion of available alloc size,
+ * divide it to leave some memory for the platform. */
+#define MAX_DEVICE_MEMORY_SIZE_DIVISOR (2)
+
+/* Get max allocation size. */
+cl_ulong get_device_info_max_mem_alloc_size(cl_device_id device,
+                                            unsigned int divisor = 1);
+cl_ulong get_device_info_global_mem_size(cl_device_id device,
+                                         unsigned int divisor = 1);
+cl_ulong get_device_info_max_constant_buffer_size(cl_device_id device,
+                                                  unsigned int divisor = 1);
 
 #endif // _deviceInfo_h

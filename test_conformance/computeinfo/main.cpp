@@ -188,6 +188,7 @@ config_info config_infos[] = {
     CONFIG_INFO(2, 0, CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT, cl_uint),
 
     CONFIG_INFO(1, 1, CL_DEVICE_MEM_BASE_ADDR_ALIGN, cl_uint),
+    CONFIG_INFO(1, 1, CL_DEVICE_HALF_FP_CONFIG, cl_device_fp_config),
     CONFIG_INFO(1, 1, CL_DEVICE_SINGLE_FP_CONFIG, cl_device_fp_config),
     CONFIG_INFO(1, 1, CL_DEVICE_DOUBLE_FP_CONFIG, cl_device_fp_config),
     CONFIG_INFO(1, 1, CL_DEVICE_GLOBAL_MEM_CACHE_TYPE,
@@ -1452,5 +1453,9 @@ int main(int argc, const char** argv)
         }
     }
 
-    return runTestHarness(argCount, argList, test_num, test_list, true, 0);
+    int error = runTestHarness(argCount, argList, test_num, test_list, true, 0);
+
+    free(argList);
+
+    return error;
 }

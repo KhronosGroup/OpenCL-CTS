@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 The Khronos Group Inc.
+// Copyright (c) 2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -266,4 +266,87 @@ int test_queue_properties_queries(cl_device_id deviceID, cl_context context,
         error |= run_test_queue_array_properties(context, deviceID, test_case);
     }
     return error;
+}
+
+int test_set_command_queue_property(cl_device_id deviceID, cl_context context,
+                                    cl_command_queue queue, int num_elements)
+{
+    int err;
+
+    // Required minimum command queue properties
+    std::vector<cl_command_queue_properties> queue_property_options = {
+        0, CL_QUEUE_PROFILING_ENABLE
+    };
+
+    // Add other supported properties combinations
+    cl_command_queue_properties supported_queue_props;
+    clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_PROPERTIES,
+                    sizeof(supported_queue_props), &supported_queue_props,
+                    NULL);
+    if (supported_queue_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)
+    {
+        queue_property_options.push_back(
+            CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+        queue_property_options.push_back(
+            CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+    }
+
+    // Initialise each queue with a different set of properties.
+    for (cl_command_queue_properties initial_properties :
+         queue_property_options)
+    {
+        clCommandQueueWrapper test_queue =
+            clCreateCommandQueue(context, deviceID, initial_properties, &err);
+        test_error(err, "clCreateCommandQueue failed");
+
+        cl_command_queue_properties old_properties, set_properties,
+            current_properties = initial_properties;
+
+        // Test clSetCommandQueueProperty with each set of properties, ignoring
+        // 0 as a property.
+        for (size_t i = 1; i < queue_property_options.size(); i++)
+        {
+            set_properties = queue_property_options[i];
+            err = clSetCommandQueueProperty(test_queue, set_properties,
+                                            CL_FALSE, &old_properties);
+            if (err == CL_INVALID_OPERATION)
+            {
+                // Implementations are allowed to return an error for
+                // non-OpenCL 1.0 devices. In which case, skip the test.
+                return TEST_SKIPPED_ITSELF;
+            }
+
+            test_error(err, "clSetCommandQueueProperty failed");
+            test_assert_error(old_properties == current_properties,
+                              "The old properties for this command queue were "
+                              "not as expected");
+
+            err = clGetCommandQueueInfo(test_queue, CL_QUEUE_PROPERTIES,
+                                        sizeof(cl_queue_properties),
+                                        &current_properties, NULL);
+            test_error(err, "clGetCommandQueueInfo failed");
+            test_assert_error(current_properties
+                                  == (old_properties & ~set_properties),
+                              "The current properties for this command queue "
+                              "were not as expected");
+
+            err = clSetCommandQueueProperty(test_queue, set_properties, CL_TRUE,
+                                            &old_properties);
+            test_error(err, "clSetCommandQueueProperty failed");
+            test_assert_error(old_properties == current_properties,
+                              "The old properties for this command queue were "
+                              "not as expected");
+
+            err = clGetCommandQueueInfo(test_queue, CL_QUEUE_PROPERTIES,
+                                        sizeof(cl_queue_properties),
+                                        &current_properties, NULL);
+            test_error(err, "clGetCommandQueueInfo failed");
+            test_assert_error(current_properties
+                                  == (set_properties | old_properties),
+                              "The current properties for this command queue "
+                              "were not as expected");
+        }
+    }
+
+    return TEST_PASS;
 }
