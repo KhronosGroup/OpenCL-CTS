@@ -139,7 +139,7 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal3 = 0.0f;
     uint64_t step = getTestStep(sizeof(float), BUFFER_SIZE);
 
-    cl_uchar overflow[BUFFER_SIZE / sizeof(float)];
+    std::vector<cl_uchar> overflow(BUFFER_SIZE / sizeof(float));
 
     float float_ulps;
     if (gIsEmbedded)
