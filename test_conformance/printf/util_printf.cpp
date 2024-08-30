@@ -1179,7 +1179,7 @@ std::vector<printDataGenParameters> printVectorGenParameters = {
 
     // Four component vector in hexadecimal floating point, lowercase format
 
-    { { "" }, "(0.25f,0.5f,1.f,1.5f)", "%", "hla", "float", "4" },
+    { { "" }, "(0.25f,0.5f,1.f,1.5f)", "%.1", "hla", "float", "4" },
 
     // Eight component vector in the shortest float representation
 
@@ -1231,12 +1231,7 @@ std::vector<std::string> correctBufferVector = {
 
     "1.23e+03,9.88e+05,5.00e-04",
 
-#ifdef _WIN32
-    "0x1.0000000000000p-2,0x1.0000000000000p-1,0x1.0000000000000p+0,"
-    "0x1.8000000000000p+0",
-#else
-    "0x1p-2,0x1p-1,0x1p+0,0x1.8p+0",
-#endif
+    "0x1.0p-2,0x1.0p-1,0x1.0p+0,0x1.8p+0",
 
     "1,2,3,4,1.5,3.14,2.5,3.5",
 
