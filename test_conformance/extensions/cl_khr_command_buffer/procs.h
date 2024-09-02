@@ -407,4 +407,32 @@ extern int test_negative_enqueue_inconsistent_device(cl_device_id device,
                                                      cl_context context,
                                                      cl_command_queue queue,
                                                      int num_elements);
+extern int test_negative_copy_to_immutable_buffer(cl_device_id device,
+                                                  cl_context contextn,
+                                                  cl_command_queue queue,
+                                                  int num_elements);
+extern int test_negative_copy_image_to_immutable_buffer(cl_device_id device,
+                                                        cl_context context,
+                                                        cl_command_queue queue,
+                                                        int num_elements);
+extern int test_negative_copy_to_immutable_buffer_rect(cl_device_id device,
+                                                       cl_context context,
+                                                       cl_command_queue queue,
+                                                       int num_elements);
+extern int test_negative_copy_to_immutable_image(cl_device_id device,
+                                                 cl_context context,
+                                                 cl_command_queue queue,
+                                                 int num_elements);
+extern int test_negative_copy_buffer_to_immutable_image(cl_device_id device,
+                                                        cl_context context,
+                                                        cl_command_queue queue,
+                                                        int num_elements);
+extern int test_negative_fill_immutable_image(cl_device_id device,
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements);
+extern int test_negative_fill_immutable_buffer(cl_device_id device,
+                                               cl_context context,
+                                               cl_command_queue queue,
+                                               int num_elements);
 #endif // CL_KHR_COMMAND_BUFFER_PROCS_H

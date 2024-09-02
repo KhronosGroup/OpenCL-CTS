@@ -161,6 +161,13 @@ test_definition test_list[] = {
     ADD_TEST(negative_enqueue_queue_without_reqd_properties),
     ADD_TEST(negative_enqueue_with_unsupported_queue_property),
     ADD_TEST(negative_enqueue_inconsistent_device),
+    ADD_TEST(negative_copy_buffer_to_immutable_image),
+    ADD_TEST(negative_copy_image_to_immutable_buffer),
+    ADD_TEST(negative_copy_to_immutable_buffer),
+    ADD_TEST(negative_copy_to_immutable_buffer_rect),
+    ADD_TEST(negative_copy_to_immutable_image),
+    ADD_TEST(negative_fill_immutable_buffer),
+    ADD_TEST(negative_fill_immutable_image),
 };
 
 int main(int argc, const char *argv[])
