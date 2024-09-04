@@ -700,8 +700,7 @@ int doTest(cl_command_queue queue, cl_context context,
 
     if ((allTestCase[testId]->_type == TYPE_LONG) && !isLongSupported(device))
     {
-        log_info("Skipping long because non-embeded test or cles_khr_int64 "
-                 "extension is not supported.\n");
+        log_info("Skipping long because long is not supported.\n");
         return TEST_SKIPPED_ITSELF;
     }
 

@@ -26,7 +26,8 @@ static void intRefBuilder(printDataGenParameters&, char*, const size_t);
 static void longRefBuilder(printDataGenParameters&, char*, const size_t);
 static void halfRefBuilder(printDataGenParameters&, char* rResult,
                            const size_t);
-static void floatRefBuilder(printDataGenParameters&, char* rResult, const size_t);
+static void floatRefBuilder(printDataGenParameters&, char* rResult,
+                            const size_t);
 static void octalRefBuilder(printDataGenParameters&, char*, const size_t);
 static void unsignedRefBuilder(printDataGenParameters&, char*, const size_t);
 static void hexRefBuilder(printDataGenParameters&, char*, const size_t);
@@ -122,33 +123,33 @@ std::vector<printDataGenParameters> printLongGenParameters = {
 
     //(Minimum) fifteen-wide,default(right)-justified
 
-    { { "%5d" }, "10000000000L" },
+    { { "%5ld" }, "10000000000L" },
 
     //(Minimum) fifteen-wide,left-justified
 
-    { { "%-15d" }, "-10000000000L" },
+    { { "%-15ld" }, "-10000000000L" },
 
     //(Minimum) fifteen-wide,default(right)-justified,zero-filled
 
-    { { "%015d" }, "10000000000L" },
+    { { "%015ld" }, "10000000000L" },
 
     //(Minimum) fifteen-wide,default(right)-justified,with sign
 
-    { { "%+15d" }, "-10000000000L" },
+    { { "%+15ld" }, "-10000000000L" },
 
     //(Minimum) fifteen-wide ,left-justified,with sign
 
-    { { "%-+15d" }, "10000000000L" },
+    { { "%-+15ld" }, "10000000000L" },
 
     //(Minimum) fifteen-digit(zero-filled in absent
     // digits),default(right)-justified
 
-    { { "%.15i" }, "10000000000L" },
+    { { "%.15li" }, "10000000000L" },
 
     //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
     // digits),default(right)-justified
 
-    { { "%-+16.15i" }, "-10000000000L" },
+    { { "%-+16.15li" }, "-10000000000L" },
 
 };
 
