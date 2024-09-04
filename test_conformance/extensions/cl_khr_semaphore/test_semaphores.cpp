@@ -14,8 +14,9 @@
 // limitations under the License.
 //
 
-
 #include <thread>
+
+#include "semaphore_base.h"
 
 #include "semaphore_base.h"
 
