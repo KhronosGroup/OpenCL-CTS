@@ -18,6 +18,7 @@
 #include "harness/testHarness.h"
 #include <ctype.h>
 #include <string.h>
+#include <cinttypes>
 
 const char *sample_single_param_kernel[] = {
     "__kernel void sample_test(__global int *src)\n"
@@ -227,13 +228,13 @@ int test_min_max_work_items_sizes(cl_device_id deviceID, cl_context context,
     {
         if (deviceMaxWorkItemSize[i] < 1)
         {
-            log_error("MAX_WORK_ITEM_SIZE in dimension %d is invalid: %lu\n", i,
+            log_error("MAX_WORK_ITEM_SIZE in dimension %d is invalid: %zu\n", i,
                       deviceMaxWorkItemSize[i]);
             errors++;
         }
         else
         {
-            log_info("Dimension %d has max work item size %lu\n", i,
+            log_info("Dimension %d has max work item size %zu\n", i,
                      deviceMaxWorkItemSize[i]);
         }
     }
@@ -257,7 +258,7 @@ int test_min_max_work_group_size(cl_device_id deviceID, cl_context context,
                             NULL);
     test_error(error, "Unable to get max work group size from device");
 
-    log_info("Reported %ld max device work group size.\n", deviceMaxThreadSize);
+    log_info("Reported %zu max device work group size.\n", deviceMaxThreadSize);
 
     if (deviceMaxThreadSize == 0)
     {
@@ -601,8 +602,9 @@ int test_min_max_mem_alloc_size(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    log_info("Reported max allocation size of %lld bytes (%gMB) and global mem "
-             "size of %lld bytes (%gMB).\n",
+    log_info("Reported max allocation size of %" PRIu64
+             " bytes (%gMB) and global mem "
+             "size of %" PRIu64 " bytes (%gMB).\n",
              maxAllocSize, maxAllocSize / (1024.0 * 1024.0), memSize,
              memSize / (1024.0 * 1024.0));
 
@@ -611,14 +613,16 @@ int test_min_max_mem_alloc_size(cl_device_id deviceID, cl_context context,
     while (currentSize >= maxAllocSize / MAX_REDUCTION_FACTOR)
     {
 
-        log_info("Trying to create a buffer of size of %lld bytes (%gMB).\n",
+        log_info("Trying to create a buffer of size of %" PRIu64
+                 " bytes (%gMB).\n",
                  currentSize, (double)currentSize / (1024.0 * 1024.0));
         memHdl = clCreateBuffer(context, CL_MEM_READ_ONLY, (size_t)currentSize,
                                 NULL, &error);
         if (error == CL_MEM_OBJECT_ALLOCATION_FAILURE
             || error == CL_OUT_OF_RESOURCES || error == CL_OUT_OF_HOST_MEMORY)
         {
-            log_info("\tAllocation failed at size of %lld bytes (%gMB).\n",
+            log_info("\tAllocation failed at size of %" PRIu64
+                     " bytes (%gMB).\n",
                      currentSize, (double)currentSize / (1024.0 * 1024.0));
             currentSize -= minSizeToTry;
             continue;
@@ -626,8 +630,8 @@ int test_min_max_mem_alloc_size(cl_device_id deviceID, cl_context context,
         test_error(error, "clCreateBuffer failed for maximum sized buffer.");
         return 0;
     }
-    log_error("Failed to allocate even %lld bytes (%gMB).\n", currentSize,
-              (double)currentSize / (1024.0 * 1024.0));
+    log_error("Failed to allocate even %" PRIu64 " bytes (%gMB).\n",
+              currentSize, (double)currentSize / (1024.0 * 1024.0));
     return -1;
 }
 
@@ -671,7 +675,7 @@ int test_min_max_image_2d_width(cl_device_id deviceID, cl_context context,
             (int)maxDimension);
         return -1;
     }
-    log_info("Max reported width is %ld.\n", maxDimension);
+    log_info("Max reported width is %zu.\n", maxDimension);
 
     /* Verify we can use the format */
     image_format_desc.image_channel_data_type = CL_UNORM_INT8;
@@ -688,8 +692,8 @@ int test_min_max_image_2d_width(cl_device_id deviceID, cl_context context,
         deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     if ((cl_ulong)maxDimension * 1 * 4 > maxAllocSize)
     {
-        log_error("Can not allocate a large enough image (min size: %lld "
-                  "bytes, max allowed: %lld bytes) to test.\n",
+        log_error("Can not allocate a large enough image (min size: %" PRIu64
+                  " bytes, max allowed: %" PRIu64 " bytes) to test.\n",
                   (cl_ulong)maxDimension * 1 * 4, maxAllocSize);
         return -1;
     }
@@ -748,7 +752,7 @@ int test_min_max_image_2d_height(cl_device_id deviceID, cl_context context,
             (int)maxDimension);
         return -1;
     }
-    log_info("Max reported height is %ld.\n", maxDimension);
+    log_info("Max reported height is %zu.\n", maxDimension);
 
     /* Verify we can use the format */
     image_format_desc.image_channel_data_type = CL_UNORM_INT8;
@@ -765,8 +769,8 @@ int test_min_max_image_2d_height(cl_device_id deviceID, cl_context context,
         deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     if ((cl_ulong)maxDimension * 1 * 4 > maxAllocSize)
     {
-        log_error("Can not allocate a large enough image (min size: %lld "
-                  "bytes, max allowed: %lld bytes) to test.\n",
+        log_error("Can not allocate a large enough image (min size: %" PRIu64
+                  " bytes, max allowed: %" PRIu64 " bytes) to test.\n",
                   (cl_ulong)maxDimension * 1 * 4, maxAllocSize);
         return -1;
     }
@@ -815,7 +819,7 @@ int test_min_max_image_3d_width(cl_device_id deviceID, cl_context context,
             (int)maxDimension);
         return -1;
     }
-    log_info("Max reported width is %ld.\n", maxDimension);
+    log_info("Max reported width is %zu.\n", maxDimension);
 
     /* Verify we can use the format */
     image_format_desc.image_channel_data_type = CL_UNORM_INT8;
@@ -832,8 +836,8 @@ int test_min_max_image_3d_width(cl_device_id deviceID, cl_context context,
         deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     if ((cl_ulong)maxDimension * 2 * 4 > maxAllocSize)
     {
-        log_error("Can not allocate a large enough image (min size: %lld "
-                  "bytes, max allowed: %lld bytes) to test.\n",
+        log_error("Can not allocate a large enough image (min size: %" PRIu64
+                  " bytes, max allowed: %" PRIu64 " bytes) to test.\n",
                   (cl_ulong)maxDimension * 2 * 4, maxAllocSize);
         return -1;
     }
@@ -883,7 +887,7 @@ int test_min_max_image_3d_height(cl_device_id deviceID, cl_context context,
             (int)maxDimension);
         return -1;
     }
-    log_info("Max reported height is %ld.\n", maxDimension);
+    log_info("Max reported height is %zu.\n", maxDimension);
 
     /* Verify we can use the format */
     image_format_desc.image_channel_data_type = CL_UNORM_INT8;
@@ -900,8 +904,8 @@ int test_min_max_image_3d_height(cl_device_id deviceID, cl_context context,
         deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     if ((cl_ulong)maxDimension * 2 * 4 > maxAllocSize)
     {
-        log_error("Can not allocate a large enough image (min size: %lld "
-                  "bytes, max allowed: %lld bytes) to test.\n",
+        log_error("Can not allocate a large enough image (min size: %" PRIu64
+                  " bytes, max allowed: %" PRIu64 " bytes) to test.\n",
                   (cl_ulong)maxDimension * 2 * 4, maxAllocSize);
         return -1;
     }
@@ -952,7 +956,7 @@ int test_min_max_image_3d_depth(cl_device_id deviceID, cl_context context,
             (int)maxDimension);
         return -1;
     }
-    log_info("Max reported depth is %ld.\n", maxDimension);
+    log_info("Max reported depth is %zu.\n", maxDimension);
 
     /* Verify we can use the format */
     image_format_desc.image_channel_data_type = CL_UNORM_INT8;
@@ -969,8 +973,8 @@ int test_min_max_image_3d_depth(cl_device_id deviceID, cl_context context,
         deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     if ((cl_ulong)maxDimension * 1 * 4 > maxAllocSize)
     {
-        log_error("Can not allocate a large enough image (min size: %lld "
-                  "bytes, max allowed: %lld bytes) to test.\n",
+        log_error("Can not allocate a large enough image (min size: %" PRIu64
+                  " bytes, max allowed: %" PRIu64 " bytes) to test.\n",
                   (cl_ulong)maxDimension * 1 * 4, maxAllocSize);
         return -1;
     }
@@ -1019,7 +1023,7 @@ int test_min_max_image_array_size(cl_device_id deviceID, cl_context context,
                   (int)maxDimension);
         return -1;
     }
-    log_info("Max reported image array size is %ld.\n", maxDimension);
+    log_info("Max reported image array size is %zu.\n", maxDimension);
 
     /* Verify we can use the format */
     image_format_desc.image_channel_data_type = CL_UNORM_INT8;
@@ -1037,8 +1041,8 @@ int test_min_max_image_array_size(cl_device_id deviceID, cl_context context,
         deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     if ((cl_ulong)maxDimension * 1 * 4 > maxAllocSize)
     {
-        log_error("Can not allocate a large enough image (min size: %lld "
-                  "bytes, max allowed: %lld bytes) to test.\n",
+        log_error("Can not allocate a large enough image (min size: %" PRIu64
+                  " bytes, max allowed: %" PRIu64 " bytes) to test.\n",
                   (cl_ulong)maxDimension * 1 * 4, maxAllocSize);
         return -1;
     }
@@ -1091,7 +1095,7 @@ int test_min_max_image_buffer_size(cl_device_id deviceID, cl_context context,
                   (int)maxDimensionPixels);
         return -1;
     }
-    log_info("Max reported image buffer size is %ld pixels.\n",
+    log_info("Max reported image buffer size is %zu pixels.\n",
              maxDimensionPixels);
 
     pixelBytes = maxAllocSize / maxDimensionPixels;
@@ -1209,7 +1213,7 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context,
         {
             log_info(
                 "Trying a kernel with %ld int arguments (%ld bytes) and one "
-                "cl_mem (%ld bytes) for %ld bytes total.\n",
+                "cl_mem (%zu bytes) for %ld bytes total.\n",
                 numberOfIntParametersToTry,
                 sizeof(cl_int) * numberOfIntParametersToTry, sizeof(cl_mem),
                 sizeof(cl_mem) + numberOfIntParametersToTry * sizeof(cl_int));
@@ -1218,7 +1222,7 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context,
         {
             log_info(
                 "Trying a kernel with %ld long arguments (%ld bytes) and one "
-                "cl_mem (%ld bytes) for %ld bytes total.\n",
+                "cl_mem (%zu bytes) for %ld bytes total.\n",
                 numberOfIntParametersToTry,
                 sizeof(cl_long) * numberOfIntParametersToTry, sizeof(cl_mem),
                 sizeof(cl_mem) + numberOfIntParametersToTry * sizeof(cl_long));
@@ -1365,8 +1369,8 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context,
         {
             if (long_result != expectedResult)
             {
-                log_error("Expected result (%lld) does not equal actual result "
-                          "(%lld).\n",
+                log_error("Expected result (%" PRId64
+                          ") does not equal actual result (%" PRId64 ").\n",
                           expectedResult, long_result);
                 numberOfIntParametersToTry -= decrement;
                 continue;
@@ -1383,8 +1387,8 @@ int test_min_max_parameter_size(cl_device_id deviceID, cl_context context,
         {
             if (int_result != expectedResult)
             {
-                log_error("Expected result (%lld) does not equal actual result "
-                          "(%d).\n",
+                log_error("Expected result (%" PRId64
+                          ") does not equal actual result (%d).\n",
                           expectedResult, int_result);
                 numberOfIntParametersToTry -= decrement;
                 continue;
@@ -1555,7 +1559,8 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    log_info("Reported max constant buffer size of %lld bytes.\n", maxSize);
+    log_info("Reported max constant buffer size of %" PRIu64 " bytes.\n",
+             maxSize);
 
     /* We have four buffers allocations */
     maxGlobalSize = get_device_info_global_mem_size(
@@ -1583,7 +1588,8 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
     d = init_genrand(gRandomSeed);
     while (!allocPassed && currentSize >= maxSize / MAX_REDUCTION_FACTOR)
     {
-        log_info("Attempting to allocate constant buffer of size %lld bytes\n",
+        log_info("Attempting to allocate constant buffer of size %" PRIu64
+                 " bytes\n",
                  maxSize);
 
         /* Create some I/O streams */
@@ -1631,8 +1637,8 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
             || (error == CL_MEM_OBJECT_ALLOCATION_FAILURE)
             || (error == CL_OUT_OF_HOST_MEMORY))
         {
-            log_info("Kernel enqueue failed at size %lld, trying at a reduced "
-                     "size.\n",
+            log_info("Kernel enqueue failed at size %" PRIu64
+                     ", trying at a reduced size.\n",
                      currentSize);
             currentSize -= stepSize;
             free(constantData);
@@ -1657,8 +1663,8 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
                 || (event_status == CL_MEM_OBJECT_ALLOCATION_FAILURE)
                 || (event_status == CL_OUT_OF_HOST_MEMORY))
             {
-                log_info("Kernel event indicates failure at size %lld, trying "
-                         "at a reduced size.\n",
+                log_info("Kernel event indicates failure at size %" PRIu64
+                         ", trying at a reduced size.\n",
                          currentSize);
                 currentSize -= stepSize;
                 free(constantData);
@@ -1715,7 +1721,8 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
         }
         else if (currentSize != maxSize)
         {
-            log_info("Passed at reduced size. (%lld of %lld bytes)\n",
+            log_info("Passed at reduced size. (%" PRIu64 " of %" PRIu64
+                     " bytes)\n",
                      currentSize, maxSize);
             return 0;
         }
@@ -1778,11 +1785,11 @@ int test_min_max_constant_args(cl_device_id deviceID, cl_context context,
         deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     individualBufferSize = ((int)maxSize / 2) / maxArgs;
 
-    log_info(
-        "Reported max constant arg count of %u and max constant buffer "
-        "size of %llu. Test will attempt to allocate half of that, or %llu "
-        "buffers of size %zu.\n",
-        maxArgs, maxSize, maxArgs, individualBufferSize);
+    log_info("Reported max constant arg count of %u and max constant buffer "
+             "size of %" PRIu64
+             ". Test will attempt to allocate half of that, or %u "
+             "buffers of size %zu.\n",
+             maxArgs, maxSize, maxArgs, individualBufferSize);
 
     str2 = (char *)malloc(sizeof(char) * 32 * (maxArgs + 2));
     constArgs = (char *)malloc(sizeof(char) * 32 * (maxArgs + 2));
@@ -2034,7 +2041,7 @@ int test_min_max_local_mem_size(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    log_info("Reported max local buffer size for device: %lld bytes.\n",
+    log_info("Reported max local buffer size for device: %" PRIu64 " bytes.\n",
              maxSize);
 
     /* Create a kernel to test with */
@@ -2052,7 +2059,7 @@ int test_min_max_local_mem_size(cl_device_id deviceID, cl_context context,
                "clGetKernelWorkGroupInfo for CL_KERNEL_LOCAL_MEM_SIZE failed");
 
     log_info("Reported local buffer usage for kernel "
-             "(CL_KERNEL_LOCAL_MEM_SIZE): %lld bytes.\n",
+             "(CL_KERNEL_LOCAL_MEM_SIZE): %" PRIu64 " bytes.\n",
              kernelLocalUsage);
 
     /* Create some I/O streams */
@@ -2167,13 +2174,13 @@ int test_min_max_kernel_preferred_work_group_size_multiple(
 
     // Since the preferred size is only a performance hint, we can only really
     // check that we get a sane value back
-    log_info("size: %ld     preferred: %ld      max: %ld\n", max_workgroup_size,
+    log_info("size: %zu     preferred: %zu      max: %zu\n", max_workgroup_size,
              preferred_workgroup_size, max_local_workgroup_size[0]);
 
     if (preferred_workgroup_size > max_workgroup_size)
     {
         log_error("ERROR: Reported preferred workgroup multiple larger than "
-                  "max workgroup size (preferred %ld, max %ld)\n",
+                  "max workgroup size (preferred %zu, max %zu)\n",
                   preferred_workgroup_size, max_workgroup_size);
         return -1;
     }

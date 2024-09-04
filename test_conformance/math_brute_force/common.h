@@ -86,6 +86,53 @@ struct BuildKernelInfo
     bool relaxedMode;
 };
 
+// Data common to all math tests.
+struct TestInfoBase
+{
+    TestInfoBase() = default;
+    ~TestInfoBase() = default;
+
+    // Prevent accidental copy/move.
+    TestInfoBase(const TestInfoBase &) = delete;
+    TestInfoBase &operator=(const TestInfoBase &) = delete;
+    TestInfoBase(TestInfoBase &&h) = delete;
+    TestInfoBase &operator=(TestInfoBase &&h) = delete;
+
+    // Size of the sub-buffer in elements.
+    size_t subBufferSize = 0;
+    // Function info.
+    const Func *f = nullptr;
+
+    // Number of worker threads.
+    cl_uint threadCount = 0;
+    // Number of jobs.
+    cl_uint jobCount = 0;
+    // step between each chunk and the next.
+    cl_uint step = 0;
+    // stride between individual test values.
+    cl_uint scale = 0;
+    // max_allowed ulps.
+    float ulps = -1.f;
+    // non-zero if running in flush to zero mode.
+    int ftz = 0;
+
+    // 1 if running the fdim test.
+    int isFDim = 0;
+    // 1 if input/output NaNs and INFs are skipped.
+    int skipNanInf = 0;
+    // 1 if running the nextafter test.
+    int isNextafter = 0;
+
+    // 1 if the function is only to be evaluated over a range.
+    int isRangeLimited = 0;
+
+    // Result limit for half_sin/half_cos/half_tan.
+    float half_sin_cos_tan_limit = -1.f;
+
+    // Whether the test is being run in relaxed mode.
+    bool relaxedMode = false;
+};
+
 using SourceGenerator = std::string (*)(const std::string &kernel_name,
                                         const char *builtin,
                                         cl_uint vector_size_index);
