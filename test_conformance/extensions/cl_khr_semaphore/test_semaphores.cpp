@@ -18,6 +18,8 @@
 
 #include "semaphore_base.h"
 
+#include "semaphore_base.h"
+
 #define FLUSH_DELAY_S 5
 
 namespace {
