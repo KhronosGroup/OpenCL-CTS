@@ -666,6 +666,12 @@ static int test_buffer_read(cl_device_id deviceID, cl_context context,
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
+            // Skip immutable memory flags
+            if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
+
             clMemWrapper buffer;
             outptr[i] = align_malloc( ptrSizes[i] * num_elements, min_alignment);
             if ( ! outptr[i] ){
@@ -809,6 +815,12 @@ static int test_buffer_read_async(cl_device_id deviceID, cl_context context,
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
+            // Skip immutable memory flags
+            if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
+
             clMemWrapper buffer;
             clEventWrapper event;
             outptr[i] = align_malloc(ptrSizes[i] * num_elements, min_alignment);
@@ -946,6 +958,12 @@ static int test_buffer_read_array_barrier(
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
+            // Skip immutable memory flags
+            if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
+
             clMemWrapper buffer;
             clEventWrapper event;
             outptr[i] = align_malloc(ptrSizes[i] * num_elements, min_alignment);
