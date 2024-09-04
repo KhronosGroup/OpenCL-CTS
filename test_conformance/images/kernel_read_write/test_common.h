@@ -53,6 +53,9 @@ int determine_validation_error_offset(
     float zAddressOffset, size_t j, int &numTries, int &numClamped,
     bool printAsFloat, int lod)
 {
+    bool image_type_3D = ((imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+                          || (imageInfo->type == CL_MEM_OBJECT_IMAGE3D));
+    bool image_type_1D = (imageInfo->type == CL_MEM_OBJECT_IMAGE1D);
     int actualX, actualY, actualZ;
     int found = debug_find_pixel_in_image(imagePtr, imageInfo, resultPtr,
                                           &actualX, &actualY, &actualZ, lod);
@@ -66,16 +69,18 @@ int determine_validation_error_offset(
         return TEST_FAIL;
     }
 
-    clamped = get_integer_coords_offset(x, y, z, xAddressOffset, yAddressOffset,
-                                        zAddressOffset, imageWidth, imageHeight,
-                                        imageDepth, imageSampler, imageInfo,
-                                        clampedX, clampedY, clampedZ);
+    clamped = get_integer_coords_offset(
+        x, !image_type_1D ? y : 0.0f, image_type_3D ? z : 0.0f, xAddressOffset,
+        !image_type_1D ? yAddressOffset : 0.0f,
+        image_type_3D ? zAddressOffset : 0.0f, imageWidth, imageHeight,
+        imageDepth, imageSampler, imageInfo, clampedX, clampedY, clampedZ);
 
     if (found)
     {
         // Is it a clamping bug?
-        if (clamped && clampedX == actualX && clampedY == actualY
-            && clampedZ == actualZ)
+        if (clamped && clampedX == actualX
+            && (clampedY == actualY || image_type_1D)
+            && (clampedZ == actualZ || !image_type_3D))
         {
             if ((--numClamped) == 0)
             {
@@ -102,6 +107,16 @@ int determine_validation_error_offset(
                 }
                 log_error("ERROR: TEST FAILED: Read is erroneously clamping "
                           "coordinates!\n");
+
+                if (imageSampler->filter_mode != CL_FILTER_LINEAR)
+                {
+                    log_error(
+                        "\tValue really found in image at %d,%d,%d (%s)\n",
+                        actualX, actualY, actualZ,
+                        (found > 1) ? "NOT unique!!" : "unique");
+                }
+                log_error("\n");
+
                 return -1;
             }
             clampingErr = true;

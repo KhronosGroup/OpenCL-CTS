@@ -58,6 +58,11 @@ extern int        test_set_kernel_arg_constant(cl_device_id deviceID, cl_context
 extern int        test_set_kernel_arg_struct_array(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_kernel_global_constant(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
+extern int test_set_command_queue_property(cl_device_id deviceID,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements);
+
 extern int        test_min_max_thread_dimensions(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_min_max_work_items_sizes(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_min_max_work_group_size(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
@@ -89,6 +94,13 @@ extern int        test_min_max_language_version(cl_device_id deviceID, cl_contex
 extern int        test_native_kernel(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems );
 
 extern int      test_create_context_from_type(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_create_context_from_type_device_type_all(cl_device_id deviceID,
+                                                         cl_context context,
+                                                         cl_command_queue queue,
+                                                         int num_elements);
+extern int test_create_context_from_type_device_type_default(
+    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    int num_elements);
 
 extern int      test_get_platform_ids(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 

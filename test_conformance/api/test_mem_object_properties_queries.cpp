@@ -165,7 +165,7 @@ static int create_object_and_check_properties(cl_context context,
     }
     if (set_size != test_case.properties.size() * sizeof(cl_mem_properties))
     {
-        log_error("ERROR: CL_MEM_PROPERTIES size is %d, expected %d.\n",
+        log_error("ERROR: CL_MEM_PROPERTIES size is %zu, expected %zu.\n",
                   set_size,
                   test_case.properties.size() * sizeof(cl_queue_properties));
         return TEST_FAIL;

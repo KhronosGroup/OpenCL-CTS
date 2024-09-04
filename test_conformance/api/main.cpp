@@ -95,6 +95,8 @@ test_definition test_list[] = {
     ADD_TEST(native_kernel),
 
     ADD_TEST(create_context_from_type),
+    ADD_TEST(create_context_from_type_device_type_all),
+    ADD_TEST(create_context_from_type_device_type_default),
 
     ADD_TEST(platform_extensions),
     ADD_TEST(get_platform_ids),
@@ -146,6 +148,8 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(consistency_3d_image_writes, Version(3, 0)),
 
     ADD_TEST(min_image_formats),
+    ADD_TEST(set_command_queue_property),
+
     ADD_TEST(negative_get_platform_info),
     ADD_TEST(negative_get_platform_ids),
 

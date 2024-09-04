@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <cinttypes>
+
 #include "testBase.h"
 #include "harness/testHarness.h"
 #include "harness/deviceInfo.h"
@@ -158,8 +160,9 @@ static int check_atomic_capabilities(cl_device_atomic_capabilities atomicCaps,
 {
     if ((atomicCaps & requiredCaps) != requiredCaps)
     {
-        log_error("Atomic capabilities %llx is missing support for at least "
-                  "one required capability %llx!\n",
+        log_error("Atomic capabilities %" PRIx64
+                  " is missing support for at least "
+                  "one required capability %" PRIx64 "!\n",
                   atomicCaps, requiredCaps);
         return TEST_FAIL;
     }

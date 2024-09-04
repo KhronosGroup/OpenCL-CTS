@@ -73,6 +73,8 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
 
     for (uint64_t i = 0; i < (1ULL << 16); i += step)
     {
+        if (gSkipCorrectnessTesting) break;
+
         // Init input array
         cl_ushort *p = (cl_ushort *)gIn;
 
@@ -159,8 +161,6 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
                 return error;
             }
         }
-
-        if (gSkipCorrectnessTesting) break;
 
         // Verify data
         uint32_t *t = (uint32_t *)gOut_Ref;

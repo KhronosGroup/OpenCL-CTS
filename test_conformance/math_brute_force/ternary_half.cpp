@@ -79,7 +79,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
 
     constexpr size_t bufferElements = BUFFER_SIZE / sizeof(cl_half);
 
-    cl_uchar overflow[bufferElements];
+    std::vector<cl_uchar> overflow(bufferElements);
     float half_ulps = f->half_ulps;
     int skipNanInf = (0 == strcmp("fma", f->nameInCode));
 
@@ -94,6 +94,8 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
+        if (gSkipCorrectnessTesting) break;
+
         // Init input array
         cl_half *hp0 = (cl_half *)gIn;
         cl_half *hp1 = (cl_half *)gIn2;
@@ -261,8 +263,6 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                 return error;
             }
         }
-
-        if (gSkipCorrectnessTesting) break;
 
         // Verify data
         uint16_t *t = (uint16_t *)gOut_Ref;

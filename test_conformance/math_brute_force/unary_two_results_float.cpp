@@ -51,7 +51,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal1 = 0.0f;
     uint64_t step = getTestStep(sizeof(float), BUFFER_SIZE);
     int scale = (int)((1ULL << 32) / (16 * BUFFER_SIZE / sizeof(float)) + 1);
-    cl_uchar overflow[BUFFER_SIZE / sizeof(float)];
+    std::vector<cl_uchar> overflow(BUFFER_SIZE / sizeof(float));
     int isFract = 0 == strcmp("fract", f->nameInCode);
     int skipNanInf = isFract && !gInfNanSupport;
 
@@ -68,6 +68,8 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
 
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
+        if (gSkipCorrectnessTesting) break;
+
         // Init input array
         uint32_t *p = (uint32_t *)gIn;
         if (gWimpyMode)
@@ -256,12 +258,6 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
                 vlog_error("ReadArray2 failed %d\n", error);
                 return error;
             }
-        }
-
-        if (gSkipCorrectnessTesting)
-        {
-            if (isFract && gIsInRTZMode) (void)set_round(oldRoundMode, kfloat);
-            break;
         }
 
         // Verify data
