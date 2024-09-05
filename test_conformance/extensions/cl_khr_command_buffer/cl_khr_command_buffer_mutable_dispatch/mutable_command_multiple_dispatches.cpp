@@ -162,26 +162,6 @@ struct MultipleCommandsDispatch : BasicMutableCommandBufferTest
                                              &new_out_mem };
         cl_mutable_dispatch_arg_khr args_sec[] = { arg_sec };
 
-#if CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_VERSION                   \
-    < CL_MAKE_VERSION(0, 9, 2)
-        // modify two mutable parameters, each one with separate handle
-        cl_mutable_dispatch_config_khr dispatch_config[] = {
-            { CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR, nullptr,
-              command_pri, 1, 0, 0, 0, args_pri, nullptr, nullptr, nullptr,
-              nullptr, nullptr },
-            { CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR, nullptr,
-              command_sec, 1, 0, 0, 0, args_sec, nullptr, nullptr, nullptr,
-              nullptr, nullptr },
-        };
-
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 2,
-            dispatch_config
-        };
-
-        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
-        test_error(error, "clUpdateMutableCommandsKHR failed");
-#else
         // modify two mutable parameters, each one with separate handle
         cl_mutable_dispatch_config_khr dispatch_config[] = {
             { command_pri, 1, 0, 0, 0, args_pri, nullptr, nullptr, nullptr,
@@ -196,11 +176,9 @@ struct MultipleCommandsDispatch : BasicMutableCommandBufferTest
             CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
         };
         const void *configs[2] = { &dispatch_config[0], &dispatch_config[1] };
-
         error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
                                            config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
-#endif // CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_VERSION
 
         // repeat execution of modified command buffer
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
