@@ -140,14 +140,9 @@ struct MutableDispatchGlobalArguments : public MutableDispatchArgumentsTest
 
     cl_int Run() override
     {
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
         cl_command_properties_khr props[] = {
-#else
-        cl_ndrange_kernel_command_properties_khr props[] = {
-#endif
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
-            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR,
-            0
+            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
 
         cl_int error = clCommandNDRangeKernelKHR(
@@ -276,14 +271,9 @@ struct MutableDispatchLocalArguments : public MutableDispatchArgumentsTest
         threads[0] = number_of_ints;
         local_threads[0] = 1;
 
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
         cl_command_properties_khr props[] = {
-#else
-        cl_ndrange_kernel_command_properties_khr props[] = {
-#endif
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
-            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR,
-            0
+            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
 
         cl_int error = clCommandNDRangeKernelKHR(
@@ -414,14 +404,9 @@ struct MutableDispatchPODArguments : public MutableDispatchArgumentsTest
         threads[0] = number_of_ints;
         local_threads[0] = 1;
 
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
         cl_command_properties_khr props[] = {
-#else
-        cl_ndrange_kernel_command_properties_khr props[] = {
-#endif
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
-            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR,
-            0
+            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
 
         cl_int error = clCommandNDRangeKernelKHR(
@@ -550,14 +535,9 @@ struct MutableDispatchNullArguments : public MutableDispatchArgumentsTest
     cl_int Run() override
     {
 
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
         cl_command_properties_khr props[] = {
-#else
-        cl_ndrange_kernel_command_properties_khr props[] = {
-#endif
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
-            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR,
-            0
+            CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
 
         cl_int error = clCommandNDRangeKernelKHR(
@@ -744,11 +724,7 @@ struct MutableDispatchSVMArguments : public MutableDispatchArgumentsTest
                                     sizeof(init_buffer), &init_buffer);
         test_error(error, "clSetKernelExecInfo failed for init_buffer");
 
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
         cl_command_properties_khr props[] = {
-#else
-        cl_ndrange_kernel_command_properties_khr props[] = {
-#endif
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR
                 | CL_MUTABLE_DISPATCH_EXEC_INFO_KHR,

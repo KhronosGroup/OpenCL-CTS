@@ -38,27 +38,15 @@ struct CopyImageKHR : public BasicCommandBufferTest
 
     cl_int Run() override
     {
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
         cl_int error = clCommandFillImageKHR(
             command_buffer, nullptr, nullptr, src_image, fill_color_1, origin,
             region, 0, nullptr, nullptr, nullptr);
-#else
-        cl_int error = clCommandFillImageKHR(command_buffer, nullptr, src_image,
-                                             fill_color_1, origin, region, 0,
-                                             nullptr, nullptr, nullptr);
-#endif
 
         test_error(error, "clCommandFillImageKHR failed");
 
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
         error = clCommandCopyImageKHR(command_buffer, nullptr, nullptr,
                                       src_image, dst_image, origin, origin,
                                       region, 0, 0, nullptr, nullptr);
-#else
-        error = clCommandCopyImageKHR(command_buffer, nullptr, src_image,
-                                      dst_image, origin, origin, region, 0, 0,
-                                      nullptr, nullptr);
-#endif
 
         test_error(error, "clCommandCopyImageKHR failed");
 
@@ -153,24 +141,13 @@ struct CopyBufferKHR : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandFillBufferKHR(
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
             command_buffer, nullptr, nullptr, in_mem, &pattern_1,
             sizeof(cl_char), 0, data_size(), 0, nullptr, nullptr, nullptr);
-#else
-            command_buffer, nullptr, in_mem, &pattern_1, sizeof(cl_char), 0,
-            data_size(), 0, nullptr, nullptr, nullptr);
-#endif
         test_error(error, "clCommandFillBufferKHR failed");
 
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
         error = clCommandCopyBufferKHR(command_buffer, nullptr, nullptr, in_mem,
                                        out_mem, 0, 0, data_size(), 0, nullptr,
                                        nullptr, nullptr);
-#else
-        error = clCommandCopyBufferKHR(command_buffer, nullptr, in_mem, out_mem,
-                                       0, 0, data_size(), 0, nullptr, nullptr,
-                                       nullptr);
-#endif
         test_error(error, "clCommandCopyBufferKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);
@@ -229,24 +206,13 @@ struct CopySVMBufferKHR : public BasicSVMCommandBufferTest
     {
 
         cl_int error = clCommandSVMMemFillKHR(
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
             command_buffer, nullptr, nullptr, svm_in_mem(), &pattern_1,
             sizeof(cl_char), data_size(), 0, nullptr, nullptr, nullptr);
-#else
-            command_buffer, nullptr, svm_in_mem(), &pattern_1, sizeof(cl_char),
-            data_size(), 0, nullptr, nullptr, nullptr);
-#endif
         test_error(error, "clCommandSVMMemFillKHR failed");
 
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
         error = clCommandSVMMemcpyKHR(command_buffer, nullptr, nullptr,
                                       svm_out_mem(), svm_in_mem(), data_size(),
                                       0, nullptr, nullptr, nullptr);
-#else
-        error = clCommandSVMMemcpyKHR(command_buffer, nullptr, svm_out_mem(),
-                                      svm_in_mem(), data_size(), 0, nullptr,
-                                      nullptr, nullptr);
-#endif
         test_error(error, "clCommandSVMMemcpyKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);
@@ -308,26 +274,13 @@ struct CopyBufferToImageKHR : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandFillBufferKHR(
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
             command_buffer, nullptr, nullptr, buffer, &pattern_1,
             sizeof(cl_char), 0, data_size, 0, nullptr, nullptr, nullptr);
-#else
-            command_buffer, nullptr, buffer, &pattern_1, sizeof(cl_char), 0,
-            data_size, 0, nullptr, nullptr, nullptr);
-#endif
-
         test_error(error, "clCommandFillBufferKHR failed");
 
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
         error = clCommandCopyBufferToImageKHR(command_buffer, nullptr, nullptr,
                                               buffer, image, 0, origin, region,
                                               0, 0, nullptr, nullptr);
-#else
-        error = clCommandCopyBufferToImageKHR(command_buffer, nullptr, buffer,
-                                              image, 0, origin, region, 0, 0,
-                                              nullptr, nullptr);
-#endif
-
         test_error(error, "clCommandCopyBufferToImageKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);
@@ -425,28 +378,14 @@ struct CopyImageToBufferKHR : public BasicCommandBufferTest
 
     cl_int Run() override
     {
-        cl_int error =
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
-            clCommandFillImageKHR(command_buffer, nullptr, nullptr, image,
-                                  fill_color_1, origin, region, 0, nullptr,
-                                  nullptr, nullptr);
-#else
-            clCommandFillImageKHR(command_buffer, nullptr, image, fill_color_1,
-                                  origin, region, 0, nullptr, nullptr, nullptr);
-#endif
-
+        cl_int error = clCommandFillImageKHR(
+            command_buffer, nullptr, nullptr, image, fill_color_1, origin,
+            region, 0, nullptr, nullptr, nullptr);
         test_error(error, "clCommandFillImageKHR failed");
 
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
         error = clCommandCopyImageToBufferKHR(command_buffer, nullptr, nullptr,
                                               image, buffer, origin, region, 0,
                                               0, nullptr, nullptr, nullptr);
-#else
-        error = clCommandCopyImageToBufferKHR(command_buffer, nullptr, image,
-                                              buffer, origin, region, 0, 0,
-                                              nullptr, nullptr, nullptr);
-#endif
-
         test_error(error, "clCommandCopyImageToBufferKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);
@@ -542,24 +481,13 @@ struct CopyBufferRectKHR : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandFillBufferKHR(
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
             command_buffer, nullptr, nullptr, in_mem, &pattern_1,
             sizeof(cl_char), 0, data_size, 0, nullptr, nullptr, nullptr);
-#else
-            command_buffer, nullptr, in_mem, &pattern_1, sizeof(cl_char), 0,
-            data_size, 0, nullptr, nullptr, nullptr);
-#endif
         test_error(error, "clCommandFillBufferKHR failed");
 
         error = clCommandCopyBufferRectKHR(
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
             command_buffer, nullptr, nullptr, in_mem, out_mem, origin, origin,
             region, 0, 0, 0, 0, 0, nullptr, nullptr, nullptr);
-#else
-            command_buffer, nullptr, in_mem, out_mem, origin, origin, region, 0,
-            0, 0, 0, 0, nullptr, nullptr, nullptr);
-#endif
-
         test_error(error, "clCommandCopyBufferRectKHR failed");
 
         error = clFinalizeCommandBufferKHR(command_buffer);

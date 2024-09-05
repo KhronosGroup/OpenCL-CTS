@@ -40,42 +40,22 @@ struct BarrierWithWaitListKHR : public BasicCommandBufferTest
 
     cl_int Run() override
     {
-        cl_int error =
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
-            clCommandFillBufferKHR(out_of_order_command_buffer, nullptr,
-                                   nullptr, in_mem, &pattern, sizeof(cl_int), 0,
-                                   data_size(), 0, nullptr, &sync_points[0],
-                                   nullptr);
-#else
-            clCommandFillBufferKHR(out_of_order_command_buffer, nullptr, in_mem,
-                                   &pattern, sizeof(cl_int), 0, data_size(), 0,
-                                   nullptr, &sync_points[0], nullptr);
-#endif
+        cl_int error = clCommandFillBufferKHR(
+            out_of_order_command_buffer, nullptr, nullptr, in_mem, &pattern,
+            sizeof(cl_int), 0, data_size(), 0, nullptr, &sync_points[0],
+            nullptr);
         test_error(error, "clCommandFillBufferKHR failed");
 
         const cl_int overwritten_pattern = 0xACDC;
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
         error = clCommandFillBufferKHR(out_of_order_command_buffer, nullptr,
                                        nullptr, out_mem, &overwritten_pattern,
                                        sizeof(cl_int), 0, data_size(), 0,
                                        nullptr, &sync_points[1], nullptr);
-#else
-        error = clCommandFillBufferKHR(out_of_order_command_buffer, nullptr,
-                                       out_mem, &overwritten_pattern,
-                                       sizeof(cl_int), 0, data_size(), 0,
-                                       nullptr, &sync_points[1], nullptr);
-#endif
         test_error(error, "clCommandFillBufferKHR failed");
 
-#if CL_KHR_COMMAND_BUFFER_EXTENSION_VERSION > CL_MAKE_VERSION(0, 9, 4)
         error = clCommandBarrierWithWaitListKHR(out_of_order_command_buffer,
                                                 nullptr, nullptr, 2,
                                                 sync_points, nullptr, nullptr);
-#else
-        error = clCommandBarrierWithWaitListKHR(out_of_order_command_buffer,
-                                                nullptr, 2, sync_points,
-                                                nullptr, nullptr);
-#endif
         test_error(error, "clCommandBarrierWithWaitListKHR failed");
 
         error = clCommandNDRangeKernelKHR(
