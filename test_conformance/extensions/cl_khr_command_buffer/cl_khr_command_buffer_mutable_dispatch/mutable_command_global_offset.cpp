@@ -137,7 +137,7 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
             if (i < update_global_offset && 0 != resultData[i])
             {
                 log_error("Data failed to verify: update_global_offset != "
-                          "resultData[%d]=%d\n",
+                          "resultData[%zu]=%d\n",
                           i, resultData[i]);
                 return TEST_FAIL;
             }
@@ -145,7 +145,7 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
                      && update_global_offset != resultData[i])
             {
                 log_error("Data failed to verify: update_global_offset != "
-                          "resultData[%d]=%d\n",
+                          "resultData[%zu]=%d\n",
                           i, resultData[i]);
                 return TEST_FAIL;
             }

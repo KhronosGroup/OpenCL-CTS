@@ -139,7 +139,7 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
             if (i < update_global_size && update_local_size != resultData[i])
             {
                 log_error("Data failed to verify: update_local_size != "
-                          "resultData[%d]=%d\n",
+                          "resultData[%zu]=%d\n",
                           i, resultData[i]);
                 return TEST_FAIL;
             }
@@ -147,7 +147,7 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
                      && local_work_size != resultData[i])
             {
                 log_error("Data failed to verify: update_local_size != "
-                          "resultData[%d]=%d\n",
+                          "resultData[%zu]=%d\n",
                           i, resultData[i]);
                 return TEST_FAIL;
             }

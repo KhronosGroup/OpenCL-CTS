@@ -198,8 +198,8 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         {
             if (imageValues_input[i] != outputData[i])
             {
-                log_error("Data failed to verify: imageValues[%d]=%d != "
-                          "outputData[%d]=%d\n",
+                log_error("Data failed to verify: imageValues[%zu]=%d != "
+                          "outputData[%zu]=%d\n",
                           i, imageValues_input[i], i, outputData[i]);
 
                 return TEST_FAIL;
@@ -397,8 +397,8 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         {
             if (imageValues_input[i] != outputData[i])
             {
-                log_error("Data failed to verify: imageValues[%d]=%d != "
-                          "outputData[%d]=%d\n",
+                log_error("Data failed to verify: imageValues[%zu]=%d != "
+                          "outputData[%zu]=%d\n",
                           i, imageValues_input[i], i, outputData[i]);
                 return TEST_FAIL;
             }

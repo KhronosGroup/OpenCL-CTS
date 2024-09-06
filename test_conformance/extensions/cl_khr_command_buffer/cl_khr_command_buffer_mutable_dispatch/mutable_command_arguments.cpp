@@ -325,8 +325,8 @@ struct MutableDispatchLocalArguments : public MutableDispatchArgumentsTest
         for (size_t i = 0; i < number_of_ints; i++)
             if (constant_data[i] != result_data[i])
             {
-                log_error("Data failed to verify: constant_data[%d]=%d != "
-                          "result_data[%d]=%d\n",
+                log_error("Data failed to verify: constant_data[%zu]=%d != "
+                          "result_data[%zu]=%d\n",
                           i, constant_data[i], i, result_data[i]);
                 return TEST_FAIL;
             }
@@ -458,8 +458,8 @@ struct MutableDispatchPODArguments : public MutableDispatchArgumentsTest
         for (size_t i = 0; i < number_of_ints; i++)
             if (constant_data[i] != result_data[i])
             {
-                log_error("Data failed to verify: constant_data[%d]=%d != "
-                          "result_data[%d]=%d\n",
+                log_error("Data failed to verify: constant_data[%zu]=%d != "
+                          "result_data[%zu]=%d\n",
                           i, constant_data[i], i, result_data[i]);
                 return TEST_FAIL;
             }

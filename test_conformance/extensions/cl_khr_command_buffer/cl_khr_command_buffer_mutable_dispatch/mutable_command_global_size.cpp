@@ -136,7 +136,7 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
             if (i >= update_global_size && global_work_size != resultData[i])
             {
                 log_error("Data failed to verify: update_global_size != "
-                          "resultData[%d]=%d\n",
+                          "resultData[%zu]=%d\n",
                           i, resultData[i]);
                 return TEST_FAIL;
             }
@@ -144,7 +144,7 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
                      && update_global_size != resultData[i])
             {
                 log_error("Data failed to verify: update_global_size != "
-                          "resultData[%d]=%d\n",
+                          "resultData[%zu]=%d\n",
                           i, resultData[i]);
                 return TEST_FAIL;
             }
