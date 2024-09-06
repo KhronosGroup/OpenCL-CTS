@@ -69,7 +69,7 @@ struct MutableCommandFullDispatch : InfoMutableCommandBufferTest
             available_caps &= ~CL_MUTABLE_DISPATCH_EXEC_INFO_KHR;
 
         // require at least one mutable capabillity
-        return (available_caps == 0) && InfoMutableCommandBufferTest::Skip();
+        return (available_caps == 0) || InfoMutableCommandBufferTest::Skip();
     }
 
     // setup kernel program specific for command buffer with full mutable
@@ -336,8 +336,6 @@ struct MutableCommandFullDispatch : InfoMutableCommandBufferTest
 
         // Modify and execute the command buffer
         cl_mutable_dispatch_config_khr dispatch_config{
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
-            nullptr,
             command,
             0 /* num_args */,
             0 /* num_svm_arg */,
@@ -395,12 +393,13 @@ struct MutableCommandFullDispatch : InfoMutableCommandBufferTest
             dispatch_config.local_work_size = &group_size;
         }
 
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
-            &dispatch_config
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
         };
-
-        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
+        const void *configs[1] = { &dispatch_config };
+        error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
+                                           config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,

@@ -199,8 +199,6 @@ struct MutableDispatchWorkGroups : public BasicMutableCommandBufferTest
     {
         cl_int error;
         cl_mutable_dispatch_config_khr dispatch_config{
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
-            nullptr,
             command,
             0, // num_args
             0, // num_svm_arg
@@ -214,13 +212,14 @@ struct MutableDispatchWorkGroups : public BasicMutableCommandBufferTest
             nullptr // local_work_size
         };
 
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
-            &dispatch_config
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
         };
-
+        const void *configs[1] = { &dispatch_config };
         error =
-            clUpdateMutableCommandsKHR(single_command_buffer, &mutable_config);
+            clUpdateMutableCommandsKHR(single_command_buffer, num_configs,
+                                       config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         clEventWrapper events[2];
