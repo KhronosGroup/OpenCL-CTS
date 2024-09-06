@@ -772,6 +772,7 @@ struct MutableDispatchSVMArguments : public MutableDispatchArgumentsTest
         exec_info.param_value = &new_buffer;
 
         cl_mutable_dispatch_config_khr dispatch_config{};
+        dispatch_config.command = command;
         dispatch_config.num_svm_args = 1;
         dispatch_config.arg_svm_list = &arg_svm;
         dispatch_config.num_exec_infos = 1;
