@@ -152,8 +152,6 @@ struct IterativeArgUpdateDispatch : BasicMutableCommandBufferTest
         cl_mutable_dispatch_arg_khr args = { 0, sizeof(cl_int), &pattern_sec };
 
         cl_mutable_dispatch_config_khr dispatch_config{
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
-            nullptr,
             command,
             1 /* num_args */,
             0 /* num_svm_arg */,
@@ -167,12 +165,13 @@ struct IterativeArgUpdateDispatch : BasicMutableCommandBufferTest
             nullptr /* local_work_size */
         };
 
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
-            &dispatch_config
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
         };
-
-        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
+        const void *configs[1] = { &dispatch_config };
+        error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
+                                           config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         // update parameter of previous mutable dispatch by using the same
@@ -181,7 +180,8 @@ struct IterativeArgUpdateDispatch : BasicMutableCommandBufferTest
         args.arg_size = sizeof(new_out_mem);
         args.arg_value = &new_out_mem;
 
-        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
+        error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
+                                           config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         error = clEnqueueFillBuffer(queue, new_out_mem, &pattern_pri,
