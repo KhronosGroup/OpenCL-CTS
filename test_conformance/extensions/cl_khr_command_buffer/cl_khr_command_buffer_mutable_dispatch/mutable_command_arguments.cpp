@@ -140,7 +140,7 @@ struct MutableDispatchGlobalArguments : public MutableDispatchArgumentsTest
 
     cl_int Run() override
     {
-        cl_ndrange_kernel_command_properties_khr props[] = {
+        cl_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
@@ -270,7 +270,7 @@ struct MutableDispatchLocalArguments : public MutableDispatchArgumentsTest
         threads[0] = number_of_ints;
         local_threads[0] = 1;
 
-        cl_ndrange_kernel_command_properties_khr props[] = {
+        cl_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
@@ -403,7 +403,7 @@ struct MutableDispatchPODArguments : public MutableDispatchArgumentsTest
         threads[0] = number_of_ints;
         local_threads[0] = 1;
 
-        cl_ndrange_kernel_command_properties_khr props[] = {
+        cl_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
@@ -533,7 +533,8 @@ struct MutableDispatchNullArguments : public MutableDispatchArgumentsTest
 
     cl_int Run() override
     {
-        cl_ndrange_kernel_command_properties_khr props[] = {
+
+        cl_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
@@ -721,7 +722,7 @@ struct MutableDispatchSVMArguments : public MutableDispatchArgumentsTest
                                     sizeof(init_buffer), &init_buffer);
         test_error(error, "clSetKernelExecInfo failed for init_buffer");
 
-        cl_ndrange_kernel_command_properties_khr props[] = {
+        cl_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR
                 | CL_MUTABLE_DISPATCH_EXEC_INFO_KHR,

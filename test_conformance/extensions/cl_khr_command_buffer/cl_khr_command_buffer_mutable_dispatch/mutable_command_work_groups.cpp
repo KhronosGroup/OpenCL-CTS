@@ -34,7 +34,7 @@
 struct Configuration
 {
     const cl_command_buffer_properties_khr *command_buffer_properties;
-    const cl_ndrange_kernel_command_properties_khr *ndrange_properties;
+    const cl_command_properties_khr *ndrange_properties;
 };
 
 // Define the command buffer properties for each configuration
@@ -44,7 +44,7 @@ const cl_command_buffer_properties_khr command_buffer_properties[] = {
 };
 
 // Define the ndrange properties
-const cl_ndrange_kernel_command_properties_khr ndrange_properties[] = {
+const cl_command_properties_khr ndrange_properties[] = {
     CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
     CL_MUTABLE_DISPATCH_GLOBAL_SIZE_KHR, CL_MUTABLE_DISPATCH_ASSERTS_KHR,
     CL_MUTABLE_DISPATCH_ASSERT_NO_ADDITIONAL_WORK_GROUPS_KHR, 0

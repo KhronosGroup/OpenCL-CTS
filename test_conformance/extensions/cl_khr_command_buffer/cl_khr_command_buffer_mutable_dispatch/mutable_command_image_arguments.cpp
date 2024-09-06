@@ -131,7 +131,7 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         error = clSetKernelArg(kernel, 2, sizeof(cl_mem), &dst_image);
         test_error(error, "Unable to set indexed kernel arguments");
 
-        cl_ndrange_kernel_command_properties_khr props[] = {
+        cl_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
@@ -331,7 +331,7 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
 
         size_t globalDim[3] = { 4, 4, 1 }, localDim[3] = { 1, 1, 1 };
 
-        cl_ndrange_kernel_command_properties_khr props[] = {
+        cl_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };

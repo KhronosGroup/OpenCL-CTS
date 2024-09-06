@@ -295,7 +295,7 @@ struct MutableCommandFullDispatch : InfoMutableCommandBufferTest
     // run command buffer with full mutable dispatch test
     cl_int Run() override
     {
-        cl_ndrange_kernel_command_properties_khr props[] = {
+        cl_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR, available_caps, 0
         };
 

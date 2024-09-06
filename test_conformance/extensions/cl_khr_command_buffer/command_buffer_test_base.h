@@ -161,17 +161,4 @@ public:
 
     operator cl_command_buffer_khr() const { return object; }
 };
-
-#define CHECK_COMMAND_BUFFER_EXTENSION_AVAILABLE(device)                       \
-    {                                                                          \
-        if (!is_extension_available(device, "cl_khr_command_buffer"))          \
-        {                                                                      \
-            log_info(                                                          \
-                "Device does not support 'cl_khr_command_buffer'. Skipping "   \
-                "the test.\n");                                                \
-            return TEST_SKIPPED_ITSELF;                                        \
-        }                                                                      \
-    }
-
-
 #endif // CL_KHR_COMMAND_BUFFER_TEST_BASE_H
