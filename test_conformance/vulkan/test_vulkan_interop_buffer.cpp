@@ -1100,8 +1100,11 @@ int run_test_with_multi_import_diff_ctx(
     std::vector<char> vkBufferShader = readFile("buffer.spv");
 
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
-    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
-        MAX_BUFFERS + 1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
+    vkDescriptorSetLayoutBindingList.addBinding(
+        0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
+    vkDescriptorSetLayoutBindingList.addBinding(
+        1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_BUFFERS);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
@@ -1216,9 +1219,9 @@ int run_test_with_multi_import_diff_ctx(
                     buffers2[bIdx][cl_bIdx] = externalMemory2[bIdx][cl_bIdx]
                                                   ->getExternalMemoryBuffer();
                 }
-                vkDescriptorSet.update((uint32_t)bIdx + 1, vkBufferList[bIdx]);
             }
 
+            vkDescriptorSet.updateArray(1, numBuffers, vkBufferList);
             vkCommandBuffer.begin();
             vkCommandBuffer.bindPipeline(vkComputePipeline);
             vkCommandBuffer.bindDescriptorSets(
