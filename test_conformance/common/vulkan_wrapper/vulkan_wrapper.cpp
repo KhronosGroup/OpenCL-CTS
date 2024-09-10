@@ -1870,6 +1870,16 @@ VulkanExtent3D VulkanImage2D::getExtent3D(uint32_t mipLevel) const
     return VulkanExtent3D(width, height, depth);
 }
 
+VkSubresourceLayout VulkanImage2D::getSubresourceLayout() const
+{
+    VkImageSubresource subresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 };
+
+    VkSubresourceLayout subresourceLayout = { 0 };
+    vkGetImageSubresourceLayout(m_device, m_vkImage, &subresource,
+                                &subresourceLayout);
+    return subresourceLayout;
+}
+
 //////////////////////////////////
 // VulkanImage3D implementation //
 //////////////////////////////////
