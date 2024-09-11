@@ -36,28 +36,12 @@ static const char *kernelpattern_image_write_1D =
 "    write_image%s( dest, index, %s(value));\n"
 "}\n";
 
-static const char *kernelpattern_image_write_1D_half =
-"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
-"__kernel void sample_test( __global half4 *source, write_only image1d_t dest )\n"
-"{\n"
-"    uint index = get_global_id(0);\n"
-"    write_imagef( dest, index, vload_half4(index, (__global half *)source));\n"
-"}\n";
-
 static const char *kernelpattern_image_write_1D_buffer =
 "__kernel void sample_test( __global %s4 *source, write_only image1d_buffer_t dest )\n"
 "{\n"
 "    uint index = get_global_id(0);\n"
 "    %s4 value = source[index];\n"
 "    write_image%s( dest, index, %s(value));\n"
-"}\n";
-
-static const char *kernelpattern_image_write_1D_buffer_half =
-"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
-"__kernel void sample_test( __global half4 *source, write_only image1d_buffer_t dest )\n"
-"{\n"
-"    uint index = get_global_id(0);\n"
-"    write_imagef( dest, index, vload_half4(index, (__global half *)source));\n"
 "}\n";
 
 static const char *kernelpattern_image_write_2D =
@@ -70,16 +54,6 @@ static const char *kernelpattern_image_write_2D =
 "    write_image%s( dest, (int2)( tidX, tidY ), %s(value));\n"
 "}\n";
 
-static const char *kernelpattern_image_write_2D_half =
-"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
-"__kernel void sample_test( __global half4 *source, write_only image2d_t dest )\n"
-"{\n"
-"    int  tidX = get_global_id(0);\n"
-"    int  tidY = get_global_id(1);\n"
-"    uint index = tidY * get_image_width( dest ) + tidX;\n"
-"    write_imagef( dest, (int2)( tidX, tidY ), vload_half4(index, (__global half *)source));\n"
-"}\n";
-
 static const char *kernelpattern_image_write_1Darray =
 "__kernel void sample_test( __global %s4 *source, write_only image1d_array_t dest )\n"
 "{\n"
@@ -88,16 +62,6 @@ static const char *kernelpattern_image_write_1Darray =
 "    uint index = tidY * get_image_width( dest ) + tidX;\n"
 "    %s4 value = source[index];\n"
 "    write_image%s( dest, (int2)( tidX, tidY ), %s(value));\n"
-"}\n";
-
-static const char *kernelpattern_image_write_1Darray_half =
-"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
-"__kernel void sample_test( __global half4 *source, write_only image1d_array_t dest )\n"
-"{\n"
-"    int  tidX = get_global_id(0);\n"
-"    int  tidY = get_global_id(1);\n"
-"    uint index = tidY * get_image_width( dest ) + tidX;\n"
-"    write_imagef( dest, (int2)( tidX, tidY ), vload_half4(index, (__global half *)source));\n"
 "}\n";
 
 static const char *kernelpattern_image_write_3D =
@@ -114,20 +78,6 @@ static const char *kernelpattern_image_write_3D =
 "    write_image%s( dest, (int4)( tidX, tidY, tidZ, 0 ), %s(value));\n"
 "}\n";
 
-static const char *kernelpattern_image_write_3D_half =
-"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
-"#pragma OPENCL EXTENSION cl_khr_3d_image_writes : enable\n"
-"__kernel void sample_test( __global half4 *source, write_only image3d_t dest )\n"
-"{\n"
-"    int  tidX   = get_global_id(0);\n"
-"    int  tidY   = get_global_id(1);\n"
-"    int  tidZ   = get_global_id(2);\n"
-"    int  width  = get_image_width( dest );\n"
-"    int  height = get_image_height( dest );\n"
-"    int  index = tidZ * width * height + tidY * width + tidX;\n"
-"    write_imagef( dest, (int4)( tidX, tidY, tidZ, 0 ), vload_half4(index, (__global half *)source));\n"
-"}\n";
-
 static const char *kernelpattern_image_write_2Darray =
 "__kernel void sample_test( __global %s4 *source, write_only image2d_array_t dest )\n"
 "{\n"
@@ -139,19 +89,6 @@ static const char *kernelpattern_image_write_2Darray =
 "    int  index = tidZ * width * height + tidY * width + tidX;\n"
 "    %s4 value = source[index];\n"
 "    write_image%s( dest, (int4)( tidX, tidY, tidZ, 0 ), %s(value));\n"
-"}\n";
-
-static const char *kernelpattern_image_write_2Darray_half =
-"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
-"__kernel void sample_test( __global half4 *source, write_only image2d_array_t dest )\n"
-"{\n"
-"    int  tidX   = get_global_id(0);\n"
-"    int  tidY   = get_global_id(1);\n"
-"    int  tidZ   = get_global_id(2);\n"
-"    int  width  = get_image_width( dest );\n"
-"    int  height = get_image_height( dest );\n"
-"    int  index = tidZ * width * height + tidY * width + tidX;\n"
-"    write_imagef( dest, (int4)( tidX, tidY, tidZ, 0 ), vload_half4(index, (__global half *)source));\n"
 "}\n";
 
 #ifdef GL_VERSION_3_2
@@ -192,24 +129,12 @@ static const char *get_appropriate_write_kernel(GLenum target,
 {
     switch (get_base_gl_target(target))
     {
-        case GL_TEXTURE_1D:
-
-            if (type == kHalf)
-                return kernelpattern_image_write_1D_half;
-            else
-                return kernelpattern_image_write_1D;
-            break;
+        case GL_TEXTURE_1D: return kernelpattern_image_write_1D; break;
         case GL_TEXTURE_BUFFER:
-            if (type == kHalf)
-                return kernelpattern_image_write_1D_buffer_half;
-            else
-                return kernelpattern_image_write_1D_buffer;
+            return kernelpattern_image_write_1D_buffer;
             break;
         case GL_TEXTURE_1D_ARRAY:
-            if (type == kHalf)
-                return kernelpattern_image_write_1Darray_half;
-            else
-                return kernelpattern_image_write_1Darray;
+            return kernelpattern_image_write_1Darray;
             break;
         case GL_COLOR_ATTACHMENT0:
         case GL_RENDERBUFFER:
@@ -220,10 +145,7 @@ static const char *get_appropriate_write_kernel(GLenum target,
             if (channel_order == CL_DEPTH || channel_order == CL_DEPTH_STENCIL)
                 return kernelpattern_image_write_2D_depth;
 #endif
-            if (type == kHalf)
-                return kernelpattern_image_write_2D_half;
-            else
-                return kernelpattern_image_write_2D;
+            return kernelpattern_image_write_2D;
             break;
 
         case GL_TEXTURE_2D_ARRAY:
@@ -231,18 +153,10 @@ static const char *get_appropriate_write_kernel(GLenum target,
             if (channel_order == CL_DEPTH || channel_order == CL_DEPTH_STENCIL)
                 return kernelpattern_image_write_2D_array_depth;
 #endif
-            if (type == kHalf)
-                return kernelpattern_image_write_2Darray_half;
-            else
-                return kernelpattern_image_write_2Darray;
+            return kernelpattern_image_write_2Darray;
             break;
 
-        case GL_TEXTURE_3D:
-            if (type == kHalf)
-                return kernelpattern_image_write_3D_half;
-            else
-                return kernelpattern_image_write_3D;
-            break;
+        case GL_TEXTURE_3D: return kernelpattern_image_write_3D; break;
 
         default:
             log_error("Unsupported GL tex target (%s) passed to write test: "
@@ -310,8 +224,7 @@ void set_dimensions_by_target(GLenum target, size_t *dims, size_t sizes[3],
 int test_cl_image_write(cl_context context, cl_command_queue queue,
                         GLenum target, cl_mem clImage, size_t width,
                         size_t height, size_t depth, cl_image_format *outFormat,
-                        ExplicitType *outType, void **outSourceBuffer, MTdata d,
-                        bool supports_half)
+                        ExplicitType *outType, void **outSourceBuffer, MTdata d)
 {
     size_t global_dims, global_sizes[3];
     clProgramWrapper program;
@@ -335,11 +248,6 @@ int test_cl_image_write(cl_context context, cl_command_queue queue,
 
     const char *appropriateKernel = get_appropriate_write_kernel(
         target, *outType, outFormat->image_channel_order);
-    if (*outType == kHalf && !supports_half)
-    {
-        log_info("cl_khr_fp16 isn't supported. Skip this test.\n");
-        return 0;
-    }
 
     const char *suffix = get_kernel_suffix(outFormat);
     const char *convert = get_write_conversion(outFormat, *outType);
@@ -429,8 +337,7 @@ static int test_image_write(cl_context context, cl_command_queue queue,
                             GLenum glTarget, GLuint glTexture, size_t width,
                             size_t height, size_t depth,
                             cl_image_format *outFormat, ExplicitType *outType,
-                            void **outSourceBuffer, MTdata d,
-                            bool supports_half)
+                            void **outSourceBuffer, MTdata d)
 {
     int error;
 
@@ -450,8 +357,7 @@ static int test_image_write(cl_context context, cl_command_queue queue,
     }
 
     return test_cl_image_write(context, queue, glTarget, image, width, height,
-                               depth, outFormat, outType, outSourceBuffer, d,
-                               supports_half);
+                               depth, outFormat, outType, outSourceBuffer, d);
 }
 
 int supportsHalf(cl_context context, bool *supports_half)
@@ -523,11 +429,6 @@ static int test_image_format_write(cl_context context, cl_command_queue queue,
                                    ExplicitType type, MTdata d)
 {
     int error;
-    // If we're testing a half float format, then we need to determine the
-    // rounding mode of this machine.  Punt if we fail to do so.
-
-    if (type == kHalf)
-        if (DetectFloatToHalfRoundingMode(queue)) return 1;
 
     // Create an appropriate GL texture or renderbuffer, given the target.
 
@@ -616,15 +517,11 @@ static int test_image_format_write(cl_context context, cl_command_queue queue,
         globj = glRenderbuffer;
     }
 
-    bool supports_half = false;
-    error = supportsHalf(context, &supports_half);
-    if (error != 0) return error;
+    error =
+        test_image_write(context, queue, target, globj, width, height, depth,
+                         &clFormat, &sourceType, (void **)&outSourceBuffer, d);
 
-    error = test_image_write(context, queue, target, globj, width, height,
-                             depth, &clFormat, &sourceType,
-                             (void **)&outSourceBuffer, d, supports_half);
-
-    if (error != 0 || ((sourceType == kHalf) && !supports_half))
+    if (error != 0)
     {
         if (outSourceBuffer) free(outSourceBuffer);
         return error;
@@ -632,12 +529,7 @@ static int test_image_format_write(cl_context context, cl_command_queue queue,
 
     if (!outSourceBuffer) return 0;
 
-    // If actual source type was half, convert to float for validation.
-
-    if (sourceType == kHalf)
-        validationType = kFloat;
-    else
-        validationType = sourceType;
+    validationType = sourceType;
 
     BufferOwningPtr<char> validationSource;
 
@@ -685,7 +577,7 @@ static int test_image_format_write(cl_context context, cl_command_queue queue,
     int valid = 0;
     if (convertedGLResults)
     {
-        if (sourceType == kFloat || sourceType == kHalf)
+        if (sourceType == kFloat)
         {
             if (clFormat.image_channel_data_type == CL_UNORM_INT_101010)
             {
