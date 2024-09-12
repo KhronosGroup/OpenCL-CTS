@@ -477,7 +477,8 @@ getCLImageInfoFromVkImageInfo(const VkImageCreateInfo *VulkanImageCreateInfo,
         throw std::runtime_error("get2DImageDimensions failed!!!");
     }
 
-    img_desc->image_depth = 0; // VulkanImageCreateInfo->extent.depth;
+    img_desc->image_depth =
+        static_cast<size_t>(VulkanImageCreateInfo->extent.depth);
     img_desc->image_array_size = 0;
     img_desc->image_row_pitch = 0; // Row pitch set to zero as host_ptr is NULL
     img_desc->image_slice_pitch =
@@ -761,6 +762,7 @@ clExternalMemoryImage::clExternalMemoryImage(
     {
         VkSubresourceLayout subresourceLayout = image2D.getSubresourceLayout();
         image_desc.image_row_pitch = subresourceLayout.rowPitch;
+        image_desc.image_slice_pitch = subresourceLayout.depthPitch;
     }
 
     extMemProperties1.push_back(
