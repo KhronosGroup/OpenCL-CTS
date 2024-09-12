@@ -109,6 +109,8 @@ const char *IGetErrorString(int clErrorCode)
             return "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR";
         case CL_INVALID_SYNC_POINT_WAIT_LIST_KHR:
             return "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR";
+        case CL_INVALID_COMMAND_BUFFER_KHR:
+            return "CL_INVALID_COMMAND_BUFFER_KHR";
         default: return "(unknown)";
     }
 }
