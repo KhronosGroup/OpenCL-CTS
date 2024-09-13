@@ -309,7 +309,7 @@ int RelationalsFPTest::test_equiv_kernel(unsigned int vecSize,
         sstr << "ERROR: Data sample " << i << ":" << j << " at size " << vs
              << " does not validate! Expected " << e << ", got " << o
              << ", source " << iA << ":" << iB << std::endl;
-        log_error(sstr.str().c_str());
+        log_error("%s", sstr.str().c_str());
     };
 
     /* And verify! */
