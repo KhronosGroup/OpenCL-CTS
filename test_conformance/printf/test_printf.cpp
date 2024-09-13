@@ -1017,6 +1017,12 @@ int test_mixed_format_random(cl_device_id deviceID, cl_context context,
     return doTest(gQueue, gContext, TYPE_MIXED_FORMAT_RANDOM, deviceID);
 }
 
+int test_length_specifier(cl_device_id deviceID, cl_context context,
+                          cl_command_queue queue, int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_LENGTH_SPECIFIER, deviceID);
+}
+
 int test_buffer_size(cl_device_id deviceID, cl_context context,
                      cl_command_queue queue, int num_elements)
 {
@@ -1060,6 +1066,7 @@ test_definition test_list[] = {
     ADD_TEST(address_space),
     ADD_TEST(buffer_size),
     ADD_TEST(mixed_format_random),
+    ADD_TEST(length_specifier),
 };
 
 const int test_num = ARRAY_SIZE( test_list );

@@ -1397,6 +1397,104 @@ testCase testCaseMixedFormat = { TYPE_MIXED_FORMAT_RANDOM,
                                  correctBufferMixedFormat,
                                  printMixedFormatGenParameters, NULL };
 
+
+//=============================================================
+
+// length sub-specifier format
+
+//=============================================================
+
+std::vector<printDataGenParameters> printLenSpecGenParameters = {
+
+    { { "%hd" }, "32767" },
+
+    { { "%hhd" }, "127" },
+
+    { { "%ld" }, "9223372036854775807L" },
+
+    { { "%hhd" }, "-128" },
+
+    { { "%ld" }, "-9223372036854775807L" },
+
+    { { "%hx" }, "32767" },
+
+    { { "%hhx" }, "127" },
+
+    { { "%lx" }, "9223372036854775807L" },
+
+    { { "%hhx" }, "-128" },
+
+    { { "%lx" }, "-9223372036854775807L" },
+
+    { { "%ho" }, "32767" },
+
+    { { "%hho" }, "127" },
+
+    { { "%lo" }, "9223372036854775807L" },
+
+    { { "%hho" }, "-128" },
+
+    { { "%lo" }, "-9223372036854775807L" },
+};
+
+//---------------------------------------------------------
+
+// Lookup table -[string] length specified correct buffer
+
+//---------------------------------------------------------
+
+std::vector<std::string> correctBufferLenSpec = {
+
+    "32767",
+
+    "127",
+
+    "9223372036854775807",
+
+    "-128",
+
+    "-9223372036854775807",
+
+    "7fff",
+
+    "7f",
+
+    "7fffffffffffffff",
+
+    "80",
+
+    "8000000000000001",
+
+    "77777",
+
+    "177",
+
+    "777777777777777777777",
+
+    "200",
+
+    "1000000000000000000001",
+};
+
+
+//----------------------------------------------------------
+
+// Test case for length specified values
+
+//----------------------------------------------------------
+
+testCase testCaseLenSpec = {
+
+    TYPE_LENGTH_SPECIFIER,
+
+    correctBufferLenSpec,
+
+    printLenSpecGenParameters,
+
+    NULL
+
+};
+
 //-------------------------------------------------------------------------------
 
 //All Test cases                                                                |
@@ -1409,7 +1507,7 @@ std::vector<testCase*> allTestCase = {
     &testCaseDoubleLimits, &testCaseOctal,       &testCaseUnsigned,
     &testCaseHexadecimal,  &testCaseChar,        &testCaseString,
     &testCaseFormatString, &testCaseVector,      &testCaseAddrSpace,
-    &testCaseMixedFormat
+    &testCaseMixedFormat,  &testCaseLenSpec
 };
 
 //-----------------------------------------
