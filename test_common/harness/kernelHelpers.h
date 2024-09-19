@@ -162,6 +162,14 @@ get_default_rounding_mode(const cl_device_id device,
         return TEST_SKIPPED_ITSELF;                                            \
     }
 
+#define PASSIVE_REQUIRE_IMMUTABLE_MEMORY_OBJECTS(device)                       \
+    if (!is_extension_available(device, "cl_ext_immutable_memory_objects"))    \
+    {                                                                          \
+        log_info("\n\tNote: device does not support "                          \
+                 "'cl_ext_immutable_memory_objects'. Skipping test...\n");     \
+        return TEST_SKIPPED_ITSELF;                                            \
+    }
+
 /* Prints out the standard device header for all tests given the device to print
  * for */
 extern int printDeviceHeader(cl_device_id device);
