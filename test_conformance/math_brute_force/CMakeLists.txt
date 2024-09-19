@@ -54,10 +54,6 @@ set(${MODULE_NAME}_SOURCES
     utility.h
 )
 
-# math_brute_force compiles cleanly with -Wall (except for a few remaining
-# warnings), but other tests not (yet); so enable -Wall locally.
-set_gnulike_module_compile_flags("-Wall -Wno-strict-aliasing -Wno-unknown-pragmas")
-
 add_cxx_flag_if_supported(-ffp-contract=off)
 
 include(../CMakeCommon.txt)
