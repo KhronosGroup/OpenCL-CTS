@@ -1149,7 +1149,7 @@ int main(int argc, const char* argv[])
     gMTdata = MTdataHolder(gRandomSeed);
 
     int err = runTestHarnessWithCheck( argCount, argList, test_num, test_list, true, 0, InitCL );
-
+    fflush(stdout);
     if(gQueue)
     {
         int error = clFinish(gQueue);
