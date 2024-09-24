@@ -1382,7 +1382,7 @@ int run_test_with_multi_import_diff_ctx(
                                                    "Failed to set kernel arg");
 
                             err = clEnqueueAcquireExternalMemObjectsKHRptr(
-                                cmd_queue1, 1, &buffers2[i][launchIter], 0,
+                                cmd_queue2, 1, &buffers2[i][launchIter], 0,
                                 nullptr, nullptr);
                             test_error_and_cleanup(err, CLEANUP,
                                                    "Failed to acquire buffers");
@@ -1402,7 +1402,7 @@ int run_test_with_multi_import_diff_ctx(
                         for (int i = 0; i < numBuffers; i++)
                         {
                             err = clEnqueueReleaseExternalMemObjectsKHRptr(
-                                cmd_queue1, 1, &buffers2[i][launchIter], 0,
+                                cmd_queue2, 1, &buffers2[i][launchIter], 0,
                                 nullptr, nullptr);
                             test_error_and_cleanup(err, CLEANUP,
                                                    "Failed to release buffers");
