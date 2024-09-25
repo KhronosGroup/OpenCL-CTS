@@ -1161,11 +1161,31 @@ int test_consistency_requirements_fp64(cl_device_id deviceID,
 
     if (is_extension_available(deviceID, "cl_khr_fp64"))
     {
+        const Version version = get_device_cl_version(deviceID);
+
         error = clGetDeviceInfo(deviceID, CL_DEVICE_DOUBLE_FP_CONFIG,
                                 sizeof(value), &value, nullptr);
         test_error(error, "Unable to get device CL_DEVICE_DOUBLE_FP_CONFIG");
         test_assert_error(
             value > 0, "CL_DEVICE_DOUBLE_FP_CONFIG must return nonzero value");
+        if (version < Version(2, 0))
+        {
+            test_assert_error(
+                value
+                    & (CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO
+                       | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM),
+                "Reported double fp config doesn't meet minimum set "
+                "for OpenCL 1.0, OpenCL 1.1, OpenCL 1.2 devices");
+        }
+        else
+        {
+            test_assert_error(
+                value
+                    & (CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_INF_NAN
+                       | CL_FP_DENORM),
+                "Reported double fp config doesn't meet minimum set "
+                "for OpenCL 2.0 or newer devices");
+        }
 
         error =
             clGetDeviceInfo(deviceID, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE,
@@ -1223,11 +1243,27 @@ int test_consistency_requirements_fp16(cl_device_id deviceID,
 
     if (is_extension_available(deviceID, "cl_khr_fp16"))
     {
+        const Version version = get_device_cl_version(deviceID);
+
         error = clGetDeviceInfo(deviceID, CL_DEVICE_HALF_FP_CONFIG,
                                 sizeof(value), &value, nullptr);
         test_error(error, "Unable to get device CL_DEVICE_HALF_FP_CONFIG");
         test_assert_error(value > 0,
                           "CL_DEVICE_HALF_FP_CONFIG must return nonzero value");
+        if (version < Version(2, 0))
+        {
+            test_assert_error(
+                value & (CL_FP_ROUND_TO_NEAREST | CL_FP_INF_NAN),
+                "Reported half fp config doesn't meet minimum set "
+                "for OpenCL 1.0, OpenCL 1.1, OpenCL 1.2 devices");
+        }
+        else
+        {
+            test_assert_error(
+                value & (CL_FP_ROUND_TO_ZERO),
+                "Reported half fp config doesn't meet minimum set "
+                "for OpenCL 2.0 or newer devices");
+        }
 
         error = clGetDeviceInfo(deviceID, CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF,
                                 sizeof(value), &value, nullptr);
