@@ -23,7 +23,7 @@ int memory_access(cl_device_id deviceID, cl_context context,
 {
     CResult result;
 
-    std::auto_ptr<CDeviceWrapper> deviceWrapper;
+    std::unique_ptr<CDeviceWrapper> deviceWrapper;
     // creates device
     if (!DeviceCreate(adapterType, deviceWrapper))
     {
@@ -74,7 +74,7 @@ int memory_access(cl_device_id deviceID, cl_context context,
         }
 
         void *objectSharedHandle = 0;
-        std::auto_ptr<CSurfaceWrapper> surface;
+        std::unique_ptr<CSurfaceWrapper> surface;
 
         // creates surface
         if (!MediaSurfaceCreate(

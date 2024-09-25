@@ -116,24 +116,24 @@ void YUVGenerateYV12(std::vector<cl_uchar> &yuv, unsigned int width,
 bool YUVGenerate(TSurfaceFormat surfaceFormat, std::vector<cl_uchar> &yuv,
                  unsigned int width, unsigned int height, cl_uchar valueMin,
                  cl_uchar valueMax, double valueAdd = 0.0);
-bool YUVSurfaceSetNV12(std::auto_ptr<CSurfaceWrapper> &surface,
+bool YUVSurfaceSetNV12(std::unique_ptr<CSurfaceWrapper> &surface,
                        const std::vector<cl_uchar> &yuv, unsigned int width,
                        unsigned int height);
-bool YUVSurfaceSetYV12(std::auto_ptr<CSurfaceWrapper> &surface,
+bool YUVSurfaceSetYV12(std::unique_ptr<CSurfaceWrapper> &surface,
                        const std::vector<cl_uchar> &yuv, unsigned int width,
                        unsigned int height);
 bool YUVSurfaceSet(TSurfaceFormat surfaceFormat,
-                   std::auto_ptr<CSurfaceWrapper> &surface,
+                   std::unique_ptr<CSurfaceWrapper> &surface,
                    const std::vector<cl_uchar> &yuv, unsigned int width,
                    unsigned int height);
-bool YUVSurfaceGetNV12(std::auto_ptr<CSurfaceWrapper> &surface,
+bool YUVSurfaceGetNV12(std::unique_ptr<CSurfaceWrapper> &surface,
                        std::vector<cl_uchar> &yuv, unsigned int width,
                        unsigned int height);
-bool YUVSurfaceGetYV12(std::auto_ptr<CSurfaceWrapper> &surface,
+bool YUVSurfaceGetYV12(std::unique_ptr<CSurfaceWrapper> &surface,
                        std::vector<cl_uchar> &yuv, unsigned int width,
                        unsigned int height);
 bool YUVSurfaceGet(TSurfaceFormat surfaceFormat,
-                   std::auto_ptr<CSurfaceWrapper> &surface,
+                   std::unique_ptr<CSurfaceWrapper> &surface,
                    std::vector<cl_uchar> &yuv, unsigned int width,
                    unsigned int height);
 bool YUVCompareNV12(const std::vector<cl_uchar> &yuvTest,
@@ -178,12 +178,12 @@ bool GetImageInfo(cl_mem object, cl_image_format formatExp,
                   size_t slicePitchExp, size_t widthExp, size_t heightExp,
                   size_t depthExp, unsigned int planeExp);
 bool GetMemObjInfo(cl_mem object, cl_dx9_media_adapter_type_khr adapterType,
-                   std::auto_ptr<CSurfaceWrapper> &surface,
+                   std::unique_ptr<CSurfaceWrapper> &surface,
                    void *shareHandleExp);
 bool ImageInfoVerify(cl_dx9_media_adapter_type_khr adapterType,
                      const std::vector<cl_mem> &memObjList, unsigned int width,
                      unsigned int height,
-                     std::auto_ptr<CSurfaceWrapper> &surface,
+                     std::unique_ptr<CSurfaceWrapper> &surface,
                      void *sharedHandle);
 bool ImageFormatCheck(cl_context context, cl_mem_object_type imageType,
                       const cl_image_format imageFormatCheck);
@@ -195,7 +195,7 @@ D3DFORMAT SurfaceFormatToD3D(TSurfaceFormat surfaceFormat);
 #endif
 
 bool DeviceCreate(cl_dx9_media_adapter_type_khr adapterType,
-                  std::auto_ptr<CDeviceWrapper> &device);
+                  std::unique_ptr<CDeviceWrapper> &device);
 bool SurfaceFormatCheck(cl_dx9_media_adapter_type_khr adapterType,
                         const CDeviceWrapper &device,
                         TSurfaceFormat surfaceFormat);
@@ -204,7 +204,7 @@ void SurfaceFormatToString(TSurfaceFormat surfaceFormat, std::string &str);
 bool MediaSurfaceCreate(cl_dx9_media_adapter_type_khr adapterType,
                         unsigned int width, unsigned int height,
                         TSurfaceFormat surfaceFormat, CDeviceWrapper &device,
-                        std::auto_ptr<CSurfaceWrapper> &surface,
+                        std::unique_ptr<CSurfaceWrapper> &surface,
                         bool sharedHandle, void **objectSharedHandle);
 
 cl_int
