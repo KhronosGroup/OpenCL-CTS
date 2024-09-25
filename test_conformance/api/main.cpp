@@ -161,6 +161,7 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(negative_create_command_queue_with_properties,
                      Version(2, 0)),
     ADD_TEST(negative_create_command_queue_with_properties_khr),
+    ADD_TEST(kernel_local_mem_size),
 };
 
 const int test_num = ARRAY_SIZE(test_list);
