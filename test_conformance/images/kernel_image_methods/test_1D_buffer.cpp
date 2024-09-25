@@ -187,7 +187,8 @@ int test_get_image_info_1D_buffer(cl_device_id device, cl_context context,
 
     imageInfo.type = CL_MEM_OBJECT_IMAGE1D_BUFFER;
     imageInfo.format = format;
-    imageInfo.height = imageInfo.depth = imageInfo.slicePitch = 0;
+    imageInfo.height = imageInfo.depth = 1;
+    imageInfo.slicePitch = 0;
     pixelSize = get_pixel_size(imageInfo.format);
 
     int error = clGetDeviceInfo(device, CL_DEVICE_IMAGE_MAX_BUFFER_SIZE,
