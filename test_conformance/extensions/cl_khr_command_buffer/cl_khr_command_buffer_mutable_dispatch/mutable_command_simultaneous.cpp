@@ -170,14 +170,15 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
         cl_sync_point_khr sync_points[2];
         const cl_int pattern = pattern_pri;
         cl_int error = clCommandFillBufferKHR(
-            work_command_buffer, nullptr, in_mem, &pattern, sizeof(cl_int), 0,
-            data_size(), 0, nullptr, &sync_points[0], nullptr);
+            work_command_buffer, nullptr, nullptr, in_mem, &pattern,
+            sizeof(cl_int), 0, data_size(), 0, nullptr, &sync_points[0],
+            nullptr);
         test_error(error, "clCommandFillBufferKHR failed");
 
-        error = clCommandFillBufferKHR(work_command_buffer, nullptr, out_mem,
-                                       &overwritten_pattern, sizeof(cl_int), 0,
-                                       data_size(), 0, nullptr, &sync_points[1],
-                                       nullptr);
+        error = clCommandFillBufferKHR(work_command_buffer, nullptr, nullptr,
+                                       out_mem, &overwritten_pattern,
+                                       sizeof(cl_int), 0, data_size(), 0,
+                                       nullptr, &sync_points[1], nullptr);
         test_error(error, "clCommandFillBufferKHR failed");
 
         error = clCommandNDRangeKernelKHR(
@@ -224,8 +225,6 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
         cl_mutable_dispatch_arg_khr args[] = { arg_1 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
-            nullptr,
             command,
             1 /* num_args */,
             0 /* num_svm_arg */,
@@ -238,13 +237,14 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
             nullptr /* global_work_size */,
             nullptr /* local_work_size */
         };
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
-            &dispatch_config
-        };
 
-        error =
-            clUpdateMutableCommandsKHR(work_command_buffer, &mutable_config);
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
+        };
+        const void* configs[1] = { &dispatch_config };
+        error = clUpdateMutableCommandsKHR(work_command_buffer, num_configs,
+                                           config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         error = clEnqueueCommandBufferKHR(0, nullptr, work_command_buffer, 0,
@@ -269,8 +269,8 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
         cl_sync_point_khr sync_points[2];
         // for both simultaneous passes this call will fill entire in_mem buffer
         cl_int error = clCommandFillBufferKHR(
-            work_command_buffer, nullptr, in_mem, &pattern_pri, sizeof(cl_int),
-            0, data_size() * buffer_size_multiplier, 0, nullptr,
+            work_command_buffer, nullptr, nullptr, in_mem, &pattern_pri,
+            sizeof(cl_int), 0, data_size() * buffer_size_multiplier, 0, nullptr,
             &sync_points[0], nullptr);
         test_error(error, "clCommandFillBufferKHR failed");
 
@@ -343,8 +343,6 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
         cl_mutable_dispatch_arg_khr args[] = { arg_1 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
-            nullptr,
             command,
             1 /* num_args */,
             0 /* num_svm_arg */,
@@ -357,13 +355,14 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
             nullptr /* global_work_size */,
             nullptr /* local_work_size */
         };
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
-            &dispatch_config
-        };
 
-        error =
-            clUpdateMutableCommandsKHR(work_command_buffer, &mutable_config);
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
+        };
+        const void* configs[1] = { &dispatch_config };
+        error = clUpdateMutableCommandsKHR(work_command_buffer, num_configs,
+                                           config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         // command buffer execution must wait for two wait-events
@@ -519,11 +518,11 @@ struct CrossQueueSimultaneousMutableDispatchTest
         // record command buffer
         cl_int pattern = 0;
         cl_int error = clCommandFillBufferKHR(
-            command_buffer, nullptr, out_mem, &pattern, sizeof(cl_int), 0,
-            data_size(), 0, nullptr, nullptr, nullptr);
+            command_buffer, nullptr, nullptr, out_mem, &pattern, sizeof(cl_int),
+            0, data_size(), 0, nullptr, nullptr, nullptr);
         test_error(error, "clCommandFillBufferKHR failed");
 
-        cl_ndrange_kernel_command_properties_khr props[] = {
+        cl_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
@@ -552,8 +551,6 @@ struct CrossQueueSimultaneousMutableDispatchTest
         cl_mutable_dispatch_arg_khr args[] = { arg_0, arg_1 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
-            nullptr,
             command,
             2 /* num_args */,
             0 /* num_svm_arg */,
@@ -566,12 +563,14 @@ struct CrossQueueSimultaneousMutableDispatchTest
             nullptr /* global_work_size */,
             nullptr /* local_work_size */
         };
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
-            &dispatch_config
-        };
 
-        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
+        };
+        const void* configs[1] = { &dispatch_config };
+        error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
+                                           config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         // enqueue command buffer to non-default queue

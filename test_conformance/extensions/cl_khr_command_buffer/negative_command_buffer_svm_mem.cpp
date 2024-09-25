@@ -29,17 +29,17 @@ struct CommandBufferCommandSVMQueueNotNull : public BasicSVMCommandBufferTest
     cl_int Run() override
     {
         cl_int error = clCommandSVMMemcpyKHR(
-            command_buffer, queue, svm_out_mem(), svm_in_mem(), data_size(), 0,
-            nullptr, nullptr, nullptr);
+            command_buffer, queue, nullptr, svm_out_mem(), svm_in_mem(),
+            data_size(), 0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(
             error, CL_INVALID_COMMAND_QUEUE,
             "clCommandSVMMemcpyKHR should return CL_INVALID_COMMAND_QUEUE",
             TEST_FAIL);
 
-        error = clCommandSVMMemFillKHR(command_buffer, queue, svm_in_mem(),
-                                       &pattern_1, sizeof(cl_char), data_size(),
-                                       0, nullptr, nullptr, nullptr);
+        error = clCommandSVMMemFillKHR(
+            command_buffer, queue, nullptr, svm_in_mem(), &pattern_1,
+            sizeof(cl_char), data_size(), 0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(
             error, CL_INVALID_COMMAND_QUEUE,
@@ -73,37 +73,33 @@ struct CommandBufferCommandSVMSyncPointsNullOrNumZero
         cl_sync_point_khr invalid_point = 0;
 
         cl_int error = clCommandSVMMemcpyKHR(
-            command_buffer, nullptr, svm_out_mem(), svm_in_mem(), data_size(),
-            1, &invalid_point, nullptr, nullptr);
-
+            command_buffer, nullptr, nullptr, svm_out_mem(), svm_in_mem(),
+            data_size(), 1, &invalid_point, nullptr, nullptr);
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandSVMMemcpyKHR should return "
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
-        error = clCommandSVMMemFillKHR(command_buffer, nullptr, svm_in_mem(),
-                                       &pattern_1, sizeof(cl_char), data_size(),
-                                       1, &invalid_point, nullptr, nullptr);
-
+        error = clCommandSVMMemFillKHR(
+            command_buffer, nullptr, nullptr, svm_in_mem(), &pattern_1,
+            sizeof(cl_char), data_size(), 1, &invalid_point, nullptr, nullptr);
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandSVMMemFillKHR should return "
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
-
-        error = clCommandSVMMemcpyKHR(command_buffer, nullptr, svm_out_mem(),
-                                      svm_in_mem(), data_size(), 1, nullptr,
-                                      nullptr, nullptr);
+        error = clCommandSVMMemcpyKHR(command_buffer, nullptr, nullptr,
+                                      svm_out_mem(), svm_in_mem(), data_size(),
+                                      1, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandSVMMemcpyKHR should return "
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
-        error = clCommandSVMMemFillKHR(command_buffer, nullptr, svm_in_mem(),
-                                       &pattern_1, sizeof(cl_char), data_size(),
-                                       1, nullptr, nullptr, nullptr);
-
+        error = clCommandSVMMemFillKHR(
+            command_buffer, nullptr, nullptr, svm_in_mem(), &pattern_1,
+            sizeof(cl_char), data_size(), 1, nullptr, nullptr, nullptr);
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandSVMMemFillKHR should return "
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
@@ -111,23 +107,22 @@ struct CommandBufferCommandSVMSyncPointsNullOrNumZero
 
 
         cl_sync_point_khr point;
-        error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
-                                                nullptr, &point, nullptr);
+        error = clCommandBarrierWithWaitListKHR(
+            command_buffer, nullptr, nullptr, 0, nullptr, &point, nullptr);
         test_error(error, "clCommandBarrierWithWaitListKHR failed");
 
-        error = clCommandSVMMemcpyKHR(command_buffer, nullptr, svm_out_mem(),
-                                      svm_in_mem(), data_size(), 0, &point,
-                                      nullptr, nullptr);
+        error = clCommandSVMMemcpyKHR(command_buffer, nullptr, nullptr,
+                                      svm_out_mem(), svm_in_mem(), data_size(),
+                                      0, &point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandSVMMemcpyKHR should return "
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
-        error = clCommandSVMMemFillKHR(command_buffer, nullptr, svm_in_mem(),
-                                       &pattern_1, sizeof(cl_char), data_size(),
-                                       0, &point, nullptr, nullptr);
-
+        error = clCommandSVMMemFillKHR(
+            command_buffer, nullptr, nullptr, svm_in_mem(), &pattern_1,
+            sizeof(cl_char), data_size(), 0, &point, nullptr, nullptr);
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandSVMMemFillKHR should return "
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
@@ -149,16 +144,16 @@ struct CommandBufferCommandSVMInvalidCommandBuffer
 
     cl_int Run() override
     {
-        cl_int error =
-            clCommandSVMMemcpyKHR(nullptr, nullptr, svm_out_mem(), svm_in_mem(),
-                                  data_size(), 0, nullptr, nullptr, nullptr);
+        cl_int error = clCommandSVMMemcpyKHR(
+            nullptr, nullptr, nullptr, svm_out_mem(), svm_in_mem(), data_size(),
+            0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(
             error, CL_INVALID_COMMAND_BUFFER_KHR,
             "clCommandSVMMemcpyKHR should return CL_INVALID_COMMAND_BUFFER_KHR",
             TEST_FAIL);
 
-        error = clCommandSVMMemFillKHR(nullptr, nullptr, svm_in_mem(),
+        error = clCommandSVMMemFillKHR(nullptr, nullptr, nullptr, svm_in_mem(),
                                        &pattern_1, sizeof(cl_char), data_size(),
                                        0, nullptr, nullptr, nullptr);
 
@@ -184,19 +179,17 @@ struct CommandBufferCommandSVMFinalizedCommandBuffer
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clCommandSVMMemcpyKHR(command_buffer, nullptr, svm_out_mem(),
-                                      svm_in_mem(), data_size(), 0, nullptr,
-                                      nullptr, nullptr);
-
+        error = clCommandSVMMemcpyKHR(command_buffer, nullptr, nullptr,
+                                      svm_out_mem(), svm_in_mem(), data_size(),
+                                      0, nullptr, nullptr, nullptr);
         test_failure_error_ret(
             error, CL_INVALID_OPERATION,
             "clCommandSVMMemcpyKHR should return CL_INVALID_OPERATION",
             TEST_FAIL);
 
-        error = clCommandSVMMemFillKHR(command_buffer, nullptr, svm_in_mem(),
-                                       &pattern_1, sizeof(cl_char), data_size(),
-                                       0, nullptr, nullptr, nullptr);
-
+        error = clCommandSVMMemFillKHR(
+            command_buffer, nullptr, nullptr, svm_in_mem(), &pattern_1,
+            sizeof(cl_char), data_size(), 0, nullptr, nullptr, nullptr);
         test_failure_error_ret(
             error, CL_INVALID_OPERATION,
             "clCommandSVMMemFillKHR should return CL_INVALID_OPERATION",
@@ -219,16 +212,16 @@ struct CommandBufferCommandSVMMutableHandleNotNull
         cl_mutable_command_khr mutable_handle;
 
         cl_int error = clCommandSVMMemcpyKHR(
-            command_buffer, nullptr, svm_out_mem(), svm_in_mem(), data_size(),
-            0, nullptr, nullptr, &mutable_handle);
+            command_buffer, nullptr, nullptr, svm_out_mem(), svm_in_mem(),
+            data_size(), 0, nullptr, nullptr, &mutable_handle);
 
         test_failure_error_ret(
             error, CL_INVALID_VALUE,
             "clCommandSVMMemcpyKHR should return CL_INVALID_VALUE", TEST_FAIL);
 
-        error = clCommandSVMMemFillKHR(command_buffer, nullptr, svm_in_mem(),
-                                       &pattern_1, sizeof(cl_char), data_size(),
-                                       0, nullptr, nullptr, &mutable_handle);
+        error = clCommandSVMMemFillKHR(
+            command_buffer, nullptr, nullptr, svm_in_mem(), &pattern_1,
+            sizeof(cl_char), data_size(), 0, nullptr, nullptr, &mutable_handle);
 
         test_failure_error_ret(
             error, CL_INVALID_VALUE,

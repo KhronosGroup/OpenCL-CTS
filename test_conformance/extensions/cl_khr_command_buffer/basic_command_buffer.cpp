@@ -254,8 +254,8 @@ struct MixedCommandsTest : public BasicCommandBufferTest
         {
             const cl_int pattern = pattern_base + i;
             cl_int error = clCommandFillBufferKHR(
-                command_buffer, nullptr, in_mem, &pattern, sizeof(cl_int), 0,
-                data_size(), 0, nullptr, nullptr, nullptr);
+                command_buffer, nullptr, nullptr, in_mem, &pattern,
+                sizeof(cl_int), 0, data_size(), 0, nullptr, nullptr, nullptr);
             test_error(error, "clCommandFillBufferKHR failed");
 
             error = clCommandNDRangeKernelKHR(
@@ -265,8 +265,8 @@ struct MixedCommandsTest : public BasicCommandBufferTest
 
             const size_t result_offset = i * sizeof(cl_int);
             error = clCommandCopyBufferKHR(
-                command_buffer, nullptr, out_mem, result_mem, 0, result_offset,
-                sizeof(cl_int), 0, nullptr, nullptr, nullptr);
+                command_buffer, nullptr, nullptr, out_mem, result_mem, 0,
+                result_offset, sizeof(cl_int), 0, nullptr, nullptr, nullptr);
             test_error(error, "clCommandCopyBufferKHR failed");
         }
 

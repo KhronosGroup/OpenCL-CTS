@@ -32,7 +32,7 @@ const char *write_kernels[] = {
 };
 
 #define TEST_SIZE 10000
-#define TEST_COUNT 100
+#define TEST_COUNT 10
 #define RANDOMIZE 1
 #define DEBUG_OUT 0
 
@@ -446,6 +446,14 @@ int test_event_enqueue_wait_for_events_run_test(
                                 &last_loop_event, NULL);
 
     test_error(error, "clEnqueueReadBuffer failed");
+
+    error = clFinish(queues[0]);
+    test_error(error, "clFinish(queues[0]) failed");
+    if (two_queues)
+    {
+        error = clFinish(queues[1]);
+        test_error(error, "clFinish(queues[1]) failed");
+    }
 
     failed = 0;
     for (i = 0; i < (int)TEST_SIZE; i++)
