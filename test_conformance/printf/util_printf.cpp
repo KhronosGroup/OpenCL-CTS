@@ -128,33 +128,33 @@ std::vector<printDataGenParameters> printLongGenParameters = {
 
     //(Minimum) fifteen-wide,default(right)-justified
 
-    { { "%5ld" }, "10000000000L" },
+    { { "%5lld" }, "10000000000L" },
 
     //(Minimum) fifteen-wide,left-justified
 
-    { { "%-15ld" }, "-10000000000L" },
+    { { "%-15lld" }, "-10000000000L" },
 
     //(Minimum) fifteen-wide,default(right)-justified,zero-filled
 
-    { { "%015ld" }, "10000000000L" },
+    { { "%015lld" }, "10000000000L" },
 
     //(Minimum) fifteen-wide,default(right)-justified,with sign
 
-    { { "%+15ld" }, "-10000000000L" },
+    { { "%+15lld" }, "-10000000000L" },
 
     //(Minimum) fifteen-wide ,left-justified,with sign
 
-    { { "%-+15ld" }, "10000000000L" },
+    { { "%-+15lld" }, "10000000000L" },
 
     //(Minimum) fifteen-digit(zero-filled in absent
     // digits),default(right)-justified
 
-    { { "%.15li" }, "10000000000L" },
+    { { "%.15lli" }, "10000000000L" },
 
     //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
     // digits),default(right)-justified
 
-    { { "%-+16.15li" }, "-10000000000L" },
+    { { "%-+16.15lli" }, "-10000000000L" },
 
 };
 
