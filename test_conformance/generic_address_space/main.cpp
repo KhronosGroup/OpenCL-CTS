@@ -113,8 +113,7 @@ test_status InitCL(cl_device_id device) {
         if (error != CL_SUCCESS)
         {
             print_error(error,
-                        "Unable to MAX_GLOBAL_VARIABLE_SIZE value. "
-                        "Program scope variable support is required");
+                        "Unable to query CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE.");
             return TEST_FAIL;
         }
 
