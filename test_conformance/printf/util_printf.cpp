@@ -23,7 +23,6 @@
 
 // Helpers for generating runtime reference results
 static void intRefBuilder(printDataGenParameters&, char*, const size_t);
-static void longRefBuilder(printDataGenParameters&, char*, const size_t);
 static void halfRefBuilder(printDataGenParameters&, char* rResult,
                            const size_t);
 static void floatRefBuilder(printDataGenParameters&, char* rResult, const size_t);
@@ -158,6 +157,33 @@ std::vector<printDataGenParameters> printLongGenParameters = {
 
 };
 
+//--------------------------------------------------------
+
+//  Lookup table - [string]long-correct buffer             |
+
+//--------------------------------------------------------
+
+// The table below is used to accommodate differences in `printf` output when
+// using the `%ld` format specifier in 32-bit versus 64-bit compiled binaries
+
+std::vector<std::string> correctBufferLong = {
+
+    "10000000000",
+
+    "-10000000000   ",
+
+    "000010000000000",
+
+    "   -10000000000",
+
+    "+10000000000   ",
+
+    "000010000000000",
+
+    "-000010000000000"
+
+};
+
 //-----------------------------------------------
 
 // test case for long                             |
@@ -172,7 +198,7 @@ testCase testCaseLong = {
 
     printLongGenParameters,
 
-    longRefBuilder,
+    NULL,
 
     klong
 
@@ -1592,13 +1618,6 @@ static void intRefBuilder(printDataGenParameters& params, char* refResult, const
 {
     snprintf(refResult, refSize, params.genericFormats.front().c_str(),
              atoi(params.dataRepresentation));
-}
-
-static void longRefBuilder(printDataGenParameters& params, char* refResult,
-                           const size_t refSize)
-{
-    snprintf(refResult, refSize, params.genericFormats.front().c_str(),
-             atoll(params.dataRepresentation));
 }
 
 static void halfRefBuilder(printDataGenParameters& params, char* refResult,
