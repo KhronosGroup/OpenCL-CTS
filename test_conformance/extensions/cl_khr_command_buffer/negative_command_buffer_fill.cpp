@@ -82,8 +82,8 @@ struct CommandBufferCommandFillBufferQueueNotNull
     cl_int Run() override
     {
         cl_int error = clCommandFillBufferKHR(
-            command_buffer, queue, out_mem, &pattern, sizeof(cl_int), 0,
-            data_size(), 0, nullptr, nullptr, nullptr);
+            command_buffer, queue, nullptr, out_mem, &pattern, sizeof(cl_int),
+            0, data_size(), 0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_QUEUE,
                                "clCommandFillBufferKHR should return "
@@ -109,9 +109,9 @@ struct CommandBufferCommandFillImageQueueNotNull
 
     cl_int Run() override
     {
-        cl_int error = clCommandFillImageKHR(command_buffer, queue, src_image,
-                                             fill_color_1, origin, region, 0,
-                                             nullptr, nullptr, nullptr);
+        cl_int error = clCommandFillImageKHR(
+            command_buffer, queue, nullptr, src_image, fill_color_1, origin,
+            region, 0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_QUEUE,
                                "clCommandFillImageKHR should return "
@@ -139,8 +139,8 @@ struct CommandBufferCommandFillBufferContextNotSame
     cl_int Run() override
     {
         cl_int error = clCommandFillBufferKHR(
-            command_buffer, nullptr, out_mem_ctx, &pattern, sizeof(cl_int), 0,
-            data_size(), 0, nullptr, nullptr, nullptr);
+            command_buffer, nullptr, nullptr, out_mem_ctx, &pattern,
+            sizeof(cl_int), 0, data_size(), 0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_CONTEXT,
                                "clCommandFillBufferKHR should return "
@@ -181,8 +181,8 @@ struct CommandBufferCommandFillImageContextNotSame
     cl_int Run() override
     {
         cl_int error = clCommandFillImageKHR(
-            command_buffer, nullptr, dst_image_ctx, fill_color_1, origin,
-            region, 0, nullptr, nullptr, nullptr);
+            command_buffer, nullptr, nullptr, dst_image_ctx, fill_color_1,
+            origin, region, 0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_CONTEXT,
                                "clCommandFillImageKHR should return "
@@ -225,8 +225,8 @@ struct CommandBufferCommandFillBufferSyncPointsNullOrNumZero
         cl_sync_point_khr invalid_point = 0;
 
         cl_int error = clCommandFillBufferKHR(
-            command_buffer, nullptr, out_mem, &pattern, sizeof(cl_int), 0,
-            data_size(), 1, &invalid_point, nullptr, nullptr);
+            command_buffer, nullptr, nullptr, out_mem, &pattern, sizeof(cl_int),
+            0, data_size(), 1, &invalid_point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandFillBufferKHR should return "
@@ -234,9 +234,9 @@ struct CommandBufferCommandFillBufferSyncPointsNullOrNumZero
                                TEST_FAIL);
 
 
-        error = clCommandFillBufferKHR(command_buffer, nullptr, out_mem,
-                                       &pattern, sizeof(cl_int), 0, data_size(),
-                                       1, nullptr, nullptr, nullptr);
+        error = clCommandFillBufferKHR(
+            command_buffer, nullptr, nullptr, out_mem, &pattern, sizeof(cl_int),
+            0, data_size(), 1, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandFillBufferKHR should return "
@@ -245,13 +245,13 @@ struct CommandBufferCommandFillBufferSyncPointsNullOrNumZero
 
 
         cl_sync_point_khr point;
-        error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
-                                                nullptr, &point, nullptr);
+        error = clCommandBarrierWithWaitListKHR(
+            command_buffer, nullptr, nullptr, 0, nullptr, &point, nullptr);
         test_error(error, "clCommandBarrierWithWaitListKHR failed");
 
-        error = clCommandFillBufferKHR(command_buffer, nullptr, out_mem,
-                                       &pattern, sizeof(cl_int), 0, data_size(),
-                                       0, &point, nullptr, nullptr);
+        error = clCommandFillBufferKHR(
+            command_buffer, nullptr, nullptr, out_mem, &pattern, sizeof(cl_int),
+            0, data_size(), 0, &point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandFillBufferKHR should return "
@@ -276,9 +276,9 @@ struct CommandBufferCommandFillImageSyncPointsNullOrNumZero
     {
         cl_sync_point_khr invalid_point = 0;
 
-        cl_int error = clCommandFillImageKHR(command_buffer, nullptr, dst_image,
-                                             fill_color_1, origin, region, 1,
-                                             &invalid_point, nullptr, nullptr);
+        cl_int error = clCommandFillImageKHR(
+            command_buffer, nullptr, nullptr, dst_image, fill_color_1, origin,
+            region, 1, &invalid_point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandFillImageKHR should return "
@@ -286,9 +286,9 @@ struct CommandBufferCommandFillImageSyncPointsNullOrNumZero
                                TEST_FAIL);
 
 
-        error = clCommandFillImageKHR(command_buffer, nullptr, dst_image,
-                                      fill_color_1, origin, region, 1, nullptr,
-                                      nullptr, nullptr);
+        error = clCommandFillImageKHR(command_buffer, nullptr, nullptr,
+                                      dst_image, fill_color_1, origin, region,
+                                      1, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandFillImageKHR should return "
@@ -296,14 +296,14 @@ struct CommandBufferCommandFillImageSyncPointsNullOrNumZero
                                TEST_FAIL);
 
         cl_sync_point_khr point;
-        error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
-                                                nullptr, &point, nullptr);
+        error = clCommandBarrierWithWaitListKHR(
+            command_buffer, nullptr, nullptr, 0, nullptr, &point, nullptr);
         test_error(error, "clCommandBarrierWithWaitListKHR failed");
 
 
-        error = clCommandFillImageKHR(command_buffer, nullptr, dst_image,
-                                      fill_color_1, origin, region, 0, &point,
-                                      nullptr, nullptr);
+        error = clCommandFillImageKHR(command_buffer, nullptr, nullptr,
+                                      dst_image, fill_color_1, origin, region,
+                                      0, &point, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_SYNC_POINT_WAIT_LIST_KHR,
                                "clCommandFillImageKHR should return "
@@ -326,8 +326,8 @@ struct CommandBufferCommandFillBufferInvalidCommandBuffer
     cl_int Run() override
     {
         cl_int error = clCommandFillBufferKHR(
-            nullptr, nullptr, out_mem, &pattern, sizeof(cl_int), 0, data_size(),
-            0, nullptr, nullptr, nullptr);
+            nullptr, nullptr, nullptr, out_mem, &pattern, sizeof(cl_int), 0,
+            data_size(), 0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_BUFFER_KHR,
                                "clCommandFillBufferKHR should return "
@@ -347,9 +347,9 @@ struct CommandBufferCommandFillImageInvalidCommandBuffer
 
     cl_int Run() override
     {
-        cl_int error =
-            clCommandFillImageKHR(nullptr, nullptr, dst_image, fill_color_1,
-                                  origin, region, 0, nullptr, nullptr, nullptr);
+        cl_int error = clCommandFillImageKHR(
+            nullptr, nullptr, nullptr, dst_image, fill_color_1, origin, region,
+            0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_COMMAND_BUFFER_KHR,
                                "clCommandFillImageKHR should return "
@@ -371,9 +371,9 @@ struct CommandBufferCommandFillBufferFinalizedCommandBuffer
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clCommandFillBufferKHR(command_buffer, nullptr, out_mem,
-                                       &pattern, sizeof(cl_int), 0, data_size(),
-                                       0, nullptr, nullptr, nullptr);
+        error = clCommandFillBufferKHR(
+            command_buffer, nullptr, nullptr, out_mem, &pattern, sizeof(cl_int),
+            0, data_size(), 0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_OPERATION,
                                "clCommandFillBufferKHR should return "
@@ -397,9 +397,9 @@ struct CommandBufferCommandFillImageFinalizedCommandBuffer
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
 
-        error = clCommandFillImageKHR(command_buffer, nullptr, dst_image,
-                                      fill_color_1, origin, region, 0, nullptr,
-                                      nullptr, nullptr);
+        error = clCommandFillImageKHR(command_buffer, nullptr, nullptr,
+                                      dst_image, fill_color_1, origin, region,
+                                      0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_OPERATION,
                                "clCommandFillImageKHR should return "
@@ -421,8 +421,8 @@ struct CommandBufferCommandFillBufferMutableHandleNotNull
         cl_mutable_command_khr mutable_handle;
 
         cl_int error = clCommandFillBufferKHR(
-            command_buffer, nullptr, out_mem, &pattern, sizeof(cl_int), 0,
-            data_size(), 0, nullptr, nullptr, &mutable_handle);
+            command_buffer, nullptr, nullptr, out_mem, &pattern, sizeof(cl_int),
+            0, data_size(), 0, nullptr, nullptr, &mutable_handle);
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clCommandFillBufferKHR should return "
@@ -444,9 +444,9 @@ struct CommandBufferCommandFillImageMutableHandleNotNull
     {
         cl_mutable_command_khr mutable_handle;
 
-        cl_int error = clCommandFillImageKHR(command_buffer, nullptr, dst_image,
-                                             fill_color_1, origin, region, 0,
-                                             nullptr, nullptr, &mutable_handle);
+        cl_int error = clCommandFillImageKHR(
+            command_buffer, nullptr, nullptr, dst_image, fill_color_1, origin,
+            region, 0, nullptr, nullptr, &mutable_handle);
 
         test_failure_error_ret(error, CL_INVALID_VALUE,
                                "clCommandFillImageKHR should return "

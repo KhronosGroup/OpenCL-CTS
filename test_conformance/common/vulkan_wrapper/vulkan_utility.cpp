@@ -50,7 +50,6 @@ const VulkanPhysicalDevice &getVulkanPhysicalDevice()
     cl_uint num_devices = 0;
     cl_uint device_no = 0;
     const size_t bufsize = BUFFERSIZE;
-    char buf[BUFFERSIZE];
     const VulkanInstance &instance = getVulkanInstance();
     const VulkanPhysicalDeviceList &physicalDeviceList =
         instance.getPhysicalDeviceList();
@@ -753,43 +752,37 @@ std::ostream &operator<<(std::ostream &os, VulkanFormat format)
     return os;
 }
 
-static char *findFilePath(const std::string filename)
+static std::string findFilePath(const std::string &filename,
+                                const std::string &startdir)
 {
     const char *searchPath[] = {
-        "./", // Same dir
-        "./shaders/", // In shaders folder in same dir
-        "../test_conformance/vulkan/shaders/" // In src folder
+        "/shaders/", // shaders directory, for most builds
+        "/../shaders/", // one directory up, for multi-config builds
     };
     for (unsigned int i = 0; i < sizeof(searchPath) / sizeof(char *); ++i)
     {
-        std::string path(searchPath[i]);
+        std::string path(startdir);
+        path += searchPath[i];
+        path += filename;
 
-        path.append(filename);
         FILE *fp;
         fp = fopen(path.c_str(), "rb");
 
         if (fp != NULL)
         {
             fclose(fp);
-            // File found
-            char *file_path = (char *)(malloc(path.length() + 1));
-            strncpy(file_path, path.c_str(), path.length() + 1);
-            return file_path;
-        }
-        if (fp)
-        {
-            fclose(fp);
+            return path;
         }
     }
     // File not found
-    return 0;
+    return "";
 }
 
-std::vector<char> readFile(const std::string &filename)
+std::vector<char> readFile(const std::string &filename,
+                           const std::string &startdir = "")
 {
-    char *file_path = findFilePath(filename);
-
-    std::ifstream file(file_path, std::ios::ate | std::ios::binary);
+    std::string filepath = findFilePath(filename, startdir);
+    std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 
     if (!file.is_open())
     {
@@ -800,6 +793,6 @@ std::vector<char> readFile(const std::string &filename)
     file.seekg(0);
     file.read(buffer.data(), fileSize);
     file.close();
-    printf("filesize is %d", fileSize);
+    printf("filesize is %zu\n", fileSize);
     return buffer;
 }
