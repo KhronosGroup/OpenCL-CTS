@@ -23,6 +23,7 @@
 #include <memory>
 #include <string.h>
 #include "harness/errorHelpers.h"
+#include "harness/os_helpers.h"
 #include "deviceInfo.h"
 
 #define MAX_BUFFERS 5
@@ -115,7 +116,7 @@ int run_test_with_two_queue(
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
-    std::vector<char> vkBufferShader = readFile("buffer.spv");
+    std::vector<char> vkBufferShader = readFile("buffer.spv", exe_dir());
 
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
@@ -447,7 +448,8 @@ int run_test_with_one_queue(
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
-    std::vector<char> vkBufferShader = readFile("buffer.spv");
+    std::vector<char> vkBufferShader = readFile("buffer.spv", exe_dir());
+
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
     vkDescriptorSetLayoutBindingList.addBinding(
@@ -749,7 +751,7 @@ int run_test_with_multi_import_same_ctx(
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
-    std::vector<char> vkBufferShader = readFile("buffer.spv");
+    std::vector<char> vkBufferShader = readFile("buffer.spv", exe_dir());
 
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
@@ -1097,7 +1099,7 @@ int run_test_with_multi_import_diff_ctx(
 
     VulkanQueue &vkQueue = vkDevice.getQueue();
 
-    std::vector<char> vkBufferShader = readFile("buffer.spv");
+    std::vector<char> vkBufferShader = readFile("buffer.spv", exe_dir());
 
     VulkanShaderModule vkBufferShaderModule(vkDevice, vkBufferShader);
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList(
@@ -1380,7 +1382,7 @@ int run_test_with_multi_import_diff_ctx(
                                                    "Failed to set kernel arg");
 
                             err = clEnqueueAcquireExternalMemObjectsKHRptr(
-                                cmd_queue1, 1, &buffers2[i][launchIter], 0,
+                                cmd_queue2, 1, &buffers2[i][launchIter], 0,
                                 nullptr, nullptr);
                             test_error_and_cleanup(err, CLEANUP,
                                                    "Failed to acquire buffers");
@@ -1400,7 +1402,7 @@ int run_test_with_multi_import_diff_ctx(
                         for (int i = 0; i < numBuffers; i++)
                         {
                             err = clEnqueueReleaseExternalMemObjectsKHRptr(
-                                cmd_queue1, 1, &buffers2[i][launchIter], 0,
+                                cmd_queue2, 1, &buffers2[i][launchIter], 0,
                                 nullptr, nullptr);
                             test_error_and_cleanup(err, CLEANUP,
                                                    "Failed to release buffers");

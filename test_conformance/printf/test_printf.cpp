@@ -698,6 +698,12 @@ int doTest(cl_command_queue queue, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
+    if ((allTestCase[testId]->_type == TYPE_LONG) && !isLongSupported(device))
+    {
+        log_info("Skipping long because long is not supported.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
     if ((allTestCase[testId]->_type == TYPE_DOUBLE
          || allTestCase[testId]->_type == TYPE_DOUBLE_LIMITS)
         && !is_extension_available(device, "cl_khr_fp64"))
@@ -927,6 +933,12 @@ int test_int(cl_device_id deviceID, cl_context context, cl_command_queue queue,
     return doTest(gQueue, gContext, TYPE_INT, deviceID);
 }
 
+int test_long(cl_device_id deviceID, cl_context context, cl_command_queue queue,
+              int num_elements)
+{
+    return doTest(gQueue, gContext, TYPE_LONG, deviceID);
+}
+
 int test_half(cl_device_id deviceID, cl_context context, cl_command_queue queue,
               int num_elements)
 {
@@ -1043,23 +1055,15 @@ int test_buffer_size(cl_device_id deviceID, cl_context context,
 }
 
 test_definition test_list[] = {
-    ADD_TEST(int),
-    ADD_TEST(half),
-    ADD_TEST(half_limits),
-    ADD_TEST(float),
-    ADD_TEST(float_limits),
-    ADD_TEST(double),
-    ADD_TEST(double_limits),
-    ADD_TEST(octal),
-    ADD_TEST(unsigned),
-    ADD_TEST(hexadecimal),
-    ADD_TEST(char),
-    ADD_TEST(string),
-    ADD_TEST(format_string),
-    ADD_TEST(vector),
-    ADD_TEST(address_space),
-    ADD_TEST(buffer_size),
-    ADD_TEST(mixed_format_random),
+    ADD_TEST(int),         ADD_TEST(long),
+    ADD_TEST(half),        ADD_TEST(half_limits),
+    ADD_TEST(float),       ADD_TEST(float_limits),
+    ADD_TEST(double),      ADD_TEST(double_limits),
+    ADD_TEST(octal),       ADD_TEST(unsigned),
+    ADD_TEST(hexadecimal), ADD_TEST(char),
+    ADD_TEST(string),      ADD_TEST(format_string),
+    ADD_TEST(vector),      ADD_TEST(address_space),
+    ADD_TEST(buffer_size), ADD_TEST(mixed_format_random),
 };
 
 const int test_num = ARRAY_SIZE( test_list );

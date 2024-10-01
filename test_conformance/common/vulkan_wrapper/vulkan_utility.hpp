@@ -72,5 +72,6 @@ operator<<(std::ostream& os,
            VulkanExternalSemaphoreHandleType externalSemaphoreHandleType);
 std::ostream& operator<<(std::ostream& os, VulkanFormat format);
 
-std::vector<char> readFile(const std::string& filename);
+std::vector<char> readFile(const std::string& filename,
+                           const std::string& startdir);
 #endif // _vulkan_utility_hpp_

@@ -99,7 +99,8 @@ uint32_t get_channel_data_type_size(cl_channel_type channelType)
         case CL_UNORM_SHORT_565:
         case CL_UNORM_SHORT_555: return 2;
 
-        case CL_UNORM_INT_101010: return 4;
+        case CL_UNORM_INT_101010:
+        case CL_UNORM_INT_101010_2: return 4;
 
         case CL_FLOAT: return sizeof(cl_float);
 
@@ -170,6 +171,7 @@ cl_channel_type get_channel_type_from_name(const char *name)
                       { CL_UNORM_SHORT_565, "CL_UNORM_SHORT_565" },
                       { CL_UNORM_SHORT_555, "CL_UNORM_SHORT_555" },
                       { CL_UNORM_INT_101010, "CL_UNORM_INT_101010" },
+                      { CL_UNORM_INT_101010_2, "CL_UNORM_INT_101010_2" },
                       { CL_SIGNED_INT8, "CL_SIGNED_INT8" },
                       { CL_SIGNED_INT16, "CL_SIGNED_INT16" },
                       { CL_SIGNED_INT32, "CL_SIGNED_INT32" },
@@ -934,6 +936,7 @@ float get_max_relative_error(const cl_image_format *format,
         case CL_UNORM_SHORT_565:
         case CL_UNORM_SHORT_555:
         case CL_UNORM_INT_101010:
+        case CL_UNORM_INT_101010_2:
             // Maximum sampling error for round to zero normalization based on
             // multiplication by reciprocal (using reciprocal generated in
             // round to +inf mode, so that 1.0 matches spec)
@@ -1017,7 +1020,8 @@ size_t get_format_max_int(const cl_image_format *format)
         case CL_UNORM_SHORT_565:
         case CL_UNORM_SHORT_555: return 31;
 
-        case CL_UNORM_INT_101010: return 1023;
+        case CL_UNORM_INT_101010:
+        case CL_UNORM_INT_101010_2: return 1023;
 
         case CL_HALF_FLOAT: return 1 << 10;
 
@@ -1049,7 +1053,8 @@ int get_format_min_int(const cl_image_format *format)
 
         case CL_UNORM_SHORT_565:
         case CL_UNORM_SHORT_555:
-        case CL_UNORM_INT_101010: return 0;
+        case CL_UNORM_INT_101010:
+        case CL_UNORM_INT_101010_2: return 0;
 
         case CL_HALF_FLOAT: return -(1 << 10);
 
@@ -1462,6 +1467,15 @@ void read_image_pixel_float(void *imageData, image_descriptor *imageInfo, int x,
             tempData[0] = (float)((dPtr[0] >> 20) & 0x3ff) / (float)1023;
             tempData[1] = (float)((dPtr[0] >> 10) & 0x3ff) / (float)1023;
             tempData[2] = (float)(dPtr[0] & 0x3ff) / (float)1023;
+            break;
+        }
+
+        case CL_UNORM_INT_101010_2: {
+            cl_uint *dPtr = (cl_uint *)ptr;
+            tempData[0] = (float)((dPtr[0] >> 22) & 0x3ff) / (float)1023;
+            tempData[1] = (float)((dPtr[0] >> 12) & 0x3ff) / (float)1023;
+            tempData[2] = (float)(dPtr[0] >> 2 & 0x3ff) / (float)1023;
+            tempData[3] = (float)(dPtr[0] >> 0 & 3) / (float)3;
             break;
         }
 
@@ -2730,6 +2744,15 @@ void pack_image_pixel(float *srcVector, const cl_image_format *imageFormat,
                 | (((unsigned int)NORMALIZE(srcVector[2], 1023.f) & 1023) << 0);
             break;
         }
+        case CL_UNORM_INT_101010_2: {
+            cl_uint *ptr = (cl_uint *)outData;
+            ptr[0] =
+                (((unsigned int)NORMALIZE(srcVector[0], 1023.f) & 1023) << 22)
+                | (((unsigned int)NORMALIZE(srcVector[1], 1023.f) & 1023) << 12)
+                | (((unsigned int)NORMALIZE(srcVector[2], 1023.f) & 1023) << 2)
+                | (((unsigned int)NORMALIZE(srcVector[3], 3.f) & 3) << 0);
+            break;
+        }
         case CL_SIGNED_INT8: {
             cl_char *ptr = (cl_char *)outData;
             for (unsigned int i = 0; i < channelCount; i++)
@@ -2889,6 +2912,20 @@ void pack_image_pixel_error(const float *srcVector,
                 - NORMALIZE_UNROUNDED(srcVector[1], 1023.f);
             errors[2] = ((ptr[0] >> 0) & 1023)
                 - NORMALIZE_UNROUNDED(srcVector[2], 1023.f);
+
+            break;
+        }
+        case CL_UNORM_INT_101010_2: {
+            const cl_uint *ptr = (const cl_uint *)results;
+
+            errors[0] = ((ptr[0] >> 22) & 1023)
+                - NORMALIZE_UNROUNDED(srcVector[0], 1023.f);
+            errors[1] = ((ptr[0] >> 12) & 1023)
+                - NORMALIZE_UNROUNDED(srcVector[1], 1023.f);
+            errors[2] = ((ptr[0] >> 2) & 1023)
+                - NORMALIZE_UNROUNDED(srcVector[2], 1023.f);
+            errors[3] =
+                ((ptr[0] >> 0) & 3) - NORMALIZE_UNROUNDED(srcVector[3], 3.f);
 
             break;
         }

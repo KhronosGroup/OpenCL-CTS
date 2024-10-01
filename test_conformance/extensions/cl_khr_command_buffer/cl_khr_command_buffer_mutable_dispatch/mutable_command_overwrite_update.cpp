@@ -157,8 +157,6 @@ struct OverwriteUpdateDispatch : BasicMutableCommandBufferTest
                                                  &unused_mem } };
 
         cl_mutable_dispatch_config_khr dispatch_config{
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
-            nullptr,
             command,
             2 /* num_args */,
             0 /* num_svm_arg */,
@@ -172,19 +170,21 @@ struct OverwriteUpdateDispatch : BasicMutableCommandBufferTest
             nullptr /* local_work_size */
         };
 
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
-            &dispatch_config
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
         };
-
-        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
+        const void *configs[1] = { &dispatch_config };
+        error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
+                                           config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         // overwrite previous update of mutable arguments
         args[0].arg_value = &pattern_sec;
         args[1].arg_value = &new_out_mem;
 
-        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
+        error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
+                                           config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         error = clEnqueueFillBuffer(queue, new_out_mem, &pattern_pri,

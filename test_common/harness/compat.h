@@ -112,6 +112,8 @@ int feclearexcept(int excepts);
 
 #if defined(__INTEL_COMPILER)
 #include <mathimf.h>
+#elif __cplusplus && defined(_MSC_VER)
+#include <cmath>
 #else
 #include <math.h>
 #endif

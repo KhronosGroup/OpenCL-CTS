@@ -87,8 +87,30 @@ template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,
                    cl_command_queue queue, int num_elements)
 {
-    CHECK_COMMAND_BUFFER_EXTENSION_AVAILABLE(device);
+    if (!is_extension_available(device, "cl_khr_command_buffer"))
+    {
+        log_info("Device does not support 'cl_khr_command_buffer'. Skipping "
+                 "the test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
 
+    Version device_version = get_device_cl_version(device);
+    if ((device_version >= Version(3, 0))
+        || is_extension_available(device, "cl_khr_extended_versioning"))
+    {
+
+        cl_version extension_version =
+            get_extension_version(device, "cl_khr_command_buffer");
+
+        if (extension_version < CL_MAKE_VERSION(0, 9, 5))
+        {
+
+            log_info("cl_khr_command_buffer version 0.9.5 or later is required "
+                     "to run "
+                     "the test, skipping.\n ");
+            return TEST_SKIPPED_ITSELF;
+        }
+    }
     try
     {
         auto test_fixture = T(device, context, queue);

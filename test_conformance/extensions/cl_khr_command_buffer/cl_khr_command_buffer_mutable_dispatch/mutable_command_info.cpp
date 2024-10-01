@@ -34,7 +34,7 @@
 // CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR
 // CL_MUTABLE_COMMAND_COMMAND_QUEUE_KHR
 // CL_MUTABLE_COMMAND_COMMAND_BUFFER_KHR
-// CL_MUTABLE_DISPATCH_PROPERTIES_ARRAY_KHR
+// CL_MUTABLE_COMMAND_PROPERTIES_ARRAY_KHR
 // CL_MUTABLE_DISPATCH_KERNEL_KHR
 // CL_MUTABLE_DISPATCH_DIMENSIONS_KHR
 // CL_MUTABLE_DISPATCH_GLOBAL_WORK_OFFSET_KHR
@@ -117,9 +117,27 @@ struct PropertiesArray : public InfoMutableCommandBufferTest
         : InfoMutableCommandBufferTest(device, context, queue)
     {}
 
+    virtual bool Skip() override
+    {
+        Version device_version = get_device_cl_version(device);
+        if ((device_version >= Version(3, 0))
+            || is_extension_available(device, "cl_khr_extended_versioning"))
+        {
+
+            cl_version extension_version = get_extension_version(
+                device, "cl_khr_command_buffer_mutable_dispatch");
+
+            if (extension_version < CL_MAKE_VERSION(0, 9, 3))
+            {
+                return true;
+            }
+        }
+        return InfoMutableCommandBufferTest::Skip();
+    }
+
     cl_int Run() override
     {
-        cl_ndrange_kernel_command_properties_khr props[] = {
+        cl_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
@@ -129,11 +147,11 @@ struct PropertiesArray : public InfoMutableCommandBufferTest
             &global_work_size, nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        cl_ndrange_kernel_command_properties_khr test_props[] = { 0, 0, 0 };
+        cl_command_properties_khr test_props[] = { 0, 0, 0 };
         size_t size;
 
         error = clGetMutableCommandInfoKHR(
-            command, CL_MUTABLE_DISPATCH_PROPERTIES_ARRAY_KHR,
+            command, CL_MUTABLE_COMMAND_PROPERTIES_ARRAY_KHR,
             sizeof(test_props), test_props, &size);
         test_error(error, "clGetMutableCommandInfoKHR failed");
 

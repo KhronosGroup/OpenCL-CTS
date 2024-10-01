@@ -88,8 +88,6 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
         test_error(error, "clFinish failed.");
 
         cl_mutable_dispatch_config_khr dispatch_config{
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
-            nullptr,
             command,
             0 /* num_args */,
             0 /* num_svm_arg */,
@@ -102,12 +100,14 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
             nullptr /* global_work_size */,
             nullptr /* local_work_size */
         };
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
-            &dispatch_config
-        };
 
-        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
+        };
+        const void *configs[1] = { &dispatch_config };
+        error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
+                                           config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
@@ -137,7 +137,7 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
             if (i < update_global_offset && 0 != resultData[i])
             {
                 log_error("Data failed to verify: update_global_offset != "
-                          "resultData[%d]=%d\n",
+                          "resultData[%zu]=%d\n",
                           i, resultData[i]);
                 return TEST_FAIL;
             }
@@ -145,7 +145,7 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
                      && update_global_offset != resultData[i])
             {
                 log_error("Data failed to verify: update_global_offset != "
-                          "resultData[%d]=%d\n",
+                          "resultData[%zu]=%d\n",
                           i, resultData[i]);
                 return TEST_FAIL;
             }
