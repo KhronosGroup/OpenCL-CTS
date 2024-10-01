@@ -1480,6 +1480,8 @@ std::vector<printDataGenParameters> printLenSpecGenParameters = {
 
     { { "%ld" }, "9223372036854775807L" },
 
+    { { "%hd" }, "-32767" },
+
     { { "%hhd" }, "-128" },
 
     { { "%ld" }, "-9223372036854775807L" },
@@ -1490,6 +1492,8 @@ std::vector<printDataGenParameters> printLenSpecGenParameters = {
 
     { { "%lx" }, "9223372036854775807L" },
 
+    { { "%hx" }, "-32767" },
+
     { { "%hhx" }, "-128" },
 
     { { "%lx" }, "-9223372036854775807L" },
@@ -1499,6 +1503,8 @@ std::vector<printDataGenParameters> printLenSpecGenParameters = {
     { { "%hho" }, "127" },
 
     { { "%lo" }, "9223372036854775807L" },
+
+    { { "%ho" }, "-32767" },
 
     { { "%hho" }, "-128" },
 
@@ -1519,6 +1525,8 @@ std::vector<std::string> correctBufferLenSpec = {
 
     "9223372036854775807",
 
+    "-32767",
+
     "-128",
 
     "-9223372036854775807",
@@ -1529,6 +1537,8 @@ std::vector<std::string> correctBufferLenSpec = {
 
     "7fffffffffffffff",
 
+    "8001",
+
     "80",
 
     "8000000000000001",
@@ -1538,6 +1548,8 @@ std::vector<std::string> correctBufferLenSpec = {
     "177",
 
     "777777777777777777777",
+
+    "100001",
 
     "200",
 
