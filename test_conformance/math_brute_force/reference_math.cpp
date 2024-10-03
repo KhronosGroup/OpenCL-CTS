@@ -5764,3 +5764,9 @@ int reference_notl(long double x)
     int r = !x;
     return r;
 }
+
+long double reference_erfcl(long double x) { return erfc(x); }
+long double reference_erfl(long double x) { return erf(x); }
+
+double reference_erfc(double x) { return erfc(x); }
+double reference_erf(double x) { return erf(x); }

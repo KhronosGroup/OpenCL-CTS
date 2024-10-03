@@ -18,6 +18,8 @@
 #include "procs.h"
 
 #include <vector>
+#include <thread>
+#include <chrono>
 
 //--------------------------------------------------------------------------
 enum class EventMode
@@ -416,6 +418,12 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
         error = clFinish(queue);
         test_error(error, "clFinish failed");
 
+        for (unsigned i = 0; i < 30; ++i)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if (confirmation) break;
+        }
+
         // verify the result
         if (!confirmation)
         {
@@ -762,6 +770,12 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
 
         error = clFinish(queue);
         test_error(error, "clFinish failed");
+
+        for (unsigned i = 0; i < 30; ++i)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if (confirmation) break;
+        }
 
         // verify the result
         if (!confirmation)

@@ -46,6 +46,7 @@
 enum PrintfTestType
 {
     TYPE_INT,
+    TYPE_LONG,
     TYPE_HALF,
     TYPE_HALF_LIMITS,
     TYPE_FLOAT,

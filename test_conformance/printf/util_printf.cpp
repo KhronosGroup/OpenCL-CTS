@@ -111,6 +111,100 @@ testCase testCaseInt = {
 };
 
 
+//==================================
+
+// long
+
+//==================================
+
+//------------------------------------------------------
+
+// [string] format  | [string] int-data representation |
+
+//------------------------------------------------------
+
+std::vector<printDataGenParameters> printLongGenParameters = {
+
+    //(Minimum) fifteen-wide,default(right)-justified
+
+    { { "%5ld" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,left-justified
+
+    { { "%-15ld" }, "-10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified,zero-filled
+
+    { { "%015ld" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified,with sign
+
+    { { "%+15ld" }, "-10000000000L" },
+
+    //(Minimum) fifteen-wide ,left-justified,with sign
+
+    { { "%-+15ld" }, "10000000000L" },
+
+    //(Minimum) fifteen-digit(zero-filled in absent
+    // digits),default(right)-justified
+
+    { { "%.15li" }, "10000000000L" },
+
+    //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
+    // digits),default(right)-justified
+
+    { { "%-+16.15li" }, "-10000000000L" },
+
+};
+
+//--------------------------------------------------------
+
+//  Lookup table - [string]long-correct buffer             |
+
+//--------------------------------------------------------
+
+// The table below is used to accommodate differences in `printf` output when
+// using the `%ld` format specifier in 32-bit versus 64-bit compiled binaries
+
+std::vector<std::string> correctBufferLong = {
+
+    "10000000000",
+
+    "-10000000000   ",
+
+    "000010000000000",
+
+    "   -10000000000",
+
+    "+10000000000   ",
+
+    "000010000000000",
+
+    "-000010000000000"
+
+};
+
+//-----------------------------------------------
+
+// test case for long                             |
+
+//-----------------------------------------------
+
+testCase testCaseLong = {
+
+    TYPE_LONG,
+
+    correctBufferLong,
+
+    printLongGenParameters,
+
+    NULL,
+
+    klong
+
+};
+
+
 //==============================================
 
 // half
@@ -1404,12 +1498,12 @@ testCase testCaseMixedFormat = { TYPE_MIXED_FORMAT_RANDOM,
 //-------------------------------------------------------------------------------
 
 std::vector<testCase*> allTestCase = {
-    &testCaseInt,          &testCaseHalf,        &testCaseHalfLimits,
-    &testCaseFloat,        &testCaseFloatLimits, &testCaseDouble,
-    &testCaseDoubleLimits, &testCaseOctal,       &testCaseUnsigned,
-    &testCaseHexadecimal,  &testCaseChar,        &testCaseString,
-    &testCaseFormatString, &testCaseVector,      &testCaseAddrSpace,
-    &testCaseMixedFormat
+    &testCaseInt,        &testCaseLong,         &testCaseHalf,
+    &testCaseHalfLimits, &testCaseFloat,        &testCaseFloatLimits,
+    &testCaseDouble,     &testCaseDoubleLimits, &testCaseOctal,
+    &testCaseUnsigned,   &testCaseHexadecimal,  &testCaseChar,
+    &testCaseString,     &testCaseFormatString, &testCaseVector,
+    &testCaseAddrSpace,  &testCaseMixedFormat
 };
 
 //-----------------------------------------
