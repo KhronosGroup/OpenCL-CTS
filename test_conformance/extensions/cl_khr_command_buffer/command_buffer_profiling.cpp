@@ -70,7 +70,22 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
     //--------------------------------------------------------------------------
     cl_int SetUp(int elements) override
     {
-        cl_int error = CL_SUCCESS;
+
+        cl_command_queue_properties supported_properties;
+        cl_int error = clGetDeviceInfo(
+            device, CL_DEVICE_COMMAND_BUFFER_SUPPORTED_QUEUE_PROPERTIES_KHR,
+            sizeof(supported_properties), &supported_properties, NULL);
+        test_error(error,
+                   "Unable to query "
+                   "CL_DEVICE_COMMAND_BUFFER_SUPPORTED_QUEUE_PROPERTIES_KHR");
+
+        // CL_QUEUE_PROFILING_ENABLE is mandated minimum property returned by
+        // CL_DEVICE_COMMAND_BUFFER_SUPPORTED_QUEUE_PROPERTIES_KHR
+        if (!(supported_properties & CL_QUEUE_PROFILING_ENABLE))
+        {
+            return TEST_FAIL;
+        }
+
         queue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE,
                                      &error);
         test_error(error, "clCreateCommandQueue failed");
