@@ -93,6 +93,25 @@ extern int test_semaphores_negative_wait_invalid_event_wait_list(
 extern int test_semaphores_negative_wait_invalid_event_status(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
+extern int test_semaphores_negative_signal_invalid_command_queue(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_semaphores_negative_signal_invalid_value(cl_device_id device,
+                                                         cl_context context,
+                                                         cl_command_queue queue,
+                                                         int num_elements);
+extern int test_semaphores_negative_signal_invalid_semaphore(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_semaphores_negative_signal_invalid_context(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_semaphores_negative_signal_invalid_event_wait_list(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_semaphores_negative_signal_invalid_event_status(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
 extern int test_semaphores_negative_release(cl_device_id device,
                                             cl_context context,
                                             cl_command_queue queue,

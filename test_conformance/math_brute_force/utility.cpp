@@ -15,6 +15,9 @@
 //
 
 #include "utility.h"
+
+#include <cassert>
+
 #include "function_list.h"
 
 #if defined(__PPC__)
@@ -161,32 +164,42 @@ void logFunctionInfo(const char *fname, unsigned int float_size,
     vlog("%15s %4s %4s", fname, fpSizeStr, fpFastRelaxedStr);
 }
 
-float getAllowedUlpError(const Func *f, const bool relaxed)
+float getAllowedUlpError(const Func *f, Type t, const bool relaxed)
 {
-    float ulp;
-
-    if (relaxed)
+    switch (t)
     {
-        if (gIsEmbedded)
-        {
-            ulp = f->relaxed_embedded_error;
-        }
-        else
-        {
-            ulp = f->relaxed_error;
-        }
+        case kfloat:
+            if (relaxed)
+            {
+                if (gIsEmbedded)
+                {
+                    return f->relaxed_embedded_error;
+                }
+                else
+                {
+                    return f->relaxed_error;
+                }
+            }
+            else
+            {
+                if (gIsEmbedded)
+                {
+                    return f->float_embedded_ulps;
+                }
+                else
+                {
+                    return f->float_ulps;
+                }
+            }
+        case kdouble:
+            // TODO: distinguish between embedded and full profile.
+            return f->double_ulps;
+        case khalf:
+            // TODO: distinguish between embedded and full profile.
+            return f->half_ulps;
+        default:
+            assert(false && "unsupported type in getAllowedUlpError");
+            // Return a negative value which will make any test fail.
+            return -1.f;
     }
-    else
-    {
-        if (gIsEmbedded)
-        {
-            ulp = f->float_embedded_ulps;
-        }
-        else
-        {
-            ulp = f->float_ulps;
-        }
-    }
-
-    return ulp;
 }

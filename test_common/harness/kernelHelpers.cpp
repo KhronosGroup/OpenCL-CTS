@@ -1319,7 +1319,8 @@ size_t get_pixel_bytes(const cl_image_format *fmt)
         case CL_UNORM_SHORT_565:
         case CL_UNORM_SHORT_555: return 2;
 
-        case CL_UNORM_INT_101010: return 4;
+        case CL_UNORM_INT_101010:
+        case CL_UNORM_INT_101010_2: return 4;
 
         case CL_SNORM_INT8:
         case CL_UNORM_INT8:

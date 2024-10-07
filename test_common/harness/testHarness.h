@@ -185,6 +185,10 @@ extern int gHasLong; // This is set to 1 if the device suppots long and ulong
 extern bool gCoreILProgram;
 
 extern cl_platform_id getPlatformFromDevice(cl_device_id deviceID);
+extern std::string get_platform_info_string(cl_platform_id platform,
+                                            cl_platform_info param_name);
+extern bool is_platform_extension_available(cl_platform_id platform,
+                                            const char *extensionName);
 
 #if !defined(__APPLE__)
 void memset_pattern4(void *, const void *, size_t);

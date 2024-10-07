@@ -23,6 +23,7 @@
 
 // Helpers for generating runtime reference results
 static void intRefBuilder(printDataGenParameters&, char*, const size_t);
+static void longRefBuilder(printDataGenParameters&, char*, const size_t);
 static void halfRefBuilder(printDataGenParameters&, char* rResult,
                            const size_t);
 static void floatRefBuilder(printDataGenParameters&, char* rResult, const size_t);
@@ -107,6 +108,73 @@ testCase testCaseInt = {
     intRefBuilder,
 
     kint
+
+};
+
+
+//==================================
+
+// long
+
+//==================================
+
+//------------------------------------------------------
+
+// [string] format  | [string] int-data representation |
+
+//------------------------------------------------------
+
+std::vector<printDataGenParameters> printLongGenParameters = {
+
+    //(Minimum) fifteen-wide,default(right)-justified
+
+    { { "%5ld" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,left-justified
+
+    { { "%-15ld" }, "-10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified,zero-filled
+
+    { { "%015ld" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified,with sign
+
+    { { "%+15ld" }, "-10000000000L" },
+
+    //(Minimum) fifteen-wide ,left-justified,with sign
+
+    { { "%-+15ld" }, "10000000000L" },
+
+    //(Minimum) fifteen-digit(zero-filled in absent
+    // digits),default(right)-justified
+
+    { { "%.15li" }, "10000000000L" },
+
+    //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
+    // digits),default(right)-justified
+
+    { { "%-+16.15li" }, "-10000000000L" },
+
+};
+
+//-----------------------------------------------
+
+// test case for long                             |
+
+//-----------------------------------------------
+
+testCase testCaseLong = {
+
+    TYPE_LONG,
+
+    correctBufferLong,
+
+    printLongGenParameters,
+
+    longRefBuilder,
+
+    klong
 
 };
 
@@ -1179,7 +1247,7 @@ std::vector<printDataGenParameters> printVectorGenParameters = {
 
     // Four component vector in hexadecimal floating point, lowercase format
 
-    { { "" }, "(0.25f,0.5f,1.f,1.5f)", "%", "hla", "float", "4" },
+    { { "" }, "(0.25f,0.5f,1.f,1.5f)", "%.1", "hla", "float", "4" },
 
     // Eight component vector in the shortest float representation
 
@@ -1231,7 +1299,7 @@ std::vector<std::string> correctBufferVector = {
 
     "1.23e+03,9.88e+05,5.00e-04",
 
-    "0x1p-2,0x1p-1,0x1p+0,0x1.8p+0",
+    "0x1.0p-2,0x1.0p-1,0x1.0p+0,0x1.8p+0",
 
     "1,2,3,4,1.5,3.14,2.5,3.5",
 
@@ -1404,12 +1472,12 @@ testCase testCaseMixedFormat = { TYPE_MIXED_FORMAT_RANDOM,
 //-------------------------------------------------------------------------------
 
 std::vector<testCase*> allTestCase = {
-    &testCaseInt,          &testCaseHalf,        &testCaseHalfLimits,
-    &testCaseFloat,        &testCaseFloatLimits, &testCaseDouble,
-    &testCaseDoubleLimits, &testCaseOctal,       &testCaseUnsigned,
-    &testCaseHexadecimal,  &testCaseChar,        &testCaseString,
-    &testCaseFormatString, &testCaseVector,      &testCaseAddrSpace,
-    &testCaseMixedFormat
+    &testCaseInt,        &testCaseLong,         &testCaseHalf,
+    &testCaseHalfLimits, &testCaseFloat,        &testCaseFloatLimits,
+    &testCaseDouble,     &testCaseDoubleLimits, &testCaseOctal,
+    &testCaseUnsigned,   &testCaseHexadecimal,  &testCaseChar,
+    &testCaseString,     &testCaseFormatString, &testCaseVector,
+    &testCaseAddrSpace,  &testCaseMixedFormat
 };
 
 //-----------------------------------------
@@ -1524,6 +1592,13 @@ static void intRefBuilder(printDataGenParameters& params, char* refResult, const
 {
     snprintf(refResult, refSize, params.genericFormats.front().c_str(),
              atoi(params.dataRepresentation));
+}
+
+static void longRefBuilder(printDataGenParameters& params, char* refResult,
+                           const size_t refSize)
+{
+    snprintf(refResult, refSize, params.genericFormats.front().c_str(),
+             atoll(params.dataRepresentation));
 }
 
 static void halfRefBuilder(printDataGenParameters& params, char* refResult,
