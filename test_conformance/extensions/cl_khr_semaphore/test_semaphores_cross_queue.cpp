@@ -195,16 +195,19 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
         clEventWrapper wait_events[2];
         // enqueue producer operations and signal semaphore
         const cl_int pattern_pri = 42;
-        err = clEnqueueFillBuffer(producer_queue, in_mem, &pattern_pri,
-                                  sizeof(cl_int), 0, sizeof(cl_int) * num_elems,
-                                  0, nullptr, &wait_events[0]);
-        test_error(err, "clEnqueueFillBuffer failed");
+        const cl_int pattern_sec = 0xACDC;
 
-        size_t threads = (size_t)num_elems;
-        err =
-            clEnqueueNDRangeKernel(producer_queue, kernel, 1, nullptr, &threads,
-                                   nullptr, 1, &wait_events[0], nullptr);
-        test_error(err, "clEnqueueNDRangeKernel failed");
+        std::vector<cl_int> host_buffer(num_elems, pattern_pri);
+
+        err = clEnqueueWriteBuffer(
+            producer_queue, in_mem, CL_FALSE, 0, sizeof(cl_int) * num_elems,
+            host_buffer.data(), 0, nullptr, &wait_events[0]);
+        test_error(err, "clEnqueueReadBuffer failed");
+
+        err = clEnqueueFillBuffer(producer_queue, in_mem, &pattern_sec,
+                                  sizeof(cl_int), 0, sizeof(cl_int) * num_elems,
+                                  1, &wait_events[0], nullptr);
+        test_error(err, "clEnqueueFillBuffer failed");
 
         // The semaphore cannot be signaled until the barrier is complete
         err = clEnqueueBarrierWithWaitList(producer_queue, 0, nullptr, nullptr);
@@ -238,29 +241,28 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
         err = clEnqueueBarrierWithWaitList(consumer_queue, 0, nullptr, nullptr);
         test_error(err, " clEnqueueBarrierWithWaitList ");
 
-        const cl_int pattern_sec = 0xACDC;
-        err = clEnqueueFillBuffer(consumer_queue, in_mem, &pattern_sec,
+        err = clEnqueueFillBuffer(consumer_queue, out_mem, &pattern_pri,
                                   sizeof(cl_int), 0, sizeof(cl_int) * num_elems,
                                   0, nullptr, &wait_events[0]);
         test_error(err, "clEnqueueFillBuffer failed");
 
+        size_t threads = (size_t)num_elems;
         err = clEnqueueNDRangeKernel(consumer_queue, kernel, 1, nullptr,
                                      &threads, nullptr, 1, &wait_events[0],
                                      &wait_events[1]);
         test_error(err, "clEnqueueNDRangeKernel failed");
 
-        std::vector<cl_int> output_buffer(num_elems, 0);
         err = clEnqueueReadBuffer(
             consumer_queue, out_mem, CL_TRUE, 0, sizeof(cl_int) * num_elems,
-            output_buffer.data(), 1, &wait_events[1], nullptr);
+            host_buffer.data(), 1, &wait_events[1], nullptr);
         test_error(err, "clEnqueueReadBuffer failed");
 
         for (int i = 0; i < num_elems; i++)
         {
-            if (pattern_sec != output_buffer[i])
+            if (pattern_sec != host_buffer[i])
             {
                 log_error("Expected %d was %d at index %zu\n", pattern_sec,
-                          output_buffer[i], i);
+                          host_buffer[i], i);
                 return TEST_FAIL;
             }
         }
