@@ -122,7 +122,7 @@ TEST_SPIRV_FUNC(op_constant_struct_int_float_simple)
 
 TEST_SPIRV_FUNC(op_constant_struct_int_char_simple)
 {
-    AbstractStruct2<int, char> value = {2100483600, 128};
+    AbstractStruct2<int, char> value = { 2100483600, (char)128 };
     std::vector<AbstractStruct2<int, char> > results(256, value);
     return test_constant(deviceID, context, queue, "constant_struct_int_char_simple", results);
 }
@@ -132,7 +132,7 @@ TEST_SPIRV_FUNC(op_constant_struct_struct_simple)
     typedef AbstractStruct2<int, char> CustomType1;
     typedef AbstractStruct2<cl_int2, CustomType1> CustomType2;
 
-    CustomType1 value1 = {2100483600, 128};
+    CustomType1 value1 = { 2100483600, (char)128 };
     cl_int2 intvals = { { 2100480000, 2100480000 } };
     CustomType2 value2 = {intvals, value1};
 
