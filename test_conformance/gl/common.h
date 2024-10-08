@@ -51,7 +51,6 @@ static const format common_formats[] = {
   { GL_RGBA16UI_EXT, GL_RGBA_INTEGER_EXT, GL_UNSIGNED_SHORT,               kUShort },
   { GL_RGBA32UI_EXT, GL_RGBA_INTEGER_EXT, GL_UNSIGNED_INT,                 kUInt },
   { GL_RGBA32F_ARB,  GL_RGBA,             GL_FLOAT,                        kFloat },
-  { GL_RGBA16F_ARB,  GL_RGBA,             GL_HALF_FLOAT,                   kHalf }
 };
 
 #ifdef GL_VERSION_3_2
