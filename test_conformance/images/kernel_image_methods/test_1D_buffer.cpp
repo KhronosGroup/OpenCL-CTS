@@ -262,8 +262,7 @@ int test_get_image_info_1D_buffer(cl_device_id device, cl_context context,
                     imageInfo.rowPitch += extraWidth;
                 } while ((imageInfo.rowPitch % pixelSize) != 0);
 
-                size = (cl_ulong)imageInfo.rowPitch * (cl_ulong)imageInfo.height
-                    * 4;
+                size = (cl_ulong)imageInfo.rowPitch * 4;
             } while (size > maxAllocSize || (size * 3) > memSize);
 
             if (gDebugTrace)
