@@ -39,8 +39,18 @@ extern int test_semaphores_multi_signal(cl_device_id deviceID,
                                         int num_elements);
 extern int test_semaphores_multi_wait(cl_device_id deviceID, cl_context context,
                                       cl_command_queue queue, int num_elements);
-extern int test_semaphores_queries(cl_device_id deviceID, cl_context context,
-                                   cl_command_queue queue, int num_elements);
+extern int test_semaphores_device_list_queries(cl_device_id deviceID,
+                                               cl_context context,
+                                               cl_command_queue queue,
+                                               int num_elements);
+extern int test_semaphores_no_device_list_queries(cl_device_id deviceID,
+                                                  cl_context context,
+                                                  cl_command_queue queue,
+                                                  int num_elements);
+extern int test_semaphores_multi_device_context_queries(cl_device_id deviceID,
+                                                        cl_context context,
+                                                        cl_command_queue queue,
+                                                        int num_elements);
 extern int test_semaphores_import_export_fd(cl_device_id deviceID,
                                             cl_context context,
                                             cl_command_queue queue,
