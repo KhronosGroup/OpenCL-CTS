@@ -224,7 +224,7 @@ bool YUVGenerate(TSurfaceFormat surfaceFormat, std::vector<cl_uchar> &yuv,
     return true;
 }
 
-bool YUVSurfaceSetNV12(std::auto_ptr<CSurfaceWrapper> &surface,
+bool YUVSurfaceSetNV12(std::unique_ptr<CSurfaceWrapper> &surface,
                        const std::vector<cl_uchar> &yuv, unsigned int width,
                        unsigned int height)
 {
@@ -257,7 +257,7 @@ bool YUVSurfaceSetNV12(std::auto_ptr<CSurfaceWrapper> &surface,
 #endif
 }
 
-bool YUVSurfaceSetYV12(std::auto_ptr<CSurfaceWrapper> &surface,
+bool YUVSurfaceSetYV12(std::unique_ptr<CSurfaceWrapper> &surface,
                        const std::vector<cl_uchar> &yuv, unsigned int width,
                        unsigned int height)
 {
@@ -305,7 +305,7 @@ bool YUVSurfaceSetYV12(std::auto_ptr<CSurfaceWrapper> &surface,
 }
 
 bool YUVSurfaceSet(TSurfaceFormat surfaceFormat,
-                   std::auto_ptr<CSurfaceWrapper> &surface,
+                   std::unique_ptr<CSurfaceWrapper> &surface,
                    const std::vector<cl_uchar> &yuv, unsigned int width,
                    unsigned int height)
 {
@@ -326,7 +326,7 @@ bool YUVSurfaceSet(TSurfaceFormat surfaceFormat,
     return true;
 }
 
-bool YUVSurfaceGetNV12(std::auto_ptr<CSurfaceWrapper> &surface,
+bool YUVSurfaceGetNV12(std::unique_ptr<CSurfaceWrapper> &surface,
                        std::vector<cl_uchar> &yuv, unsigned int width,
                        unsigned int height)
 {
@@ -363,7 +363,7 @@ bool YUVSurfaceGetNV12(std::auto_ptr<CSurfaceWrapper> &surface,
 #endif
 }
 
-bool YUVSurfaceGetYV12(std::auto_ptr<CSurfaceWrapper> &surface,
+bool YUVSurfaceGetYV12(std::unique_ptr<CSurfaceWrapper> &surface,
                        std::vector<cl_uchar> &yuv, unsigned int width,
                        unsigned int height)
 {
@@ -411,7 +411,7 @@ bool YUVSurfaceGetYV12(std::auto_ptr<CSurfaceWrapper> &surface,
 }
 
 bool YUVSurfaceGet(TSurfaceFormat surfaceFormat,
-                   std::auto_ptr<CSurfaceWrapper> &surface,
+                   std::unique_ptr<CSurfaceWrapper> &surface,
                    std::vector<cl_uchar> &yuv, unsigned int width,
                    unsigned int height)
 {
@@ -1078,7 +1078,7 @@ bool GetImageInfo(cl_mem object, cl_image_format formatExp,
 }
 
 bool GetMemObjInfo(cl_mem object, cl_dx9_media_adapter_type_khr adapterType,
-                   std::auto_ptr<CSurfaceWrapper> &surface,
+                   std::unique_ptr<CSurfaceWrapper> &surface,
                    void *shareHandleExp)
 {
     bool result = true;
@@ -1172,7 +1172,7 @@ bool GetMemObjInfo(cl_mem object, cl_dx9_media_adapter_type_khr adapterType,
 bool ImageInfoVerify(cl_dx9_media_adapter_type_khr adapterType,
                      const std::vector<cl_mem> &memObjList, unsigned int width,
                      unsigned int height,
-                     std::auto_ptr<CSurfaceWrapper> &surface,
+                     std::unique_ptr<CSurfaceWrapper> &surface,
                      void *sharedHandle)
 {
     if (memObjList.size() != 2 && memObjList.size() != 3)
@@ -1379,19 +1379,19 @@ D3DFORMAT SurfaceFormatToD3D(TSurfaceFormat surfaceFormat)
 #endif
 
 bool DeviceCreate(cl_dx9_media_adapter_type_khr adapterType,
-                  std::auto_ptr<CDeviceWrapper> &device)
+                  std::unique_ptr<CDeviceWrapper> &device)
 {
     switch (adapterType)
     {
 #if defined(_WIN32)
         case CL_ADAPTER_D3D9_KHR:
-            device = std::auto_ptr<CDeviceWrapper>(new CD3D9Wrapper());
+            device = std::unique_ptr<CDeviceWrapper>(new CD3D9Wrapper());
             break;
         case CL_ADAPTER_D3D9EX_KHR:
-            device = std::auto_ptr<CDeviceWrapper>(new CD3D9ExWrapper());
+            device = std::unique_ptr<CDeviceWrapper>(new CD3D9ExWrapper());
             break;
         case CL_ADAPTER_DXVA_KHR:
-            device = std::auto_ptr<CDeviceWrapper>(new CDXVAWrapper());
+            device = std::unique_ptr<CDeviceWrapper>(new CDXVAWrapper());
             break;
 #endif
         default:
@@ -1551,7 +1551,7 @@ void SurfaceFormatToString(TSurfaceFormat surfaceFormat, std::string &str)
 bool MediaSurfaceCreate(cl_dx9_media_adapter_type_khr adapterType,
                         unsigned int width, unsigned int height,
                         TSurfaceFormat surfaceFormat, CDeviceWrapper &device,
-                        std::auto_ptr<CSurfaceWrapper> &surface,
+                        std::unique_ptr<CSurfaceWrapper> &surface,
                         bool sharedHandle, void **objectSharedHandle)
 {
     switch (adapterType)
@@ -1559,7 +1559,7 @@ bool MediaSurfaceCreate(cl_dx9_media_adapter_type_khr adapterType,
 #if defined(_WIN32)
         case CL_ADAPTER_D3D9_KHR: {
             surface =
-                std::auto_ptr<CD3D9SurfaceWrapper>(new CD3D9SurfaceWrapper);
+                std::unique_ptr<CD3D9SurfaceWrapper>(new CD3D9SurfaceWrapper);
             CD3D9SurfaceWrapper *d3dSurface =
                 static_cast<CD3D9SurfaceWrapper *>(surface.get());
             HRESULT hr = 0;
@@ -1578,7 +1578,7 @@ bool MediaSurfaceCreate(cl_dx9_media_adapter_type_khr adapterType,
         break;
         case CL_ADAPTER_D3D9EX_KHR: {
             surface =
-                std::auto_ptr<CD3D9SurfaceWrapper>(new CD3D9SurfaceWrapper);
+                std::unique_ptr<CD3D9SurfaceWrapper>(new CD3D9SurfaceWrapper);
             CD3D9SurfaceWrapper *d3dSurface =
                 static_cast<CD3D9SurfaceWrapper *>(surface.get());
             HRESULT hr = 0;
@@ -1598,7 +1598,7 @@ bool MediaSurfaceCreate(cl_dx9_media_adapter_type_khr adapterType,
         break;
         case CL_ADAPTER_DXVA_KHR: {
             surface =
-                std::auto_ptr<CD3D9SurfaceWrapper>(new CD3D9SurfaceWrapper);
+                std::unique_ptr<CD3D9SurfaceWrapper>(new CD3D9SurfaceWrapper);
             CD3D9SurfaceWrapper *d3dSurface =
                 static_cast<CD3D9SurfaceWrapper *>(surface.get());
             HRESULT hr = 0;
