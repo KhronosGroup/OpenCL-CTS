@@ -214,6 +214,10 @@ extern int test_consistency_requirements_fp16(cl_device_id deviceID,
 
 extern int test_min_image_formats(cl_device_id deviceID, cl_context context,
                                   cl_command_queue queue, int num_elements);
+extern int test_kernel_local_memory_size(cl_device_id deviceID,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements);
 extern int test_negative_get_platform_info(cl_device_id deviceID,
                                            cl_context context,
                                            cl_command_queue queue,
