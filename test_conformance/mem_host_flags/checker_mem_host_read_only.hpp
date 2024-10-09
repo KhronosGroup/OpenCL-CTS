@@ -152,7 +152,7 @@ cl_int cBuffer_check_mem_host_read_only<T>::verify_RW_Buffer()
     // test write
     err = clEnqueueWriteBuffer(this->m_queue, this->m_buffer, this->m_blocking,
                                0, this->get_block_size_bytes(),
-                               this->host_m_2.pData, 0, NULL, &event);
+                               this->host_m_2.pData, 0, NULL, NULL);
 
     if (err == CL_SUCCESS)
     {
@@ -211,7 +211,7 @@ cl_int cBuffer_check_mem_host_read_only<T>::verify_RW_Buffer_rect()
         this->buffer_origin_bytes, this->host_origin_bytes, this->region_bytes,
         this->buffer_row_pitch_bytes, this->buffer_slice_pitch_bytes,
         this->host_row_pitch_bytes, this->host_slice_pitch_bytes,
-        this->host_m_2.pData, 0, NULL, &event);
+        this->host_m_2.pData, 0, NULL, NULL);
 
     if (err == CL_SUCCESS)
     {
@@ -270,7 +270,7 @@ cl_int cBuffer_check_mem_host_read_only<T>::verify_RW_Buffer_mapping()
     //  test blocking map read
     clEnqueueMapBuffer(this->m_queue, this->m_buffer, this->m_blocking,
                        CL_MAP_WRITE, 0, this->get_block_size_bytes(), 0, NULL,
-                       &event, &err);
+                       NULL, &err);
 
     if (err == CL_SUCCESS)
     {
