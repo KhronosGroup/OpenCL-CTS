@@ -103,7 +103,8 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
                 int ii = j * ns;
                 int n = ii + ns > nw ? nw - ii : ns;
                 std::vector<Ty> clusters_results;
-                int clusters_counter = ns / test_params.cluster_size;
+                int clusters_counter = (ns + test_params.cluster_size - 1)
+                    / test_params.cluster_size;
                 clusters_results.resize(clusters_counter);
 
                 // Compute target
