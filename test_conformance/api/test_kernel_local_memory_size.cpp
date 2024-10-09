@@ -128,12 +128,12 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
     test_error(error,
                "clGetKernelWorkGroupInfo for CL_KERNEL_LOCAL_MEM_SIZE failed");
 
-    const size_t size = 10;
-    const size_t memory = size * sizeof(cl_int);
+    constexpr size_t size = 10;
+    constexpr size_t memory = size * sizeof(cl_int);
 
-    size_t global_work_size[] = { size };
+    const size_t global_work_size[] = { size };
 
-    std::unique_ptr<int[]> data(new int[size]);
+    int data[size];
     for (size_t i = 0; i < size; i++)
     {
         data[i] = 0;
@@ -151,12 +151,30 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
                                    nullptr, 0, NULL, nullptr);
     test_error(error, "clEnqueueNDRangeKernel failed.");
 
-    error = clEnqueueReadBuffer(queue, streams[0], CL_TRUE, 0, memory,
-                                data.get(), 0, NULL, NULL);
+    error = clEnqueueReadBuffer(queue, streams[0], CL_TRUE, 0, memory, data, 0,
+                                NULL, NULL);
     test_error(error, "clEnqueueReadBuffer failed");
+
+    auto local_memory_kernel_verify = [&]() {
+        constexpr size_t size = 10;
+        int testData[size];
+        for (size_t i = 0; i < size; i++)
+        {
+            testData[i] = i * 2;
+            testData[0] += testData[i];
+        }
+        for (size_t i = 0; i < size; i++)
+        {
+            if (data[i] != testData[i]) return false;
+        }
+        return true;
+    };
+    test_assert_error(local_memory_kernel_verify(),
+                      "local_memory_kernel data verificaion failed");
 
     test_assert_error(kernel_local_usage >= memory,
                       "kernel local mem size failed");
+
 
     // Check memory needed to execute empty kernel with __local parameter with
     // setKernelArg
@@ -174,8 +192,8 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
         data[i] = i;
     }
 
-    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, memory,
-                                data.get(), &error);
+    streams[0] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, memory, data, &error);
     test_error(error, "Creating test array failed");
     streams[1] =
         clCreateBuffer(context, CL_MEM_READ_WRITE, memory, nullptr, &error);
@@ -192,8 +210,8 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
                                    nullptr, 0, NULL, nullptr);
     test_error(error, "clEnqueueNDRangeKernel failed.");
 
-    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, memory,
-                                data.get(), 0, NULL, NULL);
+    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, memory, data, 0,
+                                NULL, NULL);
     test_error(error, "clEnqueueReadBuffer failed");
 
     error = clGetKernelWorkGroupInfo(kernel, deviceID, CL_KERNEL_LOCAL_MEM_SIZE,
@@ -201,6 +219,26 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
                                      &kernel_local_usage, NULL);
     test_error(error,
                "clGetKernelWorkGroupInfo for CL_KERNEL_LOCAL_MEM_SIZE failed");
+
+    auto local_param_kernel_verify = [&]() {
+        constexpr size_t size = 10;
+        int testData[size];
+        int sum = 0;
+        for (size_t i = 0; i < size; i++)
+        {
+            testData[i] = i;
+            sum += testData[i];
+        }
+        testData[9] += sum;
+        for (size_t i = 0; i < size; i++)
+        {
+            if (data[i] != testData[i]) return false;
+        }
+
+        return true;
+    };
+    test_assert_error(local_param_kernel_verify(),
+                      "local_param_kernel data verificaion failed");
 
     test_assert_error(kernel_local_usage >= memory,
                       "kernel local mem size failed");
@@ -223,8 +261,8 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
         data[i] = i;
     }
 
-    streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, memory,
-                                data.get(), &error);
+    streams[0] =
+        clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, memory, data, &error);
     test_error(error, "Creating test array failed");
     streams[1] =
         clCreateBuffer(context, CL_MEM_READ_WRITE, memory, nullptr, &error);
@@ -241,8 +279,8 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
                                    nullptr, 0, NULL, nullptr);
     test_error(error, "clEnqueueNDRangeKernel failed.");
 
-    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, memory,
-                                data.get(), 0, NULL, NULL);
+    error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, memory, data, 0,
+                                NULL, NULL);
     test_error(error, "clEnqueueReadBuffer failed");
 
 
@@ -251,6 +289,44 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
                                      &kernel_local_usage, NULL);
     test_error(error,
                "clGetKernelWorkGroupInfo for CL_KERNEL_LOCAL_MEM_SIZE failed");
+
+    auto local_param_local_memory_kernel_verify = [&]() {
+        constexpr size_t size = 10;
+        int testData[size];
+        int sum = 0;
+        for (size_t i = 0; i < size; i++)
+        {
+            testData[i] = i;
+            sum += testData[i];
+        }
+        for (size_t i = 0; i < size; i++)
+        {
+            if (i / 2 == 0)
+                testData[i] += sum;
+            else
+                testData[i] = testData[i] * 2;
+        }
+
+        int temp = testData[9];
+        for (size_t i = 0; i < size; i++)
+        {
+            if (i == 9)
+                testData[9] += temp;
+            else
+                testData[9] += testData[i];
+        }
+        testData[9] += 666;
+
+        for (size_t i = 0; i < size; i++)
+        {
+            if (data[i] != testData[i]) return false;
+        }
+
+        return true;
+    };
+    test_assert_error(
+        local_param_local_memory_kernel_verify(),
+        "local_param_local_memory_kernel data verificaion failed");
 
     test_assert_error(kernel_local_usage >= 2 * memory,
                       "kernel local mem size failed");
