@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 The Khronos Group Inc.
+// Copyright (c) 2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,13 +14,9 @@
 // limitations under the License.
 //
 
-
-#include "harness/typeWrappers.h"
-#include "harness/errorHelpers.h"
-#include <system_error>
 #include <thread>
-#include <chrono>
-#include <vector>
+
+#include "semaphore_base.h"
 
 #include "semaphore_base.h"
 
@@ -296,96 +292,6 @@ struct SemaphoreReuse : public SemaphoreTestBase
         }
 
         return CL_SUCCESS;
-    }
-};
-
-template <bool in_order> struct SemaphoreCrossQueue : public SemaphoreTestBase
-{
-    SemaphoreCrossQueue(cl_device_id device, cl_context context,
-                        cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
-    {}
-
-    // Helper function that signals and waits on semaphore across two different
-    // queues.
-    int semaphore_cross_queue_helper(cl_device_id deviceID, cl_context context,
-                                     cl_command_queue queue_1,
-                                     cl_command_queue queue_2)
-    {
-        cl_int err = CL_SUCCESS;
-        // Create semaphore
-        cl_semaphore_properties_khr sema_props[] = {
-            static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_TYPE_BINARY_KHR),
-            0
-        };
-        semaphore =
-            clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
-        test_error(err, "Could not create semaphore");
-
-        // Signal semaphore on queue_1
-        clEventWrapper signal_event;
-        err = clEnqueueSignalSemaphoresKHR(queue_1, 1, semaphore, nullptr, 0,
-                                           nullptr, &signal_event);
-        test_error(err, "Could not signal semaphore");
-
-        // Wait semaphore on queue_2
-        clEventWrapper wait_event;
-        err = clEnqueueWaitSemaphoresKHR(queue_2, 1, semaphore, nullptr, 0,
-                                         nullptr, &wait_event);
-        test_error(err, "Could not wait semaphore");
-
-        // Finish queue_1 and queue_2
-        err = clFinish(queue_1);
-        test_error(err, "Could not finish queue");
-
-        err = clFinish(queue_2);
-        test_error(err, "Could not finish queue");
-
-        // Ensure all events are completed
-        test_assert_event_complete(signal_event);
-        test_assert_event_complete(wait_event);
-
-        return TEST_PASS;
-    }
-
-    cl_int run_in_order()
-    {
-        cl_int err = CL_SUCCESS;
-        // Create in-order queues
-        clCommandQueueWrapper queue_1 =
-            clCreateCommandQueue(context, device, 0, &err);
-        test_error(err, "Could not create command queue");
-
-        clCommandQueueWrapper queue_2 =
-            clCreateCommandQueue(context, device, 0, &err);
-        test_error(err, "Could not create command queue");
-
-        return semaphore_cross_queue_helper(device, context, queue_1, queue_2);
-    }
-
-    cl_int run_out_of_order()
-    {
-        cl_int err = CL_SUCCESS;
-        // Create ooo queues
-        clCommandQueueWrapper queue_1 = clCreateCommandQueue(
-            context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
-        test_error(err, "Could not create command queue");
-
-        clCommandQueueWrapper queue_2 = clCreateCommandQueue(
-            context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
-        test_error(err, "Could not create command queue");
-
-        return semaphore_cross_queue_helper(device, context, queue_1, queue_2);
-    }
-
-    cl_int Run() override
-    {
-        if (in_order)
-            return run_in_order();
-        else
-            return run_out_of_order();
     }
 };
 
@@ -690,24 +596,6 @@ int test_semaphores_reuse(cl_device_id deviceID, cl_context context,
                           cl_command_queue defaultQueue, int num_elements)
 {
     return MakeAndRunTest<SemaphoreReuse>(deviceID, context, defaultQueue);
-}
-
-// Confirm that a semaphore works across different ooo queues
-int test_semaphores_cross_queues_ooo(cl_device_id deviceID, cl_context context,
-                                     cl_command_queue defaultQueue,
-                                     int num_elements)
-{
-    return MakeAndRunTest<SemaphoreCrossQueue<false>>(deviceID, context,
-                                                      defaultQueue);
-}
-
-// Confirm that a semaphore works across different in-order queues
-int test_semaphores_cross_queues_io(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue defaultQueue,
-                                    int num_elements)
-{
-    return MakeAndRunTest<SemaphoreCrossQueue<true>>(deviceID, context,
-                                                     defaultQueue);
 }
 
 // Confirm that we can signal multiple semaphores with one command
