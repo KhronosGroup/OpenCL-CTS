@@ -41,10 +41,6 @@ extern int test_semaphores_multi_wait(cl_device_id deviceID, cl_context context,
                                       cl_command_queue queue, int num_elements);
 extern int test_semaphores_queries(cl_device_id deviceID, cl_context context,
                                    cl_command_queue queue, int num_elements);
-extern int test_semaphores_import_export_fd(cl_device_id deviceID,
-                                            cl_context context,
-                                            cl_command_queue queue,
-                                            int num_elements);
 extern int test_semaphores_negative_create_invalid_context(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);

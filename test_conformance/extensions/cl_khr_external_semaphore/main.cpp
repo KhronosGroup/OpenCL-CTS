@@ -14,6 +14,7 @@
 //
 #include "procs.h"
 #include "harness/testHarness.h"
+#include "harness/testHarness.h"
 
 test_definition test_list[] = {
     ADD_TEST(external_semaphores_queries),
@@ -26,10 +27,7 @@ test_definition test_list[] = {
     ADD_TEST(external_semaphores_cross_queues_io2),
     ADD_TEST(external_semaphores_multi_signal),
     ADD_TEST(external_semaphores_multi_wait),
-    // ADD_TEST(external_semaphores_order_1),
-    // ADD_TEST(external_semaphores_order_2),
-    // ADD_TEST(external_semaphores_order_3),
-    // ADD_TEST(external_semaphores_invalid_command)
+    ADD_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2)),
 };
 
 

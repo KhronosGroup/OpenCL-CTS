@@ -5,6 +5,7 @@
 #include <thread>
 #include <chrono>
 #include <algorithm>
+#include <cinttypes>
 
 #define FLUSH_DELAY_S 5
 
@@ -18,9 +19,9 @@
         test_error(error, "Unable to get " #param_name " from semaphore");     \
         if (value != expected)                                                 \
         {                                                                      \
-            test_fail("ERROR: Parameter %s did not validate! (expected %d, "   \
-                      "got %d)\n",                                             \
-                      #param_name, expected, value);                           \
+            test_fail("ERROR: Parameter %s did not validate! "                 \
+                      "(expected %" PRIuPTR " got %" PRIuPTR ")\n",            \
+                      #param_name, (uintptr_t)expected, (uintptr_t)value);     \
         }                                                                      \
         if (size != sizeof(value))                                             \
         {                                                                      \
@@ -713,7 +714,7 @@ static int external_semaphore_cross_queue_helper(cl_device_id deviceID,
                                        nullptr, 0, nullptr, &wait_event);
         test_error(err, "Could not wait semaphore");
 
-        // Finish queue_1 and queue_2
+        // Finish queue_1 and queue_2
         err = clFinish(queue_1);
         test_error(err, "Could not finish queue");
 
