@@ -5,6 +5,7 @@
 #include <thread>
 #include <chrono>
 #include <algorithm>
+#include <cinttypes>
 
 #define FLUSH_DELAY_S 5
 
@@ -18,9 +19,9 @@
         test_error(error, "Unable to get " #param_name " from semaphore");     \
         if (value != expected)                                                 \
         {                                                                      \
-            test_fail("ERROR: Parameter %s did not validate! (expected %d, "   \
-                      "got %d)\n",                                             \
-                      #param_name, expected, value);                           \
+            test_fail("ERROR: Parameter %s did not validate! "                 \
+                      "(expected %" PRIuPTR " got %" PRIuPTR ")\n",            \
+                      #param_name, (uintptr_t)expected, (uintptr_t)value);     \
         }                                                                      \
         if (size != sizeof(value))                                             \
         {                                                                      \
@@ -53,9 +54,11 @@
         }                                                                      \
     } while (false)
 
-static const char* source = "__kernel void empty() {}";
+namespace {
 
-static void log_info_semaphore_type(
+const char *source = "__kernel void empty() {}";
+
+void log_info_semaphore_type(
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType)
 {
     std::stringstream semaphore_type_description;
@@ -65,7 +68,7 @@ static void log_info_semaphore_type(
     log_info("%s", semaphore_type_description.str().c_str());
 }
 
-static int init_vuikan_device(cl_uint num_devices, cl_device_id* deviceIds)
+int init_vulkan_device(cl_uint num_devices, cl_device_id *deviceIds)
 {
     cl_platform_id platform = nullptr;
 
@@ -83,9 +86,9 @@ static int init_vuikan_device(cl_uint num_devices, cl_device_id* deviceIds)
     return CL_SUCCESS;
 }
 
-static cl_int get_device_semaphore_handle_types(
+cl_int get_device_semaphore_handle_types(
     cl_device_id deviceID, cl_device_info param,
-    std::vector<cl_external_semaphore_handle_type_khr>& handle_types)
+    std::vector<cl_external_semaphore_handle_type_khr> &handle_types)
 {
     int err = CL_SUCCESS;
     // Query for export support
@@ -119,6 +122,8 @@ static cl_int get_device_semaphore_handle_types(
     return CL_SUCCESS;
 }
 
+} // anonymous namespace
+
 // Confirm the semaphores can be successfully queried
 int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
                                      cl_command_queue defaultQueue,
@@ -138,7 +143,7 @@ int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -349,7 +354,7 @@ int test_external_semaphores_simple_1(cl_device_id deviceID, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -429,7 +434,7 @@ int test_external_semaphores_simple_2(cl_device_id deviceID, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -538,7 +543,7 @@ int test_external_semaphores_reuse(cl_device_id deviceID, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -663,7 +668,7 @@ static int external_semaphore_cross_queue_helper(cl_device_id deviceID,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -713,7 +718,7 @@ static int external_semaphore_cross_queue_helper(cl_device_id deviceID,
                                        nullptr, 0, nullptr, &wait_event);
         test_error(err, "Could not wait semaphore");
 
-        // Finish queue_1 and queue_2
+        // Finish queue_1 and queue_2
         err = clFinish(queue_1);
         test_error(err, "Could not finish queue");
 
@@ -783,7 +788,7 @@ int test_external_semaphores_cross_queues_io2(cl_device_id deviceID,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -897,7 +902,7 @@ int test_external_semaphores_multi_signal(cl_device_id deviceID,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -993,7 +998,7 @@ int test_external_semaphores_multi_wait(cl_device_id deviceID,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
