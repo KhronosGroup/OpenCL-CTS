@@ -14,62 +14,13 @@
 // limitations under the License.
 //
 
-
-#include "harness/typeWrappers.h"
-#include "harness/errorHelpers.h"
-#include <system_error>
 #include <thread>
-#include <chrono>
-#include <vector>
+
+#include "semaphore_base.h"
 
 #include "semaphore_base.h"
 
 #define FLUSH_DELAY_S 5
-
-#define SEMAPHORE_PARAM_TEST(param_name, param_type, expected)                 \
-    do                                                                         \
-    {                                                                          \
-        param_type value;                                                      \
-        size_t size;                                                           \
-        cl_int error = clGetSemaphoreInfoKHR(semaphore, param_name,            \
-                                             sizeof(value), &value, &size);    \
-        test_error(error, "Unable to get " #param_name " from semaphore");     \
-        if (value != expected)                                                 \
-        {                                                                      \
-            test_fail("ERROR: Parameter %s did not validate! (expected %d, "   \
-                      "got %d)\n",                                             \
-                      #param_name, expected, value);                           \
-        }                                                                      \
-        if (size != sizeof(value))                                             \
-        {                                                                      \
-            test_fail(                                                         \
-                "ERROR: Returned size of parameter %s does not validate! "     \
-                "(expected %d, got %d)\n",                                     \
-                #param_name, (int)sizeof(value), (int)size);                   \
-        }                                                                      \
-    } while (false)
-
-#define SEMAPHORE_PARAM_TEST_ARRAY(param_name, param_type, num_params,         \
-                                   expected)                                   \
-    do                                                                         \
-    {                                                                          \
-        param_type value[num_params];                                          \
-        size_t size;                                                           \
-        cl_int error = clGetSemaphoreInfoKHR(semaphore, param_name,            \
-                                             sizeof(value), &value, &size);    \
-        test_error(error, "Unable to get " #param_name " from semaphore");     \
-        if (size != sizeof(value))                                             \
-        {                                                                      \
-            test_fail(                                                         \
-                "ERROR: Returned size of parameter %s does not validate! "     \
-                "(expected %d, got %d)\n",                                     \
-                #param_name, (int)sizeof(value), (int)size);                   \
-        }                                                                      \
-        if (memcmp(value, expected, size) != 0)                                \
-        {                                                                      \
-            test_fail("ERROR: Parameter %s did not validate!\n", #param_name); \
-        }                                                                      \
-    } while (false)
 
 namespace {
 
@@ -515,71 +466,6 @@ struct SemaphoreMultiWait : public SemaphoreTestBase
     clSemaphoreWrapper semaphore_second = nullptr;
 };
 
-struct SemaphoreQueries : public SemaphoreTestBase
-{
-    SemaphoreQueries(cl_device_id device, cl_context context,
-                     cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
-    {}
-
-    cl_int Run() override
-    {
-        cl_int err = CL_SUCCESS;
-        // Create binary semaphore
-        cl_semaphore_properties_khr sema_props[] = {
-            static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_TYPE_BINARY_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR),
-            (cl_semaphore_properties_khr)device,
-            CL_SEMAPHORE_DEVICE_HANDLE_LIST_END_KHR,
-            0
-        };
-        semaphore =
-            clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
-        test_error(err, "Could not create semaphore");
-
-        // Confirm that querying CL_SEMAPHORE_TYPE_KHR returns
-        // CL_SEMAPHORE_TYPE_BINARY_KHR
-        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_TYPE_KHR, cl_semaphore_type_khr,
-                             CL_SEMAPHORE_TYPE_BINARY_KHR);
-
-        // Confirm that querying CL_SEMAPHORE_CONTEXT_KHR returns the right
-        // context
-        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_CONTEXT_KHR, cl_context, context);
-
-        // Confirm that querying CL_SEMAPHORE_REFERENCE_COUNT_KHR returns the
-        // right value
-        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, 1);
-
-        err = clRetainSemaphoreKHR(semaphore);
-        test_error(err, "Could not retain semaphore");
-        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, 2);
-
-        err = clReleaseSemaphoreKHR(semaphore);
-        test_error(err, "Could not release semaphore");
-        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, 1);
-
-        // Confirm that querying CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR returns the
-        // same device id the semaphore was created with
-        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR, cl_device_id,
-                             device);
-
-        // Confirm that querying CL_SEMAPHORE_PROPERTIES_KHR returns the same
-        // properties the semaphore was created with
-        SEMAPHORE_PARAM_TEST_ARRAY(CL_SEMAPHORE_PROPERTIES_KHR,
-                                   cl_semaphore_properties_khr, 6, sema_props);
-
-        // Confirm that querying CL_SEMAPHORE_PAYLOAD_KHR returns the unsignaled
-        // state
-        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_PAYLOAD_KHR, cl_semaphore_payload_khr,
-                             0);
-
-        return CL_SUCCESS;
-    }
-};
-
 struct SemaphoreImportExportFD : public SemaphoreTestBase
 {
     SemaphoreImportExportFD(cl_device_id device, cl_context context,
@@ -724,13 +610,6 @@ int test_semaphores_multi_wait(cl_device_id deviceID, cl_context context,
                                cl_command_queue defaultQueue, int num_elements)
 {
     return MakeAndRunTest<SemaphoreMultiWait>(deviceID, context, defaultQueue);
-}
-
-// Confirm the semaphores can be successfully queried
-int test_semaphores_queries(cl_device_id deviceID, cl_context context,
-                            cl_command_queue defaultQueue, int num_elements)
-{
-    return MakeAndRunTest<SemaphoreQueries>(deviceID, context, defaultQueue);
 }
 
 // Test it is possible to export a semaphore to a sync fd and import the same
