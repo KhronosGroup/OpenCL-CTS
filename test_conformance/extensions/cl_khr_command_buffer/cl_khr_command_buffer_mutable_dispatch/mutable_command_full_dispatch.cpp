@@ -241,6 +241,9 @@ struct MutableCommandFullDispatch : InfoMutableCommandBufferTest
         error = clEnqueueSVMUnmap(queue, buf, 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMUnmap failed for svm buffer");
 
+        error = clFinish(queue);
+        test_error(error, "clFinish failed");
+
         return res;
     }
 
