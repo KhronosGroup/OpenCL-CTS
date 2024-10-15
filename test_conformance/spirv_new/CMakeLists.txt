@@ -4,10 +4,10 @@ set(${MODULE_NAME}_SOURCES
   main.cpp
   test_basic_versions.cpp
   test_cl_khr_expect_assume.cpp
-  test_cl_khr_spirv_no_integer_wrap_decoration.cpp
   test_decorate.cpp
   test_get_program_il.cpp
   test_linkage.cpp
+  test_no_integer_wrap_decoration.cpp
   test_op_atomic.cpp
   test_op_branch_conditional.cpp
   test_op_branch.cpp
