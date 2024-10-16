@@ -185,7 +185,8 @@ struct SemaphoreMultiDeviceContextQueries : public SemaphoreTestBase
         test_error(err, "Unable to get maximal number of compute units");
 
         cl_device_partition_property partitionProp[] = {
-            CL_DEVICE_PARTITION_EQUALLY, maxComputeUnits / 2, 0
+            CL_DEVICE_PARTITION_EQUALLY,
+            static_cast<cl_device_partition_property>(maxComputeUnits / 2), 0
         };
 
         cl_uint deviceCount = 0;
