@@ -186,7 +186,7 @@ struct SemaphoreMultiDeviceContextQueries : public SemaphoreTestBase
 
         cl_device_partition_property partitionProp[] = {
             CL_DEVICE_PARTITION_EQUALLY,
-            static_cast<cl_device_partition_property>(maxComputeUnits / 2), 0, 0
+            static_cast<cl_device_partition_property>(maxComputeUnits / 2), 0
         };
 
         cl_uint deviceCount = 0;
