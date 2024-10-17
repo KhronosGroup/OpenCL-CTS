@@ -218,18 +218,22 @@ struct GetCommandBufferInfo : public BasicCommandBufferTest
 
     cl_int RunPropArrayInfoTest()
     {
-        std::vector<cl_command_buffer_properties_khr> properties;
-        properties.resize(number_of_properties);
+        if (0 != number_of_properties)
+        {
+            std::vector<cl_command_buffer_properties_khr> properties;
+            properties.resize(number_of_properties);
 
-        cl_int error = clGetCommandBufferInfoKHR(
-            command_buffer, CL_COMMAND_BUFFER_PROPERTIES_ARRAY_KHR,
-            number_of_properties * sizeof(cl_command_buffer_properties_khr) - 1,
-            properties.data(), nullptr);
+            cl_int error = clGetCommandBufferInfoKHR(
+                command_buffer, CL_COMMAND_BUFFER_PROPERTIES_ARRAY_KHR,
+                number_of_properties * sizeof(cl_command_buffer_properties_khr)
+                    - 1,
+                properties.data(), nullptr);
 
-        test_failure_error_ret(error, CL_INVALID_VALUE,
-                               "clGetCommandBufferInfoKHR should return "
-                               "CL_INVALID_VALUE",
-                               TEST_FAIL);
+            test_failure_error_ret(error, CL_INVALID_VALUE,
+                                   "clGetCommandBufferInfoKHR should return "
+                                   "CL_INVALID_VALUE",
+                                   TEST_FAIL);
+        }
 
         return TEST_PASS;
     }
