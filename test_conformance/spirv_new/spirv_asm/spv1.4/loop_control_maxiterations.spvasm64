@@ -1,0 +1,46 @@
+; SPIR-V
+; Version: 1.4
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 37
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %loop_control_test "loop_control_test"
+               OpSource OpenCL_C 102000
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+    %ulong_0 = OpConstant %ulong 0
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+          %5 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %uint %uint
+       %bool = OpTypeBool
+%loop_control_test = OpFunction %void None %5
+        %dst = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %count = OpFunctionParameter %uint
+      %value = OpFunctionParameter %uint
+      %entry = OpLabel
+               OpBranch %for_cond
+   %for_cond = OpLabel
+      %sum_0 = OpPhi %uint %uint_0 %entry %add %for_inc
+        %i_0 = OpPhi %uint %uint_0 %entry %inc %for_inc
+        %cmp = OpSLessThan %bool %i_0 %count
+               OpLoopMerge %for_cond_cleanup %for_inc MaxIterations 16
+               OpBranchConditional %cmp %for_body %for_cond_cleanup
+%for_cond_cleanup = OpLabel
+               OpBranch %for_end
+   %for_body = OpLabel
+        %add = OpIAdd %uint %sum_0 %value
+               OpBranch %for_inc
+    %for_inc = OpLabel
+        %inc = OpIAdd %uint %i_0 %uint_1
+               OpBranch %for_cond
+    %for_end = OpLabel
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %dst %ulong_0
+               OpStore %arrayidx %sum_0 Aligned 4
+               OpReturn
+               OpFunctionEnd
