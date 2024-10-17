@@ -110,8 +110,7 @@ public:
     clExternalMemory();
     clExternalMemory(const VulkanDeviceMemory *deviceMemory,
                      VulkanExternalMemoryHandleType externalMemoryHandleType,
-                     uint64_t size, cl_context context, cl_device_id deviceId,
-                     cl_bool useNameForImport = CL_FALSE);
+                     uint64_t size, cl_context context, cl_device_id deviceId);
 
     virtual ~clExternalMemory();
     cl_mem getExternalMemoryBuffer();
@@ -129,7 +128,7 @@ public:
         VulkanExternalMemoryHandleType externalMemoryHandleType,
         cl_context context, size_t totalImageMemSize, size_t imageWidth,
         size_t imageHeight, size_t totalSize, const VulkanImage2D &image2D,
-        cl_device_id deviceId, cl_bool useNameForImport = CL_FALSE);
+        cl_device_id deviceId);
     virtual ~clExternalMemoryImage();
     cl_mem getExternalMemoryImage();
 };
@@ -157,7 +156,7 @@ public:
     clExternalImportableSemaphore(
         const VulkanSemaphore &deviceSemaphore, cl_context context,
         VulkanExternalSemaphoreHandleType externalSemaphoreHandleType,
-        cl_device_id deviceId, cl_bool useNameForImport = CL_FALSE);
+        cl_device_id deviceId);
     ~clExternalImportableSemaphore() override;
     int wait(cl_command_queue command_queue) override;
     int signal(cl_command_queue command_queue) override;

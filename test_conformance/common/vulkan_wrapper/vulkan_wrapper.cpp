@@ -2048,9 +2048,15 @@ VulkanDeviceMemory::VulkanDeviceMemory(
     vkExportMemoryWin32HandleInfoKHR.pAttributes = &winSecurityAttributes;
     vkExportMemoryWin32HandleInfoKHR.dwAccess =
         DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
-    vkExportMemoryWin32HandleInfoKHR.name =
-        m_name.size() ? (LPCWSTR)m_name.c_str() : NULL;
+    vkExportMemoryWin32HandleInfoKHR.name = NULL;
 
+    if (externalMemoryHandleType
+        == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_NAME)
+    {
+        vkExportMemoryWin32HandleInfoKHR.name = (LPCWSTR)m_name.c_str();
+        externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT;
+    }
 #endif
 
     VkExportMemoryAllocateInfoKHR vkExportMemoryAllocateInfoKHR = {};
@@ -2095,9 +2101,15 @@ VulkanDeviceMemory::VulkanDeviceMemory(
     vkExportMemoryWin32HandleInfoKHR.pAttributes = &winSecurityAttributes;
     vkExportMemoryWin32HandleInfoKHR.dwAccess =
         DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
-    vkExportMemoryWin32HandleInfoKHR.name =
-        m_name.size() ? (LPCWSTR)m_name.c_str() : NULL;
+    vkExportMemoryWin32HandleInfoKHR.name = NULL;
 
+    if (externalMemoryHandleType
+        == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_NAME)
+    {
+        vkExportMemoryWin32HandleInfoKHR.name = (LPCWSTR)m_name.c_str();
+        externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT;
+    }
 #endif
 
     VkExportMemoryAllocateInfoKHR vkExportMemoryAllocateInfoKHR = {};
@@ -2159,9 +2171,15 @@ VulkanDeviceMemory::VulkanDeviceMemory(
     vkExportMemoryWin32HandleInfoKHR.pAttributes = &winSecurityAttributes;
     vkExportMemoryWin32HandleInfoKHR.dwAccess =
         DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
-    vkExportMemoryWin32HandleInfoKHR.name =
-        m_name.size() ? (LPCWSTR)m_name.c_str() : NULL;
+    vkExportMemoryWin32HandleInfoKHR.name = NULL;
 
+    if (externalMemoryHandleType
+        == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_NAME)
+    {
+        vkExportMemoryWin32HandleInfoKHR.name = (LPCWSTR)m_name.c_str();
+        externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT;
+    }
 #endif
 
     VkExportMemoryAllocateInfoKHR vkExportMemoryAllocateInfoKHR = {};
@@ -2321,8 +2339,15 @@ VulkanSemaphore::VulkanSemaphore(
     vkExportSemaphoreWin32HandleInfoKHR.pAttributes = &winSecurityAttributes;
     vkExportSemaphoreWin32HandleInfoKHR.dwAccess =
         DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
-    vkExportSemaphoreWin32HandleInfoKHR.name =
-        m_name.size() ? (LPCWSTR)m_name.c_str() : NULL;
+    vkExportSemaphoreWin32HandleInfoKHR.name = NULL;
+
+    if (externalSemaphoreHandleType
+        == VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT_NAME)
+    {
+        vkExportSemaphoreWin32HandleInfoKHR.name = (LPCWSTR)m_name.c_str();
+        externalSemaphoreHandleType =
+            VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT;
+    }
 #endif
 
     VkExportSemaphoreCreateInfoKHR vkExportSemaphoreCreateInfoKHR = {};
