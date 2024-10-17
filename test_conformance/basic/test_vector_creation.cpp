@@ -21,6 +21,8 @@
 
 #include <CL/cl_half.h>
 
+extern cl_half_rounding_mode halfRoundingMode;
+
 #define DEBUG 0
 #define DEPTH 16
 // Limit the maximum code size for any given kernel.
@@ -320,7 +322,8 @@ int test_vector_creation(cl_device_id deviceID, cl_context context,
                     &j,
                     ((char *)input_data_converted.data())
                         + get_explicit_type_size(vecType[type_index]) * j,
-                    kInt, 0, kRoundToEven, vecType[type_index]);
+                    kInt, 0, kRoundToEven, halfRoundingMode,
+                    vecType[type_index]);
             }
         }
 

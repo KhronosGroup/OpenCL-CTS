@@ -116,3 +116,11 @@ extern int test_userevents_multithreaded(cl_device_id deviceID,
                                          cl_context context,
                                          cl_command_queue queue,
                                          int num_elements);
+extern int test_callback_on_error_simple(cl_device_id deviceID,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements);
+extern int test_callback_on_error_enqueue_command(cl_device_id deviceID,
+                                                  cl_context context,
+                                                  cl_command_queue queue,
+                                                  int num_elements);

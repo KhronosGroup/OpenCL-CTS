@@ -40,22 +40,22 @@ struct BarrierWithWaitListKHR : public BasicCommandBufferTest
 
     cl_int Run() override
     {
-        cl_int error =
-            clCommandFillBufferKHR(out_of_order_command_buffer, nullptr, in_mem,
-                                   &pattern, sizeof(cl_int), 0, data_size(), 0,
-                                   nullptr, &sync_points[0], nullptr);
+        cl_int error = clCommandFillBufferKHR(
+            out_of_order_command_buffer, nullptr, nullptr, in_mem, &pattern,
+            sizeof(cl_int), 0, data_size(), 0, nullptr, &sync_points[0],
+            nullptr);
         test_error(error, "clCommandFillBufferKHR failed");
 
         const cl_int overwritten_pattern = 0xACDC;
         error = clCommandFillBufferKHR(out_of_order_command_buffer, nullptr,
-                                       out_mem, &overwritten_pattern,
+                                       nullptr, out_mem, &overwritten_pattern,
                                        sizeof(cl_int), 0, data_size(), 0,
                                        nullptr, &sync_points[1], nullptr);
         test_error(error, "clCommandFillBufferKHR failed");
 
         error = clCommandBarrierWithWaitListKHR(out_of_order_command_buffer,
-                                                nullptr, 2, sync_points,
-                                                nullptr, nullptr);
+                                                nullptr, nullptr, 2,
+                                                sync_points, nullptr, nullptr);
         test_error(error, "clCommandBarrierWithWaitListKHR failed");
 
         error = clCommandNDRangeKernelKHR(
@@ -92,6 +92,9 @@ struct BarrierWithWaitListKHR : public BasicCommandBufferTest
             clEnqueueFillBuffer(queue, out_mem, &zero_pattern, sizeof(cl_int),
                                 0, data_size(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBufferKHR failed");
+
+        error = clFinish(queue);
+        test_error(error, "clFinish");
 
         error = clEnqueueCommandBufferKHR(
             0, nullptr, out_of_order_command_buffer, 0, nullptr, &event);

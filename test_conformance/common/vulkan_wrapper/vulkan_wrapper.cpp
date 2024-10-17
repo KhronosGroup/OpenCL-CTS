@@ -137,7 +137,7 @@ VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
     vkApplicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     vkApplicationInfo.pEngineName = "No engine";
     vkApplicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    vkApplicationInfo.apiVersion = VK_API_VERSION_1_0;
+    vkApplicationInfo.apiVersion = VK_API_VERSION_1_1;
 
     std::vector<const char *> enabledExtensionNameList;
     enabledExtensionNameList.push_back(

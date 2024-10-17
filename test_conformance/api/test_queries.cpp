@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <algorithm>
+#include <cinttypes>
 #include <vector>
 
 int test_get_platform_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
@@ -153,7 +154,7 @@ int sampler_param_test(cl_sampler sampler, cl_sampler_info param_name,
     return 0;
 }
 
-static cl_int normalized_coord_values[] = { CL_TRUE, CL_FALSE };
+static cl_bool normalized_coord_values[] = { CL_TRUE, CL_FALSE };
 static cl_addressing_mode addressing_mode_values[] = {
     CL_ADDRESS_NONE, CL_ADDRESS_CLAMP_TO_EDGE, CL_ADDRESS_CLAMP,
     CL_ADDRESS_REPEAT, CL_ADDRESS_MIRRORED_REPEAT
@@ -237,7 +238,7 @@ int test_sampler_params(cl_device_id deviceID, cl_context context,
             if (set_size != 0)
             {
                 log_error(
-                    "ERROR: CL_SAMPLER_PROPERTIES size is %d, expected 0\n",
+                    "ERROR: CL_SAMPLER_PROPERTIES size is %zu, expected 0\n",
                     set_size);
                 return TEST_FAIL;
             }
@@ -248,7 +249,7 @@ int test_sampler_params(cl_device_id deviceID, cl_context context,
                 != test_properties.size() * sizeof(cl_sampler_properties))
             {
                 log_error(
-                    "ERROR: CL_SAMPLER_PROPERTIES size is %d, expected %d.\n",
+                    "ERROR: CL_SAMPLER_PROPERTIES size is %zu, expected %zu.\n",
                     set_size,
                     test_properties.size() * sizeof(cl_sampler_properties));
                 return TEST_FAIL;
@@ -380,7 +381,8 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
         clGetDeviceInfo(deviceID, host_queue_query, sizeof(host_queue_props),
                         &host_queue_props, NULL);
     test_error(error, "clGetDeviceInfo failed");
-    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %d\n", host_queue_props);
+    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %" PRIu64 "\n",
+             host_queue_props);
 
     cl_queue_properties device_queue_props = 0;
     if (version >= Version(2, 0))
@@ -389,7 +391,7 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
                                 sizeof(device_queue_props), &device_queue_props,
                                 NULL);
         test_error(error, "clGetDeviceInfo failed");
-        log_info("CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES is %d\n",
+        log_info("CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES is %" PRIu64 "\n",
                  device_queue_props);
     }
 
