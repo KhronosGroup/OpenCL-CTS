@@ -100,7 +100,8 @@ uint32_t get_channel_data_type_size(cl_channel_type channelType)
         case CL_UNORM_SHORT_555: return 2;
 
         case CL_UNORM_INT_101010:
-        case CL_UNORM_INT_101010_2: return 4;
+        case CL_UNORM_INT_101010_2:
+        case CL_UNORM_INT_2_101010_EXT: return 4;
 
         case CL_FLOAT: return sizeof(cl_float);
 
@@ -163,25 +164,27 @@ cl_channel_type get_channel_type_from_name(const char *name)
     {
         cl_channel_type type;
         const char *name;
-    } typeNames[] = { { CL_SNORM_INT8, "CL_SNORM_INT8" },
-                      { CL_SNORM_INT16, "CL_SNORM_INT16" },
-                      { CL_UNORM_INT8, "CL_UNORM_INT8" },
-                      { CL_UNORM_INT16, "CL_UNORM_INT16" },
-                      { CL_UNORM_INT24, "CL_UNORM_INT24" },
-                      { CL_UNORM_SHORT_565, "CL_UNORM_SHORT_565" },
-                      { CL_UNORM_SHORT_555, "CL_UNORM_SHORT_555" },
-                      { CL_UNORM_INT_101010, "CL_UNORM_INT_101010" },
-                      { CL_UNORM_INT_101010_2, "CL_UNORM_INT_101010_2" },
-                      { CL_SIGNED_INT8, "CL_SIGNED_INT8" },
-                      { CL_SIGNED_INT16, "CL_SIGNED_INT16" },
-                      { CL_SIGNED_INT32, "CL_SIGNED_INT32" },
-                      { CL_UNSIGNED_INT8, "CL_UNSIGNED_INT8" },
-                      { CL_UNSIGNED_INT16, "CL_UNSIGNED_INT16" },
-                      { CL_UNSIGNED_INT32, "CL_UNSIGNED_INT32" },
-                      { CL_HALF_FLOAT, "CL_HALF_FLOAT" },
-                      { CL_FLOAT, "CL_FLOAT" },
+    } typeNames[] = {
+        { CL_SNORM_INT8, "CL_SNORM_INT8" },
+        { CL_SNORM_INT16, "CL_SNORM_INT16" },
+        { CL_UNORM_INT8, "CL_UNORM_INT8" },
+        { CL_UNORM_INT16, "CL_UNORM_INT16" },
+        { CL_UNORM_INT24, "CL_UNORM_INT24" },
+        { CL_UNORM_SHORT_565, "CL_UNORM_SHORT_565" },
+        { CL_UNORM_SHORT_555, "CL_UNORM_SHORT_555" },
+        { CL_UNORM_INT_101010, "CL_UNORM_INT_101010" },
+        { CL_UNORM_INT_101010_2, "CL_UNORM_INT_101010_2" },
+        { CL_UNORM_INT_2_101010_EXT, "CL_UNORM_INT_2_101010_EXT" },
+        { CL_SIGNED_INT8, "CL_SIGNED_INT8" },
+        { CL_SIGNED_INT16, "CL_SIGNED_INT16" },
+        { CL_SIGNED_INT32, "CL_SIGNED_INT32" },
+        { CL_UNSIGNED_INT8, "CL_UNSIGNED_INT8" },
+        { CL_UNSIGNED_INT16, "CL_UNSIGNED_INT16" },
+        { CL_UNSIGNED_INT32, "CL_UNSIGNED_INT32" },
+        { CL_HALF_FLOAT, "CL_HALF_FLOAT" },
+        { CL_FLOAT, "CL_FLOAT" },
 #ifdef CL_SFIXED14_APPLE
-                      { CL_SFIXED14_APPLE, "CL_SFIXED14_APPLE" }
+        { CL_SFIXED14_APPLE, "CL_SFIXED14_APPLE" }
 #endif
     };
     for (size_t i = 0; i < sizeof(typeNames) / sizeof(typeNames[0]); i++)
@@ -288,7 +291,8 @@ uint32_t get_pixel_size(const cl_image_format *format)
 
         case CL_FLOAT:
             return get_format_channel_count(format) * sizeof(cl_float);
-        case CL_UNORM_INT_101010_2: return 4;
+        case CL_UNORM_INT_101010_2:
+        case CL_UNORM_INT_2_101010_EXT: return 4;
 
         case CL_UNSIGNED_INT_RAW10_EXT:
         case CL_UNSIGNED_INT_RAW12_EXT: return 2;
@@ -937,6 +941,7 @@ float get_max_relative_error(const cl_image_format *format,
         case CL_UNORM_SHORT_555:
         case CL_UNORM_INT_101010:
         case CL_UNORM_INT_101010_2:
+        case CL_UNORM_INT_2_101010_EXT:
             // Maximum sampling error for round to zero normalization based on
             // multiplication by reciprocal (using reciprocal generated in
             // round to +inf mode, so that 1.0 matches spec)
@@ -1021,7 +1026,8 @@ size_t get_format_max_int(const cl_image_format *format)
         case CL_UNORM_SHORT_555: return 31;
 
         case CL_UNORM_INT_101010:
-        case CL_UNORM_INT_101010_2: return 1023;
+        case CL_UNORM_INT_101010_2:
+        case CL_UNORM_INT_2_101010_EXT: return 1023;
 
         case CL_HALF_FLOAT: return 1 << 10;
 
@@ -1054,7 +1060,8 @@ int get_format_min_int(const cl_image_format *format)
         case CL_UNORM_SHORT_565:
         case CL_UNORM_SHORT_555:
         case CL_UNORM_INT_101010:
-        case CL_UNORM_INT_101010_2: return 0;
+        case CL_UNORM_INT_101010_2:
+        case CL_UNORM_INT_2_101010_EXT: return 0;
 
         case CL_HALF_FLOAT: return -(1 << 10);
 
@@ -1476,6 +1483,15 @@ void read_image_pixel_float(void *imageData, image_descriptor *imageInfo, int x,
             tempData[1] = (float)((dPtr[0] >> 12) & 0x3ff) / (float)1023;
             tempData[2] = (float)(dPtr[0] >> 2 & 0x3ff) / (float)1023;
             tempData[3] = (float)(dPtr[0] >> 0 & 3) / (float)3;
+            break;
+        }
+
+        case CL_UNORM_INT_2_101010_EXT: {
+            cl_uint *dPtr = (cl_uint *)ptr;
+            tempData[0] = (float)((dPtr[0] >> 30) & 0x3) / (float)3;
+            tempData[1] = (float)((dPtr[0] >> 20) & 0x3ff) / (float)1023;
+            tempData[2] = (float)(dPtr[0] >> 10 & 0x3ff) / (float)1023;
+            tempData[3] = (float)(dPtr[0] >> 0 & 0x3ff) / (float)1023;
             break;
         }
 
@@ -2753,6 +2769,14 @@ void pack_image_pixel(float *srcVector, const cl_image_format *imageFormat,
                 | (((unsigned int)NORMALIZE(srcVector[3], 3.f) & 3) << 0);
             break;
         }
+        case CL_UNORM_INT_2_101010_EXT: {
+            cl_uint *ptr = (cl_uint *)outData;
+            ptr[0] = (((unsigned int)NORMALIZE(srcVector[0], 3.f) & 3) << 30)
+                | (((unsigned int)NORMALIZE(srcVector[1], 1023.f) & 1023) << 20)
+                | (((unsigned int)NORMALIZE(srcVector[2], 1023.f) & 1023) << 10)
+                | (((unsigned int)NORMALIZE(srcVector[3], 1023.f) & 1023) << 0);
+            break;
+        }
         case CL_SIGNED_INT8: {
             cl_char *ptr = (cl_char *)outData;
             for (unsigned int i = 0; i < channelCount; i++)
@@ -2926,6 +2950,20 @@ void pack_image_pixel_error(const float *srcVector,
                 - NORMALIZE_UNROUNDED(srcVector[2], 1023.f);
             errors[3] =
                 ((ptr[0] >> 0) & 3) - NORMALIZE_UNROUNDED(srcVector[3], 3.f);
+
+            break;
+        }
+        case CL_UNORM_INT_2_101010_EXT: {
+            const cl_uint *ptr = (const cl_uint *)results;
+
+            errors[0] =
+                ((ptr[0] >> 30) & 3) - NORMALIZE_UNROUNDED(srcVector[0], 3.f);
+            errors[1] = ((ptr[0] >> 20) & 1023)
+                - NORMALIZE_UNROUNDED(srcVector[1], 1023.f);
+            errors[2] = ((ptr[0] >> 10) & 1023)
+                - NORMALIZE_UNROUNDED(srcVector[2], 1023.f);
+            errors[3] = ((ptr[0] >> 0) & 1023)
+                - NORMALIZE_UNROUNDED(srcVector[3], 1023.f);
 
             break;
         }
