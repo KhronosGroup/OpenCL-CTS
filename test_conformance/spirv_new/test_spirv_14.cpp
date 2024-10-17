@@ -71,16 +71,7 @@ TEST_SPIRV_FUNC(spirv14_usersemantic_decoratestring)
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
-    if (true)
-    {
-        log_info(
-            "The SPIR-V LLVM Translator currently doesn't handle this case.\n"
-            "See: "
-            "https://github.com/KhronosGroup/SPIRV-LLVM-Translator/issues/"
-            "2670\n"
-            "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+
     return test_usersemantic_decoration(deviceID, context, queue, false);
 }
 
@@ -91,14 +82,6 @@ TEST_SPIRV_FUNC(spirv14_usersemantic_memberdecoratestring)
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
-    if (true)
-    {
-        log_info(
-            "The SPIR-V LLVM Translator currently doesn't handle this case.\n"
-            "See: "
-            "https://github.com/KhronosGroup/SPIRV-LLVM-Translator/pull/2677\n"
-            "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+
     return test_usersemantic_decoration(deviceID, context, queue, true);
 }
