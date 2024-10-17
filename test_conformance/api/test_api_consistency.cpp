@@ -1274,8 +1274,10 @@ int test_consistency_requirements_fp16(cl_device_id deviceID,
     {
         error = clGetDeviceInfo(deviceID, CL_DEVICE_HALF_FP_CONFIG,
                                 sizeof(value), &value, nullptr);
-        test_error(error, "Unable to get device CL_DEVICE_HALF_FP_CONFIG");
-        test_assert_error(value == 0, "CL_DEVICE_HALF_FP_CONFIG must return 0");
+        test_failure_error(
+            error, CL_INVALID_VALUE,
+            "cl_khr_fp16 is not available; CL_DEVICE_HALF_FP_CONFIG must fail "
+            "with CL_INVALID_VALUE");
 
         error = clGetDeviceInfo(deviceID, CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF,
                                 sizeof(value), &value, nullptr);
