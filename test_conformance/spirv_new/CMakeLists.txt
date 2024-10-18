@@ -27,16 +27,13 @@ set(${MODULE_NAME}_SOURCES
   test_op_vector_extract.cpp
   test_op_vector_insert.cpp
   test_op_vector_times_scalar.cpp
+  test_spirv_14.cpp
 )
 
 set(TEST_HARNESS_SOURCES
   ../../test_conformance/math_brute_force/reference_math.cpp
   ../../test_conformance/math_brute_force/utility.cpp
 )
-
-if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
-    add_cxx_flag_if_supported(-Wno-narrowing)
-endif()
 
 set(${MODULE_NAME}_SOURCES ${SPIRV_NEW_SOURCES} ${TEST_HARNESS_SOURCES})
 
