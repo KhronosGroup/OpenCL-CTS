@@ -235,6 +235,10 @@ extern int test_pragma_unroll(cl_device_id deviceID, cl_context context,
                               cl_command_queue queue, int num_elements);
 extern int test_features_macro(cl_device_id deviceID, cl_context context,
                                cl_command_queue queue, int num_elements);
+extern int test_features_macro_coupling(cl_device_id deviceID,
+                                        cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements);
 extern int test_unload_valid(cl_device_id deviceID, cl_context context,
                              cl_command_queue queue, int num_elements);
 extern int test_unload_invalid(cl_device_id deviceID, cl_context context,
