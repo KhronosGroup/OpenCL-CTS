@@ -1,0 +1,24 @@
+; SPIR-V
+; Version: 1.4
+               OpCapability Addresses
+               OpCapability Kernel
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %kernel "copylogical_test"
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+       %void = OpTypeVoid
+   %struct_a = OpTypeStruct %uint %float
+%ptr_struct_a = OpTypePointer CrossWorkgroup %struct_a
+   %struct_b = OpTypeStruct %uint %float
+%ptr_struct_b = OpTypePointer CrossWorkgroup %struct_b
+ %kernel_sig = OpTypeFunction %void %ptr_struct_b
+  %uint_1024 = OpConstant %uint 1024
+   %float_pi = OpConstant %float 3.1415
+%struct_a_src = OpConstantComposite %struct_a %uint_1024 %float_pi
+     %kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %ptr_struct_b
+      %entry = OpLabel
+%struct_b_dst = OpCopyLogical %struct_b %struct_a_src
+               OpStore %dst %struct_b_dst
+               OpReturn
+               OpFunctionEnd
