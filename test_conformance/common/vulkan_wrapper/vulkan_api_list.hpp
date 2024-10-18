@@ -100,7 +100,8 @@
     VK_FUNC_DECL(vkEnumerateDeviceExtensionProperties)                         \
     VK_FUNC_DECL(vkGetPhysicalDeviceSurfaceSupportKHR)                         \
     VK_FUNC_DECL(vkImportSemaphoreFdKHR)                                       \
-    VK_FUNC_DECL(vkGetPhysicalDeviceExternalSemaphorePropertiesKHR)
+    VK_FUNC_DECL(vkGetPhysicalDeviceExternalSemaphorePropertiesKHR)            \
+    VK_FUNC_DECL(vkGetImageSubresourceLayout)
 #define VK_WINDOWS_FUNC_LIST                                                   \
     VK_FUNC_DECL(vkGetMemoryWin32HandleKHR)                                    \
     VK_FUNC_DECL(vkGetSemaphoreWin32HandleKHR)                                 \
@@ -200,5 +201,6 @@
 #define vkGetMemoryWin32HandleKHR _vkGetMemoryWin32HandleKHR
 #define vkGetSemaphoreWin32HandleKHR _vkGetSemaphoreWin32HandleKHR
 #define vkImportSemaphoreWin32HandleKHR _vkImportSemaphoreWin32HandleKHR
+#define vkGetImageSubresourceLayout _vkGetImageSubresourceLayout
 
 #endif //_vulkan_api_list_hpp_
