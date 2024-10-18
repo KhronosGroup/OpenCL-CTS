@@ -1540,7 +1540,11 @@ cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
     *outKernel = NULL;
 
     const char *flags = NULL;
-    if (gForceFTZ || gForceHalfFTZ) flags = "-cl-denorms-are-zero";
+    if ((gForceFTZ && (inType == kfloat || outType == kfloat))
+        || (gForceHalfFTZ && (inType == khalf || outType == khalf)))
+    {
+        flags = "-cl-denorms-are-zero";
+    }
 
     // build it
     std::string sourceString = source.str();
