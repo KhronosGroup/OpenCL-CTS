@@ -116,3 +116,65 @@ TEST_SPIRV_FUNC(spirv14_copymemory_memory_operands)
 
     return TEST_PASS;
 }
+
+TEST_SPIRV_FUNC(spirv14_select_composite)
+{
+    constexpr size_t global_size = 16;
+
+    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    {
+        log_info("SPIR-V 1.4 not supported; skipping tests.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_int error = CL_SUCCESS;
+
+    clProgramWrapper prog;
+    error =
+        get_program_with_il(prog, deviceID, context, "spv1.4/select_struct");
+    SPIRV_CHECK_ERROR(error, "Failed to compile spv program");
+
+    clKernelWrapper kernel = clCreateKernel(prog, "select_struct_test", &error);
+    SPIRV_CHECK_ERROR(error, "Failed to create spv kernel");
+
+    struct TestStruct
+    {
+        cl_int i;
+        cl_float f;
+    };
+
+    std::vector<TestStruct> results(global_size);
+    clMemWrapper dst =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       results.size() * sizeof(results[0]), nullptr, &error);
+    SPIRV_CHECK_ERROR(error, "Failed to create dst buffer");
+
+    error |= clSetKernelArg(kernel, 0, sizeof(dst), &dst);
+    SPIRV_CHECK_ERROR(error, "Failed to set kernel args");
+
+    error = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &global_size,
+                                   nullptr, 0, nullptr, nullptr);
+    SPIRV_CHECK_ERROR(error, "Failed to enqueue kernel");
+
+    error = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0,
+                                results.size() * sizeof(results[0]),
+                                results.data(), 0, nullptr, nullptr);
+    SPIRV_CHECK_ERROR(error, "Unable to read destination buffer");
+
+    const TestStruct expected_even{ 1024, 3.1415f };
+    const TestStruct expected_odd{ 2048, 2.7128f };
+
+    for (size_t i = 0; i < global_size; i++)
+    {
+        const TestStruct expected = (i & 1) ? expected_even : expected_odd;
+        if (results[i].i != expected.i || results[i].f != expected.f)
+        {
+            log_error("Result mismatch at index %zu!  Got {%d, %f}, Wanted "
+                      "{%d, %f}\n",
+                      i, results[i].i, results[i].f, expected.i, expected.f);
+            return TEST_FAIL;
+        }
+    }
+
+    return TEST_PASS;
+}
