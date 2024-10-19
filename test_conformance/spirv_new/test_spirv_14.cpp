@@ -41,19 +41,19 @@ TEST_SPIRV_FUNC(spirv14_nonwriteable_decoration)
 
     int result = 0;
     clMemWrapper dst = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                      sizeof(result), NULL, &error);
+                                      sizeof(result), nullptr, &error);
     SPIRV_CHECK_ERROR(error, "Failed to create dst buffer");
 
     error |= clSetKernelArg(kernel, 0, sizeof(dst), &dst);
     SPIRV_CHECK_ERROR(error, "Failed to set kernel args");
 
     size_t global = 1;
-    error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0,
-                                   NULL, NULL);
+    error = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &global, nullptr,
+                                   0, nullptr, nullptr);
     SPIRV_CHECK_ERROR(error, "Failed to enqueue kernel");
 
     error = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0, sizeof(result), &result,
-                                0, NULL, NULL);
+                                0, nullptr, nullptr);
     SPIRV_CHECK_ERROR(error, "Unable to read destination buffer");
 
     int expected = 42;
@@ -61,6 +61,57 @@ TEST_SPIRV_FUNC(spirv14_nonwriteable_decoration)
     {
         log_error("Result mismatch!  Got %d, Wanted %d\n", result, expected);
         return TEST_FAIL;
+    }
+
+    return TEST_PASS;
+}
+
+TEST_SPIRV_FUNC(spirv14_copymemory_memory_operands)
+{
+    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    {
+        log_info("SPIR-V 1.4 not supported; skipping tests.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_int error = CL_SUCCESS;
+
+    clProgramWrapper prog;
+    error = get_program_with_il(prog, deviceID, context,
+                                "spv1.4/copymemory_memory_operands");
+    SPIRV_CHECK_ERROR(error, "Failed to compile spv program");
+
+    clKernelWrapper kernel = clCreateKernel(prog, "copymemory_test", &error);
+    SPIRV_CHECK_ERROR(error, "Failed to create spv kernel");
+
+    std::vector<int> results(6);
+    clMemWrapper dst =
+        clCreateBuffer(context, CL_MEM_READ_WRITE,
+                       results.size() * sizeof(results[0]), nullptr, &error);
+    SPIRV_CHECK_ERROR(error, "Failed to create dst buffer");
+
+    error |= clSetKernelArg(kernel, 0, sizeof(dst), &dst);
+    SPIRV_CHECK_ERROR(error, "Failed to set kernel args");
+
+    size_t global = 1;
+    error = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &global, nullptr,
+                                   0, nullptr, nullptr);
+    SPIRV_CHECK_ERROR(error, "Failed to enqueue kernel");
+
+    error = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0,
+                                results.size() * sizeof(results[0]),
+                                results.data(), 0, nullptr, nullptr);
+    SPIRV_CHECK_ERROR(error, "Unable to read destination buffer");
+
+    const int expected = 42;
+    for (auto result : results)
+    {
+        if (result != expected)
+        {
+            log_error("Result mismatch!  Got %d, Wanted %d\n", result,
+                      expected);
+            return TEST_FAIL;
+        }
     }
 
     return TEST_PASS;
