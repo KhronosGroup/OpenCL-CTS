@@ -6,8 +6,6 @@
 #include <chrono>
 #include <algorithm>
 
-#define FLUSH_DELAY_S 5
-
 #define SEMAPHORE_PARAM_TEST(param_name, param_type, expected)                 \
     do                                                                         \
     {                                                                          \
@@ -502,7 +500,10 @@ int test_external_semaphores_simple_2(cl_device_id deviceID, cl_context context,
         // Flush and delay
         err = clFlush(queue);
         test_error(err, "Could not flush queue");
-        std::this_thread::sleep_for(std::chrono::seconds(FLUSH_DELAY_S));
+
+        cl_event event_list[] = { signal_event, wait_event };
+        err = clWaitForEvents(2, event_list);
+        test_error(err, "Could not wait on events");
 
         // Ensure all events are completed except for task_1
         test_assert_event_inprogress(task_1_event);
