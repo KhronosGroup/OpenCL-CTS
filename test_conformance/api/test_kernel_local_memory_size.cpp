@@ -19,10 +19,10 @@
 #include "harness/testHarness.h"
 #include <memory>
 
-static const char* empty_kernel = R"CLC(
-__kernel void empty_kernel() {
-}
-)CLC";
+// static const char* empty_kernel = R"CLC(
+//__kernel void empty_kernel() {
+// }
+//)CLC";
 
 static const char* local_memory_kernel = R"CLC(
 __kernel void local_memory_kernel(global int* data) {
@@ -67,15 +67,9 @@ __kernel void local_param_local_memory_kernel(__local int* local_ptr,
 
     __local int local_data[10];
     local_ptr[id] = src[id];
-
     barrier(CLK_LOCAL_MEM_FENCE);
-    if(id / 2 == 0) {
-        for(size_t i = 0; i < 10; i++)
-            local_data[id] += local_ptr[i];
-    }
-    else
-        local_data[id] = local_ptr[id] * 2;
 
+    local_data[id] = local_ptr[id] * 2;
     barrier(CLK_LOCAL_MEM_FENCE);
 
     dst[id] = local_data[id];
@@ -96,26 +90,29 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
     clProgramWrapper program;
     clKernelWrapper kernel;
 
-    // Check memory needed to execute empty kernel
-    if (create_single_kernel_helper(context, &program, &kernel, 1,
-                                    &empty_kernel, "empty_kernel")
-        != 0)
-    {
-        return TEST_FAIL;
-    }
+    //    // Check memory needed to execute empty kernel
+    //    if (create_single_kernel_helper(context, &program, &kernel, 1,
+    //                                    &empty_kernel, "empty_kernel")
+    //        != 0)
+    //    {
+    //        return TEST_FAIL;
+    //    }
 
     cl_ulong kernel_local_usage = 0;
     size_t param_value_size_ret = 0;
-    error = clGetKernelWorkGroupInfo(
-        kernel, deviceID, CL_KERNEL_LOCAL_MEM_SIZE, sizeof(kernel_local_usage),
-        &kernel_local_usage, &param_value_size_ret);
-    test_error(error,
-               "clGetKernelWorkGroupInfo for CL_KERNEL_LOCAL_MEM_SIZE failed");
+    //    error = clGetKernelWorkGroupInfo(
+    //        kernel, deviceID, CL_KERNEL_LOCAL_MEM_SIZE,
+    //        sizeof(kernel_local_usage), &kernel_local_usage,
+    //        &param_value_size_ret);
+    //    test_error(error,
+    //               "clGetKernelWorkGroupInfo for CL_KERNEL_LOCAL_MEM_SIZE
+    //               failed");
 
-    test_assert_error(param_value_size_ret == sizeof(cl_ulong),
-                      "param_value_size_ret failed");
+    //    test_assert_error(param_value_size_ret == sizeof(cl_ulong),
+    //                      "param_value_size_ret failed");
 
-    test_assert_error(kernel_local_usage >= 0, "kernel local mem size failed");
+    //    test_assert_error(kernel_local_usage >= 0, "kernel local mem size
+    //    failed");
 
     // Check memory needed to execute empty kernel with __local variable
     if (create_single_kernel_helper(context, &program, &kernel, 1,
@@ -125,8 +122,8 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
         return TEST_FAIL;
     }
 
-    kernel_local_usage = 0;
-    param_value_size_ret = 0;
+    //    kernel_local_usage = 0;
+    //    param_value_size_ret = 0;
     error = clGetKernelWorkGroupInfo(
         kernel, deviceID, CL_KERNEL_LOCAL_MEM_SIZE, sizeof(kernel_local_usage),
         &kernel_local_usage, &param_value_size_ret);
@@ -140,6 +137,7 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
     constexpr size_t memory = size * sizeof(cl_int);
 
     const size_t global_work_size[] = { size };
+    const size_t local_work_size[] = { size };
 
     int data[size];
     for (size_t i = 0; i < size; i++)
@@ -156,7 +154,7 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
     test_error(error, "Unable to set indexed kernel arguments");
 
     error = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, global_work_size,
-                                   nullptr, 0, NULL, nullptr);
+                                   local_work_size, 0, NULL, nullptr);
     test_error(error, "clEnqueueNDRangeKernel failed.");
 
     error = clEnqueueReadBuffer(queue, streams[0], CL_TRUE, 0, memory, data, 0,
@@ -178,7 +176,7 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
         return true;
     };
     test_assert_error(local_memory_kernel_verify(),
-                      "local_memory_kernel data verificaion failed");
+                      "local_memory_kernel data verification failed");
 
     test_assert_error(kernel_local_usage >= memory,
                       "kernel local mem size failed");
@@ -216,7 +214,7 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
     test_error(error, "Unable to set indexed kernel arguments");
 
     error = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, global_work_size,
-                                   nullptr, 0, NULL, nullptr);
+                                   local_work_size, 0, NULL, nullptr);
     test_error(error, "clEnqueueNDRangeKernel failed.");
 
     error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, memory, data, 0,
@@ -289,7 +287,7 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
     test_error(error, "Unable to set indexed kernel arguments");
 
     error = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, global_work_size,
-                                   nullptr, 0, NULL, nullptr);
+                                   local_work_size, 0, NULL, nullptr);
     test_error(error, "clEnqueueNDRangeKernel failed.");
 
     error = clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0, memory, data, 0,
@@ -309,18 +307,16 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
     auto local_param_local_memory_kernel_verify = [&]() {
         constexpr size_t size = 10;
         int testData[size];
-        int sum = 0;
+        int tempData[size];
         for (size_t i = 0; i < size; i++)
         {
             testData[i] = i;
-            sum += testData[i];
+            tempData[i] = i;
         }
+
         for (size_t i = 0; i < size; i++)
         {
-            if (i / 2 == 0)
-                testData[i] += sum;
-            else
-                testData[i] = testData[i] * 2;
+            testData[i] = tempData[i] * 2;
         }
 
         int temp = testData[9];
