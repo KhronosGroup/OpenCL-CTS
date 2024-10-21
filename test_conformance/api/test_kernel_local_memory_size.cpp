@@ -19,11 +19,6 @@
 #include "harness/testHarness.h"
 #include <memory>
 
-// static const char* empty_kernel = R"CLC(
-//__kernel void empty_kernel() {
-// }
-//)CLC";
-
 static const char* local_memory_kernel = R"CLC(
 __kernel void local_memory_kernel(global int* data) {
     __local int array[10];
@@ -90,29 +85,8 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
     clProgramWrapper program;
     clKernelWrapper kernel;
 
-    //    // Check memory needed to execute empty kernel
-    //    if (create_single_kernel_helper(context, &program, &kernel, 1,
-    //                                    &empty_kernel, "empty_kernel")
-    //        != 0)
-    //    {
-    //        return TEST_FAIL;
-    //    }
-
     cl_ulong kernel_local_usage = 0;
     size_t param_value_size_ret = 0;
-    //    error = clGetKernelWorkGroupInfo(
-    //        kernel, deviceID, CL_KERNEL_LOCAL_MEM_SIZE,
-    //        sizeof(kernel_local_usage), &kernel_local_usage,
-    //        &param_value_size_ret);
-    //    test_error(error,
-    //               "clGetKernelWorkGroupInfo for CL_KERNEL_LOCAL_MEM_SIZE
-    //               failed");
-
-    //    test_assert_error(param_value_size_ret == sizeof(cl_ulong),
-    //                      "param_value_size_ret failed");
-
-    //    test_assert_error(kernel_local_usage >= 0, "kernel local mem size
-    //    failed");
 
     // Check memory needed to execute empty kernel with __local variable
     if (create_single_kernel_helper(context, &program, &kernel, 1,
@@ -122,8 +96,6 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
         return TEST_FAIL;
     }
 
-    //    kernel_local_usage = 0;
-    //    param_value_size_ret = 0;
     error = clGetKernelWorkGroupInfo(
         kernel, deviceID, CL_KERNEL_LOCAL_MEM_SIZE, sizeof(kernel_local_usage),
         &kernel_local_usage, &param_value_size_ret);
