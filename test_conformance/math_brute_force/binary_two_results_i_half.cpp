@@ -91,7 +91,7 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
 
     cl_uint threadCount = GetThreadCount();
 
-    float half_ulps = f->half_ulps;
+    float half_ulps = getAllowedUlpError(f, khalf, relaxedMode);
 
     int testingRemquo = !strcmp(f->name, "remquo");
 

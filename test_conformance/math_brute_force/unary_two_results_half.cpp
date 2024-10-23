@@ -61,7 +61,7 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
 
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
 
-    float half_ulps = f->half_ulps;
+    float half_ulps = getAllowedUlpError(f, khalf, relaxedMode);
 
     // Init the kernels
     BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode };
