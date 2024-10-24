@@ -25,8 +25,6 @@
 
 #include <algorithm>
 
-using namespace std;
-
 void calc_2D_multisample_size_descriptors(sizevec_t* sizes, size_t nsizes)
 {
     // Need to limit texture size according to GL device properties
@@ -39,9 +37,9 @@ void calc_2D_multisample_size_descriptors(sizevec_t* sizes, size_t nsizes)
     for (size_t i = 0; i < nsizes; i++)
     {
         sizes[i].width =
-            random_in_range(2, min(maxTextureSize, 1 << (i + 4)), seed);
+            random_in_range(2, std::min(maxTextureSize, 1 << (i + 4)), seed);
         sizes[i].height =
-            random_in_range(2, min(maxTextureSize, 1 << (i + 4)), seed);
+            random_in_range(2, std::min(maxTextureSize, 1 << (i + 4)), seed);
         sizes[i].depth = 1;
     }
 }
@@ -59,11 +57,11 @@ void calc_2D_array_multisample_size_descriptors(sizevec_t* sizes, size_t nsizes)
     for (size_t i = 0; i < nsizes; i++)
     {
         sizes[i].width =
-            random_in_range(2, min(maxTextureSize, 1 << (i + 4)), seed);
+            random_in_range(2, std::min(maxTextureSize, 1 << (i + 4)), seed);
         sizes[i].height =
-            random_in_range(2, min(maxTextureSize, 1 << (i + 4)), seed);
+            random_in_range(2, std::min(maxTextureSize, 1 << (i + 4)), seed);
         sizes[i].depth =
-            random_in_range(2, min(maxTextureLayers, 1 << (i + 4)), seed);
+            random_in_range(2, std::min(maxTextureLayers, 1 << (i + 4)), seed);
     }
 }
 

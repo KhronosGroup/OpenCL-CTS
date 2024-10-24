@@ -17,8 +17,6 @@
 
 #include <algorithm>
 
-using namespace std;
-
 struct image_kernel_data
 {
     cl_int width;
@@ -383,17 +381,18 @@ int test_image_methods_depth(cl_device_id device, cl_context context,
     glGetIntegerv(GL_MAX_RECTANGLE_TEXTURE_SIZE_EXT, &maxTextureRectangleSize);
     glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxTextureLayers);
 
-    size = min(maxTextureSize, maxTextureRectangleSize);
+    size = std::min(maxTextureSize, maxTextureRectangleSize);
 
     RandomSeed seed(gRandomSeed);
 
     // Generate some random sizes (within reasonable ranges)
     for (size_t i = 0; i < nsizes; i++)
     {
-        sizes[i].width = random_in_range(2, min(size, 1 << (i + 4)), seed);
-        sizes[i].height = random_in_range(2, min(size, 1 << (i + 4)), seed);
+        sizes[i].width = random_in_range(2, std::min(size, 1 << (i + 4)), seed);
+        sizes[i].height =
+            random_in_range(2, std::min(size, 1 << (i + 4)), seed);
         sizes[i].depth =
-            random_in_range(2, min(maxTextureLayers, 1 << (i + 4)), seed);
+            random_in_range(2, std::min(maxTextureLayers, 1 << (i + 4)), seed);
     }
 
     for (size_t i = 0; i < nsizes; i++)
@@ -440,11 +439,11 @@ int test_image_methods_multisample(cl_device_id device, cl_context context,
     for (size_t i = 0; i < nsizes; i++)
     {
         sizes[i].width =
-            random_in_range(2, min(maxTextureSize, 1 << (i + 4)), seed);
+            random_in_range(2, std::min(maxTextureSize, 1 << (i + 4)), seed);
         sizes[i].height =
-            random_in_range(2, min(maxTextureSize, 1 << (i + 4)), seed);
+            random_in_range(2, std::min(maxTextureSize, 1 << (i + 4)), seed);
         sizes[i].depth =
-            random_in_range(2, min(maxTextureLayers, 1 << (i + 4)), seed);
+            random_in_range(2, std::min(maxTextureLayers, 1 << (i + 4)), seed);
     }
 
     glEnable(GL_MULTISAMPLE);

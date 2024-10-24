@@ -20,8 +20,6 @@
 #include <string>
 #include <cmath>
 
-using namespace std;
-
 const char *clone_kernel_test_img[] =
 {
     "__kernel void img_read_kernel(read_only image2d_t img, sampler_t sampler, __global int* outbuf)\n"
