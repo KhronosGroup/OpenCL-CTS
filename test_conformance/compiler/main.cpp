@@ -91,6 +91,8 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(pragma_unroll, Version(2, 0)),
 
     ADD_TEST_VERSION(features_macro, Version(3, 0)),
+    ADD_TEST(features_macro_coupling),
+
     ADD_TEST(unload_valid),
     // ADD_TEST(unload_invalid), // disabling temporarily, see GitHub #977
     ADD_TEST(unload_repeated),
