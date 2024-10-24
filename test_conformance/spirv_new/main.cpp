@@ -42,16 +42,15 @@ const std::string spvVersionSkipArg = "--skip-spirv-version-check";
 
 std::vector<unsigned char> readBinary(const char *file_name)
 {
-    using namespace std;
-
-    ifstream file(file_name, ios::in | ios::binary | ios::ate);
+    std::ifstream file(file_name,
+                       std::ios::in | std::ios::binary | std::ios::ate);
 
     std::vector<char> tmpBuffer(0);
 
     if (file.is_open()) {
         size_t size = file.tellg();
         tmpBuffer.resize(size);
-        file.seekg(0, ios::beg);
+        file.seekg(0, std::ios::beg);
         file.read(&tmpBuffer[0], size);
         file.close();
     } else {

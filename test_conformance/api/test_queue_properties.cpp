@@ -22,7 +22,6 @@
 #include <string>
 #include <vector>
 
-using namespace std;
 /*
 The test against cl_khr_create_command_queue extension. It validates if devices with Opencl 1.X can use clCreateCommandQueueWithPropertiesKHR function.
 Based on device capabilities test will create queue with NULL properties, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE property and
