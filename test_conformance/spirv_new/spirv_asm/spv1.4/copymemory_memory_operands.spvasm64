@@ -1,0 +1,36 @@
+; SPIR-V
+; Version: 1.4
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "copymemory_test"
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+       %void = OpTypeVoid
+   %gptr_int = OpTypePointer CrossWorkgroup %uint
+   %pptr_int = OpTypePointer Function %uint
+ %kernel_sig = OpTypeFunction %void %gptr_int
+    %uint_42 = OpConstant %uint 42
+    %ulong_1 = OpConstant %ulong 1
+    %ulong_2 = OpConstant %ulong 2
+    %ulong_3 = OpConstant %ulong 3
+    %ulong_4 = OpConstant %ulong 4
+    %ulong_5 = OpConstant %ulong 5
+     %kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %gptr_int
+      %entry = OpLabel
+     %pvalue = OpVariable %pptr_int Function %uint_42
+               OpCopyMemory %dst %pvalue                        ; no memory operands
+       %dst1 = OpInBoundsPtrAccessChain %gptr_int %dst %ulong_1
+               OpCopyMemory %dst1 %pvalue Volatile              ; one memory operand
+       %dst2 = OpInBoundsPtrAccessChain %gptr_int %dst %ulong_2
+               OpCopyMemory %dst2 %pvalue Volatile Volatile     ; two memory operands
+       %dst3 = OpInBoundsPtrAccessChain %gptr_int %dst %ulong_3
+               OpCopyMemorySized %dst3 %pvalue %ulong_4                   ; no memory operands
+       %dst4 = OpInBoundsPtrAccessChain %gptr_int %dst %ulong_4
+               OpCopyMemorySized %dst4 %pvalue %ulong_4 Volatile          ; one memory operand
+       %dst5 = OpInBoundsPtrAccessChain %gptr_int %dst %ulong_5
+               OpCopyMemorySized %dst5 %pvalue %ulong_4 Volatile Volatile ; two memory operands
+               OpReturn
+               OpFunctionEnd
