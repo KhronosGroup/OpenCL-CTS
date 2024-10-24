@@ -21,7 +21,7 @@ int get_device_ids(cl_device_id deviceID, cl_context context,
 {
     CResult result;
 
-    std::auto_ptr<CDeviceWrapper> deviceWrapper;
+    std::unique_ptr<CDeviceWrapper> deviceWrapper;
     if (!DeviceCreate(adapterType, deviceWrapper))
     {
         result.ResultSub(CResult::TEST_ERROR);
