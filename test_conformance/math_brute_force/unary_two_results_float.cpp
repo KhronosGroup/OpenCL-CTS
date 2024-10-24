@@ -51,13 +51,13 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal1 = 0.0f;
     uint64_t step = getTestStep(sizeof(float), BUFFER_SIZE);
     int scale = (int)((1ULL << 32) / (16 * BUFFER_SIZE / sizeof(float)) + 1);
-    cl_uchar overflow[BUFFER_SIZE / sizeof(float)];
+    std::vector<cl_uchar> overflow(BUFFER_SIZE / sizeof(float));
     int isFract = 0 == strcmp("fract", f->nameInCode);
     int skipNanInf = isFract && !gInfNanSupport;
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
-    float float_ulps = getAllowedUlpError(f, relaxedMode);
+    float float_ulps = getAllowedUlpError(f, kfloat, relaxedMode);
     // Init the kernels
     BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode,
                                 relaxedMode };

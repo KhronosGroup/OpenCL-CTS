@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <cinttypes>
+
 #include "testBase.h"
 #include "harness/testHarness.h"
 #include "harness/deviceInfo.h"
@@ -158,8 +160,9 @@ static int check_atomic_capabilities(cl_device_atomic_capabilities atomicCaps,
 {
     if ((atomicCaps & requiredCaps) != requiredCaps)
     {
-        log_error("Atomic capabilities %llx is missing support for at least "
-                  "one required capability %llx!\n",
+        log_error("Atomic capabilities %" PRIx64
+                  " is missing support for at least "
+                  "one required capability %" PRIx64 "!\n",
                   atomicCaps, requiredCaps);
         return TEST_FAIL;
     }
@@ -1144,6 +1147,151 @@ int test_consistency_3d_image_writes(cl_device_id deviceID, cl_context context,
         test_assert_error(supports_cl_khr_3d_image_writes,
                           "Device supports Writing to 3D Image Objects but "
                           "does not support cl_khr_3d_image_writes");
+    }
+
+    return TEST_PASS;
+}
+
+int test_consistency_requirements_fp64(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue, int num_elements)
+{
+    cl_int error = CL_SUCCESS;
+    cl_device_fp_config value = 0;
+
+    if (is_extension_available(deviceID, "cl_khr_fp64"))
+    {
+        const Version version = get_device_cl_version(deviceID);
+
+        error = clGetDeviceInfo(deviceID, CL_DEVICE_DOUBLE_FP_CONFIG,
+                                sizeof(value), &value, nullptr);
+        test_error(error, "Unable to get device CL_DEVICE_DOUBLE_FP_CONFIG");
+        test_assert_error(
+            value > 0, "CL_DEVICE_DOUBLE_FP_CONFIG must return nonzero value");
+        if (version < Version(2, 0))
+        {
+            test_assert_error(
+                value
+                    & (CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO
+                       | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM),
+                "Reported double fp config doesn't meet minimum set "
+                "for OpenCL 1.0, OpenCL 1.1, OpenCL 1.2 devices");
+        }
+        else
+        {
+            test_assert_error(
+                value
+                    & (CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_INF_NAN
+                       | CL_FP_DENORM),
+                "Reported double fp config doesn't meet minimum set "
+                "for OpenCL 2.0 or newer devices");
+        }
+
+        error =
+            clGetDeviceInfo(deviceID, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE,
+                            sizeof(value), &value, nullptr);
+        test_error(
+            error,
+            "Unable to get device CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE");
+        test_assert_error(value > 0,
+                          "CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return "
+                          "nonzero value");
+
+        error = clGetDeviceInfo(deviceID, CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE,
+                                sizeof(value), &value, nullptr);
+        test_error(error,
+                   "Unable to get device CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE");
+        test_assert_error(
+            value > 0,
+            "CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE must return nonzero value");
+    }
+    else
+    {
+        error = clGetDeviceInfo(deviceID, CL_DEVICE_DOUBLE_FP_CONFIG,
+                                sizeof(value), &value, nullptr);
+        test_error(error, "Unable to get device CL_DEVICE_DOUBLE_FP_CONFIG");
+        test_assert_error(value == 0,
+                          "CL_DEVICE_DOUBLE_FP_CONFIG must return 0");
+
+        error =
+            clGetDeviceInfo(deviceID, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE,
+                            sizeof(value), &value, nullptr);
+        test_error(
+            error,
+            "Unable to get device CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE");
+        test_assert_error(
+            value == 0,
+            "CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE must return 0");
+
+        error = clGetDeviceInfo(deviceID, CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE,
+                                sizeof(value), &value, nullptr);
+        test_error(error,
+                   "Unable to get device CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE");
+        test_assert_error(value == 0,
+                          "CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE must return 0");
+    }
+
+    return TEST_PASS;
+}
+
+int test_consistency_requirements_fp16(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue, int num_elements)
+{
+    cl_int error = CL_SUCCESS;
+    cl_device_fp_config value = 0;
+
+    if (is_extension_available(deviceID, "cl_khr_fp16"))
+    {
+        error = clGetDeviceInfo(deviceID, CL_DEVICE_HALF_FP_CONFIG,
+                                sizeof(value), &value, nullptr);
+        test_error(error, "Unable to get device CL_DEVICE_HALF_FP_CONFIG");
+        test_assert_error(value > 0,
+                          "CL_DEVICE_HALF_FP_CONFIG must return nonzero value");
+
+        test_assert_error((value & (CL_FP_ROUND_TO_NEAREST | CL_FP_INF_NAN))
+                              || (value & CL_FP_ROUND_TO_ZERO),
+                          "Reported half fp config doesn't meet minimum set");
+
+        error = clGetDeviceInfo(deviceID, CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF,
+                                sizeof(value), &value, nullptr);
+        test_error(
+            error,
+            "Unable to get device CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF");
+        test_assert_error(value > 0,
+                          "CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF must return "
+                          "nonzero value");
+
+        error = clGetDeviceInfo(deviceID, CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF,
+                                sizeof(value), &value, nullptr);
+        test_error(error,
+                   "Unable to get device CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF");
+        test_assert_error(
+            value > 0,
+            "CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF must return nonzero value");
+    }
+    else
+    {
+        error = clGetDeviceInfo(deviceID, CL_DEVICE_HALF_FP_CONFIG,
+                                sizeof(value), &value, nullptr);
+        test_error(error, "Unable to get device CL_DEVICE_HALF_FP_CONFIG");
+        test_assert_error(value == 0, "CL_DEVICE_HALF_FP_CONFIG must return 0");
+
+        error = clGetDeviceInfo(deviceID, CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF,
+                                sizeof(value), &value, nullptr);
+        test_error(
+            error,
+            "Unable to get device CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF");
+        test_assert_error(value == 0,
+                          "CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF must return "
+                          "0");
+
+        error = clGetDeviceInfo(deviceID, CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF,
+                                sizeof(value), &value, nullptr);
+        test_error(error,
+                   "Unable to get device CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF");
+        test_assert_error(value == 0,
+                          "CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF must return 0");
     }
 
     return TEST_PASS;

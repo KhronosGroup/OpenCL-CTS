@@ -477,12 +477,13 @@ getCLImageInfoFromVkImageInfo(const VkImageCreateInfo *VulkanImageCreateInfo,
         throw std::runtime_error("get2DImageDimensions failed!!!");
     }
 
-    img_desc->image_depth = 0; // VulkanImageCreateInfo->extent.depth;
+    img_desc->image_depth =
+        static_cast<size_t>(VulkanImageCreateInfo->extent.depth);
     img_desc->image_array_size = 0;
     img_desc->image_row_pitch = 0; // Row pitch set to zero as host_ptr is NULL
     img_desc->image_slice_pitch =
         img_desc->image_row_pitch * img_desc->image_height;
-    img_desc->num_mip_levels = 1;
+    img_desc->num_mip_levels = 0;
     img_desc->num_samples = 0;
     img_desc->buffer = NULL;
 
@@ -676,6 +677,14 @@ clExternalMemoryImage::clExternalMemoryImage(
     std::vector<cl_mem_properties> extMemProperties1;
     cl_device_id devList[] = { deviceId, NULL };
 
+    VulkanImageTiling vulkanImageTiling =
+        vkClExternalMemoryHandleTilingAssumption(
+            deviceId, externalMemoryHandleType, &errcode_ret);
+    if (CL_SUCCESS != errcode_ret)
+    {
+        throw std::runtime_error("Failed to query OpenCL tiling mode");
+    }
+
 #ifdef _WIN32
     if (!is_extension_available(devList[0], "cl_khr_external_memory_win32"))
     {
@@ -745,6 +754,15 @@ clExternalMemoryImage::clExternalMemoryImage(
     if (CL_SUCCESS != errcode_ret)
     {
         throw std::runtime_error("getCLImageInfoFromVkImageInfo failed!!!");
+    }
+
+    // If OpenCL will assume linear, query the Vulkan image's row pitch,
+    // otherwise it may not match OpenCL's assumption of the row pitch.
+    if (vulkanImageTiling == VULKAN_IMAGE_TILING_LINEAR)
+    {
+        VkSubresourceLayout subresourceLayout = image2D.getSubresourceLayout();
+        image_desc.image_row_pitch = subresourceLayout.rowPitch;
+        image_desc.image_slice_pitch = subresourceLayout.depthPitch;
     }
 
     extMemProperties1.push_back(

@@ -245,10 +245,8 @@ static const char *thread_dimension_kernel_code_not_atomic_not_long =
     "\n"
     "}\n";
 
-char dim_str[128];
-char *print_dimensions(size_t x, size_t y, size_t z, cl_uint dim)
+char *print_dimensions(char *dim_str, size_t x, size_t y, size_t z, cl_uint dim)
 {
-    // Not thread safe...
     if (dim == 1)
     {
         snprintf(dim_str, 128, "[%d]", (int)x);
@@ -268,10 +266,9 @@ char *print_dimensions(size_t x, size_t y, size_t z, cl_uint dim)
     return dim_str;
 }
 
-char dim_str2[128];
-char *print_dimensions2(size_t x, size_t y, size_t z, cl_uint dim)
+char *print_dimensions2(char *dim_str2, size_t x, size_t y, size_t z,
+                        cl_uint dim)
 {
-    // Not thread safe...
     if (dim == 1)
     {
         snprintf(dim_str2, 128, "[%d]", (int)x);
@@ -314,6 +311,9 @@ int run_test(cl_context context, cl_command_queue queue, cl_kernel kernel,
     local_size[1] = local_y_size;
     global_size[2] = final_z_size;
     local_size[2] = local_z_size;
+
+    char dim_str[128];
+    char dim_str2[128];
 
     cl_ulong start_valid_memory_address = 0;
     cl_ulong end_valid_memory_address = memory_size;
@@ -387,8 +387,9 @@ int run_test(cl_context context, cl_command_queue queue, cl_kernel kernel,
             if (DEBUG)
                 log_info("\t\t\tExecuting kernel with global %s, NULL local, "
                          "%d dim, start address %llu, end address %llu.\n",
-                         print_dimensions(global_size[0], global_size[1],
-                                          global_size[2], dimensions),
+                         print_dimensions(dim_str, global_size[0],
+                                          global_size[1], global_size[2],
+                                          dimensions),
                          dimensions, start_valid_memory_address,
                          end_valid_memory_address);
         }
@@ -398,14 +399,15 @@ int run_test(cl_context context, cl_command_queue queue, cl_kernel kernel,
                 clEnqueueNDRangeKernel(queue, kernel, dimensions, NULL,
                                        global_size, local_size, 0, NULL, NULL);
             if (DEBUG)
-                log_info("\t\t\tExecuting kernel with global %s, local %s, %d "
-                         "dim, start address %llu, end address %llu.\n",
-                         print_dimensions(global_size[0], global_size[1],
-                                          global_size[2], dimensions),
-                         print_dimensions2(local_size[0], local_size[1],
-                                           local_size[2], dimensions),
-                         dimensions, start_valid_memory_address,
-                         end_valid_memory_address);
+                log_info(
+                    "\t\t\tExecuting kernel with global %s, local %s, %d "
+                    "dim, start address %llu, end address %llu.\n",
+                    print_dimensions(dim_str, global_size[0], global_size[1],
+                                     global_size[2], dimensions),
+                    print_dimensions2(dim_str2, local_size[0], local_size[1],
+                                      local_size[2], dimensions),
+                    dimensions, start_valid_memory_address,
+                    end_valid_memory_address);
         }
         if (err == CL_OUT_OF_RESOURCES)
         {
@@ -482,18 +484,15 @@ int run_test(cl_context context, cl_command_queue queue, cl_kernel kernel,
 }
 
 
-static cl_uint max_x_size = 1, min_x_size = 1, max_y_size = 1, min_y_size = 1,
-               max_z_size = 1, min_z_size = 1;
-
-static void set_min(cl_uint *x, cl_uint *y, cl_uint *z)
-{
-    if (*x < min_x_size) *x = min_x_size;
-    if (*y < min_y_size) *y = min_y_size;
-    if (*z < min_z_size) *z = min_z_size;
-    if (*x > max_x_size) *x = max_x_size;
-    if (*y > max_y_size) *y = max_y_size;
-    if (*z > max_z_size) *z = max_z_size;
-}
+#define set_min(x, y, z)                                                       \
+    {                                                                          \
+        if (x < min_x_size) x = min_x_size;                                    \
+        if (y < min_y_size) y = min_y_size;                                    \
+        if (z < min_z_size) z = min_z_size;                                    \
+        if (x > max_x_size) x = max_x_size;                                    \
+        if (y > max_y_size) y = max_y_size;                                    \
+        if (z > max_z_size) z = max_z_size;                                    \
+    }
 
 
 int test_thread_dimensions(cl_device_id device, cl_context context,
@@ -511,6 +510,12 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
     cl_uint device_max_dimensions;
     int use_atomics = 1;
     MTdata d;
+
+    char dim_str[128];
+    char dim_str2[128];
+
+    cl_uint max_x_size = 1, min_x_size = 1, max_y_size = 1, min_y_size = 1,
+            max_z_size = 1, min_z_size = 1;
 
     if (getenv("CL_WIMPY_MODE") && !quick_test)
     {
@@ -678,9 +683,6 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
     cl_uint local_tests_per_size = 1 + dimensions + 2;
     if (explicit_local == 0) local_tests_per_size = 1;
 
-    max_x_size = 1, min_x_size = 1, max_y_size = 1, min_y_size = 1,
-    max_z_size = 1, min_z_size = 1;
-
     if (dimensions > 3)
     {
         log_error("Invalid dimensions: %d\n", dimensions);
@@ -700,7 +702,8 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
     }
 
     log_info("Testing with dimensions up to %s.\n",
-             print_dimensions(max_x_size, max_y_size, max_z_size, dimensions));
+             print_dimensions(dim_str, max_x_size, max_y_size, max_z_size,
+                              dimensions));
     if (bufferSize)
     {
         log_info("Testing with buffer size %d.\n", bufferSize);
@@ -723,7 +726,8 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
             {
 
                 log_info("Base test size %s:\n",
-                         print_dimensions(x_size, y_size, z_size, dimensions));
+                         print_dimensions(dim_str, x_size, y_size, z_size,
+                                          dimensions));
 
                 cl_uint sub_test;
                 cl_uint final_x_size, final_y_size, final_z_size;
@@ -736,10 +740,10 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                     if (sub_test == 0)
                     {
                         if (DEBUG)
-                            log_info(
-                                "\tTesting with base dimensions %s.\n",
-                                print_dimensions(final_x_size, final_y_size,
-                                                 final_z_size, dimensions));
+                            log_info("\tTesting with base dimensions %s.\n",
+                                     print_dimensions(
+                                         dim_str, final_x_size, final_y_size,
+                                         final_z_size, dimensions));
                     }
                     else if (quick_test)
                     {
@@ -749,12 +753,13 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                         final_x_size--;
                         final_y_size--;
                         final_z_size--;
-                        set_min(&final_x_size, &final_y_size, &final_z_size);
+                        set_min(final_x_size, final_y_size, final_z_size);
                         if (DEBUG)
                             log_info(
                                 "\tTesting with all base dimensions - 1 %s.\n",
-                                print_dimensions(final_x_size, final_y_size,
-                                                 final_z_size, dimensions));
+                                print_dimensions(dim_str, final_x_size,
+                                                 final_y_size, final_z_size,
+                                                 dimensions));
                     }
                     else if (sub_test <= dimensions * 2)
                     {
@@ -781,12 +786,13 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                                       dim_to_change);
                             return -1;
                         }
-                        set_min(&final_x_size, &final_y_size, &final_z_size);
+                        set_min(final_x_size, final_y_size, final_z_size);
                         if (DEBUG)
                             log_info(
                                 "\tTesting with one base dimension +/- 1 %s.\n",
-                                print_dimensions(final_x_size, final_y_size,
-                                                 final_z_size, dimensions));
+                                print_dimensions(dim_str, final_x_size,
+                                                 final_y_size, final_z_size,
+                                                 dimensions));
                     }
                     else if (sub_test == (dimensions * 2 + 1))
                     {
@@ -794,12 +800,13 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                         final_x_size--;
                         final_y_size--;
                         final_z_size--;
-                        set_min(&final_x_size, &final_y_size, &final_z_size);
+                        set_min(final_x_size, final_y_size, final_z_size);
                         if (DEBUG)
                             log_info(
                                 "\tTesting with all base dimensions - 1 %s.\n",
-                                print_dimensions(final_x_size, final_y_size,
-                                                 final_z_size, dimensions));
+                                print_dimensions(dim_str, final_x_size,
+                                                 final_y_size, final_z_size,
+                                                 dimensions));
                     }
                     else if (sub_test == (dimensions * 2 + 2))
                     {
@@ -807,12 +814,13 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                         final_x_size++;
                         final_y_size++;
                         final_z_size++;
-                        set_min(&final_x_size, &final_y_size, &final_z_size);
+                        set_min(final_x_size, final_y_size, final_z_size);
                         if (DEBUG)
                             log_info(
                                 "\tTesting with all base dimensions + 1 %s.\n",
-                                print_dimensions(final_x_size, final_y_size,
-                                                 final_z_size, dimensions));
+                                print_dimensions(dim_str, final_x_size,
+                                                 final_y_size, final_z_size,
+                                                 dimensions));
                     }
                     else
                     {
@@ -828,12 +836,12 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                             (int)get_random_float(
                                 0, (z_size / size_increase_per_iteration), d)
                             + z_size / size_increase_per_iteration;
-                        set_min(&final_x_size, &final_y_size, &final_z_size);
+                        set_min(final_x_size, final_y_size, final_z_size);
                         if (DEBUG)
-                            log_info(
-                                "\tTesting with random dimensions %s.\n",
-                                print_dimensions(final_x_size, final_y_size,
-                                                 final_z_size, dimensions));
+                            log_info("\tTesting with random dimensions %s.\n",
+                                     print_dimensions(
+                                         dim_str, final_x_size, final_y_size,
+                                         final_z_size, dimensions));
                     }
 
                     if (limit_size
@@ -842,8 +850,9 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                     {
                         log_info("Skipping size %s as it exceeds max test "
                                  "threads of %d.\n",
-                                 print_dimensions(final_x_size, final_y_size,
-                                                  final_z_size, dimensions),
+                                 print_dimensions(dim_str, final_x_size,
+                                                  final_y_size, final_z_size,
+                                                  dimensions),
                                  MAX_TOTAL_GLOBAL_THREADS_FOR_TEST);
                         continue;
                     }
@@ -993,26 +1002,27 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                         }
 
                         if (DEBUG)
-                            log_info(
-                                "\t\tTesting local size %s.\n",
-                                print_dimensions(local_x_size, local_y_size,
-                                                 local_z_size, dimensions));
+                            log_info("\t\tTesting local size %s.\n",
+                                     print_dimensions(
+                                         dim_str, local_x_size, local_y_size,
+                                         local_z_size, dimensions));
 
                         if (explicit_local == 0)
                         {
-                            log_info(
-                                "\tTesting global %s local [NULL]...\n",
-                                print_dimensions(final_x_size, final_y_size,
-                                                 final_z_size, dimensions));
+                            log_info("\tTesting global %s local [NULL]...\n",
+                                     print_dimensions(
+                                         dim_str, final_x_size, final_y_size,
+                                         final_z_size, dimensions));
                         }
                         else
                         {
-                            log_info(
-                                "\tTesting global %s local %s...\n",
-                                print_dimensions(final_x_size, final_y_size,
-                                                 final_z_size, dimensions),
-                                print_dimensions2(local_x_size, local_y_size,
-                                                  local_z_size, dimensions));
+                            log_info("\tTesting global %s local %s...\n",
+                                     print_dimensions(dim_str, final_x_size,
+                                                      final_y_size,
+                                                      final_z_size, dimensions),
+                                     print_dimensions2(
+                                         dim_str2, local_x_size, local_y_size,
+                                         local_z_size, dimensions));
                         }
 
                         // Avoid running with very small local sizes on very
@@ -1052,12 +1062,13 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                         // Otherwise, if we had errors add them up.
                         if (err)
                         {
-                            log_error(
-                                "Test global %s local %s failed.\n",
-                                print_dimensions(final_x_size, final_y_size,
-                                                 final_z_size, dimensions),
-                                print_dimensions2(local_x_size, local_y_size,
-                                                  local_z_size, dimensions));
+                            log_error("Test global %s local %s failed.\n",
+                                      print_dimensions(
+                                          dim_str, final_x_size, final_y_size,
+                                          final_z_size, dimensions),
+                                      print_dimensions2(
+                                          dim_str2, local_x_size, local_y_size,
+                                          local_z_size, dimensions));
                             errors++;
                             clReleaseMemObject(array);
                             clReleaseKernel(kernel);

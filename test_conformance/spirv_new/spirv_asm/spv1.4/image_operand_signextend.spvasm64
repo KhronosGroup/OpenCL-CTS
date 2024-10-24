@@ -1,0 +1,39 @@
+; SPIR-V
+; Version: 1.4
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 31
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpCapability ImageBasic
+               OpCapability LiteralSampler
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %read_image_test "read_image_test"
+               OpSource OpenCL_C 102000
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+    %index_0 = OpConstant %ulong 0
+       %void = OpTypeVoid
+     %v4uint = OpTypeVector %uint 4
+%_ptr_CrossWorkgroup_v4uint = OpTypePointer CrossWorkgroup %v4uint
+  %image2d_t = OpTypeImage %void 2D 0 0 0 0 Unknown ReadOnly
+          %7 = OpTypeFunction %void %_ptr_CrossWorkgroup_v4uint %image2d_t
+  %sampler_t = OpTypeSampler
+%sampledimage_t = OpTypeSampledImage %image2d_t
+     %v2uint = OpTypeVector %uint 2
+      %float = OpTypeFloat 32
+    %sampler = OpConstantSampler %sampler_t None 0 Nearest
+  %coord_0_0 = OpConstantNull %v2uint
+    %float_0 = OpConstant %float 0
+%read_image_test = OpFunction %void None %7
+        %dst = OpFunctionParameter %_ptr_CrossWorkgroup_v4uint
+      %image = OpFunctionParameter %image2d_t
+      %entry = OpLabel
+%TempSampledImage = OpSampledImage %sampledimage_t %image %sampler
+       %call = OpImageSampleExplicitLod %v4uint %TempSampledImage %coord_0_0 Lod|SignExtend %float_0
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v4uint %dst %index_0
+               OpStore %arrayidx %call Aligned 16
+               OpReturn
+               OpFunctionEnd

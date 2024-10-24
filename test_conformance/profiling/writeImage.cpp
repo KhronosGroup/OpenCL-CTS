@@ -472,7 +472,7 @@ int write_image( cl_device_id device, cl_context context, cl_command_queue queue
     }
 
     size_t origin[3] = { 0, 0, 0 };
-    size_t region[3] = { w, h, 1 };
+    size_t region[3] = { (size_t)w, (size_t)h, 1 };
     err = clEnqueueWriteImage( queue, memobjs[0], false, origin, region, 0, 0, inptr, 0, NULL, &writeEvent );
     if( err != CL_SUCCESS ){
         clReleaseMemObject(memobjs[0]);

@@ -1319,7 +1319,9 @@ size_t get_pixel_bytes(const cl_image_format *fmt)
         case CL_UNORM_SHORT_565:
         case CL_UNORM_SHORT_555: return 2;
 
-        case CL_UNORM_INT_101010: return 4;
+        case CL_UNORM_INT_101010:
+        case CL_UNORM_INT_101010_2:
+        case CL_UNORM_INT_2_101010_EXT: return 4;
 
         case CL_SNORM_INT8:
         case CL_UNORM_INT8:
@@ -1511,30 +1513,27 @@ size_t get_min_alignment(cl_context context)
     return align_size;
 }
 
-cl_device_fp_config get_default_rounding_mode(cl_device_id device,
-                                              const cl_uint &param)
+cl_device_fp_config get_default_rounding_mode(const cl_device_id device,
+                                              const cl_uint param)
 {
-    if (param == CL_DEVICE_DOUBLE_FP_CONFIG)
-        test_error_ret(
-            -1,
-            "FAILURE: CL_DEVICE_DOUBLE_FP_CONFIG not supported by this routine",
-            0);
-
     char profileStr[128] = "";
-    cl_device_fp_config single = 0;
-    int error = clGetDeviceInfo(device, param, sizeof(single), &single, NULL);
+    cl_device_fp_config config = 0;
+    int error = clGetDeviceInfo(device, param, sizeof(config), &config, NULL);
     if (error)
     {
-        std::string message = std::string("Unable to get device ")
-            + std::string(param == CL_DEVICE_HALF_FP_CONFIG
-                              ? "CL_DEVICE_HALF_FP_CONFIG"
-                              : "CL_DEVICE_SINGLE_FP_CONFIG");
+        std::string config_name = "CL_DEVICE_SINGLE_FP_CONFIG";
+        if (param == CL_DEVICE_HALF_FP_CONFIG)
+            config_name = "CL_DEVICE_HALF_FP_CONFIG";
+        else if (param == CL_DEVICE_DOUBLE_FP_CONFIG)
+            config_name = "CL_DEVICE_DOUBLE_FP_CONFIG";
+        std::string message =
+            std::string("Unable to get device ") + config_name;
         test_error_ret(error, message.c_str(), 0);
     }
 
-    if (single & CL_FP_ROUND_TO_NEAREST) return CL_FP_ROUND_TO_NEAREST;
+    if (config & CL_FP_ROUND_TO_NEAREST) return CL_FP_ROUND_TO_NEAREST;
 
-    if (0 == (single & CL_FP_ROUND_TO_ZERO))
+    if (0 == (config & CL_FP_ROUND_TO_ZERO))
         test_error_ret(-1,
                        "FAILURE: device must support either "
                        "CL_FP_ROUND_TO_ZERO or CL_FP_ROUND_TO_NEAREST",
@@ -1626,7 +1625,7 @@ Version get_device_cl_c_version(cl_device_id device)
                                  &opencl_c_version_size_in_bytes);
     test_error_ret(error,
                    "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_VERSION\n",
-                   (Version{ -1, 0 }));
+                   (Version{ 0, 0 }));
 
     std::string opencl_c_version(opencl_c_version_size_in_bytes, '\0');
     error =
@@ -1635,13 +1634,13 @@ Version get_device_cl_c_version(cl_device_id device)
 
     test_error_ret(error,
                    "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_VERSION\n",
-                   (Version{ -1, 0 }));
+                   (Version{ 0, 0 }));
 
     // Scrape out the major, minor pair from the string.
     auto major = opencl_c_version[opencl_c_version.find('.') - 1];
     auto minor = opencl_c_version[opencl_c_version.find('.') + 1];
 
-    return Version{ major - '0', minor - '0' };
+    return Version{ (cl_uint)(major - '0'), (cl_uint)(minor - '0') };
 }
 
 Version get_device_latest_cl_c_version(cl_device_id device)
@@ -1659,7 +1658,7 @@ Version get_device_latest_cl_c_version(cl_device_id device)
                             &opencl_c_all_versions_size_in_bytes);
         test_error_ret(
             error, "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_ALL_VERSIONS",
-            (Version{ -1, 0 }));
+            (Version{ 0, 0 }));
         std::vector<cl_name_version> name_versions(
             opencl_c_all_versions_size_in_bytes / sizeof(cl_name_version));
         error = clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS,
@@ -1667,14 +1666,14 @@ Version get_device_latest_cl_c_version(cl_device_id device)
                                 name_versions.data(), nullptr);
         test_error_ret(
             error, "clGetDeviceInfo failed for CL_DEVICE_OPENCL_C_ALL_VERSIONS",
-            (Version{ -1, 0 }));
+            (Version{ 0, 0 }));
 
         Version max_supported_cl_c_version{};
         for (const auto &name_version : name_versions)
         {
             Version current_version{
-                static_cast<int>(CL_VERSION_MAJOR(name_version.version)),
-                static_cast<int>(CL_VERSION_MINOR(name_version.version))
+                static_cast<cl_uint>(CL_VERSION_MAJOR(name_version.version)),
+                static_cast<cl_uint>(CL_VERSION_MINOR(name_version.version))
             };
             max_supported_cl_c_version =
                 (current_version > max_supported_cl_c_version)
@@ -1695,7 +1694,7 @@ Version get_max_OpenCL_C_for_context(cl_context context)
     auto error = clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, nullptr,
                                   &devices_size_in_bytes);
     test_error_ret(error, "clGetDeviceInfo failed for CL_CONTEXT_DEVICES",
-                   (Version{ -1, 0 }));
+                   (Version{ 0, 0 }));
     std::vector<cl_device_id> devices(devices_size_in_bytes
                                       / sizeof(cl_device_id));
     error = clGetContextInfo(context, CL_CONTEXT_DEVICES, devices_size_in_bytes,
@@ -1759,8 +1758,8 @@ bool device_supports_cl_c_version(cl_device_id device, Version version)
         for (const auto &name_version : name_versions)
         {
             Version current_version{
-                static_cast<int>(CL_VERSION_MAJOR(name_version.version)),
-                static_cast<int>(CL_VERSION_MINOR(name_version.version))
+                static_cast<cl_uint>(CL_VERSION_MAJOR(name_version.version)),
+                static_cast<cl_uint>(CL_VERSION_MINOR(name_version.version))
             };
             if (current_version == version)
             {

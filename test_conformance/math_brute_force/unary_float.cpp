@@ -88,7 +88,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     fptr func = job->f->func;
     const char *fname = job->f->name;
     bool relaxedMode = job->relaxedMode;
-    float ulps = getAllowedUlpError(job->f, relaxedMode);
+    float ulps = getAllowedUlpError(job->f, kfloat, relaxedMode);
     if (relaxedMode)
     {
         func = job->f->rfunc;

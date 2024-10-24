@@ -137,7 +137,7 @@ VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
     vkApplicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     vkApplicationInfo.pEngineName = "No engine";
     vkApplicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    vkApplicationInfo.apiVersion = VK_API_VERSION_1_0;
+    vkApplicationInfo.apiVersion = VK_API_VERSION_1_1;
 
     std::vector<const char *> enabledExtensionNameList;
     enabledExtensionNameList.push_back(
@@ -1868,6 +1868,16 @@ VulkanExtent3D VulkanImage2D::getExtent3D(uint32_t mipLevel) const
     uint32_t depth = 1;
 
     return VulkanExtent3D(width, height, depth);
+}
+
+VkSubresourceLayout VulkanImage2D::getSubresourceLayout() const
+{
+    VkImageSubresource subresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 };
+
+    VkSubresourceLayout subresourceLayout = { 0 };
+    vkGetImageSubresourceLayout(m_device, m_vkImage, &subresource,
+                                &subresourceLayout);
+    return subresourceLayout;
 }
 
 //////////////////////////////////

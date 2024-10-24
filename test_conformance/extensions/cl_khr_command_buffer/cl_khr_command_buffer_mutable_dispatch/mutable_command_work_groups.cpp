@@ -34,7 +34,7 @@
 struct Configuration
 {
     const cl_command_buffer_properties_khr *command_buffer_properties;
-    const cl_ndrange_kernel_command_properties_khr *ndrange_properties;
+    const cl_command_properties_khr *ndrange_properties;
 };
 
 // Define the command buffer properties for each configuration
@@ -44,7 +44,7 @@ const cl_command_buffer_properties_khr command_buffer_properties[] = {
 };
 
 // Define the ndrange properties
-const cl_ndrange_kernel_command_properties_khr ndrange_properties[] = {
+const cl_command_properties_khr ndrange_properties[] = {
     CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
     CL_MUTABLE_DISPATCH_GLOBAL_SIZE_KHR, CL_MUTABLE_DISPATCH_ASSERTS_KHR,
     CL_MUTABLE_DISPATCH_ASSERT_NO_ADDITIONAL_WORK_GROUPS_KHR, 0
@@ -199,8 +199,6 @@ struct MutableDispatchWorkGroups : public BasicMutableCommandBufferTest
     {
         cl_int error;
         cl_mutable_dispatch_config_khr dispatch_config{
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
-            nullptr,
             command,
             0, // num_args
             0, // num_svm_arg
@@ -214,13 +212,14 @@ struct MutableDispatchWorkGroups : public BasicMutableCommandBufferTest
             nullptr // local_work_size
         };
 
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
-            &dispatch_config
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
         };
-
+        const void *configs[1] = { &dispatch_config };
         error =
-            clUpdateMutableCommandsKHR(single_command_buffer, &mutable_config);
+            clUpdateMutableCommandsKHR(single_command_buffer, num_configs,
+                                       config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         clEventWrapper events[2];

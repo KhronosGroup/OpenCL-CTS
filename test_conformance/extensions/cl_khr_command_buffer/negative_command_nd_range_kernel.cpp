@@ -133,10 +133,9 @@ struct CommandNDRangeKerneSyncPointsNullOrNumZero
                                "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR",
                                TEST_FAIL);
 
-
         cl_sync_point_khr point;
-        error = clCommandBarrierWithWaitListKHR(command_buffer, nullptr, 0,
-                                                nullptr, &point, nullptr);
+        error = clCommandBarrierWithWaitListKHR(
+            command_buffer, nullptr, nullptr, 0, nullptr, &point, nullptr);
         test_error(error, "clCommandBarrierWithWaitListKHR failed");
 
         cl_sync_point_khr* sync_points[] = { &point };
@@ -182,8 +181,8 @@ struct CommandNDRangeKernelInvalidProperties : public BasicCommandBufferTest
 
     cl_int Run() override
     {
-        cl_ndrange_kernel_command_properties_khr empty_properties =
-            ~cl_ndrange_kernel_command_properties_khr(0);
+        cl_command_properties_khr empty_properties =
+            ~cl_command_properties_khr(0);
 
         cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, &empty_properties, kernel, 1, nullptr,
@@ -194,7 +193,7 @@ struct CommandNDRangeKernelInvalidProperties : public BasicCommandBufferTest
                                "CL_INVALID_VALUE",
                                TEST_FAIL);
 
-        cl_ndrange_kernel_command_properties_khr props_invalid[3] = {
+        cl_command_properties_khr props_invalid[3] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MEM_USE_CACHED_CPU_MEMORY_IMG, 1
         };
@@ -299,10 +298,10 @@ __kernel void printf_kernel() {
   }
 )";
 
-        error = build_program_create_kernel_helper(context, &program, &kernel,
-                                                   1, &kernel_str,
-                                                   "printf_kernel", nullptr);
-        test_error(error, "build_program_create_kernel_helper failed");
+        error =
+            create_single_kernel_helper(context, &program, &kernel, 1,
+                                        &kernel_str, "printf_kernel", nullptr);
+        test_error(error, "create_single_kernel_helper failed");
 
         return CL_SUCCESS;
     }
@@ -408,10 +407,10 @@ enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange,
 )";
         std::string build_options = std::string(" ") + cl_std;
 
-        error = build_program_create_kernel_helper(
-            context, &program, &kernel, 1, &kernel_str, "enqueue_call_kernel",
-            build_options.c_str());
-        test_error(error, "build_program_create_kernel_helper failed");
+        error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &kernel_str, "enqueue_call_kernel",
+                                            build_options.c_str());
+        test_error(error, "create_single_kernel_helper failed");
 
         return CL_SUCCESS;
     }

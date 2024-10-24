@@ -92,7 +92,8 @@ test_status InitCL(cl_device_id device) {
     if (version >= Version(3, 0))
     {
         cl_int error;
-        cl_bool support_generic;
+        cl_bool support_generic = CL_FALSE;
+        size_t max_gvar_size = 0;
 
         error = clGetDeviceInfo(device, CL_DEVICE_GENERIC_ADDRESS_SPACE_SUPPORT,
                                 sizeof(support_generic), &support_generic, NULL);
@@ -103,6 +104,20 @@ test_status InitCL(cl_device_id device) {
         }
 
         if (!support_generic)
+        {
+            return TEST_SKIP;
+        }
+
+        error = clGetDeviceInfo(device, CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE,
+                                sizeof(max_gvar_size), &max_gvar_size, NULL);
+        if (error != CL_SUCCESS)
+        {
+            print_error(error,
+                        "Unable to query CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE.");
+            return TEST_FAIL;
+        }
+
+        if (!max_gvar_size)
         {
             return TEST_SKIP;
         }

@@ -1,0 +1,5 @@
+#
+# OpenCL Conformance Tests requiring Vulkan SDK
+#
+
+cl_khr_external_semaphore,extensions/cl_khr_external_semaphore/test_cl_khr_external_semaphore

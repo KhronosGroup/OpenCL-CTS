@@ -2144,6 +2144,10 @@ int filter_rounding_errors(int forceCorrectlyRoundedWrites,
     if (0 == forceCorrectlyRoundedWrites
         && (imageInfo->format->image_channel_data_type == CL_UNORM_INT8
             || imageInfo->format->image_channel_data_type == CL_UNORM_INT_101010
+            || imageInfo->format->image_channel_data_type
+                == CL_UNORM_INT_101010_2
+            || imageInfo->format->image_channel_data_type
+                == CL_UNORM_INT_2_101010_EXT
             || imageInfo->format->image_channel_data_type == CL_UNORM_INT16
             || imageInfo->format->image_channel_data_type == CL_SNORM_INT8
             || imageInfo->format->image_channel_data_type == CL_SNORM_INT16
