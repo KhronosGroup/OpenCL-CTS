@@ -143,7 +143,7 @@ struct CommandBufferCopyImageContextNotSame : public CommandCopyBaseTest
                                TEST_FAIL);
 
         error = clCommandCopyImageToBufferKHR(
-            command_buffer, nullptr, nullptr, src_image, dst_image_ctx, origin,
+            command_buffer, nullptr, nullptr, src_image, out_mem_ctx, origin,
             region, 0, 0, nullptr, nullptr, nullptr);
 
         test_failure_error_ret(error, CL_INVALID_CONTEXT,
@@ -192,6 +192,12 @@ struct CommandBufferCopyImageContextNotSame : public CommandCopyBaseTest
                                         elements / 64, 64, 0, NULL, &error);
         test_error(error, "create_image_2d failed");
 
+        out_mem_ctx = clCreateBuffer(context1, CL_MEM_WRITE_ONLY,
+                                     sizeof(cl_int) * num_elements
+                                         * buffer_size_multiplier,
+                                     nullptr, &error);
+        test_error(error, "clCreateBuffer failed");
+
         queue1 = clCreateCommandQueue(context1, device, 0, &error);
         test_error(error, "clCreateCommandQueue failed");
 
@@ -202,6 +208,7 @@ struct CommandBufferCopyImageContextNotSame : public CommandCopyBaseTest
     clCommandQueueWrapper queue1;
     clMemWrapper src_image_ctx;
     clMemWrapper dst_image_ctx;
+    clMemWrapper out_mem_ctx;
 };
 
 // CL_INVALID_SYNC_POINT_WAIT_LIST_KHR if sync_point_wait_list is NULL and
