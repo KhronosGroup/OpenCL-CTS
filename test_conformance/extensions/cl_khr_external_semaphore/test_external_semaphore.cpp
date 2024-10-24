@@ -197,10 +197,15 @@ int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
         test_error(err, "Could not release semaphore");
         SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, 1);
 
-        // Confirm that querying CL_SEMAPHORE_PAYLOAD_KHR returns the unsignaled
+        // Confirm that querying CL_SEMAPHORE_PAYLOAD_KHR returns the correct
         // state
+        cl_semaphore_payload_khr expected_payload_value =
+            (vkExternalSemaphoreHandleType
+             == VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD)
+            ? 1
+            : 0;
         SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_PAYLOAD_KHR, cl_semaphore_payload_khr,
-                             0);
+                             expected_payload_value);
     }
 
     return TEST_PASS;
