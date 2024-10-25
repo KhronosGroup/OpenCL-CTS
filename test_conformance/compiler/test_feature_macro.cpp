@@ -839,8 +839,6 @@ int test_features_macro(cl_device_id deviceID, cl_context context,
 int test_features_macro_coupling(cl_device_id deviceID, cl_context context,
                                  cl_command_queue queue, int num_elements)
 {
-    log_info("  testing for required features coupling\n");
-
     OpenCLCFeatures features;
     int error = get_device_cl_c_features(deviceID, features);
     if (error)
