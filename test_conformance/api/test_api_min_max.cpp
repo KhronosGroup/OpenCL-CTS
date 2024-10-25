@@ -1626,8 +1626,8 @@ int test_min_max_constant_buffer_size(cl_device_id deviceID, cl_context context,
         /* Test running the kernel and verifying it */
         threads[0] = numberOfInts;
         localThreads[0] = 1;
-        log_info("Filling constant buffer with %d cl_ints (%d bytes).\n",
-                 (int)threads[0], (int)(threads[0] * sizeof(cl_int)));
+        log_info("Filling constant buffer with %zu cl_ints (%zu bytes).\n",
+                 threads[0], threads[0] * sizeof(cl_int));
 
         error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads,
                                        localThreads, 0, NULL, &event);

@@ -236,4 +236,8 @@ long double reference_ldexpl(long double x, int n);
 long double reference_assignmentl(long double x);
 int reference_notl(long double x);
 
+long double reference_erfcl(long double x);
+long double reference_erfl(long double x);
+double reference_erfc(double x);
+double reference_erf(double x);
 #endif

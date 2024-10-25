@@ -18,6 +18,10 @@ else()
     file(READ ${IMAGE2D_SHADER_IN_FILE} IMAGE2D_SHADER_UNFORMAT_CONTENT)
     file(STRINGS ${IMAGE2D_FORMATS_LIST_IN_FILE} IMAGE2D_FORMATS_LIST)
 
+    if(NOT DEFINED VULKAN_TEST_RESOURCES)
+        set(VULKAN_TEST_RESOURCES ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
+
     foreach(IMAGE2D_FORMAT ${IMAGE2D_FORMATS_LIST})
         list(GET IMAGE2D_FORMAT 1 GLSL_FORMAT)
         list(GET IMAGE2D_FORMAT 2 GLSL_TYPE_PREFIX)
@@ -25,7 +29,7 @@ else()
         string(REPLACE "GLSL_TYPE_PREFIX" "${GLSL_TYPE_PREFIX}" IMAGE2D_SHADER_CONTENT "${IMAGE2D_SHADER_CONTENT}")
         file(WRITE ${IMAGE2D_SHADER_TMP_OUT_FILE} "${IMAGE2D_SHADER_CONTENT}")
         execute_process(
-            COMMAND ${Vulkan_glslang_binary} --target-env vulkan1.0 -o ${CMAKE_CURRENT_BINARY_DIR}/image2D_${GLSL_FORMAT}.spv ${IMAGE2D_SHADER_TMP_OUT_FILE}
+            COMMAND ${Vulkan_glslang_binary} --target-env vulkan1.0 -o ${VULKAN_TEST_RESOURCES}/image2D_${GLSL_FORMAT}.spv ${IMAGE2D_SHADER_TMP_OUT_FILE}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
             RESULT_VARIABLE commandStatus
             OUTPUT_QUIET)
@@ -34,7 +38,7 @@ else()
         endif()
     endforeach(IMAGE2D_FORMAT)
     execute_process(
-        COMMAND ${Vulkan_glslang_binary} --target-env vulkan1.0 -o ${CMAKE_CURRENT_BINARY_DIR}/${BUFFER_SHADER_IN_FILE}.spv ${BUFFER_SHADER_IN_FILE}.comp
+        COMMAND ${Vulkan_glslang_binary} --target-env vulkan1.0 -o ${VULKAN_TEST_RESOURCES}/${BUFFER_SHADER_IN_FILE}.spv ${BUFFER_SHADER_IN_FILE}.comp
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         RESULT_VARIABLE commandStatus
         OUTPUT_QUIET)

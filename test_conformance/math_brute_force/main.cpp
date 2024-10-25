@@ -310,7 +310,7 @@ static test_definition test_list[] = {
     ADD_TEST(half_sin),      ADD_TEST(half_sqrt),  ADD_TEST(half_tan),
     ADD_TEST(add),           ADD_TEST(subtract),   ADD_TEST(divide),
     ADD_TEST(divide_cr),     ADD_TEST(multiply),   ADD_TEST(assignment),
-    ADD_TEST(not),
+    ADD_TEST(not ),          ADD_TEST(erf),        ADD_TEST(erfc),
 };
 
 #undef ADD_TEST

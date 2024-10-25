@@ -105,3 +105,8 @@ Mipmaps (Kernel),images/kernel_read_write/test_image_streams test_mipmaps CL_FIL
 Mipmaps (clCopyImage),images/clCopyImage/test_cl_copy_images test_mipmaps --compilation-mode binary --compilation-cache-path .
 Mipmaps (clReadWriteImage),images/clReadWriteImage/test_cl_read_write_images test_mipmaps --compilation-mode binary --compilation-cache-path .
 Subgroups,subgroups/test_subgroups --compilation-mode binary --compilation-cache-path .
+cl_ext_cxx_for_opencl,extensions/cl_ext_cxx_for_opencl/test_cl_ext_cxx_for_opencl --compilation-mode binary --compilation-cache-path .
+cl_khr_semaphore,extensions/cl_khr_semaphore/test_cl_khr_semaphore  --compilation-mode binary --compilation-cache-path .
+cl_khr_command_buffer,extensions/cl_khr_command_buffer/test_cl_khr_command_buffer --compilation-mode binary --compilation-cache-path .
+cl_khr_command_buffer_mutable_dispatch,extensions/cl_khr_command_buffer/cl_khr_command_buffer_mutable_dispatch/test_cl_khr_mutable_dispatch --compilation-mode binary --compilation-cache-path .
+cl_khr_kernel_clock,extensions/cl_khr_kernel_clock/test_cl_khr_kernel_clock --compilation-mode binary --compilation-cache-path .

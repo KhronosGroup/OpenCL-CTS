@@ -1292,8 +1292,8 @@ cl_long test_atomic_and_result_long(size_t size, cl_long *startRefValues,
 int test_atomic_and(cl_device_id deviceID, cl_context context,
                     cl_command_queue queue, int num_elements)
 {
-    TestFns set = { 0xffffffff,
-                    0xffffffffffffffffLL,
+    TestFns set = { (cl_int)0xffffffff,
+                    (cl_long)0xffffffffffffffffLL,
                     test_bitwise_num_results,
                     test_atomic_and_result_int,
                     NULL,

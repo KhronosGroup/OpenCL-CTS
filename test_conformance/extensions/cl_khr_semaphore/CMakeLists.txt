@@ -8,6 +8,7 @@ set(${MODULE_NAME}_SOURCES
          test_semaphores_negative_getinfo.cpp
          test_semaphores_negative_create.cpp
          test_semaphores_cross_queue.cpp
+         test_semaphores_queries.cpp
          semaphore_base.h
 )
 
