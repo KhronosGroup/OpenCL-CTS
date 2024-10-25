@@ -20,6 +20,7 @@
 #include <unistd.h>
 #endif
 
+// clang-format off
 // List should follow order in the extension spec
 const char *known_extensions[] = {
     "cl_khr_byte_addressable_store",
@@ -92,7 +93,9 @@ const char *known_extensions[] = {
     "cl_khr_external_memory_dma_buf",
     "cl_khr_command_buffer",
     "cl_khr_command_buffer_mutable_dispatch",
+    "cl_khr_command_buffer_multi_device"
 };
+// clang-format on
 
 size_t num_known_extensions = ARRAY_SIZE(known_extensions);
 size_t first_API_extension = 32;

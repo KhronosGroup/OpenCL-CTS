@@ -20,7 +20,6 @@
 #include <chrono>
 #include <system_error>
 #include <thread>
-#include <vector>
 
 namespace {
 
@@ -49,26 +48,6 @@ struct CreateInvalidContext : public SemaphoreTestBase
 
         return CL_SUCCESS;
     }
-};
-
-// scope guard helper to ensure proper releasing of sub devices
-struct SubDevicesScopeGuarded
-{
-    SubDevicesScopeGuarded(const cl_int dev_count)
-    {
-        sub_devices.resize(dev_count);
-    }
-    ~SubDevicesScopeGuarded()
-    {
-        for (auto& device : sub_devices)
-        {
-            cl_int err = clReleaseDevice(device);
-            if (err != CL_SUCCESS)
-                log_error("\n Releasing sub-device failed \n");
-        }
-    }
-
-    std::vector<cl_device_id> sub_devices;
 };
 
 // (1) property name in sema_props is not a supported property name,
@@ -165,7 +144,8 @@ struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
         test_error(err, "Unable to get maximal number of compute units");
 
         cl_device_partition_property partitionProp[] = {
-            CL_DEVICE_PARTITION_EQUALLY, maxComputeUnits / 2, 0
+            CL_DEVICE_PARTITION_EQUALLY,
+            static_cast<cl_device_partition_property>(maxComputeUnits / 2), 0
         };
 
         cl_uint deviceCount = 0;
@@ -238,7 +218,8 @@ struct CreateInvalidDevice : public SemaphoreTestBase
         test_error(err, "Unable to get maximal number of compute units");
 
         cl_device_partition_property partitionProp[] = {
-            CL_DEVICE_PARTITION_EQUALLY, maxComputeUnits / 2, 0
+            CL_DEVICE_PARTITION_EQUALLY,
+            static_cast<cl_device_partition_property>(maxComputeUnits / 2), 0
         };
 
         cl_uint deviceCount = 0;

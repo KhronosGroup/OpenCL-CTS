@@ -197,6 +197,7 @@ const char *GetChannelTypeName(cl_channel_type type)
         case CL_UNORM_SHORT_555: return "CL_UNORM_SHORT_555";
         case CL_UNORM_INT_101010: return "CL_UNORM_INT_101010";
         case CL_UNORM_INT_101010_2: return "CL_UNORM_INT_101010_2";
+        case CL_UNORM_INT_2_101010_EXT: return "CL_UNORM_INT_2_101010_EXT";
         case CL_SIGNED_INT8: return "CL_SIGNED_INT8";
         case CL_SIGNED_INT16: return "CL_SIGNED_INT16";
         case CL_SIGNED_INT32: return "CL_SIGNED_INT32";
@@ -228,6 +229,7 @@ int IsChannelTypeSupported(cl_channel_type type)
         case CL_UNORM_SHORT_555:
         case CL_UNORM_INT_101010:
         case CL_UNORM_INT_101010_2:
+        case CL_UNORM_INT_2_101010_EXT:
         case CL_SIGNED_INT8:
         case CL_SIGNED_INT16:
         case CL_SIGNED_INT32:

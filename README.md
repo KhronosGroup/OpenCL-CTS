@@ -90,7 +90,7 @@ require compilation, these are:
 
 The Khronos [Conformance Process Document](https://members.khronos.org/document/dl/911)
 details the steps required for a conformance submission.
-In this repository [opencl_conformance_tests_full.csv](test_conformance/submission_details_template.txt)
+In this repository [opencl_conformance_tests_full.csv](test_conformance/opencl_conformance_tests_full.csv)
 defines the full list of tests which must be run for conformance. The output log
 of which must be included alongside a filled in
 [submission details template](test_conformance/submission_details_template.txt).
