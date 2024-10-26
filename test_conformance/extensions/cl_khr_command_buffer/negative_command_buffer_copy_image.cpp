@@ -357,6 +357,14 @@ struct CommandBufferCopyImageMutableHandleNotNull : public CommandCopyBaseTest
 {
     using CommandCopyBaseTest::CommandCopyBaseTest;
 
+  bool Skip() override
+  {
+    if (CommandCopyBaseTest::Skip())
+        return true;
+    return is_extension_available(device,
+                                   "cl_khr_command_buffer_mutable_dispatch");
+  }
+
     cl_int Run() override
     {
         cl_mutable_command_khr mutable_handle;

@@ -125,7 +125,6 @@ struct PropertiesArray : public InfoMutableCommandBufferTest
         if ((device_version >= Version(3, 0))
             || is_extension_available(device, "cl_khr_extended_versioning"))
         {
-
             cl_version extension_version = get_extension_version(
                 device, "cl_khr_command_buffer_mutable_dispatch");
 
@@ -136,6 +135,16 @@ struct PropertiesArray : public InfoMutableCommandBufferTest
                 return true;
             }
         }
+
+        cl_mutable_dispatch_fields_khr mutable_capabilities;
+        cl_int error = clGetDeviceInfo(
+            device, CL_DEVICE_MUTABLE_DISPATCH_CAPABILITIES_KHR,
+            sizeof(mutable_capabilities), &mutable_capabilities, nullptr);
+        test_error(error, "clGetDeviceInfo failed");
+
+        if ((mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR) == 0)
+          return true;
+
         return false;
     }
 
