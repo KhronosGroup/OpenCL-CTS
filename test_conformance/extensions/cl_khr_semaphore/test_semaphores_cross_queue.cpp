@@ -206,7 +206,6 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
         std::vector<cl_int> host_buffer(half_num_elems * 2, pattern_pri);
 
         {
-            clEventWrapper wait_events[2];
             clEventWrapper user_event = clCreateUserEvent(context, &err);
             test_error(err, "clCreateUserEvent failed");
 
@@ -214,14 +213,14 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
             err = clEnqueueWriteBuffer(producer_queue_pri, in_mem, CL_FALSE, 0,
                                        sizeof(cl_int) * half_num_elems,
                                        host_buffer.data(), 1, &user_event,
-                                       &wait_events[0]);
+                                       nullptr);
             test_error(err, "clEnqueueReadBuffer failed");
 
             err = clEnqueueWriteBuffer(producer_queue_sec, in_mem, CL_FALSE,
                                        sizeof(cl_int) * half_num_elems,
                                        sizeof(cl_int) * half_num_elems,
                                        host_buffer.data(), 1, &user_event,
-                                       &wait_events[1]);
+                                       nullptr);
             test_error(err, "clEnqueueReadBuffer failed");
 
             // launch producer operations simultaneously
