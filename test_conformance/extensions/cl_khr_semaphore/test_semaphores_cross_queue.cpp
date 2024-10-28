@@ -228,14 +228,23 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
             err = clSetUserEventStatus(user_event, CL_COMPLETE);
             test_error(err, "clSetUserEventStatus failed");
 
+            // The semaphore cannot be signaled until the barrier is complete
+            err = clEnqueueBarrierWithWaitList(producer_queue_pri, 0, nullptr,
+                                               nullptr);
+            test_error(err, " clEnqueueBarrierWithWaitList ");
+
+            err = clEnqueueBarrierWithWaitList(producer_queue_sec, 0, nullptr,
+                                               nullptr);
+            test_error(err, " clEnqueueBarrierWithWaitList ");
+
             if (single_queue)
             {
                 clEventWrapper sema_wait_event;
 
                 // signal/wait with event dependency
-                err = clEnqueueSignalSemaphoresKHR(
-                    producer_queue_pri, 1, semaphore, nullptr, 2,
-                    &wait_events[0], &sema_wait_event);
+                err = clEnqueueSignalSemaphoresKHR(producer_queue_pri, 1,
+                                                   semaphore, nullptr, 0,
+                                                   nullptr, &sema_wait_event);
                 test_error(err, "Could not signal semaphore");
 
                 // consumer and producer queues in sync through wait event
@@ -247,8 +256,8 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
             else
             {
                 err = clEnqueueSignalSemaphoresKHR(producer_queue_pri, 1,
-                                                   semaphore, nullptr, 2,
-                                                   &wait_events[0], nullptr);
+                                                   semaphore, nullptr, 0,
+                                                   nullptr, nullptr);
                 test_error(err, "Could not signal semaphore");
 
                 err =
