@@ -281,7 +281,9 @@ struct MutableDispatchWorkGroups : public BasicMutableCommandBufferTest
     static constexpr size_t test_global_work_size = 64;
     static constexpr size_t update_global_size = 16;
     const size_t local_work_size = 8;
-    const size_t sizeToAllocate = 64 * sizeof(cl_int);
+    const size_t sizeToAllocate = (test_global_work_size > global_work_size
+                                   ? test_global_work_size
+                                   : global_work_size) * sizeof(cl_int);
 };
 
 int test_command_buffer_with_no_additional_work_groups(cl_device_id device,
