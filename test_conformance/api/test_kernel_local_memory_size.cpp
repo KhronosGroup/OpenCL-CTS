@@ -279,16 +279,9 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
     auto local_param_local_memory_kernel_verify = [&]() {
         constexpr size_t size = 10;
         int testData[size];
-        int tempData[size];
         for (size_t i = 0; i < size; i++)
         {
-            testData[i] = i;
-            tempData[i] = i;
-        }
-
-        for (size_t i = 0; i < size; i++)
-        {
-            testData[i] = tempData[i] * 2;
+            testData[i] = i * 2;
         }
 
         int temp = testData[9];
