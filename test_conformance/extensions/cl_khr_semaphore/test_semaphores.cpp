@@ -29,8 +29,8 @@ const char* source = "__kernel void empty() {}";
 struct SimpleSemaphore1 : public SemaphoreTestBase
 {
     SimpleSemaphore1(cl_device_id device, cl_context context,
-                     cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                     cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -79,8 +79,8 @@ struct SimpleSemaphore1 : public SemaphoreTestBase
 struct SimpleSemaphore2 : public SemaphoreTestBase
 {
     SimpleSemaphore2(cl_device_id device, cl_context context,
-                     cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                     cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -160,8 +160,8 @@ struct SimpleSemaphore2 : public SemaphoreTestBase
 struct SemaphoreReuse : public SemaphoreTestBase
 {
     SemaphoreReuse(cl_device_id device, cl_context context,
-                   cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                   cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -253,8 +253,9 @@ struct SemaphoreReuse : public SemaphoreTestBase
 struct SemaphoreMultiSignal : public SemaphoreTestBase
 {
     SemaphoreMultiSignal(cl_device_id device, cl_context context,
-                         cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue), semaphore_second(this)
+                         cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems),
+          semaphore_second(this)
     {}
 
     cl_int Run() override
@@ -316,8 +317,9 @@ struct SemaphoreMultiSignal : public SemaphoreTestBase
 struct SemaphoreMultiWait : public SemaphoreTestBase
 {
     SemaphoreMultiWait(cl_device_id device, cl_context context,
-                       cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue), semaphore_second(this)
+                       cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems),
+          semaphore_second(this)
     {}
 
     cl_int Run() override
@@ -379,8 +381,9 @@ struct SemaphoreMultiWait : public SemaphoreTestBase
 struct SemaphoreImportExportFD : public SemaphoreTestBase
 {
     SemaphoreImportExportFD(cl_device_id device, cl_context context,
-                            cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue), semaphore_second(this)
+                            cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems),
+          semaphore_second(this)
     {}
 
     cl_int Run() override
@@ -470,7 +473,8 @@ struct SemaphoreImportExportFD : public SemaphoreTestBase
 int test_semaphores_simple_1(cl_device_id deviceID, cl_context context,
                              cl_command_queue defaultQueue, int num_elements)
 {
-    return MakeAndRunTest<SimpleSemaphore1>(deviceID, context, defaultQueue);
+    return MakeAndRunTest<SimpleSemaphore1>(deviceID, context, defaultQueue,
+                                            num_elements);
 }
 
 // Confirm that signal a semaphore with no event dependencies will not result
@@ -478,14 +482,16 @@ int test_semaphores_simple_1(cl_device_id deviceID, cl_context context,
 int test_semaphores_simple_2(cl_device_id deviceID, cl_context context,
                              cl_command_queue defaultQueue, int num_elements)
 {
-    return MakeAndRunTest<SimpleSemaphore2>(deviceID, context, defaultQueue);
+    return MakeAndRunTest<SimpleSemaphore2>(deviceID, context, defaultQueue,
+                                            num_elements);
 }
 
 // Confirm that a semaphore can be reused multiple times
 int test_semaphores_reuse(cl_device_id deviceID, cl_context context,
                           cl_command_queue defaultQueue, int num_elements)
 {
-    return MakeAndRunTest<SemaphoreReuse>(deviceID, context, defaultQueue);
+    return MakeAndRunTest<SemaphoreReuse>(deviceID, context, defaultQueue,
+                                          num_elements);
 }
 
 // Confirm that we can signal multiple semaphores with one command
@@ -493,15 +499,16 @@ int test_semaphores_multi_signal(cl_device_id deviceID, cl_context context,
                                  cl_command_queue defaultQueue,
                                  int num_elements)
 {
-    return MakeAndRunTest<SemaphoreMultiSignal>(deviceID, context,
-                                                defaultQueue);
+    return MakeAndRunTest<SemaphoreMultiSignal>(deviceID, context, defaultQueue,
+                                                num_elements);
 }
 
 // Confirm that we can wait for multiple semaphores with one command
 int test_semaphores_multi_wait(cl_device_id deviceID, cl_context context,
                                cl_command_queue defaultQueue, int num_elements)
 {
-    return MakeAndRunTest<SemaphoreMultiWait>(deviceID, context, defaultQueue);
+    return MakeAndRunTest<SemaphoreMultiWait>(deviceID, context, defaultQueue,
+                                              num_elements);
 }
 
 // Test it is possible to export a semaphore to a sync fd and import the same
@@ -511,5 +518,5 @@ int test_semaphores_import_export_fd(cl_device_id deviceID, cl_context context,
                                      int num_elements)
 {
     return MakeAndRunTest<SemaphoreImportExportFD>(deviceID, context,
-                                                   defaultQueue);
+                                                   defaultQueue, num_elements);
 }
