@@ -70,6 +70,9 @@ bool BasicCommandBufferTest::Skip()
             != 0;
     out_of_order_support =
         capabilities & CL_COMMAND_BUFFER_CAPABILITY_OUT_OF_ORDER_KHR;
+    device_side_enqueue_support =
+        (capabilities & CL_COMMAND_BUFFER_CAPABILITY_DEVICE_SIDE_ENQUEUE_KHR)
+        != 0;
 
     // Skip if queue properties don't contain those required
     return required_properties != (required_properties & queue_properties);
