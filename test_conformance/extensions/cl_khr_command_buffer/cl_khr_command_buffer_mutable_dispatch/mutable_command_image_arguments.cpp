@@ -131,7 +131,7 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         error = clSetKernelArg(kernel, 2, sizeof(cl_mem), &dst_image);
         test_error(error, "Unable to set indexed kernel arguments");
 
-        cl_ndrange_kernel_command_properties_khr props[] = {
+        cl_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
@@ -162,8 +162,6 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         cl_mutable_dispatch_arg_khr args[] = { arg_2 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
-            nullptr,
             command,
             1 /* num_args */,
             0 /* num_svm_arg */,
@@ -176,11 +174,14 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
             nullptr /* global_work_size */,
             nullptr /* local_work_size */
         };
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
-            &dispatch_config
+
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
         };
-        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
+        const void *configs[1] = { &dispatch_config };
+        error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
+                                           config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
@@ -198,8 +199,8 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
         {
             if (imageValues_input[i] != outputData[i])
             {
-                log_error("Data failed to verify: imageValues[%d]=%d != "
-                          "outputData[%d]=%d\n",
+                log_error("Data failed to verify: imageValues[%zu]=%d != "
+                          "outputData[%zu]=%d\n",
                           i, imageValues_input[i], i, outputData[i]);
 
                 return TEST_FAIL;
@@ -330,7 +331,7 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
 
         size_t globalDim[3] = { 4, 4, 1 }, localDim[3] = { 1, 1, 1 };
 
-        cl_ndrange_kernel_command_properties_khr props[] = {
+        cl_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
@@ -360,8 +361,6 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         cl_mutable_dispatch_arg_khr args[] = { arg_2 };
 
         cl_mutable_dispatch_config_khr dispatch_config{
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
-            nullptr,
             command,
             1 /* num_args */,
             0 /* num_svm_arg */,
@@ -374,11 +373,14 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
             nullptr /* global_work_size */,
             nullptr /* local_work_size */
         };
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
-            &dispatch_config
+
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
         };
-        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
+        const void *configs[1] = { &dispatch_config };
+        error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
+                                           config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
@@ -397,8 +399,8 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
         {
             if (imageValues_input[i] != outputData[i])
             {
-                log_error("Data failed to verify: imageValues[%d]=%d != "
-                          "outputData[%d]=%d\n",
+                log_error("Data failed to verify: imageValues[%zu]=%d != "
+                          "outputData[%zu]=%d\n",
                           i, imageValues_input[i], i, outputData[i]);
                 return TEST_FAIL;
             }

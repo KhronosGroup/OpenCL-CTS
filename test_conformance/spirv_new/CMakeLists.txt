@@ -4,10 +4,10 @@ set(${MODULE_NAME}_SOURCES
   main.cpp
   test_basic_versions.cpp
   test_cl_khr_expect_assume.cpp
-  test_cl_khr_spirv_no_integer_wrap_decoration.cpp
   test_decorate.cpp
   test_get_program_il.cpp
   test_linkage.cpp
+  test_no_integer_wrap_decoration.cpp
   test_op_atomic.cpp
   test_op_branch_conditional.cpp
   test_op_branch.cpp
@@ -34,6 +34,10 @@ set(TEST_HARNESS_SOURCES
   ../../test_conformance/math_brute_force/reference_math.cpp
   ../../test_conformance/math_brute_force/utility.cpp
 )
+
+if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+    add_cxx_flag_if_supported(-Wno-narrowing)
+endif()
 
 set(${MODULE_NAME}_SOURCES ${SPIRV_NEW_SOURCES} ${TEST_HARNESS_SOURCES})
 

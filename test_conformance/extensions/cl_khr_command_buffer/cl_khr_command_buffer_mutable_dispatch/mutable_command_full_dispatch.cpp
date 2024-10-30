@@ -69,7 +69,7 @@ struct MutableCommandFullDispatch : InfoMutableCommandBufferTest
             available_caps &= ~CL_MUTABLE_DISPATCH_EXEC_INFO_KHR;
 
         // require at least one mutable capabillity
-        return (available_caps == 0) && InfoMutableCommandBufferTest::Skip();
+        return (available_caps == 0) || InfoMutableCommandBufferTest::Skip();
     }
 
     // setup kernel program specific for command buffer with full mutable
@@ -100,21 +100,17 @@ struct MutableCommandFullDispatch : InfoMutableCommandBufferTest
 
         if ((available_caps & CL_MUTABLE_DISPATCH_EXEC_INFO_KHR) == 0)
         {
-            error = create_single_kernel_helper_create_program(
-                context, &program, 1, &kernel_str_no_svm);
+            error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                                &kernel_str_no_svm,
+                                                "full_dispatch");
         }
         else
         {
-            error = create_single_kernel_helper_create_program(
-                context, &program, 1, &kernel_str_svm);
+            error =
+                create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &kernel_str_svm, "full_dispatch");
         }
         test_error(error, "Failed to create program with source");
-
-        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-        test_error(error, "Failed to build program");
-
-        kernel = clCreateKernel(program, "full_dispatch", &error);
-        test_error(error, "Failed to create copy kernel");
 
         return CL_SUCCESS;
     }
@@ -241,6 +237,9 @@ struct MutableCommandFullDispatch : InfoMutableCommandBufferTest
         error = clEnqueueSVMUnmap(queue, buf, 0, nullptr, nullptr);
         test_error(error, "clEnqueueSVMUnmap failed for svm buffer");
 
+        error = clFinish(queue);
+        test_error(error, "clFinish failed");
+
         return res;
     }
 
@@ -295,11 +294,16 @@ struct MutableCommandFullDispatch : InfoMutableCommandBufferTest
     // run command buffer with full mutable dispatch test
     cl_int Run() override
     {
-        cl_ndrange_kernel_command_properties_khr props[] = {
+        cl_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR, available_caps, 0
         };
 
         size_t work_offset = 0;
+        /* Round the global work size up to nearest multiple of the local work
+         * size to ensure work group uniformity. */
+        num_elements =
+            ((num_elements + group_size - 1) / group_size) * group_size;
+
         cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, props, kernel, 1, &work_offset,
             &num_elements, &group_size, 0, nullptr, nullptr, &command);
@@ -336,8 +340,6 @@ struct MutableCommandFullDispatch : InfoMutableCommandBufferTest
 
         // Modify and execute the command buffer
         cl_mutable_dispatch_config_khr dispatch_config{
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR,
-            nullptr,
             command,
             0 /* num_args */,
             0 /* num_svm_arg */,
@@ -383,24 +385,30 @@ struct MutableCommandFullDispatch : InfoMutableCommandBufferTest
             dispatch_config.global_work_offset = &work_offset;
         }
 
-        if ((available_caps & CL_MUTABLE_DISPATCH_GLOBAL_SIZE_KHR) != 0)
-        {
-            num_elements /= 2;
-            dispatch_config.global_work_size = &num_elements;
-        }
-
         if ((available_caps & CL_MUTABLE_DISPATCH_LOCAL_SIZE_KHR) != 0)
         {
             group_size /= 2;
             dispatch_config.local_work_size = &group_size;
         }
 
-        cl_mutable_base_config_khr mutable_config{
-            CL_STRUCTURE_TYPE_MUTABLE_BASE_CONFIG_KHR, nullptr, 1,
-            &dispatch_config
-        };
+        if ((available_caps & CL_MUTABLE_DISPATCH_GLOBAL_SIZE_KHR) != 0)
+        {
+            num_elements /= 2;
+            /* Round the global work size up to nearest multiple of the local
+             * work size to ensure work group uniformity. */
+            num_elements =
+                ((num_elements + group_size - 1) / group_size) * group_size;
 
-        error = clUpdateMutableCommandsKHR(command_buffer, &mutable_config);
+            dispatch_config.global_work_size = &num_elements;
+        }
+
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
+        };
+        const void *configs[1] = { &dispatch_config };
+        error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
+                                           config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,

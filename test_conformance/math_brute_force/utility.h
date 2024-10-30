@@ -257,7 +257,7 @@ int compareDoubles(double x, double y);
 void logFunctionInfo(const char *fname, unsigned int float_size,
                      unsigned int isFastRelaxed);
 
-float getAllowedUlpError(const Func *f, const bool relaxed);
+float getAllowedUlpError(const Func *f, Type t, const bool relaxed);
 
 inline cl_uint getTestScale(size_t typeSize)
 {

@@ -56,27 +56,8 @@ struct ThreadInfo
         tQueue; // per thread command queue to improve performance
 };
 
-struct TestInfoBase
-{
-    size_t subBufferSize; // Size of the sub-buffer in elements
-    const Func *f; // A pointer to the function info
-
-    cl_uint threadCount; // Number of worker threads
-    cl_uint jobCount; // Number of jobs
-    cl_uint step; // step between each chunk and the next.
-    cl_uint scale; // stride between individual test values
-    float ulps; // max_allowed ulps
-    int ftz; // non-zero if running in flush to zero mode
-
-    int isFDim;
-    int skipNanInf;
-    int isNextafter;
-};
-
 struct TestInfo : public TestInfoBase
 {
-    TestInfo(const TestInfoBase &base): TestInfoBase(base) {}
-
     // Array of thread specific information
     std::vector<ThreadInfo> tinfo;
 
@@ -646,7 +627,6 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
                                    bool relaxedMode)
 {
-    TestInfoBase test_info_base;
     cl_int error;
     float maxError = 0.0f;
     double maxErrorVal = 0.0;
@@ -654,8 +634,7 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
 
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
     // Init test_info
-    memset(&test_info_base, 0, sizeof(test_info_base));
-    TestInfo test_info(test_info_base);
+    TestInfo test_info;
 
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE
@@ -674,7 +653,7 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
     }
 
     test_info.f = f;
-    test_info.ulps = f->half_ulps;
+    test_info.ulps = getAllowedUlpError(f, khalf, relaxedMode);
     test_info.ftz =
         f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gHalfCapabilities);
 

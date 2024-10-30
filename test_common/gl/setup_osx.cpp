@@ -19,21 +19,28 @@
 
 class OSXGLEnvironment : public GLEnvironment
 {
-    public:
-        OSXGLEnvironment()
-        {
-      mCGLContext = NULL;
-        }
+private:
+    bool mIsGlutInit;
+
+public:
+    OSXGLEnvironment()
+    {
+        mCGLContext = NULL;
+        mIsGlutInit = false;
+    }
 
   virtual int Init( int *argc, char **argv, int use_opengl_32 )
         {
       if (!use_opengl_32) {
-
-        // Create a GLUT window to render into
-        glutInit( argc, argv );
-        glutInitWindowSize( 512, 512 );
-        glutInitDisplayMode( GLUT_RGB | GLUT_DOUBLE );
-        glutCreateWindow( "OpenCL <-> OpenGL Test" );
+          if (!mIsGlutInit)
+          {
+              // Create a GLUT window to render into
+              glutInit(argc, argv);
+              glutInitWindowSize(512, 512);
+              glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
+              glutCreateWindow("OpenCL <-> OpenGL Test");
+              mIsGlutInit = true;
+          }
       }
 
       else {

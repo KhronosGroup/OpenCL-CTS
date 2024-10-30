@@ -17,6 +17,7 @@
 #include <vulkan_interop_common.hpp>
 #include <string>
 #include "harness/errorHelpers.h"
+#include "harness/os_helpers.h"
 #include <algorithm>
 #include "deviceInfo.h"
 
@@ -272,8 +273,8 @@ int run_test_with_two_queue(
 
         std::string fileName = "image2D_"
             + std::string(getVulkanFormatGLSLFormat(vkFormat)) + ".spv";
-        log_info("Load %s file", fileName.c_str());
-        vkImage2DShader = readFile(fileName);
+        log_info("Load file: %s\n", fileName.c_str());
+        vkImage2DShader = readFile(fileName, exe_dir());
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
 
         VulkanComputePipeline vkComputePipeline(vkDevice, vkPipelineLayout,
@@ -884,8 +885,8 @@ int run_test_with_one_queue(
 
         std::string fileName = "image2D_"
             + std::string(getVulkanFormatGLSLFormat(vkFormat)) + ".spv";
-        log_info("Load %s file", fileName.c_str());
-        vkImage2DShader = readFile(fileName);
+        log_info("Load file: %s\n", fileName.c_str());
+        vkImage2DShader = readFile(fileName, exe_dir());
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
 
         VulkanComputePipeline vkComputePipeline(vkDevice, vkPipelineLayout,
@@ -1474,7 +1475,7 @@ int test_image_common(cl_device_id device_, cl_context context_,
     err = setMaxImageDimensions(deviceId, max_width, max_height);
     test_error_and_cleanup(err, CLEANUP, "error setting max image dimensions");
 
-    log_info("Set max_width to %lu and max_height to %lu\n", max_width,
+    log_info("Set max_width to %zu and max_height to %zu\n", max_width,
              max_height);
     context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU,
                                       NULL, NULL, &err);

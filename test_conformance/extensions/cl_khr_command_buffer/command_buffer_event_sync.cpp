@@ -18,6 +18,8 @@
 #include "procs.h"
 
 #include <vector>
+#include <thread>
+#include <chrono>
 
 //--------------------------------------------------------------------------
 enum class EventMode
@@ -416,6 +418,12 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
         error = clFinish(queue);
         test_error(error, "clFinish failed");
 
+        for (unsigned i = 0; i < 30; ++i)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if (confirmation) break;
+        }
+
         // verify the result
         if (!confirmation)
         {
@@ -575,7 +583,7 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
 
         // process secondary queue
         error =
-            clEnqueueFillBuffer(queue_sec, in_mem, &pattern_pri, sizeof(cl_int),
+            clEnqueueFillBuffer(queue_sec, in_mem, &pattern_sec, sizeof(cl_int),
                                 0, data_size(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
 
@@ -585,8 +593,9 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
                    "clEnqueueCommandBufferKHR in secondary queue failed");
 
         // process primary queue
-        error = clEnqueueFillBuffer(queue, in_mem, &pattern_pri, sizeof(cl_int),
-                                    0, data_size(), 0, nullptr, event_ptrs[0]);
+        error =
+            clEnqueueFillBuffer(queue, in_mem, &pattern_pri, sizeof(cl_int), 0,
+                                data_size(), 1, &test_event, event_ptrs[0]);
         test_error(error, "clEnqueueFillBuffer failed");
 
         cl_event wait_list[] = { test_event,
@@ -762,6 +771,12 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
 
         error = clFinish(queue);
         test_error(error, "clFinish failed");
+
+        for (unsigned i = 0; i < 30; ++i)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if (confirmation) break;
+        }
 
         // verify the result
         if (!confirmation)

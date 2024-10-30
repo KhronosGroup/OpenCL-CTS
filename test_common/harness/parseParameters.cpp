@@ -25,8 +25,6 @@
 #include <sys/stat.h>
 #include <string.h>
 
-using namespace std;
-
 #define DEFAULT_COMPILATION_PROGRAM "cl_offline_compiler"
 #define DEFAULT_SPIRV_VALIDATOR "spirv-val"
 
