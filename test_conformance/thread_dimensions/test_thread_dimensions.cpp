@@ -20,6 +20,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <cinttypes>
+
 #include "procs.h"
 
 #define ITERATIONS 4
@@ -386,7 +388,8 @@ int run_test(cl_context context, cl_command_queue queue, cl_kernel kernel,
                                          global_size, NULL, 0, NULL, NULL);
             if (DEBUG)
                 log_info("\t\t\tExecuting kernel with global %s, NULL local, "
-                         "%d dim, start address %llu, end address %llu.\n",
+                         "%d dim, start address %" PRIu64
+                         ", end address %" PRIu64 ".\n",
                          print_dimensions(dim_str, global_size[0],
                                           global_size[1], global_size[2],
                                           dimensions),
@@ -401,7 +404,8 @@ int run_test(cl_context context, cl_command_queue queue, cl_kernel kernel,
             if (DEBUG)
                 log_info(
                     "\t\t\tExecuting kernel with global %s, local %s, %d "
-                    "dim, start address %llu, end address %llu.\n",
+                    "dim, start address %" PRIu64 ", end address %" PRIu64
+                    ".\n",
                     print_dimensions(dim_str, global_size[0], global_size[1],
                                      global_size[2], dimensions),
                     print_dimensions2(dim_str2, local_size[0], local_size[1],

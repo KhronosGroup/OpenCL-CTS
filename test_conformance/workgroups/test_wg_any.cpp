@@ -54,7 +54,9 @@ verify_wg_any(float *inptr, int *outptr, size_t n, size_t wg_size)
             if ( (predicate_any && (outptr[i+j] == 0)) ||
                  ((predicate_any == 0) && outptr[i+j]) )
             {
-                log_info("work_group_any: Error at %lu: expected = %d, got = %d\n", i+j, predicate_any, outptr[i+j]);
+                log_info(
+                    "work_group_any: Error at %zu: expected = %d, got = %d\n",
+                    i + j, predicate_any, outptr[i + j]);
                 return -1;
             }
         }
