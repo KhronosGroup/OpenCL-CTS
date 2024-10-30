@@ -323,7 +323,7 @@ struct CreateImportExternalWithInvalidDevice : public SemaphoreTestBase
         {
             log_info(
                 "cl_khr_external_semaphore_opaque_fd is not supported on this "
-                "platoform. Skipping test.\n");
+                "platform. Skipping test.\n");
             return TEST_SKIPPED_ITSELF;
         }
 
@@ -485,7 +485,7 @@ struct CreateInvalidValue : public SemaphoreTestBase
             {
                 log_info("cl_khr_external_semaphore_opaque_fd is not supported "
                          "on this "
-                         "platoform. Skipping test.\n");
+                         "platform. Skipping test.\n");
                 return TEST_SKIPPED_ITSELF;
             }
 
@@ -528,7 +528,7 @@ struct CreateInvalidOperation : public SemaphoreTestBase
         {
             log_info(
                 "cl_khr_external_semaphore_opaque_fd is not supported on this "
-                "platoform. Skipping test.\n");
+                "platform. Skipping test.\n");
             return TEST_SKIPPED_ITSELF;
         }
 

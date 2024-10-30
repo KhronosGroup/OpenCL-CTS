@@ -564,7 +564,7 @@ int TestFunc_Half_Half_Half_Operator(const Func *f, MTdata d, bool relaxedMode)
     }
 
     test_info.f = f;
-    test_info.ulps = f->half_ulps;
+    test_info.ulps = getAllowedUlpError(f, khalf, relaxedMode);
     test_info.ftz =
         f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gHalfCapabilities);
 
