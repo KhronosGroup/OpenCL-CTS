@@ -19,6 +19,8 @@
 #include <CL/cl.h>
 
 // Basic command-buffer tests
+extern int test_multi_flag_creation(cl_device_id device, cl_context context,
+                                    cl_command_queue queue, int num_elements);
 extern int test_single_ndrange(cl_device_id device, cl_context context,
                                cl_command_queue queue, int num_elements);
 extern int test_interleaved_enqueue(cl_device_id device, cl_context context,

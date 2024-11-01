@@ -180,6 +180,71 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
 
 namespace {
 
+// Test that the CL_COMMAND_BUFFER_FLAGS_KHR bitfield is parsed correctly when
+// multiple flags are set.
+struct MultiFlagCreationTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override
+    {
+        cl_command_buffer_properties_khr flags = 0;
+        size_t num_flags_set = 0;
+        bool mutli_flags_supported = true;
+        cl_int error = CL_SUCCESS;
+
+        // First try to find mutliple flags that are supported by the driver and
+        // device.
+        if (simultaneous_use_support)
+        {
+            flags |= CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
+            num_flags_set++;
+        }
+
+        if (device_side_enqueue_support)
+        {
+            flags |= CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
+            num_flags_set++;
+        }
+
+        if (is_extension_available(
+                device, CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_NAME))
+        {
+            flags |= CL_COMMAND_BUFFER_MUTABLE_KHR;
+            num_flags_set++;
+        }
+
+        // If we can't find mutliple supported flags, still set a bitfield but
+        // expect CL_INVALID_PROPERTY to be returned on creation.
+        if (num_flags_set < 2)
+        {
+            flags = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR
+                | CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
+
+            mutli_flags_supported = false;
+        }
+
+        cl_command_buffer_properties_khr props[] = {
+            CL_COMMAND_BUFFER_FLAGS_KHR, flags, 0
+        };
+
+        command_buffer = clCreateCommandBufferKHR(1, &queue, props, &error);
+        if (mutli_flags_supported)
+        {
+            test_error(error, "clCreateCommandBufferKHR failed");
+        }
+        else
+        {
+            test_failure_error_ret(
+                error, CL_INVALID_PROPERTY,
+                "clCreateCommandBufferKHR should return CL_INVALID_PROPERTY",
+                TEST_FAIL);
+        }
+
+        return CL_SUCCESS;
+    }
+};
+
 // Test enqueuing a command-buffer containing a single NDRange command once
 struct BasicEnqueueTest : public BasicCommandBufferTest
 {
@@ -423,6 +488,13 @@ struct InterleavedEnqueueTest : public BasicCommandBufferTest
 };
 
 } // anonymous namespace
+
+int test_multi_flag_creation(cl_device_id device, cl_context context,
+                             cl_command_queue queue, int num_elements)
+{
+    return MakeAndRunTest<MultiFlagCreationTest>(device, context, queue,
+                                                 num_elements);
+}
 
 int test_single_ndrange(cl_device_id device, cl_context context,
                         cl_command_queue queue, int num_elements)
