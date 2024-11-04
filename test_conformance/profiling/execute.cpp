@@ -314,7 +314,7 @@ static int kernelFilter( cl_device_id device, cl_context context, cl_command_que
 
     // read output image
     size_t origin[3] = { 0, 0, 0 };
-    size_t region[3] = { w, h, 1 };
+    size_t region[3] = { (size_t)w, (size_t)h, 1 };
     err = clEnqueueReadImage( queue, memobjs[1], true, origin, region, 0, 0, outptr, 0, NULL, NULL);
     if( err != CL_SUCCESS ){
         print_error( err, "clReadImage failed\n" );
@@ -335,8 +335,8 @@ static int kernelFilter( cl_device_id device, cl_context context, cl_command_que
     clReleaseMemObject( memobjs[1] );
     clReleaseMemObject( memobjs[0] );
 
-  if (check_times(queueStart, submitStart, writeStart, writeEnd, device))
-    err = -1;
+    if (check_times(queueStart, submitStart, writeStart, writeEnd, device))
+        err = -1;
 
     return err;
 

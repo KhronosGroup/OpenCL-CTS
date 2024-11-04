@@ -75,7 +75,7 @@ template <typename Ty> struct BALLOT
                     {
                         v = genrand_int32(gMTdata);
                     }
-                    cl_uint4 v4 = { v, 0, 0, 0 };
+                    cl_uint4 v4 = { { v, 0, 0, 0 } };
                     t[wi_id + wg_offset] = v4;
                 }
             }
@@ -190,14 +190,13 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
 
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
-        int wi_id, sb_id, wg_id, l;
+        int wi_id, sb_id, wg_id;
         int gws = test_params.global_workgroup_size;
         int lws = test_params.local_workgroup_size;
         int sbs = test_params.subgroup_size;
         int sb_number = (lws + sbs - 1) / sbs;
         int wg_number = gws / lws;
         int limit_sbs = sbs > 100 ? 100 : sbs;
-        int non_uniform_size = gws % lws;
 
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
@@ -235,7 +234,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
     static test_status chk(Ty *x, Ty *y, Ty *mx, Ty *my, cl_int *m,
                            const WorkGroupParams &test_params)
     {
-        int wi_id, wg_id, l, sb_id;
+        int wi_id, wg_id, sb_id;
         int gws = test_params.global_workgroup_size;
         int lws = test_params.local_workgroup_size;
         int sbs = test_params.subgroup_size;
@@ -308,13 +307,13 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
 
                     if (wi_id & 1)
                     {
-                        bit_value ? expected_result = { 1, 0, 0, 1 }
-                                  : expected_result = { 0, 0, 0, 1 };
+                        bit_value ? expected_result = { { 1, 0, 0, 1 } }
+                                  : expected_result = { { 0, 0, 0, 1 } };
                     }
                     else
                     {
-                        bit_value ? expected_result = { 1, 0, 0, 2 }
-                                  : expected_result = { 0, 0, 0, 2 };
+                        bit_value ? expected_result = { { 1, 0, 0, 2 } }
+                                  : expected_result = { { 0, 0, 0, 2 } };
                     }
 
                     device_result = my[wg_offset + wi_id];
@@ -351,10 +350,6 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
 
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
-        int gws = test_params.global_workgroup_size;
-        int lws = test_params.local_workgroup_size;
-        int sbs = test_params.subgroup_size;
-        int non_uniform_size = gws % lws;
         // no work here
     }
 
@@ -398,16 +393,13 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
                 {
                     current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
                 }
-                // take index of array where info which work_item will
-                // be broadcast its value is stored
-                int midx = 4 * wg_offset + 2;
                 // take subgroup local id of this work_item
                 // Check result
                 for (wi_id = 0; wi_id < current_sbs; ++wi_id)
                 { // for each subgroup work item
 
-                    wi_id & 1 ? expected_result = { 1, 0, 0, 1 }
-                              : expected_result = { 1, 0, 0, 2 };
+                    wi_id & 1 ? expected_result = { { 1, 0, 0, 1 } }
+                              : expected_result = { { 1, 0, 0, 2 } };
 
                     device_result = my[wg_offset + wi_id];
                     if (!compare(device_result, expected_result))
@@ -461,7 +453,6 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
         {
             wg_number++;
         }
-        int e;
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
             if (non_uniform_size && wg_id == wg_number - 1)
@@ -502,7 +493,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                 }
                 else
                 {
-                    log_error("Unknown operation...");
+                    log_error("Unknown operation...\n");
                 }
             }
 
@@ -609,6 +600,12 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                     }
                     else if (operation == BallotOp::ballot_find_lsb)
                     {
+                        if (bs.none())
+                        {
+                            // Return value is undefined when no bits are set,
+                            // so skip validation:
+                            continue;
+                        }
                         for (int id = 0; id < sbs; ++id)
                         {
                             if (bs.test(id))
@@ -630,6 +627,12 @@ template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
                     }
                     else if (operation == BallotOp::ballot_find_msb)
                     {
+                        if (bs.none())
+                        {
+                            // Return value is undefined when no bits are set,
+                            // so skip validation:
+                            continue;
+                        }
                         for (int id = sbs - 1; id >= 0; --id)
                         {
                             if (bs.test(id))
@@ -671,7 +674,7 @@ template <typename Ty, BallotOp operation> struct SMASK
 
     static void gen(Ty *x, Ty *t, cl_int *m, const WorkGroupParams &test_params)
     {
-        int wi_id, wg_id, l, sb_id;
+        int wi_id, wg_id, sb_id;
         int gws = test_params.global_workgroup_size;
         int lws = test_params.local_workgroup_size;
         int sbs = test_params.subgroup_size;
@@ -688,7 +691,7 @@ template <typename Ty, BallotOp operation> struct SMASK
                 {
                     int midx = 4 * wg_offset + 4 * wi_id;
                     cl_uint max_sub_group_size = m[midx + 2];
-                    cl_uint4 expected_mask = { 0 };
+                    cl_uint4 expected_mask = { { 0 } };
                     expected_mask = generate_bit_mask(
                         wi_id, operation_names(operation), max_sub_group_size);
                     set_value(t[wg_offset + wi_id], expected_mask);
@@ -741,9 +744,12 @@ template <typename Ty, BallotOp operation> struct SMASK
                     {
                         log_error("ERROR:  get_sub_group_%s_mask... mismatch "
                                   "for local id %d in sub group %d in group "
-                                  "%d, obtained %d, expected %d\n",
+                                  "%d, %s\n",
                                   operation_names(operation), wi_id, sb_id,
-                                  wg_id, device_result, expected_result);
+                                  wg_id,
+                                  print_expected_obtained(expected_result,
+                                                          device_result)
+                                      .c_str());
                         return TEST_FAIL;
                     }
                 }
@@ -761,7 +767,7 @@ __kernel void test_sub_group_non_uniform_broadcast(const __global Type *in, __gl
     int gid = get_global_id(0);
     XY(xy,gid);
     Type x = in[gid];
-    if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {
+    if (xy[gid].x < (get_sub_group_size() >> 1)) {
         out[gid] = sub_group_non_uniform_broadcast(x, xy[gid].z);
     } else {
         out[gid] = sub_group_non_uniform_broadcast(x, xy[gid].w);
@@ -773,7 +779,7 @@ __kernel void test_sub_group_broadcast_first(const __global Type *in, __global i
     int gid = get_global_id(0);
     XY(xy,gid);
     Type x = in[gid];
-    if (xy[gid].x < NR_OF_ACTIVE_WORK_ITEMS) {
+    if (xy[gid].x < (get_sub_group_size() >> 1)) {
         out[gid] = sub_group_broadcast_first(x);;
     } else {
         out[gid] = sub_group_broadcast_first(x);;

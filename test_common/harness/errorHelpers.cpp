@@ -105,6 +105,12 @@ const char *IGetErrorString(int clErrorCode)
         case CL_INVALID_SPEC_ID: return "CL_INVALID_SPEC_ID";
         case CL_MAX_SIZE_RESTRICTION_EXCEEDED:
             return "CL_MAX_SIZE_RESTRICTION_EXCEEDED";
+        case CL_INCOMPATIBLE_COMMAND_QUEUE_KHR:
+            return "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR";
+        case CL_INVALID_SYNC_POINT_WAIT_LIST_KHR:
+            return "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR";
+        case CL_INVALID_COMMAND_BUFFER_KHR:
+            return "CL_INVALID_COMMAND_BUFFER_KHR";
         default: return "(unknown)";
     }
 }
@@ -190,6 +196,8 @@ const char *GetChannelTypeName(cl_channel_type type)
         case CL_UNORM_SHORT_565: return "CL_UNORM_SHORT_565";
         case CL_UNORM_SHORT_555: return "CL_UNORM_SHORT_555";
         case CL_UNORM_INT_101010: return "CL_UNORM_INT_101010";
+        case CL_UNORM_INT_101010_2: return "CL_UNORM_INT_101010_2";
+        case CL_UNORM_INT_2_101010_EXT: return "CL_UNORM_INT_2_101010_EXT";
         case CL_SIGNED_INT8: return "CL_SIGNED_INT8";
         case CL_SIGNED_INT16: return "CL_SIGNED_INT16";
         case CL_SIGNED_INT32: return "CL_SIGNED_INT32";
@@ -202,6 +210,8 @@ const char *GetChannelTypeName(cl_channel_type type)
         case CL_SFIXED14_APPLE: return "CL_SFIXED14_APPLE";
 #endif
         case CL_UNORM_INT24: return "CL_UNORM_INT24";
+        case CL_UNSIGNED_INT_RAW10_EXT: return "CL_UNSIGNED_INT_RAW10_EXT";
+        case CL_UNSIGNED_INT_RAW12_EXT: return "CL_UNSIGNED_INT_RAW12_EXT";
         default: return NULL;
     }
 }
@@ -218,6 +228,8 @@ int IsChannelTypeSupported(cl_channel_type type)
         case CL_UNORM_SHORT_565:
         case CL_UNORM_SHORT_555:
         case CL_UNORM_INT_101010:
+        case CL_UNORM_INT_101010_2:
+        case CL_UNORM_INT_2_101010_EXT:
         case CL_SIGNED_INT8:
         case CL_SIGNED_INT16:
         case CL_SIGNED_INT32:
@@ -369,7 +381,7 @@ static float Ulp_Error_Half_Float(float test, double reference)
     return (float)scalbn(testVal - reference, ulp_exp);
 }
 
-float Ulp_Error_Half(cl_half test, float reference)
+float Ulp_Error_Half(cl_half test, double reference)
 {
     return Ulp_Error_Half_Float(cl_half_to_float(test), reference);
 }

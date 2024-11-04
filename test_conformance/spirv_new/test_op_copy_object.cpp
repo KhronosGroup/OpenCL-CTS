@@ -1,15 +1,18 @@
-/******************************************************************
-Copyright (c) 2016 The Khronos Group Inc. All Rights Reserved.
-
-This code is protected by copyright laws and contains material proprietary to the Khronos Group, Inc.
-This is UNPUBLISHED PROPRIETARY SOURCE CODE that may not be disclosed in whole or in part to
-third parties, and may not be reproduced, republished, distributed, transmitted, displayed,
-broadcast or otherwise exploited in any manner without the express prior written permission
-of Khronos Group. The receipt or possession of this code does not convey any rights to reproduce,
-disclose, or distribute its contents, or to manufacture, use, or sell anything that it may describe,
-in whole or in part other than under the terms of the Khronos Adopters Agreement
-or Khronos Conformance Test Source License Agreement as executed between Khronos and the recipient.
-******************************************************************/
+//
+// Copyright (c) 2016-2023 The Khronos Group Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 #include "testBase.h"
 #include "types.hpp"
@@ -93,14 +96,14 @@ TEST_COPY(double  , cl_double , 3.141592653589793)
 
 TEST_SPIRV_FUNC(op_copy_int4_simple)
 {
-    cl_int4 value = {123, 122, 121, 119};
+    cl_int4 value = { { 123, 122, 121, 119 } };
     std::vector<cl_int4> results(256, value);
     return test_copy(deviceID, context, queue, "copy_int4_simple", results);
 }
 
 TEST_SPIRV_FUNC(op_copy_int3_simple)
 {
-    cl_int3 value = {123, 122, 121, 0};
+    cl_int3 value = { { 123, 122, 121, 0 } };
     std::vector<cl_int3> results(256, value);
     return test_copy(deviceID, context, queue, "copy_int3_simple",
                      results, isVectorNotEqual<cl_int3, 3>);
@@ -115,7 +118,7 @@ TEST_SPIRV_FUNC(op_copy_struct_int_float_simple)
 
 TEST_SPIRV_FUNC(op_copy_struct_int_char_simple)
 {
-    AbstractStruct2<int, char> value = {2100483600, 128};
+    AbstractStruct2<int, char> value = { 2100483600, (char)128 };
     std::vector<AbstractStruct2<int, char> > results(256, value);
     return test_copy(deviceID, context, queue, "copy_struct_int_char_simple", results);
 }
@@ -125,8 +128,8 @@ TEST_SPIRV_FUNC(op_copy_struct_struct_simple)
     typedef AbstractStruct2<int, char> CustomType1;
     typedef AbstractStruct2<cl_int2, CustomType1> CustomType2;
 
-    CustomType1 value1 = {2100483600, 128};
-    cl_int2 intvals = {2100480000, 2100480000};
+    CustomType1 value1 = { 2100483600, (char)128 };
+    cl_int2 intvals = { { 2100480000, 2100480000 } };
     CustomType2 value2 = {intvals, value1};
 
     std::vector<CustomType2> results(256, value2);

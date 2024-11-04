@@ -20,8 +20,6 @@
 #include <string>
 #include <cmath>
 
-using namespace std;
-
 const char *clone_kernel_test_img[] =
 {
     "__kernel void img_read_kernel(read_only image2d_t img, sampler_t sampler, __global int* outbuf)\n"
@@ -93,18 +91,6 @@ struct structArg
     int i;
     float f;
 };
-
-static unsigned char *
-generate_8888_image(int w, int h, MTdata d)
-{
-    unsigned char   *ptr = (unsigned char*)malloc(w * h * 4);
-    int             i;
-
-    for (i=0; i<w*h*4; i++)
-        ptr[i] = (unsigned char)genrand_int32( d);
-
-    return ptr;
-}
 
 int test_image_arg_shallow_clone(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, void* pbufRes, clMemWrapper& bufOut)
 {
@@ -322,6 +308,14 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
     // clone the kernel
     clKernelWrapper clonek = clCloneKernel(kernel, &error);
     test_error( error, "clCloneKernel failed." );
+
+    // enqueue the kernel before the last arg is set
+    error = clEnqueueNDRangeKernel(queue, clonek, 1, NULL, &ndrange1, NULL, 0,
+                                   NULL, NULL);
+    test_failure_error(error, CL_INVALID_KERNEL_ARGS,
+                       "A kernel cloned before all args are set should return "
+                       "CL_INVALID_KERNEL_ARGS if enqueued before the "
+                       "remaining args are set");
 
     // set the last arg and enqueue
     error = clSetKernelArg(clonek, 4, sizeof(cl_mem), &bufOut);

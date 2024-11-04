@@ -32,6 +32,8 @@
 #include <CL/cl_platform.h>
 #endif
 
+#include <CL/cl_half.h>
+
 #define ANALYSIS_BUFFER_SIZE 256
 
 //-----------------------------------------
@@ -42,23 +44,31 @@
 // Types
 //-----------------------------------------
 enum PrintfTestType
- {
-     TYPE_INT,
-     TYPE_FLOAT,
-     TYPE_FLOAT_LIMITS,
-     TYPE_OCTAL,
-     TYPE_UNSIGNED,
-     TYPE_HEXADEC,
-     TYPE_CHAR,
-     TYPE_STRING,
-     TYPE_VECTOR,
-     TYPE_ADDRESS_SPACE,
-     TYPE_COUNT
+{
+    TYPE_INT,
+    TYPE_LONG,
+    TYPE_HALF,
+    TYPE_HALF_LIMITS,
+    TYPE_FLOAT,
+    TYPE_FLOAT_LIMITS,
+    TYPE_DOUBLE,
+    TYPE_DOUBLE_LIMITS,
+    TYPE_OCTAL,
+    TYPE_UNSIGNED,
+    TYPE_HEXADEC,
+    TYPE_CHAR,
+    TYPE_STRING,
+    TYPE_FORMAT_STRING,
+    TYPE_VECTOR,
+    TYPE_ADDRESS_SPACE,
+    TYPE_MIXED_FORMAT_RANDOM,
+    TYPE_LENGTH_SPECIFIER,
+    TYPE_COUNT
 };
 
 struct printDataGenParameters
 {
-    const char* genericFormat;
+    std::vector<std::string> genericFormats;
     const char* dataRepresentation;
     const char* vectorFormatFlag;
     const char* vectorFormatSpecifier;
@@ -72,7 +82,9 @@ struct printDataGenParameters
 
 // Reference results - filled out at run-time
 static std::vector<std::string> correctBufferInt;
+static std::vector<std::string> correctBufferHalf;
 static std::vector<std::string> correctBufferFloat;
+static std::vector<std::string> correctBufferDouble;
 static std::vector<std::string> correctBufferOctal;
 static std::vector<std::string> correctBufferUnsigned;
 static std::vector<std::string> correctBufferHexadecimal;
@@ -103,6 +115,9 @@ struct testCase
 
 extern const char* strType[];
 extern std::vector<testCase*> allTestCase;
+extern cl_half_rounding_mode half_rounding_mode;
+
+//-----------------------------------------
 
 size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId,cl_ulong pAddr = 0);
 

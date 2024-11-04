@@ -79,7 +79,6 @@ template <int Which> struct BAR
         int ng = test_params.global_workgroup_size;
         int nj = (nw + ns - 1) / ns;
         ng = ng / nw;
-        int e;
 
         ii = 0;
         for (k = 0; k < ng; ++k)

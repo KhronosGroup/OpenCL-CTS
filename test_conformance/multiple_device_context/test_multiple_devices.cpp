@@ -42,15 +42,13 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
     clProgramWrapper program;
     clKernelWrapper kernels[2];
     clMemWrapper      stream;
-    clCommandQueueWrapper queues[MAX_QUEUES];
+    clCommandQueueWrapper queues[MAX_QUEUES] = {};
     size_t    threads[1], localThreads[1];
     cl_uint data[TEST_SIZE];
     cl_uint outputData[TEST_SIZE];
     cl_uint expectedResults[TEST_SIZE];
     cl_uint expectedResultsOneDevice[MAX_DEVICES][TEST_SIZE];
     size_t i;
-
-  memset(queues, 0, sizeof(queues));
 
     RandomSeed seed( gRandomSeed );
 
@@ -175,9 +173,8 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
   }
 
     /* All done now! */
-  if (errors)
-    return -1;
-    return 0;
+  if (errors) return -1;
+  return 0;
 }
 
 int test_two_devices(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)

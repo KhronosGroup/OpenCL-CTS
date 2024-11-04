@@ -19,11 +19,6 @@
 #include <sstream>
 #include <string>
 
-using namespace std;
-/*
-
-*/
-
 const char *queue_hint_test_kernel[] = {
 "__kernel void vec_cpy(__global int *src, __global int *dst)\n"
 "{\n"

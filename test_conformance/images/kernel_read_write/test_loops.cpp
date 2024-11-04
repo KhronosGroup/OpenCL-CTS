@@ -84,7 +84,7 @@ int test_read_image_type(cl_device_id device, cl_context context,
     // of operations for linear filtering on the GPU.  We do not test linear
     // filtering for the CL_RGB CL_UNORM_INT_101010 image format; however, we
     // test it internally for a set of other image formats.
-    if ((gDeviceType == CL_DEVICE_TYPE_GPU)
+    if ((gDeviceType & CL_DEVICE_TYPE_GPU)
         && (imageSampler->filter_mode == CL_FILTER_LINEAR)
         && (format->image_channel_order == CL_RGB)
         && (format->image_channel_data_type == CL_UNORM_INT_101010))
@@ -175,6 +175,18 @@ int test_read_image_formats(cl_device_id device, cl_context context,
     bool flipFlop[2] = { false, true };
     int normalizedIdx, floatCoordIdx;
 
+    if (gTestMipmaps)
+    {
+        if (0 == is_extension_available(device, "cl_khr_mipmap_image"))
+        {
+            log_info("-----------------------------------------------------\n");
+            log_info("This device does not support "
+                     "cl_khr_mipmap_image.\nSkipping mipmapped image test. \n");
+            log_info(
+                "-----------------------------------------------------\n\n");
+            return 0;
+        }
+    }
 
     // Use this run if we were told to only run a certain filter mode
     if (gFilterModeToUse != (cl_filter_mode)-1

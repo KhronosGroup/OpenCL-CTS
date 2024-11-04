@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <algorithm>
+#include <cinttypes>
 #include <vector>
 
 int test_get_platform_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
@@ -153,7 +154,7 @@ int sampler_param_test(cl_sampler sampler, cl_sampler_info param_name,
     return 0;
 }
 
-static cl_int normalized_coord_values[] = { CL_TRUE, CL_FALSE };
+static cl_bool normalized_coord_values[] = { CL_TRUE, CL_FALSE };
 static cl_addressing_mode addressing_mode_values[] = {
     CL_ADDRESS_NONE, CL_ADDRESS_CLAMP_TO_EDGE, CL_ADDRESS_CLAMP,
     CL_ADDRESS_REPEAT, CL_ADDRESS_MIRRORED_REPEAT
@@ -162,8 +163,8 @@ static cl_filter_mode filter_mode_values[] = { CL_FILTER_NEAREST,
                                                CL_FILTER_LINEAR };
 
 int test_sampler_params(cl_device_id deviceID, cl_context context,
-                        bool is_compatibility, int norm_coord_num,
-                        int addr_mod_num, int filt_mod_num)
+                        bool is_compatibility, size_t norm_coord_num,
+                        size_t addr_mod_num, size_t filt_mod_num)
 {
     cl_uint refCount;
     size_t size;
@@ -237,7 +238,7 @@ int test_sampler_params(cl_device_id deviceID, cl_context context,
             if (set_size != 0)
             {
                 log_error(
-                    "ERROR: CL_SAMPLER_PROPERTIES size is %d, expected 0\n",
+                    "ERROR: CL_SAMPLER_PROPERTIES size is %zu, expected 0\n",
                     set_size);
                 return TEST_FAIL;
             }
@@ -248,7 +249,7 @@ int test_sampler_params(cl_device_id deviceID, cl_context context,
                 != test_properties.size() * sizeof(cl_sampler_properties))
             {
                 log_error(
-                    "ERROR: CL_SAMPLER_PROPERTIES size is %d, expected %d.\n",
+                    "ERROR: CL_SAMPLER_PROPERTIES size is %zu, expected %zu.\n",
                     set_size,
                     test_properties.size() * sizeof(cl_sampler_properties));
                 return TEST_FAIL;
@@ -272,10 +273,10 @@ int test_sampler_params(cl_device_id deviceID, cl_context context,
 int get_sampler_info_params(cl_device_id deviceID, cl_context context,
                             bool is_compatibility)
 {
-    for (int norm_coord_num = 0;
+    for (size_t norm_coord_num = 0;
          norm_coord_num < ARRAY_SIZE(normalized_coord_values); norm_coord_num++)
     {
-        for (int addr_mod_num = 0;
+        for (size_t addr_mod_num = 0;
              addr_mod_num < ARRAY_SIZE(addressing_mode_values); addr_mod_num++)
         {
             if ((normalized_coord_values[norm_coord_num] == CL_FALSE)
@@ -285,7 +286,7 @@ int get_sampler_info_params(cl_device_id deviceID, cl_context context,
             {
                 continue;
             }
-            for (int filt_mod_num = 0;
+            for (size_t filt_mod_num = 0;
                  filt_mod_num < ARRAY_SIZE(filter_mode_values); filt_mod_num++)
             {
                 int err = test_sampler_params(deviceID, context,
@@ -380,7 +381,8 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
         clGetDeviceInfo(deviceID, host_queue_query, sizeof(host_queue_props),
                         &host_queue_props, NULL);
     test_error(error, "clGetDeviceInfo failed");
-    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %d\n", host_queue_props);
+    log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %" PRIu64 "\n",
+             host_queue_props);
 
     cl_queue_properties device_queue_props = 0;
     if (version >= Version(2, 0))
@@ -389,7 +391,7 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
                                 sizeof(device_queue_props), &device_queue_props,
                                 NULL);
         test_error(error, "clGetDeviceInfo failed");
-        log_info("CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES is %d\n",
+        log_info("CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES is %" PRIu64 "\n",
                  device_queue_props);
     }
 
@@ -507,44 +509,10 @@ int test_get_context_info(cl_device_id deviceID, cl_context context, cl_command_
     return -1;
 }
 
-#define TEST_MEM_OBJECT_PARAM( mem, paramName, val, expected, name, type, cast )    \
-error = clGetMemObjectInfo( mem, paramName, sizeof( val ), &val, &size );        \
-test_error( error, "Unable to get mem object " name );                            \
-if( val != expected )                                                                \
-{                                                                                    \
-log_error( "ERROR: Mem object " name " did not validate! (expected " type ", got " type ")\n", (cast)(expected), (cast)val );    \
-return -1;                                                                        \
-}            \
-if( size != sizeof( val ) )                \
-{                                        \
-log_error( "ERROR: Returned size of mem object " name " does not validate! (expected %d, got %d)\n", (int)sizeof( val ), (int)size );    \
-return -1;    \
-}
-
 void CL_CALLBACK mem_obj_destructor_callback( cl_mem, void *data )
 {
     free( data );
 }
-
-// All possible combinations of valid cl_mem_flags.
-static cl_mem_flags all_flags[16] = {
-  0,
-  CL_MEM_READ_WRITE,
-  CL_MEM_READ_ONLY,
-  CL_MEM_WRITE_ONLY,
-  CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-  CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-  CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
-  CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
-  CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-  CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR,
-  CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR,
-  CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR,
-  CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR,
-  CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
-  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
-  CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,
-};
 
 #define TEST_DEVICE_PARAM( device, paramName, val, name, type, cast )    \
 error = clGetDeviceInfo( device, paramName, sizeof( val ), &val, &size );        \
@@ -664,6 +632,13 @@ int test_get_device_info(cl_device_id deviceID, cl_context context, cl_command_q
     }
     log_info( "\tReported device profile: %s \n", profile );
 
+    if (strcmp(profile, "FULL_PROFILE") == 0 && compilerAvail != CL_TRUE)
+    {
+        log_error("ERROR: Returned profile of device is FULL , but "
+                  "CL_DEVICE_COMPILER_AVAILABLE is not CL_TRUE as required by "
+                  "OpenCL 1.2!");
+        return -1;
+    }
 
     return 0;
 }
@@ -819,8 +794,8 @@ int test_kernel_required_group_size(cl_device_id deviceID, cl_context context, c
         test_error(error, "clFinish failed");
 
         if (max_dimensions == 2) {
-            return 0;
             free(source);
+            return 0;
         }
 
         local[1]--; local[2]++;

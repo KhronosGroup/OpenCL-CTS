@@ -18,21 +18,24 @@
 #include "harness/testHarness.h"
 
 
-#define TEST_MEM_OBJECT_PARAM( mem, paramName, val, expected, name, type, cast )    \
-error = clGetMemObjectInfo( mem, paramName, sizeof( val ), &val, &size );   \
-test_error( error, "Unable to get mem object " name );  \
-if( val != expected )   \
-{   \
-log_error( "ERROR: Mem object " name " did not validate! (expected " type ", got " type " from %s:%d)\n",   \
-expected, (cast)val, __FILE__, __LINE__ );   \
-return -1;  \
-}   \
-if( size != sizeof( val ) ) \
-{   \
-log_error( "ERROR: Returned size of mem object " name " does not validate! (expected %d, got %d from %s:%d)\n", \
-(int)sizeof( val ), (int)size , __FILE__, __LINE__ );   \
-return -1;  \
-}
+#define TEST_MEM_OBJECT_PARAM(mem, paramName, val, expected, name, type, cast) \
+    error = clGetMemObjectInfo(mem, paramName, sizeof(val), &val, &size);      \
+    test_error(error, "Unable to get mem object " name);                       \
+    if (val != expected)                                                       \
+    {                                                                          \
+        log_error("ERROR: Mem object " name                                    \
+                  " did not validate! (expected " type ", got " type           \
+                  " from %s:%d)\n",                                            \
+                  (cast)expected, (cast)val, __FILE__, __LINE__);              \
+        return -1;                                                             \
+    }                                                                          \
+    if (size != sizeof(val))                                                   \
+    {                                                                          \
+        log_error("ERROR: Returned size of mem object " name                   \
+                  " does not validate! (expected %d, got %d from %s:%d)\n",    \
+                  (int)sizeof(val), (int)size, __FILE__, __LINE__);            \
+        return -1;                                                             \
+    }
 
 static void CL_CALLBACK mem_obj_destructor_callback( cl_mem, void * data )
 {
@@ -217,9 +220,18 @@ int test_get_buffer_info( cl_device_id deviceID, cl_context context, cl_command_
             // Create a buffer object to test against.
             bufferObject = clCreateBuffer( context, bufferFlags[ i ], addressAlign * 4, NULL, &error );
             test_error( error, "Unable to create buffer to test with" );
+            void *ptr;
+            TEST_MEM_OBJECT_PARAM(bufferObject, CL_MEM_HOST_PTR, ptr, NULL,
+                                  "host pointer", "%p", void *)
         }
 
         // Perform buffer object queries.
+        void *ptr;
+        TEST_MEM_OBJECT_PARAM(
+            bufferObject, CL_MEM_HOST_PTR, ptr,
+            ((bufferFlags[i] & CL_MEM_USE_HOST_PTR) ? buffer : NULL),
+            "host pointer", "%p", void *)
+
         cl_mem_object_type type;
         TEST_MEM_OBJECT_PARAM( bufferObject, CL_MEM_TYPE, type, CL_MEM_OBJECT_BUFFER, "type", "%d", int )
 
@@ -227,7 +239,8 @@ int test_get_buffer_info( cl_device_id deviceID, cl_context context, cl_command_
         TEST_MEM_OBJECT_PARAM( bufferObject, CL_MEM_FLAGS, flags, (unsigned int)bufferFlags[ i ], "flags", "%d", unsigned int )
 
         size_t sz;
-        TEST_MEM_OBJECT_PARAM( bufferObject, CL_MEM_SIZE, sz, (size_t)( addressAlign * 4 ), "size", "%ld", size_t )
+        TEST_MEM_OBJECT_PARAM(bufferObject, CL_MEM_SIZE, sz,
+                              (size_t)(addressAlign * 4), "size", "%zu", size_t)
 
         cl_uint mapCount;
         error = clGetMemObjectInfo( bufferObject, CL_MEM_MAP_COUNT, sizeof( mapCount ), &mapCount, &size );
@@ -256,7 +269,8 @@ int test_get_buffer_info( cl_device_id deviceID, cl_context context, cl_command_
         TEST_MEM_OBJECT_PARAM( bufferObject, CL_MEM_ASSOCIATED_MEMOBJECT, origObj, (void *)NULL, "associated mem object", "%p", void * )
 
         size_t offset;
-        TEST_MEM_OBJECT_PARAM( bufferObject, CL_MEM_OFFSET, offset, 0L, "offset", "%ld", size_t )
+        TEST_MEM_OBJECT_PARAM(bufferObject, CL_MEM_OFFSET, offset, size_t(0),
+                              "offset", "%zu", size_t)
 
         cl_buffer_region region;
         region.origin = addressAlign;
@@ -312,7 +326,8 @@ int test_get_buffer_info( cl_device_id deviceID, cl_context context, cl_command_
             }
             TEST_MEM_OBJECT_PARAM( subBufferObject, CL_MEM_FLAGS, flags, (unsigned int)inheritedFlags, "flags", "%d", unsigned int )
 
-            TEST_MEM_OBJECT_PARAM( subBufferObject, CL_MEM_SIZE, sz, (size_t)( addressAlign ), "size", "%ld", size_t )
+            TEST_MEM_OBJECT_PARAM(subBufferObject, CL_MEM_SIZE, sz,
+                                  (size_t)(addressAlign), "size", "%zu", size_t)
 
             if ( bufferFlags[ i ] & CL_MEM_USE_HOST_PTR )
             {
@@ -347,7 +362,9 @@ int test_get_buffer_info( cl_device_id deviceID, cl_context context, cl_command_
 
             TEST_MEM_OBJECT_PARAM( subBufferObject, CL_MEM_ASSOCIATED_MEMOBJECT, origObj, (cl_mem)bufferObject, "associated mem object", "%p", void * )
 
-            TEST_MEM_OBJECT_PARAM( subBufferObject, CL_MEM_OFFSET, offset, (size_t)( addressAlign ), "offset", "%ld", size_t )
+            TEST_MEM_OBJECT_PARAM(subBufferObject, CL_MEM_OFFSET, offset,
+                                  (size_t)(addressAlign), "offset", "%zu",
+                                  size_t)
         }
     }
 
@@ -363,8 +380,6 @@ int test_get_imageObject_info( cl_mem * image, cl_mem_flags objectFlags, cl_imag
     cl_mem_flags flags;
     cl_uint mapCount;
     cl_uint refCount;
-    size_t rowPitchMultiplier;
-    size_t slicePitchMultiplier;
     cl_context otherCtx;
     size_t offset;
     size_t sz;
@@ -398,7 +413,8 @@ int test_get_imageObject_info( cl_mem * image, cl_mem_flags objectFlags, cl_imag
 
     TEST_MEM_OBJECT_PARAM( *image, CL_MEM_CONTEXT, otherCtx, context, "context", "%p", cl_context )
 
-    TEST_MEM_OBJECT_PARAM( *image, CL_MEM_OFFSET, offset, 0L, "offset", "%ld", size_t )
+    TEST_MEM_OBJECT_PARAM(*image, CL_MEM_OFFSET, offset, size_t(0), "offset",
+                          "%zu", size_t)
 
     return CL_SUCCESS;
 }
@@ -475,7 +491,8 @@ int test_get_image_info( cl_device_id deviceID, cl_context context, cl_mem_objec
         CL_MEM_HOST_NO_ACCESS | CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR,
         CL_MEM_HOST_NO_ACCESS | CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,
     };
-    MTdata d;
+    MTdataHolder d_holder(gRandomSeed);
+    MTdata d = static_cast<MTdata>(d_holder);
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT( deviceID )
 
@@ -493,8 +510,6 @@ int test_get_image_info( cl_device_id deviceID, cl_context context, cl_mem_objec
 #else
     imageInfo.buffer = NULL;
 #endif
-
-    d = init_genrand( gRandomSeed );
 
     for ( unsigned int i = 0; i < sizeof(imageFlags) / sizeof(cl_mem_flags); ++i )
     {

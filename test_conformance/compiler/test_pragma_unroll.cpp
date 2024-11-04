@@ -284,8 +284,10 @@ int test_pragma_unroll(cl_device_id deviceID, cl_context context, cl_command_que
 
     for (size_t i = 0; i < ELEMENT_NUM; ++i) {
       if (results[i] != i) {
-        log_error("Kernel %d returned invalid result. Test: %d, expected: %d\n", kernelIdx + 1, results[i], i);
-        return -1;
+          log_error(
+              "Kernel %zu returned invalid result. Test: %d, expected: %zu\n",
+              kernelIdx + 1, results[i], i);
+          return -1;
       }
     }
   }

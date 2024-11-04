@@ -335,7 +335,9 @@ int test_enqueue_nested_blocks(cl_device_id device, cl_context context, cl_comma
     };
 
     dev_queue = clCreateCommandQueueWithProperties(context, device, queue_prop_def, &err_ret);
-    test_error(err_ret, "clCreateCommandQueueWithProperties(CL_QUEUE_DEVICE|CL_QUEUE_DEFAULT) failed");
+    test_error(err_ret,
+               "clCreateCommandQueueWithProperties(CL_QUEUE_ON_DEVICE | "
+               "CL_QUEUE_ON_DEVICE_DEFAULT) failed");
 
     kernel_arg args[] =
     {
@@ -348,7 +350,9 @@ int test_enqueue_nested_blocks(cl_device_id device, cl_context context, cl_comma
         if (!gKernelName.empty() && gKernelName != sources_nested_blocks[k].src.kernel_name)
             continue;
 
-        log_info("Running '%s' kernel (%d of %d) ...\n", sources_nested_blocks[k].src.kernel_name, k + 1, arr_size(sources_nested_blocks));
+        log_info("Running '%s' kernel (%d of %zu) ...\n",
+                 sources_nested_blocks[k].src.kernel_name, k + 1,
+                 arr_size(sources_nested_blocks));
         for(i = 0; i < MAX_GLOBAL_WORK_SIZE; ++i) kernel_results[i] = 0;
 
         err_ret = run_n_kernel_args(context, queue, sources_nested_blocks[k].src.lines, sources_nested_blocks[k].src.num_lines, sources_nested_blocks[k].src.kernel_name, 0, MAX_GLOBAL_WORK_SIZE, kernel_results, sizeof(kernel_results), arr_size(args), args);
@@ -364,7 +368,8 @@ int test_enqueue_nested_blocks(cl_device_id device, cl_context context, cl_comma
 
     if (failCnt > 0)
     {
-        log_error("ERROR: %d of %d kernels failed.\n", failCnt, arr_size(sources_nested_blocks));
+        log_error("ERROR: %zu of %zu kernels failed.\n", failCnt,
+                  arr_size(sources_nested_blocks));
     }
 
     return res;

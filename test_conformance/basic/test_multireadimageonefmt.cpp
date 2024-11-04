@@ -153,14 +153,14 @@ int test_mri_one(cl_device_id device, cl_context context, cl_command_queue queue
   err  = clSetKernelArg(kernel, 0, sizeof i, &i);
   err |= clSetKernelArg(kernel, 1, sizeof err, &err);
   err |= clSetKernelArg(kernel, 2, sizeof sampler, &sampler);
-  for (i=0; i<8; i++)
-    err |= clSetKernelArg(kernel, 3+i, sizeof streams[i], &streams[i]);
+  for (i = 0; i < 8; i++)
+      err |= clSetKernelArg(kernel, 3 + i, sizeof streams[i], &streams[i]);
 
-    if (err != CL_SUCCESS)
-    {
-        log_error("clSetKernelArgs failed\n");
-        return -1;
-    }
+  if (err != CL_SUCCESS)
+  {
+      log_error("clSetKernelArgs failed\n");
+      return -1;
+  }
 
     threads[0] = (unsigned int)img_width;
     threads[1] = (unsigned int)img_height;
@@ -182,15 +182,13 @@ int test_mri_one(cl_device_id device, cl_context context, cl_command_queue queue
 
     // cleanup
   clReleaseSampler(sampler);
-  for (i=0; i<8; i++)
-    clReleaseMemObject(streams[i]);
+  for (i = 0; i < 8; i++) clReleaseMemObject(streams[i]);
   clReleaseKernel(kernel);
   clReleaseProgram(program);
-  for (i=0; i<7; i++)
-    free(input_ptr[i]);
-    free(output_ptr);
+  for (i = 0; i < 7; i++) free(input_ptr[i]);
+  free(output_ptr);
 
-    return err;
+  return err;
 }
 
 

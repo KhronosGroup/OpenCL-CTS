@@ -1,0 +1,84 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 58
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Vector16
+               OpCapability Int64
+               OpCapability ExpectAssumeKHR
+               OpExtension "SPV_KHR_expect_assume"
+          %1 = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %expect_long "expect_long"
+               OpSource OpenCL_C 102000
+               OpDecorate %dst FuncParamAttr NoCapture
+               OpDecorate %dst Alignment 64
+       %void = OpTypeVoid
+      %ulong = OpTypeInt 64 0
+     %ulong2 = OpTypeVector %ulong 2
+     %ulong3 = OpTypeVector %ulong 3
+     %ulong4 = OpTypeVector %ulong 4
+     %ulong8 = OpTypeVector %ulong 8
+    %ulong16 = OpTypeVector %ulong 16
+    %ulong_0 = OpConstantNull %ulong
+   %ulong2_0 = OpConstantNull %ulong2
+   %ulong3_0 = OpConstantNull %ulong3
+   %ulong4_0 = OpConstantNull %ulong4
+   %ulong8_0 = OpConstantNull %ulong8
+  %ulong16_0 = OpConstantNull %ulong16
+    %index_1 = OpConstant %ulong 1
+    %index_2 = OpConstant %ulong 2
+    %index_3 = OpConstant %ulong 3
+    %index_4 = OpConstant %ulong 4
+    %index_5 = OpConstant %ulong 5
+%_ptr_CrossWorkgroup_ulong16 = OpTypePointer CrossWorkgroup %ulong16
+          %6 = OpTypeFunction %void %_ptr_CrossWorkgroup_ulong16 %ulong
+%expect_long = OpFunction %void None %6
+        %dst = OpFunctionParameter %_ptr_CrossWorkgroup_ulong16
+      %value = OpFunctionParameter %ulong
+         %10 = OpLabel
+                  ; setup
+  %value_vec = OpCompositeInsert %ulong2 %value %ulong2_0 0
+                  ; scalar expect:
+                  ;     long v1e = __builtin_expect(value, 0);
+                  ;     dst[0] = (long16)(v1e, 0, ...);
+        %v1e = OpExpectKHR %ulong %value %ulong_0
+      %v1v16 = OpCompositeInsert %ulong16 %v1e %ulong16_0 0
+               OpStore %dst %v1v16 Aligned 64
+                  ; vec2 expect:
+                  ;     long2 v2 = (long2)(value);
+                  ;     long2 v2e = __builtin_expect(v2, 0);
+                  ;     dst[1] = (long16)(v2e, 0, ...);
+         %v2 = OpVectorShuffle %ulong2 %value_vec %value_vec 0 0
+        %v2e = OpExpectKHR %ulong2 %v2 %ulong2_0
+      %v2v16 = OpVectorShuffle %ulong16 %v2e %ulong2_0 0 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 
+      %dst_1 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ulong16 %dst %index_1
+               OpStore %dst_1 %v2v16 Aligned 64
+                  ; vec3 expect
+         %v3 = OpVectorShuffle %ulong3 %value_vec %value_vec 0 0 0
+        %v3e = OpExpectKHR %ulong3 %v3 %ulong3_0
+      %v3v16 = OpVectorShuffle %ulong16 %v3e %ulong2_0 0 1 2 3 3 3 3 3 3 3 3 3 3 3 3 3
+      %dst_2 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ulong16 %dst %index_2
+               OpStore %dst_2 %v3v16 Aligned 64
+                  ; vec4 expect
+         %v4 = OpVectorShuffle %ulong4 %value_vec %value_vec 0 0 0 0
+        %v4e = OpExpectKHR %ulong4 %v4 %ulong4_0
+      %v4v16 = OpVectorShuffle %ulong16 %v4e %ulong2_0 0 1 2 3 4 4 4 4 4 4 4 4 4 4 4 4
+      %dst_3 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ulong16 %dst %index_3
+               OpStore %dst_3 %v4v16 Aligned 64
+                  ; vec8 expect
+         %v8 = OpVectorShuffle %ulong8 %value_vec %value_vec 0 0 0 0 0 0 0 0
+        %v8e = OpExpectKHR %ulong8 %v8 %ulong8_0
+      %v8v16 = OpVectorShuffle %ulong16 %v8e %ulong2_0 0 1 2 3 4 5 6 7 8 8 8 8 8 8 8 8
+      %dst_4 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ulong16 %dst %index_4
+               OpStore %dst_4 %v8v16 Aligned 64
+                  ; vec16 expect
+        %v16 = OpVectorShuffle %ulong16 %value_vec %value_vec 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+       %v16e = OpExpectKHR %ulong16 %v16 %ulong16_0
+      %dst_5 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_ulong16 %dst %index_5
+               OpStore %dst_5 %v16e Aligned 64
+               OpReturn
+               OpFunctionEnd

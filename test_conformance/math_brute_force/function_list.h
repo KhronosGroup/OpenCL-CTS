@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ union dptr {
     long double (*f_f)(long double);
     long double (*f_u)(cl_ulong);
     int (*i_f)(long double);
+    double (*f_ff_d)(double, double);
     long double (*f_ff)(long double, long double);
     int (*i_ff)(long double, long double);
     long double (*f_fi)(long double, int);
@@ -70,6 +71,9 @@ struct vtbl
     int (*DoubleTestFunc)(
         const struct Func *, MTdata,
         bool); // may be NULL if function is single precision only
+    int (*HalfTestFunc)(
+        const struct Func *, MTdata,
+        bool); // may be NULL if function is single precision only
 };
 
 struct Func
@@ -82,6 +86,7 @@ struct Func
     fptr rfunc;
     float float_ulps;
     float double_ulps;
+    float half_ulps;
     float float_embedded_ulps;
     float relaxed_error;
     float relaxed_embedded_error;

@@ -1,0 +1,39 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 61
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "ptrops_test"
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+    %ulong_0 = OpConstant %ulong 0
+    %ulong_1 = OpConstant %ulong 1
+    %ulong_2 = OpConstant %ulong 2
+       %void = OpTypeVoid
+   %ptr_uint = OpTypePointer CrossWorkgroup %uint
+ %kernel_sig = OpTypeFunction %void %ptr_uint %ptr_uint
+       %bool = OpTypeBool
+     %kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %ptr_uint
+        %tst = OpFunctionParameter %ptr_uint
+      %entry = OpLabel
+        %cmp = OpPtrEqual %bool %dst %tst
+      %bool0 = OpSelect %uint %cmp %uint_1 %uint_0
+       %dst0 = OpInBoundsPtrAccessChain %ptr_uint %dst %ulong_0
+               OpStore %dst0 %bool0 Aligned 4
+       %cmp1 = OpPtrNotEqual %bool %dst %tst
+      %bool1 = OpSelect %uint %cmp1 %uint_1 %uint_0
+       %dst1 = OpInBoundsPtrAccessChain %ptr_uint %dst %ulong_1
+               OpStore %dst1 %bool1 Aligned 4
+      %delta = OpPtrDiff %ulong %dst %tst
+    %deltaui = OpUConvert %uint %delta
+       %dst2 = OpInBoundsPtrAccessChain %ptr_uint %dst %ulong_2
+               OpStore %dst2 %deltaui Aligned 4
+               OpReturn
+               OpFunctionEnd

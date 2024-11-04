@@ -57,7 +57,6 @@ cl_int create_linked_lists_on_host(cl_command_queue cmdq, cl_mem nodes, Node *pN
 cl_int verify_linked_lists_on_host(int ci, cl_command_queue cmdq, cl_mem nodes, Node *pNodes2, cl_int ListLength, size_t numLists, cl_bool useNewAPI )
 {
   cl_int error = CL_SUCCESS;
-  cl_int correct_count;
 
   Node *pNodes;
   if (useNewAPI == CL_FALSE)
@@ -71,8 +70,6 @@ cl_int verify_linked_lists_on_host(int ci, cl_command_queue cmdq, cl_mem nodes, 
     error = clEnqueueSVMMap(cmdq, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, pNodes2, sizeof(Node)*ListLength * numLists, 0, NULL,NULL);
     test_error2(error, pNodes, "clEnqueueSVMMap failed");
   }
-
-  correct_count = 0;
 
   error = verify_linked_lists(pNodes, numLists, ListLength);
   if(error) return -1;
@@ -98,7 +95,9 @@ cl_int create_linked_lists_on_device(int ci, cl_command_queue cmdq, cl_mem alloc
   cl_int error = CL_SUCCESS;
   log_info("SVM: creating linked list on device: %d ", ci);
 
-  size_t *pAllocator = (size_t*) clEnqueueMapBuffer(cmdq, allocator, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, sizeof(cl_int), 0, NULL,NULL, &error);
+  size_t *pAllocator = (size_t *)clEnqueueMapBuffer(
+      cmdq, allocator, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, sizeof(size_t),
+      0, NULL, NULL, &error);
   test_error2(error, pAllocator, "clEnqueueMapBuffer failed");
   // reset allocator index
   *pAllocator = numLists;   // the first numLists elements of the nodes array are already allocated (they hold the head of each list).
@@ -206,7 +205,9 @@ int shared_address_space_coarse_grain(cl_device_id deviceID, cl_context context2
     }
 
     // this buffer holds an index into the nodes buffer, it is used for node allocation
-    clMemWrapper allocator = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int), NULL, &error);
+    clMemWrapper allocator = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                            sizeof(size_t), NULL, &error);
+
     test_error(error, "clCreateBuffer failed.");
 
     error = clGetMemObjectInfo(allocator, CL_MEM_USES_SVM_POINTER, sizeof(cl_bool), &usesSVMpointer, 0);

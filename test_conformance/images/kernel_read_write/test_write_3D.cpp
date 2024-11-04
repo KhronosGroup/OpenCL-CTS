@@ -46,22 +46,30 @@ static size_t reduceImageDepth(size_t maxDimSize, MTdata& seed) {
 
 
 const char *write3DKernelSourcePattern =
-"%s"
-"__kernel void sample_kernel( __global %s4 *input, write_only image3d_t output %s )\n"
-"{\n"
-"   int tidX = get_global_id(0), tidY = get_global_id(1), tidZ = get_global_id(2);\n"
-"%s"
-"   write_image%s( output, (int4)( tidX, tidY, tidZ, 0 ) %s, input[ offset ]);\n"
-"}";
+    "%s"
+    "%s\n"
+    "__kernel void sample_kernel( __global %s4 *input, write_only image3d_t "
+    "output %s )\n"
+    "{\n"
+    "   int tidX = get_global_id(0), tidY = get_global_id(1), tidZ = "
+    "get_global_id(2);\n"
+    "%s"
+    "   write_image%s( output, (int4)( tidX, tidY, tidZ, 0 ) %s, input[ offset "
+    "]);\n"
+    "}";
 
 const char *readwrite3DKernelSourcePattern =
-"%s"
-"__kernel void sample_kernel( __global %s4 *input, read_write image3d_t output %s )\n"
-"{\n"
-"   int tidX = get_global_id(0), tidY = get_global_id(1), tidZ = get_global_id(2);\n"
-"%s"
-"   write_image%s( output, (int4)( tidX, tidY, tidZ, 0 ) %s, input[ offset ]);\n"
-"}";
+    "%s"
+    "%s\n"
+    "__kernel void sample_kernel( __global %s4 *input, read_write image3d_t "
+    "output %s )\n"
+    "{\n"
+    "   int tidX = get_global_id(0), tidY = get_global_id(1), tidZ = "
+    "get_global_id(2);\n"
+    "%s"
+    "   write_image%s( output, (int4)( tidX, tidY, tidZ, 0 ) %s, input[ offset "
+    "]);\n"
+    "}";
 
 const char *khr3DWritesPragma =
 "#pragma OPENCL EXTENSION cl_khr_3d_image_writes : enable\n";
@@ -524,7 +532,7 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
                                                 (test_value[0] >> 5) & 0x3F,
                                                 (test_value[0] >> 11) & 0x1F);
                                             log_error(
-                                                "    Error:    %f %f %f %f\n",
+                                                "    Error:    %f %f %f\n",
                                                 errors[0], errors[1],
                                                 errors[2]);
                                             break;
@@ -553,7 +561,7 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
                                                 (test_value[0] >> 5) & 0x1F,
                                                 (test_value[0] >> 10) & 0x1F);
                                             log_error(
-                                                "    Error:    %f %f %f %f\n",
+                                                "    Error:    %f %f %f\n",
                                                 errors[0], errors[1],
                                                 errors[2]);
                                             break;
@@ -678,14 +686,15 @@ int test_write_image_3D_set(cl_device_id device, cl_context context,
     }
 
     // Construct the source
-    sprintf( programSrc,
-             KernelSourcePattern,
-             gTestMipmaps ? "" : khr3DWritesPragma,
-             get_explicit_type_name( inputType ),
-             gTestMipmaps ? ", int lod" : "",
-             gTestMipmaps ? offset3DLodSource : offset3DSource,
-             readFormat,
-             gTestMipmaps ? ", lod" : "" );
+    sprintf(
+        programSrc, KernelSourcePattern, khr3DWritesPragma,
+        gTestMipmaps
+            ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable\n#pragma "
+              "OPENCL EXTENSION cl_khr_mipmap_image_writes: enable"
+            : "",
+        get_explicit_type_name(inputType), gTestMipmaps ? ", int lod" : "",
+        gTestMipmaps ? offset3DLodSource : offset3DSource, readFormat,
+        gTestMipmaps ? ", lod" : "");
 
     ptr = programSrc;
     error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,6 +49,8 @@
 #include "harness/testHarness.h"
 
 #define kPageSize 4096
+#define HALF_REQUIRED_FEATURES_1 (CL_FP_ROUND_TO_ZERO)
+#define HALF_REQUIRED_FEATURES_2 (CL_FP_ROUND_TO_NEAREST | CL_FP_INF_NAN)
 #define DOUBLE_REQUIRED_FEATURES                                               \
     (CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO                  \
      | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM)
@@ -58,13 +60,14 @@ static char appName[MAXPATHLEN] = "";
 cl_device_id gDevice = NULL;
 cl_context gContext = NULL;
 cl_command_queue gQueue = NULL;
-static int32_t gStartTestNumber = -1;
-static int32_t gEndTestNumber = -1;
+static size_t gStartTestNumber = ~0u;
+static size_t gEndTestNumber = ~0u;
 int gSkipCorrectnessTesting = 0;
 static int gStopOnError = 0;
 static bool gSkipRestOfTests;
 int gForceFTZ = 0;
 int gWimpyMode = 0;
+int gHostFill = 0;
 static int gHasDouble = 0;
 static int gTestFloat = 1;
 // This flag should be 'ON' by default and it can be changed through the command
@@ -80,6 +83,8 @@ static int gTestFastRelaxed = 1;
 */
 int gFastRelaxedDerived = 1;
 static int gToggleCorrectlyRoundedDivideSqrt = 0;
+int gHasHalf = 0;
+cl_device_fp_config gHalfCapabilities = 0;
 int gDeviceILogb0 = 1;
 int gDeviceILogbNaN = 1;
 int gCheckTininessBeforeRounding = 1;
@@ -98,10 +103,12 @@ cl_mem gInBuffer2 = NULL;
 cl_mem gInBuffer3 = NULL;
 cl_mem gOutBuffer[VECTOR_SIZE_COUNT] = { NULL, NULL, NULL, NULL, NULL, NULL };
 cl_mem gOutBuffer2[VECTOR_SIZE_COUNT] = { NULL, NULL, NULL, NULL, NULL, NULL };
-static MTdata gMTdata;
+static MTdataHolder gMTdata;
 cl_device_fp_config gFloatCapabilities = 0;
 int gWimpyReductionFactor = 32;
 int gVerboseBruteForce = 0;
+
+cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
 
 static int ParseArgs(int argc, const char **argv);
 static void PrintUsage(void);
@@ -129,10 +136,10 @@ static int doTest(const char *name)
         const Func *const temp_func = functionList + i;
         if (strcmp(temp_func->name, name) == 0)
         {
-            if ((gStartTestNumber != -1 && i < gStartTestNumber)
+            if ((gStartTestNumber != ~0u && i < gStartTestNumber)
                 || i > gEndTestNumber)
             {
-                vlog("Skipping function #%d\n", i);
+                vlog("Skipping function #%zu\n", i);
                 return 0;
             }
 
@@ -166,7 +173,6 @@ static int doTest(const char *name)
             return 0;
         }
     }
-
     {
         if (0 == strcmp("ilogb", func_data->name))
         {
@@ -235,6 +241,23 @@ static int doTest(const char *name)
                 }
             }
         }
+
+        if (gHasHalf && NULL != func_data->vtbl_ptr->HalfTestFunc)
+        {
+            gTestCount++;
+            vlog("%3d: ", gTestCount);
+            if (func_data->vtbl_ptr->HalfTestFunc(func_data, gMTdata,
+                                                  false /* relaxed mode*/))
+            {
+                gFailCount++;
+                error++;
+                if (gStopOnError)
+                {
+                    gSkipRestOfTests = true;
+                    return error;
+                }
+            }
+        }
     }
 
     return error;
@@ -287,7 +310,7 @@ static test_definition test_list[] = {
     ADD_TEST(half_sin),      ADD_TEST(half_sqrt),  ADD_TEST(half_tan),
     ADD_TEST(add),           ADD_TEST(subtract),   ADD_TEST(divide),
     ADD_TEST(divide_cr),     ADD_TEST(multiply),   ADD_TEST(assignment),
-    ADD_TEST(not),
+    ADD_TEST(not ),          ADD_TEST(erf),        ADD_TEST(erfc),
 };
 
 #undef ADD_TEST
@@ -326,7 +349,7 @@ int main(int argc, const char *argv[])
     vlog("\n-------------------------------------------------------------------"
          "----------------------------------------\n");
 
-    gMTdata = init_genrand(gRandomSeed);
+    gMTdata = MTdataHolder(gRandomSeed);
 
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
@@ -335,8 +358,6 @@ int main(int argc, const char *argv[])
                                       test_num, test_list, true, 0, InitCL);
 
     RestoreFPState(&oldMode);
-
-    free_mtdata(gMTdata);
 
     if (gQueue)
     {
@@ -360,16 +381,18 @@ static int ParseArgs(int argc, const char **argv)
     int singleThreaded = 0;
 
     { // Extract the app name
-        strncpy(appName, argv[0], MAXPATHLEN);
+        strncpy(appName, argv[0], MAXPATHLEN - 1);
+        appName[MAXPATHLEN - 1] = '\0';
 
 #if defined(__APPLE__)
         char baseName[MAXPATHLEN];
         char *base = NULL;
-        strncpy(baseName, argv[0], MAXPATHLEN);
+        strncpy(baseName, argv[0], MAXPATHLEN - 1);
+        baseName[MAXPATHLEN - 1] = '\0';
         base = basename(baseName);
         if (NULL != base)
         {
-            strncpy(appName, base, sizeof(appName));
+            strncpy(appName, base, sizeof(appName) - 1);
             appName[sizeof(appName) - 1] = '\0';
         }
 #endif
@@ -407,6 +430,8 @@ static int ParseArgs(int argc, const char **argv)
 
                     case 'm': singleThreaded ^= 1; break;
 
+                    case 'g': gHasHalf ^= 1; break;
+
                     case 'r': gTestFastRelaxed ^= 1; break;
 
                     case 's': gStopOnError ^= 1; break;
@@ -420,6 +445,8 @@ static int ParseArgs(int argc, const char **argv)
                     case '[':
                         parseWimpyReductionFactor(arg, gWimpyReductionFactor);
                         break;
+
+                    case 'b': gHostFill ^= 1; break;
 
                     case 'z': gForceFTZ ^= 1; break;
 
@@ -467,7 +494,7 @@ static int ParseArgs(int argc, const char **argv)
             long number = strtol(arg, &t, 0);
             if (t != arg)
             {
-                if (-1 == gStartTestNumber)
+                if (~0u == gStartTestNumber)
                     gStartTestNumber = (int32_t)number;
                 else
                     gEndTestNumber = gStartTestNumber + (int32_t)number;
@@ -502,8 +529,6 @@ static int ParseArgs(int argc, const char **argv)
         gWimpyMode = 1;
     }
 
-    vlog("\nTest binary built %s %s\n", __DATE__, __TIME__);
-
     PrintArch();
 
     if (gWimpyMode)
@@ -524,7 +549,7 @@ static int ParseArgs(int argc, const char **argv)
 static void PrintFunctions(void)
 {
     vlog("\nMath function names:\n");
-    for (int i = 0; i < functionListCount; i++)
+    for (size_t i = 0; i < functionListCount; i++)
     {
         vlog("\t%s\n", functionList[i].name);
     }
@@ -539,6 +564,8 @@ static void PrintUsage(void)
     vlog("\t\t-d\tToggle double precision testing. (Default: on iff khr_fp_64 "
          "on)\n");
     vlog("\t\t-f\tToggle float precision testing. (Default: on)\n");
+    vlog("\t\t-g\tToggle half precision testing. (Default: on if khr_fp_16 "
+         "on)\n");
     vlog("\t\t-r\tToggle fast relaxed math precision testing. (Default: on)\n");
     vlog("\t\t-e\tToggle test as derived implementations for fast relaxed math "
          "precision. (Default: on)\n");
@@ -552,6 +579,7 @@ static void PrintUsage(void)
     vlog("\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
          "1-10, default factor(%u)\n",
          gWimpyReductionFactor);
+    vlog("\t\t-b\tFill buffers on host instead of device. (Default: off)\n");
     vlog("\t\t-z\tToggle FTZ mode (Section 6.5.3) for all functions. (Set by "
          "device capabilities by default.)\n");
     vlog("\t\t-v\tToggle Verbosity (Default: off)\n ");
@@ -637,6 +665,54 @@ test_status InitCL(cl_device_id device)
         return TEST_FAIL;
 #endif
     }
+
+    gFloatToHalfRoundingMode = kRoundToNearestEven;
+    if (is_extension_available(gDevice, "cl_khr_fp16"))
+    {
+        gHasHalf ^= 1;
+#if defined(CL_DEVICE_HALF_FP_CONFIG)
+        if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_HALF_FP_CONFIG,
+                                     sizeof(gHalfCapabilities),
+                                     &gHalfCapabilities, NULL)))
+        {
+            vlog_error(
+                "ERROR: Unable to get device CL_DEVICE_HALF_FP_CONFIG. (%d)\n",
+                error);
+            return TEST_FAIL;
+        }
+        if (HALF_REQUIRED_FEATURES_1
+                != (gHalfCapabilities & HALF_REQUIRED_FEATURES_1)
+            && HALF_REQUIRED_FEATURES_2
+                != (gHalfCapabilities & HALF_REQUIRED_FEATURES_2))
+        {
+            char list[300] = "";
+            if (0 == (gHalfCapabilities & CL_FP_ROUND_TO_NEAREST))
+                strncat(list, "CL_FP_ROUND_TO_NEAREST, ", sizeof(list) - 1);
+            if (0 == (gHalfCapabilities & CL_FP_ROUND_TO_ZERO))
+                strncat(list, "CL_FP_ROUND_TO_ZERO, ", sizeof(list) - 1);
+            if (0 == (gHalfCapabilities & CL_FP_INF_NAN))
+                strncat(list, "CL_FP_INF_NAN, ", sizeof(list) - 1);
+            vlog_error("ERROR: required half features are missing: %s\n", list);
+
+            return TEST_FAIL;
+        }
+
+        if ((gHalfCapabilities & CL_FP_ROUND_TO_NEAREST) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTE;
+        }
+        else // due to above condition it must be RTZ
+        {
+            gHalfRoundingMode = CL_HALF_RTZ;
+        }
+
+#else
+        vlog_error("FAIL: device says it supports cl_khr_fp16 but "
+                   "CL_DEVICE_HALF_FP_CONFIG is not in the headers!\n");
+        return TEST_FAIL;
+#endif
+    }
+
 
     uint32_t deviceFrequency = 0;
     size_t configSize = sizeof(deviceFrequency);
@@ -767,10 +843,11 @@ test_status InitCL(cl_device_id device)
     IsTininessDetectedBeforeRounding();
 
     cl_platform_id platform;
-    int err = clGetPlatformIDs(1, &platform, NULL);
+    int err = clGetDeviceInfo(gDevice, CL_DEVICE_PLATFORM, sizeof(platform),
+                              &platform, NULL);
     if (err)
     {
-        print_error(err, "clGetPlatformIDs failed");
+        print_error(err, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
         return TEST_FAIL;
     }
 
@@ -826,6 +903,7 @@ test_status InitCL(cl_device_id device)
              "Bruteforce_Ulp_Error_Double() for more details.\n\n");
     }
 
+    vlog("\tTesting half precision? %s\n", no_yes[0 != gHasHalf]);
     vlog("\tIs Embedded? %s\n", no_yes[0 != gIsEmbedded]);
     if (gIsEmbedded)
         vlog("\tRunning in RTZ mode? %s\n", no_yes[0 != gIsInRTZMode]);
@@ -965,12 +1043,13 @@ int IsTininessDetectedBeforeRounding(void)
 {
     int error;
     const char *kernelSource =
-        R"(__kernel void IsTininessDetectedBeforeRounding( __global float *out )
+        R"(__kernel void IsTininessDetectedBeforeRounding( __global float *out, float a, float b )
         {
-           volatile float a = 0x1.000002p-126f;
-           volatile float b = 0x1.fffffcp-1f;
            out[0] = a * b; // product is 0x1.fffffffffff8p-127
         })";
+
+    float a = 0x1.000002p-126f;
+    float b = 0x1.fffffcp-1f;
 
     clProgramWrapper query;
     clKernelWrapper kernel;
@@ -988,6 +1067,22 @@ int IsTininessDetectedBeforeRounding(void)
     if ((error =
              clSetKernelArg(kernel, 0, sizeof(gOutBuffer[gMinVectorSizeIndex]),
                             &gOutBuffer[gMinVectorSizeIndex])))
+    {
+        vlog_error("Error: Unable to set kernel arg to detect how tininess is "
+                   "detected  for the device. Err = %d",
+                   error);
+        return error;
+    }
+
+    if ((error = clSetKernelArg(kernel, 1, sizeof(a), &a)))
+    {
+        vlog_error("Error: Unable to set kernel arg to detect how tininess is "
+                   "detected  for the device. Err = %d",
+                   error);
+        return error;
+    }
+
+    if ((error = clSetKernelArg(kernel, 2, sizeof(b), &b)))
     {
         vlog_error("Error: Unable to set kernel arg to detect how tininess is "
                    "detected  for the device. Err = %d",
@@ -1023,83 +1118,6 @@ int IsTininessDetectedBeforeRounding(void)
 
     return 0;
 }
-
-
-int MakeKernel(const char **c, cl_uint count, const char *name, cl_kernel *k,
-               cl_program *p, bool relaxedMode)
-{
-    int error = 0;
-    char options[200] = "";
-
-    if (gForceFTZ)
-    {
-        strcat(options, " -cl-denorms-are-zero");
-    }
-
-    if (relaxedMode)
-    {
-        strcat(options, " -cl-fast-relaxed-math");
-    }
-
-    error =
-        create_single_kernel_helper(gContext, p, k, count, c, name, options);
-    if (error != CL_SUCCESS)
-    {
-        vlog_error("\t\tFAILED -- Failed to create kernel. (%d)\n", error);
-        return error;
-    }
-
-    return error;
-}
-
-int MakeKernels(const char **c, cl_uint count, const char *name,
-                cl_uint kernel_count, cl_kernel *k, cl_program *p,
-                bool relaxedMode)
-{
-    char options[200] = "";
-
-    if (gForceFTZ)
-    {
-        strcat(options, " -cl-denorms-are-zero ");
-    }
-
-    if (gFloatCapabilities & CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT)
-    {
-        strcat(options, " -cl-fp32-correctly-rounded-divide-sqrt ");
-    }
-
-    if (relaxedMode)
-    {
-        strcat(options, " -cl-fast-relaxed-math");
-    }
-
-    int error =
-        create_single_kernel_helper(gContext, p, NULL, count, c, NULL, options);
-    if (error != CL_SUCCESS)
-    {
-        vlog_error("\t\tFAILED -- Failed to create program. (%d)\n", error);
-        return error;
-    }
-
-    for (cl_uint i = 0; i < kernel_count; i++)
-    {
-        k[i] = clCreateKernel(*p, name, &error);
-        if (NULL == k[i] || error)
-        {
-            char buffer[2048] = "";
-
-            vlog_error("\t\tFAILED -- clCreateKernel() failed: (%d)\n", error);
-            clGetProgramBuildInfo(*p, gDevice, CL_PROGRAM_BUILD_LOG,
-                                  sizeof(buffer), buffer, NULL);
-            vlog_error("Log: %s\n", buffer);
-            clReleaseProgram(*p);
-            return error;
-        }
-    }
-
-    return error;
-}
-
 
 static int IsInRTZMode(void)
 {

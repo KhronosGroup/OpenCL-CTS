@@ -79,7 +79,6 @@ float qcom_s64_2_f32(int64_t data, bool sat, roundingMode rnd)
             uint32_t mantissa;
             if (mantShift >= 0){
                 uint64_t temp = (uint64_t)data >> mantShift;
-                uint64_t mask = (1 << mantShift) - 1;
                 if ((temp << mantShift) != data)
                     inExact = 1;
                 mantissa = (uint32_t)temp;
@@ -124,7 +123,6 @@ float qcom_s64_2_f32(int64_t data, bool sat, roundingMode rnd)
             uint32_t    mantissa;
             if (mantShift >= 0){
                 uint64_t temp = (uint64_t)data >> mantShift;
-                uint64_t mask = (1 << mantShift) - 1;
                 if (temp << mantShift != data)
                     inExact = 1;
                 mantissa = (uint32_t)temp;
@@ -183,7 +181,6 @@ float qcom_u64_2_f32(uint64_t data, bool sat, roundingMode rnd)
             uint32_t    mantissa;
             if (mantShift >= 0){
                 uint64_t temp = data >> mantShift;
-                uint64_t mask = (1 << mantShift) - 1;
                 if (temp << mantShift != data)
                     inExact = 1;
                 mantissa = (uint32_t)temp;
@@ -201,7 +198,6 @@ float qcom_u64_2_f32(uint64_t data, bool sat, roundingMode rnd)
                 return as_float(result);
         }
         case qcomRTN: {
-            int inExact = 0;
             if (!data)
                 return 0.0f;
             uint32_t  exponent    = (127 + 64 - clz(data) - 1) << (FLT_MANT_DIG - 1); //add 1 for the implied 1.0 in normalized fp32 numbers
@@ -209,9 +205,6 @@ float qcom_u64_2_f32(uint64_t data, bool sat, roundingMode rnd)
             uint32_t  mantissa;
             if (mantShift >= 0){
                 uint64_t temp = (uint64_t)data >> mantShift;
-                uint64_t mask = (1 << mantShift) - 1;
-                if (temp << mantShift != data)
-                    inExact = 1;
                 mantissa = (uint32_t)temp;
             }
             else

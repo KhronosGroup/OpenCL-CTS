@@ -61,6 +61,21 @@ static int vlog_win32(const char *format, ...);
         log_error(msg, ##__VA_ARGS__);                                         \
         return TEST_FAIL;                                                      \
     }
+#define test_fail_and_cleanup(errRet, cleanup, msg, ...)                       \
+    {                                                                          \
+        log_error(msg, ##__VA_ARGS__);                                         \
+        errRet = TEST_FAIL;                                                    \
+        goto cleanup;                                                          \
+    }
+#define test_error_and_cleanup(errCode, cleanup, msg, ...)                     \
+    {                                                                          \
+        auto errCodeResult = errCode;                                          \
+        if (errCodeResult != CL_SUCCESS)                                       \
+        {                                                                      \
+            print_error(errCodeResult, msg);                                   \
+            goto cleanup;                                                      \
+        }                                                                      \
+    }
 #define test_error(errCode, msg) test_error_ret(errCode, msg, errCode)
 #define test_error_fail(errCode, msg) test_error_ret(errCode, msg, TEST_FAIL)
 #define test_error_ret(errCode, msg, retValue)                                 \
@@ -153,9 +168,24 @@ static int vlog_win32(const char *format, ...);
         }                                                                      \
     } while (0)
 
+#define test_assert_event_status(comparison_operator, event)                   \
+    do                                                                         \
+    {                                                                          \
+        cl_int status;                                                         \
+        cl_int err = clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS,  \
+                                    sizeof(status), &status, nullptr);         \
+        test_error(err, "Could not get " #event " info");                      \
+        test_assert_error(status comparison_operator CL_COMPLETE,              \
+                          "Unexpected status for " #event);                    \
+    } while (false)
+
+#define test_assert_event_inprogress(event) test_assert_event_status(>, event)
+#define test_assert_event_terminated(event) test_assert_event_status(<, event)
+#define test_assert_event_complete(event) test_assert_event_status(==, event)
+
 extern const char *IGetErrorString(int clErrorCode);
 
-extern float Ulp_Error_Half(cl_half test, float reference);
+extern float Ulp_Error_Half(cl_half test, double reference);
 extern float Ulp_Error(float test, double reference);
 extern float Ulp_Error_Double(double test, long double reference);
 

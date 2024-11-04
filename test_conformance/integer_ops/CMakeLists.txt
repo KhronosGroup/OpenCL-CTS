@@ -1,5 +1,9 @@
 set(MODULE_NAME INTEGER_OPS)
 
+if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
+    add_cxx_flag_if_supported(-Wno-narrowing)
+endif()
+
 set(${MODULE_NAME}_SOURCES
     main.cpp
     test_int_basic_ops.cpp
@@ -12,6 +16,9 @@ set(${MODULE_NAME}_SOURCES
     verification_and_generation_functions.cpp
     test_popcount.cpp
     test_integer_dot_product.cpp
+    test_extended_bit_ops_extract.cpp
+    test_extended_bit_ops_insert.cpp
+    test_extended_bit_ops_reverse.cpp
 )
 
 include(../CMakeCommon.txt)

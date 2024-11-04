@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -58,6 +58,11 @@ extern int        test_set_kernel_arg_constant(cl_device_id deviceID, cl_context
 extern int        test_set_kernel_arg_struct_array(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_kernel_global_constant(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
+extern int test_set_command_queue_property(cl_device_id deviceID,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements);
+
 extern int        test_min_max_thread_dimensions(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_min_max_work_items_sizes(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_min_max_work_group_size(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
@@ -89,6 +94,13 @@ extern int        test_min_max_language_version(cl_device_id deviceID, cl_contex
 extern int        test_native_kernel(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems );
 
 extern int      test_create_context_from_type(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_create_context_from_type_device_type_all(cl_device_id deviceID,
+                                                         cl_context context,
+                                                         cl_command_queue queue,
+                                                         int num_elements);
+extern int test_create_context_from_type_device_type_default(
+    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    int num_elements);
 
 extern int      test_get_platform_ids(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
@@ -191,9 +203,21 @@ extern int test_consistency_3d_image_writes(cl_device_id deviceID,
                                             cl_context context,
                                             cl_command_queue queue,
                                             int num_elements);
+extern int test_consistency_requirements_fp64(cl_device_id deviceID,
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements);
+extern int test_consistency_requirements_fp16(cl_device_id deviceID,
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements);
 
 extern int test_min_image_formats(cl_device_id deviceID, cl_context context,
                                   cl_command_queue queue, int num_elements);
+extern int test_kernel_local_memory_size(cl_device_id deviceID,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements);
 extern int test_negative_get_platform_info(cl_device_id deviceID,
                                            cl_context context,
                                            cl_command_queue queue,
@@ -204,3 +228,27 @@ extern int test_negative_get_platform_ids(cl_device_id deviceID,
                                           int num_elements);
 extern int test_kernel_attributes(cl_device_id deviceID, cl_context context,
                                   cl_command_queue queue, int num_elements);
+
+extern int test_work_group_suggested_local_size_1D(cl_device_id device,
+                                                   cl_context context,
+                                                   cl_command_queue queue,
+                                                   int n_elems);
+extern int test_work_group_suggested_local_size_2D(cl_device_id device,
+                                                   cl_context context,
+                                                   cl_command_queue queue,
+                                                   int n_elems);
+extern int test_work_group_suggested_local_size_3D(cl_device_id device,
+                                                   cl_context context,
+                                                   cl_command_queue queue,
+                                                   int n_elems);
+
+extern int test_negative_create_command_queue(cl_device_id deviceID,
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements);
+extern int test_negative_create_command_queue_with_properties(
+    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_create_command_queue_with_properties_khr(
+    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    int num_elements);
