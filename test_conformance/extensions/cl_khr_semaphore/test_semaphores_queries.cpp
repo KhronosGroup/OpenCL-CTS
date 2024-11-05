@@ -14,11 +14,12 @@
 // limitations under the License.
 //
 
+#include <cinttypes>
 #include "semaphore_base.h"
 
 #define FLUSH_DELAY_S 5
 
-#define SEMAPHORE_PARAM_TEST(param_name, param_type, expected)                 \
+#define SEMAPHORE_PARAM_TEST(param_name, param_type, format, expected)         \
     do                                                                         \
     {                                                                          \
         param_type value;                                                      \
@@ -28,9 +29,10 @@
         test_error(error, "Unable to get " #param_name " from semaphore");     \
         if (value != expected)                                                 \
         {                                                                      \
-            test_fail("ERROR: Parameter %s did not validate! (expected %d, "   \
-                      "got %d)\n",                                             \
-                      #param_name, expected, value);                           \
+            test_fail(                                                         \
+                "ERROR: Parameter %s did not validate! (expected " format ", " \
+                "got " format ")\n",                                           \
+                #param_name, expected, value);                                 \
         }                                                                      \
         if (size != sizeof(value))                                             \
         {                                                                      \
@@ -96,39 +98,44 @@ struct SemaphoreWithDeviceListQueries : public SemaphoreTestBase
 
         // Confirm that querying CL_SEMAPHORE_TYPE_KHR returns
         // CL_SEMAPHORE_TYPE_BINARY_KHR
-        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_TYPE_KHR, cl_semaphore_type_khr,
+        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_TYPE_KHR, cl_semaphore_type_khr, "%d",
                              CL_SEMAPHORE_TYPE_BINARY_KHR);
 
         // Confirm that querying CL_SEMAPHORE_CONTEXT_KHR returns the right
         // context
-        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_CONTEXT_KHR, cl_context, context);
+        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_CONTEXT_KHR, cl_context, "%p",
+                             context);
 
-        // Confirm that querying CL_SEMAPHORE_REFERENCE_COUNT_KHR returns
-        // the right value
-        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, 1);
+        // Confirm that querying CL_SEMAPHORE_REFERENCE_COUNT_KHR returns the
+        // right value
+        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, "%u",
+                             1);
 
         err = clRetainSemaphoreKHR(semaphore);
         test_error(err, "Could not retain semaphore");
-        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, 2);
+        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, "%u",
+                             2);
 
         err = clReleaseSemaphoreKHR(semaphore);
         test_error(err, "Could not release semaphore");
-        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, 1);
+        SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, "%u",
+                             1);
 
-        // Confirm that querying CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR returns
-        // the same device id the semaphore was created with
+        // Confirm that querying CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR returns the
+        // same device id the semaphore was created with
         SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR, cl_device_id,
-                             device);
+                             "%p", device);
 
-        // Confirm that querying CL_SEMAPHORE_PROPERTIES_KHR returns the
-        // same properties the semaphore was created with
+        // Confirm that querying CL_SEMAPHORE_PROPERTIES_KHR returns the same
+        // properties the semaphore was created with
         SEMAPHORE_PARAM_TEST_ARRAY(CL_SEMAPHORE_PROPERTIES_KHR,
                                    cl_semaphore_properties_khr, 6, sema_props);
 
-        // Confirm that querying CL_SEMAPHORE_PAYLOAD_KHR returns the
-        // unsignaled state
+        // Confirm that querying CL_SEMAPHORE_PAYLOAD_KHR returns the unsignaled
+        // state
         SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_PAYLOAD_KHR, cl_semaphore_payload_khr,
-                             0);
+                             "%" PRIu64,
+                             static_cast<cl_semaphore_payload_khr>(0));
 
         return TEST_PASS;
     }
@@ -162,7 +169,7 @@ struct SemaphoreNoDeviceListQueries : public SemaphoreTestBase
         // Confirm that querying CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR returns
         // device id the semaphore was created with
         SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR, cl_device_id,
-                             device);
+                             "%p", device);
 
         return TEST_PASS;
     }
@@ -239,7 +246,7 @@ struct SemaphoreMultiDeviceContextQueries : public SemaphoreTestBase
         // Confirm that querying CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR returns
         // the same device id the semaphore was created with
         SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR, cl_device_id,
-                             scope_guard.sub_devices[0]);
+                             "%p", scope_guard.sub_devices[0]);
 
         return TEST_PASS;
     }

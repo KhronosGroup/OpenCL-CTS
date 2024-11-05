@@ -90,7 +90,7 @@ struct GetInfoInvalidValue : public SemaphoreTestBase
 
         // make sure that first test provides too small param size
         if (size != sizeof(sema_props))
-            test_fail("Error: expected size %d, returned %d",
+            test_fail("Error: expected size %zu, returned %zu",
                       sizeof(sema_props), size);
 
         // first test with non-zero property size but not enough
