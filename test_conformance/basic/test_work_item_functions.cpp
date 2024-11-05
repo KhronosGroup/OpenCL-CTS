@@ -361,7 +361,7 @@ struct TestWorkItemFnsOutOfRange : public TestWorkItemBase
                            outOfRangeWorkItemKernelCode)
     {}
 
-    virtual cl_int SetUp(const char *kernel_source) override
+    cl_int SetUp(const char *kernel_source) override
     {
         std::ostringstream sstr;
         std::string program_source;
@@ -392,7 +392,7 @@ struct TestWorkItemFnsOutOfRange : public TestWorkItemBase
     }
 
 
-    virtual cl_int Validate(const cl_uint dim)
+    cl_int Validate(const cl_uint dim)
     {
         cl_uint threads_to_verify = 1;
         for (size_t j = 0; j < dim; j++) threads_to_verify *= threads[j];
@@ -507,9 +507,9 @@ struct TestWorkItemFnsOutOfRange : public TestWorkItemBase
 
         for (size_t dim = 1; dim <= 3; dim++)
         {
-            cl_uint local_workgroup_size[3] = { maxWorkItemSizes[0],
-                                                maxWorkItemSizes[1],
-                                                maxWorkItemSizes[2] };
+            size_t local_workgroup_size[3] = { maxWorkItemSizes[0],
+                                               maxWorkItemSizes[1],
+                                               maxWorkItemSizes[2] };
             // check if maximum work group size for current dimention is not
             // exceeded
             cl_uint work_group_size = max_workgroup_size + 1;
