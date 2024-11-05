@@ -81,10 +81,9 @@ cl_int cBuffer_check_mem_host_no_access<T>::Setup_Test_Environment()
 template <class T>
 cl_int cBuffer_check_mem_host_no_access<T>::verify_RW_Buffer()
 {
-    cl_event event;
     cl_int err = clEnqueueReadBuffer(
         this->m_queue, this->m_buffer, this->m_blocking, 0,
-        this->get_block_size_bytes(), this->host_m_1.pData, 0, NULL, &event);
+        this->get_block_size_bytes(), this->host_m_1.pData, 0, NULL, NULL);
 
     if (err == CL_SUCCESS)
     {
@@ -102,7 +101,7 @@ cl_int cBuffer_check_mem_host_no_access<T>::verify_RW_Buffer()
 
     err = clEnqueueWriteBuffer(this->m_queue, this->m_buffer, this->m_blocking,
                                0, this->get_block_size_bytes(),
-                               this->host_m_1.pData, 0, NULL, &event);
+                               this->host_m_1.pData, 0, NULL, NULL);
 
     if (err == CL_SUCCESS)
     {
@@ -125,14 +124,13 @@ template <class T>
 cl_int cBuffer_check_mem_host_no_access<T>::verify_RW_Buffer_rect()
 {
     this->Init_rect();
-    cl_event event;
     cl_int err = CL_SUCCESS;
     err = clEnqueueReadBufferRect(
         this->m_queue, this->m_buffer, this->m_blocking,
         this->buffer_origin_bytes, this->host_origin_bytes, this->region_bytes,
         this->buffer_row_pitch_bytes, this->buffer_slice_pitch_bytes,
         this->host_row_pitch_bytes, this->host_slice_pitch_bytes,
-        this->host_m_2.pData, 0, NULL, &event);
+        this->host_m_2.pData, 0, NULL, NULL);
 
     if (err == CL_SUCCESS)
     {
@@ -153,7 +151,7 @@ cl_int cBuffer_check_mem_host_no_access<T>::verify_RW_Buffer_rect()
         this->buffer_origin_bytes, this->host_origin_bytes, this->region_bytes,
         this->buffer_row_pitch_bytes, this->buffer_slice_pitch_bytes,
         this->host_row_pitch_bytes, this->host_slice_pitch_bytes,
-        this->host_m_2.pData, 0, NULL, &event);
+        this->host_m_2.pData, 0, NULL, NULL);
 
     if (err == CL_SUCCESS)
     {
@@ -175,13 +173,12 @@ cl_int cBuffer_check_mem_host_no_access<T>::verify_RW_Buffer_rect()
 template <class T>
 cl_int cBuffer_check_mem_host_no_access<T>::verify_RW_Buffer_mapping()
 {
-    cl_event event;
     cl_int err;
 
     void *dataPtr;
     dataPtr = clEnqueueMapBuffer(
         this->m_queue, this->m_buffer, this->m_blocking, CL_MAP_READ, 0,
-        this->get_block_size_bytes(), 0, NULL, &event, &err);
+        this->get_block_size_bytes(), 0, NULL, NULL, &err);
     if (err == CL_SUCCESS)
     {
         log_error("Calling clEnqueueMapBuffer (CL_MAP_READ) on a memory object "
@@ -206,7 +203,7 @@ cl_int cBuffer_check_mem_host_no_access<T>::verify_RW_Buffer_mapping()
 
     dataPtr = clEnqueueMapBuffer(
         this->m_queue, this->m_buffer, this->m_blocking, CL_MAP_WRITE, 0,
-        this->get_block_size_bytes(), 0, NULL, &event, &err);
+        this->get_block_size_bytes(), 0, NULL, NULL, &err);
     if (err == CL_SUCCESS)
     {
         log_error("Calling clEnqueueMapBuffer (CL_MAP_WRITE) on a memory "

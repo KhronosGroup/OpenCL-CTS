@@ -115,7 +115,7 @@ struct CreateCommandBufferRepeatedProperties : public BasicCommandBufferTest
             TEST_FAIL);
 
         cl_command_buffer_properties_khr invalid_properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, CL_INVALID_PROPERTY, 0
+            CL_COMMAND_BUFFER_FLAGS_KHR, (cl_command_buffer_properties_khr)-1, 0
         };
 
         command_buffer =

@@ -175,7 +175,7 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
                                  nullptr, &error);
         test_error(error, "clCreateBuffer failed");
 
-        cl_int offset[] = { 0, max_pattern_length };
+        cl_uint offset[] = { 0, max_pattern_length };
         off_mem =
             clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                            sizeof(offset), offset, &error);
@@ -274,7 +274,9 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
                                      &pattern[0], 0, nullptr, nullptr);
         test_error(error, "clEnqueueWriteBuffer failed");
 
-        cl_int offset[] = { 0, pattern.size() - 1 };
+        test_assert_error(pattern.size() - 1 <= CL_UINT_MAX,
+                          "pattern.size() - 1 does not fit in a cl_uint");
+        cl_uint offset[] = { 0, static_cast<cl_uint>(pattern.size() - 1) };
         error = clEnqueueWriteBuffer(queue, off_mem, CL_TRUE, 0, sizeof(offset),
                                      offset, 0, nullptr, nullptr);
         test_error(error, "clEnqueueWriteBuffer failed");

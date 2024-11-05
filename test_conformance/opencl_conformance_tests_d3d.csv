@@ -5,3 +5,5 @@
 DX9 media sharing,media_sharing\test_media_surface_sharing
 D3D10,d3d10\test_d3d10
 D3D11,d3d11\test_d3d11
+
+cl_khr_dx9_media_sharing, extensions/cl_khr_dx9_media_sharing/test_cl_khr_dx9_media_sharing

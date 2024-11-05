@@ -40,7 +40,7 @@ struct CommandBufferCopyBaseTest : BasicCommandBufferTest
 
         if (check_image_support)
         {
-            image = create_image_2d(context, CL_MEM_READ_WRITE, &formats,
+            image = create_image_2d(context, CL_MEM_READ_WRITE, &format,
                                     img_width, img_height, 0, NULL, &error);
             test_error(error, "create_image_2d failed");
 
@@ -72,18 +72,30 @@ struct CommandBufferCopyBaseTest : BasicCommandBufferTest
         return BasicCommandBufferTest::Skip() || command_buffer_multi_device;
     }
 
+private:
+    static constexpr size_t num_channels = 4;
+
 protected:
-    const size_t img_width = 512;
-    const size_t img_height = 512;
-    const size_t origin[3] = { 0, 0, 0 };
-    const size_t region[3] = { img_width, img_height, 1 };
-    const cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
+    static constexpr size_t img_width = 512;
+    static constexpr size_t img_height = 512;
+    static constexpr size_t origin[3] = { 0, 0, 0 };
+    static constexpr size_t region[3] = { img_width, img_height, 1 };
+    static constexpr cl_image_format format = { CL_RGBA, CL_UNSIGNED_INT8 };
+    static constexpr size_t data_size =
+        img_width * img_height * num_channels * sizeof(uint8_t);
     clMemWrapper image;
     clMemWrapper buffer;
-    const size_t data_size = img_width * img_height * sizeof(cl_char);
     clMemWrapper in_mem;
     clMemWrapper out_mem;
 };
+
+template <bool check_image_support>
+constexpr size_t CommandBufferCopyBaseTest<check_image_support>::origin[3];
+template <bool check_image_support>
+constexpr size_t CommandBufferCopyBaseTest<check_image_support>::region[3];
+template <bool check_image_support>
+constexpr cl_image_format
+    CommandBufferCopyBaseTest<check_image_support>::format;
 
 namespace {
 
@@ -226,7 +238,7 @@ struct CommandBufferCopyImageDifferentContexts
         context1 = clCreateContext(0, 1, &device, nullptr, nullptr, &error);
         test_error(error, "Failed to create context");
 
-        image_ctx = create_image_2d(context1, CL_MEM_READ_WRITE, &formats,
+        image_ctx = create_image_2d(context1, CL_MEM_READ_WRITE, &format,
                                     img_width, img_height, 0, NULL, &error);
         test_error(error, "create_image_2d failed");
 

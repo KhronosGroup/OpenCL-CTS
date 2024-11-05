@@ -23,7 +23,6 @@
 
 // Helpers for generating runtime reference results
 static void intRefBuilder(printDataGenParameters&, char*, const size_t);
-static void longRefBuilder(printDataGenParameters&, char*, const size_t);
 static void halfRefBuilder(printDataGenParameters&, char* rResult,
                            const size_t);
 static void floatRefBuilder(printDataGenParameters&, char* rResult, const size_t);
@@ -158,6 +157,33 @@ std::vector<printDataGenParameters> printLongGenParameters = {
 
 };
 
+//--------------------------------------------------------
+
+//  Lookup table - [string]long-correct buffer             |
+
+//--------------------------------------------------------
+
+// The table below is used to accommodate differences in `printf` output when
+// using the `%ld` format specifier in 32-bit versus 64-bit compiled binaries
+
+std::vector<std::string> correctBufferLong = {
+
+    "10000000000",
+
+    "-10000000000   ",
+
+    "000010000000000",
+
+    "   -10000000000",
+
+    "+10000000000   ",
+
+    "000010000000000",
+
+    "-000010000000000"
+
+};
+
 //-----------------------------------------------
 
 // test case for long                             |
@@ -172,7 +198,7 @@ testCase testCaseLong = {
 
     printLongGenParameters,
 
-    longRefBuilder,
+    NULL,
 
     klong
 
@@ -1465,6 +1491,116 @@ testCase testCaseMixedFormat = { TYPE_MIXED_FORMAT_RANDOM,
                                  correctBufferMixedFormat,
                                  printMixedFormatGenParameters, NULL };
 
+
+//=============================================================
+
+// length sub-specifier format
+
+//=============================================================
+
+std::vector<printDataGenParameters> printLenSpecGenParameters = {
+
+    { { "%hd" }, "32767" },
+
+    { { "%hhd" }, "127" },
+
+    { { "%ld" }, "9223372036854775807L" },
+
+    { { "%hd" }, "-32767" },
+
+    { { "%hhd" }, "-128" },
+
+    { { "%ld" }, "-9223372036854775807L" },
+
+    { { "%hx" }, "32767" },
+
+    { { "%hhx" }, "127" },
+
+    { { "%lx" }, "9223372036854775807L" },
+
+    { { "%hx" }, "-32767" },
+
+    { { "%hhx" }, "-128" },
+
+    { { "%lx" }, "-9223372036854775807L" },
+
+    { { "%ho" }, "32767" },
+
+    { { "%hho" }, "127" },
+
+    { { "%lo" }, "9223372036854775807L" },
+
+    { { "%ho" }, "-32767" },
+
+    { { "%hho" }, "-128" },
+
+    { { "%lo" }, "-9223372036854775807L" },
+};
+
+//---------------------------------------------------------
+
+// Lookup table -[string] length specified correct buffer
+
+//---------------------------------------------------------
+
+std::vector<std::string> correctBufferLenSpec = {
+
+    "32767",
+
+    "127",
+
+    "9223372036854775807",
+
+    "-32767",
+
+    "-128",
+
+    "-9223372036854775807",
+
+    "7fff",
+
+    "7f",
+
+    "7fffffffffffffff",
+
+    "8001",
+
+    "80",
+
+    "8000000000000001",
+
+    "77777",
+
+    "177",
+
+    "777777777777777777777",
+
+    "100001",
+
+    "200",
+
+    "1000000000000000000001",
+};
+
+
+//----------------------------------------------------------
+
+// Test case for length specified values
+
+//----------------------------------------------------------
+
+testCase testCaseLenSpec = {
+
+    TYPE_LENGTH_SPECIFIER,
+
+    correctBufferLenSpec,
+
+    printLenSpecGenParameters,
+
+    NULL
+
+};
+
 //-------------------------------------------------------------------------------
 
 //All Test cases                                                                |
@@ -1477,7 +1613,7 @@ std::vector<testCase*> allTestCase = {
     &testCaseDouble,     &testCaseDoubleLimits, &testCaseOctal,
     &testCaseUnsigned,   &testCaseHexadecimal,  &testCaseChar,
     &testCaseString,     &testCaseFormatString, &testCaseVector,
-    &testCaseAddrSpace,  &testCaseMixedFormat
+    &testCaseAddrSpace,  &testCaseMixedFormat,  &testCaseLenSpec
 };
 
 //-----------------------------------------
@@ -1592,13 +1728,6 @@ static void intRefBuilder(printDataGenParameters& params, char* refResult, const
 {
     snprintf(refResult, refSize, params.genericFormats.front().c_str(),
              atoi(params.dataRepresentation));
-}
-
-static void longRefBuilder(printDataGenParameters& params, char* refResult,
-                           const size_t refSize)
-{
-    snprintf(refResult, refSize, params.genericFormats.front().c_str(),
-             atoll(params.dataRepresentation));
 }
 
 static void halfRefBuilder(printDataGenParameters& params, char* refResult,

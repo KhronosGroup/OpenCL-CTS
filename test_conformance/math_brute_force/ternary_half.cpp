@@ -80,7 +80,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
     constexpr size_t bufferElements = BUFFER_SIZE / sizeof(cl_half);
 
     std::vector<cl_uchar> overflow(bufferElements);
-    float half_ulps = f->half_ulps;
+    float half_ulps = getAllowedUlpError(f, khalf, relaxedMode);
     int skipNanInf = (0 == strcmp("fma", f->nameInCode));
 
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
@@ -300,10 +300,10 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                     if (fail && ftz)
                     {
                         // retry per section 6.5.3.2  with flushing on
-                        if (0.0f == test
-                            && 0.0f
-                                == f->func.f_fma(HTF(hp0[j]), HTF(hp1[j]),
-                                                 HTF(hp2[j]), FLUSHED))
+                        float r = f->func.f_fma(HTF(hp0[j]), HTF(hp1[j]),
+                                                HTF(hp2[j]), FLUSHED);
+                        cl_half c = HFF(r);
+                        if (0.0f == HTF(test) && IsHalfSubnormal(c))
                         {
                             fail = 0;
                             err = 0.0f;
@@ -349,13 +349,15 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                             if (fabsf(err3) < fabsf(err)) err = err3;
 
                             // retry per section 6.5.3.4
-                            if (0.0f == test
-                                && (0.0f
-                                        == f->func.f_fma(0.0f, HTF(hp1[j]),
-                                                         HTF(hp2[j]), FLUSHED)
-                                    || 0.0f
-                                        == f->func.f_fma(-0.0f, HTF(hp1[j]),
-                                                         HTF(hp2[j]), FLUSHED)))
+                            float r3 = f->func.f_fma(0.0f, HTF(hp1[j]),
+                                                     HTF(hp2[j]), FLUSHED);
+                            float r4 = f->func.f_fma(-0.0f, HTF(hp1[j]),
+                                                     HTF(hp2[j]), FLUSHED);
+                            cl_half c3 = HFF(r3);
+                            cl_half c4 = HFF(r4);
+
+                            if (0.0f == HTF(test)
+                                && (IsHalfSubnormal(c3) || IsHalfSubnormal(c4)))
                             {
                                 fail = 0;
                                 err = 0.0f;
@@ -424,28 +426,28 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                                 if (fabsf(err5) < fabsf(err)) err = err5;
 
                                 // retry per section 6.5.3.4
-                                if (0.0f == test
-                                    && (0.0f
-                                            == f->func.f_fma(0.0f, 0.0f,
-                                                             HTF(hp2[j]),
-                                                             FLUSHED)
-                                        || 0.0f
-                                            == f->func.f_fma(-0.0f, 0.0f,
-                                                             HTF(hp2[j]),
-                                                             FLUSHED)
-                                        || 0.0f
-                                            == f->func.f_fma(0.0f, -0.0f,
-                                                             HTF(hp2[j]),
-                                                             FLUSHED)
-                                        || 0.0f
-                                            == f->func.f_fma(-0.0f, -0.0f,
-                                                             HTF(hp2[j]),
-                                                             FLUSHED)))
+                                float r5 = f->func.f_fma(0.0f, 0.0f,
+                                                         HTF(hp2[j]), FLUSHED);
+                                float r6 = f->func.f_fma(-0.0f, 0.0f,
+                                                         HTF(hp2[j]), FLUSHED);
+                                float r7 = f->func.f_fma(0.0f, -0.0f,
+                                                         HTF(hp2[j]), FLUSHED);
+                                float r8 = f->func.f_fma(-0.0f, -0.0f,
+                                                         HTF(hp2[j]), FLUSHED);
+
+                                cl_half c5 = HFF(r5);
+                                cl_half c6 = HFF(r6);
+                                cl_half c7 = HFF(r7);
+                                cl_half c8 = HFF(r8);
+                                if (0.0f == HTF(test)
+                                    && (IsHalfSubnormal(c5)
+                                        || IsHalfSubnormal(c6)
+                                        || IsHalfSubnormal(c7)
+                                        || IsHalfSubnormal(c8)))
                                 {
                                     fail = 0;
                                     err = 0.0f;
                                 }
-
                                 if (IsHalfSubnormal(hp2[j]))
                                 {
                                     if (test == 0.0f) // 0*0+0 is 0
@@ -517,19 +519,24 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                                 if (fabsf(err5) < fabsf(err)) err = err5;
 
                                 // retry per section 6.5.3.4
-                                if (0.0f == test
-                                    && (0.0f
-                                            == f->func.f_fma(0.0f, HTF(hp1[j]),
-                                                             0.0f, FLUSHED)
-                                        || 0.0f
-                                            == f->func.f_fma(-0.0f, HTF(hp1[j]),
-                                                             0.0f, FLUSHED)
-                                        || 0.0f
-                                            == f->func.f_fma(0.0f, HTF(hp1[j]),
-                                                             -0.0f, FLUSHED)
-                                        || 0.0f
-                                            == f->func.f_fma(-0.0f, HTF(hp1[j]),
-                                                             -0.0f, FLUSHED)))
+                                float r9 = f->func.f_fma(0.0f, HTF(hp1[j]),
+                                                         0.0f, FLUSHED);
+                                float r10 = f->func.f_fma(-0.0f, HTF(hp1[j]),
+                                                          0.0f, FLUSHED);
+                                float r11 = f->func.f_fma(0.0f, HTF(hp1[j]),
+                                                          -0.0f, FLUSHED);
+                                float r12 = f->func.f_fma(-0.0f, HTF(hp1[j]),
+                                                          -0.0f, FLUSHED);
+
+                                cl_half c9 = HFF(r9);
+                                cl_half c10 = HFF(r10);
+                                cl_half c11 = HFF(r11);
+                                cl_half c12 = HFF(r12);
+                                if (0.0f == HTF(test)
+                                    && (IsHalfSubnormal(c9)
+                                        || IsHalfSubnormal(c10)
+                                        || IsHalfSubnormal(c11)
+                                        || IsHalfSubnormal(c12)))
                                 {
                                     fail = 0;
                                     err = 0.0f;
@@ -575,13 +582,14 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                             if (fabsf(err3) < fabsf(err)) err = err3;
 
                             // retry per section 6.5.3.4
-                            if (0.0f == test
-                                && (0.0f
-                                        == f->func.f_fma(HTF(hp0[j]), 0.0f,
-                                                         HTF(hp2[j]), FLUSHED)
-                                    || 0.0f
-                                        == f->func.f_fma(HTF(hp0[j]), -0.0f,
-                                                         HTF(hp2[j]), FLUSHED)))
+                            float r7 = f->func.f_fma(HTF(hp0[j]), 0.0f,
+                                                     HTF(hp2[j]), FLUSHED);
+                            float r8 = f->func.f_fma(HTF(hp0[j]), -0.0f,
+                                                     HTF(hp2[j]), FLUSHED);
+                            cl_half c7 = HFF(r7);
+                            cl_half c8 = HFF(r8);
+                            if (0.0f == HTF(test)
+                                && (IsHalfSubnormal(c7) || IsHalfSubnormal(c8)))
                             {
                                 fail = 0;
                                 err = 0.0f;
@@ -650,19 +658,24 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                                 if (fabsf(err5) < fabsf(err)) err = err5;
 
                                 // retry per section 6.5.3.4
-                                if (0.0f == test
-                                    && (0.0f
-                                            == f->func.f_fma(HTF(hp0[j]), 0.0f,
-                                                             0.0f, FLUSHED)
-                                        || 0.0f
-                                            == f->func.f_fma(HTF(hp0[j]), -0.0f,
-                                                             0.0f, FLUSHED)
-                                        || 0.0f
-                                            == f->func.f_fma(HTF(hp0[j]), 0.0f,
-                                                             -0.0f, FLUSHED)
-                                        || 0.0f
-                                            == f->func.f_fma(HTF(hp0[j]), -0.0f,
-                                                             -0.0f, FLUSHED)))
+                                float r13 = f->func.f_fma(HTF(hp0[j]), 0.0f,
+                                                          0.0f, FLUSHED);
+                                float r14 = f->func.f_fma(HTF(hp0[j]), -0.0f,
+                                                          0.0f, FLUSHED);
+                                float r15 = f->func.f_fma(HTF(hp0[j]), 0.0f,
+                                                          -0.0f, FLUSHED);
+                                float r16 = f->func.f_fma(HTF(hp0[j]), -0.0f,
+                                                          -0.0f, FLUSHED);
+
+                                cl_half c9 = HFF(r13);
+                                cl_half c10 = HFF(r14);
+                                cl_half c11 = HFF(r15);
+                                cl_half c12 = HFF(r16);
+                                if (0.0f == HTF(test)
+                                    && (IsHalfSubnormal(c9)
+                                        || IsHalfSubnormal(c10)
+                                        || IsHalfSubnormal(c11)
+                                        || IsHalfSubnormal(c12)))
                                 {
                                     fail = 0;
                                     err = 0.0f;
@@ -707,15 +720,15 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                             if (fabsf(err3) < fabsf(err)) err = err3;
 
                             // retry per section 6.5.3.4
-                            if (0.0f == test
-                                && (0.0f
-                                        == f->func.f_fma(HTF(hp0[j]),
-                                                         HTF(hp1[j]), 0.0f,
-                                                         FLUSHED)
-                                    || 0.0f
-                                        == f->func.f_fma(HTF(hp0[j]),
-                                                         HTF(hp1[j]), -0.0f,
-                                                         FLUSHED)))
+                            float r17 = f->func.f_fma(HTF(hp0[j]), HTF(hp1[j]),
+                                                      0.0f, FLUSHED);
+                            float r18 = f->func.f_fma(HTF(hp0[j]), HTF(hp1[j]),
+                                                      -0.0f, FLUSHED);
+                            cl_half c13 = HFF(r17);
+                            cl_half c14 = HFF(r18);
+                            if (0.0f == HTF(test)
+                                && (IsHalfSubnormal(c13)
+                                    || IsHalfSubnormal(c14)))
                             {
                                 fail = 0;
                                 err = 0.0f;
