@@ -124,8 +124,8 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
 
         const char *kernel_str =
             R"(
-          __kernel void copy(__global int* in, __global int* out, int offset) {
-              size_t id = offset + get_global_id(0);
+          __kernel void copy(__global int* in, __global int* out) {
+              size_t id = get_global_id(0);
               out[id] = in[id];
           })";
 
@@ -140,27 +140,17 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
         test_error(error, "Failed to create copy kernel");
 
         // create producer/consumer out-of-order queues
-        producer_queue_pri = clCreateCommandQueue(
-            context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &error);
-        test_error(error, "Could not create command queue");
-
-        producer_queue_sec = clCreateCommandQueue(
+        producer_queue = clCreateCommandQueue(
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &error);
         test_error(error, "Could not create command queue");
 
         if (single_queue)
         {
-            consumer_queue_pri = producer_queue_pri;
-            consumer_queue_sec = producer_queue_sec;
+            consumer_queue = producer_queue;
         }
         else
         {
-            consumer_queue_pri = clCreateCommandQueue(
-                context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-                &error);
-            test_error(error, "Could not create command queue");
-
-            consumer_queue_sec = clCreateCommandQueue(
+            consumer_queue = clCreateCommandQueue(
                 context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
                 &error);
             test_error(error, "Could not create command queue");
@@ -178,18 +168,27 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
         test_error(error, "Could not create semaphore");
 
         // create memory resources
-        in_mem = clCreateBuffer(context, CL_MEM_READ_ONLY,
-                                sizeof(cl_int) * num_elems, nullptr, &error);
+        in_mem_A = clCreateBuffer(context, CL_MEM_READ_ONLY,
+                                  sizeof(cl_int) * num_elems, nullptr, &error);
         test_error(error, "clCreateBuffer failed");
 
-        out_mem = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
-                                 sizeof(cl_int) * num_elems, nullptr, &error);
+        in_mem_B = clCreateBuffer(context, CL_MEM_READ_ONLY,
+                                  sizeof(cl_int) * num_elems, nullptr, &error);
         test_error(error, "clCreateBuffer failed");
 
-        error = clSetKernelArg(kernel, 0, sizeof(in_mem), &in_mem);
+
+        out_mem_A = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+                                   sizeof(cl_int) * num_elems, nullptr, &error);
+        test_error(error, "clCreateBuffer failed");
+
+        out_mem_B = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+                                   sizeof(cl_int) * num_elems, nullptr, &error);
+        test_error(error, "clCreateBuffer failed");
+
+        error = clSetKernelArg(kernel, 0, sizeof(in_mem_A), &in_mem_A);
         test_error(error, "clSetKernelArg failed");
 
-        error = clSetKernelArg(kernel, 1, sizeof(out_mem), &out_mem);
+        error = clSetKernelArg(kernel, 1, sizeof(out_mem_A), &out_mem_A);
         test_error(error, "clSetKernelArg failed");
 
         return CL_SUCCESS;
@@ -200,27 +199,22 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
         cl_int err = SetUp();
         test_error(err, "SetUp failed");
 
-        cl_int half_num_elems = num_elems / 2;
-
-        const cl_int pattern_pri = 42;
-        std::vector<cl_int> host_buffer(half_num_elems * 2, pattern_pri);
+        const cl_int pattern_A = 42;
+        const cl_int pattern_B = 0xACDC;
 
         {
             clEventWrapper user_event = clCreateUserEvent(context, &err);
             test_error(err, "clCreateUserEvent failed");
 
             // enqueue producer operations
-            err = clEnqueueWriteBuffer(producer_queue_pri, in_mem, CL_FALSE, 0,
-                                       sizeof(cl_int) * half_num_elems,
-                                       host_buffer.data(), 1, &user_event,
-                                       nullptr);
+            err = clEnqueueFillBuffer(
+                producer_queue, in_mem_A, &pattern_A, sizeof(cl_int), 0,
+                sizeof(cl_int) * num_elems, 1, &user_event, nullptr);
             test_error(err, "clEnqueueReadBuffer failed");
 
-            err = clEnqueueWriteBuffer(producer_queue_sec, in_mem, CL_FALSE,
-                                       sizeof(cl_int) * half_num_elems,
-                                       sizeof(cl_int) * half_num_elems,
-                                       host_buffer.data(), 1, &user_event,
-                                       nullptr);
+            err = clEnqueueFillBuffer(
+                producer_queue, in_mem_B, &pattern_B, sizeof(cl_int), 0,
+                sizeof(cl_int) * num_elems, 1, &user_event, nullptr);
             test_error(err, "clEnqueueReadBuffer failed");
 
             // launch producer operations simultaneously
@@ -228,11 +222,7 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
             test_error(err, "clSetUserEventStatus failed");
 
             // The semaphore cannot be signaled until the barrier is complete
-            err = clEnqueueBarrierWithWaitList(producer_queue_pri, 0, nullptr,
-                                               nullptr);
-            test_error(err, " clEnqueueBarrierWithWaitList ");
-
-            err = clEnqueueBarrierWithWaitList(producer_queue_sec, 0, nullptr,
+            err = clEnqueueBarrierWithWaitList(producer_queue, 0, nullptr,
                                                nullptr);
             test_error(err, " clEnqueueBarrierWithWaitList ");
 
@@ -241,31 +231,29 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
                 clEventWrapper sema_wait_event;
 
                 // signal/wait with event dependency
-                err = clEnqueueSignalSemaphoresKHR(producer_queue_pri, 1,
-                                                   semaphore, nullptr, 0,
-                                                   nullptr, &sema_wait_event);
+                err = clEnqueueSignalSemaphoresKHR(producer_queue, 1, semaphore,
+                                                   nullptr, 0, nullptr,
+                                                   &sema_wait_event);
                 test_error(err, "Could not signal semaphore");
 
                 // consumer and producer queues in sync through wait event
-                err = clEnqueueWaitSemaphoresKHR(consumer_queue_pri, 1,
-                                                 semaphore, nullptr, 1,
-                                                 &sema_wait_event, nullptr);
+                err = clEnqueueWaitSemaphoresKHR(consumer_queue, 1, semaphore,
+                                                 nullptr, 1, &sema_wait_event,
+                                                 nullptr);
                 test_error(err, "Could not wait semaphore");
             }
             else
             {
-                err = clEnqueueSignalSemaphoresKHR(producer_queue_pri, 1,
-                                                   semaphore, nullptr, 0,
-                                                   nullptr, nullptr);
+                err = clEnqueueSignalSemaphoresKHR(
+                    producer_queue, 1, semaphore, nullptr, 0, nullptr, nullptr);
                 test_error(err, "Could not signal semaphore");
 
-                err =
-                    clEnqueueWaitSemaphoresKHR(consumer_queue_pri, 1, semaphore,
-                                               nullptr, 0, nullptr, nullptr);
+                err = clEnqueueWaitSemaphoresKHR(consumer_queue, 1, semaphore,
+                                                 nullptr, 0, nullptr, nullptr);
                 test_error(err, "Could not wait semaphore");
             }
 
-            err = clEnqueueBarrierWithWaitList(consumer_queue_pri, 0, nullptr,
+            err = clEnqueueBarrierWithWaitList(consumer_queue, 0, nullptr,
                                                nullptr);
             test_error(err, " clEnqueueBarrierWithWaitList ");
         }
@@ -275,23 +263,20 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
             clEventWrapper user_event = clCreateUserEvent(context, &err);
             test_error(err, "clCreateUserEvent failed");
 
-            // first consumer queue copies half of input memory to output memory
-            cl_int zero = 0;
-            err = clSetKernelArg(kernel, 2, sizeof(cl_int), &zero);
-            test_error(err, "clSetKernelArg failed");
-
-            size_t threads = (size_t)half_num_elems;
-            err = clEnqueueNDRangeKernel(consumer_queue_pri, kernel, 1, nullptr,
+            // enqueue consumer operations
+            size_t threads = (size_t)num_elems;
+            err = clEnqueueNDRangeKernel(consumer_queue, kernel, 1, nullptr,
                                          &threads, nullptr, 1, &user_event,
                                          &wait_events[0]);
             test_error(err, "clEnqueueNDRangeKernel failed");
 
-            // second consumer queue copies second half of input memory to
-            // output memory
-            err = clSetKernelArg(kernel, 2, sizeof(cl_int), &half_num_elems);
+            err = clSetKernelArg(kernel, 0, sizeof(in_mem_B), &in_mem_B);
             test_error(err, "clSetKernelArg failed");
 
-            err = clEnqueueNDRangeKernel(consumer_queue_sec, kernel, 1, nullptr,
+            err = clSetKernelArg(kernel, 1, sizeof(out_mem_B), &out_mem_B);
+            test_error(err, "clSetKernelArg failed");
+
+            err = clEnqueueNDRangeKernel(consumer_queue, kernel, 1, nullptr,
                                          &threads, nullptr, 1, &user_event,
                                          &wait_events[1]);
             test_error(err, "clEnqueueNDRangeKernel failed");
@@ -300,37 +285,44 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
             err = clSetUserEventStatus(user_event, CL_COMPLETE);
             test_error(err, "clSetUserEventStatus failed");
 
-            err = clEnqueueSignalSemaphoresKHR(consumer_queue_pri, 1, semaphore,
+            err = clEnqueueSignalSemaphoresKHR(consumer_queue, 1, semaphore,
                                                nullptr, 2, &wait_events[0],
                                                nullptr);
             test_error(err, "Could not signal semaphore");
         }
 
-        err = clEnqueueReadBuffer(consumer_queue_pri, out_mem, CL_TRUE, 0,
-                                  sizeof(cl_int) * half_num_elems * 2,
-                                  host_buffer.data(), 0, nullptr, nullptr);
-        test_error(err, "clEnqueueReadBuffer failed");
+        std::vector<cl_int> host_buffer(num_elems, 0);
+        auto verify_result = [&](const cl_mem &out_mem, const cl_int pattern) {
+            err = clEnqueueReadBuffer(consumer_queue, out_mem, CL_TRUE, 0,
+                                      sizeof(cl_int) * num_elems,
+                                      host_buffer.data(), 0, nullptr, nullptr);
+            test_error_ret(err, "clEnqueueReadBuffer failed", false);
 
-        for (int i = 0; i < half_num_elems * 2; i++)
-        {
-            if (pattern_pri != host_buffer[i])
+            for (int i = 0; i < num_elems; i++)
             {
-                log_error("Expected %d was %d at index %zu\n", pattern_pri,
-                          host_buffer[i], i);
-                return TEST_FAIL;
+                if (pattern != host_buffer[i])
+                {
+                    log_error("Expected %d was %d at index %zu\n", pattern,
+                              host_buffer[i], i);
+                    return false;
+                }
             }
-        }
+            return true;
+        };
+
+        if (!verify_result(out_mem_A, pattern_A)) return TEST_FAIL;
+
+        if (!verify_result(out_mem_B, pattern_B)) return TEST_FAIL;
 
         return CL_SUCCESS;
     }
 
     clKernelWrapper kernel = nullptr;
     clProgramWrapper program = nullptr;
-    clMemWrapper in_mem = nullptr, out_mem = nullptr;
-    clCommandQueueWrapper producer_queue_pri = nullptr,
-                          producer_queue_sec = nullptr;
-    clCommandQueueWrapper consumer_queue_pri = nullptr,
-                          consumer_queue_sec = nullptr;
+    clMemWrapper in_mem_A = nullptr, in_mem_B = nullptr, out_mem_A = nullptr,
+                 out_mem_B = nullptr;
+    clCommandQueueWrapper producer_queue = nullptr;
+    clCommandQueueWrapper consumer_queue = nullptr;
 };
 
 } // anonymous namespace
