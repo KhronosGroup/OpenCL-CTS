@@ -202,94 +202,66 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
         const cl_int pattern_A = 42;
         const cl_int pattern_B = 0xACDC;
 
+        // enqueue producer operations
+        err = clEnqueueFillBuffer(producer_queue, in_mem_A, &pattern_A,
+                                  sizeof(cl_int), 0, sizeof(cl_int) * num_elems,
+                                  0, nullptr, nullptr);
+        test_error(err, "clEnqueueReadBuffer failed");
+
+        err = clEnqueueFillBuffer(producer_queue, in_mem_B, &pattern_B,
+                                  sizeof(cl_int), 0, sizeof(cl_int) * num_elems,
+                                  0, nullptr, nullptr);
+        test_error(err, "clEnqueueReadBuffer failed");
+
+        // The semaphore cannot be signaled until the barrier is complete
+        err = clEnqueueBarrierWithWaitList(producer_queue, 0, nullptr, nullptr);
+        test_error(err, " clEnqueueBarrierWithWaitList ");
+
+        if (single_queue)
         {
-            clEventWrapper user_event = clCreateUserEvent(context, &err);
-            test_error(err, "clCreateUserEvent failed");
+            clEventWrapper sema_wait_event;
 
-            // enqueue producer operations
-            err = clEnqueueFillBuffer(
-                producer_queue, in_mem_A, &pattern_A, sizeof(cl_int), 0,
-                sizeof(cl_int) * num_elems, 1, &user_event, nullptr);
-            test_error(err, "clEnqueueReadBuffer failed");
-
-            err = clEnqueueFillBuffer(
-                producer_queue, in_mem_B, &pattern_B, sizeof(cl_int), 0,
-                sizeof(cl_int) * num_elems, 1, &user_event, nullptr);
-            test_error(err, "clEnqueueReadBuffer failed");
-
-            // launch producer operations simultaneously
-            err = clSetUserEventStatus(user_event, CL_COMPLETE);
-            test_error(err, "clSetUserEventStatus failed");
-
-            // The semaphore cannot be signaled until the barrier is complete
-            err = clEnqueueBarrierWithWaitList(producer_queue, 0, nullptr,
-                                               nullptr);
-            test_error(err, " clEnqueueBarrierWithWaitList ");
-
-            if (single_queue)
-            {
-                clEventWrapper sema_wait_event;
-
-                // signal/wait with event dependency
-                err = clEnqueueSignalSemaphoresKHR(producer_queue, 1, semaphore,
-                                                   nullptr, 0, nullptr,
-                                                   &sema_wait_event);
-                test_error(err, "Could not signal semaphore");
-
-                // consumer and producer queues in sync through wait event
-                err = clEnqueueWaitSemaphoresKHR(consumer_queue, 1, semaphore,
-                                                 nullptr, 1, &sema_wait_event,
-                                                 nullptr);
-                test_error(err, "Could not wait semaphore");
-            }
-            else
-            {
-                err = clEnqueueSignalSemaphoresKHR(
-                    producer_queue, 1, semaphore, nullptr, 0, nullptr, nullptr);
-                test_error(err, "Could not signal semaphore");
-
-                err = clEnqueueWaitSemaphoresKHR(consumer_queue, 1, semaphore,
-                                                 nullptr, 0, nullptr, nullptr);
-                test_error(err, "Could not wait semaphore");
-            }
-
-            err = clEnqueueBarrierWithWaitList(consumer_queue, 0, nullptr,
-                                               nullptr);
-            test_error(err, " clEnqueueBarrierWithWaitList ");
-        }
-
-        {
-            clEventWrapper wait_events[2];
-            clEventWrapper user_event = clCreateUserEvent(context, &err);
-            test_error(err, "clCreateUserEvent failed");
-
-            // enqueue consumer operations
-            size_t threads = (size_t)num_elems;
-            err = clEnqueueNDRangeKernel(consumer_queue, kernel, 1, nullptr,
-                                         &threads, nullptr, 1, &user_event,
-                                         &wait_events[0]);
-            test_error(err, "clEnqueueNDRangeKernel failed");
-
-            err = clSetKernelArg(kernel, 0, sizeof(in_mem_B), &in_mem_B);
-            test_error(err, "clSetKernelArg failed");
-
-            err = clSetKernelArg(kernel, 1, sizeof(out_mem_B), &out_mem_B);
-            test_error(err, "clSetKernelArg failed");
-
-            err = clEnqueueNDRangeKernel(consumer_queue, kernel, 1, nullptr,
-                                         &threads, nullptr, 1, &user_event,
-                                         &wait_events[1]);
-            test_error(err, "clEnqueueNDRangeKernel failed");
-
-            // launch consumer operations simultaneously
-            err = clSetUserEventStatus(user_event, CL_COMPLETE);
-            test_error(err, "clSetUserEventStatus failed");
-
-            err = clEnqueueSignalSemaphoresKHR(consumer_queue, 1, semaphore,
-                                               nullptr, 2, &wait_events[0],
-                                               nullptr);
+            // signal/wait with event dependency
+            err = clEnqueueSignalSemaphoresKHR(producer_queue, 1, semaphore,
+                                               nullptr, 0, nullptr,
+                                               &sema_wait_event);
             test_error(err, "Could not signal semaphore");
+
+            // consumer and producer queues in sync through wait event
+            err = clEnqueueWaitSemaphoresKHR(consumer_queue, 1, semaphore,
+                                             nullptr, 1, &sema_wait_event,
+                                             nullptr);
+            test_error(err, "Could not wait semaphore");
         }
+        else
+        {
+            err = clEnqueueSignalSemaphoresKHR(producer_queue, 1, semaphore,
+                                               nullptr, 0, nullptr, nullptr);
+            test_error(err, "Could not signal semaphore");
+
+            err = clEnqueueWaitSemaphoresKHR(consumer_queue, 1, semaphore,
+                                             nullptr, 0, nullptr, nullptr);
+            test_error(err, "Could not wait semaphore");
+        }
+
+        err = clEnqueueBarrierWithWaitList(consumer_queue, 0, nullptr, nullptr);
+        test_error(err, " clEnqueueBarrierWithWaitList ");
+
+        // enqueue consumer operations
+        size_t threads = (size_t)num_elems;
+        err = clEnqueueNDRangeKernel(consumer_queue, kernel, 1, nullptr,
+                                     &threads, nullptr, 0, nullptr, nullptr);
+        test_error(err, "clEnqueueNDRangeKernel failed");
+
+        err = clSetKernelArg(kernel, 0, sizeof(in_mem_B), &in_mem_B);
+        test_error(err, "clSetKernelArg failed");
+
+        err = clSetKernelArg(kernel, 1, sizeof(out_mem_B), &out_mem_B);
+        test_error(err, "clSetKernelArg failed");
+
+        err = clEnqueueNDRangeKernel(consumer_queue, kernel, 1, nullptr,
+                                     &threads, nullptr, 0, nullptr, nullptr);
+        test_error(err, "clEnqueueNDRangeKernel failed");
 
         std::vector<cl_int> host_buffer(num_elems, 0);
         auto verify_result = [&](const cl_mem &out_mem, const cl_int pattern) {
