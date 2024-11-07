@@ -221,7 +221,7 @@ struct MultiFlagCreationTest : public BasicCommandBufferTest
             flags = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR
                 | CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
 
-            mutli_flags_supported = false;
+            multi_flags_supported = false;
         }
 
         cl_command_buffer_properties_khr props[] = {
@@ -229,7 +229,7 @@ struct MultiFlagCreationTest : public BasicCommandBufferTest
         };
 
         command_buffer = clCreateCommandBufferKHR(1, &queue, props, &error);
-        if (mutli_flags_supported)
+        if (multi_flags_supported)
         {
             test_error(error, "clCreateCommandBufferKHR failed");
         }
