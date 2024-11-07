@@ -214,7 +214,7 @@ struct MultiFlagCreationTest : public BasicCommandBufferTest
             num_flags_set++;
         }
 
-        // If we can't find mutliple supported flags, still set a bitfield but
+        // If we can't find multiple supported flags, still set a bitfield but
         // expect CL_INVALID_PROPERTY to be returned on creation.
         if (num_flags_set < 2)
         {
