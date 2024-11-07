@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 The Khronos Group Inc.
+// Copyright (c) 2020 - 2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,9 +24,14 @@
 #include <stdlib.h>
 #endif
 #endif
+#include <stdint.h>
 
 #if defined(__MINGW32__)
 #include "mingw_compat.h"
+#endif
+
+#if defined(_WIN32)
+#include <cstdlib>
 #endif
 
 inline void* align_malloc(size_t size, size_t alignment)
@@ -65,5 +70,10 @@ inline void align_free(void* ptr)
 #error "Please add support OS for aligned free"
 #endif
 }
+
+/* If DMA-BUF heaps are supported, a DMA-BUF will be allocated in the DMA heap
+ * and the file descriptor of the allocation is returned on success. Return -1
+ * on failure, or if DMA-BUF heaps are not supported. */
+int allocate_dma_buf(uint64_t size);
 
 #endif // #ifndef HARNESS_ALLOC_H_
