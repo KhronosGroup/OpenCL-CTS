@@ -190,7 +190,7 @@ struct MultiFlagCreationTest : public BasicCommandBufferTest
     {
         cl_command_buffer_properties_khr flags = 0;
         size_t num_flags_set = 0;
-        bool mutli_flags_supported = true;
+        bool multi_flags_supported = true;
         cl_int error = CL_SUCCESS;
 
         // First try to find multiple flags that are supported by the driver and
