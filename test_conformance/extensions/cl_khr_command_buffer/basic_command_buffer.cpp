@@ -193,7 +193,7 @@ struct MultiFlagCreationTest : public BasicCommandBufferTest
         bool mutli_flags_supported = true;
         cl_int error = CL_SUCCESS;
 
-        // First try to find mutliple flags that are supported by the driver and
+        // First try to find multiple flags that are supported by the driver and
         // device.
         if (simultaneous_use_support)
         {
