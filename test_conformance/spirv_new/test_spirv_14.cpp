@@ -494,12 +494,12 @@ TEST_SPIRV_FUNC(spirv14_select_composite)
                                 results.data(), 0, nullptr, nullptr);
     SPIRV_CHECK_ERROR(error, "Unable to read destination buffer");
 
-    const TestStruct expected_even{ 1024, 3.1415f };
-    const TestStruct expected_odd{ 2048, 2.7128f };
+    const TestStruct struct_a{ 1024, 3.1415f };
+    const TestStruct struct_b{ 2048, 2.7128f };
 
     for (size_t i = 0; i < global_size; i++)
     {
-        const TestStruct expected = (i & 1) ? expected_even : expected_odd;
+        const TestStruct& expected = (i & 1) ? struct_a : struct_b;
         if (results[i].i != expected.i || results[i].f != expected.f)
         {
             log_error("Result mismatch at index %zu!  Got {%d, %f}, Wanted "
