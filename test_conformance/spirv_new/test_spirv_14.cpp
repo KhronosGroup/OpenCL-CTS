@@ -554,7 +554,7 @@ TEST_SPIRV_FUNC(spirv14_copylogical)
     if (results.i != 1024 || results.f != 3.1415f)
     {
         log_error(
-            "Results mismatch with different pointers!  Got: { %d, %f }\n",
+            "Results mismatch!  Got: { %d, %f }\n",
             results.i, results.f);
         return TEST_FAIL;
     }
