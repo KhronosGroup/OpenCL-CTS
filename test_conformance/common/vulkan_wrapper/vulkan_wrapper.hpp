@@ -144,7 +144,7 @@ public:
     virtual ~VulkanDevice();
     const VulkanPhysicalDevice &getPhysicalDevice() const;
     VulkanQueue &
-    getQueue(const VulkanQueueFamily &queueFamily = getVulkanQueueFamily(),
+    getQueue(const VulkanQueueFamily &queueFamily /* = getVulkanQueueFamily()*/,
              uint32_t queueIndex = 0);
     operator VkDevice() const;
 };

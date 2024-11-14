@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 The Khronos Group Inc.
+// Copyright (c) 2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,13 +40,10 @@ const VulkanInstance &getVulkanInstance()
 
 const VulkanPhysicalDevice &getVulkanPhysicalDevice()
 {
-    size_t pdIdx;
+    size_t pdIdx = 0;
     cl_int errNum = 0;
-    cl_platform_id platform = NULL;
+    cl_platform_id platform = nullptr;
     cl_uchar uuid[CL_UUID_SIZE_KHR];
-    cl_device_id *devices;
-    char *extensions = NULL;
-    size_t extensionSize = 0;
     cl_uint num_devices = 0;
     cl_uint device_no = 0;
     const size_t bufsize = BUFFERSIZE;
@@ -69,14 +66,9 @@ const VulkanPhysicalDevice &getVulkanPhysicalDevice()
         throw std::runtime_error(
             "Error: clGetDeviceIDs failed in returning of devices\n");
     }
-    devices = (cl_device_id *)malloc(num_devices * sizeof(cl_device_id));
-    if (NULL == devices)
-    {
-        throw std::runtime_error(
-            "Error: Unable to allocate memory for devices\n");
-    }
-    errNum = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, num_devices, devices,
-                            NULL);
+    std::vector<cl_device_id> devices(num_devices);
+    errNum = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, num_devices,
+                            devices.data(), NULL);
     if (CL_SUCCESS != errNum)
     {
         throw std::runtime_error("Error: Failed to get deviceID.\n");
@@ -84,34 +76,14 @@ const VulkanPhysicalDevice &getVulkanPhysicalDevice()
     bool is_selected = false;
     for (device_no = 0; device_no < num_devices; device_no++)
     {
-        errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_EXTENSIONS, 0,
-                                 NULL, &extensionSize);
-        if (CL_SUCCESS != errNum)
-        {
-            throw std::runtime_error("Error in clGetDeviceInfo for getting "
-                                     "device_extension size....\n");
-        }
-        extensions = (char *)malloc(extensionSize);
-        if (NULL == extensions)
-        {
-            throw std::runtime_error(
-                "Unable to allocate memory for extensions\n");
-        }
-        errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_EXTENSIONS,
-                                 extensionSize, extensions, NULL);
-        if (CL_SUCCESS != errNum)
-        {
-            throw std::runtime_error("Error: Error in clGetDeviceInfo for "
-                                     "getting device_extension\n");
-        }
         errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_UUID_KHR,
-                                 CL_UUID_SIZE_KHR, uuid, &extensionSize);
+                                 CL_UUID_SIZE_KHR, uuid, nullptr);
         if (CL_SUCCESS != errNum)
         {
             throw std::runtime_error(
                 "Error: clGetDeviceInfo failed with error\n");
         }
-        free(extensions);
+
         for (pdIdx = 0; pdIdx < physicalDeviceList.size(); pdIdx++)
         {
             if (!memcmp(&uuid, physicalDeviceList[pdIdx].getUUID(),
@@ -139,10 +111,48 @@ const VulkanPhysicalDevice &getVulkanPhysicalDevice()
     return physicalDeviceList[pdIdx];
 }
 
-const VulkanQueueFamily &getVulkanQueueFamily(uint32_t queueFlags)
+const VulkanPhysicalDevice &
+getAssociatedVulkanPhysicalDevice(cl_device_id deviceId)
+{
+    size_t pdIdx;
+    cl_int errNum = 0;
+    cl_uchar uuid[CL_UUID_SIZE_KHR];
+    const VulkanInstance &instance = getVulkanInstance();
+    const VulkanPhysicalDeviceList &physicalDeviceList =
+        instance.getPhysicalDeviceList();
+
+    errNum = clGetDeviceInfo(deviceId, CL_DEVICE_UUID_KHR, CL_UUID_SIZE_KHR,
+                             uuid, nullptr);
+    if (CL_SUCCESS != errNum)
+    {
+        throw std::runtime_error("Error: clGetDeviceInfo failed with error\n");
+    }
+    for (pdIdx = 0; pdIdx < physicalDeviceList.size(); pdIdx++)
+    {
+        if (!memcmp(&uuid, physicalDeviceList[pdIdx].getUUID(), VK_UUID_SIZE))
+        {
+            std::cout << "Selected physical device = "
+                      << physicalDeviceList[pdIdx] << std::endl;
+            break;
+        }
+    }
+
+    if ((pdIdx >= physicalDeviceList.size())
+        || (physicalDeviceList[pdIdx] == (VkPhysicalDevice)VK_NULL_HANDLE))
+    {
+        throw std::runtime_error("failed to find a suitable GPU!");
+    }
+    std::cout << "Selected physical device is: " << physicalDeviceList[pdIdx]
+              << std::endl;
+    return physicalDeviceList[pdIdx];
+}
+
+
+const VulkanQueueFamily &
+getVulkanQueueFamily(const VulkanPhysicalDevice &physicalDevice,
+                     uint32_t queueFlags)
 {
     size_t qfIdx;
-    const VulkanPhysicalDevice &physicalDevice = getVulkanPhysicalDevice();
     const VulkanQueueFamilyList &queueFamilyList =
         physicalDevice.getQueueFamilyList();
 
