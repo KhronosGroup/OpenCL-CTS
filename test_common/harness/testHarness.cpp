@@ -689,6 +689,7 @@ static void print_results(int failed, int count, const char *name)
             log_error("FAILED %s.\n", name);
         }
     }
+    fflush(stdout);
 }
 
 int parseAndCallCommandLineTests(int argc, const char *argv[],
