@@ -499,7 +499,9 @@ size_t compare_scanlines(const image_descriptor *imageInfo, const char *aPtr,
                 cl_ushort aPixel = *(cl_ushort *)aPtr;
                 cl_ushort bPixel = *(cl_ushort *)bPtr;
                 // -1.0 is defined as 0x8000 and 0x8001
-                if ((aPixel != bPixel) && ((aPixel | bPixel) != 0x8001))
+                aPixel = aPixel == 0x8000 ? 0x8001 : aPixel;
+                bPixel = bPixel == 0x8000 ? 0x8001 : bPixel;
+                if ((aPixel != bPixel))
                 {
                     return column;
                 }
