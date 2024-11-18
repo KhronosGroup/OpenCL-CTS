@@ -263,6 +263,9 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
                                      &threads, nullptr, 0, nullptr, nullptr);
         test_error(err, "clEnqueueNDRangeKernel failed");
 
+        err = clEnqueueBarrierWithWaitList(consumer_queue, 0, nullptr, nullptr);
+        test_error(err, " clEnqueueBarrierWithWaitList ");
+
         std::vector<cl_int> host_buffer(num_elems, 0);
         auto verify_result = [&](const cl_mem &out_mem, const cl_int pattern) {
             err = clEnqueueReadBuffer(consumer_queue, out_mem, CL_TRUE, 0,
