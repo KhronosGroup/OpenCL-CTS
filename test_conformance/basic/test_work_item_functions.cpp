@@ -84,7 +84,7 @@ const char *outOfRangeWorkItemKernelCode =
     uint enqueuedLocalSize[ 3 ];
  } work_item_data;
 
-__kernel void sample_kernel( __global work_item_data *outData )
+__kernel void sample_kernel( __global work_item_data *outData, int dim_param )
 {
     int ind_mul=1;
     int ind=0;
@@ -99,40 +99,20 @@ __kernel void sample_kernel( __global work_item_data *outData )
 
 const char *outOfRangeWorkItemKernelCodeExt =
     R"(
-    uint dimindx=get_work_dim()+1;
+    uint dimindx=dim_param;
     outData[ind].globalSize[0] = (uint)get_global_size(dimindx);
     outData[ind].globalID[0] = (uint)get_global_id(dimindx);
     outData[ind].localSize[0] = (uint)get_local_size(dimindx);
     outData[ind].localID[0] = (uint)get_local_id(dimindx);
     outData[ind].numGroups[0] = (uint)get_num_groups(dimindx);
     outData[ind].groupID[0] = (uint)get_group_id(dimindx);
-)";
-
-const char *outOfRangeWorkItemKernelCodeExt11 =
-    R"(
-    uint dimindx=get_work_dim()+1;
-    outData[ind].globalSize[0] = (uint)get_global_size(dimindx);
-    outData[ind].globalID[0] = (uint)get_global_id(dimindx);
-    outData[ind].localSize[0] = (uint)get_local_size(dimindx);
-    outData[ind].localID[0] = (uint)get_local_id(dimindx);
-    outData[ind].numGroups[0] = (uint)get_num_groups(dimindx);
-    outData[ind].groupID[0] = (uint)get_group_id(dimindx);
-    outData[ind].globalOffset[0] = (uint)get_global_offset(dimindx);
-)";
-
-const char *outOfRangeWorkItemKernelCodeExt20 =
-    R"(
-    uint dimindx=get_work_dim()+1;
-    outData[ind].globalSize[0] = (uint)get_global_size(dimindx);
-    outData[ind].globalID[0] = (uint)get_global_id(dimindx);
-    outData[ind].localSize[0] = (uint)get_local_size(dimindx);
-    outData[ind].localID[0] = (uint)get_local_id(dimindx);
-    outData[ind].numGroups[0] = (uint)get_num_groups(dimindx);
-    outData[ind].groupID[0] = (uint)get_group_id(dimindx);
-    outData[ind].globalOffset[0] = (uint)get_global_offset(dimindx);
+#if __OPENCL_VERSION__ >= CL_VERSION_2_0
     outData[ind].enqueuedLocalSize[0] = (uint)get_enqueued_local_size(dimindx);
+    outData[ind].globalOffset[0] = (uint)get_global_offset(dimindx);
+#elif __OPENCL_VERSION__ >= CL_VERSION_1_1
+    outData[ind].globalOffset[0] = (uint)get_global_offset(dimindx);
+#endif
 )";
-
 
 const char *outOfRangeWorkItemHardcodedKernelCodeExt =
     R"(
@@ -142,31 +122,13 @@ const char *outOfRangeWorkItemHardcodedKernelCodeExt =
     outData[ind].localID[0] = (uint)get_local_id(4);
     outData[ind].numGroups[0] = (uint)get_num_groups(4);
     outData[ind].groupID[0] = (uint)get_group_id(4);
-)";
-
-const char *outOfRangeWorkItemHardcodedKernelCodeExt11 =
-    R"(
-    outData[ind].globalSize[0] = (uint)get_global_size(4);
-    outData[ind].globalID[0] = (uint)get_global_id(4);
-    outData[ind].localSize[0] = (uint)get_local_size(4);
-    outData[ind].localID[0] = (uint)get_local_id(4);
-    outData[ind].numGroups[0] = (uint)get_num_groups(4);
-    outData[ind].groupID[0] = (uint)get_group_id(4);
-    outData[ind].globalOffset[0] = (uint)get_global_offset(4);
-)";
-
-const char *outOfRangeWorkItemHardcodedKernelCodeExt20 =
-    R"(
-    outData[ind].globalSize[0] = (uint)get_global_size(4);
-    outData[ind].globalID[0] = (uint)get_global_id(4);
-    outData[ind].localSize[0] = (uint)get_local_size(4);
-    outData[ind].localID[0] = (uint)get_local_id(4);
-    outData[ind].numGroups[0] = (uint)get_num_groups(4);
-    outData[ind].groupID[0] = (uint)get_group_id(4);
-    outData[ind].globalOffset[0] = (uint)get_global_offset(4);
+#if __OPENCL_VERSION__ >= CL_VERSION_2_0
     outData[ind].enqueuedLocalSize[0] = (uint)get_enqueued_local_size(4);
+    outData[ind].globalOffset[0] = (uint)get_global_offset(4);
+#elif __OPENCL_VERSION__ >= CL_VERSION_1_1
+    outData[ind].globalOffset[0] = (uint)get_global_offset(4);
+#endif
 )";
-
 
 struct TestWorkItemBase
 {
@@ -177,10 +139,10 @@ struct TestWorkItemBase
           kernel_source(src), max_workgroup_size(0)
     {}
 
-    virtual cl_int SetUp(const char *kernel_source)
+    virtual cl_int SetUp(const char *src)
     {
-        cl_int error = create_single_kernel_helper(
-            context, &program, &kernel, 1, &kernel_source, "sample_kernel");
+        cl_int error = create_single_kernel_helper(context, &program, &kernel,
+                                                   1, &src, "sample_kernel");
         test_error(error, "Unable to create testing kernel");
 
         outData = clCreateBuffer(context, CL_MEM_READ_WRITE,
@@ -361,32 +323,14 @@ struct TestWorkItemFnsOutOfRange : public TestWorkItemBase
                            outOfRangeWorkItemKernelCode)
     {}
 
-    cl_int SetUp(const char *kernel_source) override
+    cl_int SetUp(const char *src) override
     {
         std::ostringstream sstr;
         std::string program_source;
-        const Version version = get_device_cl_version(device);
-        if (version >= Version(2, 0))
-        {
-            program_source = str_sprintf(
-                std::string(kernel_source),
-                hardcoded ? outOfRangeWorkItemHardcodedKernelCodeExt20
-                          : outOfRangeWorkItemKernelCodeExt20);
-        }
-        else if (version >= Version(1, 1))
-        {
-            program_source = str_sprintf(
-                std::string(kernel_source),
-                hardcoded ? outOfRangeWorkItemHardcodedKernelCodeExt11
-                          : outOfRangeWorkItemKernelCodeExt11);
-        }
-        else
-        {
-            program_source =
-                str_sprintf(std::string(kernel_source),
-                            hardcoded ? outOfRangeWorkItemHardcodedKernelCodeExt
-                                      : outOfRangeWorkItemKernelCodeExt);
-        }
+        program_source =
+            str_sprintf(std::string(kernel_source),
+                        hardcoded ? outOfRangeWorkItemHardcodedKernelCodeExt
+                                  : outOfRangeWorkItemKernelCodeExt);
 
         return TestWorkItemBase::SetUp(program_source.c_str());
     }
@@ -502,6 +446,10 @@ struct TestWorkItemFnsOutOfRange : public TestWorkItemBase
     {
         cl_int error = SetUp(kernel_source);
         test_error(error, "SetUp failed");
+
+        cl_int dim_param = 4;
+        error = clSetKernelArg(kernel, 1, sizeof(cl_int), &dim_param);
+        test_error(error, "Unable to set kernel arg");
 
         size_t localThreads[3] = { 0, 0, 0 };
 
