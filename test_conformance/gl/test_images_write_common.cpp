@@ -40,7 +40,7 @@ static const char *kernelpattern_image_write_1D_half =
 "__kernel void sample_test( __global half *source, write_only image1d_t dest )\n"
 "{\n"
 "    uint index = get_global_id(0);\n"
-"    write_imagef( dest, index, vload_half4(index, (__global half *)source));\n"
+"    write_imagef( dest, index, vload_half4(index, source));\n"
 "}\n";
 
 static const char *kernelpattern_image_write_1D_buffer =
@@ -55,7 +55,7 @@ static const char *kernelpattern_image_write_1D_buffer_half =
 "__kernel void sample_test( __global half *source, write_only image1d_buffer_t dest )\n"
 "{\n"
 "    uint index = get_global_id(0);\n"
-"    write_imagef( dest, index, vload_half4(index, (__global half *)source));\n"
+"    write_imagef( dest, index, vload_half4(index, source));\n"
 "}\n";
 
 static const char *kernelpattern_image_write_2D =
@@ -74,7 +74,7 @@ static const char *kernelpattern_image_write_2D_half =
 "    int  tidX = get_global_id(0);\n"
 "    int  tidY = get_global_id(1);\n"
 "    uint index = tidY * get_image_width( dest ) + tidX;\n"
-"    write_imagef( dest, (int2)( tidX, tidY ), vload_half4(index, (__global half *)source));\n"
+"    write_imagef( dest, (int2)( tidX, tidY ), vload_half4(index, source));\n"
 "}\n";
 
 static const char *kernelpattern_image_write_1Darray =
@@ -93,7 +93,7 @@ static const char *kernelpattern_image_write_1Darray_half =
 "    int  tidX = get_global_id(0);\n"
 "    int  tidY = get_global_id(1);\n"
 "    uint index = tidY * get_image_width( dest ) + tidX;\n"
-"    write_imagef( dest, (int2)( tidX, tidY ), vload_half4(index, (__global half *)source));\n"
+"    write_imagef( dest, (int2)( tidX, tidY ), vload_half4(index, source));\n"
 "}\n";
 
 static const char *kernelpattern_image_write_3D =
@@ -120,7 +120,7 @@ static const char *kernelpattern_image_write_3D_half =
 "    int  width  = get_image_width( dest );\n"
 "    int  height = get_image_height( dest );\n"
 "    int  index = tidZ * width * height + tidY * width + tidX;\n"
-"    write_imagef( dest, (int4)( tidX, tidY, tidZ, 0 ), vload_half4(index, (__global half *)source));\n"
+"    write_imagef( dest, (int4)( tidX, tidY, tidZ, 0 ), vload_half4(index, source));\n"
 "}\n";
 
 static const char *kernelpattern_image_write_2Darray =
@@ -145,7 +145,7 @@ static const char *kernelpattern_image_write_2Darray_half =
 "    int  width  = get_image_width( dest );\n"
 "    int  height = get_image_height( dest );\n"
 "    int  index = tidZ * width * height + tidY * width + tidX;\n"
-"    write_imagef( dest, (int4)( tidX, tidY, tidZ, 0 ), vload_half4(index, (__global half *)source));\n"
+"    write_imagef( dest, (int4)( tidX, tidY, tidZ, 0 ), vload_half4(index, source));\n"
 "}\n";
 
 #ifdef GL_VERSION_3_2
