@@ -70,8 +70,8 @@ namespace {
 struct SemaphoreWithDeviceListQueries : public SemaphoreTestBase
 {
     SemaphoreWithDeviceListQueries(cl_device_id device, cl_context context,
-                                   cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                                   cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -144,8 +144,8 @@ struct SemaphoreWithDeviceListQueries : public SemaphoreTestBase
 struct SemaphoreNoDeviceListQueries : public SemaphoreTestBase
 {
     SemaphoreNoDeviceListQueries(cl_device_id device, cl_context context,
-                                 cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                                 cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -178,8 +178,8 @@ struct SemaphoreNoDeviceListQueries : public SemaphoreTestBase
 struct SemaphoreMultiDeviceContextQueries : public SemaphoreTestBase
 {
     SemaphoreMultiDeviceContextQueries(cl_device_id device, cl_context context,
-                                       cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                                       cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -260,8 +260,8 @@ int test_semaphores_device_list_queries(cl_device_id deviceID,
                                         cl_command_queue defaultQueue,
                                         int num_elements)
 {
-    return MakeAndRunTest<SemaphoreWithDeviceListQueries>(deviceID, context,
-                                                          defaultQueue);
+    return MakeAndRunTest<SemaphoreWithDeviceListQueries>(
+        deviceID, context, defaultQueue, num_elements);
 }
 
 // Confirm the semaphore without device list can be successfully queried
@@ -270,8 +270,8 @@ int test_semaphores_no_device_list_queries(cl_device_id deviceID,
                                            cl_command_queue defaultQueue,
                                            int num_elements)
 {
-    return MakeAndRunTest<SemaphoreNoDeviceListQueries>(deviceID, context,
-                                                        defaultQueue);
+    return MakeAndRunTest<SemaphoreNoDeviceListQueries>(
+        deviceID, context, defaultQueue, num_elements);
 }
 
 // Confirm the semaphore created with multi-device context can be successfully
@@ -281,6 +281,6 @@ int test_semaphores_multi_device_context_queries(cl_device_id deviceID,
                                                  cl_command_queue defaultQueue,
                                                  int num_elements)
 {
-    return MakeAndRunTest<SemaphoreMultiDeviceContextQueries>(deviceID, context,
-                                                              defaultQueue);
+    return MakeAndRunTest<SemaphoreMultiDeviceContextQueries>(
+        deviceID, context, defaultQueue, num_elements);
 }
