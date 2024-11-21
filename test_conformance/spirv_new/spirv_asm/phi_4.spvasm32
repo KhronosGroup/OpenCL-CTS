@@ -23,6 +23,7 @@
        %bool = OpTypeBool
        %void = OpTypeVoid
      %uint_0 = OpConstant %uint 0
+ %uint_65535 = OpConstant %uint 65535
 %_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
          %14 = OpTypeFunction %void %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint %_ptr_CrossWorkgroup_uint
 %gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
@@ -37,10 +38,10 @@
          %19 = OpLoad %uint %18 Aligned 4
          %20 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %rhs %17
          %21 = OpLoad %uint %20 Aligned 4
-         %22 = OpSLessThan %bool %19 %21
+         %22 = OpULessThan %bool %19 %21
                OpBranchConditional %22 %23 %24
          %23 = OpLabel
-         %25 = OpSLessThan %bool %19 %uint_0
+         %25 = OpULessThan %bool %19 %uint_65535
                OpBranchConditional %25 %26 %27
          %26 = OpLabel
          %28 = OpISub %uint %uint_0 %19
@@ -49,7 +50,7 @@
          %30 = OpISub %uint %19 %uint_0
                OpBranch %29
          %24 = OpLabel
-         %31 = OpSLessThan %bool %21 %uint_0
+         %31 = OpULessThan %bool %21 %uint_65535
                OpBranchConditional %31 %32 %33
          %32 = OpLabel
          %34 = OpISub %uint %uint_0 %21
