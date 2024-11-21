@@ -17,10 +17,32 @@
 #define CL_KHR_SEMAPHORE_BASE_H
 
 #include <CL/cl_ext.h>
+
+#include <vector>
+
 #include "harness/deviceInfo.h"
 #include "harness/testHarness.h"
-
 #include "harness/typeWrappers.h"
+
+// scope guard helper to ensure proper releasing of sub devices
+struct SubDevicesScopeGuarded
+{
+    SubDevicesScopeGuarded(const cl_int dev_count)
+    {
+        sub_devices.resize(dev_count);
+    }
+    ~SubDevicesScopeGuarded()
+    {
+        for (auto &device : sub_devices)
+        {
+            cl_int err = clReleaseDevice(device);
+            if (err != CL_SUCCESS)
+                log_error("\n Releasing sub-device failed \n");
+        }
+    }
+
+    std::vector<cl_device_id> sub_devices;
+};
 
 struct SemaphoreBase
 {
@@ -153,8 +175,9 @@ public:
 struct SemaphoreTestBase : public SemaphoreBase
 {
     SemaphoreTestBase(cl_device_id device, cl_context context,
-                      cl_command_queue queue)
-        : SemaphoreBase(device), context(context), semaphore(this)
+                      cl_command_queue queue, cl_int nelems)
+        : SemaphoreBase(device), context(context), semaphore(this),
+          num_elems(nelems)
     {
         cl_int error = init_extension_functions();
         if (error != CL_SUCCESS)
@@ -172,11 +195,12 @@ protected:
     cl_context context = nullptr;
     clCommandQueueWrapper queue = nullptr;
     clSemaphoreWrapper semaphore = nullptr;
+    cl_int num_elems = 0;
 };
 
 template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,
-                   cl_command_queue queue)
+                   cl_command_queue queue, cl_int nelems)
 {
     if (!is_extension_available(device, "cl_khr_semaphore"))
     {
@@ -188,7 +212,7 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
     cl_int status = TEST_PASS;
     try
     {
-        auto test_fixture = T(device, context, queue);
+        auto test_fixture = T(device, context, queue, nelems);
         status = test_fixture.Run();
     } catch (const std::runtime_error &e)
     {

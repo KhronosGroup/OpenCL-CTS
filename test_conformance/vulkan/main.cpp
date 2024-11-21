@@ -205,6 +205,18 @@ static void printUsage(const char *execName)
     log_info("\t--non_dedicated - Choose dedicated Vs. non_dedicated \n");
 }
 
+bool isDeviceSelection(const char *arg)
+{
+
+    return strcmp(arg, "gpu") == 0 || strcmp(arg, "CL_DEVICE_TYPE_GPU") == 0
+        || strcmp(arg, "cpu") == 0 || strcmp(arg, "CL_DEVICE_TYPE_CPU") == 0
+        || strcmp(arg, "accelerator") == 0
+        || strcmp(arg, "CL_DEVICE_TYPE_ACCELERATOR") == 0
+        || strcmp(arg, "custom") == 0
+        || strcmp(arg, "CL_DEVICE_TYPE_CUSTOM") == 0
+        || strcmp(arg, "CL_DEVICE_TYPE_DEFAULT") == 0;
+}
+
 size_t parseParams(int argc, const char *argv[], const char **argList)
 {
     size_t argCount = 1;
@@ -234,6 +246,16 @@ size_t parseParams(int argc, const char *argv[], const char **argList)
                 printUsage(argv[0]);
                 argCount = 0; // Returning argCount=0 to assert error in main()
                 break;
+            }
+        }
+        else if (isDeviceSelection(argv[i]))
+        {
+            if (strcmp(argv[i], "gpu") != 0
+                && strcmp(argv[i], "CL_DEVICE_TYPE_GPU") != 0
+                && strcmp(argv[i], "CL_DEVICE_TYPE_DEFAULT") != 0)
+            {
+                log_info("Vulkan tests can only run on a GPU device.\n");
+                return 0;
             }
         }
         else

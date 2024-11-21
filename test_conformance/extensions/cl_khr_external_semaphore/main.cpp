@@ -20,7 +20,7 @@ test_definition test_list[] = {
     ADD_TEST(external_semaphores_queries),
     ADD_TEST(external_semaphores_cross_context),
     ADD_TEST(external_semaphores_simple_1),
-    // ADD_TEST(external_semaphores_simple_2),
+    ADD_TEST(external_semaphores_simple_2),
     ADD_TEST(external_semaphores_reuse),
     ADD_TEST(external_semaphores_cross_queues_ooo),
     ADD_TEST(external_semaphores_cross_queues_io),

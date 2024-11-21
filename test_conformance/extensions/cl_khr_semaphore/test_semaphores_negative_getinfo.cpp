@@ -25,8 +25,8 @@ namespace {
 struct GetInfoInvalidSemaphore : public SemaphoreTestBase
 {
     GetInfoInvalidSemaphore(cl_device_id device, cl_context context,
-                            cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                            cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -53,8 +53,8 @@ struct GetInfoInvalidSemaphore : public SemaphoreTestBase
 struct GetInfoInvalidValue : public SemaphoreTestBase
 {
     GetInfoInvalidValue(cl_device_id device, cl_context context,
-                        cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                        cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -90,7 +90,7 @@ struct GetInfoInvalidValue : public SemaphoreTestBase
 
         // make sure that first test provides too small param size
         if (size != sizeof(sema_props))
-            test_fail("Error: expected size %d, returned %d",
+            test_fail("Error: expected size %zu, returned %zu",
                       sizeof(sema_props), size);
 
         // first test with non-zero property size but not enough
@@ -118,7 +118,8 @@ int test_semaphores_negative_get_info_invalid_semaphore(cl_device_id device,
                                                         cl_command_queue queue,
                                                         int num_elements)
 {
-    return MakeAndRunTest<GetInfoInvalidSemaphore>(device, context, queue);
+    return MakeAndRunTest<GetInfoInvalidSemaphore>(device, context, queue,
+                                                   num_elements);
 }
 
 int test_semaphores_negative_get_info_invalid_value(cl_device_id device,
@@ -126,5 +127,6 @@ int test_semaphores_negative_get_info_invalid_value(cl_device_id device,
                                                     cl_command_queue queue,
                                                     int num_elements)
 {
-    return MakeAndRunTest<GetInfoInvalidValue>(device, context, queue);
+    return MakeAndRunTest<GetInfoInvalidValue>(device, context, queue,
+                                               num_elements);
 }

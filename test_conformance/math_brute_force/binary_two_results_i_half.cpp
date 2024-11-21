@@ -91,7 +91,7 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
 
     cl_uint threadCount = GetThreadCount();
 
-    float half_ulps = f->half_ulps;
+    float half_ulps = getAllowedUlpError(f, khalf, relaxedMode);
 
     int testingRemquo = !strcmp(f->name, "remquo");
 
@@ -304,7 +304,7 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                     // retry per section 6.5.3.2
                     if (IsHalfResultSubnormal(correct, half_ulps))
                     {
-                        fail = fail && !(test == 0.0f && iErr == 0);
+                        fail = fail && !((HTF(test) == 0.0f) && iErr == 0);
                         if (!fail) err = 0.0f;
                     }
 

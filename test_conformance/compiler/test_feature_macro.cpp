@@ -17,6 +17,7 @@
 #include <vector>
 #include <algorithm>
 #include "errorHelpers.h"
+#include "harness/featureHelpers.h"
 
 const char* macro_supported_source = R"(kernel void enabled(global int * buf) {
         int n = get_global_id(0);
@@ -832,4 +833,57 @@ int test_features_macro(cl_device_id deviceID, cl_context context,
     error |= test_consistency_c_features_list(deviceID, supported_features_vec);
 
     return error;
+}
+
+// This test checks that a supported feature comes with other required features
+int test_features_macro_coupling(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, int num_elements)
+{
+    OpenCLCFeatures features;
+    int error = get_device_cl_c_features(deviceID, features);
+    if (error)
+    {
+        log_error("Couldn't query OpenCL C features for the device!\n");
+        return TEST_FAIL;
+    }
+
+    if (features.supports__opencl_c_3d_image_writes
+        && !features.supports__opencl_c_images)
+    {
+        log_error("OpenCL C compilers that define the feature macro "
+                  "__opencl_c_3d_image_writes must also define the feature "
+                  "macro __opencl_c_images!\n");
+        return TEST_FAIL;
+    }
+
+    if (features.supports__opencl_c_device_enqueue
+        && !(features.supports__opencl_c_program_scope_global_variables
+             && features.supports__opencl_c_generic_address_space))
+    {
+        log_error("OpenCL C compilers that define the feature macro "
+                  "__opencl_c_device_enqueue must also define "
+                  "__opencl_c_generic_address_space and "
+                  "__opencl_c_program_scope_global_variables!\n");
+        return TEST_FAIL;
+    }
+
+    if (features.supports__opencl_c_pipes
+        && !features.supports__opencl_c_generic_address_space)
+    {
+        log_error("OpenCL C compilers that define the feature macro "
+                  "__opencl_c_pipes must also define the feature macro "
+                  "__opencl_c_generic_address_space!\n");
+        return TEST_FAIL;
+    }
+
+    if (features.supports__opencl_c_read_write_images
+        && !features.supports__opencl_c_images)
+    {
+        log_error("OpenCL C compilers that define the feature macro "
+                  "__opencl_c_read_write_images must also define the feature "
+                  "macro __opencl_c_images!\n");
+        return TEST_FAIL;
+    }
+
+    return TEST_PASS;
 }

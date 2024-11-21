@@ -7,8 +7,6 @@
 #include <algorithm>
 #include <cinttypes>
 
-#define FLUSH_DELAY_S 5
-
 #define SEMAPHORE_PARAM_TEST(param_name, param_type, expected)                 \
     do                                                                         \
     {                                                                          \
@@ -131,14 +129,14 @@ int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
 {
     if (!is_extension_available(deviceID, "cl_khr_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
 
     if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -202,10 +200,15 @@ int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
         test_error(err, "Could not release semaphore");
         SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, 1);
 
-        // Confirm that querying CL_SEMAPHORE_PAYLOAD_KHR returns the unsignaled
+        // Confirm that querying CL_SEMAPHORE_PAYLOAD_KHR returns the correct
         // state
+        cl_semaphore_payload_khr expected_payload_value =
+            (vkExternalSemaphoreHandleType
+             == VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD)
+            ? 1
+            : 0;
         SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_PAYLOAD_KHR, cl_semaphore_payload_khr,
-                             0);
+                             expected_payload_value);
     }
 
     return TEST_PASS;
@@ -219,7 +222,7 @@ int test_external_semaphores_cross_context(cl_device_id deviceID,
     cl_int err = CL_SUCCESS;
     if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -349,7 +352,7 @@ int test_external_semaphores_simple_1(cl_device_id deviceID, cl_context context,
 {
     if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -429,7 +432,7 @@ int test_external_semaphores_simple_2(cl_device_id deviceID, cl_context context,
 {
     if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -507,7 +510,10 @@ int test_external_semaphores_simple_2(cl_device_id deviceID, cl_context context,
         // Flush and delay
         err = clFlush(queue);
         test_error(err, "Could not flush queue");
-        std::this_thread::sleep_for(std::chrono::seconds(FLUSH_DELAY_S));
+
+        cl_event event_list[] = { signal_event, wait_event };
+        err = clWaitForEvents(2, event_list);
+        test_error(err, "Could not wait on events");
 
         // Ensure all events are completed except for task_1
         test_assert_event_inprogress(task_1_event);
@@ -538,7 +544,7 @@ int test_external_semaphores_reuse(cl_device_id deviceID, cl_context context,
 {
     if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -663,7 +669,7 @@ static int external_semaphore_cross_queue_helper(cl_device_id deviceID,
 {
     if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -783,7 +789,7 @@ int test_external_semaphores_cross_queues_io2(cl_device_id deviceID,
 {
     if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -897,7 +903,7 @@ int test_external_semaphores_multi_signal(cl_device_id deviceID,
 {
     if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
@@ -993,7 +999,7 @@ int test_external_semaphores_multi_wait(cl_device_id deviceID,
 {
     if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
     {
-        log_info("cl_khr_semaphore is not supported on this platoform. "
+        log_info("cl_khr_semaphore is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
