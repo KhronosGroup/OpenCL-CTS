@@ -32,28 +32,35 @@
 #define ENTRY(_name, _ulp, _embedded_ulp, _half_ulp, _rmode, _type)            \
     {                                                                          \
         STRINGIFY(_name), STRINGIFY(_name), { NULL }, { NULL }, { NULL },      \
-            _ulp, _ulp, _half_ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,  \
-            RELAXED_OFF, _type                                                 \
+            { NULL }, _ulp, _ulp, _half_ulp, _embedded_ulp, INFINITY,          \
+            INFINITY, _rmode, RELAXED_OFF, _type                               \
     }
 #define ENTRY_EXT(_name, _ulp, _embedded_ulp, _half_ulp, _relaxed_ulp, _rmode, \
                   _type, _relaxed_embedded_ulp)                                \
     {                                                                          \
         STRINGIFY(_name), STRINGIFY(_name), { NULL }, { NULL }, { NULL },      \
-            _ulp, _ulp, _half_ulp, _embedded_ulp, _relaxed_ulp,                \
+            { NULL }, _ulp, _ulp, _half_ulp, _embedded_ulp, _relaxed_ulp,      \
             _relaxed_embedded_ulp, _rmode, RELAXED_ON, _type                   \
     }
 #define HALF_ENTRY(_name, _ulp, _embedded_ulp, _rmode, _type)                  \
     {                                                                          \
         "half_" STRINGIFY(_name), "half_" STRINGIFY(_name), { NULL },          \
-            { NULL }, { NULL }, _ulp, _ulp, _ulp, _embedded_ulp, INFINITY,     \
-            INFINITY, _rmode, RELAXED_OFF, _type                               \
+            { NULL }, { NULL }, { NULL }, _ulp, _ulp, _ulp, _embedded_ulp,     \
+            INFINITY, INFINITY, _rmode, RELAXED_OFF, _type                     \
     }
 #define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _half_ulp,       \
                        _rmode, _type)                                          \
     {                                                                          \
-        STRINGIFY(_name), _operator, { NULL }, { NULL }, { NULL }, _ulp, _ulp, \
-            _half_ulp, _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, \
-            _type                                                              \
+        STRINGIFY(_name), _operator, { NULL }, { NULL }, { NULL }, { NULL },   \
+            _ulp, _ulp, _half_ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,  \
+            RELAXED_OFF, _type                                                 \
+    }
+#define OPERATOR_ENTRY_EXT(_name, _operator, _ulp, _embedded_ulp, _half_ulp,   \
+                           _rmode, _type)                                      \
+    {                                                                          \
+        STRINGIFY(_name), _operator, { NULL }, { NULL }, { NULL }, { NULL },   \
+            _ulp, _ulp, _half_ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,  \
+            RELAXED_OFF, _type                                                 \
     }
 
 #define unaryF NULL
@@ -81,6 +88,8 @@
 #define reference_divide NULL
 #define reference_dividel NULL
 #define reference_relaxed_divide NULL
+#define reference_sqrtf NULL
+#define reference_dividef NULL
 
 #else // FUNCTION_LIST_ULPS_ONLY
 
@@ -88,30 +97,39 @@
     {                                                                          \
         STRINGIFY(_name), STRINGIFY(_name), { (void*)reference_##_name },      \
             { (void*)reference_##_name##l }, { (void*)reference_##_name },     \
-            _ulp, _ulp, _half_ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,  \
-            RELAXED_OFF, _type                                                 \
+            { (void*)reference_##_name }, _ulp, _ulp, _half_ulp,               \
+            _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, _type      \
     }
 #define ENTRY_EXT(_name, _ulp, _embedded_ulp, _half_ulp, _relaxed_ulp, _rmode, \
                   _type, _relaxed_embedded_ulp)                                \
     {                                                                          \
         STRINGIFY(_name), STRINGIFY(_name), { (void*)reference_##_name },      \
             { (void*)reference_##_name##l },                                   \
-            { (void*)reference_##relaxed_##_name }, _ulp, _ulp, _half_ulp,     \
-            _embedded_ulp, _relaxed_ulp, _relaxed_embedded_ulp, _rmode,        \
-            RELAXED_ON, _type                                                  \
+            { (void*)reference_##relaxed_##_name }, { NULL }, _ulp, _ulp,      \
+            _half_ulp, _embedded_ulp, _relaxed_ulp, _relaxed_embedded_ulp,     \
+            _rmode, RELAXED_ON, _type                                          \
     }
 #define HALF_ENTRY(_name, _ulp, _embedded_ulp, _rmode, _type)                  \
     {                                                                          \
         "half_" STRINGIFY(_name), "half_" STRINGIFY(_name),                    \
-            { (void*)reference_##_name }, { NULL }, { NULL }, _ulp, _ulp,      \
-            _ulp, _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF,      \
-            _type                                                              \
+            { (void*)reference_##_name }, { NULL }, { NULL }, { NULL }, _ulp,  \
+            _ulp, _ulp, _embedded_ulp, INFINITY, INFINITY, _rmode,             \
+            RELAXED_OFF, _type                                                 \
     }
 #define OPERATOR_ENTRY(_name, _operator, _ulp, _embedded_ulp, _half_ulp,       \
                        _rmode, _type)                                          \
     {                                                                          \
         STRINGIFY(_name), _operator, { (void*)reference_##_name },             \
-            { (void*)reference_##_name##l }, { NULL }, _ulp, _ulp, _half_ulp,  \
+            { (void*)reference_##_name##l }, { NULL }, { NULL }, _ulp, _ulp,   \
+            _half_ulp, _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, \
+            _type                                                              \
+    }
+#define OPERATOR_ENTRY_EXT(_name, _operator, _ulp, _embedded_ulp, _half_ulp,   \
+                           _rmode, _type)                                      \
+    {                                                                          \
+        STRINGIFY(_name), _operator, { (void*)reference_##_name },             \
+            { (void*)reference_##_name##l }, { NULL },                         \
+            { (void*)reference_##_name##f }, _ulp, _ulp, _half_ulp,            \
             _embedded_ulp, INFINITY, INFINITY, _rmode, RELAXED_OFF, _type      \
     }
 
@@ -266,6 +284,7 @@ const Func functionList[] = {
       { (void*)reference_copysignf },
       { (void*)reference_copysign },
       { (void*)reference_copysignf },
+      { (void*)reference_copysignf },
       0.0f,
       0.0f,
       0.0f,
@@ -367,6 +386,7 @@ const Func functionList[] = {
       { (void*)reference_sqrt },
       { (void*)reference_sqrtl },
       { NULL },
+      { (void*)reference_sqrtf },
       3.0f,
       0.0f,
       0.0f,
@@ -380,7 +400,8 @@ const Func functionList[] = {
       "sqrt",
       { (void*)reference_sqrt },
       { nullptr },
-      { NULL },
+      { nullptr },
+      { nullptr },
       0.0f,
       INFINITY,
       INFINITY,
@@ -423,6 +444,7 @@ const Func functionList[] = {
       { (void*)reference_divide },
       { (void*)reference_dividel },
       { (void*)reference_relaxed_divide },
+      { (void*)reference_dividef },
       2.5f,
       0.0f,
       0.0f,
@@ -435,6 +457,7 @@ const Func functionList[] = {
     { "divide_cr",
       "/",
       { (void*)reference_divide },
+      { nullptr },
       { nullptr },
       { nullptr },
       0.0f,

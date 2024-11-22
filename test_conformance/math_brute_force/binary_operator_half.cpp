@@ -102,6 +102,42 @@ const cl_half specialValuesHalf[] = {
 
 constexpr size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
 
+cl_float ComputeRefDouble(cl_float p0, cl_float p1, void *data)
+{
+    TestInfo *job = (TestInfo *)data;
+    fptr func = job->f->func;
+    return func.f_ff(p0, p1);
+}
+
+cl_float ComputeRefSingle(cl_float p0, cl_float p1, void *data)
+{
+    TestInfo *job = (TestInfo *)data;
+    fptr func = job->f->hfunc;
+    return func.f_ff_f(p0, p1);
+}
+
+struct CorrectRoundScopeGuard
+{
+    CorrectRoundScopeGuard(int ftz): mFtz(ftz)
+    {
+        memset(&mOldMode, 0, sizeof(mOldMode));
+        if (ftz) ForceFTZ(&mOldMode);
+
+        // Set the rounding mode to match the device
+        if (gIsInRTZMode) mOldRoundMode = set_round(kRoundTowardZero, kfloat);
+    }
+
+    ~CorrectRoundScopeGuard()
+    {
+        if (mFtz) RestoreFPState(&mOldMode);
+        if (gIsInRTZMode) (void)set_round(mOldRoundMode, kfloat);
+    }
+
+    int mFtz;
+    FPU_mode_type mOldMode;
+    RoundingMode mOldRoundMode = kRoundToNearestEven;
+};
+
 cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 {
     TestInfo *job = (TestInfo *)data;
@@ -110,7 +146,6 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     cl_uint base = job_id * (cl_uint)job->step;
     ThreadInfo *tinfo = &(job->tinfo[thread_id]);
     float ulps = job->ulps;
-    fptr func = job->f->func;
     int ftz = job->ftz;
     MTdata d = tinfo->d;
     cl_int error;
@@ -118,10 +153,12 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     const char *name = job->f->name;
     cl_half *r = 0;
     std::vector<float> s(0), s2(0);
-    RoundingMode oldRoundMode;
 
     cl_event e[VECTOR_SIZE_COUNT];
     cl_half *out[VECTOR_SIZE_COUNT];
+
+    auto ref_fnptr = &ComputeRefDouble;
+    if (0 == strcmp(job->f->name, "divide")) ref_fnptr = &ComputeRefSingle;
 
     if (gHostFill)
     {
@@ -270,13 +307,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     }
 
     // Calculate the correctly rounded reference result
-    FPU_mode_type oldMode;
-    memset(&oldMode, 0, sizeof(oldMode));
-    if (ftz) ForceFTZ(&oldMode);
-
-    // Set the rounding mode to match the device
-    oldRoundMode = kRoundToNearestEven;
-    if (gIsInRTZMode) oldRoundMode = set_round(kRoundTowardZero, kfloat);
+    CorrectRoundScopeGuard crsg(ftz);
 
     // Calculate the correctly rounded reference result
     r = (cl_half *)gOut_Ref + thread_id * buffer_elements;
@@ -287,10 +318,8 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     {
         s[j] = HTF(p[j]);
         s2[j] = HTF(p2[j]);
-        r[j] = HFF(func.f_ff(s[j], s2[j]));
+        r[j] = HFF(ref_fnptr(s[j], s2[j], data));
     }
-
-    if (ftz) RestoreFPState(&oldMode);
 
     // Read the data back -- no need to wait for the first N-1 buffers but wait
     // for the last buffer. This is an in order queue.
@@ -320,7 +349,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
             if (r[j] != q[j])
             {
                 float test = HTF(q[j]);
-                float correct = func.f_ff(s[j], s2[j]);
+                float correct = HTF(r[j]);
 
                 // Per section 10 paragraph 6, accept any result if an input or
                 // output is a infinity or NaN or overflow
@@ -353,8 +382,8 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                         double correct2, correct3;
                         float err2, err3;
 
-                        correct2 = func.f_ff(0.0, s2[j]);
-                        correct3 = func.f_ff(-0.0, s2[j]);
+                        correct2 = ref_fnptr(0.0, s2[j], data);
+                        correct3 = ref_fnptr(-0.0, s2[j], data);
 
                         // Per section 10 paragraph 6, accept any result if an
                         // input or output is a infinity or NaN or overflow
@@ -393,10 +422,10 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                             double correct4, correct5;
                             float err4, err5;
 
-                            correct2 = func.f_ff(0.0, 0.0);
-                            correct3 = func.f_ff(-0.0, 0.0);
-                            correct4 = func.f_ff(0.0, -0.0);
-                            correct5 = func.f_ff(-0.0, -0.0);
+                            correct2 = ref_fnptr(0.0, 0.0, data);
+                            correct3 = ref_fnptr(-0.0, 0.0, data);
+                            correct4 = ref_fnptr(0.0, -0.0, data);
+                            correct5 = ref_fnptr(-0.0, -0.0, data);
 
                             // Per section 10 paragraph 6, accept any result if
                             // an input or output is a infinity or NaN or
@@ -446,9 +475,8 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                         double correct2, correct3;
                         float err2, err3;
 
-                        correct2 = func.f_ff(s[j], 0.0);
-                        correct3 = func.f_ff(s[j], -0.0);
-
+                        correct2 = ref_fnptr(s[j], 0.0, data);
+                        correct3 = ref_fnptr(s[j], -0.0, data);
 
                         // Per section 10 paragraph 6, accept any result if an
                         // input or output is a infinity or NaN or overflow
@@ -498,8 +526,6 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
             }
         }
     }
-
-    if (gIsInRTZMode) (void)set_round(oldRoundMode, kfloat);
 
     for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
     {

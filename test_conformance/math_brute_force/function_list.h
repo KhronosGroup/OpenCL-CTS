@@ -33,6 +33,7 @@
 union fptr {
     void *p;
     double (*f_f)(double);
+    float (*f_f_f)(float);
     double (*f_u)(cl_uint);
     int (*i_f)(double);
     int (*i_f_f)(float);
@@ -84,6 +85,7 @@ struct Func
     fptr func;
     dptr dfunc;
     fptr rfunc;
+    fptr hfunc;
     float float_ulps;
     float double_ulps;
     float half_ulps;
