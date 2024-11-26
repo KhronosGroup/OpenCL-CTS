@@ -149,7 +149,9 @@ int test_read_image_3D( cl_context context, cl_command_queue queue, cl_kernel ke
     }
     if ( !allZeroes )
     {
-        log_error( " Sampler-less reads differ from reads with sampler at index %lu.\n", ic );
+        log_error(" Sampler-less reads differ from reads with sampler at index "
+                  "%zu.\n",
+                  ic);
         return -1;
     }
 

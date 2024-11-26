@@ -213,7 +213,7 @@ int test_copy_image_set_1D( cl_device_id device, cl_context context, cl_command_
       {
         log_info( "   at size %d (row pitch %d) out of %d\n", (int)imageInfo.width, (int)imageInfo.rowPitch, (int)maxWidth );
         if ( gTestMipmaps )
-          log_info( "   and %llu mip levels\n", (size_t) imageInfo.num_mip_levels );
+            log_info("   and %u mip levels\n", imageInfo.num_mip_levels);
       }
 
             int ret = test_copy_image_size_1D( context, queue, &imageInfo, seed );

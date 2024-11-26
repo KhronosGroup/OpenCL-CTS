@@ -68,8 +68,8 @@ TEST_SPIRV_FUNC(get_program_il)
         if (il_size != file_bytes)
         {
             test_fail("ERROR: Returned IL size is not the same as source IL "
-                      "size (%lu "
-                      "!= %lu)!\n",
+                      "size (%zu "
+                      "!= %zu)!\n",
                       il_size, file_bytes);
         }
 

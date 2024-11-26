@@ -128,7 +128,7 @@ int test_step_internal(cl_device_id deviceID, cl_context context,
             err = runKernel(pClState, 1024);
             if (err != 0)
             {
-                vlog_error("%s: runKernel fail (%ld threads) %s%s\n", testName,
+                vlog_error("%s: runKernel fail (%zu threads) %s%s\n", testName,
                            pClState->m_numThreads, g_arrTypeNames[typeIdx],
                            g_arrVecSizeNames[vecSizeIdx]);
                 destroyBufferStruct(pBuffers, pClState);

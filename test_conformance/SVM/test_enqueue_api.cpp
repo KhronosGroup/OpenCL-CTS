@@ -193,7 +193,8 @@ int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue q
       for (size_t j = 0; j < data_size; ++j)
       {
         if (dst_ptr[j] != src_ptr[j]) {
-            log_error("Invalid data at index %ld, dst_ptr %d, src_ptr %d\n", j, dst_ptr[j], src_ptr[j]);
+            log_error("Invalid data at index %zu, dst_ptr %d, src_ptr %d\n", j,
+                      dst_ptr[j], src_ptr[j]);
             return TEST_FAIL;
         }
       }
@@ -291,8 +292,10 @@ int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue q
   //check if number of SVM pointers returned in the callback matches with expected
   if (data.num_svm_pointers != buffers.size())
   {
-    log_error("Invalid number of SVM pointers returned in the callback, expected: %ld, got: %d\n", buffers.size(), data.num_svm_pointers);
-    return TEST_FAIL;
+      log_error("Invalid number of SVM pointers returned in the callback, "
+                "expected: %zu, got: %d\n",
+                buffers.size(), data.num_svm_pointers);
+      return TEST_FAIL;
   }
 
   //check if pointers returned in callback are correct
@@ -300,8 +303,9 @@ int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue q
   {
     if (data.svm_pointers[i] != buffers[i])
     {
-      log_error("Invalid SVM pointer returned in the callback, idx: %ld\n", i);
-      return TEST_FAIL;
+        log_error("Invalid SVM pointer returned in the callback, idx: %zu\n",
+                  i);
+        return TEST_FAIL;
     }
   }
 

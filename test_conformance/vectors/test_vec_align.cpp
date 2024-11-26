@@ -183,7 +183,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
                     / (g_arrVecSizes[vecSizeIdx] * g_arrTypeSizes[typeIdx]));
             if (err != 0)
             {
-                vlog_error("%s: runKernel fail (%ld threads) %s%s\n", testName,
+                vlog_error("%s: runKernel fail (%zu threads) %s%s\n", testName,
                            pClState->m_numThreads, g_arrTypeNames[typeIdx],
                            g_arrVecSizeNames[vecSizeIdx]);
                 destroyBufferStruct(pBuffers, pClState);
