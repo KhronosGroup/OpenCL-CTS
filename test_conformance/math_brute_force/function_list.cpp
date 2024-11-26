@@ -346,7 +346,6 @@ const Func functionList[] = {
 
     ENTRY(pown, 16.0f, 16.0f, 4.0f, FTZ_OFF, binaryF_i),
     ENTRY(powr, 16.0f, 16.0f, 4.0f, FTZ_OFF, binaryF),
-    //ENTRY(reciprocal, 1.0f, 1.0f, FTZ_OFF, unaryF),
     ENTRY(remainder, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryF),
     ENTRY(remquo, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryF_two_results_i),
     ENTRY(rint, 0.0f, 0.0f, 0.0f, FTZ_OFF, unaryF),
