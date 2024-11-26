@@ -77,19 +77,19 @@ static int test_linkage_compile(cl_device_id deviceID,
     return 0;
 }
 
-TEST_SPIRV_FUNC(linkage_export_function_compile)
+REGISTER_TEST(linkage_export_function_compile)
 {
     clProgramWrapper prog;
     return test_linkage_compile(deviceID, context, queue, "linkage_export", prog);
 }
 
-TEST_SPIRV_FUNC(linkage_import_function_compile)
+REGISTER_TEST(linkage_import_function_compile)
 {
     clProgramWrapper prog;
     return test_linkage_compile(deviceID, context, queue, "linkage_import", prog);
 }
 
-TEST_SPIRV_FUNC(linkage_import_function_link)
+REGISTER_TEST(linkage_import_function_link)
 {
     int err = 0;
 
@@ -212,7 +212,7 @@ static int test_linkonce_odr_helper(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(linkage_linkonce_odr)
+REGISTER_TEST(linkage_linkonce_odr)
 {
     if (!is_extension_available(deviceID, "cl_khr_spirv_linkonce_odr"))
     {

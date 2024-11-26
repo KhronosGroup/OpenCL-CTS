@@ -91,7 +91,7 @@ int test_extract(cl_device_id deviceID, cl_context context,
 }
 
 #define TEST_VECTOR_EXTRACT(TYPE, N)                                           \
-    TEST_SPIRV_FUNC(op_vector_##TYPE##N##_extract)                             \
+    REGISTER_TEST(op_vector_##TYPE##N##_extract)                               \
     {                                                                          \
         if (sizeof(cl_##TYPE) == 2)                                            \
         {                                                                      \

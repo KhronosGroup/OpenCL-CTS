@@ -84,7 +84,7 @@ int test_selection_merge(cl_device_id deviceID,
 }
 
 #define TEST_SELECT_IF(control)                                                \
-    TEST_SPIRV_FUNC(op_selection_merge_if_##control)                           \
+    REGISTER_TEST(op_selection_merge_if_##control)                             \
     {                                                                          \
         const int num = 1 << 10;                                               \
         RandomSeed seed(gRandomSeed);                                          \
@@ -108,26 +108,26 @@ TEST_SELECT_IF(none)
 TEST_SELECT_IF(flatten)
 TEST_SELECT_IF(dont_flatten)
 
-#define TEST_SELECT_SWITCH(control)                             \
-    TEST_SPIRV_FUNC(op_selection_merge_swith_##control)         \
-    {                                                           \
-        const int num = 1 << 10;                                \
-        RandomSeed seed(gRandomSeed);                           \
-                                                                \
-        std::vector<cl_uint> lhs(num);                          \
-        std::vector<cl_uint> rhs(num);                          \
-        std::vector<cl_uint> out(num);                          \
-                                                                \
-        for (int i = 0; i < num; i++) {                         \
-            lhs[i] = genrand<cl_uint>(seed);                    \
-            rhs[i] = genrand<cl_uint>(seed);                    \
-            out[i] = (lhs[i] + rhs[i]) % 4;                     \
-        }                                                       \
-                                                                \
-        return test_selection_merge(deviceID, context, queue,   \
-                                    "select_switch_" #control,  \
-                                    lhs, rhs, out);             \
-    }                                                           \
+#define TEST_SELECT_SWITCH(control)                                            \
+    REGISTER_TEST(op_selection_merge_swith_##control)                          \
+    {                                                                          \
+        const int num = 1 << 10;                                               \
+        RandomSeed seed(gRandomSeed);                                          \
+                                                                               \
+        std::vector<cl_uint> lhs(num);                                         \
+        std::vector<cl_uint> rhs(num);                                         \
+        std::vector<cl_uint> out(num);                                         \
+                                                                               \
+        for (int i = 0; i < num; i++)                                          \
+        {                                                                      \
+            lhs[i] = genrand<cl_uint>(seed);                                   \
+            rhs[i] = genrand<cl_uint>(seed);                                   \
+            out[i] = (lhs[i] + rhs[i]) % 4;                                    \
+        }                                                                      \
+                                                                               \
+        return test_selection_merge(deviceID, context, queue,                  \
+                                    "select_switch_" #control, lhs, rhs, out); \
+    }
 
 TEST_SELECT_SWITCH(none)
 TEST_SELECT_SWITCH(flatten)

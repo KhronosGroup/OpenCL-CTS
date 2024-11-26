@@ -23,7 +23,7 @@
 
 extern bool gVersionSkip;
 
-TEST_SPIRV_FUNC(basic_versions)
+REGISTER_TEST(basic_versions)
 {
     cl_int error = CL_SUCCESS;
 

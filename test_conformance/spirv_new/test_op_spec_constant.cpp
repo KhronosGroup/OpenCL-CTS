@@ -115,7 +115,7 @@ int test_spec_constant(cl_device_id deviceID, cl_context context,
 
 
 #define TEST_SPEC_CONSTANT(NAME, type, init_buffer, spec_constant_value)       \
-    TEST_SPIRV_FUNC_VERSION(op_spec_constant_##NAME##_simple, Version(2, 2))   \
+    REGISTER_TEST_VERSION(op_spec_constant_##NAME##_simple, Version(2, 2))     \
     {                                                                          \
         type init_value = init_buffer;                                         \
         type final_value = init_value + spec_constant_value;                   \
@@ -137,7 +137,7 @@ TEST_SPEC_CONSTANT(double, cl_double, 14534.53453, 1.53453)
 // documenation: 'If a specialization constant is a boolean
 // constant, spec_value should be a pointer to a cl_uchar value'
 
-TEST_SPIRV_FUNC_VERSION(op_spec_constant_true_simple, Version(2, 2))
+REGISTER_TEST_VERSION(op_spec_constant_true_simple, Version(2, 2))
 {
     // 1-st ndrange init_value is expected value (no change)
     // 2-nd ndrange sets spec const to 'false' so value = value + 1
@@ -149,7 +149,7 @@ TEST_SPIRV_FUNC_VERSION(op_spec_constant_true_simple, Version(2, 2))
                                         init_value, 0, final_value);
 }
 
-TEST_SPIRV_FUNC_VERSION(op_spec_constant_false_simple, Version(2, 2))
+REGISTER_TEST_VERSION(op_spec_constant_false_simple, Version(2, 2))
 {
     // 1-st ndrange init_value is expected value (no change)
     // 2-nd ndrange sets spec const to 'true' so value = value + 1

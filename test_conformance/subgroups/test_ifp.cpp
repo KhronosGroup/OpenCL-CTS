@@ -297,8 +297,9 @@ int test_ifp(cl_device_id device, cl_context context, cl_command_queue queue,
     WorkGroupParams test_params(global_work_size, local_work_size);
     test_params.use_core_subgroups = useCoreSubgroups;
     test_params.dynsc = NUM_LOC + 1;
-    error = test<cl_int, IFP>::run(device, context, queue, num_elements,
-                                   "test_ifp", ifp_source, test_params);
+    error =
+        subgroup_test<cl_int, IFP>::run(device, context, queue, num_elements,
+                                        "test_ifp", ifp_source, test_params);
     return error;
 }
 

@@ -26,7 +26,7 @@ const char *sample_kernel_code_single_line[] = {
     "}\n"
 };
 
-TEST_SPIRV_FUNC(get_program_il)
+REGISTER_TEST(get_program_il)
 {
     clProgramWrapper source_program;
     size_t il_size = -1;
