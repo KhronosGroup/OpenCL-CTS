@@ -45,7 +45,7 @@
          %26 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %rhs %23
          %27 = OpLoad %uint %26 Aligned 4
                OpStore %19 %uint_0
-         %28 = OpSLessThan %bool %25 %27
+         %28 = OpULessThan %bool %25 %27
                OpSelectionMerge %29 DontFlatten
                OpBranchConditional %28 %30 %31
          %30 = OpLabel
