@@ -90,7 +90,7 @@ static int test_image_operand_helper(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(spirv14_image_operand_signextend)
+REGISTER_TEST(spirv14_image_operand_signextend)
 {
     if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
@@ -100,7 +100,7 @@ TEST_SPIRV_FUNC(spirv14_image_operand_signextend)
     return test_image_operand_helper(deviceID, context, queue, true);
 }
 
-TEST_SPIRV_FUNC(spirv14_image_operand_zeroextend)
+REGISTER_TEST(spirv14_image_operand_zeroextend)
 {
     if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
@@ -155,7 +155,7 @@ static int test_loop_control_helper(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(spirv14_loop_control_miniterations)
+REGISTER_TEST(spirv14_loop_control_miniterations)
 {
     if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
@@ -166,7 +166,7 @@ TEST_SPIRV_FUNC(spirv14_loop_control_miniterations)
                                     "loop_control_miniterations");
 }
 
-TEST_SPIRV_FUNC(spirv14_loop_control_maxiterations)
+REGISTER_TEST(spirv14_loop_control_maxiterations)
 {
     if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
@@ -177,7 +177,7 @@ TEST_SPIRV_FUNC(spirv14_loop_control_maxiterations)
                                     "loop_control_maxiterations");
 }
 
-TEST_SPIRV_FUNC(spirv14_loop_control_iterationmultiple)
+REGISTER_TEST(spirv14_loop_control_iterationmultiple)
 {
     if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
@@ -188,7 +188,7 @@ TEST_SPIRV_FUNC(spirv14_loop_control_iterationmultiple)
                                     "loop_control_iterationmultiple");
 }
 
-TEST_SPIRV_FUNC(spirv14_loop_control_peelcount)
+REGISTER_TEST(spirv14_loop_control_peelcount)
 {
     if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
@@ -199,7 +199,7 @@ TEST_SPIRV_FUNC(spirv14_loop_control_peelcount)
                                     "loop_control_peelcount");
 }
 
-TEST_SPIRV_FUNC(spirv14_loop_control_partialcount)
+REGISTER_TEST(spirv14_loop_control_partialcount)
 {
     if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
@@ -210,7 +210,7 @@ TEST_SPIRV_FUNC(spirv14_loop_control_partialcount)
                                     "loop_control_partialcount");
 }
 
-TEST_SPIRV_FUNC(spirv14_ptrops)
+REGISTER_TEST(spirv14_ptrops)
 {
     if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
@@ -331,7 +331,7 @@ static int test_usersemantic_decoration(cl_device_id deviceID,
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(spirv14_usersemantic_decoratestring)
+REGISTER_TEST(spirv14_usersemantic_decoratestring)
 {
     if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
@@ -342,7 +342,7 @@ TEST_SPIRV_FUNC(spirv14_usersemantic_decoratestring)
     return test_usersemantic_decoration(deviceID, context, queue, false);
 }
 
-TEST_SPIRV_FUNC(spirv14_usersemantic_memberdecoratestring)
+REGISTER_TEST(spirv14_usersemantic_memberdecoratestring)
 {
     if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
@@ -353,7 +353,7 @@ TEST_SPIRV_FUNC(spirv14_usersemantic_memberdecoratestring)
     return test_usersemantic_decoration(deviceID, context, queue, true);
 }
 
-TEST_SPIRV_FUNC(spirv14_nonwriteable_decoration)
+REGISTER_TEST(spirv14_nonwriteable_decoration)
 {
     if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
@@ -399,7 +399,7 @@ TEST_SPIRV_FUNC(spirv14_nonwriteable_decoration)
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(spirv14_copymemory_memory_operands)
+REGISTER_TEST(spirv14_copymemory_memory_operands)
 {
     if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {
@@ -450,7 +450,7 @@ TEST_SPIRV_FUNC(spirv14_copymemory_memory_operands)
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(spirv14_select_composite)
+REGISTER_TEST(spirv14_select_composite)
 {
     constexpr size_t global_size = 16;
 
@@ -512,7 +512,7 @@ TEST_SPIRV_FUNC(spirv14_select_composite)
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(spirv14_copylogical)
+REGISTER_TEST(spirv14_copylogical)
 {
     if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
     {

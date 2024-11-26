@@ -23,13 +23,6 @@
 #include <unistd.h>
 #endif
 
-#include "procs.h"
-
-test_definition test_list[] = {
-    ADD_TEST( timer_resolution_queries ),
-    ADD_TEST( device_and_host_timers ),
-};
-
 test_status InitCL(cl_device_id device)
 {
     auto version = get_device_cl_version(device);
@@ -70,11 +63,10 @@ test_status InitCL(cl_device_id device)
     return TEST_PASS;
 }
 
-
-const int test_num = ARRAY_SIZE( test_list );
-
 int main(int argc, const char *argv[])
 {
-    return runTestHarnessWithCheck( argc, argv, test_num, test_list, false, 0, InitCL );
+    return runTestHarnessWithCheck(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0, InitCL);
 }
 

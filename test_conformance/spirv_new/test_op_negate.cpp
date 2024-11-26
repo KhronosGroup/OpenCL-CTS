@@ -86,7 +86,7 @@ int test_negation(cl_device_id deviceID,
 }
 
 #define TEST_NEGATION(TYPE, Tv, OP, FUNC)                                      \
-    TEST_SPIRV_FUNC(OP##_##TYPE)                                               \
+    REGISTER_TEST(OP##_##TYPE)                                                 \
     {                                                                          \
         int num = 1 << 20;                                                     \
         std::vector<Tv> in(num);                                               \

@@ -84,7 +84,7 @@ int test_branch_conditional(cl_device_id deviceID,
 }
 
 #define TEST_BRANCH_CONDITIONAL(name)                                          \
-    TEST_SPIRV_FUNC(op_##name)                                                 \
+    REGISTER_TEST(op_##name)                                                   \
     {                                                                          \
         const int num = 1 << 10;                                               \
         RandomSeed seed(gRandomSeed);                                          \

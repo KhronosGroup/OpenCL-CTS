@@ -83,7 +83,7 @@ int test_phi(cl_device_id deviceID,
     return 0;
 }
 
-TEST_SPIRV_FUNC(op_phi_2_blocks)
+REGISTER_TEST(op_phi_2_blocks)
 {
     const int num = 1 << 10;
     RandomSeed seed(gRandomSeed);
@@ -101,7 +101,7 @@ TEST_SPIRV_FUNC(op_phi_2_blocks)
     return test_phi(deviceID, context, queue, "phi_2", lhs, rhs, out);
 }
 
-TEST_SPIRV_FUNC(op_phi_3_blocks)
+REGISTER_TEST(op_phi_3_blocks)
 {
     const int num = 1 << 10;
     RandomSeed seed(gRandomSeed);
@@ -123,7 +123,7 @@ TEST_SPIRV_FUNC(op_phi_3_blocks)
     return test_phi(deviceID, context, queue, "phi_3", lhs, rhs, out);
 }
 
-TEST_SPIRV_FUNC(op_phi_4_blocks)
+REGISTER_TEST(op_phi_4_blocks)
 {
     const int num = 1 << 10;
     RandomSeed seed(gRandomSeed);
