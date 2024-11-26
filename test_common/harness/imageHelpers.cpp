@@ -490,6 +490,32 @@ size_t compare_scanlines(const image_descriptor *imageInfo, const char *aPtr,
             }
             break;
 
+            case CL_SNORM_INT8: {
+                cl_uchar aPixel = *(cl_uchar *)aPtr;
+                cl_uchar bPixel = *(cl_uchar *)bPtr;
+                // -1.0 is defined as 0x80 and 0x81
+                aPixel = (aPixel == 0x80) ? 0x81 : aPixel;
+                bPixel = (bPixel == 0x80) ? 0x81 : bPixel;
+                if (aPixel != bPixel)
+                {
+                    return column;
+                }
+            }
+            break;
+
+            case CL_SNORM_INT16: {
+                cl_ushort aPixel = *(cl_ushort *)aPtr;
+                cl_ushort bPixel = *(cl_ushort *)bPtr;
+                // -1.0 is defined as 0x8000 and 0x8001
+                aPixel = (aPixel == 0x8000) ? 0x8001 : aPixel;
+                bPixel = (bPixel == 0x8000) ? 0x8001 : bPixel;
+                if (aPixel != bPixel)
+                {
+                    return column;
+                }
+            }
+            break;
+
             default:
                 if (memcmp(aPtr, bPtr, pixel_size) != 0) return column;
                 break;
