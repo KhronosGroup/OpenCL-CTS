@@ -5084,7 +5084,10 @@ static long double reference_scalblnl(long double x, long n)
 #endif
 }
 
-double reference_relaxed_exp(double x) { return reference_exp(x); }
+double reference_relaxed_exp(double x) 
+{ 
+    return reference_exp2(((float)x) * HEX_FLT(+, 1, 715476, +, 0));
+}
 
 double reference_exp(double x)
 {
