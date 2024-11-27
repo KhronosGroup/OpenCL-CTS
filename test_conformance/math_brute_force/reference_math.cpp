@@ -5772,3 +5772,6 @@ long double reference_erfl(long double x) { return erf(x); }
 
 double reference_erfc(double x) { return erfc(x); }
 double reference_erf(double x) { return erf(x); }
+
+float reference_sqrtf(float x) { return sqrtf(x); }
+float reference_dividef(float x, float y) { return x / y; }
