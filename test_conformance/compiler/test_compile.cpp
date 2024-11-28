@@ -1999,14 +1999,14 @@ static int verifyCopyBuffer(cl_context context, cl_command_queue queue,
 
     if (srcBuffer == NULL)
     {
-        log_error("ERROR: Unable to allocate srcBuffer float array with %lu "
+        log_error("ERROR: Unable to allocate srcBuffer float array with %zu "
                   "floats! (in %s:%d)\n",
                   cnDimension, __FILE__, __LINE__);
         return -1;
     }
     if (dstBuffer == NULL)
     {
-        log_error("ERROR: Unable to allocate dstBuffer float array with %lu "
+        log_error("ERROR: Unable to allocate dstBuffer float array with %zu "
                   "floats! (in %s:%d)\n",
                   cnDimension, __FILE__, __LINE__);
         return -1;
@@ -2067,7 +2067,7 @@ static int verifyCopyBuffer(cl_context context, cl_command_queue queue,
             {
                 if (mismatch < 4)
                 {
-                    log_info("Offset %08lX:  Expected %08X, Got %08X\n", i * 4,
+                    log_info("Offset %08zX:  Expected %08X, Got %08X\n", i * 4,
                              pSrc[i], pDst[i]);
                 }
                 else
@@ -2292,7 +2292,7 @@ int test_execute_after_serialize_reload_object(cl_device_id deviceID,
     binary = (unsigned char *)malloc(sizeof(unsigned char) * binarySize);
     if (binary == NULL)
     {
-        log_error("ERROR: Unable to allocate binary character array with %lu "
+        log_error("ERROR: Unable to allocate binary character array with %zu "
                   "characters! (in %s:%d)\n",
                   binarySize, __FILE__, __LINE__);
         return -1;
@@ -2404,7 +2404,7 @@ int test_execute_after_serialize_reload_library(cl_device_id deviceID,
     binary = (unsigned char *)malloc(sizeof(unsigned char) * binarySize);
     if (binary == NULL)
     {
-        log_error("ERROR: Unable to allocate binary character array with %lu "
+        log_error("ERROR: Unable to allocate binary character array with %zu "
                   "characters (in %s:%d)!",
                   binarySize, __FILE__, __LINE__);
         return -1;
@@ -3308,7 +3308,7 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context,
         if (binary == NULL)
         {
             log_error("ERROR: Unable to allocate binary character array with "
-                      "%lu characters! (in %s:%d)\n",
+                      "%zu characters! (in %s:%d)\n",
                       binarySize, __FILE__, __LINE__);
             return -1;
         }
@@ -3389,7 +3389,7 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context,
     binary = (unsigned char *)malloc(sizeof(unsigned char) * binarySize);
     if (binary == NULL)
     {
-        log_error("ERROR: Unable to allocate binary character array with %lu "
+        log_error("ERROR: Unable to allocate binary character array with %zu "
                   "characters! (in %s:%d)\n",
                   binarySize, __FILE__, __LINE__);
         return -1;
@@ -3487,7 +3487,7 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context,
         if (binary == NULL)
         {
             log_error("ERROR: Unable to allocate binary character array with "
-                      "%lu characters! (in %s:%d)\n",
+                      "%zu characters! (in %s:%d)\n",
                       binarySize, __FILE__, __LINE__);
             return -1;
         }

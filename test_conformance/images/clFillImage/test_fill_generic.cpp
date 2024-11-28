@@ -145,7 +145,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
                 if (err != CL_SUCCESS)
                 {
                     log_error("ERROR: Could not create buffer for 1D buffer "
-                              "image. %ld bytes\n",
+                              "image. %zu bytes\n",
                               imageInfo->rowPitch);
                     return NULL;
                 }
@@ -158,7 +158,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
     {
         if ( NULL == host_ptr )
         {
-            log_error( "ERROR: Unable to create backing store for pitched 3D image. %ld bytes\n",  imageInfo->depth * imageInfo->slicePitch );
+            log_error( "ERROR: Unable to create backing store for pitched 3D image. %zu bytes\n",  imageInfo->depth * imageInfo->slicePitch );
             return NULL;
         }
         if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
@@ -427,7 +427,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
         imgHost.reset(malloc(dataBytes),NULL,0,dataBytes);
         if (imgHost == NULL)
         {
-            log_error( "ERROR: Unable to malloc %lu bytes for imgHost\n", dataBytes );
+            log_error( "ERROR: Unable to malloc %zu bytes for imgHost\n", dataBytes );
             return -1;
         }
     }
