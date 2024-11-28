@@ -149,7 +149,9 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
     {
         if ( NULL == host_ptr )
         {
-            log_error( "ERROR: Unable to create backing store for pitched 3D image. %zu bytes\n",  imageInfo->depth * imageInfo->slicePitch );
+            log_error("ERROR: Unable to create backing store for pitched 3D "
+                      "image. %zu bytes\n",
+                      imageInfo->depth * imageInfo->slicePitch);
             return NULL;
         }
         if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
@@ -424,7 +426,8 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
         // Update the host verification copy of the data.
         srcHost.reset(malloc(srcBytes),NULL,0,srcBytes);
         if (srcHost == NULL) {
-            log_error( "ERROR: Unable to malloc %zu bytes for srcHost\n", srcBytes );
+            log_error("ERROR: Unable to malloc %zu bytes for srcHost\n",
+                      srcBytes);
             return -1;
         }
         memcpy(srcHost,srcData,srcBytes);
@@ -456,7 +459,8 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
             log_info( " - Resizing destination buffer...\n" );
         dstData.reset(malloc(destImageSize),NULL,0,destImageSize);
         if (dstData == NULL) {
-            log_error( "ERROR: Unable to malloc %zu bytes for dstData\n", destImageSize );
+            log_error("ERROR: Unable to malloc %zu bytes for dstData\n",
+                      destImageSize);
             return -1;
         }
     }
@@ -467,7 +471,8 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
         dstHost.reset(malloc(destImageSize),NULL,0,destImageSize);
         if (dstHost == NULL) {
             dstData.reset(NULL);
-            log_error( "ERROR: Unable to malloc %zu bytes for dstHost\n", destImageSize );
+            log_error("ERROR: Unable to malloc %zu bytes for dstHost\n",
+                      destImageSize);
             return -1;
         }
     }
