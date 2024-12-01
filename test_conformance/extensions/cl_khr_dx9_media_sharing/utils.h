@@ -27,12 +27,12 @@
 
 
 extern clGetDeviceIDsFromDX9MediaAdapterKHR_fn
-    clGetDeviceIDsFromDX9MediaAdapterKHR;
-extern clCreateFromDX9MediaSurfaceKHR_fn clCreateFromDX9MediaSurfaceKHR;
+    clGetDeviceIDsFromDX9MediaAdapterKHR_;
+extern clCreateFromDX9MediaSurfaceKHR_fn clCreateFromDX9MediaSurfaceKHR_;
 extern clEnqueueAcquireDX9MediaSurfacesKHR_fn
-    clEnqueueAcquireDX9MediaSurfacesKHR;
+    clEnqueueAcquireDX9MediaSurfacesKHR_;
 extern clEnqueueReleaseDX9MediaSurfacesKHR_fn
-    clEnqueueReleaseDX9MediaSurfacesKHR;
+    clEnqueueReleaseDX9MediaSurfacesKHR_;
 
 extern cl_platform_id gPlatformIDdetected;
 extern cl_device_id gDeviceIDdetected;

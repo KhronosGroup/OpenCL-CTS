@@ -138,7 +138,7 @@ int context_create(cl_device_id deviceID, cl_context context,
         std::vector<clMemWrapper> planesList(planesNum);
         for (unsigned int planeIdx = 0; planeIdx < planesNum; ++planeIdx)
         {
-            planesList[planeIdx] = clCreateFromDX9MediaSurfaceKHR(
+            planesList[planeIdx] = clCreateFromDX9MediaSurfaceKHR_(
                 ctx, CL_MEM_READ_WRITE, adapterType, &surfaceInfo, planeIdx,
                 &error);
             if (error != CL_SUCCESS)
@@ -170,7 +170,7 @@ int context_create(cl_device_id deviceID, cl_context context,
         }
 
         cl_event event;
-        error = clEnqueueAcquireDX9MediaSurfacesKHR(
+        error = clEnqueueAcquireDX9MediaSurfacesKHR_(
             cmdQueue, static_cast<cl_uint>(memObjList.size()),
             &memObjList.at(0), 0, NULL, &event);
         if (error != CL_SUCCESS)
@@ -228,7 +228,7 @@ int context_create(cl_device_id deviceID, cl_context context,
             result.ResultSub(CResult::TEST_FAIL);
         }
 
-        error = clEnqueueReleaseDX9MediaSurfacesKHR(
+        error = clEnqueueReleaseDX9MediaSurfacesKHR_(
             cmdQueue, static_cast<cl_uint>(memObjList.size()),
             &memObjList.at(0), 0, NULL, &event);
         if (error != CL_SUCCESS)
