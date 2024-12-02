@@ -38,6 +38,7 @@ set(${MODULE_NAME}_SOURCES
          test_queue_properties_queries.cpp
          test_pipe_properties_queries.cpp
          test_wg_suggested_local_work_size.cpp
+         test_device_command_queue.cpp
 )
 
 include(../CMakeCommon.txt)
