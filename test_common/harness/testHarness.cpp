@@ -189,14 +189,12 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
 
     int err, ret;
     char *endPtr;
-    int based_on_env_var = 0;
 
 
     /* Check for environment variable to set device type */
     char *env_mode = getenv("CL_DEVICE_TYPE");
     if (env_mode != NULL)
     {
-        based_on_env_var = 1;
         if (strcmp(env_mode, "gpu") == 0
             || strcmp(env_mode, "CL_DEVICE_TYPE_GPU") == 0)
             device_type = CL_DEVICE_TYPE_GPU;
@@ -247,6 +245,23 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
         choosen_platform_index = atoi(env_mode);
     }
 
+    switch (device_type)
+    {
+        case CL_DEVICE_TYPE_GPU: log_info("Requesting GPU device "); break;
+        case CL_DEVICE_TYPE_CPU: log_info("Requesting CPU device "); break;
+        case CL_DEVICE_TYPE_ACCELERATOR:
+            log_info("Requesting Accelerator device ");
+            break;
+        case CL_DEVICE_TYPE_DEFAULT:
+            log_info("Requesting Default device ");
+            break;
+        default: log_error("Requesting unknown device "); return EXIT_FAILURE;
+    }
+    log_info("based on environment variable for platform index %d and device "
+             "index %d\n",
+             choosen_platform_index, choosen_device_index);
+
+
     /* Process the command line arguments */
 
     argc = parseCustomParam(argc, argv);
@@ -262,17 +277,9 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     {
         char *fileName = getenv("CL_CONFORMANCE_RESULTS_FILENAME");
 
-        log_info(
-            "Usage: %s [<test name>*] [pid<num>] [id<num>] [<device type>]\n",
-            argv[0]);
-        log_info("\t<test name>\tOne or more of: (wildcard character '*') "
-                 "(default *)\n");
-        log_info("\tpid<num>\tIndicates platform at index <num> should be used "
-                 "(default 0).\n");
-        log_info("\tid<num>\t\tIndicates device at index <num> should be used "
-                 "(default 0).\n");
-        log_info("\t<device_type>\tcpu|gpu|accelerator|<CL_DEVICE_TYPE_*> "
-                 "(default CL_DEVICE_TYPE_DEFAULT)\n");
+        log_info("Usage: %s [<test name>*]\n", argv[0]);
+        log_info("\t<test name>\tOne or more of the test names below (wildcard "
+                 "character '*') (default *)\n");
         log_info("\n");
         log_info("\tNOTE: You may pass environment variable "
                  "CL_CONFORMANCE_RESULTS_FILENAME (currently '%s')\n",
@@ -316,83 +323,6 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
             argc--;
         }
     }
-
-    /* Do we have a CPU/GPU specification? */
-    if (argc > 1)
-    {
-        if (strcmp(argv[argc - 1], "gpu") == 0
-            || strcmp(argv[argc - 1], "CL_DEVICE_TYPE_GPU") == 0)
-        {
-            device_type = CL_DEVICE_TYPE_GPU;
-            argc--;
-        }
-        else if (strcmp(argv[argc - 1], "cpu") == 0
-                 || strcmp(argv[argc - 1], "CL_DEVICE_TYPE_CPU") == 0)
-        {
-            device_type = CL_DEVICE_TYPE_CPU;
-            argc--;
-        }
-        else if (strcmp(argv[argc - 1], "accelerator") == 0
-                 || strcmp(argv[argc - 1], "CL_DEVICE_TYPE_ACCELERATOR") == 0)
-        {
-            device_type = CL_DEVICE_TYPE_ACCELERATOR;
-            argc--;
-        }
-        else if (strcmp(argv[argc - 1], "custom") == 0
-                 || strcmp(argv[argc - 1], "CL_DEVICE_TYPE_CUSTOM") == 0)
-        {
-            device_type = CL_DEVICE_TYPE_CUSTOM;
-            argc--;
-        }
-        else if (strcmp(argv[argc - 1], "CL_DEVICE_TYPE_DEFAULT") == 0)
-        {
-            device_type = CL_DEVICE_TYPE_DEFAULT;
-            argc--;
-        }
-    }
-
-    /* Did we choose a specific device index? */
-    if (argc > 1)
-    {
-        if (strlen(argv[argc - 1]) >= 3 && argv[argc - 1][0] == 'i'
-            && argv[argc - 1][1] == 'd')
-        {
-            choosen_device_index = atoi(&(argv[argc - 1][2]));
-            argc--;
-        }
-    }
-
-    /* Did we choose a specific platform index? */
-    if (argc > 1)
-    {
-        if (strlen(argv[argc - 1]) >= 3 && argv[argc - 1][0] == 'p'
-            && argv[argc - 1][1] == 'i' && argv[argc - 1][2] == 'd')
-        {
-            choosen_platform_index = atoi(&(argv[argc - 1][3]));
-            argc--;
-        }
-    }
-
-
-    switch (device_type)
-    {
-        case CL_DEVICE_TYPE_GPU: log_info("Requesting GPU device "); break;
-        case CL_DEVICE_TYPE_CPU: log_info("Requesting CPU device "); break;
-        case CL_DEVICE_TYPE_ACCELERATOR:
-            log_info("Requesting Accelerator device ");
-            break;
-        case CL_DEVICE_TYPE_CUSTOM:
-            log_info("Requesting Custom device ");
-            break;
-        case CL_DEVICE_TYPE_DEFAULT:
-            log_info("Requesting Default device ");
-            break;
-        default: log_error("Requesting unknown device "); return EXIT_FAILURE;
-    }
-    log_info(based_on_env_var ? "based on environment variable "
-                              : "based on command line ");
-    log_info("for platform index %d and device index %d\n",
-             choosen_platform_index, choosen_device_index);
 
 #if defined(__APPLE__)
 #if defined(__i386__) || defined(__x86_64__)
