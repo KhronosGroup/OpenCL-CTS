@@ -20,6 +20,7 @@
 #endif
 
 #include <cinttypes>
+#include <memory>
 
 #define INT_TEST_VALUE 402258822
 #define LONG_TEST_VALUE 515154531254381446LL
@@ -136,12 +137,12 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
     int error;
     size_t threads[1];
     clMemWrapper streams[2];
-    void *refValues, *startRefValues;
+    std::unique_ptr<cl_int[]> refValues;
+    std::unique_ptr<cl_int[]> startRefValues;
     size_t threadSize, groupSize;
     const char *programLines[4];
     char pragma[512];
     char programHeader[512];
-    MTdata d;
     size_t typeSize = get_explicit_type_size(dataType);
 
 
@@ -247,23 +248,20 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
     log_info("\t(thread count %d, group size %d)\n", (int)threadSize,
              (int)groupSize);
 
-    refValues = (cl_int *)malloc(typeSize * threadSize);
+    refValues.reset(new cl_int[typeSize * threadSize]);
 
     if (testFns.GenerateRefsIntFn != NULL)
     {
         // We have a ref generator provided
-        d = init_genrand(gRandomSeed);
-        startRefValues = malloc(typeSize * threadSize);
+        MTdataHolder d_holder(gRandomSeed);
+        startRefValues.reset(new cl_int[typeSize * threadSize]);
         if (typeSize == 4)
-            testFns.GenerateRefsIntFn(threadSize, (cl_int *)startRefValues, d);
+            testFns.GenerateRefsIntFn(threadSize,
+                                      (cl_int *)startRefValues.get(), d_holder);
         else
-            testFns.GenerateRefsLongFn(threadSize, (cl_long *)startRefValues,
-                                       d);
-        free_mtdata(d);
-        d = NULL;
+            testFns.GenerateRefsLongFn(
+                threadSize, (cl_long *)startRefValues.get(), d_holder);
     }
-    else
-        startRefValues = NULL;
 
     // If we're given a num_results function, we need to determine how many
     // result objects we need. If we don't have it, we assume it's just 1
@@ -271,8 +269,8 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
         ? testFns.NumResultsFn(threadSize, dataType)
         : 1;
 
-    char *destItems = new char[typeSize * numDestItems];
-    if (destItems == NULL)
+    std::unique_ptr<char[]> destItems(new char[typeSize * numDestItems]);
+    if (destItems.get() == NULL)
     {
         log_error("ERROR: Unable to allocate memory!\n");
         return -1;
@@ -280,19 +278,20 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
     void *startValue = (typeSize == 4) ? (void *)&testFns.mIntStartValue
                                        : (void *)&testFns.mLongStartValue;
     for (size_t i = 0; i < numDestItems; i++)
-        memcpy(destItems + i * typeSize, startValue, typeSize);
+        memcpy(destItems.get() + i * typeSize, startValue, typeSize);
 
     streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,
-                                typeSize * numDestItems, destItems, NULL);
+                                typeSize * numDestItems, destItems.get(), NULL);
     if (!streams[0])
     {
         log_error("ERROR: Creating output array failed!\n");
         return -1;
     }
-    streams[1] = clCreateBuffer(
-        context,
-        ((startRefValues != NULL ? CL_MEM_COPY_HOST_PTR : CL_MEM_READ_WRITE)),
-        typeSize * threadSize, startRefValues, NULL);
+    streams[1] =
+        clCreateBuffer(context,
+                       ((startRefValues.get() != NULL ? CL_MEM_COPY_HOST_PTR
+                                                      : CL_MEM_READ_WRITE)),
+                       typeSize * threadSize, startRefValues.get(), NULL);
     if (!streams[1])
     {
         log_error("ERROR: Creating reference array failed!\n");
@@ -323,12 +322,12 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
 
     error =
         clEnqueueReadBuffer(queue, streams[0], true, 0, typeSize * numDestItems,
-                            destItems, 0, NULL, NULL);
+                            destItems.get(), 0, NULL, NULL);
     test_error(error, "Unable to read result value!");
 
     error =
         clEnqueueReadBuffer(queue, streams[1], true, 0, typeSize * threadSize,
-                            refValues, 0, NULL, NULL);
+                            refValues.get(), 0, NULL, NULL);
     test_error(error, "Unable to read reference values!");
 
     // If we have an expectedFn, then we need to generate a final value to
@@ -345,27 +344,28 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
             {
                 // Int version
                 intVal = testFns.ExpectedValueIntFn(
-                    threadSize, (cl_int *)startRefValues, i);
+                    threadSize, (cl_int *)startRefValues.get(), i);
                 memcpy(expected, &intVal, sizeof(intVal));
             }
             else
             {
                 // Long version
                 longVal = testFns.ExpectedValueLongFn(
-                    threadSize, (cl_long *)startRefValues, i);
+                    threadSize, (cl_long *)startRefValues.get(), i);
                 memcpy(expected, &longVal, sizeof(longVal));
             }
 
-            if (memcmp(expected, destItems + i * typeSize, typeSize) != 0)
+            if (memcmp(expected, destItems.get() + i * typeSize, typeSize) != 0)
             {
                 if (typeSize == 4)
                 {
-                    cl_int *outValue = (cl_int *)(destItems + i * typeSize);
+                    cl_int *outValue =
+                        (cl_int *)(destItems.get() + i * typeSize);
                     log_error("ERROR: Result %zu from kernel does not "
                               "validate! (should be %d, was %d)\n",
                               i, intVal, *outValue);
-                    cl_int *startRefs = (cl_int *)startRefValues;
-                    cl_int *refs = (cl_int *)refValues;
+                    cl_int *startRefs = (cl_int *)startRefValues.get();
+                    cl_int *refs = (cl_int *)refValues.get();
                     for (i = 0; i < threadSize; i++)
                     {
                         if (startRefs != NULL)
@@ -377,13 +377,14 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
                 }
                 else
                 {
-                    cl_long *outValue = (cl_long *)(destItems + i * typeSize);
+                    cl_long *outValue =
+                        (cl_long *)(destItems.get() + i * typeSize);
                     log_error("ERROR: Result %zu from kernel does not "
                               "validate! (should be %" PRId64 ", was %" PRId64
                               ")\n",
                               i, longVal, *outValue);
-                    cl_long *startRefs = (cl_long *)startRefValues;
-                    cl_long *refs = (cl_long *)refValues;
+                    cl_long *startRefs = (cl_long *)startRefValues.get();
+                    cl_long *refs = (cl_long *)refValues.get();
                     for (i = 0; i < threadSize; i++)
                     {
                         if (startRefs != NULL)
@@ -403,9 +404,9 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
         /* Use the verify function to also check the results */
         if (dataType == kFloat)
         {
-            cl_float *outValue = (cl_float *)destItems;
-            if (!testFns.VerifyRefsFloatFn(threadSize, (cl_float *)refValues,
-                                           *outValue)
+            cl_float *outValue = (cl_float *)destItems.get();
+            if (!testFns.VerifyRefsFloatFn(
+                    threadSize, (cl_float *)refValues.get(), *outValue)
                 != 0)
             {
                 log_error("ERROR: Reference values did not validate!\n");
@@ -414,8 +415,8 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
         }
         else if (typeSize == 4)
         {
-            cl_int *outValue = (cl_int *)destItems;
-            if (!testFns.VerifyRefsIntFn(threadSize, (cl_int *)refValues,
+            cl_int *outValue = (cl_int *)destItems.get();
+            if (!testFns.VerifyRefsIntFn(threadSize, (cl_int *)refValues.get(),
                                          *outValue)
                 != 0)
             {
@@ -425,9 +426,9 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
         }
         else
         {
-            cl_long *outValue = (cl_long *)destItems;
-            if (!testFns.VerifyRefsLongFn(threadSize, (cl_long *)refValues,
-                                          *outValue)
+            cl_long *outValue = (cl_long *)destItems.get();
+            if (!testFns.VerifyRefsLongFn(threadSize,
+                                          (cl_long *)refValues.get(), *outValue)
                 != 0)
             {
                 log_error("ERROR: Reference values did not validate!\n");
@@ -445,10 +446,10 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
 
     /* Re-write the starting value */
     for (size_t i = 0; i < numDestItems; i++)
-        memcpy(destItems + i * typeSize, startValue, typeSize);
-    error =
-        clEnqueueWriteBuffer(queue, streams[0], true, 0,
-                             typeSize * numDestItems, destItems, 0, NULL, NULL);
+        memcpy(destItems.get() + i * typeSize, startValue, typeSize);
+    error = clEnqueueWriteBuffer(queue, streams[0], true, 0,
+                                 typeSize * numDestItems, destItems.get(), 0,
+                                 NULL, NULL);
     test_error(error, "Unable to write starting values!");
 
     /* Run the kernel once for a single thread, so we can verify that the
@@ -458,16 +459,16 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
                                    NULL, NULL);
     test_error(error, "Unable to execute test kernel");
 
-    error = clEnqueueReadBuffer(queue, streams[1], true, 0, typeSize, refValues,
-                                0, NULL, NULL);
+    error = clEnqueueReadBuffer(queue, streams[1], true, 0, typeSize,
+                                refValues.get(), 0, NULL, NULL);
     test_error(error, "Unable to read reference values!");
 
-    if (memcmp(refValues, destItems, typeSize) != 0)
+    if (memcmp(refValues.get(), destItems.get(), typeSize) != 0)
     {
         if (typeSize == 4)
         {
-            cl_int *s = (cl_int *)destItems;
-            cl_int *r = (cl_int *)refValues;
+            cl_int *s = (cl_int *)destItems.get();
+            cl_int *r = (cl_int *)refValues.get();
             log_error("ERROR: atomic function operated correctly but did NOT "
                       "return correct 'old' value "
                       " (should have been %d, returned %d)!\n",
@@ -475,8 +476,8 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
         }
         else
         {
-            cl_long *s = (cl_long *)destItems;
-            cl_long *r = (cl_long *)refValues;
+            cl_long *s = (cl_long *)destItems.get();
+            cl_long *r = (cl_long *)refValues.get();
             log_error("ERROR: atomic function operated correctly but did NOT "
                       "return correct 'old' value "
                       " (should have been %" PRId64 ", returned %" PRId64
@@ -485,10 +486,6 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
         }
         return -1;
     }
-
-    delete[] destItems;
-    free(refValues);
-    if (startRefValues != NULL) free(startRefValues);
 
     return 0;
 }
@@ -659,12 +656,11 @@ bool test_atomic_xchg_verify_int(size_t size, cl_int *refValues,
 {
     /* For xchg, each value from 0 to size - 1 should have an entry in the ref
      * array, and ONLY one entry */
-    char *valids;
+    std::unique_ptr<char[]> valids(new char[sizeof(char) * size]);
     size_t i;
     char originalValidCount = 0;
 
-    valids = (char *)malloc(sizeof(char) * size);
-    memset(valids, 0, sizeof(char) * size);
+    memset(valids.get(), 0, sizeof(char) * size);
 
     for (i = 0; i < size; i++)
     {
@@ -715,7 +711,6 @@ bool test_atomic_xchg_verify_int(size_t size, cl_int *refValues,
         }
     }
 
-    free(valids);
     return true;
 }
 
@@ -724,12 +719,11 @@ bool test_atomic_xchg_verify_long(size_t size, cl_long *refValues,
 {
     /* For xchg, each value from 0 to size - 1 should have an entry in the ref
      * array, and ONLY one entry */
-    char *valids;
+    std::unique_ptr<char[]> valids(new char[sizeof(char) * size]);
     size_t i;
     char originalValidCount = 0;
 
-    valids = (char *)malloc(sizeof(char) * size);
-    memset(valids, 0, sizeof(char) * size);
+    memset(valids.get(), 0, sizeof(char) * size);
 
     for (i = 0; i < size; i++)
     {
@@ -782,7 +776,6 @@ bool test_atomic_xchg_verify_long(size_t size, cl_long *refValues,
         }
     }
 
-    free(valids);
     return true;
 }
 
@@ -791,12 +784,11 @@ bool test_atomic_xchg_verify_float(size_t size, cl_float *refValues,
 {
     /* For xchg, each value from 0 to size - 1 should have an entry in the ref
      * array, and ONLY one entry */
-    char *valids;
+    std::unique_ptr<char[]> valids(new char[sizeof(char) * size]);
     size_t i;
     char originalValidCount = 0;
 
-    valids = (char *)malloc(sizeof(char) * size);
-    memset(valids, 0, sizeof(char) * size);
+    memset(valids.get(), 0, sizeof(char) * size);
 
     for (i = 0; i < size; i++)
     {
@@ -848,7 +840,6 @@ bool test_atomic_xchg_verify_float(size_t size, cl_float *refValues,
         }
     }
 
-    free(valids);
     return true;
 }
 
