@@ -39,21 +39,6 @@
 
 #include <functional>
 
-/*
- *  The below code is intended to be used at the top of kernels that appear
- * inline in files to set line and file info for the kernel:
- *
- *  const char *source = {
- *      INIT_OPENCL_DEBUG_INFO
- *      "__kernel void foo( int x )\n"
- *      "{\n"
- *      "   ...\n"
- *      "}\n"
- *  };
- */
-#define INIT_OPENCL_DEBUG_INFO SET_OPENCL_LINE_INFO(__LINE__, __FILE__)
-#define SET_OPENCL_LINE_INFO(_line, _file)                                     \
-    "#line " STRINGIFY(_line) " " STRINGIFY(_file) "\n"
 #ifndef STRINGIFY_VALUE
 #define STRINGIFY_VALUE(_x) STRINGIFY(_x)
 #endif
@@ -84,13 +69,6 @@ extern int create_single_kernel_helper_create_program_for_device(
     cl_context context, cl_device_id device, cl_program *outProgram,
     unsigned int numKernelLines, const char **kernelProgram,
     const char *buildOptions = NULL);
-
-/* Creates OpenCL C++ program. This one must be used for creating OpenCL C++
- * program. */
-extern int create_openclcpp_program(cl_context context, cl_program *outProgram,
-                                    unsigned int numKernelLines,
-                                    const char **kernelProgram,
-                                    const char *buildOptions = NULL);
 
 /* Builds program (outProgram) and creates one kernel */
 int build_program_create_kernel_helper(

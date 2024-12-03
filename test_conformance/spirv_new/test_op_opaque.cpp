@@ -17,7 +17,7 @@
 #include "testBase.h"
 #include "types.hpp"
 
-TEST_SPIRV_FUNC(op_type_opaque_simple)
+REGISTER_TEST(op_type_opaque_simple)
 {
     const char *name = "opaque";
     cl_int err = CL_SUCCESS;

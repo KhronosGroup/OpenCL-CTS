@@ -111,6 +111,100 @@ testCase testCaseInt = {
 };
 
 
+//==================================
+
+// long
+
+//==================================
+
+//------------------------------------------------------
+
+// [string] format  | [string] int-data representation |
+
+//------------------------------------------------------
+
+std::vector<printDataGenParameters> printLongGenParameters = {
+
+    //(Minimum) fifteen-wide,default(right)-justified
+
+    { { "%5ld" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,left-justified
+
+    { { "%-15ld" }, "-10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified,zero-filled
+
+    { { "%015ld" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified,with sign
+
+    { { "%+15ld" }, "-10000000000L" },
+
+    //(Minimum) fifteen-wide ,left-justified,with sign
+
+    { { "%-+15ld" }, "10000000000L" },
+
+    //(Minimum) fifteen-digit(zero-filled in absent
+    // digits),default(right)-justified
+
+    { { "%.15li" }, "10000000000L" },
+
+    //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
+    // digits),default(right)-justified
+
+    { { "%-+16.15li" }, "-10000000000L" },
+
+};
+
+//--------------------------------------------------------
+
+//  Lookup table - [string]long-correct buffer             |
+
+//--------------------------------------------------------
+
+// The table below is used to accommodate differences in `printf` output when
+// using the `%ld` format specifier in 32-bit versus 64-bit compiled binaries
+
+std::vector<std::string> correctBufferLong = {
+
+    "10000000000",
+
+    "-10000000000   ",
+
+    "000010000000000",
+
+    "   -10000000000",
+
+    "+10000000000   ",
+
+    "000010000000000",
+
+    "-000010000000000"
+
+};
+
+//-----------------------------------------------
+
+// test case for long                             |
+
+//-----------------------------------------------
+
+testCase testCaseLong = {
+
+    TYPE_LONG,
+
+    correctBufferLong,
+
+    printLongGenParameters,
+
+    NULL,
+
+    klong
+
+};
+
+
 //==============================================
 
 // half
@@ -1179,7 +1273,7 @@ std::vector<printDataGenParameters> printVectorGenParameters = {
 
     // Four component vector in hexadecimal floating point, lowercase format
 
-    { { "" }, "(0.25f,0.5f,1.f,1.5f)", "%", "hla", "float", "4" },
+    { { "" }, "(0.25f,0.5f,1.f,1.5f)", "%.1", "hla", "float", "4" },
 
     // Eight component vector in the shortest float representation
 
@@ -1231,7 +1325,7 @@ std::vector<std::string> correctBufferVector = {
 
     "1.23e+03,9.88e+05,5.00e-04",
 
-    "0x1p-2,0x1p-1,0x1p+0,0x1.8p+0",
+    "0x1.0p-2,0x1.0p-1,0x1.0p+0,0x1.8p+0",
 
     "1,2,3,4,1.5,3.14,2.5,3.5",
 
@@ -1397,6 +1491,116 @@ testCase testCaseMixedFormat = { TYPE_MIXED_FORMAT_RANDOM,
                                  correctBufferMixedFormat,
                                  printMixedFormatGenParameters, NULL };
 
+
+//=============================================================
+
+// length sub-specifier format
+
+//=============================================================
+
+std::vector<printDataGenParameters> printLenSpecGenParameters = {
+
+    { { "%hd" }, "32767" },
+
+    { { "%hhd" }, "127" },
+
+    { { "%ld" }, "9223372036854775807L" },
+
+    { { "%hd" }, "-32767" },
+
+    { { "%hhd" }, "-128" },
+
+    { { "%ld" }, "-9223372036854775807L" },
+
+    { { "%hx" }, "32767" },
+
+    { { "%hhx" }, "127" },
+
+    { { "%lx" }, "9223372036854775807L" },
+
+    { { "%hx" }, "-32767" },
+
+    { { "%hhx" }, "-128" },
+
+    { { "%lx" }, "-9223372036854775807L" },
+
+    { { "%ho" }, "32767" },
+
+    { { "%hho" }, "127" },
+
+    { { "%lo" }, "9223372036854775807L" },
+
+    { { "%ho" }, "-32767" },
+
+    { { "%hho" }, "-128" },
+
+    { { "%lo" }, "-9223372036854775807L" },
+};
+
+//---------------------------------------------------------
+
+// Lookup table -[string] length specified correct buffer
+
+//---------------------------------------------------------
+
+std::vector<std::string> correctBufferLenSpec = {
+
+    "32767",
+
+    "127",
+
+    "9223372036854775807",
+
+    "-32767",
+
+    "-128",
+
+    "-9223372036854775807",
+
+    "7fff",
+
+    "7f",
+
+    "7fffffffffffffff",
+
+    "8001",
+
+    "80",
+
+    "8000000000000001",
+
+    "77777",
+
+    "177",
+
+    "777777777777777777777",
+
+    "100001",
+
+    "200",
+
+    "1000000000000000000001",
+};
+
+
+//----------------------------------------------------------
+
+// Test case for length specified values
+
+//----------------------------------------------------------
+
+testCase testCaseLenSpec = {
+
+    TYPE_LENGTH_SPECIFIER,
+
+    correctBufferLenSpec,
+
+    printLenSpecGenParameters,
+
+    NULL
+
+};
+
 //-------------------------------------------------------------------------------
 
 //All Test cases                                                                |
@@ -1404,12 +1608,12 @@ testCase testCaseMixedFormat = { TYPE_MIXED_FORMAT_RANDOM,
 //-------------------------------------------------------------------------------
 
 std::vector<testCase*> allTestCase = {
-    &testCaseInt,          &testCaseHalf,        &testCaseHalfLimits,
-    &testCaseFloat,        &testCaseFloatLimits, &testCaseDouble,
-    &testCaseDoubleLimits, &testCaseOctal,       &testCaseUnsigned,
-    &testCaseHexadecimal,  &testCaseChar,        &testCaseString,
-    &testCaseFormatString, &testCaseVector,      &testCaseAddrSpace,
-    &testCaseMixedFormat
+    &testCaseInt,        &testCaseLong,         &testCaseHalf,
+    &testCaseHalfLimits, &testCaseFloat,        &testCaseFloatLimits,
+    &testCaseDouble,     &testCaseDoubleLimits, &testCaseOctal,
+    &testCaseUnsigned,   &testCaseHexadecimal,  &testCaseChar,
+    &testCaseString,     &testCaseFormatString, &testCaseVector,
+    &testCaseAddrSpace,  &testCaseMixedFormat,  &testCaseLenSpec
 };
 
 //-----------------------------------------

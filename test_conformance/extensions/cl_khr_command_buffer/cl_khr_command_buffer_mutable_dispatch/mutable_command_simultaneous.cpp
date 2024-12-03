@@ -243,7 +243,7 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
             CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
         };
         const void* configs[1] = { &dispatch_config };
-        error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
+        error = clUpdateMutableCommandsKHR(work_command_buffer, num_configs,
                                            config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
@@ -361,7 +361,7 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
             CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
         };
         const void* configs[1] = { &dispatch_config };
-        error = clUpdateMutableCommandsKHR(command_buffer, num_configs,
+        error = clUpdateMutableCommandsKHR(work_command_buffer, num_configs,
                                            config_types, configs);
         test_error(error, "clUpdateMutableCommandsKHR failed");
 

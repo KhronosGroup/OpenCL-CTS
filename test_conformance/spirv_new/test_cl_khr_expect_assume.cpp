@@ -117,7 +117,7 @@ static int test_expect_type(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(op_expect)
+REGISTER_TEST(op_expect)
 {
     if (!is_extension_available(deviceID, "cl_khr_expect_assume"))
     {
@@ -139,7 +139,7 @@ TEST_SPIRV_FUNC(op_expect)
     return result;
 }
 
-TEST_SPIRV_FUNC(op_assume)
+REGISTER_TEST(op_assume)
 {
     if (!is_extension_available(deviceID, "cl_khr_expect_assume"))
     {

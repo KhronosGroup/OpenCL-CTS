@@ -4,9 +4,6 @@ set -e
 
 export TOP=$(pwd)
 
-TOOLCHAIN_URL_arm="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz"
-TOOLCHAIN_URL_aarch64="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/aarch64-linux-gnu/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.tar.xz"
-
 TOOLCHAIN_PREFIX_arm=arm-linux-gnueabihf
 TOOLCHAIN_PREFIX_aarch64=aarch64-linux-gnu
 
@@ -20,14 +17,6 @@ echo
 
 # Prepare toolchain if needed
 if [[ ${JOB_ARCHITECTURE} != "" && ${RUNNER_OS} != "Windows" ]]; then
-    TOOLCHAIN_URL_VAR=TOOLCHAIN_URL_${JOB_ARCHITECTURE}
-    TOOLCHAIN_URL=${!TOOLCHAIN_URL_VAR}
-    wget ${TOOLCHAIN_URL}
-    TOOLCHAIN_ARCHIVE=${TOOLCHAIN_URL##*/}
-    tar xf ${TOOLCHAIN_ARCHIVE}
-    TOOLCHAIN_DIR=${TOP}/${TOOLCHAIN_ARCHIVE%.tar.xz}
-    export PATH=${TOOLCHAIN_DIR}/bin:${PATH}
-
     TOOLCHAIN_PREFIX_VAR=TOOLCHAIN_PREFIX_${JOB_ARCHITECTURE}
     TOOLCHAIN_PREFIX=${!TOOLCHAIN_PREFIX_VAR}
 

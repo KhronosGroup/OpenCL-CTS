@@ -26,7 +26,7 @@ const char *sample_kernel_code_single_line[] = {
     "}\n"
 };
 
-TEST_SPIRV_FUNC(get_program_il)
+REGISTER_TEST(get_program_il)
 {
     clProgramWrapper source_program;
     size_t il_size = -1;
@@ -68,8 +68,8 @@ TEST_SPIRV_FUNC(get_program_il)
         if (il_size != file_bytes)
         {
             test_fail("ERROR: Returned IL size is not the same as source IL "
-                      "size (%lu "
-                      "!= %lu)!\n",
+                      "size (%zu "
+                      "!= %zu)!\n",
                       il_size, file_bytes);
         }
 

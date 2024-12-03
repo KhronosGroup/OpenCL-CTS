@@ -42,16 +42,15 @@ const std::string spvVersionSkipArg = "--skip-spirv-version-check";
 
 std::vector<unsigned char> readBinary(const char *file_name)
 {
-    using namespace std;
-
-    ifstream file(file_name, ios::in | ios::binary | ios::ate);
+    std::ifstream file(file_name,
+                       std::ios::in | std::ios::binary | std::ios::ate);
 
     std::vector<char> tmpBuffer(0);
 
     if (file.is_open()) {
         size_t size = file.tellg();
         tmpBuffer.resize(size);
-        file.seekg(0, ios::beg);
+        file.seekg(0, std::ios::beg);
         file.read(&tmpBuffer[0], size);
         file.close();
     } else {
@@ -68,34 +67,6 @@ std::vector<unsigned char> readSPIRV(const char *file_name)
 {
     std::string full_name_str = spvBinariesPath + slash + file_name + spvExt + gAddrWidth;
     return readBinary(full_name_str.c_str());
-}
-
-test_definition *spirvTestsRegistry::getTestDefinitions()
-{
-    return &testDefinitions[0];
-}
-
-size_t spirvTestsRegistry::getNumTests()
-{
-    return testDefinitions.size();
-}
-
-void spirvTestsRegistry::addTestClass(baseTestClass *test, const char *testName,
-                                      Version version)
-{
-
-    testClasses.push_back(test);
-    test_definition testDef;
-    testDef.func = test->getFunction();
-    testDef.name = testName;
-    testDef.min_version = version;
-    testDefinitions.push_back(testDef);
-}
-
-spirvTestsRegistry& spirvTestsRegistry::getInstance()
-{
-    static spirvTestsRegistry instance;
-    return instance;
 }
 
 static int offline_get_program_with_il(clProgramWrapper &prog,
@@ -271,7 +242,6 @@ int main(int argc, const char *argv[])
     }
 
     return runTestHarnessWithCheck(
-        argc, argv, spirvTestsRegistry::getInstance().getNumTests(),
-        spirvTestsRegistry::getInstance().getTestDefinitions(), false, 0,
-        InitCL);
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0, InitCL);
 }

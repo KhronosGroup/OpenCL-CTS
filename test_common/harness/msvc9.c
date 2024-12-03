@@ -714,6 +714,11 @@ int32_t float2int(float fx)
     return u.i;
 }
 
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
+
+#if !__has_builtin(__builtin_clz)
 #if !defined(_WIN64)
 /** Returns the number of leading 0-bits in x,
     starting at the most significant bit position.
@@ -778,6 +783,7 @@ int __builtin_clz(unsigned int pattern)
 }
 
 #endif // !defined(_WIN64)
+#endif // !__has_builtin(__builtin_clz)
 
 #include <intrin.h>
 #include <emmintrin.h>

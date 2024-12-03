@@ -353,7 +353,8 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
 }
 
 
-int init_device_partition_test(cl_device_id parentDevice, cl_uint &maxComputeUnits, cl_uint &maxSubDevices)
+int init_device_partition_test(cl_device_id parentDevice,
+                               cl_uint &maxComputeUnits, cl_uint &maxSubDevices)
 {
     int err = clGetDeviceInfo(parentDevice, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(maxComputeUnits), &maxComputeUnits, NULL);
     test_error( err, "Unable to get maximal number of compute units" );
@@ -440,23 +441,33 @@ int test_partition_of_device(cl_device_id deviceID, cl_context context, cl_comma
                properties_returned[1] == CL_DEVICE_AFFINITY_DOMAIN_L3_CACHE ||
                properties_returned[1] == CL_DEVICE_AFFINITY_DOMAIN_L2_CACHE ||
                properties_returned[1] == CL_DEVICE_AFFINITY_DOMAIN_L1_CACHE))) {
-            log_error("properties_returned[%d] 0x%x != 0x%x partition_type[%d].", i, properties_returned[i], partition_type[i], i);
-            return -1;
-              }
+              log_error(
+                  "properties_returned[%d] 0x%x != 0x%x partition_type[%d].", i,
+                  static_cast<unsigned int>(properties_returned[i]),
+                  static_cast<unsigned int>(partition_type[i]), i);
+              return -1;
+          }
         }
       } // for
     }
 
 #define PROPERTY_TYPES 8
     cl_device_partition_property partitionProp[PROPERTY_TYPES][5] = {
-        { CL_DEVICE_PARTITION_EQUALLY, maxComputeUnits / 2, 0, 0, 0 } ,
-        { CL_DEVICE_PARTITION_BY_COUNTS, 1, maxComputeUnits - 1, CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0 } ,
-        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_NUMA, 0, 0, 0 } ,
-        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_L4_CACHE, 0, 0, 0 } ,
-        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_L3_CACHE, 0, 0, 0 } ,
-        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_L2_CACHE, 0, 0, 0 } ,
-        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_L1_CACHE, 0, 0, 0 } ,
-        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN, CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE, 0, 0, 0 }
+        { CL_DEVICE_PARTITION_EQUALLY, (cl_int)maxComputeUnits / 2, 0, 0, 0 },
+        { CL_DEVICE_PARTITION_BY_COUNTS, 1, (cl_int)maxComputeUnits - 1,
+          CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0 },
+        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
+          CL_DEVICE_AFFINITY_DOMAIN_NUMA, 0, 0, 0 },
+        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
+          CL_DEVICE_AFFINITY_DOMAIN_L4_CACHE, 0, 0, 0 },
+        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
+          CL_DEVICE_AFFINITY_DOMAIN_L3_CACHE, 0, 0, 0 },
+        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
+          CL_DEVICE_AFFINITY_DOMAIN_L2_CACHE, 0, 0, 0 },
+        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
+          CL_DEVICE_AFFINITY_DOMAIN_L1_CACHE, 0, 0, 0 },
+        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
+          CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE, 0, 0, 0 }
     };
 
     // loop thru each type, creating sub-devices for each type
@@ -485,8 +496,10 @@ int test_partition_of_device(cl_device_id deviceID, cl_context context, cl_comma
       }
       else
       {
-        log_info("Testing on device %p partition type \"%s\" (%d,%d)\n", deviceID, printPartition(partitionProp[i][0]),
-                  partitionProp[i][1], partitionProp[i][2]);
+          log_info("Testing on device %p partition type \"%s\" (%d,%d)\n",
+                   deviceID, printPartition(partitionProp[i][0]),
+                   static_cast<unsigned int>(partitionProp[i][1]),
+                   static_cast<unsigned int>(partitionProp[i][2]));
       }
 
       cl_uint deviceCount;

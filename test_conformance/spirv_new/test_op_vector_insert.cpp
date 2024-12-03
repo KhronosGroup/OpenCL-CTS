@@ -109,7 +109,7 @@ int test_insert(cl_device_id deviceID, cl_context context,
 }
 
 #define TEST_VECTOR_INSERT(TYPE, N)                                            \
-    TEST_SPIRV_FUNC(op_vector_##TYPE##N##_insert)                              \
+    REGISTER_TEST(op_vector_##TYPE##N##_insert)                                \
     {                                                                          \
         if (sizeof(cl_##TYPE) == 2)                                            \
         {                                                                      \

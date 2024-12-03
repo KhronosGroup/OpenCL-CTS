@@ -110,29 +110,29 @@ int test_decorate_full(cl_device_id deviceID,
     return verify_results(deviceID, context, queue, name, prog);
 }
 
-TEST_SPIRV_FUNC(decorate_restrict)
+REGISTER_TEST(decorate_restrict)
 {
     return test_decorate_full(deviceID, context, queue, "decorate_restrict");
 }
 
-TEST_SPIRV_FUNC(decorate_aliased)
+REGISTER_TEST(decorate_aliased)
 {
     return test_decorate_full(deviceID, context, queue, "decorate_aliased");
 }
 
-TEST_SPIRV_FUNC(decorate_alignment)
+REGISTER_TEST(decorate_alignment)
 {
     //TODO: Check for results ? How to ensure buffers are aligned
     clProgramWrapper prog;
     return get_program_with_il(prog, deviceID, context, "decorate_alignment");
 }
 
-TEST_SPIRV_FUNC(decorate_constant)
+REGISTER_TEST(decorate_constant)
 {
     return test_decorate_full(deviceID, context, queue, "decorate_constant");
 }
 
-TEST_SPIRV_FUNC(decorate_cpacked)
+REGISTER_TEST(decorate_cpacked)
 {
     PACKED(struct packed_struct_t {
         cl_int ival;
@@ -382,7 +382,7 @@ int test_saturate_full(cl_device_id deviceID,
 }
 
 #define TEST_SATURATED_CONVERSION(Ti, Tl, To)                                  \
-    TEST_SPIRV_FUNC(decorate_saturated_conversion_##Ti##_to_##To)              \
+    REGISTER_TEST(decorate_saturated_conversion_##Ti##_to_##To)                \
     {                                                                          \
         typedef cl_##Ti cl_Ti;                                                 \
         typedef cl_##Tl cl_Tl;                                                 \
@@ -532,7 +532,7 @@ static inline Ti generate_fprounding_input(RandomSeed &seed)
 }
 
 #define TEST_SPIRV_FP_ROUNDING_DECORATE(name, func, Ti, To)                    \
-    TEST_SPIRV_FUNC(decorate_fp_rounding_mode_##name##_##Ti##_##To)            \
+    REGISTER_TEST(decorate_fp_rounding_mode_##name##_##Ti##_##To)              \
     {                                                                          \
         typedef cl_##Ti clTi;                                                  \
         typedef cl_##To clTo;                                                  \

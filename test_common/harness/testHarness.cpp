@@ -62,6 +62,27 @@ bool gCoreILProgram = true;
 
 #define DEFAULT_NUM_ELEMENTS 0x4000
 
+test_definition *test_registry::definitions() { return &m_definitions[0]; }
+
+size_t test_registry::num_tests() { return m_definitions.size(); }
+
+void test_registry::add_test(test *t, const char *name, Version version)
+{
+
+    m_tests.push_back(t);
+    test_definition testDef;
+    testDef.func = t->getFunction();
+    testDef.name = name;
+    testDef.min_version = version;
+    m_definitions.push_back(testDef);
+}
+
+test_registry &test_registry::getInstance()
+{
+    static test_registry instance;
+    return instance;
+}
+
 static int saveResultsToJson(const char *suiteName, test_definition testList[],
                              unsigned char selectedTestList[],
                              test_status resultTestList[], int testNum)
@@ -689,6 +710,7 @@ static void print_results(int failed, int count, const char *name)
             log_error("FAILED %s.\n", name);
         }
     }
+    fflush(stdout);
 }
 
 int parseAndCallCommandLineTests(int argc, const char *argv[],
@@ -1292,6 +1314,43 @@ cl_platform_id getPlatformFromDevice(cl_device_id deviceID)
                                  &platform, nullptr);
     ASSERT_SUCCESS(err, "clGetDeviceInfo");
     return platform;
+}
+
+/**
+ * Helper to return a string containing platform information
+ * for the specified platform info parameter.
+ */
+std::string get_platform_info_string(cl_platform_id platform,
+                                     cl_platform_info param_name)
+{
+    size_t size = 0;
+    int err;
+
+    if ((err = clGetPlatformInfo(platform, param_name, 0, NULL, &size))
+            != CL_SUCCESS
+        || size == 0)
+    {
+        throw std::runtime_error("clGetPlatformInfo failed\n");
+    }
+
+    std::vector<char> info(size);
+
+    if ((err = clGetPlatformInfo(platform, param_name, size, info.data(), NULL))
+        != CL_SUCCESS)
+    {
+        throw std::runtime_error("clGetPlatformInfo failed\n");
+    }
+
+    /* The returned string does not include the null terminator. */
+    return std::string(info.data(), size - 1);
+}
+
+bool is_platform_extension_available(cl_platform_id platform,
+                                     const char *extensionName)
+{
+    std::string extString =
+        get_platform_info_string(platform, CL_PLATFORM_EXTENSIONS);
+    return extString.find(extensionName) != std::string::npos;
 }
 
 void PrintArch(void)

@@ -160,7 +160,9 @@ int test_read_image_1D_array( cl_context context, cl_command_queue queue, cl_ker
     }
     if ( !allZeroes )
     {
-        log_error( " Sampler-less reads differ from reads with sampler at index %lu.\n", ic );
+        log_error(" Sampler-less reads differ from reads with sampler at index "
+                  "%zu.\n",
+                  ic);
         return -1;
     }
 

@@ -215,7 +215,8 @@ inline void Force64BitFPUPrecision(void)
     __asm__ __volatile__("fstcw %0" : "=m"(orig_cw));
     new_cw = orig_cw | 0x0300; // set precision to 64-bit
     __asm__ __volatile__("fldcw  %0" ::"m"(new_cw));
-#elif defined(_WIN32) && defined(__INTEL_COMPILER)
+#elif defined(_WIN32)                                                          \
+    && (defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER))
     // Unfortunately, usual method (`_controlfp( _PC_64, _MCW_PC );') does *not*
     // work on win.x64: > On the x64 architecture, changing the floating point
     // precision is not supported. (Taken from
@@ -257,7 +258,7 @@ int compareDoubles(double x, double y);
 void logFunctionInfo(const char *fname, unsigned int float_size,
                      unsigned int isFastRelaxed);
 
-float getAllowedUlpError(const Func *f, const bool relaxed);
+float getAllowedUlpError(const Func *f, Type t, const bool relaxed);
 
 inline cl_uint getTestScale(size_t typeSize)
 {

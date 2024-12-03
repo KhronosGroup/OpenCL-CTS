@@ -137,7 +137,7 @@ VulkanInstance::VulkanInstance(): m_vkInstance(VK_NULL_HANDLE)
     vkApplicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     vkApplicationInfo.pEngineName = "No engine";
     vkApplicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    vkApplicationInfo.apiVersion = VK_API_VERSION_1_0;
+    vkApplicationInfo.apiVersion = VK_API_VERSION_1_1;
 
     std::vector<const char *> enabledExtensionNameList;
     enabledExtensionNameList.push_back(
@@ -1870,6 +1870,16 @@ VulkanExtent3D VulkanImage2D::getExtent3D(uint32_t mipLevel) const
     return VulkanExtent3D(width, height, depth);
 }
 
+VkSubresourceLayout VulkanImage2D::getSubresourceLayout() const
+{
+    VkImageSubresource subresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 };
+
+    VkSubresourceLayout subresourceLayout = { 0 };
+    vkGetImageSubresourceLayout(m_device, m_vkImage, &subresource,
+                                &subresourceLayout);
+    return subresourceLayout;
+}
+
 //////////////////////////////////
 // VulkanImage3D implementation //
 //////////////////////////////////
@@ -1966,35 +1976,51 @@ public:
     ~WindowsSecurityAttributes();
 };
 
-
 WindowsSecurityAttributes::WindowsSecurityAttributes()
 {
+#define CHECK(ok, msg)                                                         \
+    if (!ok)                                                                   \
+    {                                                                          \
+        throw std::runtime_error(msg);                                         \
+    }
+
+    BOOL ok;
+    HANDLE tokenHandle;
+
+    ok = OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &tokenHandle);
+    CHECK(ok, "Failed to open process access token");
+
+    DWORD tokenInformationLength = 0;
+    GetTokenInformation(tokenHandle, TokenDefaultDacl, NULL, 0,
+                        &tokenInformationLength);
+    CHECK(tokenInformationLength,
+          "Failed to retrieve TokenDefaultDacl info buffer length");
+
     m_winPSecurityDescriptor = (PSECURITY_DESCRIPTOR)calloc(
-        1, SECURITY_DESCRIPTOR_MIN_LENGTH + 2 * sizeof(void **));
-    // CHECK_NEQ(m_winPSecurityDescriptor, (PSECURITY_DESCRIPTOR)NULL);
-    PSID *ppSID = (PSID *)((PBYTE)m_winPSecurityDescriptor
-                           + SECURITY_DESCRIPTOR_MIN_LENGTH);
-    PACL *ppACL = (PACL *)((PBYTE)ppSID + sizeof(PSID *));
-    InitializeSecurityDescriptor(m_winPSecurityDescriptor,
-                                 SECURITY_DESCRIPTOR_REVISION);
-    SID_IDENTIFIER_AUTHORITY sidIdentifierAuthority =
-        SECURITY_WORLD_SID_AUTHORITY;
-    AllocateAndInitializeSid(&sidIdentifierAuthority, 1, SECURITY_WORLD_RID, 0,
-                             0, 0, 0, 0, 0, 0, ppSID);
-    EXPLICIT_ACCESS explicitAccess;
-    ZeroMemory(&explicitAccess, sizeof(EXPLICIT_ACCESS));
-    explicitAccess.grfAccessPermissions =
-        STANDARD_RIGHTS_ALL | SPECIFIC_RIGHTS_ALL;
-    explicitAccess.grfAccessMode = SET_ACCESS;
-    explicitAccess.grfInheritance = INHERIT_ONLY;
-    explicitAccess.Trustee.TrusteeForm = TRUSTEE_IS_SID;
-    explicitAccess.Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-    explicitAccess.Trustee.ptstrName = (LPTSTR)*ppSID;
-    SetEntriesInAcl(1, &explicitAccess, NULL, ppACL);
-    SetSecurityDescriptorDacl(m_winPSecurityDescriptor, TRUE, *ppACL, FALSE);
+        1, SECURITY_DESCRIPTOR_MIN_LENGTH + tokenInformationLength);
+    assert(m_winPSecurityDescriptor != (PSECURITY_DESCRIPTOR)NULL);
+
+    TOKEN_DEFAULT_DACL *pTokenDefaultDacl =
+        reinterpret_cast<TOKEN_DEFAULT_DACL *>(
+            (PBYTE)m_winPSecurityDescriptor + SECURITY_DESCRIPTOR_MIN_LENGTH);
+    ok = GetTokenInformation(tokenHandle, TokenDefaultDacl, pTokenDefaultDacl,
+                             tokenInformationLength, &tokenInformationLength);
+    CHECK(ok, "Failed to retrieve TokenDefaultDacl info of access token");
+
+    ok = InitializeSecurityDescriptor(m_winPSecurityDescriptor,
+                                      SECURITY_DESCRIPTOR_REVISION);
+    CHECK(ok, "Failed to init security descriptor");
+
+    ok = SetSecurityDescriptorDacl(m_winPSecurityDescriptor, TRUE,
+                                   pTokenDefaultDacl->DefaultDacl, FALSE);
+    CHECK(ok, "Failed to set DACL info for given security descriptor");
+
     m_winSecurityAttributes.nLength = sizeof(m_winSecurityAttributes);
     m_winSecurityAttributes.lpSecurityDescriptor = m_winPSecurityDescriptor;
     m_winSecurityAttributes.bInheritHandle = TRUE;
+
+    CloseHandle(tokenHandle);
+#undef CHECK_WIN
 }
 
 SECURITY_ATTRIBUTES *WindowsSecurityAttributes::operator&()
@@ -2004,17 +2030,6 @@ SECURITY_ATTRIBUTES *WindowsSecurityAttributes::operator&()
 
 WindowsSecurityAttributes::~WindowsSecurityAttributes()
 {
-    PSID *ppSID = (PSID *)((PBYTE)m_winPSecurityDescriptor
-                           + SECURITY_DESCRIPTOR_MIN_LENGTH);
-    PACL *ppACL = (PACL *)((PBYTE)ppSID + sizeof(PSID *));
-    if (*ppSID)
-    {
-        FreeSid(*ppSID);
-    }
-    if (*ppACL)
-    {
-        LocalFree(*ppACL);
-    }
     free(m_winPSecurityDescriptor);
 }
 
@@ -2029,8 +2044,9 @@ VulkanDeviceMemory::VulkanDeviceMemory(const VulkanDeviceMemory &deviceMemory)
 VulkanDeviceMemory::VulkanDeviceMemory(
     const VulkanDevice &device, uint64_t size,
     const VulkanMemoryType &memoryType,
-    VulkanExternalMemoryHandleType externalMemoryHandleType, const void *name)
-    : m_device(device), m_size(size), m_isDedicated(false)
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    const std::wstring name)
+    : m_device(device), m_size(size), m_isDedicated(false), m_name(name)
 {
 #if defined(_WIN32) || defined(_WIN64)
     WindowsSecurityAttributes winSecurityAttributes;
@@ -2042,8 +2058,15 @@ VulkanDeviceMemory::VulkanDeviceMemory(
     vkExportMemoryWin32HandleInfoKHR.pAttributes = &winSecurityAttributes;
     vkExportMemoryWin32HandleInfoKHR.dwAccess =
         DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
-    vkExportMemoryWin32HandleInfoKHR.name = (LPCWSTR)name;
+    vkExportMemoryWin32HandleInfoKHR.name = NULL;
 
+    if (externalMemoryHandleType
+        == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_NAME)
+    {
+        vkExportMemoryWin32HandleInfoKHR.name = (LPCWSTR)m_name.c_str();
+        externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT;
+    }
 #endif
 
     VkExportMemoryAllocateInfoKHR vkExportMemoryAllocateInfoKHR = {};
@@ -2073,9 +2096,10 @@ VulkanDeviceMemory::VulkanDeviceMemory(
 VulkanDeviceMemory::VulkanDeviceMemory(
     const VulkanDevice &device, const VulkanImage &image,
     const VulkanMemoryType &memoryType,
-    VulkanExternalMemoryHandleType externalMemoryHandleType, const void *name)
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    const std::wstring name)
     : m_device(device), m_size(image.getSize()),
-      m_isDedicated(image.isDedicated())
+      m_isDedicated(image.isDedicated()), m_name(name)
 {
 #if defined(_WIN32) || defined(_WIN64)
     WindowsSecurityAttributes winSecurityAttributes;
@@ -2087,8 +2111,15 @@ VulkanDeviceMemory::VulkanDeviceMemory(
     vkExportMemoryWin32HandleInfoKHR.pAttributes = &winSecurityAttributes;
     vkExportMemoryWin32HandleInfoKHR.dwAccess =
         DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
-    vkExportMemoryWin32HandleInfoKHR.name = (LPCWSTR)name;
+    vkExportMemoryWin32HandleInfoKHR.name = NULL;
 
+    if (externalMemoryHandleType
+        == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_NAME)
+    {
+        vkExportMemoryWin32HandleInfoKHR.name = (LPCWSTR)m_name.c_str();
+        externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT;
+    }
 #endif
 
     VkExportMemoryAllocateInfoKHR vkExportMemoryAllocateInfoKHR = {};
@@ -2135,9 +2166,10 @@ VulkanDeviceMemory::VulkanDeviceMemory(
 VulkanDeviceMemory::VulkanDeviceMemory(
     const VulkanDevice &device, const VulkanBuffer &buffer,
     const VulkanMemoryType &memoryType,
-    VulkanExternalMemoryHandleType externalMemoryHandleType, const void *name)
+    VulkanExternalMemoryHandleType externalMemoryHandleType,
+    const std::wstring name)
     : m_device(device), m_size(buffer.getSize()),
-      m_isDedicated(buffer.isDedicated())
+      m_isDedicated(buffer.isDedicated()), m_name(name)
 {
 #if defined(_WIN32) || defined(_WIN64)
     WindowsSecurityAttributes winSecurityAttributes;
@@ -2149,8 +2181,15 @@ VulkanDeviceMemory::VulkanDeviceMemory(
     vkExportMemoryWin32HandleInfoKHR.pAttributes = &winSecurityAttributes;
     vkExportMemoryWin32HandleInfoKHR.dwAccess =
         DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
-    vkExportMemoryWin32HandleInfoKHR.name = (LPCWSTR)name;
+    vkExportMemoryWin32HandleInfoKHR.name = NULL;
 
+    if (externalMemoryHandleType
+        == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_NAME)
+    {
+        vkExportMemoryWin32HandleInfoKHR.name = (LPCWSTR)m_name.c_str();
+        externalMemoryHandleType =
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT;
+    }
 #endif
 
     VkExportMemoryAllocateInfoKHR vkExportMemoryAllocateInfoKHR = {};
@@ -2281,6 +2320,8 @@ void VulkanDeviceMemory::bindImage(const VulkanImage &image, uint64_t offset)
     vkBindImageMemory(m_device, image, m_vkDeviceMemory, offset);
 }
 
+const std::wstring &VulkanDeviceMemory::getName() const { return m_name; }
+
 VulkanDeviceMemory::operator VkDeviceMemory() const { return m_vkDeviceMemory; }
 
 ////////////////////////////////////
@@ -2308,8 +2349,15 @@ VulkanSemaphore::VulkanSemaphore(
     vkExportSemaphoreWin32HandleInfoKHR.pAttributes = &winSecurityAttributes;
     vkExportSemaphoreWin32HandleInfoKHR.dwAccess =
         DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
-    vkExportSemaphoreWin32HandleInfoKHR.name =
-        m_name.size() ? (LPCWSTR)m_name.c_str() : NULL;
+    vkExportSemaphoreWin32HandleInfoKHR.name = NULL;
+
+    if (externalSemaphoreHandleType
+        == VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT_NAME)
+    {
+        vkExportSemaphoreWin32HandleInfoKHR.name = (LPCWSTR)m_name.c_str();
+        externalSemaphoreHandleType =
+            VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT;
+    }
 #endif
 
     VkExportSemaphoreCreateInfoKHR vkExportSemaphoreCreateInfoKHR = {};

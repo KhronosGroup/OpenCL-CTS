@@ -25,20 +25,8 @@ set (${MODULE_NAME}_SOURCES
         test_vulkan_api_consistency_for_1dimages.cpp
         test_vulkan_platform_device_info.cpp
         vulkan_interop_common.cpp
-        ../../test_common/harness/genericThread.cpp
-        ../../test_common/harness/errorHelpers.cpp
-        ../../test_common/harness/testHarness.cpp
-        ../../test_common/harness/kernelHelpers.cpp
-        ../../test_common/harness/mt19937.cpp
-        ../../test_common/harness/msvc9.c
-        ../../test_common/harness/parseParameters.cpp
-        ../../test_common/harness/deviceInfo.cpp
-        ../../test_common/harness/crc32.cpp
     )
 
-set_source_files_properties(
-    ${${MODULE_NAME}_SOURCES}
-    PROPERTIES LANGUAGE CXX)
 include_directories("../common/vulkan_wrapper")
 
 add_subdirectory(shaders)

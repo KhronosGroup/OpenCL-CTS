@@ -46,6 +46,7 @@
 enum PrintfTestType
 {
     TYPE_INT,
+    TYPE_LONG,
     TYPE_HALF,
     TYPE_HALF_LIMITS,
     TYPE_FLOAT,
@@ -61,6 +62,7 @@ enum PrintfTestType
     TYPE_VECTOR,
     TYPE_ADDRESS_SPACE,
     TYPE_MIXED_FORMAT_RANDOM,
+    TYPE_LENGTH_SPECIFIER,
     TYPE_COUNT
 };
 

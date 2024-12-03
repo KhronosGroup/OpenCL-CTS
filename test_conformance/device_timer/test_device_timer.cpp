@@ -17,6 +17,7 @@
 #include <CL/cl.h>
 #include "harness/errorHelpers.h"
 #include "harness/compat.h"
+#include "harness/testHarness.h"
 
 #if !defined(_WIN32)
     #include "unistd.h" // For "sleep"
@@ -24,7 +25,7 @@
 
 #define ALLOWED_ERROR 0.005f
 
-int test_device_and_host_timers(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(device_and_host_timers)
 {
     int errors = 0;
     cl_int result = CL_SUCCESS;
@@ -124,7 +125,7 @@ End:
     return errors;
 }
 
-int test_timer_resolution_queries(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(timer_resolution_queries)
 {
     int errors = 0;
     cl_int result = CL_SUCCESS;

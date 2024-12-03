@@ -67,9 +67,7 @@ static int test_get_1Dimage_buffer_info_single(cl_context context,
     if (gDebugTrace)
         log_info(" - Creating 1D image %d ...\n", (int)imageInfo->width);
 
-    buffer = clCreateBuffer(
-        context, flags, imageInfo->width * get_pixel_size(imageInfo->format),
-        NULL, &error);
+    buffer = clCreateBuffer(context, flags, imageInfo->rowPitch, NULL, &error);
     if (error != CL_SUCCESS)
     {
         log_error("ERROR: Unable to create buffer for 1D image buffer of size "
@@ -252,7 +250,7 @@ int test_get_image_info_1D_buffer(cl_device_id device, cl_context context,
             do
             {
                 imageInfo.width =
-                    (size_t)random_log_in_range(16, (int)maxWidth / 32, seed);
+                    (size_t)random_log_in_range(16, (int)(maxWidth / 32), seed);
 
                 imageInfo.rowPitch = imageInfo.width * pixelSize;
                 size_t extraWidth = (int)random_log_in_range(0, 64, seed);
@@ -264,8 +262,7 @@ int test_get_image_info_1D_buffer(cl_device_id device, cl_context context,
                     imageInfo.rowPitch += extraWidth;
                 } while ((imageInfo.rowPitch % pixelSize) != 0);
 
-                size = (cl_ulong)imageInfo.rowPitch * (cl_ulong)imageInfo.height
-                    * 4;
+                size = (cl_ulong)imageInfo.rowPitch * 4;
             } while (size > maxAllocSize || (size * 3) > memSize);
 
             if (gDebugTrace)
