@@ -26,7 +26,10 @@
 class Version {
 public:
     Version(): m_major(0), m_minor(0) {}
+
     Version(cl_uint major, cl_uint minor): m_major(major), m_minor(minor) {}
+    int major() const { return m_major; }
+    int minor() const { return m_minor; }
     bool operator>(const Version &rhs) const
     {
         return to_uint() > rhs.to_uint();
