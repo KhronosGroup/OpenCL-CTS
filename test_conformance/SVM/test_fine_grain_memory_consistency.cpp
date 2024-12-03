@@ -141,53 +141,53 @@ int launch_kernels_and_verify(clContextWrapper &context, clCommandQueueWrapper* 
 // This test requires the new OpenCL 2.0 atomic operations that implement the new seq_cst memory ordering.
 REGISTER_TEST(svm_fine_grain_memory_consistency)
 {
-  clContextWrapper contextWrapper;
-  clProgramWrapper program;
-  clKernelWrapper kernel;
-  clCommandQueueWrapper queues[MAXQ];
+    clContextWrapper contextWrapper;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+    clCommandQueueWrapper queues[MAXQ];
 
-  cl_uint     num_devices = 0;
-  cl_int      err = CL_SUCCESS;
-  std::vector<std::string> required_extensions;
-  required_extensions.push_back("cl_khr_int64_base_atomics");
-  required_extensions.push_back("cl_khr_int64_extended_atomics");
+    cl_uint num_devices = 0;
+    cl_int err = CL_SUCCESS;
+    std::vector<std::string> required_extensions;
+    required_extensions.push_back("cl_khr_int64_base_atomics");
+    required_extensions.push_back("cl_khr_int64_extended_atomics");
 
-  // Make pragmas visible for 64-bit addresses
-  hash_table_kernel[4] = sizeof(void *) == 8 ? '1' : '0';
+    // Make pragmas visible for 64-bit addresses
+    hash_table_kernel[4] = sizeof(void *) == 8 ? '1' : '0';
 
-  char *source[] = { hash_table_kernel };
+    char *source[] = { hash_table_kernel };
 
-  err = create_cl_objects(
-      deviceID, (const char **)source, &contextWrapper, &program, &queues[0],
-      &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS,
-      required_extensions);
-  context = contextWrapper;
-  if (err == 1)
-      return 0; // no devices capable of requested SVM level, so don't execute
-                // but count test as passing.
-  if (err < 0) return -1; // fail test.
+    err = create_cl_objects(
+        deviceID, (const char **)source, &contextWrapper, &program, &queues[0],
+        &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS,
+        required_extensions);
+    context = contextWrapper;
+    if (err == 1)
+        return 0; // no devices capable of requested SVM level, so don't execute
+                  // but count test as passing.
+    if (err < 0) return -1; // fail test.
 
-  kernel = clCreateKernel(program, "build_hash_table", &err);
-  test_error(err, "clCreateKernel failed");
-  size_t num_pixels = num_elements;
+    kernel = clCreateKernel(program, "build_hash_table", &err);
+    test_error(err, "clCreateKernel failed");
+    size_t num_pixels = num_elements;
 
-  int result;
-  cl_uint numBins = 1; // all work groups in all devices and the host code will
-                       // hammer on this one lock.
-  result = launch_kernels_and_verify(contextWrapper, queues, kernel,
-                                     num_devices, numBins, num_pixels);
-  if (result == -1) return result;
+    int result;
+    cl_uint numBins = 1; // all work groups in all devices and the host code
+                         // will hammer on this one lock.
+    result = launch_kernels_and_verify(contextWrapper, queues, kernel,
+                                       num_devices, numBins, num_pixels);
+    if (result == -1) return result;
 
-  numBins = 2; // 2 locks within in same cache line will get hit from different
-               // devices and host.
-  result = launch_kernels_and_verify(contextWrapper, queues, kernel,
-                                     num_devices, numBins, num_pixels);
-  if (result == -1) return result;
+    numBins = 2; // 2 locks within in same cache line will get hit from
+                 // different devices and host.
+    result = launch_kernels_and_verify(contextWrapper, queues, kernel,
+                                       num_devices, numBins, num_pixels);
+    if (result == -1) return result;
 
-  numBins = 29; // locks span a few cache lines.
-  result = launch_kernels_and_verify(contextWrapper, queues, kernel,
-                                     num_devices, numBins, num_pixels);
-  if (result == -1) return result;
+    numBins = 29; // locks span a few cache lines.
+    result = launch_kernels_and_verify(contextWrapper, queues, kernel,
+                                       num_devices, numBins, num_pixels);
+    if (result == -1) return result;
 
-  return result;
+    return result;
 }
