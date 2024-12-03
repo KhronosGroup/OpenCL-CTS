@@ -44,16 +44,21 @@ void spawnAnalysisTask(int location)
 // Concept: a device kernel is used to search an input image for regions that match a target pattern.
 // The device immediately notifies the host when it finds a target (via an atomic operation that works across host and devices).
 // The host is then able to spawn a task that further analyzes the target while the device continues searching for more targets.
-int test_svm_fine_grain_sync_buffers(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
+REGISTER_TEST(svm_fine_grain_sync_buffers)
 {
-  clContextWrapper    context = NULL;
+  clContextWrapper    contextWrapper = NULL;
   clProgramWrapper    program = NULL;
   cl_uint     num_devices = 0;
   cl_int      err = CL_SUCCESS;
   clCommandQueueWrapper queues[MAXQ];
 
-  err = create_cl_objects(deviceID, &find_targets_kernel[0], &context, &program, &queues[0], &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS);
-  if(err == 1) return 0; // no devices capable of requested SVM level, so don't execute but count test as passing.
+  err = create_cl_objects(
+      deviceID, &find_targets_kernel[0], &contextWrapper, &program, &queues[0],
+      &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS);
+  context = contextWrapper;
+  if (err == 1)
+      return 0; // no devices capable of requested SVM level, so don't execute
+                // but count test as passing.
   if(err < 0) return -1; // fail test.
 
   clKernelWrapper kernel = clCreateKernel(program, "find_targets", &err);

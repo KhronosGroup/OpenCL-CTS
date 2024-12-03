@@ -125,16 +125,19 @@ cl_int verify_linked_lists_on_host_sb(int ci, cl_command_queue cmdq, cl_mem node
 // on another device or the host.
 // The linked list nodes are allocated from two different buffers this is done to ensure that cross buffer pointers work correctly.
 // This basic test is performed for all combinations of devices and the host.
-int test_svm_shared_sub_buffers(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+REGISTER_TEST(svm_shared_sub_buffers)
 {
-  clContextWrapper    context = NULL;
+  clContextWrapper    contextWrapper = NULL;
   clProgramWrapper    program = NULL;
   cl_uint     num_devices = 0;
   cl_int      error = CL_SUCCESS;
   clCommandQueueWrapper queues[MAXQ];
 
-  error = create_cl_objects(deviceID, &shared_sub_buffers_test_kernel[0], &context, &program, &queues[0], &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
-  if(error) return -1;
+  error = create_cl_objects(deviceID, &shared_sub_buffers_test_kernel[0],
+                            &contextWrapper, &program, &queues[0], &num_devices,
+                            CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
+  context = contextWrapper;
+  if (error) return -1;
 
   size_t numLists =  num_elements;
   if(numLists & 0x1) numLists++; // force even size, so we can easily create two sub-buffers of same size.

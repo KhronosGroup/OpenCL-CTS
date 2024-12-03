@@ -81,25 +81,6 @@ extern cl_int        verify_linked_lists_on_device(int qi, cl_command_queue q, c
 extern cl_int create_linked_lists_on_device_no_map(int qi, cl_command_queue q, size_t *pAllocator,   cl_kernel k, size_t numLists  );
 extern cl_int verify_linked_lists_on_device_no_map(int qi, cl_command_queue q, cl_int *pNum_correct, cl_kernel k, cl_int ListLength, size_t numLists  );
 
-extern int    test_svm_byte_granularity(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int    test_svm_set_kernel_exec_info_svm_ptrs(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int    test_svm_fine_grain_memory_consistency(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int    test_svm_fine_grain_sync_buffers(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int    test_svm_shared_address_space_coarse_grain_old_api(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int    test_svm_shared_address_space_coarse_grain_new_api(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int    test_svm_shared_address_space_fine_grain_buffers(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int    test_svm_shared_address_space_fine_grain(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int    test_svm_cross_buffer_pointers_coarse_grain(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int    test_svm_pointer_passing(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int    test_svm_allocate_shared_buffer(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_allocate_shared_buffer_negative(cl_device_id deviceID,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements);
-extern int    test_svm_shared_sub_buffers(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int    test_svm_enqueue_api(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int    test_svm_migrate(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-
 extern cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeString, cl_context* context, cl_program *program, cl_command_queue *queues, cl_uint *num_devices, cl_device_svm_capabilities required_svm_caps, std::vector<std::string> extensions_list = std::vector<std::string>());
 
 extern const char *linked_list_create_and_verify_kernels[];

@@ -35,16 +35,19 @@ const char *SVMPointerPassing_test_kernel[] = {
 // The buffer is initialized to known values at each location.
 // The kernel checks that it finds the expected value at each location.
 // TODO: possibly make this work across all base types (including typeN?), also check ptr arithmetic ++,--.
-int test_svm_pointer_passing(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+REGISTER_TEST(svm_pointer_passing)
 {
-  clContextWrapper    context = NULL;
+  clContextWrapper    contextWrapper = NULL;
   clProgramWrapper    program = NULL;
   cl_uint     num_devices = 0;
   cl_int      error = CL_SUCCESS;
   clCommandQueueWrapper queues[MAXQ];
 
-  error = create_cl_objects(deviceID, &SVMPointerPassing_test_kernel[0], &context, &program, &queues[0], &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
-  if(error) return -1;
+  error = create_cl_objects(deviceID, &SVMPointerPassing_test_kernel[0],
+                            &contextWrapper, &program, &queues[0], &num_devices,
+                            CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
+  context = contextWrapper;
+  if (error) return -1;
 
   clKernelWrapper kernel_verify_char = clCreateKernel(program, "verify_char", &error);
   test_error(error,"clCreateKernel failed");

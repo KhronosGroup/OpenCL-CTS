@@ -70,9 +70,9 @@ void CL_CALLBACK callback_svm_free(cl_command_queue queue, cl_uint num_svm_point
   data->status.store(1, std::memory_order_release);
 }
 
-int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
+REGISTER_TEST(svm_enqueue_api)
 {
-  clContextWrapper context = NULL;
+  clContextWrapper contextWrapper = NULL;
   clCommandQueueWrapper queues[MAXQ];
   cl_uint num_devices = 0;
   const size_t elementNum = 1024;
@@ -80,8 +80,10 @@ int test_svm_enqueue_api(cl_device_id deviceID, cl_context c, cl_command_queue q
   cl_int error = CL_SUCCESS;
   RandomSeed seed(0);
 
-  error = create_cl_objects(deviceID, NULL, &context, NULL, &queues[0], &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
-  if(error) return TEST_FAIL;
+  error = create_cl_objects(deviceID, NULL, &contextWrapper, NULL, &queues[0],
+                            &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
+  context = contextWrapper;
+  if (error) return TEST_FAIL;
 
   queue = queues[0];
 

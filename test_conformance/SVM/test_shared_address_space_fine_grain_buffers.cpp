@@ -61,16 +61,21 @@ cl_int verify_linked_lists_on_device_no_map(int vi, cl_command_queue cmdq,cl_int
 // This is done by creating a linked list on a device and then verifying the correctness of the list
 // on another device or the host.  This basic test is performed for all combinations of devices and the host that exist within
 // the platform.  The test passes only if every combination passes.
-int test_svm_shared_address_space_fine_grain_buffers(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+REGISTER_TEST(svm_shared_address_space_fine_grain_buffers)
 {
-  clContextWrapper    context = NULL;
+  clContextWrapper    contextWrapper = NULL;
   clProgramWrapper    program = NULL;
   cl_uint     num_devices = 0;
   cl_int      error = CL_SUCCESS;
   clCommandQueueWrapper queues[MAXQ];
 
-  error = create_cl_objects(deviceID, &linked_list_create_and_verify_kernels[0], &context, &program, &queues[0], &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER);
-  if(error == 1) return 0; // no devices capable of requested SVM level, so don't execute but count test as passing.
+  error = create_cl_objects(deviceID, &linked_list_create_and_verify_kernels[0],
+                            &contextWrapper, &program, &queues[0], &num_devices,
+                            CL_DEVICE_SVM_FINE_GRAIN_BUFFER);
+  context = contextWrapper;
+  if (error == 1)
+    return 0; // no devices capable of requested SVM level, so don't execute but
+              // count test as passing.
   if(error < 0) return -1; // fail test.
 
   size_t numLists =  num_elements;

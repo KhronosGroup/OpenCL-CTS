@@ -41,9 +41,9 @@ const char* flag_set_names[] = {
 };
 
 
-int test_svm_allocate_shared_buffer(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+REGISTER_TEST(svm_allocate_shared_buffer)
 {
-  clContextWrapper    context = NULL;
+  clContextWrapper    contextWrapper = NULL;
   clProgramWrapper    program = NULL;
   cl_uint     num_devices = 0;
   cl_int      err = CL_SUCCESS;
@@ -54,8 +54,10 @@ int test_svm_allocate_shared_buffer(cl_device_id deviceID, cl_context context2, 
   test_error(err,"clGetDeviceInfo failed for CL_DEVICE_SVM_CAPABILITIES");
 
   // under construction...
-  err = create_cl_objects(deviceID, NULL, &context, &program, &queues[0], &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
-  if(err) return -1;
+  err = create_cl_objects(deviceID, NULL, &contextWrapper, &program, &queues[0],
+                          &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
+  context = contextWrapper;
+  if (err) return -1;
 
   size_t size = 1024;
 

@@ -139,9 +139,9 @@ int launch_kernels_and_verify(clContextWrapper &context, clCommandQueueWrapper* 
 // Each bin in the hash table is a linked list.  Each bin is protected against simultaneous
 // update using a lock free technique.  The correctness of the list is verfied on the host.
 // This test requires the new OpenCL 2.0 atomic operations that implement the new seq_cst memory ordering.
-int test_svm_fine_grain_memory_consistency(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
+REGISTER_TEST(svm_fine_grain_memory_consistency)
 {
-  clContextWrapper context;
+  clContextWrapper contextWrapper;
   clProgramWrapper program;
   clKernelWrapper kernel;
   clCommandQueueWrapper queues[MAXQ];
@@ -157,26 +157,37 @@ int test_svm_fine_grain_memory_consistency(cl_device_id deviceID, cl_context c, 
 
   char *source[] = { hash_table_kernel };
 
-  err = create_cl_objects(deviceID, (const char**)source, &context, &program, &queues[0], &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS, required_extensions);
-  if(err == 1) return 0; // no devices capable of requested SVM level, so don't execute but count test as passing.
-  if(err < 0) return -1; // fail test.
+  err = create_cl_objects(
+      deviceID, (const char **)source, &contextWrapper, &program, &queues[0],
+      &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS,
+      required_extensions);
+  context = contextWrapper;
+  if (err == 1)
+      return 0; // no devices capable of requested SVM level, so don't execute
+                // but count test as passing.
+  if (err < 0) return -1; // fail test.
 
   kernel = clCreateKernel(program, "build_hash_table", &err);
   test_error(err, "clCreateKernel failed");
   size_t num_pixels = num_elements;
 
   int result;
-  cl_uint numBins = 1;  // all work groups in all devices and the host code will hammer on this one lock.
-  result = launch_kernels_and_verify(context, queues, kernel, num_devices, numBins, num_pixels);
-  if(result == -1) return result;
+  cl_uint numBins = 1; // all work groups in all devices and the host code will
+                       // hammer on this one lock.
+  result = launch_kernels_and_verify(contextWrapper, queues, kernel,
+                                     num_devices, numBins, num_pixels);
+  if (result == -1) return result;
 
-  numBins = 2;  // 2 locks within in same cache line will get hit from different devices and host.
-  result = launch_kernels_and_verify(context, queues, kernel, num_devices, numBins, num_pixels);
-  if(result == -1) return result;
+  numBins = 2; // 2 locks within in same cache line will get hit from different
+               // devices and host.
+  result = launch_kernels_and_verify(contextWrapper, queues, kernel,
+                                     num_devices, numBins, num_pixels);
+  if (result == -1) return result;
 
   numBins = 29; // locks span a few cache lines.
-  result = launch_kernels_and_verify(context, queues, kernel, num_devices, numBins, num_pixels);
-  if(result == -1) return result;
+  result = launch_kernels_and_verify(contextWrapper, queues, kernel,
+                                     num_devices, numBins, num_pixels);
+  if (result == -1) return result;
 
   return result;
 }
