@@ -120,7 +120,10 @@ test_definition test_list[] = {
     ADD_TEST(get_image1d_info),
     ADD_TEST(get_image1d_array_info),
     ADD_TEST(get_image2d_array_info),
+
     ADD_TEST(queue_flush_on_release),
+    ADD_TEST(multi_queue_flush_on_release),
+
     ADD_TEST(queue_hint),
     ADD_TEST(queue_properties),
     ADD_TEST_VERSION(sub_group_dispatch, Version(2, 1)),
