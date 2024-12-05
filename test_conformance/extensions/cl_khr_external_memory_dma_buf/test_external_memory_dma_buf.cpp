@@ -37,7 +37,7 @@ static const char* kernel_function_inc_buffer = R"(
 
 REGISTER_TEST(external_memory_dma_buf)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_memory_dma_buf"))
+    if (!is_extension_available(device, "cl_khr_external_memory_dma_buf"))
     {
         log_info("The device does not support the "
                  "cl_khr_external_memory_dma_buf extension.\n");
@@ -69,7 +69,7 @@ REGISTER_TEST(external_memory_dma_buf)
 
     /* Imported buffer creation */
     int dma_buf_fd = allocate_dma_buf(buffer_size_bytes);
-    if (dma_buf_fd < 3)
+    if (dma_buf_fd < 0)
     {
         log_error(
             "Failed to obtain a valid DMA buffer file descriptor, got %i.\n",
