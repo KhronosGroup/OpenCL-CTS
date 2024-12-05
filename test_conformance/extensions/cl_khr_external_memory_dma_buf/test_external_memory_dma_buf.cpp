@@ -69,7 +69,7 @@ REGISTER_TEST(external_memory_dma_buf)
 
     /* Imported buffer creation */
     int dma_buf_fd = allocate_dma_buf(buffer_size_bytes);
-    if (dma_buf_fd < 3)
+    if (!is_valid_dma_buf(dma_buf_fd))
     {
         log_error(
             "Failed to obtain a valid DMA buffer file descriptor, got %i.\n",

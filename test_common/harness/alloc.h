@@ -71,9 +71,50 @@ inline void align_free(void* ptr)
 #endif
 }
 
-/* If DMA-BUF heaps are supported, a DMA-BUF will be allocated in the DMA heap
- * and the file descriptor of the allocation is returned on success. Return -1
- * on failure, or if DMA-BUF heaps are not supported. */
-int allocate_dma_buf(uint64_t size);
+enum class dma_buf_heap_type
+{
+    SYSTEM
+};
+
+/**
+ * @brief Allocate a DMA buffer.
+ *
+ * On systems that support it, use the DMA buffer heaps to allocate a DMA buffer
+ * of the requested size, using the requested heap type. The heap type defaults
+ * to using the system heap if no type is specified.
+ *
+ * A heap type will use a default path if one exists, and can be overriden using
+ * an environment variable for each type, as follows:
+ *
+ * SYSTEM:
+ *     * Default path: /dev/dma_heap/system
+ *     * Environment variable: OCL_CTS_DMA_HEAP_PATH_SYSTEM
+ *
+ * DMA buffer heaps require a minimum Linux kernel version 5.6. A compile-time
+ * warning is issued on older systems, as well as an error message at runtime.
+ *
+ * @param size [in]           The requested buffer size in bytes.
+ * @param heap_type [in,opt]  The heap type to use for the allocation.
+ *
+ * @retrun A file descriptor representing the allocated DMA buffer on success,
+ * -1 otherwise.
+ */
+int allocate_dma_buf(uint64_t size,
+                     dma_buf_heap_type heap_type = dma_buf_heap_type::SYSTEM);
+
+/**
+ * @brief Check the validity of a DMA buffer handle.
+ *
+ * Checks that the file descriptor representing a DMA buffer handle is valid.
+ * 0, 1, and 2 are reserved POSIX file descriptors for standard input, standard
+ * output and standard error, respectively. A file descriptor with a value of
+ * -1, or representing one of the reserved values is considered invalid.
+ *
+ * @param dma_buf_fd [in] The DMA buffer handle.
+ *
+ * @return True if the file descriptor represents a valid DMA buffer, false
+ * otherwise.
+ */
+inline bool is_valid_dma_buf(int dma_buf_fd) { return dma_buf_fd > 2; }
 
 #endif // #ifndef HARNESS_ALLOC_H_
