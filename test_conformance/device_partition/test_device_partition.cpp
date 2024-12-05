@@ -336,8 +336,8 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
             if( expectedResults[ i ] != outputData[ i ] )
             {
                 log_error("ERROR: Sample data did not verify for queue %d on "
-                          "device %zu (sample %d, expected %d, got %d)\n",
-                          q, q % deviceCount, (int)i, expectedResults[i],
+                          "device %zu (sample %zu, expected %d, got %d)\n",
+                          q, q % deviceCount, i, expectedResults[i],
                           outputData[i]);
                 for (size_t j=0; j<deviceCount; j++) {
                     if (expectedResultsOneDevice[j][i] == outputData[i])
