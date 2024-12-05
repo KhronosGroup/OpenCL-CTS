@@ -99,6 +99,8 @@ test_definition test_list[] = {
     ADD_TEST(enqueue_map_image),
 
     ADD_TEST(work_item_functions),
+    ADD_TEST(work_item_functions_out_of_range),
+    ADD_TEST(work_item_functions_out_of_range_hardcoded),
 
     ADD_TEST(astype),
 

@@ -98,6 +98,13 @@ extern int      test_enqueue_map_buffer(cl_device_id deviceID, cl_context contex
 extern int      test_enqueue_map_image(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 extern int      test_work_item_functions(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_work_item_functions_out_of_range(cl_device_id deviceID,
+                                                 cl_context context,
+                                                 cl_command_queue queue,
+                                                 int num_elements);
+extern int test_work_item_functions_out_of_range_hardcoded(
+    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    int num_elements);
 
 extern int      test_astype(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
