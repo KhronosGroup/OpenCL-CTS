@@ -261,8 +261,11 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                     }
                 }
 
-                log_error( "ERROR: Unable to create 2D image of size %ld x %ld pitch %ld (%s, %s)\n", imageInfo->width, imageInfo->height,
-                          imageInfo->rowPitch, IGetErrorString( error ), mem_flag_names[mem_flag_index] );
+                log_error("ERROR: Unable to create 2D image of size %zu x %zu "
+                          "pitch %zu (%s, %s)\n",
+                          imageInfo->width, imageInfo->height,
+                          imageInfo->rowPitch, IGetErrorString(error),
+                          mem_flag_names[mem_flag_index]);
                 return error;
             }
 
@@ -285,8 +288,11 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                                              imageInfo->format, &image_desc, NULL, &error);
                 if( error != CL_SUCCESS )
                 {
-                    log_error( "ERROR: Unable to create %d level 2D image of size %ld x %ld (%s, %s)\n", imageInfo->num_mip_levels, imageInfo->width, imageInfo->height,
-                               IGetErrorString( error ), mem_flag_names[mem_flag_index] );
+                    log_error("ERROR: Unable to create %d level 2D image of "
+                              "size %zu x %zu (%s, %s)\n",
+                              imageInfo->num_mip_levels, imageInfo->width,
+                              imageInfo->height, IGetErrorString(error),
+                              mem_flag_names[mem_flag_index]);
                     return error;
                 }
             }
@@ -320,8 +326,11 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                     }
                 }
 
-                log_error( "ERROR: Unable to create 2D image of size %ld x %ld pitch %ld (%s, %s)\n", imageInfo->width, imageInfo->height,
-                          imageInfo->rowPitch, IGetErrorString( error ), mem_flag_names[mem_flag_index] );
+                log_error("ERROR: Unable to create 2D image of size %zu x %zu "
+                          "pitch %zu (%s, %s)\n",
+                          imageInfo->width, imageInfo->height,
+                          imageInfo->rowPitch, IGetErrorString(error),
+                          mem_flag_names[mem_flag_index]);
                 return error;
             }
             image = unprotImage;
@@ -450,7 +459,9 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                         {
                             unsigned int *e = (unsigned int *)resultBuffer;
                             unsigned int *a = (unsigned int *)resultPtr;
-                            log_error( "ERROR: Sample %ld (%ld,%ld) did not validate! (%s)\n", i, x, y, mem_flag_names[ mem_flag_index ] );
+                            log_error("ERROR: Sample %zu (%zu,%zu) did not "
+                                      "validate! (%s)\n",
+                                      i, x, y, mem_flag_names[mem_flag_index]);
                             log_error( "       Expected: %a %a %a %a\n", expected[ 0 ], expected[ 1 ], expected[ 2 ], expected[ 3 ] );
                             log_error( "       Expected: %08x %08x %08x %08x\n", e[ 0 ], e[ 1 ], e[ 2 ], e[ 3 ] );
                             log_error( "       Actual:   %a %a %a %a\n", actual[ 0 ], actual[ 1 ], actual[ 2 ], actual[ 3 ] );
@@ -467,7 +478,9 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                         if( !validate_half_write_results( e, a, imageInfo ) )
                         {
                             totalErrors++;
-                            log_error( "ERROR: Sample %ld (%ld,%ld) did not validate! (%s)\n", i, x, y, mem_flag_names[ mem_flag_index ] );
+                            log_error("ERROR: Sample %zu (%zu,%zu) did not "
+                                      "validate! (%s)\n",
+                                      i, x, y, mem_flag_names[mem_flag_index]);
                             log_error( "    Expected: 0x%04x 0x%04x 0x%04x 0x%04x\n", e[ 0 ], e[ 1 ], e[ 2 ], e[ 3 ] );
                             log_error( "    Actual:   0x%04x 0x%04x 0x%04x 0x%04x\n", a[ 0 ], a[ 1 ], a[ 2 ], a[ 3 ] );
                             if( inputType == kFloat )
@@ -518,7 +531,12 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
                                             deviceResults[ 4 ] == 5 && deviceResults[ 5 ] == 5 && deviceResults[ 6 ] == 6 && deviceResults[ 7 ] == 6 )
                                         deviceRounding = "round to even";
 
-                                    log_error( "ERROR: Rounding mode sample (%ld) did not validate, probably due to the device's rounding mode being wrong (%s)\n", i, mem_flag_names[mem_flag_index] );
+                                    log_error(
+                                        "ERROR: Rounding mode sample (%zu) did "
+                                        "not validate, probably due to the "
+                                        "device's rounding mode being wrong "
+                                        "(%s)\n",
+                                        i, mem_flag_names[mem_flag_index]);
                                     log_error( "       Actual values rounded by device: %x %x %x %x %x %x %x %x\n", deviceResults[ 0 ], deviceResults[ 1 ], deviceResults[ 2 ], deviceResults[ 3 ],
                                               deviceResults[ 4 ], deviceResults[ 5 ], deviceResults[ 6 ], deviceResults[ 7 ] );
                                     log_error( "       Rounding mode of device appears to be %s\n", deviceRounding );

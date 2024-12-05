@@ -97,7 +97,9 @@ template <class T> int determine_validation_error( void *imagePtr, image_descrip
         {
             if( (--numClamped) == 0 )
             {
-                log_error( "ERROR: TEST FAILED: Read is erroneously clamping coordinates for image size %ld x %ld!\n", imageInfo->width, imageInfo->height );
+                log_error("ERROR: TEST FAILED: Read is erroneously clamping "
+                          "coordinates for image size %zu x %zu!\n",
+                          imageInfo->width, imageInfo->height);
                 if (imageInfo->format->image_channel_order == CL_DEPTH)
                 {
                     if( printAsFloat )
@@ -139,7 +141,9 @@ template <class T> int determine_validation_error( void *imagePtr, image_descrip
         {
             if( (--numClamped) == 0 )
             {
-                log_error( "ERROR: TEST FAILED: Clamping is erroneously returning border color for image size %ld x %ld!\n", imageInfo->width, imageInfo->height );
+                log_error("ERROR: TEST FAILED: Clamping is erroneously "
+                          "returning border color for image size %zu x %zu!\n",
+                          imageInfo->width, imageInfo->height);
                 if (imageInfo->format->image_channel_order == CL_DEPTH)
                 {
                     if( printAsFloat )
@@ -203,7 +207,8 @@ template <class T> int determine_validation_error( void *imagePtr, image_descrip
                                     (int)resultPtr[ 0 ], (int)resultPtr[ 1 ], (int)resultPtr[ 2 ], (int)resultPtr[ 3 ] );
             }
         }
-        log_error( "img size %ld,%ld (pitch %ld)", imageInfo->width, imageInfo->height, imageInfo->rowPitch );
+        log_error("img size %zu,%zu (pitch %zu)", imageInfo->width,
+                  imageInfo->height, imageInfo->rowPitch);
         if( clamped )
         {
             log_error( " which would clamp to %d,%d\n", clampedX, clampedY );

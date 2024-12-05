@@ -976,7 +976,7 @@ static int RunTest( int testNumber )
         for( i = 0; i < sizeof(args ) / sizeof( args[0]); i++ )
             if( (error = clSetKernelArg(k, i, sizeof( cl_mem ), args + i) ))
             {
-                vlog_error( "Error %d setting kernel arg # %ld\n", error, i );
+                vlog_error("Error %d setting kernel arg # %zu\n", error, i);
                 return error;
             }
 
@@ -1021,24 +1021,72 @@ static int RunTest( int testNumber )
                 switch( testNumber )
                 {
                         // Zeros for these should be positive
-                    case 0:     vlog_error( "%ld) Error for %s %s: %a * %a + %a =  *%a vs. %a\n", i, sizeNames[ vectorSize], kernelName[ testNumber ],
-                                           a[i], b[i], c[i], correct[testNumber][i], test[i] );       clReleaseKernel(k); return -1;
-                    case 1:     vlog_error( "%ld) Error for %s %s: %a * %a - %a =  *%a vs. %a\n", i, sizeNames[ vectorSize], kernelName[ testNumber ],
-                                           a[i], b[i], c[i], correct[testNumber][i], test[i] );       clReleaseKernel(k); return -1;
-                    case 2:     vlog_error( "%ld) Error for %s %s: %a + %a * %a =  *%a vs. %a\n", i, sizeNames[ vectorSize], kernelName[ testNumber ],
-                                           c[i], a[i], b[i], correct[testNumber][i], test[i] );       clReleaseKernel(k); return -1;
-                    case 3:     vlog_error( "%ld) Error for %s %s: %a - %a * %a =  *%a vs. %a\n", i, sizeNames[ vectorSize], kernelName[ testNumber ],
-                                           c[i], a[i], b[i], correct[testNumber][i], test[i] );       clReleaseKernel(k); return -1;
+                    case 0:
+                        vlog_error("%zu) Error for %s %s: %a * %a + %a =  *%a "
+                                   "vs. %a\n",
+                                   i, sizeNames[vectorSize],
+                                   kernelName[testNumber], a[i], b[i], c[i],
+                                   correct[testNumber][i], test[i]);
+                        clReleaseKernel(k);
+                        return -1;
+                    case 1:
+                        vlog_error("%zu) Error for %s %s: %a * %a - %a =  *%a "
+                                   "vs. %a\n",
+                                   i, sizeNames[vectorSize],
+                                   kernelName[testNumber], a[i], b[i], c[i],
+                                   correct[testNumber][i], test[i]);
+                        clReleaseKernel(k);
+                        return -1;
+                    case 2:
+                        vlog_error("%zu) Error for %s %s: %a + %a * %a =  *%a "
+                                   "vs. %a\n",
+                                   i, sizeNames[vectorSize],
+                                   kernelName[testNumber], c[i], a[i], b[i],
+                                   correct[testNumber][i], test[i]);
+                        clReleaseKernel(k);
+                        return -1;
+                    case 3:
+                        vlog_error("%zu) Error for %s %s: %a - %a * %a =  *%a "
+                                   "vs. %a\n",
+                                   i, sizeNames[vectorSize],
+                                   kernelName[testNumber], c[i], a[i], b[i],
+                                   correct[testNumber][i], test[i]);
+                        clReleaseKernel(k);
+                        return -1;
 
-                        // Zeros for these should be negative
-                    case 4:     vlog_error( "%ld) Error for %s %s: -(%a * %a + %a) =  *%a vs. %a\n", i, sizeNames[ vectorSize], kernelName[ testNumber ],
-                                           a[i], b[i], c[i], correct[testNumber][i], test[i] );       clReleaseKernel(k); return -1;
-                    case 5:     vlog_error( "%ld) Error for %s %s: -(%a * %a - %a) =  *%a vs. %a\n", i, sizeNames[ vectorSize], kernelName[ testNumber ],
-                                           a[i], b[i], c[i], correct[testNumber][i], test[i] );       clReleaseKernel(k); return -1;
-                    case 6:     vlog_error( "%ld) Error for %s %s: -(%a + %a * %a) =  *%a vs. %a\n", i, sizeNames[ vectorSize], kernelName[ testNumber ],
-                                           c[i], a[i], b[i], correct[testNumber][i], test[i] );       clReleaseKernel(k); return -1;
-                    case 7:     vlog_error( "%ld) Error for %s %s: -(%a - %a * %a) =  *%a vs. %a\n", i, sizeNames[ vectorSize], kernelName[ testNumber ],
-                                           c[i], a[i], b[i], correct[testNumber][i], test[i] );       clReleaseKernel(k); return -1;
+                        // Zeros for these shouzu be negative
+                    case 4:
+                        vlog_error("%zu) Error for %s %s: -(%a * %a + %a) =  "
+                                   "*%a vs. %a\n",
+                                   i, sizeNames[vectorSize],
+                                   kernelName[testNumber], a[i], b[i], c[i],
+                                   correct[testNumber][i], test[i]);
+                        clReleaseKernel(k);
+                        return -1;
+                    case 5:
+                        vlog_error("%zu) Error for %s %s: -(%a * %a - %a) =  "
+                                   "*%a vs. %a\n",
+                                   i, sizeNames[vectorSize],
+                                   kernelName[testNumber], a[i], b[i], c[i],
+                                   correct[testNumber][i], test[i]);
+                        clReleaseKernel(k);
+                        return -1;
+                    case 6:
+                        vlog_error("%zu) Error for %s %s: -(%a + %a * %a) =  "
+                                   "*%a vs. %a\n",
+                                   i, sizeNames[vectorSize],
+                                   kernelName[testNumber], c[i], a[i], b[i],
+                                   correct[testNumber][i], test[i]);
+                        clReleaseKernel(k);
+                        return -1;
+                    case 7:
+                        vlog_error("%zu) Error for %s %s: -(%a - %a * %a) =  "
+                                   "*%a vs. %a\n",
+                                   i, sizeNames[vectorSize],
+                                   kernelName[testNumber], c[i], a[i], b[i],
+                                   correct[testNumber][i], test[i]);
+                        clReleaseKernel(k);
+                        return -1;
                     default:
                         vlog_error( "error: Unknown test number!\n" );
                         clReleaseKernel(k);
@@ -1097,7 +1145,7 @@ static int RunTest_Double( int testNumber )
         for( i = 0; i < sizeof(args ) / sizeof( args[0]); i++ )
             if( (error = clSetKernelArg(k, i, sizeof( cl_mem ), args + i) ))
             {
-                vlog_error( "Error %d setting kernel arg # %ld\n", error, i );
+                vlog_error("Error %d setting kernel arg # %zu\n", error, i);
                 return error;
             }
 
@@ -1138,24 +1186,64 @@ static int RunTest_Double( int testNumber )
                 switch( testNumber )
                 {
                         // Zeros for these should be positive
-                    case 0:     vlog_error( "%ld) Error for %s %s: %a * %a + %a =  *%a vs. %a\n", i, sizeNames_double[ vectorSize], kernelName[ testNumber ],
-                                           a[i], b[i], c[i], correct[testNumber][i], test[i] );       return -1;
-                    case 1:     vlog_error( "%ld) Error for %s %s: %a * %a - %a =  *%a vs. %a\n", i, sizeNames_double[ vectorSize], kernelName[ testNumber ],
-                                           a[i], b[i], c[i], correct[testNumber][i], test[i] );       return -1;
-                    case 2:     vlog_error( "%ld) Error for %s %s: %a + %a * %a =  *%a vs. %a\n", i, sizeNames_double[ vectorSize], kernelName[ testNumber ],
-                                           c[i], a[i], b[i], correct[testNumber][i], test[i] );       return -1;
-                    case 3:     vlog_error( "%ld) Error for %s %s: %a - %a * %a =  *%a vs. %a\n", i, sizeNames_double[ vectorSize], kernelName[ testNumber ],
-                                           c[i], a[i], b[i], correct[testNumber][i], test[i] );       return -1;
+                    case 0:
+                        vlog_error("%zu) Error for %s %s: %a * %a + %a =  *%a "
+                                   "vs. %a\n",
+                                   i, sizeNames_double[vectorSize],
+                                   kernelName[testNumber], a[i], b[i], c[i],
+                                   correct[testNumber][i], test[i]);
+                        return -1;
+                    case 1:
+                        vlog_error("%zu) Error for %s %s: %a * %a - %a =  *%a "
+                                   "vs. %a\n",
+                                   i, sizeNames_double[vectorSize],
+                                   kernelName[testNumber], a[i], b[i], c[i],
+                                   correct[testNumber][i], test[i]);
+                        return -1;
+                    case 2:
+                        vlog_error("%zu) Error for %s %s: %a + %a * %a =  *%a "
+                                   "vs. %a\n",
+                                   i, sizeNames_double[vectorSize],
+                                   kernelName[testNumber], c[i], a[i], b[i],
+                                   correct[testNumber][i], test[i]);
+                        return -1;
+                    case 3:
+                        vlog_error("%zu) Error for %s %s: %a - %a * %a =  *%a "
+                                   "vs. %a\n",
+                                   i, sizeNames_double[vectorSize],
+                                   kernelName[testNumber], c[i], a[i], b[i],
+                                   correct[testNumber][i], test[i]);
+                        return -1;
 
-                        // Zeros for these should be negative
-                    case 4:     vlog_error( "%ld) Error for %s %s: -(%a * %a + %a) =  *%a vs. %a\n", i, sizeNames_double[ vectorSize], kernelName[ testNumber ],
-                                           a[i], b[i], c[i], correct[testNumber][i], test[i] );       return -1;
-                    case 5:     vlog_error( "%ld) Error for %s %s: -(%a * %a - %a) =  *%a vs. %a\n", i, sizeNames_double[ vectorSize], kernelName[ testNumber ],
-                                           a[i], b[i], c[i], correct[testNumber][i], test[i] );       return -1;
-                    case 6:     vlog_error( "%ld) Error for %s %s: -(%a + %a * %a) =  *%a vs. %a\n", i, sizeNames_double[ vectorSize], kernelName[ testNumber ],
-                                           c[i], a[i], b[i], correct[testNumber][i], test[i] );       return -1;
-                    case 7:     vlog_error( "%ld) Error for %s %s: -(%a - %a * %a) =  *%a vs. %a\n", i, sizeNames_double[ vectorSize], kernelName[ testNumber ],
-                                           c[i], a[i], b[i], correct[testNumber][i], test[i] );       return -1;
+                        // Zeros for these shouzu be negative
+                    case 4:
+                        vlog_error("%zu) Error for %s %s: -(%a * %a + %a) =  "
+                                   "*%a vs. %a\n",
+                                   i, sizeNames_double[vectorSize],
+                                   kernelName[testNumber], a[i], b[i], c[i],
+                                   correct[testNumber][i], test[i]);
+                        return -1;
+                    case 5:
+                        vlog_error("%zu) Error for %s %s: -(%a * %a - %a) =  "
+                                   "*%a vs. %a\n",
+                                   i, sizeNames_double[vectorSize],
+                                   kernelName[testNumber], a[i], b[i], c[i],
+                                   correct[testNumber][i], test[i]);
+                        return -1;
+                    case 6:
+                        vlog_error("%zu) Error for %s %s: -(%a + %a * %a) =  "
+                                   "*%a vs. %a\n",
+                                   i, sizeNames_double[vectorSize],
+                                   kernelName[testNumber], c[i], a[i], b[i],
+                                   correct[testNumber][i], test[i]);
+                        return -1;
+                    case 7:
+                        vlog_error("%zu) Error for %s %s: -(%a - %a * %a) =  "
+                                   "*%a vs. %a\n",
+                                   i, sizeNames_double[vectorSize],
+                                   kernelName[testNumber], c[i], a[i], b[i],
+                                   correct[testNumber][i], test[i]);
+                        return -1;
                     default:
                         vlog_error( "error: Unknown test number!\n" );
                         return -2;

@@ -344,16 +344,26 @@ int test_sub_buffers_read_write_core( cl_context context, cl_command_queue queue
                     size_t sbThatFailed = find_subbuffer_by_index( subBuffers, numSubBuffers, i + j );
                     if ( sbThatFailed == numSubBuffers )
                     {
-                        log_error( "ERROR: Validation failure outside of a sub-buffer! (Shouldn't be possible, but it happened at index %ld out of %ld...)\n", i + j, mainSize );
+                        log_error("ERROR: Validation failure outside of a "
+                                  "sub-buffer! (Shouldn't be possible, but it "
+                                  "happened at index %zu out of %zu...)\n",
+                                  i + j, mainSize);
                         // Since this is a nonsensical, don't bother continuing to check
                         // (we will, however, print our map of sub-buffers for comparison)
                         for ( size_t k = 0; k < numSubBuffers; k++ )
                         {
-                            log_error( "\tBuffer %ld: %ld to %ld (length %ld)\n", k, subBuffers[ k ].mOrigin, subBuffers[ k ].mOrigin + subBuffers[ k ].mSize, subBuffers[ k ].mSize );
+                            log_error("\tBuffer %zu: %zu to %zu (length %zu)\n",
+                                      k, subBuffers[k].mOrigin,
+                                      subBuffers[k].mOrigin
+                                          + subBuffers[k].mSize,
+                                      subBuffers[k].mSize);
                         }
                         return -1;
                     }
-                    log_error( "ERROR: Validation failure on sub-buffer %ld (start: %ld, length: %ld)\n", sbThatFailed, subBuffers[ sbThatFailed ].mOrigin, subBuffers[ sbThatFailed ].mSize );
+                    log_error("ERROR: Validation failure on sub-buffer %zu "
+                              "(start: %zu, length: %zu)\n",
+                              sbThatFailed, subBuffers[sbThatFailed].mOrigin,
+                              subBuffers[sbThatFailed].mSize);
                     size_t newPos = subBuffers[ sbThatFailed ].mOrigin + subBuffers[ sbThatFailed ].mSize - 1;
                     i = newPos & ~65535;
                     j = newPos - i;
@@ -589,8 +599,10 @@ int test_sub_buffers_overlapping( cl_device_id deviceID, cl_context context, cl_
         }
     }
 
-    log_info( "\tTesting %d sub-buffers with %lld overlapping Kbytes (%d%%; as many as %ld buffers overlapping at once)\n",
-              16, ( delta / 1024LL ), (int)( delta * 100LL / (long long)mainSize ), maxOverlap );
+    log_info("\tTesting %d sub-buffers with %lld overlapping Kbytes (%d%%; as "
+             "many as %zu buffers overlapping at once)\n",
+             16, (delta / 1024LL), (int)(delta * 100LL / (long long)mainSize),
+             maxOverlap);
 
     // Write some random contents to the main buffer
     cl_char * contents = new cl_char[ mainSize ];
@@ -615,7 +627,7 @@ int test_sub_buffers_overlapping( cl_device_id deviceID, cl_context context, cl_
 
         if ( memcmp( tempBuffer, contents + subBuffers[ i ].mOrigin, subBuffers[ i ].mSize ) != 0 )
         {
-            log_error( "ERROR: Validation for sub-buffer %ld failed!\n", i );
+            log_error("ERROR: Validation for sub-buffer %zu failed!\n", i);
             numErrors++;
         }
     }

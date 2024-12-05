@@ -534,7 +534,7 @@ test_status InitCL(cl_device_id device)
     vlog("\tCL C Version: %s\n", c);
     clGetDeviceInfo(device, CL_DRIVER_VERSION, sizeof(c), c, NULL);
     vlog("\tDriver Version: %s\n", c);
-    vlog("\tProcessing with %ld devices\n", gComputeDevices);
+    vlog("\tProcessing with %zu devices\n", gComputeDevices);
     vlog("\tDevice Frequency: %d MHz\n", gDeviceFrequency);
     vlog("\tSubnormal values supported for floats? %s\n",
          no_yes[0 != (CL_FP_DENORM & floatCapabilities)]);
