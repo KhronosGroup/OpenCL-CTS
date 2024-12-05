@@ -52,11 +52,9 @@
         }                                                                      \
     } while (false)
 
-namespace {
+static const char *source = "__kernel void empty() {}";
 
-const char *source = "__kernel void empty() {}";
-
-void log_info_semaphore_type(
+static void log_info_semaphore_type(
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType)
 {
     std::stringstream semaphore_type_description;
@@ -66,7 +64,7 @@ void log_info_semaphore_type(
     log_info("%s", semaphore_type_description.str().c_str());
 }
 
-int init_vulkan_device(cl_uint num_devices, cl_device_id *deviceIds)
+static int init_vulkan_device(cl_uint num_devices, cl_device_id *deviceIds)
 {
     cl_platform_id platform = nullptr;
 
@@ -84,7 +82,7 @@ int init_vulkan_device(cl_uint num_devices, cl_device_id *deviceIds)
     return CL_SUCCESS;
 }
 
-cl_int get_device_semaphore_handle_types(
+static cl_int get_device_semaphore_handle_types(
     cl_device_id deviceID, cl_device_info param,
     std::vector<cl_external_semaphore_handle_type_khr> &handle_types)
 {
@@ -119,8 +117,6 @@ cl_int get_device_semaphore_handle_types(
 
     return CL_SUCCESS;
 }
-
-} // anonymous namespace
 
 // Confirm the semaphores can be successfully queried
 int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
