@@ -25,7 +25,7 @@ int test_external_semaphores_import_export_fd(cl_device_id deviceID,
                                               cl_command_queue defaultQueue,
                                               int num_elements)
 {
-    cl_int err;
+    cl_int err = CL_SUCCESS;
 
     if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
     {
@@ -39,6 +39,18 @@ int test_external_semaphores_import_export_fd(cl_device_id deviceID,
     {
         log_info("cl_khr_external_semaphore_sync_fd is not supported on this "
                  "platoform. Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_command_queue_properties device_props = 0;
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_PROPERTIES,
+                          sizeof(device_props), &device_props, NULL);
+    test_error(err, "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
+
+    if ((device_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE) == 0)
+    {
+        log_info("Queue property CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE not "
+                 "supported. Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
 
