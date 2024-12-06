@@ -1,5 +1,6 @@
 
 set(HARNESS_SOURCES
+    harness/alloc.cpp
     harness/typeWrappers.cpp
     harness/mt19937.cpp
     harness/conversions.cpp
