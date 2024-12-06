@@ -355,6 +355,28 @@ int test_consistency_device_enqueue(cl_device_id deviceID, cl_context context,
                 "clSetDefaultDeviceCommandQueue did not return "
                 "CL_INVALID_OPERATION");
         }
+        else
+        {
+            // Device supports a replaceable default On-Device Queue. Change
+            // default queue and query device to test CL_QUEUE_DEVICE_DEFAULT
+            // restult object comparability
+
+            clCommandQueueWrapper queue =
+                clCreateCommandQueue(context, deviceID, 0, &error);
+            test_error(error, "Unable to create command queue to test with");
+
+            error = clSetDefaultDeviceCommandQueue(context, deviceID, queue);
+            test_error(error, "clSetDefaultDeviceCommandQueue failed");
+
+            cl_command_queue q = nullptr;
+            error = clGetCommandQueueInfo(queue, CL_QUEUE_DEVICE_DEFAULT,
+                                          sizeof(q), &q, nullptr);
+            test_error(error, "Unable to query CL_QUEUE_DEVICE_DEFAULT");
+
+            test_assert_error(
+                queue == q,
+                "Unexpected result returned by CL_QUEUE_DEVICE_DEFAULT query");
+        }
 
         // If CL_DEVICE_QUEUE_REPLACEABLE_DEFAULT is set,
         // CL_DEVICE_QUEUE_SUPPORTED must also be set.
