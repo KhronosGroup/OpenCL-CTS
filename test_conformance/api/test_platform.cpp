@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017-2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,131 +17,85 @@
 
 #include <string.h>
 
-#define EXTENSION_NAME_BUF_SIZE 4096
-
-#define PRINT_EXTENSION_INFO 0
+#include <algorithm>
 
 int test_platform_extensions(cl_device_id deviceID, cl_context context,
                              cl_command_queue queue, int num_elements)
 {
-    const char *extensions[] = { "cl_khr_byte_addressable_store",
-                                 //    "cl_APPLE_SetMemObjectDestructor",
-                                 "cl_khr_global_int32_base_atomics",
-                                 "cl_khr_global_int32_extended_atomics",
-                                 "cl_khr_local_int32_base_atomics",
-                                 "cl_khr_local_int32_extended_atomics",
-                                 "cl_khr_int64_base_atomics",
-                                 "cl_khr_int64_extended_atomics",
-                                 // need to put in entires for various atomics
-                                 "cl_khr_3d_image_writes", "cl_khr_fp16",
-                                 "cl_khr_fp64", NULL };
-
-    bool extensionsSupported[] = {
-        false, //"cl_khr_byte_addressable_store",
-        false, // need to put in entires for various atomics
-        false, // "cl_khr_global_int32_base_atomics",
-        false, // "cl_khr_global_int32_extended_atomics",
-        false, // "cl_khr_local_int32_base_atomics",
-        false, // "cl_khr_local_int32_extended_atomics",
-        false, // "cl_khr_int64_base_atomics",
-        false, // "cl_khr_int64_extended_atomics",
-        false, //"cl_khr_3d_image_writes",
-        false, //"cl_khr_fp16",
-        false, //"cl_khr_fp64",
-        false // NULL
-    };
-
-    int extensionIndex;
-
     cl_platform_id platformID;
     cl_int err;
 
-    char platform_extensions[EXTENSION_NAME_BUF_SIZE];
-    char device_extensions[EXTENSION_NAME_BUF_SIZE];
-
-    // Okay, so what we're going to do is just check the device indicated by
-    // deviceID against the platform that includes this device
-
-
-    // pass CL_DEVICE_PLATFORM to clGetDeviceInfo
-    // to get a result of type cl_platform_id
-
     err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
                           (void *)(&platformID), NULL);
+    test_error(err, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM");
 
-    if (err != CL_SUCCESS)
+    // Note that we read into a vector for tokenization, rather than a string,
+    // because strtok_r modifies the string.
+
+    size_t size = 0;
+
+    err = clGetPlatformInfo(platformID, CL_PLATFORM_EXTENSIONS, 0, NULL, &size);
+    test_error(err,
+               "clGetPlatformInfo failed to get CL_PLATFORM_EXTENSIONS size");
+
+    std::vector<char> platformExtensions(size);
+    err = clGetPlatformInfo(platformID, CL_PLATFORM_EXTENSIONS, size,
+                            platformExtensions.data(), NULL);
+    test_error(err, "clGetPlatformInfo failed for CL_PLATFORM_EXTENSIONS");
+
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, 0, NULL, &size);
+    test_error(err, "clGetDeviceInfo failed to get CL_DEVICE_EXTENSIONS size");
+
+    std::vector<char> deviceExtensions(size);
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, size,
+                          deviceExtensions.data(), NULL);
+    test_error(err, "clGetDeviceInfo failed for CL_DEVICE_EXTENSIONS");
+
+    // First, check that all platform extensions are reported by the device.
+
+    for (char *saveptr = nullptr,
+              *token = strtok_r(platformExtensions.data(), " ", &saveptr);
+         token != nullptr; token = strtok_r(nullptr, " ", &saveptr))
     {
-        vlog_error("test_platform_extensions : could not get platformID from "
-                   "device\n");
-        return -1;
-    }
-
-
-    // now we grab the set of extensions specified by the platform
-    err = clGetPlatformInfo(platformID, CL_PLATFORM_EXTENSIONS,
-                            sizeof(platform_extensions),
-                            (void *)(&platform_extensions[0]), NULL);
-    if (err != CL_SUCCESS)
-    {
-        vlog_error("test_platform_extensions : could not get extension string "
-                   "from platform\n");
-        return -1;
-    }
-
-#if PRINT_EXTENSION_INFO
-    log_info("Platform extensions include \"%s\"\n\n", platform_extensions);
-#endif
-
-    // here we parse the platform extensions, to look for the "important" ones
-    for (extensionIndex = 0; extensions[extensionIndex] != NULL;
-         ++extensionIndex)
-    {
-        if (strstr(platform_extensions, extensions[extensionIndex]) != NULL)
+        // log_info("Checking platform extension: %s\n", token);
+        if (is_extension_available(deviceID, token) == false)
         {
-            // we found it
-#if PRINT_EXTENSION_INFO
-            log_info("Found \"%s\" in platform extensions\n",
-                     extensions[extensionIndex]);
-#endif
-            extensionsSupported[extensionIndex] = true;
+            test_fail("%s is supported by the platform but not by the device\n",
+                      token);
         }
     }
 
-    // and then we grab the set of extensions specified by the device
-    // (this can be turned into a "loop over all devices in this platform")
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS,
-                          sizeof(device_extensions),
-                          (void *)(&device_extensions[0]), NULL);
-    if (err != CL_SUCCESS)
+    // Next, check that device extensions reported by all devices are reported
+    // by the platform.
+
+    cl_uint numDevices = 0;
+    err = clGetDeviceIDs(platformID, CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
+    test_error(err, "clGetDeviceIDs failed to get number of devices");
+
+    std::vector<cl_device_id> devices(numDevices);
+    err = clGetDeviceIDs(platformID, CL_DEVICE_TYPE_ALL, numDevices,
+                         devices.data(), NULL);
+    test_error(err, "clGetDeviceIDs failed to get device IDs");
+
+    for (char *saveptr = nullptr,
+              *token = strtok_r(deviceExtensions.data(), " ", &saveptr);
+         token != nullptr; token = strtok_r(nullptr, " ", &saveptr))
     {
-        vlog_error("test_platform_extensions : could not get extension string "
-                   "from device\n");
-        return -1;
-    }
-
-
-#if PRINT_EXTENSION_INFO
-    log_info("Device extensions include \"%s\"\n\n", device_extensions);
-#endif
-
-    for (extensionIndex = 0; extensions[extensionIndex] != NULL;
-         ++extensionIndex)
-    {
-        if (extensionsSupported[extensionIndex] == false)
+        // log_info("Checking device extension: %s\n", token);
+        bool supportedByAllDevices = std::all_of(
+            devices.begin(), devices.end(), [&](cl_device_id device) {
+                return is_extension_available(device, token);
+            });
+        if (supportedByAllDevices
+            && !is_platform_extension_available(platformID, token))
         {
-            continue; // skip this one
-        }
-
-        if (strstr(device_extensions, extensions[extensionIndex]) == NULL)
-        {
-            // device does not support it
-            vlog_error(
-                "Platform supports extension \"%s\" but device does not\n",
-                extensions[extensionIndex]);
-            return -1;
+            test_fail(
+                "%s is supported by all devices but not by the platform\n",
+                token);
         }
     }
-    return 0;
+
+    return TEST_PASS;
 }
 
 int test_get_platform_ids(cl_device_id deviceID, cl_context context,
