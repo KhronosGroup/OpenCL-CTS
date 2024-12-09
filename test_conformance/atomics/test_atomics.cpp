@@ -137,8 +137,8 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
     int error;
     size_t threads[1];
     clMemWrapper streams[2];
-    std::vector<cl_int> refValues;
-    std::vector<cl_int> startRefValues;
+    std::vector<char> refValues;
+    std::vector<char> startRefValues;
     size_t threadSize, groupSize;
     const char *programLines[4];
     char pragma[512];
@@ -256,8 +256,8 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
         MTdataHolder d_holder(gRandomSeed);
         startRefValues.resize(typeSize * threadSize);
         if (typeSize == 4)
-            testFns.GenerateRefsIntFn(threadSize, startRefValues.data(),
-                                      d_holder);
+            testFns.GenerateRefsIntFn(
+                threadSize, (cl_int *)startRefValues.data(), d_holder);
         else
             testFns.GenerateRefsLongFn(
                 threadSize, (cl_long *)startRefValues.data(), d_holder);
@@ -340,8 +340,8 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
             if (typeSize == 4)
             {
                 // Int version
-                intVal = testFns.ExpectedValueIntFn(threadSize,
-                                                    startRefValues.data(), i);
+                intVal = testFns.ExpectedValueIntFn(
+                    threadSize, (cl_int *)startRefValues.data(), i);
                 memcpy(expected, &intVal, sizeof(intVal));
             }
             else
@@ -362,8 +362,8 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
                     log_error("ERROR: Result %zu from kernel does not "
                               "validate! (should be %d, was %d)\n",
                               i, intVal, *outValue);
-                    cl_int *startRefs = startRefValues.data();
-                    cl_int *refs = refValues.data();
+                    cl_int *startRefs = (cl_int *)startRefValues.data();
+                    cl_int *refs = (cl_int *)refValues.data();
                     for (i = 0; i < threadSize; i++)
                     {
                         if (startRefs != NULL)
