@@ -70,7 +70,8 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
         cl_image_format img_format = { 0 };
 
         VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
-            getSupportedVulkanExternalMemoryHandleTypeList()[0];
+            getSupportedVulkanExternalMemoryHandleTypeList(
+                vkDevice->getPhysicalDevice())[0];
 
         VulkanImageTiling vulkanImageTiling =
             vkClExternalMemoryHandleTilingAssumption(

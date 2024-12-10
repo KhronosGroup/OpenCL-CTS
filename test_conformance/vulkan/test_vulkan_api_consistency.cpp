@@ -68,7 +68,8 @@ struct ConsistencyExternalBufferTest : public VulkanTestBase
 #endif
 
         VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
-            getSupportedVulkanExternalMemoryHandleTypeList()[0];
+            getSupportedVulkanExternalMemoryHandleTypeList(
+                vkDevice->getPhysicalDevice())[0];
 
         VulkanBuffer vkDummyBuffer(*vkDevice, 4 * 1024,
                                    vkExternalMemoryHandleType);
@@ -212,7 +213,8 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
         cl_image_format img_format = { 0 };
 
         VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
-            getSupportedVulkanExternalMemoryHandleTypeList()[0];
+            getSupportedVulkanExternalMemoryHandleTypeList(
+                vkDevice->getPhysicalDevice())[0];
 
         VulkanImageTiling vulkanImageTiling =
             vkClExternalMemoryHandleTilingAssumption(
