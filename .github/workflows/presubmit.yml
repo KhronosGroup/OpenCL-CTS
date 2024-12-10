@@ -67,6 +67,7 @@ jobs:
         run: |
           git clone https://github.com/KhronosGroup/OpenCL-Headers.git
           cd OpenCL-Headers
+          git checkout cl_khr_unified_svm
           ln -s CL OpenCL # For OSX builds
           cd ..
       - name: Install Vulkan SDK
@@ -96,4 +97,4 @@ jobs:
         with:
           fetch-depth: 0
       - name: Check code format
-        run: ./check-format.sh
+        run: ./check-format.sh origin/cl_khr_unified_svm
