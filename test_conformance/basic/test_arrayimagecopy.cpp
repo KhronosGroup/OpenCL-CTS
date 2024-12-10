@@ -37,7 +37,8 @@ int test_arrayimagecopy_single_format(cl_device_id device, cl_context context,
                                       cl_mem_object_type image_type,
                                       const cl_image_format *format)
 {
-    std::unique_ptr<cl_uchar> bufptr, imgptr;
+    std::unique_ptr<cl_uchar, decltype(&free)> bufptr{ nullptr, free },
+        imgptr{ nullptr, free };
     clMemWrapper buffer, image;
     int img_width = 512;
     int img_height = 512;
