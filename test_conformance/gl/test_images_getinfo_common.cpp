@@ -23,7 +23,6 @@
 #include <CL/cl_gl.h>
 #endif
 
-extern int supportsHalf(cl_context context, bool *supports_half);
 
 static int test_image_info(cl_context context, cl_command_queue queue,
                            GLenum glTarget, GLuint glTexture, size_t imageWidth,
@@ -97,10 +96,6 @@ static int test_image_format_get_info(cl_context context,
     if (fmt->type == kHalf)
     {
         if (DetectFloatToHalfRoundingMode(queue)) return 0;
-        bool supports_half = false;
-        error = supportsHalf(context, &supports_half);
-        if (error != 0) return error;
-        if (!supports_half) return 0;
     }
 
     size_t w = width, h = height, d = depth;
