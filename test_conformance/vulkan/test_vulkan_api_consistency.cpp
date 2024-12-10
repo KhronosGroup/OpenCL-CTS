@@ -68,9 +68,9 @@ int test_consistency_external_buffer(cl_device_id deviceID, cl_context _context,
 #else
     if (!is_extension_available(devList[0], "cl_khr_external_memory_opaque_fd"))
     {
-        throw std::runtime_error(
-            "Device does not support "
-            "cl_khr_external_memory_opaque_fd extension \n");
+        log_info("Device does not support "
+                 "cl_khr_external_memory_opaque_fd extension \n");
+        return TEST_SKIPPED_ITSELF;
     }
 #endif
 
@@ -220,8 +220,9 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
 #else
     if (!is_extension_available(devList[0], "cl_khr_external_memory_opaque_fd"))
     {
-        test_fail("Device does not support cl_khr_external_memory_opaque_fd "
-                  "extension \n");
+        log_info("Device does not support cl_khr_external_memory_opaque_fd "
+                 "extension \n");
+        return TEST_SKIPPED_ITSELF;
     }
 #endif
     uint32_t width = 256;
