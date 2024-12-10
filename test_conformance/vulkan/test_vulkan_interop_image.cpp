@@ -205,7 +205,9 @@ int run_test_with_two_queue(
     std::vector<VulkanFormat> vkFormatList = getSupportedVulkanFormatList();
     const std::vector<VulkanExternalMemoryHandleType>
         vkExternalMemoryHandleTypeList =
-            getSupportedVulkanExternalMemoryHandleTypeList();
+            getSupportedVulkanExternalMemoryHandleTypeList(
+
+                vkDevice.getPhysicalDevice());
     char magicValue = 0;
 
     VulkanBuffer vkParamsBuffer(vkDevice, sizeof(Params));
@@ -817,7 +819,8 @@ int run_test_with_one_queue(
     std::vector<VulkanFormat> vkFormatList = getSupportedVulkanFormatList();
     const std::vector<VulkanExternalMemoryHandleType>
         vkExternalMemoryHandleTypeList =
-            getSupportedVulkanExternalMemoryHandleTypeList();
+            getSupportedVulkanExternalMemoryHandleTypeList(
+                vkDevice.getPhysicalDevice());
     char magicValue = 0;
 
     VulkanBuffer vkParamsBuffer(vkDevice, sizeof(Params));

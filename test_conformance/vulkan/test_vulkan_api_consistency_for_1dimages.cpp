@@ -65,7 +65,8 @@ int test_consistency_external_for_1dimage(cl_device_id deviceID,
     cl_image_format img_format = { 0 };
 
     VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
-        getSupportedVulkanExternalMemoryHandleTypeList()[0];
+        getSupportedVulkanExternalMemoryHandleTypeList(
+            vkDevice.getPhysicalDevice())[0];
 
     VulkanImageTiling vulkanImageTiling =
         vkClExternalMemoryHandleTilingAssumption(

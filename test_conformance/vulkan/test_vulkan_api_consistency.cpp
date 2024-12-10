@@ -75,7 +75,8 @@ int test_consistency_external_buffer(cl_device_id deviceID, cl_context _context,
 #endif
 
     VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
-        getSupportedVulkanExternalMemoryHandleTypeList()[0];
+        getSupportedVulkanExternalMemoryHandleTypeList(
+            vkDevice.getPhysicalDevice())[0];
 
     VulkanBuffer vkDummyBuffer(vkDevice, 4 * 1024, vkExternalMemoryHandleType);
     const VulkanMemoryTypeList& memoryTypeList =
@@ -230,7 +231,8 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
     cl_image_format img_format = { 0 };
 
     VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
-        getSupportedVulkanExternalMemoryHandleTypeList()[0];
+        getSupportedVulkanExternalMemoryHandleTypeList(
+            vkDevice.getPhysicalDevice())[0];
 
     VulkanImageTiling vulkanImageTiling =
         vkClExternalMemoryHandleTilingAssumption(
