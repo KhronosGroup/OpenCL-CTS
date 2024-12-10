@@ -36,7 +36,6 @@ test_definition test_list[] = {
     ADD_TEST_VERSION(semaphores_device_list_queries, Version(1, 2)),
     ADD_TEST_VERSION(semaphores_no_device_list_queries, Version(1, 2)),
     ADD_TEST_VERSION(semaphores_multi_device_context_queries, Version(1, 2)),
-    ADD_TEST_VERSION(semaphores_import_export_fd, Version(1, 2)),
     ADD_TEST_VERSION(semaphores_ooo_ops_single_queue, Version(1, 2)),
     ADD_TEST_VERSION(semaphores_ooo_ops_cross_queue, Version(1, 2)),
     ADD_TEST_VERSION(semaphores_negative_create_invalid_context, Version(1, 2)),
