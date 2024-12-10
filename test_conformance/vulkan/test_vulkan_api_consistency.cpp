@@ -490,17 +490,18 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
     // Pass invalid semaphore object to wait
     errNum =
         clEnqueueWaitSemaphoresKHRptr(cmd_queue, 1, NULL, NULL, 0, NULL, NULL);
-    test_failure_error(errNum, CL_INVALID_VALUE,
-                       "clEnqueueWaitSemaphoresKHR fails with CL_INVALID_VALUE "
-                       "when invalid semaphore object is passed");
+    test_failure_error(
+        errNum, CL_INVALID_SEMAPHORE_KHR,
+        "clEnqueueWaitSemaphoresKHR fails with CL_INVALID_SEMAPHORE_KHR "
+        "when invalid semaphore object is passed");
 
 
     // Pass invalid semaphore object to signal
     errNum = clEnqueueSignalSemaphoresKHRptr(cmd_queue, 1, NULL, NULL, 0, NULL,
                                              NULL);
     test_failure_error(
-        errNum, CL_INVALID_VALUE,
-        "clEnqueueSignalSemaphoresKHR fails with CL_INVALID_VALUE"
+        errNum, CL_INVALID_SEMAPHORE_KHR,
+        "clEnqueueSignalSemaphoresKHR fails with CL_INVALID_SEMAPHORE_KHR"
         "when invalid semaphore object is passed");
 
 
