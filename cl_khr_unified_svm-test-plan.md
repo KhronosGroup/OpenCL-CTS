@@ -21,7 +21,7 @@ https://github.com/intel/compute-samples/tree/master/compute_samples/tests/test_
 As an initial test, perform a consistency check to ensure that the platform and the test device enumerate a consistent set of SVM capabilities:
 
 * [ ] For each device in the platform, check that the platform and device report the same number of SVM capability combinations.
-* [ ] For each SVM capability combination reported by the platform, check that some device reports these capabilities.
+* [ ] For each SVM capability combination reported by the platform, check that the reported platform capabilities at an index are the intersection of all non-zero device capabilities at the same index.
 * [ ] For each SVM capability combination reported by the test device, check that the device SVM capabilities are either a super-set of the platform SVM capabilities or are zero, indicating that this SVM type is not supported.
 
 ### Testing SVM Capabilities
