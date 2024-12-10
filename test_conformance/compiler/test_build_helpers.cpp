@@ -84,8 +84,8 @@ int test_load_program_source(cl_device_id deviceID, cl_context context, cl_comma
     // Note: according to spec section 5.4.5, the length returned should include the null terminator
     if (length != line_length + 1)
     {
-        log_error("ERROR: Length of program (%ld) does not match reference "
-                  "length (%ld)!\n",
+        log_error("ERROR: Length of program (%zu) does not match reference "
+                  "length (%zu)!\n",
                   length, line_length + 1);
         return -1;
     }
@@ -520,7 +520,7 @@ int test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_co
     error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_LOG, 0, NULL, &length );
     test_error( error, "Unable to get program build log length" );
 
-    log_info("Build log is %ld long.\n", length);
+    log_info("Build log is %zu long.\n", length);
 
     buffer = (char*)malloc(length);
 
