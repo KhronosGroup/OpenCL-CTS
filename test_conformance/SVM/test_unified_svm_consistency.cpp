@@ -82,7 +82,8 @@ REGISTER_TEST(unified_svm_consistency)
     }
 
     // For each SVM capability combination reported by the platform, check that
-    // some device reports these capabilities.
+    // the reported platform capabilities at an index are the intersection of
+    // all non-zero device capabilities at the same index.
 
     size_t capabilityCount = platformSize / sizeof(cl_svm_capabilities_khr);
 
@@ -95,7 +96,7 @@ REGISTER_TEST(unified_svm_consistency)
 
     for (int i = 0; i < capabilityCount; i++)
     {
-        bool found = false;
+        cl_svm_capabilities_khr check = 0;
         for (auto device : devices)
         {
             std::vector<cl_svm_capabilities_khr> deviceCapabilities(
@@ -107,18 +108,24 @@ REGISTER_TEST(unified_svm_consistency)
                 err,
                 "clGetDeviceInfo failed for CL_DEVICE_SVM_CAPABILITIES_KHR");
 
-            if ((deviceCapabilities[i] & platformCapabilities[i])
-                == platformCapabilities[i])
+            if (deviceCapabilities[i] != 0)
             {
-                found = true;
-                break;
+                if (check == 0)
+                {
+                    check = deviceCapabilities[i];
+                }
+                else
+                {
+                    check &= deviceCapabilities[i];
+                }
             }
         }
-        if (!found)
+        if (platformCapabilities[i] != check)
         {
-            test_fail("No device reports the platform SVM type capabilities at "
-                      "index %zu: 0x%" PRIx64 ".\n",
-                      i, platformCapabilities[i]);
+            test_fail("Platform SVM type capabilities at index %zu: 0x%" PRIx64
+                      " do not match the intersection of device capabilities "
+                      "0x%" PRIx64 ".\n",
+                      i, platformCapabilities[i], check);
         }
     }
 
