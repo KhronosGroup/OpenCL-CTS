@@ -736,7 +736,7 @@ void dumpConfigInfo(config_info* info)
             }
             break;
         case type_cl_device_id:
-            log_info("\t%s == %ld\n", info->opcode_name,
+            log_info("\t%s == %" PRIdPTR "\n", info->opcode_name,
                      (intptr_t)info->config.device_id);
             break;
         case type_cl_device_affinity_domain:
