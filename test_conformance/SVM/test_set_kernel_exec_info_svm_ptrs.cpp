@@ -50,8 +50,11 @@ REGISTER_TEST(svm_set_kernel_exec_info_svm_ptrs)
   cl_int      error = CL_SUCCESS;
   clCommandQueueWrapper queues[MAXQ];
 
-  //error = create_cl_objects(deviceID, &set_kernel_exec_info_svm_ptrs_kernel[0], &context, &program, &q, &num_devices, CL_DEVICE_SVM_FINE_GRAIN);
-  error = create_cl_objects(deviceID, &set_kernel_exec_info_svm_ptrs_kernel[0], &c, &program, &queues[0], &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
+  // error = create_cl_objects(device, &set_kernel_exec_info_svm_ptrs_kernel[0],
+  // &context, &program, &q, &num_devices, CL_DEVICE_SVM_FINE_GRAIN);
+  error = create_cl_objects(device, &set_kernel_exec_info_svm_ptrs_kernel[0],
+                            &c, &program, &queues[0], &num_devices,
+                            CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
   if(error == 1) return 0; // no devices capable of requested SVM level, so don't execute but count test as passing.
   if(error < 0) return -1; // fail test.
 

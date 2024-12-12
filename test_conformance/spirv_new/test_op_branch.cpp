@@ -75,7 +75,7 @@ int test_branch_simple(cl_device_id deviceID, cl_context context,
         {                                                                      \
             results[i] = genrand<cl_int>(seed);                                \
         }                                                                      \
-        return test_branch_simple(deviceID, context, queue, #NAME "_simple",   \
+        return test_branch_simple(device, context, queue, #NAME "_simple",     \
                                   results);                                    \
     }
 

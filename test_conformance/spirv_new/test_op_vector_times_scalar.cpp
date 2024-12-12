@@ -166,7 +166,7 @@ int test_vector_times_scalar(cl_device_id deviceID,
     {                                                                          \
         if (sizeof(cl_##TYPE) == 2)                                            \
         {                                                                      \
-            PASSIVE_REQUIRE_FP16_SUPPORT(deviceID);                            \
+            PASSIVE_REQUIRE_FP16_SUPPORT(device);                              \
         }                                                                      \
         typedef cl_##TYPE##N Tv;                                               \
         typedef cl_##TYPE Ts;                                                  \
@@ -182,8 +182,8 @@ int test_vector_times_scalar(cl_device_id deviceID,
             rhs[i] = genrandReal<cl_##TYPE>(seed);                             \
         }                                                                      \
                                                                                \
-        return test_vector_times_scalar<Tv, Ts>(deviceID, context, queue,      \
-                                                #TYPE, lhs, rhs);              \
+        return test_vector_times_scalar<Tv, Ts>(device, context, queue, #TYPE, \
+                                                lhs, rhs);                     \
     }
 
 

@@ -60,7 +60,8 @@ REGISTER_TEST(op_composite_construct_int4)
 {
     cl_int4 value = { { 123, 122, 121, 119 } };
     std::vector<cl_int4> results(256, value);
-    return test_composite_construct(deviceID, context, queue, "composite_construct_int4", results);
+    return test_composite_construct(device, context, queue,
+                                    "composite_construct_int4", results);
 }
 
 REGISTER_TEST(op_composite_construct_struct)
@@ -73,5 +74,6 @@ REGISTER_TEST(op_composite_construct_struct)
     CustomType2 value2 = {intvals, value1};
 
     std::vector<CustomType2> results(256, value2);
-    return test_composite_construct(deviceID, context, queue, "composite_construct_struct", results);
+    return test_composite_construct(device, context, queue,
+                                    "composite_construct_struct", results);
 }

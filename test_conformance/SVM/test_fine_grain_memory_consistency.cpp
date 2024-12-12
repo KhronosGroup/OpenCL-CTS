@@ -158,7 +158,7 @@ REGISTER_TEST(svm_fine_grain_memory_consistency)
     char *source[] = { hash_table_kernel };
 
     err = create_cl_objects(
-        deviceID, (const char **)source, &contextWrapper, &program, &queues[0],
+        device, (const char **)source, &contextWrapper, &program, &queues[0],
         &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS,
         required_extensions);
     context = contextWrapper;
