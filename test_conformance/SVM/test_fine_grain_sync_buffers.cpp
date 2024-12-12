@@ -52,10 +52,9 @@ REGISTER_TEST(svm_fine_grain_sync_buffers)
     cl_int err = CL_SUCCESS;
     clCommandQueueWrapper queues[MAXQ];
 
-    err = create_cl_objects(deviceID, &find_targets_kernel[0], &contextWrapper,
-                            &program, &queues[0], &num_devices,
-                            CL_DEVICE_SVM_FINE_GRAIN_BUFFER
-                                | CL_DEVICE_SVM_ATOMICS);
+    err = create_cl_objects(
+        device, &find_targets_kernel[0], &contextWrapper, &program, &queues[0],
+        &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS);
     context = contextWrapper;
     if (err == 1)
         return 0; // no devices capable of requested SVM level, so don't execute

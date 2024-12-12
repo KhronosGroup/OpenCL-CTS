@@ -68,7 +68,7 @@ int test_constant(cl_device_id deviceID, cl_context context,
     REGISTER_TEST(op_constant_##NAME##_simple)                                 \
     {                                                                          \
         std::vector<type> results(1024, (type)value);                          \
-        return test_constant(deviceID, context, queue,                         \
+        return test_constant(device, context, queue,                           \
                              "constant_" #NAME "_simple", results);            \
     }
 
@@ -101,14 +101,15 @@ REGISTER_TEST(op_constant_int4_simple)
 {
     cl_int4 value = { { 123, 122, 121, 119 } };
     std::vector<cl_int4> results(256, value);
-    return test_constant(deviceID, context, queue, "constant_int4_simple", results);
+    return test_constant(device, context, queue, "constant_int4_simple",
+                         results);
 }
 
 REGISTER_TEST(op_constant_int3_simple)
 {
     cl_int3 value = { { 123, 122, 121, 0 } };
     std::vector<cl_int3> results(256, value);
-    return test_constant(deviceID, context, queue, "constant_int3_simple",
+    return test_constant(device, context, queue, "constant_int3_simple",
                          results, isVectorNotEqual<cl_int3, 3>);
 }
 
@@ -116,14 +117,16 @@ REGISTER_TEST(op_constant_struct_int_float_simple)
 {
     AbstractStruct2<int, float> value = {1024, 3.1415};
     std::vector<AbstractStruct2<int, float> > results(256, value);
-    return test_constant(deviceID, context, queue, "constant_struct_int_float_simple", results);
+    return test_constant(device, context, queue,
+                         "constant_struct_int_float_simple", results);
 }
 
 REGISTER_TEST(op_constant_struct_int_char_simple)
 {
     AbstractStruct2<int, char> value = { 2100483600, (char)128 };
     std::vector<AbstractStruct2<int, char> > results(256, value);
-    return test_constant(deviceID, context, queue, "constant_struct_int_char_simple", results);
+    return test_constant(device, context, queue,
+                         "constant_struct_int_char_simple", results);
 }
 
 REGISTER_TEST(op_constant_struct_struct_simple)
@@ -136,14 +139,14 @@ REGISTER_TEST(op_constant_struct_struct_simple)
     CustomType2 value2 = {intvals, value1};
 
     std::vector<CustomType2> results(256, value2);
-    return test_constant(deviceID, context, queue, "constant_struct_struct_simple", results);
+    return test_constant(device, context, queue,
+                         "constant_struct_struct_simple", results);
 }
 
 REGISTER_TEST(op_constant_half_simple)
 {
-    PASSIVE_REQUIRE_FP16_SUPPORT(deviceID);
+    PASSIVE_REQUIRE_FP16_SUPPORT(device);
     std::vector<cl_float> results(1024, 3.25);
-    return test_constant(deviceID, context, queue,
-                         "constant_half_simple",
+    return test_constant(device, context, queue, "constant_half_simple",
                          results);
 }

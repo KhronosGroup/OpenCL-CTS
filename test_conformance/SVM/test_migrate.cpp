@@ -92,7 +92,7 @@ REGISTER_TEST(svm_migrate)
     clProgramWrapper program;
     cl_int error;
 
-    error = create_cl_objects(deviceID, &sources[0], &contextWrapper, &program,
+    error = create_cl_objects(device, &sources[0], &contextWrapper, &program,
                               &queues[0], &num_devices,
                               CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
     context = contextWrapper;
@@ -202,7 +202,7 @@ REGISTER_TEST(svm_migrate)
 
     // Check the event command type for clEnqueueSVMMigrateMem (OpenCL 3.0 and
     // newer)
-    Version version = get_device_cl_version(deviceID);
+    Version version = get_device_cl_version(device);
     if (version >= Version(3, 0))
     {
         cl_command_type commandType;

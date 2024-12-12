@@ -35,14 +35,14 @@ REGISTER_TEST(device_and_host_timers)
     cl_ulong observedDiff;
     cl_ulong allowedDiff;
 
-    result = clGetDeviceAndHostTimer(deviceID, &deviceStartTime, &hostStartTime);
+    result = clGetDeviceAndHostTimer(device, &deviceStartTime, &hostStartTime);
     if (result != CL_SUCCESS) {
         log_error("clGetDeviceAndHostTimer failed with error %s\n", IGetErrorString(result));
         errors++;
         goto End;
     }
 
-    result = clGetHostTimer(deviceID, &hostOnlyStartTime);
+    result = clGetHostTimer(device, &hostOnlyStartTime);
     if (result != CL_SUCCESS) {
         log_error("clGetHostTimer failed with error %s\n", IGetErrorString(result));
         errors++;
@@ -52,14 +52,14 @@ REGISTER_TEST(device_and_host_timers)
     // Wait for a while to allow the timers to increment substantially.
     sleep(5);
 
-    result = clGetDeviceAndHostTimer(deviceID, &deviceEndTime, &hostEndTime);
+    result = clGetDeviceAndHostTimer(device, &deviceEndTime, &hostEndTime);
     if (result != CL_SUCCESS) {
         log_error("clGetDeviceAndHostTimer failed with error %s\n", IGetErrorString(result));
         errors++;
         goto End;
     }
 
-    result = clGetHostTimer(deviceID, &hostOnlyEndTime);
+    result = clGetHostTimer(device, &hostOnlyEndTime);
     if (result != CL_SUCCESS) {
         log_error("clGetHostTimer failed with error %s\n", IGetErrorString(result));
         errors++;
@@ -133,13 +133,16 @@ REGISTER_TEST(timer_resolution_queries)
     cl_ulong deviceTimerResolution = 0;
     cl_ulong hostTimerResolution = 0;
 
-    result = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform), &platform, NULL);
+    result = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
+                             &platform, NULL);
     if (result != CL_SUCCESS) {
         log_error("clGetDeviceInfo(CL_DEVICE_PLATFORM) failed with error %s.\n", IGetErrorString(result));
         errors++;
     }
-    
-    result = clGetDeviceInfo(deviceID, CL_DEVICE_PROFILING_TIMER_RESOLUTION, sizeof(deviceTimerResolution), &deviceTimerResolution, NULL);
+
+    result = clGetDeviceInfo(device, CL_DEVICE_PROFILING_TIMER_RESOLUTION,
+                             sizeof(deviceTimerResolution),
+                             &deviceTimerResolution, NULL);
     if (result != CL_SUCCESS) {
         log_error("clGetDeviceInfo(CL_DEVICE_PROFILING_TIMER_RESOLUTION) failed with error %s.\n", IGetErrorString(result));
         errors++;

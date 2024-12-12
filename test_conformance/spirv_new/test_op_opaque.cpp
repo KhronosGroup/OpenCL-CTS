@@ -41,7 +41,7 @@ REGISTER_TEST(op_type_opaque_simple)
     else
     {
         cl_platform_id platform;
-        err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM,
+        err = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
                               sizeof(cl_platform_id), &platform, NULL);
         SPIRV_CHECK_ERROR(err,
                           "Failed to get platform info with clGetDeviceInfo");
@@ -61,7 +61,7 @@ REGISTER_TEST(op_type_opaque_simple)
             err, "Failed to create program with clCreateProgramWithILKHR");
     }
 
-    err = clCompileProgram(prog, 1, &deviceID,
+    err = clCompileProgram(prog, 1, &device,
                            NULL, // options
                            0, // num headers
                            NULL, // input headers

@@ -120,7 +120,7 @@ int test_spec_constant(cl_device_id deviceID, cl_context context,
         type init_value = init_buffer;                                         \
         type final_value = init_value + spec_constant_value;                   \
         return test_spec_constant(                                             \
-            deviceID, context, queue, "op_spec_constant_" #NAME "_simple",     \
+            device, context, queue, "op_spec_constant_" #NAME "_simple",       \
             init_value, (type)spec_constant_value, final_value);               \
     }
 
@@ -144,7 +144,7 @@ REGISTER_TEST_VERSION(op_spec_constant_true_simple, Version(2, 2))
     cl_uchar value = (cl_uchar)7;
     cl_uchar init_value = value;
     cl_uchar final_value = value + 1;
-    return test_spec_constant<cl_uchar>(deviceID, context, queue,
+    return test_spec_constant<cl_uchar>(device, context, queue,
                                         "op_spec_constant_true_simple",
                                         init_value, 0, final_value);
 }
@@ -156,7 +156,7 @@ REGISTER_TEST_VERSION(op_spec_constant_false_simple, Version(2, 2))
     cl_uchar value = (cl_uchar)7;
     cl_uchar init_value = value;
     cl_uchar final_value = value + 1;
-    return test_spec_constant<cl_uchar>(deviceID, context, queue,
+    return test_spec_constant<cl_uchar>(device, context, queue,
                                         "op_spec_constant_false_simple",
                                         init_value, 1, final_value);
 }
