@@ -758,7 +758,7 @@ int test_stream_read( cl_device_id device, cl_context context, cl_command_queue 
 }    // end test_stream_read()
 
 
-int test_read_array_int( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_int)
 {
     int    (*foo)(void *,int);
     foo = verify_read_int;
@@ -768,7 +768,7 @@ int test_read_array_int( cl_device_id device, cl_context context, cl_command_que
 }
 
 
-int test_read_array_uint( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_uint)
 {
     int    (*foo)(void *,int);
     foo = verify_read_uint;
@@ -778,7 +778,7 @@ int test_read_array_uint( cl_device_id device, cl_context context, cl_command_qu
 }
 
 
-int test_read_array_long( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_long)
 {
     int    (*foo)(void *,int);
     foo = verify_read_long;
@@ -794,7 +794,7 @@ int test_read_array_long( cl_device_id device, cl_context context, cl_command_qu
 }
 
 
-int test_read_array_ulong( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_ulong)
 {
     int    (*foo)(void *,int);
     foo = verify_read_ulong;
@@ -810,7 +810,7 @@ int test_read_array_ulong( cl_device_id device, cl_context context, cl_command_q
 }
 
 
-int test_read_array_short( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_short)
 {
     int    (*foo)(void *,int);
     foo = verify_read_short;
@@ -820,7 +820,7 @@ int test_read_array_short( cl_device_id device, cl_context context, cl_command_q
 }
 
 
-int test_read_array_ushort( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_ushort)
 {
     int    (*foo)(void *,int);
     foo = verify_read_ushort;
@@ -830,7 +830,7 @@ int test_read_array_ushort( cl_device_id device, cl_context context, cl_command_
 }
 
 
-int test_read_array_float( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_float)
 {
     int    (*foo)(void *,int);
     foo = verify_read_float;
@@ -840,7 +840,7 @@ int test_read_array_float( cl_device_id device, cl_context context, cl_command_q
 }
 
 
-int test_read_array_half( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_half)
 {
     int    (*foo)(void *,int);
     foo = verify_read_half;
@@ -850,7 +850,7 @@ int test_read_array_half( cl_device_id device, cl_context context, cl_command_qu
 }
 
 
-int test_read_array_char( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_char)
 {
     int    (*foo)(void *,int);
     foo = verify_read_char;
@@ -860,7 +860,7 @@ int test_read_array_char( cl_device_id device, cl_context context, cl_command_qu
 }
 
 
-int test_read_array_uchar( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_uchar)
 {
     int    (*foo)(void *,int);
     foo = verify_read_uchar;
@@ -870,7 +870,7 @@ int test_read_array_uchar( cl_device_id device, cl_context context, cl_command_q
 }
 
 
-int test_read_array_struct( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_struct)
 {
     int    (*foo)(void *,int);
     foo = verify_read_struct;

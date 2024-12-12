@@ -636,33 +636,33 @@ int write_image( cl_device_id device, cl_context context, cl_command_queue queue
 }    // end write_image()
 
 
-int test_write_image_float( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
+REGISTER_TEST(write_image_float)
 {
     cl_image_format    image_format_desc = { CL_RGBA, CL_UNORM_INT8 };
     PASSIVE_REQUIRE_IMAGE_SUPPORT( device )
     // 0 to 255 for unsigned image data
-    return write_image( device, context, queue, numElements, readKernelCode[0], readKernelName[0], image_format_desc, 1 );
-
+    return write_image(device, context, queue, num_elements, readKernelCode[0],
+                       readKernelName[0], image_format_desc, 1);
 }
 
 
-int test_write_image_char( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
+REGISTER_TEST(write_image_char)
 {
     cl_image_format    image_format_desc = { CL_RGBA, CL_SIGNED_INT8 };
     PASSIVE_REQUIRE_IMAGE_SUPPORT( device )
     // -128 to 127 for signed iamge data
-    return write_image( device, context, queue, numElements, readKernelCode[1], readKernelName[1], image_format_desc, 0 );
-
+    return write_image(device, context, queue, num_elements, readKernelCode[1],
+                       readKernelName[1], image_format_desc, 0);
 }
 
 
-int test_write_image_uchar( cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
+REGISTER_TEST(write_image_uchar)
 {
     cl_image_format    image_format_desc = { CL_RGBA, CL_UNSIGNED_INT8 };
     PASSIVE_REQUIRE_IMAGE_SUPPORT( device )
     // 0 to 255 for unsigned image data
-    return write_image( device, context, queue, numElements, readKernelCode[2], readKernelName[2], image_format_desc, 0 );
-
+    return write_image(device, context, queue, num_elements, readKernelCode[2],
+                       readKernelName[2], image_format_desc, 0);
 }
 
 
