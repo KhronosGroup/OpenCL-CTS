@@ -22,6 +22,15 @@
 int test_platform_extensions(cl_device_id deviceID, cl_context context,
                              cl_command_queue queue, int num_elements)
 {
+    // These extensions are special extensions that may be reported by the
+    // platform and not by the devices in the platform.
+    // clang-format off
+    const std::vector<std::string> cPlatformExtensions = {
+        "cl_khr_icd",
+        "cl_amd_offline_devices",
+    };
+    // clang-format on
+
     cl_platform_id platformID;
     cl_int err;
 
@@ -58,9 +67,13 @@ int test_platform_extensions(cl_device_id deviceID, cl_context context,
          token != nullptr; token = strtok_r(nullptr, " ", &saveptr))
     {
         // log_info("Checking platform extension: %s\n", token);
-        if (is_extension_available(deviceID, token) == false)
+        bool isPlatformExtension = std::find(cPlatformExtensions.begin(),
+                                             cPlatformExtensions.end(), token)
+            != cPlatformExtensions.end();
+        if (!isPlatformExtension && !is_extension_available(deviceID, token))
         {
-            test_fail("%s is supported by the platform but not by the device\n",
+            test_fail("%s is not a platform extension and is supported by the "
+                      "platform but not by the device\n",
                       token);
         }
     }
