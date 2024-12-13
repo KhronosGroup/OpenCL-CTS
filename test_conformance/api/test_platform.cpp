@@ -48,7 +48,7 @@ int test_platform_extensions(cl_device_id deviceID, cl_context context,
         std::string token;
         while (std::getline(is, token, ' '))
         {
-            //log_info("Checking platform extension: %s\n", token.c_str());
+            // log_info("Checking platform extension: %s\n", token.c_str());
             bool isPlatformExtension =
                 std::find(cPlatformExtensions.begin(),
                           cPlatformExtensions.end(), token)
@@ -84,7 +84,7 @@ int test_platform_extensions(cl_device_id deviceID, cl_context context,
         std::string token;
         while (std::getline(is, token, ' '))
         {
-            //log_info("Checking device extension: %s\n", token.c_str());
+            // log_info("Checking device extension: %s\n", token.c_str());
             bool supportedByAllDevices = std::all_of(
                 devices.begin(), devices.end(), [&](cl_device_id device) {
                     return is_extension_available(device, token.c_str());
