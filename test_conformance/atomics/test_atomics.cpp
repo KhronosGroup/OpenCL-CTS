@@ -13,11 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "testBase.h"
 #include "harness/conversions.h"
-#ifndef _WIN32
-#include <unistd.h>
-#endif
+#include "harness/typeWrappers.h"
 
 #include <cinttypes>
 
@@ -568,8 +565,7 @@ cl_long test_atomic_add_result_long(size_t size, cl_long *startRefValues,
     return total;
 }
 
-int test_atomic_add(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(atomic_add)
 {
     TestFns set = { 0,
                     0LL,
@@ -582,12 +578,12 @@ int test_atomic_add(cl_device_id deviceID, cl_context context,
                     NULL };
 
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atom_add_core, set, false,
+            device, context, queue, num_elements, atom_add_core, set, false,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ false)
         != 0)
         return -1;
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atomic_add_core, set, false,
+            device, context, queue, num_elements, atomic_add_core, set, false,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ true)
         != 0)
         return -1;
@@ -618,8 +614,7 @@ cl_long test_atomic_sub_result_long(size_t size, cl_long *startRefValues,
     return total;
 }
 
-int test_atomic_sub(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(atomic_sub)
 {
     TestFns set = { INT_TEST_VALUE,
                     LONG_TEST_VALUE,
@@ -632,12 +627,12 @@ int test_atomic_sub(cl_device_id deviceID, cl_context context,
                     NULL };
 
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atom_sub_core, set, false,
+            device, context, queue, num_elements, atom_sub_core, set, false,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ false)
         != 0)
         return -1;
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atomic_sub_core, set, false,
+            device, context, queue, num_elements, atomic_sub_core, set, false,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ true)
         != 0)
         return -1;
@@ -852,8 +847,7 @@ bool test_atomic_xchg_verify_float(size_t size, cl_float *refValues,
     return true;
 }
 
-int test_atomic_xchg(cl_device_id deviceID, cl_context context,
-                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(atomic_xchg)
 {
     TestFns set = { INT_TEST_VALUE,
                     LONG_TEST_VALUE,
@@ -868,17 +862,17 @@ int test_atomic_xchg(cl_device_id deviceID, cl_context context,
                     NULL,
                     test_atomic_xchg_verify_float };
 
-    int errors = test_atomic_function_set(
-        deviceID, context, queue, num_elements, atom_xchg_core, set, false,
-        true, /*usingAtomicPrefix*/ false);
-    errors |= test_atomic_function_set(deviceID, context, queue, num_elements,
+    int errors = test_atomic_function_set(device, context, queue, num_elements,
+                                          atom_xchg_core, set, false, true,
+                                          /*usingAtomicPrefix*/ false);
+    errors |= test_atomic_function_set(device, context, queue, num_elements,
                                        atomic_xchg_core, set, false, true,
                                        /*usingAtomicPrefix*/ true);
 
-    errors |= test_atomic_function(deviceID, context, queue, num_elements,
+    errors |= test_atomic_function(device, context, queue, num_elements,
                                    atomic_xchg_float_core, set, false, false,
                                    kFloat, true);
-    errors |= test_atomic_function(deviceID, context, queue, num_elements,
+    errors |= test_atomic_function(device, context, queue, num_elements,
                                    atomic_xchg_float_core, set, false, true,
                                    kFloat, true);
 
@@ -931,8 +925,7 @@ void test_atomic_min_gen_long(size_t size, cl_long *startRefValues, MTdata d)
                       | (((cl_long)genrand_int32(d) & 0x7fffffffL) << 16));
 }
 
-int test_atomic_min(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(atomic_min)
 {
     TestFns set = { 0x7fffffffL,
                     0x7fffffffffffffffLL,
@@ -945,12 +938,12 @@ int test_atomic_min(cl_device_id deviceID, cl_context context,
                     NULL };
 
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atom_min_core, set, true,
+            device, context, queue, num_elements, atom_min_core, set, true,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ false)
         != 0)
         return -1;
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atomic_min_core, set, true,
+            device, context, queue, num_elements, atomic_min_core, set, true,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ true)
         != 0)
         return -1;
@@ -1003,8 +996,7 @@ void test_atomic_max_gen_long(size_t size, cl_long *startRefValues, MTdata d)
                       | (((cl_long)genrand_int32(d) & 0x7fffffffL) << 16));
 }
 
-int test_atomic_max(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(atomic_max)
 {
     TestFns set = { 0,
                     0,
@@ -1017,12 +1009,12 @@ int test_atomic_max(cl_device_id deviceID, cl_context context,
                     NULL };
 
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atom_max_core, set, true,
+            device, context, queue, num_elements, atom_max_core, set, true,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ false)
         != 0)
         return -1;
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atomic_max_core, set, true,
+            device, context, queue, num_elements, atomic_max_core, set, true,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ true)
         != 0)
         return -1;
@@ -1050,8 +1042,7 @@ cl_long test_atomic_inc_result_long(size_t size, cl_long *startRefValues,
     return LONG_TEST_VALUE + size;
 }
 
-int test_atomic_inc(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(atomic_inc)
 {
     TestFns set = { INT_TEST_VALUE,
                     LONG_TEST_VALUE,
@@ -1064,12 +1055,12 @@ int test_atomic_inc(cl_device_id deviceID, cl_context context,
                     NULL };
 
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atom_inc_core, set, false,
+            device, context, queue, num_elements, atom_inc_core, set, false,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ false)
         != 0)
         return -1;
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atomic_inc_core, set, false,
+            device, context, queue, num_elements, atomic_inc_core, set, false,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ true)
         != 0)
         return -1;
@@ -1097,8 +1088,7 @@ cl_long test_atomic_dec_result_long(size_t size, cl_long *startRefValues,
     return LONG_TEST_VALUE - size;
 }
 
-int test_atomic_dec(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(atomic_dec)
 {
     TestFns set = { INT_TEST_VALUE,
                     LONG_TEST_VALUE,
@@ -1111,12 +1101,12 @@ int test_atomic_dec(cl_device_id deviceID, cl_context context,
                     NULL };
 
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atom_dec_core, set, false,
+            device, context, queue, num_elements, atom_dec_core, set, false,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ false)
         != 0)
         return -1;
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atomic_dec_core, set, false,
+            device, context, queue, num_elements, atomic_dec_core, set, false,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ true)
         != 0)
         return -1;
@@ -1172,8 +1162,7 @@ cl_long test_atomic_cmpxchg_result_long(size_t size, cl_long *startRefValues,
     return total;
 }
 
-int test_atomic_cmpxchg(cl_device_id deviceID, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST(atomic_cmpxchg)
 {
     TestFns set = { INT_TEST_VALUE,
                     LONG_TEST_VALUE,
@@ -1189,42 +1178,42 @@ int test_atomic_cmpxchg(cl_device_id deviceID, cl_context context,
 
     log_info("    Testing atom_ functions...\n");
     errors |=
-        test_atomic_function(deviceID, context, queue, num_elements,
+        test_atomic_function(device, context, queue, num_elements,
                              atom_cmpxchg_core, set, false, false, kInt, true);
     errors |=
-        test_atomic_function(deviceID, context, queue, num_elements,
+        test_atomic_function(device, context, queue, num_elements,
                              atom_cmpxchg_core, set, false, false, kUInt, true);
     errors |=
-        test_atomic_function(deviceID, context, queue, num_elements,
+        test_atomic_function(device, context, queue, num_elements,
                              atom_cmpxchg_core, set, false, true, kInt, true);
     errors |=
-        test_atomic_function(deviceID, context, queue, num_elements,
+        test_atomic_function(device, context, queue, num_elements,
                              atom_cmpxchg_core, set, false, true, kUInt, true);
 
-    errors |= test_atomic_function(deviceID, context, queue, num_elements,
+    errors |= test_atomic_function(device, context, queue, num_elements,
                                    atom_cmpxchg64_core, set, false, false,
                                    kLong, true);
-    errors |= test_atomic_function(deviceID, context, queue, num_elements,
+    errors |= test_atomic_function(device, context, queue, num_elements,
                                    atom_cmpxchg64_core, set, false, false,
                                    kULong, true);
-    errors |= test_atomic_function(deviceID, context, queue, num_elements,
+    errors |= test_atomic_function(device, context, queue, num_elements,
                                    atom_cmpxchg64_core, set, false, true, kLong,
                                    true);
-    errors |= test_atomic_function(deviceID, context, queue, num_elements,
+    errors |= test_atomic_function(device, context, queue, num_elements,
                                    atom_cmpxchg64_core, set, false, true,
                                    kULong, true);
 
     log_info("    Testing atomic_ functions...\n");
-    errors |= test_atomic_function(deviceID, context, queue, num_elements,
+    errors |= test_atomic_function(device, context, queue, num_elements,
                                    atomic_cmpxchg_core, set, false, false, kInt,
                                    true);
-    errors |= test_atomic_function(deviceID, context, queue, num_elements,
+    errors |= test_atomic_function(device, context, queue, num_elements,
                                    atomic_cmpxchg_core, set, false, false,
                                    kUInt, true);
     errors |=
-        test_atomic_function(deviceID, context, queue, num_elements,
+        test_atomic_function(device, context, queue, num_elements,
                              atomic_cmpxchg_core, set, false, true, kInt, true);
-    errors |= test_atomic_function(deviceID, context, queue, num_elements,
+    errors |= test_atomic_function(device, context, queue, num_elements,
                                    atomic_cmpxchg_core, set, false, true, kUInt,
                                    true);
 
@@ -1289,8 +1278,7 @@ cl_long test_atomic_and_result_long(size_t size, cl_long *startRefValues,
     return bits;
 }
 
-int test_atomic_and(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(atomic_and)
 {
     TestFns set = { (cl_int)0xffffffff,
                     (cl_long)0xffffffffffffffffLL,
@@ -1303,12 +1291,12 @@ int test_atomic_and(cl_device_id deviceID, cl_context context,
                     NULL };
 
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atom_and_core, set, true,
+            device, context, queue, num_elements, atom_and_core, set, true,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ false)
         != 0)
         return -1;
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atomic_and_core, set, true,
+            device, context, queue, num_elements, atomic_and_core, set, true,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ true)
         != 0)
         return -1;
@@ -1362,8 +1350,7 @@ cl_long test_atomic_or_result_long(size_t size, cl_long *startRefValues,
     return bits;
 }
 
-int test_atomic_or(cl_device_id deviceID, cl_context context,
-                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(atomic_or)
 {
     TestFns set = {
         0,    0LL,  test_bitwise_num_results,   test_atomic_or_result_int,
@@ -1372,12 +1359,12 @@ int test_atomic_or(cl_device_id deviceID, cl_context context,
     };
 
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atom_or_core, set, true,
+            device, context, queue, num_elements, atom_or_core, set, true,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ false)
         != 0)
         return -1;
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atomic_or_core, set, true,
+            device, context, queue, num_elements, atomic_or_core, set, true,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ true)
         != 0)
         return -1;
@@ -1415,8 +1402,7 @@ cl_long test_atomic_xor_result_long(size_t size, cl_long *startRefValues,
     return total;
 }
 
-int test_atomic_xor(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(atomic_xor)
 {
     TestFns set = { 0x2f08ab41,
                     0x2f08ab418ba0541LL,
@@ -1429,12 +1415,12 @@ int test_atomic_xor(cl_device_id deviceID, cl_context context,
                     NULL };
 
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atom_xor_core, set, true,
+            device, context, queue, num_elements, atom_xor_core, set, true,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ false)
         != 0)
         return -1;
     if (test_atomic_function_set(
-            deviceID, context, queue, num_elements, atomic_xor_core, set, true,
+            device, context, queue, num_elements, atomic_xor_core, set, true,
             /*matchGroupSize*/ false, /*usingAtomicPrefix*/ true)
         != 0)
         return -1;
