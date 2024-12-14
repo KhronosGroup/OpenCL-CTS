@@ -372,10 +372,10 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
 
     cl_version ext_version =
         get_extension_version(device, "cl_ext_buffer_device_address");
-    if (ext_version != CL_MAKE_VERSION(0, 9, 0))
+    if (ext_version != CL_MAKE_VERSION(0, 9, 1))
     {
         log_info("The test is written against cl_ext_buffer_device_address "
-                 "extension version 0.9.0, device supports version: %u.%u.%u\n",
+                 "extension version 0.9.1, device supports version: %u.%u.%u\n",
                  CL_VERSION_MAJOR(ext_version), CL_VERSION_MINOR(ext_version),
                  CL_VERSION_PATCH(ext_version));
         return TEST_SKIPPED_ITSELF;
@@ -396,13 +396,6 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
-}
-
-int test_shared_address(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
-{
-    return MakeAndRunTest(device, context, queue,
-                          CL_MEM_DEVICE_SHARED_ADDRESS_EXT);
 }
 
 int test_private_address(cl_device_id device, cl_context context,

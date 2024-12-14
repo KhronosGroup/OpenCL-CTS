@@ -17,7 +17,6 @@
 
 test_definition test_list[] = {
     ADD_TEST(private_address),
-    ADD_TEST(shared_address),
 };
 
 
