@@ -58,6 +58,20 @@ struct TestInfo : public TestInfoBase
     KernelMatrix k;
 };
 
+cl_float ComputeRefDouble(cl_float x, void *data)
+{
+    TestInfo *job = (TestInfo *)data;
+    fptr func = job->f->func;
+    return func.f_f(x);
+}
+
+cl_float ComputeRefSingle(cl_float x, void *data)
+{
+    TestInfo *job = (TestInfo *)data;
+    fptr func = job->f->hfunc;
+    return func.f_f_f(x);
+}
+
 cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 {
     TestInfo *job = (TestInfo *)data;
@@ -67,13 +81,15 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     cl_uint base = job_id * (cl_uint)job->step;
     ThreadInfo *tinfo = &(job->tinfo[thread_id]);
     float ulps = job->ulps;
-    fptr func = job->f->func;
     cl_uint j, k;
     cl_int error = CL_SUCCESS;
 
     int isRangeLimited = job->isRangeLimited;
     float half_sin_cos_tan_limit = job->half_sin_cos_tan_limit;
     int ftz = job->ftz;
+
+    auto ref_fnptr = &ComputeRefDouble;
+    if (0 == strcmp(job->f->name, "sqrt")) ref_fnptr = &ComputeRefSingle;
 
     std::vector<float> s(0);
 
@@ -177,7 +193,6 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
         }
     }
 
-
     // Get that moving
     if ((error = clFlush(tinfo->tQueue))) vlog("clFlush 2 failed\n");
 
@@ -186,10 +201,11 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     // Calculate the correctly rounded reference result
     cl_half *r = (cl_half *)gOut_Ref + thread_id * buffer_elements;
     s.resize(buffer_elements);
+
     for (j = 0; j < buffer_elements; j++)
     {
         s[j] = (float)cl_half_to_float(p[j]);
-        r[j] = HFF(func.f_f(s[j]));
+        r[j] = HFF(ref_fnptr(s[j], data));
     }
 
     // Read the data back -- no need to wait for the first N-1 buffers. This is
@@ -227,7 +243,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
             if (r[j] != q[j])
             {
                 float test = cl_half_to_float(q[j]);
-                double correct = func.f_f(s[j]);
+                double correct = cl_half_to_float(r[j]);
                 float err = Ulp_Error_Half(q[j], correct);
                 int fail = !(fabsf(err) <= ulps);
 
@@ -257,8 +273,9 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                         // retry per section 6.5.3.3
                         if (IsHalfSubnormal(p[j]))
                         {
-                            double correct2 = func.f_f(0.0);
-                            double correct3 = func.f_f(-0.0);
+                            double correct2 = ref_fnptr(0.0, data);
+                            double correct3 = ref_fnptr(-0.0, data);
+
                             float err2 = Ulp_Error_Half(q[j], correct2);
                             float err3 = Ulp_Error_Half(q[j], correct3);
                             fail = fail

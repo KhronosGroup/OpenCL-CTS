@@ -240,4 +240,7 @@ long double reference_erfcl(long double x);
 long double reference_erfl(long double x);
 double reference_erfc(double x);
 double reference_erf(double x);
+
+float reference_sqrtf(float x);
+float reference_dividef(float x, float y);
 #endif
