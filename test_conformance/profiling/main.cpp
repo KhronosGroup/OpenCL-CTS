@@ -18,49 +18,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <cinttypes>
-#include "procs.h"
 #include "harness/testHarness.h"
 
 // FIXME: To use certain functions in harness/imageHelpers.h
 // (for example, generate_random_image_data()), the tests are required to declare
 // the following variables (<rdar://problem/11111245>):
-
-test_definition test_list[] = {
-    ADD_TEST(read_array_int),
-    ADD_TEST(read_array_uint),
-    ADD_TEST(read_array_long),
-    ADD_TEST(read_array_ulong),
-    ADD_TEST(read_array_short),
-    ADD_TEST(read_array_ushort),
-    ADD_TEST(read_array_float),
-    ADD_TEST(read_array_char),
-    ADD_TEST(read_array_uchar),
-    ADD_TEST(read_array_struct),
-    ADD_TEST(write_array_int),
-    ADD_TEST(write_array_uint),
-    ADD_TEST(write_array_long),
-    ADD_TEST(write_array_ulong),
-    ADD_TEST(write_array_short),
-    ADD_TEST(write_array_ushort),
-    ADD_TEST(write_array_float),
-    ADD_TEST(write_array_char),
-    ADD_TEST(write_array_uchar),
-    ADD_TEST(write_array_struct),
-    ADD_TEST(read_image_float),
-    ADD_TEST(read_image_char),
-    ADD_TEST(read_image_uchar),
-    ADD_TEST(write_image_float),
-    ADD_TEST(write_image_char),
-    ADD_TEST(write_image_uchar),
-    ADD_TEST(copy_array),
-    ADD_TEST(copy_partial_array),
-    ADD_TEST(copy_image),
-    ADD_TEST(copy_array_to_image),
-    ADD_TEST(execute),
-    ADD_TEST_VERSION(profiling_timebase, Version(2, 1)),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
 
 // FIXME: use timer resolution rather than hardcoding 1µs per tick.
 
@@ -133,7 +95,8 @@ int check_times(cl_ulong queueStart, cl_ulong commandSubmit, cl_ulong commandSta
 
 int main( int argc, const char *argv[] )
 {
-    return runTestHarness(argc, argv, test_num, test_list, false,
+    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
+                          test_registry::getInstance().definitions(), false,
                           CL_QUEUE_PROFILING_ENABLE);
 }
 

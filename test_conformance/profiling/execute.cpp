@@ -360,7 +360,7 @@ static int basicFilter( int w, int h, int nChannels, uchar *inptr, uchar *outptr
 }    // end of basicFilter()
 
 
-int test_execute( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(execute)
 {
     uchar    *inptr;
     uchar    *outptr[2];

@@ -264,7 +264,7 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
 // use 3d to exercise the multipass events. In the future 3d may not be multpass, in which
 // case we will need to ensure that we use gdims large enough to force multipass.
 
-int execute_multipass( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(execute_multipass)
 {
     cl_uchar *inptr;
     cl_uchar *outptr;
