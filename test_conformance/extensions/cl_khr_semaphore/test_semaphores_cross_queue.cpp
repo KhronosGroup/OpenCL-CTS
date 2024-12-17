@@ -277,7 +277,7 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
             {
                 if (pattern != host_buffer[i])
                 {
-                    log_error("Expected %d was %d at index %zu\n", pattern,
+                    log_error("Expected %d was %d at index %d\n", pattern,
                               host_buffer[i], i);
                     return false;
                 }
