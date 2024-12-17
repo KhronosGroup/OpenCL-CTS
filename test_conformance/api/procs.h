@@ -252,3 +252,7 @@ extern int test_negative_create_command_queue_with_properties(
 extern int test_negative_create_command_queue_with_properties_khr(
     cl_device_id deviceID, cl_context context, cl_command_queue queue,
     int num_elements);
+extern int test_set_default_device_command_queue(cl_device_id deviceID,
+                                                 cl_context context,
+                                                 cl_command_queue queue,
+                                                 int num_elements);
