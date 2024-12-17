@@ -264,8 +264,10 @@ public:
         size_t passCount = std::count(results.begin(), results.end(), 1);
         if (passCount != results.size()) {
             std::vector<cl_uint>::iterator iter = std::find(results.begin(), results.end(), 0);
-            log_error("Verification on device failed at index %ld\n", std::distance(results.begin(), iter));
-            log_error("%ld out of %ld failed\n", (results.size()-passCount), results.size());
+            log_error("Verification on device failed at index %td\n",
+                      std::distance(results.begin(), iter));
+            log_error("%zu out of %zu failed\n", (results.size() - passCount),
+                      results.size());
             return -1;
         }
 
@@ -276,7 +278,8 @@ public:
         cl_int result = CL_SUCCESS;
 
         for (std::vector<std::string>::const_iterator it = _kernels.begin(); it != _kernels.end(); ++it) {
-            log_info("Executing subcase #%ld out of %ld\n", (it - _kernels.begin() + 1), _kernels.size());
+            log_info("Executing subcase #%zu out of %zu\n",
+                     (it - _kernels.begin() + 1), _kernels.size());
 
             result |= ExecuteSubcase(deviceID, context, queue, num_elements, *it);
         }

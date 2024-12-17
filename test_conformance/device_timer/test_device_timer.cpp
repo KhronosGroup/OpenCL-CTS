@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include <stdio.h>
+#include <cinttypes>
 #include <CL/cl.h>
 #include "harness/errorHelpers.h"
 #include "harness/compat.h"
@@ -74,13 +75,16 @@ REGISTER_TEST(device_and_host_timers)
 
     if (deviceEndTime <= deviceStartTime) {
         log_error("Device timer is not monotonically increasing.\n");
-        log_error("    deviceStartTime: %lu, deviceEndTime: %lu\n", deviceStartTime, deviceEndTime);
+        log_error("    deviceStartTime: %" PRIu64 ", deviceEndTime: %" PRIu64
+                  "\n",
+                  deviceStartTime, deviceEndTime);
         errors++;
     }
 
     if (hostEndTime <= hostStartTime) {
         log_error("Error: Host timer is not monotonically increasing.\n");
-        log_error("    hostStartTime: %lu, hostEndTime: %lu\n", hostStartTime, hostEndTime);
+        log_error("    hostStartTime: %" PRIu64 ", hostEndTime: %" PRIu64 "\n",
+                  hostStartTime, hostEndTime);
         errors++;
     }
 
@@ -95,7 +99,9 @@ REGISTER_TEST(device_and_host_timers)
 
     if (observedDiff > allowedDiff) {
         log_error("Error: Device and host timers did not increase by same amount\n");
-        log_error("    Observed difference between timers %lu (max allowed %lu).\n", observedDiff, allowedDiff);
+        log_error("    Observed difference between timers %" PRIu64
+                  " (max allowed %" PRIu64 ").\n",
+                  observedDiff, allowedDiff);
         errors++;
     }
 
@@ -103,21 +109,26 @@ REGISTER_TEST(device_and_host_timers)
 
     if (hostOnlyEndTime <= hostOnlyStartTime) {
         log_error("Error: Host timer is not monotonically increasing.\n");
-        log_error("    hostStartTime: %lu, hostEndTime: %lu\n", hostOnlyStartTime, hostOnlyEndTime);
+        log_error("    hostStartTime: %" PRIu64 ", hostEndTime: %" PRIu64 "\n",
+                  hostOnlyStartTime, hostOnlyEndTime);
         errors++;
     }
 
     if (hostOnlyStartTime < hostStartTime) {
         log_error("Error: Host start times do not correlate.\n");
         log_error("clGetDeviceAndHostTimer was called before clGetHostTimer but timers are not in that order.\n");
-        log_error("    clGetDeviceAndHostTimer: %lu, clGetHostTimer: %lu\n", hostStartTime, hostOnlyStartTime);
+        log_error("    clGetDeviceAndHostTimer: %" PRIu64
+                  ", clGetHostTimer: %" PRIu64 "\n",
+                  hostStartTime, hostOnlyStartTime);
         errors++;
     }
 
     if (hostOnlyEndTime < hostEndTime) {
         log_error("Error: Host end times do not correlate.\n");
         log_error("clGetDeviceAndHostTimer was called before clGetHostTimer but timers are not in that order.\n");
-        log_error("    clGetDeviceAndHostTimer: %lu, clGetHostTimer: %lu\n", hostEndTime, hostOnlyEndTime);
+        log_error("    clGetDeviceAndHostTimer: %" PRIu64
+                  ", clGetHostTimer: %" PRIu64 "\n",
+                  hostEndTime, hostOnlyEndTime);
         errors++;
     }
 
@@ -148,7 +159,9 @@ REGISTER_TEST(timer_resolution_queries)
         errors++;
     }
     else {
-        log_info("CL_DEVICE_PROFILING_TIMER_RESOLUTION == %lu nanoseconds\n", deviceTimerResolution);
+        log_info("CL_DEVICE_PROFILING_TIMER_RESOLUTION == %" PRIu64
+                 " nanoseconds\n",
+                 deviceTimerResolution);
     }
    
     if (platform) {
@@ -158,7 +171,9 @@ REGISTER_TEST(timer_resolution_queries)
             errors++;
         }
         else {
-            log_info("CL_PLATFORM_HOST_TIMER_RESOLUTION == %lu nanoseconds\n", hostTimerResolution);
+            log_info("CL_PLATFORM_HOST_TIMER_RESOLUTION == %" PRIu64
+                     " nanoseconds\n",
+                     hostTimerResolution);
         }
     }
     else {
