@@ -315,15 +315,15 @@ struct TestWorkItemFns
     std::vector<work_item_data> testData;
 };
 
-template <bool hardcoded> struct TestWorkItemFnsOutOfRange
+struct TestWorkItemFnsOutOfRange
 {
     size_t threads[3] = { 0, 0, 0 };
 
     TestWorkItemFnsOutOfRange(cl_device_id deviceID, cl_context context,
-                              cl_command_queue queue)
+                              cl_command_queue queue, const char *ksrc)
         : device(deviceID), context(context), queue(queue), program(nullptr),
           kernel(nullptr), outData(nullptr), d_holder(gRandomSeed),
-          testData(10240), max_workgroup_size(0)
+          testData(10240), max_workgroup_size(0), kernel_src(ksrc)
     {}
 
     virtual cl_int SetUp(const char *src)
@@ -465,8 +465,7 @@ template <bool hardcoded> struct TestWorkItemFnsOutOfRange
 
     cl_int Run()
     {
-        cl_int error = SetUp(hardcoded ? outOfRangeWorkItemHardcodedKernelCode
-                                       : outOfRangeWorkItemKernelCode);
+        cl_int error = SetUp(kernel_src);
         test_error(error, "SetUp failed");
 
         size_t localThreads[3] = { 0, 0, 0 };
@@ -546,6 +545,8 @@ template <bool hardcoded> struct TestWorkItemFnsOutOfRange
 
     std::array<size_t, 3> maxWorkItemSizes;
     size_t max_workgroup_size;
+
+    const char *kernel_src;
 };
 
 } // anonymous namespace
@@ -562,7 +563,8 @@ int test_work_item_functions_out_of_range(cl_device_id deviceID,
                                           cl_command_queue queue,
                                           int num_elements)
 {
-    TestWorkItemFnsOutOfRange<false> fnct(deviceID, context, queue);
+    TestWorkItemFnsOutOfRange fnct(deviceID, context, queue,
+                                   outOfRangeWorkItemKernelCode);
     return fnct.Run();
 }
 
@@ -571,6 +573,7 @@ int test_work_item_functions_out_of_range_hardcoded(cl_device_id deviceID,
                                                     cl_command_queue queue,
                                                     int num_elements)
 {
-    TestWorkItemFnsOutOfRange<true> fnct(deviceID, context, queue);
+    TestWorkItemFnsOutOfRange fnct(deviceID, context, queue,
+                                   outOfRangeWorkItemHardcodedKernelCode);
     return fnct.Run();
 }
