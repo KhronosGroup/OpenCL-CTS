@@ -122,19 +122,8 @@ int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
                                      cl_command_queue defaultQueue,
                                      int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_semaphore");
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
     if (init_vuikan_device(1, &deviceID))
     {
@@ -214,13 +203,7 @@ int test_external_semaphores_cross_context(cl_device_id deviceID,
                                            cl_command_queue defaultQueue,
                                            int num_elements)
 {
-    cl_int err = CL_SUCCESS;
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
     GET_PFN(deviceID, clEnqueueSignalSemaphoresKHR);
     GET_PFN(deviceID, clEnqueueWaitSemaphoresKHR);
@@ -228,10 +211,10 @@ int test_external_semaphores_cross_context(cl_device_id deviceID,
     GET_PFN(deviceID, clGetSemaphoreHandleForTypeKHR);
     GET_PFN(deviceID, clReleaseSemaphoreKHR);
 
-
     std::vector<cl_external_semaphore_handle_type_khr> import_handle_types;
     std::vector<cl_external_semaphore_handle_type_khr> export_handle_types;
 
+    cl_int err = CL_SUCCESS;
     err = get_device_semaphore_handle_types(
         deviceID, CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR,
         import_handle_types);
@@ -345,12 +328,7 @@ int test_external_semaphores_simple_1(cl_device_id deviceID, cl_context context,
                                       cl_command_queue defaultQueue,
                                       int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
     if (init_vuikan_device(1, &deviceID))
     {
@@ -425,12 +403,7 @@ int test_external_semaphores_simple_2(cl_device_id deviceID, cl_context context,
                                       cl_command_queue defaultQueue,
                                       int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
     if (init_vuikan_device(1, &deviceID))
     {
@@ -537,12 +510,7 @@ int test_external_semaphores_reuse(cl_device_id deviceID, cl_context context,
                                    cl_command_queue defaultQueue,
                                    int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
     if (init_vuikan_device(1, &deviceID))
     {
@@ -662,12 +630,7 @@ static int external_semaphore_cross_queue_helper(cl_device_id deviceID,
                                                  cl_command_queue queue_1,
                                                  cl_command_queue queue_2)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
     if (init_vuikan_device(1, &deviceID))
     {
@@ -782,12 +745,7 @@ int test_external_semaphores_cross_queues_io2(cl_device_id deviceID,
                                               cl_command_queue defaultQueue,
                                               int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
     if (init_vuikan_device(1, &deviceID))
     {
@@ -896,12 +854,7 @@ int test_external_semaphores_multi_signal(cl_device_id deviceID,
                                           cl_command_queue defaultQueue,
                                           int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
     if (init_vuikan_device(1, &deviceID))
     {
@@ -992,12 +945,7 @@ int test_external_semaphores_multi_wait(cl_device_id deviceID,
                                         cl_command_queue defaultQueue,
                                         int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
     if (init_vuikan_device(1, &deviceID))
     {
