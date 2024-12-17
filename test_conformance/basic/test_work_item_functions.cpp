@@ -26,7 +26,6 @@
 #include "procs.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
-#include "harness/stringHelpers.h"
 
 namespace {
 
@@ -71,17 +70,30 @@ __kernel void sample_kernel( __global work_item_data *outData )
    }
 })";
 
+struct work_item_data_out_of_range
+{
+    cl_uint workDim;
+    cl_uint globalSize;
+    cl_uint globalID;
+    cl_uint localSize;
+    cl_uint localID;
+    cl_uint numGroups;
+    cl_uint groupID;
+    cl_uint globalOffset;
+    cl_uint enqueuedLocalSize;
+};
+
 const char *outOfRangeWorkItemKernelCode =
     R"(typedef struct {
     uint workDim;
-    uint globalSize[ 3 ];
-    uint globalID[ 3 ];
-    uint localSize[ 3 ];
-    uint localID[ 3 ];
-    uint numGroups[ 3 ];
-    uint groupID[ 3 ];
-    uint globalOffset[ 3 ];
-    uint enqueuedLocalSize[ 3 ];
+    uint globalSize;
+    uint globalID;
+    uint localSize;
+    uint localID;
+    uint numGroups;
+    uint groupID;
+    uint globalOffset;
+    uint enqueuedLocalSize;
  } work_item_data;
 
 __kernel void sample_kernel( __global work_item_data *outData, int dim_param )
@@ -94,52 +106,71 @@ __kernel void sample_kernel( __global work_item_data *outData, int dim_param )
         ind_mul *= get_global_size(i);
     }
     outData[ind].workDim = (uint)get_work_dim();
-%s
+
+    uint dimindx=dim_param;
+    outData[ind].globalSize = (uint)get_global_size(dimindx);
+    outData[ind].globalID = (uint)get_global_id(dimindx);
+    outData[ind].localSize = (uint)get_local_size(dimindx);
+    outData[ind].localID = (uint)get_local_id(dimindx);
+    outData[ind].numGroups = (uint)get_num_groups(dimindx);
+    outData[ind].groupID = (uint)get_group_id(dimindx);
+#if __OPENCL_VERSION__ >= CL_VERSION_2_0
+    outData[ind].enqueuedLocalSize = (uint)get_enqueued_local_size(dimindx);
+    outData[ind].globalOffset = (uint)get_global_offset(dimindx);
+#elif __OPENCL_VERSION__ >= CL_VERSION_1_1
+    outData[ind].globalOffset = (uint)get_global_offset(dimindx);
+#endif
 })";
 
-const char *outOfRangeWorkItemKernelCodeExt =
-    R"(
-    uint dimindx=dim_param;
-    outData[ind].globalSize[0] = (uint)get_global_size(dimindx);
-    outData[ind].globalID[0] = (uint)get_global_id(dimindx);
-    outData[ind].localSize[0] = (uint)get_local_size(dimindx);
-    outData[ind].localID[0] = (uint)get_local_id(dimindx);
-    outData[ind].numGroups[0] = (uint)get_num_groups(dimindx);
-    outData[ind].groupID[0] = (uint)get_group_id(dimindx);
-#if __OPENCL_VERSION__ >= CL_VERSION_2_0
-    outData[ind].enqueuedLocalSize[0] = (uint)get_enqueued_local_size(dimindx);
-    outData[ind].globalOffset[0] = (uint)get_global_offset(dimindx);
-#elif __OPENCL_VERSION__ >= CL_VERSION_1_1
-    outData[ind].globalOffset[0] = (uint)get_global_offset(dimindx);
-#endif
-)";
+const char *outOfRangeWorkItemHardcodedKernelCode =
+    R"(typedef struct {
+    uint workDim;
+    uint globalSize;
+    uint globalID;
+    uint localSize;
+    uint localID;
+    uint numGroups;
+    uint groupID;
+    uint globalOffset;
+    uint enqueuedLocalSize;
+ } work_item_data;
 
-const char *outOfRangeWorkItemHardcodedKernelCodeExt =
-    R"(
-    outData[ind].globalSize[0] = (uint)get_global_size(4);
-    outData[ind].globalID[0] = (uint)get_global_id(4);
-    outData[ind].localSize[0] = (uint)get_local_size(4);
-    outData[ind].localID[0] = (uint)get_local_id(4);
-    outData[ind].numGroups[0] = (uint)get_num_groups(4);
-    outData[ind].groupID[0] = (uint)get_group_id(4);
-#if __OPENCL_VERSION__ >= CL_VERSION_2_0
-    outData[ind].enqueuedLocalSize[0] = (uint)get_enqueued_local_size(4);
-    outData[ind].globalOffset[0] = (uint)get_global_offset(4);
-#elif __OPENCL_VERSION__ >= CL_VERSION_1_1
-    outData[ind].globalOffset[0] = (uint)get_global_offset(4);
-#endif
-)";
-
-struct TestWorkItemBase
+__kernel void sample_kernel( __global work_item_data *outData, int dim_param )
 {
-    TestWorkItemBase(cl_device_id did, cl_context c, cl_command_queue q,
-                     cl_uint data_size, const char *src)
-        : device(did), context(c), queue(q), program(nullptr), kernel(nullptr),
-          outData(nullptr), d_holder(gRandomSeed), testData(data_size),
-          kernel_source(src), max_workgroup_size(0)
+    int ind_mul=1;
+    int ind=0;
+    for( uint i = 0; i < get_work_dim(); i++ )
+    {
+        ind += (uint)get_global_id(i) * ind_mul;
+        ind_mul *= get_global_size(i);
+    }
+    outData[ind].workDim = (uint)get_work_dim();
+    outData[ind].globalSize = (uint)get_global_size(4);
+    outData[ind].globalID = (uint)get_global_id(4);
+    outData[ind].localSize = (uint)get_local_size(4);
+    outData[ind].localID = (uint)get_local_id(4);
+    outData[ind].numGroups = (uint)get_num_groups(4);
+    outData[ind].groupID = (uint)get_group_id(4);
+#if __OPENCL_VERSION__ >= CL_VERSION_2_0
+    outData[ind].enqueuedLocalSize = (uint)get_enqueued_local_size(4);
+    outData[ind].globalOffset = (uint)get_global_offset(4);
+#elif __OPENCL_VERSION__ >= CL_VERSION_1_1
+    outData[ind].globalOffset = (uint)get_global_offset(4);
+#endif
+})";
+
+#define NUM_TESTS 1
+
+struct TestWorkItemFns
+{
+    TestWorkItemFns(cl_device_id deviceID, cl_context context,
+                    cl_command_queue queue)
+        : device(deviceID), context(context), queue(queue), program(nullptr),
+          kernel(nullptr), outData(nullptr), d_holder(gRandomSeed),
+          testData(10240)
     {}
 
-    virtual cl_int SetUp(const char *src)
+    cl_int SetUp(const char *src)
     {
         cl_int error = create_single_kernel_helper(context, &program, &kernel,
                                                    1, &src, "sample_kernel");
@@ -153,49 +184,12 @@ struct TestWorkItemBase
         error = clSetKernelArg(kernel, 0, sizeof(outData), &outData);
         test_error(error, "Unable to set kernel arg");
 
-        error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
-                                sizeof(size_t) * maxWorkItemSizes.size(),
-                                maxWorkItemSizes.data(), NULL);
-        test_error(error,
-                   "clDeviceInfo for CL_DEVICE_MAX_WORK_ITEM_SIZES failed");
-
-        error = clGetKernelWorkGroupInfo(
-            kernel, device, CL_KERNEL_WORK_GROUP_SIZE,
-            sizeof(max_workgroup_size), &max_workgroup_size, NULL);
-        test_error(error, "clGetKernelWorkgroupInfo failed.");
-
         return CL_SUCCESS;
     }
-    virtual cl_int Run() = 0;
 
-protected:
-    cl_device_id device;
-    cl_context context;
-    cl_command_queue queue;
-    clProgramWrapper program;
-    clKernelWrapper kernel;
-    clMemWrapper outData;
-    MTdataHolder d_holder;
-    std::vector<work_item_data> testData;
-    const char *kernel_source;
-
-    std::array<size_t, 3> maxWorkItemSizes;
-    size_t max_workgroup_size;
-};
-
-#define NUM_TESTS 1
-
-struct TestWorkItemFns : public TestWorkItemBase
-{
-
-    TestWorkItemFns(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue)
-        : TestWorkItemBase(deviceID, context, queue, 10240, workItemKernelCode)
-    {}
-
-    cl_int Run() override
+    cl_int Run()
     {
-        cl_int error = SetUp(kernel_source);
+        cl_int error = SetUp(workItemKernelCode);
         test_error(error, "SetUp failed");
 
         size_t threads[3] = { 0, 0, 0 };
@@ -309,34 +303,59 @@ struct TestWorkItemFns : public TestWorkItemBase
         }
         return 0;
     }
+
+    cl_device_id device;
+    cl_context context;
+    cl_command_queue queue;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+    clMemWrapper outData;
+    MTdataHolder d_holder;
+
+    std::vector<work_item_data> testData;
 };
 
-template <bool hardcoded>
-struct TestWorkItemFnsOutOfRange : public TestWorkItemBase
+template <bool hardcoded> struct TestWorkItemFnsOutOfRange
 {
-
     size_t threads[3] = { 0, 0, 0 };
 
     TestWorkItemFnsOutOfRange(cl_device_id deviceID, cl_context context,
                               cl_command_queue queue)
-        : TestWorkItemBase(deviceID, context, queue, 10240,
-                           outOfRangeWorkItemKernelCode)
+        : device(deviceID), context(context), queue(queue), program(nullptr),
+          kernel(nullptr), outData(nullptr), d_holder(gRandomSeed),
+          testData(10240), max_workgroup_size(0)
     {}
 
-    cl_int SetUp(const char *src) override
+    virtual cl_int SetUp(const char *src)
     {
-        std::ostringstream sstr;
-        std::string program_source;
-        program_source =
-            str_sprintf(std::string(kernel_source),
-                        hardcoded ? outOfRangeWorkItemHardcodedKernelCodeExt
-                                  : outOfRangeWorkItemKernelCodeExt);
+        cl_int error = create_single_kernel_helper(context, &program, &kernel,
+                                                   1, &src, "sample_kernel");
+        test_error(error, "Unable to create testing kernel");
 
-        return TestWorkItemBase::SetUp(program_source.c_str());
+        outData = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                 sizeof(work_item_data_out_of_range)
+                                     * testData.size(),
+                                 NULL, &error);
+        test_error(error, "Unable to create output buffer");
+
+        error = clSetKernelArg(kernel, 0, sizeof(outData), &outData);
+        test_error(error, "Unable to set kernel arg");
+
+        error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
+                                sizeof(size_t) * maxWorkItemSizes.size(),
+                                maxWorkItemSizes.data(), NULL);
+        test_error(error,
+                   "clDeviceInfo for CL_DEVICE_MAX_WORK_ITEM_SIZES failed");
+
+        error = clGetKernelWorkGroupInfo(
+            kernel, device, CL_KERNEL_WORK_GROUP_SIZE,
+            sizeof(max_workgroup_size), &max_workgroup_size, NULL);
+        test_error(error, "clGetKernelWorkgroupInfo failed.");
+
+        return CL_SUCCESS;
     }
 
-
-    cl_int Validate(const cl_uint dim)
+    bool Validate(const cl_uint dim)
     {
         cl_uint threads_to_verify = 1;
         for (size_t j = 0; j < dim; j++) threads_to_verify *= threads[j];
@@ -348,55 +367,55 @@ struct TestWorkItemFnsOutOfRange : public TestWorkItemBase
                 log_error("ERROR: get_work_dim() did not return proper value "
                           "for %d dimensions (expected %d, got %d)\n",
                           (int)dim, (int)dim, (int)testData[q].workDim);
-                return -1;
+                return false;
             }
-            if (testData[q].globalSize[0] != 1)
+            if (testData[q].globalSize != 1)
             {
                 log_error("ERROR: get_global_size(%d) did not return "
                           "proper value for the argument out of range "
                           "(expected 1, got %d)\n",
-                          (int)dim + 1, (int)testData[q].globalSize[0]);
-                return -1;
+                          (int)dim, (int)testData[q].globalSize);
+                return false;
             }
-            if (testData[q].globalID[0] != 0)
+            if (testData[q].globalID != 0)
             {
                 log_error("ERROR: get_global_id(%d) did not return "
                           "proper value for the argument out of range "
                           "(expected 0, got %d)\n",
-                          (int)dim + 1, (int)testData[q].globalID[0]);
-                return -1;
+                          (int)dim, (int)testData[q].globalID);
+                return false;
             }
-            if (testData[q].localSize[0] != 1)
+            if (testData[q].localSize != 1)
             {
                 log_error("ERROR: get_local_size(%d) did not return "
                           "proper value for the argument out of range "
                           "(expected 1, got %d)\n",
-                          (int)dim + 1, (int)testData[q].localSize[0]);
-                return -1;
+                          (int)dim, (int)testData[q].localSize);
+                return false;
             }
-            if (testData[q].localID[0] != 0)
+            if (testData[q].localID != 0)
             {
                 log_error("ERROR: get_local_id(%d) did not return "
                           "proper value for the argument out of range "
                           "(expected 0, got %d)\n",
-                          (int)dim + 1, (int)testData[q].localID[0]);
-                return -1;
+                          (int)dim, (int)testData[q].localID);
+                return false;
             }
-            if (testData[q].numGroups[0] != 1)
+            if (testData[q].numGroups != 1)
             {
                 log_error("ERROR: get_num_groups(%d) did not return "
                           "proper value for the argument out of range "
                           "(expected 1, got %d)\n",
-                          (int)dim + 1, (int)testData[q].numGroups[0]);
-                return -1;
+                          (int)dim, (int)testData[q].numGroups);
+                return false;
             }
-            if (testData[q].groupID[0] != 0)
+            if (testData[q].groupID != 0)
             {
                 log_error("ERROR: get_group_id(%d) did not return "
                           "proper value for the argument out of range "
                           "(expected 0, got %d)\n",
-                          (int)dim + 1, (int)testData[q].groupID[0]);
-                return -1;
+                          (int)dim, (int)testData[q].groupID);
+                return false;
             }
         }
 
@@ -405,22 +424,23 @@ struct TestWorkItemFnsOutOfRange : public TestWorkItemBase
         {
             for (size_t q = 0; q < threads_to_verify; q++)
             {
-                if (testData[q].globalOffset[0] != 0)
+                if (testData[q].globalOffset != 0)
                 {
-                    log_error("ERROR: get_global_offset() did not return "
-                              "proper value "
-                              "for %d dimensions (expected %d, got %d)\n",
-                              (int)dim, (int)dim, (int)testData[q].workDim);
-                    return -1;
+                    log_error(
+                        "ERROR: get_global_offset(%d) did not return "
+                        "proper value "
+                        "for the argument out of range  (expected 0, got %d)\n",
+                        (int)dim, (int)testData[q].globalOffset);
+                    return false;
                 }
-                if (testData[q].enqueuedLocalSize[0] != 1)
+                if (testData[q].enqueuedLocalSize != 1)
                 {
                     log_error(
                         "ERROR: get_enqueued_local_size(%d) did not return "
                         "proper value for the argument out of range "
                         "(expected 1, got %d)\n",
-                        (int)dim + 1, (int)testData[q].globalSize[0]);
-                    return -1;
+                        (int)dim, (int)testData[q].globalSize);
+                    return false;
                 }
             }
         }
@@ -428,28 +448,26 @@ struct TestWorkItemFnsOutOfRange : public TestWorkItemBase
         {
             for (size_t q = 0; q < threads_to_verify; q++)
             {
-                if (testData[q].globalOffset[0] != 0)
+                if (testData[q].globalOffset != 0)
                 {
-                    log_error("ERROR: get_global_offset() did not return "
-                              "proper value "
-                              "for %d dimensions (expected %d, got %d)\n",
-                              (int)dim, (int)dim, (int)testData[q].workDim);
-                    return -1;
+                    log_error(
+                        "ERROR: get_global_offset(%d) did not return "
+                        "proper value "
+                        "for the argument out of range  (expected 0, got %d)\n",
+                        (int)dim, (int)testData[q].globalOffset);
+                    return false;
                 }
             }
         }
 
-        return CL_SUCCESS;
+        return true;
     }
 
-    cl_int Run() override
+    cl_int Run()
     {
-        cl_int error = SetUp(kernel_source);
+        cl_int error = SetUp(hardcoded ? outOfRangeWorkItemHardcodedKernelCode
+                                       : outOfRangeWorkItemKernelCode);
         test_error(error, "SetUp failed");
-
-        cl_int dim_param = 4;
-        error = clSetKernelArg(kernel, 1, sizeof(cl_int), &dim_param);
-        test_error(error, "Unable to set kernel arg");
 
         size_t localThreads[3] = { 0, 0, 0 };
 
@@ -491,23 +509,43 @@ struct TestWorkItemFnsOutOfRange : public TestWorkItemBase
                 threads[j] = num_groups * localThreads[j];
             }
 
+            cl_int dim_param = dim + 1;
+            error = clSetKernelArg(kernel, 1, sizeof(cl_int), &dim_param);
+            test_error(error, "Unable to set kernel arg");
+
             error =
                 clEnqueueNDRangeKernel(queue, kernel, (cl_uint)dim, NULL,
                                        threads, localThreads, 0, NULL, NULL);
             test_error(error, "Unable to run kernel");
 
-            error =
-                clEnqueueReadBuffer(queue, outData, CL_TRUE, 0,
-                                    sizeof(work_item_data) * testData.size(),
-                                    testData.data(), 0, NULL, NULL);
+            error = clEnqueueReadBuffer(queue, outData, CL_TRUE, 0,
+                                        sizeof(work_item_data_out_of_range)
+                                            * testData.size(),
+                                        testData.data(), 0, NULL, NULL);
             test_error(error, "Unable to read results");
 
             // Validate
-            error = Validate(dim);
-            test_error(error, "Validation failed");
+            if (!Validate(dim))
+            {
+                log_error("Validation failed");
+                return TEST_FAIL;
+            }
         }
-        return 0;
+        return TEST_PASS;
     }
+
+    cl_device_id device;
+    cl_context context;
+    cl_command_queue queue;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+    clMemWrapper outData;
+    MTdataHolder d_holder;
+
+    std::vector<work_item_data_out_of_range> testData;
+
+    std::array<size_t, 3> maxWorkItemSizes;
+    size_t max_workgroup_size;
 };
 
 } // anonymous namespace
