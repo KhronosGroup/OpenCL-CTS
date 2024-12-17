@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 The Khronos Group Inc.
+// Copyright (c) 2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,11 @@
 #include "harness/errorHelpers.h"
 #include "harness/os_helpers.h"
 #include <algorithm>
-#include "deviceInfo.h"
+
+#include "vulkan_test_base.h"
+#include "opencl_vulkan_wrapper.hpp"
+
+namespace {
 
 #define MAX_2D_IMAGES 5
 #define MAX_2D_IMAGE_WIDTH 1024
@@ -46,14 +50,13 @@
         ASSERT(0);                                                             \
     }
 
-namespace {
 struct Params
 {
     uint32_t numImage2DDescriptors;
 };
-}
-static cl_uchar uuid[CL_UUID_SIZE_KHR];
-static cl_device_id deviceId = NULL;
+
+cl_uchar uuid[CL_UUID_SIZE_KHR];
+cl_device_id deviceId = NULL;
 size_t max_width = MAX_2D_IMAGE_WIDTH;
 size_t max_height = MAX_2D_IMAGE_HEIGHT;
 
@@ -245,7 +248,7 @@ int run_test_with_two_queue(
     VulkanCommandPool vkCommandPool(vkDevice);
     VulkanCommandBuffer vkCopyCommandBuffer(vkDevice, vkCommandPool);
     VulkanCommandBuffer vkShaderCommandBuffer(vkDevice, vkCommandPool);
-    VulkanQueue &vkQueue = vkDevice.getQueue();
+    VulkanQueue &vkQueue = vkDevice.getQueue(getVulkanQueueFamily());
 
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
@@ -857,7 +860,7 @@ int run_test_with_one_queue(
     VulkanCommandPool vkCommandPool(vkDevice);
     VulkanCommandBuffer vkCopyCommandBuffer(vkDevice, vkCommandPool);
     VulkanCommandBuffer vkShaderCommandBuffer(vkDevice, vkCommandPool);
-    VulkanQueue &vkQueue = vkDevice.getQueue();
+    VulkanQueue &vkQueue = vkDevice.getQueue(getVulkanQueueFamily());
 
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
@@ -1352,262 +1355,185 @@ CLEANUP:
     return err;
 }
 
-int test_image_common(cl_device_id device_, cl_context context_,
-                      cl_command_queue queue_, int numElements_)
+struct ImageCommonTest : public VulkanTestBase
 {
-    int current_device = 0;
-    int device_count = 0;
-    int devices_prohibited = 0;
-    cl_int err = CL_SUCCESS;
-    cl_platform_id platform = NULL;
-    size_t extensionSize = 0;
-    cl_uint num_devices = 0;
-    cl_uint device_no = 0;
-    cl_device_id *devices;
-    char *extensions = NULL;
-    const char *program_source_const;
-    cl_command_queue cmd_queue1 = NULL;
-    cl_command_queue cmd_queue2 = NULL;
-    cl_context context = NULL;
-    const uint32_t num_kernels = ARRAY_SIZE(num2DImagesList) + 1;
-    // One kernel for Cross-CQ case
-    const uint32_t num_kernel_types = 3;
-    const char *kernel_source[num_kernels] = { kernel_text_numImage_1,
-                                               kernel_text_numImage_2,
-                                               kernel_text_numImage_4 };
-    char source_1[4096];
-    char source_2[4096];
-    char source_3[4096];
-    size_t program_source_length;
-    cl_program program[num_kernel_types] = { NULL };
-    cl_kernel kernel_float[num_kernels] = { NULL };
-    cl_kernel kernel_signed[num_kernels] = { NULL };
-    cl_kernel kernel_unsigned[num_kernels] = { NULL };
-    cl_mem external_mem_image1;
-    cl_mem external_mem_image2;
-    std::vector<VulkanExternalSemaphoreHandleType> supportedSemaphoreTypes;
+    ImageCommonTest(cl_device_id device, cl_context context,
+                    cl_command_queue queue, cl_int nelems)
+        : VulkanTestBase(device, context, queue, nelems)
+    {}
 
-    VulkanDevice vkDevice;
-
-    cl_context_properties contextProperties[] = { CL_CONTEXT_PLATFORM, 0, 0 };
-    // get the platform ID
-    err = clGetPlatformIDs(1, &platform, NULL);
-    test_error_and_cleanup(err, CLEANUP, "Error: Failed to get platform\n");
-
-    err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 0, NULL, &num_devices);
-    test_error_and_cleanup(
-        err, CLEANUP, "clGetDeviceIDs failed in returning no. of devices\n");
-
-    devices = (cl_device_id *)malloc(num_devices * sizeof(cl_device_id));
-    if (NULL == devices)
+    int test_image_common()
     {
-        test_fail_and_cleanup(err, CLEANUP,
-                              "Unable to allocate memory for devices\n");
-    }
-    err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, num_devices, devices,
-                         NULL);
-    test_error_and_cleanup(err, CLEANUP, "Failed to get deviceID.\n");
-
-    contextProperties[1] = (cl_context_properties)platform;
-    log_info("Assigned contextproperties for platform\n");
-    for (device_no = 0; device_no < num_devices; device_no++)
-    {
-        err = clGetDeviceInfo(devices[device_no], CL_DEVICE_EXTENSIONS, 0, NULL,
-                              &extensionSize);
-        if (CL_SUCCESS != err)
-        {
-            print_error(
-                err,
-                "Error in clGetDeviceInfo for getting device_extension size\n");
-            goto CLEANUP;
-        }
-        extensions = (char *)malloc(extensionSize);
-        if (NULL == extensions)
-        {
-            err = CL_OUT_OF_HOST_MEMORY;
-            print_error(err, "Unable to allocate memory for extensions\n");
-            goto CLEANUP;
-        }
-        err = clGetDeviceInfo(devices[device_no], CL_DEVICE_EXTENSIONS,
-                              extensionSize, extensions, NULL);
-        if (CL_SUCCESS != err)
-        {
-            print_error(
-                err, "Error in clGetDeviceInfo for getting device_extension\n");
-            goto CLEANUP;
-        }
-        err = clGetDeviceInfo(devices[device_no], CL_DEVICE_UUID_KHR,
-                              CL_UUID_SIZE_KHR, uuid, NULL);
-        test_error_and_cleanup(err, CLEANUP,
-                               "clGetDeviceInfo failed with error");
+        cl_int err = CL_SUCCESS;
+        clCommandQueueWrapper cmd_queue1;
+        clCommandQueueWrapper cmd_queue2;
+        const uint32_t num_kernels = ARRAY_SIZE(num2DImagesList) + 1;
+        // One kernel for Cross-CQ case
+        const uint32_t num_kernel_types = 3;
+        const char *kernel_source[num_kernels] = { kernel_text_numImage_1,
+                                                   kernel_text_numImage_2,
+                                                   kernel_text_numImage_4 };
+        char source_1[4096];
+        char source_2[4096];
+        char source_3[4096];
+        size_t program_source_length;
+        clProgramWrapper program[num_kernel_types] = { NULL };
+        clKernelWrapper kernel_float[num_kernels] = { NULL };
+        clKernelWrapper kernel_signed[num_kernels] = { NULL };
+        clKernelWrapper kernel_unsigned[num_kernels] = { NULL };
+        clMemWrapper external_mem_image1;
+        clMemWrapper external_mem_image2;
+        std::vector<VulkanExternalSemaphoreHandleType> supportedSemaphoreTypes;
 
         supportedSemaphoreTypes =
-            getSupportedInteropExternalSemaphoreHandleTypes(devices[device_no],
-                                                            vkDevice);
+            getSupportedInteropExternalSemaphoreHandleTypes(device, *vkDevice);
 
         // If device does not support any semaphores, try the next one
         if (supportedSemaphoreTypes.empty())
         {
-            continue;
+            log_info("Device does not support any semaphores!\n");
+            return TEST_SKIPPED_ITSELF;
         }
 
-        err =
-            memcmp(uuid, vkDevice.getPhysicalDevice().getUUID(), VK_UUID_SIZE);
-        if (err == 0)
+        deviceId = device;
+
+        err = setMaxImageDimensions(deviceId, max_width, max_height);
+        test_error(err, "error setting max image dimensions");
+
+        log_info("Set max_width to %zu and max_height to %zu\n", max_width,
+                 max_height);
+
+        log_info("Successfully created context !!!\n");
+
+        cmd_queue1 = clCreateCommandQueue(context, deviceId, 0, &err);
+        test_error(err, "Error: Failed to create command queue!\n");
+
+        log_info("clCreateCommandQueue successfull \n");
+
+        cmd_queue2 = clCreateCommandQueue(context, deviceId, 0, &err);
+        test_error(err, "Error: Failed to create command queue!\n");
+
+        log_info("clCreateCommandQueue2 successful \n");
+
+        for (int i = 0; i < num_kernels; i++)
         {
-            break;
+            switch (i)
+            {
+                case 0:
+                    sprintf(source_1, kernel_source[i], "float4", "f", "float4",
+                            "f", "f", "f");
+                    sprintf(source_2, kernel_source[i], "int4", "i", "int4",
+                            "i", "i", "i");
+                    sprintf(source_3, kernel_source[i], "uint4", "ui", "uint4",
+                            "ui", "ui", "ui");
+                    break;
+                case 1:
+                    sprintf(source_1, kernel_source[i], "float4", "f", "float4",
+                            "f", "float4", "f", "float4", "f", "f", "f", "f",
+                            "f");
+                    sprintf(source_2, kernel_source[i], "int4", "i", "int4",
+                            "i", "int4", "i", "int4", "i", "i", "i", "i", "i");
+                    sprintf(source_3, kernel_source[i], "uint4", "ui", "uint4",
+                            "ui", "uint4", "ui", "uint4", "ui", "ui", "ui",
+                            "ui", "ui");
+                    break;
+                case 2:
+                    sprintf(source_1, kernel_source[i], "float4", "f", "float4",
+                            "f", "float4", "f", "float4", "f", "float4", "f",
+                            "float4", "f", "float4", "f", "float4", "f", "f",
+                            "f", "f", "f", "f", "f", "f", "f");
+                    sprintf(source_2, kernel_source[i], "int4", "i", "int4",
+                            "i", "int4", "i", "int4", "i", "int4", "i", "int4",
+                            "i", "int4", "i", "int4", "i", "i", "i", "i", "i",
+                            "i", "i", "i", "i");
+                    sprintf(source_3, kernel_source[i], "uint4", "ui", "uint4",
+                            "ui", "uint4", "ui", "uint4", "ui", "uint4", "ui",
+                            "uint4", "ui", "uint4", "ui", "uint4", "ui", "ui",
+                            "ui", "ui", "ui", "ui", "ui", "ui", "ui");
+                    break;
+                case 3:
+                    // Addtional case for creating updateKernelCQ2 which takes
+                    // two images
+                    sprintf(source_1, kernel_source[1], "float4", "f", "float4",
+                            "f", "float4", "f", "float4", "f", "f", "f", "f",
+                            "f");
+                    sprintf(source_2, kernel_source[1], "int4", "i", "int4",
+                            "i", "int4", "i", "int4", "i", "i", "i", "i", "i");
+                    sprintf(source_3, kernel_source[1], "uint4", "ui", "uint4",
+                            "ui", "uint4", "ui", "uint4", "ui", "ui", "ui",
+                            "ui", "ui");
+                    break;
+            }
+            const char *sourceTexts[num_kernel_types] = { source_1, source_2,
+                                                          source_3 };
+            for (int k = 0; k < num_kernel_types; k++)
+            {
+                program_source_length = strlen(sourceTexts[k]);
+                program[k] = clCreateProgramWithSource(
+                    context, 1, &sourceTexts[k], &program_source_length, &err);
+                err |= clBuildProgram(program[k], 0, NULL, NULL, NULL, NULL);
+            }
+            test_error(err, "Error: Failed to build program");
+
+            // create the kernel
+            kernel_float[i] = clCreateKernel(program[0], "image2DKernel", &err);
+            test_error(err, "clCreateKernel failed");
+
+            kernel_signed[i] =
+                clCreateKernel(program[1], "image2DKernel", &err);
+            test_error(err, "clCreateKernel failed");
+
+            kernel_unsigned[i] =
+                clCreateKernel(program[2], "image2DKernel", &err);
+            test_error(err, "clCreateKernel failed ");
         }
+        for (VulkanExternalSemaphoreHandleType externalSemaphoreType :
+             supportedSemaphoreTypes)
+        {
+            if (numCQ == 2)
+            {
+                err = run_test_with_two_queue(
+                    context, (cl_command_queue &)cmd_queue1,
+                    (cl_command_queue &)cmd_queue2,
+                    (cl_kernel *)kernel_unsigned, (cl_kernel *)kernel_signed,
+                    (cl_kernel *)kernel_float, *vkDevice,
+                    externalSemaphoreType);
+            }
+            else
+            {
+                err = run_test_with_one_queue(
+                    context, (cl_command_queue &)cmd_queue1,
+                    (cl_kernel *)kernel_unsigned, (cl_kernel *)kernel_signed,
+                    (cl_kernel *)kernel_float, *vkDevice,
+                    externalSemaphoreType);
+            }
+            test_error(err, "func_name failed \n");
+        }
+
+        return err;
     }
 
-    if (supportedSemaphoreTypes.empty())
-    {
-        test_fail_and_cleanup(
-            err, CLEANUP, "No devices found that support OpenCL semaphores\n");
-    }
+    cl_int Run() override { return test_image_common(); }
+};
 
-    if (device_no >= num_devices)
-    {
-        test_fail_and_cleanup(err, CLEANUP,
-                              "OpenCL error:"
-                              "No Vulkan-OpenCL Interop capable GPU found.\n");
-    }
-    deviceId = devices[device_no];
-    err = setMaxImageDimensions(deviceId, max_width, max_height);
-    test_error_and_cleanup(err, CLEANUP, "error setting max image dimensions");
+} // anonymous namespace
 
-    log_info("Set max_width to %zu and max_height to %zu\n", max_width,
-             max_height);
-    context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU,
-                                      NULL, NULL, &err);
-    test_error_and_cleanup(err, CLEANUP, "error creating context");
+int test_image_single_queue(cl_device_id deviceID, cl_context context,
+                            cl_command_queue defaultQueue, int num_elements)
+{
+    params_reset();
+    log_info("RUNNING TEST WITH ONE QUEUE...... \n\n");
 
-    log_info("Successfully created context !!!\n");
+    return MakeAndRunTest<ImageCommonTest>(deviceID, context, defaultQueue,
+                                           num_elements);
+}
 
-    cmd_queue1 = clCreateCommandQueue(context, devices[device_no], 0, &err);
-    test_error_and_cleanup(err, CLEANUP,
-                           "Error: Failed to create command queue!\n");
-
-    log_info("clCreateCommandQueue successfull \n");
-
-    cmd_queue2 = clCreateCommandQueue(context, devices[device_no], 0, &err);
-    test_error_and_cleanup(err, CLEANUP,
-                           "Error: Failed to create command queue!\n");
-
-    log_info("clCreateCommandQueue2 successful \n");
-
-    for (int i = 0; i < num_kernels; i++)
-    {
-        switch (i)
-        {
-            case 0:
-                sprintf(source_1, kernel_source[i], "float4", "f", "float4",
-                        "f", "f", "f");
-                sprintf(source_2, kernel_source[i], "int4", "i", "int4", "i",
-                        "i", "i");
-                sprintf(source_3, kernel_source[i], "uint4", "ui", "uint4",
-                        "ui", "ui", "ui");
-                break;
-            case 1:
-                sprintf(source_1, kernel_source[i], "float4", "f", "float4",
-                        "f", "float4", "f", "float4", "f", "f", "f", "f", "f");
-                sprintf(source_2, kernel_source[i], "int4", "i", "int4", "i",
-                        "int4", "i", "int4", "i", "i", "i", "i", "i");
-                sprintf(source_3, kernel_source[i], "uint4", "ui", "uint4",
-                        "ui", "uint4", "ui", "uint4", "ui", "ui", "ui", "ui",
-                        "ui");
-                break;
-            case 2:
-                sprintf(source_1, kernel_source[i], "float4", "f", "float4",
-                        "f", "float4", "f", "float4", "f", "float4", "f",
-                        "float4", "f", "float4", "f", "float4", "f", "f", "f",
-                        "f", "f", "f", "f", "f", "f");
-                sprintf(source_2, kernel_source[i], "int4", "i", "int4", "i",
-                        "int4", "i", "int4", "i", "int4", "i", "int4", "i",
-                        "int4", "i", "int4", "i", "i", "i", "i", "i", "i", "i",
-                        "i", "i");
-                sprintf(source_3, kernel_source[i], "uint4", "ui", "uint4",
-                        "ui", "uint4", "ui", "uint4", "ui", "uint4", "ui",
-                        "uint4", "ui", "uint4", "ui", "uint4", "ui", "ui", "ui",
-                        "ui", "ui", "ui", "ui", "ui", "ui");
-                break;
-            case 3:
-                // Addtional case for creating updateKernelCQ2 which takes two
-                // images
-                sprintf(source_1, kernel_source[1], "float4", "f", "float4",
-                        "f", "float4", "f", "float4", "f", "f", "f", "f", "f");
-                sprintf(source_2, kernel_source[1], "int4", "i", "int4", "i",
-                        "int4", "i", "int4", "i", "i", "i", "i", "i");
-                sprintf(source_3, kernel_source[1], "uint4", "ui", "uint4",
-                        "ui", "uint4", "ui", "uint4", "ui", "ui", "ui", "ui",
-                        "ui");
-                break;
-        }
-        const char *sourceTexts[num_kernel_types] = { source_1, source_2,
-                                                      source_3 };
-        for (int k = 0; k < num_kernel_types; k++)
-        {
-            program_source_length = strlen(sourceTexts[k]);
-            program[k] = clCreateProgramWithSource(
-                context, 1, &sourceTexts[k], &program_source_length, &err);
-            err |= clBuildProgram(program[k], 0, NULL, NULL, NULL, NULL);
-        }
-        test_error_and_cleanup(err, CLEANUP, "Error: Failed to build program");
-
-        // create the kernel
-        kernel_float[i] = clCreateKernel(program[0], "image2DKernel", &err);
-        test_error_and_cleanup(err, CLEANUP, "clCreateKernel failed");
-
-        kernel_signed[i] = clCreateKernel(program[1], "image2DKernel", &err);
-        test_error_and_cleanup(err, CLEANUP, "clCreateKernel failed");
-
-        kernel_unsigned[i] = clCreateKernel(program[2], "image2DKernel", &err);
-        test_error_and_cleanup(err, CLEANUP, "clCreateKernel failed ");
-    }
-    for (VulkanExternalSemaphoreHandleType externalSemaphoreType :
-         supportedSemaphoreTypes)
-    {
-        if (numCQ == 2)
-        {
-            err = run_test_with_two_queue(
-                context, cmd_queue1, cmd_queue2, kernel_unsigned, kernel_signed,
-                kernel_float, vkDevice, externalSemaphoreType);
-        }
-        else
-        {
-            err = run_test_with_one_queue(context, cmd_queue1, kernel_unsigned,
-                                          kernel_signed, kernel_float, vkDevice,
-                                          externalSemaphoreType);
-        }
-    }
-CLEANUP:
-    for (int i = 0; i < num_kernels; i++)
-    {
-        if (kernel_float[i])
-        {
-            clReleaseKernel(kernel_float[i]);
-        }
-        if (kernel_unsigned[i])
-        {
-            clReleaseKernel(kernel_unsigned[i]);
-        }
-        if (kernel_signed[i])
-        {
-            clReleaseKernel(kernel_signed[i]);
-        }
-    }
-    for (int i = 0; i < num_kernel_types; i++)
-    {
-        if (program[i])
-        {
-            clReleaseProgram(program[i]);
-        }
-    }
-    if (cmd_queue1) clReleaseCommandQueue(cmd_queue1);
-    if (cmd_queue2) clReleaseCommandQueue(cmd_queue2);
-    if (context) clReleaseContext(context);
-
-    if (extensions) free(extensions);
-    if (devices) free(devices);
-
-    return err;
+int test_image_multiple_queue(cl_device_id deviceID, cl_context context,
+                              cl_command_queue defaultQueue, int num_elements)
+{
+    params_reset();
+    numCQ = 2;
+    log_info("RUNNING TEST WITH TWO QUEUE...... \n\n");
+    return MakeAndRunTest<ImageCommonTest>(deviceID, context, defaultQueue,
+                                           num_elements);
 }
