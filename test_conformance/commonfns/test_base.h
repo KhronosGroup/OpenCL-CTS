@@ -24,8 +24,16 @@
 #include <CL/cl_half.h>
 #include <CL/cl_ext.h>
 
+#include "harness/conversions.h"
+#include "harness/mt19937.h"
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
+
+#define kVectorSizeCount 5
+#define kStrangeVectorSizeCount 1
+#define kTotalVecCount (kVectorSizeCount + kStrangeVectorSizeCount)
+
+extern int g_arrVecSizes[kVectorSizeCount + kStrangeVectorSizeCount];
 
 template <typename T>
 using VerifyFuncBinary = int (*)(const T *const, const T *const, const T *const,

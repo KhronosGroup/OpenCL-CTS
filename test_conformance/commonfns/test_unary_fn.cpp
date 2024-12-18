@@ -24,7 +24,6 @@
 #include "harness/stringHelpers.h"
 #include "harness/typeWrappers.h"
 
-#include "procs.h"
 #include "test_base.h"
 
 #ifndef M_PI
@@ -385,22 +384,20 @@ cl_int SignTest::Run()
     return error;
 }
 
-int test_degrees(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int n_elems)
+REGISTER_TEST(degrees)
 {
-    return MakeAndRunTest<DegreesTest>(device, context, queue, n_elems,
+    return MakeAndRunTest<DegreesTest>(device, context, queue, num_elements,
                                        "degrees");
 }
 
-int test_radians(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int n_elems)
+REGISTER_TEST(radians)
 {
-    return MakeAndRunTest<RadiansTest>(device, context, queue, n_elems,
+    return MakeAndRunTest<RadiansTest>(device, context, queue, num_elements,
                                        "radians");
 }
 
-int test_sign(cl_device_id device, cl_context context, cl_command_queue queue,
-              int n_elems)
+REGISTER_TEST(sign)
 {
-    return MakeAndRunTest<SignTest>(device, context, queue, n_elems, "sign");
+    return MakeAndRunTest<SignTest>(device, context, queue, num_elements,
+                                    "sign");
 }

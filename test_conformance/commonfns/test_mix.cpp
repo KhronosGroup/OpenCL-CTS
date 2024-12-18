@@ -20,7 +20,6 @@
 
 #include "harness/stringHelpers.h"
 
-#include "procs.h"
 #include "test_base.h"
 
 
@@ -302,16 +301,14 @@ cl_int MixTest::Run()
     return error;
 }
 
-int test_mix(cl_device_id device, cl_context context, cl_command_queue queue,
-             int n_elems)
+REGISTER_TEST(mix)
 {
-    return MakeAndRunTest<MixTest>(device, context, queue, n_elems, "mix",
+    return MakeAndRunTest<MixTest>(device, context, queue, num_elements, "mix",
                                    true);
 }
 
-int test_mixf(cl_device_id device, cl_context context, cl_command_queue queue,
-              int n_elems)
+REGISTER_TEST(mixf)
 {
-    return MakeAndRunTest<MixTest>(device, context, queue, n_elems, "mix",
+    return MakeAndRunTest<MixTest>(device, context, queue, num_elements, "mix",
                                    false);
 }

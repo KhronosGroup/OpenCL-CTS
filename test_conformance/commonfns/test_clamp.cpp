@@ -23,7 +23,6 @@
 #include "harness/deviceInfo.h"
 #include "harness/typeWrappers.h"
 
-#include "procs.h"
 #include "test_base.h"
 
 #ifndef M_PI
@@ -308,8 +307,7 @@ cl_int ClampTest::Run()
     return error;
 }
 
-int test_clamp(cl_device_id device, cl_context context, cl_command_queue queue,
-               int n_elems)
+REGISTER_TEST(clamp)
 {
-    return MakeAndRunTest<ClampTest>(device, context, queue, n_elems);
+    return MakeAndRunTest<ClampTest>(device, context, queue, num_elements);
 }

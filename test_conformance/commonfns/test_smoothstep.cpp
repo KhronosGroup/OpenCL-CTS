@@ -20,7 +20,6 @@
 
 #include "harness/stringHelpers.h"
 
-#include "procs.h"
 #include "test_base.h"
 
 const char *smoothstep_fn_code_pattern =
@@ -317,16 +316,14 @@ cl_int SmoothstepTest::Run()
     return error;
 }
 
-int test_smoothstep(cl_device_id device, cl_context context,
-                    cl_command_queue queue, int n_elems)
+REGISTER_TEST(smoothstep)
 {
-    return MakeAndRunTest<SmoothstepTest>(device, context, queue, n_elems,
+    return MakeAndRunTest<SmoothstepTest>(device, context, queue, num_elements,
                                           "smoothstep", true);
 }
 
-int test_smoothstepf(cl_device_id device, cl_context context,
-                     cl_command_queue queue, int n_elems)
+REGISTER_TEST(smoothstepf)
 {
-    return MakeAndRunTest<SmoothstepTest>(device, context, queue, n_elems,
+    return MakeAndRunTest<SmoothstepTest>(device, context, queue, num_elements,
                                           "smoothstep", false);
 }
