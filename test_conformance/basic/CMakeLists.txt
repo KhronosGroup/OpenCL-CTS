@@ -71,6 +71,6 @@ if(APPLE)
     list(APPEND ${MODULE_NAME}_SOURCES test_queue_priority.cpp)
 endif(APPLE)
 
-set_gnulike_module_compile_flags("-Wno-sign-compare")
+set_gnulike_module_compile_flags("-Wno-sign-compare -Wno-format")
 
 include(../CMakeCommon.txt)
