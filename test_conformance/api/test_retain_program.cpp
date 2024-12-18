@@ -21,7 +21,7 @@
 
 #include "harness/compat.h"
 
-int test_release_kernel_order(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(release_kernel_order)
 {
     cl_program program;
     cl_kernel kernel;
@@ -50,7 +50,7 @@ const char *sample_delay_kernel[] = {
 "\n"
 "}\n" };
 
-int test_release_during_execute( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(release_during_execute)
 {
     int error;
     cl_program program;
@@ -100,5 +100,3 @@ int test_release_during_execute( cl_device_id deviceID, cl_context context, cl_c
 
     return 0;
 }
-
-

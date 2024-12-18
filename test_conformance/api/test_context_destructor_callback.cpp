@@ -26,12 +26,11 @@ void CL_CALLBACK context_destructor_callback(cl_context context, void *userData)
     *userPtr = ++sDestructorIndex;
 }
 
-int test_context_destructor_callback(cl_device_id deviceID, cl_context context,
-                                     cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(context_destructor_callback, Version(3, 0))
 {
     cl_int error;
     clContextWrapper localContext =
-        clCreateContext(NULL, 1, &deviceID, NULL, NULL, &error);
+        clCreateContext(NULL, 1, &device, NULL, NULL, &error);
     test_error(error, "Unable to create local context");
 
     // Set up some variables to catch the order in which callbacks are called
