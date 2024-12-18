@@ -68,14 +68,15 @@ int test_consistency_external_buffer(cl_device_id deviceID, cl_context _context,
 #else
     if (!is_extension_available(devList[0], "cl_khr_external_memory_opaque_fd"))
     {
-        throw std::runtime_error(
-            "Device does not support "
-            "cl_khr_external_memory_opaque_fd extension \n");
+        log_info("Device does not support "
+                 "cl_khr_external_memory_opaque_fd extension \n");
+        return TEST_SKIPPED_ITSELF;
     }
 #endif
 
     VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
-        getSupportedVulkanExternalMemoryHandleTypeList()[0];
+        getSupportedVulkanExternalMemoryHandleTypeList(
+            vkDevice.getPhysicalDevice())[0];
 
     VulkanBuffer vkDummyBuffer(vkDevice, 4 * 1024, vkExternalMemoryHandleType);
     const VulkanMemoryTypeList& memoryTypeList =
@@ -219,8 +220,9 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
 #else
     if (!is_extension_available(devList[0], "cl_khr_external_memory_opaque_fd"))
     {
-        test_fail("Device does not support cl_khr_external_memory_opaque_fd "
-                  "extension \n");
+        log_info("Device does not support cl_khr_external_memory_opaque_fd "
+                 "extension \n");
+        return TEST_SKIPPED_ITSELF;
     }
 #endif
     uint32_t width = 256;
@@ -230,7 +232,8 @@ int test_consistency_external_image(cl_device_id deviceID, cl_context _context,
     cl_image_format img_format = { 0 };
 
     VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
-        getSupportedVulkanExternalMemoryHandleTypeList()[0];
+        getSupportedVulkanExternalMemoryHandleTypeList(
+            vkDevice.getPhysicalDevice())[0];
 
     VulkanImageTiling vulkanImageTiling =
         vkClExternalMemoryHandleTilingAssumption(
@@ -490,17 +493,18 @@ int test_consistency_external_semaphore(cl_device_id deviceID,
     // Pass invalid semaphore object to wait
     errNum =
         clEnqueueWaitSemaphoresKHRptr(cmd_queue, 1, NULL, NULL, 0, NULL, NULL);
-    test_failure_error(errNum, CL_INVALID_VALUE,
-                       "clEnqueueWaitSemaphoresKHR fails with CL_INVALID_VALUE "
-                       "when invalid semaphore object is passed");
+    test_failure_error(
+        errNum, CL_INVALID_SEMAPHORE_KHR,
+        "clEnqueueWaitSemaphoresKHR fails with CL_INVALID_SEMAPHORE_KHR "
+        "when invalid semaphore object is passed");
 
 
     // Pass invalid semaphore object to signal
     errNum = clEnqueueSignalSemaphoresKHRptr(cmd_queue, 1, NULL, NULL, 0, NULL,
                                              NULL);
     test_failure_error(
-        errNum, CL_INVALID_VALUE,
-        "clEnqueueSignalSemaphoresKHR fails with CL_INVALID_VALUE"
+        errNum, CL_INVALID_SEMAPHORE_KHR,
+        "clEnqueueSignalSemaphoresKHR fails with CL_INVALID_SEMAPHORE_KHR"
         "when invalid semaphore object is passed");
 
 

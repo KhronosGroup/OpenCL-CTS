@@ -215,7 +215,8 @@ getDefaultVulkanQueueFamilyToQueueCountMap()
 }
 
 const std::vector<VulkanExternalMemoryHandleType>
-getSupportedVulkanExternalMemoryHandleTypeList()
+getSupportedVulkanExternalMemoryHandleTypeList(
+    const VulkanPhysicalDevice &physical_device)
 {
     std::vector<VulkanExternalMemoryHandleType> externalMemoryHandleTypeList;
 
@@ -228,8 +229,13 @@ getSupportedVulkanExternalMemoryHandleTypeList()
     externalMemoryHandleTypeList.push_back(
         VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT);
 #else
-    externalMemoryHandleTypeList.push_back(
-        VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD);
+    if (physical_device.hasExtension(
+            VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME))
+    {
+
+        externalMemoryHandleTypeList.push_back(
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD);
+    }
 #endif
 
     return externalMemoryHandleTypeList;
