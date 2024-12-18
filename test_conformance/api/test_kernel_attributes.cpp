@@ -17,7 +17,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include "procs.h"
+
 #include "harness/errorHelpers.h"
 #include "harness/typeWrappers.h"
 #include "harness/parseParameters.h"
@@ -57,7 +57,7 @@ AttributePermutations reqd_vect_work_tests;
 
 // Generate a vector with vec_type_hint(<data_type>) so that it can be used to
 // generate different kernels
-static KernelAttributes generate_vec_type_hint_data(cl_device_id deviceID)
+static KernelAttributes generate_vec_type_hint_data(cl_device_id device)
 {
     KernelAttributes vec_type_hint_data;
     // TODO Test for signed vectors (char/short/int/etc)
@@ -67,11 +67,11 @@ static KernelAttributes generate_vec_type_hint_data(cl_device_id deviceID)
     {
         vector_types.push_back("ulong");
     }
-    if (device_supports_half(deviceID))
+    if (device_supports_half(device))
     {
         vector_types.push_back("half");
     }
-    if (device_supports_double(deviceID))
+    if (device_supports_double(device))
     {
         vector_types.push_back("double");
     }
@@ -239,7 +239,7 @@ generate_attribute_tests(const KernelAttributes& vec_type_hint_data,
 }
 
 static const std::vector<AttributePermutations*>
-initialise_attribute_data(cl_device_id deviceID)
+initialise_attribute_data(cl_device_id device)
 {
     // This vector stores different work group dimensions that can be used by
     // the reqd_work_group_size and work_group_size_hint attributes. It
@@ -248,7 +248,7 @@ initialise_attribute_data(cl_device_id deviceID)
     static const std::vector<WorkGroupDimensions> work_group_dimensions = {
         { 1, 1, 1 }
     };
-    KernelAttributes vec_type_hint_data = generate_vec_type_hint_data(deviceID);
+    KernelAttributes vec_type_hint_data = generate_vec_type_hint_data(device);
     KernelAttributes work_group_size_hint_data =
         generate_work_group_size_data(work_group_dimensions);
     KernelAttributes reqd_work_group_size_data =
@@ -261,7 +261,7 @@ initialise_attribute_data(cl_device_id deviceID)
                                     reqd_work_group_size_data);
 }
 
-static bool run_test(cl_context context, cl_device_id deviceID,
+static bool run_test(cl_context context, cl_device_id device,
                      const AttributePermutations& permutations)
 {
     bool success = true;
@@ -322,18 +322,17 @@ static bool run_test(cl_context context, cl_device_id deviceID,
     return success;
 }
 
-int test_kernel_attributes(cl_device_id deviceID, cl_context context,
-                           cl_command_queue queue, int num_elements)
+REGISTER_TEST(kernel_attributes)
 {
     bool success = true;
 
     // Vector to store all of the tests
     const std::vector<AttributePermutations*> all_tests =
-        initialise_attribute_data(deviceID);
+        initialise_attribute_data(device);
 
     for (auto permutations : all_tests)
     {
-        success = success && run_test(context, deviceID, *permutations);
+        success = success && run_test(context, device, *permutations);
     }
     return success ? TEST_PASS : TEST_FAIL;
 }

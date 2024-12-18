@@ -39,10 +39,7 @@ int test_command_queue_helper(cl_context context, cl_device_id deviceID,
     return TEST_PASS;
 }
 
-int test_set_default_device_command_queue(cl_device_id deviceID,
-                                          cl_context context,
-                                          cl_command_queue queue,
-                                          int num_elements)
+REGISTER_TEST_VERSION(set_default_device_command_queue, Version(2, 1))
 {
     cl_int error;
     constexpr cl_command_queue_properties PROPERTIES = CL_QUEUE_ON_DEVICE
@@ -51,10 +48,10 @@ int test_set_default_device_command_queue(cl_device_id deviceID,
         CL_QUEUE_PROPERTIES, (PROPERTIES | CL_QUEUE_ON_DEVICE_DEFAULT), 0
     };
 
-    if (get_device_cl_version(deviceID) >= Version(3, 0))
+    if (get_device_cl_version(device) >= Version(3, 0))
     {
         cl_device_device_enqueue_capabilities dseCaps = 0;
-        error = clGetDeviceInfo(deviceID, CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES,
+        error = clGetDeviceInfo(device, CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES,
                                 sizeof(dseCaps), &dseCaps, NULL);
         test_error(error,
                    "Unable to query CL_DEVICE_DEVICE_ENQUEUE_CAPABILITIES");
@@ -64,22 +61,22 @@ int test_set_default_device_command_queue(cl_device_id deviceID,
     }
 
     clCommandQueueWrapper cmd_queue_1 = clCreateCommandQueueWithProperties(
-        context, deviceID, properties.data(), &error);
+        context, device, properties.data(), &error);
     test_error(error, "clCreateCommandQueueWithProperties failed");
 
     properties[1] = PROPERTIES;
     clCommandQueueWrapper cmd_queue_2 = clCreateCommandQueueWithProperties(
-        context, deviceID, properties.data(), &error);
+        context, device, properties.data(), &error);
     test_error(error, "clCreateCommandQueueWithProperties failed");
 
     // cmd_queue_1
-    if (test_command_queue_helper(context, deviceID, cmd_queue_1) != 0)
+    if (test_command_queue_helper(context, device, cmd_queue_1) != 0)
     {
         test_fail("test_command_queue_helper failed for cmd_queue_1.\n");
     }
 
     // cmd_queue_2 - without CL_QUEUE_ON_DEVICE_DEFAULT
-    if (test_command_queue_helper(context, deviceID, cmd_queue_2) != 0)
+    if (test_command_queue_helper(context, device, cmd_queue_2) != 0)
     {
         test_fail("test_command_queue_helper failed for cmd_queue_2.\n");
     }
