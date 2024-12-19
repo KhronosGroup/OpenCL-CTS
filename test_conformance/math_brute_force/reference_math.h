@@ -104,7 +104,6 @@ double reference_logb(double x);
 double reference_maxmag(double x, double y);
 double reference_minmag(double x, double y);
 double reference_nan(cl_uint x);
-double reference_reciprocal(double x);
 double reference_remainder(double x, double y);
 double reference_rint(double x);
 double reference_round(double x);
@@ -136,7 +135,6 @@ double reference_relaxed_log(double x);
 double reference_relaxed_log2(double x);
 double reference_relaxed_log10(double x);
 double reference_relaxed_pow(double x, double y);
-double reference_relaxed_reciprocal(double x);
 
 // -- for testing double --
 
@@ -223,7 +221,6 @@ long double reference_logbl(long double x);
 long double reference_maxmagl(long double x, long double y);
 long double reference_minmagl(long double x, long double y);
 long double reference_nanl(cl_ulong x);
-long double reference_reciprocall(long double x);
 long double reference_remainderl(long double x, long double y);
 long double reference_rintl(long double x);
 long double reference_roundl(long double x);
