@@ -12,16 +12,47 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
+
 #include "harness/testHarness.h"
+#include "harness/deviceInfo.h"
 
-test_definition test_list[] = {
-    ADD_TEST(private_address),
-};
+test_status InitCL(cl_device_id device)
+{
+    auto version = get_device_cl_version(device);
+    auto expected_min_version = Version(3, 0);
 
+    if (version < expected_min_version)
+    {
+        version_expected_info("Test", "OpenCL",
+                              expected_min_version.to_string().c_str(),
+                              version.to_string().c_str());
+        return TEST_SKIP;
+    }
+
+    if (!is_extension_available(device, "cl_ext_buffer_device_address"))
+    {
+        log_info("The device does not support the "
+                 "cl_ext_buffer_device_address extension.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_version ext_version =
+        get_extension_version(device, "cl_ext_buffer_device_address");
+    if (ext_version != CL_MAKE_VERSION(0, 9, 1))
+    {
+        log_info("The test is written against cl_ext_buffer_device_address "
+                 "extension version 0.9.1, device supports version: %u.%u.%u\n",
+                 CL_VERSION_MAJOR(ext_version), CL_VERSION_MINOR(ext_version),
+                 CL_VERSION_PATCH(ext_version));
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    return TEST_PASS;
+}
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness(argc, argv, ARRAY_SIZE(test_list), test_list, false,
-                          0);
+    return runTestHarnessWithCheck(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0, InitCL);
 }
