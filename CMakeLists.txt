@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.12.0)
 
 set( CONFORMANCE_SUFFIX "" )
 set(CLConform_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
