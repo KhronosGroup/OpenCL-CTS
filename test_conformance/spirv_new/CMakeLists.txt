@@ -42,3 +42,6 @@ endif()
 set(${MODULE_NAME}_SOURCES ${${MODULE_NAME}_SOURCES} ${TEST_HARNESS_SOURCES})
 
 include(../CMakeCommon.txt)
+
+add_subdirectory(spirv_asm)
+add_dependencies(${${MODULE_NAME}_OUT} spirv_new_binaries)
