@@ -1848,8 +1848,11 @@ void generateRef(const cl_device_id device)
             already have their reference results
             as they're constant and hard-coded
         */
-        if (caseToTest->printFN == NULL) {
-            if (caseToTest->_type == TYPE_VECTOR && fpConfigSingle == CL_FP_ROUND_TO_ZERO) {
+        if (caseToTest->printFN == NULL)
+        {
+            if (caseToTest->_type == TYPE_VECTOR
+                && fpConfigSingle == CL_FP_ROUND_TO_ZERO)
+            {
                 caseToTest->_correctBuffer = correctBufferVectorRTZ;
             }
             continue;
