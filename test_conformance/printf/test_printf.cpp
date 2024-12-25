@@ -317,8 +317,10 @@ cl_program makeMixedFormatPrintfProgram(cl_kernel* kernel_ptr,
         {
             const float max_range = 100000.f;
             float arg = get_random_float(-max_range, max_range, gMTdata);
-            args_str << str_sprintf("%f", arg) << "f, ";
-            ref_str << str_sprintf(format, arg) << ", ";
+            std::string arg_str = str_sprintf("%f", arg);
+            args_str << arg_str << "f, ";
+            float arg_deviceRound = std::stof(arg_str);
+            ref_str << str_sprintf(format, arg_deviceRound) << ", ";
         }
     }
     // Restore the original CPU rounding mode
