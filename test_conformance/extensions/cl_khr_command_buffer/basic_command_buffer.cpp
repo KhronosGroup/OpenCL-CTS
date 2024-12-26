@@ -27,7 +27,7 @@ BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
                                                cl_command_queue queue)
     : CommandBufferTestBase(device), context(context), queue(nullptr),
       num_elements(0), simultaneous_use_support(false),
-      out_of_order_support(false),
+      out_of_order_support(false), queue_out_of_order_support(false),
       // try to use simultaneous path by default
       simultaneous_use_requested(true),
       // due to simultaneous cases extend buffer size
@@ -57,7 +57,8 @@ bool BasicCommandBufferTest::Skip()
                                   sizeof(queue_properties), &queue_properties,
                                   NULL);
     test_error(error, "Unable to query CL_QUEUE_PROPERTIES");
-
+    queue_out_of_order_support =
+        queue_properties & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
 
     // Query if device supports simultaneous use
     cl_device_command_buffer_capabilities_khr capabilities;

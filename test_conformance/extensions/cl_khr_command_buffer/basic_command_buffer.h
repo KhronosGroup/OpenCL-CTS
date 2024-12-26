@@ -75,6 +75,7 @@ protected:
     // Device support query results
     bool simultaneous_use_support;
     bool out_of_order_support;
+    bool queue_out_of_order_support;
     bool device_side_enqueue_support;
 
     // user request for simultaneous use
