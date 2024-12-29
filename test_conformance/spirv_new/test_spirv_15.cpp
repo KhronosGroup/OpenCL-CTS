@@ -86,3 +86,75 @@ REGISTER_TEST(spirv15_ptr_bitcast)
 
     return TEST_PASS;
 }
+
+REGISTER_TEST(spirv15_non_uniform_broadcast)
+{
+    if (!is_spirv_version_supported(device, "SPIR-V_1.5"))
+    {
+        log_info("SPIR-V 1.5 not supported; skipping tests.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    if (!is_extension_available(device, "cl_khr_subgroup_ballot"))
+    {
+        log_info("cl_khr_subgroup_ballot is not supported; skipping tests.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_int error = CL_SUCCESS;
+
+    clProgramWrapper prog;
+    error = get_program_with_il(prog, device, context,
+                                "spv1.5/non_uniform_broadcast_dynamic_index");
+    SPIRV_CHECK_ERROR(error, "Failed to compile spv program");
+
+    clKernelWrapper kernel = clCreateKernel(
+        prog, "non_uniform_broadcast_dynamic_index_test", &error);
+    SPIRV_CHECK_ERROR(error, "Failed to create spv kernel");
+
+    // Get the local work-group size for one sub-group per work-group.
+    size_t lws = 0;
+    size_t one = 1;
+    error = clGetKernelSubGroupInfo(
+        kernel, device, CL_KERNEL_LOCAL_SIZE_FOR_SUB_GROUP_COUNT,
+        sizeof(size_t), &one, sizeof(size_t), &lws, NULL);
+    SPIRV_CHECK_ERROR(error, "Failed to get local work size for one sub-group");
+
+    // Use four work-groups, unless the local-group size is less than four.
+    size_t wgcount = std::min<size_t>(lws, 4);
+    size_t gws = wgcount * lws;
+    clMemWrapper dst = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                      sizeof(cl_int) * gws, NULL, &error);
+    SPIRV_CHECK_ERROR(error, "Failed to create dst buffer");
+
+    error |= clSetKernelArg(kernel, 0, sizeof(dst), &dst);
+    SPIRV_CHECK_ERROR(error, "Failed to set kernel args");
+
+    error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &gws, &lws, 0, NULL,
+                                   NULL);
+    SPIRV_CHECK_ERROR(error, "Failed to enqueue kernel");
+
+    std::vector<cl_int> results(gws);
+    error = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0, sizeof(cl_int) * gws,
+                                results.data(), 0, NULL, NULL);
+    SPIRV_CHECK_ERROR(error, "Unable to read destination buffer");
+
+    // Remember: the test kernel did:
+    //  sub_group_non_uniform_broadcast(get_global_id(0), get_group_id(0))
+    for (size_t g = 0; g < wgcount; g++)
+    {
+        for (size_t l = 0; l < lws; l++)
+        {
+            size_t index = g * lws + l;
+            size_t check = g * lws + g;
+            if (results[index] != static_cast<cl_int>(check))
+            {
+                log_error("Result mismatch at index %zu!  Got %d, Wanted %zu\n",
+                          index, results[index], check);
+                return TEST_FAIL;
+            }
+        }
+    }
+
+    return TEST_PASS;
+}
