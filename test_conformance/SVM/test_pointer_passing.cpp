@@ -127,10 +127,10 @@ REGISTER_TEST(svm_pointer_passing)
                     return -1;
                 }
             }
-        }
 
-        error = clFinish(cmdq);
-        test_error(error, "clFinish failed");
+            error = clFinish(cmdq);
+            test_error(error, "clFinish failed");
+        }
     }
 
 
