@@ -195,10 +195,7 @@ public:
         return read(dst.data(), dst.size(), offset);
     }
 
-    cl_int read(T& dst, size_t offset = 0)
-    {
-        return read(&dst, 1, offset);
-    }
+    cl_int read(T& dst, size_t offset = 0) { return read(&dst, 1, offset); }
 
     T* get_ptr() { return data; }
 
