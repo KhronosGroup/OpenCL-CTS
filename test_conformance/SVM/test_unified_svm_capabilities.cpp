@@ -449,52 +449,78 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         err = mem->allocate(1);
         test_error(err, "could not allocate usvm memory");
 
-        if (!kernel_IndirectAccess)
+        if (!kernel_IndirectAccessRead)
         {
             err = createIndirectAccessKernel();
             test_error(err, "could not create IndirectAccess kernel");
         }
 
+        // test reading indirectly
         cl_int value = genrand_int32(d);
         err = mem->write(value);
         test_error(err, "could not write to usvm memory");
 
-        // create a buffer to store the usvm pointer indirectly
         auto ptr = mem->get_ptr();
-        clMemWrapper src =
+        clMemWrapper indirect =
             clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                            sizeof(ptr), &ptr, &err);
-        test_error(err, "could not create source buffer");
+        test_error(err, "could not create indirect buffer");
 
-        // create a buffer to store the value read indirectly
-        clMemWrapper dst = clCreateBuffer(context, CL_MEM_READ_WRITE,
+        clMemWrapper direct = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                           sizeof(cl_int), nullptr, &err);
-        test_error(err, "could not create destination buffer");
+        test_error(err, "could not create direct buffer");
 
-        err |= clSetKernelArg(kernel_IndirectAccess, 0, sizeof(src), &src);
-        err |= clSetKernelArg(kernel_IndirectAccess, 1, sizeof(dst), &dst);
+        err |= clSetKernelArg(kernel_IndirectAccessRead, 0, sizeof(indirect), &indirect);
+        err |= clSetKernelArg(kernel_IndirectAccessRead, 1, sizeof(direct), &direct);
         test_error(err, "could not set kernel arguments");
 
-        // enable indirect access
         cl_bool enable = CL_TRUE;
-        err = clSetKernelExecInfo(kernel_IndirectAccess,
+        err = clSetKernelExecInfo(kernel_IndirectAccessRead,
                                   CL_KERNEL_EXEC_INFO_SVM_INDIRECT_ACCESS_KHR,
                                   sizeof(enable), &enable);
         test_error(err, "could not enable indirect access");
 
         size_t global_work_size = 1;
-        err = clEnqueueNDRangeKernel(queue, kernel_IndirectAccess, 1, nullptr,
-                                     &global_work_size, nullptr, 0, nullptr,
-                                     nullptr);
+        err = clEnqueueNDRangeKernel(queue, kernel_IndirectAccessRead, 1,
+                                     nullptr, &global_work_size, nullptr, 0,
+                                     nullptr, nullptr);
         test_error(err, "clEnqueueNDRangeKernel failed");
 
         err = clFinish(queue);
         test_error(err, "clFinish failed");
 
         cl_int check;
-        err = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0, sizeof(cl_int),
+        err = clEnqueueReadBuffer(queue, direct, CL_TRUE, 0, sizeof(cl_int),
                                   &check, 0, nullptr, nullptr);
-        test_error(err, "could not read destination buffer");
+        test_error(err, "could not read direct buffer");
+
+        test_assert_error(check == value, "read value does not match");
+
+        // test writing indirectly
+        value = genrand_int32(d);
+        err = clEnqueueWriteBuffer(queue, direct, CL_TRUE, 0, sizeof(cl_int),
+                                   &value, 0, nullptr, nullptr);
+        test_error(err, "could not write to direct buffer");
+
+        err |= clSetKernelArg(kernel_IndirectAccessWrite, 0, sizeof(indirect), &indirect);
+        err |= clSetKernelArg(kernel_IndirectAccessWrite, 1, sizeof(direct), &direct);
+        test_error(err, "could not set kernel arguments");
+
+        err = clSetKernelExecInfo(kernel_IndirectAccessWrite,
+                                  CL_KERNEL_EXEC_INFO_SVM_INDIRECT_ACCESS_KHR,
+                                  sizeof(enable), &enable);
+        test_error(err, "could not enable indirect access");
+
+        err = clEnqueueNDRangeKernel(queue, kernel_IndirectAccessWrite, 1,
+                                     nullptr, &global_work_size, nullptr, 0,
+                                     nullptr, nullptr);
+        test_error(err, "clEnqueueNDRangeKernel failed");
+
+        err = clFinish(queue);
+        test_error(err, "clFinish failed");
+
+        err = mem->read(check);
+        test_error(err, "could not read from usvm memory");
 
         test_assert_error(check == value, "read value does not match");
 
@@ -646,17 +672,27 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
 
         const char* programString = R"(
             struct s { const global int* ptr; };
-            kernel void test_IndirectAccess(const global struct s* src, global int* dst)
+            kernel void test_IndirectAccessRead(const global struct s* src, global int* dst)
             {
                 dst[get_global_id(0)] = src->ptr[get_global_id(0)];
+            }
+
+            struct d { global int* ptr; };
+            kernel void test_IndirectAccessWrite(global struct d* dst, const global int* src)
+            {
+                dst->ptr[get_global_id(0)] = src[get_global_id(0)];
             }
         )";
 
         clProgramWrapper program;
         err = create_single_kernel_helper(
-            context, &program, &kernel_IndirectAccess, 1, &programString,
-            "test_IndirectAccess");
-        test_error(err, "could not create IndirectAccess kernel");
+            context, &program, &kernel_IndirectAccessRead, 1, &programString,
+            "test_IndirectAccessRead");
+        test_error(err, "could not create IndirectAccessRead kernel");
+
+        kernel_IndirectAccessWrite =
+            clCreateKernel(program, "test_IndirectAccessWrite", &err);
+        test_error(err, "could not create IndirectAccessWrite kernel");
 
         return CL_SUCCESS;
     }
@@ -664,7 +700,8 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
     clKernelWrapper kernel_StorePointer;
     clKernelWrapper kernel_CopyMemory;
     clKernelWrapper kernel_AtomicIncrement;
-    clKernelWrapper kernel_IndirectAccess;
+    clKernelWrapper kernel_IndirectAccessRead;
+    clKernelWrapper kernel_IndirectAccessWrite;
 };
 
 REGISTER_TEST(unified_svm_capabilities)
