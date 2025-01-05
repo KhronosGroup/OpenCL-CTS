@@ -320,11 +320,12 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         err = clFinish(queue);
         test_error(err, "clFinish failed");
 
-        err = clEnqueueReadBuffer(queue, out, CL_TRUE, 0, sizeof(cl_int), &check,
-                                  0, nullptr, nullptr);
+        err = clEnqueueReadBuffer(queue, out, CL_TRUE, 0, sizeof(cl_int),
+                                  &check, 0, nullptr, nullptr);
         test_error(err, "could not read output buffer");
 
-        test_assert_error(check == value, "read value with kernel does not match");
+        test_assert_error(check == value,
+                          "read value with kernel does not match");
 
         return CL_SUCCESS;
     }
@@ -354,7 +355,8 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         err = mem->read(check);
         test_error(err, "could not read from usvm memory");
 
-        test_assert_error(check == value, "read value with memfill does not match");
+        test_assert_error(check == value,
+                          "read value with memfill does not match");
 
         // test writing via memcpy
         value = genrand_int32(d);
@@ -365,12 +367,14 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         err = mem->read(check);
         test_error(err, "could not read from usvm memory");
 
-        test_assert_error(check == value, "read value with memcpy does not match");
+        test_assert_error(check == value,
+                          "read value with memcpy does not match");
 
         // test writing via kernel
         value = genrand_int32(d);
-        clMemWrapper in = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                                         sizeof(cl_int), &value, &err);
+        clMemWrapper in =
+            clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                           sizeof(cl_int), &value, &err);
         test_error(err, "could not create input buffer");
 
         err |= clSetKernelArg(kernel_CopyMemory, 0, sizeof(in), &in);
@@ -389,7 +393,110 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         err = mem->read(check);
         test_error(err, "could not read from usvm memory");
 
-        test_assert_error(check == value, "read value with kernel does not match");
+        test_assert_error(check == value,
+                          "read value with kernel does not match");
+
+        return CL_SUCCESS;
+    }
+
+    cl_int test_CL_SVM_CAPABILITY_DEVICE_ATOMIC_ACCESS_KHR(cl_uint typeIndex)
+    {
+        cl_int err;
+
+        // setup
+        auto mem = get_usvm_wrapper<cl_int>(typeIndex);
+        err = mem->allocate(1);
+        test_error(err, "could not allocate usvm memory");
+
+        if (!kernel_AtomicIncrement)
+        {
+            err = createAtomicIncrementKernel();
+            test_error(err, "could not create AtomicIncrement kernel");
+        }
+
+        err = mem->write(0);
+        test_error(err, "could not write to usvm memory");
+
+        err =
+            clSetKernelArgSVMPointer(kernel_AtomicIncrement, 0, mem->get_ptr());
+        test_error(err, "could not set kernel arguments");
+
+        size_t global_work_size = num_elements;
+        err = clEnqueueNDRangeKernel(queue, kernel_AtomicIncrement, 1, nullptr,
+                                     &global_work_size, nullptr, 0, nullptr,
+                                     nullptr);
+        test_error(err, "clEnqueueNDRangeKernel failed");
+
+        err = clFinish(queue);
+        test_error(err, "clFinish failed");
+
+        cl_int check;
+        err = mem->read(check);
+        test_error(err, "could not read from usvm memory");
+
+        test_assert_error(check == num_elements,
+                          "read value does not match expected value");
+
+        return CL_SUCCESS;
+    }
+
+    cl_int test_CL_SVM_CAPABILITY_INDIRECT_ACCESS_KHR(cl_uint typeIndex)
+    {
+        cl_int err;
+
+        // setup
+        auto mem = get_usvm_wrapper<cl_int>(typeIndex);
+        err = mem->allocate(1);
+        test_error(err, "could not allocate usvm memory");
+
+        if (!kernel_IndirectAccess)
+        {
+            err = createIndirectAccessKernel();
+            test_error(err, "could not create IndirectAccess kernel");
+        }
+
+        cl_int value = genrand_int32(d);
+        err = mem->write(value);
+        test_error(err, "could not write to usvm memory");
+
+        // create a buffer to store the usvm pointer indirectly
+        auto ptr = mem->get_ptr();
+        clMemWrapper src =
+            clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                           sizeof(ptr), &ptr, &err);
+        test_error(err, "could not create source buffer");
+
+        // create a buffer to store the value read indirectly
+        clMemWrapper dst = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                          sizeof(cl_int), nullptr, &err);
+        test_error(err, "could not create destination buffer");
+
+        err |= clSetKernelArg(kernel_IndirectAccess, 0, sizeof(src), &src);
+        err |= clSetKernelArg(kernel_IndirectAccess, 1, sizeof(dst), &dst);
+        test_error(err, "could not set kernel arguments");
+
+        // enable indirect access
+        cl_bool enable = CL_TRUE;
+        err = clSetKernelExecInfo(kernel_IndirectAccess,
+                                  CL_KERNEL_EXEC_INFO_SVM_INDIRECT_ACCESS_KHR,
+                                  sizeof(enable), &enable);
+        test_error(err, "could not enable indirect access");
+
+        size_t global_work_size = 1;
+        err = clEnqueueNDRangeKernel(queue, kernel_IndirectAccess, 1, nullptr,
+                                     &global_work_size, nullptr, 0, nullptr,
+                                     nullptr);
+        test_error(err, "clEnqueueNDRangeKernel failed");
+
+        err = clFinish(queue);
+        test_error(err, "clFinish failed");
+
+        cl_int check;
+        err = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0, sizeof(cl_int),
+                                  &check, 0, nullptr, nullptr);
+        test_error(err, "could not read destination buffer");
+
+        test_assert_error(check == value, "read value does not match");
 
         return CL_SUCCESS;
     }
@@ -401,55 +508,73 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
              ti++)
         {
             const auto caps = deviceUSVMCaps[ti];
-            log_info("   testing SVM type %u, capabilities 0x%08" PRIx64 "\n",
-                     ti, caps);
+            log_info("   testing SVM type %u\n", ti);
 
             if (caps & CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR)
             {
+                log_info(
+                    "     testing CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE\n");
                 err = test_CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR(ti);
                 test_error(err,
-                           "CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR "
-                           "failed");
+                           "CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE failed");
             }
             // CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR
             // CL_SVM_CAPABILITY_DEVICE_OWNED_KHR
             if (caps & CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR)
             {
+                log_info(
+                    "     testing CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED\n");
                 err = test_CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR(ti);
-                test_error(err,
-                           "CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR failed");
+                test_error(err, "CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED failed");
             }
             // CL_SVM_CAPABILITY_CONTEXT_ACCESS_KHR
             // CL_SVM_CAPABILITY_HOST_OWNED_KHR
             if (caps & CL_SVM_CAPABILITY_HOST_READ_KHR)
             {
+                log_info("     testing CL_SVM_CAPABILITY_HOST_READ\n");
                 err = test_CL_SVM_CAPABILITY_HOST_READ_KHR(ti);
-                test_error(err, "CL_SVM_CAPABILITY_HOST_READ_KHR failed");
+                test_error(err, "CL_SVM_CAPABILITY_HOST_READ failed");
             }
             if (caps & CL_SVM_CAPABILITY_HOST_WRITE_KHR)
             {
+                log_info("     testing CL_SVM_CAPABILITY_HOST_WRITE\n");
                 err = test_CL_SVM_CAPABILITY_HOST_WRITE_KHR(ti);
-                test_error(err, "CL_SVM_CAPABILITY_HOST_WRITE_KHR failed");
+                test_error(err, "CL_SVM_CAPABILITY_HOST_WRITE failed");
             }
             if (caps & CL_SVM_CAPABILITY_HOST_MAP_KHR)
             {
+                log_info("     testing CL_SVM_CAPABILITY_HOST_MAP\n");
                 err = test_CL_SVM_CAPABILITY_HOST_MAP_KHR(ti);
-                test_error(err, "CL_SVM_CAPABILITY_HOST_MAP_KHR failed");
+                test_error(err, "CL_SVM_CAPABILITY_HOST_MAP failed");
             }
             if (caps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
             {
+                log_info("     testing CL_SVM_CAPABILITY_DEVICE_READ\n");
                 err = test_CL_SVM_CAPABILITY_DEVICE_READ_KHR(ti);
-                test_error(err, "CL_SVM_CAPABILITY_DEVICE_READ_KHR failed");
+                test_error(err, "CL_SVM_CAPABILITY_DEVICE_READ failed");
             }
             if (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR)
             {
+                log_info("     testing CL_SVM_CAPABILITY_DEVICE_WRITE\n");
                 err = test_CL_SVM_CAPABILITY_DEVICE_READ_KHR(ti);
-                test_error(err, "CL_SVM_CAPABILITY_DEVICE_READ_KHR failed");
+                test_error(err, "CL_SVM_CAPABILITY_DEVICE_READ failed");
             }
-            // CL_SVM_CAPABILITY_DEVICE_ATOMIC_ACCESS_KHR
+            if (caps & CL_SVM_CAPABILITY_DEVICE_ATOMIC_ACCESS_KHR)
+            {
+                log_info(
+                    "     testing CL_SVM_CAPABILITY_DEVICE_ATOMIC_ACCESS\n");
+                err = test_CL_SVM_CAPABILITY_DEVICE_ATOMIC_ACCESS_KHR(ti);
+                test_error(err,
+                           "CL_SVM_CAPABILITY_DEVICE_ATOMIC_ACCESS failed");
+            }
             // CL_SVM_CAPABILITY_CONCURRENT_ACCESS_KHR
             // CL_SVM_CAPABILITY_CONCURRENT_ATOMIC_ACCESS_KHR
-            // CL_SVM_CAPABILITY_INDIRECT_ACCESS_KHR
+            if (caps & CL_SVM_CAPABILITY_INDIRECT_ACCESS_KHR)
+            {
+                log_info("     testing CL_SVM_CAPABILITY_INDIRECT_ACCESS\n");
+                err = test_CL_SVM_CAPABILITY_INDIRECT_ACCESS_KHR(ti);
+                test_error(err, "CL_SVM_CAPABILITY_INDIRECT_ACCESS failed");
+            }
         }
         return CL_SUCCESS;
     }
@@ -461,9 +586,9 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         const char* programString = R"(
             // workaround for error: kernel parameter cannot be declared as a pointer to a pointer
             struct s { const global int* ptr; }; 
-            kernel void test_StorePointer(const global int* ptr, global struct s* out)
+            kernel void test_StorePointer(const global int* ptr, global struct s* dst)
             {
-                out[0].ptr = ptr;
+                dst[get_global_id(0)].ptr = ptr;
             }
         )";
 
@@ -495,8 +620,51 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         return CL_SUCCESS;
     }
 
+    cl_int createAtomicIncrementKernel()
+    {
+        cl_int err;
+
+        const char* programString = R"(
+            kernel void test_AtomicIncrement(global int* ptr)
+            {
+                atomic_inc(ptr);
+            }
+        )";
+
+        clProgramWrapper program;
+        err = create_single_kernel_helper(
+            context, &program, &kernel_AtomicIncrement, 1, &programString,
+            "test_AtomicIncrement");
+        test_error(err, "could not create AtomicIncrement kernel");
+
+        return CL_SUCCESS;
+    }
+
+    cl_int createIndirectAccessKernel()
+    {
+        cl_int err;
+
+        const char* programString = R"(
+            struct s { const global int* ptr; };
+            kernel void test_IndirectAccess(const global struct s* src, global int* dst)
+            {
+                dst[get_global_id(0)] = src->ptr[get_global_id(0)];
+            }
+        )";
+
+        clProgramWrapper program;
+        err = create_single_kernel_helper(
+            context, &program, &kernel_IndirectAccess, 1, &programString,
+            "test_IndirectAccess");
+        test_error(err, "could not create IndirectAccess kernel");
+
+        return CL_SUCCESS;
+    }
+
     clKernelWrapper kernel_StorePointer;
     clKernelWrapper kernel_CopyMemory;
+    clKernelWrapper kernel_AtomicIncrement;
+    clKernelWrapper kernel_IndirectAccess;
 };
 
 REGISTER_TEST(unified_svm_capabilities)
