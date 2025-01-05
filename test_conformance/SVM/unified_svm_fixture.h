@@ -115,8 +115,8 @@ public:
         }
         else if (caps & CL_SVM_CAPABILITY_HOST_MAP_KHR)
         {
-            err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE,
-                                  data, size * sizeof(T), 0, nullptr, nullptr);
+            err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE, data,
+                                  size * sizeof(T), 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMMap failed");
 
             std::copy(source, source + size, data + offset);
@@ -132,7 +132,8 @@ public:
         }
         else
         {
-            log_error("Not sure how to write to SVM type index %u!\n", typeIndex);
+            log_error("Not sure how to write to SVM type index %u!\n",
+                      typeIndex);
             return CL_INVALID_OPERATION;
         }
 
@@ -181,7 +182,8 @@ public:
         }
         else
         {
-            log_error("Not sure how to read from SVM type index %u!\n", typeIndex);
+            log_error("Not sure how to read from SVM type index %u!\n",
+                      typeIndex);
             return CL_INVALID_OPERATION;
         }
 
@@ -219,7 +221,7 @@ struct UnifiedSVMBase
 {
     UnifiedSVMBase(cl_context context_, cl_device_id device_,
                    cl_command_queue queue_)
-        : context(context_), device(device_), queue(queue_)
+        : d(gRandomSeed), context(context_), device(device_), queue(queue_)
     {}
 
     virtual cl_int setup()
@@ -287,6 +289,7 @@ struct UnifiedSVMBase
             clGetSVMPointerInfoKHR, clGetSVMSuggestedTypeIndexKHR));
     }
 
+    MTdataHolder d;
     cl_context context = nullptr;
     cl_device_id device = nullptr;
     cl_command_queue queue = nullptr;

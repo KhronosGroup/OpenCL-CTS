@@ -118,7 +118,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         err = mem->allocate(1);
         test_error(err, "could not allocate usvm memory");
 
-        int value = 42;
+        int value = genrand_int32(d);
         err = mem->write(value);
         test_error(err, "could not write to usvm memory");
 
@@ -127,7 +127,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
 
         if (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR)
         {
-            value = 31337;
+            value = genrand_int32(d);
             err = clEnqueueSVMMemcpy(queue, CL_TRUE, mem->get_ptr(), &value,
                                      sizeof(value), 0, nullptr, nullptr);
             test_error(err, "could not write to usvm memory on the device");
@@ -148,7 +148,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         err = mem->allocate(1);
         test_error(err, "could not allocate usvm memory");
 
-        int value = 42;
+        int value = genrand_int32(d);
         mem->get_ptr()[0] = value;
 
         int check;
@@ -158,7 +158,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
 
         if (caps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
         {
-            value = 31337;
+            value = genrand_int32(d);
             mem->get_ptr()[0] = value;
 
             err = clEnqueueSVMMemcpy(queue, CL_TRUE, &check, mem->get_ptr(),
@@ -180,7 +180,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         test_error(err, "could not allocate usvm memory");
 
         // map for writing, then map for reading
-        int value = 0xCA7;
+        int value = genrand_int32(d);
         err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE_INVALIDATE_REGION,
                               mem->get_ptr(), sizeof(value), 0, nullptr, nullptr);
         test_error(err, "could not map usvm memory for writing");
@@ -202,7 +202,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         // write directly on the host, map for reading on the host
         if (caps & CL_SVM_CAPABILITY_HOST_WRITE_KHR)
         {
-            value = 42;
+            value = genrand_int32(d);
             mem->get_ptr()[0] = value;
 
             err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, mem->get_ptr(),
@@ -219,7 +219,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         // map for writing on the host, read directly on the host
         if (caps & CL_SVM_CAPABILITY_HOST_READ_KHR)
         {
-            value = 777;
+            value = genrand_int32(d);
             err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE_INVALIDATE_REGION,
                                   mem->get_ptr(), sizeof(value), 0, nullptr,
                                   nullptr);
@@ -239,7 +239,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         // write on the device, map for reading on the host
         if (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR)
         {
-            value = 31337;
+            value = genrand_int32(d);
             err = clEnqueueSVMMemcpy(queue, CL_TRUE, mem->get_ptr(), &value,
                                     sizeof(value), 0, nullptr, nullptr);
             test_error(err, "could not write to usvm memory on the device");
@@ -258,7 +258,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         // map for writing on the host, read on the device
         if (caps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
         {
-            int value = 0xF00D;
+            int value = genrand_int32(d);
             err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE_INVALIDATE_REGION,
                                   mem->get_ptr(), sizeof(value), 0, nullptr,
                                   nullptr);
