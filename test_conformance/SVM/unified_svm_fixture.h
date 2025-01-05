@@ -37,10 +37,13 @@ public:
 
     ~USVMWrapper() { free(); }
 
-    cl_int allocate(const size_t count_,
+    cl_int allocate(const size_t count,
                     const std::vector<cl_svm_alloc_properties_khr> props_ = {})
     {
-        count = count_;
+        if (data != nullptr)
+        {
+            free();
+        }
 
         if (caps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
         {
@@ -78,17 +81,20 @@ public:
 
     cl_int free()
     {
-        if (caps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
+        if (data)
         {
-            delete[] data;
+            if (caps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
+            {
+                delete[] data;
+            }
+            else
+            {
+                cl_int err;
+                err = clSVMFreeWithPropertiesKHR(context, nullptr, 0, data);
+                test_error(err, "clSVMFreeWithPropertiesKHR failed");
+            }
+
             data = nullptr;
-            count = 0;
-        }
-        else
-        {
-            cl_int err;
-            err = clSVMFreeWithPropertiesKHR(context, nullptr, 0, data);
-            test_error(err, "clSVMFreeWithPropertiesKHR failed");
         }
 
         return CL_SUCCESS;
@@ -96,6 +102,11 @@ public:
 
     cl_int write(const T* source, size_t size, size_t offset = 0)
     {
+        if (data == nullptr)
+        {
+            return CL_INVALID_OPERATION;
+        }
+
         cl_int err;
 
         if (caps & CL_SVM_CAPABILITY_HOST_WRITE_KHR)
@@ -104,7 +115,7 @@ public:
         }
         else if (caps & CL_SVM_CAPABILITY_HOST_MAP_KHR)
         {
-            err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE_INVALIDATE_REGION,
+            err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE,
                                   data, size * sizeof(T), 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMMap failed");
 
@@ -135,7 +146,56 @@ public:
 
     cl_int write(T source, size_t offset = 0)
     {
-        return write(&source, 1, offset);
+        return write(&source, sizeof(T), offset);
+    }
+
+    cl_int read(T* dst, size_t size, size_t offset = 0)
+    {
+        if (data == nullptr)
+        {
+            return CL_INVALID_OPERATION;
+        }
+
+        cl_int err;
+
+        if (caps & CL_SVM_CAPABILITY_HOST_READ_KHR)
+        {
+            std::copy(data + offset, data + offset + size, dst);
+        }
+        else if (caps & CL_SVM_CAPABILITY_HOST_MAP_KHR)
+        {
+            err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, data,
+                                  size * sizeof(T), 0, nullptr, nullptr);
+            test_error(err, "clEnqueueSVMMap failed");
+
+            std::copy(data + offset, data + offset + size, dst);
+
+            err = clEnqueueSVMUnmap(queue, data, 0, nullptr, nullptr);
+            test_error(err, "clEnqueueSVMUnmap failed");
+        }
+        else if (caps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
+        {
+            err = clEnqueueSVMMemcpy(queue, CL_TRUE, dst, data + offset,
+                                     size * sizeof(T), 0, nullptr, nullptr);
+            test_error(err, "clEnqueueSVMMemcpy failed");
+        }
+        else
+        {
+            log_error("Not sure how to read from SVM type index %u!\n", typeIndex);
+            return CL_INVALID_OPERATION;
+        }
+
+        return CL_SUCCESS;
+    }
+
+    cl_int read(std::vector<T>& dst, size_t offset = 0)
+    {
+        return read(dst.data(), dst.size(), offset);
+    }
+
+    cl_int read(T& dst, size_t offset = 0)
+    {
+        return read(&dst, sizeof(T), offset);
     }
 
     T* get_ptr() { return data; }
@@ -153,7 +213,6 @@ private:
     clGetSVMSuggestedTypeIndexKHR_fn clGetSVMSuggestedTypeIndexKHR = nullptr;
 
     T* data = nullptr;
-    size_t count = 0;
 };
 
 struct UnifiedSVMBase

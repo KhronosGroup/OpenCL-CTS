@@ -62,10 +62,10 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         err = clEnqueueNDRangeKernel(queue, kSINGLE_ADDRESS_SPACE, 1, nullptr,
                                      &global_work_size, nullptr, 0, nullptr,
                                      nullptr);
-        test_error(err, "could not enqueue kernel");
+        test_error(err, "clEnqueueNDRangeKernel failed");
 
         err = clFinish(queue);
-        test_error(err, "could not finish queue");
+        test_error(err, "clFinish failed");
 
         int* out_ptr = nullptr;
         err = clEnqueueReadBuffer(queue, out, CL_TRUE, 0, sizeof(int*),
@@ -78,23 +78,256 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         return CL_SUCCESS;
     }
 
+    cl_int test_CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR(cl_uint typeIndex)
+    {
+        const auto caps = deviceUSVMCaps[typeIndex];
+        if (caps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
+        {
+            return CL_SUCCESS;
+        }
+
+        cl_int err;
+
+        void* ptr;
+
+        ptr = clSVMAllocWithPropertiesKHR(context, nullptr, typeIndex, 1, &err);
+        test_error(err, "allocating without associated device failed");
+
+        err = clSVMFreeWithPropertiesKHR(context, nullptr, 0, ptr);
+        test_error(err, "freeing without associated device failed");
+
+        cl_svm_alloc_properties_khr props[] = {
+            CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR,
+            reinterpret_cast<cl_svm_alloc_properties_khr>(device), 0
+        };
+        ptr = clSVMAllocWithPropertiesKHR(context, props, typeIndex, 1, &err);
+        test_error(err, "allocating with associated device failed");
+
+        err = clSVMFreeWithPropertiesKHR(context, nullptr, 0, ptr);
+        test_error(err, "freeing with associated device failed");
+
+        return CL_SUCCESS;
+    }
+
+    cl_int test_CL_SVM_CAPABILITY_HOST_READ_KHR(cl_uint typeIndex)
+    {
+        const auto caps = deviceUSVMCaps[typeIndex];
+        cl_int err;
+
+        auto mem = get_usvm_wrapper<int>(typeIndex);
+        err = mem->allocate(1);
+        test_error(err, "could not allocate usvm memory");
+
+        int value = 42;
+        err = mem->write(value);
+        test_error(err, "could not write to usvm memory");
+
+        int check = mem->get_ptr()[0];
+        test_assert_error(check == value, "read value does not match");
+
+        if (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR)
+        {
+            value = 31337;
+            err = clEnqueueSVMMemcpy(queue, CL_TRUE, mem->get_ptr(), &value,
+                                     sizeof(value), 0, nullptr, nullptr);
+            test_error(err, "could not write to usvm memory on the device");
+
+            check = mem->get_ptr()[0];
+            test_assert_error(check == value, "read value does not match");
+        }
+
+        return CL_SUCCESS;
+    }
+
+    cl_int test_CL_SVM_CAPABILITY_HOST_WRITE_KHR(cl_uint typeIndex)
+    {
+        const auto caps = deviceUSVMCaps[typeIndex];
+        cl_int err;
+
+        auto mem = get_usvm_wrapper<int>(typeIndex);
+        err = mem->allocate(1);
+        test_error(err, "could not allocate usvm memory");
+
+        int value = 42;
+        mem->get_ptr()[0] = value;
+
+        int check;
+        err = mem->read(check);
+        test_error(err, "could not read from usvm memory");
+        test_assert_error(check == value, "read value does not match");
+
+        if (caps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
+        {
+            value = 31337;
+            mem->get_ptr()[0] = value;
+
+            err = clEnqueueSVMMemcpy(queue, CL_TRUE, &check, mem->get_ptr(),
+                                     sizeof(value), 0, nullptr, nullptr);
+            test_error(err, "could not read from usvm memory on the device");
+            test_assert_error(check == value, "read value does not match");
+        }
+
+        return CL_SUCCESS;
+    }
+
+    cl_int test_CL_SVM_CAPABILITY_HOST_MAP_KHR(cl_uint typeIndex)
+    {
+        const auto caps = deviceUSVMCaps[typeIndex];
+        cl_int err;
+
+        auto mem = get_usvm_wrapper<int>(typeIndex);
+        err = mem->allocate(1);
+        test_error(err, "could not allocate usvm memory");
+
+        // map for writing, then map for reading
+        int value = 0xCA7;
+        err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE_INVALIDATE_REGION,
+                              mem->get_ptr(), sizeof(value), 0, nullptr, nullptr);
+        test_error(err, "could not map usvm memory for writing");
+
+        mem->get_ptr()[0] = value;
+        err = clEnqueueSVMUnmap(queue, mem->get_ptr(), 0, nullptr, nullptr);
+        test_error(err, "could not unmap usvm memory");
+
+        err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, mem->get_ptr(),
+                              sizeof(value), 0, nullptr, nullptr);
+        test_error(err, "could not map usvm memory for reading");
+
+        int check = mem->get_ptr()[0];
+        err = clEnqueueSVMUnmap(queue, mem->get_ptr(), 0, nullptr, nullptr);
+        test_error(err, "could not unmap usvm memory");
+
+        test_assert_error(check == value, "read value does not match");
+
+        // write directly on the host, map for reading on the host
+        if (caps & CL_SVM_CAPABILITY_HOST_WRITE_KHR)
+        {
+            value = 42;
+            mem->get_ptr()[0] = value;
+
+            err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, mem->get_ptr(),
+                                  sizeof(value), 0, nullptr, nullptr);
+            test_error(err, "could not map usvm memory for reading");
+
+            check = mem->get_ptr()[0];
+            err = clEnqueueSVMUnmap(queue, mem->get_ptr(), 0, nullptr, nullptr);
+            test_error(err, "could not unmap usvm memory");
+
+            test_assert_error(check == value, "read value does not match");
+        }
+
+        // map for writing on the host, read directly on the host
+        if (caps & CL_SVM_CAPABILITY_HOST_READ_KHR)
+        {
+            value = 777;
+            err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE_INVALIDATE_REGION,
+                                  mem->get_ptr(), sizeof(value), 0, nullptr,
+                                  nullptr);
+            test_error(err, "could not map usvm memory for writing");
+
+            mem->get_ptr()[0] = value;
+            err = clEnqueueSVMUnmap(queue, mem->get_ptr(), 0, nullptr, nullptr);
+            test_error(err, "could not unmap usvm memory");
+
+            err = clFinish(queue);
+            test_error(err, "clFinish failed");
+
+            check = mem->get_ptr()[0];
+            test_assert_error(check == value, "read value does not match");
+        }
+
+        // write on the device, map for reading on the host
+        if (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR)
+        {
+            value = 31337;
+            err = clEnqueueSVMMemcpy(queue, CL_TRUE, mem->get_ptr(), &value,
+                                    sizeof(value), 0, nullptr, nullptr);
+            test_error(err, "could not write to usvm memory on the device");
+
+            err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, mem->get_ptr(),
+                                  sizeof(value), 0, nullptr, nullptr);
+            test_error(err, "could not map usvm memory for reading");
+
+            check = mem->get_ptr()[0];
+            err = clEnqueueSVMUnmap(queue, mem->get_ptr(), 0, nullptr, nullptr);
+            test_error(err, "could not unmap usvm memory");
+
+            test_assert_error(check == value, "read value does not match");
+        }
+
+        // map for writing on the host, read on the device
+        if (caps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
+        {
+            int value = 0xF00D;
+            err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE_INVALIDATE_REGION,
+                                  mem->get_ptr(), sizeof(value), 0, nullptr,
+                                  nullptr);
+            test_error(err, "could not map usvm memory for writing");
+
+            mem->get_ptr()[0] = value;
+
+            err = clEnqueueSVMUnmap(queue, mem->get_ptr(), 0, nullptr, nullptr);
+            test_error(err, "could not unmap usvm memory");
+
+            int check;
+            err = clEnqueueSVMMemcpy(queue, CL_TRUE, &check, mem->get_ptr(),
+                                    sizeof(value), 0, nullptr, nullptr);
+            test_error(err, "could not read from usvm memory on the device");
+
+            test_assert_error(check == value, "read value does not match");
+        }
+
+        return CL_SUCCESS;
+    }
+
     cl_int run() override
     {
         cl_int err;
-        for (cl_uint i = 0; i < static_cast<cl_uint>(deviceUSVMCaps.size());
-             i++)
+        for (cl_uint ti = 0; ti < static_cast<cl_uint>(deviceUSVMCaps.size());
+             ti++)
         {
-            const auto caps = deviceUSVMCaps[i];
-            log_info("   testing SVM type %u, capabilities 0x%08" PRIx64 "\n", i,
-                     caps);
+            const auto caps = deviceUSVMCaps[ti];
+            log_info("   testing SVM type %u, capabilities 0x%08" PRIx64 "\n",
+                     ti, caps);
 
             if (caps & CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR)
             {
-                err = test_CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR(i);
+                err = test_CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR(ti);
                 test_error(err,
                            "CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR "
                            "failed");
             }
+            // CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR
+            // CL_SVM_CAPABILITY_DEVICE_OWNED_KHR
+            if (caps & CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR)
+            {
+                err = test_CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR(ti);
+                test_error(err,
+                           "CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR failed");
+            }
+            // CL_SVM_CAPABILITY_CONTEXT_ACCESS_KHR
+            // CL_SVM_CAPABILITY_HOST_OWNED_KHR
+            if (caps & CL_SVM_CAPABILITY_HOST_READ_KHR)
+            {
+                err = test_CL_SVM_CAPABILITY_HOST_READ_KHR(ti);
+                test_error(err, "CL_SVM_CAPABILITY_HOST_READ_KHR failed");
+            }
+            if (caps & CL_SVM_CAPABILITY_HOST_WRITE_KHR)
+            {
+                err = test_CL_SVM_CAPABILITY_HOST_WRITE_KHR(ti);
+                test_error(err, "CL_SVM_CAPABILITY_HOST_WRITE_KHR failed");
+            }
+            if (caps & CL_SVM_CAPABILITY_HOST_MAP_KHR)
+            {
+                err = test_CL_SVM_CAPABILITY_HOST_MAP_KHR(ti);
+                test_error(err, "CL_SVM_CAPABILITY_HOST_MAP_KHR failed");
+            }
+            // CL_SVM_CAPABILITY_DEVICE_READ_KHR
+            // CL_SVM_CAPABILITY_DEVICE_WRITE_KHR
+            // CL_SVM_CAPABILITY_DEVICE_ATOMIC_ACCESS_KHR
+            // CL_SVM_CAPABILITY_CONCURRENT_ACCESS_KHR
+            // CL_SVM_CAPABILITY_CONCURRENT_ATOMIC_ACCESS_KHR
+            // CL_SVM_CAPABILITY_INDIRECT_ACCESS_KHR
         }
         return CL_SUCCESS;
     }
