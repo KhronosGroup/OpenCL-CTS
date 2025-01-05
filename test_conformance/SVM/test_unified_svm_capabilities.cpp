@@ -467,11 +467,13 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         test_error(err, "could not create indirect buffer");
 
         clMemWrapper direct = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                          sizeof(cl_int), nullptr, &err);
+                                             sizeof(cl_int), nullptr, &err);
         test_error(err, "could not create direct buffer");
 
-        err |= clSetKernelArg(kernel_IndirectAccessRead, 0, sizeof(indirect), &indirect);
-        err |= clSetKernelArg(kernel_IndirectAccessRead, 1, sizeof(direct), &direct);
+        err |= clSetKernelArg(kernel_IndirectAccessRead, 0, sizeof(indirect),
+                              &indirect);
+        err |= clSetKernelArg(kernel_IndirectAccessRead, 1, sizeof(direct),
+                              &direct);
         test_error(err, "could not set kernel arguments");
 
         cl_bool enable = CL_TRUE;
@@ -502,8 +504,10 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
                                    &value, 0, nullptr, nullptr);
         test_error(err, "could not write to direct buffer");
 
-        err |= clSetKernelArg(kernel_IndirectAccessWrite, 0, sizeof(indirect), &indirect);
-        err |= clSetKernelArg(kernel_IndirectAccessWrite, 1, sizeof(direct), &direct);
+        err |= clSetKernelArg(kernel_IndirectAccessWrite, 0, sizeof(indirect),
+                              &indirect);
+        err |= clSetKernelArg(kernel_IndirectAccessWrite, 1, sizeof(direct),
+                              &direct);
         test_error(err, "could not set kernel arguments");
 
         err = clSetKernelExecInfo(kernel_IndirectAccessWrite,
