@@ -100,7 +100,7 @@ public:
         return CL_SUCCESS;
     }
 
-    cl_int write(const T* source, size_t size, size_t offset = 0)
+    cl_int write(const T* source, size_t count, size_t offset = 0)
     {
         if (data == nullptr)
         {
@@ -111,15 +111,15 @@ public:
 
         if (caps & CL_SVM_CAPABILITY_HOST_WRITE_KHR)
         {
-            std::copy(source, source + size, data + offset);
+            std::copy(source, source + count, data + offset);
         }
         else if (caps & CL_SVM_CAPABILITY_HOST_MAP_KHR)
         {
             err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE, data,
-                                  size * sizeof(T), 0, nullptr, nullptr);
+                                  count * sizeof(T), 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMMap failed");
 
-            std::copy(source, source + size, data + offset);
+            std::copy(source, source + count, data + offset);
 
             err = clEnqueueSVMUnmap(queue, data, 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMUnmap failed");
@@ -127,7 +127,7 @@ public:
         else if (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR)
         {
             err = clEnqueueSVMMemcpy(queue, CL_TRUE, data + offset, source,
-                                     size * sizeof(T), 0, nullptr, nullptr);
+                                     count * sizeof(T), 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMMemcpy failed");
         }
         else
@@ -147,10 +147,10 @@ public:
 
     cl_int write(T source, size_t offset = 0)
     {
-        return write(&source, sizeof(T), offset);
+        return write(&source, 1, offset);
     }
 
-    cl_int read(T* dst, size_t size, size_t offset = 0)
+    cl_int read(T* dst, size_t count, size_t offset = 0)
     {
         if (data == nullptr)
         {
@@ -161,15 +161,15 @@ public:
 
         if (caps & CL_SVM_CAPABILITY_HOST_READ_KHR)
         {
-            std::copy(data + offset, data + offset + size, dst);
+            std::copy(data + offset, data + offset + count, dst);
         }
         else if (caps & CL_SVM_CAPABILITY_HOST_MAP_KHR)
         {
             err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, data,
-                                  size * sizeof(T), 0, nullptr, nullptr);
+                                  count * sizeof(T), 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMMap failed");
 
-            std::copy(data + offset, data + offset + size, dst);
+            std::copy(data + offset, data + offset + count, dst);
 
             err = clEnqueueSVMUnmap(queue, data, 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMUnmap failed");
@@ -177,7 +177,7 @@ public:
         else if (caps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
         {
             err = clEnqueueSVMMemcpy(queue, CL_TRUE, dst, data + offset,
-                                     size * sizeof(T), 0, nullptr, nullptr);
+                                     count * sizeof(T), 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMMemcpy failed");
         }
         else
@@ -197,7 +197,7 @@ public:
 
     cl_int read(T& dst, size_t offset = 0)
     {
-        return read(&dst, sizeof(T), offset);
+        return read(&dst, 1, offset);
     }
 
     T* get_ptr() { return data; }

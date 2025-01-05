@@ -329,6 +329,71 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         return CL_SUCCESS;
     }
 
+    cl_int test_CL_SVM_CAPABILITY_DEVICE_WRITE_KHR(cl_uint typeIndex)
+    {
+        cl_int err;
+
+        // setup
+        auto mem = get_usvm_wrapper<cl_int>(typeIndex);
+        err = mem->allocate(1);
+        test_error(err, "could not allocate usvm memory");
+
+        if (!kernel_CopyMemory)
+        {
+            err = createCopyMemoryKernel();
+            test_error(err, "could not create CopyMemory kernel");
+        }
+
+        // test writing via memfill
+        cl_int value = genrand_int32(d);
+        err = clEnqueueSVMMemFill(queue, mem->get_ptr(), &value, sizeof(value),
+                                  sizeof(value), 0, nullptr, nullptr);
+        test_error(err, "could not write to usvm memory with memfill");
+
+        cl_int check;
+        err = mem->read(check);
+        test_error(err, "could not read from usvm memory");
+
+        test_assert_error(check == value, "read value with memfill does not match");
+
+        // test writing via memcpy
+        value = genrand_int32(d);
+        err = clEnqueueSVMMemcpy(queue, CL_TRUE, mem->get_ptr(), &value,
+                                 sizeof(value), 0, nullptr, nullptr);
+        test_error(err, "could not write to usvm memory with memcpy");
+
+        err = mem->read(check);
+        test_error(err, "could not read from usvm memory");
+
+        test_assert_error(check == value, "read value with memcpy does not match");
+
+        // test writing via kernel
+        value = genrand_int32(d);
+        clMemWrapper in = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                                         sizeof(cl_int), &value, &err);
+        test_error(err, "could not create input buffer");
+
+        err |= clSetKernelArg(kernel_CopyMemory, 0, sizeof(in), &in);
+        err |= clSetKernelArgSVMPointer(kernel_CopyMemory, 1, mem->get_ptr());
+        test_error(err, "could not set kernel arguments");
+
+        size_t global_work_size = 1;
+        err = clEnqueueNDRangeKernel(queue, kernel_CopyMemory, 1, nullptr,
+                                     &global_work_size, nullptr, 0, nullptr,
+                                     nullptr);
+        test_error(err, "clEnqueueNDRangeKernel failed");
+
+        err = clFinish(queue);
+        test_error(err, "clFinish failed");
+
+        err = mem->read(check);
+        test_error(err, "could not read from usvm memory");
+
+        test_assert_error(check == value, "read value with kernel does not match");
+
+        return CL_SUCCESS;
+    }
+
     cl_int run() override
     {
         cl_int err;
@@ -376,7 +441,11 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
                 err = test_CL_SVM_CAPABILITY_DEVICE_READ_KHR(ti);
                 test_error(err, "CL_SVM_CAPABILITY_DEVICE_READ_KHR failed");
             }
-            // CL_SVM_CAPABILITY_DEVICE_WRITE_KHR
+            if (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR)
+            {
+                err = test_CL_SVM_CAPABILITY_DEVICE_READ_KHR(ti);
+                test_error(err, "CL_SVM_CAPABILITY_DEVICE_READ_KHR failed");
+            }
             // CL_SVM_CAPABILITY_DEVICE_ATOMIC_ACCESS_KHR
             // CL_SVM_CAPABILITY_CONCURRENT_ACCESS_KHR
             // CL_SVM_CAPABILITY_CONCURRENT_ATOMIC_ACCESS_KHR
