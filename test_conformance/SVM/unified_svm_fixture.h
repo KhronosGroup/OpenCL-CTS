@@ -220,8 +220,9 @@ private:
 struct UnifiedSVMBase
 {
     UnifiedSVMBase(cl_context context_, cl_device_id device_,
-                   cl_command_queue queue_)
-        : d(gRandomSeed), context(context_), device(device_), queue(queue_)
+                   cl_command_queue queue_, int num_elements_)
+        : d(gRandomSeed), context(context_), device(device_), queue(queue_),
+          num_elements(num_elements_)
     {}
 
     virtual cl_int setup()
@@ -293,6 +294,7 @@ struct UnifiedSVMBase
     cl_context context = nullptr;
     cl_device_id device = nullptr;
     cl_command_queue queue = nullptr;
+    int num_elements = 0;
 
     std::vector<cl_svm_capabilities_khr> deviceUSVMCaps;
 

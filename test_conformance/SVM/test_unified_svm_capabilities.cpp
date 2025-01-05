@@ -21,45 +21,34 @@
 struct UnifiedSVMCapabilities : UnifiedSVMBase
 {
     UnifiedSVMCapabilities(cl_context context, cl_device_id device,
-                           cl_command_queue queue)
-        : UnifiedSVMBase(context, device, queue)
+                           cl_command_queue queue, int num_elements)
+        : UnifiedSVMBase(context, device, queue, num_elements)
     {}
 
     cl_int test_CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR(cl_uint typeIndex)
     {
         cl_int err;
 
-        if (!kSINGLE_ADDRESS_SPACE)
+        if (!kernel_StorePointer)
         {
-            const char* programString = R"(
-                kernel void test_SINGLE_ADDRESS_SPACE(const global int* ptr, const global int* global* out)
-                {
-                    out[0] = ptr;
-                }
-            )";
-
-            clProgramWrapper program;
-            err = create_single_kernel_helper(
-                context, &program, &kSINGLE_ADDRESS_SPACE, 1, &programString,
-                "test_SINGLE_ADDRESS_SPACE");
-            test_error(err, "could not create SINGLE_ADDRESS_SPACE kernel");
+            err = createStorePointerKernel();
+            test_error(err, "could not create StorePointer kernel");
         }
 
-        auto src = get_usvm_wrapper<int>(typeIndex);
-        err = src->allocate(1);
+        auto mem = get_usvm_wrapper<cl_int>(typeIndex);
+        err = mem->allocate(1);
         test_error(err, "could not allocate source memory");
 
         clMemWrapper out = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                          sizeof(int*), nullptr, &err);
+                                          sizeof(cl_int*), nullptr, &err);
         test_error(err, "could not create destination buffer");
 
-        err |=
-            clSetKernelArgSVMPointer(kSINGLE_ADDRESS_SPACE, 0, src->get_ptr());
-        err |= clSetKernelArg(kSINGLE_ADDRESS_SPACE, 1, sizeof(out), &out);
+        err |= clSetKernelArgSVMPointer(kernel_StorePointer, 0, mem->get_ptr());
+        err |= clSetKernelArg(kernel_StorePointer, 1, sizeof(out), &out);
         test_error(err, "could not set kernel arguments");
 
         size_t global_work_size = 1;
-        err = clEnqueueNDRangeKernel(queue, kSINGLE_ADDRESS_SPACE, 1, nullptr,
+        err = clEnqueueNDRangeKernel(queue, kernel_StorePointer, 1, nullptr,
                                      &global_work_size, nullptr, 0, nullptr,
                                      nullptr);
         test_error(err, "clEnqueueNDRangeKernel failed");
@@ -67,13 +56,13 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         err = clFinish(queue);
         test_error(err, "clFinish failed");
 
-        int* out_ptr = nullptr;
-        err = clEnqueueReadBuffer(queue, out, CL_TRUE, 0, sizeof(int*),
-                                  &out_ptr, 0, nullptr, nullptr);
+        cl_int* check = nullptr;
+        err = clEnqueueReadBuffer(queue, out, CL_TRUE, 0, sizeof(cl_int*),
+                                  &check, 0, nullptr, nullptr);
         test_error(err, "could not read output buffer");
 
-        test_assert_error(out_ptr == src->get_ptr(),
-                          "output pointer does not match input pointer");
+        test_assert_error(check == mem->get_ptr(),
+                          "stored pointer does not match input pointer");
 
         return CL_SUCCESS;
     }
@@ -114,15 +103,15 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         const auto caps = deviceUSVMCaps[typeIndex];
         cl_int err;
 
-        auto mem = get_usvm_wrapper<int>(typeIndex);
+        auto mem = get_usvm_wrapper<cl_int>(typeIndex);
         err = mem->allocate(1);
         test_error(err, "could not allocate usvm memory");
 
-        int value = genrand_int32(d);
+        cl_int value = genrand_int32(d);
         err = mem->write(value);
         test_error(err, "could not write to usvm memory");
 
-        int check = mem->get_ptr()[0];
+        cl_int check = mem->get_ptr()[0];
         test_assert_error(check == value, "read value does not match");
 
         if (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR)
@@ -144,14 +133,14 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         const auto caps = deviceUSVMCaps[typeIndex];
         cl_int err;
 
-        auto mem = get_usvm_wrapper<int>(typeIndex);
+        auto mem = get_usvm_wrapper<cl_int>(typeIndex);
         err = mem->allocate(1);
         test_error(err, "could not allocate usvm memory");
 
-        int value = genrand_int32(d);
+        cl_int value = genrand_int32(d);
         mem->get_ptr()[0] = value;
 
-        int check;
+        cl_int check;
         err = mem->read(check);
         test_error(err, "could not read from usvm memory");
         test_assert_error(check == value, "read value does not match");
@@ -175,14 +164,15 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         const auto caps = deviceUSVMCaps[typeIndex];
         cl_int err;
 
-        auto mem = get_usvm_wrapper<int>(typeIndex);
+        auto mem = get_usvm_wrapper<cl_int>(typeIndex);
         err = mem->allocate(1);
         test_error(err, "could not allocate usvm memory");
 
         // map for writing, then map for reading
-        int value = genrand_int32(d);
-        err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE_INVALIDATE_REGION,
-                              mem->get_ptr(), sizeof(value), 0, nullptr, nullptr);
+        cl_int value = genrand_int32(d);
+        err =
+            clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE_INVALIDATE_REGION,
+                            mem->get_ptr(), sizeof(value), 0, nullptr, nullptr);
         test_error(err, "could not map usvm memory for writing");
 
         mem->get_ptr()[0] = value;
@@ -193,7 +183,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
                               sizeof(value), 0, nullptr, nullptr);
         test_error(err, "could not map usvm memory for reading");
 
-        int check = mem->get_ptr()[0];
+        cl_int check = mem->get_ptr()[0];
         err = clEnqueueSVMUnmap(queue, mem->get_ptr(), 0, nullptr, nullptr);
         test_error(err, "could not unmap usvm memory");
 
@@ -220,9 +210,9 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         if (caps & CL_SVM_CAPABILITY_HOST_READ_KHR)
         {
             value = genrand_int32(d);
-            err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE_INVALIDATE_REGION,
-                                  mem->get_ptr(), sizeof(value), 0, nullptr,
-                                  nullptr);
+            err = clEnqueueSVMMap(
+                queue, CL_TRUE, CL_MAP_WRITE_INVALIDATE_REGION, mem->get_ptr(),
+                sizeof(value), 0, nullptr, nullptr);
             test_error(err, "could not map usvm memory for writing");
 
             mem->get_ptr()[0] = value;
@@ -241,7 +231,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         {
             value = genrand_int32(d);
             err = clEnqueueSVMMemcpy(queue, CL_TRUE, mem->get_ptr(), &value,
-                                    sizeof(value), 0, nullptr, nullptr);
+                                     sizeof(value), 0, nullptr, nullptr);
             test_error(err, "could not write to usvm memory on the device");
 
             err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, mem->get_ptr(),
@@ -258,10 +248,10 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         // map for writing on the host, read on the device
         if (caps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
         {
-            int value = genrand_int32(d);
-            err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_WRITE_INVALIDATE_REGION,
-                                  mem->get_ptr(), sizeof(value), 0, nullptr,
-                                  nullptr);
+            cl_int value = genrand_int32(d);
+            err = clEnqueueSVMMap(
+                queue, CL_TRUE, CL_MAP_WRITE_INVALIDATE_REGION, mem->get_ptr(),
+                sizeof(value), 0, nullptr, nullptr);
             test_error(err, "could not map usvm memory for writing");
 
             mem->get_ptr()[0] = value;
@@ -269,13 +259,72 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
             err = clEnqueueSVMUnmap(queue, mem->get_ptr(), 0, nullptr, nullptr);
             test_error(err, "could not unmap usvm memory");
 
-            int check;
+            cl_int check;
             err = clEnqueueSVMMemcpy(queue, CL_TRUE, &check, mem->get_ptr(),
-                                    sizeof(value), 0, nullptr, nullptr);
+                                     sizeof(value), 0, nullptr, nullptr);
             test_error(err, "could not read from usvm memory on the device");
 
             test_assert_error(check == value, "read value does not match");
         }
+
+        return CL_SUCCESS;
+    }
+
+    cl_int test_CL_SVM_CAPABILITY_DEVICE_READ_KHR(cl_uint typeIndex)
+    {
+        cl_int err;
+
+        // setup
+        auto mem = get_usvm_wrapper<cl_int>(typeIndex);
+        err = mem->allocate(1);
+        test_error(err, "could not allocate usvm memory");
+
+        if (!kernel_CopyMemory)
+        {
+            err = createCopyMemoryKernel();
+            test_error(err, "could not create CopyMemory kernel");
+        }
+
+        // test reading via memcpy:
+        cl_int value = genrand_int32(d);
+        err = mem->write(value);
+        test_error(err, "could not write to usvm memory");
+
+        cl_int check;
+        err = clEnqueueSVMMemcpy(queue, CL_TRUE, &check, mem->get_ptr(),
+                                 sizeof(value), 0, nullptr, nullptr);
+        test_error(err, "could not read from usvm memory with memcpy");
+
+        test_assert_error(check == value,
+                          "read value with memcpy does not match");
+
+        // test reading via kernel
+        value = genrand_int32(d);
+        err = mem->write(value);
+        test_error(err, "could not write to usvm memory");
+
+        clMemWrapper out = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                          sizeof(cl_int), nullptr, &err);
+        test_error(err, "could not create output buffer");
+
+        err |= clSetKernelArgSVMPointer(kernel_CopyMemory, 0, mem->get_ptr());
+        err |= clSetKernelArg(kernel_CopyMemory, 1, sizeof(out), &out);
+        test_error(err, "could not set kernel arguments");
+
+        size_t global_work_size = 1;
+        err = clEnqueueNDRangeKernel(queue, kernel_CopyMemory, 1, nullptr,
+                                     &global_work_size, nullptr, 0, nullptr,
+                                     nullptr);
+        test_error(err, "clEnqueueNDRangeKernel failed");
+
+        err = clFinish(queue);
+        test_error(err, "clFinish failed");
+
+        err = clEnqueueReadBuffer(queue, out, CL_TRUE, 0, sizeof(cl_int), &check,
+                                  0, nullptr, nullptr);
+        test_error(err, "could not read output buffer");
+
+        test_assert_error(check == value, "read value with kernel does not match");
 
         return CL_SUCCESS;
     }
@@ -322,7 +371,11 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
                 err = test_CL_SVM_CAPABILITY_HOST_MAP_KHR(ti);
                 test_error(err, "CL_SVM_CAPABILITY_HOST_MAP_KHR failed");
             }
-            // CL_SVM_CAPABILITY_DEVICE_READ_KHR
+            if (caps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
+            {
+                err = test_CL_SVM_CAPABILITY_DEVICE_READ_KHR(ti);
+                test_error(err, "CL_SVM_CAPABILITY_DEVICE_READ_KHR failed");
+            }
             // CL_SVM_CAPABILITY_DEVICE_WRITE_KHR
             // CL_SVM_CAPABILITY_DEVICE_ATOMIC_ACCESS_KHR
             // CL_SVM_CAPABILITY_CONCURRENT_ACCESS_KHR
@@ -332,7 +385,49 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         return CL_SUCCESS;
     }
 
-    clKernelWrapper kSINGLE_ADDRESS_SPACE;
+    cl_int createStorePointerKernel()
+    {
+        cl_int err;
+
+        const char* programString = R"(
+            // workaround for error: kernel parameter cannot be declared as a pointer to a pointer
+            struct s { const global int* ptr; }; 
+            kernel void test_StorePointer(const global int* ptr, global struct s* out)
+            {
+                out[0].ptr = ptr;
+            }
+        )";
+
+        clProgramWrapper program;
+        err =
+            create_single_kernel_helper(context, &program, &kernel_StorePointer,
+                                        1, &programString, "test_StorePointer");
+        test_error(err, "could not create StorePointer kernel");
+
+        return CL_SUCCESS;
+    }
+
+    cl_int createCopyMemoryKernel()
+    {
+        cl_int err;
+
+        const char* programString = R"(
+            kernel void test_CopyMemory(const global int* src, global int* dst)
+            {
+                dst[get_global_id(0)] = src[get_global_id(0)];
+            }
+        )";
+
+        clProgramWrapper program;
+        err = create_single_kernel_helper(context, &program, &kernel_CopyMemory,
+                                          1, &programString, "test_CopyMemory");
+        test_error(err, "could not create CopyMemory kernel");
+
+        return CL_SUCCESS;
+    }
+
+    clKernelWrapper kernel_StorePointer;
+    clKernelWrapper kernel_CopyMemory;
 };
 
 REGISTER_TEST(unified_svm_capabilities)
@@ -362,7 +457,7 @@ REGISTER_TEST(unified_svm_capabilities)
         test_error(err, "clCreateCommandQueue failed");
     }
 
-    UnifiedSVMCapabilities Test(context, deviceID, queue);
+    UnifiedSVMCapabilities Test(context, deviceID, queue, num_elements);
     err = Test.setup();
     test_error(err, "test setup failed");
 
