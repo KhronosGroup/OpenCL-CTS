@@ -180,9 +180,9 @@ g = 2
 G = 2
 )";
 
-    return printf_operands_helper(context, device, queue,
-                                  "printf_operands_scalar_fp32",
-                                  "printf_operands_scalar_fp32", expected, 2.0f);
+    return printf_operands_helper(
+        context, device, queue, "printf_operands_scalar_fp32",
+        "printf_operands_scalar_fp32", expected, 2.0f);
 }
 
 REGISTER_TEST(extinst_printf_operands_scalar_int64)
@@ -208,7 +208,7 @@ lX = 4
 
 REGISTER_TEST(extinst_printf_operands_scalar_fp64)
 {
-static const char* expected = R"(a = 0x1.0p+3
+    static const char* expected = R"(a = 0x1.0p+3
 A = 0X1.0P+3
 e = 8.0e+00
 E = 8.0E+00
