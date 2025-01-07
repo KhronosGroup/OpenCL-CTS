@@ -289,8 +289,9 @@ struct CreateCommandBufferDeviceDoesNotSupportOutOfOderQueue
     {
         BasicCommandBufferTest::Skip();
 
-        // If device supports out of order queues test should be skipped
-        return out_of_order_support != 0;
+        // If device does not support out of order queue or if device supports
+        // out of order command buffer test should be skipped
+        return !queue_out_of_order_support || out_of_order_support;
     }
 
     clCommandQueueWrapper out_of_order_queue;
