@@ -395,8 +395,8 @@ struct EnqueueCommandBufferQueueWithDifferentContext
             clCreateContext(0, 1, &device, nullptr, nullptr, &error);
         test_error(error, "Failed to create context");
 
-        queue_different_context = clCreateCommandQueue(
-            context1, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &error);
+        queue_different_context =
+            clCreateCommandQueue(context1, device, 0, &error);
         test_error(error, "clCreateCommandQueue failed");
 
         return CL_SUCCESS;
