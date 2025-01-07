@@ -32,3 +32,5 @@ include_directories("../common/vulkan_wrapper")
 add_subdirectory(shaders)
 
 include(../CMakeCommon.txt)
+
+add_dependencies(${${MODULE_NAME}_OUT} vulkan_shaders)
