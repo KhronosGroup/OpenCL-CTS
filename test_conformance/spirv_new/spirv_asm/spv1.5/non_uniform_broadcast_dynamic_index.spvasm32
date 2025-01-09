@@ -5,7 +5,7 @@
 ;       uint id = get_global_id(0);
 ;       uint index = get_group_id(0);
 ;       uint value = sub_group_non_uniform_broadcast(id, index);
-;       dst[id] = value;
+;       dst_base[id] = value;
 ;   }
                OpCapability Addresses
                OpCapability Kernel

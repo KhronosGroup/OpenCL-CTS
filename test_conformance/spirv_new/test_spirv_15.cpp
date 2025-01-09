@@ -18,7 +18,9 @@
 #include "spirvInfo.hpp"
 #include "types.hpp"
 
+#include <algorithm>
 #include <cinttypes>
+#include <vector>
 
 REGISTER_TEST(spirv15_ptr_bitcast)
 {
