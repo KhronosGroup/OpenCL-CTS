@@ -78,6 +78,8 @@
 #define reference_copysign NULL
 #define reference_sqrt NULL
 #define reference_sqrtl NULL
+#define reference_relaxed_reciprocal NULL
+
 #define reference_divide NULL
 #define reference_dividel NULL
 #define reference_relaxed_divide NULL
@@ -346,7 +348,6 @@ const Func functionList[] = {
 
     ENTRY(pown, 16.0f, 16.0f, 4.0f, FTZ_OFF, binaryF_i),
     ENTRY(powr, 16.0f, 16.0f, 4.0f, FTZ_OFF, binaryF),
-    //ENTRY(reciprocal, 1.0f, 1.0f, FTZ_OFF, unaryF),
     ENTRY(remainder, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryF),
     ENTRY(remquo, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryF_two_results_i),
     ENTRY(rint, 0.0f, 0.0f, 0.0f, FTZ_OFF, unaryF),
@@ -418,6 +419,21 @@ const Func functionList[] = {
     // basic operations
     OPERATOR_ENTRY(add, "+", 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryOperatorF),
     OPERATOR_ENTRY(subtract, "-", 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryOperatorF),
+    //ENTRY(reciprocal, 1.0f, 1.0f, FTZ_OFF, unaryF),
+    { "reciprocal",
+      "/",
+      { nullptr },
+      { nullptr },
+      { (void*)reference_relaxed_reciprocal },
+      2.5f,
+      0.0f,
+      0.0f,
+      3.0f,
+      2.5f,
+      INFINITY,
+      FTZ_OFF,
+      RELAXED_ON,
+      binaryOperatorOF },
     { "divide",
       "/",
       { (void*)reference_divide },

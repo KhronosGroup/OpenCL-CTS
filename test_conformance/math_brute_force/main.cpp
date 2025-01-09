@@ -154,7 +154,7 @@ static int doTest(const char *name)
         exit(EXIT_FAILURE);
     }
 
-    if (func_data->func.p == NULL)
+    if (func_data->func.p == NULL && func_data->rfunc.p == NULL)
     {
         vlog("'%s' is missing implementation, skipping function.\n",
              func_data->name);
@@ -308,9 +308,10 @@ static test_definition test_list[] = {
     ADD_TEST(half_log),      ADD_TEST(half_log2),  ADD_TEST(half_log10),
     ADD_TEST(half_powr),     ADD_TEST(half_recip), ADD_TEST(half_rsqrt),
     ADD_TEST(half_sin),      ADD_TEST(half_sqrt),  ADD_TEST(half_tan),
-    ADD_TEST(add),           ADD_TEST(subtract),   ADD_TEST(divide),
-    ADD_TEST(divide_cr),     ADD_TEST(multiply),   ADD_TEST(assignment),
-    ADD_TEST(not ),          ADD_TEST(erf),        ADD_TEST(erfc),
+    ADD_TEST(add),           ADD_TEST(subtract),   ADD_TEST(reciprocal),
+    ADD_TEST(divide),        ADD_TEST(divide_cr),  ADD_TEST(multiply),
+    ADD_TEST(assignment),    ADD_TEST(not ),       ADD_TEST(erf),
+    ADD_TEST(erfc),
 };
 
 #undef ADD_TEST
