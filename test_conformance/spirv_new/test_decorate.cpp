@@ -240,7 +240,9 @@ static inline To compute_saturated_output(Ti lhs, Ti rhs,
     Tl ival = (Tl)(lhs * rhs);
     To val = (To)std::min<Ti>(std::max<Ti>(ival, loVal), hiVal);
 
-    if (isnan(rhs))
+    // Note: the check for std::is_same<Ti, cl_half>::value here should be
+    // unnecessary, but is needed is to work around a Visual Studio 2019 issue.
+    if (!std::is_same<Ti, cl_half>::value && isnan(rhs))
     {
         val = 0;
     }
