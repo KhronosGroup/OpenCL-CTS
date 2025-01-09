@@ -174,27 +174,6 @@ template <typename T> inline half conv_to_half(const T &val)
     return 0;
 }
 
-template <typename T> bool isfinite_fp(const T &v)
-{
-    if (std::is_same<T, half>::value)
-    {
-        // Extract FP16 exponent and mantissa
-        uint16_t h_exp = (((half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-        uint16_t h_mant = ((half)v) & 0x3FF;
-
-        // !Inf test
-        return !(h_exp == 0x1F && h_mant == 0);
-    }
-    else
-    {
-#if !defined(_WIN32)
-        return std::isfinite(v);
-#else
-        return isfinite(v);
-#endif
-    }
-}
-
 template <typename T> float UlpFn(const T &val, const double &r)
 {
     if (std::is_same<T, half>::value)
