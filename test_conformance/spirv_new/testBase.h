@@ -38,4 +38,9 @@
     #undef min
 #endif
 
+// Some Windows headers also define small
+#if defined(small)
+#undef small
+#endif
+
 #endif // _testBase_h
