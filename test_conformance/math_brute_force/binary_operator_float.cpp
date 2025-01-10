@@ -208,9 +208,9 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     cl_float *s2 = 0;
     RoundingMode oldRoundMode;
 
-    bool reciprocal=strcmp(name, "reciprocal") == 0;
-    const float reciprocalArrayX [] = { 1.f };
-    const float * specialValuesX = reciprocal ? reciprocalArrayX : specialValues;
+    bool reciprocal = strcmp(name, "reciprocal") == 0;
+    const float reciprocalArrayX[] = { 1.f };
+    const float *specialValuesX = reciprocal ? reciprocalArrayX : specialValues;
     size_t specialValuesCountX = reciprocal ? 1 : specialValuesCount;
 
     if (relaxedMode)
@@ -278,8 +278,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             {
                 cl_uint p2j = p2[idx] & 0x7fffffff;
                 // Replace values outside [2^-126, 2^126] with QNaN
-                if (p2j < 0x00807d99 || p2j > 0x7e800000)
-                    p2[idx] = 0x7fc00000;
+                if (p2j < 0x00807d99 || p2j > 0x7e800000) p2[idx] = 0x7fc00000;
             }
         }
     }
@@ -302,8 +301,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         {
             cl_uint p2j = p2[idx] & 0x7fffffff;
             // Replace values outside [2^-126, 2^126] with QNaN
-            if (p2j < 0x00807d99 || p2j > 0x7e800000)
-                p2[idx] = 0x7fc00000;
+            if (p2j < 0x00807d99 || p2j > 0x7e800000) p2[idx] = 0x7fc00000;
         }
     }
 
@@ -480,7 +478,8 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             if (t[j] != q[j])
             {
                 float test = ((float *)q)[j];
-                double correct = reciprocal ? func.f_f(s2[j]) : func.f_ff(s[j], s2[j]);
+                double correct =
+                    reciprocal ? func.f_f(s2[j]) : func.f_ff(s[j], s2[j]);
 
                 // Per section 10 paragraph 6, accept any result if an input or
                 // output is a infinity or NaN or overflow
@@ -623,8 +622,10 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
                         if (!gInfNanSupport) feclearexcept(FE_OVERFLOW);
 
-                        correct2 = reciprocal ? func.f_f( 0.0) : func.f_ff(s[j], 0.0);
-                        correct3 = reciprocal ? func.f_f(-0.0) : func.f_ff(s[j], -0.0);
+                        correct2 =
+                            reciprocal ? func.f_f(0.0) : func.f_ff(s[j], 0.0);
+                        correct3 =
+                            reciprocal ? func.f_f(-0.0) : func.f_ff(s[j], -0.0);
 
                         // Per section 10 paragraph 6, accept any result if an
                         // input or output is a infinity or NaN or overflow
