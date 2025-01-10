@@ -36,7 +36,12 @@
 // TODO: Unify with test_printf.
 struct StreamGrabber
 {
-    StreamGrabber(): tempFileName(get_temp_filename()) {}
+    StreamGrabber()
+    {
+        char* tmp = get_temp_filename();
+        tempFileName = tmp;
+        free(tmp);
+    }
     ~StreamGrabber()
     {
         if (acquired)
