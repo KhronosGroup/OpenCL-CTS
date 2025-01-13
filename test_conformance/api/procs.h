@@ -38,6 +38,10 @@ extern int        test_get_command_queue_info(cl_device_id deviceID, cl_context 
 extern int        test_get_command_queue_info_compatibility(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_get_context_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 extern int        test_get_device_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
+extern int test_get_device_info_comparability(cl_device_id deviceID,
+                                              cl_context context,
+                                              cl_command_queue ignoreQueue,
+                                              int num_elements);
 extern int        test_kernel_required_group_size(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
 
 extern int        test_binary_get(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);

@@ -37,6 +37,7 @@ test_definition test_list[] = {
     ADD_TEST(get_command_queue_info_compatibility),
     ADD_TEST(get_context_info),
     ADD_TEST(get_device_info),
+    ADD_TEST(get_device_info_comparability),
     ADD_TEST(enqueue_task),
     ADD_TEST(binary_get),
     ADD_TEST(binary_create),
