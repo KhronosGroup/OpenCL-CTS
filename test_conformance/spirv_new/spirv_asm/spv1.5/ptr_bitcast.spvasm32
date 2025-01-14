@@ -1,0 +1,22 @@
+; SPIR-V
+; Version: 1.5
+               OpCapability Addresses
+               OpCapability Kernel
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %kernel "ptr_bitcast_test"
+       %uint = OpTypeInt 32 0
+       %void = OpTypeVoid
+   %pptr_int = OpTypePointer Function %uint
+  %gptr_uint = OpTypePointer CrossWorkgroup %uint
+ %kernel_sig = OpTypeFunction %void %gptr_uint %gptr_uint
+    %uint_42 = OpConstant %uint 42
+     %kernel = OpFunction %void None %kernel_sig
+  %dst_uint0 = OpFunctionParameter %gptr_uint
+  %dst_uint1 = OpFunctionParameter %gptr_uint
+      %entry = OpLabel
+     %pvalue = OpVariable %pptr_int Function %uint_42
+   %uint_ptr = OpBitcast %uint %pvalue
+               OpStore %dst_uint0 %uint_ptr
+               OpStore %dst_uint1 %uint_ptr
+               OpReturn
+               OpFunctionEnd
