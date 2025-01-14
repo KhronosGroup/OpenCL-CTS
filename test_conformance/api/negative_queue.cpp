@@ -16,12 +16,10 @@
 #include "testBase.h"
 #include "harness/typeWrappers.h"
 
-int test_negative_create_command_queue(cl_device_id deviceID,
-                                       cl_context context,
-                                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(negative_create_command_queue)
 {
     cl_command_queue_properties device_props = 0;
-    cl_int error = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_PROPERTIES,
+    cl_int error = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
                                    sizeof(device_props), &device_props, NULL);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
 
@@ -40,7 +38,7 @@ int test_negative_create_command_queue(cl_device_id deviceID,
     // code
     cl_int test_error = CL_SUCCESS;
     clCommandQueueWrapper test_queue = clCreateCommandQueue(
-        context, deviceID, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &test_error);
+        context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &test_error);
 
     test_failure_error_ret(
         test_error, CL_INVALID_QUEUE_PROPERTIES,
@@ -52,18 +50,16 @@ int test_negative_create_command_queue(cl_device_id deviceID,
     return TEST_PASS;
 }
 
-int test_negative_create_command_queue_with_properties(cl_device_id deviceID,
-                                                       cl_context context,
-                                                       cl_command_queue queue,
-                                                       int num_elements)
+REGISTER_TEST_VERSION(negative_create_command_queue_with_properties,
+                      Version(2, 0))
 {
     cl_command_queue_properties device_props = 0;
-    cl_int error = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_PROPERTIES,
+    cl_int error = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
                                    sizeof(device_props), &device_props, NULL);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
 
     cl_command_queue_properties device_on_host_props = 0;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_HOST_PROPERTIES,
+    error = clGetDeviceInfo(device, CL_DEVICE_QUEUE_ON_HOST_PROPERTIES,
                             sizeof(device_on_host_props), &device_on_host_props,
                             NULL);
     test_error(error,
@@ -97,7 +93,7 @@ int test_negative_create_command_queue_with_properties(cl_device_id deviceID,
 
     cl_int test_error = CL_SUCCESS;
     clCommandQueueWrapper test_queue = clCreateCommandQueueWithProperties(
-        context, deviceID, queue_prop_def, &test_error);
+        context, device, queue_prop_def, &test_error);
 
     test_failure_error_ret(test_error, CL_INVALID_QUEUE_PROPERTIES,
                            "clCreateCommandQueueWithProperties should "
@@ -110,17 +106,15 @@ int test_negative_create_command_queue_with_properties(cl_device_id deviceID,
     return TEST_PASS;
 }
 
-int test_negative_create_command_queue_with_properties_khr(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_create_command_queue_with_properties_khr)
 {
-    if (!is_extension_available(deviceID, "cl_khr_create_command_queue"))
+    if (!is_extension_available(device, "cl_khr_create_command_queue"))
     {
         return TEST_SKIPPED_ITSELF;
     }
 
     cl_platform_id platform;
-    cl_int error = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM,
+    cl_int error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
                                    sizeof(cl_platform_id), &platform, NULL);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
 
@@ -136,7 +130,7 @@ int test_negative_create_command_queue_with_properties_khr(
     }
 
     cl_command_queue_properties device_props = 0;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_PROPERTIES,
+    error = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
                             sizeof(device_props), &device_props, NULL);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
 
@@ -160,7 +154,7 @@ int test_negative_create_command_queue_with_properties_khr(
 
     cl_int test_error = CL_SUCCESS;
     clCommandQueueWrapper test_khr_queue =
-        clCreateCommandQueueWithPropertiesKHR(context, deviceID, queue_prop_def,
+        clCreateCommandQueueWithPropertiesKHR(context, device, queue_prop_def,
                                               &test_error);
 
     test_failure_error_ret(test_error, CL_INVALID_QUEUE_PROPERTIES,

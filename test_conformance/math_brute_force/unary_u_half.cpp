@@ -54,7 +54,7 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
     size_t bufferSize = bufferElements * sizeof(cl_half);
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
     const char *name = f->name;
-    float half_ulps = f->half_ulps;
+    float half_ulps = getAllowedUlpError(f, khalf, relaxedMode);
 
     // Init the kernels
     BuildKernelInfo build_info = { 1, kernels, programs, f->nameInCode };

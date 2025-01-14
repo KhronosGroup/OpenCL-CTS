@@ -1,0 +1,39 @@
+; SPIR-V
+; Version: 1.4
+; Generator: Khronos LLVM/SPIR-V Translator; 14
+; Bound: 60
+; Schema: 0
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %kernel "usersemantic_test" %global_id
+               OpDecorate %global_id LinkageAttributes "global_id" Import
+               OpDecorate %global_id Constant
+               OpDecorate %global_id BuiltIn GlobalInvocationId
+               OpDecorate %s Alignment 4
+               OpMemberDecorateString %struct 0 UserSemantic "foo"
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+ %kernel_sig = OpTypeFunction %void %_ptr_CrossWorkgroup_uint
+%struct = OpTypeStruct %uint
+%_ptr_Function_struct = OpTypePointer Function %struct
+%_ptr_Function_uint = OpTypePointer Function %uint
+  %global_id = OpVariable %_ptr_Input_v3uint Input
+     %kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+          %s = OpVariable %_ptr_Function_struct Function
+        %gid = OpLoad %v3uint %global_id Aligned 16
+       %gid0 = OpCompositeExtract %uint %gid 0
+          %x = OpInBoundsPtrAccessChain %_ptr_Function_uint %s %uint_0 %uint_0
+               OpStore %x %gid0 Aligned 4
+      %index = OpLoad %uint %x Aligned 4
+   %arrayidx = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %dst %index
+               OpStore %arrayidx %index Aligned 4
+               OpReturn
+               OpFunctionEnd

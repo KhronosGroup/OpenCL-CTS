@@ -27,7 +27,7 @@ int api_functions(cl_device_id deviceID, cl_context context,
     CResult result;
 
     // create device
-    std::auto_ptr<CDeviceWrapper> deviceWrapper;
+    std::unique_ptr<CDeviceWrapper> deviceWrapper;
     if (!DeviceCreate(adapterType, deviceWrapper))
     {
         result.ResultSub(CResult::TEST_ERROR);
@@ -87,7 +87,7 @@ int api_functions(cl_device_id deviceID, cl_context context,
         }
 
         void *objectSharedHandle = 0;
-        std::auto_ptr<CSurfaceWrapper> surface;
+        std::unique_ptr<CSurfaceWrapper> surface;
 
         // create surface
         if (!MediaSurfaceCreate(

@@ -3,6 +3,7 @@ set(MODULE_NAME CL_KHR_EXTERNAL_SEMAPHORE)
 set(${MODULE_NAME}_SOURCES
     main.cpp
     test_external_semaphore.cpp
+    test_external_semaphore_sync_fd.cpp
 )
 
 set (CLConform_VULKAN_LIBRARIES_DIR "${VULKAN_LIB_DIR}")

@@ -71,7 +71,7 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
 
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
 
-    float half_ulps = f->half_ulps;
+    float half_ulps = getAllowedUlpError(f, khalf, relaxedMode);
 
     maxiError = half_ulps == INFINITY ? CL_ULONG_MAX : 0;
 

@@ -59,24 +59,8 @@ extern int test_external_semaphores_multi_wait(cl_device_id deviceID,
                                                cl_context context,
                                                cl_command_queue queue,
                                                int num_elements);
-extern int test_external_semaphores_order_1(cl_device_id deviceID,
-                                            cl_context context,
-                                            cl_command_queue queue,
-                                            int num_elements);
-extern int test_external_semaphores_order_2(cl_device_id deviceID,
-                                            cl_context context,
-                                            cl_command_queue queue,
-                                            int num_elements);
-extern int test_external_semaphores_order_3(cl_device_id deviceID,
-                                            cl_context context,
-                                            cl_command_queue queue,
-                                            int num_elements);
 extern int test_external_semaphores_import_export_fd(cl_device_id deviceID,
                                                      cl_context context,
                                                      cl_command_queue queue,
                                                      int num_elements);
-extern int test_external_semaphores_invalid_command(cl_device_id deviceID,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements);
 #endif // CL_KHR_EXTERNAL_SEMAPHORE_PROCS_H

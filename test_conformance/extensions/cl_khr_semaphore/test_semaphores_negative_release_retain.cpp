@@ -29,8 +29,8 @@ namespace {
 struct ReleaseInvalidSemaphore : public SemaphoreTestBase
 {
     ReleaseInvalidSemaphore(cl_device_id device, cl_context context,
-                            cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                            cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -53,8 +53,8 @@ struct ReleaseInvalidSemaphore : public SemaphoreTestBase
 struct RetainInvalidSemaphore : public SemaphoreTestBase
 {
     RetainInvalidSemaphore(cl_device_id device, cl_context context,
-                           cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                           cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -79,11 +79,13 @@ struct RetainInvalidSemaphore : public SemaphoreTestBase
 int test_semaphores_negative_release(cl_device_id device, cl_context context,
                                      cl_command_queue queue, int num_elements)
 {
-    return MakeAndRunTest<ReleaseInvalidSemaphore>(device, context, queue);
+    return MakeAndRunTest<ReleaseInvalidSemaphore>(device, context, queue,
+                                                   num_elements);
 }
 
 int test_semaphores_negative_retain(cl_device_id device, cl_context context,
                                     cl_command_queue queue, int num_elements)
 {
-    return MakeAndRunTest<RetainInvalidSemaphore>(device, context, queue);
+    return MakeAndRunTest<RetainInvalidSemaphore>(device, context, queue,
+                                                  num_elements);
 }

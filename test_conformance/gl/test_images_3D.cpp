@@ -24,11 +24,6 @@
 #endif
 #include <algorithm>
 
-using namespace std;
-
-#pragma mark -
-#pragma mark _3D read test
-
 void calc_3D_size_descriptors(sizevec_t* sizes, size_t nsizes)
 {
     // Need to limit array size according to GL device properties
@@ -41,11 +36,11 @@ void calc_3D_size_descriptors(sizevec_t* sizes, size_t nsizes)
     for (size_t i = 0; i < nsizes; i++)
     {
         sizes[i].width =
-            random_in_range(2, min(maxTextureSize, 1 << (i + 4)), seed);
+            random_in_range(2, std::min(maxTextureSize, 1 << (i + 4)), seed);
         sizes[i].height =
-            random_in_range(2, min(maxTextureSize, 1 << (i + 4)), seed);
+            random_in_range(2, std::min(maxTextureSize, 1 << (i + 4)), seed);
         sizes[i].depth =
-            random_in_range(2, min(maxTextureSize, 1 << (i + 4)), seed);
+            random_in_range(2, std::min(maxTextureSize, 1 << (i + 4)), seed);
     }
 }
 

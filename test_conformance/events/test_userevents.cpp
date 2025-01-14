@@ -28,18 +28,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // CL error checking.
 
-#if defined(_MSC_VER)
-#define CL_EXIT_ERROR(cmd, ...)                                                \
-    {                                                                          \
-        if ((cmd) != CL_SUCCESS)                                               \
-        {                                                                      \
-            log_error("CL ERROR: %s %u: ", __FILE__, __LINE__);                \
-            log_error(##__VA_ARGS__);                                          \
-            log_error("\n");                                                   \
-            return -1;                                                         \
-        }                                                                      \
-    }
-#else
 #define CL_EXIT_ERROR(cmd, format, ...)                                        \
     {                                                                          \
         if ((cmd) != CL_SUCCESS)                                               \
@@ -50,7 +38,6 @@
             return -1;                                                         \
         }                                                                      \
     }
-#endif
 
 #define CL_EXIT_BUILD_ERROR(cmd, program, format, ...)                         \
     {                                                                          \

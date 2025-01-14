@@ -20,8 +20,6 @@
 #include <string>
 #include <cmath>
 
-using namespace std;
-
 const char *clone_kernel_test_img[] =
 {
     "__kernel void img_read_kernel(read_only image2d_t img, sampler_t sampler, __global int* outbuf)\n"
@@ -94,7 +92,9 @@ struct structArg
     float f;
 };
 
-int test_image_arg_shallow_clone(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, void* pbufRes, clMemWrapper& bufOut)
+int test_image_arg_shallow_clone(cl_device_id device, cl_context context,
+                                 cl_command_queue queue, int num_elements,
+                                 void* pbufRes, clMemWrapper& bufOut)
 {
     int error;
     cl_image_format    img_format;
@@ -193,7 +193,9 @@ int test_image_arg_shallow_clone(cl_device_id deviceID, cl_context context, cl_c
     return 0;
 }
 
-int test_double_arg_clone(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, void* pbufRes, clMemWrapper& bufOut)
+int test_double_arg_clone(cl_device_id device, cl_context context,
+                          cl_command_queue queue, int num_elements,
+                          void* pbufRes, clMemWrapper& bufOut)
 {
     int error = 0;
     clProgramWrapper program;
@@ -230,7 +232,7 @@ int test_double_arg_clone(cl_device_id deviceID, cl_context context, cl_command_
     return 0;
 }
 
-int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(clone_kernel, Version(2, 1))
 {
     int error;
     clProgramWrapper program;
@@ -252,11 +254,12 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
     cl_bool bimg = CL_FALSE;
     cl_bool bdouble = CL_FALSE;
     // test image support
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_IMAGE_SUPPORT, sizeof(cl_bool), &bimg, NULL);
+    error = clGetDeviceInfo(device, CL_DEVICE_IMAGE_SUPPORT, sizeof(cl_bool),
+                            &bimg, NULL);
     test_error( error, "clGetDeviceInfo failed." );
 
     // test double support
-    if (is_extension_available(deviceID, "cl_khr_fp64"))
+    if (is_extension_available(device, "cl_khr_fp64"))
     {
         bdouble = CL_TRUE;
     }
@@ -379,13 +382,15 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
 
     if (bimg)
     {
-        error = test_image_arg_shallow_clone(deviceID, context, queue, num_elements, pbufRes, bufOut);
+        error = test_image_arg_shallow_clone(device, context, queue,
+                                             num_elements, pbufRes, bufOut);
         test_error( error, "image arg shallow clone test failed." );
     }
 
     if (bdouble)
     {
-        error = test_double_arg_clone(deviceID, context, queue, num_elements, pbufRes, bufOut);
+        error = test_double_arg_clone(device, context, queue, num_elements,
+                                      pbufRes, bufOut);
         test_error( error, "double arg clone test failed." );
     }
 
@@ -394,4 +399,3 @@ int test_clone_kernel(cl_device_id deviceID, cl_context context, cl_command_queu
 
     return 0;
 }
-

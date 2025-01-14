@@ -1,0 +1,40 @@
+; SPIR-V
+; Version: 1.4
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "select_struct_test" %pgid
+               OpDecorate %pgid BuiltIn GlobalInvocationId
+               OpDecorate %pgid Constant
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+      %float = OpTypeFloat 32
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+     %struct = OpTypeStruct %uint %float
+%gptr_struct = OpTypePointer CrossWorkgroup %struct
+%iptr_v3ulong = OpTypePointer Input %v3ulong
+ %kernel_sig = OpTypeFunction %void %gptr_struct
+    %ulong_0 = OpConstant %ulong 0
+    %ulong_1 = OpConstant %ulong 1
+  %uint_1024 = OpConstant %uint 1024
+   %float_pi = OpConstant %float 3.1415
+  %uint_2048 = OpConstant %uint 2048
+    %float_e = OpConstant %float 2.7128
+   %struct_a = OpConstantComposite %struct %uint_1024 %float_pi
+   %struct_b = OpConstantComposite %struct %uint_2048 %float_e
+       %pgid = OpVariable %iptr_v3ulong Input
+     %kernel = OpFunction %void None %kernel_sig
+   %dst_base = OpFunctionParameter %gptr_struct
+      %entry = OpLabel
+        %gid = OpLoad %v3ulong %pgid Aligned 32
+       %gid0 = OpCompositeExtract %ulong %gid 0
+       %test = OpBitwiseAnd %ulong %gid0 %ulong_1
+       %cond = OpIEqual %bool %test %ulong_1
+     %result = OpSelect %struct %cond %struct_a %struct_b
+        %dst = OpInBoundsPtrAccessChain %gptr_struct %dst_base %gid0
+               OpStore %dst %result
+               OpReturn
+               OpFunctionEnd

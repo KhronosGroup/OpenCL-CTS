@@ -183,7 +183,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
                     / (g_arrVecSizes[vecSizeIdx] * g_arrTypeSizes[typeIdx]));
             if (err != 0)
             {
-                vlog_error("%s: runKernel fail (%ld threads) %s%s\n", testName,
+                vlog_error("%s: runKernel fail (%zu threads) %s%s\n", testName,
                            pClState->m_numThreads, g_arrTypeNames[typeIdx],
                            g_arrVecSizeNames[vecSizeIdx]);
                 destroyBufferStruct(pBuffers, pClState);
@@ -352,8 +352,7 @@ size_t post_align_arr[] = { 0, sizeof(cl_char),
 size_t type_multiple_post_align_arr[] = { 0, 0, 3, 5, 4, 12 };
 
 // there hsould be a packed version of this?
-int test_vec_align_array(cl_device_id deviceID, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(vec_align_array)
 {
     char tmp[2048];
     int result;
@@ -361,14 +360,13 @@ int test_vec_align_array(cl_device_id deviceID, cl_context context,
     log_info("Testing global\n");
     doReplace(tmp, (size_t)2048, patterns[0], ".SRC_SCOPE.", "__global",
               ".DST_SCOPE.", "__global"); //
-    result = test_vec_internal(deviceID, context, queue, tmp,
+    result = test_vec_internal(device, context, queue, tmp,
                                "test_vec_align_array", BUFFER_SIZE, 0, 0, 0, 0);
     return result;
 }
 
 
-int test_vec_align_struct(cl_device_id deviceID, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(vec_align_struct)
 {
     char tmp1[2048], tmp2[2048];
     int result = 0;
@@ -387,7 +385,7 @@ int test_vec_align_struct(cl_device_id deviceID, cl_context context,
                       post_substitution_arr[postIdx]);
 
             result =
-                test_vec_internal(deviceID, context, queue, tmp1,
+                test_vec_internal(device, context, queue, tmp1,
                                   "test_vec_align_struct", 512, 0, 0, 0, 0);
             if (result != 0)
             {
@@ -409,7 +407,7 @@ int test_vec_align_struct(cl_device_id deviceID, cl_context context,
                       post_substitution_arr[postIdx]);
 
             result =
-                test_vec_internal(deviceID, context, queue, tmp1,
+                test_vec_internal(device, context, queue, tmp1,
                                   "test_vec_align_struct", 512, 0, 0, 0, 0);
             if (result != 0)
             {
@@ -420,8 +418,7 @@ int test_vec_align_struct(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_vec_align_packed_struct(cl_device_id deviceID, cl_context context,
-                                 cl_command_queue queue, int num_elements)
+REGISTER_TEST(vec_align_packed_struct)
 {
     char tmp1[2048], tmp2[2048];
     int result = 0;
@@ -441,7 +438,7 @@ int test_vec_align_packed_struct(cl_device_id deviceID, cl_context context,
                       post_substitution_arr[postIdx]);
 
             result = test_vec_internal(
-                deviceID, context, queue, tmp1, "test_vec_align_packed_struct",
+                device, context, queue, tmp1, "test_vec_align_packed_struct",
                 512, pre_align_arr[preIdx], type_multiple_pre_align_arr[preIdx],
                 post_align_arr[postIdx], type_multiple_post_align_arr[postIdx]);
             if (result != 0)
@@ -464,7 +461,7 @@ int test_vec_align_packed_struct(cl_device_id deviceID, cl_context context,
                       post_substitution_arr[postIdx]);
 
             result = test_vec_internal(
-                deviceID, context, queue, tmp1, "test_vec_align_packed_struct",
+                device, context, queue, tmp1, "test_vec_align_packed_struct",
                 512, pre_align_arr[preIdx], type_multiple_pre_align_arr[preIdx],
                 post_align_arr[postIdx], type_multiple_post_align_arr[postIdx]);
             if (result != 0)
@@ -476,8 +473,7 @@ int test_vec_align_packed_struct(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_vec_align_struct_arr(cl_device_id deviceID, cl_context context,
-                              cl_command_queue queue, int num_elements)
+REGISTER_TEST(vec_align_struct_arr)
 {
     char tmp1[2048], tmp2[2048];
     int result = 0;
@@ -496,7 +492,7 @@ int test_vec_align_struct_arr(cl_device_id deviceID, cl_context context,
                       pre_substitution_arr[preIdx], ".POST.",
                       post_substitution_arr[postIdx]);
 
-            result = test_vec_internal(deviceID, context, queue, tmp1,
+            result = test_vec_internal(device, context, queue, tmp1,
                                        "test_vec_align_struct_arr", BUFFER_SIZE,
                                        0, 0, 0, 0);
             if (result != 0)
@@ -508,8 +504,7 @@ int test_vec_align_struct_arr(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_vec_align_packed_struct_arr(cl_device_id deviceID, cl_context context,
-                                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(vec_align_packed_struct_arr)
 {
     char tmp1[2048], tmp2[2048];
     int result = 0;
@@ -529,7 +524,7 @@ int test_vec_align_packed_struct_arr(cl_device_id deviceID, cl_context context,
                       post_substitution_arr[postIdx]);
 
             result = test_vec_internal(
-                deviceID, context, queue, tmp1,
+                device, context, queue, tmp1,
                 "test_vec_align_packed_struct_arr", BUFFER_SIZE,
                 pre_align_arr[preIdx], type_multiple_pre_align_arr[preIdx],
                 post_align_arr[postIdx], type_multiple_post_align_arr[postIdx]);

@@ -150,30 +150,28 @@ int test_fmath(cl_device_id deviceID,
     return 0;
 }
 
-#define TEST_FMATH_FUNC(TYPE, FUNC, MODE)           \
-    TEST_SPIRV_FUNC(op_##FUNC##_##TYPE##_##MODE)    \
-    {                                               \
-        if (sizeof(cl_##TYPE) == 2) {               \
-            PASSIVE_REQUIRE_FP16_SUPPORT(deviceID); \
-        }                                           \
-        const int num = 1 << 20;                    \
-        std::vector<cl_##TYPE> lhs(num);            \
-        std::vector<cl_##TYPE> rhs(num);            \
-                                                    \
-        RandomSeed seed(gRandomSeed);               \
-                                                    \
-        for (int i = 0; i < num; i++) {             \
-            lhs[i] = genrandReal<cl_##TYPE>(seed);  \
-            rhs[i] = genrandReal<cl_##TYPE>(seed);  \
-        }                                           \
-                                                    \
-        const char *mode = #MODE;                   \
-        return test_fmath(deviceID, context, queue, \
-                          #FUNC "_" #TYPE,          \
-                          #FUNC,                    \
-                          #TYPE,                    \
-                          mode[0] == 'f',           \
-                          lhs, rhs);                \
+#define TEST_FMATH_FUNC(TYPE, FUNC, MODE)                                      \
+    REGISTER_TEST(op_##FUNC##_##TYPE##_##MODE)                                 \
+    {                                                                          \
+        if (sizeof(cl_##TYPE) == 2)                                            \
+        {                                                                      \
+            PASSIVE_REQUIRE_FP16_SUPPORT(device);                              \
+        }                                                                      \
+        const int num = 1 << 20;                                               \
+        std::vector<cl_##TYPE> lhs(num);                                       \
+        std::vector<cl_##TYPE> rhs(num);                                       \
+                                                                               \
+        RandomSeed seed(gRandomSeed);                                          \
+                                                                               \
+        for (int i = 0; i < num; i++)                                          \
+        {                                                                      \
+            lhs[i] = genrandReal<cl_##TYPE>(seed);                             \
+            rhs[i] = genrandReal<cl_##TYPE>(seed);                             \
+        }                                                                      \
+                                                                               \
+        const char *mode = #MODE;                                              \
+        return test_fmath(device, context, queue, #FUNC "_" #TYPE, #FUNC,      \
+                          #TYPE, mode[0] == 'f', lhs, rhs);                    \
     }
 
 #define TEST_FMATH_MODE(TYPE, MODE)                                            \

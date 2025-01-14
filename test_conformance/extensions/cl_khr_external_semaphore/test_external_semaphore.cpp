@@ -5,8 +5,7 @@
 #include <thread>
 #include <chrono>
 #include <algorithm>
-
-#define FLUSH_DELAY_S 5
+#include <cinttypes>
 
 #define SEMAPHORE_PARAM_TEST(param_name, param_type, expected)                 \
     do                                                                         \
@@ -18,9 +17,9 @@
         test_error(error, "Unable to get " #param_name " from semaphore");     \
         if (value != expected)                                                 \
         {                                                                      \
-            test_fail("ERROR: Parameter %s did not validate! (expected %d, "   \
-                      "got %d)\n",                                             \
-                      #param_name, expected, value);                           \
+            test_fail("ERROR: Parameter %s did not validate! "                 \
+                      "(expected %" PRIuPTR " got %" PRIuPTR ")\n",            \
+                      #param_name, (uintptr_t)expected, (uintptr_t)value);     \
         }                                                                      \
         if (size != sizeof(value))                                             \
         {                                                                      \
@@ -53,7 +52,7 @@
         }                                                                      \
     } while (false)
 
-static const char* source = "__kernel void empty() {}";
+static const char *source = "__kernel void empty() {}";
 
 static void log_info_semaphore_type(
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType)
@@ -65,7 +64,7 @@ static void log_info_semaphore_type(
     log_info("%s", semaphore_type_description.str().c_str());
 }
 
-static int init_vuikan_device(cl_uint num_devices, cl_device_id* deviceIds)
+static int init_vulkan_device(cl_uint num_devices, cl_device_id *deviceIds)
 {
     cl_platform_id platform = nullptr;
 
@@ -85,7 +84,7 @@ static int init_vuikan_device(cl_uint num_devices, cl_device_id* deviceIds)
 
 static cl_int get_device_semaphore_handle_types(
     cl_device_id deviceID, cl_device_info param,
-    std::vector<cl_external_semaphore_handle_type_khr>& handle_types)
+    std::vector<cl_external_semaphore_handle_type_khr> &handle_types)
 {
     int err = CL_SUCCESS;
     // Query for export support
@@ -124,21 +123,10 @@ int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
                                      cl_command_queue defaultQueue,
                                      int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_semaphore");
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -197,10 +185,15 @@ int test_external_semaphores_queries(cl_device_id deviceID, cl_context context,
         test_error(err, "Could not release semaphore");
         SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_REFERENCE_COUNT_KHR, cl_uint, 1);
 
-        // Confirm that querying CL_SEMAPHORE_PAYLOAD_KHR returns the unsignaled
+        // Confirm that querying CL_SEMAPHORE_PAYLOAD_KHR returns the correct
         // state
+        cl_semaphore_payload_khr expected_payload_value =
+            (vkExternalSemaphoreHandleType
+             == VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD)
+            ? 1
+            : 0;
         SEMAPHORE_PARAM_TEST(CL_SEMAPHORE_PAYLOAD_KHR, cl_semaphore_payload_khr,
-                             0);
+                             expected_payload_value);
     }
 
     return TEST_PASS;
@@ -211,13 +204,7 @@ int test_external_semaphores_cross_context(cl_device_id deviceID,
                                            cl_command_queue defaultQueue,
                                            int num_elements)
 {
-    cl_int err = CL_SUCCESS;
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
     GET_PFN(deviceID, clEnqueueSignalSemaphoresKHR);
     GET_PFN(deviceID, clEnqueueWaitSemaphoresKHR);
@@ -225,10 +212,10 @@ int test_external_semaphores_cross_context(cl_device_id deviceID,
     GET_PFN(deviceID, clGetSemaphoreHandleForTypeKHR);
     GET_PFN(deviceID, clReleaseSemaphoreKHR);
 
-
     std::vector<cl_external_semaphore_handle_type_khr> import_handle_types;
     std::vector<cl_external_semaphore_handle_type_khr> export_handle_types;
 
+    cl_int err = CL_SUCCESS;
     err = get_device_semaphore_handle_types(
         deviceID, CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR,
         import_handle_types);
@@ -342,14 +329,9 @@ int test_external_semaphores_simple_1(cl_device_id deviceID, cl_context context,
                                       cl_command_queue defaultQueue,
                                       int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -422,14 +404,9 @@ int test_external_semaphores_simple_2(cl_device_id deviceID, cl_context context,
                                       cl_command_queue defaultQueue,
                                       int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -502,7 +479,10 @@ int test_external_semaphores_simple_2(cl_device_id deviceID, cl_context context,
         // Flush and delay
         err = clFlush(queue);
         test_error(err, "Could not flush queue");
-        std::this_thread::sleep_for(std::chrono::seconds(FLUSH_DELAY_S));
+
+        cl_event event_list[] = { signal_event, wait_event };
+        err = clWaitForEvents(2, event_list);
+        test_error(err, "Could not wait on events");
 
         // Ensure all events are completed except for task_1
         test_assert_event_inprogress(task_1_event);
@@ -531,14 +511,9 @@ int test_external_semaphores_reuse(cl_device_id deviceID, cl_context context,
                                    cl_command_queue defaultQueue,
                                    int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -656,14 +631,9 @@ static int external_semaphore_cross_queue_helper(cl_device_id deviceID,
                                                  cl_command_queue queue_1,
                                                  cl_command_queue queue_2)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -713,7 +683,7 @@ static int external_semaphore_cross_queue_helper(cl_device_id deviceID,
                                        nullptr, 0, nullptr, &wait_event);
         test_error(err, "Could not wait semaphore");
 
-        // Finish queue_1 and queue_2
+        // Finish queue_1 and queue_2
         err = clFinish(queue_1);
         test_error(err, "Could not finish queue");
 
@@ -776,14 +746,9 @@ int test_external_semaphores_cross_queues_io2(cl_device_id deviceID,
                                               cl_command_queue defaultQueue,
                                               int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -890,14 +855,9 @@ int test_external_semaphores_multi_signal(cl_device_id deviceID,
                                           cl_command_queue defaultQueue,
                                           int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");
@@ -986,14 +946,9 @@ int test_external_semaphores_multi_wait(cl_device_id deviceID,
                                         cl_command_queue defaultQueue,
                                         int num_elements)
 {
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
-    {
-        log_info("cl_khr_semaphore is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
-    if (init_vuikan_device(1, &deviceID))
+    if (init_vulkan_device(1, &deviceID))
     {
         log_info("Cannot initialise Vulkan. "
                  "Skipping test.\n");

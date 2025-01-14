@@ -3196,7 +3196,7 @@ int reference_isgreaterequall(long double x, long double y) { return x >= y; }
 int reference_isinfl(long double x) { return 0 != isinf(x); }
 int reference_islessl(long double x, long double y) { return x < y; }
 int reference_islessequall(long double x, long double y) { return x <= y; }
-#if defined(__INTEL_COMPILER)
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
 int reference_islessgreaterl(long double x, long double y)
 {
     return 0 != islessgreaterl(x, y);
@@ -3218,7 +3218,7 @@ int reference_isunorderedl(long double x, long double y)
 {
     return isnan(x) || isnan(y);
 }
-#if defined(__INTEL_COMPILER)
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
 int reference_signbitl(long double x) { return 0 != signbitl(x); }
 #else
 int reference_signbitl(long double x) { return 0 != signbit(x); }
@@ -3582,7 +3582,8 @@ long double reference_exp2l(long double z)
 
 long double reference_expm1l(long double x)
 {
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)                            \
+    && !defined(__INTEL_LLVM_COMPILER)
     // unimplemented
     return x;
 #else
@@ -3667,7 +3668,8 @@ long double reference_log2l(long double x)
 
 long double reference_log1pl(long double x)
 {
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)                            \
+    && !defined(__INTEL_LLVM_COMPILER)
     // unimplemented
     return x;
 #elif defined(__PPC__)

@@ -24,8 +24,6 @@
 #endif
 #include <algorithm>
 
-using namespace std;
-
 void calc_test_size_descriptors(sizevec_t* sizes, size_t nsizes)
 {
     // Need to limit array size according to GL device properties
@@ -33,14 +31,14 @@ void calc_test_size_descriptors(sizevec_t* sizes, size_t nsizes)
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
     glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxTextureBufferSize);
 
-    size = min(maxTextureSize, maxTextureBufferSize);
+    size = std::min(maxTextureSize, maxTextureBufferSize);
 
     RandomSeed seed(gRandomSeed);
 
     // Generate some random sizes (within reasonable ranges)
     for (size_t i = 0; i < nsizes; i++)
     {
-        sizes[i].width = random_in_range(2, min(size, 1 << (i + 4)), seed);
+        sizes[i].width = random_in_range(2, std::min(size, 1 << (i + 4)), seed);
         sizes[i].height = 1;
         sizes[i].depth = 1;
     }

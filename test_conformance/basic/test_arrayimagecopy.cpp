@@ -22,16 +22,23 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <vector>
+#include <memory>
 
 #include "procs.h"
 
+using test_function_t = int (*)(cl_device_id, cl_context, cl_command_queue,
+                                cl_mem_flags, cl_mem_flags, cl_mem_object_type,
+                                const cl_image_format *);
+
 int test_arrayimagecopy_single_format(cl_device_id device, cl_context context,
                                       cl_command_queue queue,
-                                      cl_mem_flags flags,
+                                      cl_mem_flags buffer_flags,
+                                      cl_mem_flags image_flags,
                                       cl_mem_object_type image_type,
                                       const cl_image_format *format)
 {
-    cl_uchar *bufptr, *imgptr;
+    std::unique_ptr<cl_uchar, decltype(&free)> bufptr{ nullptr, free },
+        imgptr{ nullptr, free };
     clMemWrapper buffer, image;
     int img_width = 512;
     int img_height = 512;
@@ -40,62 +47,78 @@ int test_arrayimagecopy_single_format(cl_device_id device, cl_context context,
     size_t buffer_size;
     cl_int err;
     cl_event copyevent;
+    RandomSeed seed(gRandomSeed);
 
     log_info("Testing %s %s\n",
              GetChannelOrderName(format->image_channel_order),
              GetChannelTypeName(format->image_channel_data_type));
 
-    if (CL_MEM_OBJECT_IMAGE2D == image_type)
-    {
-        image = create_image_2d(context, flags, format, img_width, img_height,
-                                0, nullptr, &err);
-    }
-    else
-    {
-        image = create_image_3d(context, flags, format, img_width, img_height,
-                                img_depth, 0, 0, nullptr, &err);
-    }
-    test_error(err, "create_image_xd failed");
-
-    err = clGetImageInfo(image, CL_IMAGE_ELEMENT_SIZE, sizeof(size_t),
-                         &elem_size, NULL);
-    test_error(err, "clGetImageInfo failed");
+    elem_size = get_pixel_size(format);
 
     buffer_size =
         sizeof(cl_uchar) * elem_size * img_width * img_height * img_depth;
 
-    buffer =
-        clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_size, NULL, &err);
-    test_error(err, "clCreateBuffer failed");
+    if (image_flags & CL_MEM_USE_HOST_PTR || image_flags & CL_MEM_COPY_HOST_PTR)
+    {
+        imgptr.reset(static_cast<cl_uchar *>(
+            create_random_data(kUChar, seed, buffer_size)));
+    }
 
-    RandomSeed seed(gRandomSeed);
-    bufptr =
-        static_cast<cl_uchar *>(create_random_data(kUChar, seed, buffer_size));
+    bufptr.reset(
+        static_cast<cl_uchar *>(create_random_data(kUChar, seed, buffer_size)));
+
+    if (CL_MEM_OBJECT_IMAGE2D == image_type)
+    {
+        image = create_image_2d(context, image_flags, format, img_width,
+                                img_height, 0, imgptr.get(), &err);
+    }
+    else
+    {
+        image =
+            create_image_3d(context, image_flags, format, img_width, img_height,
+                            img_depth, 0, 0, imgptr.get(), &err);
+    }
+    test_error(err, "create_image_xd failed");
+
+    if (buffer_flags & CL_MEM_USE_HOST_PTR
+        || buffer_flags & CL_MEM_COPY_HOST_PTR)
+    {
+        buffer = clCreateBuffer(context, buffer_flags, buffer_size,
+                                bufptr.get(), &err);
+        test_error(err, "clCreateBuffer failed");
+    }
+    else
+    {
+        buffer =
+            clCreateBuffer(context, buffer_flags, buffer_size, nullptr, &err);
+        test_error(err, "clCreateBuffer failed");
+
+        err = clEnqueueWriteBuffer(queue, buffer, CL_TRUE, 0, buffer_size,
+                                   bufptr.get(), 0, nullptr, nullptr);
+        test_error(err, "clEnqueueWriteBuffer failed");
+    }
 
     size_t origin[3] = { 0, 0, 0 },
            region[3] = { img_width, img_height, img_depth };
-    err = clEnqueueWriteBuffer(queue, buffer, CL_TRUE, 0, buffer_size, bufptr,
-                               0, NULL, NULL);
-    test_error(err, "clEnqueueWriteBuffer failed");
 
     err = clEnqueueCopyBufferToImage(queue, buffer, image, 0, origin, region, 0,
-                                     NULL, &copyevent);
+                                     nullptr, &copyevent);
     test_error(err, "clEnqueueCopyImageToBuffer failed");
 
-    imgptr = static_cast<cl_uchar *>(malloc(buffer_size));
+    imgptr.reset(static_cast<cl_uchar *>(malloc(buffer_size)));
 
     err = clEnqueueReadImage(queue, image, CL_TRUE, origin, region, 0, 0,
-                             imgptr, 1, &copyevent, NULL);
+                             imgptr.get(), 1, &copyevent, nullptr);
     test_error(err, "clEnqueueReadImage failed");
 
     err = clReleaseEvent(copyevent);
     test_error(err, "clReleaseEvent failed");
 
-    if (memcmp(bufptr, imgptr, buffer_size) != 0)
+    if (memcmp(bufptr.get(), imgptr.get(), buffer_size) != 0)
     {
         log_error("ERROR: Results did not validate!\n");
-        auto inchar = static_cast<unsigned char *>(bufptr);
-        auto outchar = static_cast<unsigned char *>(imgptr);
+        auto inchar = static_cast<unsigned char *>(bufptr.get());
+        auto outchar = static_cast<unsigned char *>(imgptr.get());
         int failuresPrinted = 0;
         for (int i = 0; i < (int)buffer_size; i += (int)elem_size)
         {
@@ -119,9 +142,6 @@ int test_arrayimagecopy_single_format(cl_device_id device, cl_context context,
         err = -1;
     }
 
-    free(bufptr);
-    free(imgptr);
-
     if (err)
         log_error(
             "ARRAY to IMAGE copy test failed for image_channel_order=0x%lx and "
@@ -134,26 +154,28 @@ int test_arrayimagecopy_single_format(cl_device_id device, cl_context context,
 
 
 int test_arrayimagecommon(cl_device_id device, cl_context context,
-                          cl_command_queue queue, cl_mem_flags flags,
-                          cl_mem_object_type image_type)
+                          cl_command_queue queue, cl_mem_flags buffer_flags,
+                          cl_mem_flags image_flags,
+                          cl_mem_object_type image_type,
+                          test_function_t test_function)
 {
     cl_int err;
     cl_uint num_formats;
 
-    err = clGetSupportedImageFormats(context, flags, image_type, 0, NULL,
-                                     &num_formats);
+    err = clGetSupportedImageFormats(context, image_flags, image_type, 0,
+                                     nullptr, &num_formats);
     test_error(err, "clGetSupportedImageFormats failed");
 
     std::vector<cl_image_format> formats(num_formats);
 
-    err = clGetSupportedImageFormats(context, flags, image_type, num_formats,
-                                     formats.data(), NULL);
+    err = clGetSupportedImageFormats(context, image_flags, image_type,
+                                     num_formats, formats.data(), nullptr);
     test_error(err, "clGetSupportedImageFormats failed");
 
     for (const auto &format : formats)
     {
-        err |= test_arrayimagecopy_single_format(device, context, queue, flags,
-                                                 image_type, &format);
+        err |= test_function(device, context, queue, buffer_flags, image_flags,
+                             image_type, &format);
     }
 
     if (err)
@@ -172,7 +194,8 @@ int test_arrayimagecopy(cl_device_id device, cl_context context,
     PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
 
     return test_arrayimagecommon(device, context, queue, CL_MEM_READ_WRITE,
-                                 CL_MEM_OBJECT_IMAGE2D);
+                                 CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
+                                 test_arrayimagecopy_single_format);
 }
 
 
@@ -181,6 +204,7 @@ int test_arrayimagecopy3d(cl_device_id device, cl_context context,
 {
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT(device)
 
-    return test_arrayimagecommon(device, context, queue, CL_MEM_READ_ONLY,
-                                 CL_MEM_OBJECT_IMAGE3D);
+    return test_arrayimagecommon(device, context, queue, CL_MEM_READ_WRITE,
+                                 CL_MEM_READ_ONLY, CL_MEM_OBJECT_IMAGE3D,
+                                 test_arrayimagecopy_single_format);
 }

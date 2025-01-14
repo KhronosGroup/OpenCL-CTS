@@ -272,47 +272,27 @@ int doTest(cl_device_id device, cl_context context, cl_command_queue queue,
     return failure_counts;
 }
 
-int test_buffer(cl_device_id device, cl_context context, cl_command_queue queue,
-                int num_elements)
-{
-    return doTest(device, context, queue, BUFFER);
-}
-int test_image2d_read(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(buffer) { return doTest(device, context, queue, BUFFER); }
+REGISTER_TEST(image2d_read)
 {
     return doTest(device, context, queue, IMAGE_READ);
 }
-int test_image2d_write(cl_device_id device, cl_context context,
-                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(image2d_write)
 {
     return doTest(device, context, queue, IMAGE_WRITE);
 }
-int test_buffer_non_blocking(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+REGISTER_TEST(buffer_non_blocking)
 {
     return doTest(device, context, queue, BUFFER_NON_BLOCKING);
 }
-int test_image2d_read_non_blocking(cl_device_id device, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(image2d_read_non_blocking)
 {
     return doTest(device, context, queue, IMAGE_READ_NON_BLOCKING);
 }
-int test_image2d_write_non_blocking(cl_device_id device, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(image2d_write_non_blocking)
 {
     return doTest(device, context, queue, IMAGE_WRITE_NON_BLOCKING);
 }
-
-test_definition test_list[] = {
-    ADD_TEST(buffer),
-    ADD_TEST(image2d_read),
-    ADD_TEST(image2d_write),
-    ADD_TEST(buffer_non_blocking),
-    ADD_TEST(image2d_read_non_blocking),
-    ADD_TEST(image2d_write_non_blocking),
-};
-
-const int test_num = ARRAY_SIZE(test_list);
 
 int main(int argc, const char *argv[])
 {
@@ -382,8 +362,9 @@ int main(int argc, const char *argv[])
         }
     }
 
-    int ret = runTestHarnessWithCheck(argCount, argList, test_num, test_list,
-                                      false, 0, init_cl);
+    int ret = runTestHarnessWithCheck(
+        argCount, argList, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0, init_cl);
 
     free(argList);
     return ret;
@@ -416,8 +397,8 @@ void printUsage(const char *execName)
              "of the memory objects.\n");
     log_info("\n");
     log_info("Test names (Allocation Types):\n");
-    for (int i = 0; i < test_num; i++)
+    for (int i = 0; i < test_registry::getInstance().num_tests(); i++)
     {
-        log_info("\t%s\n", test_list[i].name);
+        log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
     }
 }

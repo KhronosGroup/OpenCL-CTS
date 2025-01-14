@@ -22,6 +22,7 @@
 #include "vulkan_list_map.hpp"
 #include "vulkan_api_list.hpp"
 #include <memory>
+#include <cassert>
 
 class VulkanInstance {
     friend const VulkanInstance &getVulkanInstance();
@@ -144,7 +145,7 @@ public:
     virtual ~VulkanDevice();
     const VulkanPhysicalDevice &getPhysicalDevice() const;
     VulkanQueue &
-    getQueue(const VulkanQueueFamily &queueFamily = getVulkanQueueFamily(),
+    getQueue(const VulkanQueueFamily &queueFamily /* = getVulkanQueueFamily()*/,
              uint32_t queueIndex = 0);
     operator VkDevice() const;
 };
@@ -581,7 +582,7 @@ protected:
     VkDeviceMemory m_vkDeviceMemory;
     uint64_t m_size;
     bool m_isDedicated;
-
+    const std::wstring m_name;
 
     VulkanDeviceMemory(const VulkanDeviceMemory &deviceMemory);
 
@@ -590,17 +591,17 @@ public:
                        const VulkanMemoryType &memoryType,
                        VulkanExternalMemoryHandleType externalMemoryHandleType =
                            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
-                       const void *name = NULL);
+                       const std::wstring name = L"");
     VulkanDeviceMemory(const VulkanDevice &device, const VulkanImage &image,
                        const VulkanMemoryType &memoryType,
                        VulkanExternalMemoryHandleType externalMemoryHandleType =
                            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
-                       const void *name = NULL);
+                       const std::wstring name = L"");
     VulkanDeviceMemory(const VulkanDevice &device, const VulkanBuffer &buffer,
                        const VulkanMemoryType &memoryType,
                        VulkanExternalMemoryHandleType externalMemoryHandleType =
                            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
-                       const void *name = NULL);
+                       const std::wstring name = L"");
     virtual ~VulkanDeviceMemory();
     uint64_t getSize() const;
 #ifdef _WIN32
@@ -615,6 +616,7 @@ public:
     void unmap();
     void bindBuffer(const VulkanBuffer &buffer, uint64_t offset = 0);
     void bindImage(const VulkanImage &image, uint64_t offset = 0);
+    const std::wstring &getName() const;
     operator VkDeviceMemory() const;
 };
 

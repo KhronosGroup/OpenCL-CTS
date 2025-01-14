@@ -75,7 +75,7 @@ wait_and_release(const char* s, cl_event* evs, int n)
     return 0;
 }
 
-int test_svm_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
+REGISTER_TEST(svm_migrate)
 {
     std::vector<cl_uint> amem(GLOBAL_SIZE);
     std::vector<cl_uint> bmem(GLOBAL_SIZE);
@@ -86,15 +86,17 @@ int test_svm_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue
 
     RandomSeed seed(0);
 
-    clContextWrapper context = NULL;
+    clContextWrapper contextWrapper = NULL;
     clCommandQueueWrapper queues[MAXQ];
     cl_uint num_devices = 0;
     clProgramWrapper program;
     cl_int error;
 
-    error = create_cl_objects(deviceID, &sources[0], &context, &program, &queues[0], &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
-    if (error)
-        return -1;
+    error = create_cl_objects(device, &sources[0], &contextWrapper, &program,
+                              &queues[0], &num_devices,
+                              CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
+    context = contextWrapper;
+    if (error) return -1;
 
     if (num_devices > 1) {
         log_info("  Running on two devices.\n");
@@ -200,7 +202,7 @@ int test_svm_migrate(cl_device_id deviceID, cl_context c, cl_command_queue queue
 
     // Check the event command type for clEnqueueSVMMigrateMem (OpenCL 3.0 and
     // newer)
-    Version version = get_device_cl_version(deviceID);
+    Version version = get_device_cl_version(device);
     if (version >= Version(3, 0))
     {
         cl_command_type commandType;

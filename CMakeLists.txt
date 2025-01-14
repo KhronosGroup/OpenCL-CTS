@@ -104,7 +104,6 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
         # Enable more warnings if not doing a release build.
         add_cxx_flag_if_supported(-Wall)
     endif()
-    add_cxx_flag_if_supported(-Wno-format)
     add_cxx_flag_if_supported(-Wno-error=cpp) # Allow #warning directive
     add_cxx_flag_if_supported(-Wno-unknown-pragmas) # Issue #785
     add_cxx_flag_if_supported(-Wno-error=asm-operand-widths) # Issue #784
@@ -152,8 +151,14 @@ if(MSVC)
 endif()
 
 if( WIN32 AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" )
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
+    set(Shared_Flags_Intel "-Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -fp:strict")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Shared_Flags_Intel}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Shared_Flags_Intel}")
+    if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "IntelLLVM"))
+        set(ICC_Extra_Flags "-Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:source")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ICC_Extra_Flags}")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ICC_Extra_Flags}")
+    endif()
 endif()
 
 # To handle addresses larger than 2 gigabytes for 32bit targets

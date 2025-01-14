@@ -112,10 +112,17 @@ int feclearexcept(int excepts);
 
 #if defined(__INTEL_COMPILER)
 #include <mathimf.h>
-#elif __cplusplus && defined(_MSC_VER)
-#include <cmath>
 #else
 #include <math.h>
+#endif
+
+#ifdef __cplusplus
+#include <cmath>
+extern "C" {
+using std::isfinite;
+using std::isinf;
+using std::isnan;
+}
 #endif
 
 #ifndef M_PI
@@ -138,18 +145,6 @@ extern "C" {
 
 #ifndef INFINITY
 #define INFINITY (FLT_MAX + FLT_MAX)
-#endif
-
-#ifndef isfinite
-#define isfinite(x) _finite(x)
-#endif
-
-#ifndef isnan
-#define isnan(x) ((x) != (x))
-#endif
-
-#ifndef isinf
-#define isinf(_x) ((_x) == INFINITY || (_x) == -INFINITY)
 #endif
 
 #if _MSC_VER < 1900 && !defined(__INTEL_COMPILER)

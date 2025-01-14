@@ -27,8 +27,8 @@ namespace {
 struct CreateInvalidContext : public SemaphoreTestBase
 {
     CreateInvalidContext(cl_device_id device, cl_context context,
-                         cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                         cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -56,8 +56,8 @@ struct CreateInvalidContext : public SemaphoreTestBase
 struct CreateInvalidProperty : public SemaphoreTestBase
 {
     CreateInvalidProperty(cl_device_id device, cl_context context,
-                          cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                          cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -130,8 +130,8 @@ struct CreateInvalidProperty : public SemaphoreTestBase
 struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
 {
     CreateInvalidMultiDeviceProperty(cl_device_id device, cl_context context,
-                                     cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                                     cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -204,8 +204,8 @@ struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
 struct CreateInvalidDevice : public SemaphoreTestBase
 {
     CreateInvalidDevice(cl_device_id device, cl_context context,
-                        cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                        cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -312,8 +312,9 @@ struct CreateImportExternalWithInvalidDevice : public SemaphoreTestBase
 {
     CreateImportExternalWithInvalidDevice(cl_device_id device,
                                           cl_context context,
-                                          cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue), semaphore_second(this)
+                                          cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems),
+          semaphore_second(this)
     {}
 
     cl_int Run() override
@@ -455,8 +456,8 @@ struct CreateImportExternalWithInvalidDevice : public SemaphoreTestBase
 struct CreateInvalidValue : public SemaphoreTestBase
 {
     CreateInvalidValue(cl_device_id device, cl_context context,
-                       cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                       cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -517,8 +518,9 @@ struct CreateInvalidValue : public SemaphoreTestBase
 struct CreateInvalidOperation : public SemaphoreTestBase
 {
     CreateInvalidOperation(cl_device_id device, cl_context context,
-                           cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue), semaphore_second(this)
+                           cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems),
+          semaphore_second(this)
     {}
 
     cl_int Run() override
@@ -603,7 +605,8 @@ int test_semaphores_negative_create_invalid_context(cl_device_id device,
                                                     cl_command_queue queue,
                                                     int num_elements)
 {
-    return MakeAndRunTest<CreateInvalidContext>(device, context, queue);
+    return MakeAndRunTest<CreateInvalidContext>(device, context, queue,
+                                                num_elements);
 }
 
 // Confirm that creation semaphore with invalid properties return
@@ -613,7 +616,8 @@ int test_semaphores_negative_create_invalid_property(cl_device_id device,
                                                      cl_command_queue queue,
                                                      int num_elements)
 {
-    return MakeAndRunTest<CreateInvalidProperty>(device, context, queue);
+    return MakeAndRunTest<CreateInvalidProperty>(device, context, queue,
+                                                 num_elements);
 }
 
 // Confirm that creation semaphore with multi device property return
@@ -622,8 +626,8 @@ int test_semaphores_negative_create_multi_device_property(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements)
 {
-    return MakeAndRunTest<CreateInvalidMultiDeviceProperty>(device, context,
-                                                            queue);
+    return MakeAndRunTest<CreateInvalidMultiDeviceProperty>(
+        device, context, queue, num_elements);
 }
 
 // Confirm that creation semaphore with invalid device(s) return
@@ -633,7 +637,8 @@ int test_semaphores_negative_create_invalid_device(cl_device_id device,
                                                    cl_command_queue queue,
                                                    int num_elements)
 {
-    return MakeAndRunTest<CreateInvalidDevice>(device, context, queue);
+    return MakeAndRunTest<CreateInvalidDevice>(device, context, queue,
+                                               num_elements);
 }
 
 // Confirm that creation semaphore with invalid device(s) return
@@ -643,7 +648,7 @@ int test_semaphores_negative_create_import_invalid_device(
     int num_elements)
 {
     return MakeAndRunTest<CreateImportExternalWithInvalidDevice>(
-        device, context, queue);
+        device, context, queue, num_elements);
 }
 
 // Confirm that creation semaphore with invalid props values return
@@ -653,7 +658,8 @@ int test_semaphores_negative_create_invalid_value(cl_device_id device,
                                                   cl_command_queue queue,
                                                   int num_elements)
 {
-    return MakeAndRunTest<CreateInvalidValue>(device, context, queue);
+    return MakeAndRunTest<CreateInvalidValue>(device, context, queue,
+                                              num_elements);
 }
 
 // Confirm that creation semaphore with invalid props values return
@@ -663,5 +669,6 @@ int test_semaphores_negative_create_invalid_operation(cl_device_id device,
                                                       cl_command_queue queue,
                                                       int num_elements)
 {
-    return MakeAndRunTest<CreateInvalidOperation>(device, context, queue);
+    return MakeAndRunTest<CreateInvalidOperation>(device, context, queue,
+                                                  num_elements);
 }

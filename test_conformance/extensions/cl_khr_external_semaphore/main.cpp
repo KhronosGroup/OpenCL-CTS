@@ -16,20 +16,17 @@
 #include "harness/testHarness.h"
 
 test_definition test_list[] = {
-    ADD_TEST(external_semaphores_queries),
-    ADD_TEST(external_semaphores_cross_context),
-    ADD_TEST(external_semaphores_simple_1),
-    // ADD_TEST(external_semaphores_simple_2),
-    ADD_TEST(external_semaphores_reuse),
-    ADD_TEST(external_semaphores_cross_queues_ooo),
-    ADD_TEST(external_semaphores_cross_queues_io),
-    ADD_TEST(external_semaphores_cross_queues_io2),
-    ADD_TEST(external_semaphores_multi_signal),
-    ADD_TEST(external_semaphores_multi_wait),
-    // ADD_TEST(external_semaphores_order_1),
-    // ADD_TEST(external_semaphores_order_2),
-    // ADD_TEST(external_semaphores_order_3),
-    // ADD_TEST(external_semaphores_invalid_command)
+    ADD_TEST_VERSION(external_semaphores_queries, Version(1, 2)),
+    ADD_TEST_VERSION(external_semaphores_cross_context, Version(1, 2)),
+    ADD_TEST_VERSION(external_semaphores_simple_1, Version(1, 2)),
+    ADD_TEST_VERSION(external_semaphores_simple_2, Version(1, 2)),
+    ADD_TEST_VERSION(external_semaphores_reuse, Version(1, 2)),
+    ADD_TEST_VERSION(external_semaphores_cross_queues_ooo, Version(1, 2)),
+    ADD_TEST_VERSION(external_semaphores_cross_queues_io, Version(1, 2)),
+    ADD_TEST_VERSION(external_semaphores_cross_queues_io2, Version(1, 2)),
+    ADD_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2)),
+    ADD_TEST_VERSION(external_semaphores_multi_wait, Version(1, 2)),
+    ADD_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2)),
 };
 
 

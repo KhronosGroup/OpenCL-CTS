@@ -130,3 +130,11 @@ extern int test_semaphores_negative_retain(cl_device_id device,
                                            cl_context context,
                                            cl_command_queue queue,
                                            int num_elements);
+extern int test_semaphores_ooo_ops_single_queue(cl_device_id deviceID,
+                                                cl_context context,
+                                                cl_command_queue defaultQueue,
+                                                int num_elements);
+extern int test_semaphores_ooo_ops_cross_queue(cl_device_id deviceID,
+                                               cl_context context,
+                                               cl_command_queue defaultQueue,
+                                               int num_elements);

@@ -57,7 +57,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
         return result.Result();
     }
 
-    std::auto_ptr<CDeviceWrapper> deviceWrapper;
+    std::unique_ptr<CDeviceWrapper> deviceWrapper;
     if (!DeviceCreate(adapterType, deviceWrapper))
     {
         result.ResultSub(CResult::TEST_ERROR);
@@ -158,7 +158,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
         }
 
         void *objectSrcHandle = 0;
-        std::auto_ptr<CSurfaceWrapper> surfaceSrc;
+        std::unique_ptr<CSurfaceWrapper> surfaceSrc;
         if (!MediaSurfaceCreate(adapterType, width, height, surfaceFormat,
                                 *deviceWrapper, surfaceSrc,
                                 (sharedHandle == SHARED_HANDLE_ENABLED) ? true
@@ -172,7 +172,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
         }
 
         void *objectDstHandle = 0;
-        std::auto_ptr<CSurfaceWrapper> surfaceDst;
+        std::unique_ptr<CSurfaceWrapper> surfaceDst;
         if (!MediaSurfaceCreate(adapterType, width, height, surfaceFormat,
                                 *deviceWrapper, surfaceDst,
                                 (sharedHandle == SHARED_HANDLE_ENABLED) ? true

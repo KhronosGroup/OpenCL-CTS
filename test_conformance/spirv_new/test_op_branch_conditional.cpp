@@ -83,27 +83,26 @@ int test_branch_conditional(cl_device_id deviceID,
     return 0;
 }
 
-#define TEST_BRANCH_CONDITIONAL(name)                                   \
-    TEST_SPIRV_FUNC(op_##name)                                          \
-    {                                                                   \
-        const int num = 1 << 10;                                        \
-        RandomSeed seed(gRandomSeed);                                   \
-                                                                        \
-        std::vector<cl_int> lhs(num);                                   \
-        std::vector<cl_int> rhs(num);                                   \
-        std::vector<cl_int> out(num);                                   \
-                                                                        \
-        for (int i = 0; i < num; i++) {                                 \
-            lhs[i] = genrand<cl_int>(seed);                             \
-            rhs[i] = genrand<cl_int>(seed);                             \
-            out[i] = lhs[i] < rhs[i] ?                                  \
-                              (rhs[i] - lhs[i]) : (lhs[i] - rhs[i]);    \
-        }                                                               \
-                                                                        \
-        return test_branch_conditional(deviceID, context, queue,        \
-                                       #name,                           \
-                                       lhs, rhs, out);                  \
-    }                                                                   \
+#define TEST_BRANCH_CONDITIONAL(name)                                          \
+    REGISTER_TEST(op_##name)                                                   \
+    {                                                                          \
+        const int num = 1 << 10;                                               \
+        RandomSeed seed(gRandomSeed);                                          \
+                                                                               \
+        std::vector<cl_uint> lhs(num);                                         \
+        std::vector<cl_uint> rhs(num);                                         \
+        std::vector<cl_uint> out(num);                                         \
+                                                                               \
+        for (int i = 0; i < num; i++)                                          \
+        {                                                                      \
+            lhs[i] = genrand<cl_uint>(seed);                                   \
+            rhs[i] = genrand<cl_uint>(seed);                                   \
+            out[i] = lhs[i] < rhs[i] ? (rhs[i] - lhs[i]) : (lhs[i] - rhs[i]);  \
+        }                                                                      \
+                                                                               \
+        return test_branch_conditional(device, context, queue, #name, lhs,     \
+                                       rhs, out);                              \
+    }
 
 TEST_BRANCH_CONDITIONAL(branch_conditional)
 TEST_BRANCH_CONDITIONAL(branch_conditional_weighted)

@@ -80,7 +80,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
     constexpr size_t bufferElements = BUFFER_SIZE / sizeof(cl_half);
 
     std::vector<cl_uchar> overflow(bufferElements);
-    float half_ulps = f->half_ulps;
+    float half_ulps = getAllowedUlpError(f, khalf, relaxedMode);
     int skipNanInf = (0 == strcmp("fma", f->nameInCode));
 
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);

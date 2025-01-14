@@ -83,10 +83,7 @@ int test_mem_object_destructor_callback_single(clMemWrapper &memObject)
     return (numErrors > 0) ? TEST_FAIL : TEST_PASS;
 }
 
-int test_mem_object_destructor_callback(cl_device_id deviceID,
-                                        cl_context context,
-                                        cl_command_queue queue,
-                                        int num_elements)
+REGISTER_TEST(mem_object_destructor_callback)
 {
     clMemWrapper testBuffer, testImage;
     cl_int error;
@@ -102,7 +99,7 @@ int test_mem_object_destructor_callback(cl_device_id deviceID,
         return TEST_FAIL;
     }
 
-    if (checkForImageSupport(deviceID) == 0)
+    if (checkForImageSupport(device) == 0)
     {
         cl_image_format imageFormat = { CL_RGBA, CL_SIGNED_INT8 };
         testImage = create_image_2d(context, CL_MEM_READ_ONLY, &imageFormat, 16,
