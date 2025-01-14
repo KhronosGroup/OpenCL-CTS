@@ -56,7 +56,7 @@ get_image_dim(MTdata *d, unsigned int mod)
 }
 
 
-int test_get_buffer_info( cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements )
+REGISTER_TEST(get_buffer_info)
 {
     int error;
     size_t size;
@@ -150,7 +150,8 @@ int test_get_buffer_info( cl_device_id deviceID, cl_context context, cl_command_
 
     // Get the address alignment, so we can make sure the sub-buffer test later works properly.
     cl_uint addressAlignBits;
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MEM_BASE_ADDR_ALIGN, sizeof(addressAlignBits), &addressAlignBits, NULL );
+    error = clGetDeviceInfo(device, CL_DEVICE_MEM_BASE_ADDR_ALIGN,
+                            sizeof(addressAlignBits), &addressAlignBits, NULL);
 
     size_t addressAlign = addressAlignBits/8;
     if ( addressAlign < 128 )
@@ -420,7 +421,8 @@ int test_get_imageObject_info( cl_mem * image, cl_mem_flags objectFlags, cl_imag
 }
 
 
-int test_get_image_info( cl_device_id deviceID, cl_context context, cl_mem_object_type type )
+int test_get_image_info(cl_device_id device, cl_context context,
+                        cl_mem_object_type type)
 {
     int error;
     size_t size;
@@ -494,7 +496,7 @@ int test_get_image_info( cl_device_id deviceID, cl_context context, cl_mem_objec
     MTdataHolder d_holder(gRandomSeed);
     MTdata d = static_cast<MTdata>(d_holder);
 
-    PASSIVE_REQUIRE_IMAGE_SUPPORT( deviceID )
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
 
     cl_image_format imageFormat;
     size_t pixelSize = 4;
@@ -530,7 +532,7 @@ int test_get_image_info( cl_device_id deviceID, cl_context context, cl_mem_objec
                 break;
 
             case CL_MEM_OBJECT_IMAGE3D:
-                error = checkFor3DImageSupport(deviceID);
+                error = checkFor3DImageSupport(device);
                 if (error == CL_IMAGE_FORMAT_NOT_SUPPORTED)
                 {
                     log_info("Device doesn't support 3D images. Skipping test.\n");
@@ -738,29 +740,27 @@ int test_get_image_info( cl_device_id deviceID, cl_context context, cl_mem_objec
 }
 
 
-int test_get_image2d_info( cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements )
+REGISTER_TEST(get_image2d_info)
 {
-    return test_get_image_info(deviceID, context, CL_MEM_OBJECT_IMAGE2D);
+    return test_get_image_info(device, context, CL_MEM_OBJECT_IMAGE2D);
 }
 
-int test_get_image3d_info( cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements )
+REGISTER_TEST(get_image3d_info)
 {
-    return test_get_image_info(deviceID, context, CL_MEM_OBJECT_IMAGE3D);
+    return test_get_image_info(device, context, CL_MEM_OBJECT_IMAGE3D);
 }
 
-int test_get_image1d_info( cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements )
+REGISTER_TEST(get_image1d_info)
 {
-    return test_get_image_info(deviceID, context, CL_MEM_OBJECT_IMAGE1D);
+    return test_get_image_info(device, context, CL_MEM_OBJECT_IMAGE1D);
 }
 
-int test_get_image1d_array_info( cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements )
+REGISTER_TEST(get_image1d_array_info)
 {
-    return test_get_image_info(deviceID, context, CL_MEM_OBJECT_IMAGE1D_ARRAY);
+    return test_get_image_info(device, context, CL_MEM_OBJECT_IMAGE1D_ARRAY);
 }
 
-int test_get_image2d_array_info( cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements )
+REGISTER_TEST(get_image2d_array_info)
 {
-    return test_get_image_info(deviceID, context, CL_MEM_OBJECT_IMAGE2D_ARRAY);
+    return test_get_image_info(device, context, CL_MEM_OBJECT_IMAGE2D_ARRAY);
 }
-
-

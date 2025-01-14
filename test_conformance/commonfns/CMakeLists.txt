@@ -10,4 +10,6 @@ set(${MODULE_NAME}_SOURCES
     test_binary_fn.cpp
 )
 
+set_gnulike_module_compile_flags("-Wno-format")
+
 include(../CMakeCommon.txt)

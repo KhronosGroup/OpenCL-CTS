@@ -48,100 +48,115 @@ const char *byte_manipulation_kernels[] = {
 };
 
 
-
-int test_svm_byte_granularity(cl_device_id deviceID, cl_context c, cl_command_queue queue, int num_elements)
+REGISTER_TEST(svm_byte_granularity)
 {
-  clContextWrapper context;
-  clProgramWrapper program;
-  clKernelWrapper k1,k2;
-  clCommandQueueWrapper queues[MAXQ];
+    clContextWrapper contextWrapper;
+    clProgramWrapper program;
+    clKernelWrapper k1, k2;
+    clCommandQueueWrapper queues[MAXQ];
 
-  cl_uint     num_devices = 0;
-  cl_int      err = CL_SUCCESS;
+    cl_uint num_devices = 0;
+    cl_int err = CL_SUCCESS;
 
-  err = create_cl_objects(deviceID, &byte_manipulation_kernels[0], &context, &program, &queues[0], &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER);
-  if(err == 1) return 0; // no devices capable of requested SVM level, so don't execute but count test as passing.
-  if(err < 0) return -1; // fail test.
+    err = create_cl_objects(device, &byte_manipulation_kernels[0],
+                            &contextWrapper, &program, &queues[0], &num_devices,
+                            CL_DEVICE_SVM_FINE_GRAIN_BUFFER);
+    context = contextWrapper;
+    if (err == 1)
+        return 0; // no devices capable of requested SVM level, so don't execute
+                  // but count test as passing.
+    if (err < 0) return -1; // fail test.
 
-  cl_uint num_devices_plus_host = num_devices + 1;
+    cl_uint num_devices_plus_host = num_devices + 1;
 
-  k1 = clCreateKernel(program, "write_owned_locations", &err);
-  test_error(err, "clCreateKernel failed");
-  k2 = clCreateKernel(program, "sum_neighbor_locations", &err);
-  test_error(err, "clCreateKernel failed");
+    k1 = clCreateKernel(program, "write_owned_locations", &err);
+    test_error(err, "clCreateKernel failed");
+    k2 = clCreateKernel(program, "sum_neighbor_locations", &err);
+    test_error(err, "clCreateKernel failed");
 
 
-  cl_char *pA = (cl_char*) clSVMAlloc(context, CL_MEM_READ_WRITE | CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(cl_char) * num_elements, 0);
+    cl_char *pA = (cl_char *)clSVMAlloc(
+        context, CL_MEM_READ_WRITE | CL_MEM_SVM_FINE_GRAIN_BUFFER,
+        sizeof(cl_char) * num_elements, 0);
 
-  cl_uint **error_counts =  (cl_uint**) malloc(sizeof(void*) * num_devices);
+    cl_uint **error_counts = (cl_uint **)malloc(sizeof(void *) * num_devices);
 
-  for(cl_uint i=0; i < num_devices; i++) {
-    error_counts[i] = (cl_uint*) clSVMAlloc(context, CL_MEM_READ_WRITE | CL_MEM_SVM_FINE_GRAIN_BUFFER, sizeof(cl_uint), 0);
-    *error_counts[i] = 0;
-  }
-  for(int i=0; i < num_elements; i++) pA[i] = -1;
+    for (cl_uint i = 0; i < num_devices; i++)
+    {
+        error_counts[i] = (cl_uint *)clSVMAlloc(
+            context, CL_MEM_READ_WRITE | CL_MEM_SVM_FINE_GRAIN_BUFFER,
+            sizeof(cl_uint), 0);
+        *error_counts[i] = 0;
+    }
+    for (int i = 0; i < num_elements; i++) pA[i] = -1;
 
-  err |= clSetKernelArgSVMPointer(k1, 0, pA);
-  err |= clSetKernelArg(k1, 1, sizeof(cl_uint), &num_devices_plus_host);
-  test_error(err, "clSetKernelArg failed");
-
-  // get all the devices going simultaneously
-  size_t element_num = num_elements;
-  for(cl_uint d=0; d < num_devices; d++)  // device ids starting at 1.
-  {
-    err = clSetKernelArg(k1, 2, sizeof(cl_uint), &d);
-    test_error(err, "clSetKernelArg failed");
-    err = clEnqueueNDRangeKernel(queues[d], k1, 1, NULL, &element_num, NULL, 0, NULL, NULL);
-    test_error(err,"clEnqueueNDRangeKernel failed");
-  }
-
-  for(cl_uint d=0; d < num_devices; d++) clFlush(queues[d]);
-
-  cl_uint host_id = num_devices;  // host code will take the id above the devices.
-  for(int i = (int)num_devices; i < num_elements; i+= num_devices_plus_host) pA[i] = host_id;
-
-  for(cl_uint id = 0; id < num_devices; id++) clFinish(queues[id]);
-
-  // now check that each device can see the byte writes made by the other devices.
-
-  err |= clSetKernelArgSVMPointer(k2, 0, pA);
-  err |= clSetKernelArg(k2, 1, sizeof(cl_uint), &num_devices_plus_host);
-  test_error(err, "clSetKernelArg failed");
-
-  // adjusted so k2 doesn't read past end of buffer
-  size_t adjusted_num_elements = num_elements - num_devices;
-  for(cl_uint id = 0; id < num_devices; id++)
-  {
-    err = clSetKernelArgSVMPointer(k2, 2, error_counts[id]);
+    err |= clSetKernelArgSVMPointer(k1, 0, pA);
+    err |= clSetKernelArg(k1, 1, sizeof(cl_uint), &num_devices_plus_host);
     test_error(err, "clSetKernelArg failed");
 
-    err = clEnqueueNDRangeKernel(queues[id], k2, 1, NULL, &adjusted_num_elements, NULL, 0, NULL, NULL);
-    test_error(err,"clEnqueueNDRangeKernel failed");
-  }
+    // get all the devices going simultaneously
+    size_t element_num = num_elements;
+    for (cl_uint d = 0; d < num_devices; d++) // device ids starting at 1.
+    {
+        err = clSetKernelArg(k1, 2, sizeof(cl_uint), &d);
+        test_error(err, "clSetKernelArg failed");
+        err = clEnqueueNDRangeKernel(queues[d], k1, 1, NULL, &element_num, NULL,
+                                     0, NULL, NULL);
+        test_error(err, "clEnqueueNDRangeKernel failed");
+    }
 
-  for(cl_uint id = 0; id < num_devices; id++) clFinish(queues[id]);
+    for (cl_uint d = 0; d < num_devices; d++) clFlush(queues[d]);
 
-  bool failed = false;
+    cl_uint host_id =
+        num_devices; // host code will take the id above the devices.
+    for (int i = (int)num_devices; i < num_elements; i += num_devices_plus_host)
+        pA[i] = host_id;
 
-  // see if any of the devices found errors
-  for(cl_uint i=0; i < num_devices; i++) {
-    if(*error_counts[i] > 0)
-      failed = true;
-  }
-  cl_uint expected = (num_devices_plus_host * (num_devices_plus_host - 1))/2;
-  // check that host can see the byte writes made by the devices.
-  for(cl_uint i = 0; i < num_elements - num_devices_plus_host; i++)
-  {
-    int sum = 0;
-    for(cl_uint j=0; j < num_devices_plus_host; j++) sum += pA[i+j];
-    if(sum != expected)
-      failed = true;
-  }
+    for (cl_uint id = 0; id < num_devices; id++) clFinish(queues[id]);
 
-  clSVMFree(context, pA);
-  for(cl_uint i=0; i < num_devices; i++) clSVMFree(context, error_counts[i]);
+    // now check that each device can see the byte writes made by the other
+    // devices.
 
-  if(failed)
-    return -1;
-  return 0;
+    err |= clSetKernelArgSVMPointer(k2, 0, pA);
+    err |= clSetKernelArg(k2, 1, sizeof(cl_uint), &num_devices_plus_host);
+    test_error(err, "clSetKernelArg failed");
+
+    // adjusted so k2 doesn't read past end of buffer
+    size_t adjusted_num_elements = num_elements - num_devices;
+    for (cl_uint id = 0; id < num_devices; id++)
+    {
+        err = clSetKernelArgSVMPointer(k2, 2, error_counts[id]);
+        test_error(err, "clSetKernelArg failed");
+
+        err =
+            clEnqueueNDRangeKernel(queues[id], k2, 1, NULL,
+                                   &adjusted_num_elements, NULL, 0, NULL, NULL);
+        test_error(err, "clEnqueueNDRangeKernel failed");
+    }
+
+    for (cl_uint id = 0; id < num_devices; id++) clFinish(queues[id]);
+
+    bool failed = false;
+
+    // see if any of the devices found errors
+    for (cl_uint i = 0; i < num_devices; i++)
+    {
+        if (*error_counts[i] > 0) failed = true;
+    }
+    cl_uint expected =
+        (num_devices_plus_host * (num_devices_plus_host - 1)) / 2;
+    // check that host can see the byte writes made by the devices.
+    for (cl_uint i = 0; i < num_elements - num_devices_plus_host; i++)
+    {
+        int sum = 0;
+        for (cl_uint j = 0; j < num_devices_plus_host; j++) sum += pA[i + j];
+        if (sum != expected) failed = true;
+    }
+
+    clSVMFree(context, pA);
+    for (cl_uint i = 0; i < num_devices; i++)
+        clSVMFree(context, error_counts[i]);
+
+    if (failed) return -1;
+    return 0;
 }

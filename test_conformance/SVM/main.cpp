@@ -260,26 +260,6 @@ cl_int create_cl_objects(cl_device_id device_from_harness, const char** ppCodeSt
   return 0;
 }
 
-test_definition test_list[] = {
-    ADD_TEST(svm_byte_granularity),
-    ADD_TEST(svm_set_kernel_exec_info_svm_ptrs),
-    ADD_TEST(svm_fine_grain_memory_consistency),
-    ADD_TEST(svm_fine_grain_sync_buffers),
-    ADD_TEST(svm_shared_address_space_fine_grain),
-    ADD_TEST(svm_shared_sub_buffers),
-    ADD_TEST(svm_shared_address_space_fine_grain_buffers),
-    ADD_TEST(svm_allocate_shared_buffer),
-    ADD_TEST(svm_allocate_shared_buffer_negative),
-    ADD_TEST(svm_shared_address_space_coarse_grain_old_api),
-    ADD_TEST(svm_shared_address_space_coarse_grain_new_api),
-    ADD_TEST(svm_cross_buffer_pointers_coarse_grain),
-    ADD_TEST(svm_pointer_passing),
-    ADD_TEST(svm_enqueue_api),
-    ADD_TEST_VERSION(svm_migrate, Version(2, 1)),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
-
 test_status InitCL(cl_device_id device) {
   auto version = get_device_cl_version(device);
   auto expected_min_version = Version(2, 0);
@@ -310,6 +290,7 @@ test_status InitCL(cl_device_id device) {
 
 int main(int argc, const char *argv[])
 {
-  return runTestHarnessWithCheck(argc, argv, test_num, test_list, true, 0, InitCL);
+    return runTestHarnessWithCheck(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), true, 0, InitCL);
 }
-

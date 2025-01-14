@@ -369,7 +369,7 @@ int checkCorrectnessStep(bufferStruct *pBufferStruct, clState *pClState,
     {
         if (targetArr[i] != targetSize)
         {
-            vlog_error("Error %ld (of %ld).  Expected %d, got %d\n", i,
+            vlog_error("Error %zu (of %zu).  Expected %d, got %d\n", i,
                        pClState->m_numThreads, targetSize, targetArr[i]);
             return -1;
         }

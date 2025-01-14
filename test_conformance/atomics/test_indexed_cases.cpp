@@ -16,8 +16,8 @@
 
 #include <memory>
 
-#include "testBase.h"
 #include "harness/conversions.h"
+#include "harness/typeWrappers.h"
 
 // clang-format off
 const char *atomic_index_source =
@@ -36,8 +36,7 @@ const char *atomic_index_source =
     "}";
 // clang-format on
 
-int test_atomic_add_index(cl_device_id deviceID, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(atomic_add_index)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -46,7 +45,7 @@ int test_atomic_add_index(cl_device_id deviceID, cl_context context,
     int fail = 0, err;
 
     /* Check if atomics are supported. */
-    if (!is_extension_available(deviceID, "cl_khr_global_int32_base_atomics"))
+    if (!is_extension_available(device, "cl_khr_global_int32_base_atomics"))
     {
         log_info("Base atomics not supported "
                  "(cl_khr_global_int32_base_atomics). Skipping test.\n");
@@ -474,8 +473,7 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     }
 }
 
-int test_atomic_add_index_bin(cl_device_id deviceID, cl_context context,
-                              cl_command_queue queue, int num_elements)
+REGISTER_TEST(atomic_add_index_bin)
 {
     //===== add_index_bin test
     size_t numGlobalThreads = 2048;
@@ -484,7 +482,7 @@ int test_atomic_add_index_bin(cl_device_id deviceID, cl_context context,
     MTdata d = init_genrand(gRandomSeed);
 
     /* Check if atomics are supported. */
-    if (!is_extension_available(deviceID, "cl_khr_global_int32_base_atomics"))
+    if (!is_extension_available(device, "cl_khr_global_int32_base_atomics"))
     {
         log_info("Base atomics not supported "
                  "(cl_khr_global_int32_base_atomics). Skipping test.\n");

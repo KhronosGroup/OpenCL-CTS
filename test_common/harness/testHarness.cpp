@@ -62,6 +62,27 @@ bool gCoreILProgram = true;
 
 #define DEFAULT_NUM_ELEMENTS 0x4000
 
+test_definition *test_registry::definitions() { return &m_definitions[0]; }
+
+size_t test_registry::num_tests() { return m_definitions.size(); }
+
+void test_registry::add_test(test *t, const char *name, Version version)
+{
+
+    m_tests.push_back(t);
+    test_definition testDef;
+    testDef.func = t->getFunction();
+    testDef.name = name;
+    testDef.min_version = version;
+    m_definitions.push_back(testDef);
+}
+
+test_registry &test_registry::getInstance()
+{
+    static test_registry instance;
+    return instance;
+}
+
 static int saveResultsToJson(const char *suiteName, test_definition testList[],
                              unsigned char selectedTestList[],
                              test_status resultTestList[], int testNum)
@@ -689,6 +710,7 @@ static void print_results(int failed, int count, const char *name)
             log_error("FAILED %s.\n", name);
         }
     }
+    fflush(stdout);
 }
 
 int parseAndCallCommandLineTests(int argc, const char *argv[],

@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "../testBase.h"
-
 extern void read_image_pixel_float( void *imageData, image_descriptor *imageInfo, int x, int y, int z, float *outData );
 
 struct pitch_buffer_data
@@ -55,9 +54,8 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
     imageDesc.image_array_size = imageInfo->arraySize;
     imageDesc.image_row_pitch = gEnablePitch ? imageInfo->rowPitch : 0;
     imageDesc.image_slice_pitch = gEnablePitch ? imageInfo->slicePitch : 0;
-
-    cl_version version;
     cl_device_id device;
+    Version version;
     {
         cl_int err = clGetCommandQueueInfo(queue, CL_QUEUE_DEVICE,
                                            sizeof(device), &device, nullptr);
@@ -66,14 +64,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             log_error("Error: Could not get CL_QUEUE_DEVICE from queue");
             return NULL;
         }
-        err = clGetDeviceInfo(device, CL_DEVICE_NUMERIC_VERSION,
-                              sizeof(version), &version, nullptr);
-        if (err != CL_SUCCESS)
-        {
-            log_error("Error: Could not get CL_DEVICE_NUMERIC_VERSION from "
-                      "device");
-            return NULL;
-        }
+        version = get_device_cl_version(device);
     }
 
     switch (imageInfo->type)
@@ -117,7 +108,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
                 cl_mem_flags buffer_flags = CL_MEM_READ_WRITE;
                 if (gEnablePitch)
                 {
-                    if (CL_VERSION_MAJOR(version) == 1)
+                    if (version.major() == 1)
                     {
                         host_ptr = malloc(imageInfo->rowPitch);
                     }
@@ -145,7 +136,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
                 if (err != CL_SUCCESS)
                 {
                     log_error("ERROR: Could not create buffer for 1D buffer "
-                              "image. %ld bytes\n",
+                              "image. %zu bytes\n",
                               imageInfo->rowPitch);
                     return NULL;
                 }
@@ -158,7 +149,9 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
     {
         if ( NULL == host_ptr )
         {
-            log_error( "ERROR: Unable to create backing store for pitched 3D image. %ld bytes\n",  imageInfo->depth * imageInfo->slicePitch );
+            log_error("ERROR: Unable to create backing store for pitched 3D "
+                      "image. %zu bytes\n",
+                      imageInfo->depth * imageInfo->slicePitch);
             return NULL;
         }
         if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
@@ -183,7 +176,7 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
         struct pitch_buffer_data *data = (struct pitch_buffer_data *)malloc(
             sizeof(struct pitch_buffer_data));
         data->buf = host_ptr;
-        data->is_aligned = (CL_VERSION_MAJOR(version) != 1)
+        data->is_aligned = (version.major() != 1)
             && (imageInfo->type == CL_MEM_OBJECT_IMAGE1D_BUFFER);
         if (*error == CL_SUCCESS)
         {
@@ -427,7 +420,8 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
         imgHost.reset(malloc(dataBytes),NULL,0,dataBytes);
         if (imgHost == NULL)
         {
-            log_error( "ERROR: Unable to malloc %lu bytes for imgHost\n", dataBytes );
+            log_error("ERROR: Unable to malloc %zu bytes for imgHost\n",
+                      dataBytes);
             return -1;
         }
     }

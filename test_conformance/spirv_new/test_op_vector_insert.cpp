@@ -109,11 +109,11 @@ int test_insert(cl_device_id deviceID, cl_context context,
 }
 
 #define TEST_VECTOR_INSERT(TYPE, N)                                            \
-    TEST_SPIRV_FUNC(op_vector_##TYPE##N##_insert)                              \
+    REGISTER_TEST(op_vector_##TYPE##N##_insert)                                \
     {                                                                          \
         if (sizeof(cl_##TYPE) == 2)                                            \
         {                                                                      \
-            PASSIVE_REQUIRE_FP16_SUPPORT(deviceID);                            \
+            PASSIVE_REQUIRE_FP16_SUPPORT(device);                              \
         }                                                                      \
         typedef cl_##TYPE##N Tv;                                               \
         typedef cl_##TYPE Ts;                                                  \
@@ -128,7 +128,7 @@ int test_insert(cl_device_id deviceID, cl_context context,
             in[i] = genrand<Ts>(seed);                                         \
         }                                                                      \
                                                                                \
-        return test_insert<Ts, Tv>(deviceID, context, queue, name, in, N);     \
+        return test_insert<Ts, Tv>(device, context, queue, name, in, N);       \
     }
 
 TEST_VECTOR_INSERT(half, 8)

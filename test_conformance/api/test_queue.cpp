@@ -18,13 +18,12 @@
 #include "testBase.h"
 #include "harness/typeWrappers.h"
 
-int test_queue_flush_on_release(cl_device_id deviceID, cl_context context,
-                                cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST(queue_flush_on_release)
 {
     cl_int err;
 
     // Create a command queue
-    cl_command_queue queue = clCreateCommandQueue(context, deviceID, 0, &err);
+    cl_command_queue cmd_queue = clCreateCommandQueue(context, device, 0, &err);
     test_error(err, "Could not create command queue");
 
     // Create a kernel
@@ -38,12 +37,12 @@ int test_queue_flush_on_release(cl_device_id deviceID, cl_context context,
     // Enqueue the kernel
     size_t gws = 1;
     clEventWrapper event;
-    err = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &gws, nullptr, 0,
-                                 nullptr, &event);
+    err = clEnqueueNDRangeKernel(cmd_queue, kernel, 1, nullptr, &gws, nullptr,
+                                 0, nullptr, &event);
     test_error(err, "Could not enqueue kernel");
 
     // Release the queue
-    err = clReleaseCommandQueue(queue);
+    err = clReleaseCommandQueue(cmd_queue);
 
     // Wait for kernel to execute since the queue must flush on release
     bool success = poll_until(2000, 50, [&event]() {

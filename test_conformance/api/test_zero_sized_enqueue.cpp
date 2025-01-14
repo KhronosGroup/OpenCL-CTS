@@ -58,7 +58,8 @@ cl_int test_zero_sized_enqueue_and_test_output_buffer(cl_command_queue queue, cl
     return clEnqueueUnmapMemObject(queue, buf, output, 0, NULL, NULL);
 }
 
-int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_zero_sized_enqueue_helper(cl_device_id device, cl_context context,
+                                   cl_command_queue queue, int num_elements)
 {
     int error;
     clProgramWrapper program;
@@ -185,9 +186,10 @@ int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl
 }
 
 
-int test_zero_sized_enqueue(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(zero_sized_enqueue, Version(2, 1))
 {
-    int res = test_zero_sized_enqueue_helper(deviceID, context, queue, num_elements);
+    int res =
+        test_zero_sized_enqueue_helper(device, context, queue, num_elements);
     if (res != 0)
     {
         return res;
@@ -195,7 +197,9 @@ int test_zero_sized_enqueue(cl_device_id deviceID, cl_context context, cl_comman
 
     // now test out of order queue
     cl_command_queue_properties props;
-    cl_int error = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_PROPERTIES, sizeof(cl_command_queue_properties), &props, NULL);
+    cl_int error =
+        clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
+                        sizeof(cl_command_queue_properties), &props, NULL);
     test_error( error, "clGetDeviceInfo failed.");
 
     if (props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)
@@ -207,10 +211,12 @@ int test_zero_sized_enqueue(cl_device_id deviceID, cl_context context, cl_comman
             0
         };
 
-        clCommandQueueWrapper ooqueue = clCreateCommandQueueWithProperties(context, deviceID, queue_prop_def, &error);
+        clCommandQueueWrapper ooqueue = clCreateCommandQueueWithProperties(
+            context, device, queue_prop_def, &error);
         test_error( error, "clCreateCommandQueueWithProperties failed.");
 
-        res = test_zero_sized_enqueue_helper(deviceID, context, ooqueue, num_elements);
+        res = test_zero_sized_enqueue_helper(device, context, ooqueue,
+                                             num_elements);
     }
 
     return res;

@@ -16,10 +16,8 @@
 #include "harness/errorHelpers.h"
 #include "harness/typeWrappers.h"
 #include <iostream>
-#include "procs.h"
 
-int test_kernel_private_memory_size(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(kernel_private_memory_size)
 {
     const char* TEST_KERNEL =
         R"(__kernel void private_memory( __global uint *buffer ){
@@ -33,7 +31,7 @@ int test_kernel_private_memory_size(cl_device_id deviceID, cl_context context,
                                              &TEST_KERNEL, "private_memory");
     test_error(err, "create_single_kernel_helper");
     cl_ulong size = CL_ULONG_MAX;
-    err = clGetKernelWorkGroupInfo(kernel, deviceID, CL_KERNEL_PRIVATE_MEM_SIZE,
+    err = clGetKernelWorkGroupInfo(kernel, device, CL_KERNEL_PRIVATE_MEM_SIZE,
                                    sizeof(cl_ulong), &size, nullptr);
 
     test_error(err, "clGetKernelWorkGroupInfo");

@@ -39,7 +39,7 @@
          %21 = OpLoad %uint %20 Aligned 4
          %22 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %rhs %19
          %23 = OpLoad %uint %22 Aligned 4
-         %24 = OpSLessThan %bool %21 %23
+         %24 = OpULessThan %bool %21 %23
                OpBranchConditional %24 %25 %26
          %25 = OpLabel
          %27 = OpISub %uint %23 %21

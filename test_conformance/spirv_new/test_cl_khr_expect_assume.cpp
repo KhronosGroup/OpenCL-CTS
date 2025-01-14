@@ -117,9 +117,9 @@ static int test_expect_type(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(op_expect)
+REGISTER_TEST(op_expect)
 {
-    if (!is_extension_available(deviceID, "cl_khr_expect_assume"))
+    if (!is_extension_available(device, "cl_khr_expect_assume"))
     {
         log_info("cl_khr_expect_assume is not supported; skipping test.\n");
         return TEST_SKIPPED_ITSELF;
@@ -127,21 +127,21 @@ TEST_SPIRV_FUNC(op_expect)
 
     int result = TEST_PASS;
 
-    result |= test_expect_type<cl_char>(deviceID, context, queue);
-    result |= test_expect_type<cl_short>(deviceID, context, queue);
-    result |= test_expect_type<cl_int>(deviceID, context, queue);
+    result |= test_expect_type<cl_char>(device, context, queue);
+    result |= test_expect_type<cl_short>(device, context, queue);
+    result |= test_expect_type<cl_int>(device, context, queue);
     if (gHasLong)
     {
-        result |= test_expect_type<cl_long>(deviceID, context, queue);
+        result |= test_expect_type<cl_long>(device, context, queue);
     }
-    result |= test_expect_type<cl_bool>(deviceID, context, queue);
+    result |= test_expect_type<cl_bool>(device, context, queue);
 
     return result;
 }
 
-TEST_SPIRV_FUNC(op_assume)
+REGISTER_TEST(op_assume)
 {
-    if (!is_extension_available(deviceID, "cl_khr_expect_assume"))
+    if (!is_extension_available(device, "cl_khr_expect_assume"))
     {
         log_info("cl_khr_expect_assume is not supported; skipping test.\n");
         return TEST_SKIPPED_ITSELF;
@@ -154,7 +154,7 @@ TEST_SPIRV_FUNC(op_assume)
     test_error(error, "Unable to create destination buffer");
 
     clProgramWrapper prog;
-    error = get_program_with_il(prog, deviceID, context, "assume");
+    error = get_program_with_il(prog, device, context, "assume");
     test_error(error, "Unable to build SPIR-V program");
 
     clKernelWrapper kernel = clCreateKernel(prog, "test_assume", &error);

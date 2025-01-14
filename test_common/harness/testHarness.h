@@ -21,11 +21,15 @@
 #include <sstream>
 
 #include <string>
+#include <vector>
 
 class Version {
 public:
     Version(): m_major(0), m_minor(0) {}
+
     Version(cl_uint major, cl_uint minor): m_major(major), m_minor(minor) {}
+    int major() const { return m_major; }
+    int minor() const { return m_minor; }
     bool operator>(const Version &rhs) const
     {
         return to_uint() > rhs.to_uint();
@@ -98,6 +102,64 @@ struct test_harness_config
     cl_command_queue_properties queueProps;
     unsigned numWorkerThreads;
 };
+
+
+struct test
+{
+    virtual test_function_pointer getFunction() = 0;
+};
+
+class test_registry {
+private:
+    std::vector<test *> m_tests;
+    std::vector<test_definition> m_definitions;
+
+public:
+    static test_registry &getInstance();
+
+    test_definition *definitions();
+
+    size_t num_tests();
+
+    void add_test(test *t, const char *name, Version version);
+    test_registry() {}
+};
+
+template <typename T> T *register_test(const char *name, Version version)
+{
+    T *t = new T();
+    test_registry::getInstance().add_test((test *)t, name, version);
+    return t;
+}
+
+#define REGISTER_TEST_VERSION(name, version)                                   \
+    extern int test_##name(cl_device_id device, cl_context context,            \
+                           cl_command_queue queue, int num_elements);          \
+    class test_##name##_class : public test {                                  \
+    private:                                                                   \
+        test_function_pointer fn;                                              \
+                                                                               \
+    public:                                                                    \
+        test_##name##_class(): fn(test_##name) {}                              \
+        test_function_pointer getFunction() { return fn; }                     \
+    };                                                                         \
+    test_##name##_class *var_##name =                                          \
+        register_test<test_##name##_class>(#name, version);                    \
+    int test_##name(cl_device_id device, cl_context context,                   \
+                    cl_command_queue queue, int num_elements)
+
+#define REGISTER_TEST(name) REGISTER_TEST_VERSION(name, Version(1, 2))
+
+#define REQUIRE_EXTENSION(name)                                                \
+    do                                                                         \
+    {                                                                          \
+        if (!is_extension_available(deviceID, name))                           \
+        {                                                                      \
+            log_info(name                                                      \
+                     " is not supported on this device. Skipping test.\n");    \
+            return TEST_SKIPPED_ITSELF;                                        \
+        }                                                                      \
+    } while (0)
 
 extern int gFailCount;
 extern int gTestCount;

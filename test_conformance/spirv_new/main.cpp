@@ -69,34 +69,6 @@ std::vector<unsigned char> readSPIRV(const char *file_name)
     return readBinary(full_name_str.c_str());
 }
 
-test_definition *spirvTestsRegistry::getTestDefinitions()
-{
-    return &testDefinitions[0];
-}
-
-size_t spirvTestsRegistry::getNumTests()
-{
-    return testDefinitions.size();
-}
-
-void spirvTestsRegistry::addTestClass(baseTestClass *test, const char *testName,
-                                      Version version)
-{
-
-    testClasses.push_back(test);
-    test_definition testDef;
-    testDef.func = test->getFunction();
-    testDef.name = testName;
-    testDef.min_version = version;
-    testDefinitions.push_back(testDef);
-}
-
-spirvTestsRegistry& spirvTestsRegistry::getInstance()
-{
-    static spirvTestsRegistry instance;
-    return instance;
-}
-
 static int offline_get_program_with_il(clProgramWrapper &prog,
                                        const cl_device_id deviceID,
                                        const cl_context context,
@@ -270,7 +242,6 @@ int main(int argc, const char *argv[])
     }
 
     return runTestHarnessWithCheck(
-        argc, argv, spirvTestsRegistry::getInstance().getNumTests(),
-        spirvTestsRegistry::getInstance().getTestDefinitions(), false, 0,
-        InitCL);
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0, InitCL);
 }

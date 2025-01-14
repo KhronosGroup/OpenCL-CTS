@@ -55,7 +55,7 @@ extern int test_cl_image_write(cl_context context, cl_command_queue queue,
                                size_t height, size_t depth,
                                cl_image_format *outFormat,
                                ExplicitType *outType, void **outSourceBuffer,
-                               MTdata d, bool supports_half);
+                               MTdata d);
 
 extern int test_cl_image_read(cl_context context, cl_command_queue queue,
                               GLenum gl_target, cl_mem image, size_t width,
@@ -63,7 +63,6 @@ extern int test_cl_image_read(cl_context context, cl_command_queue queue,
                               cl_image_format *outFormat, ExplicitType *outType,
                               void **outResultBuffer);
 
-extern int supportsHalf(cl_context context, bool *supports_half);
 
 static int test_attach_renderbuffer_read_image(
     cl_context context, cl_command_queue queue, GLenum glTarget,
@@ -299,7 +298,7 @@ int test_attach_renderbuffer_write_to_image(
     cl_context context, cl_command_queue queue, GLenum glTarget,
     GLuint glRenderbuffer, size_t imageWidth, size_t imageHeight,
     cl_image_format *outFormat, ExplicitType *outType, MTdata d,
-    void **outSourceBuffer, bool supports_half)
+    void **outSourceBuffer)
 {
     int error;
 
@@ -314,7 +313,7 @@ int test_attach_renderbuffer_write_to_image(
 
     return test_cl_image_write(context, queue, glTarget, image, imageWidth,
                                imageHeight, 1, outFormat, outType,
-                               outSourceBuffer, d, supports_half);
+                               outSourceBuffer, d);
 }
 
 int test_renderbuffer_image_write(cl_context context, cl_command_queue queue,
@@ -355,14 +354,10 @@ int test_renderbuffer_image_write(cl_context context, cl_command_queue queue,
     ExplicitType validationType;
     void *outSourceBuffer;
 
-    bool supports_half = false;
-    error = supportsHalf(context, &supports_half);
-    if (error != 0) return error;
-
     error = test_attach_renderbuffer_write_to_image(
         context, queue, attachment, glRenderbuffer, width, height, &clFormat,
-        &sourceType, d, (void **)&outSourceBuffer, supports_half);
-    if (error != 0 || ((sourceType == kHalf) && !supports_half)) return error;
+        &sourceType, d, (void **)&outSourceBuffer);
+    if (error != 0) return error;
 
     // If actual source type was half, convert to float for validation.
     if (sourceType == kHalf)

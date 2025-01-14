@@ -324,7 +324,7 @@ void generate_shuffle_mask( char *outMaskString, size_t maskSize, const ShuffleO
         for( size_t jj = 0; jj < maskSize; jj++ )
         {
             char thisMask[ 16 ];
-            sprintf( thisMask, "%s%ld", ( jj == 0 ) ? "" : ", ", jj );
+            sprintf(thisMask, "%s%zu", (jj == 0) ? "" : ", ", jj);
             strcat( outMaskString, thisMask );
         }
     }
@@ -347,7 +347,7 @@ static int create_shuffle_kernel( cl_context context, cl_program *outProgram, cl
     if( inVecSize == 1 ) //|| (inVecSize == 3)) // just have arrays if we go with size 3
         inSizeName[ 0 ] = 0;
     else
-        sprintf( inSizeName, "%ld", inVecSize );
+        sprintf(inSizeName, "%zu", inVecSize);
     if( inVecSize == 3 )
         inSizeArgName[ 0 ] = 0;
     else

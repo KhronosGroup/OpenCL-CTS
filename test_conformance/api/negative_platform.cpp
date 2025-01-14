@@ -16,8 +16,7 @@
 
 #include "testBase.h"
 
-int test_negative_get_platform_ids(cl_device_id deviceID, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(negative_get_platform_ids)
 {
     cl_platform_id platform;
     cl_int err = clGetPlatformIDs(0, &platform, nullptr);
@@ -37,10 +36,9 @@ int test_negative_get_platform_ids(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-int test_negative_get_platform_info(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(negative_get_platform_info)
 {
-    cl_platform_id platform = getPlatformFromDevice(deviceID);
+    cl_platform_id platform = getPlatformFromDevice(device);
 
     constexpr cl_platform_info INVALID_PARAM_VALUE = 0;
     cl_int err =

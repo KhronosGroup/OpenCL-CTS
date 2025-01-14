@@ -378,95 +378,6 @@ struct SemaphoreMultiWait : public SemaphoreTestBase
     clSemaphoreWrapper semaphore_second = nullptr;
 };
 
-struct SemaphoreImportExportFD : public SemaphoreTestBase
-{
-    SemaphoreImportExportFD(cl_device_id device, cl_context context,
-                            cl_command_queue queue, cl_int nelems)
-        : SemaphoreTestBase(device, context, queue, nelems),
-          semaphore_second(this)
-    {}
-
-    cl_int Run() override
-    {
-        cl_int err = CL_SUCCESS;
-        if (!is_extension_available(device,
-                                    "cl_khr_external_semaphore_sync_fd"))
-        {
-            log_info(
-                "cl_khr_external_semaphore_sync_fd is not supported on this "
-                "platform. Skipping test.\n");
-            return TEST_SKIPPED_ITSELF;
-        }
-
-        // Create ooo queue
-        clCommandQueueWrapper queue = clCreateCommandQueue(
-            context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
-        test_error(err, "Could not create command queue");
-
-        // Create semaphore
-        cl_semaphore_properties_khr sema_1_props[] = {
-            static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_TYPE_BINARY_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_HANDLE_SYNC_FD_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
-            0
-        };
-        semaphore =
-            clCreateSemaphoreWithPropertiesKHR(context, sema_1_props, &err);
-        test_error(err, "Could not create semaphore");
-
-        // Signal semaphore
-        clEventWrapper signal_event;
-        err = clEnqueueSignalSemaphoresKHR(queue, 1, semaphore, nullptr, 0,
-                                           nullptr, &signal_event);
-        test_error(err, "Could not signal semaphore");
-
-        // Extract sync fd
-        int handle = -1;
-        size_t handle_size;
-        err = clGetSemaphoreHandleForTypeKHR(
-            semaphore, device, CL_SEMAPHORE_HANDLE_SYNC_FD_KHR, sizeof(handle),
-            &handle, &handle_size);
-        test_error(err, "Could not extract semaphore handle");
-        test_assert_error(sizeof(handle) == handle_size, "Invalid handle size");
-        test_assert_error(handle >= 0, "Invalid handle");
-
-        // Create semaphore from sync fd
-        cl_semaphore_properties_khr sema_2_props[] = {
-            static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
-            static_cast<cl_semaphore_properties_khr>(
-                CL_SEMAPHORE_TYPE_BINARY_KHR),
-            CL_SEMAPHORE_HANDLE_SYNC_FD_KHR,
-            static_cast<cl_semaphore_properties_khr>(handle), 0
-        };
-
-        semaphore_second =
-            clCreateSemaphoreWithPropertiesKHR(context, sema_2_props, &err);
-        test_error(err, "Could not create semaphore");
-
-        // Wait semaphore
-        clEventWrapper wait_event;
-        err = clEnqueueWaitSemaphoresKHR(queue, 1, semaphore_second, nullptr, 0,
-                                         nullptr, &wait_event);
-        test_error(err, "Could not wait semaphore");
-
-        // Finish
-        err = clFinish(queue);
-        test_error(err, "Could not finish queue");
-
-        // Check all events are completed
-        test_assert_event_complete(signal_event);
-        test_assert_event_complete(wait_event);
-
-        return CL_SUCCESS;
-    }
-    clSemaphoreWrapper semaphore_second = nullptr;
-};
 } // anonymous namespace
 
 // Confirm that a signal followed by a wait will complete successfully
@@ -509,14 +420,4 @@ int test_semaphores_multi_wait(cl_device_id deviceID, cl_context context,
 {
     return MakeAndRunTest<SemaphoreMultiWait>(deviceID, context, defaultQueue,
                                               num_elements);
-}
-
-// Test it is possible to export a semaphore to a sync fd and import the same
-// sync fd to a new semaphore
-int test_semaphores_import_export_fd(cl_device_id deviceID, cl_context context,
-                                     cl_command_queue defaultQueue,
-                                     int num_elements)
-{
-    return MakeAndRunTest<SemaphoreImportExportFD>(deviceID, context,
-                                                   defaultQueue, num_elements);
 }

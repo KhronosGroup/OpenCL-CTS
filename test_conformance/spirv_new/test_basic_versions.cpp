@@ -23,7 +23,7 @@
 
 extern bool gVersionSkip;
 
-TEST_SPIRV_FUNC(basic_versions)
+REGISTER_TEST(basic_versions)
 {
     cl_int error = CL_SUCCESS;
 
@@ -52,13 +52,13 @@ TEST_SPIRV_FUNC(basic_versions)
     });
 
     size_t sz = 0;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_IL_VERSION, 0, NULL, &sz);
+    error = clGetDeviceInfo(device, CL_DEVICE_IL_VERSION, 0, NULL, &sz);
     test_error(error, "Unable to query device IL versions size");
 
     std::string ilVersions;
     ilVersions.resize(sz);
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_IL_VERSION, sz, &ilVersions[0],
-                            NULL);
+    error =
+        clGetDeviceInfo(device, CL_DEVICE_IL_VERSION, sz, &ilVersions[0], NULL);
     test_error(error, "Unable to query device IL versions string");
 
     for (auto& testCase : mapILtoSubdir)
@@ -88,7 +88,7 @@ TEST_SPIRV_FUNC(basic_versions)
         std::string filename = testCase.second + "/basic";
 
         clProgramWrapper prog;
-        error = get_program_with_il(prog, deviceID, context, filename.c_str());
+        error = get_program_with_il(prog, device, context, filename.c_str());
         test_error(error, "Unable to build SPIR-V program");
 
         clKernelWrapper kernel = clCreateKernel(prog, "test_basic", &error);

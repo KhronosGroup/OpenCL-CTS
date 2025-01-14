@@ -16,6 +16,7 @@
 #include "harness/testHarness.h"
 
 test_definition test_list[] = {
+    ADD_TEST(multi_flag_creation),
     ADD_TEST(single_ndrange),
     ADD_TEST(interleaved_enqueue),
     ADD_TEST(mixed_commands),

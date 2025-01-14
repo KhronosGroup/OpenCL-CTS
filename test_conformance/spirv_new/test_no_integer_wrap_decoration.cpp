@@ -226,18 +226,17 @@ int test_no_integer_wrap_decoration(cl_device_id deviceID, cl_context context,
 }
 
 #define TEST_FMATH_FUNC_KHR(TYPE, FUNC)                                        \
-    TEST_SPIRV_FUNC(                                                           \
-        ext_cl_khr_spirv_no_integer_wrap_decoration_##FUNC##_##TYPE)           \
+    REGISTER_TEST(ext_cl_khr_spirv_no_integer_wrap_decoration_##FUNC##_##TYPE) \
     {                                                                          \
         if (!is_extension_available(                                           \
-                deviceID, "cl_khr_spirv_no_integer_wrap_decoration"))          \
+                device, "cl_khr_spirv_no_integer_wrap_decoration"))            \
         {                                                                      \
             log_info("Extension cl_khr_spirv_no_integer_wrap_decoration not "  \
                      "supported; skipping tests.\n");                          \
             return TEST_SKIPPED_ITSELF;                                        \
         }                                                                      \
         return test_no_integer_wrap_decoration<cl_##TYPE>(                     \
-            deviceID, context, queue,                                          \
+            device, context, queue,                                            \
             "ext_cl_khr_spirv_no_integer_wrap_decoration_" #FUNC "_" #TYPE,    \
             #FUNC, #TYPE);                                                     \
     }
@@ -253,15 +252,15 @@ TEST_FMATH_FUNC_KHR(uint, fmul)
 TEST_FMATH_FUNC_KHR(uint, fshiftleft)
 
 #define TEST_FMATH_FUNC_14(TYPE, FUNC)                                         \
-    TEST_SPIRV_FUNC(spirv14_no_integer_wrap_decoration_##FUNC##_##TYPE)        \
+    REGISTER_TEST(spirv14_no_integer_wrap_decoration_##FUNC##_##TYPE)          \
     {                                                                          \
-        if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))               \
+        if (!is_spirv_version_supported(device, "SPIR-V_1.4"))                 \
         {                                                                      \
             log_info("SPIR-V 1.4 not supported; skipping tests.\n");           \
             return TEST_SKIPPED_ITSELF;                                        \
         }                                                                      \
         return test_no_integer_wrap_decoration<cl_##TYPE>(                     \
-            deviceID, context, queue,                                          \
+            device, context, queue,                                            \
             "spv1.4/no_integer_wrap_decoration_" #FUNC "_" #TYPE, #FUNC,       \
             #TYPE);                                                            \
     }

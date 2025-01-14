@@ -180,7 +180,7 @@ TestItem *CreateTestItem( cl_device_id deviceID, cl_int *err )
         {
             if( err )
             {
-                log_error("FAILURE: clCreateBuffer( %ld bytes ) failed in "
+                log_error("FAILURE: clCreateBuffer( %zu bytes ) failed in "
                           "CreateTestItem: %d\n",
                           TEST_SIZE * sizeof(cl_uint), error);
                 *err = error;
@@ -294,7 +294,8 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
         {
             if( err )
             {
-                log_error( "FAILURE to set arg 0 for kernel # %ld :  %d\n", j, error );
+                log_error("FAILURE to set arg 0 for kernel # %zu :  %d\n", j,
+                          error);
                 *err = error;
             }
             return error;
@@ -305,7 +306,9 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
         {
             if( err )
             {
-                log_error( "FAILURE: Unable to set arg 1 for kernel # %ld :  %d\n", j, error );
+                log_error(
+                    "FAILURE: Unable to set arg 1 for kernel # %zu :  %d\n", j,
+                    error);
                 *err = error;
             }
             return error;
@@ -318,7 +321,8 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
         {
             if( err )
             {
-                log_error( "FAILURE: Unable to enqueue kernel %ld: %d\n", j, error );
+                log_error("FAILURE: Unable to enqueue kernel %zu: %d\n", j,
+                          error);
                 *err = error;
             }
             return error;
@@ -360,7 +364,9 @@ cl_int UseTestItem( const TestItem *item, cl_int *err )
             cl_uint result = mapped[i];
             if( expected != result )
             {
-                log_error( "FAILURE:  Sample data at position %ld does not match expected result: *0x%8.8x vs. 0x%8.8x\n", i, expected, result );
+                log_error("FAILURE:  Sample data at position %zu does not "
+                          "match expected result: *0x%8.8x vs. 0x%8.8x\n",
+                          i, expected, result);
                 if( err )
                     *err = -1;
                 return -1;
@@ -441,16 +447,17 @@ int test_context_multiple_contexts_same_device(cl_device_id deviceID, size_t max
     // Check to make sure we made the minimum amount
     if( i < minCount )
     {
-        log_error( "FAILURE: only could make %ld of %ld contexts!\n", i, minCount );
+        log_error("FAILURE: only could make %zu of %zu contexts!\n", i,
+                  minCount);
         err = -1;
         goto exit;
     }
 
     // Report how many contexts we made
     if( i == maxCount )
-        log_info( "Successfully created all %lu contexts.\n", i );
+        log_info("Successfully created all %zu contexts.\n", i);
     else
-        log_info( "Successfully created %lu contexts out of %lu\n", i, maxCount );
+        log_info("Successfully created %zu contexts out of %zu\n", i, maxCount);
 
     // Set the count to be the number we succesfully made
     maxCount = i;
