@@ -248,8 +248,8 @@ struct CreateCommandBufferQueueWithoutMinProperties
 
 // CL_INCOMPATIBLE_COMMAND_QUEUE_KHR if any command-queue in queues is an
 // out-of-order command-queue and the device associated with the command-queue
-// does not support the CL_COMMAND_BUFFER_CAPABILITY_OUT_OF_ORDER_KHR
-// capability.
+// does not return CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE from
+// CL_DEVICE_COMMAND_BUFFER_SUPPORTED_QUEUE_PROPERTIES_KHR
 struct CreateCommandBufferDeviceDoesNotSupportOutOfOderQueue
     : public BasicCommandBufferTest
 {
