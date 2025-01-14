@@ -697,8 +697,8 @@ REGISTER_TEST(get_device_info_comparability)
 
     // 2. compare platforms found with and without using query
     cl_platform_id plat = nullptr;
-    error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(plat), &plat,
-                            NULL);
+    error =
+        clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(plat), &plat, NULL);
     test_error(error, "clGetDeviceInfo failed");
 
     test_assert_error(plat == comp_platform,
