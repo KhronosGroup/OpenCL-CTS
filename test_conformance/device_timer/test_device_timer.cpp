@@ -14,9 +14,11 @@
 // limitations under the License.
 //
 #include <stdio.h>
+#include <cinttypes>
 #include <CL/cl.h>
 #include "harness/errorHelpers.h"
 #include "harness/compat.h"
+#include "harness/testHarness.h"
 
 #if !defined(_WIN32)
     #include "unistd.h" // For "sleep"
@@ -24,7 +26,7 @@
 
 #define ALLOWED_ERROR 0.005f
 
-int test_device_and_host_timers(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(device_and_host_timers)
 {
     int errors = 0;
     cl_int result = CL_SUCCESS;
@@ -34,14 +36,14 @@ int test_device_and_host_timers(cl_device_id deviceID, cl_context context, cl_co
     cl_ulong observedDiff;
     cl_ulong allowedDiff;
 
-    result = clGetDeviceAndHostTimer(deviceID, &deviceStartTime, &hostStartTime);
+    result = clGetDeviceAndHostTimer(device, &deviceStartTime, &hostStartTime);
     if (result != CL_SUCCESS) {
         log_error("clGetDeviceAndHostTimer failed with error %s\n", IGetErrorString(result));
         errors++;
         goto End;
     }
 
-    result = clGetHostTimer(deviceID, &hostOnlyStartTime);
+    result = clGetHostTimer(device, &hostOnlyStartTime);
     if (result != CL_SUCCESS) {
         log_error("clGetHostTimer failed with error %s\n", IGetErrorString(result));
         errors++;
@@ -51,14 +53,14 @@ int test_device_and_host_timers(cl_device_id deviceID, cl_context context, cl_co
     // Wait for a while to allow the timers to increment substantially.
     sleep(5);
 
-    result = clGetDeviceAndHostTimer(deviceID, &deviceEndTime, &hostEndTime);
+    result = clGetDeviceAndHostTimer(device, &deviceEndTime, &hostEndTime);
     if (result != CL_SUCCESS) {
         log_error("clGetDeviceAndHostTimer failed with error %s\n", IGetErrorString(result));
         errors++;
         goto End;
     }
 
-    result = clGetHostTimer(deviceID, &hostOnlyEndTime);
+    result = clGetHostTimer(device, &hostOnlyEndTime);
     if (result != CL_SUCCESS) {
         log_error("clGetHostTimer failed with error %s\n", IGetErrorString(result));
         errors++;
@@ -73,13 +75,16 @@ int test_device_and_host_timers(cl_device_id deviceID, cl_context context, cl_co
 
     if (deviceEndTime <= deviceStartTime) {
         log_error("Device timer is not monotonically increasing.\n");
-        log_error("    deviceStartTime: %lu, deviceEndTime: %lu\n", deviceStartTime, deviceEndTime);
+        log_error("    deviceStartTime: %" PRIu64 ", deviceEndTime: %" PRIu64
+                  "\n",
+                  deviceStartTime, deviceEndTime);
         errors++;
     }
 
     if (hostEndTime <= hostStartTime) {
         log_error("Error: Host timer is not monotonically increasing.\n");
-        log_error("    hostStartTime: %lu, hostEndTime: %lu\n", hostStartTime, hostEndTime);
+        log_error("    hostStartTime: %" PRIu64 ", hostEndTime: %" PRIu64 "\n",
+                  hostStartTime, hostEndTime);
         errors++;
     }
 
@@ -94,7 +99,9 @@ int test_device_and_host_timers(cl_device_id deviceID, cl_context context, cl_co
 
     if (observedDiff > allowedDiff) {
         log_error("Error: Device and host timers did not increase by same amount\n");
-        log_error("    Observed difference between timers %lu (max allowed %lu).\n", observedDiff, allowedDiff);
+        log_error("    Observed difference between timers %" PRIu64
+                  " (max allowed %" PRIu64 ").\n",
+                  observedDiff, allowedDiff);
         errors++;
     }
 
@@ -102,21 +109,26 @@ int test_device_and_host_timers(cl_device_id deviceID, cl_context context, cl_co
 
     if (hostOnlyEndTime <= hostOnlyStartTime) {
         log_error("Error: Host timer is not monotonically increasing.\n");
-        log_error("    hostStartTime: %lu, hostEndTime: %lu\n", hostOnlyStartTime, hostOnlyEndTime);
+        log_error("    hostStartTime: %" PRIu64 ", hostEndTime: %" PRIu64 "\n",
+                  hostOnlyStartTime, hostOnlyEndTime);
         errors++;
     }
 
     if (hostOnlyStartTime < hostStartTime) {
         log_error("Error: Host start times do not correlate.\n");
         log_error("clGetDeviceAndHostTimer was called before clGetHostTimer but timers are not in that order.\n");
-        log_error("    clGetDeviceAndHostTimer: %lu, clGetHostTimer: %lu\n", hostStartTime, hostOnlyStartTime);
+        log_error("    clGetDeviceAndHostTimer: %" PRIu64
+                  ", clGetHostTimer: %" PRIu64 "\n",
+                  hostStartTime, hostOnlyStartTime);
         errors++;
     }
 
     if (hostOnlyEndTime < hostEndTime) {
         log_error("Error: Host end times do not correlate.\n");
         log_error("clGetDeviceAndHostTimer was called before clGetHostTimer but timers are not in that order.\n");
-        log_error("    clGetDeviceAndHostTimer: %lu, clGetHostTimer: %lu\n", hostEndTime, hostOnlyEndTime);
+        log_error("    clGetDeviceAndHostTimer: %" PRIu64
+                  ", clGetHostTimer: %" PRIu64 "\n",
+                  hostEndTime, hostOnlyEndTime);
         errors++;
     }
 
@@ -124,7 +136,7 @@ End:
     return errors;
 }
 
-int test_timer_resolution_queries(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(timer_resolution_queries)
 {
     int errors = 0;
     cl_int result = CL_SUCCESS;
@@ -132,19 +144,24 @@ int test_timer_resolution_queries(cl_device_id deviceID, cl_context context, cl_
     cl_ulong deviceTimerResolution = 0;
     cl_ulong hostTimerResolution = 0;
 
-    result = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform), &platform, NULL);
+    result = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
+                             &platform, NULL);
     if (result != CL_SUCCESS) {
         log_error("clGetDeviceInfo(CL_DEVICE_PLATFORM) failed with error %s.\n", IGetErrorString(result));
         errors++;
     }
-    
-    result = clGetDeviceInfo(deviceID, CL_DEVICE_PROFILING_TIMER_RESOLUTION, sizeof(deviceTimerResolution), &deviceTimerResolution, NULL);
+
+    result = clGetDeviceInfo(device, CL_DEVICE_PROFILING_TIMER_RESOLUTION,
+                             sizeof(deviceTimerResolution),
+                             &deviceTimerResolution, NULL);
     if (result != CL_SUCCESS) {
         log_error("clGetDeviceInfo(CL_DEVICE_PROFILING_TIMER_RESOLUTION) failed with error %s.\n", IGetErrorString(result));
         errors++;
     }
     else {
-        log_info("CL_DEVICE_PROFILING_TIMER_RESOLUTION == %lu nanoseconds\n", deviceTimerResolution);
+        log_info("CL_DEVICE_PROFILING_TIMER_RESOLUTION == %" PRIu64
+                 " nanoseconds\n",
+                 deviceTimerResolution);
     }
    
     if (platform) {
@@ -154,7 +171,9 @@ int test_timer_resolution_queries(cl_device_id deviceID, cl_context context, cl_
             errors++;
         }
         else {
-            log_info("CL_PLATFORM_HOST_TIMER_RESOLUTION == %lu nanoseconds\n", hostTimerResolution);
+            log_info("CL_PLATFORM_HOST_TIMER_RESOLUTION == %" PRIu64
+                     " nanoseconds\n",
+                     hostTimerResolution);
         }
     }
     else {

@@ -16,6 +16,7 @@
 #include "testBase.h"
 #include <limits.h>
 #include <ctype.h>
+#include <cinttypes>
 #ifndef _WIN32
 #include <unistd.h>
 #endif
@@ -216,7 +217,9 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
         char *extension = (char *)malloc((extension_length + 1) * sizeof(char));
         if (extension == NULL)
         {
-            log_error( "Error: unable to allocate memory to hold extension name: %ld chars\n", extension_length );
+            log_error("Error: unable to allocate memory to hold extension "
+                      "name: %" PRIdPTR " chars\n",
+                      extension_length);
             return -1;
         }
         extensions_supported[num_of_supported_extensions] = extension;

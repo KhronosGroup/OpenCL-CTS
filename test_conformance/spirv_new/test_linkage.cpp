@@ -77,33 +77,36 @@ static int test_linkage_compile(cl_device_id deviceID,
     return 0;
 }
 
-TEST_SPIRV_FUNC(linkage_export_function_compile)
+REGISTER_TEST(linkage_export_function_compile)
 {
     clProgramWrapper prog;
-    return test_linkage_compile(deviceID, context, queue, "linkage_export", prog);
+    return test_linkage_compile(device, context, queue, "linkage_export", prog);
 }
 
-TEST_SPIRV_FUNC(linkage_import_function_compile)
+REGISTER_TEST(linkage_import_function_compile)
 {
     clProgramWrapper prog;
-    return test_linkage_compile(deviceID, context, queue, "linkage_import", prog);
+    return test_linkage_compile(device, context, queue, "linkage_import", prog);
 }
 
-TEST_SPIRV_FUNC(linkage_import_function_link)
+REGISTER_TEST(linkage_import_function_link)
 {
     int err = 0;
 
     clProgramWrapper prog_export;
-    err = test_linkage_compile(deviceID, context, queue, "linkage_export", prog_export);
+    err = test_linkage_compile(device, context, queue, "linkage_export",
+                               prog_export);
     SPIRV_CHECK_ERROR(err, "Failed to compile export program");
 
     clProgramWrapper prog_import;
-    err = test_linkage_compile(deviceID, context, queue, "linkage_import", prog_import);
+    err = test_linkage_compile(device, context, queue, "linkage_import",
+                               prog_import);
     SPIRV_CHECK_ERROR(err, "Failed to compile import program");
 
     cl_program progs[] = {prog_export, prog_import};
 
-    clProgramWrapper prog = clLinkProgram(context, 1, &deviceID, NULL, 2, progs, NULL, NULL, &err);
+    clProgramWrapper prog =
+        clLinkProgram(context, 1, &device, NULL, 2, progs, NULL, NULL, &err);
     SPIRV_CHECK_ERROR(err, "Failed to link programs");
 
     clKernelWrapper kernel = clCreateKernel(prog, "test_linkage", &err);
@@ -212,9 +215,9 @@ static int test_linkonce_odr_helper(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(linkage_linkonce_odr)
+REGISTER_TEST(linkage_linkonce_odr)
 {
-    if (!is_extension_available(deviceID, "cl_khr_spirv_linkonce_odr"))
+    if (!is_extension_available(device, "cl_khr_spirv_linkonce_odr"))
     {
         log_info("Extension cl_khr_spirv_linkonce_odr not supported; skipping "
                  "tests.\n");
@@ -226,13 +229,13 @@ TEST_SPIRV_FUNC(linkage_linkonce_odr)
     // For this test, use the default main module, which has an "a" function
     // with the linkonce_odr linkage type.  This ensures that having two "a"
     // functions with linkonce_odr works properly.
-    result |= test_linkonce_odr_helper(deviceID, context, queue,
+    result |= test_linkonce_odr_helper(device, context, queue,
                                        "linkage_linkonce_odr_main");
 
     // For this test, use a main module without the "a" function.  This ensures
     // that the "a" function is properly exported with the linkonce_odr linkage
     // type.
-    result |= test_linkonce_odr_helper(deviceID, context, queue,
+    result |= test_linkonce_odr_helper(device, context, queue,
                                        "linkage_linkonce_odr_noa_main");
 
     return result;

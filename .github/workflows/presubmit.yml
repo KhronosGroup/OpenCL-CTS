@@ -27,10 +27,29 @@ jobs:
             arch: aarch64
             debug: 1
             extra: " debug"
+          - os: ubuntu-22.04
+            mainmatrix: false
+            arch: android-arm
+            android_arch_abi: armeabi-v7a
+          - os: ubuntu-22.04
+            mainmatrix: false
+            arch: android-aarch64
+            android_arch_abi: arm64-v8a
     steps:
       - uses: actions/checkout@v4
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Install Arm and AArch64 compilers
+        if: ${{ matrix.arch == 'arm' || matrix.arch == 'aarch64' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc-12-arm-linux-gnueabihf g++-12-arm-linux-gnueabihf \
+            gcc-12-aarch64-linux-gnu g++-12-aarch64-linux-gnu
+          sudo update-alternatives --install /usr/bin/arm-linux-gnueabihf-gcc arm-linux-gnueabihf-gcc /usr/bin/arm-linux-gnueabihf-gcc-12 12
+          sudo update-alternatives --install /usr/bin/arm-linux-gnueabihf-g++ arm-linux-gnueabihf-g++ /usr/bin/arm-linux-gnueabihf-g++-12 12
+          sudo update-alternatives --install /usr/bin/aarch64-linux-gnu-gcc aarch64-linux-gnu-gcc /usr/bin/aarch64-linux-gnu-gcc-12 12
+          sudo update-alternatives --install /usr/bin/aarch64-linux-gnu-g++ aarch64-linux-gnu-g++ /usr/bin/aarch64-linux-gnu-g++-12 12
       - name: Setup OpenGL build dependencies
         if: ${{ matrix.gl }}
         run: |
@@ -55,6 +74,15 @@ jobs:
         with:
           version: 1.3.275.0
           cache: true
+      - name: Install Android NDK
+        if: ${{ matrix.arch == 'android-arm' || matrix.arch == 'android-aarch64' }}
+        run: |
+          wget https://dl.google.com/android/repository/android-ndk-r27c-linux.zip -O android-ndk.zip
+          unzip android-ndk.zip -d $HOME
+          export ANDROID_NDK=$HOME/android-ndk-r27c
+          echo "ANDROID_NDK=$ANDROID_NDK" >> $GITHUB_ENV
+          export ANDROID_ARCH_ABI=${{ matrix.android_arch_abi }}
+          echo "ANDROID_ARCH_ABI=$ANDROID_ARCH_ABI" >> $GITHUB_ENV
       - name: Build
         shell: bash
         run: ./presubmit.sh

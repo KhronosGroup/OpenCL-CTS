@@ -83,64 +83,64 @@ int test_phi(cl_device_id deviceID,
     return 0;
 }
 
-TEST_SPIRV_FUNC(op_phi_2_blocks)
+REGISTER_TEST(op_phi_2_blocks)
 {
     const int num = 1 << 10;
     RandomSeed seed(gRandomSeed);
 
-    std::vector<cl_int> lhs(num);
-    std::vector<cl_int> rhs(num);
-    std::vector<cl_int> out(num);
+    std::vector<cl_uint> lhs(num);
+    std::vector<cl_uint> rhs(num);
+    std::vector<cl_uint> out(num);
 
     for (int i = 0; i < num; i++) {
-        lhs[i] = genrand<cl_int>(seed);
-        rhs[i] = genrand<cl_int>(seed);
+        lhs[i] = genrand<cl_uint>(seed);
+        rhs[i] = genrand<cl_uint>(seed);
         out[i] = lhs[i] < rhs[i] ? (rhs[i] - lhs[i]) : (lhs[i] - rhs[i]);
     }
 
-    return test_phi(deviceID, context, queue, "phi_2", lhs, rhs, out);
+    return test_phi(device, context, queue, "phi_2", lhs, rhs, out);
 }
 
-TEST_SPIRV_FUNC(op_phi_3_blocks)
+REGISTER_TEST(op_phi_3_blocks)
 {
     const int num = 1 << 10;
     RandomSeed seed(gRandomSeed);
 
-    std::vector<cl_int> lhs(num);
-    std::vector<cl_int> rhs(num);
-    std::vector<cl_int> out(num);
+    std::vector<cl_uint> lhs(num);
+    std::vector<cl_uint> rhs(num);
+    std::vector<cl_uint> out(num);
 
     for (int i = 0; i < num; i++) {
-        lhs[i] = genrand<cl_int>(seed);
-        rhs[i] = genrand<cl_int>(seed);
+        lhs[i] = genrand<cl_uint>(seed);
+        rhs[i] = genrand<cl_uint>(seed);
         if (lhs[i] < rhs[i]) {
-            out[i] = lhs[i] < 0 ? -lhs[i] : lhs[i];
+            out[i] = lhs[i] < 65535 ? -lhs[i] : lhs[i];
         } else {
             out[i] = lhs[i] - rhs[i];
         }
     }
 
-    return test_phi(deviceID, context, queue, "phi_3", lhs, rhs, out);
+    return test_phi(device, context, queue, "phi_3", lhs, rhs, out);
 }
 
-TEST_SPIRV_FUNC(op_phi_4_blocks)
+REGISTER_TEST(op_phi_4_blocks)
 {
     const int num = 1 << 10;
     RandomSeed seed(gRandomSeed);
 
-    std::vector<cl_int> lhs(num);
-    std::vector<cl_int> rhs(num);
-    std::vector<cl_int> out(num);
+    std::vector<cl_uint> lhs(num);
+    std::vector<cl_uint> rhs(num);
+    std::vector<cl_uint> out(num);
 
     for (int i = 0; i < num; i++) {
-        lhs[i] = genrand<cl_int>(seed);
-        rhs[i] = genrand<cl_int>(seed);
+        lhs[i] = genrand<cl_uint>(seed);
+        rhs[i] = genrand<cl_uint>(seed);
         if (lhs[i] < rhs[i]) {
-            out[i] = lhs[i] < 0 ? -lhs[i] : lhs[i];
+            out[i] = lhs[i] < 65535 ? -lhs[i] : lhs[i];
         } else {
-            out[i] = rhs[i] < 0 ? -rhs[i] : rhs[i];
+            out[i] = rhs[i] < 65535 ? -rhs[i] : rhs[i];
         }
     }
 
-    return test_phi(deviceID, context, queue, "phi_4", lhs, rhs, out);
+    return test_phi(device, context, queue, "phi_4", lhs, rhs, out);
 }

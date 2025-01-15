@@ -23,7 +23,6 @@
 #include <CL/cl_gl.h>
 #endif
 
-extern int supportsHalf(cl_context context, bool *supports_half);
 extern int supportsMsaa(cl_context context, bool *supports_msaa);
 extern int supportsDepth(cl_context context, bool *supports_depth);
 
@@ -441,10 +440,6 @@ static int test_image_format_read(cl_context context, cl_command_queue queue,
     if (fmt->type == kHalf)
     {
         if (DetectFloatToHalfRoundingMode(queue)) return 1;
-        bool supports_half = false;
-        error = supportsHalf(context, &supports_half);
-        if (error != 0) return error;
-        if (!supports_half) return 0;
     }
 #ifdef GL_VERSION_3_2
     if (get_base_gl_target(target) == GL_TEXTURE_2D_MULTISAMPLE

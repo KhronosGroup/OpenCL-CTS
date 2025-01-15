@@ -26,7 +26,7 @@ struct test_queue_array_properties_data
 };
 
 int verify_if_properties_supported(
-    cl_device_id deviceID, cl_command_queue_properties requested_bitfield,
+    cl_device_id device, cl_command_queue_properties requested_bitfield,
     cl_uint requested_size)
 {
     int error = CL_SUCCESS;
@@ -40,7 +40,7 @@ int verify_if_properties_supported(
         {
             cl_uint max_queue_size = 0;
             error =
-                clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE,
+                clGetDeviceInfo(device, CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE,
                                 sizeof(max_queue_size), &max_queue_size, NULL);
             test_error(error,
                        "clGetDeviceInfo for "
@@ -71,7 +71,7 @@ int verify_if_properties_supported(
 
     if (on_host_queue)
     {
-        error = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_HOST_PROPERTIES,
+        error = clGetDeviceInfo(device, CL_DEVICE_QUEUE_ON_HOST_PROPERTIES,
                                 sizeof(supported_properties),
                                 &supported_properties, NULL);
         test_error(error,
@@ -80,7 +80,7 @@ int verify_if_properties_supported(
     }
     else
     {
-        error = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES,
+        error = clGetDeviceInfo(device, CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES,
                                 sizeof(supported_properties),
                                 &supported_properties, NULL);
         test_error(error,
@@ -107,7 +107,7 @@ int verify_if_properties_supported(
 }
 
 static int create_queue_and_check_array_properties(
-    cl_context context, cl_device_id deviceID,
+    cl_context context, cl_device_id device,
     test_queue_array_properties_data test_case)
 {
     cl_int error = CL_SUCCESS;
@@ -117,13 +117,13 @@ static int create_queue_and_check_array_properties(
     if (test_case.properties.size() > 0)
     {
         test_queue = clCreateCommandQueueWithProperties(
-            context, deviceID, test_case.properties.data(), &error);
+            context, device, test_case.properties.data(), &error);
         test_error(error, "clCreateCommandQueueWithProperties failed");
     }
     else
     {
         test_queue =
-            clCreateCommandQueueWithProperties(context, deviceID, NULL, &error);
+            clCreateCommandQueueWithProperties(context, device, NULL, &error);
         test_error(error, "clCreateCommandQueueWithProperties failed");
     }
 
@@ -162,7 +162,7 @@ static int create_queue_and_check_array_properties(
 }
 
 static int
-run_test_queue_array_properties(cl_context context, cl_device_id deviceID,
+run_test_queue_array_properties(cl_context context, cl_device_id device,
                                 test_queue_array_properties_data test_case)
 {
     int error = TEST_PASS;
@@ -189,7 +189,7 @@ run_test_queue_array_properties(cl_context context, cl_device_id deviceID,
             }
         }
 
-        error = verify_if_properties_supported(deviceID, requested_bitfield,
+        error = verify_if_properties_supported(device, requested_bitfield,
                                                requested_size);
         if (error == TEST_SKIPPED_ITSELF)
         {
@@ -201,16 +201,14 @@ run_test_queue_array_properties(cl_context context, cl_device_id deviceID,
     }
 
     // continue testing if supported user properties
-    error =
-        create_queue_and_check_array_properties(context, deviceID, test_case);
+    error = create_queue_and_check_array_properties(context, device, test_case);
     test_error(error, "create_queue_and_check_array_properties failed.\n");
 
     log_info("TC result: passed\n");
     return TEST_PASS;
 }
 
-int test_queue_properties_queries(cl_device_id deviceID, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(queue_properties_queries, Version(3, 0))
 {
     int error = TEST_PASS;
     std::vector<test_queue_array_properties_data> test_cases;
@@ -264,13 +262,12 @@ int test_queue_properties_queries(cl_device_id deviceID, cl_context context,
 
     for (auto test_case : test_cases)
     {
-        error |= run_test_queue_array_properties(context, deviceID, test_case);
+        error |= run_test_queue_array_properties(context, device, test_case);
     }
     return error;
 }
 
-int test_set_command_queue_property(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(set_command_queue_property)
 {
     int err;
 
@@ -281,7 +278,7 @@ int test_set_command_queue_property(cl_device_id deviceID, cl_context context,
 
     // Add other supported properties combinations
     cl_command_queue_properties supported_queue_props;
-    clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_PROPERTIES,
+    clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
                     sizeof(supported_queue_props), &supported_queue_props,
                     NULL);
     if (supported_queue_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)
@@ -297,7 +294,7 @@ int test_set_command_queue_property(cl_device_id deviceID, cl_context context,
          queue_property_options)
     {
         clCommandQueueWrapper test_queue =
-            clCreateCommandQueue(context, deviceID, initial_properties, &err);
+            clCreateCommandQueue(context, device, initial_properties, &err);
         test_error(err, "clCreateCommandQueue failed");
 
         cl_command_queue_properties old_properties, set_properties,

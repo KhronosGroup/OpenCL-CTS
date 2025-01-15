@@ -35,7 +35,7 @@ const char *kernel_with_bool[] = {
     "}\n"
 };
 
-int test_bool_type(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(bool_type)
 {
 
     clProgramWrapper program;
@@ -48,4 +48,3 @@ int test_bool_type(cl_device_id deviceID, cl_context context, cl_command_queue q
                       "kernel_with_bool" );
     return err;
 }
-

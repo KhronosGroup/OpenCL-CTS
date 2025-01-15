@@ -22,7 +22,7 @@
 #include <cinttypes>
 #include <vector>
 
-int test_get_platform_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(get_platform_info)
 {
     cl_platform_id platform;
     cl_int error;
@@ -162,7 +162,7 @@ static cl_addressing_mode addressing_mode_values[] = {
 static cl_filter_mode filter_mode_values[] = { CL_FILTER_NEAREST,
                                                CL_FILTER_LINEAR };
 
-int test_sampler_params(cl_device_id deviceID, cl_context context,
+int test_sampler_params(cl_device_id device, cl_context context,
                         bool is_compatibility, size_t norm_coord_num,
                         size_t addr_mod_num, size_t filt_mod_num)
 {
@@ -218,7 +218,7 @@ int test_sampler_params(cl_device_id deviceID, cl_context context,
                                "normalized coords");
     test_error(error, "param checking failed");
 
-    Version version = get_device_cl_version(deviceID);
+    Version version = get_device_cl_version(device);
     if (version >= Version(3, 0))
     {
         std::vector<cl_sampler_properties> test_properties(
@@ -270,7 +270,7 @@ int test_sampler_params(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int get_sampler_info_params(cl_device_id deviceID, cl_context context,
+int get_sampler_info_params(cl_device_id device, cl_context context,
                             bool is_compatibility)
 {
     for (size_t norm_coord_num = 0;
@@ -289,36 +289,32 @@ int get_sampler_info_params(cl_device_id deviceID, cl_context context,
             for (size_t filt_mod_num = 0;
                  filt_mod_num < ARRAY_SIZE(filter_mode_values); filt_mod_num++)
             {
-                int err = test_sampler_params(deviceID, context,
-                                              is_compatibility, norm_coord_num,
-                                              addr_mod_num, filt_mod_num);
+                int err = test_sampler_params(device, context, is_compatibility,
+                                              norm_coord_num, addr_mod_num,
+                                              filt_mod_num);
                 test_error(err, "testing clGetSamplerInfo params failed");
             }
         }
     }
     return 0;
 }
-int test_get_sampler_info(cl_device_id deviceID, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(get_sampler_info, Version(2, 0))
 {
     int error;
-    PASSIVE_REQUIRE_IMAGE_SUPPORT(deviceID)
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
 
-    error = get_sampler_info_params(deviceID, context, false);
+    error = get_sampler_info_params(device, context, false);
     test_error(error, "Test Failed");
 
     return 0;
 }
 
-int test_get_sampler_info_compatibility(cl_device_id deviceID,
-                                        cl_context context,
-                                        cl_command_queue queue,
-                                        int num_elements)
+REGISTER_TEST(get_sampler_info_compatibility)
 {
     int error;
-    PASSIVE_REQUIRE_IMAGE_SUPPORT(deviceID)
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
 
-    error = get_sampler_info_params(deviceID, context, true);
+    error = get_sampler_info_params(device, context, true);
     test_error(error, "Test Failed");
 
     return 0;
@@ -347,8 +343,7 @@ int command_queue_param_test(cl_command_queue queue,
     return 0;
 }
 
-int check_get_command_queue_info_params(cl_device_id deviceID,
-                                        cl_context context,
+int check_get_command_queue_info_params(cl_device_id device, cl_context context,
                                         bool is_compatibility)
 {
     const cl_command_queue_properties host_optional[] = {
@@ -370,7 +365,7 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
     const size_t host_optional_size = ARRAY_SIZE(host_optional);
     const size_t device_required_size = ARRAY_SIZE(device_required);
 
-    Version version = get_device_cl_version(deviceID);
+    Version version = get_device_cl_version(device);
 
     const cl_device_info host_queue_query = version >= Version(2, 0)
         ? CL_DEVICE_QUEUE_ON_HOST_PROPERTIES
@@ -378,7 +373,7 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
 
     cl_queue_properties host_queue_props = 0;
     int error =
-        clGetDeviceInfo(deviceID, host_queue_query, sizeof(host_queue_props),
+        clGetDeviceInfo(device, host_queue_query, sizeof(host_queue_props),
                         &host_queue_props, NULL);
     test_error(error, "clGetDeviceInfo failed");
     log_info("CL_DEVICE_QUEUE_ON_HOST_PROPERTIES is %" PRIu64 "\n",
@@ -387,7 +382,7 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
     cl_queue_properties device_queue_props = 0;
     if (version >= Version(2, 0))
     {
-        error = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES,
+        error = clGetDeviceInfo(device, CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES,
                                 sizeof(device_queue_props), &device_queue_props,
                                 NULL);
         test_error(error, "clGetDeviceInfo failed");
@@ -430,12 +425,12 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
         clCommandQueueWrapper queue;
         if (is_compatibility)
         {
-            queue = clCreateCommandQueue(context, deviceID, props, &error);
+            queue = clCreateCommandQueue(context, device, props, &error);
             test_error(error, "Unable to create command queue to test with");
         }
         else
         {
-            queue = clCreateCommandQueueWithProperties(context, deviceID,
+            queue = clCreateCommandQueueWithProperties(context, device,
                                                        queue_props_arg, &error);
             test_error(error, "Unable to create command queue to test with");
         }
@@ -453,8 +448,8 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
                                          "context");
         test_error(error, "param checking failed");
 
-        error = command_queue_param_test(queue, CL_QUEUE_DEVICE, deviceID,
-                                         "deviceID");
+        error =
+            command_queue_param_test(queue, CL_QUEUE_DEVICE, device, "device");
         test_error(error, "param checking failed");
 
         error = command_queue_param_test(queue, CL_QUEUE_PROPERTIES,
@@ -464,32 +459,28 @@ int check_get_command_queue_info_params(cl_device_id deviceID,
     return 0;
 }
 
-int test_get_command_queue_info(cl_device_id deviceID, cl_context context,
-                                cl_command_queue ignoreQueue, int num_elements)
+REGISTER_TEST_VERSION(get_command_queue_info, Version(2, 0))
 {
-    int error = check_get_command_queue_info_params(deviceID, context, false);
+    int error = check_get_command_queue_info_params(device, context, false);
     test_error(error, "Test Failed");
     return 0;
 }
 
-int test_get_command_queue_info_compatibility(cl_device_id deviceID,
-                                              cl_context context,
-                                              cl_command_queue ignoreQueue,
-                                              int num_elements)
+REGISTER_TEST(get_command_queue_info_compatibility)
 {
-    int error = check_get_command_queue_info_params(deviceID, context, true);
+    int error = check_get_command_queue_info_params(device, context, true);
     test_error(error, "Test Failed");
     return 0;
 }
 
-int test_get_context_info(cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements)
+REGISTER_TEST(get_context_info)
 {
     int error;
 
     // #1 query single device context and perform object comparability test
     {
         clContextWrapper context_to_test =
-            clCreateContext(NULL, 1, &deviceID, nullptr, nullptr, &error);
+            clCreateContext(NULL, 1, &device, nullptr, nullptr, &error);
         test_error_ret(error, "Unable to create testing context", CL_SUCCESS);
 
         cl_uint num_devices = 0;
@@ -506,7 +497,7 @@ int test_get_context_info(cl_device_id deviceID, cl_context context, cl_command_
         test_error(error, "clGetContextInfo CL_CONTEXT_DEVICES failed\n");
 
         test_assert_error(
-            deviceID == comp_device,
+            device == comp_device,
             "Unexpected result returned by CL_CONTEXT_DEVICES query");
     }
 
@@ -515,7 +506,7 @@ int test_get_context_info(cl_device_id deviceID, cl_context context, cl_command_
     auto test_multi_device_context = [&]() {
         cl_uint maxComputeUnits = 0;
         cl_int err =
-            clGetDeviceInfo(deviceID, CL_DEVICE_MAX_COMPUTE_UNITS,
+            clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS,
                             sizeof(maxComputeUnits), &maxComputeUnits, NULL);
         test_error_fail(err, "Unable to get maximal number of compute units");
 
@@ -526,7 +517,7 @@ int test_get_context_info(cl_device_id deviceID, cl_context context, cl_command_
 
         cl_uint deviceCount = 0;
         // how many sub-devices can we create?
-        err = clCreateSubDevices(deviceID, partitionProp, 0, nullptr,
+        err = clCreateSubDevices(device, partitionProp, 0, nullptr,
                                  &deviceCount);
         if (err != CL_SUCCESS)
         {
@@ -542,7 +533,7 @@ int test_get_context_info(cl_device_id deviceID, cl_context context, cl_command_
 
         // get the list of subDevices
         SubDevicesScopeGuarded scope_guard(deviceCount);
-        err = clCreateSubDevices(deviceID, partitionProp, deviceCount,
+        err = clCreateSubDevices(device, partitionProp, deviceCount,
                                  scope_guard.sub_devices.data(), &deviceCount);
         if (err != CL_SUCCESS)
         {
@@ -640,16 +631,18 @@ return -1;    \
 }                \
 log_info( "\tReported device " name " : " type "\n", (int)( val / div ) );
 
-int test_get_device_info(cl_device_id deviceID, cl_context context, cl_command_queue ignoreQueue, int num_elements)
+REGISTER_TEST(get_device_info)
 {
     int error;
     size_t size;
 
     cl_uint vendorID;
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_VENDOR_ID, vendorID, "vendor ID", "0x%08x", int )
+    TEST_DEVICE_PARAM(device, CL_DEVICE_VENDOR_ID, vendorID, "vendor ID",
+                      "0x%08x", int)
 
     char extensions[ 10240 ];
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_EXTENSIONS, sizeof( extensions ), &extensions, &size );
+    error = clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS, sizeof(extensions),
+                            &extensions, &size);
     test_error( error, "Unable to get device extensions" );
     if( size != strlen( extensions ) + 1 )
     {
@@ -659,25 +652,33 @@ int test_get_device_info(cl_device_id deviceID, cl_context context, cl_command_q
     log_info( "\tReported device extensions: %s \n", extensions );
 
     cl_uint preferred;
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR, preferred, "preferred vector char width", "%d", int )
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT, preferred, "preferred vector short width", "%d", int )
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT, preferred, "preferred vector int width", "%d", int )
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG, preferred, "preferred vector long width", "%d", int )
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT, preferred, "preferred vector float width", "%d", int )
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE, preferred, "preferred vector double width", "%d", int )
+    TEST_DEVICE_PARAM(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR, preferred,
+                      "preferred vector char width", "%d", int)
+    TEST_DEVICE_PARAM(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT, preferred,
+                      "preferred vector short width", "%d", int)
+    TEST_DEVICE_PARAM(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT, preferred,
+                      "preferred vector int width", "%d", int)
+    TEST_DEVICE_PARAM(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG, preferred,
+                      "preferred vector long width", "%d", int)
+    TEST_DEVICE_PARAM(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT, preferred,
+                      "preferred vector float width", "%d", int)
+    TEST_DEVICE_PARAM(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE,
+                      preferred, "preferred vector double width", "%d", int)
 
     // Note that even if cl_khr_fp64, the preferred width for double can be non-zero.  For example, vendors
     // extensions can support double but may not support cl_khr_fp64, which implies math library support.
 
     cl_uint baseAddrAlign;
-    TEST_DEVICE_PARAM(deviceID, CL_DEVICE_MEM_BASE_ADDR_ALIGN, baseAddrAlign,
+    TEST_DEVICE_PARAM(device, CL_DEVICE_MEM_BASE_ADDR_ALIGN, baseAddrAlign,
                       "base address alignment", "%d bits", int)
 
     cl_uint maxDataAlign;
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE, maxDataAlign, "min data type alignment", "%d bytes", int )
+    TEST_DEVICE_PARAM(device, CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE, maxDataAlign,
+                      "min data type alignment", "%d bytes", int)
 
     cl_device_mem_cache_type cacheType;
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_GLOBAL_MEM_CACHE_TYPE, sizeof( cacheType ), &cacheType, &size );
+    error = clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_CACHE_TYPE,
+                            sizeof(cacheType), &cacheType, &size);
     test_error( error, "Unable to get device global mem cache type" );
     if( size != sizeof( cacheType ) )
     {
@@ -688,16 +689,21 @@ int test_get_device_info(cl_device_id deviceID, cl_context context, cl_command_q
     log_info( "\tReported device global mem cache type: %s \n", cacheTypeName );
 
     cl_uint cachelineSize;
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE, cachelineSize, "global mem cacheline size", "%d bytes", int )
+    TEST_DEVICE_PARAM(device, CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE,
+                      cachelineSize, "global mem cacheline size", "%d bytes",
+                      int)
 
     cl_ulong cacheSize;
-    TEST_DEVICE_PARAM_MEM( deviceID, CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, cacheSize, "global mem cache size", "%d KB", 1024 )
+    TEST_DEVICE_PARAM_MEM(device, CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, cacheSize,
+                          "global mem cache size", "%d KB", 1024)
 
     cl_ulong memSize;
-    TEST_DEVICE_PARAM_MEM( deviceID, CL_DEVICE_GLOBAL_MEM_SIZE, memSize, "global mem size", "%d MB", ( 1024 * 1024 ) )
+    TEST_DEVICE_PARAM_MEM(device, CL_DEVICE_GLOBAL_MEM_SIZE, memSize,
+                          "global mem size", "%d MB", (1024 * 1024))
 
     cl_device_local_mem_type localMemType;
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_LOCAL_MEM_TYPE, sizeof( localMemType ), &localMemType, &size );
+    error = clGetDeviceInfo(device, CL_DEVICE_LOCAL_MEM_TYPE,
+                            sizeof(localMemType), &localMemType, &size);
     test_error( error, "Unable to get device local mem type" );
     if( size != sizeof( cacheType ) )
     {
@@ -709,22 +715,29 @@ int test_get_device_info(cl_device_id deviceID, cl_context context, cl_command_q
 
 
     cl_bool errSupport;
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_ERROR_CORRECTION_SUPPORT, errSupport, "error correction support", "%d", int )
+    TEST_DEVICE_PARAM(device, CL_DEVICE_ERROR_CORRECTION_SUPPORT, errSupport,
+                      "error correction support", "%d", int)
 
     size_t timerResolution;
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_PROFILING_TIMER_RESOLUTION, timerResolution, "profiling timer resolution", "%ld nanoseconds", long )
+    TEST_DEVICE_PARAM(device, CL_DEVICE_PROFILING_TIMER_RESOLUTION,
+                      timerResolution, "profiling timer resolution",
+                      "%ld nanoseconds", long)
 
     cl_bool endian;
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_ENDIAN_LITTLE, endian, "little endian flag", "%d", int )
+    TEST_DEVICE_PARAM(device, CL_DEVICE_ENDIAN_LITTLE, endian,
+                      "little endian flag", "%d", int)
 
     cl_bool avail;
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_AVAILABLE, avail, "available flag", "%d", int )
+    TEST_DEVICE_PARAM(device, CL_DEVICE_AVAILABLE, avail, "available flag",
+                      "%d", int)
 
     cl_bool compilerAvail;
-    TEST_DEVICE_PARAM( deviceID, CL_DEVICE_COMPILER_AVAILABLE, compilerAvail, "compiler available flag", "%d", int )
+    TEST_DEVICE_PARAM(device, CL_DEVICE_COMPILER_AVAILABLE, compilerAvail,
+                      "compiler available flag", "%d", int)
 
     char profile[ 1024 ];
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_PROFILE, sizeof( profile ), &profile, &size );
+    error = clGetDeviceInfo(device, CL_DEVICE_PROFILE, sizeof(profile),
+                            &profile, &size);
     test_error( error, "Unable to get device profile" );
     if( size != strlen( profile ) + 1 )
     {
@@ -750,8 +763,6 @@ int test_get_device_info(cl_device_id deviceID, cl_context context, cl_command_q
 }
 
 
-
-
 static const char *sample_compile_size[2] = {
     "__kernel void sample_test(__global int *src, __global int *dst)\n"
     "{\n"
@@ -766,7 +777,7 @@ static const char *sample_compile_size[2] = {
     "\n"
     "}\n" };
 
-int test_kernel_required_group_size(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(kernel_required_group_size)
 {
     int error;
     size_t realSize;
@@ -776,7 +787,8 @@ int test_kernel_required_group_size(cl_device_id deviceID, cl_context context, c
 
     cl_uint max_dimensions;
 
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(max_dimensions), &max_dimensions, NULL);
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,
+                            sizeof(max_dimensions), &max_dimensions, NULL);
     test_error(error,  "clGetDeviceInfo failed for CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS");
     log_info("Device reported CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS = %d.\n", (int)max_dimensions);
 
@@ -788,12 +800,17 @@ int test_kernel_required_group_size(cl_device_id deviceID, cl_context context, c
         if( error != 0 )
             return error;
 
-        error = clGetKernelWorkGroupInfo(kernel, deviceID, CL_KERNEL_WORK_GROUP_SIZE, sizeof(kernel_max_workgroup_size), &kernel_max_workgroup_size, NULL);
+        error =
+            clGetKernelWorkGroupInfo(kernel, device, CL_KERNEL_WORK_GROUP_SIZE,
+                                     sizeof(kernel_max_workgroup_size),
+                                     &kernel_max_workgroup_size, NULL);
         test_error( error, "clGetKernelWorkGroupInfo failed for CL_KERNEL_WORK_GROUP_SIZE");
         log_info("The CL_KERNEL_WORK_GROUP_SIZE for the kernel is %d.\n", (int)kernel_max_workgroup_size);
 
         size_t size[ 3 ];
-        error = clGetKernelWorkGroupInfo( kernel, deviceID, CL_KERNEL_COMPILE_WORK_GROUP_SIZE, sizeof( size ), size, &realSize );
+        error = clGetKernelWorkGroupInfo(kernel, device,
+                                         CL_KERNEL_COMPILE_WORK_GROUP_SIZE,
+                                         sizeof(size), size, &realSize);
         test_error( error, "Unable to get work group info" );
 
         if( size[ 0 ] != 0 || size[ 1 ] != 0 || size[ 2 ] != 0 )
@@ -841,7 +858,9 @@ int test_kernel_required_group_size(cl_device_id deviceID, cl_context context, c
             return error;
 
         size_t size[ 3 ];
-        error = clGetKernelWorkGroupInfo( kernel, deviceID, CL_KERNEL_COMPILE_WORK_GROUP_SIZE, sizeof( size ), size, &realSize );
+        error = clGetKernelWorkGroupInfo(kernel, device,
+                                         CL_KERNEL_COMPILE_WORK_GROUP_SIZE,
+                                         sizeof(size), size, &realSize);
         test_error( error, "Unable to get work group info" );
 
         if( size[ 0 ] != local[0] || size[ 1 ] != local[1] || size[ 2 ] != local[2] )

@@ -57,12 +57,12 @@ int test_undef(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-#define TEST_UNDEF(NAME, TYPE)                              \
-    TEST_SPIRV_FUNC(op_undef_##NAME##_simple)               \
-    {                                                       \
-        return test_undef<TYPE>(deviceID, context, queue,   \
-                                "undef_" #NAME "_simple");  \
-    }                                                       \
+#define TEST_UNDEF(NAME, TYPE)                                                 \
+    REGISTER_TEST(op_undef_##NAME##_simple)                                    \
+    {                                                                          \
+        return test_undef<TYPE>(device, context, queue,                        \
+                                "undef_" #NAME "_simple");                     \
+    }
 
 // Boolean tests
 TEST_UNDEF(true  , cl_int  )
@@ -92,28 +92,30 @@ TEST_UNDEF(int4  , cl_int4)
 TEST_UNDEF(int3  , cl_int3)
 
 
-TEST_SPIRV_FUNC(op_undef_struct_int_float_simple)
+REGISTER_TEST(op_undef_struct_int_float_simple)
 {
     typedef AbstractStruct2<cl_int, cl_float> CustomType;
-    return test_undef<CustomType>(deviceID, context, queue, "undef_struct_int_float_simple");
+    return test_undef<CustomType>(device, context, queue,
+                                  "undef_struct_int_float_simple");
 }
 
-TEST_SPIRV_FUNC(op_undef_struct_int_char_simple)
+REGISTER_TEST(op_undef_struct_int_char_simple)
 {
     typedef AbstractStruct2<cl_int, cl_char> CustomType;
-    return test_undef<CustomType>(deviceID, context, queue, "undef_struct_int_char_simple");
+    return test_undef<CustomType>(device, context, queue,
+                                  "undef_struct_int_char_simple");
 }
 
-TEST_SPIRV_FUNC(op_undef_struct_struct_simple)
+REGISTER_TEST(op_undef_struct_struct_simple)
 {
     typedef AbstractStruct2<cl_int, cl_char> CustomType1;
     typedef AbstractStruct2<cl_int2, CustomType1> CustomType2;
-    return test_undef<CustomType2>(deviceID, context, queue, "undef_struct_struct_simple");
+    return test_undef<CustomType2>(device, context, queue,
+                                   "undef_struct_struct_simple");
 }
 
-TEST_SPIRV_FUNC(op_undef_half_simple)
+REGISTER_TEST(op_undef_half_simple)
 {
-    PASSIVE_REQUIRE_FP16_SUPPORT(deviceID);
-    return test_undef<cl_float>(deviceID, context, queue,
-                                "undef_half_simple");
+    PASSIVE_REQUIRE_FP16_SUPPORT(device);
+    return test_undef<cl_float>(device, context, queue, "undef_half_simple");
 }

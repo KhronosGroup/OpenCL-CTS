@@ -373,8 +373,8 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
     if (result != SUCCEEDED)
     {
         if (result == FAILED_TOO_BIG)
-            log_info("\t\tExecute kernel failed: %s (global dim: %ld, local "
-                     "dim: %ld)\n",
+            log_info("\t\tExecute kernel failed: %s (global dim: %zu, local "
+                     "dim: %zu)\n",
                      IGetErrorString(error), global_dims[0], local_dims[0]);
         else
             print_error(error, "clEnqueueNDRangeKernel failed");

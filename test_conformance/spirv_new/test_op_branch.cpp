@@ -65,19 +65,19 @@ int test_branch_simple(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-#define TEST_BRANCH_SIMPLE(NAME)                            \
-    TEST_SPIRV_FUNC(op_##NAME##_simple)                     \
-    {                                                       \
-        RandomSeed seed(gRandomSeed);                       \
-        int num = 1 << 10;                                  \
-        std::vector<cl_int> results(num);                   \
-        for (int i = 0; i < num; i++) {                     \
-            results[i] = genrand<cl_int>(seed);             \
-        }                                                   \
-        return test_branch_simple(deviceID, context, queue, \
-                                  #NAME "_simple",          \
-                                  results);                 \
-    }                                                       \
+#define TEST_BRANCH_SIMPLE(NAME)                                               \
+    REGISTER_TEST(op_##NAME##_simple)                                          \
+    {                                                                          \
+        RandomSeed seed(gRandomSeed);                                          \
+        int num = 1 << 10;                                                     \
+        std::vector<cl_int> results(num);                                      \
+        for (int i = 0; i < num; i++)                                          \
+        {                                                                      \
+            results[i] = genrand<cl_int>(seed);                                \
+        }                                                                      \
+        return test_branch_simple(device, context, queue, #NAME "_simple",     \
+                                  results);                                    \
+    }
 
 
 TEST_BRANCH_SIMPLE(label)

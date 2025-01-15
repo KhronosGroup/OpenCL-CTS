@@ -23,6 +23,4 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
-
 #endif // _testBase_h
