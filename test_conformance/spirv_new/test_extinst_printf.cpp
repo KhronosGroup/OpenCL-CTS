@@ -104,15 +104,42 @@ struct StreamGrabber
     bool acquired = false;
 };
 
+// printf callback, for cl_arm_printf
+void CL_CALLBACK printfCallBack(const char* printf_data, size_t len,
+                                size_t final, void* user_data)
+{
+    fwrite(printf_data, 1, len, stdout);
+}
+
 template <typename T>
-static int printf_operands_helper(cl_context context, cl_device_id device,
-                                  cl_command_queue queue,
+static int printf_operands_helper(cl_device_id device,
                                   const char* spirvFileName,
                                   const char* kernelName,
                                   const char* expectedResults, T value)
 {
     StreamGrabber grabber;
     cl_int error;
+
+    // Create a context and a queue to test with.
+    // We cannot use the context and queue from the harness because some
+    // implementations require a printf callback to be set at context creation.
+
+    cl_context_properties printf_properties[] = {
+        CL_PRINTF_CALLBACK_ARM, (cl_context_properties)printfCallBack,
+        CL_PRINTF_BUFFERSIZE_ARM, 256, 0
+    };
+
+    cl_context_properties* props =
+        is_extension_available(device, "cl_arm_printf") ? printf_properties
+                                                        : nullptr;
+
+    clContextWrapper context =
+        clCreateContext(props, 1, &device, notify_callback, nullptr, &error);
+    test_error(error, "Unable to create printf context");
+
+    clCommandQueueWrapper queue =
+        clCreateCommandQueue(context, device, 0, &error);
+    test_error(error, "Unable to create printf queue");
 
     clProgramWrapper program;
     error = get_program_with_il(program, device, context, spirvFileName);
@@ -168,8 +195,7 @@ hhx = 1
 hhX = 1
 )";
 
-    return printf_operands_helper(context, device, queue,
-                                  "printf_operands_scalar_int32",
+    return printf_operands_helper(device, "printf_operands_scalar_int32",
                                   "printf_operands_scalar_int32", expected, 1);
 }
 
@@ -185,9 +211,9 @@ g = 2
 G = 2
 )";
 
-    return printf_operands_helper(
-        context, device, queue, "printf_operands_scalar_fp32",
-        "printf_operands_scalar_fp32", expected, 2.0f);
+    return printf_operands_helper(device, "printf_operands_scalar_fp32",
+                                  "printf_operands_scalar_fp32", expected,
+                                  2.0f);
 }
 
 REGISTER_TEST(extinst_printf_operands_scalar_int64)
@@ -206,8 +232,7 @@ lX = 4
         return TEST_SKIPPED_ITSELF;
     }
 
-    return printf_operands_helper(context, device, queue,
-                                  "printf_operands_scalar_int64",
+    return printf_operands_helper(device, "printf_operands_scalar_int64",
                                   "printf_operands_scalar_int64", expected, 4L);
 }
 
@@ -229,7 +254,6 @@ G = 8
         return TEST_SKIPPED_ITSELF;
     }
 
-    return printf_operands_helper(context, device, queue,
-                                  "printf_operands_scalar_fp64",
+    return printf_operands_helper(device, "printf_operands_scalar_fp64",
                                   "printf_operands_scalar_fp64", expected, 8.0);
 }
