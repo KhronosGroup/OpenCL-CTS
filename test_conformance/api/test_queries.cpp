@@ -517,8 +517,8 @@ REGISTER_TEST(get_context_info)
 
         cl_uint deviceCount = 0;
         // how many sub-devices can we create?
-        err = clCreateSubDevices(device, partitionProp, 0, nullptr,
-                                 &deviceCount);
+        err =
+            clCreateSubDevices(device, partitionProp, 0, nullptr, &deviceCount);
         if (err != CL_SUCCESS)
         {
             log_info("Can't partition device, test not supported\n");
