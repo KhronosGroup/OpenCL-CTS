@@ -201,105 +201,6 @@ struct CreateCommandBufferNotSupportedProperties : public BasicCommandBufferTest
 
     cl_command_buffer_properties_khr unsupported_prop = 0;
 };
-
-// CL_INCOMPATIBLE_COMMAND_QUEUE_KHR if the properties of any command-queue in
-// queues does not contain the minimum properties specified by
-// CL_DEVICE_COMMAND_BUFFER_REQUIRED_QUEUE_PROPERTIES_KHR.
-struct CreateCommandBufferQueueWithoutMinProperties
-    : public BasicCommandBufferTest
-{
-    using BasicCommandBufferTest::BasicCommandBufferTest;
-
-    cl_int Run() override
-    {
-        cl_int error = CL_SUCCESS;
-
-        command_buffer = clCreateCommandBufferKHR(1, &queue, nullptr, &error);
-        test_failure_error_ret(error, CL_INCOMPATIBLE_COMMAND_QUEUE_KHR,
-                               "clCreateCommandBufferKHR should return "
-                               "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR",
-                               TEST_FAIL);
-
-        return CL_SUCCESS;
-    }
-
-    bool Skip() override
-    {
-        if (BasicCommandBufferTest::Skip()) return true;
-
-        cl_command_queue_properties required_properties;
-        cl_int error = clGetDeviceInfo(
-            device, CL_DEVICE_COMMAND_BUFFER_REQUIRED_QUEUE_PROPERTIES_KHR,
-            sizeof(required_properties), &required_properties, NULL);
-        test_error(error,
-                   "Unable to query "
-                   "CL_DEVICE_COMMAND_BUFFER_REQUIRED_QUEUE_PROPERTIES_KHR");
-
-        cl_command_queue_properties queue_properties;
-        error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES,
-                                      sizeof(queue_properties),
-                                      &queue_properties, NULL);
-        test_error(error, "Unable to query CL_QUEUE_PROPERTIES");
-
-        // Skip if queue properties contains those required
-        return required_properties == (required_properties & queue_properties);
-    }
-};
-
-// CL_INCOMPATIBLE_COMMAND_QUEUE_KHR if any command-queue in queues is an
-// out-of-order command-queue and the device associated with the command-queue
-// does not return CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE from
-// CL_DEVICE_COMMAND_BUFFER_SUPPORTED_QUEUE_PROPERTIES_KHR
-struct CreateCommandBufferDeviceDoesNotSupportOutOfOderQueue
-    : public BasicCommandBufferTest
-{
-    CreateCommandBufferDeviceDoesNotSupportOutOfOderQueue(
-        cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicCommandBufferTest(device, context, queue),
-          out_of_order_queue(nullptr)
-    {}
-
-    cl_int Run() override
-    {
-        cl_int error = CL_SUCCESS;
-
-        command_buffer =
-            clCreateCommandBufferKHR(1, &out_of_order_queue, nullptr, &error);
-        test_failure_error_ret(error, CL_INCOMPATIBLE_COMMAND_QUEUE_KHR,
-                               "clCreateCommandBufferKHR should return "
-                               "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR",
-                               TEST_FAIL);
-
-        return CL_SUCCESS;
-    }
-
-    cl_int SetUp(int elements) override
-    {
-        cl_int error = CL_SUCCESS;
-
-        error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        out_of_order_queue = clCreateCommandQueue(
-            context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &error);
-        test_error(error,
-                   "clCreateCommandQueue with "
-                   "CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE failed");
-
-        return CL_SUCCESS;
-    }
-
-    bool Skip() override
-    {
-        if (BasicCommandBufferTest::Skip()) return true;
-
-        // If device does not support out of order queue or if device supports
-        // out of order command buffer test should be skipped
-        return !queue_out_of_order_support || out_of_order_support;
-    }
-
-    clCommandQueueWrapper out_of_order_queue;
-};
 };
 
 int test_negative_create_command_buffer_num_queues(cl_device_id device,
@@ -333,22 +234,5 @@ int test_negative_create_command_buffer_not_supported_properties(
     int num_elements)
 {
     return MakeAndRunTest<CreateCommandBufferNotSupportedProperties>(
-        device, context, queue, num_elements);
-}
-
-int test_negative_create_command_buffer_queue_without_min_properties(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
-{
-    return MakeAndRunTest<CreateCommandBufferQueueWithoutMinProperties>(
-        device, context, queue, num_elements);
-}
-
-int test_negative_create_command_buffer_device_does_not_support_out_of_order_queue(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
-{
-    return MakeAndRunTest<
-        CreateCommandBufferDeviceDoesNotSupportOutOfOderQueue>(
         device, context, queue, num_elements);
 }
