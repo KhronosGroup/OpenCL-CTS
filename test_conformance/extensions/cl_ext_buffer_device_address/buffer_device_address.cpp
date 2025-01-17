@@ -96,8 +96,9 @@ public:
         test_error(error, "clCreateBuffer failed\n");
 
         // Test a buffer with hostptr copied data
-        dev_addr_buffer = clCreateBuffer(
-            context, CL_MEM_READ_WRITE | address_type | CL_MEM_COPY_HOST_PTR,
+        cl_mem_properties buf_props[] = { address_type, CL_TRUE, 0 };
+        dev_addr_buffer = clCreateBufferWithProperties(
+            context, buf_props, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
             sizeof(cl_int) * BUF_SIZE, BufferHost, &error);
         test_error(error, "clCreateBuffer with device address 1 failed\n");
 
@@ -142,13 +143,8 @@ private:
         Addr = 0;
         cl_int error = clGetMemObjectInfo(buf, CL_MEM_DEVICE_ADDRESS_EXT,
                                           sizeof(Addr), &Addr, NULL);
-        if (error)
-        {
-            print_error(
-                error,
-                "clGetMemObjectInfo(CL_MEM_DEVICE_ADDRESS_EXT) failed\n");
-            return error;
-        }
+        test_error(error,
+                   "clGetMemObjectInfo(CL_MEM_DEVICE_ADDRESS_EXT) failed\n");
         if (Addr == 0)
         {
             print_error(error,
@@ -158,6 +154,57 @@ private:
         }
         return CL_SUCCESS;
     }
+
+    int check_svm_buffer()
+    {
+        clSVMWrapper svm_buffer;
+        clMemWrapper buffer;
+        cl_int error = 0;
+
+        cl_device_svm_capabilities svm_caps = 0;
+        error = clGetDeviceInfo(device, CL_DEVICE_SVM_CAPABILITIES,
+                                sizeof(svm_caps), &svm_caps, NULL);
+        if (error != CL_SUCCESS)
+        {
+            print_error(error, "Unable to get SVM capabilities, skipping");
+            return 0;
+        }
+        if (svm_caps == 0)
+        {
+            print_error(error, "Device has no SVM capabilities, skipping");
+            return 0;
+        }
+
+        svm_buffer =
+            clSVMWrapper(context, sizeof(cl_int) * BUF_SIZE,
+                         CL_DEVICE_SVM_COARSE_GRAIN_BUFFER | CL_MEM_READ_WRITE);
+        if (svm_buffer() == nullptr)
+        {
+            test_error(CL_OUT_OF_RESOURCES, "SVM allocation failed");
+        }
+
+        cl_mem_properties buf_props[] = { address_type, CL_TRUE, 0 };
+        buffer = clCreateBufferWithProperties(
+            context, buf_props, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+            sizeof(cl_int) * BUF_SIZE, svm_buffer(), &error);
+        test_error(error, "clCreateBuffer with device address 1 failed\n");
+
+        cl_mem_device_address_EXT Addr = 0;
+        error = clGetMemObjectInfo(buffer, CL_MEM_DEVICE_ADDRESS_EXT,
+                                   sizeof(Addr), &Addr, NULL);
+        test_error(error,
+                   "clGetMemObjectInfo(CL_MEM_DEVICE_ADDRESS_EXT) failed\n");
+
+        if ((void *)Addr != svm_buffer())
+        {
+            print_error(error,
+                        "clGetMemObjectInfo(CL_MEM_DEVICE_ADDRESS_EXT) "
+                        "returned different address than clSVMAlloc\n");
+            return CL_INVALID_VALUE;
+        }
+        return CL_SUCCESS;
+    }
+
 
     int test_buffer(clMemWrapper &dev_addr_buffer, clMemWrapper &plain_buffer,
                     clKernelWrapper &get_addr_kernel)
@@ -174,12 +221,12 @@ private:
         error =
             check_device_address_from_api(dev_addr_buffer, DeviceAddrFromAPI);
         test_error_fail(error,
-                        "device address buffer does not have device address")
+                        "device address buffer does not have device address");
 
-            error = clEnqueueWriteBuffer(queue, dev_addr_buffer,
-                                         CL_FALSE, // block
-                                         0, BUF_SIZE * sizeof(cl_int),
-                                         BufferHost, 0, NULL, NULL);
+        error = clEnqueueWriteBuffer(queue, dev_addr_buffer,
+                                     CL_FALSE, // block
+                                     0, BUF_SIZE * sizeof(cl_int), BufferHost,
+                                     0, NULL, NULL);
         test_error_fail(error,
                         "clEnqueueWriteBuffer of dev_addr_buffer failed\n");
 
