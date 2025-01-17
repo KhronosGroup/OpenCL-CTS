@@ -13,12 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _setup_h
-#define _setup_h
+#ifndef _gl_setup_h
+#define _gl_setup_h
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 #include "gl_headers.h"
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -36,13 +37,13 @@ class GLEnvironment
         GLEnvironment() {}
         virtual ~GLEnvironment() {}
 
-         virtual int Init( int *argc, char **argv, int use_opengl_32 ) = 0;
+        virtual int Init(int *argc, char **argv, int use_opengl_32) = 0;
         virtual cl_context CreateCLContext( void ) = 0;
         virtual int SupportsCLGLInterop( cl_device_type device_type) = 0;
+        virtual int
+        GetContextProps(std::vector<cl_context_properties> &props) = 0;
 
         static GLEnvironment *    Instance( void );
-
-
 };
 
-#endif // _setup_h
+#endif // _gl_setup_h
