@@ -43,7 +43,7 @@ class GLEnvironment
         virtual int
         GetContextProps(std::vector<cl_context_properties> &props) = 0;
 
-        static GLEnvironment *    Instance( void );
+        static GLEnvironment *Instance(void);
 };
 
 #endif // _gl_setup_h
