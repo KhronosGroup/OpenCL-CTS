@@ -333,8 +333,9 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
     size_t paramSize;
     cl_uint numInstances;
 
-
     error = create_single_kernel_helper_create_program(context, &program, 1, sample_kernel_code_single_line);
+    test_error(error, "create_single_kernel_helper_create_program failed");
+
     if( program == NULL )
     {
         log_error( "ERROR: Unable to create reference program!\n" );
@@ -346,12 +347,19 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
     error = clGetProgramInfo( program, CL_PROGRAM_DEVICES, sizeof( device1 ), &device1, NULL );
     test_error( error, "Unable to get device of program" );
 
-  /* Since the device IDs are opaque types we check the CL_DEVICE_VENDOR_ID which is unique for identical hardware. */
-  cl_uint device1_vid, deviceID_vid;
-  error = clGetDeviceInfo(device1, CL_DEVICE_VENDOR_ID, sizeof(device1_vid), &device1_vid, NULL );
-  test_error( error, "Unable to get device CL_DEVICE_VENDOR_ID" );
-  error = clGetDeviceInfo(deviceID, CL_DEVICE_VENDOR_ID, sizeof(deviceID_vid), &deviceID_vid, NULL );
-  test_error( error, "Unable to get device CL_DEVICE_VENDOR_ID" );
+    /* Object comparability test. */
+    test_assert_error(device1 == deviceID,
+                      "Unexpected result returned by CL_PROGRAM_DEVICES query");
+
+    /* Since the device IDs are opaque types we check the CL_DEVICE_VENDOR_ID
+     * which is unique for identical hardware. */
+    cl_uint device1_vid, deviceID_vid;
+    error = clGetDeviceInfo(device1, CL_DEVICE_VENDOR_ID, sizeof(device1_vid),
+                            &device1_vid, NULL);
+    test_error(error, "Unable to get device CL_DEVICE_VENDOR_ID");
+    error = clGetDeviceInfo(deviceID, CL_DEVICE_VENDOR_ID, sizeof(deviceID_vid),
+                            &deviceID_vid, NULL);
+    test_error(error, "Unable to get device CL_DEVICE_VENDOR_ID");
 
     if( device1_vid != deviceID_vid )
     {
@@ -420,6 +428,81 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
     test_error( error, "Unable to release program object" );
 
     return 0;
+}
+
+int test_get_program_info_mult_devices(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue, int num_elements)
+{
+    cl_program program = nullptr;
+    cl_uint maxComputeUnits = 0;
+    cl_int err =
+        clGetDeviceInfo(deviceID, CL_DEVICE_MAX_COMPUTE_UNITS,
+                        sizeof(maxComputeUnits), &maxComputeUnits, nullptr);
+    test_error_ret(err, "Unable to get maximal number of compute units",
+                   TEST_FAIL);
+
+    cl_device_partition_property partitionProp[] = {
+        CL_DEVICE_PARTITION_EQUALLY,
+        static_cast<cl_device_partition_property>(maxComputeUnits / 2), 0
+    };
+
+    cl_uint num_devices = 0;
+    // how many sub-devices can we create?
+    err = clCreateSubDevices(deviceID, partitionProp, 0, nullptr, &num_devices);
+    if (err != CL_SUCCESS || num_devices < 2)
+    {
+        log_info("Can't partition device, test not supported\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    // get the list of subDevices
+    SubDevicesScopeGuarded scope_guard(num_devices);
+    err = clCreateSubDevices(deviceID, partitionProp, num_devices,
+                             scope_guard.sub_devices.data(), &num_devices);
+    test_error_ret(err, "Unable to get maximal number of compute units",
+                   TEST_SKIPPED_ITSELF);
+
+    /* Create a multi device context */
+    clContextWrapper multi_device_context =
+        clCreateContext(nullptr, (cl_uint)num_devices,
+                        scope_guard.sub_devices.data(), nullptr, nullptr, &err);
+    test_error_ret(err, "Unable to create testing context",
+                   TEST_SKIPPED_ITSELF);
+
+    err = create_single_kernel_helper_create_program(
+        multi_device_context, &program, 1, sample_kernel_code_single_line);
+    test_error_ret(err, "create_single_kernel_helper_create_program failed",
+                   TEST_FAIL);
+
+    if (program == nullptr)
+    {
+        log_error("ERROR: Unable to create reference program!\n");
+        return -1;
+    }
+
+    err = clGetProgramInfo(program, CL_PROGRAM_NUM_DEVICES, sizeof(num_devices),
+                           &num_devices, nullptr);
+    test_error_ret(err, "Unable to get device count of program", TEST_FAIL);
+
+    test_assert_error_ret(
+        num_devices == scope_guard.sub_devices.size(),
+        "Program must be associated to exact number of devices\n", TEST_FAIL);
+
+    std::vector<cl_device_id> devices(num_devices);
+    err = clGetProgramInfo(program, CL_PROGRAM_DEVICES,
+                           num_devices * sizeof(cl_device_id), devices.data(),
+                           nullptr);
+    test_error_ret(err, "Unable to get devices of program", TEST_FAIL);
+
+    for (cl_uint i = 0; i < devices.size(); i++)
+    {
+        test_assert_error_ret(
+            scope_guard.sub_devices[i] == devices[i],
+            "Unexpected result returned by CL_PROGRAM_DEVICES query",
+            TEST_FAIL);
+    }
+    return TEST_PASS;
 }
 
 int test_get_program_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
