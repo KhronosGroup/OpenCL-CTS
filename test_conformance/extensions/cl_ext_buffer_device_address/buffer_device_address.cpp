@@ -59,8 +59,10 @@ public:
     bool Skip()
     {
         cl_int error = 0;
-        clMemWrapper TempBuffer = clCreateBuffer(
-            context, (cl_mem_flags)(CL_MEM_READ_WRITE | address_type),
+
+        cl_mem_properties buf_props[] = { address_type, CL_TRUE, 0 };
+        clMemWrapper TempBuffer = clCreateBufferWithProperties(
+            context, buf_props, CL_MEM_READ_WRITE,
             (size_t)BUF_SIZE * sizeof(cl_int), nullptr, &error);
         return (error != CL_SUCCESS);
     }
@@ -107,9 +109,9 @@ public:
             test_fail("test_buffer_host failed\n");
 
         // Test a buffer which doesn't have any hostptr associated with it.
-        dev_addr_no_host_buffer =
-            clCreateBuffer(context, CL_MEM_READ_WRITE | address_type,
-                           sizeof(cl_int) * BUF_SIZE, nullptr, &error);
+        dev_addr_no_host_buffer = clCreateBufferWithProperties(
+            context, buf_props, CL_MEM_READ_WRITE, sizeof(cl_int) * BUF_SIZE,
+            nullptr, &error);
         test_error(error, "clCreateBuffer with device address 2 failed\n");
 
         if (test_buffer(dev_addr_no_host_buffer, buffer_long, get_addr_kernel)
@@ -189,7 +191,7 @@ private:
             sizeof(cl_int) * BUF_SIZE, svm_buffer(), &error);
         test_error(error, "clCreateBuffer with device address 1 failed\n");
 
-        cl_mem_device_address_EXT Addr = 0;
+        cl_mem_device_address_ext Addr = 0;
         error = clGetMemObjectInfo(buffer, CL_MEM_DEVICE_ADDRESS_EXT,
                                    sizeof(Addr), &Addr, NULL);
         test_error(error,
@@ -374,12 +376,12 @@ private:
 
         error =
             check_device_address_from_api(dev_addr_buffer, DeviceAddrFromAPI);
-        test_error_fail(error, "dev_addr_buffer does not have device address")
+        test_error_fail(error, "dev_addr_buffer does not have device address");
 
-            error = clSetKernelArgDevicePointer(
-                ptr_arith_kernel, 0,
-                (cl_mem_device_address_EXT)(((cl_uint *)DeviceAddrFromAPI)
-                                            + 2));
+        cl_mem_device_address_ext DeviceAddrFromAPIP2 =
+            (cl_mem_device_address_ext)(((cl_uint *)DeviceAddrFromAPI) + 2);
+        error = clSetKernelArgDevicePointer(ptr_arith_kernel, 0,
+                                            DeviceAddrFromAPIP2);
         test_error_fail(error, "clSetKernelArgDevicePointer failed\n");
         error = clSetKernelArg(ptr_arith_kernel, 1, sizeof(cl_mem),
                                &buffer_out_int);
