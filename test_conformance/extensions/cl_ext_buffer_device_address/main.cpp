@@ -38,10 +38,10 @@ test_status InitCL(cl_device_id device)
 
     cl_version ext_version =
         get_extension_version(device, "cl_ext_buffer_device_address");
-    if (ext_version != CL_MAKE_VERSION(0, 9, 1))
+    if (ext_version != CL_MAKE_VERSION(1, 0, 0))
     {
         log_info("The test is written against cl_ext_buffer_device_address "
-                 "extension version 0.9.1, device supports version: %u.%u.%u\n",
+                 "extension version 1.0.0, device supports version: %u.%u.%u\n",
                  CL_VERSION_MAJOR(ext_version), CL_VERSION_MINOR(ext_version),
                  CL_VERSION_PATCH(ext_version));
         return TEST_SKIPPED_ITSELF;
