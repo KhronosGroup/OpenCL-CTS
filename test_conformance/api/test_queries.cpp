@@ -477,123 +477,44 @@ REGISTER_TEST(get_context_info)
 {
     int error;
 
-    // #1 query single device context and perform object comparability test
-    {
-        clContextWrapper context_to_test =
-            clCreateContext(NULL, 1, &device, nullptr, nullptr, &error);
-        test_error_ret(error, "Unable to create testing context", CL_SUCCESS);
+    // query single device context and perform object comparability test
+    clContextWrapper context_to_test =
+        clCreateContext(NULL, 1, &device, nullptr, nullptr, &error);
+    test_error_ret(error, "Unable to create testing context", CL_SUCCESS);
 
-        cl_uint num_devices = 0;
-        error = clGetContextInfo(context_to_test, CL_CONTEXT_NUM_DEVICES,
-                                 sizeof(cl_uint), &num_devices, nullptr);
-        test_error(error, "clGetContextInfo CL_CONTEXT_NUM_DEVICES failed\n");
+    cl_uint num_devices = 0;
+    error = clGetContextInfo(context_to_test, CL_CONTEXT_NUM_DEVICES,
+                             sizeof(cl_uint), &num_devices, nullptr);
+    test_error(error, "clGetContextInfo CL_CONTEXT_NUM_DEVICES failed\n");
 
-        test_assert_error(num_devices == 1,
-                          "Context must contain exactly one device\n");
+    test_assert_error(num_devices == 1,
+                      "Context must contain exactly one device\n");
 
-        cl_device_id comp_device = nullptr;
-        error = clGetContextInfo(context_to_test, CL_CONTEXT_DEVICES,
-                                 sizeof(cl_device_id), &comp_device, nullptr);
-        test_error(error, "clGetContextInfo CL_CONTEXT_DEVICES failed\n");
+    cl_device_id comp_device = nullptr;
+    error = clGetContextInfo(context_to_test, CL_CONTEXT_DEVICES,
+                             sizeof(cl_device_id), &comp_device, nullptr);
+    test_error(error, "clGetContextInfo CL_CONTEXT_DEVICES failed\n");
 
-        test_assert_error(
-            device == comp_device,
-            "Unexpected result returned by CL_CONTEXT_DEVICES query");
-    }
+    test_assert_error(device == comp_device,
+                      "Unexpected result returned by CL_CONTEXT_DEVICES query");
 
-
-    // #2 query multi-device context and perform objects comparability test
-    auto test_multi_device_context = [&]() {
-        cl_uint maxComputeUnits = 0;
-        cl_int err =
-            clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS,
-                            sizeof(maxComputeUnits), &maxComputeUnits, NULL);
-        test_error_fail(err, "Unable to get maximal number of compute units");
-
-        cl_device_partition_property partitionProp[] = {
-            CL_DEVICE_PARTITION_EQUALLY,
-            static_cast<cl_device_partition_property>(maxComputeUnits / 2), 0
-        };
-
-        cl_uint deviceCount = 0;
-        // how many sub-devices can we create?
-        err =
-            clCreateSubDevices(device, partitionProp, 0, nullptr, &deviceCount);
-        if (err != CL_SUCCESS)
-        {
-            log_info("Can't partition device, test not supported\n");
-            return TEST_SKIPPED_ITSELF;
-        }
-
-        if (deviceCount < 2)
-            test_error_ret(
-                CL_INVALID_VALUE,
-                "Multi context test for CL_INVALID_PROPERTY not supported",
-                TEST_SKIPPED_ITSELF);
-
-        // get the list of subDevices
-        SubDevicesScopeGuarded scope_guard(deviceCount);
-        err = clCreateSubDevices(device, partitionProp, deviceCount,
-                                 scope_guard.sub_devices.data(), &deviceCount);
-        if (err != CL_SUCCESS)
-        {
-            log_info("Can't partition device, test not supported\n");
-            return TEST_SKIPPED_ITSELF;
-        }
-
-        /* Create a multi device context */
-        clContextWrapper multi_device_context = clCreateContext(
-            NULL, (cl_uint)deviceCount, scope_guard.sub_devices.data(), nullptr,
-            nullptr, &err);
-        test_error_ret(err, "Unable to create testing context",
-                       TEST_SKIPPED_ITSELF);
-
-        cl_uint num_devices = 0;
-        error = clGetContextInfo(multi_device_context, CL_CONTEXT_NUM_DEVICES,
-                                 sizeof(cl_uint), &num_devices, nullptr);
-        test_error_ret(error,
-                       "clGetContextInfo CL_CONTEXT_NUM_DEVICES failed\n",
-                       TEST_FAIL);
-
-        test_assert_error(num_devices == deviceCount,
-                          "Context must contain exact number of devices\n");
-
-        std::vector<cl_device_id> devices(num_devices);
-        error = clGetContextInfo(multi_device_context, CL_CONTEXT_DEVICES,
-                                 num_devices * sizeof(cl_device_id),
-                                 devices.data(), nullptr);
-        test_error_ret(error, "clGetContextInfo CL_CONTEXT_DEVICES failed\n",
-                       TEST_FAIL);
-
-        test_assert_error(devices.size() == scope_guard.sub_devices.size(),
-                          "Size of devices arrays must be in sync\n");
-
-        for (cl_uint i = 0; i < devices.size(); i++)
-        {
-            test_error_ret(
-                scope_guard.sub_devices[i] == devices[i],
-                "Unexpected result returned by CL_CONTEXT_DEVICES query",
-                TEST_FAIL);
-        }
-        return TEST_PASS;
-    };
-    error = test_multi_device_context();
-    test_error(error == TEST_FAIL ? TEST_FAIL : TEST_PASS,
-               "multi-device context test for CL_CONTEXT_DEVICES objects "
-               "comparability failed!");
-
+    // query context properties against valid size
     size_t size;
     cl_context_properties props;
+    error = clGetContextInfo(context, CL_CONTEXT_PROPERTIES, sizeof(props),
+                             &props, &size);
+    test_error(error, "Unable to get context props");
 
-    error = clGetContextInfo( context, CL_CONTEXT_PROPERTIES, sizeof( props ), &props, &size );
-    test_error( error, "Unable to get context props" );
-
-    if (size == 0) {
+    if (size == 0)
+    {
         // Valid size
         return 0;
-    } else if (size == sizeof(cl_context_properties)) {
+    }
+    else if (size == sizeof(cl_context_properties))
+    {
         // Data must be NULL
-        if (props != 0) {
+        if (props != 0)
+        {
             log_error("ERROR: Returned properties is no NULL.\n");
             return -1;
         }
@@ -601,9 +522,76 @@ REGISTER_TEST(get_context_info)
         return 0;
     }
     // Size was not 0 or 1
-    log_error( "ERROR: Returned size of context props is not valid! (expected 0 or %d, got %d)\n",
-              (int)sizeof(cl_context_properties), (int)size );
+    log_error("ERROR: Returned size of context props is not valid! (expected 0 "
+              "or %d, got %d)\n",
+              (int)sizeof(cl_context_properties), (int)size);
     return -1;
+}
+
+REGISTER_TEST(get_context_info_mult_devices)
+{
+    // query multi-device context and perform objects comparability test
+    cl_uint maxComputeUnits = 0;
+    cl_int err =
+        clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS,
+                        sizeof(maxComputeUnits), &maxComputeUnits, NULL);
+    test_error_fail(err, "Unable to get maximal number of compute units");
+
+    cl_device_partition_property partitionProp[] = {
+        CL_DEVICE_PARTITION_EQUALLY,
+        static_cast<cl_device_partition_property>(maxComputeUnits / 2), 0
+    };
+
+    cl_uint num_devices = 0;
+    // how many sub-devices can we create?
+    err = clCreateSubDevices(device, partitionProp, 0, nullptr, &num_devices);
+    if (err != CL_SUCCESS || num_devices < 2)
+    {
+        log_info("Can't partition device, test not supported\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    // get the list of subDevices
+    SubDevicesScopeGuarded scope_guard(num_devices);
+    err = clCreateSubDevices(device, partitionProp, num_devices,
+                             scope_guard.sub_devices.data(), &num_devices);
+    if (err != CL_SUCCESS)
+    {
+        log_info("Can't partition device, test not supported\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    /* Create a multi device context */
+    clContextWrapper multi_device_context =
+        clCreateContext(NULL, (cl_uint)num_devices,
+                        scope_guard.sub_devices.data(), nullptr, nullptr, &err);
+    test_error_ret(err, "Unable to create testing context", TEST_FAIL);
+
+    err = clGetContextInfo(multi_device_context, CL_CONTEXT_NUM_DEVICES,
+                           sizeof(cl_uint), &num_devices, nullptr);
+    test_error_ret(err, "clGetContextInfo CL_CONTEXT_NUM_DEVICES failed\n",
+                   TEST_FAIL);
+
+    test_assert_error(num_devices == scope_guard.sub_devices.size(),
+                      "Context must contain exact number of devices\n");
+
+    std::vector<cl_device_id> devices(num_devices);
+    err = clGetContextInfo(multi_device_context, CL_CONTEXT_DEVICES,
+                           num_devices * sizeof(cl_device_id), devices.data(),
+                           nullptr);
+    test_error_ret(err, "clGetContextInfo CL_CONTEXT_DEVICES failed\n",
+                   TEST_FAIL);
+
+    test_assert_error(devices.size() == scope_guard.sub_devices.size(),
+                      "Size of devices arrays must be in sync\n");
+
+    for (cl_uint i = 0; i < devices.size(); i++)
+    {
+        test_error_ret(scope_guard.sub_devices[i] == devices[i],
+                       "Unexpected result returned by CL_CONTEXT_DEVICES query",
+                       TEST_FAIL);
+    }
+    return TEST_PASS;
 }
 
 void CL_CALLBACK mem_obj_destructor_callback( cl_mem, void *data )
