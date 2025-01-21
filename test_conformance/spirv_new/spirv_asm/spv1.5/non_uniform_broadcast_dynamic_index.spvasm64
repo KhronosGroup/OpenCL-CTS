@@ -1,0 +1,41 @@
+; SPIR-V
+; Version: 1.5
+; Reference:
+;   kernel void non_uniform_broadcast_dynamic_index_test(global uint* dst_base) {
+;       uint id = get_global_id(0);
+;       uint index = get_group_id(0);
+;       uint value = sub_group_non_uniform_broadcast(id, index);
+;       dst_base[id] = value;
+;   }
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability Int64
+               OpCapability GroupNonUniformBallot
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "non_uniform_broadcast_dynamic_index_test" %pglobalid %pgroupid
+               OpDecorate %pglobalid BuiltIn GlobalInvocationId
+               OpDecorate %pgroupid BuiltIn WorkgroupId
+       %uint = OpTypeInt 32 0
+   %sg_scope = OpConstant %uint 3
+      %ulong = OpTypeInt 64 0
+     %ulong3 = OpTypeVector %ulong 3
+       %void = OpTypeVoid
+%iptr_ulong3 = OpTypePointer Input %ulong3
+  %gptr_uint = OpTypePointer CrossWorkgroup %uint
+ %kernel_sig = OpTypeFunction %void %gptr_uint
+  %pglobalid = OpVariable %iptr_ulong3 Input
+   %pgroupid = OpVariable %iptr_ulong3 Input
+     %kernel = OpFunction %void None %kernel_sig
+   %dst_base = OpFunctionParameter %gptr_uint
+      %entry = OpLabel
+   %globalid = OpLoad %ulong3 %pglobalid Aligned 32
+  %globalid0 = OpCompositeExtract %ulong %globalid 0
+         %id = OpUConvert %uint %globalid0
+    %groupid = OpLoad %ulong3 %pgroupid Aligned 32
+   %groupid0 = OpCompositeExtract %ulong %groupid 0
+      %index = OpUConvert %uint %groupid0
+      %value = OpGroupNonUniformBroadcast %uint %sg_scope %id %index
+        %dst = OpInBoundsPtrAccessChain %gptr_uint %dst_base %globalid0
+               OpStore %dst %value
+               OpReturn
+               OpFunctionEnd

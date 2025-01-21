@@ -24,7 +24,6 @@
 #include "harness/typeWrappers.h"
 #include "harness/stringHelpers.h"
 
-#include "procs.h"
 #include "test_base.h"
 
 const char *binary_fn_code_pattern =
@@ -319,58 +318,50 @@ cl_int MinTest::Run()
     return error;
 }
 
-int test_min(cl_device_id device, cl_context context, cl_command_queue queue,
-             int n_elems)
+REGISTER_TEST(min)
 {
-    return MakeAndRunTest<MinTest>(device, context, queue, n_elems, "min",
+    return MakeAndRunTest<MinTest>(device, context, queue, num_elements, "min",
                                    true);
 }
 
-int test_minf(cl_device_id device, cl_context context, cl_command_queue queue,
-              int n_elems)
+REGISTER_TEST(minf)
 {
-    return MakeAndRunTest<MinTest>(device, context, queue, n_elems, "min",
+    return MakeAndRunTest<MinTest>(device, context, queue, num_elements, "min",
                                    false);
 }
 
-int test_fmin(cl_device_id device, cl_context context, cl_command_queue queue,
-              int n_elems)
+REGISTER_TEST(fmin)
 {
-    return MakeAndRunTest<MinTest>(device, context, queue, n_elems, "fmin",
+    return MakeAndRunTest<MinTest>(device, context, queue, num_elements, "fmin",
                                    true);
 }
 
-int test_fminf(cl_device_id device, cl_context context, cl_command_queue queue,
-               int n_elems)
+REGISTER_TEST(fminf)
 {
-    return MakeAndRunTest<MinTest>(device, context, queue, n_elems, "fmin",
+    return MakeAndRunTest<MinTest>(device, context, queue, num_elements, "fmin",
                                    false);
 }
 
-int test_max(cl_device_id device, cl_context context, cl_command_queue queue,
-             int n_elems)
+REGISTER_TEST(max)
 {
-    return MakeAndRunTest<MaxTest>(device, context, queue, n_elems, "max",
+    return MakeAndRunTest<MaxTest>(device, context, queue, num_elements, "max",
                                    true);
 }
 
-int test_maxf(cl_device_id device, cl_context context, cl_command_queue queue,
-              int n_elems)
+REGISTER_TEST(maxf)
 {
-    return MakeAndRunTest<MaxTest>(device, context, queue, n_elems, "max",
+    return MakeAndRunTest<MaxTest>(device, context, queue, num_elements, "max",
                                    false);
 }
 
-int test_fmax(cl_device_id device, cl_context context, cl_command_queue queue,
-              int n_elems)
+REGISTER_TEST(fmax)
 {
-    return MakeAndRunTest<MaxTest>(device, context, queue, n_elems, "fmax",
+    return MakeAndRunTest<MaxTest>(device, context, queue, num_elements, "fmax",
                                    true);
 }
 
-int test_fmaxf(cl_device_id device, cl_context context, cl_command_queue queue,
-               int n_elems)
+REGISTER_TEST(fmaxf)
 {
-    return MakeAndRunTest<MaxTest>(device, context, queue, n_elems, "fmax",
+    return MakeAndRunTest<MaxTest>(device, context, queue, num_elements, "fmax",
                                    false);
 }
