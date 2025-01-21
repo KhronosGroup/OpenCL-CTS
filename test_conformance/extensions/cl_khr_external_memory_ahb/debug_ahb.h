@@ -43,6 +43,7 @@ std::string
 ahardwareBufferDecodeUsageFlagsToString(AHardwareBuffer_UsageFlags flags);
 
 AHardwareBuffer* create_AHB(AHardwareBuffer_Desc* desc);
+void log_unsupported_ahb_format(AHardwareBuffer_Desc desc);
 
 struct AHardwareBufferWrapper
 {

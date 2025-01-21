@@ -97,7 +97,7 @@ static const char *diff_images_kernel_source = {
 };
 
 // Checks that the inferred image format is correct
-REGISTER_TEST(test_images)
+REGISTER_TEST(images)
 {
     cl_int err = CL_SUCCESS;
 
@@ -184,7 +184,7 @@ REGISTER_TEST(test_images)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_images_read)
+REGISTER_TEST(images_read)
 {
     cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
@@ -479,7 +479,7 @@ REGISTER_TEST(test_images_read)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_enqueue_read_image)
+REGISTER_TEST(enqueue_read_image)
 {
     cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
@@ -657,7 +657,7 @@ REGISTER_TEST(test_enqueue_read_image)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_enqueue_copy_image)
+REGISTER_TEST(enqueue_copy_image)
 {
     cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
@@ -960,7 +960,7 @@ REGISTER_TEST(test_enqueue_copy_image)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_enqueue_copy_image_to_buffer)
+REGISTER_TEST(enqueue_copy_image_to_buffer)
 {
     cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
@@ -1148,7 +1148,7 @@ REGISTER_TEST(test_enqueue_copy_image_to_buffer)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_enqueue_copy_buffer_to_image)
+REGISTER_TEST(enqueue_copy_buffer_to_image)
 {
     cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
@@ -1343,7 +1343,7 @@ REGISTER_TEST(test_enqueue_copy_buffer_to_image)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_enqueue_write_image)
+REGISTER_TEST(enqueue_write_image)
 {
     cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
@@ -1535,7 +1535,7 @@ REGISTER_TEST(test_enqueue_write_image)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_enqueue_fill_image)
+REGISTER_TEST(enqueue_fill_image)
 {
     cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
@@ -1786,7 +1786,7 @@ REGISTER_TEST(test_enqueue_fill_image)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_blob)
+REGISTER_TEST(blob)
 {
     cl_int err = CL_SUCCESS;
 
