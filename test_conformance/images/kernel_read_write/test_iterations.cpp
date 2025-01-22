@@ -1191,7 +1191,7 @@ int test_read_image_2D( cl_context context, cl_command_queue queue, cl_kernel ke
 {
     int error;
     static int initHalf = 0;
-    cl_mem imageBuffer;
+    cl_mem imageBuffer = nullptr;
     cl_mem_flags    image_read_write_flags = CL_MEM_READ_ONLY;
     size_t threads[2];
 

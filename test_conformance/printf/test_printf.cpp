@@ -1151,7 +1151,8 @@ int main(int argc, const char* argv[])
     char* pcTempFname = get_temp_filename();
     if (pcTempFname != nullptr)
     {
-        strncpy(gFileName, pcTempFname, sizeof(gFileName));
+        strncpy(gFileName, pcTempFname, sizeof(gFileName) - 1);
+        gFileName[sizeof(gFileName) - 1] = '\0';
     }
 
     free(pcTempFname);

@@ -111,6 +111,11 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
             name = "1D buffer -> 1D";
             imageType = CL_MEM_OBJECT_IMAGE1D_BUFFER;
             break;
+        default:
+            log_error("ERROR Invalid testMethod = %d", testMethod);
+            name = nullptr;
+            imageType = 0;
+            break;
     }
 
     if(gTestMipmaps)

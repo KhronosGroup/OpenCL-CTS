@@ -1448,7 +1448,9 @@ cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
         char inName[32];
         char outName[32];
         strncpy(inName, gTypeNames[inType], sizeof(inName));
+        inName[sizeof(inName) - 1] = '\0';
         strncpy(outName, gTypeNames[outType], sizeof(outName));
+        outName[sizeof(outName) - 1] = '\0';
         sprintf(testName, "test_implicit_%s_%s", outName, inName);
 
         source << "__kernel void " << testName << "( __global " << inName
@@ -1473,8 +1475,10 @@ cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
         switch (vectorSizetmp)
         {
             case 1:
-                strncpy(inName, gTypeNames[inType], sizeof(inName));
-                strncpy(outName, gTypeNames[outType], sizeof(outName));
+                strncpy(inName, gTypeNames[inType], sizeof(inName) - 1);
+                inName[sizeof(inName) - 1] = '\0';
+                strncpy(outName, gTypeNames[outType], sizeof(outName) - 1);
+                outName[sizeof(outName) - 1] = '\0';
                 snprintf(convertString, sizeof(convertString), "convert_%s%s%s",
                          outName, gSaturationNames[sat],
                          gRoundingModeNames[round]);
@@ -1482,8 +1486,10 @@ cl_program MakeProgram(Type outType, Type inType, SaturationMode sat,
                 vlog("Building %s( %s ) test\n", convertString, inName);
                 break;
             case 3:
-                strncpy(inName, gTypeNames[inType], sizeof(inName));
-                strncpy(outName, gTypeNames[outType], sizeof(outName));
+                strncpy(inName, gTypeNames[inType], sizeof(inName) - 1);
+                inName[sizeof(inName) - 1] = '\0';
+                strncpy(outName, gTypeNames[outType], sizeof(outName) - 1);
+                outName[sizeof(outName) - 1] = '\0';
                 snprintf(convertString, sizeof(convertString),
                          "convert_%s3%s%s", outName, gSaturationNames[sat],
                          gRoundingModeNames[round]);

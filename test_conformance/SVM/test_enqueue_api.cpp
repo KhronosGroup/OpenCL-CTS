@@ -160,8 +160,8 @@ REGISTER_TEST(svm_enqueue_api)
             error = clSetUserEventStatus(userEvent, CL_COMPLETE);
             test_error(error, "clSetUserEventStatus failed");
 
-            cl_uchar *src_ptr;
-            cl_uchar *dst_ptr;
+            cl_uchar *src_ptr = nullptr;
+            cl_uchar *dst_ptr = nullptr;
             if (test_case.srcAlloc == host)
             {
                 src_ptr = srcHostData.data();
