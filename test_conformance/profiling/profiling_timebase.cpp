@@ -51,8 +51,9 @@ REGISTER_TEST(profiling_timebase)
     err = clGetDeviceAndHostTimer(device, &deviceTimeBeforeQueue, &hostTime);
     test_error(err, "Unable to get starting device time");
 
-    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, NULL, NULL, 1, &uEvent,
-                                 &kEvent);
+    size_t global_size = 1;
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global_size, NULL, 1,
+                                 &uEvent, &kEvent);
     test_error(err, "clEnqueueNDRangeKernel failed");
 
     cl_ulong deviceTimeAfterQueue;
