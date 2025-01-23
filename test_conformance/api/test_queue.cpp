@@ -99,8 +99,8 @@ REGISTER_TEST(multi_queue_flush_on_release)
     err = clReleaseCommandQueue(queue_A);
     test_error(err, "clReleaseCommandQueue failed");
 
-    err = clFinish(queue_B);
-    test_error(err, "clFinish failed");
+    err = clFlush(queue_B);
+    test_error(err, "clFlush failed");
 
     // Wait for kernel to execute since the queue must flush on release
     bool success = poll_until(2000, 50, [&event_B]() {
