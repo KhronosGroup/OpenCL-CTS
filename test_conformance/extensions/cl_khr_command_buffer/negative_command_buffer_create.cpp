@@ -129,8 +129,9 @@ struct CreateCommandBufferRepeatedProperties : public BasicCommandBufferTest
 
     bool Skip() override
     {
-        bool skip = true;
+        if (BasicCommandBufferTest::Skip()) return true;
 
+        bool skip = true;
         if (simultaneous_use_support)
         {
             rep_prop = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
@@ -181,8 +182,9 @@ struct CreateCommandBufferNotSupportedProperties : public BasicCommandBufferTest
 
     bool Skip() override
     {
-        bool skip = true;
+        if (BasicCommandBufferTest::Skip()) return true;
 
+        bool skip = true;
         if (!simultaneous_use_support)
         {
             unsupported_prop = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
@@ -223,6 +225,8 @@ struct CreateCommandBufferQueueWithoutMinProperties
 
     bool Skip() override
     {
+        if (BasicCommandBufferTest::Skip()) return true;
+
         cl_command_queue_properties required_properties;
         cl_int error = clGetDeviceInfo(
             device, CL_DEVICE_COMMAND_BUFFER_REQUIRED_QUEUE_PROPERTIES_KHR,
@@ -244,8 +248,8 @@ struct CreateCommandBufferQueueWithoutMinProperties
 
 // CL_INCOMPATIBLE_COMMAND_QUEUE_KHR if any command-queue in queues is an
 // out-of-order command-queue and the device associated with the command-queue
-// does not support the CL_COMMAND_BUFFER_CAPABILITY_OUT_OF_ORDER_KHR
-// capability.
+// does not return CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE from
+// CL_DEVICE_COMMAND_BUFFER_SUPPORTED_QUEUE_PROPERTIES_KHR
 struct CreateCommandBufferDeviceDoesNotSupportOutOfOderQueue
     : public BasicCommandBufferTest
 {
@@ -287,7 +291,7 @@ struct CreateCommandBufferDeviceDoesNotSupportOutOfOderQueue
 
     bool Skip() override
     {
-        BasicCommandBufferTest::Skip();
+        if (BasicCommandBufferTest::Skip()) return true;
 
         // If device does not support out of order queue or if device supports
         // out of order command buffer test should be skipped

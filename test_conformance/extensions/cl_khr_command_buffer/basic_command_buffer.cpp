@@ -52,6 +52,14 @@ bool BasicCommandBufferTest::Skip()
                "Unable to query "
                "CL_DEVICE_COMMAND_BUFFER_REQUIRED_QUEUE_PROPERTIES_KHR");
 
+    cl_command_queue_properties supported_properties;
+    error = clGetDeviceInfo(
+        device, CL_DEVICE_COMMAND_BUFFER_SUPPORTED_QUEUE_PROPERTIES_KHR,
+        sizeof(supported_properties), &supported_properties, NULL);
+    test_error(error,
+               "Unable to query "
+               "CL_DEVICE_COMMAND_BUFFER_SUPPORTED_QUEUE_PROPERTIES_KHR");
+
     cl_command_queue_properties queue_properties;
     error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES,
                                   sizeof(queue_properties), &queue_properties,
@@ -70,7 +78,7 @@ bool BasicCommandBufferTest::Skip()
         && (capabilities & CL_COMMAND_BUFFER_CAPABILITY_SIMULTANEOUS_USE_KHR)
             != 0;
     out_of_order_support =
-        capabilities & CL_COMMAND_BUFFER_CAPABILITY_OUT_OF_ORDER_KHR;
+        supported_properties & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
     device_side_enqueue_support =
         (capabilities & CL_COMMAND_BUFFER_CAPABILITY_DEVICE_SIDE_ENQUEUE_KHR)
         != 0;
