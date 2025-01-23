@@ -78,6 +78,8 @@
 #define reference_copysign NULL
 #define reference_sqrt NULL
 #define reference_sqrtl NULL
+#define reference_reciprocal NULL
+#define reference_reciprocall NULL
 #define reference_relaxed_reciprocal NULL
 
 #define reference_divide NULL
@@ -422,8 +424,8 @@ const Func functionList[] = {
     //ENTRY(reciprocal, 1.0f, 1.0f, FTZ_OFF, unaryF),
     { "reciprocal",
       "/",
-      { nullptr },
-      { nullptr },
+      { (void*)reference_reciprocal },
+      { (void*)reference_reciprocall },
       { (void*)reference_relaxed_reciprocal },
       2.5f,
       0.0f,
@@ -433,7 +435,7 @@ const Func functionList[] = {
       INFINITY,
       FTZ_OFF,
       RELAXED_ON,
-      binaryOperatorOF },
+      binaryOperatorF },
     { "divide",
       "/",
       { (void*)reference_divide },

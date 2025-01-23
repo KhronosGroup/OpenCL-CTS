@@ -1856,6 +1856,15 @@ double reference_logb(double x)
 
 double reference_relaxed_reciprocal(double x) { return 1.0f / ((float)x); }
 
+long double reference_reciprocall(long double y)
+{
+    double dx = 1.0;
+    double dy = y;
+    return dx / dy;
+}
+
+double reference_reciprocal(double x) { return 1.0 / x; }
+
 double reference_remainder(double x, double y)
 {
     int i;

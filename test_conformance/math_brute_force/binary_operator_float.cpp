@@ -720,9 +720,6 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
     double maxErrorVal = 0.0;
     double maxErrorVal2 = 0.0;
 
-    // reciprocal differs from divide only in relaxed mode, skip otherwise
-    if ((strcmp(f->name, "reciprocal") == 0) && !relaxedMode) return CL_SUCCESS;
-
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
 
     // Init test_info

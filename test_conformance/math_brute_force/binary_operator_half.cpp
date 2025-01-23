@@ -120,6 +120,12 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     std::vector<float> s(0), s2(0);
     RoundingMode oldRoundMode;
 
+    bool reciprocal = strcmp(name, "reciprocal") == 0;
+    const cl_half reciprocalArrayHalfX[] = { 0x3c00 };
+    const cl_half *specialValuesHalfX =
+        reciprocal ? reciprocalArrayHalfX : specialValuesHalf;
+    size_t specialValuesHalfCountX = reciprocal ? 1 : specialValuesHalfCount;
+
     cl_event e[VECTOR_SIZE_COUNT];
     cl_half *out[VECTOR_SIZE_COUNT];
 
@@ -148,7 +154,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     cl_half *p2 = (cl_half *)gIn2 + thread_id * buffer_elements;
     cl_uint idx = 0;
     int totalSpecialValueCount =
-        specialValuesHalfCount * specialValuesHalfCount;
+        specialValuesHalfCountX * specialValuesHalfCount;
     int lastSpecialJobIndex = (totalSpecialValueCount - 1) / buffer_elements;
 
     if (job_id <= (cl_uint)lastSpecialJobIndex)
@@ -156,14 +162,15 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
         // Insert special values
         uint32_t x, y;
 
-        x = (job_id * buffer_elements) % specialValuesHalfCount;
+        x = (job_id * buffer_elements) % specialValuesHalfCountX;
         y = (job_id * buffer_elements) / specialValuesHalfCount;
 
         for (; idx < buffer_elements; idx++)
         {
-            p[idx] = specialValuesHalf[x];
+            p[idx] = specialValuesHalfX[x];
             p2[idx] = specialValuesHalf[y];
-            if (++x >= specialValuesHalfCount)
+            ++x;
+            if (x >= specialValuesHalfCountX)
             {
                 x = 0;
                 y++;
@@ -175,7 +182,8 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     // Init any remaining values
     for (; idx < buffer_elements; idx++)
     {
-        p[idx] = (cl_half)genrand_int32(d);
+        p[idx] = reciprocal ? ((cl_half *)specialValuesHalfX)[0]
+                            : (cl_half)genrand_int32(d);
         p2[idx] = (cl_half)genrand_int32(d);
     }
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
@@ -283,11 +291,23 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     s.resize(buffer_elements);
     s2.resize(buffer_elements);
 
-    for (size_t j = 0; j < buffer_elements; j++)
+    if (reciprocal)
     {
-        s[j] = HTF(p[j]);
-        s2[j] = HTF(p2[j]);
-        r[j] = HFF(func.f_ff(s[j], s2[j]));
+        for (size_t j = 0; j < buffer_elements; j++)
+        {
+            s[j] = HTF(p[j]);
+            s2[j] = HTF(p2[j]);
+            r[j] = HFF(func.f_f(s2[j]));
+        }
+    }
+    else
+    {
+        for (size_t j = 0; j < buffer_elements; j++)
+        {
+            s[j] = HTF(p[j]);
+            s2[j] = HTF(p2[j]);
+            r[j] = HFF(func.f_ff(s[j], s2[j]));
+        }
     }
 
     if (ftz) RestoreFPState(&oldMode);
@@ -320,7 +340,8 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
             if (r[j] != q[j])
             {
                 float test = HTF(q[j]);
-                float correct = func.f_ff(s[j], s2[j]);
+                float correct =
+                    reciprocal ? func.f_f(s2[j]) : func.f_ff(s[j], s2[j]);
 
                 // Per section 10 paragraph 6, accept any result if an input or
                 // output is a infinity or NaN or overflow
@@ -446,9 +467,10 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                         double correct2, correct3;
                         float err2, err3;
 
-                        correct2 = func.f_ff(s[j], 0.0);
-                        correct3 = func.f_ff(s[j], -0.0);
-
+                        correct2 =
+                            reciprocal ? func.f_f(0.0) : func.f_ff(s[j], 0.0);
+                        correct3 =
+                            reciprocal ? func.f_f(-0.0) : func.f_ff(s[j], -0.0);
 
                         // Per section 10 paragraph 6, accept any result if an
                         // input or output is a infinity or NaN or overflow
