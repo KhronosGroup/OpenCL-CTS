@@ -32,7 +32,7 @@ const char *inspect_image_kernel_source[] = {
 #define NUM_TRIES    100
 #define NUM_THREADS 2048
 
-int test_kernel_arg_changes(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(kernel_arg_changes)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -137,5 +137,3 @@ int test_kernel_arg_changes(cl_device_id device, cl_context context, cl_command_
     // If we got here, everything verified successfully
     return 0;
 }
-
-

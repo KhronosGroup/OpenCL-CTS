@@ -307,27 +307,24 @@ void print_hex_mem_dump(const unsigned char *inDataPtr,
     log_info("%s\n", error.str().c_str());
 }
 
-void generate_shuffle_mask( char *outMaskString, size_t maskSize, const ShuffleOrder *order )
+std::string generate_shuffle_mask(size_t maskSize, const ShuffleOrder *order)
 {
-    outMaskString[ 0 ] = 0;
+    std::ostringstream outMaskString;
     if( order != NULL )
     {
         for( size_t jj = 0; jj < maskSize; jj++ )
         {
-            char thisMask[ 16 ];
-            sprintf( thisMask, "%s%d", ( jj == 0 ) ? "" : ", ", (*order)[ jj ] );
-            strcat( outMaskString, thisMask );
+            outMaskString << (jj == 0 ? "" : ", ") << +((*order)[jj]);
         }
     }
     else
     {
         for( size_t jj = 0; jj < maskSize; jj++ )
         {
-            char thisMask[ 16 ];
-            sprintf( thisMask, "%s%ld", ( jj == 0 ) ? "" : ", ", jj );
-            strcat( outMaskString, thisMask );
+            outMaskString << (jj == 0 ? "" : ", ") << jj;
         }
     }
+    return outMaskString.str();
 }
 
 static int create_shuffle_kernel( cl_context context, cl_program *outProgram, cl_kernel *outKernel,
@@ -347,7 +344,7 @@ static int create_shuffle_kernel( cl_context context, cl_program *outProgram, cl
     if( inVecSize == 1 ) //|| (inVecSize == 3)) // just have arrays if we go with size 3
         inSizeName[ 0 ] = 0;
     else
-        sprintf( inSizeName, "%ld", inVecSize );
+        sprintf(inSizeName, "%zu", inVecSize);
     if( inVecSize == 3 )
         inSizeArgName[ 0 ] = 0;
     else
@@ -520,9 +517,9 @@ static int create_shuffle_kernel( cl_context context, cl_program *outProgram, cl
                 maskType = kULong;
             }
 
-            char maskString[ 1024 ] = "";
             size_t maskSize = outVecSize;// ( shuffleMode == kBuiltInDualInputFnMode ) ? ( outVecSize << 1 ) : outVecSize;
-            generate_shuffle_mask( maskString, maskSize, ( outOrders != NULL ) ? &outOrders[ i ] : NULL );
+            std::string maskString = generate_shuffle_mask(
+                maskSize, (outOrders != NULL) ? &outOrders[i] : NULL);
 
             // Set up a quick prefix, so mask gets unsigned type regardless of the input/output type
             char maskPrefix[ 2 ] = "u";
@@ -532,13 +529,21 @@ static int create_shuffle_kernel( cl_context context, cl_program *outProgram, cl
             char progLine2[ 10240 ];
             if( shuffleMode == kBuiltInDualInputFnMode )
             {
-                sprintf( progLine2, shuffleBuiltInDualPattern, get_explicit_type_name( vecType ), inSizeName,
-                        ( inVecSize == 3 ) ? "vload3( %ld, (__global %s *)source )" : "source[ %ld ]",
-                        get_explicit_type_name( vecType ), inSizeName,
-                        ( inVecSize == 3 ) ? "vload3( %ld, (__global %s *)secondSource )" : "secondSource[ %ld ]",
-                        maskPrefix, get_explicit_type_name( maskType ), outSizeName, maskPrefix, get_explicit_type_name( maskType ), outSizeName,
-                        maskString,
-                        ( outVecSize == 3 ) ? "vstore3( tmp, %ld, (__global %s *)dest )" : "dest[ %ld ] = tmp" );
+                sprintf(
+                    progLine2, shuffleBuiltInDualPattern,
+                    get_explicit_type_name(vecType), inSizeName,
+                    (inVecSize == 3) ? "vload3( %ld, (__global %s *)source )"
+                                     : "source[ %ld ]",
+                    get_explicit_type_name(vecType), inSizeName,
+                    (inVecSize == 3)
+                        ? "vload3( %ld, (__global %s *)secondSource )"
+                        : "secondSource[ %ld ]",
+                    maskPrefix, get_explicit_type_name(maskType), outSizeName,
+                    maskPrefix, get_explicit_type_name(maskType), outSizeName,
+                    maskString.c_str(),
+                    (outVecSize == 3)
+                        ? "vstore3( tmp, %ld, (__global %s *)dest )"
+                        : "dest[ %ld ] = tmp");
 
                 if( outVecSize == 3 )
                 {
@@ -557,11 +562,17 @@ static int create_shuffle_kernel( cl_context context, cl_program *outProgram, cl
             }
             else
             {
-                sprintf( progLine2, shuffleBuiltInPattern, get_explicit_type_name( vecType ), inSizeName,
-                        ( inVecSize == 3 ) ? "vload3( %ld, (__global %s *)source )" : "source[ %ld ]",
-                        maskPrefix, get_explicit_type_name( maskType ), outSizeName, maskPrefix, get_explicit_type_name( maskType ), outSizeName,
-                        maskString,
-                        ( outVecSize == 3 ) ? "vstore3( tmp, %ld, (__global %s *)dest )" : "dest[ %ld ] = tmp" );
+                sprintf(
+                    progLine2, shuffleBuiltInPattern,
+                    get_explicit_type_name(vecType), inSizeName,
+                    (inVecSize == 3) ? "vload3( %ld, (__global %s *)source )"
+                                     : "source[ %ld ]",
+                    maskPrefix, get_explicit_type_name(maskType), outSizeName,
+                    maskPrefix, get_explicit_type_name(maskType), outSizeName,
+                    maskString.c_str(),
+                    (outVecSize == 3)
+                        ? "vstore3( tmp, %ld, (__global %s *)dest )"
+                        : "dest[ %ld ] = tmp");
 
                 if( outVecSize == 3 )
                 {
@@ -705,9 +716,9 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
             if( ( shuffleMode == kBuiltInFnMode ) || ( shuffleMode == kBuiltInDualInputFnMode ) )
             {
                 // Mask would've been different for every shuffle done, so we have to regen it to print it
-                char maskString[ 1024 ];
-                generate_shuffle_mask( maskString, outVecSize, ( outOrderIdx != NULL ) ? &outOrderIdx[ i ] : NULL );
-                log_error( "        Mask:  %s\n", maskString );
+                std::string maskString = generate_shuffle_mask(
+                    outVecSize, (outOrderIdx != NULL) ? &outOrderIdx[i] : NULL);
+                log_error("        Mask:  %s\n", maskString.c_str());
             }
 
             ret++;

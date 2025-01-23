@@ -380,6 +380,7 @@ static int ParseArgs(int argc, const char **argv)
     gTestNames.push_back("");
 
     int singleThreaded = 0;
+    int forcedWorkerThreads = 0;
 
     { // Extract the app name
         strncpy(appName, argv[0], MAXPATHLEN - 1);
@@ -430,6 +431,11 @@ static int ParseArgs(int argc, const char **argv)
                     case 'l': gSkipCorrectnessTesting ^= 1; break;
 
                     case 'm': singleThreaded ^= 1; break;
+
+                    case 't':
+                        forcedWorkerThreads = atoi(argv[++i]);
+                        vlog(" %d", forcedWorkerThreads);
+                        break;
 
                     case 'g': gHasHalf ^= 1; break;
 
@@ -541,7 +547,17 @@ static int ParseArgs(int argc, const char **argv)
              gWimpyReductionFactor);
     }
 
-    if (singleThreaded) SetThreadCount(1);
+    if (singleThreaded)
+    {
+        vlog("*** WARNING: Force 1 worker thread                      ***\n");
+        SetThreadCount(1);
+    }
+    else if (forcedWorkerThreads > 0)
+    {
+        vlog("*** WARNING: Force %d worker threads                    ***\n",
+             forcedWorkerThreads);
+        SetThreadCount(forcedWorkerThreads);
+    }
 
     return 0;
 }

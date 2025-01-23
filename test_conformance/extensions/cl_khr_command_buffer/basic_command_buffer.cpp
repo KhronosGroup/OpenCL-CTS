@@ -27,7 +27,7 @@ BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
                                                cl_command_queue queue)
     : CommandBufferTestBase(device), context(context), queue(nullptr),
       num_elements(0), simultaneous_use_support(false),
-      out_of_order_support(false),
+      out_of_order_support(false), queue_out_of_order_support(false),
       // try to use simultaneous path by default
       simultaneous_use_requested(true),
       // due to simultaneous cases extend buffer size
@@ -52,12 +52,21 @@ bool BasicCommandBufferTest::Skip()
                "Unable to query "
                "CL_DEVICE_COMMAND_BUFFER_REQUIRED_QUEUE_PROPERTIES_KHR");
 
+    cl_command_queue_properties supported_properties;
+    error = clGetDeviceInfo(
+        device, CL_DEVICE_COMMAND_BUFFER_SUPPORTED_QUEUE_PROPERTIES_KHR,
+        sizeof(supported_properties), &supported_properties, NULL);
+    test_error(error,
+               "Unable to query "
+               "CL_DEVICE_COMMAND_BUFFER_SUPPORTED_QUEUE_PROPERTIES_KHR");
+
     cl_command_queue_properties queue_properties;
     error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES,
                                   sizeof(queue_properties), &queue_properties,
                                   NULL);
     test_error(error, "Unable to query CL_QUEUE_PROPERTIES");
-
+    queue_out_of_order_support =
+        queue_properties & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
 
     // Query if device supports simultaneous use
     cl_device_command_buffer_capabilities_khr capabilities;
@@ -69,7 +78,10 @@ bool BasicCommandBufferTest::Skip()
         && (capabilities & CL_COMMAND_BUFFER_CAPABILITY_SIMULTANEOUS_USE_KHR)
             != 0;
     out_of_order_support =
-        capabilities & CL_COMMAND_BUFFER_CAPABILITY_OUT_OF_ORDER_KHR;
+        supported_properties & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
+    device_side_enqueue_support =
+        (capabilities & CL_COMMAND_BUFFER_CAPABILITY_DEVICE_SIDE_ENQUEUE_KHR)
+        != 0;
 
     // Skip if queue properties don't contain those required
     return required_properties != (required_properties & queue_properties);
@@ -176,6 +188,71 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
 }
 
 namespace {
+
+// Test that the CL_COMMAND_BUFFER_FLAGS_KHR bitfield is parsed correctly when
+// multiple flags are set.
+struct MultiFlagCreationTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override
+    {
+        cl_command_buffer_properties_khr flags = 0;
+        size_t num_flags_set = 0;
+        bool multi_flags_supported = true;
+        cl_int error = CL_SUCCESS;
+
+        // First try to find multiple flags that are supported by the driver and
+        // device.
+        if (simultaneous_use_support)
+        {
+            flags |= CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
+            num_flags_set++;
+        }
+
+        if (device_side_enqueue_support)
+        {
+            flags |= CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
+            num_flags_set++;
+        }
+
+        if (is_extension_available(
+                device, CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_NAME))
+        {
+            flags |= CL_COMMAND_BUFFER_MUTABLE_KHR;
+            num_flags_set++;
+        }
+
+        // If we can't find multiple supported flags, still set a bitfield but
+        // expect CL_INVALID_PROPERTY to be returned on creation.
+        if (num_flags_set < 2)
+        {
+            flags = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR
+                | CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
+
+            multi_flags_supported = false;
+        }
+
+        cl_command_buffer_properties_khr props[] = {
+            CL_COMMAND_BUFFER_FLAGS_KHR, flags, 0
+        };
+
+        command_buffer = clCreateCommandBufferKHR(1, &queue, props, &error);
+        if (multi_flags_supported)
+        {
+            test_error(error, "clCreateCommandBufferKHR failed");
+        }
+        else
+        {
+            test_failure_error_ret(
+                error, CL_INVALID_PROPERTY,
+                "clCreateCommandBufferKHR should return CL_INVALID_PROPERTY",
+                TEST_FAIL);
+        }
+
+        return CL_SUCCESS;
+    }
+};
 
 // Test enqueuing a command-buffer containing a single NDRange command once
 struct BasicEnqueueTest : public BasicCommandBufferTest
@@ -420,6 +497,13 @@ struct InterleavedEnqueueTest : public BasicCommandBufferTest
 };
 
 } // anonymous namespace
+
+int test_multi_flag_creation(cl_device_id device, cl_context context,
+                             cl_command_queue queue, int num_elements)
+{
+    return MakeAndRunTest<MultiFlagCreationTest>(device, context, queue,
+                                                 num_elements);
+}
 
 int test_single_ndrange(cl_device_id device, cl_context context,
                         cl_command_queue queue, int num_elements)

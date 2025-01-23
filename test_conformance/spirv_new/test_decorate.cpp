@@ -110,29 +110,29 @@ int test_decorate_full(cl_device_id deviceID,
     return verify_results(deviceID, context, queue, name, prog);
 }
 
-TEST_SPIRV_FUNC(decorate_restrict)
+REGISTER_TEST(decorate_restrict)
 {
-    return test_decorate_full(deviceID, context, queue, "decorate_restrict");
+    return test_decorate_full(device, context, queue, "decorate_restrict");
 }
 
-TEST_SPIRV_FUNC(decorate_aliased)
+REGISTER_TEST(decorate_aliased)
 {
-    return test_decorate_full(deviceID, context, queue, "decorate_aliased");
+    return test_decorate_full(device, context, queue, "decorate_aliased");
 }
 
-TEST_SPIRV_FUNC(decorate_alignment)
+REGISTER_TEST(decorate_alignment)
 {
     //TODO: Check for results ? How to ensure buffers are aligned
     clProgramWrapper prog;
-    return get_program_with_il(prog, deviceID, context, "decorate_alignment");
+    return get_program_with_il(prog, device, context, "decorate_alignment");
 }
 
-TEST_SPIRV_FUNC(decorate_constant)
+REGISTER_TEST(decorate_constant)
 {
-    return test_decorate_full(deviceID, context, queue, "decorate_constant");
+    return test_decorate_full(device, context, queue, "decorate_constant");
 }
 
-TEST_SPIRV_FUNC(decorate_cpacked)
+REGISTER_TEST(decorate_cpacked)
 {
     PACKED(struct packed_struct_t {
         cl_int ival;
@@ -145,7 +145,7 @@ TEST_SPIRV_FUNC(decorate_cpacked)
 
     std::vector<packed_t> packed(num);
     clProgramWrapper prog;
-    cl_int err = get_program_with_il(prog, deviceID, context, "decorate_cpacked");
+    cl_int err = get_program_with_il(prog, device, context, "decorate_cpacked");
 
     clKernelWrapper kernel = clCreateKernel(prog, "decorate_cpacked", &err);
     SPIRV_CHECK_ERROR(err, "Failed to create spv kernel");
@@ -382,14 +382,14 @@ int test_saturate_full(cl_device_id deviceID,
 }
 
 #define TEST_SATURATED_CONVERSION(Ti, Tl, To)                                  \
-    TEST_SPIRV_FUNC(decorate_saturated_conversion_##Ti##_to_##To)              \
+    REGISTER_TEST(decorate_saturated_conversion_##Ti##_to_##To)                \
     {                                                                          \
         typedef cl_##Ti cl_Ti;                                                 \
         typedef cl_##Tl cl_Tl;                                                 \
         typedef cl_##To cl_To;                                                 \
         const char *name = "decorate_saturated_conversion_" #Ti "_to_" #To;    \
-        return test_saturate_full<cl_Ti, cl_Tl, cl_To>(                        \
-            deviceID, context, queue, name, #Ti #Tl #To);                      \
+        return test_saturate_full<cl_Ti, cl_Tl, cl_To>(device, context, queue, \
+                                                       name, #Ti #Tl #To);     \
     }
 
 TEST_SATURATED_CONVERSION(half, short, char)
@@ -532,7 +532,7 @@ static inline Ti generate_fprounding_input(RandomSeed &seed)
 }
 
 #define TEST_SPIRV_FP_ROUNDING_DECORATE(name, func, Ti, To)                    \
-    TEST_SPIRV_FUNC(decorate_fp_rounding_mode_##name##_##Ti##_##To)            \
+    REGISTER_TEST(decorate_fp_rounding_mode_##name##_##Ti##_##To)              \
     {                                                                          \
         typedef cl_##Ti clTi;                                                  \
         typedef cl_##To clTo;                                                  \
@@ -547,7 +547,7 @@ static inline Ti generate_fprounding_input(RandomSeed &seed)
             out[i] = func<clTi, clTo>(in[i]);                                  \
         }                                                                      \
         const char *name = "decorate_rounding_" #name "_" #Ti "_" #To;         \
-        return test_fp_rounding(deviceID, context, queue, name, in, out);      \
+        return test_fp_rounding(device, context, queue, name, in, out);        \
     }
 
 TEST_SPIRV_FP_ROUNDING_DECORATE(rte, round_to_even, half, short);

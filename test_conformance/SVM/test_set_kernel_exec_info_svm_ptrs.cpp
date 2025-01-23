@@ -42,7 +42,7 @@ const char *set_kernel_exec_info_svm_ptrs_kernel[] = {
 
 // Test that clSetKernelExecInfo works correctly with CL_KERNEL_EXEC_INFO_SVM_PTRS flag.
 //
-int test_svm_set_kernel_exec_info_svm_ptrs(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+REGISTER_TEST(svm_set_kernel_exec_info_svm_ptrs)
 {
   clContextWrapper    c = NULL;
   clProgramWrapper    program = NULL;
@@ -50,8 +50,11 @@ int test_svm_set_kernel_exec_info_svm_ptrs(cl_device_id deviceID, cl_context con
   cl_int      error = CL_SUCCESS;
   clCommandQueueWrapper queues[MAXQ];
 
-  //error = create_cl_objects(deviceID, &set_kernel_exec_info_svm_ptrs_kernel[0], &context, &program, &q, &num_devices, CL_DEVICE_SVM_FINE_GRAIN);
-  error = create_cl_objects(deviceID, &set_kernel_exec_info_svm_ptrs_kernel[0], &c, &program, &queues[0], &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
+  // error = create_cl_objects(device, &set_kernel_exec_info_svm_ptrs_kernel[0],
+  // &context, &program, &q, &num_devices, CL_DEVICE_SVM_FINE_GRAIN);
+  error = create_cl_objects(device, &set_kernel_exec_info_svm_ptrs_kernel[0],
+                            &c, &program, &queues[0], &num_devices,
+                            CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
   if(error == 1) return 0; // no devices capable of requested SVM level, so don't execute but count test as passing.
   if(error < 0) return -1; // fail test.
 

@@ -4,14 +4,17 @@ set -e
 
 export TOP=$(pwd)
 
-TOOLCHAIN_URL_arm="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz"
-TOOLCHAIN_URL_aarch64="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/aarch64-linux-gnu/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.tar.xz"
-
 TOOLCHAIN_PREFIX_arm=arm-linux-gnueabihf
 TOOLCHAIN_PREFIX_aarch64=aarch64-linux-gnu
 
-TOOLCHAIN_FILE=${TOP}/toolchain.cmake
-touch ${TOOLCHAIN_FILE}
+if [[ ${JOB_ARCHITECTURE} == android-* ]]; then
+    TOOLCHAIN_FILE=${ANDROID_NDK}/build/cmake/android.toolchain.cmake
+    CMAKE_CONFIG_ARGS_ANDROID="-DCMAKE_ANDROID_ARCH_ABI=${ANDROID_ARCH_ABI}"
+else
+    TOOLCHAIN_FILE=${TOP}/toolchain.cmake
+    touch ${TOOLCHAIN_FILE}
+fi
+
 BUILD_OPENGL_TEST="OFF"
 BUILD_VULKAN_TEST="ON"
 
@@ -19,25 +22,19 @@ cmake --version
 echo
 
 # Prepare toolchain if needed
-if [[ ${JOB_ARCHITECTURE} != "" && ${RUNNER_OS} != "Windows" ]]; then
-    TOOLCHAIN_URL_VAR=TOOLCHAIN_URL_${JOB_ARCHITECTURE}
-    TOOLCHAIN_URL=${!TOOLCHAIN_URL_VAR}
-    wget ${TOOLCHAIN_URL}
-    TOOLCHAIN_ARCHIVE=${TOOLCHAIN_URL##*/}
-    tar xf ${TOOLCHAIN_ARCHIVE}
-    TOOLCHAIN_DIR=${TOP}/${TOOLCHAIN_ARCHIVE%.tar.xz}
-    export PATH=${TOOLCHAIN_DIR}/bin:${PATH}
+if [[ ${JOB_ARCHITECTURE} != android-* ]]; then
+    if [[ ${JOB_ARCHITECTURE} != "" && ${RUNNER_OS} != "Windows" ]]; then
+        TOOLCHAIN_PREFIX_VAR=TOOLCHAIN_PREFIX_${JOB_ARCHITECTURE}
+        TOOLCHAIN_PREFIX=${!TOOLCHAIN_PREFIX_VAR}
 
-    TOOLCHAIN_PREFIX_VAR=TOOLCHAIN_PREFIX_${JOB_ARCHITECTURE}
-    TOOLCHAIN_PREFIX=${!TOOLCHAIN_PREFIX_VAR}
-
-    echo "SET(CMAKE_SYSTEM_NAME Linux)" >> ${TOOLCHAIN_FILE}
-    echo "SET(CMAKE_SYSTEM_PROCESSOR ${JOB_ARCHITECTURE})" >> ${TOOLCHAIN_FILE}
-    echo "SET(CMAKE_C_COMPILER   ${TOOLCHAIN_PREFIX}-gcc)" >> ${TOOLCHAIN_FILE}
-    echo "SET(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}-g++)" >> ${TOOLCHAIN_FILE}
-    echo "SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)" >> ${TOOLCHAIN_FILE}
-    echo "SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)" >> ${TOOLCHAIN_FILE}
-    echo "SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" >> ${TOOLCHAIN_FILE}
+        echo "SET(CMAKE_SYSTEM_NAME Linux)" >> ${TOOLCHAIN_FILE}
+        echo "SET(CMAKE_SYSTEM_PROCESSOR ${JOB_ARCHITECTURE})" >> ${TOOLCHAIN_FILE}
+        echo "SET(CMAKE_C_COMPILER   ${TOOLCHAIN_PREFIX}-gcc)" >> ${TOOLCHAIN_FILE}
+        echo "SET(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}-g++)" >> ${TOOLCHAIN_FILE}
+        echo "SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)" >> ${TOOLCHAIN_FILE}
+        echo "SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)" >> ${TOOLCHAIN_FILE}
+        echo "SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" >> ${TOOLCHAIN_FILE}
+    fi
 fi
 
 if [[ ( ${JOB_ARCHITECTURE} == "" && ${JOB_ENABLE_GL} == "1" ) ]]; then
@@ -61,24 +58,29 @@ cd build
 cmake .. -G Ninja \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
-      -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/
+      -DOPENCL_ICD_LOADER_HEADERS_DIR=${TOP}/OpenCL-Headers/ \
+      "${CMAKE_CONFIG_ARGS_ANDROID}"
 cmake --build . --parallel
 
 #Vulkan Loader
-cd ${TOP}
-git clone https://github.com/KhronosGroup/Vulkan-Loader.git
-cd Vulkan-Loader
-mkdir build
-cd build
-python3 ../scripts/update_deps.py
-cmake .. -G Ninja \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
-      -DBUILD_WSI_XLIB_SUPPORT=OFF \
-      -DBUILD_WSI_XCB_SUPPORT=OFF \
-      -DBUILD_WSI_WAYLAND_SUPPORT=OFF \
-      -C helper.cmake ..
-cmake --build . --parallel
+if [[ ${JOB_ARCHITECTURE} != android-* ]]; then
+    # Building the Vulkan loader is not supported on Android,
+    # instead, the loader is shipped as part of the operating system
+    cd ${TOP}
+    git clone https://github.com/KhronosGroup/Vulkan-Loader.git
+    cd Vulkan-Loader
+    mkdir build
+    cd build
+    python3 ../scripts/update_deps.py
+    cmake .. -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
+          -DBUILD_WSI_XLIB_SUPPORT=OFF \
+          -DBUILD_WSI_XCB_SUPPORT=OFF \
+          -DBUILD_WSI_WAYLAND_SUPPORT=OFF \
+          -C helper.cmake ..
+    cmake --build . --parallel
+fi
 
 # Build CTS
 cd ${TOP}
@@ -86,9 +88,12 @@ ls -l
 mkdir build
 cd build
 if [[ ${RUNNER_OS} == "Windows" ]]; then
-  CMAKE_OPENCL_LIBRARIES_OPTION="OpenCL"
+    CMAKE_OPENCL_LIBRARIES_OPTION="OpenCL"
 else
-  CMAKE_OPENCL_LIBRARIES_OPTION="-lOpenCL -lpthread"
+    CMAKE_OPENCL_LIBRARIES_OPTION="-lOpenCL"
+    if [[ ${JOB_ARCHITECTURE} != android-* ]]; then
+        CMAKE_OPENCL_LIBRARIES_OPTION="${CMAKE_OPENCL_LIBRARIES_OPTION} -lpthread"
+    fi
 fi
 cmake .. -G Ninja \
       -DCMAKE_BUILD_TYPE="${BUILD_CONFIG}" \
@@ -102,5 +107,6 @@ cmake .. -G Ninja \
       -DGL_IS_SUPPORTED=${BUILD_OPENGL_TEST} \
       -DVULKAN_IS_SUPPORTED=${BUILD_VULKAN_TEST} \
       -DVULKAN_INCLUDE_DIR=${TOP}/Vulkan-Headers/include/ \
-      -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/
+      -DVULKAN_LIB_DIR=${TOP}/Vulkan-Loader/build/loader/ \
+      "${CMAKE_CONFIG_ARGS_ANDROID}"
 cmake --build . --parallel

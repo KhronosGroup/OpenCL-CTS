@@ -299,7 +299,7 @@ TestNonUniformWorkGroup::TestNonUniformWorkGroup(
                 auto global_size_rounded = global_size_before
                     + (localSize[dim] - global_size_before % localSize[dim]);
                 globalSize[dim] = global_size_rounded;
-                log_info("Rounding globalSize[%d] = %d -> %d\n", dim,
+                log_info("Rounding globalSize[%d] = %zu -> %zu\n", dim,
                          global_size_before, global_size_rounded);
             }
         }
@@ -665,8 +665,8 @@ void TestNonUniformWorkGroup::showTestInfo () {
     if (!_localSize_IsNull) {
       log_info ("\tATTENTION: strict mode applies only NULL local work group size\n");
     } else {
-      log_info ("\t\tExpected value of local work group size is %ld.\n",
-        TestNonUniformWorkGroup::getMaxLocalWorkgroupSize(_device));
+        log_info("\t\tExpected value of local work group size is %zu.\n",
+                 TestNonUniformWorkGroup::getMaxLocalWorkgroupSize(_device));
     }
 
   }
@@ -687,7 +687,8 @@ size_t TestNonUniformWorkGroup::adjustLocalArraySize (size_t localArraySize) {
 
   if (kernelLocalMemSize + localArraySize > deviceLocalMemSize) {
     size_t adjustedLocalArraySize = deviceLocalMemSize - kernelLocalMemSize;
-    log_info("localArraySize was adjusted from %lu to %lu\n", localArraySize, adjustedLocalArraySize);
+    log_info("localArraySize was adjusted from %zu to %zu\n", localArraySize,
+             adjustedLocalArraySize);
     localArraySize = adjustedLocalArraySize;
   }
 
@@ -706,7 +707,8 @@ size_t TestNonUniformWorkGroup::adjustGlobalBufferSize(size_t globalBufferSize) 
   size_t adjustedGlobalBufferSize = globalBufferSize;
   if (deviceMaxAllocObjSize < globalBufferSize) {
     adjustedGlobalBufferSize = deviceMaxAllocObjSize;
-    log_info("globalBufferSize was adjusted from %lu to %lu\n", globalBufferSize, adjustedGlobalBufferSize);
+    log_info("globalBufferSize was adjusted from %zu to %zu\n",
+             globalBufferSize, adjustedGlobalBufferSize);
   }
 
   return adjustedGlobalBufferSize;

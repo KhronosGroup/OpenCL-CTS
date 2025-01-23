@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+#include <cinttypes>
+
 #include "procs.h"
 #include "harness/parseParameters.h"
 
@@ -73,7 +76,7 @@ int test_pipe_info( cl_device_id deviceID, cl_context context, cl_command_queue 
         test_error_fail(err, "clGetKernelArgInfo failed");
         if (arg_type_qualifier != CL_KERNEL_ARG_TYPE_PIPE)
         {
-            test_fail("ERROR: Incorrect type qualifier: %i\n",
+            test_fail("ERROR: Incorrect type qualifier: 0x%" PRIx64 "\n",
                       arg_type_qualifier);
         }
     }

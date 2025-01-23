@@ -72,8 +72,7 @@ const char *repeate_test_kernel =
 "}\n";
 
 
-
-int test_load_single_kernel(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(load_single_kernel)
 {
     int error;
     clProgramWrapper program;
@@ -159,7 +158,7 @@ int test_load_single_kernel(cl_device_id deviceID, cl_context context, cl_comman
     return 0;
 }
 
-int test_load_two_kernels(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(load_two_kernels)
 {
     int error;
     clProgramWrapper program;
@@ -239,7 +238,7 @@ int test_load_two_kernels(cl_device_id deviceID, cl_context context, cl_command_
     return 0;
 }
 
-int test_load_two_kernels_in_one(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(load_two_kernels_in_one)
 {
     int error;
     clProgramWrapper program;
@@ -320,7 +319,7 @@ int test_load_two_kernels_in_one(cl_device_id deviceID, cl_context context, cl_c
     return 0;
 }
 
-int test_load_two_kernels_manually( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(load_two_kernels_manually)
 {
     clProgramWrapper program;
     clKernelWrapper kernel1, kernel2;
@@ -351,7 +350,7 @@ int test_load_two_kernels_manually( cl_device_id deviceID, cl_context context, c
     return 0;
 }
 
-int test_get_program_info_kernel_names( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(get_program_info_kernel_names)
 {
     clProgramWrapper program;
     clKernelWrapper kernel1, kernel2;
@@ -442,7 +441,7 @@ static const char *single_task_kernel[] = {
     "\n"
     "}\n" };
 
-int test_enqueue_task(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(enqueue_task)
 {
     int error;
     clProgramWrapper program;
@@ -491,9 +490,8 @@ int test_enqueue_task(cl_device_id deviceID, cl_context context, cl_command_queu
 }
 
 
-
 #define TEST_SIZE 1000
-int test_repeated_setup_cleanup(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(repeated_setup_cleanup)
 {
 
     cl_context local_context;
@@ -519,10 +517,11 @@ int test_repeated_setup_cleanup(cl_device_id deviceID, cl_context context, cl_co
     for (i=0; i<100; i++) {
         memset(outData, 0, sizeof(cl_int)*TEST_SIZE);
 
-        local_context = clCreateContext(NULL, 1, &deviceID, notify_callback, NULL, &error);
+        local_context =
+            clCreateContext(NULL, 1, &device, notify_callback, NULL, &error);
         test_error( error, "clCreateContext failed");
 
-        local_queue = clCreateCommandQueue(local_context, deviceID, 0, &error);
+        local_queue = clCreateCommandQueue(local_context, device, 0, &error);
         test_error( error, "clCreateCommandQueue failed");
 
         error = create_single_kernel_helper(
@@ -590,6 +589,3 @@ int test_repeated_setup_cleanup(cl_device_id deviceID, cl_context context, cl_co
 
     return 0;
 }
-
-
-

@@ -90,24 +90,24 @@ static int test_image_operand_helper(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(spirv14_image_operand_signextend)
+REGISTER_TEST(spirv14_image_operand_signextend)
 {
-    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    if (!is_spirv_version_supported(device, "SPIR-V_1.4"))
     {
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
-    return test_image_operand_helper(deviceID, context, queue, true);
+    return test_image_operand_helper(device, context, queue, true);
 }
 
-TEST_SPIRV_FUNC(spirv14_image_operand_zeroextend)
+REGISTER_TEST(spirv14_image_operand_zeroextend)
 {
-    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    if (!is_spirv_version_supported(device, "SPIR-V_1.4"))
     {
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
-    return test_image_operand_helper(deviceID, context, queue, false);
+    return test_image_operand_helper(device, context, queue, false);
 }
 
 static int test_loop_control_helper(cl_device_id deviceID, cl_context context,
@@ -155,64 +155,64 @@ static int test_loop_control_helper(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(spirv14_loop_control_miniterations)
+REGISTER_TEST(spirv14_loop_control_miniterations)
 {
-    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    if (!is_spirv_version_supported(device, "SPIR-V_1.4"))
     {
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
-    return test_loop_control_helper(deviceID, context, queue,
+    return test_loop_control_helper(device, context, queue,
                                     "loop_control_miniterations");
 }
 
-TEST_SPIRV_FUNC(spirv14_loop_control_maxiterations)
+REGISTER_TEST(spirv14_loop_control_maxiterations)
 {
-    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    if (!is_spirv_version_supported(device, "SPIR-V_1.4"))
     {
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
-    return test_loop_control_helper(deviceID, context, queue,
+    return test_loop_control_helper(device, context, queue,
                                     "loop_control_maxiterations");
 }
 
-TEST_SPIRV_FUNC(spirv14_loop_control_iterationmultiple)
+REGISTER_TEST(spirv14_loop_control_iterationmultiple)
 {
-    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    if (!is_spirv_version_supported(device, "SPIR-V_1.4"))
     {
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
-    return test_loop_control_helper(deviceID, context, queue,
+    return test_loop_control_helper(device, context, queue,
                                     "loop_control_iterationmultiple");
 }
 
-TEST_SPIRV_FUNC(spirv14_loop_control_peelcount)
+REGISTER_TEST(spirv14_loop_control_peelcount)
 {
-    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    if (!is_spirv_version_supported(device, "SPIR-V_1.4"))
     {
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
-    return test_loop_control_helper(deviceID, context, queue,
+    return test_loop_control_helper(device, context, queue,
                                     "loop_control_peelcount");
 }
 
-TEST_SPIRV_FUNC(spirv14_loop_control_partialcount)
+REGISTER_TEST(spirv14_loop_control_partialcount)
 {
-    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    if (!is_spirv_version_supported(device, "SPIR-V_1.4"))
     {
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
-    return test_loop_control_helper(deviceID, context, queue,
+    return test_loop_control_helper(device, context, queue,
                                     "loop_control_partialcount");
 }
 
-TEST_SPIRV_FUNC(spirv14_ptrops)
+REGISTER_TEST(spirv14_ptrops)
 {
-    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    if (!is_spirv_version_supported(device, "SPIR-V_1.4"))
     {
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
@@ -221,7 +221,7 @@ TEST_SPIRV_FUNC(spirv14_ptrops)
     cl_int error = CL_SUCCESS;
 
     clProgramWrapper prog;
-    error = get_program_with_il(prog, deviceID, context, "spv1.4/ptrops");
+    error = get_program_with_il(prog, device, context, "spv1.4/ptrops");
     SPIRV_CHECK_ERROR(error, "Failed to compile spv program");
 
     clKernelWrapper kernel = clCreateKernel(prog, "ptrops_test", &error);
@@ -331,31 +331,31 @@ static int test_usersemantic_decoration(cl_device_id deviceID,
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(spirv14_usersemantic_decoratestring)
+REGISTER_TEST(spirv14_usersemantic_decoratestring)
 {
-    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    if (!is_spirv_version_supported(device, "SPIR-V_1.4"))
     {
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
 
-    return test_usersemantic_decoration(deviceID, context, queue, false);
+    return test_usersemantic_decoration(device, context, queue, false);
 }
 
-TEST_SPIRV_FUNC(spirv14_usersemantic_memberdecoratestring)
+REGISTER_TEST(spirv14_usersemantic_memberdecoratestring)
 {
-    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    if (!is_spirv_version_supported(device, "SPIR-V_1.4"))
     {
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
 
-    return test_usersemantic_decoration(deviceID, context, queue, true);
+    return test_usersemantic_decoration(device, context, queue, true);
 }
 
-TEST_SPIRV_FUNC(spirv14_nonwriteable_decoration)
+REGISTER_TEST(spirv14_nonwriteable_decoration)
 {
-    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    if (!is_spirv_version_supported(device, "SPIR-V_1.4"))
     {
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
@@ -365,7 +365,7 @@ TEST_SPIRV_FUNC(spirv14_nonwriteable_decoration)
 
     clProgramWrapper prog;
     error = get_program_with_il(
-        prog, deviceID, context,
+        prog, device, context,
         "spv1.4/nonwriteable_decoration_function_storage_class");
     SPIRV_CHECK_ERROR(error, "Failed to compile spv program");
 
@@ -399,9 +399,9 @@ TEST_SPIRV_FUNC(spirv14_nonwriteable_decoration)
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(spirv14_copymemory_memory_operands)
+REGISTER_TEST(spirv14_copymemory_memory_operands)
 {
-    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    if (!is_spirv_version_supported(device, "SPIR-V_1.4"))
     {
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
@@ -410,7 +410,7 @@ TEST_SPIRV_FUNC(spirv14_copymemory_memory_operands)
     cl_int error = CL_SUCCESS;
 
     clProgramWrapper prog;
-    error = get_program_with_il(prog, deviceID, context,
+    error = get_program_with_il(prog, device, context,
                                 "spv1.4/copymemory_memory_operands");
     SPIRV_CHECK_ERROR(error, "Failed to compile spv program");
 
@@ -450,11 +450,11 @@ TEST_SPIRV_FUNC(spirv14_copymemory_memory_operands)
     return TEST_PASS;
 }
 
-TEST_SPIRV_FUNC(spirv14_select_composite)
+REGISTER_TEST(spirv14_select_composite)
 {
     constexpr size_t global_size = 16;
 
-    if (!is_spirv_version_supported(deviceID, "SPIR-V_1.4"))
+    if (!is_spirv_version_supported(device, "SPIR-V_1.4"))
     {
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
@@ -463,8 +463,7 @@ TEST_SPIRV_FUNC(spirv14_select_composite)
     cl_int error = CL_SUCCESS;
 
     clProgramWrapper prog;
-    error =
-        get_program_with_il(prog, deviceID, context, "spv1.4/select_struct");
+    error = get_program_with_il(prog, device, context, "spv1.4/select_struct");
     SPIRV_CHECK_ERROR(error, "Failed to compile spv program");
 
     clKernelWrapper kernel = clCreateKernel(prog, "select_struct_test", &error);
@@ -507,6 +506,54 @@ TEST_SPIRV_FUNC(spirv14_select_composite)
                       i, results[i].i, results[i].f, expected.i, expected.f);
             return TEST_FAIL;
         }
+    }
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(spirv14_copylogical)
+{
+    if (!is_spirv_version_supported(device, "SPIR-V_1.4"))
+    {
+        log_info("SPIR-V 1.4 not supported; skipping tests.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper prog;
+    error =
+        get_program_with_il(prog, device, context, "spv1.4/copylogical_struct");
+    SPIRV_CHECK_ERROR(error, "Failed to compile spv program");
+
+    clKernelWrapper kernel = clCreateKernel(prog, "copylogical_test", &error);
+    SPIRV_CHECK_ERROR(error, "Failed to create spv kernel");
+
+    struct TestStruct
+    {
+        cl_int i;
+        cl_float f;
+    };
+    TestStruct results{ 0, 0.0f };
+    clMemWrapper dst = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                      sizeof(results), NULL, &error);
+    SPIRV_CHECK_ERROR(error, "Failed to create dst buffer");
+
+    error |= clSetKernelArg(kernel, 0, sizeof(dst), &dst);
+    SPIRV_CHECK_ERROR(error, "Failed to set kernel args");
+
+    size_t global = 1;
+    error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global, NULL, 0,
+                                   NULL, NULL);
+    SPIRV_CHECK_ERROR(error, "Failed to enqueue kernel");
+
+    error = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0, sizeof(results),
+                                &results, 0, NULL, NULL);
+    SPIRV_CHECK_ERROR(error, "Unable to read destination buffer");
+
+    if (results.i != 1024 || results.f != 3.1415f)
+    {
+        log_error("Results mismatch!  Got: { %d, %f }\n", results.i, results.f);
+        return TEST_FAIL;
     }
 
     return TEST_PASS;

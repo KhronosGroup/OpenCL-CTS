@@ -102,9 +102,8 @@ struct CreateCommandBufferRepeatedProperties : public BasicCommandBufferTest
         cl_int error = CL_SUCCESS;
 
         cl_command_buffer_properties_khr repeated_properties[5] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR,
-            CL_COMMAND_BUFFER_FLAGS_KHR, CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR,
-            0
+            CL_COMMAND_BUFFER_FLAGS_KHR, rep_prop, CL_COMMAND_BUFFER_FLAGS_KHR,
+            rep_prop, 0
         };
 
         command_buffer =
@@ -127,6 +126,34 @@ struct CreateCommandBufferRepeatedProperties : public BasicCommandBufferTest
 
         return CL_SUCCESS;
     }
+
+    bool Skip() override
+    {
+        if (BasicCommandBufferTest::Skip()) return true;
+
+        bool skip = true;
+        if (simultaneous_use_support)
+        {
+            rep_prop = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
+            skip = false;
+        }
+        else if (device_side_enqueue_support)
+        {
+            rep_prop = CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
+            skip = false;
+        }
+        else if (is_extension_available(
+                     device,
+                     CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_NAME))
+        {
+            rep_prop = CL_COMMAND_BUFFER_MUTABLE_KHR;
+            skip = false;
+        }
+
+        return skip;
+    }
+
+    cl_command_buffer_properties_khr rep_prop = 0;
 };
 
 // CL_INVALID_PROPERTY if values specified in properties are valid but are not
@@ -140,8 +167,7 @@ struct CreateCommandBufferNotSupportedProperties : public BasicCommandBufferTest
         cl_int error = CL_SUCCESS;
 
         cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR,
-            0
+            CL_COMMAND_BUFFER_FLAGS_KHR, unsupported_prop, 0
         };
 
         command_buffer =
@@ -156,21 +182,24 @@ struct CreateCommandBufferNotSupportedProperties : public BasicCommandBufferTest
 
     bool Skip() override
     {
-        cl_device_command_buffer_capabilities_khr capabilities;
-        cl_int error =
-            clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
-                            sizeof(capabilities), &capabilities, NULL);
-        test_error(error,
-                   "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
+        if (BasicCommandBufferTest::Skip()) return true;
 
-        bool device_supports_simultaneous_use =
-            (capabilities & CL_COMMAND_BUFFER_CAPABILITY_SIMULTANEOUS_USE_KHR)
-            != 0;
+        bool skip = true;
+        if (!simultaneous_use_support)
+        {
+            unsupported_prop = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
+            skip = false;
+        }
+        else if (!device_side_enqueue_support)
+        {
+            unsupported_prop = CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
+            skip = false;
+        }
 
-        // If device supports command queue property
-        // CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR test should be skipped
-        return device_supports_simultaneous_use;
+        return skip;
     }
+
+    cl_command_buffer_properties_khr unsupported_prop = 0;
 };
 
 // CL_INCOMPATIBLE_COMMAND_QUEUE_KHR if the properties of any command-queue in
@@ -196,6 +225,8 @@ struct CreateCommandBufferQueueWithoutMinProperties
 
     bool Skip() override
     {
+        if (BasicCommandBufferTest::Skip()) return true;
+
         cl_command_queue_properties required_properties;
         cl_int error = clGetDeviceInfo(
             device, CL_DEVICE_COMMAND_BUFFER_REQUIRED_QUEUE_PROPERTIES_KHR,
@@ -217,8 +248,8 @@ struct CreateCommandBufferQueueWithoutMinProperties
 
 // CL_INCOMPATIBLE_COMMAND_QUEUE_KHR if any command-queue in queues is an
 // out-of-order command-queue and the device associated with the command-queue
-// does not support the CL_COMMAND_BUFFER_CAPABILITY_OUT_OF_ORDER_KHR
-// capability.
+// does not return CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE from
+// CL_DEVICE_COMMAND_BUFFER_SUPPORTED_QUEUE_PROPERTIES_KHR
 struct CreateCommandBufferDeviceDoesNotSupportOutOfOderQueue
     : public BasicCommandBufferTest
 {
@@ -260,10 +291,11 @@ struct CreateCommandBufferDeviceDoesNotSupportOutOfOderQueue
 
     bool Skip() override
     {
-        BasicCommandBufferTest::Skip();
+        if (BasicCommandBufferTest::Skip()) return true;
 
-        // If device supports out of order queues test should be skipped
-        return out_of_order_support != 0;
+        // If device does not support out of order queue or if device supports
+        // out of order command buffer test should be skipped
+        return !queue_out_of_order_support || out_of_order_support;
     }
 
     clCommandQueueWrapper out_of_order_queue;
