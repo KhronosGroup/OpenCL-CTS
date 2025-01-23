@@ -39,8 +39,8 @@ extern int test_copy_image_set_1D_buffer_1D(cl_device_id device,
 
 int test_image_type( cl_device_id device, cl_context context, cl_command_queue queue, MethodsToTest testMethod, cl_mem_flags flags )
 {
-    const char *name;
-    cl_mem_object_type imageType;
+    const char *name = nullptr;
+    cl_mem_object_type imageType = 0;
 
     if ( gTestMipmaps )
     {
@@ -110,11 +110,6 @@ int test_image_type( cl_device_id device, cl_context context, cl_command_queue q
         case k1DBufferTo1D:
             name = "1D buffer -> 1D";
             imageType = CL_MEM_OBJECT_IMAGE1D_BUFFER;
-            break;
-        default:
-            log_error("ERROR Invalid testMethod = %d", testMethod);
-            name = nullptr;
-            imageType = 0;
             break;
     }
 
