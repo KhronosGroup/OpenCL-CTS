@@ -191,3 +191,14 @@ std::string ahardwareBufferFormatToString(AHardwareBuffer_Format format)
     }
     return result;
 }
+AHardwareBuffer *create_AHB(AHardwareBuffer_Desc *desc)
+{
+    AHardwareBuffer *buffer_ptr = nullptr;
+    int err = AHardwareBuffer_allocate(desc, &buffer_ptr);
+    if (err != 0)
+    {
+        throw std::runtime_error("AHardwareBuffer_allocate failed with code: "
+                                 + std::to_string(err) + "\n");
+    }
+    return buffer_ptr;
+}
