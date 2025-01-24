@@ -30,9 +30,16 @@ class VulkanInstance {
 protected:
     VkInstance m_vkInstance;
     VulkanPhysicalDeviceList m_physicalDeviceList;
+    VkDebugUtilsMessengerEXT m_debugMessenger;
+    bool m_useValidationLayers;
+    const std::vector<const char *> m_validationLayers = {
+        "VK_LAYER_KHRONOS_validation",
+    };
 
-    VulkanInstance();
     VulkanInstance(const VulkanInstance &);
+
+public:
+    VulkanInstance(bool useValidationLayers = false);
     virtual ~VulkanInstance();
 
 public:

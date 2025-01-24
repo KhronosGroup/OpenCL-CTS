@@ -40,8 +40,8 @@ struct VulkanTestBase
                    cl_command_queue queue, cl_int nelems)
         : device(device), context(context), num_elems(nelems)
     {
-        vkDevice.reset(
-            new VulkanDevice(getAssociatedVulkanPhysicalDevice(device)));
+        vkDevice.reset(new VulkanDevice(
+            getAssociatedVulkanPhysicalDevice(device, useValidationLayers)));
 
         if (!(is_extension_available(device, "cl_khr_external_memory")
               && is_extension_available(device, "cl_khr_external_semaphore")))
@@ -101,7 +101,7 @@ template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,
                    cl_command_queue queue, cl_int nelems)
 {
-    if (!checkVkSupport())
+    if (!checkVkSupport(useValidationLayers))
     {
         log_info("Vulkan supported GPU not found \n");
         log_info("TEST SKIPPED \n");
