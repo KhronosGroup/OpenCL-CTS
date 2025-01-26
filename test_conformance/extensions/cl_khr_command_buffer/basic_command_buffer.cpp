@@ -225,7 +225,7 @@ struct MultiFlagCreationTest : public BasicCommandBufferTest
         }
 
         // If we can't find multiple supported flags, still set a bitfield but
-        // expect CL_INVALID_PROPERTY to be returned on creation.
+        // expect CL_INVALID_VALUE to be returned on creation.
         if (num_flags_set < 2)
         {
             flags = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR
@@ -246,8 +246,8 @@ struct MultiFlagCreationTest : public BasicCommandBufferTest
         else
         {
             test_failure_error_ret(
-                error, CL_INVALID_PROPERTY,
-                "clCreateCommandBufferKHR should return CL_INVALID_PROPERTY",
+                error, CL_INVALID_VALUE,
+                "clCreateCommandBufferKHR should return CL_INVALID_VALUE",
                 TEST_FAIL);
         }
 
