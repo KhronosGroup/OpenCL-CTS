@@ -210,7 +210,8 @@ struct MultiFlagCreationTest : public BasicCommandBufferTest
             num_flags_set++;
         }
 
-        if (device_side_enqueue_support)
+        if (is_extension_available(
+                device, CL_KHR_COMMAND_BUFFER_MULTI_DEVICE_EXTENSION_NAME))
         {
             flags |= CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
             num_flags_set++;
