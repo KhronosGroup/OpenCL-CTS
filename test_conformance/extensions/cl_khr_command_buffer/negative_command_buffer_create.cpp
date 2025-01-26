@@ -190,11 +190,6 @@ struct CreateCommandBufferNotSupportedProperties : public BasicCommandBufferTest
             unsupported_prop = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
             skip = false;
         }
-        else if (!device_side_enqueue_support)
-        {
-            unsupported_prop = CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
-            skip = false;
-        }
 
         return skip;
     }
