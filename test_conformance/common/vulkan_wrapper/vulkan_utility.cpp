@@ -32,13 +32,13 @@
 #define BUFFERSIZE 3000
 
 
-const VulkanInstance &getVulkanInstance()
+const VulkanInstance &getVulkanInstance(bool useValidationLayers)
 {
-    static VulkanInstance instance;
+    static VulkanInstance instance(useValidationLayers);
     return instance;
 }
 
-const VulkanPhysicalDevice &getVulkanPhysicalDevice()
+const VulkanPhysicalDevice &getVulkanPhysicalDevice(bool useValidationLayers)
 {
     size_t pdIdx = 0;
     cl_int errNum = 0;
@@ -47,7 +47,7 @@ const VulkanPhysicalDevice &getVulkanPhysicalDevice()
     cl_uint num_devices = 0;
     cl_uint device_no = 0;
     const size_t bufsize = BUFFERSIZE;
-    const VulkanInstance &instance = getVulkanInstance();
+    const VulkanInstance &instance = getVulkanInstance(useValidationLayers);
     const VulkanPhysicalDeviceList &physicalDeviceList =
         instance.getPhysicalDeviceList();
 
@@ -112,12 +112,13 @@ const VulkanPhysicalDevice &getVulkanPhysicalDevice()
 }
 
 const VulkanPhysicalDevice &
-getAssociatedVulkanPhysicalDevice(cl_device_id deviceId)
+getAssociatedVulkanPhysicalDevice(cl_device_id deviceId,
+                                  bool useValidationLayers)
 {
     size_t pdIdx;
     cl_int errNum = 0;
     cl_uchar uuid[CL_UUID_SIZE_KHR];
-    const VulkanInstance &instance = getVulkanInstance();
+    const VulkanInstance &instance = getVulkanInstance(useValidationLayers);
     const VulkanPhysicalDeviceList &physicalDeviceList =
         instance.getPhysicalDeviceList();
 
@@ -188,10 +189,10 @@ getVulkanMemoryType(const VulkanDevice &device,
     return memoryTypeList[mtIdx];
 }
 
-bool checkVkSupport()
+bool checkVkSupport(bool useValidationLayers)
 {
     bool result = true;
-    const VulkanInstance &instance = getVulkanInstance();
+    const VulkanInstance &instance = getVulkanInstance(useValidationLayers);
     const VulkanPhysicalDeviceList &physicalDeviceList =
         instance.getPhysicalDeviceList();
     if (physicalDeviceList() == NULL)
@@ -695,6 +696,7 @@ operator<<(std::ostream &os,
 {
     switch (externalMemoryHandleType)
     {
+        default:
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE: return os << "None";
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
             return os << "Opaque file descriptor";
@@ -715,6 +717,7 @@ operator<<(std::ostream &os,
 {
     switch (externalSemaphoreHandleType)
     {
+        default:
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NONE: return os << "None";
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD:
             return os << "Opaque file descriptor";
