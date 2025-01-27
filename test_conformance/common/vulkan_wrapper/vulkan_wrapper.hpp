@@ -25,7 +25,7 @@
 #include <cassert>
 
 class VulkanInstance {
-    friend const VulkanInstance &getVulkanInstance();
+    friend const VulkanInstance &getVulkanInstance(bool useValidationLayers);
 
 protected:
     VkInstance m_vkInstance;
