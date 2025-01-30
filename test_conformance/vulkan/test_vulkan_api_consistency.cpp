@@ -61,14 +61,15 @@ struct ConsistencyExternalBufferTest : public VulkanTestBase
 #else
         if (!is_extension_available(device, "cl_khr_external_memory_opaque_fd"))
         {
-            throw std::runtime_error(
-                "Device does not support "
-                "cl_khr_external_memory_opaque_fd extension \n");
+            log_info("Device does not support "
+                     "cl_khr_external_memory_opaque_fd extension \n");
+            return TEST_SKIPPED_ITSELF;
         }
 #endif
 
         VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
-            getSupportedVulkanExternalMemoryHandleTypeList()[0];
+            getSupportedVulkanExternalMemoryHandleTypeList(
+                vkDevice->getPhysicalDevice())[0];
 
         VulkanBuffer vkDummyBuffer(*vkDevice, 4 * 1024,
                                    vkExternalMemoryHandleType);
@@ -200,9 +201,9 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
 #else
         if (!is_extension_available(device, "cl_khr_external_memory_opaque_fd"))
         {
-            test_fail(
-                "Device does not support cl_khr_external_memory_opaque_fd "
-                "extension \n");
+            log_info("Device does not support cl_khr_external_memory_opaque_fd "
+                     "extension \n");
+            return TEST_SKIPPED_ITSELF;
         }
 #endif
         uint32_t width = 256;
@@ -212,7 +213,8 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
         cl_image_format img_format = { 0 };
 
         VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
-            getSupportedVulkanExternalMemoryHandleTypeList()[0];
+            getSupportedVulkanExternalMemoryHandleTypeList(
+                vkDevice->getPhysicalDevice())[0];
 
         VulkanImageTiling vulkanImageTiling =
             vkClExternalMemoryHandleTilingAssumption(
@@ -355,9 +357,9 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
 #else
         if (!is_extension_available(device, "cl_khr_external_memory_opaque_fd"))
         {
-            test_fail(
-                "Device does not support cl_khr_external_memory_opaque_fd "
-                "extension \n");
+            log_info("Device does not support cl_khr_external_memory_opaque_fd "
+                     "extension \n");
+            return TEST_SKIPPED_ITSELF;
         }
 #endif
 
