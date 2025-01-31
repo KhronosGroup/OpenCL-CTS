@@ -133,7 +133,7 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
     // allocate an array memory object to load the filter weights
     memobjs[1] =
         clCreateBuffer(context, CL_MEM_READ_WRITE,
-                       sizeof(cl_float) * w * h * d * nChannels, NULL, &err);
+                       sizeof(cl_uchar) * w * h * d * nChannels, NULL, &err);
     if( memobjs[1] == (cl_mem)0 ){
         log_error( " unable to create array using clCreateBuffer\n" );
         clReleaseMemObject( memobjs[0] );
@@ -237,7 +237,7 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
     }
 
     // read output image
-    err = clEnqueueReadBuffer(queue, memobjs[1], CL_TRUE, 0, w*h*d*nChannels*4, outptr, 0, NULL, NULL);
+    err = clEnqueueReadBuffer(queue, memobjs[1], CL_TRUE, 0, sizeof(cl_uchar) * w * h * d * nChannels, outptr, 0, NULL, NULL);
     if( err != CL_SUCCESS ){
         print_error( err, "clReadImage failed\n" );
         clReleaseKernel( kernel[0] );
