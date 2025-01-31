@@ -237,7 +237,9 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
     }
 
     // read output image
-    err = clEnqueueReadBuffer(queue, memobjs[1], CL_TRUE, 0, sizeof(cl_uchar) * w * h * d * nChannels, outptr, 0, NULL, NULL);
+    err = clEnqueueReadBuffer(queue, memobjs[1], CL_TRUE, 0,
+                              sizeof(cl_uchar) * w * h * d * nChannels, outptr,
+                              0, NULL, NULL);
     if( err != CL_SUCCESS ){
         print_error( err, "clReadImage failed\n" );
         clReleaseKernel( kernel[0] );
