@@ -249,13 +249,13 @@ static int test_vectype(cl_device_id device, cl_context context,
     result |= test_case_dot<SDstType, SSrcType, USrcType, N>(
         device, context, queue, num_elements, useCoreSPIRV, false, false);
 
-    // // dot_acc_sat testing:
-    // result |= test_case_dot<UDstType, USrcType, USrcType, N>(
-    //     device, context, queue, num_elements, useCoreSPIRV, false, true);
-    // result |= test_case_dot<SDstType, SSrcType, SSrcType, N>(
-    //     device, context, queue, num_elements, useCoreSPIRV, false, true);
-    // result |= test_case_dot<SDstType, SSrcType, USrcType, N>(
-    //     device, context, queue, num_elements, useCoreSPIRV, false, true);
+    // dot_acc_sat testing:
+    result |= test_case_dot<UDstType, USrcType, USrcType, N>(
+        device, context, queue, num_elements, useCoreSPIRV, false, true);
+    result |= test_case_dot<SDstType, SSrcType, SSrcType, N>(
+        device, context, queue, num_elements, useCoreSPIRV, false, true);
+    result |= test_case_dot<SDstType, SSrcType, USrcType, N>(
+        device, context, queue, num_elements, useCoreSPIRV, false, true);
 
     return result;
 }
@@ -281,13 +281,13 @@ static int test_vectype_packed(cl_device_id device, cl_context context,
     result |= test_case_dot<SDstType, SSrcType, USrcType, N>(
         device, context, queue, num_elements, useCoreSPIRV, true, false);
 
-    // // packed dot_acc_sat testing:
-    // result |= test_case_dot<UDstType, USrcType, USrcType, N>(
-    //     device, context, queue, num_elements, useCoreSPIRV, true, true);
-    // result |= test_case_dot<SDstType, SSrcType, SSrcType, N>(
-    //     device, context, queue, num_elements, useCoreSPIRV, true, true);
-    // result |= test_case_dot<SDstType, SSrcType, USrcType, N>(
-    //     device, context, queue, num_elements, useCoreSPIRV, true, true);
+    // packed dot_acc_sat testing:
+    result |= test_case_dot<UDstType, USrcType, USrcType, N>(
+        device, context, queue, num_elements, useCoreSPIRV, true, true);
+    result |= test_case_dot<SDstType, SSrcType, SSrcType, N>(
+        device, context, queue, num_elements, useCoreSPIRV, true, true);
+    result |= test_case_dot<SDstType, SSrcType, USrcType, N>(
+        device, context, queue, num_elements, useCoreSPIRV, true, true);
 
     return result;
 }

@@ -5,7 +5,7 @@
                OpCapability DotProduct
                OpCapability DotProductInput4x8BitPacked
                OpMemoryModel Physical64 OpenCL
-               OpEntryPoint Kernel %kernel "OpUDot_packed" %ptr_global_id
+               OpEntryPoint Kernel %kernel "OpSUDotAccSat_packed" %ptr_global_id
                OpDecorate %ptr_global_id BuiltIn GlobalInvocationId
                OpDecorate %ptr_global_id Constant
        %void = OpTypeVoid
@@ -14,12 +14,13 @@
     %v3ulong = OpTypeVector %ulong 3
 %ptr_input_v3ulong = OpTypePointer Input %v3ulong
 %ptr_global_uint = OpTypePointer CrossWorkgroup %uint
- %kernel_sig = OpTypeFunction %void %ptr_global_uint %ptr_global_uint %ptr_global_uint
+ %kernel_sig = OpTypeFunction %void %ptr_global_uint %ptr_global_uint %ptr_global_uint %ptr_global_uint
 %ptr_global_id = OpVariable %ptr_input_v3ulong Input
 %kernel = OpFunction %void None %kernel_sig
         %dst = OpFunctionParameter %ptr_global_uint
           %a = OpFunctionParameter %ptr_global_uint
           %b = OpFunctionParameter %ptr_global_uint
+        %acc = OpFunctionParameter %ptr_global_uint
       %entry = OpLabel
   %global_id = OpLoad %v3ulong %ptr_global_id Aligned 32
       %gid_0 = OpCompositeExtract %ulong %global_id 0
@@ -27,7 +28,9 @@
      %avalue = OpLoad %uint %aptr Aligned 4
        %bptr = OpInBoundsPtrAccessChain %ptr_global_uint %b %gid_0
      %bvalue = OpLoad %uint %bptr Aligned 4
-     %result = OpUDot %uint %avalue %bvalue PackedVectorFormat4x8Bit
+     %accptr = OpInBoundsPtrAccessChain %ptr_global_uint %acc %gid_0
+   %accvalue = OpLoad %uint %accptr Aligned 4
+     %result = OpSUDotAccSat %uint %avalue %bvalue %accvalue PackedVectorFormat4x8Bit
      %dstptr = OpInBoundsPtrAccessChain %ptr_global_uint %dst %gid_0
                OpStore %dstptr %result Aligned 4
                OpReturn
