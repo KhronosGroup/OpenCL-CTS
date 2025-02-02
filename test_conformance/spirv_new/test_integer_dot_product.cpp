@@ -110,8 +110,8 @@ static int test_case_dot(cl_device_id device, cl_context context,
                          bool useCoreSPIRV, bool packed, bool sat)
 {
     std::string opcode;
-    if (std::numeric_limits<SrcTypeA>::is_signed &&
-        std::numeric_limits<SrcTypeB>::is_signed)
+    if (std::numeric_limits<SrcTypeA>::is_signed
+        && std::numeric_limits<SrcTypeB>::is_signed)
     {
         opcode = "OpSDot";
     }
