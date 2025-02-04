@@ -16,19 +16,57 @@
 
 #include "common.h"
 
+#include <algorithm>
 #include <memory>
+
+static inline void parseSVMAllocProperties(
+    std::vector<cl_svm_alloc_properties_khr> props, cl_device_id& device,
+    cl_svm_alloc_access_flags_khr& accessFlags, size_t& alignment)
+{
+    device = nullptr;
+    accessFlags = 0;
+    alignment = 0;
+
+    if (!props.empty())
+    {
+        size_t i = 0;
+        while (props[i])
+        {
+            switch (props[i])
+            {
+                case CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR:
+                    device = reinterpret_cast<cl_device_id>(props[++i]);
+                    break;
+                case CL_SVM_ALLOC_ACCESS_FLAGS_KHR:
+                    accessFlags =
+                        reinterpret_cast<cl_svm_alloc_access_flags_khr>(
+                            props[++i]);
+                    break;
+                case CL_SVM_ALLOC_ALIGNMENT_KHR:
+                    alignment = reinterpret_cast<size_t>(props[++i]);
+                    break;
+                default:
+                    log_error("Unknown SVM property: %X\n",
+                              static_cast<cl_uint>(props[i]));
+                    return;
+            }
+            ++i;
+        }
+    }
+}
 
 template <typename T> class USVMWrapper {
 public:
     USVMWrapper(cl_context context_, cl_device_id device_,
                 cl_command_queue queue_, cl_uint typeIndex_,
-                cl_svm_capabilities_khr caps_,
+                cl_svm_capabilities_khr caps_, size_t deviceMaxAlignment_,
                 clSVMAllocWithPropertiesKHR_fn clSVMAllocWithPropertiesKHR_,
                 clSVMFreeWithPropertiesKHR_fn clSVMFreeWithPropertiesKHR_,
                 clGetSVMPointerInfoKHR_fn clGetSVMPointerInfoKHR_,
                 clGetSVMSuggestedTypeIndexKHR_fn clGetSVMSuggestedTypeIndexKHR_)
         : context(context_), device(device_), queue(queue_),
           typeIndex(typeIndex_), caps(caps_),
+          deviceMaxAlignment(deviceMaxAlignment_),
           clSVMAllocWithPropertiesKHR(clSVMAllocWithPropertiesKHR_),
           clSVMFreeWithPropertiesKHR(clSVMFreeWithPropertiesKHR_),
           clGetSVMPointerInfoKHR(clGetSVMPointerInfoKHR_),
@@ -47,7 +85,9 @@ public:
 
         if (caps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
         {
-            data = new T[count];
+            // For now, just unconditionally align to the device maximum
+            data = static_cast<T*>(
+                align_malloc(count * sizeof(T), deviceMaxAlignment));
             test_assert_error_ret(data != nullptr, "Failed to allocate memory",
                                   CL_OUT_OF_RESOURCES);
         }
@@ -58,7 +98,10 @@ public:
             {
                 props.pop_back();
             }
-            if (!(caps & CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR))
+            if (!(caps & CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR)
+                && std::find(props.begin(), props.end(),
+                             CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR)
+                    == props.end())
             {
                 props.push_back(CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR);
                 props.push_back(
@@ -85,7 +128,7 @@ public:
         {
             if (caps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
             {
-                delete[] data;
+                align_free(data);
             }
             else
             {
@@ -205,6 +248,7 @@ private:
     cl_command_queue queue = nullptr;
     cl_uint typeIndex = 0;
     cl_svm_capabilities_khr caps = 0;
+    size_t deviceMaxAlignment = 0;
 
     clSVMAllocWithPropertiesKHR_fn clSVMAllocWithPropertiesKHR = nullptr;
     clSVMFreeWithPropertiesKHR_fn clSVMFreeWithPropertiesKHR = nullptr;
@@ -226,7 +270,25 @@ struct UnifiedSVMBase
     {
         cl_int err;
 
+        cl_platform_id platform{};
+        err = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
+                              sizeof(cl_platform_id), &platform, nullptr);
+        test_error(err, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM");
+
         size_t sz{};
+        err = clGetPlatformInfo(platform, CL_PLATFORM_SVM_TYPE_CAPABILITIES_KHR,
+                                0, nullptr, &sz);
+        test_error(err,
+                   "clGetPlatformInfo failed for "
+                   "CL_PLATFORM_SVM_TYPE_CAPABILITIES_KHR size");
+
+        platformUSVMCaps.resize(sz / sizeof(cl_svm_capabilities_khr));
+        err = clGetPlatformInfo(platform, CL_PLATFORM_SVM_TYPE_CAPABILITIES_KHR,
+                                sz, platformUSVMCaps.data(), nullptr);
+        test_error(err,
+                   "clGetPlatformInfo failed for "
+                   "CL_PLATFORM_SVM_TYPE_CAPABILITIES_KHR data");
+
         err = clGetDeviceInfo(device, CL_DEVICE_SVM_TYPE_CAPABILITIES_KHR, 0,
                               nullptr, &sz);
         test_error(
@@ -239,11 +301,6 @@ struct UnifiedSVMBase
         test_error(
             err,
             "clGetDeviceInfo failed for CL_DEVICE_SVM_CAPABILITIES_KHR data");
-
-        cl_platform_id platform{};
-        err = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
-                              sizeof(cl_platform_id), &platform, nullptr);
-        test_error(err, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM");
 
         clSVMAllocWithPropertiesKHR = (clSVMAllocWithPropertiesKHR_fn)
             clGetExtensionFunctionAddressForPlatform(
@@ -273,6 +330,17 @@ struct UnifiedSVMBase
                               "clGetSVMSuggestedTypeIndexKHR not found",
                               CL_INVALID_OPERATION);
 
+        // The maximum supported alignment is equal to the size of the largest
+        // data type supported by the device
+        if (gHasLong || is_extension_available(device, "cl_khr_fp64"))
+        {
+            deviceMaxAlignment = 16 * sizeof(cl_long);
+        }
+        else
+        {
+            deviceMaxAlignment = 16 * sizeof(cl_int);
+        }
+
         return CL_SUCCESS;
     }
 
@@ -283,8 +351,9 @@ struct UnifiedSVMBase
     {
         return std::unique_ptr<USVMWrapper<T>>(new USVMWrapper<T>(
             context, device, queue, typeIndex, deviceUSVMCaps[typeIndex],
-            clSVMAllocWithPropertiesKHR, clSVMFreeWithPropertiesKHR,
-            clGetSVMPointerInfoKHR, clGetSVMSuggestedTypeIndexKHR));
+            deviceMaxAlignment, clSVMAllocWithPropertiesKHR,
+            clSVMFreeWithPropertiesKHR, clGetSVMPointerInfoKHR,
+            clGetSVMSuggestedTypeIndexKHR));
     }
 
     MTdataHolder d;
@@ -293,7 +362,9 @@ struct UnifiedSVMBase
     cl_command_queue queue = nullptr;
     int num_elements = 0;
 
+    std::vector<cl_svm_capabilities_khr> platformUSVMCaps;
     std::vector<cl_svm_capabilities_khr> deviceUSVMCaps;
+    size_t deviceMaxAlignment = 0;
 
     clSVMAllocWithPropertiesKHR_fn clSVMAllocWithPropertiesKHR = nullptr;
     clSVMFreeWithPropertiesKHR_fn clSVMFreeWithPropertiesKHR = nullptr;

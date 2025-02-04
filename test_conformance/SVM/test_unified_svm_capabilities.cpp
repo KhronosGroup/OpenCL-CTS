@@ -718,21 +718,26 @@ REGISTER_TEST(unified_svm_capabilities)
 
     cl_int err;
 
+    clContextWrapper contextWrapper;
+    clCommandQueueWrapper queueWrapper;
+
     // For now: create a new context and queue.
     // If we switch to a new test executable and run the tests without
     // forceNoContextCreation then this can be removed, and we can just use the
     // context and the queue from the harness.
     if (context == nullptr)
     {
-        context =
+        contextWrapper =
             clCreateContext(nullptr, 1, &deviceID, nullptr, nullptr, &err);
         test_error(err, "clCreateContext failed");
+        context = contextWrapper;
     }
 
     if (queue == nullptr)
     {
-        queue = clCreateCommandQueue(context, deviceID, 0, &err);
+        queueWrapper = clCreateCommandQueue(context, deviceID, 0, &err);
         test_error(err, "clCreateCommandQueue failed");
+        queue = queueWrapper;
     }
 
     UnifiedSVMCapabilities Test(context, deviceID, queue, num_elements);
