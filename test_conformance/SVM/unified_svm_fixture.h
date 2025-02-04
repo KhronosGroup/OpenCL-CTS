@@ -39,11 +39,10 @@ static inline void parseSVMAllocProperties(
                     break;
                 case CL_SVM_ALLOC_ACCESS_FLAGS_KHR:
                     accessFlags =
-                        reinterpret_cast<cl_svm_alloc_access_flags_khr>(
-                            props[++i]);
+                        static_cast<cl_svm_alloc_access_flags_khr>(props[++i]);
                     break;
                 case CL_SVM_ALLOC_ALIGNMENT_KHR:
-                    alignment = reinterpret_cast<size_t>(props[++i]);
+                    alignment = static_cast<size_t>(props[++i]);
                     break;
                 default:
                     log_error("Unknown SVM property: %X\n",
