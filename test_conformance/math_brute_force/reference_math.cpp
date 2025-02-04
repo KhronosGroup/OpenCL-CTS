@@ -2111,6 +2111,8 @@ int reference_not(double x)
     return r;
 }
 
+double reference_tgamma(double x) { return tgamma(x); }
+
 #pragma mark -
 #pragma mark Double testing
 
@@ -5772,3 +5774,5 @@ long double reference_erfl(long double x) { return erf(x); }
 
 double reference_erfc(double x) { return erfc(x); }
 double reference_erf(double x) { return erf(x); }
+
+long double reference_tgammal(long double x) { return tgamma(x); }
