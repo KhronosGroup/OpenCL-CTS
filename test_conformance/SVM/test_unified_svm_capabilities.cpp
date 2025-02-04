@@ -710,7 +710,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
 
 REGISTER_TEST(unified_svm_capabilities)
 {
-    if (!is_extension_available(deviceID, "cl_khr_unified_svm"))
+    if (!is_extension_available(device, "cl_khr_unified_svm"))
     {
         log_info("cl_khr_unified_svm is not supported, skipping test.\n");
         return TEST_SKIPPED_ITSELF;
@@ -728,19 +728,19 @@ REGISTER_TEST(unified_svm_capabilities)
     if (context == nullptr)
     {
         contextWrapper =
-            clCreateContext(nullptr, 1, &deviceID, nullptr, nullptr, &err);
+            clCreateContext(nullptr, 1, &device, nullptr, nullptr, &err);
         test_error(err, "clCreateContext failed");
         context = contextWrapper;
     }
 
     if (queue == nullptr)
     {
-        queueWrapper = clCreateCommandQueue(context, deviceID, 0, &err);
+        queueWrapper = clCreateCommandQueue(context, device, 0, &err);
         test_error(err, "clCreateCommandQueue failed");
         queue = queueWrapper;
     }
 
-    UnifiedSVMCapabilities Test(context, deviceID, queue, num_elements);
+    UnifiedSVMCapabilities Test(context, device, queue, num_elements);
     err = Test.setup();
     test_error(err, "test setup failed");
 
