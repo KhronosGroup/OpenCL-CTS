@@ -77,7 +77,7 @@ int test_function(cl_device_id deviceID,
         {                                                                      \
             in[i] = genrand<cl_float>(seed);                                   \
         }                                                                      \
-        return test_function(deviceID, context, queue, #TYPE, in);             \
+        return test_function(device, context, queue, #TYPE, in);               \
     }
 
 TEST_FUNCTION(none)

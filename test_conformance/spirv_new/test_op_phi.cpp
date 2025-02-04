@@ -98,7 +98,7 @@ REGISTER_TEST(op_phi_2_blocks)
         out[i] = lhs[i] < rhs[i] ? (rhs[i] - lhs[i]) : (lhs[i] - rhs[i]);
     }
 
-    return test_phi(deviceID, context, queue, "phi_2", lhs, rhs, out);
+    return test_phi(device, context, queue, "phi_2", lhs, rhs, out);
 }
 
 REGISTER_TEST(op_phi_3_blocks)
@@ -120,7 +120,7 @@ REGISTER_TEST(op_phi_3_blocks)
         }
     }
 
-    return test_phi(deviceID, context, queue, "phi_3", lhs, rhs, out);
+    return test_phi(device, context, queue, "phi_3", lhs, rhs, out);
 }
 
 REGISTER_TEST(op_phi_4_blocks)
@@ -142,5 +142,5 @@ REGISTER_TEST(op_phi_4_blocks)
         }
     }
 
-    return test_phi(deviceID, context, queue, "phi_4", lhs, rhs, out);
+    return test_phi(device, context, queue, "phi_4", lhs, rhs, out);
 }

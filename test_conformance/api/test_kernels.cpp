@@ -76,9 +76,7 @@ const char *sample_two_kernel_program[] = {
 "}\n" };
 
 
-
-
-int test_get_kernel_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(get_kernel_info)
 {
     int error;
     cl_program program, testProgram;
@@ -171,7 +169,7 @@ int test_get_kernel_info(cl_device_id deviceID, cl_context context, cl_command_q
     return 0;
 }
 
-int test_execute_kernel_local_sizes(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(execute_kernel_local_sizes)
 {
     int error;
     clProgramWrapper program;
@@ -302,7 +300,7 @@ int test_execute_kernel_local_sizes(cl_device_id deviceID, cl_context context, c
     return 0;
 }
 
-int test_set_kernel_arg_by_index(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(set_kernel_arg_by_index)
 {
     int error;
     clProgramWrapper program;
@@ -372,7 +370,7 @@ int test_set_kernel_arg_by_index(cl_device_id deviceID, cl_context context, cl_c
     return 0;
 }
 
-int test_set_kernel_arg_constant(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(set_kernel_arg_constant)
 {
     int error;
     clProgramWrapper program;
@@ -390,7 +388,7 @@ int test_set_kernel_arg_constant(cl_device_id deviceID, cl_context context, cl_c
 
     /* Verify our test buffer won't be bigger than allowed */
     maxSize = get_device_info_max_constant_buffer_size(
-        deviceID, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
+        device, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
     if (maxSize < sizeof(cl_int) * num_elements)
     {
         log_error( "ERROR: Unable to test constant argument to kernel: max size of constant buffer is reported as %d!\n", (int)maxSize );
@@ -459,7 +457,7 @@ int test_set_kernel_arg_constant(cl_device_id deviceID, cl_context context, cl_c
     return 0;
 }
 
-int test_set_kernel_arg_struct_array(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(set_kernel_arg_struct_array)
 {
     int error;
     clProgramWrapper program;
@@ -536,7 +534,7 @@ int test_set_kernel_arg_struct_array(cl_device_id deviceID, cl_context context, 
     return 0;
 }
 
-int test_create_kernels_in_program(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(create_kernels_in_program)
 {
     int error;
     cl_program program;
@@ -565,7 +563,7 @@ int test_create_kernels_in_program(cl_device_id deviceID, cl_context context, cl
     return 0;
 }
 
-int test_kernel_global_constant(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(kernel_global_constant)
 {
     int error;
     clProgramWrapper program;
@@ -633,6 +631,3 @@ int test_kernel_global_constant(cl_device_id deviceID, cl_context context, cl_co
 
     return 0;
 }
-
-
-

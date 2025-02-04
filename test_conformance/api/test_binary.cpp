@@ -25,7 +25,7 @@ static const char *sample_binary_kernel_source[] = {
 "}\n" };
 
 
-int test_binary_get(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(binary_get)
 {
     int error;
     clProgramWrapper program;
@@ -71,7 +71,7 @@ int test_binary_get(cl_device_id deviceID, cl_context context, cl_command_queue 
 }
 
 
-int test_binary_create(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(binary_create)
 {
     /* To test this in a self-contained fashion, we have to create a program with
    source, then get the binary, then use that binary to reload the program, and then verify */
@@ -103,12 +103,13 @@ int test_binary_create(cl_device_id deviceID, cl_context context, cl_command_que
     test_error( error, "Unable to get program binary" );
 
     cl_int loadErrors[ 1 ];
-    program_from_binary = clCreateProgramWithBinary( context, 1, &deviceID, &binarySize, buffers, loadErrors, &error );
+    program_from_binary = clCreateProgramWithBinary(
+        context, 1, &device, &binarySize, buffers, loadErrors, &error);
     test_error( error, "Unable to load valid program binary" );
     test_error( loadErrors[ 0 ], "Unable to load valid device binary into program" );
 
-  error = clBuildProgram( program_from_binary, 1, &deviceID, NULL, NULL, NULL );
-  test_error( error, "Unable to build binary program" );
+    error = clBuildProgram(program_from_binary, 1, &device, NULL, NULL, NULL);
+    test_error(error, "Unable to build binary program");
 
     // Get the size of the binary built from the first binary
     size_t binary2Size;
@@ -123,10 +124,11 @@ int test_binary_create(cl_device_id deviceID, cl_context context, cl_command_que
 
     // Try again, this time without passing the status ptr in, to make sure we still
     // get a valid binary
-    clProgramWrapper programWithoutStatus = clCreateProgramWithBinary( context, 1, &deviceID, &binary2Size, buffers, NULL, &error );
+    clProgramWrapper programWithoutStatus = clCreateProgramWithBinary(
+        context, 1, &device, &binary2Size, buffers, NULL, &error);
     test_error( error, "Unable to load valid program binary when binary_status pointer is NULL" );
 
-    error = clBuildProgram( programWithoutStatus, 1, &deviceID, NULL, NULL, NULL );
+    error = clBuildProgram(programWithoutStatus, 1, &device, NULL, NULL, NULL);
     test_error( error, "Unable to build binary program created without binary_status" );
 
     // Get the size of the binary created without passing binary_status
@@ -214,5 +216,3 @@ int test_binary_create(cl_device_id deviceID, cl_context context, cl_command_que
   free(out_data_binary);
     return 0;
 }
-
-

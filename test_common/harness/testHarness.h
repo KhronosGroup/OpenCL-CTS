@@ -133,7 +133,7 @@ template <typename T> T *register_test(const char *name, Version version)
 }
 
 #define REGISTER_TEST_VERSION(name, version)                                   \
-    extern int test_##name(cl_device_id deviceID, cl_context context,          \
+    extern int test_##name(cl_device_id device, cl_context context,            \
                            cl_command_queue queue, int num_elements);          \
     class test_##name##_class : public test {                                  \
     private:                                                                   \
@@ -145,10 +145,21 @@ template <typename T> T *register_test(const char *name, Version version)
     };                                                                         \
     test_##name##_class *var_##name =                                          \
         register_test<test_##name##_class>(#name, version);                    \
-    int test_##name(cl_device_id deviceID, cl_context context,                 \
+    int test_##name(cl_device_id device, cl_context context,                   \
                     cl_command_queue queue, int num_elements)
 
 #define REGISTER_TEST(name) REGISTER_TEST_VERSION(name, Version(1, 2))
+
+#define REQUIRE_EXTENSION(name)                                                \
+    do                                                                         \
+    {                                                                          \
+        if (!is_extension_available(deviceID, name))                           \
+        {                                                                      \
+            log_info(name                                                      \
+                     " is not supported on this device. Skipping test.\n");    \
+            return TEST_SKIPPED_ITSELF;                                        \
+        }                                                                      \
+    } while (0)
 
 extern int gFailCount;
 extern int gTestCount;

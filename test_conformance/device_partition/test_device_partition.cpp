@@ -229,11 +229,14 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
     RandomSeed seed( gRandomSeed );
 
     if (queueCount > MAX_QUEUES) {
-        log_error("Number of queues (%ld) is greater than the number for which the test was written (%d).", queueCount, MAX_QUEUES);
+        log_error("Number of queues (%zu) is greater than the number for which "
+                  "the test was written (%d).",
+                  queueCount, MAX_QUEUES);
         return -1;
     }
 
-    log_info("Testing with %ld queues on %ld devices, %ld kernel executions.\n", queueCount, deviceCount, queueCount*num_elements/TEST_SIZE);
+    log_info("Testing with %zu queues on %zu devices, %zu kernel executions.\n",
+             queueCount, deviceCount, queueCount * num_elements / TEST_SIZE);
 
     for (i=0; i<deviceCount; i++) {
         size_t deviceNameSize;
@@ -242,7 +245,7 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
         char *deviceName = (char *)alloca(deviceNameSize * (sizeof(char)));
         error = clGetDeviceInfo(devices[i], CL_DEVICE_NAME, deviceNameSize, deviceName, NULL);
         test_error(error, "clGetDeviceInfo CL_DEVICE_NAME failed");
-        log_info("Device %ld is \"%s\".\n", i, deviceName);
+        log_info("Device %zu is \"%s\".\n", i, deviceName);
     }
 
     /* Create a context */
@@ -332,11 +335,15 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
         {
             if( expectedResults[ i ] != outputData[ i ] )
             {
-                log_error( "ERROR: Sample data did not verify for queue %d on device %ld (sample %d, expected %d, got %d)\n",
-                    q, q % deviceCount, (int)i, expectedResults[ i ], outputData[ i ] );
+                log_error("ERROR: Sample data did not verify for queue %d on "
+                          "device %zu (sample %zu, expected %d, got %d)\n",
+                          q, q % deviceCount, i, expectedResults[i],
+                          outputData[i]);
                 for (size_t j=0; j<deviceCount; j++) {
                     if (expectedResultsOneDevice[j][i] == outputData[i])
-                        log_info("Sample consistent with only device %ld having modified the data.\n", j);
+                        log_info("Sample consistent with only device %zu "
+                                 "having modified the data.\n",
+                                 j);
                 }
                 errorsThisTime++;
                 break;

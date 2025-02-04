@@ -222,30 +222,26 @@ static const char* patterns[] = {
  test_step_typedef_var,
  */
 
-int test_step_type(cl_device_id deviceID, cl_context context,
-                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(step_type)
 {
-    return test_step_internal(deviceID, context, queue, patterns[0],
+    return test_step_internal(device, context, queue, patterns[0],
                               "test_step_type");
 }
 
-int test_step_var(cl_device_id deviceID, cl_context context,
-                  cl_command_queue queue, int num_elements)
+REGISTER_TEST(step_var)
 {
-    return test_step_internal(deviceID, context, queue, patterns[1],
+    return test_step_internal(device, context, queue, patterns[1],
                               "test_step_var");
 }
 
-int test_step_typedef_type(cl_device_id deviceID, cl_context context,
-                           cl_command_queue queue, int num_elements)
+REGISTER_TEST(step_typedef_type)
 {
-    return test_step_internal(deviceID, context, queue, patterns[2],
+    return test_step_internal(device, context, queue, patterns[2],
                               "test_step_typedef_type");
 }
 
-int test_step_typedef_var(cl_device_id deviceID, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(step_typedef_var)
 {
-    return test_step_internal(deviceID, context, queue, patterns[3],
+    return test_step_internal(device, context, queue, patterns[3],
                               "test_step_typedef_var");
 }

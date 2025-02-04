@@ -23,7 +23,7 @@
 #include "harness/conversions.h"
 #include <bitset>
 
-int test_create_context_from_type(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(create_context_from_type)
 {
     int error;
     clProgramWrapper program;
@@ -47,11 +47,12 @@ int test_create_context_from_type(cl_device_id deviceID, cl_context context, cl_
     "}\n" };
 
     cl_device_type type;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_TYPE, sizeof(type), &type, NULL);
+    error = clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(type), &type, NULL);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_TYPE failed\n");
 
     cl_platform_id platform;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform), &platform, NULL);
+    error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
+                            &platform, NULL);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed\n");
 
     cl_context_properties properties[3] = {
@@ -67,7 +68,7 @@ int test_create_context_from_type(cl_device_id deviceID, cl_context context, cl_
         return -1;
     }
 
-    queue_to_test = clCreateCommandQueue(context_to_test, deviceID, 0, &error);
+    queue_to_test = clCreateCommandQueue(context_to_test, device, 0, &error);
     test_error(error, "clCreateCommandQueue failed");
     if (queue_to_test == NULL) {
         log_error("clCreateCommandQueue returned NULL, but error was CL_SUCCESS.");
@@ -128,14 +129,11 @@ int test_create_context_from_type(cl_device_id deviceID, cl_context context, cl_
   return 0;
 }
 
-int test_create_context_from_type_device_type_all(cl_device_id deviceID,
-                                                  cl_context context,
-                                                  cl_command_queue queue,
-                                                  int num_elements)
+REGISTER_TEST(create_context_from_type_device_type_all)
 {
     cl_device_type type;
     cl_int error =
-        clGetDeviceInfo(deviceID, CL_DEVICE_TYPE, sizeof(type), &type, NULL);
+        clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(type), &type, NULL);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_TYPE failed\n");
 
     std::bitset<sizeof(cl_device_type)> type_bits(type);
@@ -148,7 +146,7 @@ int test_create_context_from_type_device_type_all(cl_device_id deviceID,
         return -1;
     }
     cl_platform_id platform;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform),
+    error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
                             &platform, NULL);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed\n");
 
@@ -172,14 +170,11 @@ int test_create_context_from_type_device_type_all(cl_device_id deviceID,
     return 0;
 }
 
-int test_create_context_from_type_device_type_default(cl_device_id deviceID,
-                                                      cl_context context,
-                                                      cl_command_queue queue,
-                                                      int num_elements)
+REGISTER_TEST(create_context_from_type_device_type_default)
 {
     cl_device_type type;
     cl_int error =
-        clGetDeviceInfo(deviceID, CL_DEVICE_TYPE, sizeof(type), &type, NULL);
+        clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(type), &type, NULL);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_TYPE failed\n");
 
     std::bitset<sizeof(cl_device_type)> type_bits(type);
@@ -192,7 +187,7 @@ int test_create_context_from_type_device_type_default(cl_device_id deviceID,
         return -1;
     }
     cl_platform_id platform;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform),
+    error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
                             &platform, NULL);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed\n");
 

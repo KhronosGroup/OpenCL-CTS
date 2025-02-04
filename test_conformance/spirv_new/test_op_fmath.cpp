@@ -155,7 +155,7 @@ int test_fmath(cl_device_id deviceID,
     {                                                                          \
         if (sizeof(cl_##TYPE) == 2)                                            \
         {                                                                      \
-            PASSIVE_REQUIRE_FP16_SUPPORT(deviceID);                            \
+            PASSIVE_REQUIRE_FP16_SUPPORT(device);                              \
         }                                                                      \
         const int num = 1 << 20;                                               \
         std::vector<cl_##TYPE> lhs(num);                                       \
@@ -170,7 +170,7 @@ int test_fmath(cl_device_id deviceID,
         }                                                                      \
                                                                                \
         const char *mode = #MODE;                                              \
-        return test_fmath(deviceID, context, queue, #FUNC "_" #TYPE, #FUNC,    \
+        return test_fmath(device, context, queue, #FUNC "_" #TYPE, #FUNC,      \
                           #TYPE, mode[0] == 'f', lhs, rhs);                    \
     }
 

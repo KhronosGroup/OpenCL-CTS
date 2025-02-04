@@ -100,7 +100,7 @@ int test_selection_merge(cl_device_id deviceID,
             out[i] = lhs[i] < rhs[i] ? (rhs[i] - lhs[i]) : (lhs[i] - rhs[i]);  \
         }                                                                      \
                                                                                \
-        return test_selection_merge(deviceID, context, queue,                  \
+        return test_selection_merge(device, context, queue,                    \
                                     "select_if_" #control, lhs, rhs, out);     \
     }
 
@@ -125,7 +125,7 @@ TEST_SELECT_IF(dont_flatten)
             out[i] = (lhs[i] + rhs[i]) % 4;                                    \
         }                                                                      \
                                                                                \
-        return test_selection_merge(deviceID, context, queue,                  \
+        return test_selection_merge(device, context, queue,                    \
                                     "select_switch_" #control, lhs, rhs, out); \
     }
 

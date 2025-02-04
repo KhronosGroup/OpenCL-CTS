@@ -271,13 +271,12 @@ static int run_test_query_properties(cl_context context, cl_command_queue queue,
     return TEST_PASS;
 }
 
-int test_image_properties_queries(cl_device_id deviceID, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(image_properties_queries, Version(3, 0))
 {
     int error = CL_SUCCESS;
     cl_bool supports_images = CL_TRUE;
 
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_IMAGE_SUPPORT,
+    error = clGetDeviceInfo(device, CL_DEVICE_IMAGE_SUPPORT,
                             sizeof(supports_images), &supports_images, NULL);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_IMAGE_SUPPORT failed");
 
@@ -321,8 +320,7 @@ int test_image_properties_queries(cl_device_id deviceID, cl_context context,
     return error;
 }
 
-int test_buffer_properties_queries(cl_device_id deviceID, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(buffer_properties_queries, Version(3, 0))
 {
     int error = CL_SUCCESS;
 

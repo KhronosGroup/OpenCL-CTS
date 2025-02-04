@@ -34,7 +34,7 @@ REGISTER_TEST(get_program_il)
 
     /* If a program has been created with clCreateProgramWithIL, CL_PROGRAM_IL
      * should return the program IL it was created with and it's size */
-    if (gCoreILProgram || is_extension_available(deviceID, "cl_khr_il_program"))
+    if (gCoreILProgram || is_extension_available(device, "cl_khr_il_program"))
     {
         clProgramWrapper il_program;
         std::string spvStr = "op_function_none";
@@ -51,7 +51,7 @@ REGISTER_TEST(get_program_il)
         /* Create program with IL */
         unsigned char *spirv_buffer = &spirv_binary[0];
 
-        error = get_program_with_il(il_program, deviceID, context, spvName);
+        error = get_program_with_il(il_program, device, context, spvName);
 
         SPIRV_CHECK_ERROR(error, "Unable to create program with IL.");
         if (il_program == NULL)

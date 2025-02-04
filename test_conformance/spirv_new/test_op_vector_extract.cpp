@@ -95,7 +95,7 @@ int test_extract(cl_device_id deviceID, cl_context context,
     {                                                                          \
         if (sizeof(cl_##TYPE) == 2)                                            \
         {                                                                      \
-            PASSIVE_REQUIRE_FP16_SUPPORT(deviceID);                            \
+            PASSIVE_REQUIRE_FP16_SUPPORT(device);                              \
         }                                                                      \
         typedef cl_##TYPE##N Tv;                                               \
         typedef cl_##TYPE Ts;                                                  \
@@ -110,7 +110,7 @@ int test_extract(cl_device_id deviceID, cl_context context,
             in[i] = genrand<Tv>(seed);                                         \
         }                                                                      \
                                                                                \
-        return test_extract<Tv, Ts>(deviceID, context, queue, name, in, N);    \
+        return test_extract<Tv, Ts>(device, context, queue, name, in, N);      \
     }
 
 TEST_VECTOR_EXTRACT(half, 8)

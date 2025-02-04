@@ -90,13 +90,13 @@ int test_atomic(cl_device_id deviceID, cl_context context,
 REGISTER_TEST(op_atomic_inc_global)
 {
     int num = 1 << 16;
-    return test_atomic<cl_int>(deviceID, context, queue,
-                               "atomic_inc_global", num, true);
+    return test_atomic<cl_int>(device, context, queue, "atomic_inc_global", num,
+                               true);
 }
 
 REGISTER_TEST(op_atomic_dec_global)
 {
     int num = 1 << 16;
-    return test_atomic<cl_int>(deviceID, context, queue,
-                               "atomic_dec_global", num, false);
+    return test_atomic<cl_int>(device, context, queue, "atomic_dec_global", num,
+                               false);
 }

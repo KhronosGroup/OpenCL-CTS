@@ -274,12 +274,12 @@ int shared_address_space_coarse_grain(cl_device_id deviceID, cl_context context2
 
 REGISTER_TEST(svm_shared_address_space_coarse_grain_old_api)
 {
-    return shared_address_space_coarse_grain(deviceID, context, queue,
+    return shared_address_space_coarse_grain(device, context, queue,
                                              num_elements, CL_FALSE);
 }
 
 REGISTER_TEST(svm_shared_address_space_coarse_grain_new_api)
 {
-    return shared_address_space_coarse_grain(deviceID, context, queue,
+    return shared_address_space_coarse_grain(device, context, queue,
                                              num_elements, CL_TRUE);
 }

@@ -28,9 +28,9 @@ REGISTER_TEST(svm_shared_address_space_fine_grain)
     cl_int error = CL_SUCCESS;
     clCommandQueueWrapper queues[MAXQ];
 
-    error = create_cl_objects(
-        deviceID, &linked_list_create_and_verify_kernels[0], &contextWrapper,
-        &program, &queues[0], &num_devices, CL_DEVICE_SVM_FINE_GRAIN_SYSTEM);
+    error = create_cl_objects(device, &linked_list_create_and_verify_kernels[0],
+                              &contextWrapper, &program, &queues[0],
+                              &num_devices, CL_DEVICE_SVM_FINE_GRAIN_SYSTEM);
     context = contextWrapper;
     if (error == 1)
         return 0; // no devices capable of requested SVM level, so don't execute

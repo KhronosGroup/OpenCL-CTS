@@ -80,7 +80,7 @@ REGISTER_TEST(svm_enqueue_api)
     cl_int error = CL_SUCCESS;
     RandomSeed seed(0);
 
-    error = create_cl_objects(deviceID, NULL, &contextWrapper, NULL, &queues[0],
+    error = create_cl_objects(device, NULL, &contextWrapper, NULL, &queues[0],
                               &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
     context = contextWrapper;
     if (error) return TEST_FAIL;

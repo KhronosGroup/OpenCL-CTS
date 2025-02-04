@@ -133,7 +133,7 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
     // allocate an array memory object to load the filter weights
     memobjs[1] =
         clCreateBuffer(context, CL_MEM_READ_WRITE,
-                       sizeof(cl_float) * w * h * d * nChannels, NULL, &err);
+                       sizeof(cl_uchar) * w * h * d * nChannels, NULL, &err);
     if( memobjs[1] == (cl_mem)0 ){
         log_error( " unable to create array using clCreateBuffer\n" );
         clReleaseMemObject( memobjs[0] );
@@ -237,7 +237,9 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
     }
 
     // read output image
-    err = clEnqueueReadBuffer(queue, memobjs[1], CL_TRUE, 0, w*h*d*nChannels*4, outptr, 0, NULL, NULL);
+    err = clEnqueueReadBuffer(queue, memobjs[1], CL_TRUE, 0,
+                              sizeof(cl_uchar) * w * h * d * nChannels, outptr,
+                              0, NULL, NULL);
     if( err != CL_SUCCESS ){
         print_error( err, "clReadImage failed\n" );
         clReleaseKernel( kernel[0] );
@@ -264,7 +266,7 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
 // use 3d to exercise the multipass events. In the future 3d may not be multpass, in which
 // case we will need to ensure that we use gdims large enough to force multipass.
 
-int execute_multipass( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(execute_multipass)
 {
     cl_uchar *inptr;
     cl_uchar *outptr;

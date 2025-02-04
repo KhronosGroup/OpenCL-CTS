@@ -425,7 +425,7 @@ const Func functionList[] = {
       { (void*)reference_relaxed_divide },
       2.5f,
       0.0f,
-      0.0f,
+      1.0f,
       3.0f,
       2.5f,
       INFINITY,

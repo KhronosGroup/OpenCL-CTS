@@ -100,7 +100,7 @@ int test_branch_conditional(cl_device_id deviceID,
             out[i] = lhs[i] < rhs[i] ? (rhs[i] - lhs[i]) : (lhs[i] - rhs[i]);  \
         }                                                                      \
                                                                                \
-        return test_branch_conditional(deviceID, context, queue, #name, lhs,   \
+        return test_branch_conditional(device, context, queue, #name, lhs,     \
                                        rhs, out);                              \
     }
 

@@ -111,6 +111,7 @@ const char *IGetErrorString(int clErrorCode)
             return "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR";
         case CL_INVALID_COMMAND_BUFFER_KHR:
             return "CL_INVALID_COMMAND_BUFFER_KHR";
+        case CL_INVALID_SEMAPHORE_KHR: return "CL_INVALID_SEMAPHORE_KHR";
         default: return "(unknown)";
     }
 }
