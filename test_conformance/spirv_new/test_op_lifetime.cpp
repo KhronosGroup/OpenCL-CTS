@@ -100,8 +100,7 @@ int test_op_lifetime(cl_device_id deviceID,
             out[i] = lhs[i] - rhs[i];                                          \
         }                                                                      \
                                                                                \
-        return test_op_lifetime(deviceID, context, queue, #name, lhs, rhs,     \
-                                out);                                          \
+        return test_op_lifetime(device, context, queue, #name, lhs, rhs, out); \
     }
 
 TEST_LIFETIME(lifetime_simple)

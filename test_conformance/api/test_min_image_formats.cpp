@@ -15,8 +15,7 @@
 //
 #include "testBase.h"
 
-int test_min_image_formats(cl_device_id device, cl_context context,
-                           cl_command_queue queue, int num_elements)
+REGISTER_TEST(min_image_formats)
 {
     int missingFormats = 0;
 

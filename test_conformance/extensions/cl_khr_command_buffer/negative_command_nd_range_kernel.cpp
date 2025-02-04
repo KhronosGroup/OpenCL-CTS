@@ -273,6 +273,8 @@ struct CommandNDRangeKernelNotSupportPrintf : public BasicCommandBufferTest
 
     bool Skip() override
     {
+        if (BasicCommandBufferTest::Skip()) return true;
+
         cl_device_command_buffer_capabilities_khr capabilities;
         cl_int error =
             clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
@@ -353,6 +355,8 @@ struct CommandNDRangeKernelWithKernelEnqueueCall : public BasicCommandBufferTest
 
     bool Skip() override
     {
+        if (BasicCommandBufferTest::Skip()) return true;
+
         bool has_device_enqueue = false;
         bool cl_version_2_0_or_higher = false;
 

@@ -44,3 +44,36 @@ extern int test_platform_info(cl_device_id device, cl_context context,
                               cl_command_queue queue, int num_elements);
 extern int test_device_info(cl_device_id device, cl_context context,
                             cl_command_queue queue, int num_elements);
+extern int test_buffer_single_queue(cl_device_id device_, cl_context context_,
+                                    cl_command_queue queue_, int numElements_);
+extern int test_buffer_multiple_queue(cl_device_id device_, cl_context context_,
+                                      cl_command_queue queue_,
+                                      int numElements_);
+extern int test_buffer_multiImport_sameCtx(cl_device_id device_,
+                                           cl_context context_,
+                                           cl_command_queue queue_,
+                                           int numElements_);
+extern int test_buffer_multiImport_diffCtx(cl_device_id device_,
+                                           cl_context context_,
+                                           cl_command_queue queue_,
+                                           int numElements_);
+extern int test_buffer_single_queue_fence(cl_device_id device_,
+                                          cl_context context_,
+                                          cl_command_queue queue_,
+                                          int numElements_);
+extern int test_buffer_multiple_queue_fence(cl_device_id device_,
+                                            cl_context context_,
+                                            cl_command_queue queue_,
+                                            int numElements_);
+extern int test_buffer_multiImport_sameCtx_fence(cl_device_id device_,
+                                                 cl_context context_,
+                                                 cl_command_queue queue_,
+                                                 int numElements_);
+extern int test_buffer_multiImport_diffCtx_fence(cl_device_id device_,
+                                                 cl_context context_,
+                                                 cl_command_queue queue_,
+                                                 int numElements_);
+extern int test_image_single_queue(cl_device_id device_, cl_context context_,
+                                   cl_command_queue queue_, int numElements_);
+extern int test_image_multiple_queue(cl_device_id device_, cl_context context_,
+                                     cl_command_queue queue_, int numElements_);

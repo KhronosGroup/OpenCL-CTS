@@ -464,7 +464,7 @@ getCLImageInfoFromVkImageInfo(const VkImageCreateInfo *VulkanImageCreateInfo,
     memcpy(img_fmt, &clImgFormat, sizeof(cl_image_format));
 
     img_desc->image_type = getImageTypeFromVk(VulkanImageCreateInfo->imageType);
-    if (CL_INVALID_VALUE == img_desc->image_type)
+    if (CL_INVALID_VALUE == static_cast<cl_int>(img_desc->image_type))
     {
         return CL_INVALID_VALUE;
     }
@@ -503,6 +503,8 @@ cl_int check_external_memory_handle_type(
     errNum = clGetDeviceInfo(deviceID,
                              CL_DEVICE_EXTERNAL_MEMORY_IMPORT_HANDLE_TYPES_KHR,
                              0, NULL, &handle_type_size);
+    test_error(errNum, "clGetDeviceInfo failed");
+
     handle_type =
         (cl_external_memory_handle_type_khr *)malloc(handle_type_size);
 
@@ -539,6 +541,7 @@ cl_int check_external_semaphore_handle_type(
 
     errNum =
         clGetDeviceInfo(deviceID, queryParamName, 0, NULL, &handle_type_size);
+    test_error(errNum, "clGetDeviceInfo failed");
 
     if (handle_type_size == 0)
     {

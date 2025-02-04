@@ -95,7 +95,7 @@ int test_negation(cl_device_id deviceID,
         {                                                                      \
             in[i] = genrand<Tv>(seed);                                         \
         }                                                                      \
-        return test_negation<Tv>(deviceID, context, queue, #TYPE, #OP, in,     \
+        return test_negation<Tv>(device, context, queue, #TYPE, #OP, in,       \
                                  FUNC);                                        \
     }
 

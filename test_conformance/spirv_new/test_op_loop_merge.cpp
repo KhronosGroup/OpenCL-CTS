@@ -103,7 +103,7 @@ int test_selection_merge(cl_device_id deviceID,
             out[i] = res;                                                      \
         }                                                                      \
                                                                                \
-        return test_selection_merge(deviceID, context, queue,                  \
+        return test_selection_merge(device, context, queue,                    \
                                     "loop_merge_branch_" #control, in, out,    \
                                     rep);                                      \
     }

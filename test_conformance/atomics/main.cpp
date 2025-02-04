@@ -13,39 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "procs.h"
+
 #include "harness/testHarness.h"
-
-#if !defined(_WIN32)
-#include <unistd.h>
-#endif
-
-// clang-format off
-test_definition test_list[] = {
-    ADD_TEST( atomic_add ),
-    ADD_TEST( atomic_sub ),
-    ADD_TEST( atomic_xchg ),
-    ADD_TEST( atomic_min ),
-    ADD_TEST( atomic_max ),
-    ADD_TEST( atomic_inc ),
-    ADD_TEST( atomic_dec ),
-    ADD_TEST( atomic_cmpxchg ),
-    ADD_TEST( atomic_and ),
-    ADD_TEST( atomic_or ),
-    ADD_TEST( atomic_xor ),
-
-    ADD_TEST( atomic_add_index ),
-    ADD_TEST( atomic_add_index_bin ),
-};
-// clang-format on
-
-const int test_num = ARRAY_SIZE(test_list);
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness(argc, argv, test_num, test_list, false, 0);
+    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
+                          test_registry::getInstance().definitions(), false, 0);
 }

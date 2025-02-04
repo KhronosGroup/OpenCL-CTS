@@ -71,14 +71,13 @@ static int create_pipe_and_check_array_properties(
     return TEST_FAIL;
 }
 
-int test_pipe_properties_queries(cl_device_id deviceID, cl_context context,
-                                 cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(pipe_properties_queries, Version(3, 0))
 {
     cl_int error = CL_SUCCESS;
 
     cl_bool pipeSupport = CL_FALSE;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_PIPE_SUPPORT,
-                            sizeof(pipeSupport), &pipeSupport, NULL);
+    error = clGetDeviceInfo(device, CL_DEVICE_PIPE_SUPPORT, sizeof(pipeSupport),
+                            &pipeSupport, NULL);
     test_error(error, "Unable to query CL_DEVICE_PIPE_SUPPORT");
 
     if (pipeSupport == CL_FALSE)

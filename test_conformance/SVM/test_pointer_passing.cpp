@@ -43,7 +43,7 @@ REGISTER_TEST(svm_pointer_passing)
     cl_int error = CL_SUCCESS;
     clCommandQueueWrapper queues[MAXQ];
 
-    error = create_cl_objects(deviceID, &SVMPointerPassing_test_kernel[0],
+    error = create_cl_objects(device, &SVMPointerPassing_test_kernel[0],
                               &contextWrapper, &program, &queues[0],
                               &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
     context = contextWrapper;
@@ -127,10 +127,10 @@ REGISTER_TEST(svm_pointer_passing)
                     return -1;
                 }
             }
-        }
 
-        error = clFinish(cmdq);
-        test_error(error, "clFinish failed");
+            error = clFinish(cmdq);
+            test_error(error, "clFinish failed");
+        }
     }
 
 

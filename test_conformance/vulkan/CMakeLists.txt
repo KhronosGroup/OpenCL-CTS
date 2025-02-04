@@ -25,6 +25,7 @@ set (${MODULE_NAME}_SOURCES
         test_vulkan_api_consistency_for_1dimages.cpp
         test_vulkan_platform_device_info.cpp
         vulkan_interop_common.cpp
+        vulkan_test_base.h
     )
 
 include_directories("../common/vulkan_wrapper")
@@ -32,3 +33,5 @@ include_directories("../common/vulkan_wrapper")
 add_subdirectory(shaders)
 
 include(../CMakeCommon.txt)
+
+add_dependencies(${${MODULE_NAME}_OUT} vulkan_shaders)

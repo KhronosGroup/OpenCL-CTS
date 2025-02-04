@@ -12,6 +12,6 @@ if("${CLConform_TARGET_ARCH}" STREQUAL "ARM" OR "${CLConform_TARGET_ARCH}" STREQ
     list(APPEND ${MODULE_NAME}_SOURCES fplib.cpp)
 endif()
 
-set_gnulike_module_compile_flags("-Wno-sign-compare")
+set_gnulike_module_compile_flags("-Wno-sign-compare -Wno-format")
 
 include(../CMakeCommon.txt)
