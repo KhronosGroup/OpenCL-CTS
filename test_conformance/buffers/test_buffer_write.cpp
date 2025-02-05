@@ -852,8 +852,8 @@ int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_comm
                     buffers[0] =
                         clCreateBuffer(context, flag_set[src_flag_id],
                                        ptrSizes[i] * num_elements, NULL, &err);
-                if ( err ){
-                    align_free( outptr[i] );
+                if (err)
+                {
                     print_error(err, " clCreateBuffer failed\n" );
                     free_mtdata(d);
                     return -1;

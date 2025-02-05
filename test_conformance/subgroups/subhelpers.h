@@ -1611,7 +1611,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct subgroup_test
         test_params.subgroup_size = subgroup_size;
         Fns::gen(idata.data(), mapin.data(), sgmap.data(), test_params);
 
-        test_status status;
+        test_status status = TEST_FAIL;
 
         if (test_params.divergence_mask_arg != -1)
         {

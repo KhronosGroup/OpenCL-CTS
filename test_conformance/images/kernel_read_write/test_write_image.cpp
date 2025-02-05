@@ -223,7 +223,7 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
         clProtectedImage protImage;
         clMemWrapper unprotImage;
         cl_mem image;
-        cl_mem imageBuffer;
+        cl_mem imageBuffer = nullptr;
 
         if( gMemFlagsToUse == CL_MEM_USE_HOST_PTR )
         {
@@ -910,7 +910,7 @@ int test_write_image_formats(cl_device_id device, cl_context context,
         gTestCount++;
 
         print_write_header( &imageFormat, false );
-        int retCode;
+        int retCode = 0;
         switch (imageType)
         {
             case CL_MEM_OBJECT_IMAGE1D:

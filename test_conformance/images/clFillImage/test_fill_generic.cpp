@@ -277,6 +277,11 @@ cl_mem create_image( cl_context context, cl_command_queue queue, BufferOwningPtr
             depth = imageInfo->depth;
             imageSize = imageInfo->slicePitch * imageInfo->depth;
             break;
+        default:
+            log_error("ERROR Invalid imageInfo->type = %d\n", imageInfo->type);
+            height = 0;
+            depth = 0;
+            break;
     }
 
     size_t origin[ 3 ] = { 0, 0, 0 };
