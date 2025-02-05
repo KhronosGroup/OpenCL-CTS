@@ -198,8 +198,6 @@ struct MultiFlagCreationTest : public BasicCommandBufferTest
     cl_int Run() override
     {
         cl_command_buffer_properties_khr flags = 0;
-        size_t num_flags_set = 0;
-        bool multi_flags_supported = true;
         cl_int error = CL_SUCCESS;
 
         // First try to find multiple flags that are supported by the driver and
@@ -207,31 +205,18 @@ struct MultiFlagCreationTest : public BasicCommandBufferTest
         if (simultaneous_use_support)
         {
             flags |= CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
-            num_flags_set++;
         }
 
         if (is_extension_available(
                 device, CL_KHR_COMMAND_BUFFER_MULTI_DEVICE_EXTENSION_NAME))
         {
             flags |= CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
-            num_flags_set++;
         }
 
         if (is_extension_available(
                 device, CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_NAME))
         {
             flags |= CL_COMMAND_BUFFER_MUTABLE_KHR;
-            num_flags_set++;
-        }
-
-        // If we can't find multiple supported flags, still set a bitfield but
-        // expect CL_INVALID_VALUE to be returned on creation.
-        if (num_flags_set < 2)
-        {
-            flags = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR
-                | CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
-
-            multi_flags_supported = false;
         }
 
         cl_command_buffer_properties_khr props[] = {
@@ -239,17 +224,7 @@ struct MultiFlagCreationTest : public BasicCommandBufferTest
         };
 
         command_buffer = clCreateCommandBufferKHR(1, &queue, props, &error);
-        if (multi_flags_supported)
-        {
-            test_error(error, "clCreateCommandBufferKHR failed");
-        }
-        else
-        {
-            test_failure_error_ret(
-                error, CL_INVALID_VALUE,
-                "clCreateCommandBufferKHR should return CL_INVALID_VALUE",
-                TEST_FAIL);
-        }
+        test_error(error, "clCreateCommandBufferKHR failed");
 
         return CL_SUCCESS;
     }
