@@ -981,19 +981,6 @@ static void ReleaseCL(void)
     }
 }
 
-void _LogBuildError(cl_program p, int line, const char *file)
-{
-    char the_log[2048] = "";
-
-    vlog_error("%s:%d: Build Log:\n", file, line);
-    if (0
-        == clGetProgramBuildInfo(p, gDevice, CL_PROGRAM_BUILD_LOG,
-                                 sizeof(the_log), the_log, NULL))
-        vlog_error("%s", the_log);
-    else
-        vlog_error("*** Error getting build log for program %p\n", p);
-}
-
 int InitILogbConstants(void)
 {
     int error;
