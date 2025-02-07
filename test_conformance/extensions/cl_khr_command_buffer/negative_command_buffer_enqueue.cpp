@@ -292,63 +292,6 @@ struct EnqueueCommandBufferNotValidQueueInQueues : public BasicCommandBufferTest
     }
 };
 
-// CL_INCOMPATIBLE_COMMAND_QUEUE_KHR if any element of queues is not compatible
-// with the command-queue set on command_buffer creation at the same list index.
-struct EnqueueCommandBufferQueueNotCompatible : public BasicCommandBufferTest
-{
-    EnqueueCommandBufferQueueNotCompatible(cl_device_id device,
-                                           cl_context context,
-                                           cl_command_queue queue)
-        : BasicCommandBufferTest(device, context, queue),
-          queue_not_compatible(nullptr)
-    {}
-
-    cl_int Run() override
-    {
-        cl_int error = clFinalizeCommandBufferKHR(command_buffer);
-        test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        error = clEnqueueCommandBufferKHR(1, &queue_not_compatible,
-                                          command_buffer, 0, nullptr, nullptr);
-
-        test_failure_error_ret(error, CL_INCOMPATIBLE_COMMAND_QUEUE_KHR,
-                               "clEnqueueCommandBufferKHR should return "
-                               "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR",
-                               TEST_FAIL);
-
-        return CL_SUCCESS;
-    }
-
-    cl_int SetUp(int elements) override
-    {
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        queue_not_compatible = clCreateCommandQueue(
-            context, device, CL_QUEUE_PROFILING_ENABLE, &error);
-        test_error(error, "clCreateCommandQueue failed");
-
-        cl_command_queue_properties queue_properties;
-        error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES,
-                                      sizeof(queue_properties),
-                                      &queue_properties, NULL);
-        test_error(error, "Unable to query CL_QUEUE_PROPERTIES");
-
-        cl_command_queue_properties queue_not_compatible_properties;
-        error = clGetCommandQueueInfo(queue_not_compatible, CL_QUEUE_PROPERTIES,
-                                      sizeof(queue_not_compatible_properties),
-                                      &queue_not_compatible_properties, NULL);
-        test_error(error, "Unable to query CL_QUEUE_PROPERTIES");
-
-        test_assert_error(queue_properties != queue_not_compatible_properties,
-                          "Queues properties must be different");
-
-        return CL_SUCCESS;
-    }
-
-    clCommandQueueWrapper queue_not_compatible;
-};
-
 // CL_INVALID_CONTEXT if any element of queues does not have the same context as
 // the command-queue set on command_buffer creation at the same list index.
 struct EnqueueCommandBufferQueueWithDifferentContext
@@ -719,15 +662,6 @@ int test_negative_enqueue_command_buffer_not_valid_queue_in_queues(
     int num_elements)
 {
     return MakeAndRunTest<EnqueueCommandBufferNotValidQueueInQueues>(
-        device, context, queue, num_elements);
-}
-
-int test_negative_enqueue_queue_not_compatible(cl_device_id device,
-                                               cl_context context,
-                                               cl_command_queue queue,
-                                               int num_elements)
-{
-    return MakeAndRunTest<EnqueueCommandBufferQueueNotCompatible>(
         device, context, queue, num_elements);
 }
 

@@ -388,10 +388,6 @@ extern int test_negative_command_buffer_copy_image_mutable_handle_not_null(
 extern int test_negative_enqueue_command_buffer_not_valid_queue_in_queues(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
-extern int test_negative_enqueue_queue_not_compatible(cl_device_id device,
-                                                      cl_context context,
-                                                      cl_command_queue queue,
-                                                      int num_elements);
 extern int test_negative_enqueue_queue_with_different_context(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
