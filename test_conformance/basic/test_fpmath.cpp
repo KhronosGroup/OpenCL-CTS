@@ -98,14 +98,14 @@ int verify_fp(std::vector<T> (&input)[2], std::vector<T> &output,
     auto &inB = input[1];
     for (size_t i = 0; i < output.size(); i++)
     {
-        bool nan_test = false;
+        bool nan_test = true;
 
         T r = test.ref(inA[i], inB[i]);
 
         if (std::is_same<T, cl_half>::value)
-            nan_test = !(isHalfNan(r) && isHalfNan(output[i]));
+            nan_test = (isHalfNan(r) != isHalfNan(output[i]));
 
-        if (r != output[i] && nan_test)
+        if (r != output[i] && !nan_test)
         {
             log_error("FP math test for type: %s, vec size: %zu, failed at "
                       "index %zu, %a '%c' %a, expected %a, get %a\n",
