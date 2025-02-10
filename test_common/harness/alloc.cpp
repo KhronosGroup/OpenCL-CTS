@@ -16,6 +16,7 @@
 
 #include "alloc.h"
 #include "errorHelpers.h"
+#include "testHarness.h"
 
 #if defined(linux) || defined(__linux__) || defined(__ANDROID__)
 #include <string.h>
@@ -81,7 +82,7 @@ int allocate_dma_buf(uint64_t size, dma_buf_heap_type heap_type)
             "Opening the DMA heap device: %s failed with error: %d (%s)\n",
             dma_heap_path, errno, strerror(errno));
 
-        return -1;
+        return TEST_SKIPPED_ITSELF;
     }
 
     dma_heap_allocation_data dma_heap_data = { 0 };
@@ -107,7 +108,7 @@ int allocate_dma_buf(uint64_t size, dma_buf_heap_type heap_type)
 #else
 #warning                                                                       \
     "Kernel version doesn't support DMA buffer heaps (at least v5.6.0 is required)."
-    return -1;
+    return TEST_SKIPPED_ITSELF;
 #endif // LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 }
 
@@ -117,6 +118,6 @@ int allocate_dma_buf(uint64_t size, dma_buf_heap_type heap_type)
     log_error(
         "OS doesn't have DMA buffer heaps (only Linux and Android do).\n");
 
-    return -1;
+    return TEST_SKIPPED_ITSELF;
 }
 #endif // defined(linux) || defined(__linux__) || defined(__ANDROID__)
