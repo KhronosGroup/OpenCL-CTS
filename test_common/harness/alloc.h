@@ -97,7 +97,8 @@ enum class dma_buf_heap_type
  * @param heap_type [in,opt]  The heap type to use for the allocation.
  *
  * @retrun A file descriptor representing the allocated DMA buffer on success,
- * -1 otherwise.
+ * -1 otherwise. Failure to open the DMA device returns TEST_SKIPPED_ITSELF so
+ * it can be handled separately to other failures.
  */
 int allocate_dma_buf(uint64_t size,
                      dma_buf_heap_type heap_type = dma_buf_heap_type::SYSTEM);

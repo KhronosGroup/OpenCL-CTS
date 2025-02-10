@@ -16,6 +16,7 @@
 
 #include "alloc.h"
 #include "errorHelpers.h"
+#include "testHarness.h"
 
 #if defined(linux) || defined(__linux__) || defined(__ANDROID__)
 #include <string.h>
@@ -81,7 +82,7 @@ int allocate_dma_buf(uint64_t size, dma_buf_heap_type heap_type)
             "Opening the DMA heap device: %s failed with error: %d (%s)\n",
             dma_heap_path, errno, strerror(errno));
 
-        return -1;
+        return TEST_SKIPPED_ITSELF;
     }
 
     dma_heap_allocation_data dma_heap_data = { 0 };
