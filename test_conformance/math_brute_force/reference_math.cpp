@@ -1641,6 +1641,7 @@ double reference_expm1(double x)
 double reference_fmax(double x, double y)
 {
     if (isnan(y)) return x;
+    if (isnan(x)) return y;
 
     return x >= y ? x : y;
 }
