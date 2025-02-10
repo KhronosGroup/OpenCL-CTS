@@ -1133,14 +1133,14 @@ int run_test_with_multi_import_diff_ctx(
                                 deviceId, false);
         CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore,
                                 context, vkExternalSemaphoreHandleType,
-                                deviceId, false);
+                                deviceId, true);
 
         CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore2, vkVk2CLSemaphore,
                                 context2, vkExternalSemaphoreHandleType,
                                 deviceId, false);
         CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore2, vkCl2VkSemaphore,
                                 context2, vkExternalSemaphoreHandleType,
-                                deviceId, false);
+                                deviceId, true);
     }
 
     const uint32_t maxIter = innerIterations;
