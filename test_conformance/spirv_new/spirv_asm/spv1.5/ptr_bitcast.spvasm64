@@ -1,0 +1,27 @@
+; SPIR-V
+; Version: 1.5
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "ptr_bitcast_test"
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+      %uint2 = OpTypeVector %uint 2
+       %void = OpTypeVoid
+   %pptr_int = OpTypePointer Function %uint
+ %gptr_ulong = OpTypePointer CrossWorkgroup %ulong
+ %gptr_uint2 = OpTypePointer CrossWorkgroup %uint2
+ %kernel_sig = OpTypeFunction %void %gptr_ulong %gptr_uint2
+    %uint_42 = OpConstant %uint 42
+     %kernel = OpFunction %void None %kernel_sig
+  %dst_ulong = OpFunctionParameter %gptr_ulong
+  %dst_uint2 = OpFunctionParameter %gptr_uint2
+      %entry = OpLabel
+     %pvalue = OpVariable %pptr_int Function %uint_42
+  %ulong_ptr = OpBitcast %ulong %pvalue
+               OpStore %dst_ulong %ulong_ptr
+  %uint2_ptr = OpBitcast %uint2 %pvalue
+               OpStore %dst_uint2 %uint2_ptr
+               OpReturn
+               OpFunctionEnd

@@ -320,6 +320,12 @@ test_imagereadwrite3d(cl_device_id device, cl_context context, cl_command_queue 
                 }
                 outp = (void *)rgbafp_outptr;
                 break;
+            default:
+                log_error("ERROR Invalid j = %d\n", j);
+                elem_size = 0;
+                p = nullptr;
+                outp = nullptr;
+                break;
         }
 
         const char* update_packed_pitch_name = "";
