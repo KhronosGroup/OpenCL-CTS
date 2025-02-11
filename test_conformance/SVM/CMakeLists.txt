@@ -17,6 +17,7 @@ set(${MODULE_NAME}_SOURCES
     test_shared_sub_buffers.cpp
     test_migrate.cpp
     test_unified_svm_consistency.cpp
+    test_unified_svm_capabilities.cpp
 )
 
 set_gnulike_module_compile_flags("-Wno-sometimes-uninitialized -Wno-sign-compare")
