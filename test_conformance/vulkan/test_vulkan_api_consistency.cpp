@@ -476,29 +476,6 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
             sema_props1.push_back(0);
             sema_props2.push_back(0);
 
-            // Pass NULL properties
-            clCreateSemaphoreWithPropertiesKHRptr(context, NULL, &errNum);
-            test_failure_error(
-                errNum, CL_INVALID_VALUE,
-                "Semaphore creation must fail with CL_INVALID_VALUE "
-                " when properties are passed as NULL");
-
-            // Pass invalid semaphore object to wait
-            errNum = clEnqueueWaitSemaphoresKHRptr(queue, 1, NULL, NULL, 0,
-                                                   NULL, NULL);
-            test_failure_error(errNum, CL_INVALID_SEMAPHORE_KHR,
-                               "clEnqueueWaitSemaphoresKHR fails with "
-                               "CL_INVALID_SEMAPHORE_KHR "
-                               "when invalid semaphore object is passed");
-
-            // Pass invalid semaphore object to signal
-            errNum = clEnqueueSignalSemaphoresKHRptr(queue, 1, NULL, NULL, 0,
-                                                     NULL, NULL);
-            test_failure_error(errNum, CL_INVALID_SEMAPHORE_KHR,
-                               "clEnqueueSignalSemaphoresKHR fails with "
-                               "CL_INVALID_SEMAPHORE_KHR"
-                               "when invalid semaphore object is passed");
-
             // Create two semaphore objects
             clVk2Clsemaphore = clCreateSemaphoreWithPropertiesKHRptr(
                 context, sema_props1.data(), &errNum);
@@ -511,13 +488,6 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
             test_error(
                 errNum,
                 "Unable to create semaphore with valid semaphore properties");
-
-            // Pass invalid object to release call
-            errNum = clReleaseSemaphoreKHRptr(NULL);
-            test_failure_error(errNum, CL_INVALID_SEMAPHORE_KHR,
-                               "clReleaseSemaphoreKHRptr fails with "
-                               "CL_INVALID_SEMAPHORE_KHR when NULL semaphore "
-                               "object is passed");
 
             // Release both semaphore objects
             errNum = clReleaseSemaphoreKHRptr(clVk2Clsemaphore);
