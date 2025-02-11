@@ -153,9 +153,9 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
     }
 
     size_t info_global_size = 0;
-    const size_t update_global_size = 3;
-    const size_t sizeToAllocate = global_work_size;
-    const size_t num_elements = sizeToAllocate / sizeof(cl_int);
+    const size_t update_global_size = 16 * 1024;
+    const size_t sizeToAllocate = global_work_size * sizeof(cl_int);
+    const size_t num_elements = global_work_size;
     cl_mutable_command_khr command = nullptr;
 };
 
