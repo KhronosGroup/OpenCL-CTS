@@ -16,6 +16,7 @@ set(${MODULE_NAME}_SOURCES
     test_shared_address_space_fine_grain_buffers.cpp
     test_shared_sub_buffers.cpp
     test_migrate.cpp
+    test_unified_svm_consistency.cpp
 )
 
 set_gnulike_module_compile_flags("-Wno-sometimes-uninitialized -Wno-sign-compare")
