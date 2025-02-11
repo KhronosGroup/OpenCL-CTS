@@ -28,7 +28,7 @@ NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2174.
 
 ### Testing SVM Capabilities
 
-* [ ] `CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR`
+* [X] `CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR`
     * Testing options:
         1. Pass a pointer-to-a-pointer as a kernel argument.
            Read the pointer from the kernel argument and write to it.
@@ -36,43 +36,43 @@ NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2174.
         2. Pass the pointer as a kernel argument.
            Write the kernel argument to another allocation, which could even be an OpenCL buffer memory object.
            Ensure the value written on the device matches the value on the host.
-* [ ] `CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR`
-    * [ ] When allocating memory to test, use the system `malloc` rather than `clSVMAllocWithPropertiesKHR`.
+* [X] `CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR`
+    * [X] When allocating memory to test, use the system `malloc` rather than `clSVMAllocWithPropertiesKHR`.
 * [ ] `CL_SVM_CAPABILITY_DEVICE_OWNED_KHR`
     * TBD
-* [ ] `CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR`
-    * [ ] When allocating memory to test, do not pass the test device via a `CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR` property.
-    * [ ] Include at least one targeted test that passes the `CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR` property anyhow.
+* [X] `CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR`
+    * [X] When allocating memory to test, do not pass the test device via a `CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR` property.
+    * [X] Include at least one targeted test that passes the `CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR` property anyhow.
 * [ ] `CL_SVM_CAPABILITY_CONTEXT_ACCESS_KHR`
     * TBD: Create a multi-device context, use the allocation on all of the devices in the context?
 * [ ] `CL_SVM_CAPABILITY_HOST_OWNED_KHR`
     * TBD
-* [ ] `CL_SVM_CAPABILITY_HOST_READ_KHR`
-    * [ ] When verifying test results, read from the allocation directly on the host, without mapping or copying explicitly.
-    * [ ] For devices that also support `CL_SVM_CAPABILITY_DEVICE_WRITE_KHR`, also include a targeted test that writes on the device and reads the results on the host without mapping or copying explicitly.
-* [ ] `CL_SVM_CAPABILITY_HOST_WRITE_KHR`
-    * [ ] When initializing test data, write to the allocation directly from the host, without mapping or copying explicitly.
-    * [ ] For devices that also support `CL_SVM_CAPABILITY_DEVICE_READ_KHR`, also include a targeted test that writes on the host without mapping or copying explicitly, then read the results on the device and writes it to an an OpenCL buffer memory object.
-* [ ] `CL_SVM_CAPABILITY_HOST_MAP_KHR`
-    * [ ] When initializing test data or verifying test results, map the allocation for access from the host, rather than copying explicitly.
-    * [ ] For devices that also support `CL_SVM_CAPABILITY_DEVICE_WRITE_KHR`, also include a targeted test that writes on the device and reads the results on the host by mapping.
-    * [ ] For devices that also support `CL_SVM_CAPABILITY_DEVICE_READ_KHR`, also include a targeted test that writes on the host by mapping, then reads the results on the device and writes it to an OpenCL buffer memory object.
-* [ ] `CL_SVM_CAPABILITY_DEVICE_READ_KHR`
-    * [ ] Populate an allocation via direct access from the host, via mapping, or via device memcpy, depending on supported capabilities.
+* [X] `CL_SVM_CAPABILITY_HOST_READ_KHR`
+    * [X] When verifying test results, read from the allocation directly on the host, without mapping or copying explicitly.
+    * [X] For devices that also support `CL_SVM_CAPABILITY_DEVICE_WRITE_KHR`, also include a targeted test that writes on the device and reads the results on the host without mapping or copying explicitly.
+* [X] `CL_SVM_CAPABILITY_HOST_WRITE_KHR`
+    * [X] When initializing test data, write to the allocation directly from the host, without mapping or copying explicitly.
+    * [X] For devices that also support `CL_SVM_CAPABILITY_DEVICE_READ_KHR`, also include a targeted test that writes on the host without mapping or copying explicitly, then read the results on the device and writes it to an an OpenCL buffer memory object.
+* [X] `CL_SVM_CAPABILITY_HOST_MAP_KHR`
+    * [X] When initializing test data or verifying test results, map the allocation for access from the host, rather than copying explicitly.
+    * [X] For devices that also support `CL_SVM_CAPABILITY_DEVICE_WRITE_KHR`, also include a targeted test that writes on the device and reads the results on the host by mapping.
+    * [X] For devices that also support `CL_SVM_CAPABILITY_DEVICE_READ_KHR`, also include a targeted test that writes on the host by mapping, then reads the results on the device and writes it to an OpenCL buffer memory object.
+* [X] `CL_SVM_CAPABILITY_DEVICE_READ_KHR`
+    * [X] Populate an allocation via direct access from the host, via mapping, or via device memcpy, depending on supported capabilities.
           Then, read the value on the device and write it to an OpenCL buffer memory object.
     * Mechanisms to read from the allocation on the device are:
-        * [ ] Via a kernel that reads from the allocation as a kernel argument.
-        * [ ] Via `clEnqueueSVMMemcpy`.
-* [ ] `CL_SVM_CAPABILITY_DEVICE_WRITE_KHR`
-    * [ ] Populate an OpenCL buffer memory object with values.
+        * [X] Via a kernel that reads from the allocation as a kernel argument.
+        * [X] Via `clEnqueueSVMMemcpy`.
+* [X] `CL_SVM_CAPABILITY_DEVICE_WRITE_KHR`
+    * [X] Populate an OpenCL buffer memory object with values.
           Read the values from the OpenCL buffer memory object on the device and write them to the memory allocation.
           Verify that the values were written correctly via direct access from the host, via mapping, or via memcpy, depending on supported capabilities.
     * Mechanisms to write to the allocation on the device are:
-       * [ ] Via a kernel that writes to the allocation as a kernel argument.
-       * [ ] Via `clEnqueueSVMMemcpy`.
-       * [ ] Via `clEnqueueSVMMemFill`.
-* [ ] `CL_SVM_CAPABILITY_DEVICE_ATOMIC_ACCESS_KHR`
-    * [ ] Initialize a memory allocation with zero.
+       * [X] Via a kernel that writes to the allocation as a kernel argument.
+       * [X] Via `clEnqueueSVMMemcpy`.
+       * [X] Via `clEnqueueSVMMemFill`.
+* [X] `CL_SVM_CAPABILITY_DEVICE_ATOMIC_ACCESS_KHR`
+    * [X] Initialize a memory allocation with zero.
           Atomically increment the memory allocation from the device.
           Verify that the correct updates were made via direct access from the host, via mapping, or via memcpy, depending on supported capabilities.
 * [ ] `CL_SVM_CAPABILITY_CONCURRENT_ACCESS_KHR`
@@ -103,12 +103,14 @@ NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2174.
           Repeat as needed.
     * May want to test multiple iterations, or to take other steps to increase the likelihood that accesses are made concurrently.
     * Are there any best practices we can borrow from fine-grain SVM testing?
-* [ ] `CL_SVM_CAPABILITY_INDIRECT_ACCESS_KHR`
-    * [ ] For devices that support `CL_SVM_CAPABILITY_DEVICE_READ_KHR`, initialize a memory allocation with a known value.
+* [X] `CL_SVM_CAPABILITY_INDIRECT_ACCESS_KHR`
+    * [X] For devices that support `CL_SVM_CAPABILITY_DEVICE_READ_KHR`, initialize a memory allocation with a known value.
           On the host, embed the pointer to the allocation into an OpenCL buffer memory object.
           On the device, read the pointer out of the OpenCL buffer memory object, then read a value from the pointer.
           Store the value read to another OpenCL buffer memory object.
           Back on the host, verify the known value was read.
+
+NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2210.
 
 ### Testing New SVM APIs
 
