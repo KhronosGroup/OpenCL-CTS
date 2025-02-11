@@ -25,7 +25,7 @@ int test_copy_image_size_1D_array( cl_context context, cl_command_queue queue, i
     size_t src_lod = 0, src_width_lod = imageInfo->width, src_row_pitch_lod;
     size_t dst_lod = 0, dst_width_lod = imageInfo->width, dst_row_pitch_lod;
     size_t width_lod = imageInfo->width;
-    size_t max_mip_level;
+    size_t max_mip_level = 0;
 
     if( gTestMipmaps )
     {

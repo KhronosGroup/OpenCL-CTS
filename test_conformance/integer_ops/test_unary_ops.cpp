@@ -97,7 +97,7 @@ int test_unary_op( cl_command_queue queue, cl_context context, OpKonstants which
         get_explicit_type_size(vecType) * vecSize * TEST_SIZE, inData, &error);
     test_error( error, "Creating input data array failed" );
 
-    cl_uint bits;
+    cl_uint bits = 0;
     for( i = 0; i < TEST_SIZE; i++ )
     {
         size_t which = i & 7;

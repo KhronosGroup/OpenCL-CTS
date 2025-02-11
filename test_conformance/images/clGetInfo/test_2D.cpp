@@ -181,6 +181,10 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
     case CL_MEM_OBJECT_IMAGE3D:
       required_height = imageInfo->height;
       break;
+    default:
+        log_error("ERROR: Invalid imageInfo->type = %d\n", imageInfo->type);
+        required_height = 0;
+        break;
   }
 
     size_t outHeight;
@@ -204,6 +208,10 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
     case CL_MEM_OBJECT_IMAGE3D:
       required_depth = imageInfo->depth;
       break;
+    default:
+        log_error("ERROR: Invalid imageInfo->type = %d\n", imageInfo->type);
+        required_depth = 0;
+        break;
   }
 
   size_t outDepth;
@@ -227,6 +235,10 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
     case CL_MEM_OBJECT_IMAGE2D_ARRAY:
       required_array_size = imageInfo->arraySize;
       break;
+    default:
+        log_error("ERROR: Invalid imageInfo->type = %d\n", imageInfo->type);
+        required_array_size = 0;
+        break;
   }
 
   size_t outArraySize;
