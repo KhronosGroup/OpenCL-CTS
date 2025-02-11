@@ -19,7 +19,7 @@
 
 REGISTER_TEST(unified_svm_consistency)
 {
-    if (!is_extension_available(deviceID, "cl_khr_unified_svm"))
+    if (!is_extension_available(device, "cl_khr_unified_svm"))
     {
         log_info("cl_khr_unified_svm is not supported, skipping test.\n");
         return TEST_SKIPPED_ITSELF;
@@ -28,7 +28,7 @@ REGISTER_TEST(unified_svm_consistency)
     cl_int err;
 
     cl_platform_id platformID;
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
+    err = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(cl_platform_id),
                           (void *)(&platformID), nullptr);
     test_error(err, "clGetDeviceInfo failed for CL_DEVICE_PLATFORM");
 
@@ -122,7 +122,7 @@ REGISTER_TEST(unified_svm_consistency)
         }
         if (platformCapabilities[i] != check)
         {
-            test_fail("Platform SVM type capabilities at index %zu: 0x%" PRIx64
+            test_fail("Platform SVM type capabilities at index %d: 0x%" PRIx64
                       " do not match the intersection of device capabilities "
                       "0x%" PRIx64 ".\n",
                       i, platformCapabilities[i], check);
@@ -135,7 +135,7 @@ REGISTER_TEST(unified_svm_consistency)
     // supported.
 
     std::vector<cl_svm_capabilities_khr> deviceCapabilities(capabilityCount);
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_SVM_TYPE_CAPABILITIES_KHR,
+    err = clGetDeviceInfo(device, CL_DEVICE_SVM_TYPE_CAPABILITIES_KHR,
                           platformSize, deviceCapabilities.data(), nullptr);
     test_error(err,
                "clGetDeviceInfo failed for CL_DEVICE_SVM_CAPABILITIES_KHR");
@@ -148,7 +148,7 @@ REGISTER_TEST(unified_svm_consistency)
         if (!consistent)
         {
             test_fail(
-                "Device SVM type capabilities at index %zu: 0x%" PRIx64
+                "Device SVM type capabilities at index %d: 0x%" PRIx64
                 " are not consistent with platform SVM type capabilities: "
                 "0x%" PRIx64 ".\n",
                 i, deviceCapabilities[i], platformCapabilities[i]);
