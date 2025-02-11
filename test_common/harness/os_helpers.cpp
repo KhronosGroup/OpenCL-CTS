@@ -577,7 +577,7 @@ char* get_temp_filename()
     close(fd);
 #elif defined(_WIN32)
     UINT ret = GetTempFileName(".", "tmp", 0, gFileName);
-    if (ret == 0) return gFileName;
+    if (ret == 0) return strdup(gFileName);
 #else
     MTdata d = init_genrand((cl_uint)time(NULL));
     sprintf(gFileName, "tmpfile.%u", genrand_int32(d));
