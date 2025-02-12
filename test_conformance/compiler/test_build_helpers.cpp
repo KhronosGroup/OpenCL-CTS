@@ -64,21 +64,21 @@ const char *sample_kernel_code_bad_multi_line[] = {
 const char *sample_multi_kernel_code_with_makro = R"(
 __kernel void sample_test_A(__global float *src, __global int *dst)
 {
-    int  tid = get_global_id(0);
+    size_t  tid = get_global_id(0);
     dst[tid] = (int)src[tid];
 }
 
 #ifdef USE_SAMPLE_TEST_B
 __kernel void sample_test_B(__global float *src, __global int *dst)
 {
-    int  tid = get_global_id(0);
+    size_t  tid = get_global_id(0);
     dst[tid] = (int)src[tid];
 }
 #endif
 
 __kernel void sample_test_C(__global float *src, __global int *dst)
 {
-    int  tid = get_global_id(0);
+    size_t  tid = get_global_id(0);
     dst[tid] = (int)src[tid];
 }
 )";
@@ -453,10 +453,10 @@ int test_get_program_info_kernel_names(cl_device_id deviceID,
 
     clProgramWrapper program = nullptr;
 
-    // 1) Program without build call
-    //    Query CL_PROGRAM_NUM_KERNELS and check that it fails with
-    //    CL_INVALID_PROGRAM_EXECUTABLE Query CL_PROGRAM_KERNEL_NAMES and check
-    //    that it fails with CL_INVALID_PROGRAM_EXECUTABLE
+    // 1) Program without build call. Query CL_PROGRAM_NUM_KERNELS and check
+    // that it fails with CL_INVALID_PROGRAM_EXECUTABLE. Query
+    // CL_PROGRAM_KERNEL_NAMES and check that it fails with
+    // CL_INVALID_PROGRAM_EXECUTABLE.
     {
         program = clCreateProgramWithSource(
             context, 1, &sample_multi_kernel_code_with_makro, nullptr, &error);
@@ -473,10 +473,10 @@ int test_get_program_info_kernel_names(cl_device_id deviceID,
                            "Unexpected clGetProgramInfo result");
     }
 
-    // 2) Build the program with the preprocessor macro undefined
+    // 2) Build the program with the preprocessor macro undefined.
     //    Query CL_PROGRAM_NUM_KERNELS and check that the correct number is
-    //    returned Query CL_PROGRAM_KERNEL_NAMES and check that the right kernel
-    //    names are returned
+    //    returned. Query CL_PROGRAM_KERNEL_NAMES and check that the right
+    //    kernel names are returned.
     {
         error =
             clBuildProgram(program, 1, &deviceID, nullptr, nullptr, nullptr);
@@ -510,15 +510,19 @@ int test_get_program_info_kernel_names(cl_device_id deviceID,
                                   != std::string::npos,
                               "Unexpected kernel name");
         }
+
+        test_assert_error(program_names.find("sample_test_B")
+                              == std::string::npos,
+                          "sample_test_B should not be present");
     }
 
-    // 3) Build the program again with the preprocessor macro defined
+    // 3) Build the program again with the preprocessor macro defined.
     //    Query CL_PROGRAM_NUM_KERNELS and check that the correct number is
-    //    returned Query CL_PROGRAM_KERNEL_NAMES and check that the right kernel
-    //    names are returned
+    //    returned. Query CL_PROGRAM_KERNEL_NAMES and check that the right
+    //    kernel names are returned.
     {
-        const char *buildOptions = "-DUSE_SAMPLE_TEST_B";
-        error = clBuildProgram(program, 1, &deviceID, buildOptions, nullptr,
+        const char *build_options = "-DUSE_SAMPLE_TEST_B";
+        error = clBuildProgram(program, 1, &deviceID, build_options, nullptr,
                                nullptr);
         test_error(error, "clBuildProgram failed");
 
@@ -552,7 +556,7 @@ int test_get_program_info_kernel_names(cl_device_id deviceID,
                               "Unexpected kernel name");
         }
     }
-    return 0;
+    return CL_SUCCESS;
 }
 
 int test_get_program_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
