@@ -110,6 +110,7 @@ int verify_fp(std::vector<T> (&input)[2], std::vector<T> &output,
             both_nan = std::isnan(r) && std::isnan(output[i]);
         }
 
+        // If not both nan, check if the result is the same
         if (!both_nan && (r != output[i]))
         {
             log_error("FP math test for type: %s, vec size: %zu, failed at "
