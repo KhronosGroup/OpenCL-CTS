@@ -50,4 +50,9 @@ int get_format_list(cl_context context, cl_mem_object_type imageType,
                     cl_mem_flags flags);
 size_t random_in_ranges(size_t minimum, size_t rangeA, size_t rangeB, MTdata d);
 
+clMemWrapper create_image(cl_context context, cl_command_queue queue,
+                          BufferOwningPtr<char> &data,
+                          image_descriptor *imageInfo, bool enable_pitch,
+                          bool create_mipmaps, int *error);
+
 #endif // IMAGES_COMMON_H
