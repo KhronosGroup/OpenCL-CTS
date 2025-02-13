@@ -44,4 +44,11 @@ else()
     endforeach()
 
     add_custom_target(vulkan_shaders DEPENDS ${vulkan_spirv_files})
+
+    include(GNUInstallDirs)
+
+    install(DIRECTORY
+                ${CMAKE_CURRENT_BINARY_DIR}
+            DESTINATION
+                ${CMAKE_INSTALL_BINDIR}/$<CONFIG>)
 endif()
