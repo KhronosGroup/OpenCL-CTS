@@ -18,6 +18,7 @@
 #include "harness/propertyHelpers.h"
 #include <stdlib.h>
 #include <ctype.h>
+#include <array>
 #include <algorithm>
 #include <cinttypes>
 #include <memory>
