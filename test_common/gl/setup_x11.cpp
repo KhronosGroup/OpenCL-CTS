@@ -28,13 +28,21 @@ private:
     cl_uint m_device_count;
     bool m_glut_init;
 
+    cl_platform_id m_platform;
+    GLXContext m_context;
+    Display *m_dpy;
+
 public:
     X11GLEnvironment()
     {
         m_device_count = 0;
         m_glut_init = false;
+        m_platform = 0;
+        m_context = 0;
+        m_dpy = nullptr;
     }
-    virtual int Init( int *argc, char **argv, int use_opencl_32 )
+
+    int Init(int *argc, char **argv, int use_opencl_32) override
     {
          // Create a GLUT window to render into
          if (!m_glut_init)
@@ -49,19 +57,19 @@ public:
         return 0;
     }
 
-    virtual cl_context CreateCLContext( void )
+    cl_context CreateCLContext(void) override
     {
-        GLXContext context = glXGetCurrentContext();
-        Display *dpy = glXGetCurrentDisplay();
+        m_context = glXGetCurrentContext();
+        m_dpy = glXGetCurrentDisplay();
 
         cl_context_properties properties[] = {
-            CL_GL_CONTEXT_KHR,  (cl_context_properties) context,
-            CL_GLX_DISPLAY_KHR, (cl_context_properties) dpy,
-            0
+            CL_GL_CONTEXT_KHR, (cl_context_properties)m_context,
+            CL_GLX_DISPLAY_KHR, (cl_context_properties)m_dpy, 0
         };
         cl_int status;
 
-        if (!context || !dpy) {
+        if (!m_context || !m_dpy)
+        {
             print_error(CL_INVALID_CONTEXT, "No GL context bound");
             return 0;
         }
@@ -69,7 +77,18 @@ public:
         return clCreateContext(properties, 1, m_devices, NULL, NULL, &status);
     }
 
-    virtual int SupportsCLGLInterop( cl_device_type device_type )
+    int GetContextProps(std::vector<cl_context_properties> &props) override
+    {
+        if (m_context == 0 || m_dpy == nullptr) return -1;
+        props.push_back(CL_GL_CONTEXT_KHR);
+        props.push_back((cl_context_properties)m_context);
+        props.push_back(CL_GLX_DISPLAY_KHR);
+        props.push_back((cl_context_properties)m_dpy);
+        props.push_back(0);
+        return 0;
+    }
+
+    int SupportsCLGLInterop(cl_device_type device_type) override
     {
         int found_valid_device = 0;
         cl_platform_id platform;

@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2024 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,65 +25,72 @@ private:
 public:
     OSXGLEnvironment()
     {
-        mCGLContext = NULL;
         mIsGlutInit = false;
+        mCGLContext = NULL;
+        mShareGroup = NULL;
     }
 
-  virtual int Init( int *argc, char **argv, int use_opengl_32 )
+    int Init(int *argc, char **argv, int use_opengl_32) override
+    {
+        if (!use_opengl_32)
         {
-      if (!use_opengl_32) {
-          if (!mIsGlutInit)
-          {
-              // Create a GLUT window to render into
-              glutInit(argc, argv);
-              glutInitWindowSize(512, 512);
-              glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
-              glutCreateWindow("OpenCL <-> OpenGL Test");
-              mIsGlutInit = true;
-          }
-      }
-
-      else {
-
-        CGLPixelFormatAttribute attribs[] = {
-          kCGLPFAOpenGLProfile, (CGLPixelFormatAttribute)kCGLOGLPVersion_3_2_Core,
-          kCGLPFAAllowOfflineRenderers,
-          kCGLPFANoRecovery,
-          kCGLPFAAccelerated,
-          kCGLPFADoubleBuffer,
-          (CGLPixelFormatAttribute)0
-        };
-
-        CGLError err;
-        CGLPixelFormatObj pix;
-        GLint npix;
-        err = CGLChoosePixelFormat (attribs, &pix, &npix);
-        if(err != kCGLNoError)
-          {
-            log_error("Failed to choose pixel format\n");
-            return -1;
-          }
-        err = CGLCreateContext(pix, NULL, &mCGLContext);
-        if(err != kCGLNoError)
-          {
-            log_error("Failed to create GL context\n");
-            return -1;
-          }
-        CGLSetCurrentContext(mCGLContext);
-      }
-
-            return 0;
+            if (!mIsGlutInit)
+            {
+                // Create a GLUT window to render into
+                glutInit(argc, argv);
+                glutInitWindowSize(512, 512);
+                glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
+                glutCreateWindow("OpenCL <-> OpenGL Test");
+                mIsGlutInit = true;
+            }
         }
 
-        virtual cl_context CreateCLContext( void )
+        else
+        {
+
+            CGLPixelFormatAttribute attribs[] = {
+                kCGLPFAOpenGLProfile,
+                (CGLPixelFormatAttribute)kCGLOGLPVersion_3_2_Core,
+                kCGLPFAAllowOfflineRenderers,
+                kCGLPFANoRecovery,
+                kCGLPFAAccelerated,
+                kCGLPFADoubleBuffer,
+                (CGLPixelFormatAttribute)0
+            };
+
+            CGLError err;
+            CGLPixelFormatObj pix;
+            GLint npix;
+            err = CGLChoosePixelFormat(attribs, &pix, &npix);
+            if (err != kCGLNoError)
+            {
+                log_error("Failed to choose pixel format\n");
+                return -1;
+            }
+            err = CGLCreateContext(pix, NULL, &mCGLContext);
+            if (err != kCGLNoError)
+            {
+                log_error("Failed to create GL context\n");
+                return -1;
+            }
+            CGLSetCurrentContext(mCGLContext);
+        }
+
+        return 0;
+    }
+
+    cl_context CreateCLContext(void) override
     {
       int error;
 
       if( mCGLContext == NULL )
         mCGLContext = CGLGetCurrentContext();
 
-      CGLShareGroupObj share_group = CGLGetShareGroup(mCGLContext);
-      cl_context_properties properties[] = { CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, (cl_context_properties)share_group, 0 };
+      mShareGroup = CGLGetShareGroup(mCGLContext);
+      cl_context_properties properties[] = {
+          CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
+          (cl_context_properties)mShareGroup, 0
+      };
       cl_context context = clCreateContext(properties, 0, 0, 0, 0, &error);
       if (error) {
         print_error(error, "clCreateContext failed");
@@ -108,7 +115,16 @@ public:
       return context;
     }
 
-    virtual int SupportsCLGLInterop( cl_device_type device_type )
+    int GetContextProps(std::vector<cl_context_properties> &props) override
+    {
+        if (mShareGroup == NULL) return -1;
+        props.push_back(CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE);
+        props.push_back((cl_context_properties)mShareGroup);
+        props.push_back(0);
+        return 0;
+    }
+
+    int SupportsCLGLInterop(cl_device_type device_type) override
     {
       int found_valid_device = 0;
       cl_device_id devices[64];
@@ -131,13 +147,10 @@ public:
             return found_valid_device;
     }
 
-        virtual ~OSXGLEnvironment()
-        {
-            CGLDestroyContext( mCGLContext );
-        }
+    virtual ~OSXGLEnvironment() { CGLDestroyContext(mCGLContext); }
 
-        CGLContextObj mCGLContext;
-
+    CGLContextObj mCGLContext;
+    CGLShareGroupObj mShareGroup;
 };
 
 GLEnvironment * GLEnvironment::Instance( void )
