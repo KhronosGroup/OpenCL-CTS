@@ -1,0 +1,36 @@
+; SPIR-V
+; Version: 1.6
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability UniformDecoration
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %kernel "test_uniformdecoration" %gid
+               OpDecorate %gid BuiltIn GlobalInvocationId
+               OpDecorate %gid Constant
+               ; Decoration on a constant
+               OpDecorate %uint_0 Uniform
+               ; Decoration on a function parameter
+               OpDecorate %value Uniform
+               OpDecorate %base Uniform
+               ; Decoration on a variable
+               OpDecorate %newvalue Uniform
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+    %ptr_gid = OpTypePointer Input %v3uint
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+       %void = OpTypeVoid
+  %gptr_uint = OpTypePointer CrossWorkgroup %uint
+ %kernel_sig = OpTypeFunction %void %gptr_uint %uint
+        %gid = OpVariable %ptr_gid Input
+     %kernel = OpFunction %void None %kernel_sig
+       %base = OpFunctionParameter %gptr_uint
+      %value = OpFunctionParameter %uint
+      %entry = OpLabel
+      %gidv3 = OpLoad %v3uint %gid Aligned 32
+       %gid0 = OpCompositeExtract %uint %gidv3 0
+        %ptr = OpInBoundsPtrAccessChain %gptr_uint %base %gid0
+   %newvalue = OpIAdd %uint %value %uint_1
+               OpStore %ptr %newvalue Aligned 4
+               OpReturn
+               OpFunctionEnd
