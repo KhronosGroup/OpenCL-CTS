@@ -1649,6 +1649,7 @@ double reference_fmax(double x, double y)
 double reference_fmin(double x, double y)
 {
     if (isnan(y)) return x;
+    if (isnan(x)) return y;
 
     return x <= y ? x : y;
 }
@@ -3612,6 +3613,7 @@ long double reference_expm1l(long double x)
 long double reference_fmaxl(long double x, long double y)
 {
     if (isnan(y)) return x;
+    if (isnan(x)) return y;
 
     return x >= y ? x : y;
 }
@@ -3619,6 +3621,7 @@ long double reference_fmaxl(long double x, long double y)
 long double reference_fminl(long double x, long double y)
 {
     if (isnan(y)) return x;
+    if (isnan(x)) return y;
 
     return x <= y ? x : y;
 }
