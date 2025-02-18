@@ -506,7 +506,7 @@ int test_get_program_info_kernel_names(cl_device_id deviceID,
         std::string program_names = kernel_names.data();
         for (const auto &name : actual_names)
         {
-            test_assert_error(program_names.find(name.c_str())
+            test_assert_error(program_names.find(name)
                                   != std::string::npos,
                               "Unexpected kernel name");
         }
@@ -551,7 +551,7 @@ int test_get_program_info_kernel_names(cl_device_id deviceID,
         std::string program_names = kernel_names.data();
         for (const auto &name : actual_names)
         {
-            test_assert_error(program_names.find(name.c_str())
+            test_assert_error(program_names.find(name)
                                   != std::string::npos,
                               "Unexpected kernel name");
         }
