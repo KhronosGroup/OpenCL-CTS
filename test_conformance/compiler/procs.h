@@ -71,7 +71,10 @@ extern int test_get_program_build_info(cl_device_id deviceID,
                                        int num_elements);
 extern int test_get_program_info(cl_device_id deviceID, cl_context context,
                                  cl_command_queue queue, int num_elements);
-
+extern int test_get_linked_program_info_kernel_names(cl_device_id deviceID,
+                                                     cl_context context,
+                                                     cl_command_queue queue,
+                                                     int num_elements);
 extern int test_large_compile(cl_device_id deviceID, cl_context context,
                               cl_command_queue queue, int num_elements);
 extern int test_async_build(cl_device_id deviceID, cl_context context,
