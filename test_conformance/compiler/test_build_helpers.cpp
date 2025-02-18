@@ -511,8 +511,7 @@ int test_get_linked_program_info_kernel_names(cl_device_id deviceID,
                                                     "sample_test_C" };
         for (const auto &name : expected_names)
         {
-            test_assert_error(program_names.find(name.c_str())
-                                  != std::string::npos,
+            test_assert_error(program_names.find(name) != std::string::npos,
                               "Unexpected kernel name");
         }
 
@@ -520,8 +519,7 @@ int test_get_linked_program_info_kernel_names(cl_device_id deviceID,
                                                       "sample_test_D" };
         for (const auto &name : unexpected_names)
         {
-            test_assert_error(program_names.find(name.c_str())
-                                  == std::string::npos,
+            test_assert_error(program_names.find(name) == std::string::npos,
                               "Unexpected kernel name");
         }
     }
@@ -571,8 +569,7 @@ int test_get_linked_program_info_kernel_names(cl_device_id deviceID,
         std::string program_names = kernel_names.data();
         for (const auto &name : expected_names)
         {
-            test_assert_error(program_names.find(name.c_str())
-                                  != std::string::npos,
+            test_assert_error(program_names.find(name) != std::string::npos,
                               "Unexpected kernel name");
         }
     }
