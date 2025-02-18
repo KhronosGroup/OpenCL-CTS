@@ -125,7 +125,7 @@ int test_imagearraycopy_single_format(cl_device_id device, cl_context context,
         {
             if (memcmp(&inchar[i], &outchar[i], elem_size) != 0)
             {
-                log_error("%d(0x%x) -> expected [", i, i);
+                log_error("%zu(0x%zx) -> expected [", i, i);
                 for (size_t j = 0; j < elem_size; j++)
                     log_error("0x%02x ", inchar[i + j]);
                 log_error("] != actual [");
