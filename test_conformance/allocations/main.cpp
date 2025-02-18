@@ -125,7 +125,7 @@ int doTest(cl_device_id device, cl_context context, cl_command_queue queue,
     int number_of_mems_used;
     cl_ulong max_individual_allocation_size = g_max_individual_allocation_size;
     cl_ulong global_mem_size = g_global_mem_size;
-    unsigned int number_of_work_itmes = 8192 * 32;
+    unsigned int number_of_work_items = 8192 * 32;
     const bool allocate_image =
         (alloc_type != BUFFER) && (alloc_type != BUFFER_NON_BLOCKING);
 
@@ -183,7 +183,7 @@ int doTest(cl_device_id device, cl_context context, cl_command_queue queue,
                  g_reduction_percentage);
         g_max_size = (size_t)((double)g_max_size
                               * (double)g_reduction_percentage / 100.0);
-        number_of_work_itmes = 8192 * 2;
+        number_of_work_items = 8192 * 2;
     }
 
     // Round to nearest MB.
@@ -220,7 +220,7 @@ int doTest(cl_device_id device, cl_context context, cl_command_queue queue,
                 error =
                     execute_kernel(context, &queue, device, alloc_type, mems,
                                    number_of_mems_used, g_write_allocations,
-                                   number_of_work_itmes);
+                                   number_of_work_items);
             }
 
             // If we failed to allocate more than 1/8th of the requested amount

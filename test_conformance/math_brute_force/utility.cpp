@@ -195,8 +195,14 @@ float getAllowedUlpError(const Func *f, Type t, const bool relaxed)
             // TODO: distinguish between embedded and full profile.
             return f->double_ulps;
         case khalf:
-            // TODO: distinguish between embedded and full profile.
-            return f->half_ulps;
+            if (gIsEmbedded)
+            {
+                return f->half_embedded_ulps;
+            }
+            else
+            {
+                return f->half_ulps;
+            }
         default:
             assert(false && "unsupported type in getAllowedUlpError");
             // Return a negative value which will make any test fail.

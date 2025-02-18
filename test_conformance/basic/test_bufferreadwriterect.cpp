@@ -72,7 +72,7 @@ static void initialize_image(BufferType* ptr, size_t w, size_t h, size_t d, MTda
 
 // This function prints the contents of a buffer to standard error.
 void print_buffer(BufferType* buf, size_t w, size_t h, size_t d) {
-    log_error("Size = %lux%lux%lu (%lu total)\n",w,h,d,w*h*d);
+    log_error("Size = %zux%zux%zu (%zu total)\n", w, h, d, w * h * d);
     for (unsigned k=0; k!=d;++k) {
         log_error("Slice: %u\n",k);
         for (unsigned j=0; j!=h;++j) {
@@ -218,7 +218,9 @@ int verify_region(BufferType* device, size_t src, size_t soffset[3], size_t sreg
         size_t d_idx = (doffset[2]+sz)*dslice + (doffset[1]+sy)*dpitch + doffset[0]+sx;
 
         if (device[d_idx] != verify[src][s_idx]) {
-            log_error("Verify failed on comparsion %lu: coordinate (%lu, %lu, %lu) of region\n",i,sx,sy,sz);
+            log_error("Verify failed on comparsion %zu: coordinate (%zu, %zu, "
+                      "%zu) of region\n",
+                      i, sx, sy, sz);
             log_error("0x%02x != 0x%02x\n", device[d_idx], verify[src][s_idx]);
 #if 0
             // Uncomment this section to print buffers.
@@ -369,7 +371,7 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
         max_mem_alloc_dim = max_mem_alloc_size;
     }
 
-    log_info("Using maximum dimension      = %lu.\n", max_mem_alloc_dim);
+    log_info("Using maximum dimension      = %zu.\n", max_mem_alloc_dim);
 
     // Create pairs of cl buffers and host buffers on which operations will be mirrored.
     log_info("Creating %u pairs of random sized host and cl buffers.\n", TotalImages);
@@ -392,7 +394,8 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
 
         // Check to see if adequately sized buffers were found.
         if (tries >= max_tries) {
-            log_error("Error: Could not find random buffer sized less than %llu bytes in %lu tries.\n",
+            log_error("Error: Could not find random buffer sized less than "
+                      "%llu bytes in %zu tries.\n",
                       max_mem_alloc_size, max_tries);
             return -1;
         }
@@ -401,10 +404,11 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
         max_size = (size_bytes > max_size) ? size_bytes : max_size;
         total_bytes += size_bytes;
 
-        log_info("Buffer[%u] is (%lu,%lu,%lu) = %lu MB (truncated)\n",i,width[i],height[i],depth[i],(size_bytes)/1048576);
+        log_info("Buffer[%u] is (%zu,%zu,%zu) = %zu MB (truncated)\n", i,
+                 width[i], height[i], depth[i], (size_bytes) / 1048576);
     }
 
-    log_info( "Total size: %lu MB (truncated)\n", total_bytes/1048576 );
+    log_info("Total size: %zu MB (truncated)\n", total_bytes / 1048576);
 
     // Allocate a temporary buffer for read and write operations.
     tmp_buffer_size  = max_size;
@@ -491,32 +495,32 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
 
         switch (operation) {
             case 0:
-                log_info("%lu Copy %lu offset (%lu,%lu,%lu) -> %lu offset (%lu,%lu,%lu) region (%lux%lux%lu = %lu)\n",
-                         iter,
-                         src, soffset[0], soffset[1], soffset[2],
-                         dst, doffset[0], doffset[1], doffset[2],
-                         sregion[0], sregion[1], sregion[2],
-                         sregion[0]*sregion[1]*sregion[2]);
+                log_info("%zu Copy %zu offset (%zu,%zu,%zu) -> %zu offset "
+                         "(%zu,%zu,%zu) region (%zux%zux%zu = %zu)\n",
+                         iter, src, soffset[0], soffset[1], soffset[2], dst,
+                         doffset[0], doffset[1], doffset[2], sregion[0],
+                         sregion[1], sregion[2],
+                         sregion[0] * sregion[1] * sregion[2]);
                 if ((err = copy_region(src, soffset, sregion, dst, doffset, dregion)))
                     return err;
                 break;
             case 1:
-                log_info("%lu Read %lu offset (%lu,%lu,%lu) -> %lu offset (%lu,%lu,%lu) region (%lux%lux%lu = %lu)\n",
-                         iter,
-                         src, soffset[0], soffset[1], soffset[2],
-                         dst, doffset[0], doffset[1], doffset[2],
-                         sregion[0], sregion[1], sregion[2],
-                         sregion[0]*sregion[1]*sregion[2]);
+                log_info("%zu Read %zu offset (%zu,%zu,%zu) -> %zu offset "
+                         "(%zu,%zu,%zu) region (%zux%zux%zu = %zu)\n",
+                         iter, src, soffset[0], soffset[1], soffset[2], dst,
+                         doffset[0], doffset[1], doffset[2], sregion[0],
+                         sregion[1], sregion[2],
+                         sregion[0] * sregion[1] * sregion[2]);
                 if ((err = read_verify_region(src, soffset, sregion, dst, doffset, dregion)))
                     return err;
                 break;
             case 2:
-                log_info("%lu Write %lu offset (%lu,%lu,%lu) -> %lu offset (%lu,%lu,%lu) region (%lux%lux%lu = %lu)\n",
-                         iter,
-                         src, soffset[0], soffset[1], soffset[2],
-                         dst, doffset[0], doffset[1], doffset[2],
-                         sregion[0], sregion[1], sregion[2],
-                         sregion[0]*sregion[1]*sregion[2]);
+                log_info("%zu Write %zu offset (%zu,%zu,%zu) -> %zu offset "
+                         "(%zu,%zu,%zu) region (%zux%zux%zu = %zu)\n",
+                         iter, src, soffset[0], soffset[1], soffset[2], dst,
+                         doffset[0], doffset[1], doffset[2], sregion[0],
+                         sregion[1], sregion[2],
+                         sregion[0] * sregion[1] * sregion[2]);
                 if ((err = write_region(src, soffset, sregion, dst, doffset, dregion)))
                     return err;
                 break;
@@ -526,11 +530,11 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
         // Uncomment this section to verify each operation.
         // If commented out, verification won't occur until the end of the
         // test, and it will not be possible to determine which operation failed.
-        log_info("Verify src %lu offset (%u,%u,%u) region (%lux%lux%lu)\n", src, 0, 0, 0, width[src], height[src], depth[src]);
+        log_info("Verify src %zu offset (%u,%u,%u) region (%zux%zux%zu)\n", src, 0, 0, 0, width[src], height[src], depth[src]);
         if (err = map_verify_region(src))
             return err;
 
-        log_info("Verify dst %lu offset (%u,%u,%u) region (%lux%lux%lu)\n", dst, 0, 0, 0, width[dst], height[dst], depth[dst]);
+        log_info("Verify dst %zu offset (%u,%u,%u) region (%zux%zux%zu)\n", dst, 0, 0, 0, width[dst], height[dst], depth[dst]);
         if (err = map_verify_region(dst))
             return err;
 
@@ -540,7 +544,8 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
     } // end main for loop.
 
     for (unsigned i=0;i<TotalImages;++i) {
-        log_info("Verify %u offset (%u,%u,%u) region (%lux%lux%lu)\n", i, 0, 0, 0, width[i], height[i], depth[i]);
+        log_info("Verify %u offset (%u,%u,%u) region (%zux%zux%zu)\n", i, 0, 0,
+                 0, width[i], height[i], depth[i]);
         if ((err = map_verify_region(i)))
             return err;
     }

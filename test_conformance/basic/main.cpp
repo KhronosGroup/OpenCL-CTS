@@ -177,7 +177,7 @@ test_status InitCL(cl_device_id device)
         }
         else
         {
-            log_error("Error while acquiring half rounding mode");
+            log_error("Error while acquiring half rounding mode\n");
             return TEST_FAIL;
         }
     }
