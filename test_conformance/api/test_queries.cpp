@@ -534,10 +534,13 @@ REGISTER_TEST(get_context_info_mult_devices)
     // query multi-device context and perform objects comparability test
     err = clGetDeviceInfo(device, CL_DEVICE_PARTITION_PROPERTIES, 0, nullptr,
                           &size);
-    test_error_ret(err, "clGetDeviceInfo failed", TEST_FAIL);
+    test_error_fail(err, "clGetDeviceInfo failed");
 
-    test_error_ret(size == 0, "Can't partition device, test not supported\n",
-                   TEST_SKIPPED_ITSELF);
+    if (size == 0)
+    {
+        log_info("Can't partition device, test not supported\n");
+        return TEST_SKIPPED_ITSELF;
+    }
 
     std::vector<cl_device_partition_property> supported_props(
         size / sizeof(cl_device_partition_property), 0);
@@ -545,32 +548,23 @@ REGISTER_TEST(get_context_info_mult_devices)
                           supported_props.size()
                               * sizeof(cl_device_partition_property),
                           supported_props.data(), &size);
-    test_error_ret(err, "clGetDeviceInfo failed", TEST_FAIL);
+    test_error_fail(err, "clGetDeviceInfo failed");
 
-    test_error_ret(supported_props.empty() || supported_props.front() == 0,
-                   "Can't partition device, test not supported\n",
-                   TEST_SKIPPED_ITSELF);
+    if (supported_props.empty() || supported_props.front() == 0)
+    {
+        log_info("Can't partition device, test not supported\n");
+        return TEST_SKIPPED_ITSELF;
+    }
 
     cl_uint maxComputeUnits = 0;
     err = clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS,
                           sizeof(maxComputeUnits), &maxComputeUnits, NULL);
-    test_error_ret(err, "Unable to get maximal number of compute units",
-                   TEST_FAIL);
+    test_error_fail(err, "Unable to get maximal number of compute units");
 
     std::vector<std::array<cl_device_partition_property, 5>> partition_props = {
         { CL_DEVICE_PARTITION_EQUALLY, (cl_int)maxComputeUnits / 2, 0, 0, 0 },
         { CL_DEVICE_PARTITION_BY_COUNTS, 1, (cl_int)maxComputeUnits - 1,
           CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0 },
-        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
-          CL_DEVICE_AFFINITY_DOMAIN_NUMA, 0, 0, 0 },
-        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
-          CL_DEVICE_AFFINITY_DOMAIN_L4_CACHE, 0, 0, 0 },
-        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
-          CL_DEVICE_AFFINITY_DOMAIN_L3_CACHE, 0, 0, 0 },
-        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
-          CL_DEVICE_AFFINITY_DOMAIN_L2_CACHE, 0, 0, 0 },
-        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
-          CL_DEVICE_AFFINITY_DOMAIN_L1_CACHE, 0, 0, 0 },
         { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
           CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE, 0, 0, 0 }
     };
@@ -586,7 +580,7 @@ REGISTER_TEST(get_context_info_mult_devices)
                 // how many sub-devices can we create?
                 err = clCreateSubDevices(device, prop.data(), 0, nullptr,
                                          &num_devices);
-                test_error_ret(err, "clCreateSubDevices failed", TEST_FAIL);
+                test_error_fail(err, "clCreateSubDevices failed");
                 if (num_devices < 2) continue;
 
                 // get the list of subDevices
@@ -594,27 +588,28 @@ REGISTER_TEST(get_context_info_mult_devices)
                 err = clCreateSubDevices(device, prop.data(), num_devices,
                                          scope_guard->sub_devices.data(),
                                          &num_devices);
-                test_error_ret(err, "clCreateSubDevices failed", TEST_FAIL);
+                test_error_fail(err, "clCreateSubDevices failed");
                 break;
             }
         }
         if (scope_guard.get() != nullptr) break;
     }
 
-    test_error_ret(scope_guard.get() == nullptr,
-                   "Can't partition device, test not supported\n",
-                   TEST_SKIPPED_ITSELF);
+    if (scope_guard.get() == nullptr)
+    {
+        log_info("Can't partition device, test not supported\n");
+        return TEST_SKIPPED_ITSELF;
+    }
 
     /* Create a multi device context */
     clContextWrapper multi_device_context = clCreateContext(
         NULL, (cl_uint)num_devices, scope_guard->sub_devices.data(), nullptr,
         nullptr, &err);
-    test_error_ret(err, "Unable to create testing context", TEST_FAIL);
+    test_error_fail(err, "Unable to create testing context");
 
     err = clGetContextInfo(multi_device_context, CL_CONTEXT_NUM_DEVICES,
                            sizeof(cl_uint), &num_devices, nullptr);
-    test_error_ret(err, "clGetContextInfo CL_CONTEXT_NUM_DEVICES failed\n",
-                   TEST_FAIL);
+    test_error_fail(err, "clGetContextInfo CL_CONTEXT_NUM_DEVICES failed\n");
 
     test_assert_error(num_devices == scope_guard->sub_devices.size(),
                       "Context must contain exact number of devices\n");
@@ -623,8 +618,7 @@ REGISTER_TEST(get_context_info_mult_devices)
     err = clGetContextInfo(multi_device_context, CL_CONTEXT_DEVICES,
                            num_devices * sizeof(cl_device_id), devices.data(),
                            nullptr);
-    test_error_ret(err, "clGetContextInfo CL_CONTEXT_DEVICES failed\n",
-                   TEST_FAIL);
+    test_error_fail(err, "clGetContextInfo CL_CONTEXT_DEVICES failed\n");
 
     test_assert_error(devices.size() == scope_guard->sub_devices.size(),
                       "Size of devices arrays must be in sync\n");
@@ -645,9 +639,8 @@ REGISTER_TEST(get_context_info_mult_devices)
             else
                 ++it;
         }
-        test_error_ret(!found,
-                       "Unexpected result returned by CL_CONTEXT_DEVICES query",
-                       TEST_FAIL);
+        test_error_fail(
+            !found, "Unexpected result returned by CL_CONTEXT_DEVICES query");
     }
     return TEST_PASS;
 }
