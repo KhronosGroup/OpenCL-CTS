@@ -632,8 +632,9 @@ REGISTER_TEST(get_context_info_mult_devices)
             if (*it == devices[i])
             {
                 found = true;
-                scope_guard->sub_devices.erase(
-                    it); // in case devices contain duplicates
+                if (scope_guard->erase(it)
+                    != CL_SUCCESS) // in case devices contain duplicates
+                    return TEST_FAIL;
                 break;
             }
             else
