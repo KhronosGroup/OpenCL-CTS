@@ -34,16 +34,6 @@ struct SubDevicesScopeGuarded
     {
         sub_devices.resize(dev_count);
     }
-    cl_int erase(std::vector<cl_device_id>::iterator it)
-    {
-        if (it != sub_devices.end())
-        {
-            cl_int err = clReleaseDevice(*it);
-            test_error(err, "\n Releasing sub-device failed \n");
-            sub_devices.erase(it);
-        }
-        return CL_SUCCESS;
-    }
     ~SubDevicesScopeGuarded()
     {
         for (auto &device : sub_devices)

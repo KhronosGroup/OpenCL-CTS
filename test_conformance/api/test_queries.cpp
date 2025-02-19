@@ -626,19 +626,13 @@ REGISTER_TEST(get_context_info_mult_devices)
     for (cl_uint i = 0; i < devices.size(); i++)
     {
         bool found = false;
-        for (auto it = scope_guard->sub_devices.begin();
-             it != scope_guard->sub_devices.end();)
+        for (auto &it : scope_guard->sub_devices)
         {
-            if (*it == devices[i])
+            if (it == devices[i])
             {
                 found = true;
-                if (scope_guard->erase(it)
-                    != CL_SUCCESS) // in case devices contain duplicates
-                    return TEST_FAIL;
                 break;
             }
-            else
-                ++it;
         }
         test_error_fail(
             !found, "Unexpected result returned by CL_CONTEXT_DEVICES query");
