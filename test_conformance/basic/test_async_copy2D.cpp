@@ -120,7 +120,7 @@ int test_copy2D(const cl_device_id deviceID, const cl_context context,
 {
     int error;
 
-    log_info("Testing %d byte element with srcMargin = %d, dstMargin = %d\n",
+    log_info("Testing %zu byte element with srcMargin = %d, dstMargin = %d\n",
              elementSize, srcMargin, dstMargin);
 
     cl_long max_local_mem_size;
@@ -235,8 +235,8 @@ int test_copy2D(const cl_device_id deviceID, const cl_context context,
 
     if ((localBufferSize / 4) > max_work_group_size)
     {
-        log_info("Skipping due to resource requirements local:%db  "
-                 "max_work_group_size:%d\n",
+        log_info("Skipping due to resource requirements local:%zub  "
+                 "max_work_group_size:%zu\n",
                  localBufferSize, max_work_group_size);
         return 0;
     }

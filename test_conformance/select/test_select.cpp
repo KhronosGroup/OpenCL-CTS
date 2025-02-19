@@ -261,14 +261,18 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr,
     switch( vec_len )
     {
         case 1:
-            strncpy(stypename, type_name[srctype], sizeof(stypename));
-            strncpy(ctypename, type_name[cmptype], sizeof(ctypename));
+            strncpy(stypename, type_name[srctype], sizeof(stypename) - 1);
+            stypename[sizeof(stypename) - 1] = '\0';
+            strncpy(ctypename, type_name[cmptype], sizeof(ctypename) - 1);
+            ctypename[sizeof(ctypename) - 1] = '\0';
             snprintf(testname, sizeof(testname), "select_%s_%s", stypename, ctypename );
             log_info("Building %s(%s, %s, %s)\n", testname, stypename, stypename, ctypename);
             break;
         case 3:
-            strncpy(stypename, type_name[srctype], sizeof(stypename));
-            strncpy(ctypename, type_name[cmptype], sizeof(ctypename));
+            strncpy(stypename, type_name[srctype], sizeof(stypename) - 1);
+            stypename[sizeof(stypename) - 1] = '\0';
+            strncpy(ctypename, type_name[cmptype], sizeof(ctypename) - 1);
+            ctypename[sizeof(ctypename) - 1] = '\0';
             snprintf(testname, sizeof(testname), "select_%s3_%s3", stypename, ctypename );
             log_info("Building %s(%s3, %s3, %s3)\n", testname, stypename, stypename, ctypename);
             break;

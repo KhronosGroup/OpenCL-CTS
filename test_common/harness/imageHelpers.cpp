@@ -2415,6 +2415,12 @@ int debug_find_vector_in_image(void *imagePtr, image_descriptor *imageInfo,
                 (imageInfo->height >> lod) ? (imageInfo->height >> lod) : 1;
             depth = (imageInfo->depth >> lod) ? (imageInfo->depth >> lod) : 1;
             break;
+        default:
+            log_error("ERROR: Invalid imageInfo->type = %d\n", imageInfo->type);
+            width = 0;
+            depth = 0;
+            height = 0;
+            break;
     }
 
     row_pitch = width * get_pixel_size(imageInfo->format);
@@ -3661,6 +3667,11 @@ void copy_image_data(image_descriptor *srcImageInfo,
                     ? (srcImageInfo->height >> src_lod)
                     : 1;
                 break;
+            default:
+                log_error("ERROR: Invalid srcImageInfo->type = %d\n",
+                          srcImageInfo->type);
+                src_lod = 0;
+                break;
         }
         src_mip_level_offset = compute_mip_level_offset(srcImageInfo, src_lod);
         src_row_pitch_lod =
@@ -3706,6 +3717,11 @@ void copy_image_data(image_descriptor *srcImageInfo,
                 dst_height_lod = (dstImageInfo->height >> dst_lod)
                     ? (dstImageInfo->height >> dst_lod)
                     : 1;
+                break;
+            default:
+                log_error("ERROR: Invalid dstImageInfo->num_mip_levels = %d\n",
+                          dstImageInfo->num_mip_levels);
+                dst_lod = 0;
                 break;
         }
         dst_mip_level_offset = compute_mip_level_offset(dstImageInfo, dst_lod);

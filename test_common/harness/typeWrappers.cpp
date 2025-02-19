@@ -348,7 +348,7 @@ cl_int clProtectedImage::Create(cl_context context,
                                 const cl_image_format *fmt, size_t width,
                                 size_t height, size_t depth, size_t arraySize)
 {
-    cl_int error;
+    cl_int error = 0;
 #if defined(__APPLE__)
     int protect_pages = 1;
     cl_device_id devices[16];

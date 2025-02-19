@@ -30,6 +30,7 @@ test_definition test_list[] = {
     ADD_TEST(info_context),
     ADD_TEST(basic_profiling),
     ADD_TEST(simultaneous_profiling),
+    ADD_TEST(substitute_queue_profiling),
     ADD_TEST(regular_wait_for_command_buffer),
     ADD_TEST(command_buffer_wait_for_command_buffer),
     ADD_TEST(command_buffer_wait_for_sec_command_buffer),
@@ -44,6 +45,8 @@ test_definition test_list[] = {
     ADD_TEST(queue_substitution),
     ADD_TEST(properties_queue_substitution),
     ADD_TEST(simultaneous_queue_substitution),
+    ADD_TEST(queue_substitute_in_order),
+    ADD_TEST(queue_substitute_out_of_order),
     ADD_TEST(fill_image),
     ADD_TEST(fill_buffer),
     ADD_TEST(fill_svm_buffer),
@@ -93,9 +96,6 @@ test_definition test_list[] = {
     ADD_TEST(negative_create_command_buffer_null_queues),
     ADD_TEST(negative_create_command_buffer_repeated_properties),
     ADD_TEST(negative_create_command_buffer_not_supported_properties),
-    ADD_TEST(negative_create_command_buffer_queue_without_min_properties),
-    ADD_TEST(
-        negative_create_command_buffer_device_does_not_support_out_of_order_queue),
     ADD_TEST(negative_command_ndrange_queue_not_null),
     ADD_TEST(negative_command_ndrange_kernel_with_different_context),
     ADD_TEST(negative_command_ndrange_kernel_sync_points_null_or_num_zero),
@@ -155,10 +155,12 @@ test_definition test_list[] = {
     ADD_TEST(
         negative_enqueue_command_buffer_num_queues_not_zero_different_while_buffer_creation),
     ADD_TEST(negative_enqueue_command_buffer_not_valid_queue_in_queues),
-    ADD_TEST(negative_enqueue_queue_not_compatible),
     ADD_TEST(negative_enqueue_queue_with_different_context),
     ADD_TEST(negative_enqueue_command_buffer_different_context_than_event),
     ADD_TEST(negative_enqueue_event_wait_list_null_or_events_null),
+    ADD_TEST(negative_enqueue_queue_without_reqd_properties),
+    ADD_TEST(negative_enqueue_with_unsupported_queue_property),
+    ADD_TEST(negative_enqueue_inconsistent_device),
 };
 
 int main(int argc, const char *argv[])
