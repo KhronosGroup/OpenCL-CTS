@@ -46,10 +46,10 @@ char load_str[128] = { 0 };
 extern cl_half_rounding_mode halfRoundingMode;
 
 // clang-format off
-static const char *store_pattern= "results[ tid ] = tmp;\n";
-static const char *store_patternV3 = "results[3*tid] = tmp.s0; results[3*tid+1] = tmp.s1; results[3*tid+2] = tmp.s2;\n";
-static const char *load_pattern = "sSharedStorage[ i ] = src[ i ];\n";
-static const char *load_patternV3 = "sSharedStorage[3*i] = src[ 3*i]; sSharedStorage[3*i+1] = src[3*i+1]; sSharedStorage[3*i+2] = src[3*i+2];\n";
+static const char *const store_pattern= "results[ tid ] = tmp;\n";
+static const char *const store_patternV3 = "results[3*tid] = tmp.s0; results[3*tid+1] = tmp.s1; results[3*tid+2] = tmp.s2;\n";
+static const char *const load_pattern = "sSharedStorage[ i ] = src[ i ];\n";
+static const char *const load_patternV3 = "sSharedStorage[3*i] = src[ 3*i]; sSharedStorage[3*i+1] = src[3*i+1]; sSharedStorage[3*i+2] = src[3*i+2];\n";
 static const char *kernel_pattern[] = {
 pragma_str,
 "#define STYPE %s\n"
