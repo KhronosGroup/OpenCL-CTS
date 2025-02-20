@@ -63,8 +63,13 @@ public:
         m_dpy = glXGetCurrentDisplay();
 
         cl_context_properties properties[] = {
-            CL_GL_CONTEXT_KHR, (cl_context_properties)m_context,
-            CL_GLX_DISPLAY_KHR, (cl_context_properties)m_dpy, 0
+            CL_CONTEXT_PLATFORM,
+            (cl_context_properties)m_platform,
+            CL_GL_CONTEXT_KHR,
+            (cl_context_properties)m_context,
+            CL_GLX_DISPLAY_KHR,
+            (cl_context_properties)m_dpy,
+            0
         };
         cl_int status;
 
@@ -77,30 +82,19 @@ public:
         return clCreateContext(properties, 1, m_devices, NULL, NULL, &status);
     }
 
-    int GetContextProps(std::vector<cl_context_properties> &props) override
-    {
-        if (m_context == 0 || m_dpy == nullptr) return -1;
-        props.push_back(CL_GL_CONTEXT_KHR);
-        props.push_back((cl_context_properties)m_context);
-        props.push_back(CL_GLX_DISPLAY_KHR);
-        props.push_back((cl_context_properties)m_dpy);
-        props.push_back(0);
-        return 0;
-    }
-
     int SupportsCLGLInterop(cl_device_type device_type) override
     {
         int found_valid_device = 0;
-        cl_platform_id platform;
         cl_device_id devices[64];
         cl_uint num_of_devices;
         int error;
-        error = clGetPlatformIDs(1, &platform, NULL);
+        error = clGetPlatformIDs(1, &m_platform, NULL);
         if (error) {
             print_error(error, "clGetPlatformIDs failed");
             return -1;
         }
-        error = clGetDeviceIDs(platform, device_type, 64, devices, &num_of_devices);
+        error = clGetDeviceIDs(m_platform, device_type, 64, devices,
+                               &num_of_devices);
         // If this platform doesn't have any of the requested device_type (namely GPUs) then return 0
         if (error == CL_DEVICE_NOT_FOUND)
           return 0;

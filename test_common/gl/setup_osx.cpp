@@ -28,6 +28,7 @@ public:
         mIsGlutInit = false;
         mCGLContext = NULL;
         mShareGroup = NULL;
+        mPlatform = NULL;
     }
 
     int Init(int *argc, char **argv, int use_opengl_32) override
@@ -88,6 +89,7 @@ public:
 
       mShareGroup = CGLGetShareGroup(mCGLContext);
       cl_context_properties properties[] = {
+          CL_CONTEXT_PLATFORM, (cl_context_properties)mPlatform,
           CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
           (cl_context_properties)mShareGroup, 0
       };
@@ -115,25 +117,24 @@ public:
       return context;
     }
 
-    int GetContextProps(std::vector<cl_context_properties> &props) override
-    {
-        if (mShareGroup == NULL) return -1;
-        props.push_back(CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE);
-        props.push_back((cl_context_properties)mShareGroup);
-        props.push_back(0);
-        return 0;
-    }
-
     int SupportsCLGLInterop(cl_device_type device_type) override
     {
       int found_valid_device = 0;
       cl_device_id devices[64];
       cl_uint num_of_devices;
       int error;
-      error = clGetDeviceIDs(NULL, device_type, 64, devices, &num_of_devices);
+      error = clGetPlatformIDs(1, &mPlatform, NULL);
+      if (error)
+      {
+          print_error(error, "clGetPlatformIDs failed");
+          return 0;
+      }
+
+      error =
+          clGetDeviceIDs(mPlatform, device_type, 64, devices, &num_of_devices);
       if (error) {
         print_error(error, "clGetDeviceIDs failed");
-        return -1;
+        return 0;
       }
 
       for (int i=0; i<(int)num_of_devices; i++) {
@@ -151,6 +152,7 @@ public:
 
     CGLContextObj mCGLContext;
     CGLShareGroupObj mShareGroup;
+    cl_platform_id mPlatform;
 };
 
 GLEnvironment * GLEnvironment::Instance( void )

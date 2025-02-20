@@ -29,7 +29,7 @@ struct FindDeviceFunctor
     cl_int init()
     {
         cl_uint num_platforms = 0;
-        cl_int error = clGetPlatformIDs(16, nullptr, &num_platforms);
+        cl_int error = clGetPlatformIDs(0, nullptr, &num_platforms);
         test_error(error, "clGetPlatformIDs failed");
 
         platforms.resize(num_platforms);
@@ -41,7 +41,7 @@ struct FindDeviceFunctor
         return CL_SUCCESS;
     }
 
-    cl_int find(const cl_device_id &id)
+    bool find(const cl_device_id id)
     {
         cl_uint num_devices = 0;
         for (size_t p = 0; p < platforms.size(); p++)
@@ -55,11 +55,10 @@ struct FindDeviceFunctor
                                    num_devices, devices.data(), nullptr);
             test_error(error, "clGetDeviceIDs failed");
 
-            // try to find invalid device
             for (auto did : devices)
-                if (did == id) return 0;
+                if (did == id) return false;
         }
-        return -1;
+        return true;
     }
     std::vector<cl_platform_id> platforms;
 };
@@ -75,35 +74,32 @@ int test_queries(cl_device_id device, cl_context context,
                                    sizeof(cl_platform_id), &platform, NULL);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
 
-    // Create the environment for the test.
-    GLEnvironment *glEnv = GLEnvironment::Instance();
+    size_t returned_size = 0;
+    error = clGetContextInfo(context, CL_CONTEXT_PROPERTIES, 0, nullptr,
+                             &returned_size);
+    test_error(error, "clGetContextInfo failed");
 
-    // get GL environment props
-    std::vector<cl_context_properties> props;
-    props.push_back(CL_CONTEXT_PLATFORM);
-    props.push_back((cl_context_properties)platform);
+    std::vector<cl_context_properties> props(
+        returned_size / sizeof(cl_context_properties), 0);
 
-    if (glEnv->GetContextProps(props))
-    {
-        log_error("GetContextProps failed\n");
-        return TEST_FAIL;
-    }
+    error = clGetContextInfo(context, CL_CONTEXT_PROPERTIES,
+                             sizeof(cl_context_properties) * props.size(),
+                             props.data(), nullptr);
+    test_error(error, "clGetContextInfo failed");
 
     // get GL context info function pointer
     size_t dev_size = 0;
-    clGetGLContextInfoKHR_fn GetGLContextInfo =
+    clGetGLContextInfoKHR_fn clGetGLContextInfoKHR =
         (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddressForPlatform(
             platform, "clGetGLContextInfoKHR");
-    if (GetGLContextInfo == NULL)
-    {
-        log_error("ERROR: clGetGLContextInfoKHR failed! (%s:%d)\n", __FILE__,
-                  __LINE__);
-        return TEST_FAIL;
-    }
+
+    test_assert_error(clGetGLContextInfoKHR != NULL,
+                      "unable to get the function pointer for "
+                      "clGetGLContextInfoKHR\n");
 
     // get the size of all GL interop capable devices
-    error = GetGLContextInfo(props.data(), CL_DEVICES_FOR_GL_CONTEXT_KHR, 0,
-                             nullptr, &dev_size);
+    error = clGetGLContextInfoKHR(props.data(), CL_DEVICES_FOR_GL_CONTEXT_KHR,
+                                  0, nullptr, &dev_size);
     test_error(error,
                "clGetGLContextInfoKHR(CL_DEVICES_FOR_GL_CONTEXT_KHR) failed");
 
@@ -113,9 +109,9 @@ int test_queries(cl_device_id device, cl_context context,
 
     // get all GL interop capable devices
     std::vector<cl_device_id> devices(dev_size, 0);
-    error = GetGLContextInfo(props.data(), CL_DEVICES_FOR_GL_CONTEXT_KHR,
-                             devices.size() * sizeof(cl_device_id),
-                             devices.data(), &dev_size);
+    error = clGetGLContextInfoKHR(props.data(), CL_DEVICES_FOR_GL_CONTEXT_KHR,
+                                  devices.size() * sizeof(cl_device_id),
+                                  devices.data(), &dev_size);
     test_error(error,
                "clGetGLContextInfoKHR(CL_DEVICES_FOR_GL_CONTEXT_KHR) failed");
     if (devices.size() != dev_size / sizeof(cl_device_id))
@@ -130,9 +126,9 @@ int test_queries(cl_device_id device, cl_context context,
         if (fdf.find(did) != 0) return TEST_FAIL;
 
     // get current device associated with GL environment
-    error = GetGLContextInfo(props.data(), CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR,
-                             devices.size() * sizeof(cl_device_id),
-                             devices.data(), &dev_size);
+    error = clGetGLContextInfoKHR(
+        props.data(), CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR,
+        devices.size() * sizeof(cl_device_id), devices.data(), &dev_size);
     test_error(
         error,
         "clGetGLContextInfoKHR(CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR) failed");

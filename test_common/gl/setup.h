@@ -40,8 +40,6 @@ class GLEnvironment
         virtual int Init(int *argc, char **argv, int use_opengl_32) = 0;
         virtual cl_context CreateCLContext( void ) = 0;
         virtual int SupportsCLGLInterop( cl_device_type device_type) = 0;
-        virtual int
-        GetContextProps(std::vector<cl_context_properties> &props) = 0;
 
         static GLEnvironment *Instance(void);
 };

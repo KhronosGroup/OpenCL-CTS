@@ -164,17 +164,6 @@ public:
         return clCreateContext(properties, 1, &ctxDevice, NULL, NULL, &status);
     }
 
-    int GetContextProps(std::vector<cl_context_properties> &props) override
-    {
-        if (m_hGLRC == 0 || m_hDC == 0) return -1;
-        props.push_back(CL_GL_CONTEXT_KHR);
-        props.push_back((cl_context_properties)m_hGLRC);
-        props.push_back(CL_WGL_HDC_KHR);
-        props.push_back((cl_context_properties)m_hDC);
-        props.push_back(0);
-        return 0;
-    }
-
     int SupportsCLGLInterop(cl_device_type device_type) override
     {
         cl_device_id devices[MAX_DEVICES];
