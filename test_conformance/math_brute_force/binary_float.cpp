@@ -450,10 +450,10 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 {
                     // For fmin/fmax, when either argument is a signaling NaN, a
                     // quiet NaN return is also acceptable, which is respect to
-                    // C99, where signaling NaNs are supposed to get the same IEEE
-                    // treatment.
-                    if (fminfmax_test && IsFloatQNaN(q[j]) &&
-                        (IsFloatSNaN(p[j]) || IsFloatSNaN(p2[j])))
+                    // C99, where signaling NaNs are supposed to get the same
+                    // IEEE treatment.
+                    if (fminfmax_test && IsFloatQNaN(q[j])
+                        && (IsFloatSNaN(p[j]) || IsFloatSNaN(p2[j])))
                         continue;
 
                     float test = ((float *)q)[j];

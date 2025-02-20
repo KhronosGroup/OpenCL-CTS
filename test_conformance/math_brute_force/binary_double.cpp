@@ -410,8 +410,8 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 // quiet NaN return is also acceptable, which is respect to
                 // C99, where signaling NaNs are supposed to get the same IEEE
                 // treatment.
-                if (fminfmax_test && IsDoubleQNaN(q[j]) &&
-                    (IsDoubleSNaN(p[j]) || IsDoubleSNaN(p2[j])))
+                if (fminfmax_test && IsDoubleQNaN(q[j])
+                    && (IsDoubleSNaN(p[j]) || IsDoubleSNaN(p2[j])))
                     continue;
 
                 cl_double test = ((cl_double *)q)[j];

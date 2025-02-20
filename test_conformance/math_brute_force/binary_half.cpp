@@ -325,8 +325,8 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                 // quiet NaN return is also acceptable, which is respect to
                 // C99, where signaling NaNs are supposed to get the same IEEE
                 // treatment.
-                if (fminfmax_test && IsHalfQNaN(q[j]) &&
-                    (IsHalfSNaN(p[j]) || IsHalfSNaN(p2[j])))
+                if (fminfmax_test && IsHalfQNaN(q[j])
+                    && (IsHalfSNaN(p[j]) || IsHalfSNaN(p2[j])))
                     continue;
 
                 double correct;
