@@ -112,6 +112,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     cl_half *r;
     std::vector<float> s(0), s2(0);
     cl_uint j = 0;
+    int fminfmax_test = !strcmp(name, "fmin") || !strcmp(name, "fmax");
 
     RoundingMode oldRoundMode;
     cl_int copysign_test = 0;
@@ -320,6 +321,14 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
             // If we aren't getting the correctly rounded result
             if (t[j] != q[j])
             {
+                // For fmin/fmax, when either argument is a signaling NaN, a
+                // quiet NaN return is also acceptable, which is respect to
+                // C99, where signaling NaNs are supposed to get the same IEEE
+                // treatment.
+                if (fminfmax_test && IsHalfQNaN(q[j]) &&
+                    (IsHalfSNaN(p[j]) || IsHalfSNaN(p2[j])))
+                    continue;
+
                 double correct;
                 if (isNextafter)
                     correct = reference_nextafterh(s[j], s2[j]);

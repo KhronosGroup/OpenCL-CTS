@@ -220,6 +220,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     cl_double *s;
     cl_double *s2;
     cl_int copysign_test = 0;
+    int fminfmax_test = !strcmp(name, "fmin") || !strcmp(name, "fmax");
 
     Force64BitFPUPrecision();
 
@@ -405,6 +406,14 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             // If we aren't getting the correctly rounded result
             if (t[j] != q[j])
             {
+                // For fmin/fmax, when either argument is a signaling NaN, a
+                // quiet NaN return is also acceptable, which is respect to
+                // C99, where signaling NaNs are supposed to get the same IEEE
+                // treatment.
+                if (fminfmax_test && IsDoubleQNaN(q[j]) &&
+                    (IsDoubleSNaN(p[j]) || IsDoubleSNaN(p2[j])))
+                    continue;
+
                 cl_double test = ((cl_double *)q)[j];
                 long double correct = ref_func(s[j], s2[j]);
                 float err = Bruteforce_Ulp_Error_Double(test, correct);
