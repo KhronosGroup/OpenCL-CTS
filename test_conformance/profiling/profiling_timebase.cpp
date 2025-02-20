@@ -53,7 +53,7 @@ REGISTER_TEST(profiling_timebase)
     size_t gWorkSize[3] = { 1, 0, 0 };
     size_t* global_work_size = gWorkSize;
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, NULL,
-+                                1, &uEvent, &kEvent);
++                                +1, &uEvent, &kEvent);
     test_error(err, "clEnqueueNDRangeKernel failed");
 
     cl_ulong deviceTimeAfterQueue;
