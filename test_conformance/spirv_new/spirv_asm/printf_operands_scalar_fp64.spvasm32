@@ -1,0 +1,93 @@
+; kernel void printf_operands_scalar_fp64(double d)
+; {
+;     printf("a = %.1a\n", d);
+;     printf("A = %.1A\n", d);
+;     printf("e = %.1e\n", d);
+;     printf("E = %.1E\n", d);
+;     printf("f = %.1f\n", d);
+;     printf("F = %.1F\n", d);
+;     printf("g = %.1g\n", d);
+;     printf("G = %.1G\n", d);
+; }
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Float64
+               OpCapability Int8
+        %clext = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %test "printf_operands_scalar_fp64"
+      %uchar = OpTypeInt 8 0
+       %uint = OpTypeInt 32 0
+     %uint_8 = OpConstant %uint 8
+    %uint_10 = OpConstant %uint 10
+    %uint_12 = OpConstant %uint 12
+  %uchar_nul = OpConstant %uchar 0
+   %uchar_nl = OpConstant %uchar 10
+   %uchar_sp = OpConstant %uchar 32
+  %uchar_pct = OpConstant %uchar 37
+  %uchar_dot = OpConstant %uchar 46
+    %uchar_1 = OpConstant %uchar 49
+   %uchar_eq = OpConstant %uchar 61
+    %uchar_A = OpConstant %uchar 65
+    %uchar_E = OpConstant %uchar 69
+    %uchar_F = OpConstant %uchar 70
+    %uchar_G = OpConstant %uchar 71
+    %uchar_X = OpConstant %uchar 88
+    %uchar_a = OpConstant %uchar 97
+    %uchar_d = OpConstant %uchar 100
+    %uchar_e = OpConstant %uchar 101
+    %uchar_f = OpConstant %uchar 102
+    %uchar_g = OpConstant %uchar 103
+    %uchar_h = OpConstant %uchar 104
+    %uchar_i = OpConstant %uchar 105
+    %uchar_o = OpConstant %uchar 111
+    %uchar_u = OpConstant %uchar 117
+    %uchar_x = OpConstant %uchar 120
+  %string_10 = OpTypeArray %uchar %uint_10
+%cptr_string_10 = OpTypePointer UniformConstant %string_10
+       %void = OpTypeVoid
+     %double = OpTypeFloat 64
+ %kernel_sig = OpTypeFunction %void %double
+  %cptr_char = OpTypePointer UniformConstant %uchar
+
+    %array_a = OpConstantComposite %string_10 %uchar_a %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_dot %uchar_1 %uchar_a %uchar_nl %uchar_nul ; "a = %.1a\n"
+   %string_a = OpVariable %cptr_string_10 UniformConstant %array_a
+    %array_A = OpConstantComposite %string_10 %uchar_A %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_dot %uchar_1 %uchar_A %uchar_nl %uchar_nul ; "A = %.1A\n"
+   %string_A = OpVariable %cptr_string_10 UniformConstant %array_A
+    %array_e = OpConstantComposite %string_10 %uchar_e %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_dot %uchar_1 %uchar_e %uchar_nl %uchar_nul ; "e = %.1e\n"
+   %string_e = OpVariable %cptr_string_10 UniformConstant %array_e
+    %array_E = OpConstantComposite %string_10 %uchar_E %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_dot %uchar_1 %uchar_E %uchar_nl %uchar_nul ; "E = %.1E\n"
+   %string_E = OpVariable %cptr_string_10 UniformConstant %array_E
+    %array_f = OpConstantComposite %string_10 %uchar_f %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_dot %uchar_1 %uchar_f %uchar_nl %uchar_nul ; "f = %.1f\n"
+   %string_f = OpVariable %cptr_string_10 UniformConstant %array_f
+    %array_F = OpConstantComposite %string_10 %uchar_F %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_dot %uchar_1 %uchar_F %uchar_nl %uchar_nul ; "F = %.1F\n"
+   %string_F = OpVariable %cptr_string_10 UniformConstant %array_F
+    %array_g = OpConstantComposite %string_10 %uchar_g %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_dot %uchar_1 %uchar_g %uchar_nl %uchar_nul ; "g = %.1g\n"
+   %string_g = OpVariable %cptr_string_10 UniformConstant %array_g
+    %array_G = OpConstantComposite %string_10 %uchar_G %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_dot %uchar_1 %uchar_G %uchar_nl %uchar_nul ; "G = %.1G\n"
+   %string_G = OpVariable %cptr_string_10 UniformConstant %array_G
+
+       %test = OpFunction %void None %kernel_sig
+          %d = OpFunctionParameter %double
+      %entry = OpLabel
+
+      %fmt_a = OpBitcast %cptr_char %string_a
+   %printf_a = OpExtInst %uint %clext printf %fmt_a %d
+      %fmt_A = OpBitcast %cptr_char %string_A
+   %printf_A = OpExtInst %uint %clext printf %fmt_A %d
+      %fmt_e = OpBitcast %cptr_char %string_e
+   %printf_e = OpExtInst %uint %clext printf %fmt_e %d
+      %fmt_E = OpBitcast %cptr_char %string_E
+   %printf_E = OpExtInst %uint %clext printf %fmt_E %d
+      %fmt_f = OpBitcast %cptr_char %string_f
+   %printf_f = OpExtInst %uint %clext printf %fmt_f %d
+      %fmt_F = OpBitcast %cptr_char %string_F
+   %printf_F = OpExtInst %uint %clext printf %fmt_F %d
+      %fmt_g = OpBitcast %cptr_char %string_g
+   %printf_g = OpExtInst %uint %clext printf %fmt_g %d
+      %fmt_G = OpBitcast %cptr_char %string_G
+   %printf_G = OpExtInst %uint %clext printf %fmt_G %d
+
+               OpReturn
+               OpFunctionEnd

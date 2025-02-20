@@ -5,6 +5,7 @@ set(${MODULE_NAME}_SOURCES
   test_basic_versions.cpp
   test_cl_khr_expect_assume.cpp
   test_decorate.cpp
+  test_extinst_printf.cpp
   test_get_program_il.cpp
   test_linkage.cpp
   test_no_integer_wrap_decoration.cpp
@@ -28,6 +29,8 @@ set(${MODULE_NAME}_SOURCES
   test_op_vector_insert.cpp
   test_op_vector_times_scalar.cpp
   test_spirv_14.cpp
+  test_spirv_15.cpp
+  test_spirv_16.cpp
 )
 
 set(TEST_HARNESS_SOURCES
@@ -39,6 +42,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
     add_cxx_flag_if_supported(-Wno-narrowing)
 endif()
 
-set(${MODULE_NAME}_SOURCES ${SPIRV_NEW_SOURCES} ${TEST_HARNESS_SOURCES})
+set(${MODULE_NAME}_SOURCES ${${MODULE_NAME}_SOURCES} ${TEST_HARNESS_SOURCES})
 
 include(../CMakeCommon.txt)
+
+add_subdirectory(spirv_asm)
+add_dependencies(${${MODULE_NAME}_OUT} spirv_new_binaries)

@@ -229,26 +229,15 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
             (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
         cl_kernel kernel = job->k[j][thread_id]; // each worker thread has its
                                                  // own copy of the cl_kernel
-        cl_program program = job->programs[j];
 
-        if ((error = clSetKernelArg(kernel, 0, sizeof(tinfo->outBuf[j]),
-                                    &tinfo->outBuf[j])))
-        {
-            LogBuildError(program);
-            return error;
-        }
-        if ((error = clSetKernelArg(kernel, 1, sizeof(tinfo->inBuf),
-                                    &tinfo->inBuf)))
-        {
-            LogBuildError(program);
-            return error;
-        }
-        if ((error = clSetKernelArg(kernel, 2, sizeof(tinfo->inBuf2),
-                                    &tinfo->inBuf2)))
-        {
-            LogBuildError(program);
-            return error;
-        }
+        error = clSetKernelArg(kernel, 0, sizeof(tinfo->outBuf[j]),
+                               &tinfo->outBuf[j]);
+        test_error(error, "Failed to set kernel argument");
+        error = clSetKernelArg(kernel, 1, sizeof(tinfo->inBuf), &tinfo->inBuf);
+        test_error(error, "Failed to set kernel argument");
+        error =
+            clSetKernelArg(kernel, 2, sizeof(tinfo->inBuf2), &tinfo->inBuf2);
+        test_error(error, "Failed to set kernel argument");
 
         if ((error = clEnqueueNDRangeKernel(tinfo->tQueue, kernel, 1, NULL,
                                             &vectorCount, NULL, 0, NULL, NULL)))
@@ -266,6 +255,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
         return CL_SUCCESS;
     }
 
+    cl_half_rounding_mode halfRoundingMode = CL_HALF_RTE;
     FPU_mode_type oldMode;
     oldRoundMode = kRoundToNearestEven;
     if (isFDim)
@@ -275,7 +265,11 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
         if (ftz) ForceFTZ(&oldMode);
 
         // Set the rounding mode to match the device
-        if (gIsInRTZMode) oldRoundMode = set_round(kRoundTowardZero, kfloat);
+        if (gIsInRTZMode)
+        {
+            oldRoundMode = set_round(kRoundTowardZero, kfloat);
+            halfRoundingMode = CL_HALF_RTZ;
+        }
     }
 
     if (!strcmp(name, "copysign")) copysign_test = 1;
@@ -293,9 +287,9 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
         s2[j] = cl_half_to_float(p2[j]);
         if (isNextafter)
             r[j] = cl_half_from_float(reference_nextafterh(s[j], s2[j]),
-                                      CL_HALF_RTE);
+                                      halfRoundingMode);
         else
-            r[j] = cl_half_from_float(ref_func(s[j], s2[j]), CL_HALF_RTE);
+            r[j] = cl_half_from_float(ref_func(s[j], s2[j]), halfRoundingMode);
     }
 
     if (isFDim && ftz) RestoreFPState(&oldMode);

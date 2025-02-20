@@ -182,11 +182,12 @@ static int ParseArgs(int argc, const char **argv)
 #if (defined(__APPLE__) || defined(__linux__) || defined(__MINGW32__))
     { // Extract the app name
         char baseName[MAXPATHLEN];
-        strncpy(baseName, argv[0], MAXPATHLEN);
+        strncpy(baseName, argv[0], MAXPATHLEN - 1);
+        baseName[sizeof(baseName) - 1] = '\0';
         char *base = basename(baseName);
         if (NULL != base)
         {
-            strncpy(appName, base, sizeof(appName));
+            strncpy(appName, base, sizeof(appName) - 1);
             appName[sizeof(appName) - 1] = '\0';
         }
     }
@@ -200,7 +201,7 @@ static int ParseArgs(int argc, const char **argv)
         if (err == 0)
         { // no error
             strcat(fname, ext); // just cat them, size of frame can keep both
-            strncpy(appName, fname, sizeof(appName));
+            strncpy(appName, fname, sizeof(appName) - 1);
             appName[sizeof(appName) - 1] = '\0';
         }
     }

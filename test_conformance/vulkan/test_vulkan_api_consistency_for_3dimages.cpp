@@ -60,9 +60,9 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
 #else
         if (!is_extension_available(device, "cl_khr_external_memory_opaque_fd"))
         {
-            throw std::runtime_error(
-                "Device does not support cl_khr_external_memory_opaque_fd "
-                "extension \n");
+            log_info("Device does not support "
+                     "cl_khr_external_memory_opaque_fd extension \n");
+            return TEST_SKIPPED_ITSELF;
         }
 #endif
         uint32_t width = 256;
@@ -73,7 +73,8 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
         cl_image_format img_format = { 0 };
 
         VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
-            getSupportedVulkanExternalMemoryHandleTypeList()[0];
+            getSupportedVulkanExternalMemoryHandleTypeList(
+                vkDevice->getPhysicalDevice())[0];
 
         VulkanImageTiling vulkanImageTiling =
             vkClExternalMemoryHandleTilingAssumption(

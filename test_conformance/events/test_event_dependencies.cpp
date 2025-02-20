@@ -89,7 +89,7 @@ int test_event_enqueue_wait_for_events_run_test(
 
     // If we are to use two devices, then get them and create a context with
     // both.
-    cl_device_id *two_device_ids;
+    cl_device_id *two_device_ids = nullptr;
     if (two_devices)
     {
         two_device_ids = (cl_device_id *)malloc(sizeof(cl_device_id) * 2);

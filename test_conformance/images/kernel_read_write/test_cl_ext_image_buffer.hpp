@@ -69,7 +69,7 @@ static inline size_t get_format_size(cl_context context,
     }
 
     cl_int error = 0;
-    cl_mem buffer;
+    cl_mem buffer = nullptr;
     if (imageType == CL_MEM_OBJECT_IMAGE1D_BUFFER)
     {
         buffer = clCreateBuffer(context, flags,
