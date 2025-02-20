@@ -55,7 +55,6 @@ struct Params
     uint32_t numImage2DDescriptors;
 };
 
-cl_uchar uuid[CL_UUID_SIZE_KHR];
 cl_device_id deviceId = NULL;
 size_t max_width = MAX_2D_IMAGE_WIDTH;
 size_t max_height = MAX_2D_IMAGE_HEIGHT;
