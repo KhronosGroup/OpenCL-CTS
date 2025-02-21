@@ -247,7 +247,7 @@ cl_program makeMixedFormatPrintfProgram(cl_kernel* kernel_ptr,
     };
 
     std::array<std::vector<std::string>, 2> formats = {
-        { { "%f", "%e", "%g", "%13a", "%F", "%E", "%G", "%13A" },
+        { { "%f", "%e", "%g", "%.13a", "%F", "%E", "%G", "%.13A" },
           { "%d", "%i", "%u", "%x", "%o", "%X" } }
     };
     std::vector<char> data_before(2 + genrand_int32(gMTdata) % 8);
