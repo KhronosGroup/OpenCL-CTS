@@ -111,6 +111,7 @@ const char *IGetErrorString(int clErrorCode)
             return "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR";
         case CL_INVALID_COMMAND_BUFFER_KHR:
             return "CL_INVALID_COMMAND_BUFFER_KHR";
+        case CL_INVALID_SEMAPHORE_KHR: return "CL_INVALID_SEMAPHORE_KHR";
         default: return "(unknown)";
     }
 }
@@ -554,6 +555,39 @@ float Ulp_Error_Double(double test, long double reference)
     return result;
 }
 
+cl_int OutputBuildLog(cl_program program, const cl_device_id device)
+{
+    size_t size_ret;
+
+    // Get the build status
+    cl_build_status build_status;
+    cl_int error =
+        clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_STATUS,
+                              sizeof(build_status), &build_status, &size_ret);
+    test_error(error, "Unable to query build status");
+
+    // If the build failed then print the status, obtain the build log and
+    // print it.
+    if (build_status != CL_BUILD_SUCCESS)
+    {
+        log_error("ERROR: CL_PROGRAM_BUILD_STATUS=%d\n", (int)build_status);
+        error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0,
+                                      nullptr, &size_ret);
+        test_error(error, "Unable to query build log size");
+
+        char *build_log = (char *)malloc(size_ret);
+        error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG,
+                                      size_ret, build_log, &size_ret);
+        test_error(error, "Unable to query build log");
+
+        log_error("ERROR: CL_PROGRAM_BUILD_LOG:\n%s\n", build_log);
+
+        free(build_log);
+    }
+
+    return CL_SUCCESS;
+}
+
 cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
                        cl_device_id *device_list)
 {
@@ -593,33 +627,8 @@ cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
         unsigned int i;
         for (i = 0; i < num_devices; i++)
         {
-
-            // Get the build status
-            cl_build_status build_status;
-            error = clGetProgramBuildInfo(
-                program, device_list[i], CL_PROGRAM_BUILD_STATUS,
-                sizeof(build_status), &build_status, &size_ret);
-            test_error(error, "Unable to query build status");
-
-            // If the build failed then log the status, and allocate the build
-            // log, log it and free it
-            if (build_status != CL_BUILD_SUCCESS)
-            {
-
-                log_error("ERROR: CL_PROGRAM_BUILD_STATUS=%d\n",
-                          (int)build_status);
-                error = clGetProgramBuildInfo(program, device_list[i],
-                                              CL_PROGRAM_BUILD_LOG, 0, NULL,
-                                              &size_ret);
-                test_error(error, "Unable to query build log size");
-                char *build_log = (char *)malloc(size_ret);
-                error = clGetProgramBuildInfo(program, device_list[i],
-                                              CL_PROGRAM_BUILD_LOG, size_ret,
-                                              build_log, &size_ret);
-                test_error(error, "Unable to query build log");
-                log_error("ERROR: CL_PROGRAM_BUILD_LOG:\n%s\n", build_log);
-                free(build_log);
-            }
+            error = OutputBuildLog(program, device_list[i]);
+            test_error(error, "OutputBuildLog failed");
         }
 
         // Was the number of devices given

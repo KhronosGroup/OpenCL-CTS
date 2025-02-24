@@ -1641,6 +1641,7 @@ double reference_expm1(double x)
 double reference_fmax(double x, double y)
 {
     if (isnan(y)) return x;
+    if (isnan(x)) return y;
 
     return x >= y ? x : y;
 }
@@ -1648,6 +1649,7 @@ double reference_fmax(double x, double y)
 double reference_fmin(double x, double y)
 {
     if (isnan(y)) return x;
+    if (isnan(x)) return y;
 
     return x <= y ? x : y;
 }
@@ -1855,6 +1857,13 @@ double reference_logb(double x)
 }
 
 double reference_relaxed_reciprocal(double x) { return 1.0f / ((float)x); }
+
+long double reference_reciprocall(long double y)
+{
+    double dx = 1.0;
+    double dy = y;
+    return dx / dy;
+}
 
 double reference_reciprocal(double x) { return 1.0 / x; }
 
@@ -3604,6 +3613,7 @@ long double reference_expm1l(long double x)
 long double reference_fmaxl(long double x, long double y)
 {
     if (isnan(y)) return x;
+    if (isnan(x)) return y;
 
     return x >= y ? x : y;
 }
@@ -3611,6 +3621,7 @@ long double reference_fmaxl(long double x, long double y)
 long double reference_fminl(long double x, long double y)
 {
     if (isnan(y)) return x;
+    if (isnan(x)) return y;
 
     return x <= y ? x : y;
 }
@@ -3739,9 +3750,6 @@ long double reference_nanl(cl_ulong x)
     u.u = x | 0x7ff8000000000000ULL;
     return (long double)u.f;
 }
-
-
-long double reference_reciprocall(long double x) { return 1.0L / x; }
 
 long double reference_remainderl(long double x, long double y)
 {

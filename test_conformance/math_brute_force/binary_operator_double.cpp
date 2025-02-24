@@ -214,6 +214,12 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     cl_double *s;
     cl_double *s2;
 
+    bool reciprocal = strcmp(name, "reciprocal") == 0;
+    const double reciprocalArrayX[] = { 1.0 };
+    const double *specialValuesX =
+        reciprocal ? reciprocalArrayX : specialValues;
+    size_t specialValuesCountX = reciprocal ? 1 : specialValuesCount;
+
     Force64BitFPUPrecision();
 
     cl_event e[VECTOR_SIZE_COUNT];
@@ -242,7 +248,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     cl_ulong *p = (cl_ulong *)gIn + thread_id * buffer_elements;
     cl_ulong *p2 = (cl_ulong *)gIn2 + thread_id * buffer_elements;
     cl_uint idx = 0;
-    int totalSpecialValueCount = specialValuesCount * specialValuesCount;
+    int totalSpecialValueCount = specialValuesCountX * specialValuesCount;
     int lastSpecialJobIndex = (totalSpecialValueCount - 1) / buffer_elements;
 
     // Test edge cases
@@ -252,14 +258,15 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         cl_double *fp2 = (cl_double *)p2;
         uint32_t x, y;
 
-        x = (job_id * buffer_elements) % specialValuesCount;
+        x = (job_id * buffer_elements) % specialValuesCountX;
         y = (job_id * buffer_elements) / specialValuesCount;
 
         for (; idx < buffer_elements; idx++)
         {
-            fp[idx] = specialValues[x];
+            fp[idx] = specialValuesX[x];
             fp2[idx] = specialValues[y];
-            if (++x >= specialValuesCount)
+            ++x;
+            if (x >= specialValuesCountX)
             {
                 x = 0;
                 y++;
@@ -271,7 +278,8 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     // Init any remaining values
     for (; idx < buffer_elements; idx++)
     {
-        p[idx] = genrand_int64(d);
+        p[idx] =
+            reciprocal ? ((cl_ulong *)specialValuesX)[0] : genrand_int64(d);
         p2[idx] = genrand_int64(d);
     }
 
@@ -337,26 +345,15 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
         cl_kernel kernel = job->k[j][thread_id]; // each worker thread has its
                                                  // own copy of the cl_kernel
-        cl_program program = job->programs[j];
 
-        if ((error = clSetKernelArg(kernel, 0, sizeof(tinfo->outBuf[j]),
-                                    &tinfo->outBuf[j])))
-        {
-            LogBuildError(program);
-            return error;
-        }
-        if ((error = clSetKernelArg(kernel, 1, sizeof(tinfo->inBuf),
-                                    &tinfo->inBuf)))
-        {
-            LogBuildError(program);
-            return error;
-        }
-        if ((error = clSetKernelArg(kernel, 2, sizeof(tinfo->inBuf2),
-                                    &tinfo->inBuf2)))
-        {
-            LogBuildError(program);
-            return error;
-        }
+        error = clSetKernelArg(kernel, 0, sizeof(tinfo->outBuf[j]),
+                               &tinfo->outBuf[j]);
+        test_error(error, "Failed to set kernel argument");
+        error = clSetKernelArg(kernel, 1, sizeof(tinfo->inBuf), &tinfo->inBuf);
+        test_error(error, "Failed to set kernel argument");
+        error =
+            clSetKernelArg(kernel, 2, sizeof(tinfo->inBuf2), &tinfo->inBuf2);
+        test_error(error, "Failed to set kernel argument");
 
         if ((error = clEnqueueNDRangeKernel(tinfo->tQueue, kernel, 1, NULL,
                                             &vectorCount, NULL, 0, NULL, NULL)))
@@ -375,8 +372,13 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     r = (cl_double *)gOut_Ref + thread_id * buffer_elements;
     s = (cl_double *)gIn + thread_id * buffer_elements;
     s2 = (cl_double *)gIn2 + thread_id * buffer_elements;
-    for (size_t j = 0; j < buffer_elements; j++)
-        r[j] = (cl_double)func.f_ff(s[j], s2[j]);
+
+    if (reciprocal)
+        for (size_t j = 0; j < buffer_elements; j++)
+            r[j] = (float)func.f_f(s2[j]);
+    else
+        for (size_t j = 0; j < buffer_elements; j++)
+            r[j] = (cl_double)func.f_ff(s[j], s2[j]);
 
     // Read the data back -- no need to wait for the first N-1 buffers but wait
     // for the last buffer. This is an in order queue.
@@ -406,7 +408,9 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             if (t[j] != q[j])
             {
                 cl_double test = ((cl_double *)q)[j];
-                long double correct = func.f_ff(s[j], s2[j]);
+                long double correct =
+                    reciprocal ? func.f_f(s2[j]) : func.f_ff(s[j], s2[j]);
+
                 float err = Bruteforce_Ulp_Error_Double(test, correct);
                 int fail = !(fabsf(err) <= ulps);
 
@@ -479,8 +483,11 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                     }
                     else if (IsDoubleSubnormal(s2[j]))
                     {
-                        long double correct2 = func.f_ff(s[j], 0.0);
-                        long double correct3 = func.f_ff(s[j], -0.0);
+                        long double correct2 =
+                            reciprocal ? func.f_f(0.0) : func.f_ff(s[j], 0.0);
+                        long double correct3 =
+                            reciprocal ? func.f_f(-0.0) : func.f_ff(s[j], -0.0);
+
                         float err2 =
                             Bruteforce_Ulp_Error_Double(test, correct2);
                         float err3 =

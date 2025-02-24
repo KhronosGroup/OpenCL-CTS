@@ -69,12 +69,14 @@ int test_simple_read_image_pitch(cl_device_id device, cl_context cl_context_, cl
     for (size_t i=0;i<bufferW;++i) {
       char val = host_buffer[j*bufferW+i];
       if ((i<imageW*pixel_bytes) && (val != 0x1)) {
-        log_error("Bad value %x in image at (byte: %lu, row: %lu)\n",val,i,j);
-        ++errors;
+          log_error("Bad value %x in image at (byte: %zu, row: %zu)\n", val, i,
+                    j);
+          ++errors;
       }
       else if ((i>=imageW*pixel_bytes) && (val != 0xa)) {
-        log_error("Bad value %x outside image at (byte: %lu, row: %lu)\n",val,i,j);
-        ++errors;
+          log_error("Bad value %x outside image at (byte: %zu, row: %zu)\n",
+                    val, i, j);
+          ++errors;
       }
     }
   }
@@ -136,8 +138,9 @@ int test_simple_write_image_pitch(cl_device_id device, cl_context cl_context_, c
     for (size_t i=0;i<mapped_pitch;++i) {
       char val = mapped_image[j*mapped_pitch+i];
       if ((i<imageW*pixel_bytes) && (val != 0xa)) {
-        log_error("Bad value %x in image at (byte: %lu, row: %lu)\n",val,i,j);
-        ++errors;
+          log_error("Bad value %x in image at (byte: %zu, row: %zu)\n", val, i,
+                    j);
+          ++errors;
       }
     }
   }
