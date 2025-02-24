@@ -17,7 +17,9 @@
 #include "harness/testHarness.h"
 #include "harness/parseParameters.h"
 
+#include <array>
 #include <memory>
+#include <vector>
 
 const char *sample_kernel_code_single_line[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)\n"
