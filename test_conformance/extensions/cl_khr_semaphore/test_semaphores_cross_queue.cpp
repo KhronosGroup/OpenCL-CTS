@@ -266,6 +266,9 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
         err = clEnqueueBarrierWithWaitList(consumer_queue, 0, nullptr, nullptr);
         test_error(err, " clEnqueueBarrierWithWaitList ");
 
+        err = clFlush(producer_queue);
+        test_error(err, " clFlush ");
+
         std::vector<cl_int> host_buffer(num_elems, 0);
         auto verify_result = [&](const cl_mem &out_mem, const cl_int pattern) {
             err = clEnqueueReadBuffer(consumer_queue, out_mem, CL_TRUE, 0,
