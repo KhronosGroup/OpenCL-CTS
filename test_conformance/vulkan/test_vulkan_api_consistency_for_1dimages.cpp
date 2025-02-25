@@ -84,12 +84,11 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
 
         const VulkanMemoryTypeList& memoryTypeList =
             vkImage1D.getMemoryTypeList();
-        uint64_t totalImageMemSize = vkImage1D.getSize();
 
         log_info("Memory type index: %u\n", (uint32_t)memoryTypeList[0]);
         log_info("Memory type property: %d\n",
                  memoryTypeList[0].getMemoryTypeProperty());
-        log_info("Image size : %lu\n", totalImageMemSize);
+        log_info("Image size : %lu\n", vkImage1D.getSize());
 
         VulkanDeviceMemory* vkDeviceMem =
             new VulkanDeviceMemory(*vkDevice, vkImage1D, memoryTypeList[0],
@@ -150,14 +149,9 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
         const VkImageCreateInfo VulkanImageCreateInfo =
             vkImage1D.getVkImageCreateInfo();
 
-        errNum = getCLImageInfoFromVkImageInfo(&VulkanImageCreateInfo,
-                                               totalImageMemSize, &img_format,
-                                               &image_desc);
-        if (errNum != CL_SUCCESS)
-        {
-            log_error("getCLImageInfoFromVkImageInfo failed!!!");
-            return TEST_FAIL;
-        }
+        errNum = getCLImageInfoFromVkImageInfo(device, &VulkanImageCreateInfo,
+                                               &img_format, &image_desc);
+        test_error_fail(errNum, "getCLImageInfoFromVkImageInfo failed!!!");
 
         clMemWrapper image;
 
