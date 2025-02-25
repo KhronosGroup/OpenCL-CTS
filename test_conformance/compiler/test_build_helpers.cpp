@@ -355,22 +355,6 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
     test_assert_error(device1 == deviceID,
                       "Unexpected result returned by CL_PROGRAM_DEVICES query");
 
-    /* Since the device IDs are opaque types we check the CL_DEVICE_VENDOR_ID
-     * which is unique for identical hardware. */
-    cl_uint device1_vid, deviceID_vid;
-    error = clGetDeviceInfo(device1, CL_DEVICE_VENDOR_ID, sizeof(device1_vid),
-                            &device1_vid, NULL);
-    test_error(error, "Unable to get device CL_DEVICE_VENDOR_ID");
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_VENDOR_ID, sizeof(deviceID_vid),
-                            &deviceID_vid, NULL);
-    test_error(error, "Unable to get device CL_DEVICE_VENDOR_ID");
-
-    if( device1_vid != deviceID_vid )
-    {
-        log_error( "ERROR: Incorrect device returned for program! (Expected vendor ID 0x%x, got 0x%x)\n", deviceID_vid, device1_vid );
-        return -1;
-    }
-
     cl_uint devCount;
     error = clGetProgramInfo( program, CL_PROGRAM_NUM_DEVICES, sizeof( devCount ), &devCount, NULL );
     test_error( error, "Unable to get device count of program" );
@@ -518,7 +502,7 @@ int test_get_program_info_mult_devices(cl_device_id deviceID,
     test_error_ret(err, "Unable to create testing context",
                    TEST_SKIPPED_ITSELF);
 
-    cl_program program = nullptr;
+    clProgramWrapper program = nullptr;
     err = create_single_kernel_helper_create_program(
         multi_device_context, &program, 1, sample_kernel_code_single_line);
     test_error_ret(err, "create_single_kernel_helper_create_program failed",
