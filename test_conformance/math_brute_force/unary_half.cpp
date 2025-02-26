@@ -28,7 +28,12 @@ cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     BuildKernelInfo &info = *(BuildKernelInfo *)p;
     auto generator = [](const std::string &kernel_name, const char *builtin,
                         cl_uint vector_size_index) {
-        return GetUnaryKernel(kernel_name, builtin, ParameterType::Half,
+        const char *builtinCall = builtin;
+        if (strcmp(builtin, "reciprocal") == 0)
+        {
+            builtinCall = "((RETTYPE)(1.0h))/";
+        }
+        return GetUnaryKernel(kernel_name, builtinCall, ParameterType::Half,
                               ParameterType::Half, vector_size_index);
     };
     return BuildKernels(info, job_id, generator);
