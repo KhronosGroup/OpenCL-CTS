@@ -1,0 +1,30 @@
+; SPIR-V
+; Version: 1.6
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability ImageBasic
+               OpCapability LiteralSampler
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %kernel "read_write_image_nontemporal"
+       %uint = OpTypeInt 32 0
+       %void = OpTypeVoid
+ %read_image2d_t = OpTypeImage %void 2D 0 0 0 0 Unknown ReadOnly
+%write_image2d_t = OpTypeImage %void 2D 0 0 0 0 Unknown WriteOnly
+  %sampler_t = OpTypeSampler
+ %kernel_sig = OpTypeFunction %void %read_image2d_t %write_image2d_t
+%sampledimage_t = OpTypeSampledImage %read_image2d_t
+     %v2uint = OpTypeVector %uint 2
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+    %sampler = OpConstantSampler %sampler_t None 0 Nearest
+  %coord_0_0 = OpConstantNull %v2uint
+    %float_0 = OpConstant %float 0
+     %kernel = OpFunction %void None %kernel_sig
+        %src = OpFunctionParameter %read_image2d_t
+        %dst = OpFunctionParameter %write_image2d_t
+      %entry = OpLabel
+         %si = OpSampledImage %sampledimage_t %src %sampler
+       %data = OpImageSampleExplicitLod %v4float %si %coord_0_0 Lod|Nontemporal %float_0
+               OpImageWrite %dst %coord_0_0 %data Nontemporal
+               OpReturn
+               OpFunctionEnd

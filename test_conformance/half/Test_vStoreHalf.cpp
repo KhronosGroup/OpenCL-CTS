@@ -341,8 +341,8 @@ int Test_vStoreHalf_private(cl_device_id device, f2h referenceFunc,
     int vectorSize, error;
     cl_program programs[kVectorSizeCount + kStrangeVectorSizeCount][3];
     cl_kernel kernels[kVectorSizeCount + kStrangeVectorSizeCount][3];
-    cl_program resetProgram;
-    cl_kernel resetKernel;
+    cl_program resetProgram = nullptr;
+    cl_kernel resetKernel = nullptr;
 
     uint64_t time[kVectorSizeCount + kStrangeVectorSizeCount] = { 0 };
     uint64_t min_time[kVectorSizeCount + kStrangeVectorSizeCount] = { 0 };
@@ -1225,8 +1225,8 @@ int Test_vStoreaHalf_private(cl_device_id device, f2h referenceFunc,
     int vectorSize, error;
     cl_program programs[kVectorSizeCount + kStrangeVectorSizeCount][3];
     cl_kernel kernels[kVectorSizeCount + kStrangeVectorSizeCount][3];
-    cl_program resetProgram;
-    cl_kernel resetKernel;
+    cl_program resetProgram = nullptr;
+    cl_kernel resetKernel = nullptr;
 
     uint64_t time[kVectorSizeCount + kStrangeVectorSizeCount] = { 0 };
     uint64_t min_time[kVectorSizeCount + kStrangeVectorSizeCount] = { 0 };

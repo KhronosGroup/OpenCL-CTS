@@ -1641,6 +1641,7 @@ double reference_expm1(double x)
 double reference_fmax(double x, double y)
 {
     if (isnan(y)) return x;
+    if (isnan(x)) return y;
 
     return x >= y ? x : y;
 }
@@ -1648,6 +1649,7 @@ double reference_fmax(double x, double y)
 double reference_fmin(double x, double y)
 {
     if (isnan(y)) return x;
+    if (isnan(x)) return y;
 
     return x <= y ? x : y;
 }
@@ -1855,6 +1857,13 @@ double reference_logb(double x)
 }
 
 double reference_relaxed_reciprocal(double x) { return 1.0f / ((float)x); }
+
+long double reference_reciprocall(long double y)
+{
+    double dx = 1.0;
+    double dy = y;
+    return dx / dy;
+}
 
 double reference_reciprocal(double x) { return 1.0 / x; }
 
@@ -2725,6 +2734,34 @@ static double round_to_nearest_even_double(cl_ulong hi, cl_ulong lo,
     return u.d;
 }
 
+static double round_toward_zero_double(cl_ulong hi, cl_ulong lo, int exponent)
+{
+    union {
+        cl_ulong u;
+        cl_double d;
+    } u;
+
+    // edges
+    if (exponent > 1023) return CL_DBL_MAX;
+    if (exponent <= -1074) return 0.0;
+
+    // Figure out which bits go where
+    int shift = 11;
+    if (exponent < -1022)
+    {
+        shift -= 1022 + exponent; // subnormal: shift is not 52
+        exponent = -1023; //              set exponent to 0
+    }
+    else
+        hi &= 0x7fffffffffffffffULL; // normal: leading bit is implicit. Remove
+                                     // it.
+
+    // Assemble the double (round toward zero)
+    u.u = (hi >> shift) | ((cl_ulong)(exponent + 1023) << 52);
+
+    return u.d;
+}
+
 // Shift right.  Bits lost on the right will be OR'd together and OR'd with the
 // LSB
 static inline void shift_right_sticky_128(cl_ulong *hi, cl_ulong *lo, int shift)
@@ -2957,7 +2994,14 @@ long double reference_fmal(long double x, long double y, long double z)
     }
 
     // round
-    ua.d = round_to_nearest_even_double(hi, lo, exponent);
+    if (gIsInRTZMode)
+    {
+        ua.d = round_toward_zero_double(hi, lo, exponent);
+    }
+    else
+    {
+        ua.d = round_to_nearest_even_double(hi, lo, exponent);
+    }
 
     // Set the sign
     ua.u |= sign;
@@ -3604,6 +3648,7 @@ long double reference_expm1l(long double x)
 long double reference_fmaxl(long double x, long double y)
 {
     if (isnan(y)) return x;
+    if (isnan(x)) return y;
 
     return x >= y ? x : y;
 }
@@ -3611,6 +3656,7 @@ long double reference_fmaxl(long double x, long double y)
 long double reference_fminl(long double x, long double y)
 {
     if (isnan(y)) return x;
+    if (isnan(x)) return y;
 
     return x <= y ? x : y;
 }
@@ -3739,9 +3785,6 @@ long double reference_nanl(cl_ulong x)
     u.u = x | 0x7ff8000000000000ULL;
     return (long double)u.f;
 }
-
-
-long double reference_reciprocall(long double x) { return 1.0L / x; }
 
 long double reference_remainderl(long double x, long double y)
 {

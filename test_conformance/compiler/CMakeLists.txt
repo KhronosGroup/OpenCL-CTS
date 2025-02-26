@@ -31,3 +31,10 @@ add_custom_command(
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CLConform_SOURCE_DIR}/test_conformance/compiler/secondIncludeTestDirectory
         ${COMPILER_TEST_RESOURCES}/secondIncludeTestDirectory)
+
+include(GNUInstallDirs)
+
+install(DIRECTORY
+            ${CLConform_SOURCE_DIR}/test_conformance/compiler/includeTestDirectory
+            ${CLConform_SOURCE_DIR}/test_conformance/compiler/secondIncludeTestDirectory
+        DESTINATION ${CMAKE_INSTALL_BINDIR}/$<CONFIG>)

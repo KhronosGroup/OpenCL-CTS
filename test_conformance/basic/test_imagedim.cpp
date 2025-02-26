@@ -68,7 +68,7 @@ int get_max_image_dimensions(cl_device_id device, size_t &max_img_width,
                           nullptr);
     test_error(err, "clGetDeviceInfo for CL_DEVICE_IMAGE2D_MAX_HEIGHT failed");
 
-    log_info("Device reported max image sizes of %lu x %lu, and max mem size "
+    log_info("Device reported max image sizes of %zu x %zu, and max mem size "
              "of %gMB.\n",
              max_image2d_width, max_image2d_height,
              max_mem_size / (1024.0 * 1024.0));
@@ -98,7 +98,7 @@ int get_max_image_dimensions(cl_device_id device, size_t &max_img_width,
     max_img_width = std::min(max_image2d_width, max_img_dim);
     max_img_height = std::min(max_image2d_height, max_img_dim);
 
-    log_info("Adjusted maximum image size to test is %d x %d, which is a max "
+    log_info("Adjusted maximum image size to test is %zu x %zu, which is a max "
              "mem size of %gMB.\n",
              max_img_width, max_img_height,
              (max_img_width * max_img_height * 4) / (1024.0 * 1024.0));
@@ -147,12 +147,12 @@ int test_imagedim_common(cl_context context, cl_command_queue queue,
 
     size_t threads[] = { img_width, img_height };
     if (local_threads)
-        log_info(
-            "Testing image dimensions %d x %d with local threads %d x %d.\n",
-            img_width, img_height, local_threads[0], local_threads[1]);
+        log_info("Testing image dimensions %zu x %zu with local threads %zu x "
+                 "%zu.\n",
+                 img_width, img_height, local_threads[0], local_threads[1]);
     else
         log_info(
-            "Testing image dimensions %d x %d with local threads nullptr.\n",
+            "Testing image dimensions %zu x %zu with local threads nullptr.\n",
             img_width, img_height);
     err = clEnqueueNDRangeKernel(queue, kernel, 2, nullptr, threads,
                                  local_threads, 0, nullptr, nullptr);
@@ -165,8 +165,8 @@ int test_imagedim_common(cl_context context, cl_command_queue queue,
     if (0 != memcmp(input.data(), output.data(), 4 * img_width * img_height))
     {
         total_errors++;
-        log_error("Image Dimension test failed.  image width = %d, "
-                  "image height = %d\n",
+        log_error("Image Dimension test failed.  image width = %zu, "
+                  "image height = %zu\n",
                   img_width, img_height);
     }
     return total_errors;

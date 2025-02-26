@@ -39,8 +39,8 @@ extern int test_copy_image_set_1D_buffer_1D(cl_device_id device,
 
 int test_image_type( cl_device_id device, cl_context context, cl_command_queue queue, MethodsToTest testMethod, cl_mem_flags flags )
 {
-    const char *name;
-    cl_mem_object_type imageType;
+    const char *name = nullptr;
+    cl_mem_object_type imageType = 0;
 
     if ( gTestMipmaps )
     {
