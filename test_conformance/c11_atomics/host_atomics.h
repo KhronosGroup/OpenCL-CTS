@@ -41,6 +41,7 @@ enum TExplicitMemoryOrderType
 #define HOST_ATOMIC_UINT        unsigned long
 #define HOST_ATOMIC_LONG        unsigned long long
 #define HOST_ATOMIC_ULONG       unsigned long long
+#define HOST_ATOMIC_HALF unsigned short
 #define HOST_ATOMIC_FLOAT       float
 #define HOST_ATOMIC_DOUBLE      double
 #else
@@ -48,6 +49,7 @@ enum TExplicitMemoryOrderType
 #define HOST_ATOMIC_UINT        cl_uint
 #define HOST_ATOMIC_LONG        cl_long
 #define HOST_ATOMIC_ULONG       cl_ulong
+#define HOST_ATOMIC_HALF cl_half
 #define HOST_ATOMIC_FLOAT       cl_float
 #define HOST_ATOMIC_DOUBLE      cl_double
 #endif
@@ -69,6 +71,7 @@ enum TExplicitMemoryOrderType
 #define HOST_UINT               cl_uint
 #define HOST_LONG               cl_long
 #define HOST_ULONG              cl_ulong
+#define HOST_HALF cl_half
 #define HOST_FLOAT              cl_float
 #define HOST_DOUBLE             cl_double
 
