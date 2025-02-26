@@ -61,7 +61,7 @@ const char *sample_kernel_code_bad_multi_line[] = {
 "",
 "}" };
 
-const char *sample_multi_kernel_code_with_makro = R"(
+const char *sample_multi_kernel_code_with_macro = R"(
 __kernel void sample_test_A(__global float *src, __global int *dst)
 {
     size_t  tid = get_global_id(0);
@@ -459,7 +459,7 @@ int test_get_program_info_kernel_names(cl_device_id deviceID,
     // CL_INVALID_PROGRAM_EXECUTABLE.
     {
         program = clCreateProgramWithSource(
-            context, 1, &sample_multi_kernel_code_with_makro, nullptr, &error);
+            context, 1, &sample_multi_kernel_code_with_macro, nullptr, &error);
         test_error(error, "clCreateProgramWithSource failed");
 
         error = clGetProgramInfo(program, CL_PROGRAM_NUM_KERNELS,
