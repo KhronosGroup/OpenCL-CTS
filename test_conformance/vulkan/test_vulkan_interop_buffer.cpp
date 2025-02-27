@@ -34,7 +34,6 @@
 
 namespace {
 
-cl_uchar uuid[CL_UUID_SIZE_KHR];
 cl_device_id deviceId = nullptr;
 
 struct Params

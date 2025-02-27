@@ -36,12 +36,12 @@ inline void params_reset()
 
 struct VulkanTestBase
 {
-    VulkanTestBase(cl_device_id device, cl_context context,
+    VulkanTestBase(const VulkanPhysicalDevice &physicalDevice, cl_device_id device, cl_context context,
                    cl_command_queue queue, cl_int nelems)
         : device(device), context(context), num_elems(nelems)
     {
         vkDevice.reset(
-            new VulkanDevice(getAssociatedVulkanPhysicalDevice(device)));
+            new VulkanDevice(physicalDevice));
 
         cl_platform_id platform;
         cl_int error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
@@ -89,7 +89,7 @@ protected:
 };
 
 template <class T>
-int MakeAndRunTest(cl_device_id device, cl_context context,
+int MakeAndRunTest(const VulkanPhysicalDevice &physicalDevice, cl_device_id device, cl_context context,
                    cl_command_queue queue, cl_int nelems)
 {
     if (!(is_extension_available(device, "cl_khr_external_memory")
@@ -115,7 +115,7 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
         cl_int numElementsToUse = 1024;
 
         auto test_fixture =
-            T(device, context, queue, /*nelems*/ numElementsToUse);
+            T(physicalDevice, device, context, queue, /*nelems*/ numElementsToUse);
         status = test_fixture.Run();
     } catch (const std::runtime_error &e)
     {

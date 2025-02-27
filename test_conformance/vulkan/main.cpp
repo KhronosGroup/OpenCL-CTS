@@ -37,7 +37,7 @@ bool multiImport;
 bool multiCtx;
 bool debug_trace = false;
 bool useSingleImageKernel = false;
-bool useDeviceLocal = false;
+bool useDeviceLocal = true;
 bool disableNTHandleType = false;
 bool enableOffset = false;
 

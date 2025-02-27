@@ -139,7 +139,7 @@ protected:
 
 public:
     VulkanDevice(
-        const VulkanPhysicalDevice &physicalDevice = getVulkanPhysicalDevice(),
+        const VulkanPhysicalDevice &physicalDevice,
         const VulkanQueueFamilyToQueueCountMap &queueFamilyToQueueCountMap =
             getDefaultVulkanQueueFamilyToQueueCountMap());
     virtual ~VulkanDevice();
@@ -378,7 +378,7 @@ protected:
 public:
     VulkanCommandPool(
         const VulkanDevice &device,
-        const VulkanQueueFamily &queueFamily = getVulkanQueueFamily());
+        const VulkanQueueFamily &queueFamily);
     virtual ~VulkanCommandPool();
     operator VkCommandPool() const;
 };
