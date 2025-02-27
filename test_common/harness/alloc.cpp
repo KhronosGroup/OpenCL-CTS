@@ -30,7 +30,6 @@
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 #include <linux/dma-heap.h>
-#endif
 
 struct dma_buf_heap_helper_t
 {
@@ -64,6 +63,7 @@ static dma_buf_heap_helper_t lookup_dma_heap(dma_buf_heap_type heap_type)
            && "DMA heap type does not have an entry in DMA_BUF_HEAP_TABLE");
     return DMA_BUF_HEAP_TABLE[0];
 }
+#endif // LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 
 int allocate_dma_buf(uint64_t size, dma_buf_heap_type heap_type)
 {
@@ -106,8 +106,6 @@ int allocate_dma_buf(uint64_t size, dma_buf_heap_type heap_type)
 
     return dma_heap_data.fd;
 #else
-#warning                                                                       \
-    "Kernel version doesn't support DMA buffer heaps (at least v5.6.0 is required)."
     return TEST_SKIPPED_ITSELF;
 #endif // LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 }
