@@ -14,6 +14,7 @@
 //
 
 #include "harness/typeWrappers.h"
+#include <cinttypes>
 
 #define BUF_SIZE 1024
 #define BUF_SIZE_STR "1024"
@@ -269,8 +270,10 @@ private:
 
         if (DeviceAddrFromAPI != DeviceAddrFromKernel)
         {
-            test_fail("DeviceAddrFromAPI(%lu) != DeviceAddrFromKernel(%lu)\n",
-                      DeviceAddrFromAPI, DeviceAddrFromKernel);
+            test_fail("DeviceAddrFromAPI(%" PRIu64
+                      ") != DeviceAddrFromKernel(%" PRIu64 ")\n",
+                      (uint64_t)DeviceAddrFromAPI,
+                      (uint64_t)DeviceAddrFromKernel);
         }
         return TEST_PASS;
     }
