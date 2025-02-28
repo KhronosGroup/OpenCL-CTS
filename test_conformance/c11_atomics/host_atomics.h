@@ -123,7 +123,7 @@ CorrespondingType host_atomic_exchange(volatile AtomicType *a, CorrespondingType
                                        TExplicitMemoryOrderType order)
 {
 #if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-    if (sizeof(CorrespondingType)==16)
+    if (sizeof(CorrespondingType) == 16)
         return InterlockedExchange16(a, c);
     else
         return InterlockedExchange(a, c);
