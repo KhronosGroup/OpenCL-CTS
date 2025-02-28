@@ -123,7 +123,10 @@ CorrespondingType host_atomic_exchange(volatile AtomicType *a, CorrespondingType
                                        TExplicitMemoryOrderType order)
 {
 #if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-  return InterlockedExchange(a, c);
+    if (sizeof(CorrespondingType)==16)
+        return InterlockedExchange16(a, c);
+    else
+        return InterlockedExchange(a, c);
 #elif defined(__GNUC__)
   return __sync_lock_test_and_set(a, c);
 #else

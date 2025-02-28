@@ -78,9 +78,8 @@ cl_uint AtomicTypeInfo::Size(cl_device_id device)
           test_error_ret(error, "clGetDeviceInfo", 0);
 
           return addressBits / 8;
-    }
-  default:
-    return 0;
+      }
+      default: return 0;
   }
 }
 
