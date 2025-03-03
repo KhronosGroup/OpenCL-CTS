@@ -152,8 +152,13 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
         const VkImageCreateInfo VulkanImageCreateInfo =
             vkImage3D.getVkImageCreateInfo();
 
-        errNum = getCLImageInfoFromVkImageInfo(device, &VulkanImageCreateInfo,
-                                               &img_format, &image_desc);
+        auto layout = vkImage3D.getSubresourceLayout();
+        errNum = getCLImageInfoFromVkImageInfo(
+            device, &VulkanImageCreateInfo, &img_format, &image_desc,
+            static_cast<VkImageTiling>(vulkanImageTiling)
+                    == VK_IMAGE_TILING_LINEAR
+                ? &layout
+                : nullptr);
         test_error_fail(errNum, "getCLImageInfoFromVkImageInfo failed!!!");
 
         clMemWrapper image;

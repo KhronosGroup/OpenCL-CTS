@@ -430,7 +430,7 @@ size_t GetElementNBytes(const cl_image_format *format)
 
 cl_int getImageDimensions(const VkImageCreateInfo *VulkanImageCreateInfo,
                           cl_image_format *img_fmt, cl_image_desc *img_desc,
-                          VkExtent3D max_ext)
+                          VkExtent3D max_ext, const VkSubresourceLayout *layout)
 {
     test_assert_error(
         VulkanImageCreateInfo != nullptr,
@@ -443,6 +443,19 @@ cl_int getImageDimensions(const VkImageCreateInfo *VulkanImageCreateInfo,
     img_desc->image_depth = VulkanImageCreateInfo->extent.depth;
     img_desc->image_width = VulkanImageCreateInfo->extent.width;
     img_desc->image_height = VulkanImageCreateInfo->extent.height;
+
+    if (layout != nullptr)
+    {
+        size_t element_size = GetElementNBytes(img_fmt);
+        size_t row_pitch = element_size * VulkanImageCreateInfo->extent.width;
+        row_pitch = row_pitch < layout->rowPitch ? layout->rowPitch : row_pitch;
+        img_desc->image_row_pitch = row_pitch;
+
+        size_t slice_pitch = row_pitch * VulkanImageCreateInfo->extent.height;
+        slice_pitch =
+            slice_pitch < layout->depthPitch ? layout->depthPitch : slice_pitch;
+        img_desc->image_slice_pitch = slice_pitch;
+    }
 
     switch (img_desc->image_type)
     {
@@ -466,7 +479,8 @@ cl_int getImageDimensions(const VkImageCreateInfo *VulkanImageCreateInfo,
 cl_int
 getCLImageInfoFromVkImageInfo(const cl_device_id device,
                               const VkImageCreateInfo *VulkanImageCreateInfo,
-                              cl_image_format *img_fmt, cl_image_desc *img_desc)
+                              cl_image_format *img_fmt, cl_image_desc *img_desc,
+                              const VkSubresourceLayout *layout)
 {
     cl_int error = CL_SUCCESS;
 
@@ -514,8 +528,15 @@ getCLImageInfoFromVkImageInfo(const cl_device_id device,
     max_ext.height = height;
     max_ext.width = width;
 
-    error =
-        getImageDimensions(VulkanImageCreateInfo, img_fmt, img_desc, max_ext);
+    // If image_row_pitch is zero and the image is created from an external
+    // memory handle, then the image row pitch is implementation-defined
+    img_desc->image_row_pitch = 0;
+    // If image_slice_pitch is zero and the image is created from an external
+    // memory handle, then the image slice pitch is implementation-defined
+    img_desc->image_slice_pitch = 0;
+
+    error = getImageDimensions(VulkanImageCreateInfo, img_fmt, img_desc,
+                               max_ext, layout);
     if (CL_SUCCESS != error)
     {
         throw std::runtime_error("getImageDimensions failed!!!");
@@ -524,12 +545,6 @@ getCLImageInfoFromVkImageInfo(const cl_device_id device,
     img_desc->image_depth =
         static_cast<size_t>(VulkanImageCreateInfo->extent.depth);
     img_desc->image_array_size = 0;
-    // If image_row_pitch is zero and the image is created from an external
-    // memory handle, then the image row pitch is implementation-defined
-    img_desc->image_row_pitch = 0;
-    // If image_slice_pitch is zero and the image is created from an external
-    // memory handle, then the image slice pitch is implementation-defined
-    img_desc->image_slice_pitch = 0;
     img_desc->num_mip_levels = 0;
     img_desc->num_samples = 0;
     img_desc->buffer = NULL;
@@ -1245,6 +1260,8 @@ cl_external_memory_handle_type_khr vkToOpenCLExternalMemoryHandleType(
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_KMT:
             return CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR;
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_NAME:
+            return CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE: return 0;
     }
     return 0;
