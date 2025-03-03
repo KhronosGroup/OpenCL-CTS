@@ -510,8 +510,6 @@ getCLImageInfoFromVkImageInfo(const cl_device_id device,
         test_error(error, "Unable to get CL_DEVICE_IMAGE2D_MAX_HEIGHT");
     }
 
-    if (0 == (height | width | depth)) return CL_IMAGE_FORMAT_NOT_SUPPORTED;
-
     max_ext.depth = depth;
     max_ext.height = height;
     max_ext.width = width;
