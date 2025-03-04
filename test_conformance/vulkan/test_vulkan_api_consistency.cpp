@@ -503,27 +503,20 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
 
 } // anonymous namespace
 
-int test_consistency_external_buffer(cl_device_id deviceID, cl_context context,
-                                     cl_command_queue defaultQueue,
-                                     int num_elements)
+REGISTER_TEST(test_consistency_external_buffer)
 {
-    return MakeAndRunTest<ConsistencyExternalBufferTest>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<ConsistencyExternalBufferTest>(device, context, queue,
+                                                         num_elements);
 }
 
-int test_consistency_external_image(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue defaultQueue,
-                                    int num_elements)
+REGISTER_TEST(test_consistency_external_image)
 {
-    return MakeAndRunTest<ConsistencyExternalImageTest>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<ConsistencyExternalImageTest>(device, context, queue,
+                                                        num_elements);
 }
 
-int test_consistency_external_semaphore(cl_device_id deviceID,
-                                        cl_context context,
-                                        cl_command_queue defaultQueue,
-                                        int num_elements)
+REGISTER_TEST(test_consistency_external_semaphore)
 {
     return MakeAndRunTest<ConsistencyExternalSemaphoreTest>(
-        deviceID, context, defaultQueue, num_elements);
+        device, context, queue, num_elements);
 }

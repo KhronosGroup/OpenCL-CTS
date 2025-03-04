@@ -204,11 +204,8 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
 };
 }
 
-int test_consistency_external_for_1dimage(cl_device_id deviceID,
-                                          cl_context context,
-                                          cl_command_queue defaultQueue,
-                                          int num_elements)
+REGISTER_TEST(test_consistency_external_for_1dimage)
 {
-    return MakeAndRunTest<ConsistencyExternalImage1DTest>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<ConsistencyExternalImage1DTest>(device, context,
+                                                          queue, num_elements);
 }

@@ -17,6 +17,10 @@
 #include "harness/testHarness.h"
 #include "harness/parseParameters.h"
 
+#include <array>
+#include <memory>
+#include <vector>
+
 const char *sample_kernel_code_single_line[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)\n"
 "{\n"
@@ -362,8 +366,9 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
     size_t paramSize;
     cl_uint numInstances;
 
-
     error = create_single_kernel_helper_create_program(context, &program, 1, sample_kernel_code_single_line);
+    test_error(error, "create_single_kernel_helper_create_program failed");
+
     if( program == NULL )
     {
         log_error( "ERROR: Unable to create reference program!\n" );
@@ -375,18 +380,9 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
     error = clGetProgramInfo( program, CL_PROGRAM_DEVICES, sizeof( device1 ), &device1, NULL );
     test_error( error, "Unable to get device of program" );
 
-  /* Since the device IDs are opaque types we check the CL_DEVICE_VENDOR_ID which is unique for identical hardware. */
-  cl_uint device1_vid, deviceID_vid;
-  error = clGetDeviceInfo(device1, CL_DEVICE_VENDOR_ID, sizeof(device1_vid), &device1_vid, NULL );
-  test_error( error, "Unable to get device CL_DEVICE_VENDOR_ID" );
-  error = clGetDeviceInfo(deviceID, CL_DEVICE_VENDOR_ID, sizeof(deviceID_vid), &deviceID_vid, NULL );
-  test_error( error, "Unable to get device CL_DEVICE_VENDOR_ID" );
-
-    if( device1_vid != deviceID_vid )
-    {
-        log_error( "ERROR: Incorrect device returned for program! (Expected vendor ID 0x%x, got 0x%x)\n", deviceID_vid, device1_vid );
-        return -1;
-    }
+    /* Object comparability test. */
+    test_assert_error(device1 == deviceID,
+                      "Unexpected result returned by CL_PROGRAM_DEVICES query");
 
     cl_uint devCount;
     error = clGetProgramInfo( program, CL_PROGRAM_NUM_DEVICES, sizeof( devCount ), &devCount, NULL );
@@ -573,6 +569,134 @@ int test_get_linked_program_info_kernel_names(cl_device_id deviceID,
                               "Unexpected kernel name");
         }
     }
+    return TEST_PASS;
+}
+
+int test_get_program_info_mult_devices(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue, int num_elements)
+{
+    size_t size = 0;
+
+    // query multi-device context and perform objects comparability test
+    cl_int err = clGetDeviceInfo(deviceID, CL_DEVICE_PARTITION_PROPERTIES, 0,
+                                 nullptr, &size);
+    test_error_fail(err, "clGetDeviceInfo failed");
+
+    if (size == 0)
+    {
+        log_info("Can't partition device, test not supported\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    std::vector<cl_device_partition_property> supported_props(
+        size / sizeof(cl_device_partition_property), 0);
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_PARTITION_PROPERTIES,
+                          supported_props.size()
+                              * sizeof(cl_device_partition_property),
+                          supported_props.data(), &size);
+    test_error_fail(err, "clGetDeviceInfo failed");
+
+    if (supported_props.empty() || supported_props.front() == 0)
+    {
+        log_info("Can't partition device, test not supported\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_uint maxComputeUnits = 0;
+    err = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_COMPUTE_UNITS,
+                          sizeof(maxComputeUnits), &maxComputeUnits, nullptr);
+    test_error_ret(err, "Unable to get maximal number of compute units",
+                   TEST_FAIL);
+
+    std::vector<std::array<cl_device_partition_property, 5>> partition_props = {
+        { CL_DEVICE_PARTITION_EQUALLY, (cl_int)maxComputeUnits / 2, 0, 0, 0 },
+        { CL_DEVICE_PARTITION_BY_COUNTS, 1, (cl_int)maxComputeUnits - 1,
+          CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0 },
+        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
+          CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE, 0, 0, 0 }
+    };
+
+    std::unique_ptr<SubDevicesScopeGuarded> scope_guard;
+    cl_uint num_devices = 0;
+    for (auto &sup_prop : supported_props)
+    {
+        for (auto &prop : partition_props)
+        {
+            if (sup_prop == prop[0])
+            {
+                // how many sub-devices can we create?
+                err = clCreateSubDevices(deviceID, prop.data(), 0, nullptr,
+                                         &num_devices);
+                test_error_fail(err, "clCreateSubDevices failed");
+                if (num_devices < 2) continue;
+
+                // get the list of subDevices
+                scope_guard.reset(new SubDevicesScopeGuarded(num_devices));
+                err = clCreateSubDevices(deviceID, prop.data(), num_devices,
+                                         scope_guard->sub_devices.data(),
+                                         &num_devices);
+                test_error_fail(err, "clCreateSubDevices failed");
+                break;
+            }
+        }
+        if (scope_guard.get() != nullptr) break;
+    }
+
+    if (scope_guard.get() == nullptr)
+    {
+        log_info("Can't partition device, test not supported\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    /* Create a multi device context */
+    clContextWrapper multi_device_context = clCreateContext(
+        nullptr, (cl_uint)num_devices, scope_guard->sub_devices.data(), nullptr,
+        nullptr, &err);
+    test_error_ret(err, "Unable to create testing context",
+                   TEST_SKIPPED_ITSELF);
+
+    clProgramWrapper program = nullptr;
+    err = create_single_kernel_helper_create_program(
+        multi_device_context, &program, 1, sample_kernel_code_single_line);
+    test_error_ret(err, "create_single_kernel_helper_create_program failed",
+                   TEST_FAIL);
+
+    if (program == nullptr)
+    {
+        log_error("ERROR: Unable to create reference program!\n");
+        return -1;
+    }
+
+    err = clGetProgramInfo(program, CL_PROGRAM_NUM_DEVICES, sizeof(num_devices),
+                           &num_devices, nullptr);
+    test_error_ret(err, "Unable to get device count of program", TEST_FAIL);
+
+    test_assert_error_ret(
+        num_devices == scope_guard->sub_devices.size(),
+        "Program must be associated to exact number of devices\n", TEST_FAIL);
+
+    std::vector<cl_device_id> devices(num_devices);
+    err = clGetProgramInfo(program, CL_PROGRAM_DEVICES,
+                           num_devices * sizeof(cl_device_id), devices.data(),
+                           nullptr);
+    test_error_ret(err, "Unable to get devices of program", TEST_FAIL);
+
+    for (cl_uint i = 0; i < devices.size(); i++)
+    {
+        bool found = false;
+        for (auto &it : scope_guard->sub_devices)
+        {
+            if (it == devices[i])
+            {
+                found = true;
+                break;
+            }
+        }
+        test_error_fail(
+            !found, "Unexpected result returned by CL_CONTEXT_DEVICES query");
+    }
+
     return TEST_PASS;
 }
 

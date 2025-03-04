@@ -500,3 +500,10 @@ add_custom_command(
     VERBATIM)
 
 add_custom_target(spirv_new_binaries DEPENDS ${assembled_spirv_binaries})
+
+include(GNUInstallDirs)
+
+install(DIRECTORY
+            ${CMAKE_CURRENT_BINARY_DIR}/../spirv_bin
+        DESTINATION
+            ${CMAKE_INSTALL_BINDIR}/$<CONFIG>)

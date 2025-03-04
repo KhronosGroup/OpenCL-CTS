@@ -208,11 +208,8 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
 
 } // anonymous namespace
 
-int test_consistency_external_for_3dimage(cl_device_id deviceID,
-                                          cl_context context,
-                                          cl_command_queue defaultQueue,
-                                          int num_elements)
+REGISTER_TEST(test_consistency_external_for_3dimage)
 {
-    return MakeAndRunTest<ConsistencyExternalImage3DTest>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<ConsistencyExternalImage3DTest>(device, context,
+                                                          queue, num_elements);
 }
