@@ -677,14 +677,14 @@ REGISTER_TEST(get_device_info_comparability)
     {
         error = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, 0, nullptr,
                                &num_devices);
-        test_error(error, "clGetDeviceIDs failed");
+        if (error != CL_SUCCESS || num_devices == 0) continue;
 
         std::vector<cl_device_id> devices(num_devices);
         error = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, num_devices,
                                devices.data(), nullptr);
-        test_error(error, "clGetDeviceIDs failed");
+        if (error != CL_SUCCESS) continue;
 
-        // try to find invalid device
+        // find correct device
         for (auto did : devices)
         {
             if (did == device)
@@ -695,8 +695,23 @@ REGISTER_TEST(get_device_info_comparability)
         }
     }
 
-    // 2. compare platforms found with and without using query
-    cl_platform_id plat = nullptr;
+    // fallback path
+    if (comp_platform == nullptr)
+    {
+        char *env_mode = getenv("CL_PLATFORM_INDEX");
+        if (env_mode != nullptr)
+        {
+            int choosen_platform_index = atoi(env_mode);
+            if (choosen_platform_index < static_cast<int>(platforms.size()))
+                comp_platform = platforms[choosen_platform_index];
+        }
+    }
+
+    test_error_fail(comp_platform == nullptr,
+                    "Test failed to locate platform for comparison!")
+
+        // 2. compare platforms found with and without using query
+        cl_platform_id plat = nullptr;
     error =
         clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(plat), &plat, NULL);
     test_error(error, "clGetDeviceInfo failed");
