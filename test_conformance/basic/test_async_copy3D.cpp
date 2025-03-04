@@ -133,7 +133,7 @@ int test_copy3D(const cl_device_id deviceID, const cl_context context,
     int error;
 
     log_info(
-        "Testing %d byte element with srcLineMargin = %d, dstLineMargin = %d, "
+        "Testing %zu byte element with srcLineMargin = %d, dstLineMargin = %d, "
         "srcPlaneMargin = %d, dstPlaneMargin = %d\n",
         elementSize, srcLineMargin, dstLineMargin, srcPlaneMargin,
         dstPlaneMargin);
@@ -255,8 +255,8 @@ int test_copy3D(const cl_device_id deviceID, const cl_context context,
 
     if ((localBufferSize / 4) > max_work_group_size)
     {
-        log_info("Skipping due to resource requirements local:%db  "
-                 "max_work_group_size:%d\n",
+        log_info("Skipping due to resource requirements local:%zub  "
+                 "max_work_group_size:%zu\n",
                  localBufferSize, max_work_group_size);
         return 0;
     }

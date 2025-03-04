@@ -368,8 +368,9 @@ int RelationalsFPTest::test_equiv_kernel(unsigned int vecSize,
                 {
                     if (gInfNanSupport == 0)
                     {
-                        if (isnan(inDataA[i * vecSize + j])
-                            || isnan(inDataB[i * vecSize + j]))
+                        float a = inDataA[i * vecSize + j];
+                        float b = inDataB[i * vecSize + j];
+                        if (isnan(a) || isnan(b))
                             fail = 0;
                         else
                             fail = 1;

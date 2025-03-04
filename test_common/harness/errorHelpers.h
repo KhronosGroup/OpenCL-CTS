@@ -198,6 +198,7 @@ extern const char *GetQueuePropertyName(cl_command_queue_properties properties);
 
 extern const char *GetDeviceTypeName(cl_device_type type);
 bool check_functions_for_offline_compiler(const char *subtestname);
+cl_int OutputBuildLog(cl_program program, const cl_device_id device);
 cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
                        cl_device_id *device_list);
 

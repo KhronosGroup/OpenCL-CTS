@@ -172,7 +172,12 @@ int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
     }
 
     err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
-    SPIRV_CHECK_ERROR(err, "Failed to build program");
+    if (err != CL_SUCCESS)
+    {
+        cl_int outputErr = OutputBuildLog(prog, deviceID);
+        SPIRV_CHECK_ERROR(outputErr, "OutputBuildLog failed");
+        return err;
+    }
 
     return err;
 }

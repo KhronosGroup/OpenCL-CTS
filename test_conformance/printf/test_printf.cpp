@@ -247,7 +247,7 @@ cl_program makeMixedFormatPrintfProgram(cl_kernel* kernel_ptr,
     };
 
     std::array<std::vector<std::string>, 2> formats = {
-        { { "%f", "%e", "%g", "%a", "%F", "%E", "%G", "%A" },
+        { { "%f", "%e", "%g", "%.13a", "%F", "%E", "%G", "%.13A" },
           { "%d", "%i", "%u", "%x", "%o", "%X" } }
     };
     std::vector<char> data_before(2 + genrand_int32(gMTdata) % 8);
@@ -317,8 +317,10 @@ cl_program makeMixedFormatPrintfProgram(cl_kernel* kernel_ptr,
         {
             const float max_range = 100000.f;
             float arg = get_random_float(-max_range, max_range, gMTdata);
-            args_str << str_sprintf("%f", arg) << "f, ";
-            ref_str << str_sprintf(format, arg) << ", ";
+            std::string arg_str = str_sprintf("%f", arg);
+            args_str << arg_str << "f, ";
+            float arg_deviceRound = std::stof(arg_str);
+            ref_str << str_sprintf(format, arg_deviceRound) << ", ";
         }
     }
     // Restore the original CPU rounding mode
@@ -1151,7 +1153,8 @@ int main(int argc, const char* argv[])
     char* pcTempFname = get_temp_filename();
     if (pcTempFname != nullptr)
     {
-        strncpy(gFileName, pcTempFname, sizeof(gFileName));
+        strncpy(gFileName, pcTempFname, sizeof(gFileName) - 1);
+        gFileName[sizeof(gFileName) - 1] = '\0';
     }
 
     free(pcTempFname);

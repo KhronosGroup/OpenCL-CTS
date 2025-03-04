@@ -24,7 +24,6 @@
 #include "harness/stringHelpers.h"
 #include "harness/typeWrappers.h"
 
-#include "procs.h"
 #include "test_base.h"
 
 #ifndef M_PI
@@ -65,10 +64,6 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
     for (int i = 0, j = 0; i < n; i++, j++)
     {
         r = (180.0 / M_PI) * conv_to_dbl(inptr[i]);
-
-        if (std::is_same<T, half>::value)
-            if (!isfinite_fp(conv_to_half(r)) && !isfinite_fp(outptr[i]))
-                continue;
 
         error = UlpFn(outptr[i], r);
 
@@ -115,10 +110,6 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
     for (int i = 0, j = 0; i < n; i++, j++)
     {
         r = (M_PI / 180.0) * conv_to_dbl(inptr[i]);
-
-        if (std::is_same<T, half>::value)
-            if (!isfinite_fp(conv_to_half(r)) && !isfinite_fp(outptr[i]))
-                continue;
 
         error = UlpFn(outptr[i], r);
 
@@ -385,22 +376,20 @@ cl_int SignTest::Run()
     return error;
 }
 
-int test_degrees(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int n_elems)
+REGISTER_TEST(degrees)
 {
-    return MakeAndRunTest<DegreesTest>(device, context, queue, n_elems,
+    return MakeAndRunTest<DegreesTest>(device, context, queue, num_elements,
                                        "degrees");
 }
 
-int test_radians(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int n_elems)
+REGISTER_TEST(radians)
 {
-    return MakeAndRunTest<RadiansTest>(device, context, queue, n_elems,
+    return MakeAndRunTest<RadiansTest>(device, context, queue, num_elements,
                                        "radians");
 }
 
-int test_sign(cl_device_id device, cl_context context, cl_command_queue queue,
-              int n_elems)
+REGISTER_TEST(sign)
 {
-    return MakeAndRunTest<SignTest>(device, context, queue, n_elems, "sign");
+    return MakeAndRunTest<SignTest>(device, context, queue, num_elements,
+                                    "sign");
 }

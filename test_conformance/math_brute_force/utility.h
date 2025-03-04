@@ -114,9 +114,6 @@ inline double DoubleFromUInt32(uint32_t bits)
     return u.d;
 }
 
-void _LogBuildError(cl_program p, int line, const char *file);
-#define LogBuildError(program) _LogBuildError(program, __LINE__, __FILE__)
-
 // The spec is fairly clear that we may enforce a hard cutoff to prevent
 // premature flushing to zero.
 // However, to avoid conflict for 1.0, we are letting results at TYPE_MIN +

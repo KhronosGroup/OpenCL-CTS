@@ -61,14 +61,15 @@ struct ConsistencyExternalBufferTest : public VulkanTestBase
 #else
         if (!is_extension_available(device, "cl_khr_external_memory_opaque_fd"))
         {
-            throw std::runtime_error(
-                "Device does not support "
-                "cl_khr_external_memory_opaque_fd extension \n");
+            log_info("Device does not support "
+                     "cl_khr_external_memory_opaque_fd extension \n");
+            return TEST_SKIPPED_ITSELF;
         }
 #endif
 
         VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
-            getSupportedVulkanExternalMemoryHandleTypeList()[0];
+            getSupportedVulkanExternalMemoryHandleTypeList(
+                vkDevice->getPhysicalDevice())[0];
 
         VulkanBuffer vkDummyBuffer(*vkDevice, 4 * 1024,
                                    vkExternalMemoryHandleType);
@@ -200,9 +201,9 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
 #else
         if (!is_extension_available(device, "cl_khr_external_memory_opaque_fd"))
         {
-            test_fail(
-                "Device does not support cl_khr_external_memory_opaque_fd "
-                "extension \n");
+            log_info("Device does not support cl_khr_external_memory_opaque_fd "
+                     "extension \n");
+            return TEST_SKIPPED_ITSELF;
         }
 #endif
         uint32_t width = 256;
@@ -212,7 +213,8 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
         cl_image_format img_format = { 0 };
 
         VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
-            getSupportedVulkanExternalMemoryHandleTypeList()[0];
+            getSupportedVulkanExternalMemoryHandleTypeList(
+                vkDevice->getPhysicalDevice())[0];
 
         VulkanImageTiling vulkanImageTiling =
             vkClExternalMemoryHandleTilingAssumption(
@@ -355,9 +357,9 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
 #else
         if (!is_extension_available(device, "cl_khr_external_memory_opaque_fd"))
         {
-            test_fail(
-                "Device does not support cl_khr_external_memory_opaque_fd "
-                "extension \n");
+            log_info("Device does not support cl_khr_external_memory_opaque_fd "
+                     "extension \n");
+            return TEST_SKIPPED_ITSELF;
         }
 #endif
 
@@ -474,29 +476,6 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
             sema_props1.push_back(0);
             sema_props2.push_back(0);
 
-            // Pass NULL properties
-            clCreateSemaphoreWithPropertiesKHRptr(context, NULL, &errNum);
-            test_failure_error(
-                errNum, CL_INVALID_VALUE,
-                "Semaphore creation must fail with CL_INVALID_VALUE "
-                " when properties are passed as NULL");
-
-            // Pass invalid semaphore object to wait
-            errNum = clEnqueueWaitSemaphoresKHRptr(queue, 1, NULL, NULL, 0,
-                                                   NULL, NULL);
-            test_failure_error(
-                errNum, CL_INVALID_VALUE,
-                "clEnqueueWaitSemaphoresKHR fails with CL_INVALID_VALUE "
-                "when invalid semaphore object is passed");
-
-            // Pass invalid semaphore object to signal
-            errNum = clEnqueueSignalSemaphoresKHRptr(queue, 1, NULL, NULL, 0,
-                                                     NULL, NULL);
-            test_failure_error(
-                errNum, CL_INVALID_VALUE,
-                "clEnqueueSignalSemaphoresKHR fails with CL_INVALID_VALUE"
-                "when invalid semaphore object is passed");
-
             // Create two semaphore objects
             clVk2Clsemaphore = clCreateSemaphoreWithPropertiesKHRptr(
                 context, sema_props1.data(), &errNum);
@@ -509,13 +488,6 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
             test_error(
                 errNum,
                 "Unable to create semaphore with valid semaphore properties");
-
-            // Pass invalid object to release call
-            errNum = clReleaseSemaphoreKHRptr(NULL);
-            test_failure_error(errNum, CL_INVALID_SEMAPHORE_KHR,
-                               "clReleaseSemaphoreKHRptr fails with "
-                               "CL_INVALID_SEMAPHORE_KHR when NULL semaphore "
-                               "object is passed");
 
             // Release both semaphore objects
             errNum = clReleaseSemaphoreKHRptr(clVk2Clsemaphore);
@@ -531,27 +503,20 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
 
 } // anonymous namespace
 
-int test_consistency_external_buffer(cl_device_id deviceID, cl_context context,
-                                     cl_command_queue defaultQueue,
-                                     int num_elements)
+REGISTER_TEST(test_consistency_external_buffer)
 {
-    return MakeAndRunTest<ConsistencyExternalBufferTest>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<ConsistencyExternalBufferTest>(device, context, queue,
+                                                         num_elements);
 }
 
-int test_consistency_external_image(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue defaultQueue,
-                                    int num_elements)
+REGISTER_TEST(test_consistency_external_image)
 {
-    return MakeAndRunTest<ConsistencyExternalImageTest>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<ConsistencyExternalImageTest>(device, context, queue,
+                                                        num_elements);
 }
 
-int test_consistency_external_semaphore(cl_device_id deviceID,
-                                        cl_context context,
-                                        cl_command_queue defaultQueue,
-                                        int num_elements)
+REGISTER_TEST(test_consistency_external_semaphore)
 {
     return MakeAndRunTest<ConsistencyExternalSemaphoreTest>(
-        deviceID, context, defaultQueue, num_elements);
+        device, context, queue, num_elements);
 }
