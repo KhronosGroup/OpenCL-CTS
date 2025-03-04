@@ -36,6 +36,7 @@ test_definition test_list[] = {
     ADD_TEST(get_program_build_info),
     ADD_TEST(get_program_info),
     ADD_TEST(get_linked_program_info_kernel_names),
+    ADD_TEST(get_program_info_kernel_names),
     ADD_TEST(get_program_info_mult_devices),
 
     ADD_TEST(large_compile),
