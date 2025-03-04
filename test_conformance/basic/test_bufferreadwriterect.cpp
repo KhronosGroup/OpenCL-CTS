@@ -344,9 +344,22 @@ void CL_CALLBACK mem_obj_destructor_callback( cl_mem, void *data )
     free( data );
 }
 
+using test_fn = int (*)(size_t, size_t[3], size_t[3], size_t, size_t[3],
+                        size_t[3]);
+struct TestFunctions
+{
+    test_fn copy;
+    test_fn read;
+    test_fn write;
+};
+
 // This is the main test function for the conformance test.
-int
-test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_queue queue_, int num_elements)
+static int test_bufferreadwriterect_impl(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue_,
+                                         int num_elements,
+                                         cl_map_flags buffer_flags,
+                                         const TestFunctions& test_functions)
 {
     queue = queue_;
     cl_int err;
@@ -436,7 +449,8 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
         memcpy(backing[i], verify[i], size_bytes);
 
         // Create the CL buffer.
-        buffer[i] = clCreateBuffer (context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE, size_bytes, backing[i], &err);
+        buffer[i] =
+            clCreateBuffer(context, buffer_flags, size_bytes, backing[i], &err);
         CL_EXIT_ERROR(err,"clCreateBuffer failed for buffer %u", i);
 
         // Make sure buffer is cleaned up appropriately if we encounter an error in the rest of the calls.
@@ -501,7 +515,8 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
                          doffset[0], doffset[1], doffset[2], sregion[0],
                          sregion[1], sregion[2],
                          sregion[0] * sregion[1] * sregion[2]);
-                if ((err = copy_region(src, soffset, sregion, dst, doffset, dregion)))
+                if ((err = test_functions.copy(src, soffset, sregion, dst,
+                                               doffset, dregion)))
                     return err;
                 break;
             case 1:
@@ -511,7 +526,8 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
                          doffset[0], doffset[1], doffset[2], sregion[0],
                          sregion[1], sregion[2],
                          sregion[0] * sregion[1] * sregion[2]);
-                if ((err = read_verify_region(src, soffset, sregion, dst, doffset, dregion)))
+                if ((err = test_functions.read(src, soffset, sregion, dst,
+                                               doffset, dregion)))
                     return err;
                 break;
             case 2:
@@ -521,7 +537,8 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
                          doffset[0], doffset[1], doffset[2], sregion[0],
                          sregion[1], sregion[2],
                          sregion[0] * sregion[1] * sregion[2]);
-                if ((err = write_region(src, soffset, sregion, dst, doffset, dregion)))
+                if ((err = test_functions.write(src, soffset, sregion, dst,
+                                                doffset, dregion)))
                     return err;
                 break;
         }
@@ -565,5 +582,14 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
     return err;
 }
 
-
-
+int test_bufferreadwriterect(cl_device_id device, cl_context context,
+                             cl_command_queue queue_, int num_elements)
+{
+    TestFunctions test_functions;
+    test_functions.copy = copy_region;
+    test_functions.read = read_verify_region;
+    test_functions.write = write_region;
+    return test_bufferreadwriterect_impl(
+        device, context, queue_, num_elements,
+        CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE, test_functions);
+}
