@@ -1,0 +1,77 @@
+; kernel void printf_operands_scalar_int64(long l)
+; {
+;     printf("ld = %ld\n", l);
+;     printf("li = %li\n", l);
+;     printf("lo = %lo\n", l);
+;     printf("lu = %lu\n", l);
+;     printf("lx = %lx\n", l);
+;     printf("lX = %lX\n", l);
+; }
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int64
+               OpCapability Int8
+        %clext = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %test "printf_operands_scalar_int64"
+      %uchar = OpTypeInt 8 0
+      %ulong = OpTypeInt 64 0
+       %uint = OpTypeInt 32 0
+     %uint_8 = OpConstant %uint 8
+    %uint_10 = OpConstant %uint 10
+    %uint_12 = OpConstant %uint 12
+    %uchar_nul = OpConstant %uchar 0
+   %uchar_nl = OpConstant %uchar 10
+   %uchar_sp = OpConstant %uchar 32
+  %uchar_pct = OpConstant %uchar 37
+   %uchar_eq = OpConstant %uchar 61
+    %uchar_X = OpConstant %uchar 88
+    %uchar_d = OpConstant %uchar 100
+    %uchar_i = OpConstant %uchar 105
+    %uchar_l = OpConstant %uchar 108
+    %uchar_o = OpConstant %uchar 111
+    %uchar_u = OpConstant %uchar 117
+    %uchar_x = OpConstant %uchar 120
+   %string_8 = OpTypeArray %uchar %uint_8
+%cptr_string_8 = OpTypePointer UniformConstant %string_8
+  %string_10 = OpTypeArray %uchar %uint_10
+%cptr_string_10 = OpTypePointer UniformConstant %string_10
+  %string_12 = OpTypeArray %uchar %uint_12
+%cptr_string_12 = OpTypePointer UniformConstant %string_12
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+ %kernel_sig = OpTypeFunction %void %ulong
+  %cptr_char = OpTypePointer UniformConstant %uchar
+
+   %array_ld = OpConstantComposite %string_10 %uchar_l %uchar_d %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_l %uchar_d %uchar_nl %uchar_nul ; "ld = %ld\n"
+  %string_ld = OpVariable %cptr_string_10 UniformConstant %array_ld
+   %array_li = OpConstantComposite %string_10 %uchar_l %uchar_i %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_l %uchar_i %uchar_nl %uchar_nul ; "li = %li\n"
+  %string_li = OpVariable %cptr_string_10 UniformConstant %array_li
+   %array_lo = OpConstantComposite %string_10 %uchar_l %uchar_o %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_l %uchar_o %uchar_nl %uchar_nul ; "lo = %lo\n"
+  %string_lo = OpVariable %cptr_string_10 UniformConstant %array_lo
+   %array_lu = OpConstantComposite %string_10 %uchar_l %uchar_u %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_l %uchar_u %uchar_nl %uchar_nul ; "lu = %lu\n"
+  %string_lu = OpVariable %cptr_string_10 UniformConstant %array_lu
+   %array_lx = OpConstantComposite %string_10 %uchar_l %uchar_x %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_l %uchar_x %uchar_nl %uchar_nul ; "lx = %lx\n"
+  %string_lx = OpVariable %cptr_string_10 UniformConstant %array_lx
+   %array_lX = OpConstantComposite %string_10 %uchar_l %uchar_X %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_l %uchar_X %uchar_nl %uchar_nul ; "lX = %lX\n"
+  %string_lX = OpVariable %cptr_string_10 UniformConstant %array_lX
+
+       %test = OpFunction %void None %kernel_sig
+          %l = OpFunctionParameter %ulong
+      %entry = OpLabel
+
+     %fmt_ld = OpBitcast %cptr_char %string_ld
+  %printf_ld = OpExtInst %uint %clext printf %fmt_ld %l
+     %fmt_li = OpBitcast %cptr_char %string_li
+  %printf_li = OpExtInst %uint %clext printf %fmt_li %l
+     %fmt_lo = OpBitcast %cptr_char %string_lo
+  %printf_lo = OpExtInst %uint %clext printf %fmt_lo %l
+     %fmt_lu = OpBitcast %cptr_char %string_lu
+  %printf_lu = OpExtInst %uint %clext printf %fmt_lu %l
+     %fmt_lx = OpBitcast %cptr_char %string_lx
+  %printf_lx = OpExtInst %uint %clext printf %fmt_lx %l
+     %fmt_lX = OpBitcast %cptr_char %string_lX
+  %printf_lX = OpExtInst %uint %clext printf %fmt_lX %l
+               OpReturn
+               OpFunctionEnd

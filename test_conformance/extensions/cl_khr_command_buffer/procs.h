@@ -91,6 +91,10 @@ extern int test_basic_profiling(cl_device_id device, cl_context context,
 extern int test_simultaneous_profiling(cl_device_id device, cl_context context,
                                        cl_command_queue queue,
                                        int num_elements);
+extern int test_substitute_queue_profiling(cl_device_id device,
+                                           cl_context context,
+                                           cl_command_queue queue,
+                                           int num_elements);
 extern int test_queue_substitution(cl_device_id device, cl_context context,
                                    cl_command_queue queue, int num_elements);
 extern int test_properties_queue_substitution(cl_device_id device,
@@ -101,6 +105,14 @@ extern int test_simultaneous_queue_substitution(cl_device_id device,
                                                 cl_context context,
                                                 cl_command_queue queue,
                                                 int num_elements);
+extern int test_queue_substitute_in_order(cl_device_id device,
+                                          cl_context context,
+                                          cl_command_queue queue,
+                                          int num_elements);
+extern int test_queue_substitute_out_of_order(cl_device_id device,
+                                              cl_context context,
+                                              cl_command_queue queue,
+                                              int num_elements);
 extern int test_fill_image(cl_device_id device, cl_context context,
                            cl_command_queue queue, int num_elements);
 extern int test_fill_buffer(cl_device_id device, cl_context context,
@@ -209,13 +221,6 @@ extern int test_negative_create_command_buffer_repeated_properties(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
 extern int test_negative_create_command_buffer_not_supported_properties(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements);
-extern int test_negative_create_command_buffer_queue_without_min_properties(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements);
-extern int
-test_negative_create_command_buffer_device_does_not_support_out_of_order_queue(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
 extern int test_negative_command_ndrange_queue_not_null(cl_device_id device,
@@ -383,10 +388,6 @@ extern int test_negative_command_buffer_copy_image_mutable_handle_not_null(
 extern int test_negative_enqueue_command_buffer_not_valid_queue_in_queues(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
-extern int test_negative_enqueue_queue_not_compatible(cl_device_id device,
-                                                      cl_context context,
-                                                      cl_command_queue queue,
-                                                      int num_elements);
 extern int test_negative_enqueue_queue_with_different_context(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
@@ -396,6 +397,14 @@ extern int test_negative_enqueue_command_buffer_different_context_than_event(
 extern int test_negative_enqueue_event_wait_list_null_or_events_null(
     cl_device_id device, cl_context context, cl_command_queue queue,
     int num_elements);
-
-
+extern int test_negative_enqueue_queue_without_reqd_properties(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_enqueue_with_unsupported_queue_property(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    int num_elements);
+extern int test_negative_enqueue_inconsistent_device(cl_device_id device,
+                                                     cl_context context,
+                                                     cl_command_queue queue,
+                                                     int num_elements);
 #endif // CL_KHR_COMMAND_BUFFER_PROCS_H

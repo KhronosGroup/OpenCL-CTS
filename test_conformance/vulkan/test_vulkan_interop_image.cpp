@@ -1521,22 +1521,20 @@ struct ImageCommonTest : public VulkanTestBase
 
 } // anonymous namespace
 
-int test_image_single_queue(cl_device_id deviceID, cl_context context,
-                            cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST(test_image_single_queue)
 {
     params_reset();
     log_info("RUNNING TEST WITH ONE QUEUE...... \n\n");
 
-    return MakeAndRunTest<ImageCommonTest>(deviceID, context, defaultQueue,
+    return MakeAndRunTest<ImageCommonTest>(device, context, queue,
                                            num_elements);
 }
 
-int test_image_multiple_queue(cl_device_id deviceID, cl_context context,
-                              cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST(test_image_multiple_queue)
 {
     params_reset();
     numCQ = 2;
     log_info("RUNNING TEST WITH TWO QUEUE...... \n\n");
-    return MakeAndRunTest<ImageCommonTest>(deviceID, context, defaultQueue,
+    return MakeAndRunTest<ImageCommonTest>(device, context, queue,
                                            num_elements);
 }

@@ -154,7 +154,7 @@ static int doTest(const char *name)
         exit(EXIT_FAILURE);
     }
 
-    if (func_data->func.p == NULL)
+    if (func_data->func.p == NULL && func_data->rfunc.p == NULL)
     {
         vlog("'%s' is missing implementation, skipping function.\n",
              func_data->name);
@@ -308,9 +308,10 @@ static test_definition test_list[] = {
     ADD_TEST(half_log),      ADD_TEST(half_log2),  ADD_TEST(half_log10),
     ADD_TEST(half_powr),     ADD_TEST(half_recip), ADD_TEST(half_rsqrt),
     ADD_TEST(half_sin),      ADD_TEST(half_sqrt),  ADD_TEST(half_tan),
-    ADD_TEST(add),           ADD_TEST(subtract),   ADD_TEST(divide),
-    ADD_TEST(divide_cr),     ADD_TEST(multiply),   ADD_TEST(assignment),
-    ADD_TEST(not ),          ADD_TEST(erf),        ADD_TEST(erfc),
+    ADD_TEST(add),           ADD_TEST(subtract),   ADD_TEST(reciprocal),
+    ADD_TEST(divide),        ADD_TEST(divide_cr),  ADD_TEST(multiply),
+    ADD_TEST(assignment),    ADD_TEST(not ),       ADD_TEST(erf),
+    ADD_TEST(erfc),
 };
 
 #undef ADD_TEST
@@ -978,19 +979,6 @@ static void ReleaseCL(void)
         align_free(gOut[i]);
         align_free(gOut2[i]);
     }
-}
-
-void _LogBuildError(cl_program p, int line, const char *file)
-{
-    char the_log[2048] = "";
-
-    vlog_error("%s:%d: Build Log:\n", file, line);
-    if (0
-        == clGetProgramBuildInfo(p, gDevice, CL_PROGRAM_BUILD_LOG,
-                                 sizeof(the_log), the_log, NULL))
-        vlog_error("%s", the_log);
-    else
-        vlog_error("*** Error getting build log for program %p\n", p);
 }
 
 int InitILogbConstants(void)

@@ -28,7 +28,12 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     BuildKernelInfo &info = *(BuildKernelInfo *)p;
     auto generator = [](const std::string &kernel_name, const char *builtin,
                         cl_uint vector_size_index) {
-        return GetUnaryKernel(kernel_name, builtin, ParameterType::Float,
+        const char *builtinCall = builtin;
+        if (strcmp(builtin, "reciprocal") == 0)
+        {
+            builtinCall = "((RETTYPE)(1.0f))/";
+        }
+        return GetUnaryKernel(kernel_name, builtinCall, ParameterType::Float,
                               ParameterType::Float, vector_size_index);
     };
     return BuildKernels(info, job_id, generator);
@@ -205,20 +210,12 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
         cl_kernel kernel = job->k[j][thread_id]; // each worker thread has its
                                                  // own copy of the cl_kernel
-        cl_program program = job->programs[j];
 
-        if ((error = clSetKernelArg(kernel, 0, sizeof(tinfo->outBuf[j]),
-                                    &tinfo->outBuf[j])))
-        {
-            LogBuildError(program);
-            return error;
-        }
-        if ((error = clSetKernelArg(kernel, 1, sizeof(tinfo->inBuf),
-                                    &tinfo->inBuf)))
-        {
-            LogBuildError(program);
-            return error;
-        }
+        error = clSetKernelArg(kernel, 0, sizeof(tinfo->outBuf[j]),
+                               &tinfo->outBuf[j]);
+        test_error(error, "Failed to set kernel argument 0");
+        error = clSetKernelArg(kernel, 1, sizeof(tinfo->inBuf), &tinfo->inBuf);
+        test_error(error, "Failed to set kernel argument 1");
 
         if ((error = clEnqueueNDRangeKernel(tinfo->tQueue, kernel, 1, NULL,
                                             &vectorCount, NULL, 0, NULL, NULL)))

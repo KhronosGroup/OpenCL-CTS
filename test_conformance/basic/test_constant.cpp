@@ -140,8 +140,8 @@ int test_constant(cl_device_id device, cl_context context,
 
 
     log_info(
-        "Test will attempt to use %lu bytes with one %lu byte constant int "
-        "buffer and one %lu byte constant float buffer.\n",
+        "Test will attempt to use %zu bytes with one %zu byte constant int "
+        "buffer and one %zu byte constant float buffer.\n",
         constant_values * sizeof(cl_int) + constant_values * sizeof(cl_float),
         constant_values * sizeof(cl_int), constant_values * sizeof(cl_float));
 
