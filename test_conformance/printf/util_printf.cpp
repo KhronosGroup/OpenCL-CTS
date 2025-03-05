@@ -1744,9 +1744,13 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
         return strcmp(analysisBuffer, "INF")
             && strcmp(analysisBuffer, "INFINITY");
     else if (pTestCase->_correctBuffer[testId] == "nan")
-        return strcmp(analysisBuffer, "nan") && strcmp(analysisBuffer, "-nan");
+        return strcmp(analysisBuffer, "nan") && strcmp(analysisBuffer, "-nan")
+            && strcmp(analysisBuffer, "nan(ind)")
+            && strcmp(analysisBuffer, "-nan(ind)");
     else if (pTestCase->_correctBuffer[testId] == "NAN")
-        return strcmp(analysisBuffer, "NAN") && strcmp(analysisBuffer, "-NAN");
+        return strcmp(analysisBuffer, "NAN") && strcmp(analysisBuffer, "-NAN")
+            && strcmp(analysisBuffer, "NAN(IND)")
+            && strcmp(analysisBuffer, "-NAN(IND)");
 
     return strcmp(analysisBuffer, pTestCase->_correctBuffer[testId].c_str());
 }
