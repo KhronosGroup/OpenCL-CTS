@@ -526,7 +526,7 @@ struct TestWorkItemFnsOutOfRange
             // Validate
             if (!Validate(dim))
             {
-                log_error("Validation failed");
+                log_error("Validation failed\n");
                 return TEST_FAIL;
             }
         }

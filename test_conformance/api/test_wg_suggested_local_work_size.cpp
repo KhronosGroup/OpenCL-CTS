@@ -208,7 +208,7 @@ int do_test_work_group_suggested_local_size(
     bool (*skip_cond)(size_t), size_t start, size_t end, size_t incr,
     cl_ulong max_local_mem_size, size_t global_work_offset[], num_dims dim)
 {
-    int err;
+    int err = 0;
     size_t test_values[] = { 1, 1, 1 };
     std::string kernel_names[6] = {
         "test_wg_scan_local_work_group_size",

@@ -30,35 +30,8 @@
 #include <OpenCL/cl.h>
 #endif
 
-#include "procs.h"
 #include "harness/testHarness.h"
 #include "harness/parseParameters.h"
-
-#if !defined(_WIN32)
-#include <unistd.h>
-#endif
-
-#define BUFFERSIZE 3000
-
-test_definition test_list[] = { ADD_TEST(buffer_single_queue),
-                                ADD_TEST(buffer_multiple_queue),
-                                ADD_TEST(buffer_multiImport_sameCtx),
-                                ADD_TEST(buffer_multiImport_diffCtx),
-                                ADD_TEST(buffer_single_queue_fence),
-                                ADD_TEST(buffer_multiple_queue_fence),
-                                ADD_TEST(buffer_multiImport_sameCtx_fence),
-                                ADD_TEST(buffer_multiImport_diffCtx_fence),
-                                ADD_TEST(image_single_queue),
-                                ADD_TEST(image_multiple_queue),
-                                ADD_TEST(consistency_external_buffer),
-                                ADD_TEST(consistency_external_image),
-                                ADD_TEST(consistency_external_for_3dimage),
-                                ADD_TEST(consistency_external_for_1dimage),
-                                ADD_TEST(consistency_external_semaphore),
-                                ADD_TEST(platform_info),
-                                ADD_TEST(device_info) };
-
-const int test_num = ARRAY_SIZE(test_list);
 
 unsigned int numCQ;
 bool multiImport;
@@ -77,9 +50,9 @@ static void printUsage(const char *execName)
 
     log_info("Usage: %s [test_names] [options]\n", execName);
     log_info("Test names:\n");
-    for (int i = 0; i < test_num; i++)
+    for (int i = 0; i < test_registry::getInstance().num_tests(); i++)
     {
-        log_info("\t%s\n", test_list[i].name);
+        log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
     }
     log_info("\n");
     log_info("Options:\n");
@@ -204,5 +177,6 @@ int main(int argc, const char *argv[])
 
     if (argc == 0) return 0;
 
-    return runTestHarness(argc, argv, test_num, test_list, false, 0);
+    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
+                          test_registry::getInstance().definitions(), false, 0);
 }

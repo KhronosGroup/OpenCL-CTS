@@ -49,7 +49,8 @@ const VulkanDescriptorSetLayoutList& getEmptyVulkanDescriptorSetLayoutList();
 const VulkanQueueFamilyToQueueCountMap&
 getDefaultVulkanQueueFamilyToQueueCountMap();
 const std::vector<VulkanExternalMemoryHandleType>
-getSupportedVulkanExternalMemoryHandleTypeList();
+getSupportedVulkanExternalMemoryHandleTypeList(
+    const VulkanPhysicalDevice& physical_device);
 const std::vector<VulkanExternalSemaphoreHandleType>
 getSupportedVulkanExternalSemaphoreHandleTypeList(const VulkanDevice& vkDevice);
 std::vector<VulkanExternalSemaphoreHandleType>

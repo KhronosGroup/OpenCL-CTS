@@ -113,7 +113,8 @@ int run_test_with_two_queue(
 
     const std::vector<VulkanExternalMemoryHandleType>
         vkExternalMemoryHandleTypeList =
-            getSupportedVulkanExternalMemoryHandleTypeList();
+            getSupportedVulkanExternalMemoryHandleTypeList(
+                vkDevice.getPhysicalDevice());
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     std::shared_ptr<VulkanFence> fence = nullptr;
@@ -447,7 +448,8 @@ int run_test_with_one_queue(
 
     const std::vector<VulkanExternalMemoryHandleType>
         vkExternalMemoryHandleTypeList =
-            getSupportedVulkanExternalMemoryHandleTypeList();
+            getSupportedVulkanExternalMemoryHandleTypeList(
+                vkDevice.getPhysicalDevice());
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     std::shared_ptr<VulkanFence> fence = nullptr;
@@ -752,7 +754,8 @@ int run_test_with_multi_import_same_ctx(
 
     const std::vector<VulkanExternalMemoryHandleType>
         vkExternalMemoryHandleTypeList =
-            getSupportedVulkanExternalMemoryHandleTypeList();
+            getSupportedVulkanExternalMemoryHandleTypeList(
+                vkDevice.getPhysicalDevice());
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     std::shared_ptr<VulkanFence> fence = nullptr;
@@ -1092,7 +1095,8 @@ int run_test_with_multi_import_diff_ctx(
 
     const std::vector<VulkanExternalMemoryHandleType>
         vkExternalMemoryHandleTypeList =
-            getSupportedVulkanExternalMemoryHandleTypeList();
+            getSupportedVulkanExternalMemoryHandleTypeList(
+                vkDevice.getPhysicalDevice());
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     std::shared_ptr<VulkanFence> fence = nullptr;
@@ -1793,93 +1797,77 @@ template <bool use_fence> struct BufferCommonBufferTest : public BufferTestBase
 
 } // anonymous namespace
 
-int test_buffer_single_queue(cl_device_id deviceID, cl_context context,
-                             cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST(test_buffer_single_queue)
 {
     params_reset();
     log_info("RUNNING TEST WITH ONE QUEUE...... \n\n");
-    return MakeAndRunTest<BufferCommonBufferTest<false>>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<BufferCommonBufferTest<false>>(device, context, queue,
+                                                         num_elements);
 }
 
-int test_buffer_multiple_queue(cl_device_id deviceID, cl_context context,
-                               cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST(test_buffer_multiple_queue)
 {
     params_reset();
     numCQ = 2;
     log_info("RUNNING TEST WITH TWO QUEUE...... \n\n");
-    return MakeAndRunTest<BufferCommonBufferTest<false>>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<BufferCommonBufferTest<false>>(device, context, queue,
+                                                         num_elements);
 }
 
-int test_buffer_multiImport_sameCtx(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue defaultQueue,
-                                    int num_elements)
+REGISTER_TEST(test_buffer_multiImport_sameCtx)
 {
     params_reset();
     multiImport = true;
     log_info("RUNNING TEST WITH MULTIPLE DEVICE MEMORY IMPORT "
              "IN SAME CONTEXT...... \n\n");
-    return MakeAndRunTest<BufferCommonBufferTest<false>>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<BufferCommonBufferTest<false>>(device, context, queue,
+                                                         num_elements);
 }
-int test_buffer_multiImport_diffCtx(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue defaultQueue,
-                                    int num_elements)
+REGISTER_TEST(test_buffer_multiImport_diffCtx)
 {
     params_reset();
     multiImport = true;
     multiCtx = true;
     log_info("RUNNING TEST WITH MULTIPLE DEVICE MEMORY IMPORT "
              "IN DIFFERENT CONTEXT...... \n\n");
-    return MakeAndRunTest<BufferCommonBufferTest<false>>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<BufferCommonBufferTest<false>>(device, context, queue,
+                                                         num_elements);
 }
-int test_buffer_single_queue_fence(cl_device_id deviceID, cl_context context,
-                                   cl_command_queue defaultQueue,
-                                   int num_elements)
+REGISTER_TEST(test_buffer_single_queue_fence)
 {
     params_reset();
     log_info("RUNNING TEST WITH ONE QUEUE...... \n\n");
 
-    return MakeAndRunTest<BufferCommonBufferTest<true>>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<BufferCommonBufferTest<true>>(device, context, queue,
+                                                        num_elements);
 }
 
-int test_buffer_multiple_queue_fence(cl_device_id deviceID, cl_context context,
-                                     cl_command_queue defaultQueue,
-                                     int num_elements)
+REGISTER_TEST(test_buffer_multiple_queue_fence)
 {
     params_reset();
     numCQ = 2;
     log_info("RUNNING TEST WITH TWO QUEUE...... \n\n");
-    return MakeAndRunTest<BufferCommonBufferTest<true>>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<BufferCommonBufferTest<true>>(device, context, queue,
+                                                        num_elements);
 }
 
-int test_buffer_multiImport_sameCtx_fence(cl_device_id deviceID,
-                                          cl_context context,
-                                          cl_command_queue defaultQueue,
-                                          int num_elements)
+REGISTER_TEST(test_buffer_multiImport_sameCtx_fence)
 {
     params_reset();
     multiImport = true;
     log_info("RUNNING TEST WITH MULTIPLE DEVICE MEMORY IMPORT "
              "IN SAME CONTEXT...... \n\n");
-    return MakeAndRunTest<BufferCommonBufferTest<true>>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<BufferCommonBufferTest<true>>(device, context, queue,
+                                                        num_elements);
 }
 
-int test_buffer_multiImport_diffCtx_fence(cl_device_id deviceID,
-                                          cl_context context,
-                                          cl_command_queue defaultQueue,
-                                          int num_elements)
+REGISTER_TEST(test_buffer_multiImport_diffCtx_fence)
 {
     params_reset();
     multiImport = true;
     multiCtx = true;
     log_info("RUNNING TEST WITH MULTIPLE DEVICE MEMORY IMPORT "
              "IN DIFFERENT CONTEXT...... \n\n");
-    return MakeAndRunTest<BufferCommonBufferTest<true>>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<BufferCommonBufferTest<true>>(device, context, queue,
+                                                        num_elements);
 }

@@ -72,7 +72,7 @@ int test_copy_image_size_2D_2D_array( cl_context context, cl_command_queue queue
     size_t threeImage_lod = 0, threeImage_width_lod = threeImage->width, threeImage_row_pitch_lod, threeImage_slice_pitch_lod;
     size_t threeImage_height_lod = threeImage->height;
     size_t width_lod, height_lod;
-    size_t twoImage_max_mip_level,threeImage_max_mip_level;
+    size_t twoImage_max_mip_level = 0, threeImage_max_mip_level = 0;
 
     if( gTestMipmaps )
     {

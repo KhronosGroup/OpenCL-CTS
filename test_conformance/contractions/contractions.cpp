@@ -365,16 +365,18 @@ static int ParseArgs( int argc, const char **argv )
     int length_of_seed = 0;
 
     { // Extract the app name
-        strncpy( appName, argv[0], MAXPATHLEN );
+        strncpy(appName, argv[0], MAXPATHLEN - 1);
+        appName[MAXPATHLEN - 1] = '\0';
 
 #if (defined( __APPLE__ ) || defined(__linux__) || defined(__MINGW32__))
         char baseName[MAXPATHLEN];
         char *base = NULL;
-        strncpy( baseName, argv[0], MAXPATHLEN );
+        strncpy(baseName, argv[0], MAXPATHLEN - 1);
+        baseName[MAXPATHLEN - 1] = '\0';
         base = basename( baseName );
         if( NULL != base )
         {
-            strncpy( appName, base, sizeof( appName )  );
+            strncpy(appName, base, sizeof(appName) - 1);
             appName[ sizeof( appName ) -1 ] = '\0';
         }
 #elif defined (_WIN32)
@@ -385,7 +387,7 @@ static int ParseArgs( int argc, const char **argv )
                                    fname, _MAX_FNAME, ext, _MAX_EXT );
         if (err == 0) { // no error
             strcat (fname, ext); //just cat them, size of frame can keep both
-            strncpy (appName, fname, sizeof(appName));
+            strncpy(appName, fname, sizeof(appName) - 1);
             appName[ sizeof( appName ) -1 ] = '\0';
         }
 #endif

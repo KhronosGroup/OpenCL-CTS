@@ -1100,7 +1100,7 @@ static int check_global_initialization(cl_context context, cl_program program,
     test_error_ret(status, "Failed to read buffer from device", status);
     if (is_init_valid == 0)
     {
-        log_error("Unexpected default values were detected");
+        log_error("Unexpected default values were detected\n");
         return 1;
     }
 
