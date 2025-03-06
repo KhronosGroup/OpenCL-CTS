@@ -32,7 +32,7 @@ protected:
     VulkanPhysicalDeviceList m_physicalDeviceList;
     VkDebugUtilsMessengerEXT m_debugMessenger;
     bool m_useValidationLayers;
-    const std::vector<const char *> m_validationLayers = {
+    std::vector<const char *> m_validationLayers = {
         "VK_LAYER_KHRONOS_validation",
     };
 

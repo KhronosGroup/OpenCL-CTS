@@ -84,7 +84,15 @@ static void printUsage(const char *execName)
     log_info("\n");
     log_info("Options:\n");
     log_info("\t--debug_trace - Enables additional debug info logging\n");
-    log_info("\t--non_dedicated - Choose dedicated Vs. non_dedicated \n");
+    log_info("\t--useSingleImageKernel - Use the same image "
+             "(image_single_queue and image_multiple_queue tests)\n");
+    log_info("\t--useDeviceLocal - Skip tests that use images with local "
+             "memory type\n");
+    log_info("\t--disableNTHandleType - Skip tests that use win32 external "
+             "memory handle\n");
+    log_info("\t--useValidationLayers - Enables Vulkan validation layer "
+             "diagnostic output\n");
+    log_info("\t-h - Print test usage\n");
 }
 
 bool isDeviceSelection(const char *arg)

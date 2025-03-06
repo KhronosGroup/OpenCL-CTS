@@ -160,15 +160,22 @@ VulkanInstance::VulkanInstance(bool useValidationLayers)
         std::vector<VkLayerProperties> layers(layerCount);
         vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
 
-        bool found = false;
-        for (const char *layerName : m_validationLayers)
+        for (auto it = m_validationLayers.begin();
+             it != m_validationLayers.end();)
+        {
+            bool found = false;
             for (const auto &layerProps : layers)
-                if (strcmp(layerName, layerProps.layerName) == 0)
+                if (strcmp(*it, layerProps.layerName) == 0)
                 {
                     found = true;
                     break;
                 }
-        m_useValidationLayers = found;
+            if (!found)
+                it = m_validationLayers.erase(it);
+            else
+                ++it;
+        }
+        m_useValidationLayers = !m_validationLayers.empty();
     }
 
     VkApplicationInfo vkApplicationInfo = {};
@@ -240,12 +247,6 @@ VulkanInstance::VulkanInstance(bool useValidationLayers)
             | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
             | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
-        // VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
-        // VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT
-        // VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-        // VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
-        debugCreateInfo.messageSeverity |=
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
         debugCreateInfo.sType =
             VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
         debugCreateInfo.messageSeverity =
