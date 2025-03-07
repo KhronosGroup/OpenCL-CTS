@@ -17,6 +17,7 @@
 #include "semaphore_base.h"
 
 #include "harness/errorHelpers.h"
+#include <array>
 #include <chrono>
 #include <system_error>
 #include <thread>
@@ -165,18 +166,21 @@ struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
         }
 
         cl_uint maxComputeUnits = 0;
-        err = clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS,
-                              sizeof(maxComputeUnits), &maxComputeUnits, nullptr);
+        err =
+            clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS,
+                            sizeof(maxComputeUnits), &maxComputeUnits, nullptr);
         test_error_ret(err, "Unable to get maximal number of compute units",
                        TEST_FAIL);
 
-        std::vector<std::array<cl_device_partition_property, 5>> partition_props = {
-            { CL_DEVICE_PARTITION_EQUALLY, (cl_int)maxComputeUnits / 2, 0, 0, 0 },
-            { CL_DEVICE_PARTITION_BY_COUNTS, 1, (cl_int)maxComputeUnits - 1,
-              CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0 },
-            { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
-              CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE, 0, 0, 0 }
-        };
+        std::vector<std::array<cl_device_partition_property, 5>>
+            partition_props = {
+                { CL_DEVICE_PARTITION_EQUALLY, (cl_int)maxComputeUnits / 2, 0,
+                  0, 0 },
+                { CL_DEVICE_PARTITION_BY_COUNTS, 1, (cl_int)maxComputeUnits - 1,
+                  CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0 },
+                { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
+                  CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE, 0, 0, 0 }
+            };
 
         std::unique_ptr<SubDevicesScopeGuarded> scope_guard;
         cl_uint num_devices = 0;
@@ -212,8 +216,8 @@ struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
 
         /* Create a multi device context */
         clContextWrapper multi_device_context = clCreateContext(
-            NULL, (cl_uint)num_devices, scope_guard->sub_devices.data(), nullptr,
-            nullptr, &err);
+            NULL, (cl_uint)num_devices, scope_guard->sub_devices.data(),
+            nullptr, nullptr, &err);
         test_error_fail(err, "Unable to create testing context");
 
         cl_semaphore_properties_khr sema_props[] = {
