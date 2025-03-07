@@ -106,7 +106,7 @@ REGISTER_TEST_VERSION(work_group_any, Version(2, 0))
 
     p = input_ptr[0];
     d = init_genrand( gRandomSeed );
-    for (size_t i = 0; i < (num_elements + 1); i++)
+    for (int i = 0; i < (num_elements + 1); i++)
     {
         p[i] = get_random_float((float)(-100000.f * M_PI), (float)(100000.f * M_PI) ,d);
     }

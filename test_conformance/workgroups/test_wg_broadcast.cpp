@@ -209,7 +209,7 @@ REGISTER_TEST_VERSION(work_group_broadcast_1D, Version(2, 0))
 
     p = input_ptr[0];
     d = init_genrand( gRandomSeed );
-    for (size_t i = 0; i < num_elements; i++)
+    for (int i = 0; i < num_elements; i++)
     {
         p[i] = get_random_float((float)(-100000.f * M_PI), (float)(100000.f * M_PI) ,d);
     }
@@ -332,7 +332,7 @@ REGISTER_TEST_VERSION(work_group_broadcast_2D, Version(2, 0))
 
     p = input_ptr[0];
     d = init_genrand( gRandomSeed );
-    for (size_t i = 0; i < num_elements; i++)
+    for (int i = 0; i < num_elements; i++)
     {
         p[i] = get_random_float((float)(-100000.f * M_PI), (float)(100000.f * M_PI) ,d);
     }
@@ -454,7 +454,7 @@ REGISTER_TEST_VERSION(work_group_broadcast_3D, Version(2, 0))
 
     p = input_ptr[0];
     d = init_genrand( gRandomSeed );
-    for (size_t i = 0; i < num_elements; i++)
+    for (int i = 0; i < num_elements; i++)
     {
         p[i] = get_random_float((float)(-100000.f * M_PI), (float)(100000.f * M_PI) ,d);
     }
