@@ -16,31 +16,11 @@
 #include "harness/compat.h"
 
 #include "harness/testHarness.h"
-#include "procs.h"
 #include <stdio.h>
 #include <string.h>
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif
-
-test_definition test_list[] = {
-    ADD_TEST_VERSION(work_group_all, Version(2, 0)),
-    ADD_TEST_VERSION(work_group_any, Version(2, 0)),
-    ADD_TEST_VERSION(work_group_reduce_add, Version(2, 0)),
-    ADD_TEST_VERSION(work_group_reduce_min, Version(2, 0)),
-    ADD_TEST_VERSION(work_group_reduce_max, Version(2, 0)),
-    ADD_TEST_VERSION(work_group_scan_inclusive_add, Version(2, 0)),
-    ADD_TEST_VERSION(work_group_scan_inclusive_min, Version(2, 0)),
-    ADD_TEST_VERSION(work_group_scan_inclusive_max, Version(2, 0)),
-    ADD_TEST_VERSION(work_group_scan_exclusive_add, Version(2, 0)),
-    ADD_TEST_VERSION(work_group_scan_exclusive_min, Version(2, 0)),
-    ADD_TEST_VERSION(work_group_scan_exclusive_max, Version(2, 0)),
-    ADD_TEST_VERSION(work_group_broadcast_1D, Version(2, 0)),
-    ADD_TEST_VERSION(work_group_broadcast_2D, Version(2, 0)),
-    ADD_TEST_VERSION(work_group_broadcast_3D, Version(2, 0)),
-};
-
-const int test_num = ARRAY_SIZE(test_list);
 
 test_status InitCL(cl_device_id device) {
     auto version = get_device_cl_version(device);
@@ -77,6 +57,8 @@ test_status InitCL(cl_device_id device) {
 }
 
 int main(int argc, const char *argv[]) {
-  return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, 0, InitCL);
+    return runTestHarnessWithCheck(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0, InitCL);
 }
 
