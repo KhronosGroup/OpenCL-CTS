@@ -17,6 +17,7 @@
 #include "semaphore_base.h"
 
 #include "harness/errorHelpers.h"
+#include <array>
 #include <chrono>
 #include <system_error>
 #include <thread>
