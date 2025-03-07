@@ -5,6 +5,7 @@
 ; Schema: 0
                OpCapability Addresses
                OpCapability Kernel
+               OpCapability Float16
                OpCapability Float16Buffer
           %1 = OpExtInstImport "OpenCL.std"
                OpMemoryModel Physical32 OpenCL
