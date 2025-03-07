@@ -20,8 +20,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+#include "harness/testHarness.h"
 #include "harness/errorHelpers.h"
+#include "harness/typeWrappers.h"
 
 #define TEST_PRIME_INT        ((1<<16)+1)
 
@@ -77,7 +78,7 @@ static int verify_result(void *ptr1, void *ptr2, int n)
     return 0;
 }
 
-int test_pipe_query_functions(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(pipe_query_functions)
 {
     clMemWrapper pipe;
     clMemWrapper buffers[4];
@@ -252,4 +253,3 @@ int test_pipe_query_functions(cl_device_id deviceID, cl_context context, cl_comm
     }
     return 0;
 }
-

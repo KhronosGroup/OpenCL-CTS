@@ -20,8 +20,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
 #include "harness/errorHelpers.h"
+#include "harness/testHarness.h"
+#include "harness/typeWrappers.h"
 
 const char* pipe_readwrite_errors_kernel_code = {
     "__kernel void test_pipe_write_error(__global int *src, __write_only pipe int out_pipe, __global int *status)\n"
@@ -62,7 +63,7 @@ const char* pipe_readwrite_errors_kernel_code = {
 };
 
 
-int test_pipe_readwrite_errors(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(pipe_readwrite_errors)
 {
     clMemWrapper pipe;
     clMemWrapper buffers[3];
