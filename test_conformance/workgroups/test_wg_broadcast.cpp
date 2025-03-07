@@ -22,8 +22,7 @@
 
 #include <algorithm>
 
-#include "procs.h"
-
+#include "testBase.h"
 
 const char *wg_broadcast_1D_kernel_code =
 "__kernel void test_wg_broadcast_1D(global float *input, global float *output)\n"
@@ -168,8 +167,7 @@ verify_wg_broadcast_3D(float *inptr, float *outptr, size_t nx, size_t ny, size_t
 }
 
 
-int
-test_work_group_broadcast_1D(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST_VERSION(work_group_broadcast_1D, Version(2, 0))
 {
     cl_mem       streams[2];
     cl_float     *input_ptr[1], *p;
@@ -177,8 +175,7 @@ test_work_group_broadcast_1D(cl_device_id device, cl_context context, cl_command
     cl_program   program;
     cl_kernel    kernel;
     size_t       globalsize[1];
-    size_t       wg_size[1];
-    size_t       num_elements;
+    size_t wg_size[1];
     int          err;
     MTdata       d;
 
@@ -191,8 +188,6 @@ test_work_group_broadcast_1D(cl_device_id device, cl_context context, cl_command
     // "wg_size" is limited to that of the first dimension as only a 1DRange is executed.
     err = get_max_allowed_1d_work_group_size_on_device(device, kernel, wg_size);
     test_error(err, "get_max_allowed_1d_work_group_size_on_device failed");
-
-    num_elements = n_elems;
 
     input_ptr[0] = (cl_float*)malloc(sizeof(cl_float) * num_elements);
     output_ptr = (cl_float*)malloc(sizeof(cl_float) * num_elements);
@@ -214,7 +209,7 @@ test_work_group_broadcast_1D(cl_device_id device, cl_context context, cl_command
 
     p = input_ptr[0];
     d = init_genrand( gRandomSeed );
-    for (size_t i = 0; i < num_elements; i++)
+    for (int i = 0; i < num_elements; i++)
     {
         p[i] = get_random_float((float)(-100000.f * M_PI), (float)(100000.f * M_PI) ,d);
     }
@@ -236,7 +231,7 @@ test_work_group_broadcast_1D(cl_device_id device, cl_context context, cl_command
     }
 
     // Line below is troublesome...
-    globalsize[0] = (size_t)n_elems;
+    globalsize[0] = (size_t)num_elements;
     err = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, globalsize, wg_size, 0, NULL, NULL );
     if (err != CL_SUCCESS)
     {
@@ -271,8 +266,7 @@ test_work_group_broadcast_1D(cl_device_id device, cl_context context, cl_command
 }
 
 
-int
-test_work_group_broadcast_2D(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST_VERSION(work_group_broadcast_2D, Version(2, 0))
 {
     cl_mem       streams[2];
     cl_float     *input_ptr[1], *p;
@@ -282,8 +276,7 @@ test_work_group_broadcast_2D(cl_device_id device, cl_context context, cl_command
     size_t       globalsize[2];
     size_t       localsize[2];
     size_t       wg_size[1];
-    size_t       num_workgroups;
-    size_t       num_elements;
+    size_t num_workgroups;
     int          err;
     MTdata       d;
 
@@ -314,7 +307,7 @@ test_work_group_broadcast_2D(cl_device_id device, cl_context context, cl_command
         localsize[0] = localsize[1] = 1;
     }
 
-    num_workgroups = std::max(n_elems / wg_size[0], (size_t)16);
+    num_workgroups = std::max(num_elements / wg_size[0], (size_t)16);
     globalsize[0] = num_workgroups * localsize[0];
     globalsize[1] = num_workgroups * localsize[1];
     num_elements = globalsize[0] * globalsize[1];
@@ -339,7 +332,7 @@ test_work_group_broadcast_2D(cl_device_id device, cl_context context, cl_command
 
     p = input_ptr[0];
     d = init_genrand( gRandomSeed );
-    for (size_t i = 0; i < num_elements; i++)
+    for (int i = 0; i < num_elements; i++)
     {
         p[i] = get_random_float((float)(-100000.f * M_PI), (float)(100000.f * M_PI) ,d);
     }
@@ -394,8 +387,7 @@ test_work_group_broadcast_2D(cl_device_id device, cl_context context, cl_command
 }
 
 
-int
-test_work_group_broadcast_3D(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST_VERSION(work_group_broadcast_3D, Version(2, 0))
 {
     cl_mem       streams[2];
     cl_float     *input_ptr[1], *p;
@@ -405,8 +397,7 @@ test_work_group_broadcast_3D(cl_device_id device, cl_context context, cl_command
     size_t       globalsize[3];
     size_t       localsize[3];
     size_t       wg_size[1];
-    size_t       num_workgroups;
-    size_t       num_elements;
+    size_t num_workgroups;
     int          err;
     MTdata       d;
 
@@ -437,7 +428,7 @@ test_work_group_broadcast_3D(cl_device_id device, cl_context context, cl_command
         localsize[0] = localsize[1] = localsize[2] = 1;
     }
 
-    num_workgroups = std::max(n_elems / wg_size[0], (size_t)8);
+    num_workgroups = std::max(num_elements / wg_size[0], (size_t)8);
     globalsize[0] = num_workgroups * localsize[0];
     globalsize[1] = num_workgroups * localsize[1];
     globalsize[2] = num_workgroups * localsize[2];
@@ -463,7 +454,7 @@ test_work_group_broadcast_3D(cl_device_id device, cl_context context, cl_command
 
     p = input_ptr[0];
     d = init_genrand( gRandomSeed );
-    for (size_t i = 0; i < num_elements; i++)
+    for (int i = 0; i < num_elements; i++)
     {
         p[i] = get_random_float((float)(-100000.f * M_PI), (float)(100000.f * M_PI) ,d);
     }
@@ -516,18 +507,3 @@ test_work_group_broadcast_3D(cl_device_id device, cl_context context, cl_command
 
     return err;
 }
-
-
-int
-test_work_group_broadcast(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
-{
-    int err;
-
-    err = test_work_group_broadcast_1D(device, context, queue, n_elems);
-    if (err) return err;
-    err = test_work_group_broadcast_2D(device, context, queue, n_elems);
-    if (err) return err;
-    return err;
-}
-
-
