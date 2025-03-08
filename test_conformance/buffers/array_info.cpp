@@ -21,11 +21,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+#include "testBase.h"
 
-
-
-int test_array_info_size( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(array_info_size)
 {
     cl_mem          memobj;
     cl_int          err;

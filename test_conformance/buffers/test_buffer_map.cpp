@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+#include "testBase.h"
 #include "harness/errorHelpers.h"
 
 
@@ -672,12 +672,14 @@ static int test_buffer_map_read( cl_device_id deviceID, cl_context context, cl_c
 }   // end test_buffer_map_read()
 
 
-#define DECLARE_LOCK_TEST(type, realType) \
-int test_buffer_map_read_##type( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )    \
-{ \
-return test_buffer_map_read( deviceID, context, queue,  num_elements, sizeof( realType ), (char*)#type, 5, \
-buffer_read_##type##_kernel_code, type##_kernel_name, verify_read_##type ); \
-}
+#define DECLARE_LOCK_TEST(type, realType)                                      \
+    REGISTER_TEST(buffer_map_read_##type)                                      \
+    {                                                                          \
+        return test_buffer_map_read(device, context, queue, num_elements,      \
+                                    sizeof(realType), (char *)#type, 5,        \
+                                    buffer_read_##type##_kernel_code,          \
+                                    type##_kernel_name, verify_read_##type);   \
+    }
 
 DECLARE_LOCK_TEST(int, cl_int)
 DECLARE_LOCK_TEST(uint, cl_uint)
@@ -689,13 +691,14 @@ DECLARE_LOCK_TEST(char, cl_char)
 DECLARE_LOCK_TEST(uchar, cl_uchar)
 DECLARE_LOCK_TEST(float, cl_float)
 
-int test_buffer_map_read_struct( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_map_read_struct)
 {
     int (*foo)(void *,int);
     foo = verify_read_struct;
 
-    return test_buffer_map_read( deviceID, context, queue, num_elements, sizeof( TestStruct ), (char*)"struct", 1,
-                                 buffer_read_struct_kernel_code, struct_kernel_name, foo );
-
+    return test_buffer_map_read(device, context, queue, num_elements,
+                                sizeof(TestStruct), (char *)"struct", 1,
+                                buffer_read_struct_kernel_code,
+                                struct_kernel_name, foo);
 }   // end test_buffer_map_struct_read()
 
