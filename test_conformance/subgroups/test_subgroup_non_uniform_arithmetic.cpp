@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include "subhelpers.h"
 #include "harness/typeWrappers.h"
 #include "subgroup_common_templates.h"
@@ -121,10 +120,7 @@ int run_functions_logical_and_or_xor_for_type(RunTestForType rft)
 
 }
 
-int test_subgroup_functions_non_uniform_arithmetic(cl_device_id device,
-                                                   cl_context context,
-                                                   cl_command_queue queue,
-                                                   int num_elements)
+REGISTER_TEST(subgroup_functions_non_uniform_arithmetic)
 {
     if (!is_extension_available(device,
                                 "cl_khr_subgroup_non_uniform_arithmetic"))
