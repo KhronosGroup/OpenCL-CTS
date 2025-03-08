@@ -926,33 +926,32 @@ int test_shuffle_random(cl_device_id device, cl_context context, cl_command_queu
     return totalError;
 }
 
-int test_shuffle_copy(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST(shuffle_copy)
 {
     RandomSeed seed(gRandomSeed);
     return test_shuffle_random( device, context, queue, kNormalMode, seed );
 }
 
-int test_shuffle_function_call(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST(shuffle_function_call)
 {
     RandomSeed seed(gRandomSeed);
     return test_shuffle_random( device, context, queue, kFunctionCallMode, seed );
 }
 
-int test_shuffle_array_cast(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST(shuffle_array_cast)
 {
     RandomSeed seed(gRandomSeed);
     return test_shuffle_random( device, context, queue, kArrayAccessMode, seed );
 }
 
-int test_shuffle_built_in(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST(shuffle_built_in)
 {
     RandomSeed seed(gRandomSeed);
     return test_shuffle_random( device, context, queue, kBuiltInFnMode, seed );
 }
 
-int test_shuffle_built_in_dual_input(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST(shuffle_built_in_dual_input)
 {
     RandomSeed seed(gRandomSeed);
     return test_shuffle_random( device, context, queue, kBuiltInDualInputFnMode, seed );
 }
-

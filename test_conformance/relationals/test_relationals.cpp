@@ -199,7 +199,7 @@ int anyVerifyFn( ExplicitType vecType, unsigned int vecSize, void *inData )
     }
 }
 
-int test_relational_any(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
+REGISTER_TEST(relational_any)
 {
     ExplicitType vecType[] = { kChar, kShort, kInt, kLong };
     unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
@@ -268,7 +268,7 @@ int allVerifyFn( ExplicitType vecType, unsigned int vecSize, void *inData )
     }
 }
 
-int test_relational_all(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
+REGISTER_TEST(relational_all)
 {
     ExplicitType vecType[] = { kChar, kShort, kInt, kLong };
     unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
@@ -526,7 +526,7 @@ void bitselect_verify_fn( ExplicitType vecType, ExplicitType testVecType, unsign
     }
 }
 
-int test_relational_bitselect(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
+REGISTER_TEST(relational_bitselect)
 {
     constexpr ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort,
                                          kInt,  kUInt,  kLong,  kULong,
@@ -626,7 +626,7 @@ void select_signed_verify_fn( ExplicitType vecType, ExplicitType testVecType, un
     memcpy( outData, ( yep ) ? inDataB : inDataA, get_explicit_type_size( vecType ) );
 }
 
-int test_relational_select_signed(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
+REGISTER_TEST(relational_select_signed)
 {
     constexpr ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort,
                                          kInt,  kUInt,  kLong,  kULong,
@@ -732,7 +732,7 @@ void select_unsigned_verify_fn( ExplicitType vecType, ExplicitType testVecType, 
     memcpy( outData, ( yep ) ? inDataB : inDataA, get_explicit_type_size( vecType ) );
 }
 
-int test_relational_select_unsigned(cl_device_id device, cl_context context, cl_command_queue queue, int numElements )
+REGISTER_TEST(relational_select_unsigned)
 {
     constexpr ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort,
                                          kInt,  kUInt,  kLong,  kULong,

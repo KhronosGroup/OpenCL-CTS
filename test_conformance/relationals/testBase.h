@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,15 +17,21 @@
 #define _testBase_h
 
 #include "harness/compat.h"
+#include "harness/testHarness.h"
+#include "harness/typeWrappers.h"
+#include "harness/conversions.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+// The number of errors to print out for each test in the shuffle tests
+#define MAX_ERRORS_TO_PRINT 1
+
+extern const int g_vector_aligns[];
+extern const int g_vector_allocs[];
+
+#define DENSE_PACK_VECS 1
 
 #endif // _testBase_h
-
-
-

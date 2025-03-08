@@ -14,15 +14,9 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
-
-#include <stdio.h>
-#include <string.h>
-#include "procs.h"
 #include "harness/testHarness.h"
 
-#if !defined(_WIN32)
-#include <unistd.h>
-#endif
+#include "testBase.h"
 
 #if DENSE_PACK_VECS
 const int g_vector_aligns[] = {0, 1, 2, 3, 4,
@@ -44,32 +38,9 @@ const int g_vector_allocs[] = {0, 1, 2, 4, 4,
                                16, 16, 16, 16};
 
 
-test_definition test_list[] = {
-    ADD_TEST( relational_any ),
-    ADD_TEST( relational_all ),
-    ADD_TEST( relational_bitselect ),
-    ADD_TEST( relational_select_signed ),
-    ADD_TEST( relational_select_unsigned ),
-
-    ADD_TEST( relational_isequal ),
-    ADD_TEST( relational_isnotequal ),
-    ADD_TEST( relational_isgreater ),
-    ADD_TEST( relational_isgreaterequal ),
-    ADD_TEST( relational_isless ),
-    ADD_TEST( relational_islessequal ),
-    ADD_TEST( relational_islessgreater ),
-
-    ADD_TEST( shuffle_copy ),
-    ADD_TEST( shuffle_function_call ),
-    ADD_TEST( shuffle_array_cast ),
-    ADD_TEST( shuffle_built_in ),
-    ADD_TEST( shuffle_built_in_dual_input ),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
-
 int main(int argc, const char *argv[])
 {
-    return runTestHarness(argc, argv, test_num, test_list, false, 0);
+    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
+                          test_registry::getInstance().definitions(), false, 0);
 }
 
