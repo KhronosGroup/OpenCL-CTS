@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 template <typename T> struct TestDef
 {
@@ -28,8 +28,9 @@ template <typename T> struct TestDef
 };
 
 template <typename T, unsigned N>
-int test_intmath(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int num_elements, std::string typestr)
+static int test_intmath(cl_device_id device, cl_context context,
+                        cl_command_queue queue, int num_elements,
+                        std::string typestr)
 {
     TestDef<T> tests[] = {
         // Test addition
@@ -197,43 +198,37 @@ int test_intmath(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
-int test_intmath_int(cl_device_id device, cl_context context,
-                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(intmath_int)
 {
     return test_intmath<cl_uint, 1>(device, context, queue, num_elements,
                                     "uint");
 }
 
-int test_intmath_int2(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(intmath_int2)
 {
     return test_intmath<cl_uint, 2>(device, context, queue, num_elements,
                                     "uint2");
 }
 
-int test_intmath_int4(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(intmath_int4)
 {
     return test_intmath<cl_uint, 4>(device, context, queue, num_elements,
                                     "uint4");
 }
 
-int test_intmath_long(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(intmath_long)
 {
     return test_intmath<cl_ulong, 1>(device, context, queue, num_elements,
                                      "ulong");
 }
 
-int test_intmath_long2(cl_device_id device, cl_context context,
-                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(intmath_long2)
 {
     return test_intmath<cl_ulong, 2>(device, context, queue, num_elements,
                                      "ulong2");
 }
 
-int test_intmath_long4(cl_device_id device, cl_context context,
-                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(intmath_long4)
 {
     return test_intmath<cl_ulong, 4>(device, context, queue, num_elements,
                                      "ulong4");

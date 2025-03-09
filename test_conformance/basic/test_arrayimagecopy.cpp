@@ -23,19 +23,14 @@
 #include <sys/stat.h>
 #include <vector>
 #include <memory>
-
-#include "procs.h"
-
 using test_function_t = int (*)(cl_device_id, cl_context, cl_command_queue,
                                 cl_mem_flags, cl_mem_flags, cl_mem_object_type,
                                 const cl_image_format *);
 
-int test_arrayimagecopy_single_format(cl_device_id device, cl_context context,
-                                      cl_command_queue queue,
-                                      cl_mem_flags buffer_flags,
-                                      cl_mem_flags image_flags,
-                                      cl_mem_object_type image_type,
-                                      const cl_image_format *format)
+static int test_arrayimagecopy_single_format(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    cl_mem_flags buffer_flags, cl_mem_flags image_flags,
+    cl_mem_object_type image_type, const cl_image_format *format)
 {
     std::unique_ptr<cl_uchar, decltype(&free)> bufptr{ nullptr, free },
         imgptr{ nullptr, free };
@@ -153,11 +148,12 @@ int test_arrayimagecopy_single_format(cl_device_id device, cl_context context,
 }
 
 
-int test_arrayimagecommon(cl_device_id device, cl_context context,
-                          cl_command_queue queue, cl_mem_flags buffer_flags,
-                          cl_mem_flags image_flags,
-                          cl_mem_object_type image_type,
-                          test_function_t test_function)
+static int test_arrayimagecommon(cl_device_id device, cl_context context,
+                                 cl_command_queue queue,
+                                 cl_mem_flags buffer_flags,
+                                 cl_mem_flags image_flags,
+                                 cl_mem_object_type image_type,
+                                 test_function_t test_function)
 {
     cl_int err;
     cl_uint num_formats;
@@ -188,8 +184,7 @@ int test_arrayimagecommon(cl_device_id device, cl_context context,
     return err;
 }
 
-int test_arrayimagecopy(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST(arrayimagecopy)
 {
     PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
 
@@ -199,8 +194,7 @@ int test_arrayimagecopy(cl_device_id device, cl_context context,
 }
 
 
-int test_arrayimagecopy3d(cl_device_id device, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(arrayimagecopy3d)
 {
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT(device)
 

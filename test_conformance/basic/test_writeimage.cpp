@@ -22,14 +22,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
-
 #include <algorithm>
 #include <string>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 namespace {
 const char *kernel_source = R"(
@@ -120,9 +117,9 @@ const char *get_mem_flag_name(cl_mem_flags flags)
 }
 
 template <typename T>
-int test_writeimage(cl_device_id device, cl_context context,
-                    cl_command_queue queue, const cl_image_format *img_format,
-                    cl_mem_flags img_flags)
+static int
+test_writeimage(cl_device_id device, cl_context context, cl_command_queue queue,
+                const cl_image_format *img_format, cl_mem_flags img_flags)
 {
     clMemWrapper streams[2];
     clProgramWrapper program;
@@ -207,8 +204,7 @@ bool check_format(cl_device_id device, cl_context context,
                                      &img_format);
 }
 }
-int test_writeimage(cl_device_id device, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(writeimage)
 {
     int err = 0;
     const cl_image_format format[] = { { CL_RGBA, CL_UNORM_INT8 },
@@ -230,8 +226,7 @@ int test_writeimage(cl_device_id device, cl_context context,
     return err;
 }
 
-int test_writeimage_int16(cl_device_id device, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(writeimage_int16)
 {
     int err = 0;
     const cl_image_format format = { CL_RGBA, CL_UNORM_INT16 };
@@ -245,8 +240,7 @@ int test_writeimage_int16(cl_device_id device, cl_context context,
     return err;
 }
 
-int test_writeimage_fp32(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(writeimage_fp32)
 {
     int err = 0;
     const cl_image_format format = { CL_RGBA, CL_FLOAT };

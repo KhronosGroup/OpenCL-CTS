@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 namespace {
 const char* constant_kernel_code = R"(
@@ -99,8 +99,7 @@ template <typename T> void generate_random_inputs(std::vector<T>& v)
 }
 }
 
-int test_constant(cl_device_id device, cl_context context,
-                  cl_command_queue queue, int num_elements)
+REGISTER_TEST(constant)
 {
     clMemWrapper streams[3];
     clProgramWrapper program;

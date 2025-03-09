@@ -31,7 +31,7 @@
 #include <string>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 extern cl_half_rounding_mode halfRoundingMode;
 
@@ -380,8 +380,7 @@ protected:
 
 } // anonymous namespace
 
-int test_fpmath(cl_device_id device, cl_context context, cl_command_queue queue,
-                int num_elements)
+REGISTER_TEST(fpmath)
 {
     try
     {

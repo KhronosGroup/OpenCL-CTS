@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include <ctype.h>
+
+#include "testBase.h"
 
 static const char *linear_ids_source[1] = {
 "__kernel void test_linear_ids(__global int2 *out)\n"
@@ -46,8 +47,7 @@ static const char *linear_ids_source[1] = {
 #define MAX_3D 16
 #define MAX_OFFSET 100000
 
-int
-test_get_linear_ids(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(get_linear_ids, Version(2, 0))
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -193,4 +193,3 @@ test_get_linear_ids(cl_device_id device, cl_context context, cl_command_queue qu
     free_mtdata(seed);
     return 0;
 }
-
