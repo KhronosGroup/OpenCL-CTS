@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+#include "testBase.h"
 
 #define CL_EXIT_ERROR(cmd,format,...)                \
 {                                \
@@ -36,7 +36,7 @@ log_error("\n");                        \
 typedef unsigned char BufferType;
 
 // Globals for test
-cl_command_queue queue;
+cl_command_queue gQueue;
 
 // Width and height of each pair of images.
 enum { TotalImages = 8 };
@@ -150,13 +150,12 @@ int copy_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst, si
         log_info( "Copy overlap reported, skipping copy buffer rect\n" );
         return CL_SUCCESS;
     } else {
-        if ((err = clEnqueueCopyBufferRect(queue,
-                                         buffer[src],buffer[dst],
-                                         soffset, doffset,
-                                         sregion,/*dregion,*/
-                                         width[src], src_slice_pitch,
-                                         width[dst], dst_slice_pitch,
-                                         0, NULL, NULL)) != CL_SUCCESS)
+        if ((err = clEnqueueCopyBufferRect(
+                 gQueue, buffer[src], buffer[dst], soffset, doffset,
+                 sregion, /*dregion,*/
+                 width[src], src_slice_pitch, width[dst], dst_slice_pitch, 0,
+                 NULL, NULL))
+            != CL_SUCCESS)
         {
             CL_EXIT_ERROR(err, "clEnqueueCopyBufferRect failed between %u and %u",(unsigned)src,(unsigned)dst);
         }
@@ -253,15 +252,12 @@ int read_verify_region(size_t src, size_t soffset[3], size_t sregion[3], size_t 
     size_t dst_slice_pitch = (width[dst]*height[dst] != 1) ? width[dst]*height[dst] : 0;
 
     // Copy the source region of the cl buffer, to the destination region of the temporary buffer.
-    CL_EXIT_ERROR(clEnqueueReadBufferRect(queue,
-                                          buffer[src],
-                                          CL_TRUE,
-                                          soffset,doffset,
-                                          sregion,
-                                          width[src], src_slice_pitch,
-                                          width[dst], dst_slice_pitch,
-                                          tmp_buffer,
-                                          0, NULL, NULL), "clEnqueueCopyBufferRect failed between %u and %u",(unsigned)src,(unsigned)dst);
+    CL_EXIT_ERROR(clEnqueueReadBufferRect(
+                      gQueue, buffer[src], CL_TRUE, soffset, doffset, sregion,
+                      width[src], src_slice_pitch, width[dst], dst_slice_pitch,
+                      tmp_buffer, 0, NULL, NULL),
+                  "clEnqueueCopyBufferRect failed between %u and %u",
+                  (unsigned)src, (unsigned)dst);
 
     return verify_region(tmp_buffer,src,soffset,sregion,dst,doffset);
 }
@@ -276,7 +272,9 @@ int map_verify_region(size_t src) {
 
     // Copy the source region of the cl buffer, to the destination region of the temporary buffer.
     cl_int err;
-    BufferType* mapped = (BufferType*)clEnqueueMapBuffer(queue,buffer[src],CL_TRUE,CL_MAP_READ,0,size_bytes,0,NULL,NULL,&err);
+    BufferType* mapped = (BufferType*)clEnqueueMapBuffer(
+        gQueue, buffer[src], CL_TRUE, CL_MAP_READ, 0, size_bytes, 0, NULL, NULL,
+        &err);
     CL_EXIT_ERROR(err, "clEnqueueMapBuffer failed for buffer %u",(unsigned)src);
 
     size_t soffset[] = { 0, 0, 0 };
@@ -284,8 +282,9 @@ int map_verify_region(size_t src) {
 
     int ret = verify_region(mapped,src,soffset,sregion,src,soffset);
 
-    CL_EXIT_ERROR(clEnqueueUnmapMemObject(queue,buffer[src],mapped,0,NULL,NULL),
-                  "clEnqueueUnmapMemObject failed for buffer %u",(unsigned)src);
+    CL_EXIT_ERROR(
+        clEnqueueUnmapMemObject(gQueue, buffer[src], mapped, 0, NULL, NULL),
+        "clEnqueueUnmapMemObject failed for buffer %u", (unsigned)src);
 
     return ret;
 }
@@ -301,15 +300,12 @@ int write_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst, s
     size_t dst_slice_pitch = (width[dst]*height[dst] != 1) ? width[dst]*height[dst] : 0;
 
     // Copy the source region of the cl buffer, to the destination region of the temporary buffer.
-    CL_EXIT_ERROR(clEnqueueWriteBufferRect(queue,
-                                           buffer[dst],
-                                           CL_TRUE,
-                                           doffset,soffset,
-    /*sregion,*/dregion,
-                                           width[dst], dst_slice_pitch,
-                                           width[src], src_slice_pitch,
-                                           tmp_buffer,
-                                           0, NULL, NULL), "clEnqueueWriteBufferRect failed between %u and %u",(unsigned)src,(unsigned)dst);
+    CL_EXIT_ERROR(clEnqueueWriteBufferRect(
+                      gQueue, buffer[dst], CL_TRUE, doffset, soffset,
+                      /*sregion,*/ dregion, width[dst], dst_slice_pitch,
+                      width[src], src_slice_pitch, tmp_buffer, 0, NULL, NULL),
+                  "clEnqueueWriteBufferRect failed between %u and %u",
+                  (unsigned)src, (unsigned)dst);
 
     // Copy from the temporary buffer to the host buffer.
     size_t spitch = width[src];
@@ -345,10 +341,9 @@ void CL_CALLBACK mem_obj_destructor_callback( cl_mem, void *data )
 }
 
 // This is the main test function for the conformance test.
-int
-test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_queue queue_, int num_elements)
+REGISTER_TEST(bufferreadwriterect)
 {
-    queue = queue_;
+    gQueue = queue;
     cl_int err;
 
     // Initialize the random number generator.
@@ -564,6 +559,3 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
 
     return err;
 }
-
-
-

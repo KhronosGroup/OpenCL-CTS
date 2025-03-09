@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 namespace {
 const char *conditional_kernel_code = R"(
@@ -88,8 +88,7 @@ void generate_random_inputs(std::vector<cl_int> &v)
     std::generate(v.begin(), v.end(), random_generator);
 }
 }
-int test_if(cl_device_id device, cl_context context, cl_command_queue queue,
-            int num_elements)
+REGISTER_TEST(if)
 {
     clMemWrapper streams[2];
     clProgramWrapper program;

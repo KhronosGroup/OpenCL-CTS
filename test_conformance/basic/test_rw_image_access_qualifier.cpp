@@ -18,7 +18,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+#include "testBase.h"
 #include "harness/clImageHelper.h"
 
 static const char* rw_kernel_code =
@@ -41,10 +41,10 @@ static const char* rw_kernel_code =
 "}\n";
 
 
-int test_rw_image_access_qualifier(cl_device_id device_id, cl_context context, cl_command_queue commands, int num_elements)
+REGISTER_TEST_VERSION(rw_image_access_qualifier, Version(2, 0))
 {
     // This test should be skipped if images are not supported.
-    if (checkForImageSupport(device_id))
+    if (checkForImageSupport(device))
     {
         return TEST_SKIPPED_ITSELF;
     }
@@ -53,11 +53,11 @@ int test_rw_image_access_qualifier(cl_device_id device_id, cl_context context, c
     // or 2.X device if the device supports images. In OpenCL-3.0
     // read-write images are optional. This test is already being skipped
     // for 1.X devices.
-    if (get_device_cl_version(device_id) >= Version(3, 0))
+    if (get_device_cl_version(device) >= Version(3, 0))
     {
         cl_uint are_rw_images_supported{};
         test_error(
-            clGetDeviceInfo(device_id, CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS,
+            clGetDeviceInfo(device, CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS,
                             sizeof(are_rw_images_supported),
                             &are_rw_images_supported, nullptr),
             "clGetDeviceInfo failed for CL_DEVICE_MAX_READ_IMAGE_ARGS\n");
@@ -155,15 +155,14 @@ int test_rw_image_access_qualifier(cl_device_id device_id, cl_context context, c
     err = CL_SUCCESS;
     unsigned int num_iter = 1;
     for(i = 0; i < num_iter; i++) {
-        err |= clEnqueueNDRangeKernel(commands, kernel, dim_count,
-                                      NULL, global_dim, local_dim,
-                                      0, NULL, NULL);
+        err |= clEnqueueNDRangeKernel(queue, kernel, dim_count, NULL,
+                                      global_dim, local_dim, 0, NULL, NULL);
     }
 
     /* Read back the results from the device to verify the output */
     const size_t origin[3] = {0, 0, 0};
     const size_t region[3] = {size_x, size_y, 1};
-    err |= clEnqueueReadImage(commands, src_image, CL_TRUE, origin, region, 0, 0,
+    err |= clEnqueueReadImage(queue, src_image, CL_TRUE, origin, region, 0, 0,
                               output, 0, NULL, NULL);
     if (err != CL_SUCCESS) {
         log_error("Error: clEnqueueReadBuffer failed\n");
