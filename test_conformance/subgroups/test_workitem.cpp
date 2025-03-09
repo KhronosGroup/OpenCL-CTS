@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 #include <CL/cl.h>
@@ -321,14 +320,12 @@ int test_work_item_functions(cl_device_id device, cl_context context,
     return 0;
 }
 
-int test_work_item_functions_core(cl_device_id device, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(work_item_functions_core, Version(2, 1))
 {
     return test_work_item_functions(device, context, queue, num_elements, true);
 }
 
-int test_work_item_functions_ext(cl_device_id device, cl_context context,
-                                 cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(work_item_functions_ext, Version(2, 0))
 {
     bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
 
