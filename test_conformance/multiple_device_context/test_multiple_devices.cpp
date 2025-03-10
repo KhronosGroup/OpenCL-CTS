@@ -35,7 +35,8 @@ const char *test_kernels[] = { "__kernel void kernelA(__global uint *dst)\n"
 #define MAX_DEVICES 32
 #define MAX_QUEUES 1000
 
-int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices, int num_elements)
+static int test_device_set(size_t deviceCount, size_t queueCount,
+                           cl_device_id *devices, int num_elements)
 {
     int error;
     clContextWrapper context;
@@ -187,7 +188,7 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
   return 0;
 }
 
-int test_two_devices(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(two_devices)
 {
     cl_platform_id platform;
     cl_device_id devices[2];
@@ -215,7 +216,7 @@ int test_two_devices(cl_device_id deviceID, cl_context context, cl_command_queue
     return test_device_set( 2, 2, devices, num_elements );
 }
 
-int test_max_devices(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(max_devices)
 {
     cl_platform_id platform;
     cl_device_id devices[MAX_DEVICES];
@@ -235,8 +236,7 @@ int test_max_devices(cl_device_id deviceID, cl_context context, cl_command_queue
     return test_device_set( deviceCount, deviceCount, devices, num_elements );
 }
 
-int test_hundred_queues(cl_device_id device, cl_context contextIgnore, cl_command_queue queueIgnore, int num_elements)
+REGISTER_TEST(hundred_queues)
 {
-  return test_device_set( 1, 100, &device, num_elements );
+    return test_device_set(1, 100, &device, num_elements);
 }
-
