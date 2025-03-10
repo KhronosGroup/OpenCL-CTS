@@ -16,7 +16,6 @@
 #ifndef TESTNONUNIFORMWORKGROUP_H
 #define TESTNONUNIFORMWORKGROUP_H
 
-#include "procs.h"
 #include <vector>
 #include "tools.h"
 #include <algorithm>

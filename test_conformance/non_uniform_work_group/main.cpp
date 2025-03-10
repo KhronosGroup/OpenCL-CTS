@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,30 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include "tools.h"
 #include "harness/testHarness.h"
 #include "TestNonUniformWorkGroup.h"
-
-test_definition test_list[] = {
-    ADD_TEST( non_uniform_1d_basic ),
-    ADD_TEST( non_uniform_1d_atomics ),
-    ADD_TEST( non_uniform_1d_barriers ),
-
-    ADD_TEST( non_uniform_2d_basic ),
-    ADD_TEST( non_uniform_2d_atomics ),
-    ADD_TEST( non_uniform_2d_barriers ),
-
-    ADD_TEST( non_uniform_3d_basic ),
-    ADD_TEST( non_uniform_3d_atomics ),
-    ADD_TEST( non_uniform_3d_barriers ),
-
-    ADD_TEST( non_uniform_other_basic ),
-    ADD_TEST( non_uniform_other_atomics ),
-    ADD_TEST( non_uniform_other_barriers ),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
 
 test_status InitCL(cl_device_id device) {
     auto version = get_device_cl_version(device);
@@ -69,6 +48,9 @@ int main(int argc, const char *argv[])
 
   PrimeNumbers::generatePrimeNumbers(100000);
 
-  return runTestHarnessWithCheck(static_cast<int>(programArgs.size()), &programArgs.front(), test_num, test_list, false, false, InitCL);
+  return runTestHarnessWithCheck(
+      static_cast<int>(programArgs.size()), &programArgs.front(),
+      test_registry::getInstance().num_tests(),
+      test_registry::getInstance().definitions(), false, false, InitCL);
 }
 
