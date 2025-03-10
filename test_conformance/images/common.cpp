@@ -173,7 +173,6 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
 {
     cl_mem img;
     cl_image_desc imageDesc;
-    cl_mem_flags mem_flags = CL_MEM_READ_ONLY;
     void *host_ptr = nullptr;
     bool is_host_ptr_aligned = false;
 
@@ -310,21 +309,17 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
                       imageInfo->depth * imageInfo->slicePitch);
             return nullptr;
         }
-        if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
-        {
-            mem_flags = CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR;
-        }
     }
 
     if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
     {
-        img = clCreateImage(context, mem_flags, imageInfo->format, &imageDesc,
-                            host_ptr, error);
+        img = clCreateImage(context, imageInfo->mem_flags, imageInfo->format,
+                            &imageDesc, host_ptr, error);
     }
     else
     {
-        img = clCreateImage(context, mem_flags, imageInfo->format, &imageDesc,
-                            nullptr, error);
+        img = clCreateImage(context, imageInfo->mem_flags, imageInfo->format,
+                            &imageDesc, nullptr, error);
     }
 
     if (enable_pitch)
