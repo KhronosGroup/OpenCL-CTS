@@ -1,0 +1,153 @@
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability Vector16
+               OpCapability Float16
+               OpCapability ArithmeticFenceEXT
+               OpExtension "SPV_EXT_arithmetic_fence"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "test_ext_arithmetic_fence_half"
+               OpDecorate %add FPFastMathMode Fast
+               OpDecorate %scalar_res FPFastMathMode Fast
+               OpDecorate %add2 FPFastMathMode Fast
+               OpDecorate %vec2_res FPFastMathMode Fast
+               OpDecorate %add3 FPFastMathMode Fast
+               OpDecorate %vec3_res FPFastMathMode Fast
+               OpDecorate %add4 FPFastMathMode Fast
+               OpDecorate %vec4_res FPFastMathMode Fast
+               OpDecorate %add8 FPFastMathMode Fast
+               OpDecorate %vec8_res FPFastMathMode Fast
+               OpDecorate %add16 FPFastMathMode Fast
+               OpDecorate %vec16_res FPFastMathMode Fast
+       %void = OpTypeVoid
+       %half = OpTypeFloat 16
+      %half2 = OpTypeVector %half 2
+      %half3 = OpTypeVector %half 3
+      %half4 = OpTypeVector %half 4
+      %half8 = OpTypeVector %half 8
+     %half16 = OpTypeVector %half 16
+      %float = OpTypeFloat 32
+  %gptr_half = OpTypePointer CrossWorkgroup %float
+ %kernel_sig = OpTypeFunction %void %gptr_half %float %float
+     %kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %gptr_half
+       %fbig = OpFunctionParameter %float
+     %fsmall = OpFunctionParameter %float
+      %entry = OpLabel
+        %big = OpFConvert %half %fbig
+      %small = OpFConvert %half %fsmall
+; Note: without the arithmetic fence, most compilers will reassociated the
+; expression "big + small - big" to "big - big + small" and therefore just
+; "small".  The arithmetic fence prevents this reassociation.
+
+; Scalar arithmetic fence:
+        %add = OpFAdd %half %big %small
+ %fenced_add = OpArithmeticFenceEXT %half %add
+ %scalar_res = OpFSub %half %fenced_add %big
+
+; Vec2 arithmetic fence:
+       %big2 = OpCompositeConstruct %half2 %big %big
+     %small2 = OpCompositeConstruct %half2 %small %small
+       %add2 = OpFAdd %half2 %big2 %small2
+%fenced_add2 = OpArithmeticFenceEXT %half2 %add2
+   %vec2_res = OpFSub %half2 %fenced_add2 %big2
+ %vec2_res_0 = OpCompositeExtract %half %vec2_res 0
+ %vec2_res_1 = OpCompositeExtract %half %vec2_res 1
+   %vec2_sum = OpFAdd %half %vec2_res_0 %vec2_res_1
+
+; Vec3 arithmetic fence:
+       %big3 = OpCompositeConstruct %half3 %big %big %big
+     %small3 = OpCompositeConstruct %half3 %small %small %small
+       %add3 = OpFAdd %half3 %big3 %small3
+%fenced_add3 = OpArithmeticFenceEXT %half3 %add3
+   %vec3_res = OpFSub %half3 %fenced_add3 %big3
+ %vec3_res_0 = OpCompositeExtract %half %vec3_res 0
+ %vec3_res_1 = OpCompositeExtract %half %vec3_res 1
+ %vec3_res_2 = OpCompositeExtract %half %vec3_res 2
+  %vec3_sum0 = OpFAdd %half %vec3_res_0 %vec3_res_1
+   %vec3_sum = OpFAdd %half %vec3_sum0 %vec3_res_2
+
+; Vec4 arithmetic fence:
+       %big4 = OpCompositeConstruct %half4 %big %big %big %big
+     %small4 = OpCompositeConstruct %half4 %small %small %small %small
+       %add4 = OpFAdd %half4 %big4 %small4
+%fenced_add4 = OpArithmeticFenceEXT %half4 %add4
+   %vec4_res = OpFSub %half4 %fenced_add4 %big4
+ %vec4_res_0 = OpCompositeExtract %half %vec4_res 0
+ %vec4_res_1 = OpCompositeExtract %half %vec4_res 1
+ %vec4_res_2 = OpCompositeExtract %half %vec4_res 2
+ %vec4_res_3 = OpCompositeExtract %half %vec4_res 3
+  %vec4_sum0 = OpFAdd %half %vec4_res_0 %vec4_res_1
+  %vec4_sum1 = OpFAdd %half %vec4_sum0 %vec4_res_2
+   %vec4_sum = OpFAdd %half %vec4_sum1 %vec4_res_3
+
+; Vec8 arithmetic fence:
+       %big8 = OpCompositeConstruct %half8 %big %big %big %big %big %big %big %big
+     %small8 = OpCompositeConstruct %half8 %small %small %small %small %small %small %small %small
+       %add8 = OpFAdd %half8 %big8 %small8
+%fenced_add8 = OpArithmeticFenceEXT %half8 %add8
+   %vec8_res = OpFSub %half8 %fenced_add8 %big8
+ %vec8_res_0 = OpCompositeExtract %half %vec8_res 0
+ %vec8_res_1 = OpCompositeExtract %half %vec8_res 1
+ %vec8_res_2 = OpCompositeExtract %half %vec8_res 2
+ %vec8_res_3 = OpCompositeExtract %half %vec8_res 3
+ %vec8_res_4 = OpCompositeExtract %half %vec8_res 4
+ %vec8_res_5 = OpCompositeExtract %half %vec8_res 5
+ %vec8_res_6 = OpCompositeExtract %half %vec8_res 6
+ %vec8_res_7 = OpCompositeExtract %half %vec8_res 7
+  %vec8_sum0 = OpFAdd %half %vec8_res_0 %vec8_res_1
+  %vec8_sum1 = OpFAdd %half %vec8_sum0 %vec8_res_2
+  %vec8_sum2 = OpFAdd %half %vec8_sum1 %vec8_res_3
+  %vec8_sum3 = OpFAdd %half %vec8_sum2 %vec8_res_4
+  %vec8_sum4 = OpFAdd %half %vec8_sum3 %vec8_res_5
+  %vec8_sum5 = OpFAdd %half %vec8_sum4 %vec8_res_6
+   %vec8_sum = OpFAdd %half %vec8_sum5 %vec8_res_7
+
+; Vec16 arithmetic fence:
+      %big16 = OpCompositeConstruct %half16 %big %big %big %big %big %big %big %big %big %big %big %big %big %big %big %big
+    %small16 = OpCompositeConstruct %half16 %small %small %small %small %small %small %small %small %small %small %small %small %small %small %small %small
+      %add16 = OpFAdd %half16 %big16 %small16
+%fenced_add16 = OpArithmeticFenceEXT %half16 %add16
+  %vec16_res = OpFSub %half16 %fenced_add16 %big16
+%vec16_res_0 = OpCompositeExtract %half %vec16_res 0
+%vec16_res_1 = OpCompositeExtract %half %vec16_res 1
+%vec16_res_2 = OpCompositeExtract %half %vec16_res 2
+%vec16_res_3 = OpCompositeExtract %half %vec16_res 3
+%vec16_res_4 = OpCompositeExtract %half %vec16_res 4
+%vec16_res_5 = OpCompositeExtract %half %vec16_res 5
+%vec16_res_6 = OpCompositeExtract %half %vec16_res 6
+%vec16_res_7 = OpCompositeExtract %half %vec16_res 7
+%vec16_res_8 = OpCompositeExtract %half %vec16_res 8
+%vec16_res_9 = OpCompositeExtract %half %vec16_res 9
+%vec16_res_a = OpCompositeExtract %half %vec16_res 10
+%vec16_res_b = OpCompositeExtract %half %vec16_res 11
+%vec16_res_c = OpCompositeExtract %half %vec16_res 12
+%vec16_res_d = OpCompositeExtract %half %vec16_res 13
+%vec16_res_e = OpCompositeExtract %half %vec16_res 14
+%vec16_res_f = OpCompositeExtract %half %vec16_res 15
+ %vec16_sum0 = OpFAdd %half %vec16_res_0 %vec16_res_1
+ %vec16_sum1 = OpFAdd %half %vec16_sum0 %vec16_res_2
+ %vec16_sum2 = OpFAdd %half %vec16_sum1 %vec16_res_3
+ %vec16_sum3 = OpFAdd %half %vec16_sum2 %vec16_res_4
+ %vec16_sum4 = OpFAdd %half %vec16_sum3 %vec16_res_5
+ %vec16_sum5 = OpFAdd %half %vec16_sum4 %vec16_res_6
+ %vec16_sum6 = OpFAdd %half %vec16_sum5 %vec16_res_7
+ %vec16_sum7 = OpFAdd %half %vec16_sum6 %vec16_res_8
+ %vec16_sum8 = OpFAdd %half %vec16_sum7 %vec16_res_9
+ %vec16_sum9 = OpFAdd %half %vec16_sum8 %vec16_res_a
+ %vec16_suma = OpFAdd %half %vec16_sum9 %vec16_res_b
+ %vec16_sumb = OpFAdd %half %vec16_suma %vec16_res_c
+ %vec16_sumc = OpFAdd %half %vec16_sumb %vec16_res_d
+ %vec16_sumd = OpFAdd %half %vec16_sumc %vec16_res_e
+  %vec16_sum = OpFAdd %half %vec16_sumd %vec16_res_f
+
+; Add up the results and store:
+       %res0 = OpFAdd %half %scalar_res %vec2_sum
+       %res1 = OpFAdd %half %res0 %vec3_sum
+       %res2 = OpFAdd %half %res1 %vec4_sum
+       %res3 = OpFAdd %half %res2 %vec8_sum
+        %res = OpFAdd %half %res3 %vec16_sum
+       %fres = OpFConvert %float %res
+               OpStore %dst %fres Aligned 4
+
+               OpReturn
+               OpFunctionEnd
