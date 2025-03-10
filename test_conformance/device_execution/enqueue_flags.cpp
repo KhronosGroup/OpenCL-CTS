@@ -20,7 +20,6 @@
 
 #include <vector>
 
-#include "procs.h"
 #include "utils.h"
 #include <time.h>
 
@@ -671,7 +670,7 @@ static const kernel_src sources_enqueue_block_flags[] =
 static const size_t num_enqueue_block_flags = arr_size(sources_enqueue_block_flags);
 
 
-int test_enqueue_flags(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(enqueue_flags)
 {
     cl_uint i;
     cl_int err_ret, res = 0;
@@ -757,7 +756,6 @@ int test_enqueue_flags(cl_device_id device, cl_context context, cl_command_queue
 
     return res;
 }
-
 
 
 #endif
