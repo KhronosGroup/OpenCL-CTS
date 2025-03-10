@@ -19,7 +19,7 @@
 #include <limits>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 static std::string make_kernel_string(const std::string &type,
                                       const std::string &kernelName,
@@ -272,184 +272,181 @@ static int run_test(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
-int test_work_group_reduce_add(cl_device_id device, cl_context context,
-                               cl_command_queue queue, int n_elems)
-{
-    int result = TEST_PASS;
-
-    result |= run_test<Reduce<Add<cl_int>>>(device, context, queue, n_elems);
-    result |= run_test<Reduce<Add<cl_uint>>>(device, context, queue, n_elems);
-
-    if (gHasLong)
-    {
-        result |=
-            run_test<Reduce<Add<cl_long>>>(device, context, queue, n_elems);
-        result |=
-            run_test<Reduce<Add<cl_ulong>>>(device, context, queue, n_elems);
-    }
-
-    return result;
-}
-
-int test_work_group_reduce_max(cl_device_id device, cl_context context,
-                               cl_command_queue queue, int n_elems)
-{
-    int result = TEST_PASS;
-
-    result |= run_test<Reduce<Max<cl_int>>>(device, context, queue, n_elems);
-    result |= run_test<Reduce<Max<cl_uint>>>(device, context, queue, n_elems);
-
-    if (gHasLong)
-    {
-        result |=
-            run_test<Reduce<Max<cl_long>>>(device, context, queue, n_elems);
-        result |=
-            run_test<Reduce<Max<cl_ulong>>>(device, context, queue, n_elems);
-    }
-
-    return result;
-}
-
-int test_work_group_reduce_min(cl_device_id device, cl_context context,
-                               cl_command_queue queue, int n_elems)
-{
-    int result = TEST_PASS;
-
-    result |= run_test<Reduce<Min<cl_int>>>(device, context, queue, n_elems);
-    result |= run_test<Reduce<Min<cl_uint>>>(device, context, queue, n_elems);
-
-    if (gHasLong)
-    {
-        result |=
-            run_test<Reduce<Min<cl_long>>>(device, context, queue, n_elems);
-        result |=
-            run_test<Reduce<Min<cl_ulong>>>(device, context, queue, n_elems);
-    }
-
-    return result;
-}
-
-int test_work_group_scan_inclusive_add(cl_device_id device, cl_context context,
-                                       cl_command_queue queue, int n_elems)
+REGISTER_TEST_VERSION(work_group_reduce_add, Version(2, 0))
 {
     int result = TEST_PASS;
 
     result |=
-        run_test<ScanInclusive<Add<cl_int>>>(device, context, queue, n_elems);
+        run_test<Reduce<Add<cl_int>>>(device, context, queue, num_elements);
     result |=
-        run_test<ScanInclusive<Add<cl_uint>>>(device, context, queue, n_elems);
+        run_test<Reduce<Add<cl_uint>>>(device, context, queue, num_elements);
+
+    if (gHasLong)
+    {
+        result |= run_test<Reduce<Add<cl_long>>>(device, context, queue,
+                                                 num_elements);
+        result |= run_test<Reduce<Add<cl_ulong>>>(device, context, queue,
+                                                  num_elements);
+    }
+
+    return result;
+}
+
+REGISTER_TEST_VERSION(work_group_reduce_max, Version(2, 0))
+{
+    int result = TEST_PASS;
+
+    result |=
+        run_test<Reduce<Max<cl_int>>>(device, context, queue, num_elements);
+    result |=
+        run_test<Reduce<Max<cl_uint>>>(device, context, queue, num_elements);
+
+    if (gHasLong)
+    {
+        result |= run_test<Reduce<Max<cl_long>>>(device, context, queue,
+                                                 num_elements);
+        result |= run_test<Reduce<Max<cl_ulong>>>(device, context, queue,
+                                                  num_elements);
+    }
+
+    return result;
+}
+
+REGISTER_TEST_VERSION(work_group_reduce_min, Version(2, 0))
+{
+    int result = TEST_PASS;
+
+    result |=
+        run_test<Reduce<Min<cl_int>>>(device, context, queue, num_elements);
+    result |=
+        run_test<Reduce<Min<cl_uint>>>(device, context, queue, num_elements);
+
+    if (gHasLong)
+    {
+        result |= run_test<Reduce<Min<cl_long>>>(device, context, queue,
+                                                 num_elements);
+        result |= run_test<Reduce<Min<cl_ulong>>>(device, context, queue,
+                                                  num_elements);
+    }
+
+    return result;
+}
+
+REGISTER_TEST_VERSION(work_group_scan_inclusive_add, Version(2, 0))
+{
+    int result = TEST_PASS;
+
+    result |= run_test<ScanInclusive<Add<cl_int>>>(device, context, queue,
+                                                   num_elements);
+    result |= run_test<ScanInclusive<Add<cl_uint>>>(device, context, queue,
+                                                    num_elements);
 
     if (gHasLong)
     {
         result |= run_test<ScanInclusive<Add<cl_long>>>(device, context, queue,
-                                                        n_elems);
+                                                        num_elements);
         result |= run_test<ScanInclusive<Add<cl_ulong>>>(device, context, queue,
-                                                         n_elems);
+                                                         num_elements);
     }
 
     return result;
 }
 
-int test_work_group_scan_inclusive_max(cl_device_id device, cl_context context,
-                                       cl_command_queue queue, int n_elems)
+REGISTER_TEST_VERSION(work_group_scan_inclusive_max, Version(2, 0))
 {
     int result = TEST_PASS;
 
-    result |=
-        run_test<ScanInclusive<Max<cl_int>>>(device, context, queue, n_elems);
-    result |=
-        run_test<ScanInclusive<Max<cl_uint>>>(device, context, queue, n_elems);
+    result |= run_test<ScanInclusive<Max<cl_int>>>(device, context, queue,
+                                                   num_elements);
+    result |= run_test<ScanInclusive<Max<cl_uint>>>(device, context, queue,
+                                                    num_elements);
 
     if (gHasLong)
     {
         result |= run_test<ScanInclusive<Max<cl_long>>>(device, context, queue,
-                                                        n_elems);
+                                                        num_elements);
         result |= run_test<ScanInclusive<Max<cl_ulong>>>(device, context, queue,
-                                                         n_elems);
+                                                         num_elements);
     }
 
     return result;
 }
 
-int test_work_group_scan_inclusive_min(cl_device_id device, cl_context context,
-                                       cl_command_queue queue, int n_elems)
+REGISTER_TEST_VERSION(work_group_scan_inclusive_min, Version(2, 0))
 {
     int result = TEST_PASS;
 
-    result |=
-        run_test<ScanInclusive<Min<cl_int>>>(device, context, queue, n_elems);
-    result |=
-        run_test<ScanInclusive<Min<cl_uint>>>(device, context, queue, n_elems);
+    result |= run_test<ScanInclusive<Min<cl_int>>>(device, context, queue,
+                                                   num_elements);
+    result |= run_test<ScanInclusive<Min<cl_uint>>>(device, context, queue,
+                                                    num_elements);
 
     if (gHasLong)
     {
         result |= run_test<ScanInclusive<Min<cl_long>>>(device, context, queue,
-                                                        n_elems);
+                                                        num_elements);
         result |= run_test<ScanInclusive<Min<cl_ulong>>>(device, context, queue,
-                                                         n_elems);
+                                                         num_elements);
     }
 
     return result;
 }
 
-int test_work_group_scan_exclusive_add(cl_device_id device, cl_context context,
-                                       cl_command_queue queue, int n_elems)
+REGISTER_TEST_VERSION(work_group_scan_exclusive_add, Version(2, 0))
 {
     int result = TEST_PASS;
 
-    result |=
-        run_test<ScanExclusive<Add<cl_int>>>(device, context, queue, n_elems);
-    result |=
-        run_test<ScanExclusive<Add<cl_uint>>>(device, context, queue, n_elems);
+    result |= run_test<ScanExclusive<Add<cl_int>>>(device, context, queue,
+                                                   num_elements);
+    result |= run_test<ScanExclusive<Add<cl_uint>>>(device, context, queue,
+                                                    num_elements);
 
     if (gHasLong)
     {
         result |= run_test<ScanExclusive<Add<cl_long>>>(device, context, queue,
-                                                        n_elems);
+                                                        num_elements);
         result |= run_test<ScanExclusive<Add<cl_ulong>>>(device, context, queue,
-                                                         n_elems);
+                                                         num_elements);
     }
 
     return result;
 }
 
-int test_work_group_scan_exclusive_max(cl_device_id device, cl_context context,
-                                       cl_command_queue queue, int n_elems)
+REGISTER_TEST_VERSION(work_group_scan_exclusive_max, Version(2, 0))
 {
     int result = TEST_PASS;
 
-    result |=
-        run_test<ScanExclusive<Max<cl_int>>>(device, context, queue, n_elems);
-    result |=
-        run_test<ScanExclusive<Max<cl_uint>>>(device, context, queue, n_elems);
+    result |= run_test<ScanExclusive<Max<cl_int>>>(device, context, queue,
+                                                   num_elements);
+    result |= run_test<ScanExclusive<Max<cl_uint>>>(device, context, queue,
+                                                    num_elements);
 
     if (gHasLong)
     {
         result |= run_test<ScanExclusive<Max<cl_long>>>(device, context, queue,
-                                                        n_elems);
+                                                        num_elements);
         result |= run_test<ScanExclusive<Max<cl_ulong>>>(device, context, queue,
-                                                         n_elems);
+                                                         num_elements);
     }
 
     return result;
 }
 
-int test_work_group_scan_exclusive_min(cl_device_id device, cl_context context,
-                                       cl_command_queue queue, int n_elems)
+REGISTER_TEST_VERSION(work_group_scan_exclusive_min, Version(2, 0))
 {
     int result = TEST_PASS;
 
-    result |=
-        run_test<ScanExclusive<Min<cl_int>>>(device, context, queue, n_elems);
-    result |=
-        run_test<ScanExclusive<Min<cl_uint>>>(device, context, queue, n_elems);
+    result |= run_test<ScanExclusive<Min<cl_int>>>(device, context, queue,
+                                                   num_elements);
+    result |= run_test<ScanExclusive<Min<cl_uint>>>(device, context, queue,
+                                                    num_elements);
 
     if (gHasLong)
     {
         result |= run_test<ScanExclusive<Min<cl_long>>>(device, context, queue,
-                                                        n_elems);
+                                                        num_elements);
         result |= run_test<ScanExclusive<Min<cl_ulong>>>(device, context, queue,
-                                                         n_elems);
+                                                         num_elements);
     }
 
     return result;
