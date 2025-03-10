@@ -94,8 +94,7 @@ void CL_CALLBACK test_notify_build_complete(cl_program program, void *userData)
     }
 }
 
-int test_async_build(cl_device_id deviceID, cl_context context,
-                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(async_build)
 {
     cl_int error;
 
@@ -119,9 +118,9 @@ int test_async_build(cl_device_id deviceID, cl_context context,
         test_error(error, "Unable to create program from source");
 
         // Start an asynchronous build, registering the completion callback
-        TestData testData = { deviceID, testDef.expectedStatus };
+        TestData testData = { device, testDef.expectedStatus };
         callbackResult = 0;
-        error = clBuildProgram(program, 1, &deviceID, NULL,
+        error = clBuildProgram(program, 1, &device, NULL,
                                test_notify_build_complete, (void *)&testData);
         // Allow implementations to return synchronous build failures.
         // They still need to call the callback.
