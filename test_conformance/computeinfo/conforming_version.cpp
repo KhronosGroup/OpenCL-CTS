@@ -18,11 +18,10 @@
 #include "harness/testHarness.h"
 #include "harness/deviceInfo.h"
 
-int test_conformance_version(cl_device_id deviceID, cl_context context,
-                             cl_command_queue ignoreQueue, int num_elements)
+REGISTER_TEST_VERSION(conformance_version, Version(3, 0))
 {
     std::string version_string{ get_device_info_string(
-        deviceID, CL_DEVICE_LATEST_CONFORMANCE_VERSION_PASSED) };
+        device, CL_DEVICE_LATEST_CONFORMANCE_VERSION_PASSED) };
 
     // Latest conformance version passed should match vYYYY-MM-DD-XX, where XX
     // is a number

@@ -724,11 +724,10 @@ static_assert(sizeof(cl_name_version) == sizeof(cl_name_version_khr),
 static_assert(CL_MAKE_VERSION(1, 2, 3) == CL_MAKE_VERSION_KHR(1, 2, 3),
               "CL_MAKE_VERSION mismatch");
 
-int test_extended_versioning(cl_device_id deviceID, cl_context context,
-                             cl_command_queue ignoreQueue, int num_elements)
+REGISTER_TEST(extended_versioning)
 {
-    bool ext = is_extension_available(deviceID, "cl_khr_extended_versioning");
-    bool core = get_device_cl_version(deviceID) >= Version(3, 0);
+    bool ext = is_extension_available(device, "cl_khr_extended_versioning");
+    bool core = get_device_cl_version(device) >= Version(3, 0);
 
     if (!ext && !core)
     {
@@ -736,17 +735,17 @@ int test_extended_versioning(cl_device_id deviceID, cl_context context,
     }
 
     cl_platform_id platform;
-    cl_int err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform),
+    cl_int err = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
                                  &platform, nullptr);
     test_error(err, "clGetDeviceInfo failed\n");
 
     int total_errors = 0;
     total_errors += test_extended_versioning_platform_version(platform);
     total_errors += test_extended_versioning_platform_extensions(platform);
-    total_errors += test_extended_versioning_device_versions(ext, deviceID);
-    total_errors += test_extended_versioning_device_extensions(deviceID);
-    total_errors += test_extended_versioning_device_il(deviceID);
-    total_errors += test_extended_versioning_device_built_in_kernels(deviceID);
+    total_errors += test_extended_versioning_device_versions(ext, device);
+    total_errors += test_extended_versioning_device_extensions(device);
+    total_errors += test_extended_versioning_device_il(device);
+    total_errors += test_extended_versioning_device_built_in_kernels(device);
 
     return total_errors;
 }
