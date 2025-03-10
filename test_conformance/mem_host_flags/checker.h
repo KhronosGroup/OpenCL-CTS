@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "procs.h"
+#include "testBase.h"
 #include "C_host_memory_block.h"
 
 #define TEST_VALUE 5
