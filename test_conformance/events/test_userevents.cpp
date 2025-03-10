@@ -78,8 +78,7 @@ enum
     MaxDevices = 8
 };
 
-int test_userevents(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(userevents)
 {
 
     cl_int err;

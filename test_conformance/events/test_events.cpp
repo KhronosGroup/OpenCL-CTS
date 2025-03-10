@@ -102,8 +102,7 @@ const char *IGetStatusString(cl_int status)
 }
 
 /* Note: tests clGetEventStatus and clReleaseEvent (implicitly) */
-int test_event_get_execute_status(cl_device_id deviceID, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_get_execute_status)
 {
     cl_int status;
     SETUP_EVENT(context, queue);
@@ -128,8 +127,7 @@ int test_event_get_execute_status(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_event_get_info(cl_device_id deviceID, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_get_info)
 {
     SETUP_EVENT(context, queue);
 
@@ -204,8 +202,7 @@ int test_event_get_info(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_event_get_write_array_status(cl_device_id deviceID, cl_context context,
-                                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_get_write_array_status)
 {
     cl_mem stream;
     cl_float testArray[1024 * 32];
@@ -246,8 +243,7 @@ int test_event_get_write_array_status(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_event_get_read_array_status(cl_device_id deviceID, cl_context context,
-                                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_get_read_array_status)
 {
     cl_mem stream;
     cl_float testArray[1024 * 32];
@@ -305,8 +301,7 @@ int test_event_get_read_array_status(cl_device_id deviceID, cl_context context,
 
 /* clGetEventStatus not implemented yet */
 
-int test_event_wait_for_execute(cl_device_id deviceID, cl_context context,
-                                cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_wait_for_execute)
 {
     cl_int status;
     SETUP_EVENT(context, queue);
@@ -331,8 +326,7 @@ int test_event_wait_for_execute(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_event_wait_for_array(cl_device_id deviceID, cl_context context,
-                              cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_wait_for_array)
 {
     cl_mem streams[2];
     cl_float readArray[1024 * 32];
@@ -419,8 +413,7 @@ int test_event_wait_for_array(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_event_flush(cl_device_id deviceID, cl_context context,
-                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_flush)
 {
     cl_int status;
     SETUP_EVENT(context, queue);
@@ -472,8 +465,7 @@ int test_event_flush(cl_device_id deviceID, cl_context context,
 }
 
 
-int test_event_finish_execute(cl_device_id deviceID, cl_context context,
-                              cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_finish_execute)
 {
     cl_int status;
     SETUP_EVENT(context, queue);
@@ -498,8 +490,7 @@ int test_event_finish_execute(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_event_finish_array(cl_device_id deviceID, cl_context context,
-                            cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_finish_array)
 {
     cl_mem streams[2];
     cl_float readArray[1024 * 32];
@@ -589,8 +580,7 @@ int test_event_finish_array(cl_device_id deviceID, cl_context context,
 
 #define NUM_EVENT_RUNS 100
 
-int test_event_release_before_done(cl_device_id deviceID, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_release_before_done)
 {
     // Create a kernel to run
     clProgramWrapper program;
@@ -680,8 +670,7 @@ int test_event_release_before_done(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_event_enqueue_marker(cl_device_id deviceID, cl_context context,
-                              cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_enqueue_marker)
 {
     cl_int status;
     SETUP_EVENT(context, queue);
@@ -718,10 +707,7 @@ int test_event_enqueue_marker(cl_device_id deviceID, cl_context context,
 }
 
 #ifdef CL_VERSION_1_2
-int test_event_enqueue_marker_with_event_list(cl_device_id deviceID,
-                                              cl_context context,
-                                              cl_command_queue queue,
-                                              int num_elements)
+REGISTER_TEST(event_enqueue_marker_with_event_list)
 {
     SETUP_EVENT(context, queue);
     cl_event event_list[3] = { NULL, NULL, NULL };
@@ -771,10 +757,7 @@ int test_event_enqueue_marker_with_event_list(cl_device_id deviceID,
     return 0;
 }
 
-int test_event_enqueue_barrier_with_event_list(cl_device_id deviceID,
-                                               cl_context context,
-                                               cl_command_queue queue,
-                                               int num_elements)
+REGISTER_TEST(event_enqueue_barrier_with_event_list)
 {
     SETUP_EVENT(context, queue);
     cl_event event_list[3] = { NULL, NULL, NULL };
