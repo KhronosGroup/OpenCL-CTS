@@ -21,8 +21,9 @@ extern const char *IGetStatusString(cl_int status);
 
 #define PRINT_OPS 0
 
-int test_waitlist(cl_device_id device, cl_context context,
-                  cl_command_queue queue, Action *actionToTest, bool multiple)
+static int test_waitlist(cl_device_id device, cl_context context,
+                         cl_command_queue queue, Action *actionToTest,
+                         bool multiple)
 {
     NDRangeKernelAction actions[2];
     clEventWrapper events[3];
@@ -314,38 +315,39 @@ int test_waitlist(cl_device_id device, cl_context context,
     {                                                                          \
         name##Action action;                                                   \
         log_info("-- Testing " #name " (waiting on 1 event)...\n");            \
-        if ((error = test_waitlist(deviceID, context, queue, &action, false))  \
+        if ((error =                                                           \
+                 test_waitlist(device, context, test_queue, &action, false))   \
             != CL_SUCCESS)                                                     \
             retVal++;                                                          \
-        clFinish(queue);                                                       \
+        clFinish(test_queue);                                                  \
     }                                                                          \
     if (error                                                                  \
         == CL_SUCCESS) /* Only run multiples test if single test passed */     \
     {                                                                          \
         name##Action action;                                                   \
         log_info("-- Testing " #name " (waiting on 2 events)...\n");           \
-        if ((error = test_waitlist(deviceID, context, queue, &action, true))   \
+        if ((error =                                                           \
+                 test_waitlist(device, context, test_queue, &action, true))    \
             != CL_SUCCESS)                                                     \
             retVal++;                                                          \
-        clFinish(queue);                                                       \
+        clFinish(test_queue);                                                  \
     }
 
-int test_waitlists(cl_device_id deviceID, cl_context context,
-                   cl_command_queue oldQueue, int num_elements)
+REGISTER_TEST(waitlists)
 {
     cl_int error;
     int retVal = 0;
     cl_command_queue_properties props = CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
 
-    if (!checkDeviceForQueueSupport(deviceID, props))
+    if (!checkDeviceForQueueSupport(device, props))
     {
         log_info("WARNING: Device does not support out-of-order exec mode; "
                  "skipping test.\n");
         return 0;
     }
 
-    clCommandQueueWrapper queue =
-        clCreateCommandQueue(context, deviceID, props, &error);
+    clCommandQueueWrapper test_queue =
+        clCreateCommandQueue(context, device, props, &error);
     test_error(error, "Unable to create out-of-order queue");
 
     log_info("\n");
@@ -357,7 +359,7 @@ int test_waitlists(cl_device_id deviceID, cl_context context,
     TEST_ACTION(MapBuffer)
     TEST_ACTION(UnmapBuffer)
 
-    if (checkForImageSupport(deviceID) == CL_IMAGE_FORMAT_NOT_SUPPORTED)
+    if (checkForImageSupport(device) == CL_IMAGE_FORMAT_NOT_SUPPORTED)
     {
         log_info("\nNote: device does not support images. Skipping remainder "
                  "of waitlist tests...\n");
@@ -371,7 +373,7 @@ int test_waitlists(cl_device_id deviceID, cl_context context,
         TEST_ACTION(CopyBufferTo2DImage)
         TEST_ACTION(MapImage)
 
-        if (checkFor3DImageSupport(deviceID) == CL_IMAGE_FORMAT_NOT_SUPPORTED)
+        if (checkFor3DImageSupport(device) == CL_IMAGE_FORMAT_NOT_SUPPORTED)
             log_info("Device does not support 3D images. Skipping remainder of "
                      "waitlist tests...\n");
         else
