@@ -220,7 +220,7 @@ void * create_upsample_data( ExplicitType type, void *sourceA, void *sourceB, si
     return outData;
 }
 
-int test_integer_upsample(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(integer_upsample)
 {
     ExplicitType typesToTest[] = { kChar, kUChar, kShort, kUShort, kInt, kUInt, kNumExplicitTypes };
     ExplicitType baseTypes[] = { kUChar, kUChar, kUShort, kUShort, kUInt, kUInt, kNumExplicitTypes };
@@ -264,5 +264,3 @@ int test_integer_upsample(cl_device_id deviceID, cl_context context, cl_command_
     }
     return err;
 }
-
-

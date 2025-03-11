@@ -13,14 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
+#include "testBase.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
 #include "harness/conversions.h"
 #include "harness/ThreadPool.h"
 
@@ -887,314 +886,441 @@ int run_test(cl_device_id deviceID, cl_context context, cl_command_queue queue, 
 // -----------------
 // Long tests
 // -----------------
-int test_long_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(long_math)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_math(deviceID, context, queue, num_elements, kLong, LONG_MATH_SHIFT_SIZE);
+    return run_test_math(device, context, queue, num_elements, kLong,
+                         LONG_MATH_SHIFT_SIZE);
 }
-int test_long_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(long_logic)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_logic(deviceID, context, queue, num_elements, kLong, LONG_MATH_SHIFT_SIZE);
+    return run_test_logic(device, context, queue, num_elements, kLong,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_long_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(long_shift)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_shift(deviceID, context, queue, num_elements, kLong, LONG_MATH_SHIFT_SIZE);
+    return run_test_shift(device, context, queue, num_elements, kLong,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_long_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(long_compare)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_compare(deviceID, context, queue, num_elements, kLong, LONG_MATH_SHIFT_SIZE);
+    return run_test_compare(device, context, queue, num_elements, kLong,
+                            LONG_MATH_SHIFT_SIZE);
 }
-int test_quick_long_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(quick_long_math)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_math(deviceID, context, queue, num_elements, kLong, QUICK_MATH_SHIFT_SIZE);
+    return run_test_math(device, context, queue, num_elements, kLong,
+                         QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_long_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(quick_long_logic)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_logic(deviceID, context, queue, num_elements, kLong, QUICK_MATH_SHIFT_SIZE);
+    return run_test_logic(device, context, queue, num_elements, kLong,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_long_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(quick_long_shift)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_shift(deviceID, context, queue, num_elements, kLong, QUICK_MATH_SHIFT_SIZE);
+    return run_test_shift(device, context, queue, num_elements, kLong,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_long_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(quick_long_compare)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_compare(deviceID, context, queue, num_elements, kLong, QUICK_MATH_SHIFT_SIZE);
+    return run_test_compare(device, context, queue, num_elements, kLong,
+                            QUICK_MATH_SHIFT_SIZE);
 }
 
 
 // -----------------
 // ULong tests
 // -----------------
-int test_ulong_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(ulong_math)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_math(deviceID, context, queue, num_elements, kULong, LONG_MATH_SHIFT_SIZE);
+    return run_test_math(device, context, queue, num_elements, kULong,
+                         LONG_MATH_SHIFT_SIZE);
 }
-int test_ulong_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(ulong_logic)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_logic(deviceID, context, queue, num_elements, kULong, LONG_MATH_SHIFT_SIZE);
+    return run_test_logic(device, context, queue, num_elements, kULong,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_ulong_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(ulong_shift)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_shift(deviceID, context, queue, num_elements, kULong, LONG_MATH_SHIFT_SIZE);
+    return run_test_shift(device, context, queue, num_elements, kULong,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_ulong_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(ulong_compare)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_compare(deviceID, context, queue, num_elements, kULong, LONG_MATH_SHIFT_SIZE);
+    return run_test_compare(device, context, queue, num_elements, kULong,
+                            LONG_MATH_SHIFT_SIZE);
 }
-int test_quick_ulong_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(quick_ulong_math)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_math(deviceID, context, queue, num_elements, kULong, QUICK_MATH_SHIFT_SIZE);
+    return run_test_math(device, context, queue, num_elements, kULong,
+                         QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_ulong_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(quick_ulong_logic)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_logic(deviceID, context, queue, num_elements, kULong, QUICK_MATH_SHIFT_SIZE);
+    return run_test_logic(device, context, queue, num_elements, kULong,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_ulong_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(quick_ulong_shift)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_shift(deviceID, context, queue, num_elements, kULong, QUICK_MATH_SHIFT_SIZE);
+    return run_test_shift(device, context, queue, num_elements, kULong,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_ulong_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(quick_ulong_compare)
+{
     if (!gHasLong)
     {
         log_info( "WARNING: 64 bit integers are not supported on this device. Skipping\n" );
         return CL_SUCCESS;
     }
-    return run_test_compare(deviceID, context, queue, num_elements, kULong, QUICK_MATH_SHIFT_SIZE);
+    return run_test_compare(device, context, queue, num_elements, kULong,
+                            QUICK_MATH_SHIFT_SIZE);
 }
 
 
 // -----------------
 // Int tests
 // -----------------
-int test_int_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_math(deviceID, context, queue, num_elements, kInt, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(int_math)
+{
+    return run_test_math(device, context, queue, num_elements, kInt,
+                         LONG_MATH_SHIFT_SIZE);
 }
-int test_int_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_logic(deviceID, context, queue, num_elements, kInt, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(int_logic)
+{
+    return run_test_logic(device, context, queue, num_elements, kInt,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_int_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_shift(deviceID, context, queue, num_elements, kInt, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(int_shift)
+{
+    return run_test_shift(device, context, queue, num_elements, kInt,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_int_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_compare(deviceID, context, queue, num_elements, kInt, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(int_compare)
+{
+    return run_test_compare(device, context, queue, num_elements, kInt,
+                            LONG_MATH_SHIFT_SIZE);
 }
-int test_quick_int_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_math(deviceID, context, queue, num_elements, kInt, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_int_math)
+{
+    return run_test_math(device, context, queue, num_elements, kInt,
+                         QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_int_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_logic(deviceID, context, queue, num_elements, kInt, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_int_logic)
+{
+    return run_test_logic(device, context, queue, num_elements, kInt,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_int_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_shift(deviceID, context, queue, num_elements, kInt, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_int_shift)
+{
+    return run_test_shift(device, context, queue, num_elements, kInt,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_int_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_compare(deviceID, context, queue, num_elements, kInt, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_int_compare)
+{
+    return run_test_compare(device, context, queue, num_elements, kInt,
+                            QUICK_MATH_SHIFT_SIZE);
 }
 
 
 // -----------------
 // UInt tests
 // -----------------
-int test_uint_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_math(deviceID, context, queue, num_elements, kUInt, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(uint_math)
+{
+    return run_test_math(device, context, queue, num_elements, kUInt,
+                         LONG_MATH_SHIFT_SIZE);
 }
-int test_uint_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_logic(deviceID, context, queue, num_elements, kUInt, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(uint_logic)
+{
+    return run_test_logic(device, context, queue, num_elements, kUInt,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_uint_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_shift(deviceID, context, queue, num_elements, kUInt, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(uint_shift)
+{
+    return run_test_shift(device, context, queue, num_elements, kUInt,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_uint_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_compare(deviceID, context, queue, num_elements, kUInt, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(uint_compare)
+{
+    return run_test_compare(device, context, queue, num_elements, kUInt,
+                            LONG_MATH_SHIFT_SIZE);
 }
-int test_quick_uint_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_math(deviceID, context, queue, num_elements, kUInt, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_uint_math)
+{
+    return run_test_math(device, context, queue, num_elements, kUInt,
+                         QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_uint_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_logic(deviceID, context, queue, num_elements, kUInt, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_uint_logic)
+{
+    return run_test_logic(device, context, queue, num_elements, kUInt,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_uint_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_shift(deviceID, context, queue, num_elements, kUInt, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_uint_shift)
+{
+    return run_test_shift(device, context, queue, num_elements, kUInt,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_uint_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_compare(deviceID, context, queue, num_elements, kUInt, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_uint_compare)
+{
+    return run_test_compare(device, context, queue, num_elements, kUInt,
+                            QUICK_MATH_SHIFT_SIZE);
 }
 
 
 // -----------------
 // Short tests
 // -----------------
-int test_short_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_math(deviceID, context, queue, num_elements, kShort, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(short_math)
+{
+    return run_test_math(device, context, queue, num_elements, kShort,
+                         LONG_MATH_SHIFT_SIZE);
 }
-int test_short_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_logic(deviceID, context, queue, num_elements, kShort, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(short_logic)
+{
+    return run_test_logic(device, context, queue, num_elements, kShort,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_short_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_shift(deviceID, context, queue, num_elements, kShort, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(short_shift)
+{
+    return run_test_shift(device, context, queue, num_elements, kShort,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_short_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_compare(deviceID, context, queue, num_elements, kShort, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(short_compare)
+{
+    return run_test_compare(device, context, queue, num_elements, kShort,
+                            LONG_MATH_SHIFT_SIZE);
 }
-int test_quick_short_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_math(deviceID, context, queue, num_elements, kShort, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_short_math)
+{
+    return run_test_math(device, context, queue, num_elements, kShort,
+                         QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_short_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_logic(deviceID, context, queue, num_elements, kShort, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_short_logic)
+{
+    return run_test_logic(device, context, queue, num_elements, kShort,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_short_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_shift(deviceID, context, queue, num_elements, kShort, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_short_shift)
+{
+    return run_test_shift(device, context, queue, num_elements, kShort,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_short_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_compare(deviceID, context, queue, num_elements, kShort, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_short_compare)
+{
+    return run_test_compare(device, context, queue, num_elements, kShort,
+                            QUICK_MATH_SHIFT_SIZE);
 }
 
 
 // -----------------
 // UShort tests
 // -----------------
-int test_ushort_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_math(deviceID, context, queue, num_elements, kUShort, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(ushort_math)
+{
+    return run_test_math(device, context, queue, num_elements, kUShort,
+                         LONG_MATH_SHIFT_SIZE);
 }
-int test_ushort_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_logic(deviceID, context, queue, num_elements, kUShort, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(ushort_logic)
+{
+    return run_test_logic(device, context, queue, num_elements, kUShort,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_ushort_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_shift(deviceID, context, queue, num_elements, kUShort, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(ushort_shift)
+{
+    return run_test_shift(device, context, queue, num_elements, kUShort,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_ushort_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_compare(deviceID, context, queue, num_elements, kUShort, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(ushort_compare)
+{
+    return run_test_compare(device, context, queue, num_elements, kUShort,
+                            LONG_MATH_SHIFT_SIZE);
 }
-int test_quick_ushort_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_math(deviceID, context, queue, num_elements, kUShort, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_ushort_math)
+{
+    return run_test_math(device, context, queue, num_elements, kUShort,
+                         QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_ushort_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_logic(deviceID, context, queue, num_elements, kUShort, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_ushort_logic)
+{
+    return run_test_logic(device, context, queue, num_elements, kUShort,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_ushort_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_shift(deviceID, context, queue, num_elements, kUShort, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_ushort_shift)
+{
+    return run_test_shift(device, context, queue, num_elements, kUShort,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_ushort_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_compare(deviceID, context, queue, num_elements, kUShort, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_ushort_compare)
+{
+    return run_test_compare(device, context, queue, num_elements, kUShort,
+                            QUICK_MATH_SHIFT_SIZE);
 }
 
 
 // -----------------
 // Char tests
 // -----------------
-int test_char_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_math(deviceID, context, queue, num_elements, kChar, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(char_math)
+{
+    return run_test_math(device, context, queue, num_elements, kChar,
+                         LONG_MATH_SHIFT_SIZE);
 }
-int test_char_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_logic(deviceID, context, queue, num_elements, kChar, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(char_logic)
+{
+    return run_test_logic(device, context, queue, num_elements, kChar,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_char_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_shift(deviceID, context, queue, num_elements, kChar, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(char_shift)
+{
+    return run_test_shift(device, context, queue, num_elements, kChar,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_char_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_compare(deviceID, context, queue, num_elements, kChar, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(char_compare)
+{
+    return run_test_compare(device, context, queue, num_elements, kChar,
+                            LONG_MATH_SHIFT_SIZE);
 }
-int test_quick_char_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_math(deviceID, context, queue, num_elements, kChar, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_char_math)
+{
+    return run_test_math(device, context, queue, num_elements, kChar,
+                         QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_char_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_logic(deviceID, context, queue, num_elements, kChar, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_char_logic)
+{
+    return run_test_logic(device, context, queue, num_elements, kChar,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_char_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_shift(deviceID, context, queue, num_elements, kChar, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_char_shift)
+{
+    return run_test_shift(device, context, queue, num_elements, kChar,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_char_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_compare(deviceID, context, queue, num_elements, kChar, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_char_compare)
+{
+    return run_test_compare(device, context, queue, num_elements, kChar,
+                            QUICK_MATH_SHIFT_SIZE);
 }
 
 
 // -----------------
 // UChar tests
 // -----------------
-int test_uchar_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_math(deviceID, context, queue, num_elements, kUChar, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(uchar_math)
+{
+    return run_test_math(device, context, queue, num_elements, kUChar,
+                         LONG_MATH_SHIFT_SIZE);
 }
-int test_uchar_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_logic(deviceID, context, queue, num_elements, kUChar, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(uchar_logic)
+{
+    return run_test_logic(device, context, queue, num_elements, kUChar,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_uchar_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_shift(deviceID, context, queue, num_elements, kUChar, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(uchar_shift)
+{
+    return run_test_shift(device, context, queue, num_elements, kUChar,
+                          LONG_MATH_SHIFT_SIZE);
 }
-int test_uchar_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_compare(deviceID, context, queue, num_elements, kUChar, LONG_MATH_SHIFT_SIZE);
+REGISTER_TEST(uchar_compare)
+{
+    return run_test_compare(device, context, queue, num_elements, kUChar,
+                            LONG_MATH_SHIFT_SIZE);
 }
-int test_quick_uchar_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_math(deviceID, context, queue, num_elements, kUChar, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_uchar_math)
+{
+    return run_test_math(device, context, queue, num_elements, kUChar,
+                         QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_uchar_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_logic(deviceID, context, queue, num_elements, kUChar, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_uchar_logic)
+{
+    return run_test_logic(device, context, queue, num_elements, kUChar,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_uchar_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_shift(deviceID, context, queue, num_elements, kUChar, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_uchar_shift)
+{
+    return run_test_shift(device, context, queue, num_elements, kUChar,
+                          QUICK_MATH_SHIFT_SIZE);
 }
-int test_quick_uchar_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
-    return run_test_compare(deviceID, context, queue, num_elements, kUChar, QUICK_MATH_SHIFT_SIZE);
+REGISTER_TEST(quick_uchar_compare)
+{
+    return run_test_compare(device, context, queue, num_elements, kUChar,
+                            QUICK_MATH_SHIFT_SIZE);
 }
-
 
 
 // These are kept for debugging if you want to run all the tests together.
@@ -1334,7 +1460,7 @@ int run_vector_scalar_tests( cl_device_id deviceID, cl_context context, cl_comma
     return errors;
 }
 
-int test_vector_scalar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(vector_scalar)
 {
     int errors = 0;
     int numTypes = sizeof( types ) / sizeof( types[ 0 ] );
@@ -1344,7 +1470,8 @@ int test_vector_scalar(cl_device_id deviceID, cl_context context, cl_command_que
         if ((types[ t ] == kLong || types[ t ] == kULong) && !gHasLong)
             continue;
 
-        errors += run_vector_scalar_tests( deviceID, context, queue, num_elements, types[ t ], 1 );
+        errors += run_vector_scalar_tests(device, context, queue, num_elements,
+                                          types[t], 1);
         break;
     }
 
