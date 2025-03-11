@@ -82,8 +82,9 @@ void CL_CALLBACK combuf_event_callback_function(cl_event event,
     *pdata = true;
 }
 
-int test_callback_event_single(cl_device_id device, cl_context context,
-                               cl_command_queue queue, Action *actionToTest)
+static int test_callback_event_single(cl_device_id device, cl_context context,
+                                      cl_command_queue queue,
+                                      Action *actionToTest)
 {
     // Note: we don't use the waiting feature here. We just want to verify that
     // we get a callback called when the given event finishes
@@ -163,15 +164,14 @@ int test_callback_event_single(cl_device_id device, cl_context context,
     {                                                                          \
         name##Action action;                                                   \
         log_info("-- Testing " #name "...\n");                                 \
-        if ((error = test_callback_event_single(deviceID, context, queue,      \
-                                                &action))                      \
+        if ((error =                                                           \
+                 test_callback_event_single(device, context, queue, &action))  \
             != CL_SUCCESS)                                                     \
             retVal++;                                                          \
         clFinish(queue);                                                       \
     }
 
-int test_callbacks(cl_device_id deviceID, cl_context context,
-                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(callbacks)
 {
     cl_int error;
     int retVal = 0;
@@ -185,7 +185,7 @@ int test_callbacks(cl_device_id deviceID, cl_context context,
     TEST_ACTION(MapBuffer)
     TEST_ACTION(UnmapBuffer)
 
-    if (checkForImageSupport(deviceID) == CL_IMAGE_FORMAT_NOT_SUPPORTED)
+    if (checkForImageSupport(device) == CL_IMAGE_FORMAT_NOT_SUPPORTED)
     {
         log_info("\nNote: device does not support images. Skipping remainder "
                  "of callback tests...\n");
@@ -199,7 +199,7 @@ int test_callbacks(cl_device_id deviceID, cl_context context,
         TEST_ACTION(CopyBufferTo2DImage)
         TEST_ACTION(MapImage)
 
-        if (checkFor3DImageSupport(deviceID) == CL_IMAGE_FORMAT_NOT_SUPPORTED)
+        if (checkFor3DImageSupport(device) == CL_IMAGE_FORMAT_NOT_SUPPORTED)
             log_info("\nNote: device does not support 3D images. Skipping "
                      "remainder of waitlist tests...\n");
         else
@@ -237,8 +237,7 @@ void CL_CALLBACK simultaneous_event_callback_function(cl_event event,
     ThreadPool_AtomicAdd(&sSimultaneousCount, 1);
 }
 
-int test_callbacks_simultaneous(cl_device_id deviceID, cl_context context,
-                                cl_command_queue queue, int num_elements)
+REGISTER_TEST(callbacks_simultaneous)
 {
     cl_int error;
 
@@ -255,7 +254,7 @@ int test_callbacks_simultaneous(cl_device_id deviceID, cl_context context,
     actions[index++] = new MapBufferAction();
     actions[index++] = new UnmapBufferAction();
 
-    if (checkForImageSupport(deviceID) != CL_IMAGE_FORMAT_NOT_SUPPORTED)
+    if (checkForImageSupport(device) != CL_IMAGE_FORMAT_NOT_SUPPORTED)
     {
         actions[index++] = new ReadImage2DAction();
         actions[index++] = new WriteImage2DAction();
@@ -264,7 +263,7 @@ int test_callbacks_simultaneous(cl_device_id deviceID, cl_context context,
         actions[index++] = new CopyBufferTo2DImageAction();
         actions[index++] = new MapImageAction();
 
-        if (checkFor3DImageSupport(deviceID) != CL_IMAGE_FORMAT_NOT_SUPPORTED)
+        if (checkFor3DImageSupport(device) != CL_IMAGE_FORMAT_NOT_SUPPORTED)
         {
             actions[index++] = new ReadImage3DAction();
             actions[index++] = new WriteImage3DAction();
@@ -282,7 +281,7 @@ int test_callbacks_simultaneous(cl_device_id deviceID, cl_context context,
     log_info("\tSetting up test events...\n");
     for (index = 0; actions[index] != NULL; index++)
     {
-        error = actions[index]->Setup(deviceID, context, queue);
+        error = actions[index]->Setup(device, context, queue);
         test_error(error, "Unable to set up test action");
         sSimultaneousFlags[index] = false;
     }
@@ -384,8 +383,7 @@ int test_callbacks_simultaneous(cl_device_id deviceID, cl_context context,
     return -1;
 }
 
-int test_callback_on_error_simple(cl_device_id deviceID, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+REGISTER_TEST(callback_on_error_simple)
 {
     cl_int error = CL_SUCCESS;
     clEventWrapper user_event = clCreateUserEvent(context, &error);
@@ -412,10 +410,7 @@ int test_callback_on_error_simple(cl_device_id deviceID, cl_context context,
     return CL_SUCCESS;
 }
 
-int test_callback_on_error_enqueue_command(cl_device_id deviceID,
-                                           cl_context context,
-                                           cl_command_queue queue,
-                                           int num_elements)
+REGISTER_TEST(callback_on_error_enqueue_command)
 {
     cl_int error = CL_SUCCESS;
     bool confirmation = false;
