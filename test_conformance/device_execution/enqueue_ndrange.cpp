@@ -21,7 +21,6 @@
 #include <algorithm>
 #include <vector>
 
-#include "procs.h"
 #include "utils.h"
 #include <time.h>
 
@@ -609,7 +608,7 @@ static int check_kernel_results(cl_int* results, cl_int len, std::vector<cl_uint
     return -1;
 }
 
-int test_enqueue_ndrange(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(enqueue_ndrange)
 {
     MTdata d;
     cl_uint i;

@@ -23,7 +23,6 @@
 #include "harness/testHarness.h"
 #include "harness/parseParameters.h"
 #include "utils.h"
-#include "procs.h"
 
 std::string gKernelName;
 int gWimpyMode = 0;
@@ -57,17 +56,6 @@ test_status InitCL(cl_device_id device) {
   return TEST_PASS;
 }
 
-test_definition test_list[] = {
-    ADD_TEST(device_info),           ADD_TEST(device_queue),
-    ADD_TEST(execute_block),         ADD_TEST(enqueue_block),
-    ADD_TEST(enqueue_nested_blocks), ADD_TEST(enqueue_wg_size),
-    ADD_TEST(enqueue_flags),         ADD_TEST(enqueue_multi_queue),
-    ADD_TEST(host_multi_queue),      ADD_TEST(enqueue_ndrange),
-    ADD_TEST(host_queue_order),      ADD_TEST(enqueue_profiling),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
-
 int main(int argc, const char *argv[])
 {
     argc = parseCustomParam(argc, argv);
@@ -98,5 +86,7 @@ int main(int argc, const char *argv[])
       }
     }
 
-    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, 0, InitCL);
+    return runTestHarnessWithCheck(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0, InitCL);
 }
