@@ -88,7 +88,7 @@ cl_int get_result_from_program( cl_context context, cl_command_queue queue, cl_p
     return CL_SUCCESS;
 }
 
-int test_options_build_optimizations(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(options_build_optimizations)
 {
     int error;
     cl_build_status status;
@@ -105,10 +105,12 @@ int test_options_build_optimizations(cl_device_id deviceID, cl_context context, 
 
         /* Build with the macro defined */
         log_info("Testing optimization option '%s'\n", optimization_options[i]);
-        error = clBuildProgram( program, 1, &deviceID, optimization_options[i], NULL, NULL );
+        error = clBuildProgram(program, 1, &device, optimization_options[i],
+                               NULL, NULL);
         test_error( error, "Test program did not properly build" );
 
-        error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_STATUS, sizeof( status ), &status, NULL );
+        error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_STATUS,
+                                      sizeof(status), &status, NULL);
         test_error( error, "Unable to get program build status" );
 
         if( (int)status != CL_BUILD_SUCCESS )
@@ -121,7 +123,7 @@ int test_options_build_optimizations(cl_device_id deviceID, cl_context context, 
     return 0;
 }
 
-int test_options_build_macro(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(options_build_macro)
 {
     int error;
     clProgramWrapper program;
@@ -136,10 +138,11 @@ int test_options_build_macro(cl_device_id deviceID, cl_context context, cl_comma
     }
 
     /* Build with the macro defined */
-    error = clBuildProgram( program, 1, &deviceID, "-DTEST_MACRO=1 ", NULL, NULL );
+    error = clBuildProgram(program, 1, &device, "-DTEST_MACRO=1 ", NULL, NULL);
     test_error( error, "Test program did not properly build" );
 
-    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_STATUS, sizeof( status ), &status, NULL );
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_STATUS,
+                                  sizeof(status), &status, NULL);
     test_error( error, "Unable to get program build status" );
 
     if( (int)status != CL_BUILD_SUCCESS )
@@ -162,7 +165,7 @@ int test_options_build_macro(cl_device_id deviceID, cl_context context, cl_comma
     }
 
     // Rebuild with a different value for the define macro, to make sure caching behaves properly
-    error = clBuildProgram( program, 1, &deviceID, "-DTEST_MACRO=5 ", NULL, NULL );
+    error = clBuildProgram(program, 1, &device, "-DTEST_MACRO=5 ", NULL, NULL);
     test_error( error, "Test program did not properly rebuild" );
 
     error = get_result_from_program( context, queue, program, &secondResult );
@@ -180,7 +183,7 @@ int test_options_build_macro(cl_device_id deviceID, cl_context context, cl_comma
     return 0;
 }
 
-int test_options_build_macro_existence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(options_build_macro_existence)
 {
     int error;
     clProgramWrapper program;
@@ -195,7 +198,7 @@ int test_options_build_macro_existence(cl_device_id deviceID, cl_context context
     }
 
     /* Build without the macro defined */
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
+    error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
     test_error( error, "Test program did not properly build" );
 
     // Go ahead and run the program to verify results
@@ -211,7 +214,7 @@ int test_options_build_macro_existence(cl_device_id deviceID, cl_context context
     }
 
     // Now compile again with the macro defined and verify a change in results
-    error = clBuildProgram( program, 1, &deviceID, "-DTEST_MACRO", NULL, NULL );
+    error = clBuildProgram(program, 1, &device, "-DTEST_MACRO", NULL, NULL);
     test_error( error, "Test program did not properly build" );
 
     error = get_result_from_program( context, queue, program, &secondResult );
@@ -229,7 +232,7 @@ int test_options_build_macro_existence(cl_device_id deviceID, cl_context context
     return 0;
 }
 
-int test_options_include_directory(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(options_include_directory)
 {
     int error;
 
@@ -252,10 +255,12 @@ int test_options_include_directory(cl_device_id deviceID, cl_context context, cl
     include_dir = "-I " + path + sep + "includeTestDirectory";
 
 //    log_info("%s\n", include_dir);
-    error = clBuildProgram( program, 1, &deviceID, include_dir.c_str(), NULL, NULL );
+    error =
+        clBuildProgram(program, 1, &device, include_dir.c_str(), NULL, NULL);
     test_error( error, "Test program did not properly build" );
 
-    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_STATUS, sizeof( status ), &status, NULL );
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_STATUS,
+                                  sizeof(status), &status, NULL);
     test_error( error, "Unable to get program build status" );
 
     if( (int)status != CL_BUILD_SUCCESS )
@@ -278,7 +283,8 @@ int test_options_include_directory(cl_device_id deviceID, cl_context context, cl
 
     // Rebuild with a different include directory
     include_dir = "-I " + path + sep + "secondIncludeTestDirectory";
-    error = clBuildProgram( program, 1, &deviceID, include_dir.c_str(), NULL, NULL );
+    error =
+        clBuildProgram(program, 1, &device, include_dir.c_str(), NULL, NULL);
     test_error( error, "Test program did not properly rebuild" );
 
     error = get_result_from_program( context, queue, program, &secondResult );
@@ -334,7 +340,7 @@ cl_int get_float_result_from_program( cl_context context, cl_command_queue queue
     return CL_SUCCESS;
 }
 
-int test_options_denorm_cache(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(options_denorm_cache)
 {
     int error;
 
@@ -344,7 +350,8 @@ int test_options_denorm_cache(cl_device_id deviceID, cl_context context, cl_comm
 
     // If denorms aren't even supported, testing this flag is pointless
     cl_device_fp_config floatCaps = 0;
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_SINGLE_FP_CONFIG, sizeof(floatCaps), &floatCaps,  NULL);
+    error = clGetDeviceInfo(device, CL_DEVICE_SINGLE_FP_CONFIG,
+                            sizeof(floatCaps), &floatCaps, NULL);
     test_error( error, "Unable to get device FP config" );
     if( ( floatCaps & CL_FP_DENORM ) == 0 )
     {
@@ -356,10 +363,12 @@ int test_options_denorm_cache(cl_device_id deviceID, cl_context context, cl_comm
     test_error( error, "Unable to create test program" );
 
     // Build first WITH the denorm flush flag
-    error = clBuildProgram( program, 1, &deviceID, "-cl-denorms-are-zero", NULL, NULL );
+    error =
+        clBuildProgram(program, 1, &device, "-cl-denorms-are-zero", NULL, NULL);
     test_error( error, "Test program did not properly build" );
 
-    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_STATUS, sizeof( status ), &status, NULL );
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_STATUS,
+                                  sizeof(status), &status, NULL);
     test_error( error, "Unable to get program build status" );
 
     if( (int)status != CL_BUILD_SUCCESS )
@@ -382,7 +391,7 @@ int test_options_denorm_cache(cl_device_id deviceID, cl_context context, cl_comm
     // valid, there isn't anything we can to do validate results for now
 
     // Rebuild without flushing flag set
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
+    error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
     test_error( error, "Test program did not properly rebuild" );
 
     error = get_float_result_from_program( context, queue, program, *input, *input, &secondResult );
@@ -406,4 +415,3 @@ int test_options_denorm_cache(cl_device_id deviceID, cl_context context, cl_comm
 
     return 0;
 }
-
