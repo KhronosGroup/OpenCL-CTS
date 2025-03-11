@@ -14,26 +14,15 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "harness/testHarness.h"
 
 #include <stdio.h>
 #include <string.h>
-#include "procs.h"
 
 // Additional parameters to limit test scope (-n,-b,-x)
 cl_uint maxThreadDimension = 0;
 cl_uint bufferSize = 0;
 cl_uint bufferStep = 0;
-
-test_definition test_list[] = {
-    ADD_TEST(quick_1d_explicit_local), ADD_TEST(quick_2d_explicit_local),
-    ADD_TEST(quick_3d_explicit_local), ADD_TEST(quick_1d_implicit_local),
-    ADD_TEST(quick_2d_implicit_local), ADD_TEST(quick_3d_implicit_local),
-    ADD_TEST(full_1d_explicit_local),  ADD_TEST(full_2d_explicit_local),
-    ADD_TEST(full_3d_explicit_local),  ADD_TEST(full_1d_implicit_local),
-    ADD_TEST(full_2d_implicit_local),  ADD_TEST(full_3d_implicit_local),
-};
-
-const int test_num = ARRAY_SIZE(test_list);
 
 int main(int argc, const char *argv[])
 {
@@ -88,5 +77,6 @@ int main(int argc, const char *argv[])
         i -= delArg;
     }
 
-    return runTestHarness(argc, argv, test_num, test_list, false, 0);
+    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
+                          test_registry::getInstance().definitions(), false, 0);
 }
