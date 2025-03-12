@@ -21,7 +21,7 @@
 #include <sys/stat.h>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 int hi_offset( int index, int vectorSize) { return index + vectorSize / 2; }
 int lo_offset( int index, int vectorSize) { return index; }
@@ -48,7 +48,7 @@ static const char *vector_size_names[] = { "", "2", "3", "4", "8", "16"};
 static const size_t kSizes[] = { 1, 1, 2, 2, 4, 4, 8, 8, 2, 4, 8 };
 static int CheckResults( void *in, void *out, size_t elementCount, int type, int vectorSize, int operatorToUse );
 
-int test_hiloeo(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST(hiloeo)
 {
     int err;
     int hasDouble = is_extension_available( device, "cl_khr_fp64" );
@@ -60,12 +60,12 @@ int test_hiloeo(cl_device_id device, cl_context context, cl_command_queue queue,
     int expressionMode;
     int numExpressionModes = 2;
 
-    size_t length = sizeof(cl_int) * 4 * n_elems;
+    size_t length = sizeof(cl_int) * 4 * num_elements;
 
-    std::vector<cl_int> input_ptr(4 * n_elems);
-    std::vector<cl_int> output_ptr(4 * n_elems);
+    std::vector<cl_int> input_ptr(4 * num_elements);
+    std::vector<cl_int> output_ptr(4 * num_elements);
 
-    for (cl_uint i = 0; i < 4 * (cl_uint)n_elems; i++)
+    for (cl_uint i = 0; i < 4 * (cl_uint)num_elements; i++)
         input_ptr[i] = genrand_int32(d);
 
     for( type = 0; type < sizeof( test_str_names ) / sizeof( test_str_names[0] ); type++ )

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include <ctype.h>
 
+#include "testBase.h"
 
 const char *work_offset_test[] = {
     "__kernel void test( __global int * outputID_A, \n"
@@ -122,7 +122,7 @@ int check_results( size_t threads[], size_t offsets[], cl_int outputA[], cl_int 
     return ( missed | multiple | errored | corrected );
 }
 
-int test_global_work_offsets(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(global_work_offsets)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -222,7 +222,7 @@ const char *get_offset_test[] = {
     "}\n"
 };
 
-int test_get_global_offset(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(get_global_offset)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -300,4 +300,3 @@ int test_get_global_offset(cl_device_id deviceID, cl_context context, cl_command
     // All done!
     return 0;
 }
-

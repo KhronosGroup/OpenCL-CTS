@@ -23,7 +23,6 @@
 #include <sys/stat.h>
 #include <vector>
 
-#include "procs.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
@@ -551,29 +550,22 @@ struct TestWorkItemFnsOutOfRange
 
 } // anonymous namespace
 
-int test_work_item_functions(cl_device_id deviceID, cl_context context,
-                             cl_command_queue queue, int num_elements)
+REGISTER_TEST(work_item_functions)
 {
-    TestWorkItemFns fnct(deviceID, context, queue);
+    TestWorkItemFns fnct(device, context, queue);
     return fnct.Run();
 }
 
-int test_work_item_functions_out_of_range(cl_device_id deviceID,
-                                          cl_context context,
-                                          cl_command_queue queue,
-                                          int num_elements)
+REGISTER_TEST(work_item_functions_out_of_range)
 {
-    TestWorkItemFnsOutOfRange fnct(deviceID, context, queue,
+    TestWorkItemFnsOutOfRange fnct(device, context, queue,
                                    outOfRangeWorkItemKernelCode);
     return fnct.Run();
 }
 
-int test_work_item_functions_out_of_range_hardcoded(cl_device_id deviceID,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements)
+REGISTER_TEST(work_item_functions_out_of_range_hardcoded)
 {
-    TestWorkItemFnsOutOfRange fnct(deviceID, context, queue,
+    TestWorkItemFnsOutOfRange fnct(device, context, queue,
                                    outOfRangeWorkItemHardcodedKernelCode);
     return fnct.Run();
 }

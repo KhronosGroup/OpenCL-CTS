@@ -17,7 +17,6 @@
 #include <unistd.h>
 #endif
 
-#include "procs.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 #include "harness/errorHelpers.h"
@@ -148,7 +147,9 @@ const char * get_explicit_address_name( AddressSpaces address )
 }
 
 
-int test_kernel_memory_alignment(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems, AddressSpaces address )
+static int test_kernel_memory_alignment(cl_device_id device, cl_context context,
+                                        cl_command_queue queue, int n_elems,
+                                        AddressSpaces address)
 {
     const char *constant_kernel;
     const char *parameter_kernel;
@@ -495,17 +496,19 @@ int test_kernel_memory_alignment(cl_device_id device, cl_context context, cl_com
 }
 
 
-int test_kernel_memory_alignment_local(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
+REGISTER_TEST(kernel_memory_alignment_local)
 {
-    return test_kernel_memory_alignment( device,  context,  queue,  n_elems, kLocal );
+    return test_kernel_memory_alignment(device, context, queue, num_elements,
+                                        kLocal);
 }
 
-int test_kernel_memory_alignment_global(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
+REGISTER_TEST(kernel_memory_alignment_global)
 {
-    return test_kernel_memory_alignment( device,  context,  queue,  n_elems, kGlobal );
+    return test_kernel_memory_alignment(device, context, queue, num_elements,
+                                        kGlobal);
 }
 
-int test_kernel_memory_alignment_constant(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
+REGISTER_TEST(kernel_memory_alignment_constant)
 {
     // There is a class of approved OpenCL 1.0 conformant devices out there that in some circumstances
     // are unable to meaningfully take (or more precisely use) the address of constant data by virtue
@@ -559,12 +562,12 @@ int test_kernel_memory_alignment_constant(cl_device_id device, cl_context contex
     free(version_string);
 
     // Everyone else is to be ground mercilessly under the wheels of progress
-    return test_kernel_memory_alignment( device,  context,  queue,  n_elems, kConstant );
+    return test_kernel_memory_alignment(device, context, queue, num_elements,
+                                        kConstant);
 }
 
-int test_kernel_memory_alignment_private(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
+REGISTER_TEST(kernel_memory_alignment_private)
 {
-    return test_kernel_memory_alignment( device,  context,  queue,  n_elems, kPrivate );
+    return test_kernel_memory_alignment(device, context, queue, num_elements,
+                                        kPrivate);
 }
-
-

@@ -25,8 +25,6 @@ using std::isnan;
 #include <vector>
 
 #include <CL/cl_half.h>
-
-#include "procs.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
@@ -114,10 +112,11 @@ bool IsHalfNaN(cl_half v)
     return (h_exp == 0x1F && h_mant != 0);
 }
 
-int test_explicit_s2v_function(cl_context context, cl_command_queue queue,
-                               cl_kernel kernel, ExplicitType srcType,
-                               unsigned int count, ExplicitType destType,
-                               unsigned int vecSize, void *inputData)
+static int test_explicit_s2v_function(cl_context context,
+                                      cl_command_queue queue, cl_kernel kernel,
+                                      ExplicitType srcType, unsigned int count,
+                                      ExplicitType destType,
+                                      unsigned int vecSize, void *inputData)
 {
     int error;
     clMemWrapper streams[2];
@@ -387,12 +386,11 @@ protected:
 
 } // anonymous namespace
 
-int test_explicit_s2v(cl_device_id deviceID, cl_context context,
-                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(explicit_s2v)
 {
     try
     {
-        TypesIterator(deviceID, context, queue);
+        TypesIterator(device, context, queue);
     } catch (const std::runtime_error &e)
     {
         log_error("%s", e.what());

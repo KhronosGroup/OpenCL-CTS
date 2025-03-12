@@ -21,8 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 static unsigned char *
 generate_rgba8_image(int w, int h, MTdata d)
@@ -117,8 +116,7 @@ verify_rgbafp_image(float *image, float *outptr, int x, int y, int w, int h, int
 #define NUM_COPIES    10
 static const char *test_str_names[] = { "CL_RGBA CL_UNORM_INT8", "CL_RGBA CL_UNORM_INT16", "CL_RGBA CL_FLOAT" };
 
-int
-test_imagerandomcopy(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(imagerandomcopy)
 {
     cl_image_format    img_format;
     unsigned char    *rgba8_inptr, *rgba8_outptr;
@@ -271,6 +269,3 @@ test_imagerandomcopy(cl_device_id device, cl_context context, cl_command_queue q
 
     return err;
 }
-
-
-
