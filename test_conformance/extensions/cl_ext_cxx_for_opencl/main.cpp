@@ -14,15 +14,11 @@
 // limitations under the License.
 //
 
-#include "procs.h"
-
-test_definition test_list[] = {
-    ADD_TEST_VERSION(cxx_for_opencl_ext, Version(2, 0)),
-    ADD_TEST_VERSION(cxx_for_opencl_ver, Version(2, 0))
-};
+#include "harness/testHarness.h"
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarnessWithCheck(argc, argv, ARRAY_SIZE(test_list), test_list,
-                                   false, 0, nullptr);
+    return runTestHarnessWithCheck(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0, nullptr);
 }

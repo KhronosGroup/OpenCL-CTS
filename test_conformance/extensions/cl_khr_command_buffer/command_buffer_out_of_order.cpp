@@ -15,7 +15,6 @@
 //
 
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 #include <vector>
 
@@ -337,15 +336,13 @@ struct OutOfOrderTest : public BasicCommandBufferTest
 
 } // anonymous namespace
 
-int test_out_of_order(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(out_of_order)
 {
     return MakeAndRunTest<OutOfOrderTest<false>>(device, context, queue,
                                                  num_elements);
 }
 
-int test_simultaneous_out_of_order(cl_device_id device, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(simultaneous_out_of_order)
 {
     return MakeAndRunTest<OutOfOrderTest<true>>(device, context, queue,
                                                 num_elements);

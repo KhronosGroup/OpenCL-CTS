@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 
 //--------------------------------------------------------------------------
@@ -59,17 +58,13 @@ struct ReleaseCommandBufferInvalidCommandBuffer : public BasicCommandBufferTest
 };
 };
 
-int test_negative_retain_command_buffer_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_retain_command_buffer_invalid_command_buffer)
 {
     return MakeAndRunTest<RetainCommandBufferInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_release_command_buffer_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_release_command_buffer_invalid_command_buffer)
 {
     return MakeAndRunTest<ReleaseCommandBufferInvalidCommandBuffer>(
         device, context, queue, num_elements);
