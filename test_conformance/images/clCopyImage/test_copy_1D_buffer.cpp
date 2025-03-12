@@ -75,13 +75,18 @@ int test_copy_image_size_1D_buffer(cl_context context, cl_command_queue queue,
     return ret;
 }
 
-int test_copy_image_set_1D_buffer(cl_device_id device, cl_context context,
-                                  cl_command_queue queue,
-                                  cl_image_format *format)
+int test_copy_image_set_1D_buffer(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    cl_mem_flags src_flags, cl_mem_object_type src_type, cl_mem_flags dst_flags,
+    cl_mem_object_type dst_type, cl_image_format *format)
 {
+    assert(
+        dst_type
+        == src_type); // This test expects to copy 1D buffer -> 1D buffer images
     size_t maxWidth;
     cl_ulong maxAllocSize, memSize;
-    image_descriptor imageInfo = { 0 };
+    image_descriptor srcImageInfo = { 0 };
+    image_descriptor dstImageInfo = { 0 };
     RandomSeed seed(gRandomSeed);
     size_t pixelSize;
 
@@ -92,11 +97,12 @@ int test_copy_image_set_1D_buffer(cl_device_id device, cl_context context,
         return 0;
     }
 
-    imageInfo.format = format;
-    imageInfo.height = imageInfo.depth = imageInfo.arraySize =
-        imageInfo.slicePitch = 0;
-    imageInfo.type = CL_MEM_OBJECT_IMAGE1D_BUFFER;
-    pixelSize = get_pixel_size(imageInfo.format);
+    srcImageInfo.format = format;
+    srcImageInfo.height = srcImageInfo.depth = srcImageInfo.arraySize =
+        srcImageInfo.slicePitch = 0;
+    srcImageInfo.type = src_type;
+    srcImageInfo.mem_flags = src_flags;
+    pixelSize = get_pixel_size(srcImageInfo.format);
 
     int error = clGetDeviceInfo(device, CL_DEVICE_IMAGE_MAX_BUFFER_SIZE,
                                 sizeof(maxWidth), &maxWidth, NULL);
@@ -114,168 +120,29 @@ int test_copy_image_set_1D_buffer(cl_device_id device, cl_context context,
 
     if (gTestSmallImages)
     {
-        for (imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++)
+        for (srcImageInfo.width = 1; srcImageInfo.width < 13;
+             srcImageInfo.width++)
         {
             size_t rowPadding = gEnablePitch ? 48 : 0;
-            imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
+            srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
 
             if (gEnablePitch)
             {
                 do
                 {
                     rowPadding++;
-                    imageInfo.rowPitch =
-                        imageInfo.width * pixelSize + rowPadding;
-                } while ((imageInfo.rowPitch % pixelSize) != 0);
+                    srcImageInfo.rowPitch =
+                        srcImageInfo.width * pixelSize + rowPadding;
+                } while ((srcImageInfo.rowPitch % pixelSize) != 0);
             }
-
-            if (gDebugTrace) log_info("   at size %d\n", (int)imageInfo.width);
-
-            int ret = test_copy_image_size_1D_buffer(context, queue, &imageInfo,
-                                                     &imageInfo, seed);
-            if (ret) return -1;
-        }
-    }
-    else if (gTestMaxImages)
-    {
-        // Try a specific set of maximum sizes
-        size_t numbeOfSizes;
-        size_t sizes[100][3];
-
-        get_max_sizes(&numbeOfSizes, 100, sizes, maxWidth, 1, 1, 1,
-                      maxAllocSize, memSize, CL_MEM_OBJECT_IMAGE1D_BUFFER,
-                      imageInfo.format);
-
-        for (size_t idx = 0; idx < numbeOfSizes; idx++)
-        {
-            size_t rowPadding = gEnablePitch ? 48 : 0;
-            imageInfo.width = sizes[idx][0];
-            imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-
-            if (gEnablePitch)
-            {
-                do
-                {
-                    rowPadding++;
-                    imageInfo.rowPitch =
-                        imageInfo.width * pixelSize + rowPadding;
-                } while ((imageInfo.rowPitch % pixelSize) != 0);
-            }
-
-            log_info("Testing %d\n", (int)sizes[idx][0]);
-            if (gDebugTrace)
-                log_info("   at max size %d\n", (int)sizes[idx][0]);
-            if (test_copy_image_size_1D_buffer(context, queue, &imageInfo,
-                                               &imageInfo, seed))
-                return -1;
-        }
-    }
-    else
-    {
-        for (int i = 0; i < NUM_IMAGE_ITERATIONS; i++)
-        {
-            cl_ulong size;
-            size_t rowPadding = gEnablePitch ? 48 : 0;
-            // Loop until we get a size that a) will fit in the max alloc size
-            // and b) that an allocation of that image, the result array, plus
-            // offset arrays, will fit in the global ram space
-            do
-            {
-                imageInfo.width =
-                    (size_t)random_log_in_range(16, (int)(maxWidth / 32), seed);
-
-                imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-
-                if (gEnablePitch)
-                {
-                    do
-                    {
-                        rowPadding++;
-                        imageInfo.rowPitch =
-                            imageInfo.width * pixelSize + rowPadding;
-                    } while ((imageInfo.rowPitch % pixelSize) != 0);
-                }
-
-                size = (size_t)imageInfo.rowPitch * 4;
-            } while (size > maxAllocSize || (size * 3) > memSize);
 
             if (gDebugTrace)
-            {
-                log_info("   at size %d (row pitch %d) out of %d\n",
-                         (int)imageInfo.width, (int)imageInfo.rowPitch,
-                         (int)maxWidth);
-            }
+                log_info("   at size %d\n", (int)srcImageInfo.width);
 
-            int ret = test_copy_image_size_1D_buffer(context, queue, &imageInfo,
-                                                     &imageInfo, seed);
-            if (ret) return -1;
-        }
-    }
-
-    return 0;
-}
-
-int test_copy_image_set_1D_1D_buffer(cl_device_id device, cl_context context,
-                                     cl_command_queue queue,
-                                     cl_image_format *format)
-{
-    size_t maxWidth;
-    cl_ulong maxAllocSize, memSize;
-    image_descriptor imageInfo = { 0 };
-    RandomSeed seed(gRandomSeed);
-    size_t pixelSize;
-
-    if (gTestMipmaps)
-    {
-        // 1D image buffers don't support mipmaps
-        // https://registry.khronos.org/OpenCL/specs/3.0-unified/html/OpenCL_Ext.html#cl_khr_mipmap_image
-        return 0;
-    }
-
-    imageInfo.format = format;
-    imageInfo.height = imageInfo.depth = imageInfo.arraySize =
-        imageInfo.slicePitch = 0;
-    imageInfo.type = CL_MEM_OBJECT_IMAGE1D_BUFFER;
-    pixelSize = get_pixel_size(imageInfo.format);
-
-    int error = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_WIDTH,
-                                sizeof(maxWidth), &maxWidth, NULL);
-    error |= clGetDeviceInfo(device, CL_DEVICE_MAX_MEM_ALLOC_SIZE,
-                             sizeof(maxAllocSize), &maxAllocSize, NULL);
-    error |= clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(memSize),
-                             &memSize, NULL);
-    test_error(error, "Unable to get max image 1D buffer size from device");
-
-    if (memSize > (cl_ulong)SIZE_MAX)
-    {
-        memSize = (cl_ulong)SIZE_MAX;
-        maxAllocSize = (cl_ulong)SIZE_MAX;
-    }
-
-    if (gTestSmallImages)
-    {
-        for (imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++)
-        {
-            size_t rowPadding = gEnablePitch ? 48 : 0;
-            imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-
-            if (gEnablePitch)
-            {
-                do
-                {
-                    rowPadding++;
-                    imageInfo.rowPitch =
-                        imageInfo.width * pixelSize + rowPadding;
-                } while ((imageInfo.rowPitch % pixelSize) != 0);
-            }
-
-            if (gDebugTrace) log_info("   at size %d\n", (int)imageInfo.width);
-
-            image_descriptor srcImageInfo = imageInfo;
-            srcImageInfo.type = CL_MEM_OBJECT_IMAGE1D;
-
+            dstImageInfo = srcImageInfo;
+            dstImageInfo.mem_flags = dst_flags;
             int ret = test_copy_image_size_1D_buffer(
-                context, queue, &srcImageInfo, &imageInfo, seed);
+                context, queue, &srcImageInfo, &dstImageInfo, seed);
             if (ret) return -1;
         }
     }
@@ -286,183 +153,31 @@ int test_copy_image_set_1D_1D_buffer(cl_device_id device, cl_context context,
         size_t sizes[100][3];
 
         get_max_sizes(&numbeOfSizes, 100, sizes, maxWidth, 1, 1, 1,
-                      maxAllocSize, memSize, CL_MEM_OBJECT_IMAGE1D_BUFFER,
-                      imageInfo.format);
+                      maxAllocSize, memSize, src_type, srcImageInfo.format);
 
         for (size_t idx = 0; idx < numbeOfSizes; idx++)
         {
             size_t rowPadding = gEnablePitch ? 48 : 0;
-            imageInfo.width = sizes[idx][0];
-            imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
+            srcImageInfo.width = sizes[idx][0];
+            srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
 
             if (gEnablePitch)
             {
                 do
                 {
                     rowPadding++;
-                    imageInfo.rowPitch =
-                        imageInfo.width * pixelSize + rowPadding;
-                } while ((imageInfo.rowPitch % pixelSize) != 0);
+                    srcImageInfo.rowPitch =
+                        srcImageInfo.width * pixelSize + rowPadding;
+                } while ((srcImageInfo.rowPitch % pixelSize) != 0);
             }
 
             log_info("Testing %d\n", (int)sizes[idx][0]);
             if (gDebugTrace)
                 log_info("   at max size %d\n", (int)sizes[idx][0]);
 
-            image_descriptor srcImageInfo = imageInfo;
-            srcImageInfo.type = CL_MEM_OBJECT_IMAGE1D;
-
+            dstImageInfo = srcImageInfo;
+            dstImageInfo.mem_flags = dst_flags;
             if (test_copy_image_size_1D_buffer(context, queue, &srcImageInfo,
-                                               &imageInfo, seed))
-                return -1;
-        }
-    }
-    else
-    {
-        for (int i = 0; i < NUM_IMAGE_ITERATIONS; i++)
-        {
-            cl_ulong size;
-            size_t rowPadding = gEnablePitch ? 48 : 0;
-            // Loop until we get a size that a) will fit in the max alloc size
-            // and b) that an allocation of that image, the result array, plus
-            // offset arrays, will fit in the global ram space
-            do
-            {
-                imageInfo.width =
-                    (size_t)random_log_in_range(16, (int)maxWidth / 32, seed);
-
-                imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-
-                if (gEnablePitch)
-                {
-                    do
-                    {
-                        rowPadding++;
-                        imageInfo.rowPitch =
-                            imageInfo.width * pixelSize + rowPadding;
-                    } while ((imageInfo.rowPitch % pixelSize) != 0);
-                }
-
-                size = (size_t)imageInfo.rowPitch * 4;
-            } while (size > maxAllocSize || (size * 3) > memSize);
-
-            if (gDebugTrace)
-            {
-                log_info("   at size %d (row pitch %d) out of %d\n",
-                         (int)imageInfo.width, (int)imageInfo.rowPitch,
-                         (int)maxWidth);
-            }
-
-            image_descriptor srcImageInfo = imageInfo;
-            srcImageInfo.type = CL_MEM_OBJECT_IMAGE1D;
-
-            int ret = test_copy_image_size_1D_buffer(
-                context, queue, &srcImageInfo, &imageInfo, seed);
-            if (ret) return -1;
-        }
-    }
-
-    return 0;
-}
-
-int test_copy_image_set_1D_buffer_1D(cl_device_id device, cl_context context,
-                                     cl_command_queue queue,
-                                     cl_image_format *format)
-{
-    size_t maxWidth;
-    cl_ulong maxAllocSize, memSize;
-    image_descriptor imageInfo = { 0 };
-    RandomSeed seed(gRandomSeed);
-    size_t pixelSize;
-
-    if (gTestMipmaps)
-    {
-        // 1D image buffers don't support mipmaps
-        // https://registry.khronos.org/OpenCL/specs/3.0-unified/html/OpenCL_Ext.html#cl_khr_mipmap_image
-        return 0;
-    }
-
-    imageInfo.format = format;
-    imageInfo.height = imageInfo.depth = imageInfo.arraySize =
-        imageInfo.slicePitch = 0;
-    imageInfo.type = CL_MEM_OBJECT_IMAGE1D_BUFFER;
-    pixelSize = get_pixel_size(imageInfo.format);
-
-    int error = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_WIDTH,
-                                sizeof(maxWidth), &maxWidth, NULL);
-    error |= clGetDeviceInfo(device, CL_DEVICE_MAX_MEM_ALLOC_SIZE,
-                             sizeof(maxAllocSize), &maxAllocSize, NULL);
-    error |= clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(memSize),
-                             &memSize, NULL);
-    test_error(error, "Unable to get max image 1D buffer size from device");
-
-    if (memSize > (cl_ulong)SIZE_MAX)
-    {
-        memSize = (cl_ulong)SIZE_MAX;
-        maxAllocSize = (cl_ulong)SIZE_MAX;
-    }
-
-    if (gTestSmallImages)
-    {
-        for (imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++)
-        {
-            size_t rowPadding = gEnablePitch ? 48 : 0;
-            imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-
-            if (gEnablePitch)
-            {
-                do
-                {
-                    rowPadding++;
-                    imageInfo.rowPitch =
-                        imageInfo.width * pixelSize + rowPadding;
-                } while ((imageInfo.rowPitch % pixelSize) != 0);
-            }
-
-            if (gDebugTrace) log_info("   at size %d\n", (int)imageInfo.width);
-
-            image_descriptor dstImageInfo = imageInfo;
-            dstImageInfo.type = CL_MEM_OBJECT_IMAGE1D;
-
-            int ret = test_copy_image_size_1D_buffer(context, queue, &imageInfo,
-                                                     &dstImageInfo, seed);
-            if (ret) return -1;
-        }
-    }
-    else if (gTestMaxImages)
-    {
-        // Try a specific set of maximum sizes
-        size_t numbeOfSizes;
-        size_t sizes[100][3];
-
-        get_max_sizes(&numbeOfSizes, 100, sizes, maxWidth, 1, 1, 1,
-                      maxAllocSize, memSize, CL_MEM_OBJECT_IMAGE1D_BUFFER,
-                      imageInfo.format);
-
-        for (size_t idx = 0; idx < numbeOfSizes; idx++)
-        {
-            size_t rowPadding = gEnablePitch ? 48 : 0;
-            imageInfo.width = sizes[idx][0];
-            imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-
-            if (gEnablePitch)
-            {
-                do
-                {
-                    rowPadding++;
-                    imageInfo.rowPitch =
-                        imageInfo.width * pixelSize + rowPadding;
-                } while ((imageInfo.rowPitch % pixelSize) != 0);
-            }
-
-            log_info("Testing %d\n", (int)sizes[idx][0]);
-            if (gDebugTrace)
-                log_info("   at max size %d\n", (int)sizes[idx][0]);
-
-            image_descriptor dstImageInfo = imageInfo;
-            dstImageInfo.type = CL_MEM_OBJECT_IMAGE1D;
-
-            if (test_copy_image_size_1D_buffer(context, queue, &imageInfo,
                                                &dstImageInfo, seed))
                 return -1;
         }
@@ -478,36 +193,194 @@ int test_copy_image_set_1D_buffer_1D(cl_device_id device, cl_context context,
             // offset arrays, will fit in the global ram space
             do
             {
-                imageInfo.width =
+                srcImageInfo.width =
                     (size_t)random_log_in_range(16, (int)maxWidth / 32, seed);
 
-                imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
+                srcImageInfo.rowPitch =
+                    srcImageInfo.width * pixelSize + rowPadding;
 
                 if (gEnablePitch)
                 {
                     do
                     {
                         rowPadding++;
-                        imageInfo.rowPitch =
-                            imageInfo.width * pixelSize + rowPadding;
-                    } while ((imageInfo.rowPitch % pixelSize) != 0);
+                        srcImageInfo.rowPitch =
+                            srcImageInfo.width * pixelSize + rowPadding;
+                    } while ((srcImageInfo.rowPitch % pixelSize) != 0);
                 }
 
-                size = (size_t)imageInfo.rowPitch * 4;
+                size = (size_t)srcImageInfo.rowPitch * 4;
             } while (size > maxAllocSize || (size * 3) > memSize);
 
             if (gDebugTrace)
             {
                 log_info("   at size %d (row pitch %d) out of %d\n",
-                         (int)imageInfo.width, (int)imageInfo.rowPitch,
+                         (int)srcImageInfo.width, (int)srcImageInfo.rowPitch,
                          (int)maxWidth);
             }
 
-            image_descriptor dstImageInfo = imageInfo;
-            dstImageInfo.type = CL_MEM_OBJECT_IMAGE1D;
+            dstImageInfo = srcImageInfo;
+            dstImageInfo.mem_flags = dst_flags;
+            int ret = test_copy_image_size_1D_buffer(
+                context, queue, &srcImageInfo, &dstImageInfo, seed);
+            if (ret) return -1;
+        }
+    }
 
-            int ret = test_copy_image_size_1D_buffer(context, queue, &imageInfo,
-                                                     &dstImageInfo, seed);
+    return 0;
+}
+
+int test_copy_image_set_1D_1D_buffer(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    cl_mem_flags src_flags, cl_mem_object_type src_type, cl_mem_flags dst_flags,
+    cl_mem_object_type dst_type, cl_image_format *format)
+{
+    size_t maxWidth;
+    cl_ulong maxAllocSize, memSize;
+    image_descriptor srcImageInfo = { 0 };
+    image_descriptor dstImageInfo = { 0 };
+    RandomSeed seed(gRandomSeed);
+    size_t pixelSize;
+
+    if (gTestMipmaps)
+    {
+        // 1D image buffers don't support mipmaps
+        // https://registry.khronos.org/OpenCL/specs/3.0-unified/html/OpenCL_Ext.html#cl_khr_mipmap_image
+        return 0;
+    }
+
+    srcImageInfo.format = format;
+    srcImageInfo.height = srcImageInfo.depth = srcImageInfo.arraySize =
+        srcImageInfo.slicePitch = 0;
+    srcImageInfo.type = src_type;
+    srcImageInfo.mem_flags = src_flags;
+    pixelSize = get_pixel_size(srcImageInfo.format);
+
+    int error = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_WIDTH,
+                                sizeof(maxWidth), &maxWidth, NULL);
+    error |= clGetDeviceInfo(device, CL_DEVICE_MAX_MEM_ALLOC_SIZE,
+                             sizeof(maxAllocSize), &maxAllocSize, NULL);
+    error |= clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(memSize),
+                             &memSize, NULL);
+    test_error(error, "Unable to get max image 1D buffer size from device");
+
+    if (memSize > (cl_ulong)SIZE_MAX)
+    {
+        memSize = (cl_ulong)SIZE_MAX;
+        maxAllocSize = (cl_ulong)SIZE_MAX;
+    }
+
+    if (gTestSmallImages)
+    {
+        for (srcImageInfo.width = 1; srcImageInfo.width < 13;
+             srcImageInfo.width++)
+        {
+            size_t rowPadding = gEnablePitch ? 48 : 0;
+            srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
+
+            if (gEnablePitch)
+            {
+                do
+                {
+                    rowPadding++;
+                    srcImageInfo.rowPitch =
+                        srcImageInfo.width * pixelSize + rowPadding;
+                } while ((srcImageInfo.rowPitch % pixelSize) != 0);
+            }
+
+            if (gDebugTrace)
+                log_info("   at size %d\n", (int)srcImageInfo.width);
+
+            dstImageInfo = srcImageInfo;
+            dstImageInfo.type = dst_type;
+            dstImageInfo.mem_flags = dst_flags;
+
+            int ret = test_copy_image_size_1D_buffer(
+                context, queue, &srcImageInfo, &dstImageInfo, seed);
+            if (ret) return -1;
+        }
+    }
+    else if (gTestMaxImages)
+    {
+        // Try a specific set of maximum sizes
+        size_t numbeOfSizes;
+        size_t sizes[100][3];
+
+        get_max_sizes(&numbeOfSizes, 100, sizes, maxWidth, 1, 1, 1,
+                      maxAllocSize, memSize, src_type, srcImageInfo.format);
+
+        for (size_t idx = 0; idx < numbeOfSizes; idx++)
+        {
+            size_t rowPadding = gEnablePitch ? 48 : 0;
+            srcImageInfo.width = sizes[idx][0];
+            srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
+
+            if (gEnablePitch)
+            {
+                do
+                {
+                    rowPadding++;
+                    srcImageInfo.rowPitch =
+                        srcImageInfo.width * pixelSize + rowPadding;
+                } while ((srcImageInfo.rowPitch % pixelSize) != 0);
+            }
+
+            log_info("Testing %d\n", (int)sizes[idx][0]);
+            if (gDebugTrace)
+                log_info("   at max size %d\n", (int)sizes[idx][0]);
+
+            dstImageInfo = srcImageInfo;
+            dstImageInfo.type = dst_type;
+            dstImageInfo.mem_flags = dst_flags;
+
+            if (test_copy_image_size_1D_buffer(context, queue, &srcImageInfo,
+                                               &dstImageInfo, seed))
+                return -1;
+        }
+    }
+    else
+    {
+        for (int i = 0; i < NUM_IMAGE_ITERATIONS; i++)
+        {
+            cl_ulong size;
+            size_t rowPadding = gEnablePitch ? 48 : 0;
+            // Loop until we get a size that a) will fit in the max alloc size
+            // and b) that an allocation of that image, the result array, plus
+            // offset arrays, will fit in the global ram space
+            do
+            {
+                srcImageInfo.width =
+                    (size_t)random_log_in_range(16, (int)maxWidth / 32, seed);
+
+                srcImageInfo.rowPitch =
+                    srcImageInfo.width * pixelSize + rowPadding;
+
+                if (gEnablePitch)
+                {
+                    do
+                    {
+                        rowPadding++;
+                        srcImageInfo.rowPitch =
+                            srcImageInfo.width * pixelSize + rowPadding;
+                    } while ((srcImageInfo.rowPitch % pixelSize) != 0);
+                }
+
+                size = (size_t)srcImageInfo.rowPitch * 4;
+            } while (size > maxAllocSize || (size * 3) > memSize);
+
+            if (gDebugTrace)
+            {
+                log_info("   at size %d (row pitch %d) out of %d\n",
+                         (int)srcImageInfo.width, (int)srcImageInfo.rowPitch,
+                         (int)maxWidth);
+            }
+
+            dstImageInfo = srcImageInfo;
+            dstImageInfo.type = dst_type;
+            dstImageInfo.mem_flags = dst_flags;
+
+            int ret = test_copy_image_size_1D_buffer(
+                context, queue, &srcImageInfo, &dstImageInfo, seed);
             if (ret) return -1;
         }
     }
