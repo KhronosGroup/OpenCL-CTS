@@ -291,7 +291,7 @@ const Func functionList[] = {
     ENTRY(erfc, 16.0f, 16.0f, 4.0f, 4.0f, FTZ_OFF, unaryF),
     ENTRY(erf,  16.0f, 16.0f, 4.0f, 4.0f, FTZ_OFF, unaryF),
 
-    // 3+floor(fabs(2*x)) is added to the relaxed error in unary.c
+    // floor(fabs(2*x)) is added to the relaxed error in unary.c
     ENTRY_EXT(exp, 3.0f, 4.0f, 2.0f, 3.0f, 3.0f, FTZ_OFF, unaryF, 4.0f),
 
     // 3+floor(fabs(2*x)) is added to the relaxed error in unary.c
