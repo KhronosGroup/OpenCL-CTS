@@ -20,8 +20,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 const char *copy_kernel_code =
 "__kernel void test_copy(__global unsigned int *src, __global unsigned int *dst)\n"
@@ -31,14 +30,13 @@ const char *copy_kernel_code =
 "    dst[tid] = src[tid];\n"
 "}\n";
 
-int
-test_arraycopy(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST(arraycopy)
 {
     cl_uint    *input_ptr, *output_ptr;
     cl_mem                streams[4], results;
     cl_program          program;
     cl_kernel            kernel;
-    unsigned            num_elements = 128 * 1024;
+    num_elements = 128 * 1024;
     cl_uint             num_copies = 1;
     size_t                delta_offset;
     unsigned            i;
@@ -202,6 +200,3 @@ test_arraycopy(cl_device_id device, cl_context context, cl_command_queue queue, 
 
     return err;
 }
-
-
-

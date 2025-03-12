@@ -25,7 +25,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 namespace {
 const char *global_linear_id_2d_code = R"(
@@ -64,8 +64,7 @@ int verify_global_linear_id(std::vector<cl_int> &result, int n)
 }
 }
 
-int test_global_linear_id(cl_device_id device, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(global_linear_id, Version(2, 0))
 {
     clProgramWrapper program[2];
     clKernelWrapper kernel[2];

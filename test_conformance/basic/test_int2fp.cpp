@@ -29,7 +29,7 @@
 #include <map>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 extern cl_half_rounding_mode halfRoundingMode;
 
@@ -294,8 +294,7 @@ protected:
 
 }
 
-int test_int2fp(cl_device_id device, cl_context context, cl_command_queue queue,
-                int num_elements)
+REGISTER_TEST(int2fp)
 {
     try
     {
@@ -309,8 +308,7 @@ int test_int2fp(cl_device_id device, cl_context context, cl_command_queue queue,
     return TEST_PASS;
 }
 
-int test_fp2int(cl_device_id device, cl_context context, cl_command_queue queue,
-                int num_elements)
+REGISTER_TEST(fp2int)
 {
     try
     {

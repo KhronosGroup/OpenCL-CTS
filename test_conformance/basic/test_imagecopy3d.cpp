@@ -21,8 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 static unsigned char *
 generate_uint8_image(unsigned num_elements, MTdata d)
@@ -105,8 +104,7 @@ verify_float_image(float *image, float *outptr, unsigned num_elements)
 }
 
 
-int
-test_imagecopy3d(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements_ignored)
+REGISTER_TEST(imagecopy3d)
 {
     cl_image_format    img_format;
     unsigned char    *rgba8_inptr, *rgba8_outptr;
@@ -118,20 +116,21 @@ test_imagecopy3d(cl_device_id device, cl_context context, cl_command_queue queue
     int img_depth = 64;
     int i;
     cl_int        err;
-    unsigned    num_elements = img_width * img_height * img_depth * 4;
+    unsigned num_elems = img_width * img_height * img_depth * 4;
     MTdata      d;
 
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( device )
 
     d = init_genrand( gRandomSeed );
-    rgba8_inptr = (unsigned char *)generate_uint8_image(num_elements, d);
-    rgba16_inptr = (unsigned short *)generate_uint16_image(num_elements, d);
-    rgbafp_inptr = (float *)generate_float_image(num_elements, d);
+    rgba8_inptr = (unsigned char *)generate_uint8_image(num_elems, d);
+    rgba16_inptr = (unsigned short *)generate_uint16_image(num_elems, d);
+    rgbafp_inptr = (float *)generate_float_image(num_elems, d);
     free_mtdata(d); d = NULL;
 
-    rgba8_outptr = (unsigned char*)malloc(sizeof(unsigned char) * num_elements);
-    rgba16_outptr = (unsigned short*)malloc(sizeof(unsigned short) * num_elements);
-    rgbafp_outptr = (float*)malloc(sizeof(float) * num_elements);
+    rgba8_outptr = (unsigned char *)malloc(sizeof(unsigned char) * num_elems);
+    rgba16_outptr =
+        (unsigned short *)malloc(sizeof(unsigned short) * num_elems);
+    rgbafp_outptr = (float *)malloc(sizeof(float) * num_elems);
 
     img_format.image_channel_order = CL_RGBA;
     img_format.image_channel_data_type = CL_UNORM_INT8;
@@ -202,16 +201,18 @@ test_imagecopy3d(cl_device_id device, cl_context context, cl_command_queue queue
         switch (i)
         {
             case 0:
-                err = verify_uint8_image(rgba8_inptr, rgba8_outptr, num_elements);
-        if (err) log_error("Failed uint8\n");
+                err = verify_uint8_image(rgba8_inptr, rgba8_outptr, num_elems);
+                if (err) log_error("Failed uint8\n");
                 break;
             case 1:
-                err = verify_uint16_image(rgba16_inptr, rgba16_outptr, num_elements);
-        if (err) log_error("Failed uint16\n");
+                err =
+                    verify_uint16_image(rgba16_inptr, rgba16_outptr, num_elems);
+                if (err) log_error("Failed uint16\n");
                 break;
             case 2:
-                err = verify_float_image(rgbafp_inptr, rgbafp_outptr, num_elements);
-        if (err) log_error("Failed float\n");
+                err =
+                    verify_float_image(rgbafp_inptr, rgbafp_outptr, num_elems);
+                if (err) log_error("Failed float\n");
                 break;
         }
 
@@ -233,6 +234,3 @@ test_imagecopy3d(cl_device_id device, cl_context context, cl_command_queue queue
 
     return err;
 }
-
-
-

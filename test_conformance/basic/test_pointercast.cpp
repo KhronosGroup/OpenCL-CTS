@@ -21,8 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 static const char *pointer_cast_kernel_code =
 "__kernel void test_pointer_cast(__global unsigned char *src, __global unsigned int *dst)\n"
@@ -57,7 +56,7 @@ verify_pointer_cast(unsigned char *inptr, unsigned int *outptr, int n)
     return 0;
 }
 
-int test_pointer_cast(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(pointer_cast)
 {
     cl_mem streams[2];
     unsigned char *input_ptr;
@@ -137,5 +136,3 @@ int test_pointer_cast(cl_device_id device, cl_context context, cl_command_queue 
 
     return err;
 }
-
-

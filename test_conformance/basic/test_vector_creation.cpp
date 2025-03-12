@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 #include "harness/errorHelpers.h"
@@ -244,8 +243,7 @@ int create_kernel(ExplicitType type, int output_size, char *program,
 }
 
 
-int test_vector_creation(cl_device_id deviceID, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(vector_creation)
 {
     const std::vector<ExplicitType> vecType = { kChar,  kUChar, kShort, kUShort,
                                                 kInt,   kUInt,  kLong,  kULong,
@@ -274,7 +272,7 @@ int test_vector_creation(cl_device_id deviceID, cl_context context,
         }
         else if (vecType[type_index] == kDouble)
         {
-            if (!is_extension_available(deviceID, "cl_khr_fp64"))
+            if (!is_extension_available(device, "cl_khr_fp64"))
             {
                 log_info("Extension cl_khr_fp64 not supported; skipping double "
                          "tests.\n");
@@ -285,7 +283,7 @@ int test_vector_creation(cl_device_id deviceID, cl_context context,
         }
         else if (vecType[type_index] == kHalf)
         {
-            if (!is_extension_available(deviceID, "cl_khr_fp16"))
+            if (!is_extension_available(device, "cl_khr_fp16"))
             {
                 log_info("Extension cl_khr_fp16 not supported; skipping half "
                          "tests.\n");

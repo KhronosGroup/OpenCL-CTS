@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,8 +20,7 @@
 #include <sys/stat.h>
 #include <vector>
 
-#include "procs.h"
-#include "harness/conversions.h"
+#include "testBase.h"
 
 static const char *async_global_to_local_kernel =
 "%s\n" // optional pragma string
@@ -75,10 +72,9 @@ static const char *prefetch_kernel =
 "}\n" ;
 
 
-
-int test_copy(cl_device_id deviceID, cl_context context, cl_command_queue queue, const char *kernelCode,
-              ExplicitType vecType, int vecSize
-              )
+static int test_copy(cl_device_id deviceID, cl_context context,
+                     cl_command_queue queue, const char *kernelCode,
+                     ExplicitType vecType, int vecSize)
 {
     int error;
     clProgramWrapper program;
@@ -238,7 +234,9 @@ int test_copy(cl_device_id deviceID, cl_context context, cl_command_queue queue,
     return failuresPrinted ? -1 : 0;
 }
 
-int test_copy_all_types(cl_device_id deviceID, cl_context context, cl_command_queue queue, const char *kernelCode) {
+static int test_copy_all_types(cl_device_id deviceID, cl_context context,
+                               cl_command_queue queue, const char *kernelCode)
+{
     const std::vector<ExplicitType> vecType = { kChar,  kUChar, kShort, kUShort,
                                                 kInt,   kUInt,  kLong,  kULong,
                                                 kFloat, kHalf,  kDouble };
@@ -271,18 +269,19 @@ int test_copy_all_types(cl_device_id deviceID, cl_context context, cl_command_qu
     return 0;
 }
 
-int test_async_copy_global_to_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(async_copy_global_to_local)
 {
-    return test_copy_all_types( deviceID, context, queue, async_global_to_local_kernel );
+    return test_copy_all_types(device, context, queue,
+                               async_global_to_local_kernel);
 }
 
-int test_async_copy_local_to_global(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(async_copy_local_to_global)
 {
-    return test_copy_all_types( deviceID, context, queue, async_local_to_global_kernel );
+    return test_copy_all_types(device, context, queue,
+                               async_local_to_global_kernel);
 }
 
-int test_prefetch(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(prefetch)
 {
-    return test_copy_all_types( deviceID, context, queue, prefetch_kernel );
+    return test_copy_all_types(device, context, queue, prefetch_kernel);
 }
-

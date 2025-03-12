@@ -13,16 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "../../test_common/harness/conversions.h"
-#include "procs.h"
+#include "testBase.h"
 
 static const char *import_after_export_aliased_local_kernel =
     "#pragma OPENCL EXTENSION cl_khr_async_work_group_copy_fence : enable\n"
@@ -331,10 +328,11 @@ static const char *export_after_import_aliased_global_and_local_kernel =
     "    }\n"
     "}\n";
 
-int test_copy_fence(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, const char *kernelCode,
-                    ExplicitType vecType, int vecSize, bool export_after_import,
-                    bool aliased_local_mem, bool aliased_global_mem)
+static int test_copy_fence(cl_device_id deviceID, cl_context context,
+                           cl_command_queue queue, const char *kernelCode,
+                           ExplicitType vecType, int vecSize,
+                           bool export_after_import, bool aliased_local_mem,
+                           bool aliased_global_mem)
 {
     int error;
     clProgramWrapper program;
@@ -710,10 +708,12 @@ int test_copy_fence(cl_device_id deviceID, cl_context context,
     return failuresPrinted ? -1 : 0;
 }
 
-int test_copy_fence_all_types(cl_device_id deviceID, cl_context context,
-                              cl_command_queue queue, const char *kernelCode,
-                              bool export_after_import, bool aliased_local_mem,
-                              bool aliased_global_mem)
+static int test_copy_fence_all_types(cl_device_id deviceID, cl_context context,
+                                     cl_command_queue queue,
+                                     const char *kernelCode,
+                                     bool export_after_import,
+                                     bool aliased_local_mem,
+                                     bool aliased_global_mem)
 {
     ExplicitType vecType[] = {
         kChar,  kUChar, kShort,  kUShort,          kInt, kUInt, kLong,
@@ -757,56 +757,46 @@ int test_copy_fence_all_types(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_async_work_group_copy_fence_import_after_export_aliased_local(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(async_work_group_copy_fence_import_after_export_aliased_local)
 {
-    return test_copy_fence_all_types(deviceID, context, queue,
+    return test_copy_fence_all_types(device, context, queue,
                                      import_after_export_aliased_local_kernel,
                                      false, true, false);
 }
 
-int test_async_work_group_copy_fence_import_after_export_aliased_global(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(async_work_group_copy_fence_import_after_export_aliased_global)
 {
-    return test_copy_fence_all_types(deviceID, context, queue,
+    return test_copy_fence_all_types(device, context, queue,
                                      import_after_export_aliased_global_kernel,
                                      false, false, true);
 }
 
-int test_async_work_group_copy_fence_import_after_export_aliased_global_and_local(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    async_work_group_copy_fence_import_after_export_aliased_global_and_local)
 {
     return test_copy_fence_all_types(
-        deviceID, context, queue,
+        device, context, queue,
         import_after_export_aliased_global_and_local_kernel, false, true, true);
 }
 
-int test_async_work_group_copy_fence_export_after_import_aliased_local(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(async_work_group_copy_fence_export_after_import_aliased_local)
 {
-    return test_copy_fence_all_types(deviceID, context, queue,
+    return test_copy_fence_all_types(device, context, queue,
                                      export_after_import_aliased_local_kernel,
                                      true, true, false);
 }
 
-int test_async_work_group_copy_fence_export_after_import_aliased_global(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(async_work_group_copy_fence_export_after_import_aliased_global)
 {
-    return test_copy_fence_all_types(deviceID, context, queue,
+    return test_copy_fence_all_types(device, context, queue,
                                      export_after_import_aliased_global_kernel,
                                      true, false, true);
 }
 
-int test_async_work_group_copy_fence_export_after_import_aliased_global_and_local(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    async_work_group_copy_fence_export_after_import_aliased_global_and_local)
 {
     return test_copy_fence_all_types(
-        deviceID, context, queue,
+        device, context, queue,
         export_after_import_aliased_global_and_local_kernel, true, true, true);
 }
