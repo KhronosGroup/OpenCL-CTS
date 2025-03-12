@@ -15,7 +15,6 @@
 //
 
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 #include <vector>
 
@@ -374,40 +373,35 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
 } // anonymous namespace
 
 
-int test_info_queues(cl_device_id device, cl_context context,
-                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(info_queues)
 {
     return MakeAndRunTest<
         CommandBufferGetCommandBufferInfo<CombufInfoTestMode::CITM_QUEUES>>(
         device, context, queue, num_elements);
 }
 
-int test_info_ref_count(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST(info_ref_count)
 {
     return MakeAndRunTest<
         CommandBufferGetCommandBufferInfo<CombufInfoTestMode::CITM_REF_COUNT>>(
         device, context, queue, num_elements);
 }
 
-int test_info_state(cl_device_id device, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(info_state)
 {
     return MakeAndRunTest<
         CommandBufferGetCommandBufferInfo<CombufInfoTestMode::CITM_STATE>>(
         device, context, queue, num_elements);
 }
 
-int test_info_prop_array(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(info_prop_array)
 {
     return MakeAndRunTest<
         CommandBufferGetCommandBufferInfo<CombufInfoTestMode::CITM_PROP_ARRAY>>(
         device, context, queue, num_elements);
 }
 
-int test_info_context(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(info_context)
 {
     return MakeAndRunTest<
         CommandBufferGetCommandBufferInfo<CombufInfoTestMode::CITM_CONTEXT>>(

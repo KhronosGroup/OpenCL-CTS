@@ -412,19 +412,13 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-int test_mutable_dispatch_image_1d_arguments(cl_device_id device,
-                                             cl_context context,
-                                             cl_command_queue queue,
-                                             int num_elements)
+REGISTER_TEST(mutable_dispatch_image_1d_arguments)
 {
     return MakeAndRunTest<MutableDispatchImage1DArguments>(device, context,
                                                            queue, num_elements);
 }
 
-int test_mutable_dispatch_image_2d_arguments(cl_device_id device,
-                                             cl_context context,
-                                             cl_command_queue queue,
-                                             int num_elements)
+REGISTER_TEST(mutable_dispatch_image_2d_arguments)
 {
     return MakeAndRunTest<MutableDispatchImage2DArguments>(device, context,
                                                            queue, num_elements);

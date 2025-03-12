@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 #include <algorithm>
 #include <cstring>
@@ -473,36 +472,31 @@ struct InterleavedEnqueueTest : public BasicCommandBufferTest
 
 } // anonymous namespace
 
-int test_multi_flag_creation(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+REGISTER_TEST(multi_flag_creation)
 {
     return MakeAndRunTest<MultiFlagCreationTest>(device, context, queue,
                                                  num_elements);
 }
 
-int test_single_ndrange(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST(single_ndrange)
 {
     return MakeAndRunTest<BasicEnqueueTest>(device, context, queue,
                                             num_elements);
 }
 
-int test_interleaved_enqueue(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+REGISTER_TEST(interleaved_enqueue)
 {
     return MakeAndRunTest<InterleavedEnqueueTest>(device, context, queue,
                                                   num_elements);
 }
 
-int test_mixed_commands(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST(mixed_commands)
 {
     return MakeAndRunTest<MixedCommandsTest>(device, context, queue,
                                              num_elements);
 }
 
-int test_explicit_flush(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST(explicit_flush)
 {
     return MakeAndRunTest<ExplicitFlushTest>(device, context, queue,
                                              num_elements);

@@ -674,14 +674,13 @@ int api_functions(cl_device_id deviceID, cl_context context,
     return result.Result();
 }
 
-int test_api(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-             int num_elements)
+REGISTER_TEST(api)
 {
     CResult result;
 
 #if defined(_WIN32)
     // D3D9
-    if (api_functions(deviceID, context, queue, num_elements, 10, 256, 256,
+    if (api_functions(device, context, queue, num_elements, 10, 256, 256,
                       CL_ADAPTER_D3D9_KHR, SURFACE_FORMAT_NV12,
                       SHARED_HANDLE_DISABLED)
         != 0)
@@ -690,7 +689,7 @@ int test_api(cl_device_id deviceID, cl_context context, cl_command_queue queue,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (api_functions(deviceID, context, queue, num_elements, 3, 512, 256,
+    if (api_functions(device, context, queue, num_elements, 3, 512, 256,
                       CL_ADAPTER_D3D9_KHR, SURFACE_FORMAT_YV12,
                       SHARED_HANDLE_DISABLED)
         != 0)
@@ -700,7 +699,7 @@ int test_api(cl_device_id deviceID, cl_context context, cl_command_queue queue,
     }
 
     // D3D9EX
-    if (api_functions(deviceID, context, queue, num_elements, 5, 256, 512,
+    if (api_functions(device, context, queue, num_elements, 5, 256, 512,
                       CL_ADAPTER_D3D9EX_KHR, SURFACE_FORMAT_NV12,
                       SHARED_HANDLE_DISABLED)
         != 0)
@@ -709,7 +708,7 @@ int test_api(cl_device_id deviceID, cl_context context, cl_command_queue queue,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (api_functions(deviceID, context, queue, num_elements, 7, 512, 256,
+    if (api_functions(device, context, queue, num_elements, 7, 512, 256,
                       CL_ADAPTER_D3D9EX_KHR, SURFACE_FORMAT_NV12,
                       SHARED_HANDLE_ENABLED)
         != 0)
@@ -718,7 +717,7 @@ int test_api(cl_device_id deviceID, cl_context context, cl_command_queue queue,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (api_functions(deviceID, context, queue, num_elements, 10, 256, 256,
+    if (api_functions(device, context, queue, num_elements, 10, 256, 256,
                       CL_ADAPTER_D3D9EX_KHR, SURFACE_FORMAT_YV12,
                       SHARED_HANDLE_DISABLED)
         != 0)
@@ -727,7 +726,7 @@ int test_api(cl_device_id deviceID, cl_context context, cl_command_queue queue,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (api_functions(deviceID, context, queue, num_elements, 15, 128, 128,
+    if (api_functions(device, context, queue, num_elements, 15, 128, 128,
                       CL_ADAPTER_D3D9EX_KHR, SURFACE_FORMAT_YV12,
                       SHARED_HANDLE_ENABLED)
         != 0)
@@ -737,7 +736,7 @@ int test_api(cl_device_id deviceID, cl_context context, cl_command_queue queue,
     }
 
     // DXVA
-    if (api_functions(deviceID, context, queue, num_elements, 20, 128, 128,
+    if (api_functions(device, context, queue, num_elements, 20, 128, 128,
                       CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_NV12,
                       SHARED_HANDLE_DISABLED)
         != 0)
@@ -746,7 +745,7 @@ int test_api(cl_device_id deviceID, cl_context context, cl_command_queue queue,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (api_functions(deviceID, context, queue, num_elements, 40, 64, 64,
+    if (api_functions(device, context, queue, num_elements, 40, 64, 64,
                       CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_NV12,
                       SHARED_HANDLE_ENABLED)
         != 0)
@@ -755,7 +754,7 @@ int test_api(cl_device_id deviceID, cl_context context, cl_command_queue queue,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (api_functions(deviceID, context, queue, num_elements, 5, 512, 512,
+    if (api_functions(device, context, queue, num_elements, 5, 512, 512,
                       CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_YV12,
                       SHARED_HANDLE_DISABLED)
         != 0)
@@ -764,7 +763,7 @@ int test_api(cl_device_id deviceID, cl_context context, cl_command_queue queue,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (api_functions(deviceID, context, queue, num_elements, 2, 1024, 1024,
+    if (api_functions(device, context, queue, num_elements, 2, 1024, 1024,
                       CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_YV12,
                       SHARED_HANDLE_ENABLED)
         != 0)

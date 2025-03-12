@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 #include <vector>
 
 namespace {
@@ -222,33 +221,28 @@ struct ReferenceCount : public BasicCommandBufferTest
 };
 };
 
-int test_event_info_command_type(cl_device_id device, cl_context context,
-                                 cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_info_command_type)
 {
     return MakeAndRunTest<CommandType>(device, context, queue, num_elements);
 }
 
-int test_event_info_command_queue(cl_device_id device, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_info_command_queue)
 {
     return MakeAndRunTest<CommandQueue>(device, context, queue, num_elements);
 }
 
-int test_event_info_context(cl_device_id device, cl_context context,
-                            cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_info_context)
 {
     return MakeAndRunTest<Context>(device, context, queue, num_elements);
 }
 
-int test_event_info_execution_status(cl_device_id device, cl_context context,
-                                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_info_execution_status)
 {
     return MakeAndRunTest<ExecutionStatus>(device, context, queue,
                                            num_elements);
 }
 
-int test_event_info_reference_count(cl_device_id device, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(event_info_reference_count)
 {
     return MakeAndRunTest<ReferenceCount>(device, context, queue, num_elements);
 }

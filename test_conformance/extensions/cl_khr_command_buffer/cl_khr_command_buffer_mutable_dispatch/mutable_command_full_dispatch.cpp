@@ -492,8 +492,7 @@ struct MutableCommandFullDispatch : InfoMutableCommandBufferTest
 
 }
 
-int test_mutable_command_full_dispatch(cl_device_id device, cl_context context,
-                                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(mutable_command_full_dispatch)
 {
     return MakeAndRunTest<MutableCommandFullDispatch>(device, context, queue,
                                                       num_elements);
