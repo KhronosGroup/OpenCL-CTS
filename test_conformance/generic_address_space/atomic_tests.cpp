@@ -91,10 +91,9 @@ kernel void testKernel(global atomic_int* globalPtr, local atomic_int* localPtr)
 )OpenCLC";
 }
 
-int test_generic_atomics_invariant(cl_device_id deviceID, cl_context context,
-                                   cl_command_queue queue, int)
+REGISTER_TEST(generic_atomics_invariant)
 {
-    const auto version = get_device_cl_version(deviceID);
+    const auto version = get_device_cl_version(device);
 
     if (version < Version(2, 0)) return TEST_SKIPPED_ITSELF;
 
@@ -108,7 +107,7 @@ int test_generic_atomics_invariant(cl_device_id deviceID, cl_context context,
 
     size_t wgSize, retSize;
     // Attempt to find the simd unit size for the device.
-    err = clGetKernelWorkGroupInfo(kernel, deviceID,
+    err = clGetKernelWorkGroupInfo(kernel, device,
                                    CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
                                    sizeof(wgSize), &wgSize, &retSize);
     test_error(err, "clGetKernelWorkGroupInfo failed");
@@ -154,10 +153,9 @@ int test_generic_atomics_invariant(cl_device_id deviceID, cl_context context,
     return CL_SUCCESS;
 }
 
-int test_generic_atomics_variant(cl_device_id deviceID, cl_context context,
-                                 cl_command_queue queue, int)
+REGISTER_TEST(generic_atomics_variant)
 {
-    const auto version = get_device_cl_version(deviceID);
+    const auto version = get_device_cl_version(device);
 
     if (version < Version(2, 0)) return TEST_SKIPPED_ITSELF;
 
@@ -171,7 +169,7 @@ int test_generic_atomics_variant(cl_device_id deviceID, cl_context context,
 
     size_t wgSize, retSize;
     // Attempt to find the simd unit size for the device.
-    err = clGetKernelWorkGroupInfo(kernel, deviceID,
+    err = clGetKernelWorkGroupInfo(kernel, device,
                                    CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
                                    sizeof(wgSize), &wgSize, &retSize);
     test_error(err, "clGetKernelWorkGroupInfo failed");

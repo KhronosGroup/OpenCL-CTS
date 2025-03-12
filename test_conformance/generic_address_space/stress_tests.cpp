@@ -99,15 +99,20 @@ private:
     const std::vector<std::string> _kernels;
 };
 
-int test_max_number_of_params(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(max_number_of_params)
+{
     cl_int error;
 
     size_t deviceMaxParameterSize;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_PARAMETER_SIZE, sizeof(deviceMaxParameterSize), &deviceMaxParameterSize, NULL);
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_PARAMETER_SIZE,
+                            sizeof(deviceMaxParameterSize),
+                            &deviceMaxParameterSize, NULL);
     test_error(error, "clGetDeviceInfo failed");
 
     size_t deviceAddressBits;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_ADDRESS_BITS, sizeof(deviceAddressBits), &deviceAddressBits, NULL);
+    error =
+        clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS,
+                        sizeof(deviceAddressBits), &deviceAddressBits, NULL);
     test_error(error, "clGetDeviceInfo failed");
 
     size_t maxParams = deviceMaxParameterSize / (deviceAddressBits / 8);
@@ -174,5 +179,5 @@ int test_max_number_of_params(cl_device_id deviceID, cl_context context, cl_comm
 
     CStressTest test(KERNEL_FUNCTION);
 
-    return test.Execute(deviceID, context, queue, num_elements);
+    return test.Execute(device, context, queue, num_elements);
 }
