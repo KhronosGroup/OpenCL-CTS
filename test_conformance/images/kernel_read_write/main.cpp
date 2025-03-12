@@ -264,139 +264,81 @@ static int doTest( cl_device_id device, cl_context context, cl_command_queue que
     return ret;
 }
 
-int test_1D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(1D)
 {
     return doTest( device, context, queue, CL_MEM_OBJECT_IMAGE1D );
 }
-int test_2D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(2D)
 {
     return doTest( device, context, queue, CL_MEM_OBJECT_IMAGE2D );
 }
-int test_3D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(3D)
 {
     return doTest( device, context, queue, CL_MEM_OBJECT_IMAGE3D );
 }
-int test_1Darray(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(1Darray)
 {
     return doTest( device, context, queue, CL_MEM_OBJECT_IMAGE1D_ARRAY );
 }
-int test_2Darray(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(2Darray)
 {
     return doTest( device, context, queue, CL_MEM_OBJECT_IMAGE2D_ARRAY );
 }
 
-int test_cl_image_requirements_size_ext_negative(cl_device_id device,
-                                                 cl_context context,
-                                                 cl_command_queue queue,
-                                                 int num_elements)
+REGISTER_TEST_VERSION(cl_image_requirements_size_ext_negative, Version(3, 0))
 {
     return cl_image_requirements_size_ext_negative(device, context, queue);
 }
-int test_cl_image_requirements_size_ext_consistency(cl_device_id device,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements)
+REGISTER_TEST_VERSION(cl_image_requirements_size_ext_consistency, Version(3, 0))
 {
     return cl_image_requirements_size_ext_consistency(device, context, queue);
 }
-int test_clGetImageRequirementsInfoEXT_negative(cl_device_id device,
-                                                cl_context context,
-                                                cl_command_queue queue,
-                                                int num_elements)
+REGISTER_TEST_VERSION(clGetImageRequirementsInfoEXT_negative, Version(3, 0))
 {
     return clGetImageRequirementsInfoEXT_negative(device, context, queue);
 }
-int test_cl_image_requirements_max_val_ext_negative(cl_device_id device,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements)
+REGISTER_TEST_VERSION(cl_image_requirements_max_val_ext_negative, Version(3, 0))
 {
     return cl_image_requirements_max_val_ext_negative(device, context, queue);
 }
-int test_cl_image_requirements_max_val_ext_positive(cl_device_id device,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements)
+REGISTER_TEST_VERSION(cl_image_requirements_max_val_ext_positive, Version(3, 0))
 {
     return cl_image_requirements_max_val_ext_positive(device, context, queue);
 }
 
-int test_image2d_from_buffer_positive(cl_device_id device, cl_context context,
-                                      cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(image2d_from_buffer_positive, Version(3, 0))
 {
     return image2d_from_buffer_positive(device, context, queue);
 }
-int test_memInfo_image_from_buffer_positive(cl_device_id device,
-                                            cl_context context,
-                                            cl_command_queue queue,
-                                            int num_elements)
+REGISTER_TEST_VERSION(memInfo_image_from_buffer_positive, Version(3, 0))
 {
     return memInfo_image_from_buffer_positive(device, context, queue);
 }
-int test_imageInfo_image_from_buffer_positive(cl_device_id device,
-                                              cl_context context,
-                                              cl_command_queue queue,
-                                              int num_elements)
+REGISTER_TEST_VERSION(imageInfo_image_from_buffer_positive, Version(3, 0))
 {
     return imageInfo_image_from_buffer_positive(device, context, queue);
 }
-int test_image_from_buffer_alignment_negative(cl_device_id device,
-                                              cl_context context,
-                                              cl_command_queue queue,
-                                              int num_elements)
+REGISTER_TEST_VERSION(image_from_buffer_alignment_negative, Version(3, 0))
 {
     return image_from_buffer_alignment_negative(device, context, queue);
 }
-int test_image_from_small_buffer_negative(cl_device_id device,
-                                          cl_context context,
-                                          cl_command_queue queue,
-                                          int num_elements)
+REGISTER_TEST_VERSION(image_from_small_buffer_negative, Version(3, 0))
 {
     return image_from_small_buffer_negative(device, context, queue);
 }
-int test_image_from_buffer_fill_positive(cl_device_id device,
-                                         cl_context context,
-                                         cl_command_queue queue,
-                                         int num_elements)
+REGISTER_TEST_VERSION(image_from_buffer_fill_positive, Version(3, 0))
 {
     return image_from_buffer_fill_positive(device, context, queue);
 }
-int test_image_from_buffer_read_positive(cl_device_id device,
-                                         cl_context context,
-                                         cl_command_queue queue,
-                                         int num_elements)
+REGISTER_TEST_VERSION(image_from_buffer_read_positive, Version(3, 0))
 {
     return image_from_buffer_read_positive(device, context, queue);
 }
 
-int test_cl_ext_image_raw10_raw12(cl_device_id device, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(cl_ext_image_raw10_raw12, Version(1, 2))
 {
     return ext_image_raw10_raw12(device, context, queue);
 }
-
-test_definition test_list[] = {
-    ADD_TEST(1D),
-    ADD_TEST(2D),
-    ADD_TEST(3D),
-    ADD_TEST(1Darray),
-    ADD_TEST(2Darray),
-    ADD_TEST_VERSION(cl_image_requirements_size_ext_negative, Version(3, 0)),
-    ADD_TEST_VERSION(cl_image_requirements_size_ext_consistency, Version(3, 0)),
-    ADD_TEST_VERSION(clGetImageRequirementsInfoEXT_negative, Version(3, 0)),
-    ADD_TEST_VERSION(cl_image_requirements_max_val_ext_negative, Version(3, 0)),
-    ADD_TEST_VERSION(cl_image_requirements_max_val_ext_positive, Version(3, 0)),
-    ADD_TEST_VERSION(image2d_from_buffer_positive, Version(3, 0)),
-    ADD_TEST_VERSION(memInfo_image_from_buffer_positive, Version(3, 0)),
-    ADD_TEST_VERSION(imageInfo_image_from_buffer_positive, Version(3, 0)),
-    ADD_TEST_VERSION(image_from_buffer_alignment_negative, Version(3, 0)),
-    ADD_TEST_VERSION(image_from_small_buffer_negative, Version(3, 0)),
-    ADD_TEST_VERSION(image_from_buffer_fill_positive, Version(3, 0)),
-    ADD_TEST_VERSION(image_from_buffer_read_positive, Version(3, 0)),
-    ADD_TEST_VERSION(cl_ext_image_raw10_raw12, Version(1, 2)),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
@@ -532,8 +474,10 @@ int main(int argc, const char *argv[])
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 
-    int ret = runTestHarnessWithCheck(argCount, argList, test_num, test_list,
-                                      false, 0, verifyImageSupport);
+    int ret = runTestHarnessWithCheck(
+        argCount, argList, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0,
+        verifyImageSupport);
 
     // Restore FP state before leaving
     RestoreFPState(&oldMode);
@@ -593,8 +537,8 @@ static void printUsage( const char *execName )
     log_info( "\ttest_mipmaps - Enables mipmapped images\n");
     log_info( "\n" );
     log_info( "Test names:\n" );
-    for( int i = 0; i < test_num; i++ )
+    for (size_t i = 0; i < test_registry::getInstance().num_tests(); i++)
     {
-        log_info( "\t%s\n", test_list[i].name );
+        log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
     }
 }
