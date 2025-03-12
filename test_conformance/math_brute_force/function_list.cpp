@@ -294,7 +294,7 @@ const Func functionList[] = {
     // floor(fabs(2*x)) is added to the relaxed error in unary.c
     ENTRY_EXT(exp, 3.0f, 4.0f, 2.0f, 3.0f, 3.0f, FTZ_OFF, unaryF, 4.0f),
 
-    // 3+floor(fabs(2*x)) is added to the relaxed error in unary.c
+    // floor(fabs(2*x)) is added to the relaxed error in unary.c
     ENTRY_EXT(exp2, 3.0f, 4.0f, 2.0f, 3.0f, 3.0f, FTZ_OFF, unaryF, 4.0f),
 
     // in non-derived mode it uses the ulp error for half_exp10.
