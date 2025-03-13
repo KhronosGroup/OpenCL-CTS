@@ -1191,6 +1191,10 @@ cl_external_memory_handle_type_khr vkToOpenCLExternalMemoryHandleType(
 {
     switch (vkExternalMemoryHandleType)
     {
+        default:
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE:
+            log_error("Unexpected external memory handle type\n");
+            return 0;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
             return CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
@@ -1198,7 +1202,6 @@ cl_external_memory_handle_type_khr vkToOpenCLExternalMemoryHandleType(
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_KMT:
             return CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR;
-        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE: return 0;
     }
     return 0;
 }
