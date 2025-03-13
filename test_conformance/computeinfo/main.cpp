@@ -1256,9 +1256,30 @@ REGISTER_TEST(computeinfo)
     int err;
     int total_errors = 0;
     cl_platform_id platform;
-
-    err = clGetPlatformIDs(1, &platform, NULL);
-    test_error(err, "clGetPlatformIDs failed");
+    cl_uint platform_num;
+    
+    err = clGetPlatformIDs(0, NULL, &platform_num);
+    test_error(err, "clGetPlatformIDs failed in trying to get platform number");
+    
+    char *env_mode=getenv("CL_PLATFORM_INDEX");
+    if(env_mode == NULL)
+    {
+        err = clGetPlatformIDs(1, &platform, NULL);
+        test_error(err, "clGetPlatformIDs failed");
+    }
+    else{
+        cl_uint platform_index_env = atoi(env_mode);
+        if(platform_index_env >= platform_num)
+        {
+            test_error(CL_INVALID_PLATFORM, "platform index out of range");
+        }
+        cl_platform_id* platform_id_temp_buffer = new cl_platform_id[platform_num];
+        err = clGetPlatformIDs(platform_num, platform_id_temp_buffer, NULL);
+        test_error(err, "clGetPlatformIDs failed");
+        platform = platform_id_temp_buffer[platform_index_env];
+        delete [] platform_id_temp_buffer;
+    }
+    
 
     // print platform info
     log_info("\nclGetPlatformInfo:\n------------------\n");
