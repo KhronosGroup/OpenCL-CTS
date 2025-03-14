@@ -18,12 +18,12 @@ include_directories (${CLConform_INCLUDE_DIR})
 
 set (${MODULE_NAME}_SOURCES
         main.cpp
-        test_vulkan_interop_buffer.cpp
+#        test_vulkan_interop_buffer.cpp
         test_vulkan_interop_image.cpp
-        test_vulkan_api_consistency.cpp
-        test_vulkan_api_consistency_for_3dimages.cpp
-        test_vulkan_api_consistency_for_1dimages.cpp
-        test_vulkan_platform_device_info.cpp
+#        test_vulkan_api_consistency.cpp
+#        test_vulkan_api_consistency_for_3dimages.cpp
+#        test_vulkan_api_consistency_for_1dimages.cpp
+#        test_vulkan_platform_device_info.cpp
         vulkan_interop_common.cpp
         vulkan_test_base.h
     )

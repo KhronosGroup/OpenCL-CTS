@@ -55,7 +55,6 @@ struct Params
     uint32_t numImage2DDescriptors;
 };
 
-cl_uchar uuid[CL_UUID_SIZE_KHR];
 cl_device_id deviceId = NULL;
 size_t max_width = MAX_2D_IMAGE_WIDTH;
 size_t max_height = MAX_2D_IMAGE_HEIGHT;
@@ -195,6 +194,7 @@ const cl_kernel getKernelType(VulkanFormat format, cl_kernel kernel_float,
 }
 
 int run_test_with_two_queue(
+    const VulkanPhysicalDevice &physicalDevice,
     cl_context &context, cl_command_queue &cmd_queue1,
     cl_command_queue &cmd_queue2, cl_kernel *kernel_unsigned,
     cl_kernel *kernel_signed, cl_kernel *kernel_float, VulkanDevice &vkDevice,
@@ -247,10 +247,10 @@ int run_test_with_two_queue(
     VulkanDescriptorSet vkDescriptorSet(vkDevice, vkDescriptorPool,
                                         vkDescriptorSetLayout);
 
-    VulkanCommandPool vkCommandPool(vkDevice);
+    VulkanCommandPool vkCommandPool(vkDevice, getVulkanQueueFamily(physicalDevice));
     VulkanCommandBuffer vkCopyCommandBuffer(vkDevice, vkCommandPool);
     VulkanCommandBuffer vkShaderCommandBuffer(vkDevice, vkCommandPool);
-    VulkanQueue &vkQueue = vkDevice.getQueue(getVulkanQueueFamily());
+    VulkanQueue &vkQueue = vkDevice.getQueue(getVulkanQueueFamily(physicalDevice));
 
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
@@ -271,14 +271,11 @@ int run_test_with_two_queue(
     for (size_t fIdx = 0; fIdx < vkFormatList.size(); fIdx++)
     {
         VulkanFormat vkFormat = vkFormatList[fIdx];
-        log_info("Format: %d\n", vkFormat);
         uint32_t elementSize = getVulkanFormatElementSize(vkFormat);
         ASSERT_LEQ(elementSize, (uint32_t)MAX_2D_IMAGE_ELEMENT_SIZE);
-        log_info("elementSize= %d\n", elementSize);
 
         std::string fileName = "image2D_"
             + std::string(getVulkanFormatGLSLFormat(vkFormat)) + ".spv";
-        log_info("Load file: %s\n", fileName.c_str());
         vkImage2DShader = readFile(fileName, exe_dir());
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
 
@@ -288,18 +285,15 @@ int run_test_with_two_queue(
         for (size_t wIdx = 0; wIdx < ARRAY_SIZE(widthList); wIdx++)
         {
             uint32_t width = widthList[wIdx];
-            log_info("Width: %d\n", width);
             if (width > max_width) continue;
             region[0] = width;
             for (size_t hIdx = 0; hIdx < ARRAY_SIZE(heightList); hIdx++)
             {
                 uint32_t height = heightList[hIdx];
-                log_info("Height: %d", height);
                 if (height > max_height) continue;
                 region[1] = height;
 
                 uint32_t numMipLevels = 1;
-                log_info("Number of mipmap levels: %d\n", numMipLevels);
 
                 magicValue++;
                 char *vkSrcBufferDeviceMemoryPtr =
@@ -337,7 +331,6 @@ int run_test_with_two_queue(
                 {
                     uint32_t num2DImages = num2DImagesList[niIdx] + 1;
                     // added one image for cross-cq case for updateKernelCQ2
-                    log_info("Number of images: %d\n", num2DImages);
                     ASSERT_LEQ(num2DImages, (uint32_t)MAX_2D_IMAGES);
                     uint32_t num_2D_image;
                     if (useSingleImageKernel)
@@ -366,8 +359,6 @@ int run_test_with_two_queue(
                             // Skip running for WIN32 NT handle.
                             continue;
                         }
-                        log_info("External memory handle type: %d \n",
-                                 vkExternalMemoryHandleType);
                         VulkanImageTiling vulkanImageTiling =
                             vkClExternalMemoryHandleTilingAssumption(
                                 deviceId,
@@ -387,10 +378,6 @@ int run_test_with_two_queue(
                         {
                             const VulkanMemoryType &memoryType =
                                 memoryTypeList[mtIdx];
-                            log_info("Memory type index: %d\n",
-                                     (uint32_t)memoryType);
-                            log_info("Memory type property: %d\n",
-                                     memoryType.getMemoryTypeProperty());
                             if (!useDeviceLocal)
                             {
                                 if (VULKAN_MEMORY_TYPE_PROPERTY_DEVICE_LOCAL
@@ -810,6 +797,7 @@ CLEANUP:
 }
 
 int run_test_with_one_queue(
+    const VulkanPhysicalDevice &physicalDevice,
     cl_context &context, cl_command_queue &cmd_queue1,
     cl_kernel *kernel_unsigned, cl_kernel *kernel_signed,
     cl_kernel *kernel_float, VulkanDevice &vkDevice,
@@ -860,10 +848,10 @@ int run_test_with_one_queue(
     VulkanDescriptorSet vkDescriptorSet(vkDevice, vkDescriptorPool,
                                         vkDescriptorSetLayout);
 
-    VulkanCommandPool vkCommandPool(vkDevice);
+    VulkanCommandPool vkCommandPool(vkDevice, getVulkanQueueFamily(physicalDevice));
     VulkanCommandBuffer vkCopyCommandBuffer(vkDevice, vkCommandPool);
     VulkanCommandBuffer vkShaderCommandBuffer(vkDevice, vkCommandPool);
-    VulkanQueue &vkQueue = vkDevice.getQueue(getVulkanQueueFamily());
+    VulkanQueue &vkQueue = vkDevice.getQueue(getVulkanQueueFamily(physicalDevice));
 
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
     VulkanSemaphore vkCl2VkSemaphore(vkDevice, vkExternalSemaphoreHandleType);
@@ -884,14 +872,11 @@ int run_test_with_one_queue(
     for (size_t fIdx = 0; fIdx < vkFormatList.size(); fIdx++)
     {
         VulkanFormat vkFormat = vkFormatList[fIdx];
-        log_info("Format: %d\n", vkFormat);
         uint32_t elementSize = getVulkanFormatElementSize(vkFormat);
         ASSERT_LEQ(elementSize, (uint32_t)MAX_2D_IMAGE_ELEMENT_SIZE);
-        log_info("elementSize= %d\n", elementSize);
 
         std::string fileName = "image2D_"
             + std::string(getVulkanFormatGLSLFormat(vkFormat)) + ".spv";
-        log_info("Load file: %s\n", fileName.c_str());
         vkImage2DShader = readFile(fileName, exe_dir());
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
 
@@ -901,18 +886,15 @@ int run_test_with_one_queue(
         for (size_t wIdx = 0; wIdx < ARRAY_SIZE(widthList); wIdx++)
         {
             uint32_t width = widthList[wIdx];
-            log_info("Width: %d\n", width);
             if (width > max_width) continue;
             region[0] = width;
             for (size_t hIdx = 0; hIdx < ARRAY_SIZE(heightList); hIdx++)
             {
                 uint32_t height = heightList[hIdx];
-                log_info("Height: %d\n", height);
                 if (height > max_height) continue;
                 region[1] = height;
 
                 uint32_t numMipLevels = 1;
-                log_info("Number of mipmap levels: %d\n", numMipLevels);
 
                 magicValue++;
                 char *vkSrcBufferDeviceMemoryPtr =
@@ -949,7 +931,6 @@ int run_test_with_one_queue(
                      niIdx++)
                 {
                     uint32_t num2DImages = num2DImagesList[niIdx];
-                    log_info("Number of images: %d\n", num2DImages);
                     ASSERT_LEQ(num2DImages, (uint32_t)MAX_2D_IMAGES);
 
                     Params *params = (Params *)vkParamsDeviceMemory.map();
@@ -972,8 +953,6 @@ int run_test_with_one_queue(
                         VulkanExternalMemoryHandleType
                             vkExternalMemoryHandleType =
                                 vkExternalMemoryHandleTypeList[emhtIdx];
-                        log_info("External memory handle type: %d \n",
-                                 vkExternalMemoryHandleType);
                         if ((true == disableNTHandleType)
                             && (VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT
                                 == vkExternalMemoryHandleType))
@@ -1001,10 +980,6 @@ int run_test_with_one_queue(
                         {
                             const VulkanMemoryType &memoryType =
                                 memoryTypeList[mtIdx];
-                            log_info("Memory type index: %d\n",
-                                     (uint32_t)memoryType);
-                            log_info("Memory type property: %d\n",
-                                     memoryType.getMemoryTypeProperty());
                             if (!useDeviceLocal)
                             {
                                 if (VULKAN_MEMORY_TYPE_PROPERTY_DEVICE_LOCAL
@@ -1360,10 +1335,14 @@ CLEANUP:
 
 struct ImageCommonTest : public VulkanTestBase
 {
-    ImageCommonTest(cl_device_id device, cl_context context,
+    ImageCommonTest(const VulkanPhysicalDevice &physicalDevice,
+                    cl_device_id device, cl_context context,
                     cl_command_queue queue, cl_int nelems)
-        : VulkanTestBase(device, context, queue, nelems)
+        : VulkanTestBase(physicalDevice, device, context, queue, nelems),
+          m_physicalDevice(physicalDevice)
     {}
+
+    const VulkanPhysicalDevice &m_physicalDevice;
 
     int test_image_common()
     {
@@ -1496,6 +1475,7 @@ struct ImageCommonTest : public VulkanTestBase
             if (numCQ == 2)
             {
                 err = run_test_with_two_queue(
+                    m_physicalDevice,
                     context, (cl_command_queue &)cmd_queue1,
                     (cl_command_queue &)cmd_queue2,
                     (cl_kernel *)kernel_unsigned, (cl_kernel *)kernel_signed,
@@ -1505,6 +1485,7 @@ struct ImageCommonTest : public VulkanTestBase
             else
             {
                 err = run_test_with_one_queue(
+                    m_physicalDevice,
                     context, (cl_command_queue &)cmd_queue1,
                     (cl_kernel *)kernel_unsigned, (cl_kernel *)kernel_signed,
                     (cl_kernel *)kernel_float, *vkDevice,
@@ -1526,8 +1507,22 @@ REGISTER_TEST(test_image_single_queue)
     params_reset();
     log_info("RUNNING TEST WITH ONE QUEUE...... \n\n");
 
-    return MakeAndRunTest<ImageCommonTest>(device, context, queue,
+    const VulkanInstance &instance = getVulkanInstance();
+    const VulkanPhysicalDeviceList &physicalDeviceList =
+        instance.getPhysicalDeviceList();
+
+    for(int i = 0; i < physicalDeviceList.size(); i++)
+    {
+        log_info("Using physical device 0x%p\n", &physicalDeviceList[i]);
+        int result = MakeAndRunTest<ImageCommonTest>(physicalDeviceList[i], device, context, queue,
                                            num_elements);
+        if(result != TEST_PASS)
+        {
+            return result;
+        }
+    }
+
+    return TEST_PASS;
 }
 
 REGISTER_TEST(test_image_multiple_queue)
@@ -1535,6 +1530,20 @@ REGISTER_TEST(test_image_multiple_queue)
     params_reset();
     numCQ = 2;
     log_info("RUNNING TEST WITH TWO QUEUE...... \n\n");
-    return MakeAndRunTest<ImageCommonTest>(device, context, queue,
+    const VulkanInstance &instance = getVulkanInstance();
+    const VulkanPhysicalDeviceList &physicalDeviceList =
+        instance.getPhysicalDeviceList();
+
+    for(int i = 0; i < physicalDeviceList.size(); i++)
+    {
+        log_info("Using physical device 0x%p\n", &physicalDeviceList[i]);
+        int result = MakeAndRunTest<ImageCommonTest>(physicalDeviceList[i], device, context, queue,
                                            num_elements);
+        if(result != TEST_PASS)
+        {
+            return result;
+        }
+    }
+
+    return TEST_PASS;
 }
