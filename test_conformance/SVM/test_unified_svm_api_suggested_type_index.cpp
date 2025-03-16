@@ -157,11 +157,7 @@ struct UnifiedSVMAPISuggestedTypeIndex : UnifiedSVMBase
 
 REGISTER_TEST(unified_svm_api_suggested_type_index)
 {
-    if (!is_extension_available(device, "cl_khr_unified_svm"))
-    {
-        log_info("cl_khr_unified_svm is not supported, skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_unified_svm");
 
     cl_int err;
 
