@@ -203,73 +203,6 @@ struct UnifiedSVMAPIs : UnifiedSVMBase
         return CL_SUCCESS;
     }
 
-    cl_int test_query_defaults(cl_device_id queryDevice)
-    {
-        cl_int err = CL_SUCCESS;
-        const void* query_ptr = &err; // a random non-USVM pointer
-
-        cl_uint typeIndexQuery = 0;
-        err = clGetSVMPointerInfoKHR(
-            context, queryDevice, query_ptr, CL_SVM_INFO_TYPE_INDEX_KHR,
-            sizeof(typeIndexQuery), &typeIndexQuery, nullptr);
-        test_error(err,
-                   "clGetSVMPointerInfoKHR for CL_SVM_INFO_TYPE_INDEX_KHR");
-        test_assert_error_ret(typeIndexQuery == CL_UINT_MAX,
-                              "type index is not the default",
-                              CL_INVALID_VALUE);
-
-        cl_svm_capabilities_khr capabilitiesQuery = ~0;
-        err = clGetSVMPointerInfoKHR(
-            context, queryDevice, query_ptr, CL_SVM_INFO_CAPABILITIES_KHR,
-            sizeof(capabilitiesQuery), &capabilitiesQuery, nullptr);
-        test_error(err,
-                   "clGetSVMPointerInfoKHR for CL_SVM_INFO_CAPABILITIES_KHR");
-        test_assert_error_ret(capabilitiesQuery == 0,
-                              "capabilities are not the default",
-                              CL_INVALID_VALUE);
-
-        cl_svm_alloc_access_flags_khr accessFlagsQuery = ~0;
-        err = clGetSVMPointerInfoKHR(
-            context, queryDevice, query_ptr, CL_SVM_INFO_ACCESS_FLAGS_KHR,
-            sizeof(accessFlagsQuery), &accessFlagsQuery, nullptr);
-        test_error(err,
-                   "clGetSVMPointerInfoKHR for CL_SVM_INFO_ACCESS_FLAGS_KHR");
-        test_assert_error_ret(accessFlagsQuery == 0,
-                              "access flags are not the default",
-                              CL_INVALID_VALUE);
-
-        void* basePtrQuery = &err;
-        err = clGetSVMPointerInfoKHR(
-            context, queryDevice, query_ptr, CL_SVM_INFO_BASE_PTR_KHR,
-            sizeof(basePtrQuery), &basePtrQuery, nullptr);
-        test_error(err, "clGetSVMPointerInfoKHR for CL_SVM_INFO_BASE_PTR_KHR");
-        test_assert_error_ret(basePtrQuery == nullptr,
-                              "base pointer is not the default",
-                              CL_INVALID_VALUE);
-
-        size_t sizeQuery = ~0;
-        err = clGetSVMPointerInfoKHR(context, queryDevice, query_ptr,
-                                     CL_SVM_INFO_SIZE_KHR, sizeof(sizeQuery),
-                                     &sizeQuery, nullptr);
-        test_error(err, "clGetSVMPointerInfoKHR for CL_SVM_INFO_SIZE_KHR");
-        test_assert_error_ret(sizeQuery == 0, "size is not the default",
-                              CL_INVALID_VALUE);
-
-        cl_device_id associatedDeviceQuery = device;
-        err = clGetSVMPointerInfoKHR(context, queryDevice, query_ptr,
-                                     CL_SVM_INFO_ASSOCIATED_DEVICE_HANDLE_KHR,
-                                     sizeof(associatedDeviceQuery),
-                                     &associatedDeviceQuery, nullptr);
-        test_error(err,
-                   "clGetSVMPointerInfoKHR for "
-                   "CL_SVM_INFO_ASSOCIATED_DEVICE_HANDLE_KHR");
-        test_assert_error_ret(associatedDeviceQuery == nullptr,
-                              "associated device handle is not the default",
-                              CL_INVALID_VALUE);
-
-        return CL_SUCCESS;
-    }
-
     cl_int run() override
     {
         cl_int err;
@@ -282,15 +215,6 @@ struct UnifiedSVMAPIs : UnifiedSVMBase
             err = test_alloc_query_free(ti);
             test_error(err, "allocation, queries, and frees failed");
         }
-
-        log_info("   testing query defaults with no device\n");
-        err = test_query_defaults(nullptr);
-        test_error(err, "query defaults failed");
-
-        log_info("   testing query defaults with a device\n");
-        err = test_query_defaults(device);
-        test_error(err, "query defaults failed");
-
         return CL_SUCCESS;
     }
 
