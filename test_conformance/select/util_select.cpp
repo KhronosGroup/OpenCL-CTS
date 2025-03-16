@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <cinttypes>
 #include "test_select.h"
+#include "CL/cl_half.h"
 
 
 //-----------------------------------------
@@ -830,10 +831,12 @@ size_t check_half(const void *const test, const void *const correct,
 
     if (memcmp(t, c, count * sizeof(c[0])) != 0)
     {
-        for (i = 0; i < count; i++) /* Allow nans to be binary different */
-            if ((t[i] != c[i])
-                && !(isnan(((cl_half *)correct)[i])
-                     && isnan(((cl_half *)test)[i])))
+        // Allow nans to be binary different
+        for (i = 0; i < count; i++)
+        {
+            float fcorrect = cl_half_to_float(c[i]);
+            float ftest = cl_half_to_float(t[i]);
+            if ((t[i] != c[i]) && !(isnan(fcorrect) && isnan(ftest)))
             {
                 log_error("\n(check_half) Error for vector size %zu found at "
                           "0x%8.8zx (of 0x%8.8zx):  "
@@ -841,6 +844,7 @@ size_t check_half(const void *const test, const void *const correct,
                           vector_size, i, count, c[i], t[i]);
                 return i + 1;
             }
+        }
     }
 
     return 0;
@@ -855,9 +859,12 @@ size_t check_float(const void *const test, const void *const correct,
 
     if (memcmp(t, c, count * sizeof(c[0])) != 0)
     {
-        for (i = 0; i < count; i++) /* Allow nans to be binary different */
-            if ((t[i] != c[i])
-                && !(isnan(((float *)correct)[i]) && isnan(((float *)test)[i])))
+        // Allow nans to be binary different
+        for (i = 0; i < count; i++)
+        {
+            float fcorrect = ((float *)correct)[i];
+            float ftest = ((float *)test)[i];
+            if ((t[i] != c[i]) && !(isnan(fcorrect) && isnan(ftest)))
             {
                 log_error("\n(check_float) Error for vector size %zu found at "
                           "0x%8.8zx (of 0x%8.8zx):  "
@@ -865,6 +872,7 @@ size_t check_float(const void *const test, const void *const correct,
                           vector_size, i, count, c[i], t[i]);
                 return i + 1;
             }
+        }
     }
 
     return 0;

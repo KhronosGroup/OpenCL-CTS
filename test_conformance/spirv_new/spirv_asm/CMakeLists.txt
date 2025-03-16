@@ -411,6 +411,12 @@ set(spirv_sources
     spv1.5/basic.spvasm64
     spv1.6/basic.spvasm32
     spv1.6/basic.spvasm64
+    spv1.6/image_operand_nontemporal.spvasm32
+    spv1.6/image_operand_nontemporal.spvasm64
+    spv1.6/uniformdecoration_uniformid.spvasm32
+    spv1.6/uniformdecoration_uniformid.spvasm64
+    spv1.6/uniformdecoration_uniform.spvasm32
+    spv1.6/uniformdecoration_uniform.spvasm64
     undef_char_simple.spvasm32
     undef_char_simple.spvasm64
     undef_double_simple.spvasm32
@@ -500,3 +506,10 @@ add_custom_command(
     VERBATIM)
 
 add_custom_target(spirv_new_binaries DEPENDS ${assembled_spirv_binaries})
+
+include(GNUInstallDirs)
+
+install(DIRECTORY
+            ${CMAKE_CURRENT_BINARY_DIR}/../spirv_bin
+        DESTINATION
+            ${CMAKE_INSTALL_BINDIR}/$<CONFIG>)

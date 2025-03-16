@@ -15,6 +15,7 @@
 //
 #include "harness/compat.h"
 
+#include <algorithm>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -97,6 +98,7 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
     cl_ulong queueStart, submitStart, writeStart, writeEnd;
     size_t threads[3];
     size_t localThreads[3];
+    size_t maxWorkgroupSize;
     int err = 0;
 
     // set thread dimensions
@@ -104,16 +106,27 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
     threads[1] = h;
     threads[2] = d;
 
-    err = clGetDeviceInfo( device, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof( cl_uint ), (size_t*)localThreads, NULL );
+    err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
+                          3 * sizeof(size_t), (size_t *)localThreads, NULL);
     if (err)
     {
-        localThreads[0] = 256; localThreads[1] = 1; localThreads[2] = 1;
-        err = 0;
+        log_error("clGetDeviceInfo(CL_DEVICE_MAX_WORK_ITEM_SIZES) failed\n");
+        return -1;
     }
-    if( localThreads[0] > threads[0] )
-        localThreads[0] = threads[0];
-    if( localThreads[1] > threads[1] )
-        localThreads[1] = threads[1];
+    err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t),
+                          &maxWorkgroupSize, NULL);
+    if (err)
+    {
+        log_error("clGetDeviceInfo(CL_DEVICE_MAX_WORK_GROUP_SIZE) failed\n");
+        return -1;
+    }
+    localThreads[0] =
+        std::min({ localThreads[0], threads[0], maxWorkgroupSize });
+    localThreads[1] = std::min(
+        { localThreads[1], threads[1], maxWorkgroupSize / localThreads[0] });
+    localThreads[2] =
+        std::min({ localThreads[2], threads[2],
+                   maxWorkgroupSize / (localThreads[0] * localThreads[1]) });
 
     cl_sampler sampler = clCreateSampler( context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err );
     if( err ){
@@ -131,9 +144,9 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
     }
 
     // allocate an array memory object to load the filter weights
+    size_t outptr_size = sizeof(cl_uchar) * w * h * d * nChannels;
     memobjs[1] =
-        clCreateBuffer(context, CL_MEM_READ_WRITE,
-                       sizeof(cl_uchar) * w * h * d * nChannels, NULL, &err);
+        clCreateBuffer(context, CL_MEM_READ_WRITE, outptr_size, NULL, &err);
     if( memobjs[1] == (cl_mem)0 ){
         log_error( " unable to create array using clCreateBuffer\n" );
         clReleaseMemObject( memobjs[0] );
@@ -237,9 +250,8 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
     }
 
     // read output image
-    err = clEnqueueReadBuffer(queue, memobjs[1], CL_TRUE, 0,
-                              sizeof(cl_uchar) * w * h * d * nChannels, outptr,
-                              0, NULL, NULL);
+    err = clEnqueueReadBuffer(queue, memobjs[1], CL_TRUE, 0, outptr_size,
+                              outptr, 0, NULL, NULL);
     if( err != CL_SUCCESS ){
         print_error( err, "clReadImage failed\n" );
         clReleaseKernel( kernel[0] );
