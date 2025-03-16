@@ -21,7 +21,7 @@
 struct UnifiedSVMAPISuggestedTypeIndex : UnifiedSVMBase
 {
     UnifiedSVMAPISuggestedTypeIndex(cl_context context, cl_device_id device,
-                   cl_command_queue queue, int num_elements)
+                                    cl_command_queue queue, int num_elements)
         : UnifiedSVMBase(context, device, queue, num_elements)
     {}
 
