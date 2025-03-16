@@ -122,8 +122,8 @@ NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2210.
     * [X] Test with varying the `CL_SVM_ALLOC_ACCESS_FLAGS_KHR` property - all combinations?
     * [X] Include at least one test with all properties: `CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR` plus `CL_SVM_ALLOC_ALIGNMENT_KHR` plus `CL_SVM_ALLOC_ACCESS_FLAGS_KHR`.
     * [ ] TODO: Test zero-byte allocation?
-* [ ] `clSVMFreeWithPropertiesKHR`
-    * TBD - depends on blocking free behavior.
+* [X] `clSVMFreeWithPropertiesKHR`
+    * Tested by the fixture; no flags or properties to test..
 * [ ] `clGetSVMPointerInfoKHR`
     * After allocating, perform each of the queries, both with and without an explicit `device` parameter, for the base pointer returned by the `clSVMAllocWithPropertiesKHR` and a pointer computed from the base pointer.
         * [X] `CL_SVM_INFO_TYPE_INDEX_KHR` - must match the index passed during allocation.
