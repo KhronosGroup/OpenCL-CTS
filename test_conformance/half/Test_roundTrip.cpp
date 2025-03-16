@@ -22,7 +22,7 @@
 #include "tests.h"
 #include "harness/testHarness.h"
 
-int test_roundTrip( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(roundTrip)
 {
     int vectorSize, error;
     uint64_t i, j;
@@ -400,5 +400,3 @@ exit:
 
     return error;
 }
-
-

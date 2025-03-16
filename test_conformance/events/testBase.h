@@ -17,12 +17,7 @@
 #define _testBase_h
 
 #include "harness/compat.h"
-
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include "procs.h"
+#include "harness/testHarness.h"
+#include "harness/typeWrappers.h"
 
 #endif // _testBase_h
