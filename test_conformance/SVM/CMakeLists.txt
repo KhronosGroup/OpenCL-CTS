@@ -19,6 +19,7 @@ set(${MODULE_NAME}_SOURCES
     test_unified_svm_consistency.cpp
     test_unified_svm_capabilities.cpp
     test_unified_svm_apis.cpp
+    test_unified_svm_api_suggested_type_index.cpp
 )
 
 set_gnulike_module_compile_flags("-Wno-sometimes-uninitialized -Wno-sign-compare")
