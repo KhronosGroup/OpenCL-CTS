@@ -1374,6 +1374,8 @@ void PrintArch(void)
     vlog("ARCH:\tWindows\n");
 #elif defined(__mips__)
     vlog("ARCH:\tmips\n");
+#elif defined(__riscv)
+    vlog("ARCH:\riscv/riscv64\n");
 #else
 #error unknown arch
 #endif
