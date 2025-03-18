@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
+#include "testBase.h"
 
 #define TEST_VALUE_POSITIVE( string_name, name, value ) \
 { \
@@ -55,7 +55,7 @@ log_info("\t" string_name ": " #name " = %a  (%17.21g)\n", value, value); \
 } \
 }
 
-int test_host_numeric_constants(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(host_numeric_constants)
 {
     int errors = 0;
     TEST_VALUE_EQUAL_LITERAL( "CL_CHAR_BIT",     CL_CHAR_BIT,    8)
@@ -215,7 +215,7 @@ const char *kernel_double[] = {
 };
 
 
-int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(kernel_numeric_constants)
 {
     int error, errors = 0;
     //    clProgramWrapper program;
@@ -307,7 +307,7 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
     TEST_VALUE_EQUAL( "M_SQRT1_2_F", float_out[15],      CL_M_SQRT1_2_F )
 
     // We need to check these values against what we know is supported on the device
-    if( checkForImageSupport( deviceID ) == 0 )
+    if (checkForImageSupport(device) == 0)
     { // has images
         // If images are supported, the constant should have been defined to the value 1
         if( int_out[18] == 0xf00baa )
@@ -383,7 +383,8 @@ int test_kernel_numeric_constants(cl_device_id deviceID, cl_context context, cl_
 
     /** DOUBLEs **/
 
-    if(!is_extension_available(deviceID, "cl_khr_fp64")) {
+    if (!is_extension_available(device, "cl_khr_fp64"))
+    {
         log_info("Extension cl_khr_fp64 not supported; skipping double tests.\n");
     }
     else
@@ -529,7 +530,7 @@ const char *kernel_constant_double_limits[] = {
 #define TEST_FLOAT_ASSERTION( a, msg, f ) if( !( a ) ) { log_error( "ERROR: Float constant failed requirement: %s (bitwise value is 0x%8.8x)\n", msg, *( (uint32_t *)&f ) ); return -1; }
 #define TEST_DOUBLE_ASSERTION( a, msg, f ) if( !( a ) ) { log_error( "ERROR: Double constant failed requirement: %s (bitwise value is 0x%16.16llx)\n", msg, *( (uint64_t *)&f ) ); return -1; }
 
-int test_kernel_limit_constants(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(kernel_limit_constants)
 {
     int error;
     size_t              threads[] = {1,1,1};
@@ -583,7 +584,8 @@ int test_kernel_limit_constants(cl_device_id deviceID, cl_context context, cl_co
 
     // Stage 2: INFINITY and NAN
     char profileStr[128] = "";
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_PROFILE, sizeof( profileStr ), &profileStr, NULL );
+    error = clGetDeviceInfo(device, CL_DEVICE_PROFILE, sizeof(profileStr),
+                            &profileStr, NULL);
     test_error( error, "Unable to run INFINITY/NAN tests (unable to get CL_DEVICE_PROFILE" );
 
     bool testInfNan = true;
@@ -591,7 +593,8 @@ int test_kernel_limit_constants(cl_device_id deviceID, cl_context context, cl_co
     {
         // We test if we're not an embedded profile, OR if the inf/nan flag in the config is set
         cl_device_fp_config single = 0;
-        error = clGetDeviceInfo( deviceID, CL_DEVICE_SINGLE_FP_CONFIG, sizeof( single ), &single, NULL );
+        error = clGetDeviceInfo(device, CL_DEVICE_SINGLE_FP_CONFIG,
+                                sizeof(single), &single, NULL);
         test_error( error, "Unable to run INFINITY/NAN tests (unable to get FP_CONFIG bits)" );
 
         if( ( single & CL_FP_INF_NAN ) == 0 )
@@ -666,12 +669,13 @@ int test_kernel_limit_constants(cl_device_id deviceID, cl_context context, cl_co
     }
 
     // Stage 3: limits on HUGE_VAL (double)
-    if( !is_extension_available( deviceID, "cl_khr_fp64" ) )
+    if (!is_extension_available(device, "cl_khr_fp64"))
         log_info( "Note: Skipping double HUGE_VAL tests (doubles unsupported on device)\n" );
     else
     {
         cl_device_fp_config config = 0;
-        error = clGetDeviceInfo( deviceID, CL_DEVICE_DOUBLE_FP_CONFIG, sizeof( config ), &config, NULL );
+        error = clGetDeviceInfo(device, CL_DEVICE_DOUBLE_FP_CONFIG,
+                                sizeof(config), &config, NULL);
         test_error( error, "Unable to run INFINITY/NAN tests (unable to get double FP_CONFIG bits)" );
 
         if( ( config & CL_FP_INF_NAN ) == 0 )
@@ -716,5 +720,3 @@ int test_kernel_limit_constants(cl_device_id deviceID, cl_context context, cl_co
 
     return 0;
 }
-
-

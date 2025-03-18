@@ -21,8 +21,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
 #include "harness/typeWrappers.h"
 #include "harness/imageHelpers.h"
 #include "harness/conversions.h"
@@ -161,7 +159,7 @@ int validate_results( size_t width, size_t height, cl_image_format &format, char
     return 0;
 }
 
-int test_image_param(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(image_param)
 {
     size_t              sizes[] = { 64, 100, 128, 250, 512 };
     cl_image_format      formats[] = { { CL_RGBA, CL_UNORM_INT8 }, { CL_RGBA, CL_UNORM_INT16 }, { CL_RGBA, CL_FLOAT }, { CL_BGRA, CL_UNORM_INT8 } };
