@@ -124,7 +124,7 @@ NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2210.
     * [ ] TODO: Test zero-byte allocation?
 * [X] `clSVMFreeWithPropertiesKHR`
     * Tested by the fixture; no flags or properties to test..
-* [ ] `clGetSVMPointerInfoKHR`
+* [X] `clGetSVMPointerInfoKHR`
     * After allocating, perform each of the queries, both with and without an explicit `device` parameter, for the base pointer returned by the `clSVMAllocWithPropertiesKHR` and a pointer computed from the base pointer.
         * [X] `CL_SVM_INFO_TYPE_INDEX_KHR` - must match the index passed during allocation.
         * [X] `CL_SVM_INFO_CAPABILITIES_KHR` - must match the device capabilities for the explicit `device` parameter, or be a super-set of the platform capabilities otherwise.
@@ -134,23 +134,25 @@ NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2210.
         * [X] `CL_SVM_INFO_SIZE_KHR` - must match the size passed during allocation.
         * [X] `CL_SVM_INFO_ASSOCIATED_DEVICE_HANDLE_KHR` - must match the associated device, or be `NULL`.
     * Test each of the queries for a bogus pointer (both with and without an explicit `device` parameter?).
-        * [ ] `CL_SVM_INFO_TYPE_INDEX_KHR` - must return `CL_UINT_MAX`.
-        * [ ] `CL_SVM_INFO_CAPABILITIES_KHR` - must return `0`.
-        * [ ] `CL_SVM_INFO_PROPERTIES_KHR` - must return size equal to `0`.
-        * [ ] `CL_SVM_INFO_ACCESS_FLAGS_KHR` - must return `0`?  See doc issue.
-        * [ ] `CL_SVM_INFO_BASE_PTR_KHR` - must return `NULL`.
-        * [ ] `CL_SVM_INFO_SIZE_KHR` - must return `0`.
-        * [ ] `CL_SVM_INFO_ASSOCIATED_DEVICE_HANDLE_KHR` - must return `NULL`.
-* [ ] `clGetSVMSuggestedTypeIndexKHR`
-    * [ ] Pass each of the supported device capabilities as `required_capabilities` and verify that the capabilities at `suggested_type_index` satisfy the required capabilities.
-    * [ ] Test without a `CL_SVM_ALLOC_ALIGNMENT_KHR` property.
-    * [ ] Test without a `CL_SVM_ALLOC_ACCESS_FLAGS_KHR` property.
-    * [ ] For SVM types supporting `CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR`, test without a `CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR` device.
-    * [ ] Test with varying the `CL_SVM_ALLOC_ALIGNMENT_KHR` property - all powers of two from 1 to 128?
-    * [ ] Test with varying the `CL_SVM_ALLOC_ACCESS_FLAGS_KHR` property - all combinations?
-    * [ ] Include at least one test with all properties: `CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR` plus `CL_SVM_ALLOC_ALIGNMENT_KHR` plus `CL_SVM_ALLOC_ACCESS_FLAGS_KHR`.
+        * [X] `CL_SVM_INFO_TYPE_INDEX_KHR` - must return `CL_UINT_MAX`.
+        * [X] `CL_SVM_INFO_CAPABILITIES_KHR` - must return `0`.
+        * [X] `CL_SVM_INFO_PROPERTIES_KHR` - must return size equal to `0`.
+        * [X] `CL_SVM_INFO_ACCESS_FLAGS_KHR` - must return `0`?  See doc issue.
+        * [X] `CL_SVM_INFO_BASE_PTR_KHR` - must return `NULL`.
+        * [X] `CL_SVM_INFO_SIZE_KHR` - must return `0`.
+        * [X] `CL_SVM_INFO_ASSOCIATED_DEVICE_HANDLE_KHR` - must return `NULL`.
+* [X] `clGetSVMSuggestedTypeIndexKHR`
+    * [X] Pass each of the supported device capabilities as `required_capabilities` and verify that the capabilities at `suggested_type_index` satisfy the required capabilities.
+    * [X] Test without a `CL_SVM_ALLOC_ALIGNMENT_KHR` property.
+    * [X] Test without a `CL_SVM_ALLOC_ACCESS_FLAGS_KHR` property.
+    * [X] For SVM types supporting `CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR`, test without a `CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR` device.
+    * [X] Test with varying the `CL_SVM_ALLOC_ALIGNMENT_KHR` property - all powers of two from 1 to 128?
+    * [X] Test with varying the `CL_SVM_ALLOC_ACCESS_FLAGS_KHR` property - all combinations?
+    * [X] Include at least one test with all properties: `CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR` plus `CL_SVM_ALLOC_ALIGNMENT_KHR` plus `CL_SVM_ALLOC_ACCESS_FLAGS_KHR`.
 
 NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2261.
+NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2280.
+NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2338.
 
 ### Testing Existing SVM APIs
 
