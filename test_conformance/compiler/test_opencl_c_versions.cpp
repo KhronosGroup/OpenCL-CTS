@@ -286,8 +286,7 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_versions(cl_device_id device,
     return TEST_PASS;
 }
 
-int test_opencl_c_versions(cl_device_id device, cl_context context,
-                           cl_command_queue queue, int num_elements)
+REGISTER_TEST(opencl_c_versions)
 {
     check_compiler_available(device);
 
