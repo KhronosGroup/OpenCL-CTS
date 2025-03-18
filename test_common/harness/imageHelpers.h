@@ -126,6 +126,7 @@ typedef struct
     const cl_image_format *format;
     cl_mem buffer;
     cl_mem_object_type type;
+    cl_mem_flags mem_flags;
     cl_uint num_mip_levels;
 } image_descriptor;
 
