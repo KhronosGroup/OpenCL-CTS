@@ -36,21 +36,22 @@ const char * image_not_supported_source = "kernel void not_enabled(global int * 
 "\r\n } \r\n";
 
 
-int test_image_macro(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(image_macro)
 {
     cl_bool image_support;
     char buf[256];
     int status;
     cl_program program;
 
-    status = clGetDeviceInfo( deviceID, CL_DEVICE_NAME, sizeof( buf ), buf, NULL );
+    status = clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof(buf), buf, NULL);
     if( status )
     {
       log_error( "getting device info (name): %d\n", status );
       exit(-1);
     }
 
-    status = clGetDeviceInfo( deviceID, CL_DEVICE_IMAGE_SUPPORT, sizeof( image_support ), &image_support, NULL );
+    status = clGetDeviceInfo(device, CL_DEVICE_IMAGE_SUPPORT,
+                             sizeof(image_support), &image_support, NULL);
     if( status )
     {
       log_error( "getting device info (image support): %d\n", status );
@@ -67,7 +68,7 @@ int test_image_macro(cl_device_id deviceID, cl_context context, cl_command_queue
             return status;
         }
 
-        status = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
+        status = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
         if( status )
             log_error("CL_DEVICE_IMAGE_SUPPORT is set, __IMAGE_SUPPORT__ macro not set \n");
         else
@@ -82,7 +83,7 @@ int test_image_macro(cl_device_id deviceID, cl_context context, cl_command_queue
             return status;
         }
 
-        status = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
+        status = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
         if( status )
             log_error("CL_DEVICE_IMAGE_SUPPORT not set, __IMAGE_SUPPORT__ macro is set \n");
         else
@@ -98,4 +99,3 @@ int test_image_macro(cl_device_id deviceID, cl_context context, cl_command_queue
 
     return status;
 }
-

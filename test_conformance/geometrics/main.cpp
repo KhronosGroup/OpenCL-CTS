@@ -17,27 +17,14 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "procs.h"
 #include "harness/testHarness.h"
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif
 
-test_definition test_list[] = {
-    ADD_TEST( geom_cross ),
-    ADD_TEST( geom_dot ),
-    ADD_TEST( geom_distance ),
-    ADD_TEST( geom_fast_distance ),
-    ADD_TEST( geom_length ),
-    ADD_TEST( geom_fast_length ),
-    ADD_TEST( geom_normalize ),
-    ADD_TEST( geom_fast_normalize ),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
-
 int main(int argc, const char *argv[])
 {
-    return runTestHarness(argc, argv, test_num, test_list, false, 0);
+    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
+                          test_registry::getInstance().definitions(), false, 0);
 }
 

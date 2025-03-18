@@ -21,8 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 const char *barrier_with_localmem_kernel_code[] = {
 "__kernel void compute_sum_with_localmem(__global int *a, int n, __local int *tmp_sum, __global int *sum)\n"
@@ -115,7 +114,7 @@ verify_sum(int *inptr, int *outptr, int n)
     return 0;
 }
 
-int test_local_arg_def(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(local_arg_def)
 {
     cl_mem streams[2];
     cl_program program;
@@ -231,7 +230,7 @@ int test_local_arg_def(cl_device_id device, cl_context context, cl_command_queue
     return err;
 }
 
-int test_local_kernel_def(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(local_kernel_def)
 {
     cl_mem streams[2];
     cl_program program;
@@ -363,6 +362,3 @@ int test_local_kernel_def(cl_device_id device, cl_context context, cl_command_qu
 
     return err;
 }
-
-
-

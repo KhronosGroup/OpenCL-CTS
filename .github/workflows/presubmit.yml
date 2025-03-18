@@ -73,7 +73,7 @@ jobs:
       - name: Install Vulkan SDK
         uses: humbletim/install-vulkan-sdk@main
         with:
-          version: 1.3.275.0
+          version: 1.4.309.0
           cache: true
       - name: Install Android NDK
         if: ${{ matrix.arch == 'android-arm' || matrix.arch == 'android-aarch64' }}

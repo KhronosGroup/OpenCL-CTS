@@ -20,9 +20,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
-
-#include "procs.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
@@ -44,8 +41,7 @@ const char *flag_set_names[] = {
 };
 // clang-format on
 
-int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context,
-                            cl_command_queue queue, int num_elements)
+REGISTER_TEST(enqueue_map_buffer)
 {
     int error;
     const size_t bufferSize = 256 * 256;
@@ -141,15 +137,14 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_enqueue_map_image(cl_device_id deviceID, cl_context context,
-                           cl_command_queue queue, int num_elements)
+REGISTER_TEST(enqueue_map_image)
 {
     int error;
     cl_image_format format = { CL_RGBA, CL_UNSIGNED_INT32 };
     const size_t imageSize = 256;
     const size_t imageDataSize = imageSize * imageSize * 4 * sizeof(cl_uint);
 
-    PASSIVE_REQUIRE_IMAGE_SUPPORT(deviceID)
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
 
     BufferOwningPtr<cl_uint> hostPtrData{ malloc(imageDataSize) };
     BufferOwningPtr<cl_uint> referenceData{ malloc(imageDataSize) };

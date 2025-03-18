@@ -23,8 +23,6 @@
 #include <vector>
 
 #include <CL/cl_half.h>
-
-#include "procs.h"
 #include "harness/conversions.h"
 #include "harness/errorHelpers.h"
 #include "harness/stringHelpers.h"
@@ -46,10 +44,10 @@ char load_str[128] = { 0 };
 extern cl_half_rounding_mode halfRoundingMode;
 
 // clang-format off
-static const char *store_pattern= "results[ tid ] = tmp;\n";
-static const char *store_patternV3 = "results[3*tid] = tmp.s0; results[3*tid+1] = tmp.s1; results[3*tid+2] = tmp.s2;\n";
-static const char *load_pattern = "sSharedStorage[ i ] = src[ i ];\n";
-static const char *load_patternV3 = "sSharedStorage[3*i] = src[ 3*i]; sSharedStorage[3*i+1] = src[3*i+1]; sSharedStorage[3*i+2] = src[3*i+2];\n";
+static const char *const store_pattern= "results[ tid ] = tmp;\n";
+static const char *const store_patternV3 = "results[3*tid] = tmp.s0; results[3*tid+1] = tmp.s1; results[3*tid+2] = tmp.s2;\n";
+static const char *const load_pattern = "sSharedStorage[ i ] = src[ i ];\n";
+static const char *const load_patternV3 = "sSharedStorage[3*i] = src[ 3*i]; sSharedStorage[3*i+1] = src[3*i+1]; sSharedStorage[3*i+2] = src[3*i+2];\n";
 static const char *kernel_pattern[] = {
 pragma_str,
 "#define STYPE %s\n"
@@ -111,9 +109,10 @@ typedef void (*create_program_fn)(std::string &, size_t, ExplicitType, size_t,
 typedef int (*test_fn)(cl_device_id, cl_context, cl_command_queue, ExplicitType,
                        unsigned int, create_program_fn, size_t);
 
-int test_vload(cl_device_id device, cl_context context, cl_command_queue queue,
-               ExplicitType type, unsigned int vecSize,
-               create_program_fn createFn, size_t bufferSize)
+static int test_vload(cl_device_id device, cl_context context,
+                      cl_command_queue queue, ExplicitType type,
+                      unsigned int vecSize, create_program_fn createFn,
+                      size_t bufferSize)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -278,8 +277,9 @@ int test_vload(cl_device_id device, cl_context context, cl_command_queue queue,
 }
 
 template <test_fn test_func_ptr>
-int test_vset(cl_device_id device, cl_context context, cl_command_queue queue,
-              create_program_fn createFn, size_t bufferSize)
+static int test_vset(cl_device_id device, cl_context context,
+                     cl_command_queue queue, create_program_fn createFn,
+                     size_t bufferSize)
 {
     std::vector<ExplicitType> vecType = { kChar,  kUChar, kShort, kUShort,
                                           kInt,   kUInt,  kLong,  kULong,
@@ -342,7 +342,7 @@ void create_global_load_code(std::string &destBuffer, size_t inBufferSize,
                              typeName, (int)inVectorSize, (int)inVectorSize);
 }
 
-int test_vload_global(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
+REGISTER_TEST(vload_global)
 {
     return test_vset<test_vload>(device, context, queue,
                                  create_global_load_code, 10240);
@@ -372,7 +372,7 @@ void create_local_load_code(std::string &destBuffer, size_t inBufferSize,
                              (int)inVectorSize, (int)inVectorSize, typeName);
 }
 
-int test_vload_local(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
+REGISTER_TEST(vload_local)
 {
     // Determine the max size of a local buffer that we can test against
     cl_ulong localSize;
@@ -408,7 +408,7 @@ void create_constant_load_code(std::string &destBuffer, size_t inBufferSize,
                              typeName, (int)inVectorSize, (int)inVectorSize);
 }
 
-int test_vload_constant(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
+REGISTER_TEST(vload_constant)
 {
     // Determine the max size of a local buffer that we can test against
     cl_ulong maxSize;
@@ -448,7 +448,7 @@ void create_private_load_code(std::string &destBuffer, size_t inBufferSize,
                              (int)inVectorSize, (int)inVectorSize, typeName);
 }
 
-int test_vload_private(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
+REGISTER_TEST(vload_private)
 {
     // We have no idea how much actual private storage is available, so just pick a reasonable value,
     // which is that we can fit at least two 16-element long, which is 2*8 bytes * 16 = 256 bytes
@@ -459,9 +459,10 @@ int test_vload_private(cl_device_id device, cl_context context, cl_command_queue
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark -------------------- vstore harness --------------------------
 
-int test_vstore(cl_device_id device, cl_context context, cl_command_queue queue,
-                ExplicitType type, unsigned int vecSize,
-                create_program_fn createFn, size_t bufferSize)
+static int test_vstore(cl_device_id device, cl_context context,
+                       cl_command_queue queue, ExplicitType type,
+                       unsigned int vecSize, create_program_fn createFn,
+                       size_t bufferSize)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -716,7 +717,7 @@ void create_global_store_code(std::string &destBuffer, size_t inBufferSize,
     }
 }
 
-int test_vstore_global(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
+REGISTER_TEST(vstore_global)
 {
     return test_vset<test_vstore>(device, context, queue,
                                   create_global_store_code, 10240);
@@ -805,7 +806,7 @@ void create_local_store_code(std::string &destBuffer, size_t inBufferSize,
     }
 }
 
-int test_vstore_local(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
+REGISTER_TEST(vstore_local)
 {
     // Determine the max size of a local buffer that we can test against
     cl_ulong localSize;
@@ -890,13 +891,10 @@ void create_private_store_code(std::string &destBuffer, size_t inBufferSize,
     }
 }
 
-int test_vstore_private(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
+REGISTER_TEST(vstore_private)
 {
     // We have no idea how much actual private storage is available, so just pick a reasonable value,
     // which is that we can fit at least two 16-element long, which is 2*8 bytes * 16 = 256 bytes
     return test_vset<test_vstore>(device, context, queue,
                                   create_private_store_code, 256);
 }
-
-
-
