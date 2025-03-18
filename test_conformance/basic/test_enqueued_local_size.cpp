@@ -24,7 +24,7 @@
 
 #include <algorithm>
 
-#include "procs.h"
+#include "testBase.h"
 
 static const char *enqueued_local_size_2d_code = R"(
 __kernel void test_enqueued_local_size_2d(global int *dst)
@@ -65,8 +65,7 @@ static int verify_enqueued_local_size(int *result, size_t *expected, int n)
 }
 
 
-int test_enqueued_local_size(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(enqueued_local_size, Version(2, 0))
 {
     clMemWrapper stream;
     clProgramWrapper program[2];

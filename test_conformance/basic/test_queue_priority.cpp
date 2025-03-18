@@ -20,9 +20,9 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "harness/rounding_mode.h"
 
-#include "procs.h"
+#include "testBase.h"
+#include "harness/rounding_mode.h"
 
 static const char *fpadd_kernel_code =
 "__kernel void test_fpadd(__global float *srcA, __global float *srcB, __global float *dst)\n"
@@ -131,7 +131,7 @@ verify_fpmul(float *inptrA, float *inptrB, float *outptr, int n, int fileNum)
 
 #if defined( __APPLE__ )
 
-int test_queue_priority(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(queue_priority)
 {
   int err;
   int command_queue_priority = 0;
@@ -340,7 +340,6 @@ int test_queue_priority(cl_device_id device, cl_context context, cl_command_queu
 
   return err;
 }
-
 
 
 #endif
