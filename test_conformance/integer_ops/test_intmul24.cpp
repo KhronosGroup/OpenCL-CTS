@@ -13,15 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
+#include "testBase.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#include "procs.h"
-
 #define NUM_PROGRAMS 6
 
 static const int vector_sizes[] = {1, 2, 3, 4, 8, 16};
@@ -173,7 +170,7 @@ static inline int random_int24( MTdata d )
 
 static const char *test_str_names[] = { "int", "int2", "int3", "int4", "int8", "int16", "uint", "uint2", "uint3", "uint4", "uint8", "uint16" };
 
-int test_integer_mul24(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST(integer_mul24)
 {
     cl_mem streams[3];
     cl_int *input_ptr[2], *output_ptr, *p;
@@ -182,13 +179,13 @@ int test_integer_mul24(cl_device_id device, cl_context context, cl_command_queue
     cl_kernel kernel[NUM_PROGRAMS*2];
     size_t threads[1];
 
-    int                num_elements;
+    int n_elems;
     int                err;
     int                i;
     MTdata              d;
 
-    size_t length = sizeof(cl_int) * 16 * n_elems;
-    num_elements = n_elems * 16;
+    size_t length = sizeof(cl_int) * 16 * num_elements;
+    n_elems = num_elements * 16;
 
     input_ptr[0] = (cl_int*)malloc(length);
     input_ptr[1] = (cl_int*)malloc(length);
@@ -215,11 +212,9 @@ int test_integer_mul24(cl_device_id device, cl_context context, cl_command_queue
 
     d = init_genrand( gRandomSeed );
     p = input_ptr[0];
-    for (i=0; i<num_elements; i++)
-        p[i] = random_int24(d);
+    for (i = 0; i < n_elems; i++) p[i] = random_int24(d);
     p = input_ptr[1];
-    for (i=0; i<num_elements; i++)
-        p[i] = random_int24(d);
+    for (i = 0; i < n_elems; i++) p[i] = random_int24(d);
     free_mtdata(d); d = NULL;
 
     err = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, length, input_ptr[0], 0, NULL, NULL);
@@ -285,7 +280,7 @@ int test_integer_mul24(cl_device_id device, cl_context context, cl_command_queue
     }
 
     // test signed
-    threads[0] = (unsigned int)n_elems;
+    threads[0] = (unsigned int)num_elements;
     for (i=0; i<NUM_PROGRAMS; i++)
     {
         err = clEnqueueNDRangeKernel(queue, kernel[i], 1, NULL, threads, NULL, 0, NULL, NULL);
@@ -320,11 +315,9 @@ int test_integer_mul24(cl_device_id device, cl_context context, cl_command_queue
 
     // clamp the set of input values to be in range
     p = input_ptr[0];
-    for (i=0; i<num_elements; i++)
-        p[i] &= 0xffffffU;
+    for (i = 0; i < n_elems; i++) p[i] &= 0xffffffU;
     p = input_ptr[1];
-    for (i=0; i<num_elements; i++)
-        p[i] &= 0xffffffU;
+    for (i = 0; i < n_elems; i++) p[i] &= 0xffffffU;
 
     err = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, length, input_ptr[0], 0, NULL, NULL);
     if (err != CL_SUCCESS)
@@ -356,7 +349,10 @@ int test_integer_mul24(cl_device_id device, cl_context context, cl_command_queue
             return -1;
         }
 
-        err = verify_uint_mul24((cl_uint*) input_ptr[0], (cl_uint*) input_ptr[1], (cl_uint*) output_ptr, n_elems * vector_sizes[i-NUM_PROGRAMS], vector_sizes[i-NUM_PROGRAMS]);
+        err = verify_uint_mul24((cl_uint *)input_ptr[0],
+                                (cl_uint *)input_ptr[1], (cl_uint *)output_ptr,
+                                num_elements * vector_sizes[i - NUM_PROGRAMS],
+                                vector_sizes[i - NUM_PROGRAMS]);
         if (err)
         {
             log_error("UINT_MUL24 %s test failed\n", test_str_names[i]);
@@ -387,5 +383,3 @@ int test_integer_mul24(cl_device_id device, cl_context context, cl_command_queue
     free(output_ptr);
     return err;
 }
-
-

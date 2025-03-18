@@ -342,7 +342,7 @@ bool verify_integer_clz( void *source, void *destination, ExplicitType vecType )
     return true;
 }
 
-int test_integer_clz(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(integer_clz)
 {
     return test_single_param_integer_fn( queue, context, "clz", verify_integer_clz );
 }
@@ -436,7 +436,7 @@ bool verify_integer_ctz( void *source, void *destination, ExplicitType vecType )
 }
 
 
-int test_integer_ctz(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(integer_ctz)
 {
   return test_single_param_integer_fn( queue, context, "ctz", verify_integer_ctz );
 }
@@ -464,15 +464,17 @@ int test_integer_ctz(cl_device_id deviceID, cl_context context, cl_command_queue
             break; \
     }
 
-#define OP_TEST( op, opName ) \
-    bool verify_integer_##opName##Assign( void *source, void *destination, ExplicitType vecType )    \
-    {    \
-        OP_CASES( op )    \
-        return true; \
-    }    \
-    int test_integer_##opName##Assign(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)    \
-    {    \
-        return test_single_param_integer_fn( queue, context, #op, verify_integer_##opName##Assign, true ); \
+#define OP_TEST(op, opName)                                                    \
+    bool verify_integer_##opName##Assign(void *source, void *destination,      \
+                                         ExplicitType vecType)                 \
+    {                                                                          \
+        OP_CASES(op)                                                           \
+        return true;                                                           \
+    }                                                                          \
+    REGISTER_TEST(integer_##opName##Assign)                                    \
+    {                                                                          \
+        return test_single_param_integer_fn(                                   \
+            queue, context, #op, verify_integer_##opName##Assign, true);       \
     }
 
 OP_TEST( +, add )
@@ -521,15 +523,17 @@ OP_TEST( &, and )
             break; \
     }
 
-#define OP_TEST_GUARD( op, opName ) \
-    bool verify_integer_##opName##Assign( void *source, void *destination, ExplicitType vecType )    \
-    {    \
-        OP_CASES_GUARD( op )    \
-        return true;            \
-    }    \
-    int test_integer_##opName##Assign(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)    \
-    {    \
-        return test_single_param_integer_fn( queue, context, #op, verify_integer_##opName##Assign, true ); \
+#define OP_TEST_GUARD(op, opName)                                              \
+    bool verify_integer_##opName##Assign(void *source, void *destination,      \
+                                         ExplicitType vecType)                 \
+    {                                                                          \
+        OP_CASES_GUARD(op)                                                     \
+        return true;                                                           \
+    }                                                                          \
+    REGISTER_TEST(integer_##opName##Assign)                                    \
+    {                                                                          \
+        return test_single_param_integer_fn(                                   \
+            queue, context, #op, verify_integer_##opName##Assign, true);       \
     }
 
 OP_TEST_GUARD( /, divide )
@@ -898,7 +902,7 @@ bool verify_integer_hadd( void *sourceA, void *sourceB, void *destination, Expli
     return true;
 }
 
-int test_integer_hadd(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(integer_hadd)
 {
     return test_two_param_integer_fn( queue, context, "hadd", verify_integer_hadd );
 }
@@ -961,7 +965,7 @@ bool verify_integer_rhadd( void *sourceA, void *sourceB, void *destination, Expl
     return true;
 }
 
-int test_integer_rhadd(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(integer_rhadd)
 {
     return test_two_param_integer_fn( queue, context, "rhadd", verify_integer_rhadd );
 }
@@ -994,7 +998,7 @@ bool verify_integer_min( void *sourceA, void *sourceB, void *destination, Explic
     return true;
 }
 
-int test_integer_min(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(integer_min)
 {
     return test_two_param_integer_fn( queue, context, "min", verify_integer_min);
 }
@@ -1027,7 +1031,7 @@ bool verify_integer_max( void *sourceA, void *sourceB, void *destination, Explic
     return true;
 }
 
-int test_integer_max(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(integer_max)
 {
     return test_two_param_integer_fn( queue, context, "max", verify_integer_max );
 }
@@ -1195,7 +1199,7 @@ bool verify_integer_mul_hi( void *sourceA, void *sourceB, void *destination, Exp
     return true;
 }
 
-int test_integer_mul_hi(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(integer_mul_hi)
 {
     return test_two_param_integer_fn( queue, context, "mul_hi", verify_integer_mul_hi );
 }
@@ -1256,7 +1260,7 @@ bool verify_integer_rotate( void *sourceA, void *sourceB, void *destination, Exp
     return true;
 }
 
-int test_integer_rotate(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(integer_rotate)
 {
     return test_two_param_integer_fn( queue, context, "rotate", verify_integer_rotate );
 }
@@ -1615,7 +1619,7 @@ bool verify_integer_clamp( void *sourceA, void *sourceB, void *sourceC, void *de
     return true;
 }
 
-int test_integer_clamp(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(integer_clamp)
 {
     return test_three_param_integer_fn( queue, context, "clamp", verify_integer_clamp );
 }
@@ -1785,7 +1789,7 @@ bool verify_integer_mad_sat( void *sourceA, void *sourceB, void *sourceC, void *
     return true;
 }
 
-int test_integer_mad_sat(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(integer_mad_sat)
 {
     return test_three_param_integer_fn( queue, context, "mad_sat", verify_integer_mad_sat );
 }
@@ -1907,7 +1911,7 @@ bool verify_integer_mad_hi( void *sourceA, void *sourceB, void *sourceC, void *d
     return true;
 }
 
-int test_integer_mad_hi( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(integer_mad_hi)
 {
     return test_three_param_integer_fn( queue, context, "mad_hi", verify_integer_mad_hi );
 }

@@ -198,17 +198,17 @@ int test_unary_op_set( cl_command_queue queue, cl_context context, OpKonstants w
     return retVal;
 }
 
-int test_unary_ops_full(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(unary_ops_full)
 {
     return test_unary_op_set( queue, context, kBoth );
 }
 
-int test_unary_ops_increment(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(unary_ops_increment)
 {
     return test_unary_op_set( queue, context, kIncrement );
 }
 
-int test_unary_ops_decrement(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(unary_ops_decrement)
 {
     return test_unary_op_set( queue, context, kDecrement );
 }

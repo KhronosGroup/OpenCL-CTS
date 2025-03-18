@@ -14,13 +14,13 @@
 // limitations under the License.
 //
 
+#include "testBase.h"
+
 #include <algorithm>
 #include <numeric>
 #include <string>
 #include <type_traits>
 #include <vector>
-
-#include "procs.h"
 #include "harness/integer_ops_test_info.h"
 #include "harness/testHarness.h"
 
@@ -188,8 +188,7 @@ static int test_type(cl_device_id device, cl_context context,
         | test_vectype<T, 16>(device, context, queue);
 }
 
-int test_extended_bit_ops_insert(cl_device_id device, cl_context context,
-                                 cl_command_queue queue, int num_elements)
+REGISTER_TEST(extended_bit_ops_insert)
 {
     if (is_extension_available(device, "cl_khr_extended_bit_ops"))
     {

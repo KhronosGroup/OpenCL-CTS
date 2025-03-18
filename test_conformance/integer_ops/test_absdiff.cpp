@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
+#include "testBase.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -21,9 +21,6 @@
 #include <sys/stat.h>
 
 #include <cinttypes>
-
-#include "procs.h"
-
 template <class Integer>
 static typename std::make_unsigned<Integer>::type abs_diff(Integer a, Integer b)
 {
@@ -219,7 +216,7 @@ static void printSrc(const char *src[], int nSrcStrings) {
     }
 }
 
-int test_integer_abs_diff(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST(integer_abs_diff)
 {
     cl_int *input_ptr[2], *output_ptr, *p;
     int err;
@@ -229,7 +226,7 @@ int test_integer_abs_diff(cl_device_id device, cl_context context, cl_command_qu
     MTdata d;
     int fail_count = 0;
 
-    size_t length = sizeof(cl_int) * 4 * n_elems;
+    size_t length = sizeof(cl_int) * 4 * num_elements;
 
     input_ptr[0] = (cl_int*)malloc(length);
     input_ptr[1] = (cl_int*)malloc(length);
@@ -237,11 +234,9 @@ int test_integer_abs_diff(cl_device_id device, cl_context context, cl_command_qu
 
     d = init_genrand( gRandomSeed );
     p = input_ptr[0];
-    for (i=0; i<4 * n_elems; i++)
-        p[i] = genrand_int32(d);
+    for (i = 0; i < 4 * num_elements; i++) p[i] = genrand_int32(d);
     p = input_ptr[1];
-    for (i=0; i<4 * n_elems; i++)
-        p[i] = genrand_int32(d);
+    for (i = 0; i < 4 * num_elements; i++) p[i] = genrand_int32(d);
     free_mtdata(d);  d = NULL;
 
     for( type = 0; type < sizeof( test_str_names ) / sizeof( test_str_names[0] ); type++ )
@@ -405,5 +400,3 @@ int test_integer_abs_diff(cl_device_id device, cl_context context, cl_command_qu
 
     return err;
 }
-
-
