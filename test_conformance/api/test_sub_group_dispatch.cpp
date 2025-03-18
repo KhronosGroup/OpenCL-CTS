@@ -102,10 +102,13 @@ REGISTER_TEST_VERSION(sub_group_dispatch, Version(2, 1))
     out = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(size_t), NULL, &error);
     test_error(error, "clCreateBuffer failed");
 
-    error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE,
-                            sizeof(size_t), &max_local, NULL);
+    size_t max_work_item_sizes[3] = {};
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
+                            sizeof(max_work_item_sizes), &max_work_item_sizes,
+                            nullptr);
     test_error(error, "clGetDeviceInfo failed");
 
+    max_local = max_work_item_sizes[0];
 
     error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
                             (void *)&platform, NULL);
