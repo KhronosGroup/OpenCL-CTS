@@ -129,6 +129,9 @@ public:
             != TEST_PASS)
             test_fail("test_set_kernel_arg failed\n");
 
+        if (test_svm_buffer() == TEST_FAIL)
+            test_fail("test_svm_buffer failed\n");
+
         return TEST_PASS;
     }
 
@@ -158,7 +161,7 @@ private:
         return CL_SUCCESS;
     }
 
-    int check_svm_buffer()
+    int test_svm_buffer()
     {
         clSVMWrapper svm_buffer;
         clMemWrapper buffer;
@@ -169,13 +172,18 @@ private:
                                 sizeof(svm_caps), &svm_caps, NULL);
         if (error != CL_SUCCESS)
         {
-            print_error(error, "Unable to get SVM capabilities, skipping");
-            return 0;
+            print_missing_feature(error,
+                                  "Unable to get SVM capabilities, "
+                                  "skipping");
+            return TEST_SKIP;
         }
-        if (svm_caps == 0)
+        if ((svm_caps & CL_DEVICE_SVM_COARSE_GRAIN_BUFFER) == 0)
         {
-            print_error(error, "Device has no SVM capabilities, skipping");
-            return 0;
+            print_missing_feature(error,
+                                  "Device doesn't support "
+                                  "CL_DEVICE_SVM_COARSE_"
+                                  "GRAIN_BUFFER, skipping");
+            return TEST_SKIP;
         }
 
         svm_buffer =
@@ -200,12 +208,10 @@ private:
 
         if ((void *)Addr != svm_buffer())
         {
-            print_error(error,
-                        "clGetMemObjectInfo(CL_MEM_DEVICE_ADDRESS_EXT) "
-                        "returned different address than clSVMAlloc\n");
-            return CL_INVALID_VALUE;
+            test_fail("clGetMemObjectInfo(CL_MEM_DEVICE_ADDRESS_EXT) "
+                      "returned different address than clSVMAlloc\n");
         }
-        return CL_SUCCESS;
+        return TEST_PASS;
     }
 
 
