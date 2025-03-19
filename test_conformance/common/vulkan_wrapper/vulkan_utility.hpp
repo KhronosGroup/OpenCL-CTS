@@ -35,7 +35,7 @@ const VulkanPhysicalDevice& getVulkanPhysicalDevice();
 const VulkanPhysicalDevice&
 getAssociatedVulkanPhysicalDevice(cl_device_id deviceId);
 const VulkanQueueFamily& getVulkanQueueFamily(
-    const VulkanPhysicalDevice& physicalDevice = getVulkanPhysicalDevice(),
+    const VulkanPhysicalDevice& physicalDevice,
     uint32_t queueFlags = VULKAN_QUEUE_FLAG_GRAPHICS
         | VULKAN_QUEUE_FLAG_COMPUTE);
 const VulkanMemoryType&
