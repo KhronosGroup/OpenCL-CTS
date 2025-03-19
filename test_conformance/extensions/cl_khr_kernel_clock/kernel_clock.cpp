@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include "harness/typeWrappers.h"
 
 namespace {
@@ -173,22 +172,19 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
 
 }
 
-int test_device_scope(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(device_scope)
 {
     return MakeAndRunTest(device, context, queue,
                           CL_DEVICE_KERNEL_CLOCK_SCOPE_DEVICE_KHR);
 }
 
-int test_workgroup_scope(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(workgroup_scope)
 {
     return MakeAndRunTest(device, context, queue,
                           CL_DEVICE_KERNEL_CLOCK_SCOPE_WORK_GROUP_KHR);
 }
 
-int test_subgroup_scope(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST(subgroup_scope)
 {
     return MakeAndRunTest(device, context, queue,
                           CL_DEVICE_KERNEL_CLOCK_SCOPE_SUB_GROUP_KHR);

@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 //--------------------------------------------------------------------------
 template <bool check_image_support>
@@ -580,97 +579,80 @@ struct CommandBufferCopyImageMutableHandleNotNull
 };
 }
 
-int test_negative_command_buffer_command_copy_buffer_queue_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_copy_buffer_queue_not_null)
 {
     return MakeAndRunTest<CommandBufferCopyBufferQueueNotNull>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_image_queue_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_copy_image_queue_not_null)
 {
     return MakeAndRunTest<CommandBufferCopyImageQueueNotNull>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_buffer_different_contexts(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_copy_buffer_different_contexts)
 {
     return MakeAndRunTest<CommandBufferCopyBufferDifferentContexts>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_image_different_contexts(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_copy_image_different_contexts)
 {
     return MakeAndRunTest<CommandBufferCopyImageDifferentContexts>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_buffer_sync_points_null_or_num_zero(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_copy_buffer_sync_points_null_or_num_zero)
 {
     return MakeAndRunTest<CommandBufferCopyBufferSyncPointsNullOrNumZero>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_image_sync_points_null_or_num_zero(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_copy_image_sync_points_null_or_num_zero)
 {
     return MakeAndRunTest<CommandBufferCopyImageSyncPointsNullOrNumZero>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_buffer_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_copy_buffer_invalid_command_buffer)
 {
     return MakeAndRunTest<CommandBufferCopyBufferInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_image_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_copy_image_invalid_command_buffer)
 {
     return MakeAndRunTest<CommandBufferCopyImageInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_buffer_finalized_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_copy_buffer_finalized_command_buffer)
 {
     return MakeAndRunTest<CommandBufferCopyBufferFinalizedCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_image_finalized_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_copy_image_finalized_command_buffer)
 {
     return MakeAndRunTest<CommandBufferCopyImageFinalizedCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_buffer_mutable_handle_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_copy_buffer_mutable_handle_not_null)
 {
     return MakeAndRunTest<CommandBufferCopyBufferMutableHandleNotNull>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_image_mutable_handle_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_copy_image_mutable_handle_not_null)
 {
     return MakeAndRunTest<CommandBufferCopyImageMutableHandleNotNull>(
         device, context, queue, num_elements);

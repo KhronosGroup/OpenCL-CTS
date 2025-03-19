@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 
 //--------------------------------------------------------------------------
@@ -199,35 +198,25 @@ struct CreateCommandBufferNotSupportedProperties : public BasicCommandBufferTest
 };
 };
 
-int test_negative_create_command_buffer_num_queues(cl_device_id device,
-                                                   cl_context context,
-                                                   cl_command_queue queue,
-                                                   int num_elements)
+REGISTER_TEST(negative_create_command_buffer_num_queues)
 {
     return MakeAndRunTest<CreateCommandBufferNumQueues>(device, context, queue,
                                                         num_elements);
 }
 
-int test_negative_create_command_buffer_null_queues(cl_device_id device,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements)
+REGISTER_TEST(negative_create_command_buffer_null_queues)
 {
     return MakeAndRunTest<CreateCommandBufferNullQueues>(device, context, queue,
                                                          num_elements);
 }
 
-int test_negative_create_command_buffer_repeated_properties(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_create_command_buffer_repeated_properties)
 {
     return MakeAndRunTest<CreateCommandBufferRepeatedProperties>(
         device, context, queue, num_elements);
 }
 
-int test_negative_create_command_buffer_not_supported_properties(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_create_command_buffer_not_supported_properties)
 {
     return MakeAndRunTest<CreateCommandBufferNotSupportedProperties>(
         device, context, queue, num_elements);

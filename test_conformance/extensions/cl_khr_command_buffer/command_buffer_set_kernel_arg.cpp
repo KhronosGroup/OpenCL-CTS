@@ -15,7 +15,6 @@
 //
 
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 #include <vector>
 
@@ -306,15 +305,13 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
 
 } // anonymous namespace
 
-int test_basic_set_kernel_arg(cl_device_id device, cl_context context,
-                              cl_command_queue queue, int num_elements)
+REGISTER_TEST(basic_set_kernel_arg)
 {
     return MakeAndRunTest<CommandBufferSetKernelArg<false>>(
         device, context, queue, num_elements);
 }
 
-int test_pending_set_kernel_arg(cl_device_id device, cl_context context,
-                                cl_command_queue queue, int num_elements)
+REGISTER_TEST(pending_set_kernel_arg)
 {
     return MakeAndRunTest<CommandBufferSetKernelArg<true>>(device, context,
                                                            queue, num_elements);
