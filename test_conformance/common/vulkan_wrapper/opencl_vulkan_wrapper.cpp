@@ -529,8 +529,8 @@ cl_int check_external_memory_handle_type(
     return CL_INVALID_VALUE;
 }
 
-cl_int check_external_semaphore_handle_type(
-    cl_device_id deviceID,
+void check_external_semaphore_handle_type(
+    cl_device_id device,
     cl_external_semaphore_handle_type_khr requiredHandleType,
     cl_device_info queryParamName)
 {
@@ -540,8 +540,8 @@ cl_int check_external_semaphore_handle_type(
     cl_int errNum = CL_SUCCESS;
 
     errNum =
-        clGetDeviceInfo(deviceID, queryParamName, 0, NULL, &handle_type_size);
-    test_error(errNum, "clGetDeviceInfo failed");
+        clGetDeviceInfo(device, queryParamName, 0, NULL, &handle_type_size);
+    ASSERT_SUCCESS(errNum, "clGetDeviceInfo");
 
     if (handle_type_size == 0)
     {
@@ -549,31 +549,37 @@ cl_int check_external_semaphore_handle_type(
                   queryParamName == CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR
                       ? "importing"
                       : "exporting");
-        return CL_INVALID_VALUE;
+
+        throw std::runtime_error("");
     }
 
     handle_type =
         (cl_external_semaphore_handle_type_khr *)malloc(handle_type_size);
 
-    errNum = clGetDeviceInfo(deviceID, queryParamName, handle_type_size,
+    errNum = clGetDeviceInfo(device, queryParamName, handle_type_size,
                              handle_type, NULL);
+    ASSERT_SUCCESS(errNum, "clGetDeviceInfo");
 
-    test_error(
-        errNum,
-        "Unable to query supported device semaphore handle types list\n");
-
+    bool found = false;
     for (i = 0; i < handle_type_size; i++)
     {
         if (requiredHandleType == handle_type[i])
         {
-            return CL_SUCCESS;
+            found = true;
+            break;
         }
     }
-    log_error("cl_khr_external_semaphore extension is missing support for %d\n",
-              requiredHandleType);
 
-    return CL_INVALID_VALUE;
+    if (!found)
+    {
+        log_error("cl_khr_external_semaphore extension is missing support for "
+                  "handle type %d\n",
+                  requiredHandleType);
+
+        throw std::runtime_error("");
+    }
 }
+
 clExternalMemory::clExternalMemory() {}
 
 clExternalMemory::clExternalMemory(const clExternalMemory &externalMemory)
@@ -855,9 +861,15 @@ clExternalImportableSemaphore::clExternalImportableSemaphore(
     cl_device_id deviceId)
     : m_deviceSemaphore(semaphore)
 {
-
     cl_int err = 0;
     cl_device_id devList[] = { deviceId, NULL };
+    cl_external_semaphore_handle_type_khr clSemaphoreHandleType =
+        getCLSemaphoreTypeFromVulkanType(externalSemaphoreHandleType);
+
+    check_external_semaphore_handle_type(
+        deviceId, clSemaphoreHandleType,
+        CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR);
+
     m_externalHandleType = externalSemaphoreHandleType;
     m_externalSemaphore = nullptr;
     m_device = deviceId;
@@ -875,8 +887,6 @@ clExternalImportableSemaphore::clExternalImportableSemaphore(
             ASSERT(0);
 #else
             fd = (int)semaphore.getHandle(externalSemaphoreHandleType);
-            err = check_external_semaphore_handle_type(
-                devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
             sema_props.push_back(
                 (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)fd);
@@ -888,8 +898,6 @@ clExternalImportableSemaphore::clExternalImportableSemaphore(
             ASSERT(0);
 #else
             handle = semaphore.getHandle(externalSemaphoreHandleType);
-            err = check_external_semaphore_handle_type(
-                devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)
                                      CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)handle);
@@ -903,8 +911,6 @@ clExternalImportableSemaphore::clExternalImportableSemaphore(
             const std::wstring &name = semaphore.getName();
             if (name.size())
             {
-                err = check_external_semaphore_handle_type(
-                    devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_NAME_KHR);
                 sema_props.push_back(
                     (cl_semaphore_properties_khr)
                         CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_NAME_KHR);
@@ -924,21 +930,17 @@ clExternalImportableSemaphore::clExternalImportableSemaphore(
             ASSERT(0);
 #else
             handle = semaphore.getHandle(externalSemaphoreHandleType);
-            err = check_external_semaphore_handle_type(
-                devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)
                                      CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)handle);
 #endif
             break;
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD:
-            err = check_external_semaphore_handle_type(
-                devList[0], CL_SEMAPHORE_HANDLE_SYNC_FD_KHR);
-
             sema_props.push_back(static_cast<cl_semaphore_properties_khr>(
                 CL_SEMAPHORE_HANDLE_SYNC_FD_KHR));
             sema_props.push_back(static_cast<cl_semaphore_properties_khr>(-1));
             break;
+
         default:
             log_error("Unsupported external memory handle type\n");
             ASSERT(0);
@@ -1013,11 +1015,15 @@ clExternalExportableSemaphore::clExternalExportableSemaphore(
     cl_device_id deviceId)
     : m_deviceSemaphore(semaphore)
 {
-
     cl_int err = 0;
     cl_device_id devList[] = { deviceId, NULL };
     cl_external_semaphore_handle_type_khr clSemaphoreHandleType =
         getCLSemaphoreTypeFromVulkanType(externalSemaphoreHandleType);
+
+    check_external_semaphore_handle_type(
+        deviceId, clSemaphoreHandleType,
+        CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR);
+
     m_externalHandleType = externalSemaphoreHandleType;
     m_externalSemaphore = nullptr;
     m_device = deviceId;
