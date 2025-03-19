@@ -317,9 +317,14 @@ static int test_kernel_memory_alignment(cl_device_id device, cl_context context,
                 for (int i = 0; i < 6; i++) {
                     if ((results_data[i] & alignments[i]) != 0) {
                         total_errors++;
-                        log_error("\tVector size %d failed: 0x%" PRIx64 " is not properly aligned.\n", 1 << i, results_data[i]);
+                        log_error("\tVector size %d failed: 0x%" PRIx64
+                                  " is not properly aligned.\n",
+                                  1 << i, results_data[i]);
                     } else {
-                        if (DEBUG) log_info("\tVector size %d passed: 0x%" PRIx64 " is properly aligned.\n", 1 << i, results_data[i]);
+                        if (DEBUG)
+                            log_info("\tVector size %d passed: 0x%" PRIx64
+                                     " is properly aligned.\n",
+                                     1 << i, results_data[i]);
                     }
                 }
             }
@@ -330,9 +335,14 @@ static int test_kernel_memory_alignment(cl_device_id device, cl_context context,
                 for (int i = 0; i < 6; i++) {
                     if ((results_data_no_long[i] & alignments[i]) != 0) {
                         total_errors++;
-                        log_error("\tVector size %d failed: 0x%x is not properly aligned.\n", 1 << i, results_data_no_long[i]);
+                        log_error("\tVector size %d failed: 0x%x is not "
+                                  "properly aligned.\n",
+                                  1 << i, results_data_no_long[i]);
                     } else {
-                        if (DEBUG) log_info("\tVector size %d passed: 0x%x is properly aligned.\n", 1 << i, results_data_no_long[i]);
+                        if (DEBUG)
+                            log_info("\tVector size %d passed: 0x%x is "
+                                     "properly aligned.\n",
+                                     1 << i, results_data_no_long[i]);
                     }
                 }
             }
@@ -385,9 +395,14 @@ static int test_kernel_memory_alignment(cl_device_id device, cl_context context,
                 for (int i = 0; i < 5; i++) {
                     if ((results_data[i] & alignments[i]) != 0) {
                         total_errors++;
-                        log_error("\tVector size %d failed: 0x%" PRIx64 " is not properly aligned.\n", 1 << i, results_data[i]);
+                        log_error("\tVector size %d failed: 0x%" PRIx64
+                                  " is not properly aligned.\n",
+                                  1 << i, results_data[i]);
                     } else {
-                        if (DEBUG) log_info("\tVector size %d passed: 0x%" PRIx64 " is properly aligned.\n", 1 << i, results_data[i]);
+                        if (DEBUG)
+                            log_info("\tVector size %d passed: 0x%" PRIx64
+                                     " is properly aligned.\n",
+                                     1 << i, results_data[i]);
                     }
                 }
             }
@@ -398,9 +413,14 @@ static int test_kernel_memory_alignment(cl_device_id device, cl_context context,
                 for (int i = 0; i < 5; i++) {
                     if ((results_data_no_long[i] & alignments[i]) != 0) {
                         total_errors++;
-                        log_error("\tVector size %d failed: 0x%x is not properly aligned.\n", 1 << i, results_data_no_long[i]);
+                        log_error("\tVector size %d failed: 0x%x is not "
+                                  "properly aligned.\n",
+                                  1 << i, results_data_no_long[i]);
                     } else {
-                        if (DEBUG) log_info("\tVector size %d passed: 0x%x is properly aligned.\n", 1 << i, results_data_no_long[i]);
+                        if (DEBUG)
+                            log_info("\tVector size %d passed: 0x%x is "
+                                     "properly aligned.\n",
+                                     1 << i, results_data_no_long[i]);
                     }
                 }
             }
@@ -457,9 +477,14 @@ static int test_kernel_memory_alignment(cl_device_id device, cl_context context,
                 for (int i = 0; i < 5; i++) {
                     if ((results_data[i] & alignments[i]) != 0) {
                         total_errors++;
-                        log_error("\tVector size %d failed: 0x%" PRIx64 " is not properly aligned.\n", 1 << i, results_data[i]);
+                        log_error("\tVector size %d failed: 0x%" PRIx64
+                                  " is not properly aligned.\n",
+                                  1 << i, results_data[i]);
                     } else {
-                        if (DEBUG) log_info("\tVector size %d passed: 0x%" PRIx64 " is properly aligned.\n", 1 << i, results_data[i]);
+                        if (DEBUG)
+                            log_info("\tVector size %d passed: 0x%" PRIx64
+                                     " is properly aligned.\n",
+                                     1 << i, results_data[i]);
                     }
                 }
             }
@@ -470,9 +495,14 @@ static int test_kernel_memory_alignment(cl_device_id device, cl_context context,
                 for (int i = 0; i < 5; i++) {
                     if ((results_data_no_long[i] & alignments[i]) != 0) {
                         total_errors++;
-                        log_error("\tVector size %d failed: 0x%x is not properly aligned.\n", 1 << i, results_data_no_long[i]);
+                        log_error("\tVector size %d failed: 0x%x is not "
+                                  "properly aligned.\n",
+                                  1 << i, results_data_no_long[i]);
                     } else {
-                        if (DEBUG) log_info("\tVector size %d passed: 0x%x is properly aligned.\n", 1 << i, results_data_no_long[i]);
+                        if (DEBUG)
+                            log_info("\tVector size %d passed: 0x%x is "
+                                     "properly aligned.\n",
+                                     1 << i, results_data_no_long[i]);
                     }
                 }
             }

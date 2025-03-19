@@ -163,12 +163,16 @@ REGISTER_TEST(sizeof)
             return err;
         if( test != scalar_table[i].size )
         {
-            log_error( "\nFAILED: Type %s has size %" PRId64 ", but expected size %" PRId64 "!\n", scalar_table[i].name, test, scalar_table[i].size );
+            log_error("\nFAILED: Type %s has size %" PRId64
+                      ", but expected size %" PRId64 "!\n",
+                      scalar_table[i].name, test, scalar_table[i].size);
             return -1;
         }
         if( test != scalar_table[i].cl_size )
         {
-            log_error( "\nFAILED: Type %s has size %" PRId64 ", but cl_ size is %" PRId64 "!\n", scalar_table[i].name, test, scalar_table[i].cl_size );
+            log_error("\nFAILED: Type %s has size %" PRId64
+                      ", but cl_ size is %" PRId64 "!\n",
+                      scalar_table[i].name, test, scalar_table[i].cl_size);
             return -2;
         }
         log_info( "%16s", scalar_table[i].name );
@@ -198,16 +202,16 @@ REGISTER_TEST(sizeof)
                 return err;
             if( test != j * vector_table[i].size )
             {
-                log_error(
-                    "\nFAILED: Type %s has size %" PRId64 ", but expected size %" PRIu64 "!\n",
-                    name, test, j * vector_table[i].size);
+                log_error("\nFAILED: Type %s has size %" PRId64
+                          ", but expected size %" PRIu64 "!\n",
+                          name, test, j * vector_table[i].size);
                 return -1;
             }
             if( test != j * vector_table[i].cl_size )
             {
-                log_error(
-                    "\nFAILED: Type %s has size %" PRId64 ", but cl_ size is %" PRIu64 "!\n",
-                    name, test, j * vector_table[i].cl_size);
+                log_error("\nFAILED: Type %s has size %" PRId64
+                          ", but cl_ size is %" PRIu64 "!\n",
+                          name, test, j * vector_table[i].cl_size);
                 return -2;
             }
             log_info( "%16s", name );
@@ -224,7 +228,9 @@ REGISTER_TEST(sizeof)
             return err;
         if( test != ptr_size )
         {
-            log_error( "\nFAILED: Type %s has size %" PRId64 ", but expected size %u!\n", ptr_table[i], test, ptr_size );
+            log_error("\nFAILED: Type %s has size %" PRId64
+                      ", but expected size %u!\n",
+                      ptr_table[i], test, ptr_size);
             return -1;
         }
         log_info( "%16s", ptr_table[i] );
@@ -237,12 +243,16 @@ REGISTER_TEST(sizeof)
         return err;
     if( test < ptr_size )
     {
-        log_error( "\nFAILED: intptr_t has size %" PRId64 ", but must be at least %u!\n", test, ptr_size );
+        log_error("\nFAILED: intptr_t has size %" PRId64
+                  ", but must be at least %u!\n",
+                  test, ptr_size);
         return -1;
     }
     if( ! IsPowerOfTwo( test ) )
     {
-        log_error( "\nFAILED: sizeof(intptr_t) is %" PRId64 ", but must be a power of two!\n", test );
+        log_error("\nFAILED: sizeof(intptr_t) is %" PRId64
+                  ", but must be a power of two!\n",
+                  test);
         return -2;
     }
     log_info( "%16s", "intptr_t" );
@@ -254,12 +264,16 @@ REGISTER_TEST(sizeof)
         return err;
     if( test < ptr_size )
     {
-        log_error( "\nFAILED: uintptr_t has size %" PRId64 ", but must be at least %u!\n", test, ptr_size );
+        log_error("\nFAILED: uintptr_t has size %" PRId64
+                  ", but must be at least %u!\n",
+                  test, ptr_size);
         return -1;
     }
     if( ! IsPowerOfTwo( test ) )
     {
-        log_error( "\nFAILED: sizeof(uintptr_t) is %" PRId64 ", but must be a power of two!\n", test );
+        log_error("\nFAILED: sizeof(uintptr_t) is %" PRId64
+                  ", but must be a power of two!\n",
+                  test);
         return -2;
     }
     log_info( "%16s\n", "uintptr_t" );
@@ -295,7 +309,9 @@ REGISTER_TEST(sizeof)
             return err;
         if( ! IsPowerOfTwo( test ) )
         {
-            log_error( "\nFAILED: Type %s has size %" PRId64 ", which is not a power of two (section 6.1.5)!\n", other_types[i], test );
+            log_error("\nFAILED: Type %s has size %" PRId64
+                      ", which is not a power of two (section 6.1.5)!\n",
+                      other_types[i], test);
             return -1;
         }
         log_info( "%16s", other_types[i] );
@@ -313,7 +329,8 @@ REGISTER_TEST(sizeof)
             return err;
         if( test != 8 )
         {
-            log_error( "\nFAILED: double has size %" PRId64 ", but must be 8!\n", test );
+            log_error("\nFAILED: double has size %" PRId64 ", but must be 8!\n",
+                      test);
             return -1;
         }
         log_info( "%16s", "double" );
@@ -330,7 +347,8 @@ REGISTER_TEST(sizeof)
                 return err;
             if( test != 8*j )
             {
-                log_error("\nFAILED: %s has size %" PRId64 ", but must be %zu!\n",
+                log_error("\nFAILED: %s has size %" PRId64
+                          ", but must be %zu!\n",
                           name, test, 8 * j);
                 return -1;
             }
@@ -349,7 +367,8 @@ REGISTER_TEST(sizeof)
             return err;
         if( test != 2 )
         {
-            log_error( "\nFAILED: half has size %" PRId64 ", but must be 2!\n", test );
+            log_error("\nFAILED: half has size %" PRId64 ", but must be 2!\n",
+                      test);
             return -1;
         }
         log_info( "%16s", "half" );
@@ -366,7 +385,8 @@ REGISTER_TEST(sizeof)
                 return err;
             if( test != 2*j )
             {
-                log_error("\nFAILED: %s has size %" PRId64 ", but must be %zu!\n",
+                log_error("\nFAILED: %s has size %" PRId64
+                          ", but must be %zu!\n",
                           name, test, 2 * j);
                 return -1;
             }

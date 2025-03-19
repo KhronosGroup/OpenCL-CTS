@@ -354,7 +354,8 @@ REGISTER_TEST(bufferreadwriterect)
     // Compute a maximum buffer size based on the number of test images and the device maximum.
     cl_ulong max_mem_alloc_size = 0;
     CL_EXIT_ERROR(clGetDeviceInfo(device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(cl_ulong), &max_mem_alloc_size, NULL),"Could not get device info");
-    log_info("CL_DEVICE_MAX_MEM_ALLOC_SIZE = %" PRIu64 " bytes.\n", max_mem_alloc_size);
+    log_info("CL_DEVICE_MAX_MEM_ALLOC_SIZE = %" PRIu64 " bytes.\n",
+             max_mem_alloc_size);
 
     // Confirm that the maximum allocation size is not zero.
     if (max_mem_alloc_size == 0) {

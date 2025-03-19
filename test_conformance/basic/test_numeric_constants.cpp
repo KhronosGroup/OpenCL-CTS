@@ -530,7 +530,14 @@ const char *kernel_constant_double_limits[] = {
 };
 
 #define TEST_FLOAT_ASSERTION( a, msg, f ) if( !( a ) ) { log_error( "ERROR: Float constant failed requirement: %s (bitwise value is 0x%8.8x)\n", msg, *( (uint32_t *)&f ) ); return -1; }
-#define TEST_DOUBLE_ASSERTION( a, msg, f ) if( !( a ) ) { log_error( "ERROR: Double constant failed requirement: %s (bitwise value is 0x%16.16" PRIx64 ")\n", msg, *( (uint64_t *)&f ) ); return -1; }
+#define TEST_DOUBLE_ASSERTION(a, msg, f)                                       \
+    if (!(a))                                                                  \
+    {                                                                          \
+        log_error("ERROR: Double constant failed requirement: %s (bitwise "    \
+                  "value is 0x%16.16" PRIx64 ")\n",                            \
+                  msg, *((uint64_t *)&f));                                     \
+        return -1;                                                             \
+    }
 
 REGISTER_TEST(kernel_limit_constants)
 {
