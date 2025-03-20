@@ -103,9 +103,15 @@ CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingTyp
     else
     {
 #if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-        return InterlockedExchangeAdd(a, c);
+        if (std::is_same<AtomicType, HOST_ATOMIC_INT>::value)
+            return InterlockedExchangeAdd((volatile cl_int *)a, c);
+        else if (std::is_same<AtomicType, HOST_ATOMIC_UINT>::value)
+            return InterlockedExchangeAdd((volatile cl_uint *)a, c);
+        else if (std::is_same<AtomicType, HOST_ATOMIC_LONG>::value)
+            return InterlockedExchangeAdd64((volatile cl_long *)a, c);
+        else if (std::is_same<AtomicType, HOST_ATOMIC_ULONG>::value)
+            return InterlockedExchangeAdd64((volatile cl_ulong *)a, c);
 #elif defined(__GNUC__)
-
         if (std::is_same<AtomicType, HOST_ATOMIC_INT>::value)
             return __sync_fetch_and_add((volatile cl_int *)a, c);
         else if (std::is_same<AtomicType, HOST_ATOMIC_UINT>::value)
