@@ -834,7 +834,7 @@ REGISTER_TEST(compare_pointers)
         NL
         NL "    ptr = lptr;"
         NL
-        NL "    results[tid] = (gptr == ptr) && (lptr == ptr);"
+        NL "    results[tid] = ((int*)gptr == ptr) && ((int*)lptr == ptr);"
         NL "}"
         NL
     );
