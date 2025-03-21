@@ -20,7 +20,6 @@
 
 #include <vector>
 
-#include "procs.h"
 #include "utils.h"
 #include <time.h>
 
@@ -1010,7 +1009,7 @@ static int check_kernel_results(cl_int* results, cl_int len)
     return -1;
 }
 
-int test_execute_block(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(execute_block)
 {
     size_t i;
     size_t ret_len;

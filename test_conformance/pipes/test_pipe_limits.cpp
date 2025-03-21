@@ -25,8 +25,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "procs.h"
+#include "harness/testHarness.h"
 #include "harness/errorHelpers.h"
+#include "harness/typeWrappers.h"
 
 #define STRING_LENGTH  1024
 
@@ -150,7 +151,7 @@ static int verify_result_int(void *ptr1, void *ptr2, int n)
     return 0;
 }
 
-int test_pipe_max_args(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(pipe_max_args)
 {
 
     clMemWrapper pipes[1024];
@@ -177,7 +178,7 @@ int test_pipe_max_args(cl_device_id deviceID, cl_context context, cl_command_que
 
     size_t min_alignment = get_min_alignment(context);
 
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_PIPE_ARGS,
+    err = clGetDeviceInfo(device, CL_DEVICE_MAX_PIPE_ARGS,
                           sizeof(max_pipe_args), (void *)&max_pipe_args, NULL);
     if (err)
     {
@@ -263,7 +264,7 @@ int test_pipe_max_args(cl_device_id deviceID, cl_context context, cl_command_que
 }
 
 
-int test_pipe_max_packet_size(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(pipe_max_packet_size)
 {
     clMemWrapper pipe;
     clMemWrapper buffers[2];
@@ -290,7 +291,7 @@ int test_pipe_max_packet_size(cl_device_id deviceID, cl_context context, cl_comm
 
     std::stringstream source;
 
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_PIPE_MAX_PACKET_SIZE,
+    err = clGetDeviceInfo(device, CL_DEVICE_PIPE_MAX_PACKET_SIZE,
                           sizeof(max_pipe_packet_size),
                           (void *)&max_pipe_packet_size, NULL);
     test_error_ret(err, " clCreatePipe failed", -1);
@@ -402,7 +403,7 @@ int test_pipe_max_packet_size(cl_device_id deviceID, cl_context context, cl_comm
     return 0;
 }
 
-int test_pipe_max_active_reservations(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(pipe_max_active_reservations)
 {
     clMemWrapper pipe;
     clMemWrapper buffers[2];
@@ -437,12 +438,12 @@ int test_pipe_max_active_reservations(cl_device_id deviceID, cl_context context,
 
     global_work_size[0] = 1;
 
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_PIPE_MAX_ACTIVE_RESERVATIONS,
+    err = clGetDeviceInfo(device, CL_DEVICE_PIPE_MAX_ACTIVE_RESERVATIONS,
                           sizeof(max_active_reservations),
                           (void *)&max_active_reservations, NULL);
     test_error_ret(err, " clGetDeviceInfo failed", -1);
 
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_GLOBAL_MEM_SIZE,
+    err = clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE,
                           sizeof(max_global_size), (void *)&max_global_size,
                           NULL);
     test_error_ret(err, " clGetDeviceInfo failed", -1);

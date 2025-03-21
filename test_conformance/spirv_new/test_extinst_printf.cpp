@@ -30,6 +30,8 @@
 #define streamDup2(fd1, fd2) dup2(fd1, fd2)
 #endif
 
+#include <cstdint>
+
 #include <fstream>
 #include <vector>
 
@@ -232,8 +234,9 @@ lX = 4
         return TEST_SKIPPED_ITSELF;
     }
 
-    return printf_operands_helper(device, "printf_operands_scalar_int64",
-                                  "printf_operands_scalar_int64", expected, 4L);
+    return printf_operands_helper<int64_t>(
+        device, "printf_operands_scalar_int64", "printf_operands_scalar_int64",
+        expected, 4L);
 }
 
 REGISTER_TEST(extinst_printf_operands_scalar_fp64)

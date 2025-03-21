@@ -21,9 +21,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+#include "testBase.h"
 #include "harness/errorHelpers.h"
-
 
 static int verify_copy_buffer(int *inptr, int *outptr, int n)
 {
@@ -245,7 +244,7 @@ static int testPartialCopy( cl_command_queue queue, cl_context context, int num_
 }   // end testPartialCopy()
 
 
-int test_buffer_copy( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_copy)
 {
     int     i, err = 0;
     int     size;
@@ -271,7 +270,7 @@ int test_buffer_copy( cl_device_id deviceID, cl_context context, cl_command_queu
 }   // end test_buffer_copy()
 
 
-int test_buffer_partial_copy( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_partial_copy)
 {
     int     i, err = 0;
     int     size;

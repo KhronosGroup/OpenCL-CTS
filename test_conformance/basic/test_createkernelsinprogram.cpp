@@ -21,8 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 const char *sample_single_kernel = {
 "__kernel void sample_test(__global float *src, __global int *dst)\n"
@@ -50,8 +49,7 @@ const char *sample_double_kernel = {
 "}\n"};
 
 
-int
-test_createkernelsinprogram(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(createkernelsinprogram)
 {
     cl_program        program;
     cl_kernel        kernel[2];
@@ -98,8 +96,3 @@ test_createkernelsinprogram(cl_device_id device, cl_context context, cl_command_
 
     return err;
 }
-
-
-
-
-
