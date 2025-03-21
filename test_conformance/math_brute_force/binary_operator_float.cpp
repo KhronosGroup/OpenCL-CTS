@@ -208,11 +208,6 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     cl_float *s2 = 0;
     RoundingMode oldRoundMode;
 
-    bool reciprocal = strcmp(name, "reciprocal") == 0;
-    const float reciprocalArrayX[] = { 1.f };
-    const float *specialValuesX = reciprocal ? reciprocalArrayX : specialValues;
-    size_t specialValuesCountX = reciprocal ? 1 : specialValuesCount;
-
     if (relaxedMode)
     {
         func = job->f->rfunc;
@@ -244,7 +239,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     cl_uint *p = (cl_uint *)gIn + thread_id * buffer_elements;
     cl_uint *p2 = (cl_uint *)gIn2 + thread_id * buffer_elements;
     cl_uint idx = 0;
-    int totalSpecialValueCount = specialValuesCountX * specialValuesCount;
+    int totalSpecialValueCount = specialValuesCount * specialValuesCount;
     int lastSpecialJobIndex = (totalSpecialValueCount - 1) / buffer_elements;
 
     if (job_id <= (cl_uint)lastSpecialJobIndex)
@@ -252,15 +247,15 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         // Insert special values
         uint32_t x, y;
 
-        x = (job_id * buffer_elements) % specialValuesCountX;
+        x = (job_id * buffer_elements) % specialValuesCount;
         y = (job_id * buffer_elements) / specialValuesCount;
 
         for (; idx < buffer_elements; idx++)
         {
-            p[idx] = ((cl_uint *)specialValuesX)[x];
+            p[idx] = ((cl_uint *)specialValues)[x];
             p2[idx] = ((cl_uint *)specialValues)[y];
             ++x;
-            if (x >= specialValuesCountX)
+            if (x >= specialValuesCount)
             {
                 x = 0;
                 y++;
@@ -274,19 +269,13 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 if (pj < 0x20800000 || pj > 0x5e800000) p[idx] = 0x7fc00000;
                 if (p2j < 0x20800000 || p2j > 0x5e800000) p2[idx] = 0x7fc00000;
             }
-            else if (relaxedMode && reciprocal)
-            {
-                cl_uint p2j = p2[idx] & 0x7fffffff;
-                // Replace values outside [2^-126, 2^126] with QNaN
-                if (p2j < 0x00807d99 || p2j > 0x7e800000) p2[idx] = 0x7fc00000;
-            }
         }
     }
 
     // Init any remaining values
     for (; idx < buffer_elements; idx++)
     {
-        p[idx] = reciprocal ? ((cl_uint *)specialValuesX)[0] : genrand_int32(d);
+        p[idx] = genrand_int32(d);
         p2[idx] = genrand_int32(d);
 
         if (relaxedMode && strcmp(name, "divide") == 0)
@@ -296,12 +285,6 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             // Replace values outside [2^-62, 2^62] with QNaN
             if (pj < 0x20800000 || pj > 0x5e800000) p[idx] = 0x7fc00000;
             if (p2j < 0x20800000 || p2j > 0x5e800000) p2[idx] = 0x7fc00000;
-        }
-        else if (relaxedMode && reciprocal)
-        {
-            cl_uint p2j = p2[idx] & 0x7fffffff;
-            // Replace values outside [2^-126, 2^126] with QNaN
-            if (p2j < 0x00807d99 || p2j > 0x7e800000) p2[idx] = 0x7fc00000;
         }
     }
 
@@ -408,31 +391,18 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     s2 = (float *)gIn2 + thread_id * buffer_elements;
     if (gInfNanSupport)
     {
-        if (reciprocal)
-            for (size_t j = 0; j < buffer_elements; j++)
-                r[j] = (float)func.f_f(s2[j]);
-        else
-            for (size_t j = 0; j < buffer_elements; j++)
-                r[j] = (float)func.f_ff(s[j], s2[j]);
+        for (size_t j = 0; j < buffer_elements; j++)
+            r[j] = (float)func.f_ff(s[j], s2[j]);
     }
     else
     {
-        if (reciprocal)
-            for (size_t j = 0; j < buffer_elements; j++)
-            {
-                feclearexcept(FE_OVERFLOW);
-                r[j] = (float)func.f_f(s2[j]);
-                overflow[j] =
-                    FE_OVERFLOW == (FE_OVERFLOW & fetestexcept(FE_OVERFLOW));
-            }
-        else
-            for (size_t j = 0; j < buffer_elements; j++)
-            {
-                feclearexcept(FE_OVERFLOW);
-                r[j] = (float)func.f_ff(s[j], s2[j]);
-                overflow[j] =
-                    FE_OVERFLOW == (FE_OVERFLOW & fetestexcept(FE_OVERFLOW));
-            }
+        for (size_t j = 0; j < buffer_elements; j++)
+        {
+            feclearexcept(FE_OVERFLOW);
+            r[j] = (float)func.f_ff(s[j], s2[j]);
+            overflow[j] =
+                FE_OVERFLOW == (FE_OVERFLOW & fetestexcept(FE_OVERFLOW));
+        }
     }
 
     if (gIsInRTZMode) (void)set_round(oldRoundMode, kfloat);
@@ -467,8 +437,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             if (t[j] != q[j])
             {
                 float test = ((float *)q)[j];
-                double correct =
-                    reciprocal ? func.f_f(s2[j]) : func.f_ff(s[j], s2[j]);
+                double correct = func.f_ff(s[j], s2[j]);
 
                 // Per section 10 paragraph 6, accept any result if an input or
                 // output is a infinity or NaN or overflow
@@ -505,7 +474,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                     }
 
                     // retry per section 6.5.3.3
-                    if (!reciprocal && IsFloatSubnormal(s[j]))
+                    if (IsFloatSubnormal(s[j]))
                     {
                         double correct2, correct3;
                         float err2, err3;
@@ -611,10 +580,8 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
                         if (!gInfNanSupport) feclearexcept(FE_OVERFLOW);
 
-                        correct2 =
-                            reciprocal ? func.f_f(0.0) : func.f_ff(s[j], 0.0);
-                        correct3 =
-                            reciprocal ? func.f_f(-0.0) : func.f_ff(s[j], -0.0);
+                        correct2 = func.f_ff(s[j], 0.0);
+                        correct3 = func.f_ff(s[j], -0.0);
 
                         // Per section 10 paragraph 6, accept any result if an
                         // input or output is a infinity or NaN or overflow
@@ -646,6 +613,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                         }
                     }
                 }
+
 
                 if (fabsf(err) > tinfo->maxError)
                 {

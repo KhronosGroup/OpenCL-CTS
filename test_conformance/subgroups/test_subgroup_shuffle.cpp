@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include "subhelpers.h"
 #include "subgroup_common_kernels.h"
 #include "subgroup_common_templates.h"
@@ -33,8 +32,7 @@ template <typename T> int run_shuffle_for_type(RunTestForType rft)
 
 }
 
-int test_subgroup_functions_shuffle(cl_device_id device, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(subgroup_functions_shuffle)
 {
     if (!is_extension_available(device, "cl_khr_subgroup_shuffle"))
     {

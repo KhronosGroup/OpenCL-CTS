@@ -53,24 +53,6 @@ int g_arrVecSizes[kVectorSizeCount+kStrangeVectorSizeCount];
 int g_arrVecAligns[kLargestVectorSize+1];
 static int arrStrangeVecSizes[kStrangeVectorSizeCount] = {3};
 
-test_definition test_list[] = {
-    ADD_TEST( vload_half ),
-    ADD_TEST( vloada_half ),
-    ADD_TEST( vstore_half ),
-    ADD_TEST( vstorea_half ),
-    ADD_TEST( vstore_half_rte ),
-    ADD_TEST( vstorea_half_rte ),
-    ADD_TEST( vstore_half_rtz ),
-    ADD_TEST( vstorea_half_rtz ),
-    ADD_TEST( vstore_half_rtp ),
-    ADD_TEST( vstorea_half_rtp ),
-    ADD_TEST( vstore_half_rtn ),
-    ADD_TEST( vstorea_half_rtn ),
-    ADD_TEST( roundTrip ),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
-
 int main (int argc, const char **argv )
 {
     int error;
@@ -109,7 +91,9 @@ int main (int argc, const char **argv )
     }
 
     fflush( stdout );
-    error = runTestHarnessWithCheck( argCount, argList, test_num, test_list, true, 0, InitCL );
+    error = runTestHarnessWithCheck(
+        argCount, argList, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), true, 0, InitCL);
 
 exit:
     if(gQueue)
@@ -248,8 +232,8 @@ static void PrintUsage( void )
          "1-12, default factor(%u)\n",
          gWimpyReductionFactor);
     vlog("\t\t-h\tHelp\n");
-    for (int i = 0; i < test_num; i++)
+    for (size_t i = 0; i < test_registry::getInstance().num_tests(); i++)
     {
-        vlog("\t\t%s\n", test_list[i].name );
+        vlog("\t\t%s\n", test_registry::getInstance().definitions()[i].name);
     }
 }

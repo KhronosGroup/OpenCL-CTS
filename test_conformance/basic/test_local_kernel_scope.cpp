@@ -21,8 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 #define MAX_LOCAL_STORAGE_SIZE  256
 #define MAX_LOCAL_STORAGE_SIZE_STRING "256"
@@ -56,7 +55,7 @@ const char *kernelSource[] = {
     "}\n"
 };
 
-int test_local_kernel_scope(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(local_kernel_scope)
 {
     cl_int error;
     clProgramWrapper program;
@@ -138,5 +137,3 @@ int test_local_kernel_scope(cl_device_id device, cl_context context, cl_command_
     free(outputData);
     return 0;
 }
-
-

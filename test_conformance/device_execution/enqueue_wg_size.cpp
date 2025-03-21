@@ -20,7 +20,6 @@
 
 #include <vector>
 
-#include "procs.h"
 #include "utils.h"
 #include <time.h>
 
@@ -1637,7 +1636,7 @@ static const kernel_src_check sources_enqueue_wg_size[] =
     { KERNEL(enqueue_mix_wg_size_all_diff), check_all_diff_mix }
 };
 
-int test_enqueue_wg_size(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(enqueue_wg_size)
 {
     MTdata d;
     cl_uint i, k;

@@ -25,9 +25,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "procs.h"
 #include "kernels.h"
 #include "harness/errorHelpers.h"
+#include "harness/typeWrappers.h"
+#include "harness/conversions.h"
 
 #ifndef uchar
 typedef unsigned char uchar;
@@ -694,7 +695,7 @@ int test_pipe_readwrite_struct_generic( cl_device_id deviceID, cl_context contex
 }
 
 
-int test_pipe_readwrite_int( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_readwrite_int)
 {
     cl_int  *inptr[5];
     size_t  ptrSizes[5];
@@ -721,20 +722,24 @@ int test_pipe_readwrite_int( cl_device_id deviceID, cl_context context, cl_comma
     }
 
     if(useWorkgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_int ), (char*)"int", 5, (void**)inptr,
-                                   workgroup_int_kernel_name, foo);
+        err = test_pipe_readwrite(
+            device, context, queue, num_elements, sizeof(cl_int), (char *)"int",
+            5, (void **)inptr, workgroup_int_kernel_name, foo);
     }
     else if(useSubgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_int ), (char*)"int", 5, (void**)inptr,
-                                   subgroup_int_kernel_name, foo);
+        err = test_pipe_readwrite(
+            device, context, queue, num_elements, sizeof(cl_int), (char *)"int",
+            5, (void **)inptr, subgroup_int_kernel_name, foo);
     }
     else if(useConvenienceBuiltIn == 1) {
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_int ), (char*)"int", 5, (void**)inptr,
-                                   convenience_int_kernel_name, foo);
+        err = test_pipe_readwrite(
+            device, context, queue, num_elements, sizeof(cl_int), (char *)"int",
+            5, (void **)inptr, convenience_int_kernel_name, foo);
     }
     else {
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_int ), (char*)"int", 5, (void**)inptr,
-                                   int_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_int), (char *)"int", 5,
+                                  (void **)inptr, int_kernel_name, foo);
     }
 
 
@@ -744,10 +749,9 @@ int test_pipe_readwrite_int( cl_device_id deviceID, cl_context context, cl_comma
     free_mtdata(d);
 
     return err;
-
 }
 
-int test_pipe_readwrite_uint( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_readwrite_uint)
 {
     cl_uint     *inptr[5];
     size_t  ptrSizes[5];
@@ -774,20 +778,25 @@ int test_pipe_readwrite_uint( cl_device_id deviceID, cl_context context, cl_comm
     }
 
     if(useWorkgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_uint ), (char*)"uint", 5, (void**)inptr,
-                                   workgroup_uint_kernel_name, foo);
+        err = test_pipe_readwrite(
+            device, context, queue, num_elements, sizeof(cl_uint),
+            (char *)"uint", 5, (void **)inptr, workgroup_uint_kernel_name, foo);
     }
     else if(useSubgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_uint ), (char*)"uint", 5, (void**)inptr,
-                                   subgroup_uint_kernel_name, foo);
+        err = test_pipe_readwrite(
+            device, context, queue, num_elements, sizeof(cl_uint),
+            (char *)"uint", 5, (void **)inptr, subgroup_uint_kernel_name, foo);
     }
     else if(useConvenienceBuiltIn == 1) {
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_uint ), (char*)"uint", 5, (void**)inptr,
-                                   convenience_uint_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_uint), (char *)"uint", 5,
+                                  (void **)inptr, convenience_uint_kernel_name,
+                                  foo);
     }
     else {
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_uint ), (char*)"uint", 5, (void**)inptr,
-                                   uint_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_uint), (char *)"uint", 5,
+                                  (void **)inptr, uint_kernel_name, foo);
     }
 
     for ( i = 0; i < 5; i++ ){
@@ -796,10 +805,9 @@ int test_pipe_readwrite_uint( cl_device_id deviceID, cl_context context, cl_comm
     free_mtdata(d);
 
     return err;
-
 }
 
-int test_pipe_readwrite_short( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_readwrite_short)
 {
     cl_short     *inptr[5];
     size_t  ptrSizes[5];
@@ -826,20 +834,27 @@ int test_pipe_readwrite_short( cl_device_id deviceID, cl_context context, cl_com
     }
 
     if(useWorkgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_short ), (char*)"short", 5, (void**)inptr,
-                                   workgroup_short_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_short), (char *)"short", 5,
+                                  (void **)inptr, workgroup_short_kernel_name,
+                                  foo);
     }
     else if(useSubgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_short ), (char*)"short", 5, (void**)inptr,
-                                   subgroup_short_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_short), (char *)"short", 5,
+                                  (void **)inptr, subgroup_short_kernel_name,
+                                  foo);
     }
     else if(useConvenienceBuiltIn == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_short ), (char*)"short", 5, (void**)inptr,
-                                   convenience_short_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_short), (char *)"short", 5,
+                                  (void **)inptr, convenience_short_kernel_name,
+                                  foo);
     }
     else{
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_short ), (char*)"short", 5, (void**)inptr,
-                                   short_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_short), (char *)"short", 5,
+                                  (void **)inptr, short_kernel_name, foo);
     }
 
     for ( i = 0; i < 5; i++ ){
@@ -848,10 +863,9 @@ int test_pipe_readwrite_short( cl_device_id deviceID, cl_context context, cl_com
     free_mtdata(d);
 
     return err;
-
 }
 
-int test_pipe_readwrite_ushort( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_readwrite_ushort)
 {
     cl_ushort     *inptr[5];
     size_t  ptrSizes[5];
@@ -878,20 +892,27 @@ int test_pipe_readwrite_ushort( cl_device_id deviceID, cl_context context, cl_co
     }
 
     if(useWorkgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_ushort ), (char*)"ushort", 5, (void**)inptr,
-                                   workgroup_ushort_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_ushort), (char *)"ushort", 5,
+                                  (void **)inptr, workgroup_ushort_kernel_name,
+                                  foo);
     }
     else if(useSubgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_ushort ), (char*)"ushort", 5, (void**)inptr,
-                                   subgroup_ushort_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_ushort), (char *)"ushort", 5,
+                                  (void **)inptr, subgroup_ushort_kernel_name,
+                                  foo);
     }
     else if(useConvenienceBuiltIn == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_ushort ), (char*)"ushort", 5, (void**)inptr,
-                                   convenience_ushort_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_ushort), (char *)"ushort", 5,
+                                  (void **)inptr,
+                                  convenience_ushort_kernel_name, foo);
     }
     else{
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_ushort ), (char*)"ushort", 5, (void**)inptr,
-                                   ushort_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_ushort), (char *)"ushort", 5,
+                                  (void **)inptr, ushort_kernel_name, foo);
     }
 
 
@@ -901,10 +922,9 @@ int test_pipe_readwrite_ushort( cl_device_id deviceID, cl_context context, cl_co
     free_mtdata(d);
 
     return err;
-
 }
 
-int test_pipe_readwrite_char( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_readwrite_char)
 {
     cl_char *inptr[5];
     size_t  ptrSizes[5];
@@ -931,20 +951,25 @@ int test_pipe_readwrite_char( cl_device_id deviceID, cl_context context, cl_comm
     }
 
     if(useWorkgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_char ), (char*)"char", 5, (void**)inptr,
-                                   workgroup_char_kernel_name, foo);
+        err = test_pipe_readwrite(
+            device, context, queue, num_elements, sizeof(cl_char),
+            (char *)"char", 5, (void **)inptr, workgroup_char_kernel_name, foo);
     }
     else if(useSubgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_char ), (char*)"char", 5, (void**)inptr,
-                                   subgroup_char_kernel_name, foo);
+        err = test_pipe_readwrite(
+            device, context, queue, num_elements, sizeof(cl_char),
+            (char *)"char", 5, (void **)inptr, subgroup_char_kernel_name, foo);
     }
     else if(useConvenienceBuiltIn == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_char ), (char*)"char", 5, (void**)inptr,
-                                   convenience_char_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_char), (char *)"char", 5,
+                                  (void **)inptr, convenience_char_kernel_name,
+                                  foo);
     }
     else{
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_char ), (char*)"char", 5, (void**)inptr,
-                                   char_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_char), (char *)"char", 5,
+                                  (void **)inptr, char_kernel_name, foo);
     }
 
 
@@ -954,10 +979,9 @@ int test_pipe_readwrite_char( cl_device_id deviceID, cl_context context, cl_comm
     free_mtdata(d);
 
     return err;
-
 }
 
-int test_pipe_readwrite_uchar( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_readwrite_uchar)
 {
     cl_uchar    *inptr[5];
     size_t        ptrSizes[5];
@@ -984,20 +1008,27 @@ int test_pipe_readwrite_uchar( cl_device_id deviceID, cl_context context, cl_com
     }
 
     if(useWorkgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_uchar ), (char*)"uchar", 5, (void**)inptr,
-                                   workgroup_uchar_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_uchar), (char *)"uchar", 5,
+                                  (void **)inptr, workgroup_uchar_kernel_name,
+                                  foo);
     }
     else if(useSubgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_uchar ), (char*)"uchar", 5, (void**)inptr,
-                                   subgroup_uchar_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_uchar), (char *)"uchar", 5,
+                                  (void **)inptr, subgroup_uchar_kernel_name,
+                                  foo);
     }
     else if(useConvenienceBuiltIn == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_uchar ), (char*)"uchar", 5, (void**)inptr,
-                                   convenience_uchar_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_uchar), (char *)"uchar", 5,
+                                  (void **)inptr, convenience_uchar_kernel_name,
+                                  foo);
     }
     else{
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_uchar ), (char*)"uchar", 5, (void**)inptr,
-                                   uchar_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_uchar), (char *)"uchar", 5,
+                                  (void **)inptr, uchar_kernel_name, foo);
     }
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1005,10 +1036,9 @@ int test_pipe_readwrite_uchar( cl_device_id deviceID, cl_context context, cl_com
     free_mtdata(d);
 
     return err;
-
 }
 
-int test_pipe_readwrite_float( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_readwrite_float)
 {
     float     *inptr[5];
     size_t  ptrSizes[5];
@@ -1035,20 +1065,27 @@ int test_pipe_readwrite_float( cl_device_id deviceID, cl_context context, cl_com
     }
 
     if(useWorkgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_float ), (char*)"float", 5, (void**)inptr,
-                                   workgroup_float_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_float), (char *)"float", 5,
+                                  (void **)inptr, workgroup_float_kernel_name,
+                                  foo);
     }
     else if(useSubgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_float ), (char*)"float", 5, (void**)inptr,
-                                   subgroup_float_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_float), (char *)"float", 5,
+                                  (void **)inptr, subgroup_float_kernel_name,
+                                  foo);
     }
     else if(useConvenienceBuiltIn == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_float ), (char*)"float", 5, (void**)inptr,
-                                   convenience_float_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_float), (char *)"float", 5,
+                                  (void **)inptr, convenience_float_kernel_name,
+                                  foo);
     }
     else{
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_float ), (char*)"float", 5, (void**)inptr,
-                                   float_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_float), (char *)"float", 5,
+                                  (void **)inptr, float_kernel_name, foo);
     }
 
     for ( i = 0; i < 5; i++ ){
@@ -1057,10 +1094,9 @@ int test_pipe_readwrite_float( cl_device_id deviceID, cl_context context, cl_com
     free_mtdata(d);
 
     return err;
-
 }
 
-int test_pipe_readwrite_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_readwrite_half)
 {
     float   *inptr[5];
     size_t  ptrSizes[5];
@@ -1073,7 +1109,7 @@ int test_pipe_readwrite_half( cl_device_id deviceID, cl_context context, cl_comm
 
     foo = verify_readwrite_half;
 
-    if(!is_extension_available(deviceID, "cl_khr_fp16"))
+    if (!is_extension_available(device, "cl_khr_fp16"))
     {
         log_info(
             "cl_khr_fp16 is not supported on this platform. Skipping test.\n");
@@ -1093,20 +1129,25 @@ int test_pipe_readwrite_half( cl_device_id deviceID, cl_context context, cl_comm
     }
 
     if(useWorkgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_half ), (char*)"half", 5, (void**)inptr,
-                                    workgroup_half_kernel_name, foo);
+        err = test_pipe_readwrite(
+            device, context, queue, num_elements, sizeof(cl_half),
+            (char *)"half", 5, (void **)inptr, workgroup_half_kernel_name, foo);
     }
     else if(useSubgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_half ), (char*)"half", 5, (void**)inptr,
-                                    subgroup_half_kernel_name, foo);
+        err = test_pipe_readwrite(
+            device, context, queue, num_elements, sizeof(cl_half),
+            (char *)"half", 5, (void **)inptr, subgroup_half_kernel_name, foo);
     }
     else if(useConvenienceBuiltIn == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_half ), (char*)"half", 5, (void**)inptr,
-                                    convenience_half_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_half), (char *)"half", 5,
+                                  (void **)inptr, convenience_half_kernel_name,
+                                  foo);
     }
     else{
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_half ), (char*)"half", 5, (void**)inptr,
-                                    half_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_half), (char *)"half", 5,
+                                  (void **)inptr, half_kernel_name, foo);
     }
 
     for ( i = 0; i < 5; i++ ){
@@ -1117,7 +1158,7 @@ int test_pipe_readwrite_half( cl_device_id deviceID, cl_context context, cl_comm
     return err;
 }
 
-int test_pipe_readwrite_long( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_readwrite_long)
 {
     cl_long *inptr[5];
     size_t  ptrSizes[5];
@@ -1151,20 +1192,25 @@ int test_pipe_readwrite_long( cl_device_id deviceID, cl_context context, cl_comm
     }
 
     if(useWorkgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_long ), (char*)"long", 5, (void**)inptr,
-                                   workgroup_long_kernel_name, foo);
+        err = test_pipe_readwrite(
+            device, context, queue, num_elements, sizeof(cl_long),
+            (char *)"long", 5, (void **)inptr, workgroup_long_kernel_name, foo);
     }
     else if(useSubgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_long ), (char*)"long", 5, (void**)inptr,
-                                   subgroup_long_kernel_name, foo);
+        err = test_pipe_readwrite(
+            device, context, queue, num_elements, sizeof(cl_long),
+            (char *)"long", 5, (void **)inptr, subgroup_long_kernel_name, foo);
     }
     else if(useConvenienceBuiltIn == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_long ), (char*)"long", 5, (void**)inptr,
-                                   convenience_long_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_long), (char *)"long", 5,
+                                  (void **)inptr, convenience_long_kernel_name,
+                                  foo);
     }
     else{
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_long ), (char*)"long", 5, (void**)inptr,
-                                   long_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_long), (char *)"long", 5,
+                                  (void **)inptr, long_kernel_name, foo);
     }
 
     for ( i = 0; i < 5; i++ ){
@@ -1173,10 +1219,9 @@ int test_pipe_readwrite_long( cl_device_id deviceID, cl_context context, cl_comm
     free_mtdata(d);
 
     return err;
-
 }
 
-int test_pipe_readwrite_ulong( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_readwrite_ulong)
 {
     cl_ulong *inptr[5];
     size_t  ptrSizes[5];
@@ -1210,20 +1255,27 @@ int test_pipe_readwrite_ulong( cl_device_id deviceID, cl_context context, cl_com
     }
 
     if(useWorkgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_ulong ), (char*)"ulong", 5, (void**)inptr,
-                                   workgroup_ulong_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_ulong), (char *)"ulong", 5,
+                                  (void **)inptr, workgroup_ulong_kernel_name,
+                                  foo);
     }
     else if(useSubgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_ulong ), (char*)"ulong", 5, (void**)inptr,
-                                   subgroup_ulong_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_ulong), (char *)"ulong", 5,
+                                  (void **)inptr, subgroup_ulong_kernel_name,
+                                  foo);
     }
     else if(useConvenienceBuiltIn == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_ulong ), (char*)"ulong", 5, (void**)inptr,
-                                   convenience_ulong_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_ulong), (char *)"ulong", 5,
+                                  (void **)inptr, convenience_ulong_kernel_name,
+                                  foo);
     }
     else{
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_ulong ), (char*)"ulong", 5, (void**)inptr,
-                                   ulong_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_ulong), (char *)"ulong", 5,
+                                  (void **)inptr, ulong_kernel_name, foo);
     }
 
     for ( i = 0; i < 5; i++ ){
@@ -1232,10 +1284,9 @@ int test_pipe_readwrite_ulong( cl_device_id deviceID, cl_context context, cl_com
     free_mtdata(d);
 
     return err;
-
 }
 
-int test_pipe_readwrite_double( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_readwrite_double)
 {
     cl_double *inptr[5];
     size_t  ptrSizes[5];
@@ -1255,7 +1306,7 @@ int test_pipe_readwrite_double( cl_device_id deviceID, cl_context context, cl_co
     ptrSizes[4] = ptrSizes[3] << 1;
 
     //skip devices that don't support double
-    if(!is_extension_available(deviceID, "cl_khr_fp64"))
+    if (!is_extension_available(device, "cl_khr_fp64"))
     {
         log_info(
             "cl_khr_fp64 is not supported on this platform. Skipping test.\n");
@@ -1270,20 +1321,27 @@ int test_pipe_readwrite_double( cl_device_id deviceID, cl_context context, cl_co
     }
 
     if(useWorkgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_double ), (char*)"double", 5, (void**)inptr,
-                                   workgroup_double_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_double), (char *)"double", 5,
+                                  (void **)inptr, workgroup_double_kernel_name,
+                                  foo);
     }
     else if(useSubgroupReserve == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_double ), (char*)"double", 5, (void**)inptr,
-                                   subgroup_double_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_double), (char *)"double", 5,
+                                  (void **)inptr, subgroup_double_kernel_name,
+                                  foo);
     }
     else if(useConvenienceBuiltIn == 1){
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_double ), (char*)"double", 5, (void**)inptr,
-                                   convenience_double_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_double), (char *)"double", 5,
+                                  (void **)inptr,
+                                  convenience_double_kernel_name, foo);
     }
     else{
-        err = test_pipe_readwrite( deviceID, context, queue, num_elements, sizeof( cl_double ), (char*)"double", 5, (void**)inptr,
-                                   double_kernel_name, foo);
+        err = test_pipe_readwrite(device, context, queue, num_elements,
+                                  sizeof(cl_double), (char *)"double", 5,
+                                  (void **)inptr, double_kernel_name, foo);
     }
 
     for ( i = 0; i < 5; i++ ){
@@ -1292,392 +1350,398 @@ int test_pipe_readwrite_double( cl_device_id deviceID, cl_context context, cl_co
     free_mtdata(d);
 
     return err;
-
 }
 
-int test_pipe_readwrite_struct( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_readwrite_struct)
 {
     const char *kernelNames[] = {"test_pipe_write_struct","test_pipe_read_struct"};
-    return test_pipe_readwrite_struct_generic(deviceID, context, queue, num_elements, pipe_readwrite_struct_kernel_code, kernelNames);
+    return test_pipe_readwrite_struct_generic(
+        device, context, queue, num_elements, pipe_readwrite_struct_kernel_code,
+        kernelNames);
 }
 
 // Work-group functions for pipe reserve/commits
-int test_pipe_workgroup_readwrite_int( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_workgroup_readwrite_int)
 {
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_int(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_int(device, context, queue, num_elements);
 }
 
-int test_pipe_workgroup_readwrite_uint( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_workgroup_readwrite_uint)
 {
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_uint(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_uint(device, context, queue, num_elements);
 }
 
-int test_pipe_workgroup_readwrite_short( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_workgroup_readwrite_short)
 {
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_short(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_short(device, context, queue, num_elements);
 }
 
-int test_pipe_workgroup_readwrite_ushort( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_workgroup_readwrite_ushort)
 {
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_ushort(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_ushort(device, context, queue, num_elements);
 }
 
-int test_pipe_workgroup_readwrite_char( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_workgroup_readwrite_char)
 {
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_char(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_char(device, context, queue, num_elements);
 }
 
-int test_pipe_workgroup_readwrite_uchar( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_workgroup_readwrite_uchar)
 {
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_uchar(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_uchar(device, context, queue, num_elements);
 }
 
-int test_pipe_workgroup_readwrite_float( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_workgroup_readwrite_float)
 {
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_float(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_float(device, context, queue, num_elements);
 }
 
-int test_pipe_workgroup_readwrite_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_workgroup_readwrite_half)
 {
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_half(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_half(device, context, queue, num_elements);
 }
 
-int test_pipe_workgroup_readwrite_long( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_workgroup_readwrite_long)
 {
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_long(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_long(device, context, queue, num_elements);
 }
 
-int test_pipe_workgroup_readwrite_ulong( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_workgroup_readwrite_ulong)
 {
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_ulong(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_ulong(device, context, queue, num_elements);
 }
 
-int test_pipe_workgroup_readwrite_double( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_workgroup_readwrite_double)
 {
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_double(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_double(device, context, queue, num_elements);
 }
 
-int test_pipe_workgroup_readwrite_struct( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_workgroup_readwrite_struct)
 {
     const char *kernelNames[] = {"test_pipe_workgroup_write_struct","test_pipe_workgroup_read_struct"};
-    return test_pipe_readwrite_struct_generic(deviceID, context, queue, num_elements, pipe_workgroup_readwrite_struct_kernel_code, kernelNames);
+    return test_pipe_readwrite_struct_generic(
+        device, context, queue, num_elements,
+        pipe_workgroup_readwrite_struct_kernel_code, kernelNames);
 }
 
 // Sub-group functions for pipe reserve/commits
-int test_pipe_subgroup_readwrite_int( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_subgroup_readwrite_int)
 {
     useSubgroupReserve = 1;
     useWorkgroupReserve = 0;
     useConvenienceBuiltIn = 0;
 
-    if(!is_extension_available(deviceID, "cl_khr_subgroups"))
+    if (!is_extension_available(device, "cl_khr_subgroups"))
     {
         log_info("cl_khr_subgroups is not supported on this platform. Skipping "
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_int(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_int(device, context, queue, num_elements);
 }
 
-int test_pipe_subgroup_readwrite_uint( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_subgroup_readwrite_uint)
 {
     useSubgroupReserve = 1;
     useWorkgroupReserve = 0;
     useConvenienceBuiltIn = 0;
 
-    if(!is_extension_available(deviceID, "cl_khr_subgroups"))
+    if (!is_extension_available(device, "cl_khr_subgroups"))
     {
         log_info("cl_khr_subgroups is not supported on this platform. Skipping "
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_uint(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_uint(device, context, queue, num_elements);
 }
 
-int test_pipe_subgroup_readwrite_short( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_subgroup_readwrite_short)
 {
     useSubgroupReserve = 1;
     useWorkgroupReserve = 0;
     useConvenienceBuiltIn = 0;
 
-    if(!is_extension_available(deviceID, "cl_khr_subgroups"))
+    if (!is_extension_available(device, "cl_khr_subgroups"))
     {
         log_info("cl_khr_subgroups is not supported on this platform. Skipping "
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_short(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_short(device, context, queue, num_elements);
 }
 
-int test_pipe_subgroup_readwrite_ushort( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_subgroup_readwrite_ushort)
 {
     useSubgroupReserve = 1;
     useWorkgroupReserve = 0;
     useConvenienceBuiltIn = 0;
 
-    if(!is_extension_available(deviceID, "cl_khr_subgroups"))
+    if (!is_extension_available(device, "cl_khr_subgroups"))
     {
         log_info("cl_khr_subgroups is not supported on this platform. Skipping "
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_ushort(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_ushort(device, context, queue, num_elements);
 }
 
-int test_pipe_subgroup_readwrite_char( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_subgroup_readwrite_char)
 {
     useSubgroupReserve = 1;
     useWorkgroupReserve = 0;
     useConvenienceBuiltIn = 0;
 
-    if(!is_extension_available(deviceID, "cl_khr_subgroups"))
+    if (!is_extension_available(device, "cl_khr_subgroups"))
     {
         log_info("cl_khr_subgroups is not supported on this platform. Skipping "
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_char(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_char(device, context, queue, num_elements);
 }
 
-int test_pipe_subgroup_readwrite_uchar( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_subgroup_readwrite_uchar)
 {
     useSubgroupReserve = 1;
     useWorkgroupReserve = 0;
     useConvenienceBuiltIn = 0;
 
-    if(!is_extension_available(deviceID, "cl_khr_subgroups"))
+    if (!is_extension_available(device, "cl_khr_subgroups"))
     {
         log_info("cl_khr_subgroups is not supported on this platform. Skipping "
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_uchar(deviceID, context, queue, num_elements);
-
+    return test_pipe_readwrite_uchar(device, context, queue, num_elements);
 }
 
-int test_pipe_subgroup_readwrite_float( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_subgroup_readwrite_float)
 {
     useSubgroupReserve = 1;
     useWorkgroupReserve = 0;
     useConvenienceBuiltIn = 0;
 
-    if(!is_extension_available(deviceID, "cl_khr_subgroups"))
+    if (!is_extension_available(device, "cl_khr_subgroups"))
     {
         log_info("cl_khr_subgroups is not supported on this platform. Skipping "
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_float(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_float(device, context, queue, num_elements);
 }
 
-int test_pipe_subgroup_readwrite_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_subgroup_readwrite_half)
 {
     useSubgroupReserve = 1;
     useWorkgroupReserve = 0;
     useConvenienceBuiltIn = 0;
 
-    if(!is_extension_available(deviceID, "cl_khr_subgroups"))
+    if (!is_extension_available(device, "cl_khr_subgroups"))
     {
         log_info("cl_khr_subgroups is not supported on this platform. Skipping "
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_half(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_half(device, context, queue, num_elements);
 }
 
-int test_pipe_subgroup_readwrite_long( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_subgroup_readwrite_long)
 {
     useSubgroupReserve = 1;
     useWorkgroupReserve = 0;
     useConvenienceBuiltIn = 0;
 
-    if(!is_extension_available(deviceID, "cl_khr_subgroups"))
+    if (!is_extension_available(device, "cl_khr_subgroups"))
     {
         log_info("cl_khr_subgroups is not supported on this platform. Skipping "
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_long(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_long(device, context, queue, num_elements);
 }
 
-int test_pipe_subgroup_readwrite_ulong( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_subgroup_readwrite_ulong)
 {
     useSubgroupReserve = 1;
     useWorkgroupReserve = 0;
     useConvenienceBuiltIn = 0;
 
-    if(!is_extension_available(deviceID, "cl_khr_subgroups"))
+    if (!is_extension_available(device, "cl_khr_subgroups"))
     {
         log_info("cl_khr_subgroups is not supported on this platform. Skipping "
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_ulong(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_ulong(device, context, queue, num_elements);
 }
 
-int test_pipe_subgroup_readwrite_double( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_subgroup_readwrite_double)
 {
     useSubgroupReserve = 1;
     useWorkgroupReserve = 0;
     useConvenienceBuiltIn = 0;
 
-    if(!is_extension_available(deviceID, "cl_khr_subgroups"))
+    if (!is_extension_available(device, "cl_khr_subgroups"))
     {
         log_info("cl_khr_subgroups is not supported on this platform. Skipping "
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_double(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_double(device, context, queue, num_elements);
 }
 
-int test_pipe_subgroup_readwrite_struct( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_subgroup_readwrite_struct)
 {
-    if(!is_extension_available(deviceID, "cl_khr_subgroups"))
+    if (!is_extension_available(device, "cl_khr_subgroups"))
     {
         log_info("cl_khr_subgroups is not supported on this platform. Skipping "
                  "test.\n");
         return CL_SUCCESS;
     }
     const char *kernelNames[] = {"test_pipe_subgroup_write_struct","test_pipe_subgroup_read_struct"};
-    return test_pipe_readwrite_struct_generic(deviceID, context, queue, num_elements, pipe_subgroup_readwrite_struct_kernel_code, kernelNames);
+    return test_pipe_readwrite_struct_generic(
+        device, context, queue, num_elements,
+        pipe_subgroup_readwrite_struct_kernel_code, kernelNames);
 }
 
 // Convenience functions for pipe reserve/commits
-int test_pipe_convenience_readwrite_int( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_convenience_readwrite_int)
 {
     useConvenienceBuiltIn = 1;
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_int(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_int(device, context, queue, num_elements);
 }
 
-int test_pipe_convenience_readwrite_uint( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_convenience_readwrite_uint)
 {
     useConvenienceBuiltIn = 1;
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_uint(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_uint(device, context, queue, num_elements);
 }
 
-int test_pipe_convenience_readwrite_short( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_convenience_readwrite_short)
 {
     useConvenienceBuiltIn = 1;
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_short(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_short(device, context, queue, num_elements);
 }
 
-int test_pipe_convenience_readwrite_ushort( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_convenience_readwrite_ushort)
 {
     useConvenienceBuiltIn = 1;
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_ushort(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_ushort(device, context, queue, num_elements);
 }
 
-int test_pipe_convenience_readwrite_char( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_convenience_readwrite_char)
 {
     useConvenienceBuiltIn = 1;
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_char(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_char(device, context, queue, num_elements);
 }
 
-int test_pipe_convenience_readwrite_uchar( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_convenience_readwrite_uchar)
 {
     useConvenienceBuiltIn = 1;
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_uchar(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_uchar(device, context, queue, num_elements);
 }
 
 
-int test_pipe_convenience_readwrite_float( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_convenience_readwrite_float)
 {
     useConvenienceBuiltIn = 1;
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_float(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_float(device, context, queue, num_elements);
 }
 
-int test_pipe_convenience_readwrite_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_convenience_readwrite_half)
 {
     useConvenienceBuiltIn = 1;
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_half(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_half(device, context, queue, num_elements);
 }
 
-int test_pipe_convenience_readwrite_long( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_convenience_readwrite_long)
 {
     useConvenienceBuiltIn = 1;
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_long(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_long(device, context, queue, num_elements);
 }
 
-int test_pipe_convenience_readwrite_ulong( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_convenience_readwrite_ulong)
 {
     useConvenienceBuiltIn = 1;
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_ulong(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_ulong(device, context, queue, num_elements);
 }
 
-int test_pipe_convenience_readwrite_double( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_convenience_readwrite_double)
 {
     useConvenienceBuiltIn = 1;
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_double(deviceID, context, queue, num_elements);
+    return test_pipe_readwrite_double(device, context, queue, num_elements);
 }
 
-int test_pipe_convenience_readwrite_struct( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_convenience_readwrite_struct)
 {
     const char *kernelNames[] = {"test_pipe_convenience_write_struct","test_pipe_convenience_read_struct"};
-    return test_pipe_readwrite_struct_generic(deviceID, context, queue, num_elements, pipe_convenience_readwrite_struct_kernel_code, kernelNames);
+    return test_pipe_readwrite_struct_generic(
+        device, context, queue, num_elements,
+        pipe_convenience_readwrite_struct_kernel_code, kernelNames);
 }

@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 #define TEST_IMAGE_WIDTH_2D (512)
 #define TEST_IMAGE_HEIGHT_2D (512)
@@ -204,8 +204,9 @@ cl_mem create_image_xd(cl_context context, cl_mem_flags flags,
 }
 
 template <cl_mem_object_type IMG_TYPE, typename T>
-int test_readimage(cl_device_id device, cl_context context,
-                   cl_command_queue queue, const cl_image_format *img_format)
+static int test_readimage(cl_device_id device, cl_context context,
+                          cl_command_queue queue,
+                          const cl_image_format *img_format)
 {
     clMemWrapper streams[2];
     clProgramWrapper program;
@@ -301,8 +302,7 @@ bool check_format(cl_device_id device, cl_context context,
 }
 
 }
-int test_readimage(cl_device_id device, cl_context context,
-                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(readimage)
 {
     const cl_image_format format[] = { { CL_RGBA, CL_UNORM_INT8 },
                                        { CL_BGRA, CL_UNORM_INT8 } };
@@ -319,24 +319,21 @@ int test_readimage(cl_device_id device, cl_context context,
     return err;
 }
 
-int test_readimage_int16(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(readimage_int16)
 {
     const cl_image_format format = { CL_RGBA, CL_UNORM_INT16 };
     return test_readimage<CL_MEM_OBJECT_IMAGE2D, cl_ushort>(device, context,
                                                             queue, &format);
 }
 
-int test_readimage_fp32(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST(readimage_fp32)
 {
     const cl_image_format format = { CL_RGBA, CL_FLOAT };
     return test_readimage<CL_MEM_OBJECT_IMAGE2D, cl_float>(device, context,
                                                            queue, &format);
 }
 
-int test_readimage3d(cl_device_id device, cl_context context,
-                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(readimage3d)
 {
     const cl_image_format format[] = { { CL_RGBA, CL_UNORM_INT8 },
                                        { CL_BGRA, CL_UNORM_INT8 } };
@@ -355,8 +352,7 @@ int test_readimage3d(cl_device_id device, cl_context context,
     return err;
 }
 
-int test_readimage3d_int16(cl_device_id device, cl_context context,
-                           cl_command_queue queue, int num_elements)
+REGISTER_TEST(readimage3d_int16)
 {
     const cl_image_format format = { CL_RGBA, CL_UNORM_INT16 };
 
@@ -365,8 +361,7 @@ int test_readimage3d_int16(cl_device_id device, cl_context context,
     return test_readimage<CL_MEM_OBJECT_IMAGE3D, cl_ushort>(device, context,
                                                             queue, &format);
 }
-int test_readimage3d_fp32(cl_device_id device, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(readimage3d_fp32)
 {
     const cl_image_format format = { CL_RGBA, CL_FLOAT };
 
