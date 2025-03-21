@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include "subhelpers.h"
 #include "harness/typeWrappers.h"
 #include <set>
@@ -253,10 +252,7 @@ template <typename T> int run_vote_all_equal_for_type(RunTestForType rft)
 }
 }
 
-int test_subgroup_functions_non_uniform_vote(cl_device_id device,
-                                             cl_context context,
-                                             cl_command_queue queue,
-                                             int num_elements)
+REGISTER_TEST(subgroup_functions_non_uniform_vote)
 {
     if (!is_extension_available(device, "cl_khr_subgroup_non_uniform_vote"))
     {

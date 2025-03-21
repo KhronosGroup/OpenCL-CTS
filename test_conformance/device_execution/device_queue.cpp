@@ -20,7 +20,6 @@
 
 #include <vector>
 
-#include "procs.h"
 #include "utils.h"
 
 static int check_device_queue(cl_device_id device, cl_context context, cl_command_queue queue, cl_uint size)
@@ -97,7 +96,7 @@ static int check_device_queues(cl_device_id device, cl_context context, cl_uint 
     return res;
 }
 
-int test_device_queue(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(device_queue)
 {
     cl_int err_ret, res = 0;
     size_t ret_len;
@@ -187,4 +186,3 @@ int test_device_queue(cl_device_id device, cl_context context, cl_command_queue 
 
     return res;
 }
-

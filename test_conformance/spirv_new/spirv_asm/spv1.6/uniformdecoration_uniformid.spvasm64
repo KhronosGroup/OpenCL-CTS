@@ -1,0 +1,42 @@
+; SPIR-V
+; Version: 1.6
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability Int64
+               OpCapability UniformDecoration
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "test_uniformdecoration" %gid
+               OpDecorate %gid BuiltIn GlobalInvocationId
+               OpDecorate %gid Constant
+               ; Decoration on a constant
+               OpDecorateId %uint_0 UniformId %scope_CrossDevice
+               ; Decoration on a function parameter
+               OpDecorateId %value UniformId %scope_Device
+               OpDecorateId %base UniformId %scope_Workgroup
+               ; Decoration on a variable
+               OpDecorateId %newvalue UniformId %scope_Subgroup
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+    %ptr_gid = OpTypePointer Input %v3ulong
+%scope_CrossDevice = OpConstant %uint 0
+%scope_Device = OpConstant %uint 1
+%scope_Workgroup = OpConstant %uint 2
+%scope_Subgroup = OpConstant %uint 3
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+       %void = OpTypeVoid
+  %gptr_uint = OpTypePointer CrossWorkgroup %uint
+ %kernel_sig = OpTypeFunction %void %gptr_uint %uint
+        %gid = OpVariable %ptr_gid Input
+     %kernel = OpFunction %void None %kernel_sig
+       %base = OpFunctionParameter %gptr_uint
+      %value = OpFunctionParameter %uint
+      %entry = OpLabel
+      %gidv3 = OpLoad %v3ulong %gid Aligned 32
+       %gid0 = OpCompositeExtract %ulong %gidv3 0
+        %ptr = OpInBoundsPtrAccessChain %gptr_uint %base %gid0
+   %newvalue = OpIAdd %uint %value %uint_1
+               OpStore %ptr %newvalue Aligned 4
+               OpReturn
+               OpFunctionEnd

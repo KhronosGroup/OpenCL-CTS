@@ -28,7 +28,12 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     BuildKernelInfo &info = *(BuildKernelInfo *)p;
     auto generator = [](const std::string &kernel_name, const char *builtin,
                         cl_uint vector_size_index) {
-        return GetUnaryKernel(kernel_name, builtin, ParameterType::Float,
+        const char *builtinCall = builtin;
+        if (strcmp(builtin, "reciprocal") == 0)
+        {
+            builtinCall = "((RETTYPE)(1.0f))/";
+        }
+        return GetUnaryKernel(kernel_name, builtinCall, ParameterType::Float,
                               ParameterType::Float, vector_size_index);
     };
     return BuildKernels(info, job_id, generator);
@@ -295,13 +300,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
                     if (strcmp(fname, "exp") == 0 || strcmp(fname, "exp2") == 0)
                     {
-                        // For full profile, ULP depends on input value.
-                        // For embedded profile, ULP comes from functionList.
-                        if (!gIsEmbedded)
-                        {
-                            ulps = 3.0f + floor(fabs(2 * s[j]));
-                        }
-
+                        ulps += floor(fabs(2 * s[j]));
                         fail = !(fabsf(err) <= ulps);
                     }
                     if (strcmp(fname, "tan") == 0)
