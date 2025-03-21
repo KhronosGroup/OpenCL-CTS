@@ -171,7 +171,10 @@ VulkanInstance::VulkanInstance(bool useValidationLayers)
                     break;
                 }
             if (!found)
+            {
+                log_info("Vulkan layer not found: %s\n", *it);
                 it = m_validationLayers.erase(it);
+            }
             else
                 ++it;
         }
