@@ -40,8 +40,8 @@ struct VulkanTestBase
                    cl_command_queue queue, cl_int nelems)
         : device(device), context(context), num_elems(nelems)
     {
-        vkDevice.reset(
-            new VulkanDevice(getAssociatedVulkanPhysicalDevice(device)));
+        vkDevice.reset(new VulkanDevice(
+            getAssociatedVulkanPhysicalDevice(device, useValidationLayers)));
 
         cl_platform_id platform;
         cl_int error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
@@ -101,7 +101,7 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (!checkVkSupport())
+    if (!checkVkSupport(useValidationLayers))
     {
         log_info("Vulkan supported GPU not found \n");
         log_info("TEST SKIPPED \n");
