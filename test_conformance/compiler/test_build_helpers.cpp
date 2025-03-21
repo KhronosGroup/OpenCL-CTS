@@ -654,13 +654,13 @@ REGISTER_TEST(get_linked_program_info_kernel_names)
     //    kernel names are returned.
     {
         const char *build_options_B = "-DUSE_SAMPLE_TEST_B";
-        error = clCompileProgram(program_AB, 1, &device, build_options_B, 0,
-                                 0, 0, 0, 0);
+        error = clCompileProgram(program_AB, 1, &device, build_options_B, 0, 0,
+                                 0, 0, 0);
         test_error(error, "clCompileProgram failed");
 
         const char *build_options_D = "-DUSE_SAMPLE_TEST_D";
-        error = clCompileProgram(program_CD, 1, &device, build_options_D, 0,
-                                 0, 0, 0, 0);
+        error = clCompileProgram(program_CD, 1, &device, build_options_D, 0, 0,
+                                 0, 0, 0);
         test_error(error, "clCompileProgram failed");
 
         cl_program progs[] = { program_AB, program_CD };
