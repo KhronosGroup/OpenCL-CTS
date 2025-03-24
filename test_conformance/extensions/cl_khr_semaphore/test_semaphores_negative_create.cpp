@@ -230,7 +230,7 @@ struct CreateInvalidDevice : public SemaphoreTestBase
         err = clGetDeviceInfo(device, CL_DEVICE_PARTITION_PROPERTIES,
                               supported_props.size()
                                   * sizeof(cl_device_partition_property),
-                              supported_props.data(), &size);
+                              supported_props.data(), nullptr);
         test_error_fail(err, "clGetDeviceInfo failed");
 
         if (supported_props.empty() || supported_props.front() == 0)
