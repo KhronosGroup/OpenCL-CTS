@@ -219,7 +219,7 @@ struct CreateInvalidDevice : public SemaphoreTestBase
                                      nullptr, &size);
         test_error_fail(err, "clGetDeviceInfo failed");
 
-        if (size == 0)
+        if ((size / sizeof(cl_device_partition_property)) == 0)
         {
             log_info("Can't partition device, test not supported\n");
             return TEST_SKIPPED_ITSELF;
@@ -233,7 +233,7 @@ struct CreateInvalidDevice : public SemaphoreTestBase
                               supported_props.data(), nullptr);
         test_error_fail(err, "clGetDeviceInfo failed");
 
-        if (supported_props.empty() || supported_props.front() == 0)
+        if (supported_props.front() == 0)
         {
             log_info("Can't partition device, test not supported\n");
             return TEST_SKIPPED_ITSELF;
