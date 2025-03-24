@@ -86,7 +86,7 @@ __kernel void sample_test_C(__global float *src, __global int *dst)
 }
 )";
 
-const char *sample_multi_kernel_code_AB_with_makro = R"(
+const char *sample_multi_kernel_code_AB_with_macro = R"(
 __kernel void sample_test_A(__global float *src, __global int *dst)
 {
     size_t tid = get_global_id(0);
@@ -101,7 +101,7 @@ __kernel void sample_test_B(__global float *src, __global int *dst)
 #endif
 )";
 
-const char *sample_multi_kernel_code_CD_with_makro = R"(
+const char *sample_multi_kernel_code_CD_with_macro = R"(
 __kernel void sample_test_C(__global float *src, __global int *dst)
 {
     size_t tid = get_global_id(0);
@@ -585,11 +585,11 @@ REGISTER_TEST(get_linked_program_info_kernel_names)
     size_t kernel_names_len = 0;
 
     clProgramWrapper program_AB = clCreateProgramWithSource(
-        context, 1, &sample_multi_kernel_code_AB_with_makro, nullptr, &error);
+        context, 1, &sample_multi_kernel_code_AB_with_macro, nullptr, &error);
     test_error(error, "clCreateProgramWithSource failed");
 
     clProgramWrapper program_CD = clCreateProgramWithSource(
-        context, 1, &sample_multi_kernel_code_CD_with_makro, nullptr, &error);
+        context, 1, &sample_multi_kernel_code_CD_with_macro, nullptr, &error);
     test_error(error, "clCreateProgramWithSource failed");
 
     clProgramWrapper program = nullptr;
