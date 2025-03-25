@@ -22,6 +22,8 @@
 
 #include "host_atomics.h"
 
+#include "CL/cl_half.h"
+
 #include <vector>
 #include <sstream>
 
@@ -38,6 +40,7 @@ enum TExplicitAtomicType
     TYPE_ATOMIC_UINT,
     TYPE_ATOMIC_LONG,
     TYPE_ATOMIC_ULONG,
+    TYPE_ATOMIC_HALF,
     TYPE_ATOMIC_FLOAT,
     TYPE_ATOMIC_DOUBLE,
     TYPE_ATOMIC_INTPTR_T,
@@ -71,6 +74,9 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+extern cl_half_rounding_mode gHalfRoundingMode;
+extern bool gFloatAtomicsSupported;
+extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
 
 extern const char *
 get_memory_order_type_name(TExplicitMemoryOrderType orderType);
@@ -168,6 +174,13 @@ public:
     {
         return false;
     }
+    virtual bool VerifyExpected(const HostDataType &expected,
+                                const HostAtomicType *const testValue,
+                                cl_uint whichDestValue)
+    {
+        if (testValue != nullptr) return expected != testValue[whichDestValue];
+        return true;
+    }
     virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                               MTdata d)
     {
@@ -240,13 +253,13 @@ public:
         int error = 0;
         if (_maxDeviceThreads > 0 && !UseSVM())
         {
-            LocalMemory(true);
+            SetLocalMemory(true);
             EXECUTE_TEST(
                 error, ExecuteForEachDeclarationType(deviceID, context, queue));
         }
         if (_maxDeviceThreads + MaxHostThreads() > 0)
         {
-            LocalMemory(false);
+            SetLocalMemory(false);
             EXECUTE_TEST(
                 error, ExecuteForEachDeclarationType(deviceID, context, queue));
         }
@@ -401,7 +414,7 @@ public:
     bool UseSVM() { return _useSVM; }
     void StartValue(HostDataType startValue) { _startValue = startValue; }
     HostDataType StartValue() { return _startValue; }
-    void LocalMemory(bool local) { _localMemory = local; }
+    void SetLocalMemory(bool local) { _localMemory = local; }
     bool LocalMemory() { return _localMemory; }
     void DeclaredInProgram(bool declaredInProgram)
     {
@@ -781,6 +794,8 @@ CBasicTest<HostAtomicType, HostDataType>::PragmaHeader(cl_device_id deviceID)
     }
     if (_dataType == TYPE_ATOMIC_DOUBLE)
         pragma += "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+    if (_dataType == TYPE_ATOMIC_HALF)
+        pragma += "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
     return pragma;
 }
 
@@ -875,7 +890,14 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
         header += std::string("__global volatile ") + aTypeName + " destMemory["
             + ss.str() + "] = {\n";
         ss.str("");
-        ss << _startValue;
+
+        if (CBasicTest<HostAtomicType, HostDataType>::DataType()._type
+            != TYPE_ATOMIC_HALF)
+            ss << _startValue;
+        else
+            ss << static_cast<HostDataType>(
+                cl_half_to_float(static_cast<cl_half>(_startValue)));
+
         for (cl_uint i = 0; i < maxNumDestItems; i++)
         {
             if (aTypeName == "atomic_flag")
@@ -1434,7 +1456,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (expected != destItems[i])
+        if (VerifyExpected(expected, destItems.data(), i))
         {
             std::stringstream logLine;
             logLine << "ERROR: Result " << i

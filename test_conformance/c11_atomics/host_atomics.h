@@ -17,6 +17,9 @@
 #define HOST_ATOMICS_H_
 
 #include "harness/testHarness.h"
+#include <mutex>
+
+#include "CL/cl_half.h"
 
 #ifdef WIN32
 #include "Windows.h"
@@ -41,6 +44,7 @@ enum TExplicitMemoryOrderType
 #define HOST_ATOMIC_UINT        unsigned long
 #define HOST_ATOMIC_LONG        unsigned long long
 #define HOST_ATOMIC_ULONG       unsigned long long
+#define HOST_ATOMIC_HALF unsigned short
 #define HOST_ATOMIC_FLOAT       float
 #define HOST_ATOMIC_DOUBLE      double
 #else
@@ -48,6 +52,7 @@ enum TExplicitMemoryOrderType
 #define HOST_ATOMIC_UINT        cl_uint
 #define HOST_ATOMIC_LONG        cl_long
 #define HOST_ATOMIC_ULONG       cl_ulong
+#define HOST_ATOMIC_HALF cl_half
 #define HOST_ATOMIC_FLOAT       cl_float
 #define HOST_ATOMIC_DOUBLE      cl_double
 #endif
@@ -69,6 +74,7 @@ enum TExplicitMemoryOrderType
 #define HOST_UINT               cl_uint
 #define HOST_LONG               cl_long
 #define HOST_ULONG              cl_ulong
+#define HOST_HALF cl_half
 #define HOST_FLOAT              cl_float
 #define HOST_DOUBLE             cl_double
 
@@ -138,19 +144,53 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
                                   TExplicitMemoryOrderType order_success,
                                   TExplicitMemoryOrderType order_failure)
 {
-  CorrespondingType tmp;
-#if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-  tmp = InterlockedCompareExchange(a, desired, *expected);
+    CorrespondingType tmp;
+    if (std::is_same<AtomicType, HOST_ATOMIC_HALF>::value)
+    {
+        static std::mutex mtx;
+        std::lock_guard<std::mutex> lock(mtx);
+        tmp = *reinterpret_cast<volatile cl_half *>(a);
+
+        if (cl_half_to_float(tmp) == cl_half_to_float(*expected))
+        {
+            *reinterpret_cast<volatile cl_half *>(a) = desired;
+            return true;
+        }
+        *expected = tmp;
+    }
+    else
+    {
+#if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
+
+        if (std::is_same<AtomicType, HOST_ATOMIC_INT>::value
+            || std::is_same<AtomicType, HOST_ATOMIC_UINT>::value)
+            tmp = InterlockedCompareExchange((volatile cl_uint *)a, desired,
+                                             *expected);
+        else if (std::is_same<AtomicType, HOST_ATOMIC_LONG>::value
+                 || std::is_same<AtomicType, HOST_ATOMIC_ULONG>::value)
+            tmp = InterlockedCompareExchange((volatile cl_ulong *)a, desired,
+                                             *expected);
 #elif defined(__GNUC__)
-  tmp = __sync_val_compare_and_swap(a, *expected, desired);
+        if (std::is_same<AtomicType, HOST_ATOMIC_INT>::value)
+            tmp = __sync_val_compare_and_swap((volatile cl_int *)a, *expected,
+                                              desired);
+        else if (std::is_same<AtomicType, HOST_ATOMIC_UINT>::value)
+            tmp = __sync_val_compare_and_swap((volatile cl_uint *)a, *expected,
+                                              desired);
+        else if (std::is_same<AtomicType, HOST_ATOMIC_LONG>::value)
+            tmp = __sync_val_compare_and_swap((volatile cl_long *)a, *expected,
+                                              desired);
+        else if (std::is_same<AtomicType, HOST_ATOMIC_ULONG>::value)
+            tmp = __sync_val_compare_and_swap((volatile cl_ulong *)a, *expected,
+                                              desired);
 #else
-  log_info("Host function not implemented: atomic_compare_exchange\n");
-  tmp = 0;
+        log_info("Host function not implemented: atomic_compare_exchange\n");
+        tmp = 0;
 #endif
-  if(tmp == *expected)
-    return true;
-  *expected = tmp;
-  return false;
+        if (tmp == *expected) return true;
+        *expected = tmp;
+    }
+    return false;
 }
 
 template <typename AtomicType, typename CorrespondingType>
