@@ -1065,10 +1065,12 @@ public:
                                     HostDataType>::OldValueCheck(false);
         }
     }
-    template<typename T>
-    double kahan_sum(const std::vector<T>& nums){return 0.0;}
-    template<>
-    double kahan_sum<double>(const std::vector<double>& nums) {
+    template <typename T> double kahan_sum(const std::vector<T> &nums)
+    {
+        return 0.0;
+    }
+    template <> double kahan_sum<double>(const std::vector<double> &nums)
+    {
         double sum = 0.0;
         double compensation = 0.0;
         for (double num : nums)
