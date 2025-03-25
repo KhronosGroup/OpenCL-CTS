@@ -688,7 +688,7 @@ REGISTER_TEST(get_linked_program_info_kernel_names)
         error =
             clGetProgramInfo(program, CL_PROGRAM_KERNEL_NAMES, kernel_names_len,
                              kernel_names.data(), &kernel_names_len);
-        test_error(error, "Unable to get kernel names list.");
+        test_error(error, "Could not find expected kernel name");
 
         std::string program_names = kernel_names.data();
         for (const auto &name : expected_names)
