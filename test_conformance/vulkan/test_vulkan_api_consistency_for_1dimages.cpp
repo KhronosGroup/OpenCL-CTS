@@ -73,14 +73,20 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
             getSupportedVulkanExternalMemoryHandleTypeList(
                 vkDevice->getPhysicalDevice())[0];
 
-        VulkanImageTiling vulkanImageTiling =
-            vkClExternalMemoryHandleTilingAssumption(
-                device, vkExternalMemoryHandleType, &errNum);
+        auto vulkanImageTiling = vkClExternalMemoryHandleTilingAssumption(
+            device, vkExternalMemoryHandleType, &errNum);
         ASSERT_SUCCESS(errNum, "Failed to query OpenCL tiling mode");
+        if (vulkanImageTiling == std::nullopt)
+        {
+            log_info("No image tiling supported by both Vulkan and OpenCL "
+                     "could be found\n");
+            return TEST_SKIPPED_ITSELF;
+        }
+
 
         VulkanImage1D vkImage1D =
             VulkanImage1D(*vkDevice, VULKAN_FORMAT_R8G8B8A8_UNORM, width,
-                          vulkanImageTiling, 1, vkExternalMemoryHandleType);
+                          *vulkanImageTiling, 1, vkExternalMemoryHandleType);
 
         const VulkanMemoryTypeList& memoryTypeList =
             vkImage1D.getMemoryTypeList();

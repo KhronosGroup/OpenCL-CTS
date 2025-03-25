@@ -26,6 +26,8 @@
 #include <OpenCL/cl_ext.h>
 #endif
 
+#include <optional>
+
 #define CREATE_OPENCL_SEMAPHORE(clSemaphore, vkSemaphore, ctx, handleType,     \
                                 devIdx, createExportable)                      \
     if (!(createExportable                                                     \
@@ -187,7 +189,7 @@ public:
 extern void init_cl_vk_ext(cl_platform_id, cl_uint num_devices,
                            cl_device_id *deviceIds);
 
-VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
+std::optional<VulkanImageTiling> vkClExternalMemoryHandleTilingAssumption(
     cl_device_id deviceId,
     VulkanExternalMemoryHandleType vkExternalMemoryHandleType, int *error_ret);
 
