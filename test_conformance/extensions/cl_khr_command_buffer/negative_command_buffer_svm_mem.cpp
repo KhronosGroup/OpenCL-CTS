@@ -15,7 +15,6 @@
 //
 #include "basic_command_buffer.h"
 #include "svm_command_basic.h"
-#include "procs.h"
 
 
 //--------------------------------------------------------------------------
@@ -234,41 +233,31 @@ struct CommandBufferCommandSVMMutableHandleNotNull
 };
 }
 
-int test_negative_command_buffer_command_svm_queue_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_svm_queue_not_null)
 {
     return MakeAndRunTest<CommandBufferCommandSVMQueueNotNull>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_svm_sync_points_null_or_num_zero(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_svm_sync_points_null_or_num_zero)
 {
     return MakeAndRunTest<CommandBufferCommandSVMSyncPointsNullOrNumZero>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_svm_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_svm_invalid_command_buffer)
 {
     return MakeAndRunTest<CommandBufferCommandSVMInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_svm_finalized_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_svm_finalized_command_buffer)
 {
     return MakeAndRunTest<CommandBufferCommandSVMFinalizedCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_svm_mutable_handle_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_svm_mutable_handle_not_null)
 {
     return MakeAndRunTest<CommandBufferCommandSVMMutableHandleNotNull>(
         device, context, queue, num_elements);

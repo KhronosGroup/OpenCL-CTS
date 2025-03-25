@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 //--------------------------------------------------------------------------
 namespace {
@@ -614,103 +613,77 @@ struct EnqueueCommandBufferInconsistentDevice : public BasicCommandBufferTest
 };
 };
 
-int test_negative_enqueue_command_buffer_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_enqueue_command_buffer_invalid_command_buffer)
 {
     return MakeAndRunTest<EnqueueCommandBufferInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_command_buffer_not_finalized(cl_device_id device,
-                                                       cl_context context,
-                                                       cl_command_queue queue,
-                                                       int num_elements)
+REGISTER_TEST(negative_enqueue_command_buffer_not_finalized)
 {
     return MakeAndRunTest<EnqueueCommandBufferNotFinalized>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_command_buffer_without_simultaneous_no_pending_state(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_enqueue_command_buffer_without_simultaneous_no_pending_state)
 {
     return MakeAndRunTest<
         EnqueueCommandBufferWithoutSimultaneousUseNotInPendingState>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_command_buffer_null_queues_num_queues(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_enqueue_command_buffer_null_queues_num_queues)
 {
     return MakeAndRunTest<EnqueueCommandBufferNullQueuesNumQueues>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_command_buffer_num_queues_not_zero_different_while_buffer_creation(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_enqueue_command_buffer_num_queues_not_zero_different_while_buffer_creation)
 {
     return MakeAndRunTest<
         EnqueueCommandBufferNumQueuesNotZeroAndDifferentThanWhileBufferCreation>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_command_buffer_not_valid_queue_in_queues(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_enqueue_command_buffer_not_valid_queue_in_queues)
 {
     return MakeAndRunTest<EnqueueCommandBufferNotValidQueueInQueues>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_queue_with_different_context(cl_device_id device,
-                                                       cl_context context,
-                                                       cl_command_queue queue,
-                                                       int num_elements)
+REGISTER_TEST(negative_enqueue_queue_with_different_context)
 {
     return MakeAndRunTest<EnqueueCommandBufferQueueWithDifferentContext>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_command_buffer_different_context_than_event(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_enqueue_command_buffer_different_context_than_event)
 {
     return MakeAndRunTest<EnqueueCommandBufferWithDiferentContextThanEvent>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_event_wait_list_null_or_events_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_enqueue_event_wait_list_null_or_events_null)
 {
     return MakeAndRunTest<EnqueueCommandBufferEventWaitListNullOrEventsNull>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_queue_without_reqd_properties(cl_device_id device,
-                                                        cl_context context,
-                                                        cl_command_queue queue,
-                                                        int num_elements)
+REGISTER_TEST(negative_enqueue_queue_without_reqd_properties)
 {
     return MakeAndRunTest<EnqueueCommandBufferQueueWithoutReqdProperties>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_with_unsupported_queue_property(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_enqueue_with_unsupported_queue_property)
 {
     return MakeAndRunTest<EnqueueCommandBufferWithUnsupportedQueueProperty>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_inconsistent_device(cl_device_id device,
-                                              cl_context context,
-                                              cl_command_queue queue,
-                                              int num_elements)
+REGISTER_TEST(negative_enqueue_inconsistent_device)
 {
     return MakeAndRunTest<EnqueueCommandBufferInconsistentDevice>(
         device, context, queue, num_elements);

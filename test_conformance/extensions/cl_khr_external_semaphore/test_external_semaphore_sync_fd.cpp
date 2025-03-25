@@ -20,14 +20,11 @@
 
 // Test it is possible to export a semaphore to a sync fd and import the same
 // sync fd to a new semaphore
-int test_external_semaphores_import_export_fd(cl_device_id deviceID,
-                                              cl_context context,
-                                              cl_command_queue defaultQueue,
-                                              int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2))
 {
     cl_int err = CL_SUCCESS;
 
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore"))
+    if (!is_extension_available(device, "cl_khr_external_semaphore"))
     {
         log_info(
             "cl_khr_external_semaphore is not supported on this platoform. "
@@ -35,7 +32,7 @@ int test_external_semaphores_import_export_fd(cl_device_id deviceID,
         return TEST_SKIPPED_ITSELF;
     }
 
-    if (!is_extension_available(deviceID, "cl_khr_external_semaphore_sync_fd"))
+    if (!is_extension_available(device, "cl_khr_external_semaphore_sync_fd"))
     {
         log_info("cl_khr_external_semaphore_sync_fd is not supported on this "
                  "platoform. Skipping test.\n");
@@ -43,7 +40,7 @@ int test_external_semaphores_import_export_fd(cl_device_id deviceID,
     }
 
     cl_command_queue_properties device_props = 0;
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_PROPERTIES,
+    err = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
                           sizeof(device_props), &device_props, NULL);
     test_error(err, "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
 
@@ -55,15 +52,15 @@ int test_external_semaphores_import_export_fd(cl_device_id deviceID,
     }
 
     // Obtain pointers to semaphore's API
-    GET_PFN(deviceID, clCreateSemaphoreWithPropertiesKHR);
-    GET_PFN(deviceID, clEnqueueSignalSemaphoresKHR);
-    GET_PFN(deviceID, clEnqueueWaitSemaphoresKHR);
-    GET_PFN(deviceID, clGetSemaphoreHandleForTypeKHR);
-    GET_PFN(deviceID, clReleaseSemaphoreKHR);
+    GET_PFN(device, clCreateSemaphoreWithPropertiesKHR);
+    GET_PFN(device, clEnqueueSignalSemaphoresKHR);
+    GET_PFN(device, clEnqueueWaitSemaphoresKHR);
+    GET_PFN(device, clGetSemaphoreHandleForTypeKHR);
+    GET_PFN(device, clReleaseSemaphoreKHR);
 
     // Create ooo queue
-    clCommandQueueWrapper queue = clCreateCommandQueue(
-        context, deviceID, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
+    clCommandQueueWrapper test_queue = clCreateCommandQueue(
+        context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
     test_error(err, "Could not create command queue");
 
     // Create semaphore
@@ -84,14 +81,14 @@ int test_external_semaphores_import_export_fd(cl_device_id deviceID,
 
     // Signal semaphore
     clEventWrapper signal_event;
-    err = clEnqueueSignalSemaphoresKHR(queue, 1, &sema_1, nullptr, 0, nullptr,
-                                       &signal_event);
+    err = clEnqueueSignalSemaphoresKHR(test_queue, 1, &sema_1, nullptr, 0,
+                                       nullptr, &signal_event);
     test_error(err, "Could not signal semaphore");
 
     // Extract sync fd
     int handle = -1;
     size_t handle_size;
-    err = clGetSemaphoreHandleForTypeKHR(sema_1, deviceID,
+    err = clGetSemaphoreHandleForTypeKHR(sema_1, device,
                                          CL_SEMAPHORE_HANDLE_SYNC_FD_KHR,
                                          sizeof(handle), &handle, &handle_size);
     test_error(err, "Could not extract semaphore handle");
@@ -112,12 +109,12 @@ int test_external_semaphores_import_export_fd(cl_device_id deviceID,
 
     // Wait semaphore
     clEventWrapper wait_event;
-    err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema_2, nullptr, 0, nullptr,
-                                     &wait_event);
+    err = clEnqueueWaitSemaphoresKHR(test_queue, 1, &sema_2, nullptr, 0,
+                                     nullptr, &wait_event);
     test_error(err, "Could not wait semaphore");
 
     // Finish
-    err = clFinish(queue);
+    err = clFinish(test_queue);
     test_error(err, "Could not finish queue");
 
     // Check all events are completed

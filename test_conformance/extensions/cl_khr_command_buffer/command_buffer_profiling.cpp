@@ -15,7 +15,6 @@
 //
 
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 #include <vector>
 
@@ -357,22 +356,19 @@ struct CommandBufferSubstituteQueueProfiling : public BasicCommandBufferTest
 };
 } // anonymous namespace
 
-int test_basic_profiling(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(basic_profiling)
 {
     return MakeAndRunTest<CommandBufferProfiling<false>>(device, context, queue,
                                                          num_elements);
 }
 
-int test_simultaneous_profiling(cl_device_id device, cl_context context,
-                                cl_command_queue queue, int num_elements)
+REGISTER_TEST(simultaneous_profiling)
 {
     return MakeAndRunTest<CommandBufferProfiling<true>>(device, context, queue,
                                                         num_elements);
 }
 
-int test_substitute_queue_profiling(cl_device_id device, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(substitute_queue_profiling)
 {
     return MakeAndRunTest<CommandBufferSubstituteQueueProfiling>(
         device, context, queue, num_elements);

@@ -182,13 +182,12 @@ int get_device_ids(cl_device_id deviceID, cl_context context,
     return result.Result();
 }
 
-int test_get_device_ids(cl_device_id deviceID, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST(get_device_ids)
 {
     CResult result;
 
 #if defined(_WIN32)
-    if (get_device_ids(deviceID, context, queue, num_elements,
+    if (get_device_ids(device, context, queue, num_elements,
                        CL_ADAPTER_D3D9_KHR)
         != 0)
     {
@@ -196,7 +195,7 @@ int test_get_device_ids(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (get_device_ids(deviceID, context, queue, num_elements,
+    if (get_device_ids(device, context, queue, num_elements,
                        CL_ADAPTER_D3D9EX_KHR)
         != 0)
     {
@@ -204,7 +203,7 @@ int test_get_device_ids(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (get_device_ids(deviceID, context, queue, num_elements,
+    if (get_device_ids(device, context, queue, num_elements,
                        CL_ADAPTER_DXVA_KHR)
         != 0)
     {

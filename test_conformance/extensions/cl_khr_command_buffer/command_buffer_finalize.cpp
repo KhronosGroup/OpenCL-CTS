@@ -14,7 +14,6 @@
 // limitations under the License.
 
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 namespace {
 
@@ -71,15 +70,13 @@ struct FinalizeEmpty : public BasicCommandBufferTest
 };
 } // anonymous namespace
 
-int test_finalize_invalid(cl_device_id device, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(finalize_invalid)
 {
     return MakeAndRunTest<FinalizeInvalid>(device, context, queue,
                                            num_elements);
 }
 
-int test_finalize_empty(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST(finalize_empty)
 {
     return MakeAndRunTest<FinalizeEmpty>(device, context, queue, num_elements);
 }
