@@ -1037,6 +1037,23 @@ REGISTER_TEST(svm_atomic_compare_exchange_weak)
                                                      num_elements, true);
 }
 
+template <typename T> double kahan_sum(const std::vector<T> &nums)
+{
+    return 0.0;
+}
+template <> double kahan_sum<double>(const std::vector<double> &nums)
+{
+    double sum = 0.0;
+    double compensation = 0.0;
+    for (double num : nums)
+    {
+        double y = num - compensation;
+        double t = sum + y;
+        compensation = (t - sum) - y;
+        sum = t;
+    }
+    return sum;
+}
 template <typename HostAtomicType, typename HostDataType>
 class CBasicTestFetchAdd
     : public CBasicTestMemOrderScope<HostAtomicType, HostDataType> {
@@ -1064,23 +1081,6 @@ public:
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
         }
-    }
-    template <typename T> double kahan_sum(const std::vector<T> &nums)
-    {
-        return 0.0;
-    }
-    template <> double kahan_sum<double>(const std::vector<double> &nums)
-    {
-        double sum = 0.0;
-        double compensation = 0.0;
-        for (double num : nums)
-        {
-            double y = num - compensation;
-            double t = sum + y;
-            compensation = (t - sum) - y;
-            sum = t;
-        }
-        return sum;
     }
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
