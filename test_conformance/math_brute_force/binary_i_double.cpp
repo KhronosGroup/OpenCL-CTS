@@ -522,7 +522,7 @@ int TestFunc_Double_Double_Int(const Func *f, MTdata d, bool relaxedMode)
     }
 
     test_info.f = f;
-    test_info.ulps = f->double_ulps;
+    test_info.ulps = getAllowedUlpError(f, kdouble, relaxedMode);
     test_info.ftz = f->ftz || gForceFTZ;
     test_info.relaxedMode = relaxedMode;
 

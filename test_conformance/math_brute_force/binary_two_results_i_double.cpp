@@ -91,6 +91,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     cl_uint threadCount = GetThreadCount();
 
     Force64BitFPUPrecision();
+    float double_ulps = getAllowedUlpError(f, kdouble, relaxedMode);
 
     int testingRemquo = !strcmp(f->name, "remquo");
 
@@ -256,6 +257,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         // Verify data
         uint64_t *t = (uint64_t *)gOut_Ref;
         int32_t *t2 = (int32_t *)gOut_Ref2;
+
         for (size_t j = 0; j < BUFFER_SIZE / sizeof(double); j++)
         {
             for (auto k = gMinVectorSizeIndex; k < gMaxVectorSizeIndex; k++)
@@ -294,11 +296,11 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                     || isnan(((double *)gIn)[j]);
                 if (iptrUndefined) iErr = 0;
 
-                int fail = !(fabsf(err) <= f->double_ulps && iErr == 0);
+                int fail = !(fabsf(err) <= double_ulps && iErr == 0);
                 if ((ftz || relaxedMode) && fail)
                 {
                     // retry per section 6.5.3.2
-                    if (IsDoubleResultSubnormal(correct, f->double_ulps))
+                    if (IsDoubleResultSubnormal(correct, double_ulps))
                     {
                         fail = fail && !(test == 0.0f && iErr == 0);
                         if (!fail) err = 0.0f;
@@ -319,8 +321,8 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                         int64_t iErr3 = (long long)q2[j] - (long long)correct3i;
                         int64_t iErr4 = (long long)q2[j] - (long long)correct4i;
                         fail = fail
-                            && ((!(fabsf(err2) <= f->double_ulps && iErr3 == 0))
-                                && (!(fabsf(err3) <= f->double_ulps
+                            && ((!(fabsf(err2) <= double_ulps && iErr3 == 0))
+                                && (!(fabsf(err3) <= double_ulps
                                       && iErr4 == 0)));
                         if (fabsf(err2) < fabsf(err)) err = err2;
                         if (fabsf(err3) < fabsf(err)) err = err3;
@@ -328,9 +330,8 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                         if (llabs(iErr4) < llabs(iErr)) iErr = iErr4;
 
                         // retry per section 6.5.3.4
-                        if (IsDoubleResultSubnormal(correct2, f->double_ulps)
-                            || IsDoubleResultSubnormal(correct3,
-                                                       f->double_ulps))
+                        if (IsDoubleResultSubnormal(correct2, double_ulps)
+                            || IsDoubleResultSubnormal(correct3, double_ulps))
                         {
                             fail = fail
                                 && !(test == 0.0f
@@ -361,13 +362,13 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                             int64_t iErr8 =
                                 (long long)q2[j] - (long long)correct8i;
                             fail = fail
-                                && ((!(fabsf(err2) <= f->double_ulps
+                                && ((!(fabsf(err2) <= double_ulps
                                        && iErr3 == 0))
-                                    && (!(fabsf(err3) <= f->double_ulps
+                                    && (!(fabsf(err3) <= double_ulps
                                           && iErr4 == 0))
-                                    && (!(fabsf(err4) <= f->double_ulps
+                                    && (!(fabsf(err4) <= double_ulps
                                           && iErr7 == 0))
-                                    && (!(fabsf(err5) <= f->double_ulps
+                                    && (!(fabsf(err5) <= double_ulps
                                           && iErr8 == 0)));
                             if (fabsf(err2) < fabsf(err)) err = err2;
                             if (fabsf(err3) < fabsf(err)) err = err3;
@@ -379,14 +380,13 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                             if (llabs(iErr8) < llabs(iErr)) iErr = iErr8;
 
                             // retry per section 6.5.3.4
-                            if (IsDoubleResultSubnormal(correct3,
-                                                        f->double_ulps)
+                            if (IsDoubleResultSubnormal(correct3, double_ulps)
                                 || IsDoubleResultSubnormal(correct4,
-                                                           f->double_ulps)
+                                                           double_ulps)
                                 || IsDoubleResultSubnormal(correct7,
-                                                           f->double_ulps)
+                                                           double_ulps)
                                 || IsDoubleResultSubnormal(correct8,
-                                                           f->double_ulps))
+                                                           double_ulps))
                             {
                                 fail = fail
                                     && !(test == 0.0f
@@ -410,8 +410,8 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                         int64_t iErr3 = (long long)q2[j] - (long long)correct3i;
                         int64_t iErr4 = (long long)q2[j] - (long long)correct4i;
                         fail = fail
-                            && ((!(fabsf(err2) <= f->double_ulps && iErr3 == 0))
-                                && (!(fabsf(err3) <= f->double_ulps
+                            && ((!(fabsf(err2) <= double_ulps && iErr3 == 0))
+                                && (!(fabsf(err3) <= double_ulps
                                       && iErr4 == 0)));
                         if (fabsf(err2) < fabsf(err)) err = err2;
                         if (fabsf(err3) < fabsf(err)) err = err3;
@@ -419,9 +419,8 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
                         if (llabs(iErr4) < llabs(iErr)) iErr = iErr4;
 
                         // retry per section 6.5.3.4
-                        if (IsDoubleResultSubnormal(correct2, f->double_ulps)
-                            || IsDoubleResultSubnormal(correct3,
-                                                       f->double_ulps))
+                        if (IsDoubleResultSubnormal(correct2, double_ulps)
+                            || IsDoubleResultSubnormal(correct3, double_ulps))
                         {
                             fail = fail
                                 && !(test == 0.0f
