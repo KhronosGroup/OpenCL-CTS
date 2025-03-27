@@ -16,10 +16,13 @@
 #include "harness/testHarness.h"
 #include "harness/kernelHelpers.h"
 #include "harness/typeWrappers.h"
+#include "harness/conversions.h"
 
 #include "common.h"
 #include "host_atomics.h"
 
+#include <algorithm>
+#include <numeric>
 #include <sstream>
 #include <vector>
 
@@ -1037,60 +1040,236 @@ REGISTER_TEST(svm_atomic_compare_exchange_weak)
 template <typename HostAtomicType, typename HostDataType>
 class CBasicTestFetchAdd
     : public CBasicTestMemOrderScope<HostAtomicType, HostDataType> {
+
+    double min_range;
+    double max_range;
+    double max_error;
+    std::vector<HostDataType> ref_vals;
+
 public:
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrder;
     using CBasicTestMemOrderScope<HostAtomicType,
                                   HostDataType>::MemoryOrderScopeStr;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::StartValue;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DataType;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
     CBasicTestFetchAdd(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
-                                                                useSVM)
-    {}
-    virtual std::string ProgramCore()
+                                                                useSVM),
+          min_range(-999.0), max_range(999.0), max_error(0.0)
+    {
+        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        {
+            StartValue(0);
+            CBasicTestMemOrderScope<HostAtomicType,
+                                    HostDataType>::OldValueCheck(false);
+        }
+    }
+    template <typename Iterator> float accum_halfs(Iterator begin, Iterator end)
+    {
+        cl_half sum = 0;
+        for (auto it = begin; it != end; ++it)
+        {
+            sum = cl_half_from_float(cl_half_to_float(sum)
+                                         + cl_half_to_float(*it),
+                                     gHalfRoundingMode);
+        }
+        return cl_half_to_float(sum);
+    }
+    bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
+                      MTdata d) override
+    {
+        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        {
+            if (threadCount > ref_vals.size())
+            {
+                ref_vals.resize(threadCount);
+
+                for (cl_uint i = 0; i < threadCount; i++)
+                    ref_vals[i] = cl_half_from_float(
+                        get_random_float(min_range, max_range, d),
+                        gHalfRoundingMode);
+
+                memcpy(startRefValues, ref_vals.data(),
+                       sizeof(HostDataType) * ref_vals.size());
+
+                // Estimate highest possible summation error for given set.
+                std::vector<float> sums;
+                std::sort(ref_vals.begin(), ref_vals.end(),
+                          [](cl_half a, cl_half b) {
+                              return cl_half_to_float(a) < cl_half_to_float(b);
+                          });
+
+                sums.push_back(accum_halfs(ref_vals.begin(), ref_vals.end()));
+                sums.push_back(accum_halfs(ref_vals.rbegin(), ref_vals.rend()));
+
+                std::sort(ref_vals.begin(), ref_vals.end(),
+                          [](cl_half a, cl_half b) {
+                              return std::abs(cl_half_to_float(a))
+                                  < std::abs(cl_half_to_float(b));
+                          });
+
+                float precise = 0.f;
+                for (auto elem : ref_vals) precise += cl_half_to_float(elem);
+                sums.push_back(precise);
+
+                sums.push_back(accum_halfs(ref_vals.begin(), ref_vals.end()));
+                sums.push_back(accum_halfs(ref_vals.rbegin(), ref_vals.rend()));
+
+                std::sort(sums.begin(), sums.end());
+                max_error = std::abs(sums.front() - sums.back());
+
+                // restore unsorted order
+                memcpy(ref_vals.data(), startRefValues,
+                       sizeof(HostDataType) * ref_vals.size());
+            }
+            else
+            {
+                memcpy(startRefValues, ref_vals.data(),
+                       sizeof(HostDataType) * threadCount);
+            }
+            return true;
+        }
+        return false;
+    }
+    std::string ProgramCore() override
     {
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
-        return "  oldValues[tid] = atomic_fetch_add" + postfix
-            + "(&destMemory[0], (" + DataType().AddSubOperandTypeName()
-            + ")tid + 3" + memoryOrderScope + ");\n" + "  atomic_fetch_add"
-            + postfix + "(&destMemory[0], ("
-            + DataType().AddSubOperandTypeName() + ")tid + 3" + memoryOrderScope
-            + ");\n"
-              "  atomic_fetch_add"
-            + postfix + "(&destMemory[0], ("
-            + DataType().AddSubOperandTypeName() + ")tid + 3" + memoryOrderScope
-            + ");\n"
-              "  atomic_fetch_add"
-            + postfix + "(&destMemory[0], (("
-            + DataType().AddSubOperandTypeName() + ")tid + 3) << (sizeof("
-            + DataType().AddSubOperandTypeName() + ")-1)*8" + memoryOrderScope
-            + ");\n";
+
+        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        {
+            return "  atomic_fetch_add" + postfix + "(&destMemory[0], ("
+                + DataType().AddSubOperandTypeName() + ")oldValues[tid]"
+                + memoryOrderScope + ");\n"
+                + "  oldValues[tid] = atomic_fetch_add" + postfix
+                + "(&destMemory[tid], (" + DataType().AddSubOperandTypeName()
+                + ")0" + memoryOrderScope + ");\n";
+        }
+        else
+        {
+            return "  oldValues[tid] = atomic_fetch_add" + postfix
+                + "(&destMemory[0], (" + DataType().AddSubOperandTypeName()
+                + ")tid + 3" + memoryOrderScope + ");\n" + "  atomic_fetch_add"
+                + postfix + "(&destMemory[0], ("
+                + DataType().AddSubOperandTypeName() + ")tid + 3"
+                + memoryOrderScope
+                + ");\n"
+                  "  atomic_fetch_add"
+                + postfix + "(&destMemory[0], ("
+                + DataType().AddSubOperandTypeName() + ")tid + 3"
+                + memoryOrderScope
+                + ");\n"
+                  "  atomic_fetch_add"
+                + postfix + "(&destMemory[0], (("
+                + DataType().AddSubOperandTypeName() + ")tid + 3) << (sizeof("
+                + DataType().AddSubOperandTypeName() + ")-1)*8"
+                + memoryOrderScope + ");\n";
+        }
     }
-    virtual void HostFunction(cl_uint tid, cl_uint threadCount,
-                              volatile HostAtomicType *destMemory,
-                              HostDataType *oldValues)
+    void HostFunction(cl_uint tid, cl_uint threadCount,
+                      volatile HostAtomicType *destMemory,
+                      HostDataType *oldValues) override
     {
-        oldValues[tid] = host_atomic_fetch_add(
-            &destMemory[0], (HostDataType)tid + 3, MemoryOrder());
-        host_atomic_fetch_add(&destMemory[0], (HostDataType)tid + 3,
-                              MemoryOrder());
-        host_atomic_fetch_add(&destMemory[0], (HostDataType)tid + 3,
-                              MemoryOrder());
-        host_atomic_fetch_add(&destMemory[0],
-                              ((HostDataType)tid + 3)
-                                  << (sizeof(HostDataType) - 1) * 8,
-                              MemoryOrder());
+        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        {
+            host_atomic_fetch_add(&destMemory[0], (HostDataType)oldValues[tid],
+                                  MemoryOrder());
+            oldValues[tid] = host_atomic_fetch_add(
+                &destMemory[0], (HostDataType)0, MemoryOrder());
+        }
+        else
+        {
+            oldValues[tid] = host_atomic_fetch_add(
+                &destMemory[0], (HostDataType)tid + 3, MemoryOrder());
+            host_atomic_fetch_add(&destMemory[0], (HostDataType)tid + 3,
+                                  MemoryOrder());
+            host_atomic_fetch_add(&destMemory[0], (HostDataType)tid + 3,
+                                  MemoryOrder());
+            host_atomic_fetch_add(&destMemory[0], GetTypeDependentAddition(tid),
+                                  MemoryOrder());
+        }
     }
-    virtual bool ExpectedValue(HostDataType &expected, cl_uint threadCount,
-                               HostDataType *startRefValues,
-                               cl_uint whichDestValue)
+    bool ExpectedValue(HostDataType &expected, cl_uint threadCount,
+                       HostDataType *startRefValues,
+                       cl_uint whichDestValue) override
     {
         expected = StartValue();
-        for (cl_uint i = 0; i < threadCount; i++)
-            expected += ((HostDataType)i + 3) * 3
-                + (((HostDataType)i + 3) << (sizeof(HostDataType) - 1) * 8);
+        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        {
+            if (whichDestValue == 0)
+            {
+                for (cl_uint i = 0; i < threadCount; i++)
+                {
+                    expected = cl_half_from_float(
+                        cl_half_to_float(expected)
+                            + cl_half_to_float(startRefValues[i]),
+                        gHalfRoundingMode);
+                }
+            }
+        }
+        else
+        {
+            for (cl_uint i = 0; i < threadCount; i++)
+                expected +=
+                    ((HostDataType)i + 3) * 3 + GetTypeDependentAddition(i);
+        }
+
         return true;
+    }
+    bool VerifyExpected(const HostDataType &expected,
+                        const HostAtomicType *const testValue,
+                        cl_uint whichDestValue) override
+    {
+        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        {
+            if (whichDestValue == 0 && testValue != nullptr)
+                return std::abs(cl_half_to_float(expected)
+                                - cl_half_to_float(testValue[whichDestValue]))
+                    > max_error;
+        }
+        return CBasicTestMemOrderScope<
+            HostAtomicType, HostDataType>::VerifyExpected(expected, testValue,
+                                                          whichDestValue);
+    }
+    HostDataType GetTypeDependentAddition(cl_uint id)
+    {
+        if (std::is_same<HostDataType, HOST_ATOMIC_INT>::value)
+            return (((cl_int)id + 3) << (sizeof(cl_int) - 1) * 8);
+        else if (std::is_same<HostDataType, HOST_ATOMIC_UINT>::value)
+            return (((cl_uint)id + 3) << (sizeof(cl_uint) - 1) * 8);
+        else if (std::is_same<HostDataType, HOST_ATOMIC_LONG>::value)
+            return (((cl_long)id + 3) << (sizeof(cl_long) - 1) * 8);
+        else if (std::is_same<HostDataType, HOST_ATOMIC_ULONG>::value)
+            return (((cl_ulong)id + 3) << (sizeof(cl_ulong) - 1) * 8);
+        return (HostDataType)0;
+    }
+    int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
+                          cl_command_queue queue) override
+    {
+        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        {
+            if (LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_ADD_EXT) == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_ADD_EXT) == 0)
+                return 0;
+        }
+        return CBasicTestMemOrderScope<
+            HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context,
+                                                             queue);
+    }
+    cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
+    {
+        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        {
+            return threadCount;
+        }
+        return CBasicTestMemOrderScope<HostAtomicType,
+                                       HostDataType>::NumResults(threadCount,
+                                                                 deviceID);
     }
 };
 
@@ -1116,6 +1295,15 @@ static int test_atomic_fetch_add_generic(cl_device_id deviceID,
         TYPE_ATOMIC_ULONG, useSVM);
     EXECUTE_TEST(error,
                  test_ulong.Execute(deviceID, context, queue, num_elements));
+
+    if (gFloatAtomicsSupported)
+    {
+        CBasicTestFetchAdd<HOST_ATOMIC_HALF, HOST_HALF> test_half(
+            TYPE_ATOMIC_HALF, useSVM);
+        EXECUTE_TEST(error,
+                     test_half.Execute(deviceID, context, queue, num_elements));
+    }
+
     if (AtomicTypeInfo(TYPE_ATOMIC_SIZE_T).Size(deviceID) == 4)
     {
         CBasicTestFetchAdd<HOST_ATOMIC_INTPTR_T32, HOST_INTPTR_T32>
