@@ -144,17 +144,17 @@ __kernel void sample_kernel( __global work_item_data *outData, int dim_param )
         ind_mul *= get_global_size(i);
     }
     outData[ind].workDim = (uint)get_work_dim();
-    outData[ind].globalSize = (uint)get_global_size(4);
-    outData[ind].globalID = (uint)get_global_id(4);
-    outData[ind].localSize = (uint)get_local_size(4);
-    outData[ind].localID = (uint)get_local_id(4);
-    outData[ind].numGroups = (uint)get_num_groups(4);
-    outData[ind].groupID = (uint)get_group_id(4);
+    outData[ind].globalSize = (uint)get_global_size(%c);
+    outData[ind].globalID = (uint)get_global_id(%c);
+    outData[ind].localSize = (uint)get_local_size(%c);
+    outData[ind].localID = (uint)get_local_id(%c);
+    outData[ind].numGroups = (uint)get_num_groups(%c);
+    outData[ind].groupID = (uint)get_group_id(%c);
 #if __OPENCL_VERSION__ >= CL_VERSION_2_0
-    outData[ind].enqueuedLocalSize = (uint)get_enqueued_local_size(4);
-    outData[ind].globalOffset = (uint)get_global_offset(4);
+    outData[ind].enqueuedLocalSize = (uint)get_enqueued_local_size(%c);
+    outData[ind].globalOffset = (uint)get_global_offset(%c);
 #elif __OPENCL_VERSION__ >= CL_VERSION_1_1
-    outData[ind].globalOffset = (uint)get_global_offset(4);
+    outData[ind].globalOffset = (uint)get_global_offset(%c);
 #endif
 })";
 
@@ -175,6 +175,11 @@ struct TestWorkItemFns
                                                    1, &src, "sample_kernel");
         test_error(error, "Unable to create testing kernel");
 
+        error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,
+                                sizeof(max_work_item_dimensions),
+                                &max_work_item_dimensions, nullptr);
+        test_error(error, "clGetDeviceInfo failed.");
+
         outData = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                  sizeof(work_item_data) * testData.size(), NULL,
                                  &error);
@@ -193,7 +198,7 @@ struct TestWorkItemFns
 
         size_t threads[3] = { 0, 0, 0 };
         size_t localThreads[3] = { 0, 0, 0 };
-        for (size_t dim = 1; dim <= 3; dim++)
+        for (size_t dim = 1; dim <= max_work_item_dimensions; dim++)
         {
             for (int i = 0; i < NUM_TESTS; i++)
             {
@@ -310,6 +315,7 @@ struct TestWorkItemFns
     clKernelWrapper kernel;
     clMemWrapper outData;
     MTdataHolder d_holder;
+    cl_uint max_work_item_dimensions = 0;
 
     std::vector<work_item_data> testData;
 };
@@ -330,6 +336,11 @@ struct TestWorkItemFnsOutOfRange
         cl_int error = create_single_kernel_helper(context, &program, &kernel,
                                                    1, &src, "sample_kernel");
         test_error(error, "Unable to create testing kernel");
+
+        error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,
+                                sizeof(max_work_item_dimensions),
+                                &max_work_item_dimensions, nullptr);
+        test_error(error, "clGetDeviceInfo failed.");
 
         outData = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                  sizeof(work_item_data_out_of_range)
@@ -469,12 +480,14 @@ struct TestWorkItemFnsOutOfRange
 
         size_t localThreads[3] = { 0, 0, 0 };
 
-        for (size_t dim = 1; dim <= 3; dim++)
+        // For values greater than CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS-1,
+        // work-item functions behavior is undefined
+        for (size_t dim = 1; dim < max_work_item_dimensions; dim++)
         {
             size_t local_workgroup_size[3] = { maxWorkItemSizes[0],
                                                maxWorkItemSizes[1],
                                                maxWorkItemSizes[2] };
-            // check if maximum work group size for current dimention is not
+            // check if maximum work group size for current dimension is not
             // exceeded
             cl_uint work_group_size = max_workgroup_size + 1;
             while (max_workgroup_size < work_group_size && work_group_size != 1)
@@ -507,8 +520,7 @@ struct TestWorkItemFnsOutOfRange
                 threads[j] = num_groups * localThreads[j];
             }
 
-            cl_int dim_param = dim + 1;
-            error = clSetKernelArg(kernel, 1, sizeof(cl_int), &dim_param);
+            error = clSetKernelArg(kernel, 1, sizeof(cl_int), &dim);
             test_error(error, "Unable to set kernel arg");
 
             error =
@@ -544,6 +556,7 @@ struct TestWorkItemFnsOutOfRange
 
     std::array<size_t, 3> maxWorkItemSizes;
     size_t max_workgroup_size;
+    cl_uint max_work_item_dimensions = 0;
 
     const char *kernel_src;
 };
@@ -565,7 +578,34 @@ REGISTER_TEST(work_item_functions_out_of_range)
 
 REGISTER_TEST(work_item_functions_out_of_range_hardcoded)
 {
-    TestWorkItemFnsOutOfRange fnct(device, context, queue,
-                                   outOfRangeWorkItemHardcodedKernelCode);
-    return fnct.Run();
+    int result = TEST_PASS;
+    char *outOfRangeWorkItemHardcodedKernelCodeWithValues = static_cast<char *>(
+        calloc(std::strlen(outOfRangeWorkItemHardcodedKernelCode) + 1,
+               sizeof(char)));
+
+    cl_int max_work_item_dimensions = 0;
+    result = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,
+                             sizeof(max_work_item_dimensions),
+                             &max_work_item_dimensions, nullptr);
+    test_error(result, "clGetDeviceInfo failed.");
+
+    // Hardcode the CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS - 1 value
+    const char max_work_item_dimensions_valid =
+        max_work_item_dimensions - 1 + '0';
+    sprintf(outOfRangeWorkItemHardcodedKernelCodeWithValues,
+            outOfRangeWorkItemHardcodedKernelCode,
+            max_work_item_dimensions_valid, max_work_item_dimensions_valid,
+            max_work_item_dimensions_valid, max_work_item_dimensions_valid,
+            max_work_item_dimensions_valid, max_work_item_dimensions_valid,
+            max_work_item_dimensions_valid, max_work_item_dimensions_valid,
+            max_work_item_dimensions_valid);
+
+    TestWorkItemFnsOutOfRange fnct(
+        device, context, queue,
+        outOfRangeWorkItemHardcodedKernelCodeWithValues);
+    result = fnct.Run();
+
+    free(outOfRangeWorkItemHardcodedKernelCodeWithValues);
+
+    return result;
 }
