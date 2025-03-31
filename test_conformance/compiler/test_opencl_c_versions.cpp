@@ -125,7 +125,7 @@ static int test_CL_DEVICE_OPENCL_C_ALL_VERSIONS(cl_device_id device,
     std::vector<cl_name_version> clc_versions(sz / sizeof(cl_name_version));
     error = clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS, sz,
                             clc_versions.data(), NULL);
-    test_error(error, "Unable to query CL_DEVICE_OPENCL_C_FEATURES");
+    test_error(error, "Unable to query CL_DEVICE_OPENCL_C_ALL_VERSIONS");
 
     for (const auto& clc_version : clc_versions)
     {
@@ -192,8 +192,27 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_features(cl_device_id device,
         return TEST_FAIL;
     }
 
-    const Version clc_version = get_device_cl_c_version(device);
-    if (clc_version >= Version(2, 0))
+    size_t sz = 0;
+    error =
+        clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS, 0, NULL, &sz);
+    test_error(error, "Unable to query CL_DEVICE_OPENCL_C_ALL_VERSIONS size");
+
+    std::vector<cl_name_version> clc_versions(sz / sizeof(cl_name_version));
+    error = clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS, sz,
+                            clc_versions.data(), NULL);
+    test_error(error, "Unable to query CL_DEVICE_OPENCL_C_ALL_VERSIONS");
+    bool supports_clc_20 = false;
+    for (const auto& clc_version : clc_versions)
+    {
+        const unsigned major = CL_VERSION_MAJOR(clc_version.version);
+        const unsigned minor = CL_VERSION_MINOR(clc_version.version);
+        if (major == 2 && minor == 0)
+        {
+            supports_clc_20 = true;
+            break;
+        }
+    }
+    if (supports_clc_20)
     {
         bool has_all_OpenCL_C_20_features =
             features.supports__opencl_c_atomic_order_acq_rel
@@ -216,6 +235,11 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_features(cl_device_id device,
         test_assert_error(
             has_all_OpenCL_C_20_features,
             "At least one required OpenCL C 2.0 feature is missing!");
+    }
+    else
+    {
+        log_info("    skipping OpenCL C 2.0 features check, OpenCL C 2.0 not "
+                 "reported in OPENCL_C_ALL_VERSIONS.\n");
     }
 
     return TEST_PASS;
@@ -248,7 +272,7 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_versions(cl_device_id device,
                                                      / sizeof(cl_name_version));
     error = clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS, sz,
                             device_clc_versions.data(), NULL);
-    test_error(error, "Unable to query CL_DEVICE_OPENCL_C_FEATURES");
+    test_error(error, "Unable to query CL_DEVICE_OPENCL_C_ALL_VERSIONS");
 
     for (const auto& test_clc_version : test_clc_versions)
     {
@@ -275,6 +299,13 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_versions(cl_device_id device,
             }
             else
             {
+                if (device_clc_version == Version(3, 0)
+                    && test_clc_version == Version(2, 0))
+                {
+                    // OpenCL C 3.0 is not backwards compatible with OpenCL
+                    // C 2.0, continue the test
+                    continue;
+                }
                 log_error("Didn't find OpenCL C version '%s'!\n",
                           test_clc_version.to_string().c_str());
                 return TEST_FAIL;
