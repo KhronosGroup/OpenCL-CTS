@@ -1245,10 +1245,10 @@ REGISTER_TEST(consistency_requirements_fp16)
     {
         error = clGetDeviceInfo(device, CL_DEVICE_HALF_FP_CONFIG, sizeof(value),
                                 &value, nullptr);
-        test_failure_error(
-            error, CL_INVALID_VALUE,
+        test_assert_error(
+            error == CL_INVALID_VALUE || (error == CL_SUCCESS && value == 0),
             "cl_khr_fp16 is not available; CL_DEVICE_HALF_FP_CONFIG must fail "
-            "with CL_INVALID_VALUE");
+            "with CL_INVALID_VALUE or return zero value");
 
         error = clGetDeviceInfo(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF,
                                 sizeof(value), &value, nullptr);
