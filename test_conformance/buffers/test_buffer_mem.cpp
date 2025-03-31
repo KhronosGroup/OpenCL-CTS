@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+#include "testBase.h"
 
 #ifndef uchar
 typedef unsigned char uchar;
@@ -66,9 +66,9 @@ static int verify_mem( int *outptr, int n )
 }
 
 
-int test_mem_flags(cl_context context, cl_command_queue queue, int num_elements,
-                   cl_mem_flags flags, const char **kernel_program,
-                   const char *kernel_name)
+static int test_mem_flags(cl_context context, cl_command_queue queue,
+                          int num_elements, cl_mem_flags flags,
+                          const char **kernel_program, const char *kernel_name)
 {
     clMemWrapper buffers[2];
     cl_int      *inptr, *outptr;
@@ -205,38 +205,35 @@ int test_mem_flags(cl_context context, cl_command_queue queue, int num_elements,
     return err;
 } // end test_mem_flags()
 
-int test_mem_read_write_flags(cl_device_id deviceID, cl_context context,
-                              cl_command_queue queue, int num_elements)
+REGISTER_TEST(mem_read_write_flags)
 {
     return test_mem_flags(context, queue, num_elements, CL_MEM_READ_WRITE,
                           &mem_read_write_kernel_code, "test_mem_read_write");
 }
 
 
-int test_mem_write_only_flags(cl_device_id deviceID, cl_context context,
-                              cl_command_queue queue, int num_elements)
+REGISTER_TEST(mem_write_only_flags)
 {
     return test_mem_flags(context, queue, num_elements, CL_MEM_WRITE_ONLY,
                           &mem_write_kernel_code, "test_mem_write");
 }
 
 
-int test_mem_read_only_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(mem_read_only_flags)
 {
     return test_mem_flags(context, queue, num_elements, CL_MEM_READ_ONLY,
                           &mem_read_kernel_code, "test_mem_read");
 }
 
 
-int test_mem_copy_host_flags( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(mem_copy_host_flags)
 {
     return test_mem_flags(context, queue, num_elements,
                           CL_MEM_COPY_HOST_PTR | CL_MEM_READ_WRITE,
                           &mem_read_write_kernel_code, "test_mem_read_write");
 }
 
-int test_mem_alloc_ref_flags(cl_device_id deviceID, cl_context context,
-                             cl_command_queue queue, int num_elements)
+REGISTER_TEST(mem_alloc_ref_flags)
 {
     return test_mem_flags(context, queue, num_elements,
                           CL_MEM_ALLOC_HOST_PTR | CL_MEM_READ_WRITE,

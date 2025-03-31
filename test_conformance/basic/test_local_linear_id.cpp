@@ -20,9 +20,9 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "harness/rounding_mode.h"
 
-#include "procs.h"
+#include "testBase.h"
+#include "harness/rounding_mode.h"
 
 static const char *local_linear_id_1d_code =
 "__kernel void test_local_linear_id_1d(global int *dst)\n"
@@ -63,8 +63,7 @@ verify_local_linear_id(int *result, int n)
 }
 
 
-int
-test_local_linear_id(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(local_linear_id, Version(2, 0))
 {
     cl_mem streams;
     cl_program program[2];

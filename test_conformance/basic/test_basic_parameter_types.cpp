@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+#include "testBase.h"
 
 const char *kernel_code = R"(
 __kernel void test_kernel(
@@ -46,8 +46,8 @@ __global float%s *result)
     result[1] = %s(ul);
 })";
 
-int test_parameter_types_long(cl_device_id device, cl_context context,
-                              cl_command_queue queue, int num_elements)
+static int test_parameter_types_long(cl_device_id device, cl_context context,
+                                     cl_command_queue queue, int num_elements)
 {
     clMemWrapper results;
     int error;
@@ -196,8 +196,7 @@ int test_parameter_types_long(cl_device_id device, cl_context context,
     return total_errors;
 }
 
-int test_parameter_types(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(parameter_types)
 {
     clMemWrapper results;
     int error;

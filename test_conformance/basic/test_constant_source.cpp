@@ -21,8 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 const char *constant_source_kernel_code[] = {
 "__constant int outVal = 42;\n"
@@ -44,7 +43,7 @@ const char *constant_source_kernel_code[] = {
 "    }\n"
 "}\n" };
 
-int test_constant_source(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(constant_source)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -94,8 +93,3 @@ int test_constant_source(cl_device_id device, cl_context context, cl_command_que
 
     return 0;
 }
-
-
-
-
-

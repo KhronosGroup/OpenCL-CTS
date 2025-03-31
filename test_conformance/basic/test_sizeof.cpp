@@ -20,9 +20,8 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "procs.h"
 
-
+#include "testBase.h"
 
 cl_int get_type_size( cl_context context, cl_command_queue queue, const char *type, cl_ulong *size, cl_device_id device  )
 {
@@ -127,7 +126,7 @@ const char *other_types[] =
 
 static int IsPowerOfTwo( cl_ulong x ){ return 0 == (x & (x-1)); }
 
-int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(sizeof)
 {
     size_t i, j;
     cl_ulong test;
@@ -376,5 +375,3 @@ int test_sizeof(cl_device_id device, cl_context context, cl_command_queue queue,
 
     return err;
 }
-
-

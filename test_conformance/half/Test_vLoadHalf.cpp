@@ -604,13 +604,6 @@ exit:
     return error;
 }
 
-int test_vload_half( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
-{
-    return Test_vLoadHalf_private( device, false );
-}
+REGISTER_TEST(vload_half) { return Test_vLoadHalf_private(device, false); }
 
-int test_vloada_half( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
-{
-    return Test_vLoadHalf_private( device, true );
-}
-
+REGISTER_TEST(vloada_half) { return Test_vLoadHalf_private(device, true); }

@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 namespace {
 const char *image_dim_kernel_code = R"(
@@ -105,9 +105,9 @@ int get_max_image_dimensions(cl_device_id device, size_t &max_img_width,
     return err;
 }
 
-int test_imagedim_common(cl_context context, cl_command_queue queue,
-                         cl_kernel kernel, size_t *local_threads,
-                         size_t img_width, size_t img_height)
+static int test_imagedim_common(cl_context context, cl_command_queue queue,
+                                cl_kernel kernel, size_t *local_threads,
+                                size_t img_width, size_t img_height)
 {
 
     int err;
@@ -173,8 +173,7 @@ int test_imagedim_common(cl_context context, cl_command_queue queue,
 }
 }
 
-int test_imagedim_pow2(cl_device_id device, cl_context context,
-                       cl_command_queue queue, int n_elems)
+REGISTER_TEST(imagedim_pow2)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -211,8 +210,7 @@ int test_imagedim_pow2(cl_device_id device, cl_context context,
 }
 
 
-int test_imagedim_non_pow2(cl_device_id device, cl_context context,
-                           cl_command_queue queue, int n_elems)
+REGISTER_TEST(imagedim_non_pow2)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;

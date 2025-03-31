@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 namespace {
 const char *r_uint8_kernel_code = R"(
@@ -52,8 +52,7 @@ void generate_random_inputs(std::vector<cl_uchar> &v)
 }
 
 }
-int test_image_r8(cl_device_id device, cl_context context,
-                  cl_command_queue queue, int num_elements)
+REGISTER_TEST(image_r8)
 {
     clMemWrapper streams[2];
     clProgramWrapper program;
