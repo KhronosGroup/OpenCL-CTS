@@ -162,7 +162,7 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
                                              *expected);
         else if (std::is_same<AtomicType, HOST_ATOMIC_LONG>::value
                  || std::is_same<AtomicType, HOST_ATOMIC_ULONG>::value)
-            tmp = InterlockedCompareExchange((volatile cl_long *)a, desired,
+            tmp = InterlockedCompareExchange((volatile cl_ulong *)a, desired,
                                              *expected);
 #elif defined(__GNUC__)
         if (std::is_same<AtomicType, HOST_ATOMIC_INT>::value)
