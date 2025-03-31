@@ -1066,8 +1066,7 @@ REGISTER_TEST(min_max_image_buffer_size)
     PASSIVE_REQUIRE_IMAGE_SUPPORT(device);
 
     /* Get the max memory allocation size, divide it */
-    maxAllocSize = get_device_info_max_mem_alloc_size(
-        device, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
+    maxAllocSize = get_device_info_max_mem_alloc_size(device, 1);
 
     /* Get the max image array width */
     error =
