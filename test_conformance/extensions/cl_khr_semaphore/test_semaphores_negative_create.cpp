@@ -145,7 +145,7 @@ struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
                                      nullptr, &size);
         test_error_fail(err, "clGetDeviceInfo failed");
 
-        if (size == 0)
+        if ((size / sizeof(cl_device_partition_property)) == 0)
         {
             log_info("Can't partition device, test not supported\n");
             return TEST_SKIPPED_ITSELF;
@@ -156,10 +156,10 @@ struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
         err = clGetDeviceInfo(device, CL_DEVICE_PARTITION_PROPERTIES,
                               supported_props.size()
                                   * sizeof(cl_device_partition_property),
-                              supported_props.data(), &size);
+                              supported_props.data(), nullptr);
         test_error_fail(err, "clGetDeviceInfo failed");
 
-        if (supported_props.empty() || supported_props.front() == 0)
+        if (supported_props.front() == 0)
         {
             log_info("Can't partition device, test not supported\n");
             return TEST_SKIPPED_ITSELF;
