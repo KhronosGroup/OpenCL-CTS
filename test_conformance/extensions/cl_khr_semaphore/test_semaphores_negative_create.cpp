@@ -17,6 +17,7 @@
 #include "semaphore_base.h"
 
 #include "harness/errorHelpers.h"
+#include <array>
 #include <chrono>
 #include <system_error>
 #include <thread>
@@ -137,38 +138,77 @@ struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
     cl_int Run() override
     {
         // partition device and create new context if possible
-        cl_uint maxComputeUnits = 0;
-        cl_int err =
-            clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS,
-                            sizeof(maxComputeUnits), &maxComputeUnits, NULL);
-        test_error(err, "Unable to get maximal number of compute units");
+        size_t size = 0;
 
-        cl_device_partition_property partitionProp[] = {
-            CL_DEVICE_PARTITION_EQUALLY,
-            static_cast<cl_device_partition_property>(maxComputeUnits / 2), 0
-        };
+        // query multi-device context and perform objects comparability test
+        cl_int err = clGetDeviceInfo(device, CL_DEVICE_PARTITION_PROPERTIES, 0,
+                                     nullptr, &size);
+        test_error_fail(err, "clGetDeviceInfo failed");
 
-        cl_uint deviceCount = 0;
-        // how many sub-devices can we create?
-        err =
-            clCreateSubDevices(device, partitionProp, 0, nullptr, &deviceCount);
-        if (err != CL_SUCCESS)
+        if ((size / sizeof(cl_device_partition_property)) == 0)
         {
             log_info("Can't partition device, test not supported\n");
             return TEST_SKIPPED_ITSELF;
         }
 
-        if (deviceCount < 2)
-            test_error_ret(
-                CL_INVALID_VALUE,
-                "Multi context test for CL_INVALID_PROPERTY not supported",
-                TEST_SKIPPED_ITSELF);
+        std::vector<cl_device_partition_property> supported_props(
+            size / sizeof(cl_device_partition_property), 0);
+        err = clGetDeviceInfo(device, CL_DEVICE_PARTITION_PROPERTIES,
+                              supported_props.size()
+                                  * sizeof(cl_device_partition_property),
+                              supported_props.data(), nullptr);
+        test_error_fail(err, "clGetDeviceInfo failed");
 
-        // get the list of subDevices
-        SubDevicesScopeGuarded scope_guard(deviceCount);
-        err = clCreateSubDevices(device, partitionProp, deviceCount,
-                                 scope_guard.sub_devices.data(), &deviceCount);
-        if (err != CL_SUCCESS)
+        if (supported_props.front() == 0)
+        {
+            log_info("Can't partition device, test not supported\n");
+            return TEST_SKIPPED_ITSELF;
+        }
+
+        cl_uint maxComputeUnits = 0;
+        err =
+            clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS,
+                            sizeof(maxComputeUnits), &maxComputeUnits, nullptr);
+        test_error_ret(err, "Unable to get maximal number of compute units",
+                       TEST_FAIL);
+
+        std::vector<std::array<cl_device_partition_property, 5>>
+            partition_props = {
+                { CL_DEVICE_PARTITION_EQUALLY, (cl_int)maxComputeUnits / 2, 0,
+                  0, 0 },
+                { CL_DEVICE_PARTITION_BY_COUNTS, 1, (cl_int)maxComputeUnits - 1,
+                  CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0 },
+                { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
+                  CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE, 0, 0, 0 }
+            };
+
+        std::unique_ptr<SubDevicesScopeGuarded> scope_guard;
+        cl_uint num_devices = 0;
+        for (auto &sup_prop : supported_props)
+        {
+            for (auto &prop : partition_props)
+            {
+                if (sup_prop == prop[0])
+                {
+                    // how many sub-devices can we create?
+                    err = clCreateSubDevices(device, prop.data(), 0, nullptr,
+                                             &num_devices);
+                    test_error_fail(err, "clCreateSubDevices failed");
+                    if (num_devices < 2) continue;
+
+                    // get the list of subDevices
+                    scope_guard.reset(new SubDevicesScopeGuarded(num_devices));
+                    err = clCreateSubDevices(device, prop.data(), num_devices,
+                                             scope_guard->sub_devices.data(),
+                                             &num_devices);
+                    test_error_fail(err, "clCreateSubDevices failed");
+                    break;
+                }
+            }
+            if (scope_guard.get() != nullptr) break;
+        }
+
+        if (scope_guard.get() == nullptr)
         {
             log_info("Can't partition device, test not supported\n");
             return TEST_SKIPPED_ITSELF;
@@ -176,9 +216,9 @@ struct CreateInvalidMultiDeviceProperty : public SemaphoreTestBase
 
         /* Create a multi device context */
         clContextWrapper multi_device_context = clCreateContext(
-            NULL, (cl_uint)deviceCount, scope_guard.sub_devices.data(), nullptr,
-            nullptr, &err);
-        test_error_ret(err, "Unable to create testing context", CL_SUCCESS);
+            NULL, (cl_uint)num_devices, scope_guard->sub_devices.data(),
+            nullptr, nullptr, &err);
+        test_error_fail(err, "Unable to create testing context");
 
         cl_semaphore_properties_khr sema_props[] = {
             (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
