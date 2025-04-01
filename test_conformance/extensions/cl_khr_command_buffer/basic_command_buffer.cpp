@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 #include <algorithm>
 #include <cstring>
@@ -186,324 +185,253 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
     return CL_SUCCESS;
 }
 
-namespace {
-
-// Test that the CL_COMMAND_BUFFER_FLAGS_KHR bitfield is parsed correctly when
-// multiple flags are set.
-struct MultiFlagCreationTest : public BasicCommandBufferTest
+cl_int MultiFlagCreationTest::Run()
 {
-    using BasicCommandBufferTest::BasicCommandBufferTest;
+    cl_command_buffer_properties_khr flags = 0;
+    cl_int error = CL_SUCCESS;
 
-    cl_int Run() override
+    // First try to find multiple flags that are supported by the driver and
+    // device.
+    if (simultaneous_use_support)
     {
-        cl_command_buffer_properties_khr flags = 0;
-        cl_int error = CL_SUCCESS;
-
-        // First try to find multiple flags that are supported by the driver and
-        // device.
-        if (simultaneous_use_support)
-        {
-            flags |= CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
-        }
-
-        if (is_extension_available(
-                device, CL_KHR_COMMAND_BUFFER_MULTI_DEVICE_EXTENSION_NAME))
-        {
-            flags |= CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
-        }
-
-        if (is_extension_available(
-                device, CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_NAME))
-        {
-            flags |= CL_COMMAND_BUFFER_MUTABLE_KHR;
-        }
-
-        cl_command_buffer_properties_khr props[] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, flags, 0
-        };
-
-        command_buffer = clCreateCommandBufferKHR(1, &queue, props, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
-        return CL_SUCCESS;
+        flags |= CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
     }
+
+    if (is_extension_available(
+            device, CL_KHR_COMMAND_BUFFER_MULTI_DEVICE_EXTENSION_NAME))
+    {
+        flags |= CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
+    }
+
+    if (is_extension_available(
+            device, CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_NAME))
+    {
+        flags |= CL_COMMAND_BUFFER_MUTABLE_KHR;
+    }
+
+    cl_command_buffer_properties_khr props[] = { CL_COMMAND_BUFFER_FLAGS_KHR,
+                                                 flags, 0 };
+
+    command_buffer = clCreateCommandBufferKHR(1, &queue, props, &error);
+    test_error(error, "clCreateCommandBufferKHR failed");
+
+    return CL_SUCCESS;
 };
 
-// Test enqueuing a command-buffer containing a single NDRange command once
-struct BasicEnqueueTest : public BasicCommandBufferTest
+cl_int BasicEnqueueTest::Run()
 {
-    using BasicCommandBufferTest::BasicCommandBufferTest;
 
-    cl_int Run() override
+    cl_int error = clCommandNDRangeKernelKHR(
+        command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
+        nullptr, 0, nullptr, nullptr, nullptr);
+    test_error(error, "clCommandNDRangeKernelKHR failed");
+
+    error = clFinalizeCommandBufferKHR(command_buffer);
+    test_error(error, "clFinalizeCommandBufferKHR failed");
+
+    const cl_int pattern = 42;
+    error = clEnqueueFillBuffer(queue, in_mem, &pattern, sizeof(cl_int), 0,
+                                data_size(), 0, nullptr, nullptr);
+    test_error(error, "clEnqueueFillBuffer failed");
+
+    error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0, nullptr,
+                                      nullptr);
+    test_error(error, "clEnqueueCommandBufferKHR failed");
+
+    std::vector<cl_int> output_data_1(num_elements);
+    error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
+                                output_data_1.data(), 0, nullptr, nullptr);
+    test_error(error, "clEnqueueReadBuffer failed");
+
+    for (size_t i = 0; i < num_elements; i++)
     {
-        cl_int error = clCommandNDRangeKernelKHR(
+        CHECK_VERIFICATION_ERROR(pattern, output_data_1[i], i);
+    }
+
+    const cl_int new_pattern = 12;
+    error = clEnqueueFillBuffer(queue, in_mem, &new_pattern, sizeof(cl_int), 0,
+                                data_size(), 0, nullptr, nullptr);
+    test_error(error, "clEnqueueFillBuffer failed");
+
+    error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0, nullptr,
+                                      nullptr);
+    test_error(error, "clEnqueueCommandBufferKHR failed");
+
+    std::vector<cl_int> output_data_2(num_elements);
+    error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
+                                output_data_2.data(), 0, nullptr, nullptr);
+    test_error(error, "clEnqueueReadBuffer failed");
+
+    for (size_t i = 0; i < num_elements; i++)
+    {
+        CHECK_VERIFICATION_ERROR(new_pattern, output_data_2[i], i);
+    }
+
+    return CL_SUCCESS;
+};
+
+cl_int MixedCommandsTest::Run()
+{
+    cl_int error;
+    const size_t iterations = 4;
+    clMemWrapper result_mem =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int) * iterations,
+                       nullptr, &error);
+    test_error(error, "clCreateBuffer failed");
+
+    const cl_int pattern_base = 42;
+    for (size_t i = 0; i < iterations; i++)
+    {
+        const cl_int pattern = pattern_base + i;
+        cl_int error = clCommandFillBufferKHR(
+            command_buffer, nullptr, nullptr, in_mem, &pattern, sizeof(cl_int),
+            0, data_size(), 0, nullptr, nullptr, nullptr);
+        test_error(error, "clCommandFillBufferKHR failed");
+
+        error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
             nullptr, 0, nullptr, nullptr, nullptr);
         test_error(error, "clCommandNDRangeKernelKHR failed");
 
-        error = clFinalizeCommandBufferKHR(command_buffer);
-        test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        const cl_int pattern = 42;
-        error = clEnqueueFillBuffer(queue, in_mem, &pattern, sizeof(cl_int), 0,
-                                    data_size(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
-                                          nullptr, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        std::vector<cl_int> output_data_1(num_elements);
-        error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
-                                    output_data_1.data(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        for (size_t i = 0; i < num_elements; i++)
-        {
-            CHECK_VERIFICATION_ERROR(pattern, output_data_1[i], i);
-        }
-
-        const cl_int new_pattern = 12;
-        error = clEnqueueFillBuffer(queue, in_mem, &new_pattern, sizeof(cl_int),
-                                    0, data_size(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
-                                          nullptr, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        std::vector<cl_int> output_data_2(num_elements);
-        error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
-                                    output_data_2.data(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        for (size_t i = 0; i < num_elements; i++)
-        {
-            CHECK_VERIFICATION_ERROR(new_pattern, output_data_2[i], i);
-        }
-
-        return CL_SUCCESS;
+        const size_t result_offset = i * sizeof(cl_int);
+        error = clCommandCopyBufferKHR(
+            command_buffer, nullptr, nullptr, out_mem, result_mem, 0,
+            result_offset, sizeof(cl_int), 0, nullptr, nullptr, nullptr);
+        test_error(error, "clCommandCopyBufferKHR failed");
     }
-};
 
-// Test enqueuing a command-buffer containing multiple command, including
-// operations other than NDRange kernel execution.
-struct MixedCommandsTest : public BasicCommandBufferTest
-{
-    using BasicCommandBufferTest::BasicCommandBufferTest;
+    error = clFinalizeCommandBufferKHR(command_buffer);
+    test_error(error, "clFinalizeCommandBufferKHR failed");
 
-    cl_int Run() override
+    error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0, nullptr,
+                                      nullptr);
+    test_error(error, "clEnqueueCommandBufferKHR failed");
+
+    std::vector<cl_int> result_data(num_elements);
+    error = clEnqueueReadBuffer(queue, result_mem, CL_TRUE, 0,
+                                iterations * sizeof(cl_int), result_data.data(),
+                                0, nullptr, nullptr);
+    test_error(error, "clEnqueueReadBuffer failed");
+
+    for (size_t i = 0; i < iterations; i++)
     {
-        cl_int error;
-        const size_t iterations = 4;
-        clMemWrapper result_mem =
-            clCreateBuffer(context, CL_MEM_READ_WRITE,
-                           sizeof(cl_int) * iterations, nullptr, &error);
-        test_error(error, "clCreateBuffer failed");
-
-        const cl_int pattern_base = 42;
-        for (size_t i = 0; i < iterations; i++)
-        {
-            const cl_int pattern = pattern_base + i;
-            cl_int error = clCommandFillBufferKHR(
-                command_buffer, nullptr, nullptr, in_mem, &pattern,
-                sizeof(cl_int), 0, data_size(), 0, nullptr, nullptr, nullptr);
-            test_error(error, "clCommandFillBufferKHR failed");
-
-            error = clCommandNDRangeKernelKHR(
-                command_buffer, nullptr, nullptr, kernel, 1, nullptr,
-                &num_elements, nullptr, 0, nullptr, nullptr, nullptr);
-            test_error(error, "clCommandNDRangeKernelKHR failed");
-
-            const size_t result_offset = i * sizeof(cl_int);
-            error = clCommandCopyBufferKHR(
-                command_buffer, nullptr, nullptr, out_mem, result_mem, 0,
-                result_offset, sizeof(cl_int), 0, nullptr, nullptr, nullptr);
-            test_error(error, "clCommandCopyBufferKHR failed");
-        }
-
-        error = clFinalizeCommandBufferKHR(command_buffer);
-        test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
-                                          nullptr, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        std::vector<cl_int> result_data(num_elements);
-        error = clEnqueueReadBuffer(queue, result_mem, CL_TRUE, 0,
-                                    iterations * sizeof(cl_int),
-                                    result_data.data(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        for (size_t i = 0; i < iterations; i++)
-        {
-            const cl_int ref = pattern_base + i;
-            CHECK_VERIFICATION_ERROR(ref, result_data[i], i);
-        }
-
-        return CL_SUCCESS;
-    }
-};
-
-// Test flushing the command-queue between command-buffer enqueues
-struct ExplicitFlushTest : public BasicCommandBufferTest
-{
-    using BasicCommandBufferTest::BasicCommandBufferTest;
-
-    cl_int Run() override
-    {
-        cl_int error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
-            nullptr, 0, nullptr, nullptr, nullptr);
-        test_error(error, "clCommandNDRangeKernelKHR failed");
-
-        error = clFinalizeCommandBufferKHR(command_buffer);
-        test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        const cl_int pattern_A = 42;
-        error = clEnqueueFillBuffer(queue, in_mem, &pattern_A, sizeof(cl_int),
-                                    0, data_size(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        error = clFlush(queue);
-        test_error(error, "clFlush failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
-                                          nullptr, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        std::vector<cl_int> output_data_A(num_elements);
-        error = clEnqueueReadBuffer(queue, out_mem, CL_FALSE, 0, data_size(),
-                                    output_data_A.data(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        const cl_int pattern_B = 0xA;
-        error = clEnqueueFillBuffer(queue, in_mem, &pattern_B, sizeof(cl_int),
-                                    0, data_size(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        error = clFlush(queue);
-        test_error(error, "clFlush failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
-                                          nullptr, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        error = clFlush(queue);
-        test_error(error, "clFlush failed");
-
-        std::vector<cl_int> output_data_B(num_elements);
-        error = clEnqueueReadBuffer(queue, out_mem, CL_FALSE, 0, data_size(),
-                                    output_data_B.data(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
-
-        for (size_t i = 0; i < num_elements; i++)
-        {
-            CHECK_VERIFICATION_ERROR(pattern_A, output_data_A[i], i);
-
-            CHECK_VERIFICATION_ERROR(pattern_B, output_data_B[i], i);
-        }
-        return CL_SUCCESS;
+        const cl_int ref = pattern_base + i;
+        CHECK_VERIFICATION_ERROR(ref, result_data[i], i);
     }
 
-    bool Skip() override
-    {
-        return BasicCommandBufferTest::Skip() || !simultaneous_use_support;
-    }
-};
-
-// Test enqueueing a command-buffer twice separated by another enqueue operation
-struct InterleavedEnqueueTest : public BasicCommandBufferTest
-{
-    using BasicCommandBufferTest::BasicCommandBufferTest;
-
-    cl_int Run() override
-    {
-        cl_int error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
-            nullptr, 0, nullptr, nullptr, nullptr);
-        test_error(error, "clCommandNDRangeKernelKHR failed");
-
-        error = clFinalizeCommandBufferKHR(command_buffer);
-        test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        cl_int pattern = 42;
-        error = clEnqueueFillBuffer(queue, in_mem, &pattern, sizeof(cl_int), 0,
-                                    data_size(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
-                                          nullptr, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        pattern = 0xABCD;
-        error = clEnqueueFillBuffer(queue, in_mem, &pattern, sizeof(cl_int), 0,
-                                    data_size(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
-                                          nullptr, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        error = clEnqueueCopyBuffer(queue, in_mem, out_mem, 0, 0, data_size(),
-                                    0, nullptr, nullptr);
-        test_error(error, "clEnqueueCopyBuffer failed");
-
-        std::vector<cl_int> output_data(num_elements);
-        error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
-                                    output_data.data(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        for (size_t i = 0; i < num_elements; i++)
-        {
-            CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
-        }
-
-        return CL_SUCCESS;
-    }
-
-    bool Skip() override
-    {
-        return BasicCommandBufferTest::Skip() || !simultaneous_use_support;
-    }
-};
-
-} // anonymous namespace
-
-int test_multi_flag_creation(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
-{
-    return MakeAndRunTest<MultiFlagCreationTest>(device, context, queue,
-                                                 num_elements);
+    return CL_SUCCESS;
 }
 
-int test_single_ndrange(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+cl_int ExplicitFlushTest::Run()
 {
-    return MakeAndRunTest<BasicEnqueueTest>(device, context, queue,
-                                            num_elements);
+    cl_int error = clCommandNDRangeKernelKHR(
+        command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
+        nullptr, 0, nullptr, nullptr, nullptr);
+    test_error(error, "clCommandNDRangeKernelKHR failed");
+
+    error = clFinalizeCommandBufferKHR(command_buffer);
+    test_error(error, "clFinalizeCommandBufferKHR failed");
+
+    const cl_int pattern_A = 42;
+    error = clEnqueueFillBuffer(queue, in_mem, &pattern_A, sizeof(cl_int), 0,
+                                data_size(), 0, nullptr, nullptr);
+    test_error(error, "clEnqueueFillBuffer failed");
+
+    error = clFlush(queue);
+    test_error(error, "clFlush failed");
+
+    error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0, nullptr,
+                                      nullptr);
+    test_error(error, "clEnqueueCommandBufferKHR failed");
+
+    std::vector<cl_int> output_data_A(num_elements);
+    error = clEnqueueReadBuffer(queue, out_mem, CL_FALSE, 0, data_size(),
+                                output_data_A.data(), 0, nullptr, nullptr);
+    test_error(error, "clEnqueueReadBuffer failed");
+
+    const cl_int pattern_B = 0xA;
+    error = clEnqueueFillBuffer(queue, in_mem, &pattern_B, sizeof(cl_int), 0,
+                                data_size(), 0, nullptr, nullptr);
+    test_error(error, "clEnqueueFillBuffer failed");
+
+    error = clFlush(queue);
+    test_error(error, "clFlush failed");
+
+    error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0, nullptr,
+                                      nullptr);
+    test_error(error, "clEnqueueCommandBufferKHR failed");
+
+    error = clFlush(queue);
+    test_error(error, "clFlush failed");
+
+    std::vector<cl_int> output_data_B(num_elements);
+    error = clEnqueueReadBuffer(queue, out_mem, CL_FALSE, 0, data_size(),
+                                output_data_B.data(), 0, nullptr, nullptr);
+    test_error(error, "clEnqueueReadBuffer failed");
+
+    error = clFinish(queue);
+    test_error(error, "clFinish failed");
+
+    for (size_t i = 0; i < num_elements; i++)
+    {
+        CHECK_VERIFICATION_ERROR(pattern_A, output_data_A[i], i);
+
+        CHECK_VERIFICATION_ERROR(pattern_B, output_data_B[i], i);
+    }
+    return CL_SUCCESS;
 }
 
-int test_interleaved_enqueue(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+bool ExplicitFlushTest::Skip()
 {
-    return MakeAndRunTest<InterleavedEnqueueTest>(device, context, queue,
-                                                  num_elements);
+    return BasicCommandBufferTest::Skip() || !simultaneous_use_support;
 }
 
-int test_mixed_commands(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+cl_int InterleavedEnqueueTest::Run()
 {
-    return MakeAndRunTest<MixedCommandsTest>(device, context, queue,
-                                             num_elements);
+    cl_int error = clCommandNDRangeKernelKHR(
+        command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
+        nullptr, 0, nullptr, nullptr, nullptr);
+    test_error(error, "clCommandNDRangeKernelKHR failed");
+
+    error = clFinalizeCommandBufferKHR(command_buffer);
+    test_error(error, "clFinalizeCommandBufferKHR failed");
+
+    cl_int pattern = 42;
+    error = clEnqueueFillBuffer(queue, in_mem, &pattern, sizeof(cl_int), 0,
+                                data_size(), 0, nullptr, nullptr);
+    test_error(error, "clEnqueueFillBuffer failed");
+
+    error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0, nullptr,
+                                      nullptr);
+    test_error(error, "clEnqueueCommandBufferKHR failed");
+
+    pattern = 0xABCD;
+    error = clEnqueueFillBuffer(queue, in_mem, &pattern, sizeof(cl_int), 0,
+                                data_size(), 0, nullptr, nullptr);
+    test_error(error, "clEnqueueFillBuffer failed");
+
+    error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0, nullptr,
+                                      nullptr);
+    test_error(error, "clEnqueueCommandBufferKHR failed");
+
+    error = clEnqueueCopyBuffer(queue, in_mem, out_mem, 0, 0, data_size(), 0,
+                                nullptr, nullptr);
+    test_error(error, "clEnqueueCopyBuffer failed");
+
+    std::vector<cl_int> output_data(num_elements);
+    error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
+                                output_data.data(), 0, nullptr, nullptr);
+    test_error(error, "clEnqueueReadBuffer failed");
+
+    for (size_t i = 0; i < num_elements; i++)
+    {
+        CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
+    }
+
+    return CL_SUCCESS;
 }
 
-int test_explicit_flush(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+bool InterleavedEnqueueTest::Skip()
 {
-    return MakeAndRunTest<ExplicitFlushTest>(device, context, queue,
-                                             num_elements);
+    return BasicCommandBufferTest::Skip() || !simultaneous_use_support;
 }

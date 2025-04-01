@@ -327,8 +327,7 @@ int interop_user_sync(cl_device_id deviceID, cl_context context,
     return result.Result();
 }
 
-int test_interop_user_sync(cl_device_id deviceID, cl_context context,
-                           cl_command_queue queue, int num_elements)
+REGISTER_TEST(interop_user_sync)
 {
     const unsigned int WIDTH = 256;
     const unsigned int HEIGHT = 256;
@@ -382,7 +381,7 @@ int test_interop_user_sync(cl_device_id deviceID, cl_context context,
                             continue;
 
                         if (interop_user_sync(
-                                deviceID, context, queue, num_elements, WIDTH,
+                                device, context, queue, num_elements, WIDTH,
                                 HEIGHT, contextFuncs[contextFuncIdx],
                                 adapters[adapterIdx], formats[formatIdx],
                                 sharedHandleTypes[sharedHandleIdx],

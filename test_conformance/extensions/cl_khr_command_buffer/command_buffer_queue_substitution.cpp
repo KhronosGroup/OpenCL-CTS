@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 #include <vector>
 
@@ -396,38 +395,31 @@ struct QueueOrderTest : public BasicCommandBufferTest
 };
 } // anonymous namespace
 
-int test_queue_substitution(cl_device_id device, cl_context context,
-                            cl_command_queue queue, int num_elements)
+REGISTER_TEST(queue_substitution)
 {
     return MakeAndRunTest<SubstituteQueueTest<false, false>>(
         device, context, queue, num_elements);
 }
 
-int test_properties_queue_substitution(cl_device_id device, cl_context context,
-                                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(properties_queue_substitution)
 {
     return MakeAndRunTest<SubstituteQueueTest<true, false>>(
         device, context, queue, num_elements);
 }
 
-int test_simultaneous_queue_substitution(cl_device_id device,
-                                         cl_context context,
-                                         cl_command_queue queue,
-                                         int num_elements)
+REGISTER_TEST(simultaneous_queue_substitution)
 {
     return MakeAndRunTest<SubstituteQueueTest<false, true>>(
         device, context, queue, num_elements);
 }
 
-int test_queue_substitute_in_order(cl_device_id device, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(queue_substitute_in_order)
 {
     return MakeAndRunTest<QueueOrderTest<false>>(device, context, queue,
                                                  num_elements);
 }
 
-int test_queue_substitute_out_of_order(cl_device_id device, cl_context context,
-                                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(queue_substitute_out_of_order)
 {
     return MakeAndRunTest<QueueOrderTest<true>>(device, context, queue,
                                                 num_elements);

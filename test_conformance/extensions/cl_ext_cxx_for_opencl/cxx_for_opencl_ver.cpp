@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
+#include <CL/cl.h>
 
+#include "harness/typeWrappers.h"
 
 int test_cxx_for_opencl_version(cl_device_id device, cl_context context,
                                 cl_command_queue queue)
@@ -88,8 +89,7 @@ int test_cxx_for_opencl_version(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
-int test_cxx_for_opencl_ver(cl_device_id device, cl_context context,
-                            cl_command_queue queue, int)
+REGISTER_TEST_VERSION(cxx_for_opencl_ver, Version(2, 0))
 {
     if (!is_extension_available(device, "cl_ext_cxx_for_opencl"))
     {

@@ -17,7 +17,6 @@
 #include <harness/os_helpers.h>
 
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 #if !defined(_WIN32)
 #if defined(__APPLE__)
@@ -524,15 +523,13 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
 
 } // anonymous namespace
 
-int test_basic_printf(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(basic_printf)
 {
     return MakeAndRunTest<CommandBufferPrintfTest<false>>(device, context,
                                                           queue, num_elements);
 }
 
-int test_simultaneous_printf(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+REGISTER_TEST(simultaneous_printf)
 {
     return MakeAndRunTest<CommandBufferPrintfTest<true>>(device, context, queue,
                                                          num_elements);
