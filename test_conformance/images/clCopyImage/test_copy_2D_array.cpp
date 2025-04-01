@@ -19,26 +19,39 @@
 extern int test_copy_image_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
                                    const size_t sourcePos[], const size_t destPos[], const size_t regionSize[], MTdata d );
 
-int test_copy_image_2D_array( cl_context context, cl_command_queue queue, image_descriptor *imageInfo, MTdata d )
+int test_copy_image_2D_array(cl_context context, cl_command_queue queue,
+                             image_descriptor *srcImageInfo,
+                             image_descriptor *dstImageInfo, MTdata d)
 {
     size_t srcPos[] = { 0, 0, 0, 0}, dstPos[] = {0, 0, 0, 0};
-    size_t region[] = { imageInfo->width, imageInfo->height, imageInfo->arraySize };
+    size_t region[] = { srcImageInfo->width, srcImageInfo->height,
+                        srcImageInfo->arraySize };
 
-    size_t src_lod = 0, src_width_lod = imageInfo->width, src_height_lod = imageInfo->height;
-    size_t dst_lod = 0, dst_width_lod = imageInfo->width, dst_height_lod = imageInfo->height;
-    size_t width_lod = imageInfo->width, height_lod = imageInfo->height;
+    size_t src_lod = 0, src_width_lod = srcImageInfo->width,
+           src_height_lod = srcImageInfo->height;
+    size_t dst_lod = 0, dst_width_lod = dstImageInfo->width,
+           dst_height_lod = dstImageInfo->height;
+    size_t width_lod = srcImageInfo->width, height_lod = srcImageInfo->height;
     size_t max_mip_level;
 
     if( gTestMipmaps )
     {
-        max_mip_level = imageInfo->num_mip_levels;
+        max_mip_level = srcImageInfo->num_mip_levels;
         // Work at a random mip level
         src_lod = (size_t)random_in_range( 0, max_mip_level ? max_mip_level - 1 : 0, d );
         dst_lod = (size_t)random_in_range( 0, max_mip_level ? max_mip_level - 1 : 0, d );
-        src_width_lod = ( imageInfo->width >> src_lod )? ( imageInfo->width >> src_lod ) : 1;
-        dst_width_lod = ( imageInfo->width >> dst_lod )? ( imageInfo->width >> dst_lod ) : 1;
-        src_height_lod = ( imageInfo->height >> src_lod )? ( imageInfo->height >> src_lod ) : 1;
-        dst_height_lod = ( imageInfo->height >> dst_lod )? ( imageInfo->height >> dst_lod ) : 1;
+        src_width_lod = (srcImageInfo->width >> src_lod)
+            ? (srcImageInfo->width >> src_lod)
+            : 1;
+        dst_width_lod = (dstImageInfo->width >> dst_lod)
+            ? (dstImageInfo->width >> dst_lod)
+            : 1;
+        src_height_lod = (srcImageInfo->height >> src_lod)
+            ? (srcImageInfo->height >> src_lod)
+            : 1;
+        dst_height_lod = (dstImageInfo->height >> dst_lod)
+            ? (dstImageInfo->height >> dst_lod)
+            : 1;
         width_lod  = ( src_width_lod > dst_width_lod ) ? dst_width_lod : src_width_lod;
         height_lod  = ( src_height_lod > dst_height_lod ) ? dst_height_lod : src_height_lod;
 
@@ -47,20 +60,31 @@ int test_copy_image_2D_array( cl_context context, cl_command_queue queue, image_
         srcPos[ 3 ] = src_lod;
         dstPos[ 3 ] = dst_lod;
 }
-    return test_copy_image_generic( context, queue, imageInfo, imageInfo, srcPos, dstPos, region, d );
+return test_copy_image_generic(context, queue, srcImageInfo, dstImageInfo,
+                               srcPos, dstPos, region, d);
 }
 
-int test_copy_image_set_2D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_image_format *format )
+int test_copy_image_set_2D_array(cl_device_id device, cl_context context,
+                                 cl_command_queue queue, cl_mem_flags src_flags,
+                                 cl_mem_object_type src_type,
+                                 cl_mem_flags dst_flags,
+                                 cl_mem_object_type dst_type,
+                                 cl_image_format *format)
 {
+    assert(
+        dst_type
+        == src_type); // This test expects to copy 2D array -> 2D array images
     size_t maxWidth, maxHeight, maxArraySize;
     cl_ulong maxAllocSize, memSize;
-    image_descriptor imageInfo = { 0 };
+    image_descriptor srcImageInfo = { 0 };
+    image_descriptor dstImageInfo = { 0 };
     RandomSeed seed( gRandomSeed );
     size_t pixelSize;
 
-    imageInfo.format = format;
-    imageInfo.type = CL_MEM_OBJECT_IMAGE2D_ARRAY;
-    pixelSize = get_pixel_size( imageInfo.format );
+    srcImageInfo.format = format;
+    srcImageInfo.type = src_type;
+    srcImageInfo.mem_flags = src_flags;
+    pixelSize = get_pixel_size(srcImageInfo.format);
 
     int error = clGetDeviceInfo( device, CL_DEVICE_IMAGE3D_MAX_WIDTH, sizeof( maxWidth ), &maxWidth, NULL );
     error |= clGetDeviceInfo( device, CL_DEVICE_IMAGE3D_MAX_HEIGHT, sizeof( maxHeight ), &maxHeight, NULL );
@@ -76,33 +100,49 @@ int test_copy_image_set_2D_array( cl_device_id device, cl_context context, cl_co
 
     if( gTestSmallImages )
     {
-        for( imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++ )
+        for (srcImageInfo.width = 1; srcImageInfo.width < 13;
+             srcImageInfo.width++)
         {
             size_t rowPadding = gEnablePitch ? 80 : 0;
             size_t slicePadding = gEnablePitch ? 3 : 0;
 
-            imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
+            srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
 
             if (gTestMipmaps)
-              imageInfo.num_mip_levels = (cl_uint) random_log_in_range(2, (int)compute_max_mip_levels(imageInfo.width, imageInfo.height, 0), seed);
+                srcImageInfo.num_mip_levels = (cl_uint)random_log_in_range(
+                    2,
+                    (int)compute_max_mip_levels(srcImageInfo.width,
+                                                srcImageInfo.height, 0),
+                    seed);
 
             if (gEnablePitch)
             {
                 do {
                     rowPadding++;
-                    imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-                } while ((imageInfo.rowPitch % pixelSize) != 0);
+                    srcImageInfo.rowPitch =
+                        srcImageInfo.width * pixelSize + rowPadding;
+                } while ((srcImageInfo.rowPitch % pixelSize) != 0);
             }
 
-            for( imageInfo.height = 1; imageInfo.height < 9; imageInfo.height++ )
+            for (srcImageInfo.height = 1; srcImageInfo.height < 9;
+                 srcImageInfo.height++)
             {
-                imageInfo.slicePitch = imageInfo.rowPitch * (imageInfo.height + slicePadding);
+                srcImageInfo.slicePitch = srcImageInfo.rowPitch
+                    * (srcImageInfo.height + slicePadding);
 
-                for( imageInfo.arraySize = 2; imageInfo.arraySize < 9; imageInfo.arraySize++ )
+                for (srcImageInfo.arraySize = 2; srcImageInfo.arraySize < 9;
+                     srcImageInfo.arraySize++)
                 {
                     if( gDebugTrace )
-                        log_info( "   at size %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.arraySize );
-                    int ret = test_copy_image_2D_array( context, queue, &imageInfo, seed );
+                        log_info("   at size %d,%d,%d\n",
+                                 (int)srcImageInfo.width,
+                                 (int)srcImageInfo.height,
+                                 (int)srcImageInfo.arraySize);
+
+                    dstImageInfo = srcImageInfo;
+                    dstImageInfo.mem_flags = dst_flags;
+                    int ret = test_copy_image_2D_array(
+                        context, queue, &srcImageInfo, &dstImageInfo, seed);
                     if( ret )
                         return -1;
                 }
@@ -114,34 +154,46 @@ int test_copy_image_set_2D_array( cl_device_id device, cl_context context, cl_co
         // Try a specific set of maximum sizes
         size_t numbeOfSizes;
         size_t sizes[100][3];
-        get_max_sizes(&numbeOfSizes, 100, sizes, maxWidth, maxHeight, 1, maxArraySize, maxAllocSize, memSize, imageInfo.type, imageInfo.format);
+        get_max_sizes(&numbeOfSizes, 100, sizes, maxWidth, maxHeight, 1,
+                      maxArraySize, maxAllocSize, memSize, srcImageInfo.type,
+                      srcImageInfo.format);
 
         for( size_t idx = 0; idx < numbeOfSizes; idx++ )
         {
             size_t rowPadding = gEnablePitch ? 80 : 0;
             size_t slicePadding = gEnablePitch ? 3 : 0;
 
-            imageInfo.width = sizes[ idx ][ 0 ];
-            imageInfo.height = sizes[ idx ][ 1 ];
-            imageInfo.arraySize = sizes[ idx ][ 2 ];
-            imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
+            srcImageInfo.width = sizes[idx][0];
+            srcImageInfo.height = sizes[idx][1];
+            srcImageInfo.arraySize = sizes[idx][2];
+            srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
 
             if (gTestMipmaps)
-              imageInfo.num_mip_levels = (cl_uint) random_log_in_range(2, (int)compute_max_mip_levels(imageInfo.width, imageInfo.height, 0), seed);
+                srcImageInfo.num_mip_levels = (cl_uint)random_log_in_range(
+                    2,
+                    (int)compute_max_mip_levels(srcImageInfo.width,
+                                                srcImageInfo.height, 0),
+                    seed);
 
             if (gEnablePitch)
             {
                 do {
                     rowPadding++;
-                    imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-                } while ((imageInfo.rowPitch % pixelSize) != 0);
+                    srcImageInfo.rowPitch =
+                        srcImageInfo.width * pixelSize + rowPadding;
+                } while ((srcImageInfo.rowPitch % pixelSize) != 0);
             }
 
-            imageInfo.slicePitch = imageInfo.rowPitch * (imageInfo.height + slicePadding);
+            srcImageInfo.slicePitch =
+                srcImageInfo.rowPitch * (srcImageInfo.height + slicePadding);
             log_info( "Testing %d x %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
             if( gDebugTrace )
                 log_info( "   at max size %d,%d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
-            if( test_copy_image_2D_array( context, queue, &imageInfo, seed ) )
+
+            dstImageInfo = srcImageInfo;
+            dstImageInfo.mem_flags = dst_flags;
+            if (test_copy_image_2D_array(context, queue, &srcImageInfo,
+                                         &dstImageInfo, seed))
                 return -1;
         }
     }
@@ -156,38 +208,61 @@ int test_copy_image_set_2D_array( cl_device_id device, cl_context context, cl_co
             // image, the result array, plus offset arrays, will fit in the global ram space
             do
             {
-                imageInfo.width = (size_t)random_log_in_range( 16, (int)maxWidth / 32, seed );
-                imageInfo.height = (size_t)random_log_in_range( 16, (int)maxHeight / 32, seed );
-                imageInfo.arraySize = (size_t)random_log_in_range( 16, (int)maxArraySize / 32, seed );
+                srcImageInfo.width =
+                    (size_t)random_log_in_range(16, (int)maxWidth / 32, seed);
+                srcImageInfo.height =
+                    (size_t)random_log_in_range(16, (int)maxHeight / 32, seed);
+                srcImageInfo.arraySize = (size_t)random_log_in_range(
+                    16, (int)maxArraySize / 32, seed);
 
                 if (gTestMipmaps)
                 {
-                    imageInfo.num_mip_levels = (cl_uint) random_log_in_range(2, (int)compute_max_mip_levels(imageInfo.width, imageInfo.height, 0), seed);
-                    imageInfo.rowPitch = imageInfo.width * get_pixel_size( imageInfo.format );
-                    imageInfo.slicePitch = imageInfo.rowPitch * imageInfo.height;
-                    size = compute_mipmapped_image_size( imageInfo );
+                    srcImageInfo.num_mip_levels = (cl_uint)random_log_in_range(
+                        2,
+                        (int)compute_max_mip_levels(srcImageInfo.width,
+                                                    srcImageInfo.height, 0),
+                        seed);
+                    srcImageInfo.rowPitch = srcImageInfo.width
+                        * get_pixel_size(srcImageInfo.format);
+                    srcImageInfo.slicePitch =
+                        srcImageInfo.rowPitch * srcImageInfo.height;
+                    size = compute_mipmapped_image_size(srcImageInfo);
                     size = size*4;
                 }
                 else
                 {
-                  imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-                  if (gEnablePitch)
-                  {
-                    do {
-                      rowPadding++;
-                      imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
-                    } while ((imageInfo.rowPitch % pixelSize) != 0);
-                  }
+                    srcImageInfo.rowPitch =
+                        srcImageInfo.width * pixelSize + rowPadding;
+                    if (gEnablePitch)
+                    {
+                        do
+                        {
+                            rowPadding++;
+                            srcImageInfo.rowPitch =
+                                srcImageInfo.width * pixelSize + rowPadding;
+                        } while ((srcImageInfo.rowPitch % pixelSize) != 0);
+                    }
 
-                  imageInfo.slicePitch = imageInfo.rowPitch * (imageInfo.height + slicePadding);
+                    srcImageInfo.slicePitch = srcImageInfo.rowPitch
+                        * (srcImageInfo.height + slicePadding);
 
-                  size = (cl_ulong)imageInfo.slicePitch * (cl_ulong)imageInfo.arraySize * 4 * 4;
+                    size = (cl_ulong)srcImageInfo.slicePitch
+                        * (cl_ulong)srcImageInfo.arraySize * 4 * 4;
                 }
             } while(  size > maxAllocSize || ( size * 3 ) > memSize );
 
             if( gDebugTrace )
-                log_info( "   at size %d,%d,%d (pitch %d,%d) out of %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.arraySize, (int)imageInfo.rowPitch, (int)imageInfo.slicePitch, (int)maxWidth, (int)maxHeight, (int)maxArraySize );
-            int ret = test_copy_image_2D_array( context, queue, &imageInfo,seed );
+                log_info("   at size %d,%d,%d (pitch %d,%d) out of %d,%d,%d\n",
+                         (int)srcImageInfo.width, (int)srcImageInfo.height,
+                         (int)srcImageInfo.arraySize,
+                         (int)srcImageInfo.rowPitch,
+                         (int)srcImageInfo.slicePitch, (int)maxWidth,
+                         (int)maxHeight, (int)maxArraySize);
+
+            dstImageInfo = srcImageInfo;
+            dstImageInfo.mem_flags = dst_flags;
+            int ret = test_copy_image_2D_array(context, queue, &srcImageInfo,
+                                               &dstImageInfo, seed);
             if( ret )
                 return -1;
         }
