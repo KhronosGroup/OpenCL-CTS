@@ -786,7 +786,9 @@ int __builtin_clz(unsigned int pattern)
 #endif // !__has_builtin(__builtin_clz)
 
 #include <intrin.h>
+#if !defined(_M_ARM64)
 #include <emmintrin.h>
+#endif
 
 int usleep(int usec)
 {
