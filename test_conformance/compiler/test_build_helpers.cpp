@@ -55,7 +55,6 @@ const char *sample_kernel_code_two_line[] = {
 "\n"
 "}\n" };
 
-
 const char *sample_kernel_code_bad_multi_line[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)",
 "{",
@@ -87,6 +86,35 @@ __kernel void sample_test_C(__global float *src, __global int *dst)
 }
 )";
 
+const char *sample_multi_kernel_code_AB_with_macro = R"(
+__kernel void sample_test_A(__global float *src, __global int *dst)
+{
+    size_t tid = get_global_id(0);
+    dst[tid] = (int)src[tid];
+}
+#ifdef USE_SAMPLE_TEST_B
+__kernel void sample_test_B(__global float *src, __global int *dst)
+{
+    size_t tid = get_global_id(0);
+    dst[tid] = (int)src[tid];
+}
+#endif
+)";
+
+const char *sample_multi_kernel_code_CD_with_macro = R"(
+__kernel void sample_test_C(__global float *src, __global int *dst)
+{
+    size_t tid = get_global_id(0);
+    dst[tid] = (int)src[tid];
+}
+#ifdef USE_SAMPLE_TEST_D
+__kernel void sample_test_D(__global float *src, __global int *dst)
+{
+    size_t tid = get_global_id(0);
+    dst[tid] = (int)src[tid];
+}
+#endif
+)";
 
 REGISTER_TEST(load_program_source)
 {
@@ -550,6 +578,128 @@ REGISTER_TEST(get_program_info_kernel_names)
     return CL_SUCCESS;
 }
 
+REGISTER_TEST(get_linked_program_info_kernel_names)
+{
+    int error = CL_SUCCESS;
+    size_t total_kernels = 0;
+    size_t kernel_names_len = 0;
+
+    clProgramWrapper program_AB = clCreateProgramWithSource(
+        context, 1, &sample_multi_kernel_code_AB_with_macro, nullptr, &error);
+    test_error(error, "clCreateProgramWithSource failed");
+
+    clProgramWrapper program_CD = clCreateProgramWithSource(
+        context, 1, &sample_multi_kernel_code_CD_with_macro, nullptr, &error);
+    test_error(error, "clCreateProgramWithSource failed");
+
+    clProgramWrapper program = nullptr;
+
+    // 1) Compile and link the programs with the preprocessor macro undefined.
+    //    Query CL_PROGRAM_NUM_KERNELS and check that the correct number is
+    //    returned. Query CL_PROGRAM_KERNEL_NAMES and check that the right
+    //    kernel names are returned.
+    {
+        error =
+            clCompileProgram(program_AB, 1, &device, nullptr, 0, 0, 0, 0, 0);
+        test_error(error, "clCompileProgram failed");
+
+        error =
+            clCompileProgram(program_CD, 1, &device, nullptr, 0, 0, 0, 0, 0);
+        test_error(error, "clCompileProgram failed");
+
+        cl_program progs[] = { program_AB, program_CD };
+        program =
+            clLinkProgram(context, 1, &device, "", 2, progs, 0, 0, &error);
+        test_error(error, "clLinkProgram failed");
+
+        error = clGetProgramInfo(program, CL_PROGRAM_NUM_KERNELS,
+                                 sizeof(size_t), &total_kernels, nullptr);
+        test_error(error, "clGetProgramInfo failed");
+
+        test_assert_error(total_kernels == 2,
+                          "Unexpected clGetProgramInfo result");
+
+        error = clGetProgramInfo(program, CL_PROGRAM_KERNEL_NAMES, 0, nullptr,
+                                 &kernel_names_len);
+        test_error(error, "clGetProgramInfo failed");
+
+        const size_t len = kernel_names_len + 1;
+        std::vector<char> kernel_names(len, '\0');
+        error =
+            clGetProgramInfo(program, CL_PROGRAM_KERNEL_NAMES, kernel_names_len,
+                             kernel_names.data(), &kernel_names_len);
+        test_error(error, "Unable to get kernel names list.");
+        std::string program_names = kernel_names.data();
+
+        std::vector<std::string> expected_names = { "sample_test_A",
+                                                    "sample_test_C" };
+        for (const auto &name : expected_names)
+        {
+            test_assert_error(program_names.find(name) != std::string::npos,
+                              "Unexpected kernel name");
+        }
+
+        std::vector<std::string> unexpected_names = { "sample_test_B",
+                                                      "sample_test_D" };
+        for (const auto &name : unexpected_names)
+        {
+            test_assert_error(program_names.find(name) == std::string::npos,
+                              "Unexpected kernel name");
+        }
+    }
+
+    // 2) Compile and link the programs with the preprocessor macro defined.
+    //    Query CL_PROGRAM_NUM_KERNELS and check that the correct number is
+    //    returned. Query CL_PROGRAM_KERNEL_NAMES and check that the right
+    //    kernel names are returned.
+    {
+        const char *build_options_B = "-DUSE_SAMPLE_TEST_B";
+        error = clCompileProgram(program_AB, 1, &device, build_options_B, 0, 0,
+                                 0, 0, 0);
+        test_error(error, "clCompileProgram failed");
+
+        const char *build_options_D = "-DUSE_SAMPLE_TEST_D";
+        error = clCompileProgram(program_CD, 1, &device, build_options_D, 0, 0,
+                                 0, 0, 0);
+        test_error(error, "clCompileProgram failed");
+
+        cl_program progs[] = { program_AB, program_CD };
+        program =
+            clLinkProgram(context, 1, &device, "", 2, progs, 0, 0, &error);
+        test_error(error, "clLinkProgram failed");
+
+        error = clGetProgramInfo(program, CL_PROGRAM_NUM_KERNELS,
+                                 sizeof(size_t), &total_kernels, nullptr);
+        test_error(error, "clGetProgramInfo failed");
+
+        test_assert_error(total_kernels == 4,
+                          "Unexpected clGetProgramInfo result");
+
+        error = clGetProgramInfo(program, CL_PROGRAM_KERNEL_NAMES, 0, nullptr,
+                                 &kernel_names_len);
+        test_error(error, "clGetProgramInfo failed");
+
+        std::vector<std::string> expected_names = {
+            "sample_test_A", "sample_test_B", "sample_test_C", "sample_test_D"
+        };
+
+        const size_t len = kernel_names_len + 1;
+        std::vector<char> kernel_names(len, '\0');
+        error =
+            clGetProgramInfo(program, CL_PROGRAM_KERNEL_NAMES, kernel_names_len,
+                             kernel_names.data(), &kernel_names_len);
+        test_error(error, "Could not find expected kernel name");
+
+        std::string program_names = kernel_names.data();
+        for (const auto &name : expected_names)
+        {
+            test_assert_error(program_names.find(name) != std::string::npos,
+                              "Unexpected kernel name");
+        }
+    }
+    return TEST_PASS;
+}
+
 REGISTER_TEST(get_program_info_mult_devices)
 {
     size_t size = 0;
@@ -641,7 +791,7 @@ REGISTER_TEST(get_program_info_mult_devices)
     if (program == nullptr)
     {
         log_error("ERROR: Unable to create reference program!\n");
-        return -1;
+        return TEST_FAIL;
     }
 
     err = clGetProgramInfo(program, CL_PROGRAM_NUM_DEVICES, sizeof(num_devices),
@@ -670,7 +820,7 @@ REGISTER_TEST(get_program_info_mult_devices)
             }
         }
         test_error_fail(
-            !found, "Unexpected result returned by CL_CONTEXT_DEVICES query");
+            !found, "Unexpected result returned by CL_PROGRAM_DEVICES query");
     }
 
     return TEST_PASS;

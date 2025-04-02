@@ -22,6 +22,7 @@
 #include <sys/stat.h>
 
 #include <algorithm>
+#include <cinttypes>
 #include <vector>
 
 #include "testBase.h"
@@ -116,7 +117,8 @@ REGISTER_TEST(constant)
     err = clGetDeviceInfo(device, CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE,
                           sizeof(maxSize), &maxSize, 0);
     test_error(err, "Unable to get max constant buffer size");
-    log_info("Device reports CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE %llu bytes.\n",
+    log_info("Device reports CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE %" PRIu64
+             " bytes.\n",
              maxSize);
 
     // Limit test buffer size to 1/4 of CL_DEVICE_GLOBAL_MEM_SIZE
