@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 #include "harness/testHarness.h"
+#include "harness/deviceInfo.h"
+#include "harness/kernelHelpers.h"
 #include <iostream>
 #include <string>
 
@@ -28,6 +30,8 @@ int gInternalIterations = 10000; // internal test iterations for atomic operatio
 int gMaxDeviceThreads = 1024; // maximum number of threads executed on OCL device
 cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+bool gFloatAtomicsSupported = false;
+cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps = 0;
 
 test_status InitCL(cl_device_id device) {
     auto version = get_device_cl_version(device);
@@ -121,6 +125,18 @@ test_status InitCL(cl_device_id device) {
             | CL_DEVICE_ATOMIC_SCOPE_WORK_ITEM
             | CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP | CL_DEVICE_ATOMIC_SCOPE_DEVICE
             | CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES;
+    }
+
+    if (is_extension_available(device, "cl_ext_float_atomics"))
+    {
+        gFloatAtomicsSupported = true;
+        if (is_extension_available(device, "cl_khr_fp64"))
+        {
+            cl_int error = clGetDeviceInfo(
+                device, CL_DEVICE_DOUBLE_FP_ATOMIC_CAPABILITIES_EXT,
+                sizeof(gDoubleAtomicCaps), &gDoubleAtomicCaps, nullptr);
+            test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
+        }
     }
 
     return TEST_PASS;
