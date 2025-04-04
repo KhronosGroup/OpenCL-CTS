@@ -36,7 +36,7 @@
         %lhs = OpFunctionParameter %_ptr_CrossWorkgroup_v2double
         %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_v2double
       %entry = OpLabel
-         %18 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %18 = OpLoad %v3ulong %gl_GlobalInvocationID
          %19 = OpCompositeExtract %ulong %18 0
          %20 = OpShiftLeftLogical %ulong %19 %ulong_32
          %21 = OpShiftRightArithmetic %ulong %20 %ulong_32

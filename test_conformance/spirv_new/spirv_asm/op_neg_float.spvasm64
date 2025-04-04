@@ -26,7 +26,7 @@
           %1 = OpFunction %void None %10
          %in = OpFunctionParameter %_ptr_CrossWorkgroup_float
          %12 = OpLabel
-         %13 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %13 = OpLoad %v3ulong %gl_GlobalInvocationID
          %14 = OpCompositeExtract %ulong %13 0
          %15 = OpShiftLeftLogical %ulong %14 %ulong_32
          %16 = OpShiftRightArithmetic %ulong %15 %ulong_32

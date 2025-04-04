@@ -33,7 +33,7 @@
         %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint
          %16 = OpLabel
          %17 = OpVariable %_ptr_Function_uint Function
-         %18 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %18 = OpLoad %v3uint %gl_GlobalInvocationID
          %19 = OpCompositeExtract %uint %18 0
          %20 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %lhs %19
          %21 = OpLoad %uint %20 Aligned 4

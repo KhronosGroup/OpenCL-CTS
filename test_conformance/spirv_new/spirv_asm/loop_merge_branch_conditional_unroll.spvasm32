@@ -37,7 +37,7 @@
          %18 = OpLabel
          %19 = OpVariable %_ptr_Function_uint Function
          %20 = OpVariable %_ptr_Function_uint Function
-         %21 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %21 = OpLoad %v3uint %gl_GlobalInvocationID
          %22 = OpCompositeExtract %uint %21 0
                OpStore %19 %uint_0 Aligned 4
                OpStore %20 %uint_0 Aligned 4

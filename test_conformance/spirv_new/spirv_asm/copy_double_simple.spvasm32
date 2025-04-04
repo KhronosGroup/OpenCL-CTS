@@ -26,7 +26,7 @@
           %1 = OpFunction %void None %10
          %in = OpFunctionParameter %_ptr_CrossWorkgroup_double
          %12 = OpLabel
-         %13 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %13 = OpLoad %v3uint %gl_GlobalInvocationID
          %14 = OpCompositeExtract %uint %13 0
          %15 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_double %in %14
          %16 = OpCopyObject %double %double_3_1415926535897931

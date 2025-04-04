@@ -27,7 +27,7 @@
          %in = OpFunctionParameter %_ptr_CrossWorkgroup__struct_9
          %12 = OpLabel
          %13 = OpUndef %_struct_9
-         %14 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %14 = OpLoad %v3uint %gl_GlobalInvocationID
          %15 = OpCompositeExtract %uint %14 0
          %16 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__struct_9 %in %15
                OpStore %16 %13

@@ -30,7 +30,7 @@
           %4 = OpFunctionParameter %_ptr_CrossWorkgroup_double
          %14 = OpFunctionParameter %uint
          %15 = OpLabel
-         %16 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %16 = OpLoad %v3uint %gl_GlobalInvocationID
          %17 = OpCompositeExtract %uint %16 0
          %18 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v2double %in %17
          %19 = OpLoad %v2double %18

@@ -38,7 +38,7 @@
          %21 = OpLabel
          %22 = OpCompositeConstruct %_struct_11 %uint_2100483600 %uchar_128
          %23 = OpCompositeConstruct %_struct_12 %20 %22
-         %24 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %24 = OpLoad %v3ulong %gl_GlobalInvocationID
          %25 = OpCompositeExtract %ulong %24 0
          %26 = OpShiftLeftLogical %ulong %25 %ulong_32
          %27 = OpShiftRightArithmetic %ulong %26 %ulong_32
