@@ -29,7 +29,7 @@
          %13 = OpLabel
          %14 = OpCopyObject %half %half_0x1_ap_1
          %15 = OpFConvert %float %14
-         %16 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %16 = OpLoad %v3uint %gl_GlobalInvocationID
          %17 = OpCompositeExtract %uint %16 0
          %18 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_float %in %17
                OpStore %18 %15
