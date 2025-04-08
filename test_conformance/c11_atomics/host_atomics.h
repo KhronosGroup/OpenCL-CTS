@@ -130,7 +130,7 @@ CorrespondingType host_atomic_fetch_sub(volatile AtomicType *a, CorrespondingTyp
             return InterlockedExchangeSubtract((volatile cl_uint *)a, c);
         else if (std::is_same<AtomicType, HOST_ATOMIC_LONG>::value
                  || std::is_same<AtomicType, HOST_ATOMIC_ULONG>::value)
-            return InterlockedExchangeSubtract64((volatile cl_long *)a, c);
+            return InterlockedExchangeAdd64((volatile cl_long *)a, -c);
 #elif defined(__GNUC__)
         return __sync_fetch_and_sub(a, c);
 #else
