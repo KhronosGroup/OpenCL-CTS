@@ -711,12 +711,16 @@ clExternalMemoryImage::clExternalMemoryImage(
     std::vector<cl_mem_properties> extMemProperties1;
     cl_device_id devList[] = { deviceId, NULL };
 
-    VulkanImageTiling vulkanImageTiling =
-        vkClExternalMemoryHandleTilingAssumption(
-            deviceId, externalMemoryHandleType, &errcode_ret);
+    auto vulkanImageTiling = vkClExternalMemoryHandleTilingAssumption(
+        deviceId, externalMemoryHandleType, &errcode_ret);
     if (CL_SUCCESS != errcode_ret)
     {
         throw std::runtime_error("Failed to query OpenCL tiling mode");
+    }
+    if (vulkanImageTiling == std::nullopt)
+    {
+        throw std::runtime_error(
+            "Could not find image tiling supported by both Vulkan and OpenCL");
     }
 
 #ifdef _WIN32
@@ -1197,6 +1201,10 @@ cl_external_memory_handle_type_khr vkToOpenCLExternalMemoryHandleType(
 {
     switch (vkExternalMemoryHandleType)
     {
+        default:
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE:
+            log_error("Unexpected external memory handle type\n");
+            return 0;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
             return CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
@@ -1204,17 +1212,15 @@ cl_external_memory_handle_type_khr vkToOpenCLExternalMemoryHandleType(
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_KMT:
             return CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR;
-        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE: return 0;
     }
     return 0;
 }
 
-VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
+std::optional<VulkanImageTiling> vkClExternalMemoryHandleTilingAssumption(
     cl_device_id deviceId,
     VulkanExternalMemoryHandleType vkExternalMemoryHandleType, int *error_ret)
 {
     size_t size = 0;
-    VulkanImageTiling mode = VULKAN_IMAGE_TILING_OPTIMAL;
 
     assert(error_ret
            != nullptr); // errcode_ret is not optional, it must be checked
@@ -1225,12 +1231,12 @@ VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
         0, nullptr, &size);
     if (*error_ret != CL_SUCCESS)
     {
-        return mode;
+        return std::nullopt;
     }
 
     if (size == 0)
     {
-        return mode;
+        return std::nullopt;
     }
 
     std::vector<cl_external_memory_handle_type_khr> assume_linear_types(
@@ -1242,7 +1248,7 @@ VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
         size, assume_linear_types.data(), nullptr);
     if (*error_ret != CL_SUCCESS)
     {
-        return mode;
+        return std::nullopt;
     }
 
     if (std::find(
@@ -1250,8 +1256,8 @@ VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
             vkToOpenCLExternalMemoryHandleType(vkExternalMemoryHandleType))
         != assume_linear_types.end())
     {
-        mode = VULKAN_IMAGE_TILING_LINEAR;
+        return VULKAN_IMAGE_TILING_LINEAR;
     }
 
-    return mode;
+    return std::nullopt;
 }

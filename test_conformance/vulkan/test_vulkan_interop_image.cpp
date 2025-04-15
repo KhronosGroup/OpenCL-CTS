@@ -369,16 +369,22 @@ int run_test_with_two_queue(
                         }
                         log_info("External memory handle type: %d \n",
                                  vkExternalMemoryHandleType);
-                        VulkanImageTiling vulkanImageTiling =
+                        auto vulkanImageTiling =
                             vkClExternalMemoryHandleTilingAssumption(
                                 deviceId,
                                 vkExternalMemoryHandleTypeList[emhtIdx], &err);
                         ASSERT_SUCCESS(err,
                                        "Failed to query OpenCL tiling mode");
+                        if (vulkanImageTiling == std::nullopt)
+                        {
+                            log_info("No image tiling supported by both Vulkan "
+                                     "and OpenCL could be found\n");
+                            return TEST_SKIPPED_ITSELF;
+                        }
 
                         VulkanImage2D vkDummyImage2D(
                             vkDevice, vkFormatList[0], widthList[0],
-                            heightList[0], vulkanImageTiling, 1,
+                            heightList[0], *vulkanImageTiling, 1,
                             vkExternalMemoryHandleType);
                         const VulkanMemoryTypeList &memoryTypeList =
                             vkDummyImage2D.getMemoryTypeList();
@@ -406,7 +412,7 @@ int run_test_with_two_queue(
                             {
                                 VulkanImage2D vkImage2D(
                                     vkDevice, vkFormat, width, height,
-                                    vulkanImageTiling, numMipLevels,
+                                    *vulkanImageTiling, numMipLevels,
                                     vkExternalMemoryHandleType);
                                 ASSERT_LEQ(vkImage2D.getSize(), maxImage2DSize);
                                 totalImageMemSize =
@@ -415,7 +421,7 @@ int run_test_with_two_queue(
                             }
                             VulkanImage2DList vkImage2DList(
                                 num2DImages, vkDevice, vkFormat, width, height,
-                                vulkanImageTiling, numMipLevels,
+                                *vulkanImageTiling, numMipLevels,
                                 vkExternalMemoryHandleType);
                             for (size_t bIdx = 0; bIdx < num2DImages; bIdx++)
                             {
@@ -437,7 +443,7 @@ int run_test_with_two_queue(
                                 vkDevice, vkImage2DList);
                             VulkanImage2DList vkImage2DList2(
                                 num2DImages, vkDevice, vkFormat, width, height,
-                                vulkanImageTiling, numMipLevels,
+                                *vulkanImageTiling, numMipLevels,
                                 vkExternalMemoryHandleType);
                             for (size_t bIdx = 0; bIdx < num2DImages; bIdx++)
                             {
@@ -984,16 +990,21 @@ int run_test_with_one_queue(
                             continue;
                         }
 
-                        VulkanImageTiling vulkanImageTiling =
+                        auto vulkanImageTiling =
                             vkClExternalMemoryHandleTilingAssumption(
                                 deviceId,
                                 vkExternalMemoryHandleTypeList[emhtIdx], &err);
                         test_error_and_cleanup(
                             err, CLEANUP, "Failed to query OpenCL tiling mode");
-
+                        if (vulkanImageTiling == std::nullopt)
+                        {
+                            log_info("No image tiling supported by both Vulkan "
+                                     "and OpenCL could be found\n");
+                            return TEST_SKIPPED_ITSELF;
+                        }
                         VulkanImage2D vkDummyImage2D(
                             vkDevice, vkFormatList[0], widthList[0],
-                            heightList[0], vulkanImageTiling, 1,
+                            heightList[0], *vulkanImageTiling, 1,
                             vkExternalMemoryHandleType);
                         const VulkanMemoryTypeList &memoryTypeList =
                             vkDummyImage2D.getMemoryTypeList();
@@ -1020,7 +1031,7 @@ int run_test_with_one_queue(
                             {
                                 VulkanImage2D vkImage2D(
                                     vkDevice, vkFormat, width, height,
-                                    vulkanImageTiling, numMipLevels,
+                                    *vulkanImageTiling, numMipLevels,
                                     vkExternalMemoryHandleType);
                                 ASSERT_LEQ(vkImage2D.getSize(), maxImage2DSize);
                                 totalImageMemSize =
@@ -1029,7 +1040,7 @@ int run_test_with_one_queue(
                             }
                             VulkanImage2DList vkImage2DList(
                                 num2DImages, vkDevice, vkFormat, width, height,
-                                vulkanImageTiling, numMipLevels,
+                                *vulkanImageTiling, numMipLevels,
                                 vkExternalMemoryHandleType);
                             for (size_t bIdx = 0; bIdx < vkImage2DList.size();
                                  bIdx++)
@@ -1055,7 +1066,7 @@ int run_test_with_one_queue(
 
                             VulkanImage2DList vkImage2DList2(
                                 num2DImages, vkDevice, vkFormat, width, height,
-                                vulkanImageTiling, numMipLevels,
+                                *vulkanImageTiling, numMipLevels,
                                 vkExternalMemoryHandleType);
                             for (size_t bIdx = 0; bIdx < vkImage2DList2.size();
                                  bIdx++)

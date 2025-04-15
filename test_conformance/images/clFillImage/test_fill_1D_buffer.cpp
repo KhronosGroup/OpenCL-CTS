@@ -71,6 +71,7 @@ int test_fill_image_size_1D_buffer(cl_context context, cl_command_queue queue,
 int test_fill_image_set_1D_buffer(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
                                   cl_image_format *format,
+                                  cl_mem_flags mem_flags,
                                   ExplicitType outputType)
 {
     size_t maxWidth;
@@ -84,6 +85,7 @@ int test_fill_image_set_1D_buffer(cl_device_id device, cl_context context,
     memset(&imageInfo, 0x0, sizeof(image_descriptor));
     imageInfo.type = CL_MEM_OBJECT_IMAGE1D_BUFFER;
     imageInfo.format = format;
+    imageInfo.mem_flags = mem_flags;
     pixelSize = get_pixel_size(imageInfo.format);
 
     int error = clGetDeviceInfo(device, CL_DEVICE_IMAGE_MAX_BUFFER_SIZE,

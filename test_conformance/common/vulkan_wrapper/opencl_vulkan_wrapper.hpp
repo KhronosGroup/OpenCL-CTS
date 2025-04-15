@@ -26,6 +26,25 @@
 #include <OpenCL/cl_ext.h>
 #endif
 
+#include <optional>
+
+#define CREATE_OPENCL_SEMAPHORE(clSemaphore, vkSemaphore, ctx, handleType,     \
+                                devIdx, createExportable)                      \
+    if (!(createExportable                                                     \
+          && (check_external_semaphore_handle_type(                            \
+                  devIdx, getCLSemaphoreTypeFromVulkanType(handleType),        \
+                  CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR)                 \
+              == CL_SUCCESS)))                                                 \
+    {                                                                          \
+        clSemaphore = new clExternalImportableSemaphore(vkSemaphore, ctx,      \
+                                                        handleType, devIdx);   \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+        clSemaphore = new clExternalExportableSemaphore(vkSemaphore, ctx,      \
+                                                        handleType, devIdx);   \
+    }
+
 typedef cl_semaphore_khr (*pfnclCreateSemaphoreWithPropertiesKHR)(
     cl_context context, cl_semaphore_properties_khr *sema_props,
     cl_int *errcode_ret);
@@ -169,7 +188,7 @@ public:
 extern void init_cl_vk_ext(cl_platform_id, cl_uint num_devices,
                            cl_device_id *deviceIds);
 
-VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
+std::optional<VulkanImageTiling> vkClExternalMemoryHandleTilingAssumption(
     cl_device_id deviceId,
     VulkanExternalMemoryHandleType vkExternalMemoryHandleType, int *error_ret);
 

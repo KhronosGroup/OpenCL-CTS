@@ -31,7 +31,7 @@
         %val = OpFunctionParameter %_ptr_CrossWorkgroup_uint
     %counter = OpFunctionParameter %_ptr_CrossWorkgroup_uint
          %15 = OpLabel
-         %16 = OpLoad %v3ulong %__spirv_GlobalInvocationId Aligned 0
+         %16 = OpLoad %v3ulong %__spirv_GlobalInvocationId
          %17 = OpCompositeExtract %ulong %16 0
          %18 = OpShiftLeftLogical %ulong %17 %ulong_32
          %19 = OpShiftRightArithmetic %ulong %18 %ulong_32

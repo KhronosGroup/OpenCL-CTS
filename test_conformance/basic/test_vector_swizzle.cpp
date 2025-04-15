@@ -605,7 +605,7 @@ template <typename T, size_t N>
 static int test_vectype(const char* type_name, cl_device_id device,
                         cl_context context, cl_command_queue queue)
 {
-    log_info("    testing type %s%d\n", type_name, N);
+    log_info("    testing type %s%zu\n", type_name, N);
 
     cl_int error = CL_SUCCESS;
     int result = TEST_PASS;
