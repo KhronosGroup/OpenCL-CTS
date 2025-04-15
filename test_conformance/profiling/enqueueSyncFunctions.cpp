@@ -58,8 +58,6 @@ __kernel void test3(__global int* dst) {
 )CLC";
 
 int check_times2(const cl_ulong timestamp, const cl_ulong *timestamps_array, const std::string condition = "after") {
-    log_info("timestamp_array = {%lu %lu %lu %lu}\n", timestamps_array[0], timestamps_array[1], timestamps_array[2], timestamp);
-    log_info("timestamp diff = {%lli %lli %lli}\n", (long long int)(timestamp - timestamps_array[0]), (long long int)(timestamp - timestamps_array[1]), (long long int)(timestamp - timestamps_array[2]));
     if (condition == "after") {
         if (timestamp > timestamps_array[0] && timestamp > timestamps_array[1] && timestamp > timestamps_array[2]) {
             log_info("OK\n");
@@ -135,8 +133,7 @@ int test_enqueue_function(cl_device_id device, cl_context context, cl_command_qu
     error = fn(queue_with_props, 3, &events_list_set1[0], &eventEnqueueMarkerSet1);
     test_error(error, "Unable to enqueue sync command");
 
-    error = clFinish(queue_with_props);
-    // error = clWaitForEvents(1, &eventEnqueueMarkerSet1);
+    error = clWaitForEvents(1, &eventEnqueueMarkerSet1);
     test_error(error, "Unable to wait for event");
 
     // run 2 set of ndrange commands
@@ -144,13 +141,16 @@ int test_enqueue_function(cl_device_id device, cl_context context, cl_command_qu
     error |= clEnqueueNDRangeKernel(queue_with_props, kernel2, 1, NULL, global_work_size, NULL, 0, NULL, &events_list_set2[1]);
     error |= clEnqueueNDRangeKernel(queue_with_props, kernel3, 1, NULL, global_work_size, NULL, 0, NULL, &events_list_set2[2]);
     test_error(error, "Unable to enqueue kernels in set 2");
-
+    
     error = fn(queue_with_props, 3, &events_list_set2[0], &eventEnqueueMarkerSet2);
     test_error(error, "Unable to enqueue sync command");
-
-
+    
     error = clWaitForEvents(1, &eventEnqueueMarkerSet2);
     test_error(error, "Unable to wait for event");
+
+    error = clFinish(queue_with_props);
+    test_error(error, "Unable to finish the queue");
+
 
     error = clGetEventProfilingInfo(eventEnqueueMarkerSet1, CL_PROFILING_COMMAND_QUEUED, sizeof(cl_ulong), &queueStart, NULL);
     test_error(error, "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_QUEUED");
@@ -192,7 +192,6 @@ int test_enqueue_function(cl_device_id device, cl_context context, cl_command_qu
     error |= check_times2(timestamps_set2_cmd_start[2], timestamps_set1_cmd_end, "after");
 
     log_info("Sync command run after all cmds from set1... ");
-    // error |= check_times2(fnStart, timestamps_set1_cmd_end, "after");
     cl_ulong max_end = std::max({ timestamps_set1_cmd_end[0], timestamps_set1_cmd_end[1], timestamps_set1_cmd_end[2] });
     if (fnStart < max_end) {
         log_info("\nWARNING: fnStart (%lu) < max_end of set1 (%lu)\n", (unsigned long)fnStart, (unsigned long)max_end);
@@ -204,6 +203,17 @@ int test_enqueue_function(cl_device_id device, cl_context context, cl_command_qu
 
     log_info("Sync command finishes before all functions from set2... ");
     error |= check_times2(fnEnd, timestamps_set2_cmd_start, "before");
+
+    clReleaseEvent(eventEnqueueMarkerSet1);
+    clReleaseEvent(eventEnqueueMarkerSet2);
+    clReleaseKernel(kernel1);
+    clReleaseKernel(kernel2);
+    clReleaseKernel(kernel3);
+    clReleaseProgram(program);
+    clReleaseMemObject(buffer1);
+    clReleaseMemObject(buffer2);
+    clReleaseMemObject(buffer3);
+    clReleaseCommandQueue(queue_with_props);
 
     return error;
 }
