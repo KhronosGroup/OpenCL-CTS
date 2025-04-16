@@ -113,6 +113,7 @@ int test_enqueue_function(cl_device_id device, cl_context context,
     const size_t allocSize = global_work_size[0] * global_work_size[1]
         * global_work_size[2] * sizeof(uint32_t);
 
+    // setup test environment
     cl_command_queue_properties props_out_of_order = CL_QUEUE_PROFILING_ENABLE;
     queue_with_props =
         clCreateCommandQueue(context, device, props_out_of_order, &error);
@@ -189,21 +190,22 @@ int test_enqueue_function(cl_device_id device, cl_context context,
     error = clFinish(queue_with_props);
     test_error(error, "Unable to finish the queue");
 
-    error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES,
-                                  sizeof(props_out_of_order),
-                                  &props_out_of_order, NULL);
-    if (error != CL_SUCCESS
-        || !(props_out_of_order & CL_QUEUE_PROFILING_ENABLE))
-    {
-        printf("Command queue does not support profiling. Ensure "
-               "CL_QUEUE_PROFILING_ENABLE is enabled.\n");
-        return error;
-    }
-    if (eventEnqueueMarkerSet1 == NULL)
-    {
-        printf("Invalid event passed to clGetEventProfilingInfo.\n");
-        return CL_INVALID_EVENT;
-    }
+    // get profiling info
+    // error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES,
+    //                               sizeof(props_out_of_order),
+    //                               &props_out_of_order, NULL);
+    // if (error != CL_SUCCESS
+    //     || !(props_out_of_order & CL_QUEUE_PROFILING_ENABLE))
+    // {
+    //     printf("Command queue does not support profiling. Ensure "
+    //            "CL_QUEUE_PROFILING_ENABLE is enabled.\n");
+    //     return error;
+    // }
+    // if (eventEnqueueMarkerSet1 == NULL)
+    // {
+    //     printf("Invalid event passed to clGetEventProfilingInfo.\n");
+    //     return CL_INVALID_EVENT;
+    // }
 
     error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
                                     CL_PROFILING_COMMAND_QUEUED,
@@ -232,52 +234,6 @@ int test_enqueue_function(cl_device_id device, cl_context context,
     test_error(
         error,
         "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_END");
-
-    // error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
-    //                                 CL_PROFILING_COMMAND_QUEUED,
-    //                                 sizeof(cl_ulong), &queueStart, NULL);
-    // if (error != CL_SUCCESS)
-    // {
-    //     printf("Error: Unable to retrieve CL_PROFILING_COMMAND_QUEUED. Error
-    //     "
-    //            "code: %d\n",
-    //            error);
-    //     return error;
-    // }
-
-    // error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
-    //                                 CL_PROFILING_COMMAND_SUBMIT,
-    //                                 sizeof(cl_ulong), &submitStart, NULL);
-    // if (error != CL_SUCCESS)
-    // {
-    //     printf("Error: Unable to retrieve CL_PROFILING_COMMAND_SUBMIT. Error
-    //     "
-    //            "code: %d\n",
-    //            error);
-    //     return error;
-    // }
-
-    // error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
-    //                                 CL_PROFILING_COMMAND_START,
-    //                                 sizeof(cl_ulong), &fnStart, NULL);
-    // if (error != CL_SUCCESS)
-    // {
-    //     printf("Error: Unable to retrieve CL_PROFILING_COMMAND_START. Error "
-    //            "code: %d\n",
-    //            error);
-    //     return error;
-    // }
-
-    // error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
-    //                                 CL_PROFILING_COMMAND_END,
-    //                                 sizeof(cl_ulong), &fnEnd, NULL);
-    // if (error != CL_SUCCESS)
-    // {
-    //     printf("Error: Unable to retrieve CL_PROFILING_COMMAND_END. Error "
-    //            "code: %d\n",
-    //            error);
-    //     return error;
-    // }
 
     error = check_times(queueStart, submitStart, fnStart, fnEnd, device);
     test_error(error, "Checking timestamps function failed.");
@@ -312,6 +268,7 @@ int test_enqueue_function(cl_device_id device, cl_context context,
         error,
         "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_START");
 
+    // verify
     log_info("Verification:\n");
     log_info("cmd 1 from set2 run after all cmds from set1... ");
     error |= check_times2(timestamps_set2_cmd_start[0], timestamps_set1_cmd_end,
