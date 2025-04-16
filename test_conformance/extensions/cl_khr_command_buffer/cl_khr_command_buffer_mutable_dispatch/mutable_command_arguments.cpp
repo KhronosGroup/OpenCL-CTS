@@ -826,44 +826,31 @@ struct MutableDispatchSVMArguments : public MutableDispatchArgumentsTest
 
 }
 
-int test_mutable_dispatch_local_arguments(cl_device_id device,
-                                          cl_context context,
-                                          cl_command_queue queue,
-                                          int num_elements)
+REGISTER_TEST(mutable_dispatch_local_arguments)
 {
     return MakeAndRunTest<MutableDispatchLocalArguments>(device, context, queue,
                                                          num_elements);
 }
 
-int test_mutable_dispatch_global_arguments(cl_device_id device,
-                                           cl_context context,
-                                           cl_command_queue queue,
-                                           int num_elements)
+REGISTER_TEST(mutable_dispatch_global_arguments)
 {
     return MakeAndRunTest<MutableDispatchGlobalArguments>(device, context,
                                                           queue, num_elements);
 }
 
-int test_mutable_dispatch_pod_arguments(cl_device_id device, cl_context context,
-                                        cl_command_queue queue,
-                                        int num_elements)
+REGISTER_TEST(mutable_dispatch_pod_arguments)
 {
     return MakeAndRunTest<MutableDispatchPODArguments>(device, context, queue,
                                                        num_elements);
 }
 
-int test_mutable_dispatch_null_arguments(cl_device_id device,
-                                         cl_context context,
-                                         cl_command_queue queue,
-                                         int num_elements)
+REGISTER_TEST(mutable_dispatch_null_arguments)
 {
     return MakeAndRunTest<MutableDispatchNullArguments>(device, context, queue,
                                                         num_elements);
 }
 
-int test_mutable_dispatch_svm_arguments(cl_device_id device, cl_context context,
-                                        cl_command_queue queue,
-                                        int num_elements)
+REGISTER_TEST(mutable_dispatch_svm_arguments)
 {
     return MakeAndRunTest<MutableDispatchSVMArguments>(device, context, queue,
                                                        num_elements);

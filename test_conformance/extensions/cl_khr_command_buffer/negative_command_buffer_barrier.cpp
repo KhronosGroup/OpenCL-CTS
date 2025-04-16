@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 #include <vector>
 
 //--------------------------------------------------------------------------
@@ -159,42 +158,31 @@ struct CommandBufferBarrierSyncPointsNullOrNumZero
 };
 };
 
-int test_negative_command_buffer_barrier_not_null_queue(cl_device_id device,
-                                                        cl_context context,
-                                                        cl_command_queue queue,
-                                                        int num_elements)
+REGISTER_TEST(negative_command_buffer_barrier_not_null_queue)
 {
     return MakeAndRunTest<CommandBufferBarrierNotNullQueue>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_barrier_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_barrier_invalid_command_buffer)
 {
     return MakeAndRunTest<CommandBufferBarrierInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_barrier_buffer_finalized(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_barrier_buffer_finalized)
 {
     return MakeAndRunTest<CommandBufferBarrierBufferFinalized>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_barrier_mutable_handle_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_barrier_mutable_handle_not_null)
 {
     return MakeAndRunTest<CommandBufferBarrierMutableHandleNotNull>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_barrier_sync_points_null_or_num_zero(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_barrier_sync_points_null_or_num_zero)
 {
     return MakeAndRunTest<CommandBufferBarrierSyncPointsNullOrNumZero>(
         device, context, queue, num_elements);

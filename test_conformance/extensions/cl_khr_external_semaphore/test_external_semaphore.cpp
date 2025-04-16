@@ -119,9 +119,7 @@ static cl_int get_device_semaphore_handle_types(
 }
 
 // Confirm the semaphores can be successfully queried
-int test_external_semaphores_queries(cl_device_id device, cl_context context,
-                                     cl_command_queue defaultQueue,
-                                     int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_queries, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_semaphore");
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
@@ -199,10 +197,7 @@ int test_external_semaphores_queries(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
-int test_external_semaphores_cross_context(cl_device_id device,
-                                           cl_context context,
-                                           cl_command_queue defaultQueue,
-                                           int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_cross_context, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
@@ -325,9 +320,7 @@ int test_external_semaphores_cross_context(cl_device_id device,
 }
 
 // Confirm that a signal followed by a wait will complete successfully
-int test_external_semaphores_simple_1(cl_device_id device, cl_context context,
-                                      cl_command_queue defaultQueue,
-                                      int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_simple_1, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
@@ -397,9 +390,7 @@ int test_external_semaphores_simple_1(cl_device_id device, cl_context context,
 
 // Confirm that signal a semaphore with no event dependencies will not result
 // in an implicit dependency on everything previously submitted
-int test_external_semaphores_simple_2(cl_device_id device, cl_context context,
-                                      cl_command_queue defaultQueue,
-                                      int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_simple_2, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
@@ -501,9 +492,7 @@ int test_external_semaphores_simple_2(cl_device_id device, cl_context context,
 }
 
 // Confirm that a semaphore can be reused multiple times
-int test_external_semaphores_reuse(cl_device_id device, cl_context context,
-                                   cl_command_queue defaultQueue,
-                                   int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_reuse, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
@@ -689,51 +678,42 @@ static int external_semaphore_cross_queue_helper(cl_device_id device,
 
 
 // Confirm that a semaphore works across different ooo queues
-int test_external_semaphores_cross_queues_ooo(cl_device_id deviceID,
-                                              cl_context context,
-                                              cl_command_queue defaultQueue,
-                                              int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_cross_queues_ooo, Version(1, 2))
 {
     cl_int err;
 
     // Create ooo queues
     clCommandQueueWrapper queue_1 = clCreateCommandQueue(
-        context, deviceID, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
+        context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
     test_error(err, "Could not create command queue");
 
     clCommandQueueWrapper queue_2 = clCreateCommandQueue(
-        context, deviceID, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
+        context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
     test_error(err, "Could not create command queue");
 
-    return external_semaphore_cross_queue_helper(deviceID, context, queue_1,
+    return external_semaphore_cross_queue_helper(device, context, queue_1,
                                                  queue_2);
 }
 
 // Confirm that a semaphore works across different in-order queues
-int test_external_semaphores_cross_queues_io(cl_device_id deviceID,
-                                             cl_context context,
-                                             cl_command_queue defaultQueue,
-                                             int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_cross_queues_io, Version(1, 2))
 {
     cl_int err;
 
     // Create in-order queues
     clCommandQueueWrapper queue_1 =
-        clCreateCommandQueue(context, deviceID, 0, &err);
+        clCreateCommandQueue(context, device, 0, &err);
     test_error(err, "Could not create command queue");
 
     clCommandQueueWrapper queue_2 =
-        clCreateCommandQueue(context, deviceID, 0, &err);
+        clCreateCommandQueue(context, device, 0, &err);
     test_error(err, "Could not create command queue");
 
-    return external_semaphore_cross_queue_helper(deviceID, context, queue_1,
+    return external_semaphore_cross_queue_helper(device, context, queue_1,
                                                  queue_2);
 }
 
-int test_external_semaphores_cross_queues_io2(cl_device_id device,
-                                              cl_context context,
-                                              cl_command_queue defaultQueue,
-                                              int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_cross_queues_io2, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
@@ -835,10 +815,7 @@ int test_external_semaphores_cross_queues_io2(cl_device_id device,
 }
 
 // Confirm that we can signal multiple semaphores with one command
-int test_external_semaphores_multi_signal(cl_device_id device,
-                                          cl_context context,
-                                          cl_command_queue defaultQueue,
-                                          int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
@@ -920,9 +897,7 @@ int test_external_semaphores_multi_signal(cl_device_id device,
 }
 
 // Confirm that we can wait for multiple semaphores with one command
-int test_external_semaphores_multi_wait(cl_device_id device, cl_context context,
-                                        cl_command_queue defaultQueue,
-                                        int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_multi_wait, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
