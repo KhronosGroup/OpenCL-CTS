@@ -97,61 +97,215 @@ int test_enqueue_function(cl_device_id device, cl_context context, cl_command_qu
     const size_t allocSize = global_work_size[0] * global_work_size[1] * global_work_size[2] * sizeof(uint32_t);
 
     cl_command_queue_properties props_out_of_order = CL_QUEUE_PROFILING_ENABLE;
-    queue_with_props = clCreateCommandQueue(context, device, props_out_of_order, &error);
-    test_error(error, "Unable to create command queue");
+    queue_with_props = clCreateCommandQueue(
+        context,
+        device,
+        props_out_of_order,
+        &error);
+    test_error(
+        error,
+        "Unable to create command queue");
 
-    buffer1 = clCreateBuffer(context, CL_MEM_READ_WRITE, allocSize, NULL, &error);
-    test_error(error, "Unable to create test buffer1");
-    buffer2 = clCreateBuffer(context, CL_MEM_READ_WRITE, allocSize, NULL, &error);
-    test_error(error, "Unable to create test buffer2");
-    buffer3 = clCreateBuffer(context, CL_MEM_READ_WRITE, allocSize, NULL, &error);
-    test_error(error, "Unable to create test buffer3");
+    buffer1 = clCreateBuffer(
+        context,
+        CL_MEM_READ_WRITE,
+        allocSize,
+        NULL,
+        &error);
+    test_error(
+        error,
+        "Unable to create test buffer1");
+    buffer2 = clCreateBuffer(
+        context,
+        CL_MEM_READ_WRITE,
+        allocSize,
+        NULL,
+        &error);
+    test_error(
+        error,
+        "Unable to create test buffer2");
+    buffer3 = clCreateBuffer(
+        context,
+        CL_MEM_READ_WRITE,
+        allocSize,
+        NULL,
+        &error);
+    test_error(
+        error,
+        "Unable to create test buffer3");
 
-    error = create_single_kernel_helper(context, &program, &kernel1, 1, &test_kernel, "test1");
-    test_error(error, "Unable to create test kernel");
-    error = create_single_kernel_helper(context, &program, &kernel2, 1, &test_kernel, "test2");
-    test_error(error, "Unable to create test kernel");
-    error = create_single_kernel_helper(context, &program, &kernel3, 1, &test_kernel, "test3");
-    test_error(error, "Unable to create test kernel");
+    error = create_single_kernel_helper(
+        context,
+        &program,
+        &kernel1,
+        1,
+        &test_kernel,
+        "test1");
+    test_error(
+        error,
+        "Unable to create test kernel");
+    error = create_single_kernel_helper(
+        context,
+        &program,
+        &kernel2,
+        1,
+        &test_kernel,
+        "test2");
+    test_error(
+        error,
+        "Unable to create test kernel");
+    error = create_single_kernel_helper(
+        context,
+        &program,
+        &kernel3,
+        1,
+        &test_kernel,
+        "test3");
+    test_error(
+        error,
+        "Unable to create test kernel");
     
-    error = clSetKernelArg(kernel1, 0, sizeof(buffer1), &buffer1);
-    test_error(error, "Unable to set argument for test kernel");
-    error = clSetKernelArg(kernel2, 0, sizeof(buffer2), &buffer2);
-    test_error(error, "Unable to set argument for test kernel");
-    error = clSetKernelArg(kernel3, 0, sizeof(buffer3), &buffer3);
-    test_error(error, "Unable to set argument for test kernel");
+    error = clSetKernelArg(
+        kernel1,
+        0,
+        sizeof(buffer1),
+        &buffer1);
+    test_error(
+        error,
+        "Unable to set argument for test kernel");
+    error = clSetKernelArg(
+        kernel2,
+        0,
+        sizeof(buffer2),
+        &buffer2);
+    test_error(
+        error,
+        "Unable to set argument for test kernel");
+    error = clSetKernelArg(
+        kernel3,
+        0,
+        sizeof(buffer3),
+        &buffer3);
+    test_error(
+        error,
+        "Unable to set argument for test kernel");
 
     cl_event events_list_set1[3] = { NULL, NULL, NULL };
     cl_event events_list_set2[3] = { NULL, NULL, NULL };
 
     // run 1 set of ndrange commands
-    error = clEnqueueNDRangeKernel(queue_with_props, kernel1, 1, NULL, global_work_size, NULL, 0, NULL, &events_list_set1[0]);
-    error |= clEnqueueNDRangeKernel(queue_with_props, kernel2, 1, NULL, global_work_size, NULL, 0, NULL, &events_list_set1[1]);
-    error |= clEnqueueNDRangeKernel(queue_with_props, kernel3, 1, NULL, global_work_size, NULL, 0, NULL, &events_list_set1[2]);
-    test_error(error, "Unable to enqueue kernels in set 1");
+    error = clEnqueueNDRangeKernel(
+        queue_with_props,
+        kernel1,
+        1,
+        NULL,
+        global_work_size,
+        NULL,
+        0,
+        NULL,
+        &events_list_set1[0]);
+    error |= clEnqueueNDRangeKernel(
+        queue_with_props,
+        kernel2,
+        1,
+        NULL,
+        global_work_size,
+        NULL,
+        0,
+        NULL,
+        &events_list_set1[1]);
+    error |= clEnqueueNDRangeKernel(
+        queue_with_props,
+        kernel3,
+        1,
+        NULL,
+        global_work_size,
+        NULL,
+        0,
+        NULL,
+        &events_list_set1[2]);
+    test_error(
+        error,
+        "Unable to enqueue kernels in set 1");
 
-    error = fn(queue_with_props, 3, &events_list_set1[0], &eventEnqueueMarkerSet1);
-    test_error(error, "Unable to enqueue sync command");
+    error = fn(
+        queue_with_props,
+        3,
+        &events_list_set1[0],
+        &eventEnqueueMarkerSet1);
+    test_error(
+        error,
+        "Unable to enqueue sync command");
 
-    error = clWaitForEvents(1, &eventEnqueueMarkerSet1);
-    test_error(error, "Unable to wait for event");
+    error = clWaitForEvents(
+        1,
+        &eventEnqueueMarkerSet1);
+    test_error(
+        error,
+        "Unable to wait for event");
 
     // run 2 set of ndrange commands
-    error = clEnqueueNDRangeKernel(queue_with_props, kernel1, 1, NULL, global_work_size, NULL, 0, NULL, &events_list_set2[0]);
-    error |= clEnqueueNDRangeKernel(queue_with_props, kernel2, 1, NULL, global_work_size, NULL, 0, NULL, &events_list_set2[1]);
-    error |= clEnqueueNDRangeKernel(queue_with_props, kernel3, 1, NULL, global_work_size, NULL, 0, NULL, &events_list_set2[2]);
-    test_error(error, "Unable to enqueue kernels in set 2");
+    error = clEnqueueNDRangeKernel(
+        queue_with_props,
+        kernel1,
+        1,
+        NULL,
+        global_work_size,
+        NULL,
+        0,
+        NULL,
+        &events_list_set2[0]);
+    error |= clEnqueueNDRangeKernel(
+        queue_with_props,
+        kernel2,
+        1,
+        NULL,
+        global_work_size,
+        NULL,
+        0,
+        NULL,
+        &events_list_set2[1]);
+    error |= clEnqueueNDRangeKernel(
+        queue_with_props,
+        kernel3,
+        1,
+        NULL,
+        global_work_size,
+        NULL,
+        0,
+        NULL,
+        &events_list_set2[2]);
+    test_error(
+        error,
+        "Unable to enqueue kernels in set 2");
     
-    error = fn(queue_with_props, 3, &events_list_set2[0], &eventEnqueueMarkerSet2);
-    test_error(error, "Unable to enqueue sync command");
+    error = fn(
+        queue_with_props,
+        3,
+        &events_list_set2[0],
+        &eventEnqueueMarkerSet2);
+    test_error(
+        error,
+        "Unable to enqueue sync command");
     
-    error = clWaitForEvents(1, &eventEnqueueMarkerSet2);
-    test_error(error, "Unable to wait for event");
+    error = clWaitForEvents(
+        1,
+        &eventEnqueueMarkerSet2);
+    test_error(
+        error,
+        "Unable to wait for event");
 
     error = clFinish(queue_with_props);
-    test_error(error, "Unable to finish the queue");
+    test_error(
+        error,
+        "Unable to finish the queue");
 
-    error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES, sizeof(props_out_of_order), &props_out_of_order, NULL);
+    error = clGetCommandQueueInfo(
+        queue,
+        CL_QUEUE_PROPERTIES,
+        sizeof(props_out_of_order),
+        &props_out_of_order,
+        NULL);
     if (error != CL_SUCCESS || !(props_out_of_order & CL_QUEUE_PROFILING_ENABLE)) {
         printf("Command queue does not support profiling. Ensure CL_QUEUE_PROFILING_ENABLE is enabled.\n");
         return error;
@@ -173,65 +327,141 @@ int test_enqueue_function(cl_device_id device, cl_context context, cl_command_qu
     // error = clGetEventProfilingInfo(eventEnqueueMarkerSet1, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &fnEnd, NULL);
     // test_error(error, "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_END");
 
-    error = clGetEventProfilingInfo(eventEnqueueMarkerSet1, CL_PROFILING_COMMAND_QUEUED, sizeof(cl_ulong), &queueStart, NULL);
+    error = clGetEventProfilingInfo(
+        eventEnqueueMarkerSet1,
+        CL_PROFILING_COMMAND_QUEUED,
+        sizeof(cl_ulong),
+        &queueStart,
+        NULL);
     if (error != CL_SUCCESS)
     {
-        printf("Error: Unable to retrieve CL_PROFILING_COMMAND_QUEUED. Error code: %d\n", error);
+        printf("Error: Unable to retrieve CL_PROFILING_COMMAND_QUEUED. Error code: %d\n",
+            error);
         return error;
     }
 
-    error = clGetEventProfilingInfo(eventEnqueueMarkerSet1, CL_PROFILING_COMMAND_SUBMIT, sizeof(cl_ulong), &submitStart, NULL);
+    error = clGetEventProfilingInfo(
+        eventEnqueueMarkerSet1,
+        CL_PROFILING_COMMAND_SUBMIT,
+        sizeof(cl_ulong),
+        &submitStart,
+        NULL);
     if (error != CL_SUCCESS)
     {
-        printf("Error: Unable to retrieve CL_PROFILING_COMMAND_SUBMIT. Error code: %d\n", error);
+        printf("Error: Unable to retrieve CL_PROFILING_COMMAND_SUBMIT. Error code: %d\n",
+            error);
         return error;
     }
 
-    error = clGetEventProfilingInfo(eventEnqueueMarkerSet1, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &fnStart, NULL);
+    error = clGetEventProfilingInfo(
+        eventEnqueueMarkerSet1,
+        CL_PROFILING_COMMAND_START,
+        sizeof(cl_ulong),
+        &fnStart,
+        NULL);
     if (error != CL_SUCCESS)
     {
-        printf("Error: Unable to retrieve CL_PROFILING_COMMAND_START. Error code: %d\n", error);
+        printf("Error: Unable to retrieve CL_PROFILING_COMMAND_START. Error code: %d\n",
+            error);
         return error;
     }
 
-    error = clGetEventProfilingInfo(eventEnqueueMarkerSet1, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &fnEnd, NULL);
+    error = clGetEventProfilingInfo(
+        eventEnqueueMarkerSet1,
+        CL_PROFILING_COMMAND_END,
+        sizeof(cl_ulong),
+        &fnEnd,
+        NULL);
     if (error != CL_SUCCESS)
     {
-        printf("Error: Unable to retrieve CL_PROFILING_COMMAND_END. Error code: %d\n", error);
+        printf("Error: Unable to retrieve CL_PROFILING_COMMAND_END. Error code: %d\n",
+            error);
         return error;
     }
 
-    error = check_times(queueStart, submitStart, fnStart, fnEnd, device);
-    test_error(error, "Checking timestamps function failed.");
+    error = check_times(
+        queueStart,
+        submitStart,
+        fnStart,
+        fnEnd,
+        device);
+    test_error(
+        error,
+        "Checking timestamps function failed.");
 
 
     cl_ulong timestamps_set1_cmd_end[] = { 0, 0, 0 };
     cl_ulong timestamps_set2_cmd_start[] = { 0, 0, 0 };
 
-    error = clGetEventProfilingInfo(events_list_set1[0], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &timestamps_set1_cmd_end[0], NULL);
-    error |= clGetEventProfilingInfo(events_list_set1[1], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &timestamps_set1_cmd_end[1], NULL);
-    error |= clGetEventProfilingInfo(events_list_set1[2], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &timestamps_set1_cmd_end[2], NULL);
-    test_error(error, "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_START");
+    error = clGetEventProfilingInfo(
+        events_list_set1[0],
+        CL_PROFILING_COMMAND_END,
+        sizeof(cl_ulong),
+        &timestamps_set1_cmd_end[0],
+        NULL);
+    error |= clGetEventProfilingInfo(
+        events_list_set1[1],
+        CL_PROFILING_COMMAND_END,
+        sizeof(cl_ulong),
+        &timestamps_set1_cmd_end[1],
+        NULL);
+    error |= clGetEventProfilingInfo(
+        events_list_set1[2],
+        CL_PROFILING_COMMAND_END,
+        sizeof(cl_ulong),
+        &timestamps_set1_cmd_end[2],
+        NULL);
+    test_error(
+        error,
+        "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_START");
 
-    error = clGetEventProfilingInfo(events_list_set2[0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &timestamps_set2_cmd_start[0], NULL);
-    error |= clGetEventProfilingInfo(events_list_set2[1], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &timestamps_set2_cmd_start[1], NULL);
-    error |= clGetEventProfilingInfo(events_list_set2[2], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &timestamps_set2_cmd_start[2], NULL);
-    test_error(error, "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_START");
+    error = clGetEventProfilingInfo(
+        events_list_set2[0],
+        CL_PROFILING_COMMAND_START,
+        sizeof(cl_ulong),
+        &timestamps_set2_cmd_start[0],
+        NULL);
+    error |= clGetEventProfilingInfo(
+        events_list_set2[1],
+        CL_PROFILING_COMMAND_START,
+        sizeof(cl_ulong),
+        &timestamps_set2_cmd_start[1],
+        NULL);
+    error |= clGetEventProfilingInfo(
+        events_list_set2[2],
+        CL_PROFILING_COMMAND_START,
+        sizeof(cl_ulong),
+        &timestamps_set2_cmd_start[2],
+        NULL);
+    test_error(
+        error,
+        "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_START");
 
     log_info("Verification:\n");
     log_info("cmd 1 from set2 run after all cmds from set1... ");
-    error |= check_times2(timestamps_set2_cmd_start[0], timestamps_set1_cmd_end, "after");
+    error |= check_times2(
+        timestamps_set2_cmd_start[0],
+        timestamps_set1_cmd_end,
+        "after");
 
     log_info("cmd 2 from set2 run after all cmds from set1... ");
-    error |= check_times2(timestamps_set2_cmd_start[1], timestamps_set1_cmd_end, "after");
+    error |= check_times2(
+        timestamps_set2_cmd_start[1],
+        timestamps_set1_cmd_end,
+        "after");
 
     log_info("cmd 3 from set2 run after all cmds from set1... ");
-    error |= check_times2(timestamps_set2_cmd_start[2], timestamps_set1_cmd_end, "after");
+    error |= check_times2(
+        timestamps_set2_cmd_start[2],
+        timestamps_set1_cmd_end,
+        "after");
 
     log_info("Sync command run after all cmds from set1... ");
     cl_ulong max_end = std::max({ timestamps_set1_cmd_end[0], timestamps_set1_cmd_end[1], timestamps_set1_cmd_end[2] });
     if (fnStart < max_end) {
-        log_info("\nWARNING: fnStart (%lu) < max_end of set1 (%lu)\n", (unsigned long)fnStart, (unsigned long)max_end);
+        log_info("\nWARNING: fnStart (%lu) < max_end of set1 (%lu)\n",
+            (unsigned long)fnStart,
+            (unsigned long)max_end);
         error = 0;
     } else {
         log_info("\nOK: fnStart > all set1 ends\n");
@@ -239,7 +469,10 @@ int test_enqueue_function(cl_device_id device, cl_context context, cl_command_qu
     }
 
     log_info("Sync command finishes before all functions from set2... ");
-    error |= check_times2(fnEnd, timestamps_set2_cmd_start, "before");
+    error |= check_times2(
+        fnEnd,
+        timestamps_set2_cmd_start,
+        "before");
 
     clReleaseEvent(eventEnqueueMarkerSet1);
     clReleaseEvent(eventEnqueueMarkerSet2);
@@ -259,12 +492,22 @@ REGISTER_TEST(enqueue_marker)
 {
     int (*foo)(cl_command_queue command_queue, cl_uint num_events_in_wait_list, const cl_event *event_wait_list, cl_event *event);
     foo = clEnqueueMarkerWithWaitList;
-    return test_enqueue_function(device, context, queue, num_elements, foo);
+    return test_enqueue_function(
+        device,
+        context,
+        queue,
+        num_elements,
+        foo);
 }
 
 REGISTER_TEST(enqueue_barrier)
 {
     int (*foo)(cl_command_queue command_queue, cl_uint num_events_in_wait_list, const cl_event *event_wait_list, cl_event *event);
     foo = clEnqueueBarrierWithWaitList;
-    return test_enqueue_function(device, context, queue, num_elements, foo);
+    return test_enqueue_function(
+        device,
+        context,
+        queue,
+        num_elements,
+        foo);
 }
