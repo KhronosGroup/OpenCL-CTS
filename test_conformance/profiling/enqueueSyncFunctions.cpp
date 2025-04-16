@@ -205,69 +205,79 @@ int test_enqueue_function(cl_device_id device, cl_context context,
         return CL_INVALID_EVENT;
     }
 
-    // error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
-    // CL_PROFILING_COMMAND_QUEUED, sizeof(cl_ulong), &queueStart, NULL);
-    // test_error(error, "Unable to run clGetEventProfilingInfo
-    // CL_PROFILING_COMMAND_QUEUED");
-
-    // error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
-    // CL_PROFILING_COMMAND_SUBMIT, sizeof(cl_ulong), &submitStart, NULL);
-    // test_error(error, "Unable to run clGetEventProfilingInfo
-    // CL_PROFILING_COMMAND_SUBMIT");
-
-    // error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
-    // CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &fnStart, NULL);
-    // test_error(error, "Unable to run clGetEventProfilingInfo
-    // CL_PROFILING_COMMAND_START");
-
-    // error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
-    // CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &fnEnd, NULL);
-    // test_error(error, "Unable to run clGetEventProfilingInfo
-    // CL_PROFILING_COMMAND_END");
-
     error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
                                     CL_PROFILING_COMMAND_QUEUED,
                                     sizeof(cl_ulong), &queueStart, NULL);
-    if (error != CL_SUCCESS)
-    {
-        printf("Error: Unable to retrieve CL_PROFILING_COMMAND_QUEUED. Error "
-               "code: %d\n",
-               error);
-        return error;
-    }
+    test_error(
+        error,
+        "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_QUEUED");
 
     error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
                                     CL_PROFILING_COMMAND_SUBMIT,
                                     sizeof(cl_ulong), &submitStart, NULL);
-    if (error != CL_SUCCESS)
-    {
-        printf("Error: Unable to retrieve CL_PROFILING_COMMAND_SUBMIT. Error "
-               "code: %d\n",
-               error);
-        return error;
-    }
+    test_error(
+        error,
+        "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_SUBMIT");
 
     error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
                                     CL_PROFILING_COMMAND_START,
                                     sizeof(cl_ulong), &fnStart, NULL);
-    if (error != CL_SUCCESS)
-    {
-        printf("Error: Unable to retrieve CL_PROFILING_COMMAND_START. Error "
-               "code: %d\n",
-               error);
-        return error;
-    }
+    test_error(
+        error,
+        "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_START");
 
     error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
                                     CL_PROFILING_COMMAND_END, sizeof(cl_ulong),
                                     &fnEnd, NULL);
-    if (error != CL_SUCCESS)
-    {
-        printf("Error: Unable to retrieve CL_PROFILING_COMMAND_END. Error "
-               "code: %d\n",
-               error);
-        return error;
-    }
+    test_error(
+        error,
+        "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_END");
+
+    // error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
+    //                                 CL_PROFILING_COMMAND_QUEUED,
+    //                                 sizeof(cl_ulong), &queueStart, NULL);
+    // if (error != CL_SUCCESS)
+    // {
+    //     printf("Error: Unable to retrieve CL_PROFILING_COMMAND_QUEUED. Error
+    //     "
+    //            "code: %d\n",
+    //            error);
+    //     return error;
+    // }
+
+    // error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
+    //                                 CL_PROFILING_COMMAND_SUBMIT,
+    //                                 sizeof(cl_ulong), &submitStart, NULL);
+    // if (error != CL_SUCCESS)
+    // {
+    //     printf("Error: Unable to retrieve CL_PROFILING_COMMAND_SUBMIT. Error
+    //     "
+    //            "code: %d\n",
+    //            error);
+    //     return error;
+    // }
+
+    // error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
+    //                                 CL_PROFILING_COMMAND_START,
+    //                                 sizeof(cl_ulong), &fnStart, NULL);
+    // if (error != CL_SUCCESS)
+    // {
+    //     printf("Error: Unable to retrieve CL_PROFILING_COMMAND_START. Error "
+    //            "code: %d\n",
+    //            error);
+    //     return error;
+    // }
+
+    // error = clGetEventProfilingInfo(eventEnqueueMarkerSet1,
+    //                                 CL_PROFILING_COMMAND_END,
+    //                                 sizeof(cl_ulong), &fnEnd, NULL);
+    // if (error != CL_SUCCESS)
+    // {
+    //     printf("Error: Unable to retrieve CL_PROFILING_COMMAND_END. Error "
+    //            "code: %d\n",
+    //            error);
+    //     return error;
+    // }
 
     error = check_times(queueStart, submitStart, fnStart, fnEnd, device);
     test_error(error, "Checking timestamps function failed.");
