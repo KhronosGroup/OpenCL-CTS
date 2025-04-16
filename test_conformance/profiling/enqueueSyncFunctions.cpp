@@ -95,17 +95,17 @@ int test_enqueue_function(cl_device_id device, cl_context context, cl_command_qu
     cl_event eventEnqueueMarkerSet1, eventEnqueueMarkerSet2;
     size_t global_work_size[] = { 256, 256, 256 };
     const size_t allocSize = global_work_size[0] * global_work_size[1] * global_work_size[2] * sizeof(uint32_t);
-    cl_command_queue_properties props_out_of_order = CL_QUEUE_PROFILING_ENABLE;
 
+    cl_command_queue_properties props_out_of_order = CL_QUEUE_PROFILING_ENABLE;
     queue_with_props = clCreateCommandQueue(context, device, props_out_of_order, &error);
-    test_error(error, "Unable to create test buffer");
+    test_error(error, "Unable to create command queue");
 
     buffer1 = clCreateBuffer(context, CL_MEM_READ_WRITE, allocSize, NULL, &error);
-    test_error(error, "Unable to create test buffer");
+    test_error(error, "Unable to create test buffer1");
     buffer2 = clCreateBuffer(context, CL_MEM_READ_WRITE, allocSize, NULL, &error);
-    test_error(error, "Unable to create test buffer");
+    test_error(error, "Unable to create test buffer2");
     buffer3 = clCreateBuffer(context, CL_MEM_READ_WRITE, allocSize, NULL, &error);
-    test_error(error, "Unable to create test buffer");
+    test_error(error, "Unable to create test buffer3");
 
     error = create_single_kernel_helper(context, &program, &kernel1, 1, &test_kernel, "test1");
     test_error(error, "Unable to create test kernel");
@@ -152,8 +152,14 @@ int test_enqueue_function(cl_device_id device, cl_context context, cl_command_qu
     test_error(error, "Unable to finish the queue");
 
     error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES, sizeof(props_out_of_order), &props_out_of_order, NULL);
-    test_error(error != CL_SUCCESS || !(props_out_of_order & CL_QUEUE_PROFILING_ENABLE), "Command queue does not support profiling. Ensure CL_QUEUE_PROFILING_ENABLE is enabled.\n");
-    test_error(eventEnqueueMarkerSet1==NULL, "Invalid event passed to clGetEventProfilingInfo.\n");
+    if (error != CL_SUCCESS || !(props_out_of_order & CL_QUEUE_PROFILING_ENABLE)) {
+        printf("Command queue does not support profiling. Ensure CL_QUEUE_PROFILING_ENABLE is enabled.\n");
+        return error;
+    }
+    if (eventEnqueueMarkerSet1 == NULL) {
+        printf("Invalid event passed to clGetEventProfilingInfo.\n");
+        return CL_INVALID_EVENT;
+    }
 
     error = clGetEventProfilingInfo(eventEnqueueMarkerSet1, CL_PROFILING_COMMAND_QUEUED, sizeof(cl_ulong), &queueStart, NULL);
     test_error(error, "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_QUEUED");
