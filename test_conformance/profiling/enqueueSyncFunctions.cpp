@@ -151,6 +151,9 @@ int test_enqueue_function(cl_device_id device, cl_context context, cl_command_qu
     error = clFinish(queue_with_props);
     test_error(error, "Unable to finish the queue");
 
+    error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES, sizeof(props_out_of_order), &props_out_of_order, NULL);
+    test_error(error != CL_SUCCESS || !(props_out_of_order & CL_QUEUE_PROFILING_ENABLE), "Command queue does not support profiling. Ensure CL_QUEUE_PROFILING_ENABLE is enabled.\n");
+    test_error(eventEnqueueMarkerSet1==NULL, "Invalid event passed to clGetEventProfilingInfo.\n");
 
     error = clGetEventProfilingInfo(eventEnqueueMarkerSet1, CL_PROFILING_COMMAND_QUEUED, sizeof(cl_ulong), &queueStart, NULL);
     test_error(error, "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_QUEUED");
