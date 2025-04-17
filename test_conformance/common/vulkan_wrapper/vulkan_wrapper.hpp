@@ -491,6 +491,8 @@ public:
         VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
     virtual ~VulkanImage();
     virtual VulkanExtent3D getExtent3D(uint32_t mipLevel = 0) const;
+    virtual VkSubresourceLayout getSubresourceLayout() const;
+
     VulkanFormat getFormat() const;
     uint32_t getNumMipLevels() const;
     uint32_t getNumLayers() const;
@@ -560,7 +562,6 @@ public:
         VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
     virtual ~VulkanImage2D();
     virtual VulkanExtent3D getExtent3D(uint32_t mipLevel = 0) const;
-    virtual VkSubresourceLayout getSubresourceLayout() const;
 
     VulkanImage2D(const VulkanImage2D &image2D);
 };

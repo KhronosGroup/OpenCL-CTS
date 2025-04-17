@@ -1839,7 +1839,13 @@ VulkanImage::VulkanImage(
         vkImageCreateInfo.pNext = &vkExternalMemoryImageCreateInfo;
     }
 
-    vkCreateImage(m_device, &vkImageCreateInfo, NULL, &m_vkImage);
+    VkResult vkStatus =
+        vkCreateImage(m_device, &vkImageCreateInfo, NULL, &m_vkImage);
+    if (vkStatus != VK_SUCCESS)
+    {
+        throw std::runtime_error("Error: Failed create image.");
+    }
+
     VulkanImageCreateInfo = vkImageCreateInfo;
 
     VkMemoryDedicatedRequirements vkMemoryDedicatedRequirements = {};
@@ -1968,7 +1974,7 @@ VulkanExtent3D VulkanImage2D::getExtent3D(uint32_t mipLevel) const
     return VulkanExtent3D(width, height, depth);
 }
 
-VkSubresourceLayout VulkanImage2D::getSubresourceLayout() const
+VkSubresourceLayout VulkanImage::getSubresourceLayout() const
 {
     VkImageSubresource subresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 };
 
