@@ -271,19 +271,16 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     {
         for ( size_t y = 0; y < secondDim; y++ )
         {
-            if (memcmp( sourcePtr, destPtr, scanlineSize ) != 0)
+            size_t where = compare_scanlines(imageInfo, sourcePtr, destPtr);
+            if (where < imageInfo->width)
             {
                 // Find the first differing pixel
-                size_t pixel_size = get_pixel_size( imageInfo->format );
-                size_t where = compare_scanlines(imageInfo, sourcePtr, destPtr);
+                size_t pixel_size = get_pixel_size(imageInfo->format);
 
-                if (where < imageInfo->width)
-                {
-                    print_first_pixel_difference_error(
-                        where, sourcePtr + pixel_size * where,
-                        destPtr + pixel_size * where, imageInfo, y, thirdDim);
-                    return -1;
-                }
+                print_first_pixel_difference_error(
+                    where, sourcePtr + pixel_size * where,
+                    destPtr + pixel_size * where, imageInfo, y, thirdDim);
+                return -1;
             }
 
             total_matched += scanlineSize;
