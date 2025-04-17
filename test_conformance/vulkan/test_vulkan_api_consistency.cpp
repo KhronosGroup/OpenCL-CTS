@@ -216,14 +216,19 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
             getSupportedVulkanExternalMemoryHandleTypeList(
                 vkDevice->getPhysicalDevice())[0];
 
-        VulkanImageTiling vulkanImageTiling =
-            vkClExternalMemoryHandleTilingAssumption(
-                device, vkExternalMemoryHandleType, &errNum);
+        auto vulkanImageTiling = vkClExternalMemoryHandleTilingAssumption(
+            device, vkExternalMemoryHandleType, &errNum);
         ASSERT_SUCCESS(errNum, "Failed to query OpenCL tiling mode");
+        if (vulkanImageTiling == std::nullopt)
+        {
+            log_info("No image tiling supported by both Vulkan and OpenCL "
+                     "could be found\n");
+            return TEST_SKIPPED_ITSELF;
+        }
 
         VulkanImage2D vkImage2D = VulkanImage2D(
             *vkDevice, VULKAN_FORMAT_R8G8B8A8_UNORM, width, height,
-            vulkanImageTiling, 1, vkExternalMemoryHandleType);
+            *vulkanImageTiling, 1, vkExternalMemoryHandleType);
 
         const VulkanMemoryTypeList& memoryTypeList =
             vkImage2D.getMemoryTypeList();
@@ -373,6 +378,10 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
         for (VulkanExternalSemaphoreHandleType semaphoreHandleType :
              supportedExternalSemaphores)
         {
+            check_external_semaphore_handle_type(
+                device, getCLSemaphoreTypeFromVulkanType(semaphoreHandleType),
+                CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR);
+
             VulkanSemaphore vkVk2Clsemaphore(*vkDevice, semaphoreHandleType);
             VulkanSemaphore vkCl2Vksemaphore(*vkDevice, semaphoreHandleType);
             cl_semaphore_khr clCl2Vksemaphore;
@@ -388,6 +397,7 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
                 (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
                 (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,
             };
+
             switch (semaphoreHandleType)
             {
 #ifdef _WIN32
@@ -396,8 +406,6 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
                         " Opaque NT handles are only supported on Windows\n");
                     handle1 = vkVk2Clsemaphore.getHandle(semaphoreHandleType);
                     handle2 = vkCl2Vksemaphore.getHandle(semaphoreHandleType);
-                    errNum = check_external_semaphore_handle_type(
-                        device, CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
                     sema_props1.push_back(
                         (cl_semaphore_properties_khr)
                             CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
@@ -412,8 +420,6 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
                              "Windows\n");
                     handle1 = vkVk2Clsemaphore.getHandle(semaphoreHandleType);
                     handle2 = vkCl2Vksemaphore.getHandle(semaphoreHandleType);
-                    errNum = check_external_semaphore_handle_type(
-                        device, CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
                     sema_props1.push_back(
                         (cl_semaphore_properties_khr)
                             CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
@@ -427,8 +433,6 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
                 case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD:
                     fd1 = (int)vkVk2Clsemaphore.getHandle(semaphoreHandleType);
                     fd2 = (int)vkCl2Vksemaphore.getHandle(semaphoreHandleType);
-                    errNum = check_external_semaphore_handle_type(
-                        device, CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
                     sema_props1.push_back(
                         (cl_semaphore_properties_khr)
                             CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
@@ -441,8 +445,6 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
                 case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD:
                     fd1 = -1;
                     fd2 = -1;
-                    errNum = check_external_semaphore_handle_type(
-                        device, CL_SEMAPHORE_HANDLE_SYNC_FD_KHR);
                     sema_props1.push_back((cl_semaphore_properties_khr)
                                               CL_SEMAPHORE_HANDLE_SYNC_FD_KHR);
                     sema_props1.push_back((cl_semaphore_properties_khr)fd1);
@@ -458,7 +460,7 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
             if (CL_SUCCESS != errNum)
             {
                 throw std::runtime_error(
-                    "Unsupported external sempahore handle type\n ");
+                    "Unsupported external semaphore handle type\n ");
             }
             sema_props1.push_back((cl_semaphore_properties_khr)
                                       CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR);

@@ -21,16 +21,6 @@
 #include "procs.h"
 
 
-test_definition test_list[] = { ADD_TEST(context_create),
-                                ADD_TEST(get_device_ids),
-                                ADD_TEST(api),
-                                ADD_TEST(kernel),
-                                ADD_TEST(other_data_types),
-                                ADD_TEST(memory_access),
-                                ADD_TEST(interop_user_sync) };
-
-const int test_num = ARRAY_SIZE(test_list);
-
 clGetDeviceIDsFromDX9MediaAdapterKHR_fn clGetDeviceIDsFromDX9MediaAdapterKHR =
     NULL;
 clCreateFromDX9MediaSurfaceKHR_fn clCreateFromDX9MediaSurfaceKHR = NULL;
@@ -227,5 +217,6 @@ int main(int argc, const char *argv[])
 
     if (!MediaSurfaceSharingExtensionInit()) return TEST_FAIL;
 
-    return runTestHarness(argc, argv, test_num, test_list, true, 0);
+    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
+                          test_registry::getInstance().definitions(), true, 0);
 }

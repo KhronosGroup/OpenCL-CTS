@@ -485,7 +485,7 @@ public:
         VulkanExternalMemoryHandleType externalMemoryHandleType =
             VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
         VulkanImageCreateFlag imageCreateFlags = VULKAN_IMAGE_CREATE_FLAG_NONE,
-        VulkanImageTiling imageTiling = VULKAN_IMAGE_TILING_OPTIMAL,
+        VulkanImageTiling imageTiling = VULKAN_IMAGE_TILING_LINEAR,
         VulkanImageUsage imageUsage =
             VULKAN_IMAGE_USAGE_SAMPLED_STORAGE_TRANSFER_SRC_DST,
         VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
