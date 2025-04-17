@@ -1313,7 +1313,7 @@ public:
             host_atomic_fetch_sub(&destMemory[0], (HostDataType)oldValues[tid],
                                   MemoryOrder());
             oldValues[tid] = host_atomic_fetch_sub(
-                &destMemory[0], (HostDataType)0, MemoryOrder());
+                &destMemory[tid], (HostDataType)0, MemoryOrder());
         }
         else
         {
