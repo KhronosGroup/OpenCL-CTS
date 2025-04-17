@@ -13,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,8 +20,7 @@
 #include <sys/stat.h>
 #include <vector>
 
-#include "procs.h"
-#include "harness/conversions.h"
+#include "testBase.h"
 
 // clang-format off
 
@@ -66,7 +63,9 @@ static const char *async_strided_local_to_global_kernel =
 
 // clang-format on
 
-int test_strided_copy(cl_device_id deviceID, cl_context context, cl_command_queue queue, const char *kernelCode, ExplicitType vecType, int vecSize, int stride)
+static int test_strided_copy(cl_device_id deviceID, cl_context context,
+                             cl_command_queue queue, const char *kernelCode,
+                             ExplicitType vecType, int vecSize, int stride)
 {
     int error;
     clProgramWrapper program;
@@ -233,7 +232,10 @@ int test_strided_copy(cl_device_id deviceID, cl_context context, cl_command_queu
     return 0;
 }
 
-int test_strided_copy_all_types(cl_device_id deviceID, cl_context context, cl_command_queue queue, const char *kernelCode)
+static int test_strided_copy_all_types(cl_device_id deviceID,
+                                       cl_context context,
+                                       cl_command_queue queue,
+                                       const char *kernelCode)
 {
     const std::vector<ExplicitType> vecType = { kChar,  kUChar, kShort, kUShort,
                                                 kInt,   kUInt,  kLong,  kULong,
@@ -272,13 +274,14 @@ int test_strided_copy_all_types(cl_device_id deviceID, cl_context context, cl_co
     return 0;
 }
 
-int test_async_strided_copy_global_to_local(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(async_strided_copy_global_to_local)
 {
-    return test_strided_copy_all_types( deviceID, context, queue, async_strided_global_to_local_kernel );
+    return test_strided_copy_all_types(device, context, queue,
+                                       async_strided_global_to_local_kernel);
 }
 
-int test_async_strided_copy_local_to_global(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(async_strided_copy_local_to_global)
 {
-    return test_strided_copy_all_types( deviceID, context, queue, async_strided_local_to_global_kernel );
+    return test_strided_copy_all_types(device, context, queue,
+                                       async_strided_local_to_global_kernel);
 }
-

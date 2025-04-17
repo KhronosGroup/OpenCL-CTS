@@ -16,7 +16,9 @@
 #ifndef TOOLS_H
 #define TOOLS_H
 
-#include "procs.h"
+#include "harness/testHarness.h"
+#include "harness/typeWrappers.h"
+
 #include <vector>
 #include <map>
 #include <string>

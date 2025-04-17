@@ -16,14 +16,54 @@
 #ifndef _testBase_h
 #define _testBase_h
 
-#include "harness/compat.h"
-
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <vector>
 
-#include "procs.h"
+#include <CL/cl.h>
+
+#include "harness/conversions.h"
+#include "harness/testHarness.h"
+#include "harness/typeWrappers.h"
+
+// This is a macro rather than a function to be able to use and act like the
+// existing test_error macro.
+//
+// Not all compiler tests need to use this macro, only those that don't use the
+// test harness compiler helpers.
+#define check_compiler_available(DEVICE)                                       \
+    {                                                                          \
+        cl_bool compilerAvailable = CL_FALSE;                                  \
+        cl_int error = clGetDeviceInfo((DEVICE), CL_DEVICE_COMPILER_AVAILABLE, \
+                                       sizeof(compilerAvailable),              \
+                                       &compilerAvailable, NULL);              \
+        test_error(error, "Unable to query CL_DEVICE_COMPILER_AVAILABLE");     \
+        if (compilerAvailable == CL_FALSE)                                     \
+        {                                                                      \
+            log_info("Skipping test - no compiler is available.\n");           \
+            return TEST_SKIPPED_ITSELF;                                        \
+        }                                                                      \
+    }
+
+
+// scope guard helper to ensure proper releasing of sub devices
+struct SubDevicesScopeGuarded
+{
+    SubDevicesScopeGuarded(const cl_int dev_count)
+    {
+        sub_devices.resize(dev_count);
+    }
+    ~SubDevicesScopeGuarded()
+    {
+        for (auto &device : sub_devices)
+        {
+            cl_int err = clReleaseDevice(device);
+            if (err != CL_SUCCESS)
+                log_error("\n Releasing sub-device failed \n");
+        }
+    }
+
+    std::vector<cl_device_id> sub_devices;
+};
 
 #endif // _testBase_h
 

@@ -31,6 +31,7 @@
 #endif
 
 #include "harness/testHarness.h"
+#include "harness/parseParameters.h"
 
 unsigned int numCQ;
 bool multiImport;
@@ -38,6 +39,7 @@ bool multiCtx;
 bool debug_trace = false;
 bool useSingleImageKernel = false;
 bool useDeviceLocal = false;
+bool useValidationLayers = false;
 bool disableNTHandleType = false;
 bool enableOffset = false;
 
@@ -55,7 +57,15 @@ static void printUsage(const char *execName)
     log_info("\n");
     log_info("Options:\n");
     log_info("\t--debug_trace - Enables additional debug info logging\n");
-    log_info("\t--non_dedicated - Choose dedicated Vs. non_dedicated \n");
+    log_info("\t--useSingleImageKernel - Use the same image "
+             "(image_single_queue and image_multiple_queue tests)\n");
+    log_info("\t--useDeviceLocal - Skip tests that use images with local "
+             "memory type\n");
+    log_info("\t--disableNTHandleType - Skip tests that use win32 external "
+             "memory handle\n");
+    log_info("\t--useValidationLayers - Enables Vulkan validation layer "
+             "diagnostic output\n");
+    log_info("\t-h - Print test usage\n");
 }
 
 bool isDeviceSelection(const char *arg)
@@ -70,35 +80,47 @@ bool isDeviceSelection(const char *arg)
         || strcmp(arg, "CL_DEVICE_TYPE_DEFAULT") == 0;
 }
 
-size_t parseParams(int argc, const char *argv[], const char **argList)
+void parseParams(int &argc, const char *argv[])
 {
-    size_t argCount = 1;
-    for (int i = 1; i < argc; i++)
+    argc = parseCustomParam(argc, argv);
+
+    for (int i = 0; i < argc; ++i)
     {
+        int argsRemoveNum = 0;
+
         if (argv[i] == NULL) break;
         if (argv[i][0] == '-')
         {
             if (!strcmp(argv[i], "--debug_trace"))
             {
                 debug_trace = true;
+                argsRemoveNum = 1;
             }
             if (!strcmp(argv[i], "--useSingleImageKernel"))
             {
                 useSingleImageKernel = true;
+                argsRemoveNum = 1;
             }
             if (!strcmp(argv[i], "--useDeviceLocal"))
             {
                 useDeviceLocal = true;
+                argsRemoveNum = 1;
+            }
+            if (!strcmp(argv[i], "--useValidationLayers"))
+            {
+                useValidationLayers = true;
+                argsRemoveNum = 1;
             }
             if (!strcmp(argv[i], "--disableNTHandleType"))
             {
                 disableNTHandleType = true;
+                argsRemoveNum = 1;
             }
             if (strcmp(argv[i], "-h") == 0)
             {
                 printUsage(argv[0]);
-                argCount = 0; // Returning argCount=0 to assert error in main()
-                break;
+                argc = 0; // Returning argCount=0 to assert error in main()
+                return;
             }
         }
         else if (isDeviceSelection(argv[i]))
@@ -108,16 +130,20 @@ size_t parseParams(int argc, const char *argv[], const char **argList)
                 && strcmp(argv[i], "CL_DEVICE_TYPE_DEFAULT") != 0)
             {
                 log_info("Vulkan tests can only run on a GPU device.\n");
-                return 0;
+                argc = 0;
+                return;
             }
         }
-        else
+
+        if (argsRemoveNum > 0)
         {
-            argList[argCount] = argv[i];
-            argCount++;
+            for (int j = i; j < (argc - argsRemoveNum); ++j)
+                argv[j] = argv[j + argsRemoveNum];
+
+            argc -= argsRemoveNum;
+            --i;
         }
     }
-    return argCount;
 }
 
 int main(int argc, const char *argv[])
@@ -147,9 +173,9 @@ int main(int argc, const char *argv[])
         return 0;
     }
 
-    const char **argList = (const char **)calloc(argc, sizeof(char *));
-    size_t argCount = parseParams(argc, argv, argList);
-    if (argCount == 0) return 0;
+    parseParams(argc, argv);
+
+    if (argc == 0) return 0;
 
     return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
                           test_registry::getInstance().definitions(), false, 0);

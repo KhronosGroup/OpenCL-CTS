@@ -16,6 +16,12 @@
 #ifndef _testBase_h
 #define _testBase_h
 
+#include "harness/testHarness.h"
+#include "harness/kernelHelpers.h"
+#include "harness/errorHelpers.h"
+#include "harness/typeWrappers.h"
+#include "harness/conversions.h"
+#include "harness/mt19937.h"
 #include "harness/compat.h"
 
 #include <stdio.h>
@@ -23,9 +29,4 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
-
 #endif // _testBase_h
-
-
-

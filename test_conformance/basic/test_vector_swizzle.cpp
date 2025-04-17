@@ -19,8 +19,7 @@
 #include <string>
 #include <vector>
 
-#include "procs.h"
-#include "harness/testHarness.h"
+#include "testBase.h"
 
 static std::string pragma_extension;
 
@@ -606,7 +605,7 @@ template <typename T, size_t N>
 static int test_vectype(const char* type_name, cl_device_id device,
                         cl_context context, cl_command_queue queue)
 {
-    log_info("    testing type %s%d\n", type_name, N);
+    log_info("    testing type %s%zu\n", type_name, N);
 
     cl_int error = CL_SUCCESS;
     int result = TEST_PASS;
@@ -692,8 +691,7 @@ static int test_type(const char* type_name, cl_device_id device,
         | test_vectype<T, 16>(type_name, device, context, queue);
 }
 
-int test_vector_swizzle(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST(vector_swizzle)
 {
     int hasDouble = is_extension_available(device, "cl_khr_fp64");
     int hasHalf = is_extension_available(device, "cl_khr_fp16");

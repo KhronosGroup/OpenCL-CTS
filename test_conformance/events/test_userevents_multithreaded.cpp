@@ -30,8 +30,7 @@ void trigger_user_event(cl_event *event)
     clSetUserEventStatus(*event, CL_COMPLETE);
 }
 
-int test_userevents_multithreaded(cl_device_id deviceID, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+REGISTER_TEST(userevents_multithreaded)
 {
     cl_int error;
 
@@ -50,7 +49,7 @@ int test_userevents_multithreaded(cl_device_id deviceID, cl_context context,
 
     for (int i = 0; actions[i] != NULL; i++)
     {
-        error = actions[i]->Setup(deviceID, context, queue);
+        error = actions[i]->Setup(device, context, queue);
         test_error(error, "Unable to set up test action");
 
         error = actions[i]->Execute(queue, 1, &gateEvent, &actionEvents[i]);
