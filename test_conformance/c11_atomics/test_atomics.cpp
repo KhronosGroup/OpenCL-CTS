@@ -1181,7 +1181,7 @@ public:
             host_atomic_fetch_add(&destMemory[0], (HostDataType)oldValues[tid],
                                   MemoryOrder());
             oldValues[tid] = host_atomic_fetch_add(
-                &destMemory[0], (HostDataType)0, MemoryOrder());
+                &destMemory[tid], (HostDataType)0, MemoryOrder());
         }
         else
         {
