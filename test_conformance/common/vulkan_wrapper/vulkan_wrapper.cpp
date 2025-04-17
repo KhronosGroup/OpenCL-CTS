@@ -1976,8 +1976,7 @@ VulkanExtent3D VulkanImage2D::getExtent3D(uint32_t mipLevel) const
 
 VkSubresourceLayout VulkanImage::getSubresourceLayout() const
 {
-    VkImageSubresource subresource = { VK_IMAGE_ASPECT_COLOR_BIT,
-                                       m_numMipLevels, 0 };
+    VkImageSubresource subresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 };
 
     VkSubresourceLayout subresourceLayout = { 0 };
     vkGetImageSubresourceLayout(m_device, m_vkImage, &subresource,
