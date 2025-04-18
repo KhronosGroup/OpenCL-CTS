@@ -25,12 +25,10 @@
 
 #include "utility.h"
 
-#if defined(__SSE__)                                                           \
-    || (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64)))
+#if defined(__SSE__) || _M_IX86_FP == 1
 #include <xmmintrin.h>
 #endif
-#if defined(__SSE2__)                                                          \
-    || (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64)))
+#if defined(__SSE2__) || _M_IX86_FP == 2 || defined(_M_X64)
 #include <emmintrin.h>
 #endif
 
@@ -855,8 +853,7 @@ double reference_add(double x, double y)
     volatile float a = (float)x;
     volatile float b = (float)y;
 
-#if defined(__SSE__)                                                           \
-    || (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64)))
+#if defined(__SSE__) || _M_IX86_FP == 1
     // defeat x87
     __m128 va = _mm_set_ss((float)a);
     __m128 vb = _mm_set_ss((float)b);
@@ -953,8 +950,7 @@ double reference_subtract(double x, double y)
 {
     volatile float a = (float)x;
     volatile float b = (float)y;
-#if defined(__SSE__)                                                           \
-    || (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64)))
+#if defined(__SSE__) || _M_IX86_FP == 1
     // defeat x87
     __m128 va = _mm_set_ss((float)a);
     __m128 vb = _mm_set_ss((float)b);
@@ -970,8 +966,7 @@ double reference_multiply(double x, double y)
 {
     volatile float a = (float)x;
     volatile float b = (float)y;
-#if defined(__SSE__)                                                           \
-    || (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64)))
+#if defined(__SSE__) || _M_IX86_FP == 1
     // defeat x87
     __m128 va = _mm_set_ss((float)a);
     __m128 vb = _mm_set_ss((float)b);
