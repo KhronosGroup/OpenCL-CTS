@@ -30,26 +30,6 @@ enum class RunMode
     RM_SIGNAL
 };
 
-// scope guard helper to ensure proper releasing of sub devices
-struct SubDevicesScopeGuarded
-{
-    SubDevicesScopeGuarded(const cl_int dev_count)
-    {
-        sub_devices.resize(dev_count);
-    }
-    ~SubDevicesScopeGuarded()
-    {
-        for (auto& device : sub_devices)
-        {
-            cl_int err = clReleaseDevice(device);
-            if (err != CL_SUCCESS)
-                log_error("\n Releasing sub-device failed \n");
-        }
-    }
-
-    std::vector<cl_device_id> sub_devices;
-};
-
 // the device associated with command_queue is not same as one of the devices
 // specified by CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR at the time of creating one
 // or more of sema_objects.
