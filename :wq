@@ -1,0 +1,17 @@
+OpenCL profiling timestamp report correction
+
+https://github.com/KhronosGroup/OpenCL-CTS/pull/1780 pr remake.
+Test verifies if clEnqueueMarkerWithWaitList and clEnqueueBarrierWithWaitList
+sync commands have proper timestamps.
+
+Signed-off-by: Wojciech Konior <wojciech.konior@intel.com>
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch profiling_new_cmds
+# Your branch is up to date with 'WojciechKonior/profiling_new_cmds'.
+#
+# Changes to be committed:
+#	modified:   test_conformance/profiling/enqueueSyncFunctions.cpp
+#

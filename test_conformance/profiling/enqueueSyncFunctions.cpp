@@ -90,7 +90,8 @@ int test_enqueue_function(cl_device_id device, cl_context context,
         * global_work_size[2] * sizeof(uint32_t);
 
     // setup test environment
-    cl_command_queue_properties props_out_of_order = CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
+    cl_command_queue_properties props_out_of_order =
+        CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
     queue_with_props =
         clCreateCommandQueue(context, device, props_out_of_order, &error);
     test_error(error, "Unable to create command queue");
@@ -116,8 +117,7 @@ int test_enqueue_function(cl_device_id device, cl_context context,
     test_error(error, "Unable to enqueue kernels in set 1");
 
     error =
-        fn(queue_with_props, 1, &events_list_set1[0],
-        &eventEnqueueMarkerSet1);
+        fn(queue_with_props, 1, &events_list_set1[0], &eventEnqueueMarkerSet1);
     test_error(error, "Unable to enqueue sync command");
 
     error = clWaitForEvents(1, &eventEnqueueMarkerSet1);
