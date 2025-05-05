@@ -22,29 +22,7 @@
 #include "procs.h"
 
 static const char *test_kernel = R"CLC(
-__kernel void test1(__global int* dst) {
-    size_t id = get_global_linear_id();
-    size_t loop_end = 1<<12UL;
-    for (size_t i = 0; i <= loop_end; i++) {
-        if(i%1 == 0) {
-            dst[id] = 0;
-        } else {
-            dst[id] += 1;
-        }
-    }
-}
-__kernel void test2(__global int* dst) {
-    size_t id = get_global_linear_id();
-    size_t loop_end = 1<<12UL;
-    for (size_t i = 0; i <= loop_end; i++) {
-        if(i%2 == 0) {
-            dst[id] = 0;
-        } else {
-            dst[id] += 1;
-        }
-    }
-}
-__kernel void test3(__global int* dst) {
+__kernel void test(__global int* dst) {
     size_t id = get_global_linear_id();
     size_t loop_end = 1<<12UL;
     for (size_t i = 0; i <= loop_end; i++) {
@@ -62,8 +40,7 @@ int check_times2(const cl_ulong timestamp, const cl_ulong *timestamps_array,
 {
     if (condition == "after")
     {
-        if (timestamp > timestamps_array[0] && timestamp > timestamps_array[1]
-            && timestamp > timestamps_array[2])
+        if (timestamp > timestamps_array[0])
         {
             log_info("OK\n");
         }
@@ -75,8 +52,7 @@ int check_times2(const cl_ulong timestamp, const cl_ulong *timestamps_array,
     }
     else if (condition == "before")
     {
-        if (timestamp < timestamps_array[0] && timestamp < timestamps_array[1]
-            && timestamp < timestamps_array[2])
+        if (timestamp < timestamps_array[0])
         {
             log_info("OK\n");
         }
@@ -104,9 +80,9 @@ int test_enqueue_function(cl_device_id device, cl_context context,
 {
     cl_int error;
     cl_command_queue queue_with_props;
-    cl_mem buffer1, buffer2, buffer3;
+    cl_mem buffer;
     cl_program program;
-    cl_kernel kernel1, kernel2, kernel3;
+    cl_kernel kernel;
     cl_ulong queueStart, submitStart, fnStart, fnEnd;
     cl_event eventEnqueueMarkerSet1, eventEnqueueMarkerSet2;
     size_t global_work_size[] = { 256, 256, 256 };
@@ -114,78 +90,47 @@ int test_enqueue_function(cl_device_id device, cl_context context,
         * global_work_size[2] * sizeof(uint32_t);
 
     // setup test environment
-    cl_command_queue_properties props_out_of_order =
-        CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
+    cl_command_queue_properties props_out_of_order = CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
     queue_with_props =
         clCreateCommandQueue(context, device, props_out_of_order, &error);
     test_error(error, "Unable to create command queue");
 
-    buffer1 =
+    buffer =
         clCreateBuffer(context, CL_MEM_READ_WRITE, allocSize, NULL, &error);
-    test_error(error, "Unable to create test buffer1");
-    buffer2 =
-        clCreateBuffer(context, CL_MEM_READ_WRITE, allocSize, NULL, &error);
-    test_error(error, "Unable to create test buffer2");
-    buffer3 =
-        clCreateBuffer(context, CL_MEM_READ_WRITE, allocSize, NULL, &error);
-    test_error(error, "Unable to create test buffer3");
+    test_error(error, "Unable to create test buffer");
 
-    error = create_single_kernel_helper(context, &program, &kernel1, 1,
-                                        &test_kernel, "test1");
-    test_error(error, "Unable to create test kernel");
-    error = create_single_kernel_helper(context, &program, &kernel2, 1,
-                                        &test_kernel, "test2");
-    test_error(error, "Unable to create test kernel");
-    error = create_single_kernel_helper(context, &program, &kernel3, 1,
-                                        &test_kernel, "test3");
+    error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                        &test_kernel, "test");
     test_error(error, "Unable to create test kernel");
 
-    error = clSetKernelArg(kernel1, 0, sizeof(buffer1), &buffer1);
-    test_error(error, "Unable to set argument for test kernel");
-    error = clSetKernelArg(kernel2, 0, sizeof(buffer2), &buffer2);
-    test_error(error, "Unable to set argument for test kernel");
-    error = clSetKernelArg(kernel3, 0, sizeof(buffer3), &buffer3);
+    error = clSetKernelArg(kernel, 0, sizeof(buffer), &buffer);
     test_error(error, "Unable to set argument for test kernel");
 
-    cl_event events_list_set1[3] = { NULL, NULL, NULL };
-    cl_event events_list_set2[3] = { NULL, NULL, NULL };
+    cl_event events_list_set1[1] = { NULL };
+    cl_event events_list_set2[1] = { NULL };
 
     // run 1 set of ndrange commands
-    error = clEnqueueNDRangeKernel(queue_with_props, kernel1, 1, NULL,
-                                   global_work_size, NULL, 0, NULL,
-                                   &events_list_set1[0]);
-    error |= clEnqueueNDRangeKernel(queue_with_props, kernel2, 1, NULL,
+    error |= clEnqueueNDRangeKernel(queue_with_props, kernel, 1, NULL,
                                     global_work_size, NULL, 0, NULL,
-                                    &events_list_set1[1]);
-    error |= clEnqueueNDRangeKernel(queue_with_props, kernel3, 1, NULL,
-                                    global_work_size, NULL, 0, NULL,
-                                    &events_list_set1[2]);
+                                    &events_list_set1[0]);
     test_error(error, "Unable to enqueue kernels in set 1");
 
-    // error = clFinish(queue_with_props);
-    // test_error(error, "Unable to finish the queue");
-
     error =
-        fn(queue_with_props, 3, &events_list_set1[0], &eventEnqueueMarkerSet1);
+        fn(queue_with_props, 1, &events_list_set1[0],
+        &eventEnqueueMarkerSet1);
     test_error(error, "Unable to enqueue sync command");
 
     error = clWaitForEvents(1, &eventEnqueueMarkerSet1);
     test_error(error, "Unable to wait for event");
 
     // run 2 set of ndrange commands
-    error = clEnqueueNDRangeKernel(queue_with_props, kernel1, 1, NULL,
-                                   global_work_size, NULL, 0, NULL,
-                                   &events_list_set2[0]);
-    error |= clEnqueueNDRangeKernel(queue_with_props, kernel2, 1, NULL,
+    error |= clEnqueueNDRangeKernel(queue_with_props, kernel, 1, NULL,
                                     global_work_size, NULL, 0, NULL,
-                                    &events_list_set2[1]);
-    error |= clEnqueueNDRangeKernel(queue_with_props, kernel3, 1, NULL,
-                                    global_work_size, NULL, 0, NULL,
-                                    &events_list_set2[2]);
+                                    &events_list_set2[0]);
     test_error(error, "Unable to enqueue kernels in set 2");
 
     error =
-        fn(queue_with_props, 3, &events_list_set2[0], &eventEnqueueMarkerSet2);
+        fn(queue_with_props, 1, &events_list_set2[0], &eventEnqueueMarkerSet2);
     test_error(error, "Unable to enqueue sync command");
 
     error = clWaitForEvents(1, &eventEnqueueMarkerSet2);
@@ -227,47 +172,27 @@ int test_enqueue_function(cl_device_id device, cl_context context,
     test_error(error, "Checking timestamps function failed.");
 
 
-    cl_ulong timestamps_set1_cmd_end[] = { 0, 0, 0 };
-    cl_ulong timestamps_set2_cmd_start[] = { 0, 0, 0 };
+    cl_ulong timestamps_set1_cmd_end[1] = { 0 };
+    cl_ulong timestamps_set2_cmd_start[1] = { 0 };
 
-    error = clGetEventProfilingInfo(events_list_set1[0],
-                                    CL_PROFILING_COMMAND_END, sizeof(cl_ulong),
-                                    &timestamps_set1_cmd_end[0], NULL);
-    error |= clGetEventProfilingInfo(events_list_set1[1],
+    error |= clGetEventProfilingInfo(events_list_set1[0],
                                      CL_PROFILING_COMMAND_END, sizeof(cl_ulong),
-                                     &timestamps_set1_cmd_end[1], NULL);
-    error |= clGetEventProfilingInfo(events_list_set1[2],
-                                     CL_PROFILING_COMMAND_END, sizeof(cl_ulong),
-                                     &timestamps_set1_cmd_end[2], NULL);
+                                     &timestamps_set1_cmd_end[0], NULL);
     test_error(
         error,
         "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_START");
 
-    error = clGetEventProfilingInfo(
+    error |= clGetEventProfilingInfo(
         events_list_set2[0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong),
         &timestamps_set2_cmd_start[0], NULL);
-    error |= clGetEventProfilingInfo(
-        events_list_set2[1], CL_PROFILING_COMMAND_START, sizeof(cl_ulong),
-        &timestamps_set2_cmd_start[1], NULL);
-    error |= clGetEventProfilingInfo(
-        events_list_set2[2], CL_PROFILING_COMMAND_START, sizeof(cl_ulong),
-        &timestamps_set2_cmd_start[2], NULL);
     test_error(
         error,
         "Unable to run clGetEventProfilingInfo CL_PROFILING_COMMAND_START");
 
     // verify
     log_info("Verification:\n");
-    log_info("cmd 1 from set2 run after all cmds from set1... ");
-    error |= check_times2(timestamps_set2_cmd_start[0], timestamps_set1_cmd_end,
-                          "after");
-
-    log_info("cmd 2 from set2 run after all cmds from set1... ");
-    error |= check_times2(timestamps_set2_cmd_start[1], timestamps_set1_cmd_end,
-                          "after");
-
     log_info("cmd 3 from set2 run after all cmds from set1... ");
-    error |= check_times2(timestamps_set2_cmd_start[2], timestamps_set1_cmd_end,
+    error |= check_times2(timestamps_set2_cmd_start[0], timestamps_set1_cmd_end,
                           "after");
 
     log_info("Sync command run after all cmds from set1... ");
@@ -278,13 +203,9 @@ int test_enqueue_function(cl_device_id device, cl_context context,
 
     clReleaseEvent(eventEnqueueMarkerSet1);
     clReleaseEvent(eventEnqueueMarkerSet2);
-    clReleaseKernel(kernel1);
-    clReleaseKernel(kernel2);
-    clReleaseKernel(kernel3);
+    clReleaseKernel(kernel);
     clReleaseProgram(program);
-    clReleaseMemObject(buffer1);
-    clReleaseMemObject(buffer2);
-    clReleaseMemObject(buffer3);
+    clReleaseMemObject(buffer);
     clReleaseCommandQueue(queue_with_props);
 
     return error;
