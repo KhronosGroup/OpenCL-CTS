@@ -298,10 +298,8 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
             vkImage2D.getVkImageCreateInfo();
 
         auto layout = vkImage2D.getSubresourceLayout();
-        errNum = getCLImageInfoFromVkImageInfo(
-            device, &VulkanImageCreateInfo, &img_format, &image_desc,
-            vulkanImageTiling == VULKAN_IMAGE_TILING_LINEAR ? &layout
-                                                            : nullptr);
+        errNum = getCLImageInfoFromVkImageInfo(device, &VulkanImageCreateInfo,
+                                               &img_format, &image_desc);
         test_error_fail(errNum, "getCLImageInfoFromVkImageInfo failed!!!");
 
         clMemWrapper image;

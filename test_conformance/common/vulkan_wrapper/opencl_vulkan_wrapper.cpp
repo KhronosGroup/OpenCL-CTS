@@ -430,7 +430,7 @@ size_t GetElementNBytes(const cl_image_format *format)
 
 cl_int getImageDimensions(const VkImageCreateInfo *VulkanImageCreateInfo,
                           cl_image_format *img_fmt, cl_image_desc *img_desc,
-                          VkExtent3D max_ext, const VkSubresourceLayout *layout)
+                          VkExtent3D max_ext)
 {
     test_assert_error(
         VulkanImageCreateInfo != nullptr,
@@ -443,19 +443,6 @@ cl_int getImageDimensions(const VkImageCreateInfo *VulkanImageCreateInfo,
     img_desc->image_depth = VulkanImageCreateInfo->extent.depth;
     img_desc->image_width = VulkanImageCreateInfo->extent.width;
     img_desc->image_height = VulkanImageCreateInfo->extent.height;
-
-    if (layout != nullptr)
-    {
-        size_t element_size = GetElementNBytes(img_fmt);
-        size_t row_pitch = element_size * VulkanImageCreateInfo->extent.width;
-        row_pitch = row_pitch < layout->rowPitch ? layout->rowPitch : row_pitch;
-        img_desc->image_row_pitch = row_pitch;
-
-        size_t slice_pitch = row_pitch * VulkanImageCreateInfo->extent.height;
-        slice_pitch =
-            slice_pitch < layout->depthPitch ? layout->depthPitch : slice_pitch;
-        img_desc->image_slice_pitch = slice_pitch;
-    }
 
     switch (img_desc->image_type)
     {
@@ -479,8 +466,7 @@ cl_int getImageDimensions(const VkImageCreateInfo *VulkanImageCreateInfo,
 cl_int
 getCLImageInfoFromVkImageInfo(const cl_device_id device,
                               const VkImageCreateInfo *VulkanImageCreateInfo,
-                              cl_image_format *img_fmt, cl_image_desc *img_desc,
-                              const VkSubresourceLayout *layout)
+                              cl_image_format *img_fmt, cl_image_desc *img_desc)
 {
     cl_int error = CL_SUCCESS;
 
@@ -535,8 +521,8 @@ getCLImageInfoFromVkImageInfo(const cl_device_id device,
     // memory handle, then the image slice pitch is implementation-defined
     img_desc->image_slice_pitch = 0;
 
-    error = getImageDimensions(VulkanImageCreateInfo, img_fmt, img_desc,
-                               max_ext, layout);
+    error =
+        getImageDimensions(VulkanImageCreateInfo, img_fmt, img_desc, max_ext);
     if (CL_SUCCESS != error)
     {
         throw std::runtime_error("getImageDimensions failed!!!");

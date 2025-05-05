@@ -71,10 +71,9 @@ extern pfnclEnqueueReleaseExternalMemObjectsKHR
 extern pfnclReleaseSemaphoreKHR clReleaseSemaphoreKHRptr;
 extern pfnclReImportSemaphoreSyncFdKHR pfnclReImportSemaphoreSyncFdKHRptr;
 
-cl_int
-getCLImageInfoFromVkImageInfo(const cl_device_id, const VkImageCreateInfo *,
-                              cl_image_format *, cl_image_desc *,
-                              const VkSubresourceLayout *layout = nullptr);
+cl_int getCLImageInfoFromVkImageInfo(const cl_device_id,
+                                     const VkImageCreateInfo *,
+                                     cl_image_format *, cl_image_desc *);
 cl_int check_external_memory_handle_type(
     cl_device_id deviceID,
     cl_external_memory_handle_type_khr requiredHandleType);
