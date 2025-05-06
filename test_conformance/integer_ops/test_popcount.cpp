@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
+#include "testBase.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -21,9 +21,6 @@
 #include <sys/stat.h>
 
 #include <cinttypes>
-
-#include "procs.h"
-
 #define str(s) #s
 
 #define __popcnt(x, __T, __n, __r) \
@@ -92,7 +89,7 @@ static void printSrc(const char *src[], int nSrcStrings) {
     }
 }
 
-int test_popcount(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST(popcount)
 {
     cl_int *input_ptr[1], *output_ptr, *p;
     int err;
@@ -102,15 +99,14 @@ int test_popcount(cl_device_id device, cl_context context, cl_command_queue queu
     MTdata d;
     int fail_count = 0;
 
-    size_t length = sizeof(cl_int) * 8 * n_elems;
+    size_t length = sizeof(cl_int) * 8 * num_elements;
 
     input_ptr[0] = (cl_int*)malloc(length);
     output_ptr   = (cl_int*)malloc(length);
 
     d = init_genrand( gRandomSeed );
     p = input_ptr[0];
-    for (i=0; i<8 * n_elems; i++)
-        p[i] = genrand_int32(d);
+    for (i = 0; i < 8 * num_elements; i++) p[i] = genrand_int32(d);
     free_mtdata(d);  d = NULL;
 
     for( type = 0; type < sizeof( test_str_names ) / sizeof( test_str_names[0] ); type++ )
@@ -248,5 +244,3 @@ int test_popcount(cl_device_id device, cl_context context, cl_command_queue queu
 
     return err;
 }
-
-

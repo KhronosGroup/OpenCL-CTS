@@ -1,4 +1,5 @@
-// Copyright (c) 2024 The Khronos Group Inc.
+//
+// Copyright (c) 2025 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,16 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef CL_KHR_KERNEL_CLOCK_PROCS_H
-#define CL_KHR_KERNEL_CLOCK_PROCS_H
+#ifndef _testBase_h
+#define _testBase_h
 
 #include <CL/cl.h>
 
-int test_device_scope(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements);
-int test_workgroup_scope(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements);
-int test_subgroup_scope(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements);
+#include "harness/conversions.h"
+#include "harness/testHarness.h"
+#include "harness/typeWrappers.h"
+#include "harness/rounding_mode.h"
 
-#endif /*CL_KHR_KERNEL_CLOCK_PROCS_H*/
+#endif // _testBase_h

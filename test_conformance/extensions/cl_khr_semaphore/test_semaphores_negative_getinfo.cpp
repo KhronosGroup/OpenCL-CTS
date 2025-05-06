@@ -113,19 +113,14 @@ struct GetInfoInvalidValue : public SemaphoreTestBase
 
 }
 
-int test_semaphores_negative_get_info_invalid_semaphore(cl_device_id device,
-                                                        cl_context context,
-                                                        cl_command_queue queue,
-                                                        int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_get_info_invalid_semaphore,
+                      Version(1, 2))
 {
     return MakeAndRunTest<GetInfoInvalidSemaphore>(device, context, queue,
                                                    num_elements);
 }
 
-int test_semaphores_negative_get_info_invalid_value(cl_device_id device,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_get_info_invalid_value, Version(1, 2))
 {
     return MakeAndRunTest<GetInfoInvalidValue>(device, context, queue,
                                                num_elements);
