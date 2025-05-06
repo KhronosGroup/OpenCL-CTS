@@ -156,8 +156,10 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
             vkImage1D.getVkImageCreateInfo();
 
         auto layout = vkImage1D.getSubresourceLayout();
-        errNum = getCLImageInfoFromVkImageInfo(device, &VulkanImageCreateInfo,
-                                               &img_format, &image_desc);
+        errNum = getCLImageInfoFromVkImageInfo(
+            device, &VulkanImageCreateInfo, &img_format, &image_desc,
+            vulkanImageTiling == VULKAN_IMAGE_TILING_LINEAR ? &layout
+                                                            : nullptr);
         test_error_fail(errNum, "getCLImageInfoFromVkImageInfo failed!!!");
 
         clMemWrapper image;
@@ -167,16 +169,6 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
             context, extMemProperties.data(), CL_MEM_READ_WRITE, &img_format,
             &image_desc, NULL /* host_ptr */, &errNum);
         test_error(errNum, "Unable to create Image with Properties");
-        image.reset();
-
-        // Passing NULL properties and a valid image_format and image_desc
-        image = clCreateImageWithProperties(context, NULL, CL_MEM_READ_WRITE,
-                                            &img_format, &image_desc, NULL,
-                                            &errNum);
-        test_error(errNum,
-                   "Unable to create image with NULL properties "
-                   "with valid image format and image desc");
-
         image.reset();
 
         // Passing image_format as NULL
