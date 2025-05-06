@@ -37,36 +37,44 @@ typedef int FPU_mode_type;
 #else
 typedef int64_t FPU_mode_type;
 #endif
-#if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)              \
-    || defined(__MINGW32__)
+#if defined(__i386__) || defined(__x86_64__) || defined(_M_IX86)               \
+    || defined(_M_X64) || defined(__MINGW32__)
 #include <xmmintrin.h>
+#elif defined(_M_ARM64)
+#include <intrin.h>
 #elif defined(__PPC__)
 #include <fpu_control.h>
 extern __thread fpu_control_t fpu_control;
 #elif defined(__mips__)
 #include "mips/m32c1.h"
 #endif
+
 // Set the reference hardware floating point unit to FTZ mode
-inline void ForceFTZ(FPU_mode_type *mode)
+inline void ForceFTZ(FPU_mode_type *oldMode)
 {
-#if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)              \
-    || defined(__MINGW32__)
-    *mode = _mm_getcsr();
-    _mm_setcsr(*mode | 0x8040);
+#if defined(__i386__) || defined(__x86_64__) || defined(_M_IX86)               \
+    || defined(_M_X64) || defined(__MINGW32__)
+    *oldMode = _mm_getcsr();
+    _mm_setcsr(*oldMode | 0x8040);
 #elif defined(__PPC__)
-    *mode = fpu_control;
+    *oldMode = fpu_control;
     fpu_control |= _FPU_MASK_NI;
 #elif defined(__arm__)
     unsigned fpscr;
     __asm__ volatile("fmrx %0, fpscr" : "=r"(fpscr));
-    *mode = fpscr;
+    *oldMode = fpscr;
     __asm__ volatile("fmxr fpscr, %0" ::"r"(fpscr | (1U << 24)));
     // Add 64 bit support
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) // Clang
     uint64_t fpscr;
     __asm__ volatile("mrs %0, fpcr" : "=r"(fpscr));
-    *mode = fpscr;
+    *oldMode = fpscr;
     __asm__ volatile("msr fpcr, %0" ::"r"(fpscr | (1U << 24)));
+#elif defined(_M_ARM64) // Visual Studio
+    uint64_t fpscr;
+    fpscr = _ReadStatusReg(ARM64_FPSR);
+    *oldMode = fpscr;
+    _WriteStatusReg(ARM64_FPCR, fpscr | (1U << 24));
 #elif defined(__mips__)
     fpa_bissr(FPA_CSR_FS);
 #else
@@ -75,26 +83,31 @@ inline void ForceFTZ(FPU_mode_type *mode)
 }
 
 // Disable the denorm flush to zero
-inline void DisableFTZ(FPU_mode_type *mode)
+inline void DisableFTZ(FPU_mode_type *oldMode)
 {
-#if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)              \
-    || defined(__MINGW32__)
-    *mode = _mm_getcsr();
-    _mm_setcsr(*mode & ~0x8040);
+#if defined(__i386__) || defined(__x86_64__) || defined(_M_IX86)               \
+    || defined(_M_X64) || defined(__MINGW32__)
+    *oldMode = _mm_getcsr();
+    _mm_setcsr(*oldMode & ~0x8040);
 #elif defined(__PPC__)
     *mode = fpu_control;
     fpu_control &= ~_FPU_MASK_NI;
 #elif defined(__arm__)
     unsigned fpscr;
     __asm__ volatile("fmrx %0, fpscr" : "=r"(fpscr));
-    *mode = fpscr;
+    *oldMode = fpscr;
     __asm__ volatile("fmxr fpscr, %0" ::"r"(fpscr & ~(1U << 24)));
     // Add 64 bit support
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) // Clang
     uint64_t fpscr;
     __asm__ volatile("mrs %0, fpcr" : "=r"(fpscr));
-    *mode = fpscr;
+    *oldMode = fpscr;
     __asm__ volatile("msr fpcr, %0" ::"r"(fpscr & ~(1U << 24)));
+#elif defined(_M_ARM64) // Visual Studio
+    uint64_t fpscr;
+    fpscr = _ReadStatusReg(ARM64_FPSR);
+    *oldMode = fpscr;
+    _WriteStatusReg(ARM64_FPCR, fpscr & ~(1U << 24));
 #elif defined(__mips__)
     fpa_bicsr(FPA_CSR_FS);
 #else
@@ -105,16 +118,18 @@ inline void DisableFTZ(FPU_mode_type *mode)
 // Restore the reference hardware to floating point state indicated by *mode
 inline void RestoreFPState(FPU_mode_type *mode)
 {
-#if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)              \
-    || defined(__MINGW32__)
+#if defined(__i386__) || defined(__x86_64__) || defined(_M_IX86)               \
+    || defined(_M_X64) || defined(__MINGW32__)
     _mm_setcsr(*mode);
 #elif defined(__PPC__)
     fpu_control = *mode;
 #elif defined(__arm__)
     __asm__ volatile("fmxr fpscr, %0" ::"r"(*mode));
     // Add 64 bit support
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) // Clang
     __asm__ volatile("msr fpcr, %0" ::"r"(*mode));
+#elif defined(_M_ARM64) // Visual Studio
+    _WriteStatusReg(ARM64_FPCR, *mode);
 #elif defined(__mips__)
     // Mips runs by default with DAZ=1 FTZ=1
 #else
