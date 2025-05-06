@@ -98,8 +98,8 @@ int run_test_with_two_queue(
     cl_mem error_1 = nullptr;
     cl_kernel update_buffer_kernel = nullptr;
     cl_kernel kernel_cq = nullptr;
-    clExternalSemaphore *clVk2CLExternalSemaphore = NULL;
-    clExternalSemaphore *clCl2VkExternalSemaphore = NULL;
+    clExternalImportableSemaphore *clVk2CLExternalSemaphore = nullptr;
+    clExternalExportableSemaphore *clCl2VkExternalSemaphore = nullptr;
     const char *program_source_const = kernel_text_numbuffer_2;
     size_t program_source_length = strlen(program_source_const);
     cl_program program = clCreateProgramWithSource(
@@ -147,12 +147,11 @@ int run_test_with_two_queue(
     }
     else
     {
-        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore,
-                                context, vkExternalSemaphoreHandleType,
-                                deviceId, false);
-        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore,
-                                context, vkExternalSemaphoreHandleType,
-                                deviceId, true);
+        clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+
+        clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
+            vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
     }
 
     const uint32_t maxIter = innerIterations;
@@ -442,8 +441,8 @@ int run_test_with_one_queue(
     uint8_t *error_2 = nullptr;
     cl_mem error_1 = nullptr;
     cl_kernel update_buffer_kernel;
-    clExternalSemaphore *clVk2CLExternalSemaphore = NULL;
-    clExternalSemaphore *clCl2VkExternalSemaphore = NULL;
+    clExternalImportableSemaphore *clVk2CLExternalSemaphore = nullptr;
+    clExternalExportableSemaphore *clCl2VkExternalSemaphore = nullptr;
     int err = CL_SUCCESS;
 
     const std::vector<VulkanExternalMemoryHandleType>
@@ -482,12 +481,11 @@ int run_test_with_one_queue(
     }
     else
     {
-        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore,
-                                context, vkExternalSemaphoreHandleType,
-                                deviceId, false);
-        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore,
-                                context, vkExternalSemaphoreHandleType,
-                                deviceId, true);
+        clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+
+        clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
+            vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
     }
 
     const uint32_t maxIter = innerIterations;
@@ -747,8 +745,8 @@ int run_test_with_multi_import_same_ctx(
     cl_mem error_1 = nullptr;
     int numImports = numBuffers;
     cl_kernel update_buffer_kernel;
-    clExternalSemaphore *clVk2CLExternalSemaphore = NULL;
-    clExternalSemaphore *clCl2VkExternalSemaphore = NULL;
+    clExternalImportableSemaphore *clVk2CLExternalSemaphore = nullptr;
+    clExternalExportableSemaphore *clCl2VkExternalSemaphore = nullptr;
     int err = CL_SUCCESS;
     int calc_max_iter;
 
@@ -787,12 +785,11 @@ int run_test_with_multi_import_same_ctx(
     }
     else
     {
-        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore,
-                                context, vkExternalSemaphoreHandleType,
-                                deviceId, false);
-        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore,
-                                context, vkExternalSemaphoreHandleType,
-                                deviceId, true);
+        clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+
+        clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
+            vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
     }
 
     const uint32_t maxIter = innerIterations;
@@ -1084,10 +1081,10 @@ int run_test_with_multi_import_diff_ctx(
     int numImports = numBuffers;
     cl_kernel update_buffer_kernel1[MAX_IMPORTS];
     cl_kernel update_buffer_kernel2[MAX_IMPORTS];
-    clExternalSemaphore *clVk2CLExternalSemaphore = NULL;
-    clExternalSemaphore *clCl2VkExternalSemaphore = NULL;
-    clExternalSemaphore *clVk2CLExternalSemaphore2 = NULL;
-    clExternalSemaphore *clCl2VkExternalSemaphore2 = NULL;
+    clExternalImportableSemaphore *clVk2CLExternalSemaphore = nullptr;
+    clExternalExportableSemaphore *clCl2VkExternalSemaphore = nullptr;
+    clExternalImportableSemaphore *clVk2CLExternalSemaphore2 = nullptr;
+    clExternalExportableSemaphore *clCl2VkExternalSemaphore2 = nullptr;
     int err = CL_SUCCESS;
     int calc_max_iter;
     bool withOffset;
@@ -1128,19 +1125,19 @@ int run_test_with_multi_import_diff_ctx(
     }
     else
     {
-        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore, vkVk2CLSemaphore,
-                                context, vkExternalSemaphoreHandleType,
-                                deviceId, false);
-        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore, vkCl2VkSemaphore,
-                                context, vkExternalSemaphoreHandleType,
-                                deviceId, false);
+        clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
 
-        CREATE_OPENCL_SEMAPHORE(clVk2CLExternalSemaphore2, vkVk2CLSemaphore,
-                                context2, vkExternalSemaphoreHandleType,
-                                deviceId, false);
-        CREATE_OPENCL_SEMAPHORE(clCl2VkExternalSemaphore2, vkCl2VkSemaphore,
-                                context2, vkExternalSemaphoreHandleType,
-                                deviceId, false);
+        clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
+            vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+
+        clVk2CLExternalSemaphore2 = new clExternalImportableSemaphore(
+            vkVk2CLSemaphore, context2, vkExternalSemaphoreHandleType,
+            deviceId);
+
+        clCl2VkExternalSemaphore2 = new clExternalExportableSemaphore(
+            vkCl2VkSemaphore, context2, vkExternalSemaphoreHandleType,
+            deviceId);
     }
 
     const uint32_t maxIter = innerIterations;
