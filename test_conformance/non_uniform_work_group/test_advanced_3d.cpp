@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,13 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include "tools.h"
 
 #include "TestNonUniformWorkGroup.h"
 
-int
-  test_non_uniform_3d_basic(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(non_uniform_3d_basic)
 {
   SubTestExecutor exec(device, context, queue);
 
@@ -148,8 +146,7 @@ int
   return exec.status();
 }
 
-int
-  test_non_uniform_3d_atomics(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(non_uniform_3d_atomics)
 {
   SubTestExecutor exec(device, context, queue);
 
@@ -278,8 +275,7 @@ int
   return exec.status();
 }
 
-int
-  test_non_uniform_3d_barriers(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(non_uniform_3d_barriers)
 {
   SubTestExecutor exec(device, context, queue);
 

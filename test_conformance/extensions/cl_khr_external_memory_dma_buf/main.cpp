@@ -1,3 +1,4 @@
+//
 // Copyright (c) 2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,16 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef CL_KHR_KERNEL_CLOCK_PROCS_H
-#define CL_KHR_KERNEL_CLOCK_PROCS_H
 
-#include <CL/cl.h>
+#include "harness/testHarness.h"
 
-int test_device_scope(cl_device_id device, cl_context context,
-                      cl_command_queue queue, int num_elements);
-int test_workgroup_scope(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements);
-int test_subgroup_scope(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements);
-
-#endif /*CL_KHR_KERNEL_CLOCK_PROCS_H*/
+int main(int argc, const char *argv[])
+{
+    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
+                          test_registry::getInstance().definitions(), false, 0);
+}

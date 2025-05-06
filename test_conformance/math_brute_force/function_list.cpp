@@ -291,13 +291,12 @@ const Func functionList[] = {
     ENTRY(erfc, 16.0f, 16.0f, 4.0f, 4.0f, FTZ_OFF, unaryF),
     ENTRY(erf,  16.0f, 16.0f, 4.0f, 4.0f, FTZ_OFF, unaryF),
 
-    // relaxed error is overwritten in unary.c as it is 3+floor(fabs(2*x))
+    // floor(fabs(2*x)) is added to the relaxed error in unary.c
     ENTRY_EXT(exp, 3.0f, 4.0f, 2.0f, 3.0f, 3.0f, FTZ_OFF, unaryF, 4.0f),
 
-    // relaxed error is overwritten in unary.c as it is 3+floor(fabs(2*x))
+    // floor(fabs(2*x)) is added to the relaxed error in unary.c
     ENTRY_EXT(exp2, 3.0f, 4.0f, 2.0f, 3.0f, 3.0f, FTZ_OFF, unaryF, 4.0f),
 
-    // relaxed error is overwritten in unary.c as it is 3+floor(fabs(2*x)) in derived mode;
     // in non-derived mode it uses the ulp error for half_exp10.
     ENTRY_EXT(exp10, 3.0f, 4.0f, 2.0f, 3.0f, 8192.0f, FTZ_OFF, unaryF, 8192.0f),
 
@@ -427,9 +426,8 @@ const Func functionList[] = {
     // basic operations
     OPERATOR_ENTRY(add, "+", 0.0f, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryOperatorF),
     OPERATOR_ENTRY(subtract, "-", 0.0f, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryOperatorF),
-    //ENTRY(reciprocal, 1.0f, 1.0f, FTZ_OFF, unaryF),
     { "reciprocal",
-      "/",
+      "reciprocal",
       { (void*)reference_reciprocal },
       { (void*)reference_reciprocall },
       { (void*)reference_relaxed_reciprocal },
@@ -442,7 +440,7 @@ const Func functionList[] = {
       INFINITY,
       FTZ_OFF,
       RELAXED_ON,
-      binaryOperatorF },
+      unaryF},
     { "divide",
       "/",
       { (void*)reference_divide },

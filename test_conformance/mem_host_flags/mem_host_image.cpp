@@ -20,22 +20,20 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
-
 #include "checker_image_mem_host_read_only.hpp"
 #include "checker_image_mem_host_no_access.hpp"
 #include "checker_image_mem_host_write_only.hpp"
 
 //======================================
 static cl_int test_mem_host_read_only_RW_Image(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    cl_device_id device, cl_context context, cl_command_queue queue,
     cl_bool blocking, cl_mem_flags buffer_mem_flag,
     cl_mem_object_type image_type_in, size_t array_size, size_t *img_dim)
 {
     log_info("%s  ... \n ", __FUNCTION__);
     cl_int err = CL_SUCCESS;
 
-    cImage_check_mem_host_read_only<int> checker(deviceID, context, queue);
+    cImage_check_mem_host_read_only<int> checker(device, context, queue);
     checker.m_blocking = blocking;
     checker.buffer_mem_flag = buffer_mem_flag;
 
@@ -58,14 +56,14 @@ static cl_int test_mem_host_read_only_RW_Image(
 }
 
 static cl_int test_mem_host_read_only_RW_Image_Mapping(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    cl_device_id device, cl_context context, cl_command_queue queue,
     cl_bool blocking, cl_mem_flags buffer_mem_flag,
     cl_mem_object_type image_type_in, size_t array_size, size_t *img_dim)
 {
     log_info("%s  ... \n ", __FUNCTION__);
     cl_int err = CL_SUCCESS;
 
-    cImage_check_mem_host_read_only<int> checker(deviceID, context, queue);
+    cImage_check_mem_host_read_only<int> checker(device, context, queue);
     checker.m_blocking = blocking;
     checker.buffer_mem_flag = buffer_mem_flag;
 
@@ -87,8 +85,7 @@ static cl_int test_mem_host_read_only_RW_Image_Mapping(
     return err;
 }
 
-int test_mem_host_read_only_image(cl_device_id deviceID, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+REGISTER_TEST(mem_host_read_only_image)
 {
     cl_mem_flags buffer_mem_flags[2] = {
         CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR | CL_MEM_HOST_READ_ONLY,
@@ -98,8 +95,8 @@ int test_mem_host_read_only_image(cl_device_id deviceID, cl_context context,
     cl_int err = CL_SUCCESS;
 
     cl_bool image_support;
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_IMAGE_SUPPORT,
-                          sizeof image_support, &image_support, NULL);
+    err = clGetDeviceInfo(device, CL_DEVICE_IMAGE_SUPPORT, sizeof image_support,
+                          &image_support, NULL);
     if (err)
     {
         test_error(err, __FUNCTION__);
@@ -132,16 +129,14 @@ int test_mem_host_read_only_image(cl_device_id deviceID, cl_context context,
             for (int p = 0; p < 3; p++)
             {
                 err = test_mem_host_read_only_RW_Image(
-                    deviceID, context, queue, blocking[i],
-                    buffer_mem_flags[flag], img_type[p], array_size[p],
-                    img_dims[p]);
+                    device, context, queue, blocking[i], buffer_mem_flags[flag],
+                    img_type[p], array_size[p], img_dims[p]);
 
                 test_error(err, __FUNCTION__);
 
                 err = test_mem_host_read_only_RW_Image_Mapping(
-                    deviceID, context, queue, blocking[i],
-                    buffer_mem_flags[flag], img_type[p], array_size[p],
-                    img_dims[p]);
+                    device, context, queue, blocking[i], buffer_mem_flags[flag],
+                    img_type[p], array_size[p], img_dims[p]);
 
                 test_error(err, __FUNCTION__);
             }
@@ -152,14 +147,14 @@ int test_mem_host_read_only_image(cl_device_id deviceID, cl_context context,
 
 //----------------------------
 static cl_int test_MEM_HOST_WRITE_ONLY_Image_RW(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    cl_device_id device, cl_context context, cl_command_queue queue,
     cl_bool blocking, cl_mem_flags buffer_mem_flag,
     cl_mem_object_type image_type_in, size_t array_size, size_t *img_dim)
 {
     log_info(" %s  ... \n ", __FUNCTION__);
     cl_int err = CL_SUCCESS;
 
-    cImage_check_mem_host_write_only<int> checker(deviceID, context, queue);
+    cImage_check_mem_host_write_only<int> checker(device, context, queue);
     checker.m_blocking = blocking;
     checker.buffer_mem_flag = buffer_mem_flag;
 
@@ -185,14 +180,14 @@ static cl_int test_MEM_HOST_WRITE_ONLY_Image_RW(
 }
 
 static cl_int test_MEM_HOST_WRITE_ONLY_Image_RW_Mapping(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    cl_device_id device, cl_context context, cl_command_queue queue,
     cl_bool blocking, cl_mem_flags buffer_mem_flag,
     cl_mem_object_type image_type_in, size_t array_size, size_t *img_dim)
 {
     log_info("%s  ... \n ", __FUNCTION__);
     cl_int err = CL_SUCCESS;
 
-    cImage_check_mem_host_write_only<int> checker(deviceID, context, queue);
+    cImage_check_mem_host_write_only<int> checker(device, context, queue);
     checker.m_blocking = blocking;
     checker.buffer_mem_flag = buffer_mem_flag;
 
@@ -217,8 +212,7 @@ static cl_int test_MEM_HOST_WRITE_ONLY_Image_RW_Mapping(
     return err;
 }
 
-int test_mem_host_write_only_image(cl_device_id deviceID, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(mem_host_write_only_image)
 {
     cl_mem_flags buffer_mem_flags[2] = {
         CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR | CL_MEM_HOST_WRITE_ONLY,
@@ -228,8 +222,8 @@ int test_mem_host_write_only_image(cl_device_id deviceID, cl_context context,
     cl_int err = CL_SUCCESS;
 
     cl_bool image_support;
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_IMAGE_SUPPORT,
-                          sizeof image_support, &image_support, NULL);
+    err = clGetDeviceInfo(device, CL_DEVICE_IMAGE_SUPPORT, sizeof image_support,
+                          &image_support, NULL);
     if (err)
     {
         test_error(err, __FUNCTION__);
@@ -261,12 +255,12 @@ int test_mem_host_write_only_image(cl_device_id deviceID, cl_context context,
             for (int p = 0; p < 3; p++)
             {
                 err = test_MEM_HOST_WRITE_ONLY_Image_RW(
-                    deviceID, context, queue, blocking[i], buffer_mem_flags[k],
+                    device, context, queue, blocking[i], buffer_mem_flags[k],
                     img_type[p], array_size[p], img_dims[p]);
                 test_error(err, __FUNCTION__);
 
                 err = test_MEM_HOST_WRITE_ONLY_Image_RW_Mapping(
-                    deviceID, context, queue, blocking[i], buffer_mem_flags[k],
+                    device, context, queue, blocking[i], buffer_mem_flags[k],
                     img_type[p], array_size[p], img_dims[p]);
                 test_error(err, __FUNCTION__);
             }
@@ -278,14 +272,14 @@ int test_mem_host_write_only_image(cl_device_id deviceID, cl_context context,
 //--------
 
 static cl_int test_mem_host_no_access_Image_RW(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    cl_device_id device, cl_context context, cl_command_queue queue,
     cl_bool blocking, cl_mem_flags buffer_mem_flag,
     cl_mem_object_type image_type_in, size_t array_size, size_t *img_dim)
 {
     log_info("%s  ... \n", __FUNCTION__);
     cl_int err = CL_SUCCESS;
 
-    cImage_check_mem_host_no_access<int> checker(deviceID, context, queue);
+    cImage_check_mem_host_no_access<int> checker(device, context, queue);
 
     checker.m_blocking = blocking;
     checker.buffer_mem_flag = buffer_mem_flag;
@@ -310,14 +304,14 @@ static cl_int test_mem_host_no_access_Image_RW(
 }
 
 static cl_int test_mem_host_no_access_Image_RW_Mapping(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    cl_device_id device, cl_context context, cl_command_queue queue,
     cl_bool blocking, cl_mem_flags buffer_mem_flag,
     cl_mem_object_type image_type_in, size_t array_size, size_t *img_dim)
 {
     log_info("%s  ... \n ", __FUNCTION__);
     cl_int err = CL_SUCCESS;
 
-    cImage_check_mem_host_no_access<int> checker(deviceID, context, queue);
+    cImage_check_mem_host_no_access<int> checker(device, context, queue);
 
     checker.m_blocking = blocking;
     checker.buffer_mem_flag = buffer_mem_flag;
@@ -341,8 +335,7 @@ static cl_int test_mem_host_no_access_Image_RW_Mapping(
     return err;
 }
 
-int test_mem_host_no_access_image(cl_device_id deviceID, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+REGISTER_TEST(mem_host_no_access_image)
 {
     cl_mem_flags buffer_mem_flags[2] = {
         CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
@@ -352,8 +345,8 @@ int test_mem_host_no_access_image(cl_device_id deviceID, cl_context context,
     cl_int err = CL_SUCCESS;
 
     cl_bool image_support;
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_IMAGE_SUPPORT,
-                          sizeof image_support, &image_support, NULL);
+    err = clGetDeviceInfo(device, CL_DEVICE_IMAGE_SUPPORT, sizeof image_support,
+                          &image_support, NULL);
     if (err)
     {
         test_error(err, __FUNCTION__);
@@ -385,11 +378,11 @@ int test_mem_host_no_access_image(cl_device_id deviceID, cl_context context,
             for (int p = 0; p < 3; p++)
             {
                 err += test_mem_host_no_access_Image_RW(
-                    deviceID, context, queue, blocking[i], buffer_mem_flags[k],
+                    device, context, queue, blocking[i], buffer_mem_flags[k],
                     img_type[p], array_size[p], img_dims[p]);
 
                 err += test_mem_host_no_access_Image_RW_Mapping(
-                    deviceID, context, queue, blocking[i], buffer_mem_flags[k],
+                    device, context, queue, blocking[i], buffer_mem_flags[k],
                     img_type[p], array_size[p], img_dims[p]);
             }
         }

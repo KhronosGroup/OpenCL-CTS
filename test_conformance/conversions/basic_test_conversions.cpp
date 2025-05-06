@@ -318,7 +318,7 @@ int CalcRefValsPat<InType, OutType, InFP, OutFP>::check_result(void *test,
 {
     const cl_uchar *a = (const cl_uchar *)gAllowZ;
 
-    if (is_half<OutType, OutFP>())
+    if constexpr (is_half<OutType, OutFP>())
     {
         const cl_half *t = (const cl_half *)test;
         const cl_half *c = (const cl_half *)gRef;
@@ -335,7 +335,7 @@ int CalcRefValsPat<InType, OutType, InFP, OutFP>::check_result(void *test,
                 return i + 1;
             }
     }
-    else if (std::is_integral<OutType>::value)
+    else if constexpr (std::is_integral<OutType>::value)
     { // char/uchar/short/ushort/half/int/uint/long/ulong
         const OutType *t = (const OutType *)test;
         const OutType *c = (const OutType *)gRef;
@@ -350,7 +350,7 @@ int CalcRefValsPat<InType, OutType, InFP, OutFP>::check_result(void *test,
                 return i + 1;
             }
     }
-    else if (std::is_same<OutType, cl_float>::value)
+    else if constexpr (std::is_same<OutType, cl_float>::value)
     {
         // cast to integral - from original test
         const cl_uint *t = (const cl_uint *)test;

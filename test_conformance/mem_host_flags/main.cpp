@@ -22,30 +22,17 @@
 #include <CL/cl.h>
 #endif
 
-#include "procs.h"
 #include "harness/testHarness.h"
+#include "harness/imageHelpers.h"
 
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif
 
-test_definition test_list[] = {
-    ADD_TEST(mem_host_read_only_buffer),
-    ADD_TEST(mem_host_read_only_subbuffer),
-    ADD_TEST(mem_host_write_only_buffer),
-    ADD_TEST(mem_host_write_only_subbuffer),
-    ADD_TEST(mem_host_no_access_buffer),
-    ADD_TEST(mem_host_no_access_subbuffer),
-    ADD_TEST(mem_host_read_only_image),
-    ADD_TEST(mem_host_write_only_image),
-    ADD_TEST(mem_host_no_access_image),
-};
-
-const int test_num = ARRAY_SIZE(test_list);
-
 int main(int argc, const char *argv[])
 {
     log_info("1st part, non gl-sharing objects...\n");
     gTestRounding = true;
-    return runTestHarness(argc, argv, test_num, test_list, false, 0);
+    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
+                          test_registry::getInstance().definitions(), false, 0);
 }

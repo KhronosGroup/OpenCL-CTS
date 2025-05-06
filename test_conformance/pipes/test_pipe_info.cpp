@@ -16,14 +16,15 @@
 
 #include <cinttypes>
 
-#include "procs.h"
+#include "harness/testHarness.h"
+#include "harness/typeWrappers.h"
 #include "harness/parseParameters.h"
 
 const char* pipe_kernel_code = {
     "__kernel void pipe_kernel(__write_only pipe int out_pipe)\n"
     "{}\n" };
 
-int test_pipe_info( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_info)
 {
     clMemWrapper pipe;
     cl_int err;

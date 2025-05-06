@@ -153,7 +153,7 @@ template <typename T> T *register_test(const char *name, Version version)
 #define REQUIRE_EXTENSION(name)                                                \
     do                                                                         \
     {                                                                          \
-        if (!is_extension_available(deviceID, name))                           \
+        if (!is_extension_available(device, name))                             \
         {                                                                      \
             log_info(name                                                      \
                      " is not supported on this device. Skipping test.\n");    \

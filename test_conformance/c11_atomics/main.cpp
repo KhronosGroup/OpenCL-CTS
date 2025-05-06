@@ -35,84 +35,6 @@ cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
 bool gFloatAtomicsSupported = false;
 cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps = 0;
 
-extern int test_atomic_init(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_store(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_load(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_store_load(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_exchange(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_compare_exchange_weak(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_compare_exchange_strong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_add(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_sub(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_and(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_or(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_orand(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_xor(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_xor2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_min(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fetch_max(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_flag(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_atomic_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-
-extern int test_svm_atomic_init(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_store(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_load(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_store_load(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_exchange(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_compare_exchange_weak(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_compare_exchange_strong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_add(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_sub(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_and(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_or(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_orand(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_xor(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_xor2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_min(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fetch_max(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_flag(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-extern int test_svm_atomic_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements);
-
-test_definition test_list[] = {
-    ADD_TEST( atomic_init ),
-    ADD_TEST( atomic_store ),
-    ADD_TEST( atomic_load ),
-    ADD_TEST( atomic_exchange ),
-    ADD_TEST( atomic_compare_exchange_weak ),
-    ADD_TEST( atomic_compare_exchange_strong ),
-    ADD_TEST( atomic_fetch_add ),
-    ADD_TEST( atomic_fetch_sub ),
-    ADD_TEST( atomic_fetch_and ),
-    ADD_TEST( atomic_fetch_or ),
-    ADD_TEST( atomic_fetch_orand ),
-    ADD_TEST( atomic_fetch_xor ),
-    ADD_TEST( atomic_fetch_xor2 ),
-    ADD_TEST( atomic_fetch_min ),
-    ADD_TEST( atomic_fetch_max ),
-    ADD_TEST( atomic_flag ),
-    ADD_TEST( atomic_fence ),
-
-    ADD_TEST( svm_atomic_init ),
-    ADD_TEST( svm_atomic_store ),
-    ADD_TEST( svm_atomic_load ),
-    ADD_TEST( svm_atomic_exchange ),
-    ADD_TEST( svm_atomic_compare_exchange_weak ),
-    ADD_TEST( svm_atomic_compare_exchange_strong ),
-    ADD_TEST( svm_atomic_fetch_add ),
-    ADD_TEST( svm_atomic_fetch_sub ),
-    ADD_TEST( svm_atomic_fetch_and ),
-    ADD_TEST( svm_atomic_fetch_or ),
-    ADD_TEST( svm_atomic_fetch_orand ),
-    ADD_TEST( svm_atomic_fetch_xor ),
-    ADD_TEST( svm_atomic_fetch_xor2 ),
-    ADD_TEST( svm_atomic_fetch_min ),
-    ADD_TEST( svm_atomic_fetch_max ),
-    ADD_TEST( svm_atomic_flag ),
-    ADD_TEST( svm_atomic_fence ),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
-
 test_status InitCL(cl_device_id device) {
     auto version = get_device_cl_version(device);
     auto expected_min_version = Version(2, 0);
@@ -319,5 +241,7 @@ int main(int argc, const char *argv[])
     log_info("*** Use of this mode is not sufficient to verify correctness.              ***\n");
     log_info("***                                                                        ***\n");
   }
-  return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, false, InitCL);
+  return runTestHarnessWithCheck(
+      argc, argv, test_registry::getInstance().num_tests(),
+      test_registry::getInstance().definitions(), false, false, InitCL);
 }
