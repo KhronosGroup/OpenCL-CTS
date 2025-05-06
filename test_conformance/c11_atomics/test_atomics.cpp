@@ -321,7 +321,7 @@ public:
 
         if (CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DataType()
                 ._type
-            != TYPE_ATOMIC_HALF)
+            == TYPE_ATOMIC_HALF)
         {
             if (LocalMemory()
                 && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_LOAD_STORE_EXT)
@@ -383,7 +383,7 @@ public:
         correct = true;
         for (cl_uint i = 0; i < threadCount; i++)
         {
-            if (std::is_same<HostDataType, cl_half>::value)
+            if constexpr (std::is_same<HostDataType, cl_half>::value)
             {
                 HostDataType test = cl_half_from_float(static_cast<float>(i),
                                                        gHalfRoundingMode);
