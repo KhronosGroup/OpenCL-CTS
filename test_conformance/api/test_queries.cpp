@@ -835,23 +835,11 @@ REGISTER_TEST(get_device_info_comparability)
         }
     }
 
-    // fallback path
-    if (comp_platform == nullptr)
-    {
-        char *env_mode = getenv("CL_PLATFORM_INDEX");
-        if (env_mode != nullptr)
-        {
-            int choosen_platform_index = atoi(env_mode);
-            if (choosen_platform_index < static_cast<int>(platforms.size()))
-                comp_platform = platforms[choosen_platform_index];
-        }
-    }
-
     test_error_fail(comp_platform == nullptr,
-                    "Test failed to locate platform for comparison!")
+                    "Test failed to locate platform for comparison!");
 
-        // 2. compare platforms found with and without using query
-        cl_platform_id plat = nullptr;
+    // 2. compare platforms found with and without using query
+    cl_platform_id plat = nullptr;
     error =
         clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(plat), &plat, NULL);
     test_error(error, "clGetDeviceInfo failed");
