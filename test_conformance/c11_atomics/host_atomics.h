@@ -17,6 +17,7 @@
 #define HOST_ATOMICS_H_
 
 #include "harness/testHarness.h"
+#include <mutex>
 
 #ifdef WIN32
 #include "Windows.h"
@@ -91,14 +92,41 @@ template <typename AtomicType, typename CorrespondingType>
 CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingType c,
                                         TExplicitMemoryOrderType order)
 {
+    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_DOUBLE>)
+    {
+        static std::mutex mx;
+        std::lock_guard<std::mutex> lock(mx);
+        CorrespondingType old_value = *a;
+        *a += c;
+        return old_value;
+    }
+    else
+    {
 #if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-  return InterlockedExchangeAdd(a, c);
+        if constexpr (
+            std::is_same_v<
+                AtomicType,
+                HOST_ATOMIC_INT> || std::is_same_v<AtomicType, HOST_ATOMIC_UINT>)
+            return InterlockedExchangeAdd((volatile cl_uint *)a, c);
+        else if constexpr (
+            std::is_same_v<
+                AtomicType,
+                HOST_ATOMIC_LONG> || std::is_same_v<AtomicType, HOST_ATOMIC_ULONG>)
+            return InterlockedExchangeAdd64((volatile cl_long *)a, c);
 #elif defined(__GNUC__)
-  return __sync_fetch_and_add(a, c);
+        if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_INT>)
+            return __sync_fetch_and_add((volatile cl_int *)a, c);
+        else if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_UINT>)
+            return __sync_fetch_and_add((volatile cl_uint *)a, c);
+        else if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_LONG>)
+            return __sync_fetch_and_add((volatile cl_long *)a, c);
+        else if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_ULONG>)
+            return __sync_fetch_and_add((volatile cl_ulong *)a, c);
 #else
-  log_info("Host function not implemented: atomic_fetch_add\n");
-  return 0;
+        log_info("Host function not implemented: atomic_fetch_add\n");
+        return 0;
 #endif
+    }
 }
 
 template <typename AtomicType, typename CorrespondingType>
