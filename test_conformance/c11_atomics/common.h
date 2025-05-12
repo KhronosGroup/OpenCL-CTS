@@ -24,6 +24,8 @@
 
 #include "CL/cl_half.h"
 
+#include <iomanip>
+#include <limits>
 #include <vector>
 #include <sstream>
 
@@ -87,6 +89,26 @@ get_memory_scope_type_name(TExplicitMemoryScopeType scopeType);
 extern cl_int getSupportedMemoryOrdersAndScopes(
     cl_device_id device, std::vector<TExplicitMemoryOrderType> &memoryOrders,
     std::vector<TExplicitMemoryScopeType> &memoryScopes);
+
+inline bool IsHalfNaN(const cl_half v)
+{
+    // Extract FP16 exponent and mantissa
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+
+    // NaN test
+    return (h_exp == 0x1F && h_mant != 0);
+}
+
+inline bool IsHalfInfinity(const cl_half v)
+{
+    // Extract FP16 exponent and mantissa
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+
+    // Inf test
+    return (h_exp == 0x1F && h_mant == 0);
+}
 
 class AtomicTypeInfo {
 public:
@@ -891,7 +913,21 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
         header += std::string("__global volatile ") + aTypeName + " destMemory["
             + ss.str() + "] = {\n";
         ss.str("");
-        ss << _startValue;
+
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        {
+            if (IsHalfInfinity(_startValue))
+                ss << ((_startValue & 0x8000) != 0 ? "-" : "") << "INFINITY";
+            else if (IsHalfNaN(_startValue))
+                ss << "0.0h / 0.0h";
+            else
+                ss << std::setprecision(
+                    std::numeric_limits<float>::max_digits10)
+                   << cl_half_to_float(_startValue);
+        }
+        else
+            ss << _startValue;
+
         for (cl_uint i = 0; i < maxNumDestItems; i++)
         {
             if (aTypeName == "atomic_flag")

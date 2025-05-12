@@ -98,7 +98,7 @@ template <typename AtomicType, typename CorrespondingType>
 CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingType c,
                                         TExplicitMemoryOrderType order)
 {
-    if (std::is_same<AtomicType, HOST_ATOMIC_HALF>::value)
+    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_HALF>)
     {
         static std::mutex mx;
         std::lock_guard<std::mutex> lock(mx);
@@ -110,22 +110,24 @@ CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingTyp
     else
     {
 #if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-        if (std::is_same<AtomicType, HOST_ATOMIC_INT>::value)
+        if constexpr (
+            std::is_same_v<
+                AtomicType,
+                HOST_ATOMIC_INT> || std::is_same_v<AtomicType, HOST_ATOMIC_UINT>)
             return InterlockedExchangeAdd((volatile cl_uint *)a, c);
-        else if (std::is_same<AtomicType, HOST_ATOMIC_UINT>::value)
-            return InterlockedExchangeAdd((volatile cl_uint *)a, c);
-        else if (std::is_same<AtomicType, HOST_ATOMIC_LONG>::value)
-            return InterlockedExchangeAdd64((volatile cl_long *)a, c);
-        else if (std::is_same<AtomicType, HOST_ATOMIC_ULONG>::value)
+        else if constexpr (
+            std::is_same_v<
+                AtomicType,
+                HOST_ATOMIC_LONG> || std::is_same_v<AtomicType, HOST_ATOMIC_ULONG>)
             return InterlockedExchangeAdd64((volatile cl_long *)a, c);
 #elif defined(__GNUC__)
-        if (std::is_same<AtomicType, HOST_ATOMIC_INT>::value)
+        if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_INT>)
             return __sync_fetch_and_add((volatile cl_int *)a, c);
-        else if (std::is_same<AtomicType, HOST_ATOMIC_UINT>::value)
+        else if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_UINT>)
             return __sync_fetch_and_add((volatile cl_uint *)a, c);
-        else if (std::is_same<AtomicType, HOST_ATOMIC_LONG>::value)
+        else if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_LONG>)
             return __sync_fetch_and_add((volatile cl_long *)a, c);
-        else if (std::is_same<AtomicType, HOST_ATOMIC_ULONG>::value)
+        else if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_ULONG>)
             return __sync_fetch_and_add((volatile cl_ulong *)a, c);
 #else
         log_info("Host function not implemented: atomic_fetch_add\n");
