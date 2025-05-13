@@ -1156,6 +1156,14 @@ int clExternalExportableSemaphore::signal(cl_command_queue cmd_queue)
 
     if (m_externalHandleType == VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD)
     {
+        // Finish the queue to signal the semaphore
+        err = clFinish(cmd_queue);
+        if (err != CL_SUCCESS)
+        {
+            log_error("Failed to finish cmd_queue\n");
+            return err;
+        }
+
         err = clGetSemaphoreHandleForTypeKHRptr(m_externalSemaphore, m_device,
                                                 CL_SEMAPHORE_HANDLE_SYNC_FD_KHR,
                                                 sizeof(int), &fd, nullptr);
@@ -1175,7 +1183,6 @@ int clExternalExportableSemaphore::signal(cl_command_queue cmd_queue)
 
         VkResult res =
             vkImportSemaphoreFdKHR(m_deviceSemaphore.getDevice(), &import);
-        ASSERT(res == VK_SUCCESS);
         if (res != VK_SUCCESS)
         {
             err = CL_INVALID_OPERATION;
