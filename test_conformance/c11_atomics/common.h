@@ -22,6 +22,10 @@
 
 #include "host_atomics.h"
 
+#include "CL/cl_half.h"
+
+#include <iomanip>
+#include <limits>
 #include <vector>
 #include <sstream>
 
@@ -38,6 +42,7 @@ enum TExplicitAtomicType
     TYPE_ATOMIC_UINT,
     TYPE_ATOMIC_LONG,
     TYPE_ATOMIC_ULONG,
+    TYPE_ATOMIC_HALF,
     TYPE_ATOMIC_FLOAT,
     TYPE_ATOMIC_DOUBLE,
     TYPE_ATOMIC_INTPTR_T,
@@ -71,6 +76,10 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+extern cl_half_rounding_mode gHalfRoundingMode;
+extern bool gFloatAtomicsSupported;
+extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
+extern cl_device_fp_config gHalfCaps;
 
 extern const char *
 get_memory_order_type_name(TExplicitMemoryOrderType orderType);
@@ -80,6 +89,26 @@ get_memory_scope_type_name(TExplicitMemoryScopeType scopeType);
 extern cl_int getSupportedMemoryOrdersAndScopes(
     cl_device_id device, std::vector<TExplicitMemoryOrderType> &memoryOrders,
     std::vector<TExplicitMemoryScopeType> &memoryScopes);
+
+inline bool IsHalfNaN(const cl_half v)
+{
+    // Extract FP16 exponent and mantissa
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+
+    // NaN test
+    return (h_exp == 0x1F && h_mant != 0);
+}
+
+inline bool IsHalfInfinity(const cl_half v)
+{
+    // Extract FP16 exponent and mantissa
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+
+    // Inf test
+    return (h_exp == 0x1F && h_mant == 0);
+}
 
 class AtomicTypeInfo {
 public:
@@ -168,6 +197,13 @@ public:
     {
         return false;
     }
+    virtual bool VerifyExpected(const HostDataType &expected,
+                                const HostAtomicType *const testValue,
+                                cl_uint whichDestValue)
+    {
+        if (testValue != nullptr) return expected != testValue[whichDestValue];
+        return true;
+    }
     virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                               MTdata d)
     {
@@ -240,13 +276,13 @@ public:
         int error = 0;
         if (_maxDeviceThreads > 0 && !UseSVM())
         {
-            LocalMemory(true);
+            SetLocalMemory(true);
             EXECUTE_TEST(
                 error, ExecuteForEachDeclarationType(deviceID, context, queue));
         }
         if (_maxDeviceThreads + MaxHostThreads() > 0)
         {
-            LocalMemory(false);
+            SetLocalMemory(false);
             EXECUTE_TEST(
                 error, ExecuteForEachDeclarationType(deviceID, context, queue));
         }
@@ -401,7 +437,7 @@ public:
     bool UseSVM() { return _useSVM; }
     void StartValue(HostDataType startValue) { _startValue = startValue; }
     HostDataType StartValue() { return _startValue; }
-    void LocalMemory(bool local) { _localMemory = local; }
+    void SetLocalMemory(bool local) { _localMemory = local; }
     bool LocalMemory() { return _localMemory; }
     void DeclaredInProgram(bool declaredInProgram)
     {
@@ -781,6 +817,8 @@ CBasicTest<HostAtomicType, HostDataType>::PragmaHeader(cl_device_id deviceID)
     }
     if (_dataType == TYPE_ATOMIC_DOUBLE)
         pragma += "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+    if (_dataType == TYPE_ATOMIC_HALF)
+        pragma += "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
     return pragma;
 }
 
@@ -875,7 +913,21 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
         header += std::string("__global volatile ") + aTypeName + " destMemory["
             + ss.str() + "] = {\n";
         ss.str("");
-        ss << _startValue;
+
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        {
+            if (IsHalfInfinity(_startValue))
+                ss << ((_startValue & 0x8000) != 0 ? "-" : "") << "INFINITY";
+            else if (IsHalfNaN(_startValue))
+                ss << "0.0h / 0.0h";
+            else
+                ss << std::setprecision(
+                    std::numeric_limits<float>::max_digits10)
+                   << cl_half_to_float(_startValue);
+        }
+        else
+            ss << _startValue;
+
         for (cl_uint i = 0; i < maxNumDestItems; i++)
         {
             if (aTypeName == "atomic_flag")
@@ -1434,7 +1486,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (expected != destItems[i])
+        if (VerifyExpected(expected, destItems.data(), i))
         {
             std::stringstream logLine;
             logLine << "ERROR: Result " << i
