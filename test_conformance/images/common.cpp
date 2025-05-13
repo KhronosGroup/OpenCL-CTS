@@ -127,6 +127,9 @@ int get_format_list(cl_context context, cl_mem_object_type imageType,
                     std::vector<cl_image_format> &outFormatList,
                     cl_mem_flags flags)
 {
+    flags &= CL_MEM_READ_WRITE | CL_MEM_READ_ONLY | CL_MEM_WRITE_ONLY
+        | CL_MEM_KERNEL_READ_AND_WRITE | CL_MEM_IMMUTABLE_EXT;
+
     cl_uint formatCount;
     int error = clGetSupportedImageFormats(context, flags, imageType, 0, NULL,
                                            &formatCount);
