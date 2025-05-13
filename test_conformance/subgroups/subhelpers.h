@@ -1609,6 +1609,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct subgroup_test
 
         // Generate the desired input for the kernel
         test_params.subgroup_size = subgroup_size;
+        test_params.local_workgroup_size = local;
         Fns::gen(idata.data(), mapin.data(), sgmap.data(), test_params);
 
         test_status status = TEST_FAIL;
