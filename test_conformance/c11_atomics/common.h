@@ -22,6 +22,8 @@
 
 #include "host_atomics.h"
 
+#include <iomanip>
+#include <limits>
 #include <vector>
 #include <sstream>
 
@@ -71,6 +73,9 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+extern bool gFloatAtomicsSupported;
+extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
+extern cl_device_fp_config gDoubleCaps;
 
 extern const char *
 get_memory_order_type_name(TExplicitMemoryOrderType orderType);
@@ -168,6 +173,13 @@ public:
     {
         return false;
     }
+    virtual bool VerifyExpected(const HostDataType &expected,
+                                const HostAtomicType *const testValue,
+                                cl_uint whichDestValue)
+    {
+        if (testValue != nullptr) return expected != testValue[whichDestValue];
+        return true;
+    }
     virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                               MTdata d)
     {
@@ -240,13 +252,13 @@ public:
         int error = 0;
         if (_maxDeviceThreads > 0 && !UseSVM())
         {
-            LocalMemory(true);
+            SetLocalMemory(true);
             EXECUTE_TEST(
                 error, ExecuteForEachDeclarationType(deviceID, context, queue));
         }
         if (_maxDeviceThreads + MaxHostThreads() > 0)
         {
-            LocalMemory(false);
+            SetLocalMemory(false);
             EXECUTE_TEST(
                 error, ExecuteForEachDeclarationType(deviceID, context, queue));
         }
@@ -401,7 +413,7 @@ public:
     bool UseSVM() { return _useSVM; }
     void StartValue(HostDataType startValue) { _startValue = startValue; }
     HostDataType StartValue() { return _startValue; }
-    void LocalMemory(bool local) { _localMemory = local; }
+    void SetLocalMemory(bool local) { _localMemory = local; }
     bool LocalMemory() { return _localMemory; }
     void DeclaredInProgram(bool declaredInProgram)
     {
@@ -875,7 +887,21 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
         header += std::string("__global volatile ") + aTypeName + " destMemory["
             + ss.str() + "] = {\n";
         ss.str("");
-        ss << _startValue;
+
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
+        {
+            if (std::isinf(_startValue))
+                ss << (_startValue < 0 ? "-" : "") << "INFINITY";
+            else if (std::isnan(_startValue))
+                ss << "0.0 / 0.0";
+            else
+                ss << std::setprecision(
+                    std::numeric_limits<HostDataType>::max_digits10)
+                   << _startValue;
+        }
+        else
+            ss << _startValue;
+
         for (cl_uint i = 0; i < maxNumDestItems; i++)
         {
             if (aTypeName == "atomic_flag")
@@ -1434,7 +1460,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (expected != destItems[i])
+        if (VerifyExpected(expected, destItems.data(), i))
         {
             std::stringstream logLine;
             logLine << "ERROR: Result " << i
