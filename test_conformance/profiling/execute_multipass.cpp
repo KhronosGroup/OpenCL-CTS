@@ -162,10 +162,12 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
         test_error(err, "clWaitForEvents failed");
 
         // test profiling
-        while( ( err = clGetEventProfilingInfo( executeEvent, CL_PROFILING_COMMAND_QUEUED, sizeof( cl_ulong ), &queueStart, NULL ) ) == CL_PROFILING_INFO_NOT_AVAILABLE );
+        while( ( err = clGetEventProfilingInfo( executeEvent, CL_PROFILING_COMMAND_QUEUED, sizeof( cl_ulong ), &queueStart, NULL ) ) == CL_PROFILING_INFO_NOT_AVAILABLE )
+            ;
         test_error(err, "clGetEventProfilingInfo failed");
 
-        while( ( err = clGetEventProfilingInfo( executeEvent, CL_PROFILING_COMMAND_SUBMIT, sizeof( cl_ulong ), &submitStart, NULL ) ) == CL_PROFILING_INFO_NOT_AVAILABLE );
+        while( ( err = clGetEventProfilingInfo( executeEvent, CL_PROFILING_COMMAND_SUBMIT, sizeof( cl_ulong ), &submitStart, NULL ) ) == CL_PROFILING_INFO_NOT_AVAILABLE )
+            ;
         test_error(err, "clGetEventProfilingInfo failed");
 
         err = clGetEventProfilingInfo( executeEvent, CL_PROFILING_COMMAND_START, sizeof( cl_ulong ), &writeStart, NULL );
