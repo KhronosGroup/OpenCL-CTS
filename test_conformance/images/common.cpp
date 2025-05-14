@@ -30,6 +30,9 @@ cl_channel_type floatFormats[] = {
     CL_SNORM_INT16,
     CL_FLOAT,
     CL_HALF_FLOAT,
+    CL_UNORM_INT10X6_EXT,
+    CL_UNORM_INT12X4_EXT,
+    CL_UNORM_INT14X2_EXT,
     (cl_channel_type)-1,
 };
 
@@ -41,9 +44,8 @@ cl_channel_type intFormats[] = {
 };
 
 cl_channel_type uintFormats[] = {
-    CL_UNSIGNED_INT8,
-    CL_UNSIGNED_INT16,
-    CL_UNSIGNED_INT32,
+    CL_UNSIGNED_INT8,        CL_UNSIGNED_INT16,       CL_UNSIGNED_INT32,
+    CL_UNSIGNED_INT10X6_EXT, CL_UNSIGNED_INT12X4_EXT, CL_UNSIGNED_INT14X2_EXT,
     (cl_channel_type)-1,
 };
 
