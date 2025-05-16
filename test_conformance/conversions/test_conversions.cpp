@@ -226,8 +226,6 @@ static int ParseArgs(int argc, const char **argv)
                         gForceFTZ ^= 1;
                         gForceHalfFTZ ^= 1;
                         break;
-                    case 't': gTimeResults ^= 1; break;
-                    case 'a': gReportAverageTimes ^= 1; break;
                     case '1':
                         if (arg[1] == '6')
                         {

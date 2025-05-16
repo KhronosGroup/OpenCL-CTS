@@ -68,12 +68,6 @@ cl_context gContext = NULL;
 cl_command_queue gQueue = NULL;
 int gStartTestNumber = -1;
 int gEndTestNumber = 0;
-#if defined(__APPLE__)
-int gTimeResults = 1;
-#else
-int gTimeResults = 0;
-#endif
-int gReportAverageTimes = 0;
 void *gIn = NULL;
 void *gRef = NULL;
 void *gAllowZ = NULL;
@@ -102,8 +96,6 @@ MTdata gMTdata;
 const char **argList = NULL;
 int argCount = 0;
 
-
-double SubtractTime(uint64_t endTime, uint64_t startTime);
 
 cl_half_rounding_mode DataInitInfo::halfRoundingMode = CL_HALF_RTE;
 cl_half_rounding_mode ConversionsTest::defaultHalfRoundingMode = CL_HALF_RTE;
@@ -904,61 +896,6 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
 
     log_info("done.\n");
 
-    if (gTimeResults)
-    {
-        // Kick off tests for the various vector lengths
-        for (vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize;
-             vectorSize++)
-        {
-            size_t workItemCount = blockCount / vectorSizes[vectorSize];
-            if (vectorSizes[vectorSize] * gTypeSizes[outType] < 4)
-                workItemCount /=
-                    4 / (vectorSizes[vectorSize] * gTypeSizes[outType]);
-
-            double sum = 0.0;
-            double bestTime = INFINITY;
-            cl_uint k;
-            for (k = 0; k < PERF_LOOP_COUNT; k++)
-            {
-                uint64_t startTime = conv_test::GetTime();
-                if ((error = conv_test::RunKernel(
-                         writeInputBufferInfo.calcInfo[vectorSize]->kernel,
-                         gInBuffer, gOutBuffers[vectorSize], workItemCount)))
-                {
-                    gFailCount++;
-                    return error;
-                }
-
-                // Make sure OpenCL is done
-                if ((error = clFinish(gQueue)))
-                {
-                    vlog_error("Error %d at clFinish\n", error);
-                    return error;
-                }
-
-                uint64_t endTime = conv_test::GetTime();
-                double time = SubtractTime(endTime, startTime);
-                sum += time;
-                if (time < bestTime) bestTime = time;
-            }
-
-            if (gReportAverageTimes) bestTime = sum / PERF_LOOP_COUNT;
-            double clocksPerOp = bestTime * (double)gDeviceFrequency
-                * gComputeDevices * gSimdSize * 1e6
-                / (workItemCount * vectorSizes[vectorSize]);
-            if (0 == vectorSize)
-                vlog_perf(clocksPerOp, LOWER_IS_BETTER, "clocks / element",
-                          "implicit convert %s -> %s", gTypeNames[inType],
-                          gTypeNames[outType]);
-            else
-                vlog_perf(clocksPerOp, LOWER_IS_BETTER, "clocks / element",
-                          "convert_%s%s%s%s( %s%s )", gTypeNames[outType],
-                          sizeNames[vectorSize], gSaturationNames[sat],
-                          gRoundingModeNames[round], gTypeNames[inType],
-                          sizeNames[vectorSize]);
-        }
-    }
-
     if (gWimpyMode)
         vlog("\tWimp pass");
     else
@@ -976,33 +913,6 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
 
 #if !defined(__APPLE__)
 void memset_pattern4(void *dest, const void *src_pattern, size_t bytes);
-#endif
-
-#if defined(_MSC_VER)
-/* function is defined in "compat.h" */
-#else
-double SubtractTime(uint64_t endTime, uint64_t startTime)
-{
-    uint64_t diff = endTime - startTime;
-    static double conversion = 0.0;
-
-    if (0.0 == conversion)
-    {
-#if defined(__APPLE__)
-        mach_timebase_info_data_t info = { 0, 0 };
-        kern_return_t err = mach_timebase_info(&info);
-        if (0 == err)
-            conversion = 1e-9 * (double)info.numer / (double)info.denom;
-#else
-        // This function consumes output from GetTime() above, and converts the
-        // time to secionds.
-#warning need accurate ticks to seconds conversion factor here. Times are invalid.
-#endif
-    }
-
-    // strictly speaking we should also be subtracting out timer latency here
-    return conversion * (double)diff;
-}
 #endif
 
 void MapResultValuesComplete(const std::unique_ptr<CalcRefValsBase> &ptr);
@@ -1350,20 +1260,6 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
     FixNanConversions(outType, inType, d, count, s);
 
     return CL_SUCCESS;
-}
-
-uint64_t GetTime(void)
-{
-#if defined(__APPLE__)
-    return mach_absolute_time();
-#elif defined(_MSC_VER)
-    return ReadTime();
-#else
-    // mach_absolute_time is a high precision timer with precision < 1
-    // microsecond.
-#warning need accurate clock here.  Times are invalid.
-    return 0;
-#endif
 }
 
 // Note: not called reentrantly
