@@ -1216,6 +1216,7 @@ public:
     }
     bool VerifyExpected(const HostDataType &expected,
                         const HostAtomicType *const testValue,
+                        const HostDataType *startRefValues,
                         cl_uint whichDestValue) override
     {
         if (testValue != nullptr)
@@ -1229,6 +1230,7 @@ public:
 
         return CBasicTestMemOrderScope<
             HostAtomicType, HostDataType>::VerifyExpected(expected, testValue,
+                                                          startRefValues,
                                                           whichDestValue);
     }
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
@@ -1296,14 +1298,14 @@ static int test_atomic_fetch_add_generic(cl_device_id deviceID,
         auto spec_vals_halfs =
             CBasicTestFetchAddSpecialFloats<HOST_ATOMIC_HALF,
                                             HOST_HALF>::GetSpecialValues();
+        int num_elems = spec_vals_halfs.size();
 
         for (auto &elem : spec_vals_halfs)
         {
             CBasicTestFetchAddSpecialFloats<HOST_ATOMIC_HALF, HOST_HALF>
                 test_half(TYPE_ATOMIC_HALF, elem, useSVM);
             EXECUTE_TEST(
-                error,
-                test_half.Execute(deviceID, context, queue, num_elements));
+                error, test_half.Execute(deviceID, context, queue, num_elems));
         }
     }
 

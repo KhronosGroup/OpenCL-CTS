@@ -173,12 +173,12 @@ public:
         return 0;
     }
     CBasicTest(TExplicitAtomicType dataType, bool useSVM)
-        : CTest(), _maxDeviceThreads(MAX_DEVICE_THREADS), _dataType(dataType),
-          _useSVM(useSVM), _startValue(255), _localMemory(false),
-          _declaredInProgram(false), _usedInFunction(false),
-          _genericAddrSpace(false), _oldValueCheck(true),
-          _localRefValues(false), _maxGroupSize(0), _passCount(0),
-          _iterations(gInternalIterations)
+        : CTest(), _dataType(dataType), _useSVM(useSVM), _startValue(255),
+          _localMemory(false), _declaredInProgram(false),
+          _usedInFunction(false), _genericAddrSpace(false),
+          _oldValueCheck(true), _localRefValues(false), _maxGroupSize(0),
+          _passCount(0), _iterations(gInternalIterations),
+          _maxDeviceThreads(MAX_DEVICE_THREADS), _deviceThreads(0)
     {}
     virtual ~CBasicTest()
     {
@@ -199,6 +199,7 @@ public:
     }
     virtual bool VerifyExpected(const HostDataType &expected,
                                 const HostAtomicType *const testValue,
+                                const HostDataType *startRefValues,
                                 cl_uint whichDestValue)
     {
         if (testValue != nullptr) return expected != testValue[whichDestValue];
@@ -274,13 +275,13 @@ public:
                                            cl_command_queue queue)
     {
         int error = 0;
-        if (_maxDeviceThreads > 0 && !UseSVM())
+        if (_deviceThreads > 0 && !UseSVM())
         {
             SetLocalMemory(true);
             EXECUTE_TEST(
                 error, ExecuteForEachDeclarationType(deviceID, context, queue));
         }
-        if (_maxDeviceThreads + MaxHostThreads() > 0)
+        if (_deviceThreads + MaxHostThreads() > 0)
         {
             SetLocalMemory(false);
             EXECUTE_TEST(
@@ -289,7 +290,7 @@ public:
         return error;
     }
     virtual int Execute(cl_device_id deviceID, cl_context context,
-                        cl_command_queue queue, int num_elements)
+                        cl_command_queue queue, int num_elements) override
     {
         if (sizeof(HostAtomicType) != DataType().Size(deviceID))
         {
@@ -329,7 +330,12 @@ public:
             if (UseSVM()) return 0;
             _maxDeviceThreads = 0;
         }
-        if (_maxDeviceThreads + MaxHostThreads() == 0) return 0;
+
+        _deviceThreads = (num_elements > 0)
+            ? std::min(cl_uint(num_elements), _maxDeviceThreads)
+            : _maxDeviceThreads;
+
+        if (_deviceThreads + MaxHostThreads() == 0) return 0;
         return ExecuteForEachParameterSet(deviceID, context, queue);
     }
     virtual void HostFunction(cl_uint tid, cl_uint threadCount,
@@ -342,7 +348,7 @@ public:
     {
         return AtomicTypeExtendedInfo<HostDataType>(_dataType);
     }
-    cl_uint _maxDeviceThreads;
+
     virtual cl_uint MaxHostThreads()
     {
         if (UseSVM() || gHost)
@@ -496,6 +502,8 @@ private:
     cl_uint _currentGroupSize;
     cl_uint _passCount;
     const cl_int _iterations;
+    cl_uint _maxDeviceThreads;
+    cl_uint _deviceThreads;
 };
 
 template <typename HostAtomicType, typename HostDataType>
@@ -1161,7 +1169,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
     MTdata d;
     size_t typeSize = DataType().Size(deviceID);
 
-    deviceThreadCount = _maxDeviceThreads;
+    deviceThreadCount = _deviceThreads;
     hostThreadCount = MaxHostThreads();
     threadCount = deviceThreadCount + hostThreadCount;
 
@@ -1486,7 +1494,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (VerifyExpected(expected, destItems.data(), i))
+        if (VerifyExpected(expected, destItems.data(), startRefValues.data(),
+                           i))
         {
             std::stringstream logLine;
             logLine << "ERROR: Result " << i
