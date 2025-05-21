@@ -474,7 +474,7 @@ public:
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
                                                                 useSVM)
     {
-        if (std::is_same<HostDataType, cl_half>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
             StartValue(cl_half_from_float(static_cast<float>(1234),
                                           gHalfRoundingMode));
         else
@@ -483,9 +483,7 @@ public:
     virtual int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                                   cl_command_queue queue)
     {
-        if (CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DataType()
-                ._type
-            == TYPE_ATOMIC_HALF)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
         {
             if (LocalMemory()
                 && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_LOAD_STORE_EXT)
@@ -542,18 +540,18 @@ public:
         /* Any repeated value is treated as an error */
         std::vector<bool> tidFound(threadCount);
         bool startValueFound = false;
-        cl_uint startVal = static_cast<cl_uint>(
-            cl_half_to_float(static_cast<cl_half>(StartValue())));
+        cl_uint startVal = StartValue();
+
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+            startVal = static_cast<cl_uint>(
+                cl_half_to_float(static_cast<cl_half>(StartValue())));
 
         for (cl_uint i = 0; i <= threadCount; i++)
         {
             cl_uint value = 0;
             if (i == threadCount)
             {
-                if (CBasicTestMemOrderScope<HostAtomicType,
-                                            HostDataType>::DataType()
-                        ._type
-                    != TYPE_ATOMIC_HALF)
+                if constexpr (!std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
                     value =
                         (cl_uint)finalValues[0]; // additional value from atomic
                                                  // variable (last written)
@@ -563,16 +561,12 @@ public:
             }
             else
             {
-                if (CBasicTestMemOrderScope<HostAtomicType,
-                                            HostDataType>::DataType()
-                        ._type
-                    != TYPE_ATOMIC_HALF)
+                if constexpr (!std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
                     value = (cl_uint)refValues[i];
                 else
                     value =
                         cl_half_to_float(static_cast<cl_half>(refValues[i]));
             }
-
 
             if (value == startVal)
             {
