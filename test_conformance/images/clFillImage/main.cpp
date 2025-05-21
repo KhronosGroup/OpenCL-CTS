@@ -32,38 +32,21 @@ extern int test_image_set( cl_device_id device, cl_context context, cl_command_q
 static void printUsage( const char *execName );
 
 
-int test_1D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return test_image_set(device, context, queue, k1D);
-}
-int test_2D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return test_image_set(device, context, queue, k2D);
-}
-int test_3D(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return test_image_set(device, context, queue, k3D);
-}
-int test_1Darray(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(1D) { return test_image_set(device, context, queue, k1D); }
+REGISTER_TEST(2D) { return test_image_set(device, context, queue, k2D); }
+REGISTER_TEST(3D) { return test_image_set(device, context, queue, k3D); }
+REGISTER_TEST(1Darray)
 {
     return test_image_set(device, context, queue, k1DArray);
 }
-int test_2Darray(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(2Darray)
 {
     return test_image_set(device, context, queue, k2DArray);
 }
-int test_1Dbuffer(cl_device_id device, cl_context context,
-                  cl_command_queue queue, int num_elements)
+REGISTER_TEST(1Dbuffer)
 {
     return test_image_set(device, context, queue, k1DBuffer);
 }
-
-test_definition test_list[] = {
-    ADD_TEST(1D),      ADD_TEST(2D),      ADD_TEST(3D),
-    ADD_TEST(1Darray), ADD_TEST(2Darray), ADD_TEST(1Dbuffer),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char *argv[])
 {
@@ -126,8 +109,10 @@ int main(int argc, const char *argv[])
     if ( gTestSmallImages )
         log_info( "Note: Using small test images\n" );
 
-    int ret = runTestHarnessWithCheck(argCount, argList, test_num, test_list,
-                                      false, 0, verifyImageSupport);
+    int ret = runTestHarnessWithCheck(
+        argCount, argList, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0,
+        verifyImageSupport);
 
     free(argList);
     return ret;
@@ -153,9 +138,9 @@ static void printUsage( const char *execName )
     log_info( "\tuse_pitches - Enables row and slice pitches\n" );
     log_info( "\n" );
     log_info( "Test names:\n" );
-    for( int i = 0; i < test_num; i++ )
+    for (size_t i = 0; i < test_registry::getInstance().num_tests(); i++)
     {
-        log_info( "\t%s\n", test_list[i].name );
+        log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
     }
     log_info( "\n" );
     log_info( "You may also use appropriate CL_ channel type and ordering constants.\n" );

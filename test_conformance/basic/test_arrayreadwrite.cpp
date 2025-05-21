@@ -21,12 +21,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "testBase.h"
 
-#include "procs.h"
-
-
-int
-test_arrayreadwrite(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(arrayreadwrite)
 {
     cl_uint                *inptr, *outptr;
     cl_mem              streams[1];
@@ -91,6 +88,3 @@ test_arrayreadwrite(cl_device_id device, cl_context context, cl_command_queue qu
 
     return err;
 }
-
-
-

@@ -25,7 +25,7 @@
 #include <numeric>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 namespace {
 const char *barrier_kernel_code = R"(
@@ -66,9 +66,9 @@ void generate_random_inputs(std::vector<cl_int> &v)
     std::generate(v.begin(), v.end(), random_generator);
 }
 
-int test_barrier_common(cl_device_id device, cl_context context,
-                        cl_command_queue queue, int num_elements,
-                        std::string barrier_str)
+static int test_barrier_common(cl_device_id device, cl_context context,
+                               cl_command_queue queue, int num_elements,
+                               std::string barrier_str)
 {
     clMemWrapper streams[3];
     clProgramWrapper program;
@@ -142,14 +142,12 @@ int test_barrier_common(cl_device_id device, cl_context context,
 }
 }
 
-int test_barrier(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int num_elements)
+REGISTER_TEST(barrier)
 {
     return test_barrier_common(device, context, queue, num_elements, "barrier");
 }
 
-int test_wg_barrier(cl_device_id device, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(wg_barrier, Version(2, 0))
 {
     return test_barrier_common(device, context, queue, num_elements,
                                "work_group_barrier");

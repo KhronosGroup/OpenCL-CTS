@@ -21,7 +21,6 @@
 #include <sys/stat.h>
 #include <vector>
 
-#include "procs.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
@@ -36,7 +35,7 @@ static const char *sample_kernel = {
     "}\n"
 };
 
-int test_vec_type_hint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(vec_type_hint)
 {
   int error;
   int vec_type_index, vec_size_index;
@@ -51,14 +50,14 @@ int test_vec_type_hint(cl_device_id deviceID, cl_context context, cl_command_que
   {
 
       if (vecType[vec_type_index] == kHalf
-          && !is_extension_available(deviceID, "cl_khr_fp16"))
+          && !is_extension_available(device, "cl_khr_fp16"))
       {
           log_info(
               "Extension cl_khr_fp16 not supported; skipping half tests.\n");
           continue;
       }
       else if (vecType[vec_type_index] == kDouble
-               && !is_extension_available(deviceID, "cl_khr_fp64"))
+               && !is_extension_available(device, "cl_khr_fp64"))
       {
           log_info(
               "Extension cl_khr_fp64 not supported; skipping double tests.\n");

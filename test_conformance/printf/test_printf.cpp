@@ -247,7 +247,7 @@ cl_program makeMixedFormatPrintfProgram(cl_kernel* kernel_ptr,
     };
 
     std::array<std::vector<std::string>, 2> formats = {
-        { { "%f", "%e", "%g", "%.13a", "%F", "%E", "%G", "%.13A" },
+        { { "%.13f", "%e", "%g", "%.13a", "%.13F", "%E", "%G", "%.13A" },
           { "%d", "%i", "%u", "%x", "%o", "%X" } }
     };
     std::vector<char> data_before(2 + genrand_int32(gMTdata) % 8);
@@ -929,123 +929,77 @@ int doTest(cl_command_queue queue, cl_context context,
 
 }
 
-int test_int(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-             int num_elements)
+REGISTER_TEST(int) { return doTest(gQueue, gContext, TYPE_INT, device); }
+
+REGISTER_TEST(long) { return doTest(gQueue, gContext, TYPE_LONG, device); }
+
+REGISTER_TEST(half) { return doTest(gQueue, gContext, TYPE_HALF, device); }
+
+REGISTER_TEST(half_limits)
 {
-    return doTest(gQueue, gContext, TYPE_INT, deviceID);
+    return doTest(gQueue, gContext, TYPE_HALF_LIMITS, device);
 }
 
-int test_long(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
+REGISTER_TEST(float) { return doTest(gQueue, gContext, TYPE_FLOAT, device); }
+
+REGISTER_TEST(float_limits)
 {
-    return doTest(gQueue, gContext, TYPE_LONG, deviceID);
+    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, device);
 }
 
-int test_half(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
+REGISTER_TEST(double) { return doTest(gQueue, gContext, TYPE_DOUBLE, device); }
+
+REGISTER_TEST(double_limits)
 {
-    return doTest(gQueue, gContext, TYPE_HALF, deviceID);
+    return doTest(gQueue, gContext, TYPE_DOUBLE_LIMITS, device);
 }
 
-int test_half_limits(cl_device_id deviceID, cl_context context,
-                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(octal) { return doTest(gQueue, gContext, TYPE_OCTAL, device); }
+
+REGISTER_TEST(unsigned)
 {
-    return doTest(gQueue, gContext, TYPE_HALF_LIMITS, deviceID);
+    return doTest(gQueue, gContext, TYPE_UNSIGNED, device);
 }
 
-int test_float(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
+REGISTER_TEST(hexadecimal)
 {
-    return doTest(gQueue, gContext, TYPE_FLOAT, deviceID);
+    return doTest(gQueue, gContext, TYPE_HEXADEC, device);
 }
 
-int test_float_limits(cl_device_id deviceID, cl_context context,
-                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(char) { return doTest(gQueue, gContext, TYPE_CHAR, device); }
+
+REGISTER_TEST(string) { return doTest(gQueue, gContext, TYPE_STRING, device); }
+
+REGISTER_TEST(format_string)
 {
-    return doTest(gQueue, gContext, TYPE_FLOAT_LIMITS, deviceID);
+    return doTest(gQueue, gContext, TYPE_FORMAT_STRING, device);
 }
 
-int test_double(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
+REGISTER_TEST(vector) { return doTest(gQueue, gContext, TYPE_VECTOR, device); }
+
+REGISTER_TEST(address_space)
 {
-    return doTest(gQueue, gContext, TYPE_DOUBLE, deviceID);
+    return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, device);
 }
 
-int test_double_limits(cl_device_id deviceID, cl_context context,
-                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(mixed_format_random)
 {
-    return doTest(gQueue, gContext, TYPE_DOUBLE_LIMITS, deviceID);
+    return doTest(gQueue, gContext, TYPE_MIXED_FORMAT_RANDOM, device);
 }
 
-int test_octal(cl_device_id deviceID, cl_context context,
-               cl_command_queue queue, int num_elements)
+REGISTER_TEST(length_specifier)
 {
-    return doTest(gQueue, gContext, TYPE_OCTAL, deviceID);
+    return doTest(gQueue, gContext, TYPE_LENGTH_SPECIFIER, device);
 }
 
-int test_unsigned(cl_device_id deviceID, cl_context context,
-                  cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_UNSIGNED, deviceID);
-}
-
-int test_hexadecimal(cl_device_id deviceID, cl_context context,
-                     cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_HEXADEC, deviceID);
-}
-
-int test_char(cl_device_id deviceID, cl_context context, cl_command_queue queue,
-              int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_CHAR, deviceID);
-}
-
-int test_string(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_STRING, deviceID);
-}
-
-int test_format_string(cl_device_id deviceID, cl_context context,
-                       cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_FORMAT_STRING, deviceID);
-}
-
-int test_vector(cl_device_id deviceID, cl_context context,
-                cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_VECTOR, deviceID);
-}
-
-int test_address_space(cl_device_id deviceID, cl_context context,
-                       cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_ADDRESS_SPACE, deviceID);
-}
-
-int test_mixed_format_random(cl_device_id deviceID, cl_context context,
-                             cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_MIXED_FORMAT_RANDOM, deviceID);
-}
-
-int test_length_specifier(cl_device_id deviceID, cl_context context,
-                          cl_command_queue queue, int num_elements)
-{
-    return doTest(gQueue, gContext, TYPE_LENGTH_SPECIFIER, deviceID);
-}
-
-int test_buffer_size(cl_device_id deviceID, cl_context context,
-                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(buffer_size)
 {
     size_t printf_buff_size = 0;
     const size_t printf_buff_size_req = !gIsEmbedded ? (1024 * 1024UL) : 1024UL;
     const size_t config_size = sizeof(printf_buff_size);
     cl_int err = CL_SUCCESS;
 
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_PRINTF_BUFFER_SIZE, config_size,
+    err = clGetDeviceInfo(device, CL_DEVICE_PRINTF_BUFFER_SIZE, config_size,
                           &printf_buff_size, NULL);
     if (err != CL_SUCCESS)
     {
@@ -1062,30 +1016,6 @@ int test_buffer_size(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-test_definition test_list[] = {
-    ADD_TEST(int),
-    ADD_TEST(long),
-    ADD_TEST(half),
-    ADD_TEST(half_limits),
-    ADD_TEST(float),
-    ADD_TEST(float_limits),
-    ADD_TEST(double),
-    ADD_TEST(double_limits),
-    ADD_TEST(octal),
-    ADD_TEST(unsigned),
-    ADD_TEST(hexadecimal),
-    ADD_TEST(char),
-    ADD_TEST(string),
-    ADD_TEST(format_string),
-    ADD_TEST(vector),
-    ADD_TEST(address_space),
-    ADD_TEST(buffer_size),
-    ADD_TEST(mixed_format_random),
-    ADD_TEST(length_specifier),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
-
 //-----------------------------------------
 // printUsage
 //-----------------------------------------
@@ -1094,9 +1024,9 @@ static void printUsage(void)
     log_info("test_printf: <optional: testnames> \n");
     log_info("\tdefault is to run the full test on the default device\n");
     log_info("\n");
-    for (int i = 0; i < test_num; i++)
+    for (size_t i = 0; i < test_registry::getInstance().num_tests(); i++)
     {
-        log_info("\t%s\n", test_list[i].name);
+        log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
     }
 }
 
@@ -1167,7 +1097,9 @@ int main(int argc, const char* argv[])
 
     gMTdata = MTdataHolder(gRandomSeed);
 
-    int err = runTestHarnessWithCheck( argCount, argList, test_num, test_list, true, 0, InitCL );
+    int err = runTestHarnessWithCheck(
+        argCount, argList, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), true, 0, InitCL);
 
     if(gQueue)
     {
