@@ -754,10 +754,12 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
         test_info.tinfo[i].d = MTdataHolder(genrand_int32(d));
     }
 
+    bool correctlyRounded = strcmp(f->name, "divide_cr") == 0;
+
     // Init the kernels
     BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
                                 test_info.programs, f->nameInCode,
-                                relaxedMode };
+                                relaxedMode, correctlyRounded };
     if ((error = ThreadPool_Do(BuildKernelFn,
                                gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                &build_info)))
