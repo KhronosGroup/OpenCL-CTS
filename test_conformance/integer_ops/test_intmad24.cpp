@@ -13,15 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
+#include "testBase.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#include "procs.h"
-
 #define NUM_PROGRAMS 6
 
 static const int vector_sizes[] = {1, 2, 3, 4, 8, 16};
@@ -187,7 +184,7 @@ static inline int random_int32( MTdata d )
 }
 
 
-int test_integer_mad24(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST(integer_mad24)
 {
     cl_mem streams[4];
     cl_int *input_ptr[3], *output_ptr, *p;
@@ -196,13 +193,13 @@ int test_integer_mad24(cl_device_id device, cl_context context, cl_command_queue
     cl_kernel kernel[2*NUM_PROGRAMS];
     size_t threads[1];
 
-    int                num_elements;
+    int n_elems;
     int                err;
     int                i;
     MTdata              d;
 
-    size_t length = sizeof(cl_int) * 16 * n_elems;
-    num_elements = n_elems * 16;
+    size_t length = sizeof(cl_int) * 16 * num_elements;
+    n_elems = num_elements * 16;
 
     input_ptr[0] = (cl_int*)malloc(length);
     input_ptr[1] = (cl_int*)malloc(length);
@@ -220,14 +217,11 @@ int test_integer_mad24(cl_device_id device, cl_context context, cl_command_queue
 
     d = init_genrand( gRandomSeed );
     p = input_ptr[0];
-    for (i=0; i<num_elements; i++)
-        p[i] = random_int24(d);
+    for (i = 0; i < n_elems; i++) p[i] = random_int24(d);
     p = input_ptr[1];
-    for (i=0; i<num_elements; i++)
-        p[i] = random_int24(d);
+    for (i = 0; i < n_elems; i++) p[i] = random_int24(d);
     p = input_ptr[2];
-    for (i=0; i<num_elements; i++)
-        p[i] = random_int32(d);
+    for (i = 0; i < n_elems; i++) p[i] = random_int32(d);
     free_mtdata(d); d = NULL;
 
     err = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, length, input_ptr[0], 0, NULL, NULL);
@@ -285,7 +279,7 @@ int test_integer_mad24(cl_device_id device, cl_context context, cl_command_queue
     }
 
 
-    threads[0] = (unsigned int)n_elems;
+    threads[0] = (unsigned int)num_elements;
     // test signed
     for (i=0; i<NUM_PROGRAMS; i++)
     {
@@ -295,11 +289,13 @@ int test_integer_mad24(cl_device_id device, cl_context context, cl_command_queue
         err = clEnqueueReadBuffer(queue, streams[3], CL_TRUE, 0, length, output_ptr, 0, NULL, NULL);
           test_error(err, "clEnqueueNDRangeKernel failed");
 
-        if (verify_int_mad24(input_ptr[0], input_ptr[1], input_ptr[2], output_ptr, n_elems * vector_sizes[i], vector_sizes[i]))
-        {
-            log_error("INT_MAD24 %s test failed\n", test_str_names[i]);
-            err = -1;
-        }
+          if (verify_int_mad24(input_ptr[0], input_ptr[1], input_ptr[2],
+                               output_ptr, num_elements * vector_sizes[i],
+                               vector_sizes[i]))
+          {
+              log_error("INT_MAD24 %s test failed\n", test_str_names[i]);
+              err = -1;
+          }
         else
         {
             log_info("INT_MAD24 %s test passed\n", test_str_names[i]);
@@ -311,11 +307,9 @@ int test_integer_mad24(cl_device_id device, cl_context context, cl_command_queue
     }
 
     p = input_ptr[0];
-    for (i=0; i<num_elements; i++)
-        p[i] &= 0xffffffU;
+    for (i = 0; i < n_elems; i++) p[i] &= 0xffffffU;
     p = input_ptr[1];
-    for (i=0; i<num_elements; i++)
-        p[i] &= 0xffffffU;
+    for (i = 0; i < n_elems; i++) p[i] &= 0xffffffU;
 
     err = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, 0, length, input_ptr[0], 0, NULL, NULL);
       test_error(err, "clEnqueueWriteBuffer failed");
@@ -332,11 +326,15 @@ int test_integer_mad24(cl_device_id device, cl_context context, cl_command_queue
         err = clEnqueueReadBuffer(queue, streams[3], CL_TRUE, 0, length, output_ptr, 0, NULL, NULL);
           test_error(err, "clEnqueueNDRangeKernel failed");
 
-        if (verify_uint_mad24( (cl_uint*) input_ptr[0], (cl_uint*) input_ptr[1], (cl_uint*) input_ptr[2], (cl_uint*)output_ptr, n_elems * vector_sizes[i-NUM_PROGRAMS], vector_sizes[i-NUM_PROGRAMS]))
-        {
-            log_error("UINT_MAD24 %s test failed\n", test_str_names[i]);
-            err = -1;
-        }
+          if (verify_uint_mad24((cl_uint *)input_ptr[0],
+                                (cl_uint *)input_ptr[1],
+                                (cl_uint *)input_ptr[2], (cl_uint *)output_ptr,
+                                num_elements * vector_sizes[i - NUM_PROGRAMS],
+                                vector_sizes[i - NUM_PROGRAMS]))
+          {
+              log_error("UINT_MAD24 %s test failed\n", test_str_names[i]);
+              err = -1;
+          }
         else
         {
             log_info("UINT_MAD24 %s test passed\n", test_str_names[i]);
@@ -364,5 +362,3 @@ int test_integer_mad24(cl_device_id device, cl_context context, cl_command_queue
 
     return err;
 }
-
-

@@ -92,8 +92,7 @@ char appName[64] = "ctest";
 int gMultithread = 1;
 
 
-int test_conversions(cl_device_id device, cl_context context,
-                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(conversions)
 {
     if (argCount)
     {
@@ -106,13 +105,6 @@ int test_conversions(cl_device_id device, cl_context context,
                                                num_elements);
     }
 }
-
-
-test_definition test_list[] = {
-    ADD_TEST(conversions),
-};
-
-const int test_num = ARRAY_SIZE(test_list);
 
 
 int main(int argc, const char **argv)
@@ -148,8 +140,9 @@ int main(int argc, const char **argv)
     gMTdata = init_genrand(gRandomSeed);
 
     const char *arg[] = { argv[0] };
-    int ret =
-        runTestHarnessWithCheck(1, arg, test_num, test_list, true, 0, InitCL);
+    int ret = runTestHarnessWithCheck(
+        1, arg, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), true, 0, InitCL);
 
     free_mtdata(gMTdata);
     if (gQueue)

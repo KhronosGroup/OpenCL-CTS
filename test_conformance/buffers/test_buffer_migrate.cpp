@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "procs.h"
+#include "testBase.h"
 #include "harness/errorHelpers.h"
 #include "harness/testHarness.h"
 
@@ -96,7 +96,7 @@ static cl_int restoreBuffer(cl_command_queue *queues, cl_mem *buffers, cl_uint n
   return CL_SUCCESS;
 }
 
-int test_buffer_migrate(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(buffer_migrate)
 {
   int failed = 0;
   cl_uint i, j;
@@ -119,9 +119,12 @@ int test_buffer_migrate(cl_device_id deviceID, cl_context context, cl_command_qu
   const size_t wgs[1] = {BUFFER_SIZE};
 
   /* Allocate arrays whose size varies according to the maximum number of sub-devices */
-  if ((err = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(max_sub_devices), &max_sub_devices, NULL)) != CL_SUCCESS) {
-    print_error(err, "clGetDeviceInfo(CL_DEVICE_MAX_COMPUTE_UNITS) failed");
-    return -1;
+  if ((err = clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS,
+                             sizeof(max_sub_devices), &max_sub_devices, NULL))
+      != CL_SUCCESS)
+  {
+      print_error(err, "clGetDeviceInfo(CL_DEVICE_MAX_COMPUTE_UNITS) failed");
+      return -1;
   }
   if (max_sub_devices < 1) {
     log_error("ERROR: Invalid number of compute units returned.\n");
@@ -156,9 +159,12 @@ int test_buffer_migrate(cl_device_id deviceID, cl_context context, cl_command_qu
   }
 
   // Attempt to partition the device along each of the allowed affinity domain.
-  if ((err = clGetDeviceInfo(deviceID, CL_DEVICE_PARTITION_AFFINITY_DOMAIN, sizeof(domains), &domains, NULL)) != CL_SUCCESS) {
-    print_error(err, "clGetDeviceInfo(CL_PARTITION_AFFINITY_DOMAIN) failed");
-    return -1;
+  if ((err = clGetDeviceInfo(device, CL_DEVICE_PARTITION_AFFINITY_DOMAIN,
+                             sizeof(domains), &domains, NULL))
+      != CL_SUCCESS)
+  {
+      print_error(err, "clGetDeviceInfo(CL_PARTITION_AFFINITY_DOMAIN) failed");
+      return -1;
   }
 
   domains &= (CL_DEVICE_AFFINITY_DOMAIN_L4_CACHE | CL_DEVICE_AFFINITY_DOMAIN_L3_CACHE |
@@ -175,7 +181,9 @@ int test_buffer_migrate(cl_device_id deviceID, cl_context context, cl_command_qu
     // Determine the number of partitions for the device given the specific domain.
     if (domain) {
       property[1] = domain;
-      err = clCreateSubDevices(deviceID, (const cl_device_partition_property *)property, -1, NULL, &num_devices);
+      err = clCreateSubDevices(device,
+                               (const cl_device_partition_property *)property,
+                               -1, NULL, &num_devices);
       if ((err != CL_SUCCESS) || (num_devices == 0)) {
         print_error(err, "Obtaining the number of partions by affinity failed.");
         failed = 1;
@@ -187,10 +195,14 @@ int test_buffer_migrate(cl_device_id deviceID, cl_context context, cl_command_qu
 
     if (num_devices > 1) {
       // Create each of the sub-devices and a corresponding context.
-      if ((err = clCreateSubDevices(deviceID, (const cl_device_partition_property *)property, num_devices, devices, &num_devices)) != CL_SUCCESS) {
-        print_error(err, "Failed creating sub devices.");
-        failed = 1;
-        goto cleanup;
+      if ((err = clCreateSubDevices(
+               device, (const cl_device_partition_property *)property,
+               num_devices, devices, &num_devices))
+          != CL_SUCCESS)
+      {
+          print_error(err, "Failed creating sub devices.");
+          failed = 1;
+          goto cleanup;
       }
 
       // Create a context containing all the sub-devices
@@ -213,7 +225,7 @@ int test_buffer_migrate(cl_device_id deviceID, cl_context context, cl_command_qu
       }
     } else {
       // No partitioning available. Just exercise the APIs on a single device.
-      devices[0] = deviceID;
+      devices[0] = device;
       queues[0] = queue;
       ctx = context;
     }
