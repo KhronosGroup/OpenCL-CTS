@@ -22,6 +22,9 @@
 
 #include "host_atomics.h"
 
+#include <algorithm>
+#include <iomanip>
+#include <limits>
 #include <vector>
 #include <sstream>
 
@@ -71,6 +74,9 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+extern bool gFloatAtomicsSupported;
+extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
+extern cl_device_fp_config gDoubleCaps;
 
 extern const char *
 get_memory_order_type_name(TExplicitMemoryOrderType orderType);
@@ -80,6 +86,56 @@ get_memory_scope_type_name(TExplicitMemoryScopeType scopeType);
 extern cl_int getSupportedMemoryOrdersAndScopes(
     cl_device_id device, std::vector<TExplicitMemoryOrderType> &memoryOrders,
     std::vector<TExplicitMemoryScopeType> &memoryScopes);
+
+union FloatIntUnion {
+    float f;
+    uint32_t i;
+};
+
+union DoubleIntUnion {
+    double d;
+    uint64_t i;
+};
+
+template <typename HostDataType> bool is_qnan(const HostDataType &value)
+{
+    if constexpr (std::is_same_v<HostDataType, float>)
+    {
+        FloatIntUnion u;
+        u.f = value;
+        if ((u.i & 0x7F800000) != 0x7F800000) return false;
+        return (u.i & 0x00400000) != 0;
+    }
+    else if constexpr (std::is_same_v<HostDataType, double>)
+    {
+        DoubleIntUnion u;
+        u.d = value;
+        if ((u.i & 0x7FF0000000000000) != 0x7FF0000000000000) return false;
+        return (u.i & 0x0008000000000000) != 0;
+    }
+    else
+        return std::isnan(value);
+}
+
+template <typename HostDataType> bool is_snan(const HostDataType &value)
+{
+    if constexpr (std::is_same_v<HostDataType, float>)
+    {
+        FloatIntUnion u;
+        u.f = value;
+        if ((u.i & 0x7F800000) != 0x7F800000) return false;
+        return (u.i & 0x00400000) == 0;
+    }
+    else if constexpr (std::is_same_v<HostDataType, double>)
+    {
+        DoubleIntUnion u;
+        u.d = value;
+        if ((u.i & 0x7FF0000000000000) != 0x7FF0000000000000) return false;
+        return (u.i & 0x0008000000000000) == 0;
+    }
+    else
+        return std::isnan(value);
+}
 
 class AtomicTypeInfo {
 public:
@@ -144,12 +200,12 @@ public:
         return 0;
     }
     CBasicTest(TExplicitAtomicType dataType, bool useSVM)
-        : CTest(), _maxDeviceThreads(MAX_DEVICE_THREADS), _dataType(dataType),
-          _useSVM(useSVM), _startValue(255), _localMemory(false),
-          _declaredInProgram(false), _usedInFunction(false),
-          _genericAddrSpace(false), _oldValueCheck(true),
-          _localRefValues(false), _maxGroupSize(0), _passCount(0),
-          _iterations(gInternalIterations)
+        : CTest(), _dataType(dataType), _useSVM(useSVM), _startValue(255),
+          _localMemory(false), _declaredInProgram(false),
+          _usedInFunction(false), _genericAddrSpace(false),
+          _oldValueCheck(true), _localRefValues(false), _maxGroupSize(0),
+          _passCount(0), _iterations(gInternalIterations),
+          _maxDeviceThreads(MAX_DEVICE_THREADS), _deviceThreads(0)
     {}
     virtual ~CBasicTest()
     {
@@ -167,6 +223,14 @@ public:
                                cl_uint whichDestValue)
     {
         return false;
+    }
+    virtual bool VerifyExpected(const HostDataType &expected,
+                                const HostAtomicType *const testValue,
+                                const HostDataType *startRefValues,
+                                cl_uint whichDestValue)
+    {
+        if (testValue != nullptr) return expected != testValue[whichDestValue];
+        return true;
     }
     virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                               MTdata d)
@@ -238,22 +302,22 @@ public:
                                            cl_command_queue queue)
     {
         int error = 0;
-        if (_maxDeviceThreads > 0 && !UseSVM())
+        if (_deviceThreads > 0 && !UseSVM())
         {
-            LocalMemory(true);
+            SetLocalMemory(true);
             EXECUTE_TEST(
                 error, ExecuteForEachDeclarationType(deviceID, context, queue));
         }
-        if (_maxDeviceThreads + MaxHostThreads() > 0)
+        if (_deviceThreads + MaxHostThreads() > 0)
         {
-            LocalMemory(false);
+            SetLocalMemory(false);
             EXECUTE_TEST(
                 error, ExecuteForEachDeclarationType(deviceID, context, queue));
         }
         return error;
     }
     virtual int Execute(cl_device_id deviceID, cl_context context,
-                        cl_command_queue queue, int num_elements)
+                        cl_command_queue queue, int num_elements) override
     {
         if (sizeof(HostAtomicType) != DataType().Size(deviceID))
         {
@@ -293,7 +357,12 @@ public:
             if (UseSVM()) return 0;
             _maxDeviceThreads = 0;
         }
-        if (_maxDeviceThreads + MaxHostThreads() == 0) return 0;
+
+        _deviceThreads = (num_elements > 0)
+            ? std::min(cl_uint(num_elements), _maxDeviceThreads)
+            : _maxDeviceThreads;
+
+        if (_deviceThreads + MaxHostThreads() == 0) return 0;
         return ExecuteForEachParameterSet(deviceID, context, queue);
     }
     virtual void HostFunction(cl_uint tid, cl_uint threadCount,
@@ -306,7 +375,7 @@ public:
     {
         return AtomicTypeExtendedInfo<HostDataType>(_dataType);
     }
-    cl_uint _maxDeviceThreads;
+
     virtual cl_uint MaxHostThreads()
     {
         if (UseSVM() || gHost)
@@ -401,7 +470,7 @@ public:
     bool UseSVM() { return _useSVM; }
     void StartValue(HostDataType startValue) { _startValue = startValue; }
     HostDataType StartValue() { return _startValue; }
-    void LocalMemory(bool local) { _localMemory = local; }
+    void SetLocalMemory(bool local) { _localMemory = local; }
     bool LocalMemory() { return _localMemory; }
     void DeclaredInProgram(bool declaredInProgram)
     {
@@ -460,6 +529,8 @@ private:
     cl_uint _currentGroupSize;
     cl_uint _passCount;
     const cl_int _iterations;
+    cl_uint _maxDeviceThreads;
+    cl_uint _deviceThreads;
 };
 
 template <typename HostAtomicType, typename HostDataType>
@@ -875,7 +946,21 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
         header += std::string("__global volatile ") + aTypeName + " destMemory["
             + ss.str() + "] = {\n";
         ss.str("");
-        ss << _startValue;
+
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
+        {
+            if (std::isinf(_startValue))
+                ss << (_startValue < 0 ? "-" : "") << "INFINITY";
+            else if (std::isnan(_startValue))
+                ss << "0.0 / 0.0";
+            else
+                ss << std::setprecision(
+                    std::numeric_limits<HostDataType>::max_digits10)
+                   << _startValue;
+        }
+        else
+            ss << _startValue;
+
         for (cl_uint i = 0; i < maxNumDestItems; i++)
         {
             if (aTypeName == "atomic_flag")
@@ -1109,7 +1194,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
     MTdata d;
     size_t typeSize = DataType().Size(deviceID);
 
-    deviceThreadCount = _maxDeviceThreads;
+    deviceThreadCount = _deviceThreads;
     hostThreadCount = MaxHostThreads();
     threadCount = deviceThreadCount + hostThreadCount;
 
@@ -1434,7 +1519,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (expected != destItems[i])
+        if (VerifyExpected(expected, destItems.data(), startRefValues.data(),
+                           i))
         {
             std::stringstream logLine;
             logLine << "ERROR: Result " << i
