@@ -381,43 +381,36 @@ struct SemaphoreMultiWait : public SemaphoreTestBase
 } // anonymous namespace
 
 // Confirm that a signal followed by a wait will complete successfully
-int test_semaphores_simple_1(cl_device_id deviceID, cl_context context,
-                             cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST_VERSION(semaphores_simple_1, Version(1, 2))
 {
-    return MakeAndRunTest<SimpleSemaphore1>(deviceID, context, defaultQueue,
+    return MakeAndRunTest<SimpleSemaphore1>(device, context, queue,
                                             num_elements);
 }
 
 // Confirm that signal a semaphore with no event dependencies will not result
 // in an implicit dependency on everything previously submitted
-int test_semaphores_simple_2(cl_device_id deviceID, cl_context context,
-                             cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST_VERSION(semaphores_simple_2, Version(1, 2))
 {
-    return MakeAndRunTest<SimpleSemaphore2>(deviceID, context, defaultQueue,
+    return MakeAndRunTest<SimpleSemaphore2>(device, context, queue,
                                             num_elements);
 }
 
 // Confirm that a semaphore can be reused multiple times
-int test_semaphores_reuse(cl_device_id deviceID, cl_context context,
-                          cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST_VERSION(semaphores_reuse, Version(1, 2))
 {
-    return MakeAndRunTest<SemaphoreReuse>(deviceID, context, defaultQueue,
-                                          num_elements);
+    return MakeAndRunTest<SemaphoreReuse>(device, context, queue, num_elements);
 }
 
 // Confirm that we can signal multiple semaphores with one command
-int test_semaphores_multi_signal(cl_device_id deviceID, cl_context context,
-                                 cl_command_queue defaultQueue,
-                                 int num_elements)
+REGISTER_TEST_VERSION(semaphores_multi_signal, Version(1, 2))
 {
-    return MakeAndRunTest<SemaphoreMultiSignal>(deviceID, context, defaultQueue,
+    return MakeAndRunTest<SemaphoreMultiSignal>(device, context, queue,
                                                 num_elements);
 }
 
 // Confirm that we can wait for multiple semaphores with one command
-int test_semaphores_multi_wait(cl_device_id deviceID, cl_context context,
-                               cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST_VERSION(semaphores_multi_wait, Version(1, 2))
 {
-    return MakeAndRunTest<SemaphoreMultiWait>(deviceID, context, defaultQueue,
+    return MakeAndRunTest<SemaphoreMultiWait>(device, context, queue,
                                               num_elements);
 }
