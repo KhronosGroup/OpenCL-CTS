@@ -26,6 +26,8 @@ typedef long long unsigned llu;
 
 #define REDUCTION_PERCENTAGE_DEFAULT 50
 
+#define BYTES_PER_WORK_ITEM 2048ULL
+
 int g_repetition_count = 1;
 int g_reduction_percentage = REDUCTION_PERCENTAGE_DEFAULT;
 int g_write_allocations = 1;
@@ -125,7 +127,7 @@ int doTest(cl_device_id device, cl_context context, cl_command_queue queue,
     int number_of_mems_used;
     cl_ulong max_individual_allocation_size = g_max_individual_allocation_size;
     cl_ulong global_mem_size = g_global_mem_size;
-    unsigned int number_of_work_items = 8192 * 32;
+    unsigned int number_of_work_items;
     const bool allocate_image =
         (alloc_type != BUFFER) && (alloc_type != BUFFER_NON_BLOCKING);
 
@@ -183,11 +185,15 @@ int doTest(cl_device_id device, cl_context context, cl_command_queue queue,
                  g_reduction_percentage);
         g_max_size = (size_t)((double)g_max_size
                               * (double)g_reduction_percentage / 100.0);
-        number_of_work_items = 8192 * 2;
     }
 
     // Round to nearest MB.
     g_max_size &= (size_t)(0xFFFFFFFFFF00000ULL);
+
+    // Scales the number of work-items to keep the amount of bytes processed
+    // per work-item the same.
+    number_of_work_items =
+        std::max(g_max_size / BYTES_PER_WORK_ITEM, 8192ULL * 2ULL);
 
     log_info("** Target allocation size (rounded to nearest MB) is: %llu bytes "
              "(%gMB).\n",

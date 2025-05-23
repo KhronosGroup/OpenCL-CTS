@@ -312,41 +312,31 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
 } // anonymous namespace
 
 // Confirm that a semaphore works across different ooo queues
-int test_semaphores_cross_queues_ooo(cl_device_id deviceID, cl_context context,
-                                     cl_command_queue defaultQueue,
-                                     int num_elements)
+REGISTER_TEST_VERSION(semaphores_cross_queues_ooo, Version(1, 2))
 {
-    return MakeAndRunTest<SemaphoreCrossQueue<false>>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<SemaphoreCrossQueue<false>>(device, context, queue,
+                                                      num_elements);
 }
 
 // Confirm that a semaphore works across different in-order queues
-int test_semaphores_cross_queues_io(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue defaultQueue,
-                                    int num_elements)
+REGISTER_TEST_VERSION(semaphores_cross_queues_io, Version(1, 2))
 {
-    return MakeAndRunTest<SemaphoreCrossQueue<true>>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<SemaphoreCrossQueue<true>>(device, context, queue,
+                                                     num_elements);
 }
 
 // Confirm that we can synchronize signal/wait commands in single out-of-order
 // queue
-int test_semaphores_ooo_ops_single_queue(cl_device_id deviceID,
-                                         cl_context context,
-                                         cl_command_queue defaultQueue,
-                                         int num_elements)
+REGISTER_TEST_VERSION(semaphores_ooo_ops_single_queue, Version(1, 2))
 {
-    return MakeAndRunTest<SemaphoreOutOfOrderOps<true>>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<SemaphoreOutOfOrderOps<true>>(device, context, queue,
+                                                        num_elements);
 }
 
 // Confirm that we can synchronize signal/wait commands across two out-of-order
 // queues
-int test_semaphores_ooo_ops_cross_queue(cl_device_id deviceID,
-                                        cl_context context,
-                                        cl_command_queue defaultQueue,
-                                        int num_elements)
+REGISTER_TEST_VERSION(semaphores_ooo_ops_cross_queue, Version(1, 2))
 {
-    return MakeAndRunTest<SemaphoreOutOfOrderOps<false>>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<SemaphoreOutOfOrderOps<false>>(device, context, queue,
+                                                         num_elements);
 }

@@ -19,7 +19,7 @@
 #include "test_printf.h"
 #include <assert.h>
 #include <CL/cl_half.h>
-
+#include <regex>
 
 // Helpers for generating runtime reference results
 static void intRefBuilder(printDataGenParameters&, char*, const size_t);
@@ -1743,10 +1743,14 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
     else if (pTestCase->_correctBuffer[testId] == "INF")
         return strcmp(analysisBuffer, "INF")
             && strcmp(analysisBuffer, "INFINITY");
-    else if (pTestCase->_correctBuffer[testId] == "nan")
-        return strcmp(analysisBuffer, "nan") && strcmp(analysisBuffer, "-nan");
-    else if (pTestCase->_correctBuffer[testId] == "NAN")
-        return strcmp(analysisBuffer, "NAN") && strcmp(analysisBuffer, "-NAN");
+    else if (pTestCase->_correctBuffer[testId] == "nan"
+             || pTestCase->_correctBuffer[testId] == "NAN")
+    {
+        std::string pattern =
+            R"(-?)" + pTestCase->_correctBuffer[testId] + R"((\(.*\))?)";
+        std::regex nanRegex(pattern);
+        return !std::regex_match(analysisBuffer, nanRegex);
+    }
 
     return strcmp(analysisBuffer, pTestCase->_correctBuffer[testId].c_str());
 }

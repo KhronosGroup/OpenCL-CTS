@@ -17,13 +17,21 @@
 #define _testBase_h
 
 #include "harness/compat.h"
+#include "harness/errorHelpers.h"
+#include "harness/kernelHelpers.h"
+#include "harness/testHarness.h"
+#include "harness/typeWrappers.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+// The number of errors to print out for each test
+#define MAX_ERRORS_TO_PRINT 10
+
+extern void fill_test_values(cl_long *outBufferA, cl_long *outBufferB,
+                             size_t numElements, MTdata d);
 
 #endif // _testBase_h
 
