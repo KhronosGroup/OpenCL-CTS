@@ -140,7 +140,7 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
                                   TExplicitMemoryOrderType order_failure)
 {
     CorrespondingType tmp;
-    if (std::is_same<AtomicType, HOST_ATOMIC_DOUBLE>::value)
+    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_DOUBLE>)
     {
         static std::mutex mtx;
         std::lock_guard<std::mutex> lock(mtx);
@@ -155,28 +155,9 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
     else
     {
 #if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
-
-        if (std::is_same<AtomicType, HOST_ATOMIC_INT>::value
-            || std::is_same<AtomicType, HOST_ATOMIC_UINT>::value)
-            tmp = InterlockedCompareExchange((volatile cl_uint *)a, desired,
-                                             *expected);
-        else if (std::is_same<AtomicType, HOST_ATOMIC_LONG>::value
-                 || std::is_same<AtomicType, HOST_ATOMIC_ULONG>::value)
-            tmp = InterlockedCompareExchange((volatile cl_ulong *)a, desired,
-                                             *expected);
+        tmp = InterlockedCompareExchange(a, desired, *expected);
 #elif defined(__GNUC__)
-        if (std::is_same<AtomicType, HOST_ATOMIC_INT>::value)
-            tmp = __sync_val_compare_and_swap((volatile cl_int *)a, *expected,
-                                              desired);
-        else if (std::is_same<AtomicType, HOST_ATOMIC_UINT>::value)
-            tmp = __sync_val_compare_and_swap((volatile cl_uint *)a, *expected,
-                                              desired);
-        else if (std::is_same<AtomicType, HOST_ATOMIC_LONG>::value)
-            tmp = __sync_val_compare_and_swap((volatile cl_long *)a, *expected,
-                                              desired);
-        else if (std::is_same<AtomicType, HOST_ATOMIC_ULONG>::value)
-            tmp = __sync_val_compare_and_swap((volatile cl_ulong *)a, *expected,
-                                              desired);
+        tmp = __sync_val_compare_and_swap(a, *expected, desired);
 #else
         log_info("Host function not implemented: atomic_compare_exchange\n");
         tmp = 0;

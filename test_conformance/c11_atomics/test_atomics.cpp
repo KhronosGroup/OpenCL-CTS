@@ -2131,7 +2131,7 @@ public:
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_DOUBLE>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
         {
             for (cl_uint i = 0; i < threadCount; i++)
             {
@@ -2167,7 +2167,7 @@ public:
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_DOUBLE>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
         {
             if (LocalMemory()
                 && (gDoubleAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
@@ -2312,7 +2312,7 @@ public:
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_DOUBLE>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
         {
             for (cl_uint i = 0; i < threadCount; i++)
             {
@@ -2348,7 +2348,7 @@ public:
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_DOUBLE>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
         {
             if (LocalMemory()
                 && (gDoubleAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
