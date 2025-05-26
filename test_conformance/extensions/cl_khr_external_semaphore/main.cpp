@@ -12,23 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include "harness/testHarness.h"
-
-test_definition test_list[] = {
-    ADD_TEST_VERSION(external_semaphores_queries, Version(1, 2)),
-    ADD_TEST_VERSION(external_semaphores_cross_context, Version(1, 2)),
-    ADD_TEST_VERSION(external_semaphores_simple_1, Version(1, 2)),
-    ADD_TEST_VERSION(external_semaphores_simple_2, Version(1, 2)),
-    ADD_TEST_VERSION(external_semaphores_reuse, Version(1, 2)),
-    ADD_TEST_VERSION(external_semaphores_cross_queues_ooo, Version(1, 2)),
-    ADD_TEST_VERSION(external_semaphores_cross_queues_io, Version(1, 2)),
-    ADD_TEST_VERSION(external_semaphores_cross_queues_io2, Version(1, 2)),
-    ADD_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2)),
-    ADD_TEST_VERSION(external_semaphores_multi_wait, Version(1, 2)),
-    ADD_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2)),
-};
-
 
 int main(int argc, const char *argv[])
 {
@@ -38,6 +22,8 @@ int main(int argc, const char *argv[])
     // for this in the tests themselves, rather than here, where we have a
     // device to query.
     const cl_command_queue_properties queue_properties = 0;
-    return runTestHarnessWithCheck(argc, argv, ARRAY_SIZE(test_list), test_list,
+    return runTestHarnessWithCheck(argc, argv,
+                                   test_registry::getInstance().num_tests(),
+                                   test_registry::getInstance().definitions(),
                                    false, queue_properties, nullptr);
 }

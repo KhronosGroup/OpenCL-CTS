@@ -16,7 +16,6 @@
 #include "basic_command_buffer.h"
 #include "svm_command_basic.h"
 #include "harness/typeWrappers.h"
-#include "procs.h"
 
 #include <vector>
 
@@ -230,22 +229,19 @@ struct FillSVMBufferKHR : public BasicSVMCommandBufferTest
 };
 };
 
-int test_fill_buffer(cl_device_id device, cl_context context,
-                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(fill_buffer)
 {
     return MakeAndRunTest<FillBufferKHR>(device, context, queue, num_elements);
 }
 
-int test_fill_svm_buffer(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(fill_svm_buffer)
 {
     return MakeAndRunTest<FillSVMBufferKHR>(device, context, queue,
                                             num_elements);
 }
 
 
-int test_fill_image(cl_device_id device, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(fill_image)
 {
     return MakeAndRunTest<FillImageKHR>(device, context, queue, num_elements);
 }
