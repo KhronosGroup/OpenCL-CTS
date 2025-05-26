@@ -94,7 +94,6 @@ struct StreamGrabber
                 results.clear();
                 results.resize(filesize);
                 is.read(&results[0], filesize);
-
                 return 0;
             }
         }
@@ -105,6 +104,16 @@ struct StreamGrabber
     int old_fd = 0;
     bool acquired = false;
 };
+
+void normalize_strings(std::string& input)
+{
+    // Normalize line endings: replace \r\n with \n
+    size_t pos = 0;
+    while ((pos = input.find("\r\n", pos)) != std::string::npos)
+    {
+        input.replace(pos, 2, "\n");
+    }
+}
 
 // printf callback, for cl_arm_printf
 void CL_CALLBACK printfCallBack(const char* printf_data, size_t len,
@@ -162,12 +171,15 @@ static int printf_operands_helper(cl_device_id device,
     test_error(error, "unable to enqueue kernel");
 
     std::string results;
+    std::string expectedResultsStr(expectedResults);
     grabber.get_results(results);
+    normalize_strings(results);
+    normalize_strings(expectedResultsStr);
 
-    if (results != std::string(expectedResults))
+    if (results != expectedResultsStr)
     {
         log_error("Results do not match.\n");
-        log_error("Expected: \n---\n%s---\n", expectedResults);
+        log_error("Expected: \n---\n%s---\n", expectedResultsStr.c_str());
         log_error("Got: \n---\n%s---\n", results.c_str());
         return TEST_FAIL;
     }

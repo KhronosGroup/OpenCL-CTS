@@ -12,18 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include "harness/testHarness.h"
-
-test_definition test_list[] = {
-    ADD_TEST(device_scope),
-    ADD_TEST(workgroup_scope),
-    ADD_TEST(subgroup_scope),
-};
-
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness(argc, argv, ARRAY_SIZE(test_list), test_list, false,
-                          0);
+    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
+                          test_registry::getInstance().definitions(), false, 0);
 }

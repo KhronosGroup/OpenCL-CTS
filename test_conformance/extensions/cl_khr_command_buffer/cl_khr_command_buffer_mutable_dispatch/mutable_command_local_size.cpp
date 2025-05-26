@@ -16,7 +16,6 @@
 
 #include <extensionHelpers.h>
 #include "typeWrappers.h"
-#include "procs.h"
 #include "testHarness.h"
 #include "mutable_command_basic.h"
 #include <vector>
@@ -166,8 +165,7 @@ struct MutableDispatchLocalSize : public InfoMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-int test_mutable_dispatch_local_size(cl_device_id device, cl_context context,
-                                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(mutable_dispatch_local_size)
 {
     return MakeAndRunTest<MutableDispatchLocalSize>(device, context, queue,
                                                     num_elements);

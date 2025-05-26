@@ -159,8 +159,7 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-int test_mutable_dispatch_global_size(cl_device_id device, cl_context context,
-                                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(mutable_dispatch_global_size)
 {
     return MakeAndRunTest<MutableDispatchGlobalSize>(device, context, queue,
                                                      num_elements);

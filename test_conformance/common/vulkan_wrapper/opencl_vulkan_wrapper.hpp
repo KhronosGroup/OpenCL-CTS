@@ -26,22 +26,7 @@
 #include <OpenCL/cl_ext.h>
 #endif
 
-#define CREATE_OPENCL_SEMAPHORE(clSemaphore, vkSemaphore, ctx, handleType,     \
-                                devIdx, createExportable)                      \
-    if (!(createExportable                                                     \
-          && (check_external_semaphore_handle_type(                            \
-                  devIdx, getCLSemaphoreTypeFromVulkanType(handleType),        \
-                  CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR)                 \
-              == CL_SUCCESS)))                                                 \
-    {                                                                          \
-        clSemaphore = new clExternalImportableSemaphore(vkSemaphore, ctx,      \
-                                                        handleType, devIdx);   \
-    }                                                                          \
-    else                                                                       \
-    {                                                                          \
-        clSemaphore = new clExternalExportableSemaphore(vkSemaphore, ctx,      \
-                                                        handleType, devIdx);   \
-    }
+#include <optional>
 
 typedef cl_semaphore_khr (*pfnclCreateSemaphoreWithPropertiesKHR)(
     cl_context context, cl_semaphore_properties_khr *sema_props,
@@ -91,11 +76,10 @@ cl_int getCLImageInfoFromVkImageInfo(const VkImageCreateInfo *, size_t,
 cl_int check_external_memory_handle_type(
     cl_device_id deviceID,
     cl_external_memory_handle_type_khr requiredHandleType);
-cl_int check_external_semaphore_handle_type(
-    cl_device_id deviceID,
+void check_external_semaphore_handle_type(
+    cl_device_id device,
     cl_external_semaphore_handle_type_khr requiredHandleType,
-    cl_device_info queryParamName =
-        CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR);
+    cl_device_info queryParamName);
 cl_int setMaxImageDimensions(cl_device_id deviceID, size_t &width,
                              size_t &height);
 
@@ -187,7 +171,7 @@ public:
 extern void init_cl_vk_ext(cl_platform_id, cl_uint num_devices,
                            cl_device_id *deviceIds);
 
-VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
+std::optional<VulkanImageTiling> vkClExternalMemoryHandleTilingAssumption(
     cl_device_id deviceId,
     VulkanExternalMemoryHandleType vkExternalMemoryHandleType, int *error_ret);
 
