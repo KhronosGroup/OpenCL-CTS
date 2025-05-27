@@ -2152,8 +2152,13 @@ int filter_rounding_errors(int forceCorrectlyRoundedWrites,
             || imageInfo->format->image_channel_data_type == CL_SNORM_INT8
             || imageInfo->format->image_channel_data_type == CL_SNORM_INT16
             || imageInfo->format->image_channel_data_type == CL_UNORM_SHORT_555
+            || imageInfo->format->image_channel_data_type == CL_UNORM_SHORT_565
             || imageInfo->format->image_channel_data_type
-                == CL_UNORM_SHORT_565))
+                == CL_UNORM_INT10X6_EXT
+            || imageInfo->format->image_channel_data_type
+                == CL_UNORM_INT12X4_EXT
+            || imageInfo->format->image_channel_data_type
+                == CL_UNORM_INT14X2_EXT))
     {
         if (!(fabsf(errors[0]) > 0.6f) && !(fabsf(errors[1]) > 0.6f)
             && !(fabsf(errors[2]) > 0.6f) && !(fabsf(errors[3]) > 0.6f))
