@@ -202,7 +202,11 @@ int run_test_with_two_queue(
                     bufferSize, context, deviceId));
             }
             cl_mem buffers[MAX_BUFFERS];
-            clFinish(cmd_queue1);
+
+            err = clFinish(cmd_queue1);
+            test_error_and_cleanup(err, CLEANUP,
+                                   "Failed to finish cmd_queue1.\n");
+
             Params *params = (Params *)vkParamsDeviceMemory.map();
             params->numBuffers = numBuffers;
             params->bufferSize = bufferSize;
@@ -328,6 +332,19 @@ int run_test_with_two_queue(
                 }
                 else if (!use_fence && iter != (maxIter - 1))
                 {
+                    if (VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD
+                        == vkExternalSemaphoreHandleType)
+                    {
+                        // Due to the finish that will happen on cmd_queue2 in
+                        // clCl2VkExternalSemaphore->signal(cmd_queue2),
+                        // cmd_queue1 needs to be finished now because
+                        // cmd_queue2 depends on first_launch which is
+                        // completed in cmd_queue1.
+                        err = clFinish(cmd_queue1);
+                        test_error_and_cleanup(
+                            err, CLEANUP, "Failed to finish cmd_queue1.\n");
+                    }
+
                     err = clCl2VkExternalSemaphore->signal(cmd_queue2);
                     test_error_and_cleanup(err, CLEANUP,
                                            "Failed to signal CL semaphore\n");
@@ -342,7 +359,15 @@ int run_test_with_two_queue(
                 test_fail_and_cleanup(err, CLEANUP,
                                       "Not able to allocate memory\n");
             }
-            clFinish(cmd_queue2);
+
+            err = clFinish(cmd_queue1);
+            test_error_and_cleanup(err, CLEANUP,
+                                   "Failed to finish cmd_queue1.\n");
+
+            err = clFinish(cmd_queue2);
+            test_error_and_cleanup(err, CLEANUP,
+                                   "Failed to finish cmd_queue2.\n");
+
             error_1 = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
                                      sizeof(uint8_t), NULL, &err);
             test_error_and_cleanup(err, CLEANUP, "Error: clCreateBuffer \n");
