@@ -14,8 +14,11 @@
 // limitations under the License.
 //
 #include "harness/testHarness.h"
+#include "harness/deviceInfo.h"
+#include "harness/kernelHelpers.h"
 #include <iostream>
 #include <string>
+#include "CL/cl_half.h"
 
 bool gHost = false; // flag for testing native host threads (test verification)
 bool gOldAPI = false; // flag for testing with old API (OpenCL 1.2) - test verification
@@ -28,6 +31,10 @@ int gInternalIterations = 10000; // internal test iterations for atomic operatio
 int gMaxDeviceThreads = 1024; // maximum number of threads executed on OCL device
 cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
+bool gFloatAtomicsSupported = false;
+cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps = 0;
+cl_device_fp_config gHalfCaps = 0;
 
 test_status InitCL(cl_device_id device) {
     auto version = get_device_cl_version(device);
@@ -121,6 +128,38 @@ test_status InitCL(cl_device_id device) {
             | CL_DEVICE_ATOMIC_SCOPE_WORK_ITEM
             | CL_DEVICE_ATOMIC_SCOPE_WORK_GROUP | CL_DEVICE_ATOMIC_SCOPE_DEVICE
             | CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES;
+    }
+
+    if (is_extension_available(device, "cl_ext_float_atomics"))
+    {
+        gFloatAtomicsSupported = true;
+        if (is_extension_available(device, "cl_khr_fp16"))
+        {
+            cl_int error = clGetDeviceInfo(
+                device, CL_DEVICE_HALF_FP_ATOMIC_CAPABILITIES_EXT,
+                sizeof(gHalfAtomicCaps), &gHalfAtomicCaps, nullptr);
+            test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
+
+            const cl_device_fp_config fpConfigHalf =
+                get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
+            if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
+            {
+                gHalfRoundingMode = CL_HALF_RTE;
+            }
+            else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
+            {
+                gHalfRoundingMode = CL_HALF_RTZ;
+            }
+            else
+            {
+                log_error("Error while acquiring half rounding mode\n");
+                return TEST_FAIL;
+            }
+
+            error = clGetDeviceInfo(device, CL_DEVICE_HALF_FP_CONFIG,
+                                    sizeof(gHalfCaps), &gHalfCaps, NULL);
+            test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
+        }
     }
 
     return TEST_PASS;
