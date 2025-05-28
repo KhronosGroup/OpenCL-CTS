@@ -14,8 +14,6 @@
 // limitations under the License.
 //
 #include "harness/testHarness.h"
-#include "harness/kernelHelpers.h"
-#include "harness/typeWrappers.h"
 
 #include "common.h"
 #include "host_atomics.h"

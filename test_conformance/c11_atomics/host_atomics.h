@@ -161,7 +161,15 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
     else
     {
 #if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
-        tmp = InterlockedCompareExchange(a, desired, *expected);
+
+        if (std::is_same<AtomicType, HOST_ATOMIC_INT>::value
+            || std::is_same<AtomicType, HOST_ATOMIC_UINT>::value)
+            tmp = InterlockedCompareExchange((volatile cl_uint *)a, desired,
+                                             *expected);
+        else if (std::is_same<AtomicType, HOST_ATOMIC_LONG>::value
+                 || std::is_same<AtomicType, HOST_ATOMIC_ULONG>::value)
+            tmp = InterlockedCompareExchange((volatile cl_ulong *)a, desired,
+                                             *expected);
 #elif defined(__GNUC__)
         tmp = __sync_val_compare_and_swap(a, *expected, desired);
 #else
