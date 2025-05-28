@@ -153,6 +153,8 @@ REGISTER_TEST(kernel_local_memory_size)
                       "kernel local mem size failed");
 
 
+    program.reset();
+    kernel.reset();
     // Check memory needed to execute empty kernel with __local parameter with
     // setKernelArg
     if (create_single_kernel_helper(context, &program, &kernel, 1,
@@ -225,6 +227,8 @@ REGISTER_TEST(kernel_local_memory_size)
                       "kernel local mem size failed");
 
 
+    program.reset();
+    kernel.reset();
     // Check memory needed to execute kernel with __local variable and __local
     // parameter with setKernelArg
     if (create_single_kernel_helper(context, &program, &kernel, 1,
