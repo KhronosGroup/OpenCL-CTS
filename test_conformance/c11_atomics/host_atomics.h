@@ -164,15 +164,7 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
     else
     {
 #if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
-
-        if (std::is_same<AtomicType, HOST_ATOMIC_INT>::value
-            || std::is_same<AtomicType, HOST_ATOMIC_UINT>::value)
-            tmp = InterlockedCompareExchange((volatile cl_uint *)a, desired,
-                                             *expected);
-        else if (std::is_same<AtomicType, HOST_ATOMIC_LONG>::value
-                 || std::is_same<AtomicType, HOST_ATOMIC_ULONG>::value)
-            tmp = InterlockedCompareExchange((volatile cl_ulong *)a, desired,
-                                             *expected);
+        tmp = InterlockedCompareExchange(a, desired, *expected);
 #elif defined(__GNUC__)
         tmp = __sync_val_compare_and_swap(a, *expected, desired);
 #else
@@ -190,7 +182,10 @@ CorrespondingType host_atomic_load(volatile AtomicType *a,
                                    TExplicitMemoryOrderType order)
 {
 #if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-  return InterlockedExchangeAdd(a, 0);
+    if (sizeof(CorrespondingType) == 2)
+        auto prev = InterlockedOr16(reinterpret_cast<volatile SHORT *>(a), 0);
+    else
+        return InterlockedExchangeAdd(reinterpret_cast<volatile LONG *>(a), 0);
 #elif defined(__GNUC__)
   return __sync_add_and_fetch(a, 0);
 #else
