@@ -577,6 +577,25 @@ int run_test_with_one_queue(
             // bufferSizeList[i]
             global_work_size[0] = bufferSize;
 
+            err = clEnqueueAcquireExternalMemObjectsKHRptr(
+                cmd_queue1, vkBufferList.size(), buffers, 0, nullptr, nullptr);
+            test_error_and_cleanup(err, CLEANUP, "Failed to acquire buffers");
+
+            uint8_t pattern = 0;
+
+            for (int i = 0; i < vkBufferList.size(); i++)
+            {
+                err = clEnqueueFillBuffer(
+                    cmd_queue1, buffers[i], &pattern, sizeof(pattern), 0,
+                    sizeof(uint8_t) * bufferSize, 0, NULL, NULL);
+            }
+
+            err = clEnqueueReleaseExternalMemObjectsKHRptr(
+                cmd_queue1, vkBufferList.size(), buffers, 0, nullptr, nullptr);
+            test_error_and_cleanup(err, CLEANUP, "Failed to release buffers");
+
+            clFinish(cmd_queue1);
+
             for (uint32_t iter = 0; iter < maxIter; iter++)
             {
                 if (use_fence)
