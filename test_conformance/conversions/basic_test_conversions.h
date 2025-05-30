@@ -86,8 +86,6 @@ extern int gSkipTesting;
 extern int gMinVectorSize;
 extern int gMaxVectorSize;
 extern int gForceFTZ;
-extern int gTimeResults;
-extern int gReportAverageTimes;
 extern int gStartTestNumber;
 extern int gEndTestNumber;
 extern int gIsRTZ;
