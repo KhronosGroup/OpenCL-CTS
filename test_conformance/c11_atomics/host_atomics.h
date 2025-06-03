@@ -128,7 +128,7 @@ CorrespondingType host_atomic_exchange(volatile AtomicType *a, CorrespondingType
     else
         return InterlockedExchange(reinterpret_cast<volatile LONG *>(a), c);
 #elif defined(__GNUC__)
-  return __sync_lock_test_and_set(a, c);
+    return __sync_lock_test_and_set(a, c);
 #else
   log_info("Host function not implemented: atomic_exchange\n");
   return 0;
