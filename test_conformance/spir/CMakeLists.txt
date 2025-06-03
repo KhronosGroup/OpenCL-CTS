@@ -1,6 +1,6 @@
-set(SPIR_OUT ${CONFORMANCE_PREFIX}spir${CONFORMANCE_SUFFIX})
+set(MODULE_NAME SPIR)
 
-set (SPIR_SOURCES
+set (${MODULE_NAME}_SOURCES
     main.cpp
     datagen.cpp
     run_build_test.cpp
@@ -8,16 +8,13 @@ set (SPIR_SOURCES
     kernelargs.cpp
 )
 
-add_executable(${SPIR_OUT}
-    ${SPIR_SOURCES})
+include(../CMakeCommon.txt)
 
 if(UNIX)
-    target_compile_options(${SPIR_OUT} PRIVATE -fexceptions -frtti)
+    target_compile_options(${${MODULE_NAME}_OUT} PRIVATE -fexceptions -frtti)
 elseif(MSVC)
-    target_compile_options(${SPIR_OUT} PRIVATE /GR /EHs /EHc)
+    target_compile_options(${${MODULE_NAME}_OUT} PRIVATE /GR /EHs /EHc)
 endif()
-
-target_link_libraries(${SPIR_OUT} harness ${CLConform_LIBRARIES})
 
 # Need to copy the spir zips to sit beside the executable
 
@@ -49,8 +46,10 @@ set(SPIR_FILES
 
 foreach(input_file ${SPIR_FILES})
     add_custom_command(
-    TARGET ${SPIR_OUT}
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${input_file}" "$<TARGET_FILE_DIR:${SPIR_OUT}>/"
-)
+        TARGET ${${MODULE_NAME}_OUT}
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${input_file}" "$<TARGET_FILE_DIR:${${MODULE_NAME}_OUT}>/"
+    )
 endforeach(input_file)
+
+install(FILES ${SPIR_FILES} DESTINATION ${CMAKE_INSTALL_BINDIR}/$<CONFIG>)
