@@ -15,25 +15,14 @@
 //
 #include "common.h"
 
-static int svm_buffer_address_equivalence_helper(cl_context context,
-                                                 cl_command_queue queue,
-                                                 cl_kernel kernel, cl_mem out,
-                                                 cl_svm_mem_flags svmFlags)
+static int do_svm_buffer_address_equivalent_test(cl_command_queue queue,
+                                                 cl_kernel kernel, cl_mem src,
+                                                 cl_mem dst, void *expected)
 {
-    constexpr size_t sz = 1024 * 1024;
     cl_int error = CL_SUCCESS;
 
-    clSVMWrapper svmPtr(context, sz, svmFlags | CL_MEM_READ_WRITE);
-    test_assert_error(svmPtr() != nullptr, "clSVMAlloc failed");
-
-    // printf("SVM pointer is %p\n", svmPtr());
-
-    clMemWrapper svmBuf = clCreateBuffer(
-        context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sz, svmPtr(), &error);
-    test_error(error, "clCreateBuffer with SVM pointer failed");
-
-    error |= clSetKernelArg(kernel, 0, sizeof(svmBuf), &svmBuf);
-    error |= clSetKernelArg(kernel, 1, sizeof(out), &out);
+    error |= clSetKernelArg(kernel, 0, sizeof(src), &src);
+    error |= clSetKernelArg(kernel, 1, sizeof(dst), &dst);
     test_error(error, "clSetKernelArg failed");
 
     size_t globalWorkSize = 1;
@@ -45,16 +34,74 @@ static int svm_buffer_address_equivalence_helper(cl_context context,
     test_error(error, "clFinish failed");
 
     void *check = nullptr;
-    error = clEnqueueReadBuffer(queue, out, CL_TRUE, 0, sizeof(check), &check,
+    error = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0, sizeof(check), &check,
                                 0, nullptr, nullptr);
     test_error(error, "clEnqueueReadBuffer for output buffer failed");
 
-    // printf("Output pointer is %p\n", check);
-
-    test_assert_error(check == svmPtr(),
-                      "stored pointer does not match SVM pointer");
+    if (check != expected)
+    {
+        test_fail("stored pointer %p does not match expected pointer %p!\n",
+                  check, expected);
+    }
 
     return TEST_PASS;
+}
+
+static int svm_buffer_address_equivalence_helper(cl_device_id device,
+                                                 cl_context context,
+                                                 cl_command_queue queue,
+                                                 cl_kernel kernel, cl_mem out,
+                                                 cl_svm_mem_flags svmFlags)
+{
+    cl_int error = CL_SUCCESS;
+    int result = TEST_PASS;
+
+    cl_uint subBufferAlign = 0;
+    error = clGetDeviceInfo(device, CL_DEVICE_MEM_BASE_ADDR_ALIGN,
+                            sizeof(subBufferAlign), &subBufferAlign, nullptr);
+    test_error(error, "clGetDeviceInfo failed to get sub-buffer alignment");
+
+    subBufferAlign /= 8; // convert bits to bytes
+
+    // Allocate at least 1MB, or enough memory for a few sub-buffers.
+    const size_t sz = std::max(subBufferAlign * 4, 1024U * 1024U);
+
+    clSVMWrapper svmPtr(context, sz, svmFlags | CL_MEM_READ_WRITE);
+    test_assert_error(svmPtr() != nullptr, "clSVMAlloc failed");
+
+    // printf("SVM pointer is %p\n", svmPtr());
+
+    clMemWrapper svmBuf = clCreateBuffer(
+        context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sz, svmPtr(), &error);
+    test_error(error, "clCreateBuffer with SVM pointer failed");
+
+    log_info("      testing basic buffer\n");
+    result |= do_svm_buffer_address_equivalent_test(queue, kernel, svmBuf, out,
+                                                    svmPtr());
+
+    cl_buffer_region region = { subBufferAlign, subBufferAlign };
+    clMemWrapper svmSubBuf =
+        clCreateSubBuffer(svmBuf, CL_MEM_READ_WRITE,
+                          CL_BUFFER_CREATE_TYPE_REGION, &region, &error);
+    test_error(error, "clCreateSubBuffer failed");
+
+    log_info("      testing sub-buffer\n");
+    result |= do_svm_buffer_address_equivalent_test(
+        queue, kernel, svmSubBuf, out, (char *)svmPtr() + region.origin);
+
+    svmSubBuf = nullptr; // Release the sub-buffer
+    svmBuf = nullptr; // Release the main buffer
+
+    const cl_uint offset = subBufferAlign;
+    svmBuf = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                            sz - offset, (char *)svmPtr() + offset, &error);
+    test_error(error, "clCreateBuffer with offset SVM pointer failed");
+
+    log_info("      testing offset buffer\n");
+    result |= do_svm_buffer_address_equivalent_test(queue, kernel, svmBuf, out,
+                                                    (char *)svmPtr() + offset);
+
+    return result;
 }
 
 REGISTER_TEST(svm_buffer_address_equivalence)
@@ -110,18 +157,21 @@ REGISTER_TEST(svm_buffer_address_equivalence)
 
     if (svmCaps & CL_DEVICE_SVM_COARSE_GRAIN_BUFFER)
     {
-        result |= svm_buffer_address_equivalence_helper(context, queue, kernel,
-                                                        out, 0);
+        log_info("    testing coarse-grain SVM\n");
+        result |= svm_buffer_address_equivalence_helper(device, context, queue,
+                                                        kernel, out, 0);
     }
     if (svmCaps & CL_DEVICE_SVM_FINE_GRAIN_BUFFER)
     {
+        log_info("    testing fine-grain SVM\n");
         result |= svm_buffer_address_equivalence_helper(
-            context, queue, kernel, out, CL_MEM_SVM_FINE_GRAIN_BUFFER);
+            device, context, queue, kernel, out, CL_MEM_SVM_FINE_GRAIN_BUFFER);
     }
     if (svmCaps & (CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS))
     {
+        log_info("    testing fine-grain SVM with atomics\n");
         result |= svm_buffer_address_equivalence_helper(
-            context, queue, kernel, out,
+            device, context, queue, kernel, out,
             CL_MEM_SVM_FINE_GRAIN_BUFFER | CL_MEM_SVM_ATOMICS);
     }
 
