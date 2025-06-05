@@ -376,7 +376,7 @@ const Func functionList[] = {
       3.0f,
       0.0f,
       1.5f,
-      1.0f,
+      1.5f,
       4.0f,
       INFINITY,
       INFINITY,
