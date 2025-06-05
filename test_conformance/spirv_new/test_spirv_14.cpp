@@ -97,6 +97,7 @@ REGISTER_TEST(spirv14_image_operand_signextend)
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device);
     return test_image_operand_helper(device, context, queue, true);
 }
 
@@ -107,6 +108,7 @@ REGISTER_TEST(spirv14_image_operand_zeroextend)
         log_info("SPIR-V 1.4 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device);
     return test_image_operand_helper(device, context, queue, false);
 }
 
