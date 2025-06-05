@@ -17,6 +17,7 @@
 #define HOST_ATOMICS_H_
 
 #include "harness/testHarness.h"
+#include <mutex>
 
 #ifdef WIN32
 #include "Windows.h"
@@ -108,14 +109,25 @@ template <typename AtomicType, typename CorrespondingType>
 CorrespondingType host_atomic_fetch_sub(volatile AtomicType *a, CorrespondingType c,
                                         TExplicitMemoryOrderType order)
 {
-#if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-  return InterlockedExchangeSubtract(a, c);
+    if constexpr (std::is_same<AtomicType, HOST_ATOMIC_FLOAT>::value)
+    {
+        static std::mutex mx;
+        std::lock_guard<std::mutex> lock(mx);
+        CorrespondingType old_value = *a;
+        *a -= c;
+        return old_value;
+    }
+    else
+    {
+#if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
+        return InterlockedExchangeSubtract(a, c);
 #elif defined(__GNUC__)
-  return __sync_fetch_and_sub(a, c);
+        return __sync_fetch_and_sub(a, c);
 #else
-  log_info("Host function not implemented: atomic_fetch_sub\n");
-  return 0;
+        log_info("Host function not implemented: atomic_fetch_sub\n");
+        return 0;
 #endif
+    }
 }
 
 template <typename AtomicType, typename CorrespondingType>
