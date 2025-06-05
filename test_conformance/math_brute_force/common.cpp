@@ -102,7 +102,7 @@ void EmitEnableExtension(std::ostringstream &kernel,
     if (needsFp16) kernel << "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
 }
 
-std::string GetBuildOptions(const BuildKernelInfo& info)
+std::string GetBuildOptions(const BuildKernelInfo &info)
 {
     std::ostringstream options;
 
