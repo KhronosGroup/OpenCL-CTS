@@ -1075,7 +1075,7 @@ class CBasicTestFetchAdd
     double min_range;
     double max_range;
     double max_error_fp32;
-    std::vector<HostDataType> ref_vals_fp32;
+    std::vector<HostDataType> ref_vals;
 
 public:
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrder;
@@ -1101,52 +1101,52 @@ public:
     {
         if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
         {
-            if (threadCount > ref_vals_fp32.size())
+            if (threadCount > ref_vals.size())
             {
-                ref_vals_fp32.resize(threadCount);
+                ref_vals.resize(threadCount);
 
                 for (cl_uint i = 0; i < threadCount; i++)
-                    ref_vals_fp32[i] =
+                    ref_vals[i] =
                         get_random_float(min_range, max_range, d);
 
-                memcpy(startRefValues, ref_vals_fp32.data(),
-                       sizeof(HostDataType) * ref_vals_fp32.size());
+                memcpy(startRefValues, ref_vals.data(),
+                       sizeof(HostDataType) * ref_vals.size());
 
                 // Estimate highest possible summation error for given set.
                 std::vector<HostDataType> sums;
-                std::sort(ref_vals_fp32.begin(), ref_vals_fp32.end());
+                std::sort(ref_vals.begin(), ref_vals.end());
 
-                sums.push_back(std::accumulate(ref_vals_fp32.begin(),
-                                               ref_vals_fp32.end(), 0.f));
+                sums.push_back(std::accumulate(ref_vals.begin(),
+                                               ref_vals.end(), 0.f));
 
-                sums.push_back(std::accumulate(ref_vals_fp32.rbegin(),
-                                               ref_vals_fp32.rend(), 0.f));
+                sums.push_back(std::accumulate(ref_vals.rbegin(),
+                                               ref_vals.rend(), 0.f));
 
                 std::sort(
-                    ref_vals_fp32.begin(), ref_vals_fp32.end(),
+                    ref_vals.begin(), ref_vals.end(),
                     [](float a, float b) { return std::abs(a) < std::abs(b); });
 
                 double precise = 0.0;
-                for (auto elem : ref_vals_fp32) precise += double(elem);
+                for (auto elem : ref_vals) precise += double(elem);
                 sums.push_back(precise);
 
-                sums.push_back(std::accumulate(ref_vals_fp32.begin(),
-                                               ref_vals_fp32.end(), 0.f));
+                sums.push_back(std::accumulate(ref_vals.begin(),
+                                               ref_vals.end(), 0.f));
 
-                sums.push_back(std::accumulate(ref_vals_fp32.rbegin(),
-                                               ref_vals_fp32.rend(), 0.f));
+                sums.push_back(std::accumulate(ref_vals.rbegin(),
+                                               ref_vals.rend(), 0.f));
 
                 std::sort(sums.begin(), sums.end());
                 max_error_fp32 =
                     std::abs((HOST_ATOMIC_FLOAT)sums.front() - sums.back());
 
                 // restore unsorted order
-                memcpy(ref_vals_fp32.data(), startRefValues,
-                       sizeof(HostDataType) * ref_vals_fp32.size());
+                memcpy(ref_vals.data(), startRefValues,
+                       sizeof(HostDataType) * ref_vals.size());
             }
             else
             {
-                memcpy(startRefValues, ref_vals_fp32.data(),
+                memcpy(startRefValues, ref_vals.data(),
                        sizeof(HostDataType) * threadCount);
             }
             return true;
