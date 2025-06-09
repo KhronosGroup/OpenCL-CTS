@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ public:
     using CBasicTestMemOrderScope<HostAtomicType,
                                   HostDataType>::MemoryOrderScopeStr;
     using CBasicTest<HostAtomicType, HostDataType>::CheckCapabilities;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
     CBasicTestStore(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
                                                                 useSVM)
@@ -56,6 +57,21 @@ public:
         if (CheckCapabilities(MemoryScope(), MemoryOrder())
             == TEST_SKIPPED_ITSELF)
             return 0; // skip test - not applicable
+
+        if (CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DataType()
+                ._type
+            == TYPE_ATOMIC_HALF)
+        {
+            if (LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_LOAD_STORE_EXT)
+                    == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_LOAD_STORE_EXT)
+                    == 0)
+                return 0;
+        }
 
         return CBasicTestMemOrderScope<
             HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context,
@@ -78,7 +94,13 @@ public:
                                HostDataType *startRefValues,
                                cl_uint whichDestValue)
     {
-        expected = (HostDataType)whichDestValue;
+        if (CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DataType()
+                ._type
+            != TYPE_ATOMIC_HALF)
+            expected = (HostDataType)whichDestValue;
+        else
+            expected = cl_half_from_float(static_cast<float>(whichDestValue),
+                                          gHalfRoundingMode);
         return true;
     }
 };
@@ -112,6 +134,15 @@ static int test_atomic_store_generic(cl_device_id deviceID, cl_context context,
         TYPE_ATOMIC_DOUBLE, useSVM);
     EXECUTE_TEST(error,
                  test_double.Execute(deviceID, context, queue, num_elements));
+
+    if (gFloatAtomicsSupported)
+    {
+        CBasicTestStore<HOST_ATOMIC_HALF, HOST_HALF> test_half(TYPE_ATOMIC_HALF,
+                                                               useSVM);
+        EXECUTE_TEST(error,
+                     test_half.Execute(deviceID, context, queue, num_elements));
+    }
+
     if (AtomicTypeInfo(TYPE_ATOMIC_SIZE_T).Size(deviceID) == 4)
     {
         CBasicTestStore<HOST_ATOMIC_INTPTR_T32, HOST_INTPTR_T32> test_intptr_t(
