@@ -213,6 +213,12 @@ const char *GetChannelTypeName(cl_channel_type type)
         case CL_UNORM_INT24: return "CL_UNORM_INT24";
         case CL_UNSIGNED_INT_RAW10_EXT: return "CL_UNSIGNED_INT_RAW10_EXT";
         case CL_UNSIGNED_INT_RAW12_EXT: return "CL_UNSIGNED_INT_RAW12_EXT";
+        case CL_UNSIGNED_INT10X6_EXT: return "CL_UNSIGNED_INT10X6_EXT";
+        case CL_UNSIGNED_INT12X4_EXT: return "CL_UNSIGNED_INT12X4_EXT";
+        case CL_UNSIGNED_INT14X2_EXT: return "CL_UNSIGNED_INT14X2_EXT";
+        case CL_UNORM_INT10X6_EXT: return "CL_UNORM_INT10X6_EXT";
+        case CL_UNORM_INT12X4_EXT: return "CL_UNORM_INT12X4_EXT";
+        case CL_UNORM_INT14X2_EXT: return "CL_UNORM_INT14X2_EXT";
         default: return NULL;
     }
 }
@@ -238,10 +244,16 @@ int IsChannelTypeSupported(cl_channel_type type)
         case CL_UNSIGNED_INT16:
         case CL_UNSIGNED_INT32:
         case CL_HALF_FLOAT:
-        case CL_FLOAT: return 1;
+        case CL_FLOAT:
 #ifdef CL_SFIXED14_APPLE
-        case CL_SFIXED14_APPLE: return 1;
+        case CL_SFIXED14_APPLE:
 #endif
+        case CL_UNSIGNED_INT10X6_EXT:
+        case CL_UNSIGNED_INT12X4_EXT:
+        case CL_UNSIGNED_INT14X2_EXT:
+        case CL_UNORM_INT10X6_EXT:
+        case CL_UNORM_INT12X4_EXT:
+        case CL_UNORM_INT14X2_EXT: return 1;
         default: return 0;
     }
 }
