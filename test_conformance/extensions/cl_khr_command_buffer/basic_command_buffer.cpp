@@ -435,3 +435,40 @@ bool InterleavedEnqueueTest::Skip()
 {
     return BasicCommandBufferTest::Skip() || !simultaneous_use_support;
 }
+
+cl_int EnqueueAndReleaseTest::Run()
+{
+    cl_int error = clCommandNDRangeKernelKHR(
+        command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
+        nullptr, 0, nullptr, nullptr, nullptr);
+    test_error(error, "clCommandNDRangeKernelKHR failed");
+
+    error = clFinalizeCommandBufferKHR(command_buffer);
+    test_error(error, "clFinalizeCommandBufferKHR failed");
+
+    cl_int pattern = 42;
+    error = clEnqueueFillBuffer(queue, in_mem, &pattern, sizeof(cl_int), 0,
+                                data_size(), 0, nullptr, nullptr);
+    test_error(error, "clEnqueueFillBuffer failed");
+
+    error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0, nullptr,
+                                      nullptr);
+    test_error(error, "clEnqueueCommandBufferKHR failed");
+
+    // Calls release on cl_command_buffer_khr handle inside wrapper class, and
+    // sets the handle to nullptr, so that release doesn't get called again at
+    // end of test when wrapper object is destroyed.
+    command_buffer.reset();
+
+    std::vector<cl_int> output_data(num_elements);
+    error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
+                                output_data.data(), 0, nullptr, nullptr);
+    test_error(error, "clEnqueueReadBuffer failed");
+
+    for (size_t i = 0; i < num_elements; i++)
+    {
+        CHECK_VERIFICATION_ERROR(pattern, output_data[i], i);
+    }
+
+    return CL_SUCCESS;
+}
