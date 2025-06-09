@@ -140,9 +140,12 @@ CorrespondingType host_atomic_exchange(volatile AtomicType *a, CorrespondingType
                                        TExplicitMemoryOrderType order)
 {
 #if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-  return InterlockedExchange(a, c);
+    if (sizeof(CorrespondingType) == 2)
+        return InterlockedExchange16(reinterpret_cast<volatile SHORT *>(a), c);
+    else
+        return InterlockedExchange(reinterpret_cast<volatile LONG *>(a), c);
 #elif defined(__GNUC__)
-  return __sync_lock_test_and_set(a, c);
+    return __sync_lock_test_and_set(a, c);
 #else
   log_info("Host function not implemented: atomic_exchange\n");
   return 0;
