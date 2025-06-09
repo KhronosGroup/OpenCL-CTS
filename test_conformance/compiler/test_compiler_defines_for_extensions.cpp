@@ -94,7 +94,8 @@ const char *known_extensions[] = {
     "cl_khr_external_memory_dma_buf",
     "cl_khr_command_buffer",
     "cl_khr_command_buffer_mutable_dispatch",
-    "cl_khr_command_buffer_multi_device"
+    "cl_khr_command_buffer_multi_device",
+    "cl_khr_external_memory_android_hardware_buffer"
 };
 // clang-format on
 

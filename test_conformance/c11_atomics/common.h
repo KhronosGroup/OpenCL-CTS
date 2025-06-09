@@ -22,6 +22,8 @@
 
 #include "host_atomics.h"
 
+#include "CL/cl_half.h"
+
 #include <vector>
 #include <sstream>
 
@@ -38,6 +40,7 @@ enum TExplicitAtomicType
     TYPE_ATOMIC_UINT,
     TYPE_ATOMIC_LONG,
     TYPE_ATOMIC_ULONG,
+    TYPE_ATOMIC_HALF,
     TYPE_ATOMIC_FLOAT,
     TYPE_ATOMIC_DOUBLE,
     TYPE_ATOMIC_INTPTR_T,
@@ -71,7 +74,9 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+extern cl_half_rounding_mode gHalfRoundingMode;
 extern bool gFloatAtomicsSupported;
+extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
 extern cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps;
 
 extern const char *
@@ -790,6 +795,8 @@ CBasicTest<HostAtomicType, HostDataType>::PragmaHeader(cl_device_id deviceID)
     }
     if (_dataType == TYPE_ATOMIC_DOUBLE)
         pragma += "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+    if (_dataType == TYPE_ATOMIC_HALF)
+        pragma += "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
     return pragma;
 }
 
