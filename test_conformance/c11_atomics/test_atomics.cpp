@@ -1106,8 +1106,7 @@ public:
                 ref_vals.resize(threadCount);
 
                 for (cl_uint i = 0; i < threadCount; i++)
-                    ref_vals[i] =
-                        get_random_float(min_range, max_range, d);
+                    ref_vals[i] = get_random_float(min_range, max_range, d);
 
                 memcpy(startRefValues, ref_vals.data(),
                        sizeof(HostDataType) * ref_vals.size());
@@ -1116,11 +1115,11 @@ public:
                 std::vector<HostDataType> sums;
                 std::sort(ref_vals.begin(), ref_vals.end());
 
-                sums.push_back(std::accumulate(ref_vals.begin(),
-                                               ref_vals.end(), 0.f));
+                sums.push_back(
+                    std::accumulate(ref_vals.begin(), ref_vals.end(), 0.f));
 
-                sums.push_back(std::accumulate(ref_vals.rbegin(),
-                                               ref_vals.rend(), 0.f));
+                sums.push_back(
+                    std::accumulate(ref_vals.rbegin(), ref_vals.rend(), 0.f));
 
                 std::sort(
                     ref_vals.begin(), ref_vals.end(),
@@ -1130,11 +1129,11 @@ public:
                 for (auto elem : ref_vals) precise += double(elem);
                 sums.push_back(precise);
 
-                sums.push_back(std::accumulate(ref_vals.begin(),
-                                               ref_vals.end(), 0.f));
+                sums.push_back(
+                    std::accumulate(ref_vals.begin(), ref_vals.end(), 0.f));
 
-                sums.push_back(std::accumulate(ref_vals.rbegin(),
-                                               ref_vals.rend(), 0.f));
+                sums.push_back(
+                    std::accumulate(ref_vals.rbegin(), ref_vals.rend(), 0.f));
 
                 std::sort(sums.begin(), sums.end());
                 max_error_fp32 =
