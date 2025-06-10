@@ -372,6 +372,12 @@ static int findRequirements(cl_device_id device,
         capabilities.push_back(spv::CapabilityImageMipmap);
     }
 
+    // Required for devices supporting cl_khr_spirv_extended_debug_info.
+    if (is_extension_available(device, "cl_khr_spirv_extended_debug_info"))
+    {
+        extendedInstructionSets.push_back("OpenCL.DebugInfo.100");
+    }
+
     // Required for devices supporting cl_khr_spirv_linkonce_odr.
     if (is_extension_available(device, "cl_khr_spirv_linkonce_odr"))
     {
