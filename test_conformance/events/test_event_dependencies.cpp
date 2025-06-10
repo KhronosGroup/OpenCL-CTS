@@ -110,6 +110,11 @@ static int test_event_enqueue_wait_for_events_run_test(
             error = clGetDeviceInfo(two_device_ids[i], CL_DEVICE_TYPE,
                                     sizeof(cl_device_type), &type, NULL);
             test_error(error, "clGetDeviceInfo failed.");
+            if (type & CL_DEVICE_TYPE_CUSTOM) {
+                log_info("Second device type is CL_DEVICE_TYPE_CUSTOM. Test can not run.\n");
+                free(two_device_ids);
+                return 0;
+            }
             if (type & CL_DEVICE_TYPE_CPU)
                 log_info("\tDevice %d is CL_DEVICE_TYPE_CPU.\n", i);
             if (type & CL_DEVICE_TYPE_GPU)

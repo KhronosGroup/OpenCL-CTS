@@ -191,36 +191,50 @@ static int test_device_set(size_t deviceCount, size_t queueCount,
 REGISTER_TEST(two_devices)
 {
     cl_platform_id platform;
-    cl_device_id devices[2];
+    cl_device_id devices[MAX_DEVICES];
+    cl_device_id devicesFiltered[MAX_DEVICES];
     int err;
-    cl_uint numDevices;
+    cl_uint numDevices, numDevicesFiltered;
 
     err = clGetPlatformIDs(1, &platform, NULL);
     test_error( err, "Unable to get platform" );
 
     /* Get some devices */
-    err = clGetDeviceIDs(platform,  CL_DEVICE_TYPE_ALL, 2, devices, &numDevices );
-    test_error( err, "Unable to get 2 devices" );
+    err = clGetDeviceIDs(platform,  CL_DEVICE_TYPE_ALL, MAX_DEVICES, devices, &numDevices );
+    test_error( err, "Unable to get multiple devices" );
 
-    if( numDevices < 2 )
+    /* Filter out CL_DEVICE_TYPE_CUSTOM devices */
+    numDevicesFiltered = 0;
+    for(int i = 0; i < numDevices; i++) {
+        cl_device_type type;
+        err = clGetDeviceInfo(devices[i], CL_DEVICE_TYPE,
+                                sizeof(cl_device_type), &type, NULL);
+        test_error(err, "clGetDeviceInfo failed.");
+        if(!(type & CL_DEVICE_TYPE_CUSTOM)) {
+            devicesFiltered[numDevicesFiltered++] = devices[i];
+        }
+    }
+
+    if( numDevicesFiltered < 2 )
     {
-        log_info( "WARNING: two device test unable to get two devices via CL_DEVICE_TYPE_ALL (got %d devices). Skipping test...\n", (int)numDevices );
+        log_info( "WARNING: two device test unable to get two devices via CL_DEVICE_TYPE_ALL (got %d devices). Skipping test...\n", (int)numDevicesFiltered );
         return 0;
     }
-  else if (numDevices > 2)
+  else if (numDevicesFiltered > 2)
   {
-    log_info("Note: got %d devices, using just the first two.\n", (int)numDevices);
+    log_info("Note: got %d non CL_DEVICE_TYPE_CUSTOM devices, using just the first two.\n", (int)numDevicesFiltered);
   }
 
     /* Run test */
-    return test_device_set( 2, 2, devices, num_elements );
+    return test_device_set( 2, 2, devicesFiltered, num_elements );
 }
 
 REGISTER_TEST(max_devices)
 {
     cl_platform_id platform;
     cl_device_id devices[MAX_DEVICES];
-    cl_uint deviceCount;
+    cl_device_id devicesFiltered[MAX_DEVICES];
+    cl_uint deviceCount, devicesFilteredCount;
     int err;
 
     err = clGetPlatformIDs(1, &platform, NULL);
@@ -230,10 +244,22 @@ REGISTER_TEST(max_devices)
     err = clGetDeviceIDs(platform,  CL_DEVICE_TYPE_ALL, MAX_DEVICES, devices, &deviceCount );
     test_error( err, "Unable to get multiple devices" );
 
-  log_info("Testing with %d devices.", deviceCount);
+    /* Filter out CL_DEVICE_TYPE_CUSTOM devices */
+    devicesFilteredCount = 0;
+    for(int i = 0; i < deviceCount; i++) {
+        cl_device_type type;
+        err = clGetDeviceInfo(devices[i], CL_DEVICE_TYPE,
+                              sizeof(cl_device_type), &type, NULL);
+        test_error(err, "clGetDeviceInfo failed.");
+        if(!(type & CL_DEVICE_TYPE_CUSTOM)) {
+            devicesFiltered[devicesFilteredCount++] = devices[i];
+        }
+    }
+
+  log_info("Testing with %d devices.", devicesFilteredCount);
 
     /* Run test */
-    return test_device_set( deviceCount, deviceCount, devices, num_elements );
+    return test_device_set( devicesFilteredCount, devicesFilteredCount, devicesFiltered, num_elements );
 }
 
 REGISTER_TEST(hundred_queues)
