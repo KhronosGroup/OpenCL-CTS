@@ -34,6 +34,7 @@ cl_device_atomic_capabilities gAtomicMemCap,
 cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
 bool gFloatAtomicsSupported = false;
 cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps = 0;
+cl_device_fp_config gHalfCaps = 0;
 
 test_status InitCL(cl_device_id device) {
     auto version = get_device_cl_version(device);
@@ -154,6 +155,10 @@ test_status InitCL(cl_device_id device) {
                 log_error("Error while acquiring half rounding mode\n");
                 return TEST_FAIL;
             }
+
+            error = clGetDeviceInfo(device, CL_DEVICE_HALF_FP_CONFIG,
+                                    sizeof(gHalfCaps), &gHalfCaps, NULL);
+            test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
         }
     }
 
