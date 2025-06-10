@@ -254,6 +254,8 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
 
     size_t thirdDim = 1;
     size_t secondDim = 1;
+    size_t firstDim = dstImageInfo->width;
+    image_descriptor dstMipLevelImageInfo = { 0 };
 
     switch (dstImageInfo->type)
     {
@@ -299,30 +301,47 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
                     : 1;
                 break;
         }
+        firstDim = (dstImageInfo->width >> dst_lod)
+            ? (dstImageInfo->width >> dst_lod)
+            : 1;
+
+        dstMipLevelImageInfo.width = firstDim;
+        dstMipLevelImageInfo.height = secondDim;
+        dstMipLevelImageInfo.depth = thirdDim;
+        dstMipLevelImageInfo.rowPitch = mappedRow;
+        dstMipLevelImageInfo.slicePitch = mappedSlice;
+        dstMipLevelImageInfo.num_mip_levels = 0;
+        dstMipLevelImageInfo.format = dstImageInfo->format;
+        dstMipLevelImageInfo.type = dstImageInfo->type;
     }
+
+    // Select the correct destinate image.  Mipmapped levels are smaller than
+    // the full image.
+    image_descriptor *dstComparisonImageInfo =
+        gTestMipmaps ? &dstMipLevelImageInfo : dstImageInfo;
+
     for( size_t z = 0; z < thirdDim; z++ )
     {
         for( size_t y = 0; y < secondDim; y++ )
         {
-            if( memcmp( sourcePtr, destPtr, scanlineSize ) != 0 )
+            // Find the first differing pixel
+            size_t where =
+                compare_scanlines(dstComparisonImageInfo, sourcePtr, destPtr);
+            if (where < dstComparisonImageInfo->width)
             {
-                // Find the first differing pixel
-                size_t pixel_size = get_pixel_size( dstImageInfo->format );
-                size_t where =
-                    compare_scanlines(dstImageInfo, sourcePtr, destPtr);
+                size_t pixel_size =
+                    get_pixel_size(dstComparisonImageInfo->format);
 
-                if (where < dstImageInfo->width)
-                {
-                    print_first_pixel_difference_error(
-                        where, sourcePtr + pixel_size * where,
-                        destPtr + pixel_size * where, dstImageInfo, y,
-                        dstImageInfo->depth);
-                    return -1;
-                }
+                print_first_pixel_difference_error(
+                    where, sourcePtr + pixel_size * where,
+                    destPtr + pixel_size * where, dstComparisonImageInfo, y,
+                    dstComparisonImageInfo->depth);
+                return -1;
             }
             sourcePtr += rowPitch;
-            if((dstImageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY || dstImageInfo->type == CL_MEM_OBJECT_IMAGE1D))
-            destPtr += mappedSlice;
+            if ((dstComparisonImageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY
+                 || dstComparisonImageInfo->type == CL_MEM_OBJECT_IMAGE1D))
+                destPtr += mappedSlice;
             else
             destPtr += mappedRow;
         }
