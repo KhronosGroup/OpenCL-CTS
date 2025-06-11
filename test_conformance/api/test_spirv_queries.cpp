@@ -291,15 +291,18 @@ static int findRequirements(cl_device_id device,
         capabilities.push_back(spv::CapabilityDeviceEnqueue);
     }
 
-    // Required for OpenCL 2.2 devices.
-    if (version == Version(2, 2))
+    // Required for devices supporting SPIR-V 1.1 and OpenCL 2.2.
+    if (ilVersions.find("SPIR-V_1.1") != std::string::npos
+        && version == Version(2, 2))
     {
         capabilities.push_back(spv::CapabilityPipeStorage);
     }
 
-    // Required for OpenCL 2.2, or OpenCL 3.0 devices supporting sub-groups.
-    if (version == Version(2, 2)
-        || (version >= Version(3, 0) && deviceSubGroupsSupport == CL_TRUE))
+    // Required for devices supporting SPIR-V 1.1 and either OpenCL 2.2 or
+    // OpenCL 3.0 devices supporting sub-groups.
+    if (ilVersions.find("SPIR-V_1.1") != std::string::npos
+        && (version == Version(2, 2)
+            || (version >= Version(3, 0) && deviceSubGroupsSupport == CL_TRUE)))
     {
         capabilities.push_back(spv::CapabilitySubgroupDispatch);
     }
