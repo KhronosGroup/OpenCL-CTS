@@ -201,7 +201,7 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
             || strcmp(env_mode, "CL_DEVICE_TYPE_ALL") == 0)
             device_type = CL_DEVICE_TYPE_ALL;
         else if (strcmp(env_mode, "gpu") == 0
-            || strcmp(env_mode, "CL_DEVICE_TYPE_GPU") == 0)
+                 || strcmp(env_mode, "CL_DEVICE_TYPE_GPU") == 0)
             device_type = CL_DEVICE_TYPE_GPU;
         else if (strcmp(env_mode, "cpu") == 0
                  || strcmp(env_mode, "CL_DEVICE_TYPE_CPU") == 0)
