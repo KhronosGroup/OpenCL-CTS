@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 #include <vector>
 
@@ -146,8 +145,7 @@ struct BarrierWithWaitListKHR : public BasicCommandBufferTest
 };
 
 
-int test_barrier_wait_list(cl_device_id device, cl_context context,
-                           cl_command_queue queue, int num_elements)
+REGISTER_TEST(barrier_wait_list)
 {
     return MakeAndRunTest<BarrierWithWaitListKHR>(device, context, queue,
                                                   num_elements);

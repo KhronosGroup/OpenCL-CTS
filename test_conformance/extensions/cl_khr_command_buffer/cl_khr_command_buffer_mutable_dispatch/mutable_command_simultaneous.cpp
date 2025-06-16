@@ -605,35 +605,25 @@ struct CrossQueueSimultaneousMutableDispatchTest
 
 } // anonymous namespace
 
-int test_mutable_dispatch_out_of_order(cl_device_id device, cl_context context,
-                                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(mutable_dispatch_out_of_order)
 {
     return MakeAndRunTest<SimultaneousMutableDispatchTest<false, true>>(
         device, context, queue, num_elements);
 }
 
-int test_mutable_dispatch_simultaneous_out_of_order(cl_device_id device,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements)
+REGISTER_TEST(mutable_dispatch_simultaneous_out_of_order)
 {
     return MakeAndRunTest<SimultaneousMutableDispatchTest<true, true>>(
         device, context, queue, num_elements);
 }
 
-int test_mutable_dispatch_simultaneous_in_order(cl_device_id device,
-                                                cl_context context,
-                                                cl_command_queue queue,
-                                                int num_elements)
+REGISTER_TEST(mutable_dispatch_simultaneous_in_order)
 {
     return MakeAndRunTest<SimultaneousMutableDispatchTest<true, false>>(
         device, context, queue, num_elements);
 }
 
-int test_mutable_dispatch_simultaneous_cross_queue(cl_device_id device,
-                                                   cl_context context,
-                                                   cl_command_queue queue,
-                                                   int num_elements)
+REGISTER_TEST(mutable_dispatch_simultaneous_cross_queue)
 {
     return MakeAndRunTest<CrossQueueSimultaneousMutableDispatchTest>(
         device, context, queue, num_elements);
