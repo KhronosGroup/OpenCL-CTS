@@ -174,6 +174,13 @@ public:
     {
         return false;
     }
+    virtual bool VerifyExpected(const HostDataType &expected,
+                                const HostAtomicType *const testValue,
+                                cl_uint whichDestValue)
+    {
+        if (testValue != nullptr) return expected != testValue[whichDestValue];
+        return true;
+    }
     virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                               MTdata d)
     {
@@ -883,7 +890,14 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
         header += std::string("__global volatile ") + aTypeName + " destMemory["
             + ss.str() + "] = {\n";
         ss.str("");
-        ss << _startValue;
+
+        if (CBasicTest<HostAtomicType, HostDataType>::DataType()._type
+            != TYPE_ATOMIC_HALF)
+            ss << _startValue;
+        else
+            ss << static_cast<HostDataType>(
+                cl_half_to_float(static_cast<cl_half>(_startValue)));
+
         for (cl_uint i = 0; i < maxNumDestItems; i++)
         {
             if (aTypeName == "atomic_flag")
@@ -1442,7 +1456,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (expected != destItems[i])
+        if (VerifyExpected(expected, destItems.data(), i))
         {
             std::stringstream logLine;
             logLine << "ERROR: Result " << i
