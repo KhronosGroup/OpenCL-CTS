@@ -113,7 +113,7 @@ template <typename AtomicType, typename CorrespondingType>
 CorrespondingType host_atomic_fetch_sub(volatile AtomicType *a, CorrespondingType c,
                                         TExplicitMemoryOrderType order)
 {
-    if (std::is_same<AtomicType, HOST_ATOMIC_HALF>::value)
+    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_HALF>)
     {
         static std::mutex mx;
         std::lock_guard<std::mutex> lock(mx);
@@ -125,12 +125,7 @@ CorrespondingType host_atomic_fetch_sub(volatile AtomicType *a, CorrespondingTyp
     else
     {
 #if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
-        if (std::is_same<AtomicType, HOST_ATOMIC_INT>::value
-            || std::is_same<AtomicType, HOST_ATOMIC_UINT>::value)
-            return InterlockedExchangeSubtract((volatile cl_uint *)a, c);
-        else if (std::is_same<AtomicType, HOST_ATOMIC_LONG>::value
-                 || std::is_same<AtomicType, HOST_ATOMIC_ULONG>::value)
-            return InterlockedExchangeAdd64((volatile cl_long *)a, -c);
+        return InterlockedExchangeSubtract((volatile cl_uint *)a, c);
 #elif defined(__GNUC__)
         return __sync_fetch_and_sub(a, c);
 #else

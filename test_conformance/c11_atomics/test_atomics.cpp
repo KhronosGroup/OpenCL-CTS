@@ -1275,7 +1275,7 @@ public:
                                                                 useSVM),
           min_range(-999.0), max_range(999.0), max_error(0.0)
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
         {
             StartValue(0);
             CBasicTestMemOrderScope<HostAtomicType,
@@ -1297,7 +1297,7 @@ public:
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
         {
             if (threadCount > ref_vals.size())
             {
@@ -1359,7 +1359,7 @@ public:
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
 
-        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
         {
             return "  atomic_fetch_sub" + postfix + "(&destMemory[0], ("
                 + DataType().AddSubOperandTypeName() + ")oldValues[tid]"
@@ -1381,7 +1381,7 @@ public:
                       volatile HostAtomicType *destMemory,
                       HostDataType *oldValues) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
         {
             host_atomic_fetch_sub(&destMemory[0], (HostDataType)oldValues[tid],
                                   MemoryOrder());
@@ -1403,7 +1403,7 @@ public:
                        cl_uint whichDestValue) override
     {
         expected = StartValue();
-        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
         {
             if (whichDestValue == 0)
             {
@@ -1428,7 +1428,7 @@ public:
                         const HostAtomicType *const testValue,
                         cl_uint whichDestValue) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
         {
             if (whichDestValue == 0 && testValue != nullptr)
                 return std::abs(cl_half_to_float(expected)
@@ -1442,7 +1442,7 @@ public:
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
         {
             if (LocalMemory()
                 && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_ADD_EXT) == 0)
@@ -1458,7 +1458,7 @@ public:
     }
     cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
         {
             return threadCount;
         }
