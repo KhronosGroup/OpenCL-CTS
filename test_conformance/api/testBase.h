@@ -27,24 +27,4 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-// scope guard helper to ensure proper releasing of sub devices
-struct SubDevicesScopeGuarded
-{
-    SubDevicesScopeGuarded(const cl_int dev_count)
-    {
-        sub_devices.resize(dev_count);
-    }
-    ~SubDevicesScopeGuarded()
-    {
-        for (auto &device : sub_devices)
-        {
-            cl_int err = clReleaseDevice(device);
-            if (err != CL_SUCCESS)
-                log_error("\n Releasing sub-device failed \n");
-        }
-    }
-
-    std::vector<cl_device_id> sub_devices;
-};
-
 #endif // _testBase_h

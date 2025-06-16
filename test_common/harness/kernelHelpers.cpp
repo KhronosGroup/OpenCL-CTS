@@ -1328,6 +1328,12 @@ size_t get_pixel_bytes(const cl_image_format *fmt)
         case CL_SIGNED_INT8:
         case CL_UNSIGNED_INT8: return chanCount;
 
+        case CL_UNSIGNED_INT10X6_EXT:
+        case CL_UNSIGNED_INT12X4_EXT:
+        case CL_UNSIGNED_INT14X2_EXT:
+        case CL_UNORM_INT10X6_EXT:
+        case CL_UNORM_INT12X4_EXT:
+        case CL_UNORM_INT14X2_EXT:
         case CL_SNORM_INT16:
         case CL_UNORM_INT16:
         case CL_HALF_FLOAT:

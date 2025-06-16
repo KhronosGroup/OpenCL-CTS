@@ -42,6 +42,7 @@ enum TExplicitMemoryOrderType
 #define HOST_ATOMIC_UINT        unsigned long
 #define HOST_ATOMIC_LONG        unsigned long long
 #define HOST_ATOMIC_ULONG       unsigned long long
+#define HOST_ATOMIC_HALF unsigned short
 #define HOST_ATOMIC_FLOAT       float
 #define HOST_ATOMIC_DOUBLE      double
 #else
@@ -49,6 +50,7 @@ enum TExplicitMemoryOrderType
 #define HOST_ATOMIC_UINT        cl_uint
 #define HOST_ATOMIC_LONG        cl_long
 #define HOST_ATOMIC_ULONG       cl_ulong
+#define HOST_ATOMIC_HALF cl_half
 #define HOST_ATOMIC_FLOAT       cl_float
 #define HOST_ATOMIC_DOUBLE      cl_double
 #endif
@@ -70,6 +72,7 @@ enum TExplicitMemoryOrderType
 #define HOST_UINT               cl_uint
 #define HOST_LONG               cl_long
 #define HOST_ULONG              cl_ulong
+#define HOST_HALF cl_half
 #define HOST_FLOAT              cl_float
 #define HOST_DOUBLE             cl_double
 
@@ -144,9 +147,12 @@ CorrespondingType host_atomic_exchange(volatile AtomicType *a, CorrespondingType
                                        TExplicitMemoryOrderType order)
 {
 #if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-  return InterlockedExchange(a, c);
+    if (sizeof(CorrespondingType) == 2)
+        return InterlockedExchange16(reinterpret_cast<volatile SHORT *>(a), c);
+    else
+        return InterlockedExchange(reinterpret_cast<volatile LONG *>(a), c);
 #elif defined(__GNUC__)
-  return __sync_lock_test_and_set(a, c);
+    return __sync_lock_test_and_set(a, c);
 #else
   log_info("Host function not implemented: atomic_exchange\n");
   return 0;
@@ -182,7 +188,10 @@ CorrespondingType host_atomic_load(volatile AtomicType *a,
                                    TExplicitMemoryOrderType order)
 {
 #if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-  return InterlockedExchangeAdd(a, 0);
+    if (sizeof(CorrespondingType) == 2)
+        auto prev = InterlockedOr16(reinterpret_cast<volatile SHORT *>(a), 0);
+    else
+        return InterlockedExchangeAdd(reinterpret_cast<volatile LONG *>(a), 0);
 #elif defined(__GNUC__)
   return __sync_add_and_fetch(a, 0);
 #else
