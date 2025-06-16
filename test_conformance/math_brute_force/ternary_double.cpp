@@ -127,6 +127,8 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
     double maxErrorVal3 = 0.0f;
     uint64_t step = getTestStep(sizeof(double), BUFFER_SIZE);
 
+    float double_ulps = getAllowedUlpError(f, kdouble, relaxedMode);
+
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
     Force64BitFPUPrecision();
@@ -295,7 +297,7 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                     double test = ((double *)q)[j];
                     long double correct = f->dfunc.f_fff(s[j], s2[j], s3[j]);
                     float err = Bruteforce_Ulp_Error_Double(test, correct);
-                    int fail = !(fabsf(err) <= f->double_ulps);
+                    int fail = !(fabsf(err) <= double_ulps);
 
                     if (fail && (ftz || relaxedMode))
                     {
@@ -318,16 +320,15 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                             float err3 =
                                 Bruteforce_Ulp_Error_Double(test, correct3);
                             fail = fail
-                                && ((!(fabsf(err2) <= f->double_ulps))
-                                    && (!(fabsf(err3) <= f->double_ulps)));
+                                && ((!(fabsf(err2) <= double_ulps))
+                                    && (!(fabsf(err3) <= double_ulps)));
                             if (fabsf(err2) < fabsf(err)) err = err2;
                             if (fabsf(err3) < fabsf(err)) err = err3;
 
                             // retry per section 6.5.3.4
-                            if (IsDoubleResultSubnormal(correct2,
-                                                        f->double_ulps)
+                            if (IsDoubleResultSubnormal(correct2, double_ulps)
                                 || IsDoubleResultSubnormal(correct3,
-                                                           f->double_ulps))
+                                                           double_ulps))
                             { // look at me now,
                                 fail = fail && (test != 0.0f);
                                 if (!fail) err = 0.0f;
@@ -351,10 +352,10 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                                 float err5 =
                                     Bruteforce_Ulp_Error_Double(test, correct5);
                                 fail = fail
-                                    && ((!(fabsf(err2) <= f->double_ulps))
-                                        && (!(fabsf(err3) <= f->double_ulps))
-                                        && (!(fabsf(err4) <= f->double_ulps))
-                                        && (!(fabsf(err5) <= f->double_ulps)));
+                                    && ((!(fabsf(err2) <= double_ulps))
+                                        && (!(fabsf(err3) <= double_ulps))
+                                        && (!(fabsf(err4) <= double_ulps))
+                                        && (!(fabsf(err5) <= double_ulps)));
                                 if (fabsf(err2) < fabsf(err)) err = err2;
                                 if (fabsf(err3) < fabsf(err)) err = err3;
                                 if (fabsf(err4) < fabsf(err)) err = err4;
@@ -362,13 +363,13 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
 
                                 // retry per section 6.5.3.4
                                 if (IsDoubleResultSubnormal(correct2,
-                                                            f->double_ulps)
+                                                            double_ulps)
                                     || IsDoubleResultSubnormal(correct3,
-                                                               f->double_ulps)
+                                                               double_ulps)
                                     || IsDoubleResultSubnormal(correct4,
-                                                               f->double_ulps)
+                                                               double_ulps)
                                     || IsDoubleResultSubnormal(correct5,
-                                                               f->double_ulps))
+                                                               double_ulps))
                                 {
                                     fail = fail && (test != 0.0f);
                                     if (!fail) err = 0.0f;
@@ -405,21 +406,14 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                                     float err9 = Bruteforce_Ulp_Error_Double(
                                         test, correct9);
                                     fail = fail
-                                        && ((!(fabsf(err2) <= f->double_ulps))
-                                            && (!(fabsf(err3)
-                                                  <= f->double_ulps))
-                                            && (!(fabsf(err4)
-                                                  <= f->double_ulps))
-                                            && (!(fabsf(err5)
-                                                  <= f->double_ulps))
-                                            && (!(fabsf(err5)
-                                                  <= f->double_ulps))
-                                            && (!(fabsf(err6)
-                                                  <= f->double_ulps))
-                                            && (!(fabsf(err7)
-                                                  <= f->double_ulps))
-                                            && (!(fabsf(err8)
-                                                  <= f->double_ulps)));
+                                        && ((!(fabsf(err2) <= double_ulps))
+                                            && (!(fabsf(err3) <= double_ulps))
+                                            && (!(fabsf(err4) <= double_ulps))
+                                            && (!(fabsf(err5) <= double_ulps))
+                                            && (!(fabsf(err5) <= double_ulps))
+                                            && (!(fabsf(err6) <= double_ulps))
+                                            && (!(fabsf(err7) <= double_ulps))
+                                            && (!(fabsf(err8) <= double_ulps)));
                                     if (fabsf(err2) < fabsf(err)) err = err2;
                                     if (fabsf(err3) < fabsf(err)) err = err3;
                                     if (fabsf(err4) < fabsf(err)) err = err4;
@@ -431,21 +425,21 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
 
                                     // retry per section 6.5.3.4
                                     if (IsDoubleResultSubnormal(correct2,
-                                                                f->double_ulps)
-                                        || IsDoubleResultSubnormal(
-                                            correct3, f->double_ulps)
-                                        || IsDoubleResultSubnormal(
-                                            correct4, f->double_ulps)
-                                        || IsDoubleResultSubnormal(
-                                            correct5, f->double_ulps)
-                                        || IsDoubleResultSubnormal(
-                                            correct6, f->double_ulps)
-                                        || IsDoubleResultSubnormal(
-                                            correct7, f->double_ulps)
-                                        || IsDoubleResultSubnormal(
-                                            correct8, f->double_ulps)
-                                        || IsDoubleResultSubnormal(
-                                            correct9, f->double_ulps))
+                                                                double_ulps)
+                                        || IsDoubleResultSubnormal(correct3,
+                                                                   double_ulps)
+                                        || IsDoubleResultSubnormal(correct4,
+                                                                   double_ulps)
+                                        || IsDoubleResultSubnormal(correct5,
+                                                                   double_ulps)
+                                        || IsDoubleResultSubnormal(correct6,
+                                                                   double_ulps)
+                                        || IsDoubleResultSubnormal(correct7,
+                                                                   double_ulps)
+                                        || IsDoubleResultSubnormal(correct8,
+                                                                   double_ulps)
+                                        || IsDoubleResultSubnormal(correct9,
+                                                                   double_ulps))
                                     {
                                         fail = fail && (test != 0.0f);
                                         if (!fail) err = 0.0f;
@@ -469,10 +463,10 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                                 float err5 =
                                     Bruteforce_Ulp_Error_Double(test, correct5);
                                 fail = fail
-                                    && ((!(fabsf(err2) <= f->double_ulps))
-                                        && (!(fabsf(err3) <= f->double_ulps))
-                                        && (!(fabsf(err4) <= f->double_ulps))
-                                        && (!(fabsf(err5) <= f->double_ulps)));
+                                    && ((!(fabsf(err2) <= double_ulps))
+                                        && (!(fabsf(err3) <= double_ulps))
+                                        && (!(fabsf(err4) <= double_ulps))
+                                        && (!(fabsf(err5) <= double_ulps)));
                                 if (fabsf(err2) < fabsf(err)) err = err2;
                                 if (fabsf(err3) < fabsf(err)) err = err3;
                                 if (fabsf(err4) < fabsf(err)) err = err4;
@@ -480,13 +474,13 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
 
                                 // retry per section 6.5.3.4
                                 if (IsDoubleResultSubnormal(correct2,
-                                                            f->double_ulps)
+                                                            double_ulps)
                                     || IsDoubleResultSubnormal(correct3,
-                                                               f->double_ulps)
+                                                               double_ulps)
                                     || IsDoubleResultSubnormal(correct4,
-                                                               f->double_ulps)
+                                                               double_ulps)
                                     || IsDoubleResultSubnormal(correct5,
-                                                               f->double_ulps))
+                                                               double_ulps))
                                 {
                                     fail = fail && (test != 0.0f);
                                     if (!fail) err = 0.0f;
@@ -504,16 +498,15 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                             float err3 =
                                 Bruteforce_Ulp_Error_Double(test, correct3);
                             fail = fail
-                                && ((!(fabsf(err2) <= f->double_ulps))
-                                    && (!(fabsf(err3) <= f->double_ulps)));
+                                && ((!(fabsf(err2) <= double_ulps))
+                                    && (!(fabsf(err3) <= double_ulps)));
                             if (fabsf(err2) < fabsf(err)) err = err2;
                             if (fabsf(err3) < fabsf(err)) err = err3;
 
                             // retry per section 6.5.3.4
-                            if (IsDoubleResultSubnormal(correct2,
-                                                        f->double_ulps)
+                            if (IsDoubleResultSubnormal(correct2, double_ulps)
                                 || IsDoubleResultSubnormal(correct3,
-                                                           f->double_ulps))
+                                                           double_ulps))
                             {
                                 fail = fail && (test != 0.0f);
                                 if (!fail) err = 0.0f;
@@ -537,10 +530,10 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                                 float err5 =
                                     Bruteforce_Ulp_Error_Double(test, correct5);
                                 fail = fail
-                                    && ((!(fabsf(err2) <= f->double_ulps))
-                                        && (!(fabsf(err3) <= f->double_ulps))
-                                        && (!(fabsf(err4) <= f->double_ulps))
-                                        && (!(fabsf(err5) <= f->double_ulps)));
+                                    && ((!(fabsf(err2) <= double_ulps))
+                                        && (!(fabsf(err3) <= double_ulps))
+                                        && (!(fabsf(err4) <= double_ulps))
+                                        && (!(fabsf(err5) <= double_ulps)));
                                 if (fabsf(err2) < fabsf(err)) err = err2;
                                 if (fabsf(err3) < fabsf(err)) err = err3;
                                 if (fabsf(err4) < fabsf(err)) err = err4;
@@ -548,13 +541,13 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
 
                                 // retry per section 6.5.3.4
                                 if (IsDoubleResultSubnormal(correct2,
-                                                            f->double_ulps)
+                                                            double_ulps)
                                     || IsDoubleResultSubnormal(correct3,
-                                                               f->double_ulps)
+                                                               double_ulps)
                                     || IsDoubleResultSubnormal(correct4,
-                                                               f->double_ulps)
+                                                               double_ulps)
                                     || IsDoubleResultSubnormal(correct5,
-                                                               f->double_ulps))
+                                                               double_ulps))
                                 {
                                     fail = fail && (test != 0.0f);
                                     if (!fail) err = 0.0f;
@@ -572,16 +565,15 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                             float err3 =
                                 Bruteforce_Ulp_Error_Double(test, correct3);
                             fail = fail
-                                && ((!(fabsf(err2) <= f->double_ulps))
-                                    && (!(fabsf(err3) <= f->double_ulps)));
+                                && ((!(fabsf(err2) <= double_ulps))
+                                    && (!(fabsf(err3) <= double_ulps)));
                             if (fabsf(err2) < fabsf(err)) err = err2;
                             if (fabsf(err3) < fabsf(err)) err = err3;
 
                             // retry per section 6.5.3.4
-                            if (IsDoubleResultSubnormal(correct2,
-                                                        f->double_ulps)
+                            if (IsDoubleResultSubnormal(correct2, double_ulps)
                                 || IsDoubleResultSubnormal(correct3,
-                                                           f->double_ulps))
+                                                           double_ulps))
                             {
                                 fail = fail && (test != 0.0f);
                                 if (!fail) err = 0.0f;

@@ -35,7 +35,7 @@
          %19 = OpLabel
          %20 = OpCompositeConstruct %_struct_10 %uint_2100483600 %uchar_128
          %21 = OpCompositeConstruct %_struct_11 %18 %20
-         %22 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %22 = OpLoad %v3uint %gl_GlobalInvocationID
          %23 = OpCompositeExtract %uint %22 0
          %24 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup__struct_11 %in %23
                OpStore %24 %21

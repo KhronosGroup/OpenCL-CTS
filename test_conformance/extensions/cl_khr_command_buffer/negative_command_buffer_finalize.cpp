@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 
 //--------------------------------------------------------------------------
@@ -136,17 +135,13 @@ struct FinalizeCommandBufferNotRecordingState : public BasicCommandBufferTest
 };
 };
 
-int test_negative_finalize_command_buffer_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_finalize_command_buffer_invalid_command_buffer)
 {
     return MakeAndRunTest<FinalizeCommandBufferInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_finalize_command_buffer_not_recording_state(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_finalize_command_buffer_not_recording_state)
 {
     return MakeAndRunTest<FinalizeCommandBufferNotRecordingState>(
         device, context, queue, num_elements);
