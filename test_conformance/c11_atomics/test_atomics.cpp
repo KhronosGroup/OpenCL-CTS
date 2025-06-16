@@ -1275,7 +1275,7 @@ public:
                                                                 useSVM),
           min_range(-999.0), max_range(999.0), max_error(0.0)
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
         {
             StartValue(0.f);
             CBasicTestMemOrderScope<HostAtomicType,
@@ -1292,7 +1292,7 @@ public:
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
         {
             if (threadCount > ref_vals.size())
             {
@@ -1347,7 +1347,7 @@ public:
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
 
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
         {
             return "  atomic_fetch_sub" + postfix + "(&destMemory[0], ("
                 + DataType().AddSubOperandTypeName() + ")oldValues[tid]"
@@ -1369,7 +1369,7 @@ public:
                       volatile HostAtomicType *destMemory,
                       HostDataType *oldValues) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
         {
             host_atomic_fetch_sub(&destMemory[0], (HostDataType)oldValues[tid],
                                   MemoryOrder());
@@ -1378,10 +1378,12 @@ public:
         }
         else
         {
-            oldValues[tid] = host_atomic_fetch_sub(
-                &destMemory[0],
-                (HostDataType)tid + 3 + GetTypeDependentAddition(tid),
-                MemoryOrder());
+            oldValues[tid] =
+                host_atomic_fetch_sub(&destMemory[0],
+                                      (HostDataType)tid + 3
+                                          + (((HostDataType)tid + 3)
+                                             << (sizeof(HostDataType) - 1) * 8),
+                                      MemoryOrder());
         }
     }
     bool ExpectedValue(HostDataType &expected, cl_uint threadCount,
@@ -1389,7 +1391,7 @@ public:
                        cl_uint whichDestValue) override
     {
         expected = StartValue();
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
         {
             if (whichDestValue == 0)
                 for (cl_uint i = 0; i < threadCount; i++)
@@ -1398,27 +1400,16 @@ public:
         else
         {
             for (cl_uint i = 0; i < threadCount; i++)
-                expected -= (HostDataType)i + 3 + GetTypeDependentAddition(i);
+                expected -= (HostDataType)i + 3
+                    + (((HostDataType)i + 3) << (sizeof(HostDataType) - 1) * 8);
         }
         return true;
-    }
-    HostDataType GetTypeDependentAddition(cl_uint id)
-    {
-        if (std::is_same<HostDataType, HOST_ATOMIC_INT>::value)
-            return (((cl_int)id + 3) << (sizeof(cl_int) - 1) * 8);
-        else if (std::is_same<HostDataType, HOST_ATOMIC_UINT>::value)
-            return (((cl_uint)id + 3) << (sizeof(cl_uint) - 1) * 8);
-        else if (std::is_same<HostDataType, HOST_ATOMIC_LONG>::value)
-            return (((cl_long)id + 3) << (sizeof(cl_long) - 1) * 8);
-        else if (std::is_same<HostDataType, HOST_ATOMIC_ULONG>::value)
-            return (((cl_ulong)id + 3) << (sizeof(cl_ulong) - 1) * 8);
-        return (HostDataType)0;
     }
     bool VerifyExpected(const HostDataType &expected,
                         const HostAtomicType *const testValue,
                         cl_uint whichDestValue) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
         {
             if (whichDestValue == 0 && testValue != nullptr)
                 return std::abs((HOST_ATOMIC_FLOAT)expected
@@ -1432,7 +1423,7 @@ public:
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
         {
             if (LocalMemory()
                 && (gFloatAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_ADD_EXT) == 0)
@@ -1448,7 +1439,7 @@ public:
     }
     cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
         {
             return threadCount;
         }
