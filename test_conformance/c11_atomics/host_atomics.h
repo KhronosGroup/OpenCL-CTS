@@ -125,7 +125,7 @@ CorrespondingType host_atomic_fetch_sub(volatile AtomicType *a, CorrespondingTyp
     else
     {
 #if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
-        return InterlockedExchangeSubtract((volatile cl_uint *)a, c);
+        return InterlockedExchangeSubtract(a, c);
 #elif defined(__GNUC__)
         return __sync_fetch_and_sub(a, c);
 #else
