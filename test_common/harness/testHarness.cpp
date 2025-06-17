@@ -1041,7 +1041,8 @@ cl_device_type GetDeviceType(cl_device_id d)
     return result;
 }
 
-
+// Should not return CL_DEVICE_TYPE_CUSTOM type device because these may not
+// support the necessary OpenCL API calls
 cl_device_id GetOpposingDevice(cl_device_id device)
 {
     cl_int error;
@@ -1087,8 +1088,10 @@ cl_device_id GetOpposingDevice(cl_device_id device)
                        // find another one
     }
 
-    // Loop and just find one that isn't the one we were given
+    // Loop and just find one that isn't the one we were given or of type
+    // CL_DEVICE_TYPE_CUSTOM
     cl_uint i;
+    cl_device_id result = device;
     for (i = 0; i < actualCount; i++)
     {
         if (otherDevices[i] != device)
@@ -1102,13 +1105,21 @@ cl_device_id GetOpposingDevice(cl_device_id device)
                             "Unable to get device type for other device");
                 return NULL;
             }
-            cl_device_id result = otherDevices[i];
+            if (newType & CL_DEVICE_TYPE_CUSTOM) {
+                // From spec a CL_DEVICE_TYPE_CUSTOM device is
+                // "Specialized devices that implement some of the OpenCL
+                // runtime APIs but do not support all of the required OpenCL
+                // functionality."
+                // We therefore cannot make assumption about what API calls
+                // will work with such devices.
+                continue;
+            }
+            result = otherDevices[i];
             return result;
         }
     }
 
-    // Should never get here
-    return NULL;
+    return result;
 }
 
 Version get_device_cl_version(cl_device_id device)
