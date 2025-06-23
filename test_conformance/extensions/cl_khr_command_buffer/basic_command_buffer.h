@@ -84,6 +84,49 @@ protected:
     clCommandBufferWrapper command_buffer;
 };
 
+// Test that CL_COMMAND_BUFFER_FLAGS_KHR bitfield is parsed correctly when
+// multiple flags are set.
+struct MultiFlagCreationTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+};
+
+// Test enqueuing a command-buffer containing a single NDRange command once
+struct BasicEnqueueTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+};
+
+// Test enqueuing a command-buffer containing multiple command, including
+// operations other than NDRange kernel execution.
+struct MixedCommandsTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+};
+
+// Test flushing the command-queue between command-buffer enqueues
+struct ExplicitFlushTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+    bool Skip() override;
+};
+
+// Test enqueueing a command-buffer twice separated by another enqueue operation
+struct InterleavedEnqueueTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+    bool Skip() override;
+};
 
 template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,
@@ -104,9 +147,9 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
         cl_version extension_version =
             get_extension_version(device, "cl_khr_command_buffer");
 
-        if (extension_version != CL_MAKE_VERSION(0, 9, 6))
+        if (extension_version != CL_MAKE_VERSION(0, 9, 7))
         {
-            log_info("cl_khr_command_buffer version 0.9.6 is required to run "
+            log_info("cl_khr_command_buffer version 0.9.7 is required to run "
                      "the test, skipping.\n ");
             return TEST_SKIPPED_ITSELF;
         }

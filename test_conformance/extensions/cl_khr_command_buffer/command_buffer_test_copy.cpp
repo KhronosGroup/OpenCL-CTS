@@ -16,7 +16,6 @@
 #include "basic_command_buffer.h"
 #include "svm_command_basic.h"
 #include "harness/typeWrappers.h"
-#include "procs.h"
 
 #include <vector>
 
@@ -563,42 +562,36 @@ struct CopyBufferRectKHR : public BasicCommandBufferTest
 };
 };
 
-int test_copy_image(cl_device_id device, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(copy_image)
 {
     return MakeAndRunTest<CopyImageKHR>(device, context, queue, num_elements);
 }
 
-int test_copy_buffer(cl_device_id device, cl_context context,
-                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(copy_buffer)
 {
     return MakeAndRunTest<CopyBufferKHR>(device, context, queue, num_elements);
 }
 
-int test_copy_svm_buffer(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(copy_svm_buffer)
 {
     return MakeAndRunTest<CopySVMBufferKHR>(device, context, queue,
                                             num_elements);
 }
 
 
-int test_copy_buffer_to_image(cl_device_id device, cl_context context,
-                              cl_command_queue queue, int num_elements)
+REGISTER_TEST(copy_buffer_to_image)
 {
     return MakeAndRunTest<CopyBufferToImageKHR>(device, context, queue,
                                                 num_elements);
 }
 
-int test_copy_image_to_buffer(cl_device_id device, cl_context context,
-                              cl_command_queue queue, int num_elements)
+REGISTER_TEST(copy_image_to_buffer)
 {
     return MakeAndRunTest<CopyImageToBufferKHR>(device, context, queue,
                                                 num_elements);
 }
 
-int test_copy_buffer_rect(cl_device_id device, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(copy_buffer_rect)
 {
     return MakeAndRunTest<CopyBufferRectKHR>(device, context, queue,
                                              num_elements);

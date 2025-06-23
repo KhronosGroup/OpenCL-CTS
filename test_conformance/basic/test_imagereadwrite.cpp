@@ -21,8 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 static unsigned char *
 generate_rgba8_image(int w, int h, MTdata d)
@@ -188,8 +187,7 @@ verify_rgbafp_image(float *image, float *outptr, int w, int h)
 }
 
 
-int
-test_imagereadwrite(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(imagereadwrite)
 {
     cl_image_format    img_format;
     unsigned char    *rgba8_inptr, *rgba8_outptr;
@@ -314,6 +312,12 @@ test_imagereadwrite(cl_device_id device, cl_context context, cl_command_queue qu
                 }
                 outp = (void *)rgbafp_outptr;
                 break;
+            default:
+                log_error("ERROR Invalid j = %d\n", j);
+                elem_size = 0;
+                p = nullptr;
+                outp = nullptr;
+                break;
         }
 
         const char* update_packed_pitch_name = "";
@@ -416,6 +420,3 @@ test_imagereadwrite(cl_device_id device, cl_context context, cl_command_queue qu
 
     return err;
 }
-
-
-

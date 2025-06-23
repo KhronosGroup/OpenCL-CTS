@@ -56,6 +56,7 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
     Force64BitFPUPrecision();
+    float double_ulps = getAllowedUlpError(f, kdouble, relaxedMode);
 
     // Init the kernels
     BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode,
@@ -143,25 +144,15 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_double);
             size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
-            if ((error = clSetKernelArg(kernels[j][thread_id], 0,
-                                        sizeof(gOutBuffer[j]), &gOutBuffer[j])))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
-            if ((error =
-                     clSetKernelArg(kernels[j][thread_id], 1,
-                                    sizeof(gOutBuffer2[j]), &gOutBuffer2[j])))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
-            if ((error = clSetKernelArg(kernels[j][thread_id], 2,
-                                        sizeof(gInBuffer), &gInBuffer)))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
+            error = clSetKernelArg(kernels[j][thread_id], 0,
+                                   sizeof(gOutBuffer[j]), &gOutBuffer[j]);
+            test_error(error, "Failed to set kernel argument");
+            error = clSetKernelArg(kernels[j][thread_id], 1,
+                                   sizeof(gOutBuffer2[j]), &gOutBuffer2[j]);
+            test_error(error, "Failed to set kernel argument");
+            error = clSetKernelArg(kernels[j][thread_id], 2, sizeof(gInBuffer),
+                                   &gInBuffer);
+            test_error(error, "Failed to set kernel argument");
 
             if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j][thread_id],
                                                 1, NULL, &localCount, NULL, 0,
@@ -224,15 +215,14 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
                     long double correct = f->dfunc.f_fpf(s[j], &correct2);
                     float err = Bruteforce_Ulp_Error_Double(test, correct);
                     float err2 = Bruteforce_Ulp_Error_Double(test2, correct2);
-                    int fail = !(fabsf(err) <= f->double_ulps
-                                 && fabsf(err2) <= f->double_ulps);
+                    int fail = !(fabsf(err) <= double_ulps
+                                 && fabsf(err2) <= double_ulps);
                     if (ftz || relaxedMode)
                     {
                         // retry per section 6.5.3.2
-                        if (IsDoubleResultSubnormal(correct, f->double_ulps))
+                        if (IsDoubleResultSubnormal(correct, double_ulps))
                         {
-                            if (IsDoubleResultSubnormal(correct2,
-                                                        f->double_ulps))
+                            if (IsDoubleResultSubnormal(correct2, double_ulps))
                             {
                                 fail = fail && !(test == 0.0f && test2 == 0.0f);
                                 if (!fail)
@@ -245,16 +235,15 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
                             {
                                 fail = fail
                                     && !(test == 0.0f
-                                         && fabsf(err2) <= f->double_ulps);
+                                         && fabsf(err2) <= double_ulps);
                                 if (!fail) err = 0.0f;
                             }
                         }
-                        else if (IsDoubleResultSubnormal(correct2,
-                                                         f->double_ulps))
+                        else if (IsDoubleResultSubnormal(correct2, double_ulps))
                         {
                             fail = fail
                                 && !(test2 == 0.0f
-                                     && fabsf(err) <= f->double_ulps);
+                                     && fabsf(err) <= double_ulps);
                             if (!fail) err2 = 0.0f;
                         }
 
@@ -275,26 +264,24 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
                             float err2n =
                                 Bruteforce_Ulp_Error_Double(test, correct2n);
                             fail = fail
-                                && ((!(fabsf(errp) <= f->double_ulps))
-                                    && (!(fabsf(err2p) <= f->double_ulps))
-                                    && ((!(fabsf(errn) <= f->double_ulps))
-                                        && (!(fabsf(err2n)
-                                              <= f->double_ulps))));
+                                && ((!(fabsf(errp) <= double_ulps))
+                                    && (!(fabsf(err2p) <= double_ulps))
+                                    && ((!(fabsf(errn) <= double_ulps))
+                                        && (!(fabsf(err2n) <= double_ulps))));
                             if (fabsf(errp) < fabsf(err)) err = errp;
                             if (fabsf(errn) < fabsf(err)) err = errn;
                             if (fabsf(err2p) < fabsf(err2)) err2 = err2p;
                             if (fabsf(err2n) < fabsf(err2)) err2 = err2n;
 
                             // retry per section 6.5.3.4
-                            if (IsDoubleResultSubnormal(correctp,
-                                                        f->double_ulps)
+                            if (IsDoubleResultSubnormal(correctp, double_ulps)
                                 || IsDoubleResultSubnormal(correctn,
-                                                           f->double_ulps))
+                                                           double_ulps))
                             {
                                 if (IsDoubleResultSubnormal(correct2p,
-                                                            f->double_ulps)
+                                                            double_ulps)
                                     || IsDoubleResultSubnormal(correct2n,
-                                                               f->double_ulps))
+                                                               double_ulps))
                                 {
                                     fail = fail
                                         && !(test == 0.0f && test2 == 0.0f);
@@ -304,18 +291,18 @@ int TestFunc_Double2_Double(const Func *f, MTdata d, bool relaxedMode)
                                 {
                                     fail = fail
                                         && !(test == 0.0f
-                                             && fabsf(err2) <= f->double_ulps);
+                                             && fabsf(err2) <= double_ulps);
                                     if (!fail) err = 0.0f;
                                 }
                             }
                             else if (IsDoubleResultSubnormal(correct2p,
-                                                             f->double_ulps)
+                                                             double_ulps)
                                      || IsDoubleResultSubnormal(correct2n,
-                                                                f->double_ulps))
+                                                                double_ulps))
                             {
                                 fail = fail
                                     && !(test2 == 0.0f
-                                         && (fabsf(err) <= f->double_ulps));
+                                         && (fabsf(err) <= double_ulps));
                                 if (!fail) err2 = 0.0f;
                             }
                         }

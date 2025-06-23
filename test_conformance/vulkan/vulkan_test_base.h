@@ -40,17 +40,8 @@ struct VulkanTestBase
                    cl_command_queue queue, cl_int nelems)
         : device(device), context(context), num_elems(nelems)
     {
-        vkDevice.reset(
-            new VulkanDevice(getAssociatedVulkanPhysicalDevice(device)));
-
-        if (!(is_extension_available(device, "cl_khr_external_memory")
-              && is_extension_available(device, "cl_khr_external_semaphore")))
-        {
-            log_info("Device does not support cl_khr_external_memory "
-                     "or cl_khr_external_semaphore\n");
-            log_info(" TEST SKIPPED\n");
-            throw std::runtime_error("VulkanTestBase not supported");
-        }
+        vkDevice.reset(new VulkanDevice(
+            getAssociatedVulkanPhysicalDevice(device, useValidationLayers)));
 
         cl_platform_id platform;
         cl_int error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
@@ -101,7 +92,16 @@ template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,
                    cl_command_queue queue, cl_int nelems)
 {
-    if (!checkVkSupport())
+    if (!(is_extension_available(device, "cl_khr_external_memory")
+          && is_extension_available(device, "cl_khr_external_semaphore")))
+    {
+        log_info("Device does not support cl_khr_external_memory "
+                 "or cl_khr_external_semaphore\n");
+        log_info(" TEST SKIPPED\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    if (!checkVkSupport(useValidationLayers))
     {
         log_info("Vulkan supported GPU not found \n");
         log_info("TEST SKIPPED \n");

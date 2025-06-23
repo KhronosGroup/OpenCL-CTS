@@ -31,7 +31,7 @@
 #include <string>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 extern cl_half_rounding_mode halfRoundingMode;
 
@@ -98,14 +98,20 @@ int verify_fp(std::vector<T> (&input)[2], std::vector<T> &output,
     auto &inB = input[1];
     for (size_t i = 0; i < output.size(); i++)
     {
-        bool nan_test = false;
-
         T r = test.ref(inA[i], inB[i]);
+        bool both_nan = false;
 
         if (std::is_same<T, cl_half>::value)
-            nan_test = !(isHalfNan(r) && isHalfNan(output[i]));
+        {
+            both_nan = isHalfNan(r) && isHalfNan(output[i]);
+        }
+        else if (std::is_floating_point<T>::value)
+        {
+            both_nan = std::isnan(r) && std::isnan(output[i]);
+        }
 
-        if (r != output[i] && nan_test)
+        // If not both nan, check if the result is the same
+        if (!both_nan && (r != output[i]))
         {
             log_error("FP math test for type: %s, vec size: %zu, failed at "
                       "index %zu, %a '%c' %a, expected %a, get %a\n",
@@ -374,8 +380,7 @@ protected:
 
 } // anonymous namespace
 
-int test_fpmath(cl_device_id device, cl_context context, cl_command_queue queue,
-                int num_elements)
+REGISTER_TEST(fpmath)
 {
     try
     {

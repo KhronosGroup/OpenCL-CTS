@@ -76,15 +76,13 @@ struct RetainInvalidSemaphore : public SemaphoreTestBase
 
 }
 
-int test_semaphores_negative_release(cl_device_id device, cl_context context,
-                                     cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_release, Version(1, 2))
 {
     return MakeAndRunTest<ReleaseInvalidSemaphore>(device, context, queue,
                                                    num_elements);
 }
 
-int test_semaphores_negative_retain(cl_device_id device, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_retain, Version(1, 2))
 {
     return MakeAndRunTest<RetainInvalidSemaphore>(device, context, queue,
                                                   num_elements);

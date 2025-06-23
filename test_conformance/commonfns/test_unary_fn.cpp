@@ -65,10 +65,6 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
     {
         r = (180.0 / M_PI) * conv_to_dbl(inptr[i]);
 
-        if (std::is_same<T, half>::value)
-            if (!isfinite_fp(conv_to_half(r)) && !isfinite_fp(outptr[i]))
-                continue;
-
         error = UlpFn(outptr[i], r);
 
         if (fabsf(error) > max_error)
@@ -114,10 +110,6 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
     for (int i = 0, j = 0; i < n; i++, j++)
     {
         r = (M_PI / 180.0) * conv_to_dbl(inptr[i]);
-
-        if (std::is_same<T, half>::value)
-            if (!isfinite_fp(conv_to_half(r)) && !isfinite_fp(outptr[i]))
-                continue;
 
         error = UlpFn(outptr[i], r);
 

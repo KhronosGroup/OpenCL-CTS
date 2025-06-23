@@ -56,7 +56,9 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
     int ftz = f->ftz || gForceFTZ;
     double maxErrorVal = 0.0f;
     double maxErrorVal2 = 0.0f;
-    cl_ulong maxiError = f->double_ulps == INFINITY ? CL_ULONG_MAX : 0;
+    cl_ulong maxiError = getAllowedUlpError(f, kdouble, relaxedMode) == INFINITY
+        ? CL_ULONG_MAX
+        : 0;
     uint64_t step = getTestStep(sizeof(cl_double), BUFFER_SIZE);
     int scale =
         (int)((1ULL << 32) / (16 * BUFFER_SIZE / sizeof(cl_double)) + 1);
@@ -64,6 +66,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
     Force64BitFPUPrecision();
+    float double_ulps = getAllowedUlpError(f, kdouble, relaxedMode);
 
     // Init the kernels
     BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode,
@@ -151,25 +154,15 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_double);
             size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
-            if ((error = clSetKernelArg(kernels[j][thread_id], 0,
-                                        sizeof(gOutBuffer[j]), &gOutBuffer[j])))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
-            if ((error =
-                     clSetKernelArg(kernels[j][thread_id], 1,
-                                    sizeof(gOutBuffer2[j]), &gOutBuffer2[j])))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
-            if ((error = clSetKernelArg(kernels[j][thread_id], 2,
-                                        sizeof(gInBuffer), &gInBuffer)))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
+            error = clSetKernelArg(kernels[j][thread_id], 0,
+                                   sizeof(gOutBuffer[j]), &gOutBuffer[j]);
+            test_error(error, "Failed to set kernel argument");
+            error = clSetKernelArg(kernels[j][thread_id], 1,
+                                   sizeof(gOutBuffer2[j]), &gOutBuffer2[j]);
+            test_error(error, "Failed to set kernel argument");
+            error = clSetKernelArg(kernels[j][thread_id], 2, sizeof(gInBuffer),
+                                   &gInBuffer);
+            test_error(error, "Failed to set kernel argument");
 
             if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j][thread_id],
                                                 1, NULL, &localCount, NULL, 0,
@@ -227,12 +220,12 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
                     long double correct = f->dfunc.f_fpI(s[j], &correct2);
                     float err = Bruteforce_Ulp_Error_Double(test, correct);
                     cl_long iErr = (long long)q2[j] - (long long)correct2;
-                    int fail = !(fabsf(err) <= f->double_ulps
+                    int fail = !(fabsf(err) <= double_ulps
                                  && abs_cl_long(iErr) <= maxiError);
                     if (ftz || relaxedMode)
                     {
                         // retry per section 6.5.3.2
-                        if (IsDoubleResultSubnormal(correct, f->double_ulps))
+                        if (IsDoubleResultSubnormal(correct, double_ulps))
                         {
                             fail = fail && !(test == 0.0f && iErr == 0);
                             if (!fail) err = 0.0f;
@@ -256,7 +249,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
                                 (long long)q2[j] - (long long)correct6;
 
                             // Did +0 work?
-                            if (fabsf(err2) <= f->double_ulps
+                            if (fabsf(err2) <= double_ulps
                                 && abs_cl_long(iErr2) <= maxiError)
                             {
                                 err = err2;
@@ -264,7 +257,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
                                 fail = 0;
                             }
                             // Did -0 work?
-                            else if (fabsf(err3) <= f->double_ulps
+                            else if (fabsf(err3) <= double_ulps
                                      && abs_cl_long(iErr3) <= maxiError)
                             {
                                 err = err3;
@@ -275,9 +268,9 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
                             // retry per section 6.5.3.4
                             if (fail
                                 && (IsDoubleResultSubnormal(correct2,
-                                                            f->double_ulps)
+                                                            double_ulps)
                                     || IsDoubleResultSubnormal(correct3,
-                                                               f->double_ulps)))
+                                                               double_ulps)))
                             {
                                 fail = fail
                                     && !(test == 0.0f

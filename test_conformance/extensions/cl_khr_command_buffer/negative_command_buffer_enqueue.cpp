@@ -14,8 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
-
 
 //--------------------------------------------------------------------------
 namespace {
@@ -293,63 +291,6 @@ struct EnqueueCommandBufferNotValidQueueInQueues : public BasicCommandBufferTest
     }
 };
 
-// CL_INCOMPATIBLE_COMMAND_QUEUE_KHR if any element of queues is not compatible
-// with the command-queue set on command_buffer creation at the same list index.
-struct EnqueueCommandBufferQueueNotCompatible : public BasicCommandBufferTest
-{
-    EnqueueCommandBufferQueueNotCompatible(cl_device_id device,
-                                           cl_context context,
-                                           cl_command_queue queue)
-        : BasicCommandBufferTest(device, context, queue),
-          queue_not_compatible(nullptr)
-    {}
-
-    cl_int Run() override
-    {
-        cl_int error = clFinalizeCommandBufferKHR(command_buffer);
-        test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        error = clEnqueueCommandBufferKHR(1, &queue_not_compatible,
-                                          command_buffer, 0, nullptr, nullptr);
-
-        test_failure_error_ret(error, CL_INCOMPATIBLE_COMMAND_QUEUE_KHR,
-                               "clEnqueueCommandBufferKHR should return "
-                               "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR",
-                               TEST_FAIL);
-
-        return CL_SUCCESS;
-    }
-
-    cl_int SetUp(int elements) override
-    {
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        queue_not_compatible = clCreateCommandQueue(
-            context, device, CL_QUEUE_PROFILING_ENABLE, &error);
-        test_error(error, "clCreateCommandQueue failed");
-
-        cl_command_queue_properties queue_properties;
-        error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES,
-                                      sizeof(queue_properties),
-                                      &queue_properties, NULL);
-        test_error(error, "Unable to query CL_QUEUE_PROPERTIES");
-
-        cl_command_queue_properties queue_not_compatible_properties;
-        error = clGetCommandQueueInfo(queue_not_compatible, CL_QUEUE_PROPERTIES,
-                                      sizeof(queue_not_compatible_properties),
-                                      &queue_not_compatible_properties, NULL);
-        test_error(error, "Unable to query CL_QUEUE_PROPERTIES");
-
-        test_assert_error(queue_properties != queue_not_compatible_properties,
-                          "Queues properties must be different");
-
-        return CL_SUCCESS;
-    }
-
-    clCommandQueueWrapper queue_not_compatible;
-};
-
 // CL_INVALID_CONTEXT if any element of queues does not have the same context as
 // the command-queue set on command_buffer creation at the same list index.
 struct EnqueueCommandBufferQueueWithDifferentContext
@@ -491,89 +432,259 @@ struct EnqueueCommandBufferEventWaitListNullOrEventsNull
         return CL_SUCCESS;
     }
 };
+
+// CL_INCOMPATIBLE_COMMAND_QUEUE_KHR if the properties of any command-queue in
+// queues does not contain the minimum properties specified by
+// CL_DEVICE_COMMAND_BUFFER_REQUIRED_QUEUE_PROPERTIES_KHR.
+struct EnqueueCommandBufferQueueWithoutReqdProperties
+    : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override
+    {
+        cl_int error = clFinalizeCommandBufferKHR(command_buffer);
+        test_error(error, "clFinalizeCommandBufferKHR failed");
+
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_failure_error_ret(error, CL_INCOMPATIBLE_COMMAND_QUEUE_KHR,
+                               "clEnqueueCommandBufferKHR should return "
+                               "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR",
+                               TEST_FAIL);
+
+        error = clEnqueueCommandBufferKHR(1, &queue, command_buffer, 0, nullptr,
+                                          nullptr);
+        test_failure_error_ret(error, CL_INCOMPATIBLE_COMMAND_QUEUE_KHR,
+                               "clEnqueueCommandBufferKHR should return "
+                               "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR",
+                               TEST_FAIL);
+
+        return CL_SUCCESS;
+    }
+
+    bool Skip() override
+    {
+        // Omit BasicCommandBufferTest::Skip() here because it skips
+        // if we don't have required properties, which is what we want to
+        // test an error for.
+
+        cl_command_queue_properties required_properties;
+        cl_int error = clGetDeviceInfo(
+            device, CL_DEVICE_COMMAND_BUFFER_REQUIRED_QUEUE_PROPERTIES_KHR,
+            sizeof(required_properties), &required_properties, NULL);
+        test_error(error,
+                   "Unable to query "
+                   "CL_DEVICE_COMMAND_BUFFER_REQUIRED_QUEUE_PROPERTIES_KHR");
+
+        cl_command_queue_properties queue_properties;
+        error = clGetCommandQueueInfo(queue, CL_QUEUE_PROPERTIES,
+                                      sizeof(queue_properties),
+                                      &queue_properties, NULL);
+        test_error(error, "Unable to query CL_QUEUE_PROPERTIES");
+
+        // Skip if queue properties contains those required
+        return required_properties == (required_properties & queue_properties);
+    }
 };
 
-int test_negative_enqueue_command_buffer_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+// CL_INCOMPATIBLE_COMMAND_QUEUE_KHR if any command-queue in queues is an
+// out-of-order command-queue and the device associated with the command-queue
+// does not return CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE from
+// CL_DEVICE_COMMAND_BUFFER_SUPPORTED_QUEUE_PROPERTIES_KHR
+struct EnqueueCommandBufferWithUnsupportedQueueProperty
+    : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override
+    {
+        cl_int error = clFinalizeCommandBufferKHR(command_buffer);
+        test_error(error, "clFinalizeCommandBufferKHR failed");
+
+        error = clEnqueueCommandBufferKHR(1, &out_of_order_queue,
+                                          command_buffer, 0, nullptr, nullptr);
+        test_failure_error_ret(error, CL_INCOMPATIBLE_COMMAND_QUEUE_KHR,
+                               "clEnqueueCommandBufferKHR should return "
+                               "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR",
+                               TEST_FAIL);
+        return CL_SUCCESS;
+    }
+
+    cl_int SetUp(int elements) override
+    {
+        cl_int error = BasicCommandBufferTest::SetUp(elements);
+        test_error(error, "BasicCommandBufferTest::SetUp failed");
+
+        out_of_order_queue = clCreateCommandQueue(
+            context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &error);
+        test_error(error,
+                   "clCreateCommandQueue with "
+                   "CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE failed");
+
+        return CL_SUCCESS;
+    }
+
+    bool Skip() override
+    {
+        if (BasicCommandBufferTest::Skip()) return true;
+
+        // If device does not support out of order queue or if device supports
+        // out of order command buffer test should be skipped
+        return !queue_out_of_order_support || out_of_order_support;
+    }
+
+    clCommandQueueWrapper out_of_order_queue = nullptr;
+};
+
+// CL_INVALID_DEVICE if any element of queues does not have the same device
+// as the command-queue set on command_buffer creation at the
+// same list index.
+struct EnqueueCommandBufferInconsistentDevice : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override
+    {
+        cl_int error = clFinalizeCommandBufferKHR(command_buffer);
+        test_error(error, "clFinalizeCommandBufferKHR failed");
+
+        error = clEnqueueCommandBufferKHR(1, &second_device_queue,
+                                          command_buffer, 0, nullptr, nullptr);
+        test_failure_error_ret(error, CL_INCOMPATIBLE_COMMAND_QUEUE_KHR,
+                               "clEnqueueCommandBufferKHR should return "
+                               "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR",
+                               TEST_FAIL);
+        return CL_SUCCESS;
+    }
+
+    cl_int SetUp(int elements) override
+    {
+        cl_int error = BasicCommandBufferTest::SetUp(elements);
+        test_error(error, "BasicCommandBufferTest::SetUp failed");
+
+        cl_device_id second_device = nullptr;
+        for (auto query_device : devices)
+        {
+            if (query_device != device)
+            {
+                second_device = query_device;
+                break;
+            }
+        }
+
+        test_assert_error(second_device != nullptr,
+                          "Second device not found for testing");
+
+        second_device_queue =
+            clCreateCommandQueue(context, second_device, 0, &error);
+        test_error(error, "clCreateCommandQueue failed");
+
+        return CL_SUCCESS;
+    }
+
+    bool Skip() override
+    {
+        if (BasicCommandBufferTest::Skip()) return true;
+
+        size_t context_devices_size;
+        cl_int error = clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, NULL,
+                                        &context_devices_size);
+        test_error(error, "clGetContextInfo failed");
+
+        size_t num_devices = context_devices_size / sizeof(cl_device_id);
+
+        if (num_devices < 2)
+        {
+            // We need a second device for test
+            return true;
+        }
+
+        devices.resize(num_devices);
+        error = clGetContextInfo(context, CL_CONTEXT_DEVICES, num_devices,
+                                 devices.data(), nullptr);
+        test_error(error, "clGetContextInfo failed");
+
+        return false;
+    }
+
+    std::vector<cl_device_id> devices;
+    clCommandQueueWrapper second_device_queue = nullptr;
+};
+};
+
+REGISTER_TEST(negative_enqueue_command_buffer_invalid_command_buffer)
 {
     return MakeAndRunTest<EnqueueCommandBufferInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_command_buffer_not_finalized(cl_device_id device,
-                                                       cl_context context,
-                                                       cl_command_queue queue,
-                                                       int num_elements)
+REGISTER_TEST(negative_enqueue_command_buffer_not_finalized)
 {
     return MakeAndRunTest<EnqueueCommandBufferNotFinalized>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_command_buffer_without_simultaneous_no_pending_state(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_enqueue_command_buffer_without_simultaneous_no_pending_state)
 {
     return MakeAndRunTest<
         EnqueueCommandBufferWithoutSimultaneousUseNotInPendingState>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_command_buffer_null_queues_num_queues(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_enqueue_command_buffer_null_queues_num_queues)
 {
     return MakeAndRunTest<EnqueueCommandBufferNullQueuesNumQueues>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_command_buffer_num_queues_not_zero_different_while_buffer_creation(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_enqueue_command_buffer_num_queues_not_zero_different_while_buffer_creation)
 {
     return MakeAndRunTest<
         EnqueueCommandBufferNumQueuesNotZeroAndDifferentThanWhileBufferCreation>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_command_buffer_not_valid_queue_in_queues(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_enqueue_command_buffer_not_valid_queue_in_queues)
 {
     return MakeAndRunTest<EnqueueCommandBufferNotValidQueueInQueues>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_queue_not_compatible(cl_device_id device,
-                                               cl_context context,
-                                               cl_command_queue queue,
-                                               int num_elements)
-{
-    return MakeAndRunTest<EnqueueCommandBufferQueueNotCompatible>(
-        device, context, queue, num_elements);
-}
-
-int test_negative_enqueue_queue_with_different_context(cl_device_id device,
-                                                       cl_context context,
-                                                       cl_command_queue queue,
-                                                       int num_elements)
+REGISTER_TEST(negative_enqueue_queue_with_different_context)
 {
     return MakeAndRunTest<EnqueueCommandBufferQueueWithDifferentContext>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_command_buffer_different_context_than_event(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_enqueue_command_buffer_different_context_than_event)
 {
     return MakeAndRunTest<EnqueueCommandBufferWithDiferentContextThanEvent>(
         device, context, queue, num_elements);
 }
 
-int test_negative_enqueue_event_wait_list_null_or_events_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_enqueue_event_wait_list_null_or_events_null)
 {
     return MakeAndRunTest<EnqueueCommandBufferEventWaitListNullOrEventsNull>(
+        device, context, queue, num_elements);
+}
+
+REGISTER_TEST(negative_enqueue_queue_without_reqd_properties)
+{
+    return MakeAndRunTest<EnqueueCommandBufferQueueWithoutReqdProperties>(
+        device, context, queue, num_elements);
+}
+
+REGISTER_TEST(negative_enqueue_with_unsupported_queue_property)
+{
+    return MakeAndRunTest<EnqueueCommandBufferWithUnsupportedQueueProperty>(
+        device, context, queue, num_elements);
+}
+
+REGISTER_TEST(negative_enqueue_inconsistent_device)
+{
+    return MakeAndRunTest<EnqueueCommandBufferInconsistentDevice>(
         device, context, queue, num_elements);
 }

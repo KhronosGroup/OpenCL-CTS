@@ -154,7 +154,7 @@ static int doTest(const char *name)
         exit(EXIT_FAILURE);
     }
 
-    if (func_data->func.p == NULL)
+    if (func_data->func.p == NULL && func_data->rfunc.p == NULL)
     {
         vlog("'%s' is missing implementation, skipping function.\n",
              func_data->name);
@@ -263,61 +263,113 @@ static int doTest(const char *name)
     return error;
 }
 
+#define DO_TEST(name)                                                          \
+    REGISTER_TEST_VERSION(name, Version(1, 0)) { return doTest(#name); }
 
-#define TEST_LAMBDA(name)                                                      \
-    [](cl_device_id, cl_context, cl_command_queue, int) {                      \
-        return doTest(#name);                                                  \
-    }
-
-// Redefine ADD_TEST to use TEST_LAMBDA.
-#undef ADD_TEST
-#define ADD_TEST(name)                                                         \
-    {                                                                          \
-        TEST_LAMBDA(name), #name, Version(1, 0)                                \
-    }
-
-static test_definition test_list[] = {
-    ADD_TEST(acos),          ADD_TEST(acosh),     ADD_TEST(acospi),
-    ADD_TEST(asin),          ADD_TEST(asinh),     ADD_TEST(asinpi),
-    ADD_TEST(atan),          ADD_TEST(atanh),     ADD_TEST(atanpi),
-    ADD_TEST(atan2),         ADD_TEST(atan2pi),   ADD_TEST(cbrt),
-    ADD_TEST(ceil),          ADD_TEST(copysign),  ADD_TEST(cos),
-    ADD_TEST(cosh),          ADD_TEST(cospi),     ADD_TEST(exp),
-    ADD_TEST(exp2),          ADD_TEST(exp10),     ADD_TEST(expm1),
-    ADD_TEST(fabs),          ADD_TEST(fdim),      ADD_TEST(floor),
-    ADD_TEST(fma),           ADD_TEST(fmax),      ADD_TEST(fmin),
-    ADD_TEST(fmod),          ADD_TEST(fract),     ADD_TEST(frexp),
-    ADD_TEST(hypot),         ADD_TEST(ilogb),     ADD_TEST(isequal),
-    ADD_TEST(isfinite),      ADD_TEST(isgreater), ADD_TEST(isgreaterequal),
-    ADD_TEST(isinf),         ADD_TEST(isless),    ADD_TEST(islessequal),
-    ADD_TEST(islessgreater), ADD_TEST(isnan),     ADD_TEST(isnormal),
-    ADD_TEST(isnotequal),    ADD_TEST(isordered), ADD_TEST(isunordered),
-    ADD_TEST(ldexp),         ADD_TEST(lgamma),    ADD_TEST(lgamma_r),
-    ADD_TEST(log),           ADD_TEST(log2),      ADD_TEST(log10),
-    ADD_TEST(log1p),         ADD_TEST(logb),      ADD_TEST(mad),
-    ADD_TEST(maxmag),        ADD_TEST(minmag),    ADD_TEST(modf),
-    ADD_TEST(nan),           ADD_TEST(nextafter), ADD_TEST(pow),
-    ADD_TEST(pown),          ADD_TEST(powr),      ADD_TEST(remainder),
-    ADD_TEST(remquo),        ADD_TEST(rint),      ADD_TEST(rootn),
-    ADD_TEST(round),         ADD_TEST(rsqrt),     ADD_TEST(signbit),
-    ADD_TEST(sin),           ADD_TEST(sincos),    ADD_TEST(sinh),
-    ADD_TEST(sinpi),         ADD_TEST(sqrt),      ADD_TEST(sqrt_cr),
-    ADD_TEST(tan),           ADD_TEST(tanh),      ADD_TEST(tanpi),
-    ADD_TEST(tgamma),        ADD_TEST(trunc),     ADD_TEST(half_cos),
-    ADD_TEST(half_divide),   ADD_TEST(half_exp),  ADD_TEST(half_exp2),
-    ADD_TEST(half_exp10),    ADD_TEST(half_log),  ADD_TEST(half_log2),
-    ADD_TEST(half_log10),    ADD_TEST(half_powr), ADD_TEST(half_recip),
-    ADD_TEST(half_rsqrt),    ADD_TEST(half_sin),  ADD_TEST(half_sqrt),
-    ADD_TEST(half_tan),      ADD_TEST(add),       ADD_TEST(subtract),
-    ADD_TEST(divide),        ADD_TEST(divide_cr), ADD_TEST(multiply),
-    ADD_TEST(assignment),    ADD_TEST(not ),      ADD_TEST(erf),
-    ADD_TEST(erfc),
-};
-
-#undef ADD_TEST
-#undef TEST_LAMBDA
-
-static const int test_num = ARRAY_SIZE(test_list);
+DO_TEST(acos)
+DO_TEST(acosh)
+DO_TEST(acospi)
+DO_TEST(asin)
+DO_TEST(asinh)
+DO_TEST(asinpi)
+DO_TEST(atan)
+DO_TEST(atanh)
+DO_TEST(atanpi)
+DO_TEST(atan2)
+DO_TEST(atan2pi)
+DO_TEST(cbrt)
+DO_TEST(ceil)
+DO_TEST(copysign)
+DO_TEST(cos)
+DO_TEST(cosh)
+DO_TEST(cospi)
+DO_TEST(exp)
+DO_TEST(exp2)
+DO_TEST(exp10)
+DO_TEST(expm1)
+DO_TEST(fabs)
+DO_TEST(fdim)
+DO_TEST(floor)
+DO_TEST(fma)
+DO_TEST(fmax)
+DO_TEST(fmin)
+DO_TEST(fmod)
+DO_TEST(fract)
+DO_TEST(frexp)
+DO_TEST(hypot)
+DO_TEST(ilogb)
+DO_TEST(isequal)
+DO_TEST(isfinite)
+DO_TEST(isgreater)
+DO_TEST(isgreaterequal)
+DO_TEST(isinf)
+DO_TEST(isless)
+DO_TEST(islessequal)
+DO_TEST(islessgreater)
+DO_TEST(isnan)
+DO_TEST(isnormal)
+DO_TEST(isnotequal)
+DO_TEST(isordered)
+DO_TEST(isunordered)
+DO_TEST(ldexp)
+DO_TEST(lgamma)
+DO_TEST(lgamma_r)
+DO_TEST(log)
+DO_TEST(log2)
+DO_TEST(log10)
+DO_TEST(log1p)
+DO_TEST(logb)
+DO_TEST(mad)
+DO_TEST(maxmag)
+DO_TEST(minmag)
+DO_TEST(modf)
+DO_TEST(nan)
+DO_TEST(nextafter)
+DO_TEST(pow)
+DO_TEST(pown)
+DO_TEST(powr)
+DO_TEST(remainder)
+DO_TEST(remquo)
+DO_TEST(rint)
+DO_TEST(rootn)
+DO_TEST(round)
+DO_TEST(rsqrt)
+DO_TEST(signbit)
+DO_TEST(sin)
+DO_TEST(sincos)
+DO_TEST(sinh)
+DO_TEST(sinpi)
+DO_TEST(sqrt)
+DO_TEST(sqrt_cr)
+DO_TEST(tan)
+DO_TEST(tanh)
+DO_TEST(tanpi)
+DO_TEST(tgamma)
+DO_TEST(trunc)
+DO_TEST(half_cos)
+DO_TEST(half_divide)
+DO_TEST(half_exp)
+DO_TEST(half_exp2)
+DO_TEST(half_exp10)
+DO_TEST(half_log)
+DO_TEST(half_log2)
+DO_TEST(half_log10)
+DO_TEST(half_powr)
+DO_TEST(half_recip)
+DO_TEST(half_rsqrt)
+DO_TEST(half_sin)
+DO_TEST(half_sqrt)
+DO_TEST(half_tan)
+DO_TEST(add)
+DO_TEST(subtract)
+DO_TEST(reciprocal)
+DO_TEST(divide)
+DO_TEST(divide_cr)
+DO_TEST(multiply)
+DO_TEST(assignment)
+DO_TEST(not )
+DO_TEST(erf)
+DO_TEST(erfc)
 
 #pragma mark -
 
@@ -355,8 +407,10 @@ int main(int argc, const char *argv[])
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 
-    int ret = runTestHarnessWithCheck(gTestNames.size(), gTestNames.data(),
-                                      test_num, test_list, true, 0, InitCL);
+    int ret = runTestHarnessWithCheck(
+        gTestNames.size(), gTestNames.data(),
+        test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), true, 0, InitCL);
 
     RestoreFPState(&oldMode);
 
@@ -979,19 +1033,6 @@ static void ReleaseCL(void)
         align_free(gOut[i]);
         align_free(gOut2[i]);
     }
-}
-
-void _LogBuildError(cl_program p, int line, const char *file)
-{
-    char the_log[2048] = "";
-
-    vlog_error("%s:%d: Build Log:\n", file, line);
-    if (0
-        == clGetProgramBuildInfo(p, gDevice, CL_PROGRAM_BUILD_LOG,
-                                 sizeof(the_log), the_log, NULL))
-        vlog_error("%s", the_log);
-    else
-        vlog_error("*** Error getting build log for program %p\n", p);
 }
 
 int InitILogbConstants(void)

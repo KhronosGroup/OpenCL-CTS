@@ -233,16 +233,13 @@ struct DeviceInfoTest : public VulkanTestBase
 
 } // anonymous namespace
 
-int test_platform_info(cl_device_id deviceID, cl_context context,
-                       cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST(test_platform_info)
 {
-    return MakeAndRunTest<PlatformInfoTest>(deviceID, context, defaultQueue,
+    return MakeAndRunTest<PlatformInfoTest>(device, context, queue,
                                             num_elements);
 }
 
-int test_device_info(cl_device_id deviceID, cl_context context,
-                     cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST(test_device_info)
 {
-    return MakeAndRunTest<DeviceInfoTest>(deviceID, context, defaultQueue,
-                                          num_elements);
+    return MakeAndRunTest<DeviceInfoTest>(device, context, queue, num_elements);
 }

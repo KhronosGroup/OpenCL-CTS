@@ -92,8 +92,7 @@ char appName[64] = "ctest";
 int gMultithread = 1;
 
 
-int test_conversions(cl_device_id device, cl_context context,
-                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(conversions)
 {
     if (argCount)
     {
@@ -106,13 +105,6 @@ int test_conversions(cl_device_id device, cl_context context,
                                                num_elements);
     }
 }
-
-
-test_definition test_list[] = {
-    ADD_TEST(conversions),
-};
-
-const int test_num = ARRAY_SIZE(test_list);
 
 
 int main(int argc, const char **argv)
@@ -148,8 +140,9 @@ int main(int argc, const char **argv)
     gMTdata = init_genrand(gRandomSeed);
 
     const char *arg[] = { argv[0] };
-    int ret =
-        runTestHarnessWithCheck(1, arg, test_num, test_list, true, 0, InitCL);
+    int ret = runTestHarnessWithCheck(
+        1, arg, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), true, 0, InitCL);
 
     free_mtdata(gMTdata);
     if (gQueue)
@@ -182,11 +175,12 @@ static int ParseArgs(int argc, const char **argv)
 #if (defined(__APPLE__) || defined(__linux__) || defined(__MINGW32__))
     { // Extract the app name
         char baseName[MAXPATHLEN];
-        strncpy(baseName, argv[0], MAXPATHLEN);
+        strncpy(baseName, argv[0], MAXPATHLEN - 1);
+        baseName[sizeof(baseName) - 1] = '\0';
         char *base = basename(baseName);
         if (NULL != base)
         {
-            strncpy(appName, base, sizeof(appName));
+            strncpy(appName, base, sizeof(appName) - 1);
             appName[sizeof(appName) - 1] = '\0';
         }
     }
@@ -200,7 +194,7 @@ static int ParseArgs(int argc, const char **argv)
         if (err == 0)
         { // no error
             strcat(fname, ext); // just cat them, size of frame can keep both
-            strncpy(appName, fname, sizeof(appName));
+            strncpy(appName, fname, sizeof(appName) - 1);
             appName[sizeof(appName) - 1] = '\0';
         }
     }
@@ -232,8 +226,6 @@ static int ParseArgs(int argc, const char **argv)
                         gForceFTZ ^= 1;
                         gForceHalfFTZ ^= 1;
                         break;
-                    case 't': gTimeResults ^= 1; break;
-                    case 'a': gReportAverageTimes ^= 1; break;
                     case '1':
                         if (arg[1] == '6')
                         {

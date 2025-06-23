@@ -187,31 +187,18 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             size_t vectorSize = sizeof(cl_float) * sizeValues[j];
             size_t localCount = (BUFFER_SIZE + vectorSize - 1)
                 / vectorSize; // BUFFER_SIZE / vectorSize  rounded up
-            if ((error = clSetKernelArg(kernels[j][thread_id], 0,
-                                        sizeof(gOutBuffer[j]), &gOutBuffer[j])))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
-            if ((error =
-                     clSetKernelArg(kernels[j][thread_id], 1,
-                                    sizeof(gOutBuffer2[j]), &gOutBuffer2[j])))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
-            if ((error = clSetKernelArg(kernels[j][thread_id], 2,
-                                        sizeof(gInBuffer), &gInBuffer)))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
-            if ((error = clSetKernelArg(kernels[j][thread_id], 3,
-                                        sizeof(gInBuffer2), &gInBuffer2)))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
+            error = clSetKernelArg(kernels[j][thread_id], 0,
+                                   sizeof(gOutBuffer[j]), &gOutBuffer[j]);
+            test_error(error, "Failed to set kernel argument");
+            error = clSetKernelArg(kernels[j][thread_id], 1,
+                                   sizeof(gOutBuffer2[j]), &gOutBuffer2[j]);
+            test_error(error, "Failed to set kernel argument");
+            error = clSetKernelArg(kernels[j][thread_id], 2, sizeof(gInBuffer),
+                                   &gInBuffer);
+            test_error(error, "Failed to set kernel argument");
+            error = clSetKernelArg(kernels[j][thread_id], 3, sizeof(gInBuffer2),
+                                   &gInBuffer2);
+            test_error(error, "Failed to set kernel argument");
 
             if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j][thread_id],
                                                 1, NULL, &localCount, NULL, 0,

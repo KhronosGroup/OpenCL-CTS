@@ -20,6 +20,7 @@
 
 extern int gTypesToTest;
 extern int gtestTypesToRun;
+extern int gNormalizedModeToUse;
 extern bool gTestImage2DFromBuffer;
 extern cl_mem_flags gMemFlagsToUse;
 
@@ -38,16 +39,20 @@ static int test_image_set(cl_device_id device, cl_context context,
     log_info("---- Supported %s %s formats for this device for "
              "cl_ext_image_raw10_raw12---- \n",
              convert_image_type_to_string(imageType), "read");
-    log_info("  %-7s %-24s %d\n", "CL_R", "CL_UNSIGNED_INT_RAW10_EXT", 0);
-    log_info("  %-7s %-24s %d\n", "CL_R", "CL_UNSIGNED_INT_RAW12_EXT", 0);
+    log_info("  %-7s %-24s %d\n", "CL_R", "CL_UNSIGNED_INT_RAW10_EXT", 1);
+    log_info("  %-7s %-24s %d\n", "CL_R", "CL_UNSIGNED_INT_RAW12_EXT", 1);
     log_info("------------------------------------------- \n");
 
     image_sampler_data imageSampler;
     ImageTestTypes test{ kTestUInt, kUInt, uintFormats, "uint" };
+
     if (gTypesToTest & test.type)
     {
         std::vector<bool> filterFlags(formatList.size(), false);
         imageSampler.filter_mode = CL_FILTER_NEAREST;
+        // `CL_UNSIGNED_INT_RAW10_EXT` and `CL_UNSIGNED_INT_RAW12_EXT` image
+        // channel data types are unnormalised
+        imageSampler.normalized_coords = false;
         ret = test_read_image_formats(device, context, queue, formatList,
                                       filterFlags, &imageSampler,
                                       test.explicitType, imageType);
@@ -60,19 +65,34 @@ int ext_image_raw10_raw12(cl_device_id device, cl_context context,
 {
     int ret = 0;
 
-    if (0 == is_extension_available(device, "cl_ext_image_raw10_raw12"))
+    if (true != gNormalizedModeToUse)
     {
-        log_info("-----------------------------------------------------\n");
-        log_info("This device does not support "
-                 "cl_ext_image_raw10_raw12.\n");
-        log_info("Skipping cl_ext_image_raw10_raw12 "
-                 "image test.\n");
-        log_info("-----------------------------------------------------\n\n");
-        return 0;
+        if (0 == is_extension_available(device, "cl_ext_image_raw10_raw12"))
+        {
+            log_info("-----------------------------------------------------\n");
+            log_info("This device does not support "
+                     "cl_ext_image_raw10_raw12.\n");
+            log_info("Skipping cl_ext_image_raw10_raw12 "
+                     "image test.\n");
+            log_info(
+                "-----------------------------------------------------\n\n");
+            ret = TEST_SKIPPED_ITSELF;
+        }
+        else
+        {
+            gtestTypesToRun = kReadTests;
+            ret +=
+                test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE2D);
+        }
     }
-    gtestTypesToRun = kReadTests;
-
-    ret += test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE2D);
+    else
+    {
+        // skip the test if it is forced to be NORMALIZED from the command line
+        // argument i.e. gNormalizedModeToUse is true
+        log_info("cl_ext_image_raw10_raw12 does not support normalized channel "
+                 "components. Skipping the test.\n");
+        ret = TEST_SKIPPED_ITSELF;
+    }
 
     return ret;
 }

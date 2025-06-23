@@ -99,10 +99,9 @@ static bool get_uuid(const cl_device_id device, const cl_device_info info,
     return true;
 }
 
-int test_device_uuid(cl_device_id deviceID, cl_context context,
-                     cl_command_queue ignoreQueue, int num_elements)
+REGISTER_TEST(device_uuid)
 {
-    if (!is_extension_available(deviceID, "cl_khr_device_uuid"))
+    if (!is_extension_available(device, "cl_khr_device_uuid"))
     {
         log_info("cl_khr_device_uuid not supported. Skipping test...\n");
         return TEST_SKIPPED_ITSELF;
@@ -112,7 +111,7 @@ int test_device_uuid(cl_device_id deviceID, cl_context context,
 
     /* CL_DEVICE_UUID_KHR */
     uuid device_uuid;
-    bool success = get_uuid(deviceID, CL_DEVICE_UUID_KHR, device_uuid);
+    bool success = get_uuid(device, CL_DEVICE_UUID_KHR, device_uuid);
     if (!success)
     {
         log_error("Error getting device UUID\n");
@@ -127,7 +126,7 @@ int test_device_uuid(cl_device_id deviceID, cl_context context,
 
     /* CL_DRIVER_UUID_KHR */
     uuid driver_uuid;
-    success = get_uuid(deviceID, CL_DRIVER_UUID_KHR, driver_uuid);
+    success = get_uuid(device, CL_DRIVER_UUID_KHR, driver_uuid);
     if (!success)
     {
         log_error("Error getting driver UUID\n");
@@ -144,7 +143,7 @@ int test_device_uuid(cl_device_id deviceID, cl_context context,
 
     /* CL_DEVICE_LUID_VALID_KHR */
     cl_bool device_luid_valid{};
-    cl_int err = clGetDeviceInfo(deviceID, CL_DEVICE_LUID_VALID_KHR,
+    cl_int err = clGetDeviceInfo(device, CL_DEVICE_LUID_VALID_KHR,
                                  sizeof(device_luid_valid), &device_luid_valid,
                                  &size_ret);
     if (!check_device_info_returns(err, size_ret, sizeof(device_luid_valid)))
@@ -162,7 +161,7 @@ int test_device_uuid(cl_device_id deviceID, cl_context context,
     /* CL_DEVICE_LUID_KHR */
     luid device_luid;
     success =
-        get_uuid(deviceID, CL_DEVICE_LUID_KHR, device_luid, device_luid_valid);
+        get_uuid(device, CL_DEVICE_LUID_KHR, device_luid, device_luid_valid);
     if (!success)
     {
         log_error("Error getting device LUID\n");
@@ -178,7 +177,7 @@ int test_device_uuid(cl_device_id deviceID, cl_context context,
     /* CL_DEVICE_NODE_MASK_KHR */
     cl_uint device_node_mask{};
     err =
-        clGetDeviceInfo(deviceID, CL_DEVICE_NODE_MASK_KHR,
+        clGetDeviceInfo(device, CL_DEVICE_NODE_MASK_KHR,
                         sizeof(device_node_mask), &device_node_mask, &size_ret);
     if (!check_device_info_returns(err, size_ret, sizeof(device_node_mask)))
     {

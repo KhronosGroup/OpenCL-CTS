@@ -42,6 +42,7 @@ extern bool debug_trace;
 
 extern bool useSingleImageKernel;
 extern bool useDeviceLocal;
+extern bool useValidationLayers;
 extern bool disableNTHandleType;
 
 #endif // _vulkan_interop_common_hpp_

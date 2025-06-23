@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "procs.h"
+#include "testBase.h"
 #include "harness/errorHelpers.h"
 
 #define MAX_SUB_DEVICES        16        // Limit the sub-devices to ensure no out of resource errors.
@@ -113,7 +113,7 @@ static cl_int restoreImage(cl_command_queue *queues, cl_mem *mem_objects, cl_uin
   return CL_SUCCESS;
 }
 
-int test_image_migrate(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(image_migrate)
 {
   int failed = 0;
   cl_uint i, j;
@@ -139,15 +139,19 @@ int test_image_migrate(cl_device_id deviceID, cl_context context, cl_command_que
   const size_t wls[2] = {1, 1};
 
   // Check for image support.
-  if(checkForImageSupport(deviceID) == CL_IMAGE_FORMAT_NOT_SUPPORTED) {
-    log_info("Device does not support images. Skipping test.\n");
-    return 0;
+  if (checkForImageSupport(device) == CL_IMAGE_FORMAT_NOT_SUPPORTED)
+  {
+      log_info("Device does not support images. Skipping test.\n");
+      return 0;
   }
 
   // Allocate arrays whose size varies according to the maximum number of sub-devices.
-  if ((err = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(max_sub_devices), &max_sub_devices, NULL)) != CL_SUCCESS) {
-    print_error(err, "clGetDeviceInfo(CL_DEVICE_MAX_COMPUTE_UNITS) failed");
-    return -1;
+  if ((err = clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS,
+                             sizeof(max_sub_devices), &max_sub_devices, NULL))
+      != CL_SUCCESS)
+  {
+      print_error(err, "clGetDeviceInfo(CL_DEVICE_MAX_COMPUTE_UNITS) failed");
+      return -1;
   }
   if (max_sub_devices < 1) {
     log_error("ERROR: Invalid number of compute units returned.\n");
@@ -188,9 +192,12 @@ int test_image_migrate(cl_device_id deviceID, cl_context context, cl_command_que
 
 
   // Attempt to partition the device along each of the allowed affinity domain.
-  if ((err = clGetDeviceInfo(deviceID, CL_DEVICE_PARTITION_AFFINITY_DOMAIN, sizeof(domains), &domains, NULL)) != CL_SUCCESS) {
-    print_error(err, "clGetDeviceInfo(CL_PARTITION_AFFINITY_DOMAIN) failed");
-    return -1;
+  if ((err = clGetDeviceInfo(device, CL_DEVICE_PARTITION_AFFINITY_DOMAIN,
+                             sizeof(domains), &domains, NULL))
+      != CL_SUCCESS)
+  {
+      print_error(err, "clGetDeviceInfo(CL_PARTITION_AFFINITY_DOMAIN) failed");
+      return -1;
   }
 
   domains &= (CL_DEVICE_AFFINITY_DOMAIN_L4_CACHE | CL_DEVICE_AFFINITY_DOMAIN_L3_CACHE |
@@ -207,7 +214,9 @@ int test_image_migrate(cl_device_id deviceID, cl_context context, cl_command_que
     // Determine the number of partitions for the device given the specific domain.
     if (domain) {
       property[1] = domain;
-      err = clCreateSubDevices(deviceID, (const cl_device_partition_property *)property, -1, NULL, &num_devices);
+      err = clCreateSubDevices(device,
+                               (const cl_device_partition_property *)property,
+                               -1, NULL, &num_devices);
       if ((err != CL_SUCCESS) || (num_devices == 0)) {
         print_error(err, "Obtaining the number of partions by affinity failed.");
         failed = 1;
@@ -219,10 +228,14 @@ int test_image_migrate(cl_device_id deviceID, cl_context context, cl_command_que
 
     if (num_devices > 1) {
       // Create each of the sub-devices and a corresponding context.
-      if ((err = clCreateSubDevices(deviceID, (const cl_device_partition_property *)property, num_devices, devices, &num_devices)) != CL_SUCCESS) {
-        print_error(err, "Failed creating sub devices.");
-        failed = 1;
-        goto cleanup;
+      if ((err = clCreateSubDevices(
+               device, (const cl_device_partition_property *)property,
+               num_devices, devices, &num_devices))
+          != CL_SUCCESS)
+      {
+          print_error(err, "Failed creating sub devices.");
+          failed = 1;
+          goto cleanup;
       }
 
       // Create a context containing all the sub-devices
@@ -245,7 +258,7 @@ int test_image_migrate(cl_device_id deviceID, cl_context context, cl_command_que
       }
     } else {
       // No partitioning available. Just exercise the APIs on a single device.
-      devices[0] = deviceID;
+      devices[0] = device;
       queues[0] = queue;
       ctx = context;
     }

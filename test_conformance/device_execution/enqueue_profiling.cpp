@@ -20,7 +20,6 @@
 
 #include <vector>
 
-#include "procs.h"
 #include "utils.h"
 #include <time.h>
 
@@ -43,8 +42,7 @@ static const char* enqueue_multi_level = R"(
       block_fn(res, level);
     })";
 
-int test_enqueue_profiling(cl_device_id device, cl_context context,
-                           cl_command_queue queue, int num_elements)
+REGISTER_TEST(enqueue_profiling)
 {
     cl_int err_ret, res = 0;
     clCommandQueueWrapper dev_queue;
