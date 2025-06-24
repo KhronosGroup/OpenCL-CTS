@@ -53,6 +53,9 @@ def main():
     parser.add_argument('--grammar', metavar='<path>',
                         type=str, required=True,
                         help='input JSON grammar file')
+    parser.add_argument('--output', metavar='<path>',
+                        type=str, required=False,
+                        help='output file path (default: stdout)')
     args = parser.parse_args()
 
     dependencies = {}
@@ -70,26 +73,30 @@ def main():
 
     capabilities.sort()
 
-    print(header_text)
-    print("// clang-format off")
+    output = []
+    output.append(header_text)
+    output.append("// clang-format off")
     if False:
         for cap in capabilities:
             deps = dependencies[cap]
             extensions_str = ', '.join(f'"{ext}"' for ext in deps['extensions'])
             
-            print('SPIRV_CAPABILITY_DEPENDENCIES( ', end = "")
-            print('{}, '.format(cap), end = "")
-            print('{{{}}}, '.format(extensions_str), end = "")
-            print('"{}"'.format(deps['version']), end = "")
-            print(' )')
+            output.append('SPIRV_CAPABILITY_DEPENDENCIES( {}, {{{}}}, "{}" )'.format(
+                cap, extensions_str, deps['version']))
     else:
         for cap in capabilities:
             deps = dependencies[cap]
             if deps['version'] != "":
-                print('SPIRV_CAPABILITY_VERSION_DEPENDENCY( {}, "{}" )'.format(cap, deps['version']))
+                output.append('SPIRV_CAPABILITY_VERSION_DEPENDENCY( {}, "{}" )'.format(cap, deps['version']))
             for ext in deps['extensions']:
-                print('SPIRV_CAPABILITY_EXTENSION_DEPENDENCY( {}, "{}" )'.format(cap, ext))
-    print("// clang-format on")
+                output.append('SPIRV_CAPABILITY_EXTENSION_DEPENDENCY( {}, "{}" )'.format(cap, ext))
+    output.append("// clang-format on")
+
+    if args.output:
+        with open(args.output, 'w') as output_file:
+            output_file.write('\n'.join(output))
+    else:
+        print('\n'.join(output))
 
 if __name__ == '__main__':
     main()
