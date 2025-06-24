@@ -6005,7 +6005,7 @@ public:
         clContextWrapper context;
         clCommandQueueWrapper queue;
         size_t num_modules = m_moduleNames.size();
-        std::vector<cl_program> programs(num_modules);
+        std::vector<clProgramWrapper> programs(num_modules);
         create_context_and_queue(dev, &context, &queue);
 
         for (size_t i=0; i<num_modules; i++)
