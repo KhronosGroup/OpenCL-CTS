@@ -69,6 +69,8 @@ inline void ForceFTZ(FPU_mode_type *mode)
     __asm__ volatile("msr fpcr, %0" ::"r"(fpscr | (1U << 24)));
 #elif defined(__mips__)
     fpa_bissr(FPA_CSR_FS);
+#elif defined(__riscv)
+    #warning RISC-V platform does NOT support FTZ...
 #else
 #error ForceFTZ needs an implentation
 #endif
@@ -97,6 +99,8 @@ inline void DisableFTZ(FPU_mode_type *mode)
     __asm__ volatile("msr fpcr, %0" ::"r"(fpscr & ~(1U << 24)));
 #elif defined(__mips__)
     fpa_bicsr(FPA_CSR_FS);
+#elif defined(__riscv)
+    #warning RISC-V platform does NOT support FTZ...
 #else
 #error DisableFTZ needs an implentation
 #endif
@@ -117,6 +121,8 @@ inline void RestoreFPState(FPU_mode_type *mode)
     __asm__ volatile("msr fpcr, %0" ::"r"(*mode));
 #elif defined(__mips__)
     // Mips runs by default with DAZ=1 FTZ=1
+#elif defined(__riscv)
+    #warning RISC-V platform does NOT support FTZ...
 #else
 #error RestoreFPState needs an implementation
 #endif
