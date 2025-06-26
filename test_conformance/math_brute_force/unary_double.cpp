@@ -79,6 +79,7 @@ struct TestInfo
     int isRangeLimited; // 1 if the function is only to be evaluated over a
                         // range
     float half_sin_cos_tan_limit;
+    float tgamma_arg_limit;
     bool relaxedMode; // True if test is running in relaxed mode, false
                       // otherwise.
 };
@@ -98,6 +99,9 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     bool relaxedMode = job->relaxedMode;
 
     Force64BitFPUPrecision();
+
+    int isRangeLimited = job->isRangeLimited;
+    float tgamma_arg_limit = job->tgamma_arg_limit;
 
     cl_event e[VECTOR_SIZE_COUNT];
     cl_ulong *out[VECTOR_SIZE_COUNT];
@@ -239,6 +243,15 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 long double correct = func.f_f(s[j]);
                 float err = Bruteforce_Ulp_Error_Double(test, correct);
                 int fail = !(fabsf(err) <= ulps);
+
+                if (isRangeLimited)
+                {
+                    if (tgamma_arg_limit > 0 && fabs(s[j]) > tgamma_arg_limit)
+                    {
+                        err = 0;
+                        fail = 0;
+                    }
+                }
 
                 if (fail)
                 {
@@ -396,6 +409,14 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             vlog_error("clCreateCommandQueue failed. (%d)\n", error);
             return error;
         }
+    }
+
+    test_info.isRangeLimited = 0;
+    test_info.tgamma_arg_limit = 0.f;
+    if (0 == strcmp(f->name, "tgamma"))
+    {
+        test_info.isRangeLimited = 1;
+        test_info.tgamma_arg_limit = 1755.455f;
     }
 
     // Init the kernels

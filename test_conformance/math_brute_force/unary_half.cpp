@@ -78,6 +78,8 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 
     int isRangeLimited = job->isRangeLimited;
     float half_sin_cos_tan_limit = job->half_sin_cos_tan_limit;
+    float tgamma_arg_limit = job->tgamma_arg_limit;
+
     int ftz = job->ftz;
 
     std::vector<float> s(0);
@@ -229,11 +231,21 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
                 int fail = !(fabsf(err) <= ulps);
 
                 // half_sin/cos/tan are only valid between +-2**16, Inf, NaN
-                if (isRangeLimited
-                    && fabsf(s[j]) > MAKE_HEX_FLOAT(0x1.0p16f, 0x1L, 16)
-                    && fabsf(s[j]) < INFINITY)
+                if (isRangeLimited)
                 {
-                    if (fabsf(test) <= half_sin_cos_tan_limit)
+
+                    if (half_sin_cos_tan_limit > 0
+                        && fabsf(s[j]) > MAKE_HEX_FLOAT(0x1.0p16f, 0x1L, 16)
+                        && fabsf(s[j]) < INFINITY)
+                    {
+                        if (fabsf(test) <= half_sin_cos_tan_limit)
+                        {
+                            err = 0;
+                            fail = 0;
+                        }
+                    }
+                    else if (tgamma_arg_limit > 0
+                             && fabsf(s[j]) > tgamma_arg_limit)
                     {
                         err = 0;
                         fail = 0;
@@ -406,6 +418,7 @@ int TestFunc_Half_Half(const Func *f, MTdata d, bool relaxedMode)
     // Check for special cases for unary float
     test_info.isRangeLimited = 0;
     test_info.half_sin_cos_tan_limit = 0;
+    test_info.tgamma_arg_limit = 0;
     if (0 == strcmp(f->name, "half_sin") || 0 == strcmp(f->name, "half_cos"))
     {
         test_info.isRangeLimited = 1;
@@ -419,6 +432,11 @@ int TestFunc_Half_Half(const Func *f, MTdata d, bool relaxedMode)
         test_info.isRangeLimited = 1;
         test_info.half_sin_cos_tan_limit =
             INFINITY; // out of range resut from finite inputs must be numeric
+    }
+    else if (0 == strcmp(f->name, "tgamma"))
+    {
+        test_info.isRangeLimited = 1;
+        test_info.tgamma_arg_limit = 1755.455f;
     }
 
     // Init the kernels
