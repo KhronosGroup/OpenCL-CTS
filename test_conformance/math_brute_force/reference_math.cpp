@@ -2317,7 +2317,7 @@ long double olm_tgammal(long double x)
         x += 1.0L;
     }
 
-    if (x <= 0.03125L) goto small;
+    if (x <= 0.03125L) goto smallarg;
 
     while (x < 2.0L)
     {
@@ -2333,7 +2333,7 @@ long double olm_tgammal(long double x)
     z = z * p / q;
     return z;
 
-small:
+smallarg:
     if (x == 0.0L)
         return (x - x) / (x - x);
     else
