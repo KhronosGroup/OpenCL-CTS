@@ -943,8 +943,7 @@ static int RunTest( int testNumber )
         float *b = (float*) buf2;
         for( i = 0; i < BUFFER_SIZE / sizeof( float ); i++ )
         {
-            if( isnan(test[i]) && isnan(correct[testNumber][i] ) )
-                continue;
+            if (isnan_fp(test[i]) && isnan_fp(correct[testNumber][i])) continue;
 
             if( skipTest[testNumber][i] )
                 continue;
@@ -1112,7 +1111,7 @@ static int RunTest_Double( int testNumber )
         double *b = (double*) buf2;
         for( i = 0; i < BUFFER_SIZE / sizeof( double ); i++ )
         {
-            if( isnan(test[i]) && isnan(correct_double[testNumber][i] ) )
+            if (isnan_fp(test[i]) && isnan_fp(correct_double[testNumber][i]))
                 continue;
 
             // sign of zero must be correct

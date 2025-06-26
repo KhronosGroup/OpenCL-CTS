@@ -380,8 +380,7 @@ int test_twoToFloat_kernel_double(cl_command_queue queue, cl_context context, co
         double expected = verifyFn( inDataA + i * vecSize, inDataB + i * vecSize, vecSize );
         if( (double) expected != outData[ i ] )
         {
-            if( isnan(expected) && isnan( outData[i] ) )
-                continue;
+            if (isnan_fp(expected) && isnan_fp(outData[i])) continue;
 
             if( ulpLimit < 0 )
             {
@@ -612,8 +611,7 @@ int test_oneToFloat_kernel_double(cl_command_queue queue, cl_context context, co
                 continue;
 
             // We have to special case NAN
-            if( isnan( outData[ i ] ) && isnan( expected ) )
-                continue;
+            if (isnan_fp(outData[i]) && isnan_fp(expected)) continue;
 
             if(! (fabs(ulps) < ulpLimit) )
             {
@@ -817,7 +815,7 @@ int test_oneToOne_kernel_double(cl_command_queue queue, cl_context context, cons
         for( j = 0; j < vecSize; j++ )
         {
             // We have to special case NAN
-            if( isnan( outData[ i * vecSize + j ] ) && isnan( expected[ j ] ) )
+            if (isnan_fp(outData[i * vecSize + j]) && isnan_fp(expected[j]))
                 continue;
 
             if( expected[j] != outData[ i *vecSize+j ] )

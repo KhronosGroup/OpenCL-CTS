@@ -37,11 +37,7 @@ double sRGBmap(float fc)
 {
     double c = (double)fc;
 
-#if !defined(_WIN32)
-    if (std::isnan(c)) c = 0.0;
-#else
-    if (_isnan(c)) c = 0.0;
-#endif
+    if (isnan_fp(c)) c = 0.0;
 
     if (c > 1.0)
         c = 1.0;

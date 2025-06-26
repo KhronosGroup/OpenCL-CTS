@@ -955,24 +955,6 @@ void MapResultValuesComplete(const std::unique_ptr<CalcRefValsBase> &info)
     // destroyed automatically soon after we exit.
 }
 
-template <typename T> static bool isnan_fp(const T &v)
-{
-    if (std::is_same<T, cl_half>::value)
-    {
-        uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-        uint16_t h_mant = ((cl_half)v) & 0x3FF;
-        return (h_exp == 0x1F && h_mant != 0);
-    }
-    else
-    {
-#if !defined(_WIN32)
-        return std::isnan(v);
-#else
-        return _isnan(v);
-#endif
-    }
-}
-
 template <typename InType>
 void ZeroNanToIntCases(cl_uint count, void *mapped, Type outType, void *input)
 {
