@@ -74,9 +74,11 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+
 extern cl_half_rounding_mode gHalfRoundingMode;
 extern bool gFloatAtomicsSupported;
 extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
+extern cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps;
 
 extern const char *
 get_memory_order_type_name(TExplicitMemoryOrderType orderType);
@@ -173,6 +175,13 @@ public:
                                cl_uint whichDestValue)
     {
         return false;
+    }
+    virtual bool VerifyExpected(const HostDataType &expected,
+                                const HostAtomicType *const testValue,
+                                cl_uint whichDestValue)
+    {
+        if (testValue != nullptr) return expected != testValue[whichDestValue];
+        return true;
     }
     virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                               MTdata d)
@@ -1449,7 +1458,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (expected != destItems[i])
+        if (VerifyExpected(expected, destItems.data(), i))
         {
             std::stringstream logLine;
             logLine << "ERROR: Result " << i
