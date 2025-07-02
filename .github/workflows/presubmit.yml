@@ -61,6 +61,10 @@ jobs:
           cd OpenCL-Headers
           ln -s CL OpenCL # For OSX builds
           cd ..
+      - name: Fetch SPIR-V Headers
+        shell: bash
+        run: |
+          git clone https://github.com/KhronosGroup/SPIRV-Headers.git
       - name: Install Vulkan SDK
         uses: humbletim/install-vulkan-sdk@main
         with:
@@ -159,6 +163,7 @@ jobs:
                 -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
                 -DCMAKE_CACHE_OPTIONS="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache" \
                 -DCL_INCLUDE_DIR='${{ github.workspace }}'/OpenCL-Headers \
+                -DSPIRV_INCLUDE_DIR='${{ github.workspace }}'/SPIRV-Headers \
                 -DCL_LIB_DIR='${{ github.workspace }}'/OpenCL-ICD-Loader/build \
                 -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
                 -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin \
