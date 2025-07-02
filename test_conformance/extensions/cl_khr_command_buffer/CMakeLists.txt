@@ -3,6 +3,7 @@ set(MODULE_NAME CL_KHR_COMMAND_BUFFER)
 set(${MODULE_NAME}_SOURCES
     main.cpp
     basic_command_buffer.cpp
+    basic_command_buffer_tests.cpp
     svm_command_basic.cpp
     command_buffer_printf.cpp
     command_buffer_get_command_buffer_info.cpp

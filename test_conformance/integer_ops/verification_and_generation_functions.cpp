@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
+#include "testBase.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -22,7 +22,6 @@
 
 #include <cinttypes>
 
-#include "procs.h"
 #include "harness/conversions.h"
 
 extern     MTdata          d;
@@ -80,11 +79,6 @@ const char *test_names[] = {
     "!=", // 21
     "!",  // 22
 };
-
-const size_t vector_aligns[] = {0, 1, 2, 4, 4,
-    8, 8, 8, 8,
-    16, 16, 16, 16,
-    16, 16, 16, 16};
 
 // =======================================
 // long

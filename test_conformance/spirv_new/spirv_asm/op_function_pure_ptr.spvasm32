@@ -45,7 +45,7 @@
           %1 = OpFunction %void None %10
          %in = OpFunctionParameter %_ptr_CrossWorkgroup_float
          %27 = OpLabel
-         %28 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %28 = OpLoad %v3uint %gl_GlobalInvocationID
          %29 = OpCompositeExtract %uint %28 0
          %30 = OpFunctionCall %float %14 %in %29
          %31 = OpFunctionCall %void %21 %in %29 %30

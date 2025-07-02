@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "harness/compat.h"
+#include "testBase.h"
 
 #include <cinttypes>
 
@@ -22,10 +22,6 @@
 #include <limits.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#include "procs.h"
-
-
 static int verify_abs_char( const void *p, const void *q, size_t n, const char *sizeName, size_t vecSize )
 {
     const cl_char *inA = (const cl_char*) p;
@@ -216,7 +212,7 @@ static const char * dest_stores[] = {
     "    vstore3(tmp, tid, dst);\n"
 };
 
-int test_integer_abs(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems)
+REGISTER_TEST(integer_abs)
 {
     cl_int *input_ptr, *output_ptr, *p;
     int err;
@@ -226,15 +222,14 @@ int test_integer_abs(cl_device_id device, cl_context context, cl_command_queue q
     MTdata d;
     int fail_count = 0;
 
-    size_t length = sizeof(cl_int) * 4 * n_elems;
+    size_t length = sizeof(cl_int) * 4 * num_elements;
 
     input_ptr   = (cl_int*)malloc(length);
     output_ptr  = (cl_int*)malloc(length);
 
     p = input_ptr;
     d = init_genrand( gRandomSeed );
-    for (i=0; i<n_elems * 4; i++)
-        p[i] = genrand_int32(d);
+    for (i = 0; i < num_elements * 4; i++) p[i] = genrand_int32(d);
     free_mtdata(d); d = NULL;
 
     for( type = 0; type < sizeof( test_str_names ) / sizeof( test_str_names[0] ); type++ )
@@ -372,5 +367,3 @@ int test_integer_abs(cl_device_id device, cl_context context, cl_command_queue q
 
     return err;
 }
-
-

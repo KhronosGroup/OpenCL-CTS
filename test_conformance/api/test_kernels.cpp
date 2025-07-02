@@ -16,6 +16,7 @@
 #include "testBase.h"
 #include "harness/typeWrappers.h"
 #include "harness/conversions.h"
+#include <vector>
 
 const char *sample_single_test_kernel[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)\n"
@@ -48,6 +49,17 @@ const char *sample_const_test_kernel[] = {
 "    dst[tid] = src1[tid] + src2[tid];\n"
 "\n"
 "}\n" };
+
+const char *sample_image_test_kernel[] = {
+    "__kernel void sample_image_test(__read_only image2d_t src, __write_only "
+    "image2d_t dst)\n"
+    "{\n"
+    "    int2 coord = (int2)(get_global_id(0), get_global_id(1));\n"
+    "    uint4 value = read_imageui(src, coord);\n"
+    "    write_imageui(dst, coord, value);\n"
+    "\n"
+    "}\n"
+};
 
 const char *sample_const_global_test_kernel[] = {
 "__constant int addFactor = 1024;\n"
@@ -630,4 +642,65 @@ REGISTER_TEST(kernel_global_constant)
     }
 
     return 0;
+}
+
+REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
+{
+    REQUIRE_EXTENSION("cl_ext_immutable_memory_objects");
+
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper kernels[2];
+    clMemWrapper image, buffer;
+    const char *test_kernels[2] = { sample_const_test_kernel[0],
+                                    sample_image_test_kernel[0] };
+    constexpr cl_image_format formats = { CL_RGBA, CL_UNSIGNED_INT8 };
+    constexpr size_t size_dim = 128;
+
+    // Setup the test
+    error = create_single_kernel_helper(context, &program, nullptr, 2,
+                                        test_kernels, nullptr);
+    test_error(error, "Unable to build test program");
+
+    kernels[0] = clCreateKernel(program, "sample_test", &error);
+    test_error(error, "Unable to get sample_test kernel for built program");
+
+    kernels[1] = clCreateKernel(program, "sample_image_test", &error);
+    test_error(error,
+               "Unable to get sample_image_test kernel for built program");
+
+    std::vector<cl_uchar> mem_data(size_dim * size_dim);
+    buffer = clCreateBuffer(context, CL_MEM_IMMUTABLE_EXT | CL_MEM_USE_HOST_PTR,
+                            sizeof(cl_int) * size_dim, mem_data.data(), &error);
+    test_error(error, "clCreateBuffer failed");
+
+    image = create_image_2d(context, CL_MEM_IMMUTABLE_EXT | CL_MEM_USE_HOST_PTR,
+                            &formats, size_dim, size_dim, 0, mem_data.data(),
+                            &error);
+    test_error(error, "create_image_2d failed");
+
+    // Run the test
+    error = clSetKernelArg(kernels[0], 0, sizeof(buffer), &buffer);
+    test_error(error, "clSetKernelArg failed");
+
+    error = clSetKernelArg(kernels[0], 2, sizeof(buffer), &buffer);
+    test_failure_error_ret(error, CL_INVALID_ARG_VALUE,
+                           "clSetKernelArg is supposed to fail "
+                           "with CL_INVALID_ARG_VALUE when a buffer is "
+                           "created with CL_MEM_IMMUTABLE_EXT is "
+                           "passed to a non-constant kernel argument",
+                           TEST_FAIL);
+
+    error = clSetKernelArg(kernels[1], 0, sizeof(image), &image);
+    test_error(error, "clSetKernelArg failed");
+
+    error = clSetKernelArg(kernels[1], 1, sizeof(image), &image);
+    test_failure_error_ret(error, CL_INVALID_ARG_VALUE,
+                           "clSetKernelArg is supposed to fail "
+                           "with CL_INVALID_ARG_VALUE when an image is "
+                           "created with CL_MEM_IMMUTABLE_EXT is "
+                           "passed to a write_only kernel argument",
+                           TEST_FAIL);
+
+    return TEST_PASS;
 }

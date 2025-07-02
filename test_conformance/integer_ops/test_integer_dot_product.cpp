@@ -14,13 +14,14 @@
 // limitations under the License.
 //
 
+#include "testBase.h"
+
 #include <algorithm>
 #include <limits>
 #include <numeric>
 #include <string>
 #include <vector>
 
-#include "procs.h"
 #include "harness/integer_ops_test_info.h"
 #include "harness/testHarness.h"
 
@@ -327,23 +328,22 @@ static int test_vectype_packed(cl_device_id deviceID, cl_context context,
     return result;
 }
 
-int test_integer_dot_product(cl_device_id deviceID, cl_context context,
-                             cl_command_queue queue, int num_elements)
+REGISTER_TEST(integer_dot_product)
 {
-    if (!is_extension_available(deviceID, "cl_khr_integer_dot_product"))
+    if (!is_extension_available(device, "cl_khr_integer_dot_product"))
     {
         log_info("cl_khr_integer_dot_product is not supported\n");
         return TEST_SKIPPED_ITSELF;
     }
 
-    Version deviceVersion = get_device_cl_version(deviceID);
+    Version deviceVersion = get_device_cl_version(device);
     cl_version extensionVersion;
 
     if ((deviceVersion >= Version(3, 0))
-        || is_extension_available(deviceID, "cl_khr_extended_versioning"))
+        || is_extension_available(device, "cl_khr_extended_versioning"))
     {
         extensionVersion =
-            get_extension_version(deviceID, "cl_khr_integer_dot_product");
+            get_extension_version(device, "cl_khr_integer_dot_product");
     }
     else
     {
@@ -355,9 +355,9 @@ int test_integer_dot_product(cl_device_id deviceID, cl_context context,
     int result = TEST_PASS;
 
     cl_device_integer_dot_product_capabilities_khr dotCaps = 0;
-    error = clGetDeviceInfo(deviceID,
-                            CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR,
-                            sizeof(dotCaps), &dotCaps, NULL);
+    error =
+        clGetDeviceInfo(device, CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR,
+                        sizeof(dotCaps), &dotCaps, NULL);
     test_error(
         error,
         "Unable to query CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR");
@@ -383,7 +383,7 @@ int test_integer_dot_product(cl_device_id deviceID, cl_context context,
     {
         size_t size_ret;
         error = clGetDeviceInfo(
-            deviceID,
+            device,
             CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_8BIT_KHR, 0,
             nullptr, &size_ret);
         test_error(
@@ -394,13 +394,13 @@ int test_integer_dot_product(cl_device_id deviceID, cl_context context,
         cl_device_integer_dot_product_acceleration_properties_khr
             accelerationProperties;
         error = clGetDeviceInfo(
-            deviceID,
+            device,
             CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_8BIT_KHR,
             sizeof(accelerationProperties), &accelerationProperties, nullptr);
         test_error(error, "Unable to query 8-bit acceleration properties");
 
         error = clGetDeviceInfo(
-            deviceID,
+            device,
             CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_PACKED_KHR,
             0, nullptr, &size_ret);
         test_error(
@@ -410,7 +410,7 @@ int test_integer_dot_product(cl_device_id deviceID, cl_context context,
             "PACKED_KHR");
 
         error = clGetDeviceInfo(
-            deviceID,
+            device,
             CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_PACKED_KHR,
             sizeof(accelerationProperties), &accelerationProperties, nullptr);
         test_error(error,
@@ -428,14 +428,14 @@ int test_integer_dot_product(cl_device_id deviceID, cl_context context,
     // Test built-in functions
     if (dotCaps & CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_KHR)
     {
-        result |= test_vectype<cl_uchar, cl_uint, 4>(deviceID, context, queue,
+        result |= test_vectype<cl_uchar, cl_uint, 4>(device, context, queue,
                                                      num_elements);
     }
 
     if (dotCaps & CL_DEVICE_INTEGER_DOT_PRODUCT_INPUT_4x8BIT_PACKED_KHR)
     {
         result |= test_vectype_packed<cl_uchar, cl_uint, 4>(
-            deviceID, context, queue, num_elements);
+            device, context, queue, num_elements);
     }
 
     return result;

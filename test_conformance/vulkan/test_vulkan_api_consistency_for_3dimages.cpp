@@ -76,23 +76,27 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
             getSupportedVulkanExternalMemoryHandleTypeList(
                 vkDevice->getPhysicalDevice())[0];
 
-        VulkanImageTiling vulkanImageTiling =
-            vkClExternalMemoryHandleTilingAssumption(
-                device, vkExternalMemoryHandleType, &errNum);
+        auto vulkanImageTiling = vkClExternalMemoryHandleTilingAssumption(
+            device, vkExternalMemoryHandleType, &errNum);
         ASSERT_SUCCESS(errNum, "Failed to query OpenCL tiling mode");
+        if (vulkanImageTiling == std::nullopt)
+        {
+            log_info("No image tiling supported by both Vulkan and OpenCL "
+                     "could be found\n");
+            return TEST_SKIPPED_ITSELF;
+        }
 
         VulkanImage3D vkImage3D = VulkanImage3D(
             *vkDevice, VULKAN_FORMAT_R8G8B8A8_UNORM, width, height, depth,
-            vulkanImageTiling, 1, vkExternalMemoryHandleType);
+            *vulkanImageTiling, 1, vkExternalMemoryHandleType);
 
         const VulkanMemoryTypeList& memoryTypeList =
             vkImage3D.getMemoryTypeList();
-        uint64_t totalImageMemSize = vkImage3D.getSize();
 
         log_info("Memory type index: %u\n", (uint32_t)memoryTypeList[0]);
         log_info("Memory type property: %d\n",
                  memoryTypeList[0].getMemoryTypeProperty());
-        log_info("Image size : %lu\n", totalImageMemSize);
+        log_info("Image size : %lu\n", vkImage3D.getSize());
 
         VulkanDeviceMemory* vkDeviceMem =
             new VulkanDeviceMemory(*vkDevice, vkImage3D, memoryTypeList[0],
@@ -153,14 +157,12 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
         const VkImageCreateInfo VulkanImageCreateInfo =
             vkImage3D.getVkImageCreateInfo();
 
-        errNum = getCLImageInfoFromVkImageInfo(&VulkanImageCreateInfo,
-                                               totalImageMemSize, &img_format,
-                                               &image_desc);
-        if (errNum != CL_SUCCESS)
-        {
-            log_error("getCLImageInfoFromVkImageInfo failed!!!");
-            return TEST_FAIL;
-        }
+        auto layout = vkImage3D.getSubresourceLayout();
+        errNum = getCLImageInfoFromVkImageInfo(
+            device, &VulkanImageCreateInfo, &img_format, &image_desc,
+            vulkanImageTiling == VULKAN_IMAGE_TILING_LINEAR ? &layout
+                                                            : nullptr);
+        test_error_fail(errNum, "getCLImageInfoFromVkImageInfo failed!!!");
 
         clMemWrapper image;
 
@@ -169,16 +171,6 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
             context, extMemProperties.data(), CL_MEM_READ_WRITE, &img_format,
             &image_desc, NULL /* host_ptr */, &errNum);
         test_error(errNum, "Unable to create Image with Properties");
-        image.reset();
-
-        // Passing NULL properties and a valid image_format and image_desc
-        image = clCreateImageWithProperties(context, NULL, CL_MEM_READ_WRITE,
-                                            &img_format, &image_desc, NULL,
-                                            &errNum);
-        test_error(errNum,
-                   "Unable to create image with NULL properties "
-                   "with valid image format and image desc");
-
         image.reset();
 
         // Passing image_format as NULL

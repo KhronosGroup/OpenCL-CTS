@@ -255,32 +255,23 @@ struct SemaphoreMultiDeviceContextQueries : public SemaphoreTestBase
 } // anonymous namespace
 
 // Confirm the semaphore with device list can be successfully queried
-int test_semaphores_device_list_queries(cl_device_id deviceID,
-                                        cl_context context,
-                                        cl_command_queue defaultQueue,
-                                        int num_elements)
+REGISTER_TEST_VERSION(semaphores_device_list_queries, Version(1, 2))
 {
-    return MakeAndRunTest<SemaphoreWithDeviceListQueries>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<SemaphoreWithDeviceListQueries>(device, context,
+                                                          queue, num_elements);
 }
 
 // Confirm the semaphore without device list can be successfully queried
-int test_semaphores_no_device_list_queries(cl_device_id deviceID,
-                                           cl_context context,
-                                           cl_command_queue defaultQueue,
-                                           int num_elements)
+REGISTER_TEST_VERSION(semaphores_no_device_list_queries, Version(1, 2))
 {
-    return MakeAndRunTest<SemaphoreNoDeviceListQueries>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<SemaphoreNoDeviceListQueries>(device, context, queue,
+                                                        num_elements);
 }
 
 // Confirm the semaphore created with multi-device context can be successfully
 // queried
-int test_semaphores_multi_device_context_queries(cl_device_id deviceID,
-                                                 cl_context context,
-                                                 cl_command_queue defaultQueue,
-                                                 int num_elements)
+REGISTER_TEST_VERSION(semaphores_multi_device_context_queries, Version(1, 2))
 {
     return MakeAndRunTest<SemaphoreMultiDeviceContextQueries>(
-        deviceID, context, defaultQueue, num_elements);
+        device, context, queue, num_elements);
 }

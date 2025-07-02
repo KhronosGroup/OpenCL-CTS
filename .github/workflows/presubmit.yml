@@ -5,34 +5,26 @@ jobs:
   build:
     name: Build ${{ matrix.os }} ${{ matrix.arch }}${{ matrix.extra }}
     runs-on: ${{ matrix.os }}
-    env:
-      JOB_ARCHITECTURE: ${{ matrix.arch }}
-      JOB_ENABLE_GL: ${{ matrix.gl }}
-      JOB_ENABLE_DEBUG: ${{ matrix.debug }}
     strategy:
       fail-fast: false
       matrix:
-        mainmatrix: [true]
+        build-type: [Release]
+        gl: [0]
         os: [ubuntu-22.04, macos-latest, windows-latest]
         include:
           - os: ubuntu-22.04
-            mainmatrix: true
             gl: 1
             extra: " gl"
           - os: ubuntu-22.04
-            mainmatrix: false
             arch: arm
           - os: ubuntu-22.04
-            mainmatrix: false
             arch: aarch64
-            debug: 1
+            build-type: Debug
             extra: " debug"
           - os: ubuntu-22.04
-            mainmatrix: false
             arch: android-arm
             android_arch_abi: armeabi-v7a
           - os: ubuntu-22.04
-            mainmatrix: false
             arch: android-aarch64
             android_arch_abi: arm64-v8a
     steps:
@@ -84,9 +76,101 @@ jobs:
           echo "ANDROID_NDK=$ANDROID_NDK" >> $GITHUB_ENV
           export ANDROID_ARCH_ABI=${{ matrix.android_arch_abi }}
           echo "ANDROID_ARCH_ABI=$ANDROID_ARCH_ABI" >> $GITHUB_ENV
-      - name: Build
+      - name: Prepare CMake Toolchain file
         shell: bash
-        run: ./presubmit.sh
+        run: |
+          if [[ '${{ matrix.arch }}' == android-* ]]; then
+              TOOLCHAIN_FILE=${ANDROID_NDK}/build/cmake/android.toolchain.cmake
+          else
+              TOOLCHAIN_FILE='${{ github.workspace }}'/toolchain.cmake
+              touch ${TOOLCHAIN_FILE}
+          fi
+
+          TOOLCHAIN_PREFIX_arm=arm-linux-gnueabihf
+          TOOLCHAIN_PREFIX_aarch64=aarch64-linux-gnu
+
+          if [[ '${{ matrix.arch }}' != android-* ]]; then
+            if [[ '${{ matrix.arch }}' != "" && ${RUNNER_OS} != "Windows" ]]; then
+              TOOLCHAIN_PREFIX_VAR=TOOLCHAIN_PREFIX_${{ matrix.arch }}
+              TOOLCHAIN_PREFIX=${!TOOLCHAIN_PREFIX_VAR}
+
+              echo "SET(CMAKE_SYSTEM_NAME Linux)" >> ${TOOLCHAIN_FILE}
+              echo "SET(CMAKE_SYSTEM_PROCESSOR ${{ matrix.arch }})" >> ${TOOLCHAIN_FILE}
+              echo "SET(CMAKE_C_COMPILER   ${TOOLCHAIN_PREFIX}-gcc)" >> ${TOOLCHAIN_FILE}
+              echo "SET(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}-g++)" >> ${TOOLCHAIN_FILE}
+              echo "SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)" >> ${TOOLCHAIN_FILE}
+              echo "SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)" >> ${TOOLCHAIN_FILE}
+              echo "SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" >> ${TOOLCHAIN_FILE}
+            fi
+          fi
+          echo "TOOLCHAIN_FILE=${TOOLCHAIN_FILE}" >> $GITHUB_ENV
+      - name: Prepare Android CMake arguments
+        if: ${{ matrix.arch == 'android-arm' || matrix.arch == 'android-aarch64' }}
+        shell: bash
+        run: |
+          echo "CMAKE_CONFIG_ARGS_ANDROID=-DCMAKE_ANDROID_ARCH_ABI=${ANDROID_ARCH_ABI}" >> $GITHUB_ENV
+      - name: Fetch and build OpenCL ICD Loader
+        shell: bash
+        run: |
+          git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
+          cd OpenCL-ICD-Loader
+          mkdir build
+          cd build
+          cmake .. -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
+                -DOPENCL_ICD_LOADER_HEADERS_DIR='${{ github.workspace }}'/OpenCL-Headers/ \
+                "${CMAKE_CONFIG_ARGS_ANDROID}"
+          cmake --build . --parallel
+      - name: Fetch Vulkan Headers
+        shell: bash
+        run: |
+          git clone https://github.com/KhronosGroup/Vulkan-Headers.git
+      - name: Fetch and build Vulkan Loader
+        if: ${{ matrix.arch != 'android-arm' && matrix.arch != 'android-aarch64' }}
+        shell: bash
+        run: |
+          git clone https://github.com/KhronosGroup/Vulkan-Loader.git
+          cd Vulkan-Loader
+          mkdir build
+          cd build
+          python3 ../scripts/update_deps.py
+          cmake .. -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
+                -DBUILD_WSI_XLIB_SUPPORT=OFF \
+                -DBUILD_WSI_XCB_SUPPORT=OFF \
+                -DBUILD_WSI_WAYLAND_SUPPORT=OFF \
+                -C helper.cmake ..
+          cmake --build . --parallel
+      - name: Configure and build
+        shell: bash
+        run: |
+          mkdir build
+          cd build
+          if [[ ${RUNNER_OS} == "Windows" ]]; then
+              CMAKE_OPENCL_LIBRARIES_OPTION="OpenCL"
+          else
+              CMAKE_OPENCL_LIBRARIES_OPTION="-lOpenCL"
+              if [[ '${{ matrix.arch }}' != android-* ]]; then
+                  CMAKE_OPENCL_LIBRARIES_OPTION="${CMAKE_OPENCL_LIBRARIES_OPTION} -lpthread"
+              fi
+          fi
+          cmake .. -G Ninja \
+                -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
+                -DCMAKE_CACHE_OPTIONS="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache" \
+                -DCL_INCLUDE_DIR='${{ github.workspace }}'/OpenCL-Headers \
+                -DCL_LIB_DIR='${{ github.workspace }}'/OpenCL-ICD-Loader/build \
+                -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
+                -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=./bin \
+                -DOPENCL_LIBRARIES="${CMAKE_OPENCL_LIBRARIES_OPTION}" \
+                -DUSE_CL_EXPERIMENTAL=ON \
+                -DGL_IS_SUPPORTED=${{ matrix.gl }} \
+                -DVULKAN_IS_SUPPORTED=ON \
+                -DVULKAN_INCLUDE_DIR='${{ github.workspace }}'/Vulkan-Headers/include/ \
+                -DVULKAN_LIB_DIR='${{ github.workspace }}'/Vulkan-Loader/build/loader/ \
+                "${CMAKE_CONFIG_ARGS_ANDROID}"
+          cmake --build . --parallel
   formatcheck:
     name: Check code format
     runs-on: ubuntu-22.04

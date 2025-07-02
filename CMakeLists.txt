@@ -7,7 +7,7 @@ project(CLConform${CONFORMANCE_SUFFIX})
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_definitions(-DCL_TARGET_OPENCL_VERSION=300)
@@ -100,7 +100,11 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
     add_cxx_flag_if_supported(-Wmisleading-indentation)
     add_cxx_flag_if_supported(-Wunused-function)
     add_cxx_flag_if_supported(-Wunused-variable)
-    add_cxx_flag_if_supported(-Werror)
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+      set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
+    else()
+      add_cxx_flag_if_supported(-Werror)
+    endif()
     if(NOT CMAKE_BUILD_TYPE MATCHES "Release|RelWithDebInfo|MinSizeRel")
         # Enable more warnings if not doing a release build.
         add_cxx_flag_if_supported(-Wall)

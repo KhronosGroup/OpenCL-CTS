@@ -796,6 +796,60 @@ REGISTER_TEST(get_device_info)
     return 0;
 }
 
+REGISTER_TEST(get_device_info_comparability)
+{
+    int error = CL_SUCCESS;
+
+    // comparability test for CL_DEVICE_PLATFORM
+    // 1. find platform related to device without using query
+    cl_uint num_platforms = 0;
+    error = clGetPlatformIDs(16, nullptr, &num_platforms);
+    test_error(error, "clGetPlatformIDs failed");
+
+    std::vector<cl_platform_id> platforms(num_platforms);
+
+    error = clGetPlatformIDs(num_platforms, platforms.data(), &num_platforms);
+    test_error(error, "clGetPlatformIDs failed");
+
+    cl_uint num_devices = 0;
+    cl_platform_id comp_platform = nullptr;
+    for (int p = 0; p < (int)num_platforms && comp_platform == nullptr; p++)
+    {
+        error = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, 0, nullptr,
+                               &num_devices);
+        if (error != CL_SUCCESS || num_devices == 0) continue;
+
+        std::vector<cl_device_id> devices(num_devices);
+        error = clGetDeviceIDs(platforms[p], CL_DEVICE_TYPE_ALL, num_devices,
+                               devices.data(), nullptr);
+        if (error != CL_SUCCESS) continue;
+
+        // find correct device
+        for (auto did : devices)
+        {
+            if (did == device)
+            {
+                comp_platform = platforms[p];
+                break;
+            }
+        }
+    }
+
+    test_error_fail(comp_platform == nullptr,
+                    "Test failed to locate platform for comparison!");
+
+    // 2. compare platforms found with and without using query
+    cl_platform_id plat = nullptr;
+    error =
+        clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(plat), &plat, NULL);
+    test_error(error, "clGetDeviceInfo failed");
+
+    test_assert_error(plat == comp_platform,
+                      "Unexpected result returned by clGetDeviceInfo for "
+                      "CL_DEVICE_PLATFORM query");
+
+    return TEST_PASS;
+}
 
 static const char *sample_compile_size[2] = {
     "__kernel void sample_test(__global int *src, __global int *dst)\n"
