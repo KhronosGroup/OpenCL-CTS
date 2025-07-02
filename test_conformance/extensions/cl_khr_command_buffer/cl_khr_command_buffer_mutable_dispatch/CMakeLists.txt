@@ -14,6 +14,7 @@ set(${MODULE_NAME}_SOURCES
     mutable_command_multiple_dispatches.cpp
     mutable_command_iterative_arg_update.cpp
     mutable_command_work_groups.cpp
+    mutable_command_work_dim.cpp
     ../basic_command_buffer.cpp
 )
 
