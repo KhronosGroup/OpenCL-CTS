@@ -128,6 +128,15 @@ struct InterleavedEnqueueTest : public BasicCommandBufferTest
     bool Skip() override;
 };
 
+// Test releasing a command-buffer after it has been submitted for execution,
+// but before the user has waited on completion of the enqueue.
+struct EnqueueAndReleaseTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+};
+
 template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,
                    cl_command_queue queue, int num_elements)
