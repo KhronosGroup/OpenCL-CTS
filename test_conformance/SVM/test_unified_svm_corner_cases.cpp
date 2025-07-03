@@ -47,8 +47,26 @@ struct UnifiedSVMCornerCaseAllocFree : UnifiedSVMBase
         err = clSVMFreeWithPropertiesKHR(context, nullptr, 0, nullptr);
         test_error(err, "clSVMFreeWithPropertiesKHR with NULL pointer failed");
 
-        log_info("   testing asynchronous NULL pointer free\n");
+        log_info("   testing asynchronous empty set free\n");
         clEventWrapper event;
+        err = clEnqueueSVMFree(queue, 0, nullptr, nullptr, nullptr, 0,
+                               nullptr, &event);
+        test_error(err, "clEnqueueSVMFree with empty set failed");
+
+        err = clFinish(queue);
+        test_error(err,
+                   "clFinish after clEnqueueSVMFree with empty set failed");
+
+        cl_command_type cmdType = 0;
+        err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
+                             &cmdType, nullptr);
+        test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
+        test_assert_error(
+            cmdType == CL_COMMAND_SVM_FREE,
+            "clEnqueueSVMFree did not return a CL_COMMAND_SVM_FREE event");
+
+        log_info("   testing asynchronous NULL pointer free\n");
+        event = nullptr;
         void* svm_pointers[] = { nullptr };
         err = clEnqueueSVMFree(queue, 1, svm_pointers, nullptr, nullptr, 0,
                                nullptr, &event);
@@ -58,7 +76,7 @@ struct UnifiedSVMCornerCaseAllocFree : UnifiedSVMBase
         test_error(err,
                    "clFinish after clEnqueueSVMFree with NULL pointer failed");
 
-        cl_command_type cmdType = 0;
+        cmdType = 0;
         err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
                              &cmdType, nullptr);
         test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
@@ -410,6 +428,7 @@ struct UnifiedSVMCornerCaseMemcpy : UnifiedSVMBase
             err,
             "clEnqueueSVMMemcpy with a NULL source pointer returned an error");
 
+        cmdType = 0;
         err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
                              &cmdType, nullptr);
         test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
@@ -447,6 +466,7 @@ struct UnifiedSVMCornerCaseMemcpy : UnifiedSVMBase
             err,
             "clEnqueueSVMMemcpy with a bogus source pointer returned an error");
 
+        cmdType = 0;
         err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
                              &cmdType, nullptr);
         test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
