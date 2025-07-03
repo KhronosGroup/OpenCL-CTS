@@ -298,7 +298,8 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
         cl_int offset;
         std::vector<cl_int> output_buffer;
         // 0:user event, 1:offset-buffer fill event, 2:kernel done event
-        clEventWrapper wait_events[3];
+        // 3:read result event
+        clEventWrapper wait_events[4];
     };
 
     cl_int EnqueueSimultaneousPass(SimulPassData& pd)
@@ -329,7 +330,7 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
         error = clEnqueueReadBuffer(work_queue, out_mem, CL_FALSE,
                                     pd.offset * sizeof(cl_int), data_size(),
                                     pd.output_buffer.data(), 1,
-                                    &pd.wait_events[2], nullptr);
+                                    &pd.wait_events[2], &pd.wait_events[3]);
         test_error(error, "clEnqueueReadBuffer failed");
 
         clMemWrapper new_out_mem = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
@@ -371,9 +372,12 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
                                       &pd.wait_events[0], &pd.wait_events[2]);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
+        // read buffer must wait for (1) command buffer execution and (2)
+        // previous read buffer operation, to avoid data race on the output
+        // buffer
         error = clEnqueueReadBuffer(work_queue, new_out_mem, CL_FALSE,
                                     pd.offset * sizeof(cl_int), data_size(),
-                                    pd.output_buffer.data(), 1,
+                                    pd.output_buffer.data(), 2,
                                     &pd.wait_events[2], nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
