@@ -84,11 +84,19 @@ public:
 
         if (caps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
         {
-            // For now, just unconditionally align to the device maximum
-            data = static_cast<T*>(
-                align_malloc(count * sizeof(T), deviceMaxAlignment));
-            test_assert_error_ret(data != nullptr, "Failed to allocate memory",
-                                  CL_OUT_OF_RESOURCES);
+            if (count == 0)
+            {
+                data = nullptr;
+            }
+            else
+            {
+                // For now, just unconditionally align to the device maximum
+                data = static_cast<T*>(
+                    align_malloc(count * sizeof(T), deviceMaxAlignment));
+                test_assert_error_ret(data != nullptr,
+                                      "Failed to allocate memory",
+                                      CL_OUT_OF_RESOURCES);
+            }
         }
         else
         {
