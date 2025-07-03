@@ -49,8 +49,8 @@ struct UnifiedSVMCornerCaseAllocFree : UnifiedSVMBase
 
         log_info("   testing asynchronous empty set free\n");
         clEventWrapper event;
-        err = clEnqueueSVMFree(queue, 0, nullptr, nullptr, nullptr, 0,
-                               nullptr, &event);
+        err = clEnqueueSVMFree(queue, 0, nullptr, nullptr, nullptr, 0, nullptr,
+                               &event);
         test_error(err, "clEnqueueSVMFree with empty set failed");
 
         err = clFinish(queue);
