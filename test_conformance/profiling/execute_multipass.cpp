@@ -106,28 +106,6 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
     threads[1] = h;
     threads[2] = d;
 
-    err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
-                          3 * sizeof(size_t), (size_t *)localThreads, NULL);
-    if (err)
-    {
-        log_error("clGetDeviceInfo(CL_DEVICE_MAX_WORK_ITEM_SIZES) failed\n");
-        return -1;
-    }
-    err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t),
-                          &maxWorkgroupSize, NULL);
-    if (err)
-    {
-        log_error("clGetDeviceInfo(CL_DEVICE_MAX_WORK_GROUP_SIZE) failed\n");
-        return -1;
-    }
-    localThreads[0] =
-        std::min({ localThreads[0], threads[0], maxWorkgroupSize });
-    localThreads[1] = std::min(
-        { localThreads[1], threads[1], maxWorkgroupSize / localThreads[0] });
-    localThreads[2] =
-        std::min({ localThreads[2], threads[2],
-                   maxWorkgroupSize / (localThreads[0] * localThreads[1]) });
-
     cl_sampler sampler = clCreateSampler( context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &err );
     if( err ){
         log_error( " clCreateSampler failed.\n" );
@@ -161,6 +139,27 @@ static int run_kernel( cl_device_id device, cl_context context, cl_command_queue
         return -1;
     }
 
+    err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
+                          3 * sizeof(size_t), (size_t *)localThreads, NULL);
+    if (err)
+    {
+        log_error("clGetDeviceInfo(CL_DEVICE_MAX_WORK_ITEM_SIZES) failed\n");
+        return -1;
+    }
+    err = clGetKernelWorkGroupInfo(kernel[0], device, CL_KERNEL_WORK_GROUP_SIZE,
+                                   sizeof(size_t), &maxWorkgroupSize, NULL);
+    if (err)
+    {
+        log_error("clGetDeviceInfo(CL_KERNEL_WORK_GROUP_SIZE) failed\n");
+        return -1;
+    }
+    localThreads[0] =
+        std::min({ localThreads[0], threads[0], maxWorkgroupSize });
+    localThreads[1] = std::min(
+        { localThreads[1], threads[1], maxWorkgroupSize / localThreads[0] });
+    localThreads[2] =
+        std::min({ localThreads[2], threads[2],
+                   maxWorkgroupSize / (localThreads[0] * localThreads[1]) });
 
     // create kernel args object and set arg values.
     // set the args values
