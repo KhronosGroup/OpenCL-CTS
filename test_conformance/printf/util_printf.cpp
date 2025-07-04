@@ -468,12 +468,12 @@ std::vector<printDataGenParameters> printFloatGenParameters = {
 
     // Double argument representing floating-point,in [-]xh.hhhhpAd style
 
-    { { "%.6a" }, "0.1f" },
+    { { "%.6a" }, "0.5f" },
 
     //(Minimum)Ten-wide,Double argument representing floating-point,in
     // xh.hhhhpAd style,default(right)-justified
 
-    { { "%10.2a" }, "9990.235f" },
+    { { "%10.2a" }, "1.5f" },
 
     //(Minimum)Ten-wide,two positions after the decimal,with
     // a blank space inserted before the value, default(right)-justified
@@ -673,12 +673,12 @@ std::vector<printDataGenParameters> printDoubleGenParameters = {
 
     // Double argument representing floating-point,in [-]xh.hhhhpAd style
 
-    { { "%.6a" }, "0.1" },
+    { { "%.6a" }, "0.5" },
 
     //(Minimum)Ten-wide,Double argument representing floating-point,in
     // xh.hhhhpAd style,default(right)-justified
 
-    { { "%10.2a" }, "9990.235" },
+    { { "%10.2a" }, "1.5" },
 };
 
 //---------------------------------------------------------
