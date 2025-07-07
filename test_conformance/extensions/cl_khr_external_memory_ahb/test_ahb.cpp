@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 The Khronos Group Inc.
+// Copyright (c) 2025 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,15 +16,14 @@
 
 #include "harness/compat.h"
 #include "harness/kernelHelpers.h"
-#include "harness/clImageHelper.h"
 #include "harness/imageHelpers.h"
 #include "harness/typeWrappers.h"
-#include "harness/extensionHelpers.h"
 #include "harness/errorHelpers.h"
+#include "harness/extensionHelpers.h"
 #include <android/hardware_buffer.h>
 #include "debug_ahb.h"
 
-static bool isAHBUsageReadable(AHardwareBuffer_UsageFlags usage)
+static bool isAHBUsageReadable(const AHardwareBuffer_UsageFlags usage)
 {
     return (AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE | usage) != 0;
 }
@@ -45,7 +44,10 @@ struct ahb_image_size_table {
 };
 
 ahb_image_size_table test_sizes[] = {
-        {128,128}
+    {64,64},
+    {128,128},
+    {256,256},
+    {512,512}
 };
 
 ahb_usage_table test_usages[] = {
@@ -63,19 +65,6 @@ ahb_format_table test_formats[] = {
                 {CL_RGBA, CL_HALF_FLOAT},
                 CL_MEM_OBJECT_IMAGE2D
         },
-
-        {
-                AHARDWAREBUFFER_FORMAT_R16G16_UINT,
-                {CL_RG, CL_UNSIGNED_INT16},
-                CL_MEM_OBJECT_IMAGE2D
-        },
-
-        {
-                AHARDWAREBUFFER_FORMAT_R16_UINT,
-                {CL_R, CL_UNSIGNED_INT16},
-                CL_MEM_OBJECT_IMAGE2D
-        },
-
         {
                 AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM,
                 {CL_RGBA, CL_UNORM_INT8},
@@ -90,36 +79,42 @@ ahb_format_table test_formats[] = {
 };
 
 static const char *diff_images_kernel_source = {
-        R"(
-            #define PIXEL_FORMAT %s4
-           __kernel void verify_image( read_only image2d_t ahb_image , read_only image2d_t ocl_image, global PIXEL_FORMAT *ocl_pixel, global PIXEL_FORMAT *ahb_pixel)
-            {
-                int tidX = get_global_id(0);
-                int tidY = get_global_id(1);
-                int idx = tidY * get_global_size(0) + tidX;
+    R"(
+        #define PIXEL_FORMAT %s4
+       __kernel void verify_image( read_only image2d_t ahb_image , read_only image2d_t ocl_image, global PIXEL_FORMAT *ocl_pixel, global PIXEL_FORMAT *ahb_pixel)
+        {
+            int tidX = get_global_id(0);
+            int tidY = get_global_id(1);
+            int idx = tidY * get_global_size(0) + tidX;
 
-                sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_NONE | CLK_FILTER_NEAREST;
-                PIXEL_FORMAT a = read_image%s(ahb_image, sampler, (int2)( tidX, tidY ) );
-                PIXEL_FORMAT o = read_image%s(ocl_image, sampler, (int2)( tidX, tidY ) );
-                ahb_pixel[idx] = a;
-                ocl_pixel[idx] = o;
-            })"
+            sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_NONE | CLK_FILTER_NEAREST;
+            PIXEL_FORMAT a = read_image%s(ahb_image, sampler, (int2)( tidX, tidY ) );
+            PIXEL_FORMAT o = read_image%s(ocl_image, sampler, (int2)( tidX, tidY ) );
+            ahb_pixel[idx] = a;
+            ocl_pixel[idx] = o;
+        })"
 };
 
-// Confirm that a signal followed by a wait will complete successfully
-int test_images(cl_device_id deviceID, cl_context context,
-                             cl_command_queue defaultQueue, int num_elements)
+// Checks that the inferred image format is correct
+REGISTER_TEST(test_images)
 {
-    cl_int err;
+    cl_int err = CL_SUCCESS;
 
-    if (!is_extension_available(deviceID, "cl_khr_external_memory_android_hardware_buffer"))
+    if (!is_extension_available(device, "cl_khr_external_memory"))
+    {
+        log_info("cl_khr_external_memory is not supported on this platform. "
+                 "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+    if (!is_extension_available(device, "cl_khr_external_memory_android_hardware_buffer"))
     {
         log_info("cl_khr_external_memory_android_hardware_buffer is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
 
-    for(auto format : test_formats) {
+    for (const auto format : test_formats) {
+        log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
         AHardwareBuffer_Desc aHardwareBufferDesc = {0};
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for(auto usage : test_usages) {
@@ -128,18 +123,8 @@ int test_images(cl_device_id deviceID, cl_context context,
                 aHardwareBufferDesc.width = resolution.width;
                 aHardwareBufferDesc.height = resolution.height;
                 aHardwareBufferDesc.layers = 1;
-                if(!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
-                {
-                    char *usage_string = ahardwareBufferDecodeUsageFlagsToString(static_cast<AHardwareBuffer_UsageFlags>(aHardwareBufferDesc.usage));
-                    log_info("Unsupported format %s:\n   Usage flags %s\n   Size (%u, %u, layers = %u)\n",
-                             ahardwareBufferFormatToString(format.aHardwareBufferFormat),
-                             usage_string,
-                             aHardwareBufferDesc.width,
-                             aHardwareBufferDesc.height,
-                             aHardwareBufferDesc.layers);
-                    delete [] usage_string;
-                    continue;
-                }
+
+                CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
                 AHardwareBuffer *aHardwareBuffer = nullptr;
                 int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc, &aHardwareBuffer);
@@ -147,9 +132,8 @@ int test_images(cl_device_id deviceID, cl_context context,
                     log_error("AHardwareBuffer_allocate failed with code %d\n", ahb_result);
                     return TEST_FAIL;
                 }
-                log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
 
-                cl_mem_properties props[] = {
+                const cl_mem_properties props[] = {
                         CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
                         reinterpret_cast<cl_mem_properties>(aHardwareBuffer),
                         0
@@ -182,21 +166,30 @@ int test_images(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-// Confirm that a signal followed by a wait will complete successfully
-int test_images_read(cl_device_id deviceID, cl_context context,
-                             cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST(test_images_read)
 {
-    cl_int err;
+    cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
 
-    if (!is_extension_available(deviceID, "cl_khr_external_memory_android_hardware_buffer"))
+    if (!is_extension_available(device, "cl_khr_external_memory"))
+    {
+        log_info("cl_khr_external_memory is not supported on this platform. "
+                 "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+    if (!is_extension_available(device, "cl_khr_external_memory_android_hardware_buffer"))
     {
         log_info("cl_khr_external_memory_android_hardware_buffer is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
 
+    GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
+    GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
+
     for(auto format : test_formats) {
+        log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+
         AHardwareBuffer_Desc aHardwareBufferDesc = {0};
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for(auto usage : test_usages) {
@@ -211,18 +204,8 @@ int test_images_read(cl_device_id deviceID, cl_context context,
                 aHardwareBufferDesc.width = resolution.width;
                 aHardwareBufferDesc.height = resolution.height;
                 aHardwareBufferDesc.layers = 1;
-                if(!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
-                {
-                    char *usage_string = ahardwareBufferDecodeUsageFlagsToString(static_cast<AHardwareBuffer_UsageFlags>(aHardwareBufferDesc.usage));
-                    log_info("Unsupported format %s:\n   Usage flags %s\n   Size (%u, %u, layers = %u)\n",
-                             ahardwareBufferFormatToString(format.aHardwareBufferFormat),
-                             usage_string,
-                             aHardwareBufferDesc.width,
-                             aHardwareBufferDesc.height,
-                             aHardwareBufferDesc.layers);
-                    delete [] usage_string;
-                    continue;
-                }
+
+                CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
                 AHardwareBuffer *aHardwareBuffer = nullptr;
                 int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc, &aHardwareBuffer);
@@ -230,7 +213,6 @@ int test_images_read(cl_device_id deviceID, cl_context context,
                     log_error("AHardwareBuffer_allocate failed with code %d\n", ahb_result);
                     return TEST_FAIL;
                 }
-                log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
 
                 // Determine AHB memory layout
                 AHardwareBuffer_Desc hardware_buffer_desc = {};
@@ -338,17 +320,24 @@ int test_images_read(cl_device_id deviceID, cl_context context,
                 err = clSetKernelArg(kernel,3,sizeof(cl_mem),&ahb_pixel_buffer);
                 test_error(err, "clSetKernelArg failed");
 
-                size_t global_work_size[] = { (imageInfo.width),
-                                              (imageInfo.height) };
-                err = clEnqueueNDRangeKernel(defaultQueue,kernel,2,nullptr,global_work_size, nullptr,0, nullptr, nullptr);
+                err = clEnqueueAcquireExternalMemObjectsKHR(queue, 1, &imported_image, 0, nullptr, nullptr);
+                test_error(err, "clEnqueueAcquireExternalMemObjectsKHR failed");
+
+                size_t global_work_size[] = { imageInfo.width,
+                                              imageInfo.height };
+                err = clEnqueueNDRangeKernel(queue,kernel,2,nullptr,global_work_size, nullptr,0, nullptr, nullptr);
+                test_error(err, "clEnqueueNDRangeKernel failed");
+
+                err = clEnqueueReleaseExternalMemObjectsKHR(queue, 1, &opencl_image, 0, nullptr, nullptr);
+                test_error(err, "clEnqueueReleaseExternalMemObjectsKHR failed");
 
                 // Read buffer and verify
                 std::vector<char> ocl_verify_data(verify_buffer_size);
-                err = clEnqueueReadBuffer(defaultQueue, ocl_pixel_buffer, CL_BLOCKING, 0, verify_buffer_size, ocl_verify_data.data(), 0, nullptr, nullptr);
+                err = clEnqueueReadBuffer(queue, ocl_pixel_buffer, CL_BLOCKING, 0, verify_buffer_size, ocl_verify_data.data(), 0, nullptr, nullptr);
                 test_error(err, "clEnqueueReadBuffer failed");
 
                 std::vector<char> ahb_verify_data(verify_buffer_size);
-                err = clEnqueueReadBuffer(defaultQueue, ahb_pixel_buffer, CL_BLOCKING, 0, verify_buffer_size, ahb_verify_data.data(), 0, nullptr, nullptr);
+                err = clEnqueueReadBuffer(queue, ahb_pixel_buffer, CL_BLOCKING, 0, verify_buffer_size, ahb_verify_data.data(), 0, nullptr, nullptr);
                 test_error(err, "clEnqueueReadBuffer failed");
 
                 for(unsigned row = 0; row < imageInfo.height; row++)
@@ -408,22 +397,30 @@ int test_images_read(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-// clEnqueueReadImage
-
-int test_enqueue_read_image(cl_device_id deviceID, cl_context context,
-                    cl_command_queue defaultQueue, int num_elements){
-
-    cl_int err;
+REGISTER_TEST(test_enqueue_read_image)
+{
+    cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
 
-    if (!is_extension_available(deviceID, "cl_khr_external_memory_android_hardware_buffer"))
+    if (!is_extension_available(device, "cl_khr_external_memory"))
+    {
+        log_info("cl_khr_external_memory is not supported on this platform. "
+                 "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+    if (!is_extension_available(device, "cl_khr_external_memory_android_hardware_buffer"))
     {
         log_info("cl_khr_external_memory_android_hardware_buffer is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
 
+    GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
+    GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
+
     for(auto format : test_formats) {
+        log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+
         AHardwareBuffer_Desc aHardwareBufferDesc = {0};
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for(auto usage : test_usages) {
@@ -438,18 +435,8 @@ int test_enqueue_read_image(cl_device_id deviceID, cl_context context,
                 aHardwareBufferDesc.width = resolution.width;
                 aHardwareBufferDesc.height = resolution.height;
                 aHardwareBufferDesc.layers = 1;
-                if(!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
-                {
-                    char *usage_string = ahardwareBufferDecodeUsageFlagsToString(static_cast<AHardwareBuffer_UsageFlags>(aHardwareBufferDesc.usage));
-                    log_info("Unsupported format %s:\n   Usage flags %s\n   Size (%u, %u, layers = %u)\n",
-                             ahardwareBufferFormatToString(format.aHardwareBufferFormat),
-                             usage_string,
-                             aHardwareBufferDesc.width,
-                             aHardwareBufferDesc.height,
-                             aHardwareBufferDesc.layers);
-                    delete [] usage_string;
-                    continue;
-                }
+
+                CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
                 AHardwareBuffer *aHardwareBuffer = nullptr;
                 int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc, &aHardwareBuffer);
@@ -457,7 +444,6 @@ int test_enqueue_read_image(cl_device_id deviceID, cl_context context,
                     log_error("AHardwareBuffer_allocate failed with code %d\n", ahb_result);
                     return TEST_FAIL;
                 }
-                log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
 
                 // Determine AHB memory layout
                 AHardwareBuffer_Desc hardware_buffer_desc = {};
@@ -467,7 +453,7 @@ int test_enqueue_read_image(cl_device_id deviceID, cl_context context,
                 test_assert_error(hardware_buffer_desc.height == resolution.height, "AHB has unexpected height");
 
                 // Populate AHB with random data
-                size_t pixelSize = get_pixel_size( &format.clImageFormat );
+                const size_t pixelSize = get_pixel_size( &format.clImageFormat );
                 image_descriptor imageInfo = { 0 };
                 imageInfo.format = &format.clImageFormat;
                 imageInfo.type = format.clMemObjectType;
@@ -493,13 +479,14 @@ int test_enqueue_read_image(cl_device_id deviceID, cl_context context,
                 memcpy(hardware_buffer_data, srcData, srcBytes);
 
                 ahb_result = AHardwareBuffer_unlock(aHardwareBuffer, nullptr);
-                if(ahb_result != 0)
+                if (ahb_result != 0)
                 {
-                    log_error("AHardwareBuffer_unlock failed with code %d\n", ahb_result);
+                    log_error("AHardwareBuffer_unlock failed with code %d\n",
+                              ahb_result);
                     return TEST_FAIL;
                 }
 
-                cl_mem_properties props[] = {
+                const cl_mem_properties props[] = {
                         CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
                         reinterpret_cast<cl_mem_properties>(aHardwareBuffer),
                         0
@@ -508,18 +495,24 @@ int test_enqueue_read_image(cl_device_id deviceID, cl_context context,
                 clMemWrapper imported_image = clCreateImageWithProperties(context, props, CL_MEM_READ_ONLY, nullptr, nullptr, nullptr, &err);
                 test_error(err, "Failed to create CL image from AHardwareBuffer");
 
+                err = clEnqueueAcquireExternalMemObjectsKHR(queue, 1, &imported_image, 0, nullptr, nullptr);
+                test_error(err, "clEnqueueAcquireExternalMemObjectsKHR failed");
+
                 size_t origin[] = {0,0,0};
                 size_t region[] = {imageInfo.width,imageInfo.height,1};
 
                 std::vector<char> out_image(srcBytes);
-                err = clEnqueueReadImage(defaultQueue,imported_image, CL_TRUE,origin, region,imageInfo.rowPitch,0,
+                err = clEnqueueReadImage(queue,imported_image, CL_TRUE,origin, region,imageInfo.rowPitch,0,
                                          out_image.data(), 0, nullptr, nullptr);
                 test_error(err,"clEnqueueCopyImage failed");
 
-                char * out_image_ptr = out_image.data();
-                char * srcData_ptr = (char *) srcData;
+                err = clEnqueueReleaseExternalMemObjectsKHR(queue, 1, &imported_image, 0, nullptr, nullptr);
+                test_error(err,"clEnqueueReleaseExternalMemObjectsKHR failed");
 
-                size_t scanlineSize = imageInfo.width * get_pixel_size( imageInfo.format );
+                const char * out_image_ptr = out_image.data();
+                auto srcData_ptr = static_cast<const char *>(srcData);
+
+                const size_t scanlineSize = imageInfo.width * get_pixel_size( imageInfo.format );
 
                 // Count the number of bytes successfully matched
                 size_t total_matched = 0;
@@ -527,7 +520,7 @@ int test_enqueue_read_image(cl_device_id deviceID, cl_context context,
 
                     if(memcmp(srcData_ptr,out_image_ptr,scanlineSize) != 0) {
                         // Find the first differing pixel
-                        size_t pixel_size = get_pixel_size( imageInfo.format );
+                        const size_t pixel_size = get_pixel_size( imageInfo.format );
                         size_t where = compare_scanlines(&imageInfo, srcData_ptr, out_image_ptr);
                         if (where < imageInfo.width)
                         {
@@ -555,27 +548,32 @@ int test_enqueue_read_image(cl_device_id deviceID, cl_context context,
     }
 
     return TEST_PASS;
-
-
 }
 
-
-// clEnqueueCopyImage
-
-int test_enqueue_copy_image(cl_device_id deviceID, cl_context context,
-                            cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST(test_enqueue_copy_image)
 {
-    cl_int err;
+    cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
 
-    if (!is_extension_available(deviceID, "cl_khr_external_memory_android_hardware_buffer"))
+    if (!is_extension_available(device, "cl_khr_external_memory"))
+    {
+        log_info("cl_khr_external_memory is not supported on this platform. "
+                 "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+    if (!is_extension_available(device, "cl_khr_external_memory_android_hardware_buffer"))
     {
         log_info("cl_khr_external_memory_android_hardware_buffer is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
 
+    GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
+    GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
+
     for(auto format : test_formats) {
+        log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+
         AHardwareBuffer_Desc aHardwareBufferDesc = {0};
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for(auto usage : test_usages) {
@@ -590,18 +588,8 @@ int test_enqueue_copy_image(cl_device_id deviceID, cl_context context,
                 aHardwareBufferDesc.width = resolution.width;
                 aHardwareBufferDesc.height = resolution.height;
                 aHardwareBufferDesc.layers = 1;
-                if (!AHardwareBuffer_isSupported(&aHardwareBufferDesc)) {
-                    char *usage_string = ahardwareBufferDecodeUsageFlagsToString(
-                            static_cast<AHardwareBuffer_UsageFlags>(aHardwareBufferDesc.usage));
-                    log_info("Unsupported format %s:\n   Usage flags %s\n   Size (%u, %u, layers = %u)\n",
-                             ahardwareBufferFormatToString(format.aHardwareBufferFormat),
-                             usage_string,
-                             aHardwareBufferDesc.width,
-                             aHardwareBufferDesc.height,
-                             aHardwareBufferDesc.layers);
-                    delete[] usage_string;
-                    continue;
-                }
+
+                CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
                 AHardwareBuffer *aHardwareBuffer = nullptr;
                 int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc, &aHardwareBuffer);
@@ -609,7 +597,6 @@ int test_enqueue_copy_image(cl_device_id deviceID, cl_context context,
                     log_error("AHardwareBuffer_allocate failed with code %d\n", ahb_result);
                     return TEST_FAIL;
                 }
-                log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
 
                 // Determine AHB memory layout
                 AHardwareBuffer_Desc hardware_buffer_desc = {};
@@ -625,7 +612,7 @@ int test_enqueue_copy_image(cl_device_id deviceID, cl_context context,
                 imageInfo.type = format.clMemObjectType;
                 imageInfo.width = resolution.width;
                 imageInfo.height = resolution.height;
-                imageInfo.rowPitch = hardware_buffer_desc.stride * pixelSize;
+                imageInfo.rowPitch = resolution.width * pixelSize;
                 test_assert_error(imageInfo.rowPitch >= pixelSize * imageInfo.width, "Row pitch is smaller than width");
 
                 size_t srcBytes = get_image_size(&imageInfo);
@@ -668,9 +655,12 @@ int test_enqueue_copy_image(cl_device_id deviceID, cl_context context,
                 clMemWrapper opencl_image = clCreateImage(context,CL_MEM_READ_WRITE, imageInfo.format, &imageDesc,nullptr,&err);
                 test_error(err, "Failed to create CL image");
 
+                err = clEnqueueAcquireExternalMemObjectsKHR(queue, 1, &imported_image, 0, nullptr, nullptr);
+                test_error(err, "clEnqueueAcquireExternalMemObjectsKHR failed");
+
                 size_t origin[] = {0,0,0};
                 size_t region[] = {imageInfo.width,imageInfo.height,1};
-                err = clEnqueueCopyImage(defaultQueue, imported_image, opencl_image, origin, origin, region, 0, nullptr, nullptr);
+                err = clEnqueueCopyImage(queue, imported_image, opencl_image, origin, origin, region, 0, nullptr, nullptr);
                 test_error(err,"Failed calling clEnqueueCopyImage");
 
                 ExplicitTypes outputType;
@@ -723,15 +713,18 @@ int test_enqueue_copy_image(cl_device_id deviceID, cl_context context,
 
                 size_t global_work_size[] = { (imageInfo.width),
                                               (imageInfo.height) };
-                err = clEnqueueNDRangeKernel(defaultQueue,kernel,2,nullptr,global_work_size, nullptr,0, nullptr, nullptr);
+                err = clEnqueueNDRangeKernel(queue,kernel,2,nullptr,global_work_size, nullptr,0, nullptr, nullptr);
+
+                err = clEnqueueReleaseExternalMemObjectsKHR(queue, 1, &imported_image, 0, nullptr, nullptr);
+                test_error(err, "clEnqueueReleaseExternalMemObjectsKHR failed");
 
                 // Read buffer and verify
                 std::vector<char> ocl_verify_data(verify_buffer_size);
-                err = clEnqueueReadBuffer(defaultQueue, ocl_pixel_buffer, CL_BLOCKING, 0, verify_buffer_size, ocl_verify_data.data(), 0, nullptr, nullptr);
+                err = clEnqueueReadBuffer(queue, ocl_pixel_buffer, CL_BLOCKING, 0, verify_buffer_size, ocl_verify_data.data(), 0, nullptr, nullptr);
                 test_error(err, "clEnqueueReadBuffer failed");
 
                 std::vector<char> ahb_verify_data(verify_buffer_size);
-                err = clEnqueueReadBuffer(defaultQueue, ahb_pixel_buffer, CL_BLOCKING, 0, verify_buffer_size, ahb_verify_data.data(), 0, nullptr, nullptr);
+                err = clEnqueueReadBuffer(queue, ahb_pixel_buffer, CL_BLOCKING, 0, verify_buffer_size, ahb_verify_data.data(), 0, nullptr, nullptr);
                 test_error(err, "clEnqueueReadBuffer failed");
 
                 for(unsigned row = 0; row < imageInfo.height; row++)
@@ -791,22 +784,30 @@ int test_enqueue_copy_image(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-// clEnqueueCopyImageToBuffer
-
-int test_enqueue_copy_image_to_buffer(cl_device_id deviceID, cl_context context,
-                            cl_command_queue defaultQueue, int num_elements){
-
-    cl_int err;
+REGISTER_TEST(test_enqueue_copy_image_to_buffer)
+{
+    cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
 
-    if (!is_extension_available(deviceID, "cl_khr_external_memory_android_hardware_buffer"))
+    if (!is_extension_available(device, "cl_khr_external_memory"))
+    {
+        log_info("cl_khr_external_memory is not supported on this platform. "
+                 "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+    if (!is_extension_available(device, "cl_khr_external_memory_android_hardware_buffer"))
     {
         log_info("cl_khr_external_memory_android_hardware_buffer is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
 
+    GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
+    GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
+
     for(auto format : test_formats) {
+        log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+
         AHardwareBuffer_Desc aHardwareBufferDesc = {0};
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for(auto usage : test_usages) {
@@ -821,18 +822,8 @@ int test_enqueue_copy_image_to_buffer(cl_device_id deviceID, cl_context context,
                 aHardwareBufferDesc.width = resolution.width;
                 aHardwareBufferDesc.height = resolution.height;
                 aHardwareBufferDesc.layers = 1;
-                if(!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
-                {
-                    char *usage_string = ahardwareBufferDecodeUsageFlagsToString(static_cast<AHardwareBuffer_UsageFlags>(aHardwareBufferDesc.usage));
-                    log_info("Unsupported format %s:\n   Usage flags %s\n   Size (%u, %u, layers = %u)\n",
-                             ahardwareBufferFormatToString(format.aHardwareBufferFormat),
-                             usage_string,
-                             aHardwareBufferDesc.width,
-                             aHardwareBufferDesc.height,
-                             aHardwareBufferDesc.layers);
-                    delete [] usage_string;
-                    continue;
-                }
+
+                CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
                 AHardwareBuffer *aHardwareBuffer = nullptr;
                 int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc, &aHardwareBuffer);
@@ -840,7 +831,6 @@ int test_enqueue_copy_image_to_buffer(cl_device_id deviceID, cl_context context,
                     log_error("AHardwareBuffer_allocate failed with code %d\n", ahb_result);
                     return TEST_FAIL;
                 }
-                log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
 
                 // Determine AHB memory layout
                 AHardwareBuffer_Desc hardware_buffer_desc = {};
@@ -894,22 +884,28 @@ int test_enqueue_copy_image_to_buffer(cl_device_id deviceID, cl_context context,
                 clMemWrapper opencl_buffer = clCreateBuffer(context,CL_MEM_READ_WRITE,srcBytes, nullptr,&err);
                 test_error(err, "Failed to create CL buffer");
 
+                err = clEnqueueAcquireExternalMemObjectsKHR(queue, 1, &imported_image, 0, nullptr, nullptr);
+                test_error(err, "clEnqueueAcquireExternalMemObjectsKHR failed");
+
                 size_t origin[] = {0,0,0};
                 size_t region[] = {imageInfo.width,imageInfo.height,1};
 
-                err = clEnqueueCopyImageToBuffer(defaultQueue,imported_image,opencl_buffer,origin,region,0,0, nullptr,
+                err = clEnqueueCopyImageToBuffer(queue,imported_image,opencl_buffer,origin,region,0,0, nullptr,
                                                  nullptr);
                 test_error(err,"Failed to copy imported AHB image to opencl buffer");
 
+                err = clEnqueueReleaseExternalMemObjectsKHR(queue, 1, &imported_image, 0, nullptr, nullptr);
+                test_error(err,"clEnqueueReleaseExternalMemObjectsKHR failed");
+
                 std::vector<char> out_buffer(srcBytes);
-                err = clEnqueueReadBuffer(defaultQueue, opencl_buffer, CL_TRUE, 0, srcBytes, out_buffer.data(), 0, nullptr, nullptr);
+                err = clEnqueueReadBuffer(queue, opencl_buffer, CL_TRUE, 0, srcBytes, out_buffer.data(), 0, nullptr, nullptr);
                 test_error(err,"clEnqueueReadBuffer failed");
 
                 char * out_buffer_ptr = out_buffer.data();
                 char * srcData_ptr = (char *) srcData;
 
 
-                size_t scanlineSize = imageInfo.width * get_pixel_size( imageInfo.format );
+                const size_t scanlineSize = imageInfo.width * get_pixel_size( imageInfo.format );
 
                 // Count the number of bytes successfully matched
                 size_t total_matched = 0;
@@ -917,7 +913,7 @@ int test_enqueue_copy_image_to_buffer(cl_device_id deviceID, cl_context context,
 
                     if(memcmp(srcData_ptr, out_buffer_ptr, scanlineSize) != 0) {
                         // Find the first differing pixel
-                        size_t pixel_size = get_pixel_size( imageInfo.format );
+                        const size_t pixel_size = get_pixel_size( imageInfo.format );
                         size_t where = compare_scanlines(&imageInfo, srcData_ptr, out_buffer_ptr);
                         if (where < imageInfo.width)
                         {
@@ -930,7 +926,7 @@ int test_enqueue_copy_image_to_buffer(cl_device_id deviceID, cl_context context,
 
                     total_matched += scanlineSize;
                     srcData_ptr += imageInfo.rowPitch;
-                    out_buffer_ptr += imageInfo.rowPitch;
+                    out_buffer_ptr += scanlineSize;
 
                 }
 
@@ -947,21 +943,30 @@ int test_enqueue_copy_image_to_buffer(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-// clEnqueueCopyBufferToImage
-
-int test_enqueue_copy_buffer_to_image(cl_device_id deviceID, cl_context context,
-                                      cl_command_queue defaultQueue, int num_elements){
-    cl_int err;
+REGISTER_TEST(test_enqueue_copy_buffer_to_image)
+{
+    cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
 
-    if (!is_extension_available(deviceID, "cl_khr_external_memory_android_hardware_buffer"))
+    if (!is_extension_available(device, "cl_khr_external_memory"))
+    {
+        log_info("cl_khr_external_memory is not supported on this platform. "
+                 "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+    if (!is_extension_available(device, "cl_khr_external_memory_android_hardware_buffer"))
     {
         log_info("cl_khr_external_memory_android_hardware_buffer is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
 
+    GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
+    GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
+
     for(auto format : test_formats) {
+        log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+
         AHardwareBuffer_Desc aHardwareBufferDesc = {0};
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for(auto usage : test_usages) {
@@ -976,18 +981,8 @@ int test_enqueue_copy_buffer_to_image(cl_device_id deviceID, cl_context context,
                 aHardwareBufferDesc.width = resolution.width;
                 aHardwareBufferDesc.height = resolution.height;
                 aHardwareBufferDesc.layers = 1;
-                if(!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
-                {
-                    char *usage_string = ahardwareBufferDecodeUsageFlagsToString(static_cast<AHardwareBuffer_UsageFlags>(aHardwareBufferDesc.usage));
-                    log_info("Unsupported format %s:\n   Usage flags %s\n   Size (%u, %u, layers = %u)\n",
-                             ahardwareBufferFormatToString(format.aHardwareBufferFormat),
-                             usage_string,
-                             aHardwareBufferDesc.width,
-                             aHardwareBufferDesc.height,
-                             aHardwareBufferDesc.layers);
-                    delete [] usage_string;
-                    continue;
-                }
+
+                CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
                 AHardwareBuffer *aHardwareBuffer = nullptr;
                 int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc, &aHardwareBuffer);
@@ -995,7 +990,6 @@ int test_enqueue_copy_buffer_to_image(cl_device_id deviceID, cl_context context,
                     log_error("AHardwareBuffer_allocate failed with code %d\n", ahb_result);
                     return TEST_FAIL;
                 }
-                log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
 
                 // Determine AHB memory layout
                 AHardwareBuffer_Desc hardware_buffer_desc = {};
@@ -1005,7 +999,7 @@ int test_enqueue_copy_buffer_to_image(cl_device_id deviceID, cl_context context,
                 test_assert_error(hardware_buffer_desc.height == resolution.height, "AHB has unexpected height");
 
                 // Generate random data for opencl buffer
-                size_t pixelSize = get_pixel_size( &format.clImageFormat );
+                const size_t pixelSize = get_pixel_size( &format.clImageFormat );
                 image_descriptor imageInfo = { 0 };
                 imageInfo.format = &format.clImageFormat;
                 imageInfo.type = format.clMemObjectType;
@@ -1014,7 +1008,7 @@ int test_enqueue_copy_buffer_to_image(cl_device_id deviceID, cl_context context,
                 imageInfo.rowPitch = resolution.width * resolution.height * pixelSize; // data is tightly packed in buffer
                 test_assert_error(imageInfo.rowPitch >= pixelSize * imageInfo.width, "Row pitch is smaller than width");
 
-                size_t srcBytes = get_image_size(&imageInfo);
+                const size_t srcBytes = get_image_size(&imageInfo);
                 test_assert_error(srcBytes > 0, "Image cannot have zero size");
 
                 BufferOwningPtr<char> srcData;
@@ -1032,14 +1026,20 @@ int test_enqueue_copy_buffer_to_image(cl_device_id deviceID, cl_context context,
                 clMemWrapper imported_image = clCreateImageWithProperties(context, props, CL_MEM_READ_WRITE, nullptr, nullptr, nullptr, &err);
                 test_error(err, "Failed to create CL image from AHardwareBuffer");
 
+                err = clEnqueueAcquireExternalMemObjectsKHR(queue, 1, &imported_image, 0, nullptr, nullptr);
+                test_error(err, "clEnqueueAcquireExternalMemObjects failed");
+
                 size_t origin[] = {0,0,0};
                 size_t region[] = {imageInfo.width,imageInfo.height,1};
 
-                err = clEnqueueCopyBufferToImage(defaultQueue, opencl_buffer, imported_image, 0, origin, region, 0, nullptr,
+                err = clEnqueueCopyBufferToImage(queue, opencl_buffer, imported_image, 0, origin, region, 0, nullptr,
                                                  nullptr);
                 test_error(err, "Failed to copy opencl buffer to imported AHB image");
 
-                clFinish(defaultQueue);
+                err = clEnqueueReleaseExternalMemObjectsKHR(queue, 1, &imported_image, 0, nullptr, nullptr);
+                test_error(err, "clEnqueueReleaseExternalMemObjects failed");
+
+                clFinish(queue);
 
                 AHardwareBuffer_describe(aHardwareBuffer, &hardware_buffer_desc);
 
@@ -1051,10 +1051,10 @@ int test_enqueue_copy_buffer_to_image(cl_device_id deviceID, cl_context context,
                     return TEST_FAIL;
                 }
 
-                char * out_image_ptr = reinterpret_cast<char *>(hardware_buffer_data);
-                char * srcData_ptr = (char *) srcData;
+                auto out_image_ptr = static_cast<char *>(hardware_buffer_data);
+                auto srcData_ptr = static_cast<char *>(srcData);
 
-                size_t scanlineSize = imageInfo.width * get_pixel_size( imageInfo.format );
+                const size_t scanlineSize = imageInfo.width * get_pixel_size( imageInfo.format );
 
                 // Count the number of bytes successfully matched
                 size_t total_matched = 0;
@@ -1102,22 +1102,30 @@ int test_enqueue_copy_buffer_to_image(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-// clEnqueueWriteImage
-
-int test_enqueue_write_image(cl_device_id deviceID, cl_context context,
-                             cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST(test_enqueue_write_image)
 {
-    cl_int err;
+    cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
 
-    if (!is_extension_available(deviceID, "cl_khr_external_memory_android_hardware_buffer"))
+    if (!is_extension_available(device, "cl_khr_external_memory"))
+    {
+        log_info("cl_khr_external_memory is not supported on this platform. "
+                 "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+    if (!is_extension_available(device, "cl_khr_external_memory_android_hardware_buffer"))
     {
         log_info("cl_khr_external_memory_android_hardware_buffer is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
 
+    GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
+    GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
+
     for(auto format : test_formats) {
+        log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+
         AHardwareBuffer_Desc aHardwareBufferDesc = {0};
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for(auto usage : test_usages) {
@@ -1132,18 +1140,8 @@ int test_enqueue_write_image(cl_device_id deviceID, cl_context context,
                 aHardwareBufferDesc.width = resolution.width;
                 aHardwareBufferDesc.height = resolution.height;
                 aHardwareBufferDesc.layers = 1;
-                if (!AHardwareBuffer_isSupported(&aHardwareBufferDesc)) {
-                    char *usage_string = ahardwareBufferDecodeUsageFlagsToString(
-                            static_cast<AHardwareBuffer_UsageFlags>(aHardwareBufferDesc.usage));
-                    log_info("Unsupported format %s:\n   Usage flags %s\n   Size (%u, %u, layers = %u)\n",
-                             ahardwareBufferFormatToString(format.aHardwareBufferFormat),
-                             usage_string,
-                             aHardwareBufferDesc.width,
-                             aHardwareBufferDesc.height,
-                             aHardwareBufferDesc.layers);
-                    delete[] usage_string;
-                    continue;
-                }
+
+                CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
                 AHardwareBuffer *aHardwareBuffer = nullptr;
                 int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc, &aHardwareBuffer);
@@ -1151,7 +1149,6 @@ int test_enqueue_write_image(cl_device_id deviceID, cl_context context,
                     log_error("AHardwareBuffer_allocate failed with code %d\n", ahb_result);
                     return TEST_FAIL;
                 }
-                log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
 
                 // Determine AHB memory layout
                 AHardwareBuffer_Desc hardware_buffer_desc = {};
@@ -1172,7 +1169,7 @@ int test_enqueue_write_image(cl_device_id deviceID, cl_context context,
                 test_error(err, "Failed to create CL image from AHardwareBuffer");
 
                 // Generate data to write to image
-                size_t pixelSize = get_pixel_size(&format.clImageFormat);
+                const size_t pixelSize = get_pixel_size(&format.clImageFormat);
                 image_descriptor imageInfo = {0};
                 imageInfo.format = &format.clImageFormat;
                 imageInfo.type = format.clMemObjectType;
@@ -1181,20 +1178,26 @@ int test_enqueue_write_image(cl_device_id deviceID, cl_context context,
                 imageInfo.rowPitch = resolution.width * resolution.height * pixelSize; // Data is tightly packed
                 test_assert_error(imageInfo.rowPitch >= pixelSize * imageInfo.width, "Row pitch is smaller than width");
 
-                size_t srcBytes = get_image_size(&imageInfo);
+                const size_t srcBytes = get_image_size(&imageInfo);
                 test_assert_error(srcBytes > 0, "Image cannot have zero size");
 
                 BufferOwningPtr<char> srcData;
                 generate_random_image_data(&imageInfo, srcData, seed);
 
+                err = clEnqueueAcquireExternalMemObjectsKHR(queue, 1, &imported_image, 0, nullptr, nullptr);
+                test_error(err, "clEnqueueAcquireExternalMemObjects failed");
+
                 size_t origin[] = {0,0,0};
                 size_t region[] = {imageInfo.width,imageInfo.height,1};
 
-                err = clEnqueueWriteImage(defaultQueue, imported_image, CL_TRUE, origin, region, 0, 0, srcData, 0,
+                err = clEnqueueWriteImage(queue, imported_image, CL_TRUE, origin, region, 0, 0, srcData, 0,
                                           nullptr, nullptr);
                 test_error(err,"Failed calling clEnqueueWriteImage");
 
-                clFinish(defaultQueue);
+                err = clEnqueueReleaseExternalMemObjectsKHR(queue, 1, &imported_image, 0, nullptr, nullptr);
+                test_error(err,"clReleaseExternalMemObject failed");
+
+                clFinish(queue);
 
                 AHardwareBuffer_describe(aHardwareBuffer, &hardware_buffer_desc);
 
@@ -1206,10 +1209,10 @@ int test_enqueue_write_image(cl_device_id deviceID, cl_context context,
                     return TEST_FAIL;
                 }
 
-                char * out_image_ptr = reinterpret_cast<char *>(hardware_buffer_data);
-                char * srcData_ptr = (char *) srcData;
+                auto out_image_ptr = static_cast<char *>(hardware_buffer_data);
+                auto srcData_ptr = static_cast<char *>(srcData);
 
-                size_t scanlineSize = imageInfo.width * get_pixel_size( imageInfo.format );
+                const size_t scanlineSize = imageInfo.width * get_pixel_size( imageInfo.format );
 
                 // Count the number of bytes successfully matched
                 size_t total_matched = 0;
@@ -1217,7 +1220,7 @@ int test_enqueue_write_image(cl_device_id deviceID, cl_context context,
 
                     if(memcmp(srcData_ptr,out_image_ptr,scanlineSize) != 0) {
                         // Find the first differing pixel
-                        size_t pixel_size = get_pixel_size( imageInfo.format );
+                        const size_t pixel_size = get_pixel_size( imageInfo.format );
                         size_t where = compare_scanlines(&imageInfo, srcData_ptr, out_image_ptr);
                         if (where < imageInfo.width)
                         {
@@ -1238,7 +1241,6 @@ int test_enqueue_write_image(cl_device_id deviceID, cl_context context,
                     total_matched += scanlineSize;
                     srcData_ptr += scanlineSize; // Data is tightly packed
                     out_image_ptr += hardware_buffer_desc.stride * pixelSize;
-
                 }
 
                 ahb_result = AHardwareBuffer_unlock(aHardwareBuffer, nullptr);
@@ -1254,7 +1256,6 @@ int test_enqueue_write_image(cl_device_id deviceID, cl_context context,
                 if(total_matched == 0) {
                     test_fail("Zero bytes matched");
                 }
-
             }
         }
     }
@@ -1262,22 +1263,30 @@ int test_enqueue_write_image(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-// clEnqueueFillImage
-
-int test_enqueue_fill_image(cl_device_id deviceID, cl_context context,
-                             cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST(test_enqueue_fill_image)
 {
-    cl_int err;
+    cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
 
-    if (!is_extension_available(deviceID, "cl_khr_external_memory_android_hardware_buffer"))
+    if (!is_extension_available(device, "cl_khr_external_memory"))
+    {
+        log_info("cl_khr_external_memory is not supported on this platform. "
+                 "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+    if (!is_extension_available(device, "cl_khr_external_memory_android_hardware_buffer"))
     {
         log_info("cl_khr_external_memory_android_hardware_buffer is not supported on this platform. "
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
 
+    GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
+    GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
+
     for(auto format : test_formats) {
+        log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+
         AHardwareBuffer_Desc aHardwareBufferDesc = {0};
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for(auto usage : test_usages) {
@@ -1292,18 +1301,8 @@ int test_enqueue_fill_image(cl_device_id deviceID, cl_context context,
                 aHardwareBufferDesc.width = resolution.width;
                 aHardwareBufferDesc.height = resolution.height;
                 aHardwareBufferDesc.layers = 1;
-                if (!AHardwareBuffer_isSupported(&aHardwareBufferDesc)) {
-                    char *usage_string = ahardwareBufferDecodeUsageFlagsToString(
-                            static_cast<AHardwareBuffer_UsageFlags>(aHardwareBufferDesc.usage));
-                    log_info("Unsupported format %s:\n   Usage flags %s\n   Size (%u, %u, layers = %u)\n",
-                             ahardwareBufferFormatToString(format.aHardwareBufferFormat),
-                             usage_string,
-                             aHardwareBufferDesc.width,
-                             aHardwareBufferDesc.height,
-                             aHardwareBufferDesc.layers);
-                    delete[] usage_string;
-                    continue;
-                }
+
+                CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
                 AHardwareBuffer *aHardwareBuffer = nullptr;
                 int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc, &aHardwareBuffer);
@@ -1311,7 +1310,6 @@ int test_enqueue_fill_image(cl_device_id deviceID, cl_context context,
                     log_error("AHardwareBuffer_allocate failed with code %d\n", ahb_result);
                     return TEST_FAIL;
                 }
-                log_info("Testing %s\n", ahardwareBufferFormatToString(format.aHardwareBufferFormat));
 
                 // Determine AHB memory layout
                 AHardwareBuffer_Desc hardware_buffer_desc = {};
@@ -1319,7 +1317,6 @@ int test_enqueue_fill_image(cl_device_id deviceID, cl_context context,
 
                 test_assert_error(hardware_buffer_desc.width == resolution.width, "AHB has unexpected width");
                 test_assert_error(hardware_buffer_desc.height == resolution.height, "AHB has unexpected height");
-
 
                 cl_mem_properties props[] = {
                         CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
@@ -1344,31 +1341,34 @@ int test_enqueue_fill_image(cl_device_id deviceID, cl_context context,
                 size_t origin[] = {0,0,0};
                 size_t region[] = {imageInfo.width,imageInfo.height,1};
 
-                char * verificationValue = static_cast<char *>(malloc(pixelSize));
+                auto verificationValue = static_cast<char *>(malloc(pixelSize));
                 if(!verificationValue){
                     log_error("Unable to malloc %zu bytes for verificationValue",pixelSize);
                     return TEST_FAIL;
                 }
 
+                err = clEnqueueAcquireExternalMemObjectsKHR(queue, 1, &imported_image, 0, nullptr, nullptr);
+                test_error(err, "clEnqueueAcquireExternalMemObjects failed");
+
                 // Generate pixel color and fill image
                 switch(format.clImageFormat.image_channel_data_type){
                     case CL_HALF_FLOAT:
-                        DetectFloatToHalfRoundingMode(defaultQueue); // Intentional drop-through
+                        DetectFloatToHalfRoundingMode(queue); // Intentional drop-through
                     case CL_UNORM_INT8: {
                         auto pattern_decimal = static_cast<float>(genrand_real1(seed));
                         cl_float fillColor[4] = {pattern_decimal, pattern_decimal, pattern_decimal, pattern_decimal};
 
-                        err = clEnqueueFillImage(defaultQueue,imported_image, fillColor, origin, region, 0, nullptr, nullptr);
+                        err = clEnqueueFillImage(queue,imported_image, fillColor, origin, region, 0, nullptr, nullptr);
                         test_error(err,"Failed calling clEnqueueFillImage");
 
                         pack_image_pixel(fillColor, &format.clImageFormat, verificationValue);
                         break;
                     }
                     case CL_UNSIGNED_INT16: {
-                        cl_uint pattern_whole = genrand_int32(seed);
+                        const cl_uint pattern_whole = genrand_int32(seed);
                         cl_uint fillColor[4] = {pattern_whole, pattern_whole, pattern_whole, pattern_whole};
 
-                        err = clEnqueueFillImage(defaultQueue,imported_image, fillColor, origin, region, 0, nullptr, nullptr);
+                        err = clEnqueueFillImage(queue,imported_image, fillColor, origin, region, 0, nullptr, nullptr);
                         test_error(err,"Failed calling clEnqueueFillImage");
 
                         pack_image_pixel(fillColor, &format.clImageFormat, verificationValue);
@@ -1379,7 +1379,10 @@ int test_enqueue_fill_image(cl_device_id deviceID, cl_context context,
                         continue;
                 }
 
-                clFinish(defaultQueue);
+                err = clEnqueueReleaseExternalMemObjectsKHR(queue, 1, &imported_image, 0, nullptr, nullptr);
+                test_error(err, "clEnqueueReleaseExternalMemObjects failed");
+
+                clFinish(queue);
                 AHardwareBuffer_describe(aHardwareBuffer, &hardware_buffer_desc);
 
                 void *hardware_buffer_data = nullptr;
@@ -1390,11 +1393,11 @@ int test_enqueue_fill_image(cl_device_id deviceID, cl_context context,
                     return TEST_FAIL;
                 }
 
-                char * out_image_ptr = reinterpret_cast<char *>(hardware_buffer_data);
-                size_t scanlineSize = imageInfo.width * pixelSize;
+                auto out_image_ptr = static_cast<char *>(hardware_buffer_data);
+                const size_t scanlineSize = imageInfo.width * pixelSize;
 
 
-                char * verificationLine = static_cast<char *>(malloc(pixelSize * scanlineSize));
+                auto verificationLine = static_cast<char *>(malloc(pixelSize * scanlineSize));
                 if(!verificationLine){
                     free(verificationValue);
                     log_error("Unable to malloc %zu bytes for verificationLine",pixelSize * scanlineSize);
@@ -1414,7 +1417,7 @@ int test_enqueue_fill_image(cl_device_id deviceID, cl_context context,
 
                     if(memcmp(verificationLine,out_image_ptr,scanlineSize) != 0) {
                         // Find the first differing pixel
-                        size_t pixel_size = get_pixel_size( imageInfo.format );
+                        const size_t pixel_size = get_pixel_size( imageInfo.format );
                         size_t where = compare_scanlines(&imageInfo, verificationLine, out_image_ptr);
                         if (where < imageInfo.width)
                         {
@@ -1436,7 +1439,6 @@ int test_enqueue_fill_image(cl_device_id deviceID, cl_context context,
 
                     total_matched += scanlineSize;
                     out_image_ptr += hardware_buffer_desc.stride * pixelSize;
-
                 }
 
                 ahb_result = AHardwareBuffer_unlock(aHardwareBuffer, nullptr);
@@ -1461,14 +1463,17 @@ int test_enqueue_fill_image(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-
-// Confirm that a signal followed by a wait will complete successfully
-int test_blob(cl_device_id deviceID, cl_context context,
-                             cl_command_queue defaultQueue, int num_elements)
+REGISTER_TEST(test_blob)
 {
-    cl_int err;
+    cl_int err = CL_SUCCESS;
 
-    if (!is_extension_available(deviceID, "cl_khr_external_memory_android_hardware_buffer"))
+    if (!is_extension_available(device, "cl_khr_external_memory"))
+    {
+        log_info("cl_khr_external_memory is not supported on this platform. "
+                 "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+    if (!is_extension_available(device, "cl_khr_external_memory_android_hardware_buffer"))
     {
         log_info("cl_khr_external_memory_android_hardware_buffer is not supported on this platform. "
                  "Skipping test.\n");
@@ -1478,42 +1483,44 @@ int test_blob(cl_device_id deviceID, cl_context context,
     AHardwareBuffer_Desc aHardwareBufferDesc = {0};
     aHardwareBufferDesc.format = AHARDWAREBUFFER_FORMAT_BLOB;
     aHardwareBufferDesc.usage = AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER;
-        for(auto resolution : test_sizes) {
-            aHardwareBufferDesc.width = resolution.width * resolution.height;
-            aHardwareBufferDesc.height = 1;
-            aHardwareBufferDesc.layers = 1;
-            aHardwareBufferDesc.usage = AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER;
 
-            if(!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
-            {
-                char *usage_string = ahardwareBufferDecodeUsageFlagsToString(static_cast<AHardwareBuffer_UsageFlags>(aHardwareBufferDesc.usage));
-                log_info("Unsupported format %s, usage flags %s\n",
-                         ahardwareBufferFormatToString(static_cast<AHardwareBuffer_Format>(aHardwareBufferDesc.format)),
-                         usage_string);
-                delete [] usage_string;
-                continue;
-            }
+    log_info("Testing %s\n", ahardwareBufferFormatToString(static_cast<AHardwareBuffer_Format>(aHardwareBufferDesc.format)));
 
-            AHardwareBuffer *aHardwareBuffer = nullptr;
-            int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc, &aHardwareBuffer);
-            if(ahb_result != 0) {
-                log_error("AHardwareBuffer_allocate failed with code %d\n", ahb_result);
-                return TEST_FAIL;
-            }
-            log_info("Testing %s\n", ahardwareBufferFormatToString(static_cast<AHardwareBuffer_Format>(aHardwareBufferDesc.format)));
+    for(auto resolution : test_sizes) {
+        aHardwareBufferDesc.width = resolution.width * resolution.height;
+        aHardwareBufferDesc.height = 1;
+        aHardwareBufferDesc.layers = 1;
+        aHardwareBufferDesc.usage = AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER;
 
-            cl_mem_properties props[] = {
-                    CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
-                    reinterpret_cast<cl_mem_properties>(aHardwareBuffer),
-                    0
-            };
+        if(!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
+        {
+            std::string *usage_string = ahardwareBufferDecodeUsageFlagsToString(static_cast<AHardwareBuffer_UsageFlags>(aHardwareBufferDesc.usage));
+            log_info("Unsupported format %s, usage flags %s\n",
+                     ahardwareBufferFormatToString(static_cast<AHardwareBuffer_Format>(aHardwareBufferDesc.format)),
+                     usage_string->c_str());
+            delete [] usage_string;
+            continue;
+        }
 
-            cl_mem buffer = clCreateBufferWithProperties(context, props, CL_MEM_READ_WRITE, 0, nullptr, &err);
-            test_error(err, "Failed to create CL buffer from AHardwareBuffer");
+        AHardwareBuffer *aHardwareBuffer = nullptr;
+        int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc, &aHardwareBuffer);
+        if(ahb_result != 0) {
+            log_error("AHardwareBuffer_allocate failed with code %d\n", ahb_result);
+            return TEST_FAIL;
+        }
 
-            test_error(clReleaseMemObject(buffer), "Failed to release buffer");
-            AHardwareBuffer_release(aHardwareBuffer);
-            aHardwareBuffer = nullptr;
+        cl_mem_properties props[] = {
+                CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+                reinterpret_cast<cl_mem_properties>(aHardwareBuffer),
+                0
+        };
+
+        cl_mem buffer = clCreateBufferWithProperties(context, props, CL_MEM_READ_WRITE, 0, nullptr, &err);
+        test_error(err, "Failed to create CL buffer from AHardwareBuffer");
+
+        test_error(clReleaseMemObject(buffer), "Failed to release buffer");
+        AHardwareBuffer_release(aHardwareBuffer);
+        aHardwareBuffer = nullptr;
     }
 
     return TEST_PASS;

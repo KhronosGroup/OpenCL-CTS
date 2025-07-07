@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 The Khronos Group Inc.
+// Copyright (c) 2025 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,26 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
+
 #include "harness/testHarness.h"
-
-#include <unistd.h>
-
-test_definition test_list[] = {
-    ADD_TEST_VERSION(images, Version(1, 0)),
-    ADD_TEST_VERSION(blob, Version(1, 0)),
-    ADD_TEST_VERSION(images_read, Version(1, 0)),
-    ADD_TEST_VERSION(enqueue_read_image, Version(1, 0)),
-    ADD_TEST_VERSION(enqueue_copy_image,Version(1,0)),
-    ADD_TEST_VERSION(enqueue_copy_image_to_buffer,Version(1,0)),
-    ADD_TEST_VERSION(enqueue_copy_buffer_to_image,Version(1,0)),
-    ADD_TEST_VERSION(enqueue_write_image,Version(1,0)),
-    ADD_TEST_VERSION(enqueue_fill_image,Version(1,0))
-};
-
-const int test_num = ARRAY_SIZE(test_list);
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness(argc, argv, test_num, test_list, false, 0);
+    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0);
 }
