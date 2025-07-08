@@ -53,7 +53,8 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
         test_error(error, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
         // test_assert_error(
         //     cmdType == CL_COMMAND_SVM_FREE,
-        //     "Unexpected command type for clEnqueueSVMFree with an empty set");
+        //     "Unexpected command type for clEnqueueSVMFree with an empty
+        //     set");
         log_info("      clEnqueueSVMFree with an empty set has command type "
                  "%4X (%4X)\n",
                  cmdType, CL_COMMAND_SVM_FREE);
