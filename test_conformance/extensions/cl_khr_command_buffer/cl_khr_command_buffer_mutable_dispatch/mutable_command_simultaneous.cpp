@@ -297,6 +297,7 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
     {
         cl_int offset;
         std::vector<cl_int> output_buffer;
+        std::vector<cl_int> updated_output_buffer;
         // 0:user event, 1:offset-buffer fill event, 2:kernel done event
         clEventWrapper wait_events[3];
     };
@@ -373,7 +374,7 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
 
         error = clEnqueueReadBuffer(work_queue, new_out_mem, CL_FALSE,
                                     pd.offset * sizeof(cl_int), data_size(),
-                                    pd.output_buffer.data(), 1,
+                                    pd.updated_output_buffer.data(), 1,
                                     &pd.wait_events[2], nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
@@ -388,8 +389,10 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
         cl_int offset = static_cast<cl_int>(num_elements);
 
         std::vector<SimulPassData> simul_passes = {
-            { 0, std::vector<cl_int>(num_elements) },
-            { offset, std::vector<cl_int>(num_elements) }
+            { 0, std::vector<cl_int>(num_elements),
+              std::vector<cl_int>(num_elements) },
+            { offset, std::vector<cl_int>(num_elements),
+              std::vector<cl_int>(num_elements) }
         };
 
         for (auto&& pass : simul_passes)
@@ -407,13 +410,26 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
         test_error(error, "clFinish failed");
 
         // verify the result buffers
-        for (auto&& pass : simul_passes)
+        auto& first_pass_output = simul_passes[0].output_buffer;
+        auto& first_pass_updated_output = simul_passes[0].updated_output_buffer;
+        auto& second_pass_output = simul_passes[1].output_buffer;
+        auto& second_pass_updated_output =
+            simul_passes[1].updated_output_buffer;
+        for (size_t i = 0; i < num_elements; i++)
         {
-            auto& res_data = pass.output_buffer;
-            for (size_t i = 0; i < num_elements; i++)
-            {
-                CHECK_VERIFICATION_ERROR(pattern_pri, res_data[i], i);
-            }
+            // First pass:
+            // Before updating, out_mem is copied from in_mem (pattern_pri)
+            CHECK_VERIFICATION_ERROR(pattern_pri, first_pass_output[i], i);
+            // After updating, new_out_mem is copied from in_mem (pattern_pri)
+            CHECK_VERIFICATION_ERROR(pattern_pri, first_pass_updated_output[i],
+                                     i);
+            // Second pass:
+            // Before updating, out_mem is filled with overwritten_pattern
+            CHECK_VERIFICATION_ERROR(overwritten_pattern, second_pass_output[i],
+                                     i);
+            // After updating, new_out_mem is copied from in_mem (pattern_pri)
+            CHECK_VERIFICATION_ERROR(pattern_pri, second_pass_updated_output[i],
+                                     i);
         }
 
         return CL_SUCCESS;
