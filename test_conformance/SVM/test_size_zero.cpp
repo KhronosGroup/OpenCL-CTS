@@ -187,6 +187,36 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
                  cmdType, CL_COMMAND_SVM_MIGRATE_MEM);
     }
 
+    // Try migrating zero bytes and a NULL pointer
+    {
+        const void* svm_pointers[] = { nullptr };
+        const size_t sizes[] = { 0 };
+        event = nullptr; // Reset the event
+        error = clEnqueueSVMMigrateMem(queue, 1, svm_pointers, sizes,
+                                       CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED,
+                                       0, nullptr, &event);
+        // test_error(error, "clEnqueueSVMMigrateMem with NULL pointer failed");
+        log_info("      clEnqueueSVMMigrateMem with NULL pointer returned %s\n",
+                 IGetErrorString(error));
+    }
+
+    // Check that the event for the NULL pointer migration has the right command
+    // type
+    if (error == CL_SUCCESS)
+    {
+        error = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
+                               &cmdType, nullptr);
+        test_error(error, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
+        // test_assert_error(cmdType == CL_COMMAND_SVM_MIGRATE_MEM,
+        //                   "Unexpected command type for clEnqueueSVMMigrateMem
+        //                   " "with NULL pointer");
+        log_info(
+            "      clEnqueueSVMMigrateMem with NULL pointer has command type "
+            "%4X (%4X)\n",
+            cmdType, CL_COMMAND_SVM_MIGRATE_MEM);
+    }
+
+
     // Try to call clSetKernelExecInfo with an empty set
     error =
         clSetKernelExecInfo(kernel, CL_KERNEL_EXEC_INFO_SVM_PTRS, 0, nullptr);
