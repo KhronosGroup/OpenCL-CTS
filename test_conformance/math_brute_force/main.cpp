@@ -82,7 +82,6 @@ static int gTestFastRelaxed = 1;
   OpenCL 2.0 spec then it has to be changed through a command line argument.
 */
 int gFastRelaxedDerived = 1;
-static int gToggleCorrectlyRoundedDivideSqrt = 0;
 int gHasHalf = 0;
 cl_device_fp_config gHalfCapabilities = 0;
 int gDeviceILogb0 = 1;
@@ -469,8 +468,6 @@ static int ParseArgs(int argc, const char **argv)
                 optionFound = 1;
                 switch (*arg)
                 {
-                    case 'c': gToggleCorrectlyRoundedDivideSqrt ^= 1; break;
-
                     case 'd': gHasDouble ^= 1; break;
 
                     case 'e': gFastRelaxedDerived ^= 1; break;
@@ -629,8 +626,6 @@ static void PrintUsage(void)
 {
     vlog("%s [-cglsz]: <optional: math function names>\n", appName);
     vlog("\toptions:\n");
-    vlog("\t\t-c\tToggle test fp correctly rounded divide and sqrt (Default: "
-         "off)\n");
     vlog("\t\t-d\tToggle double precision testing. (Default: on iff khr_fp_64 "
          "on)\n");
     vlog("\t\t-f\tToggle float precision testing. (Default: on)\n");
@@ -940,13 +935,6 @@ test_status InitCL(cl_device_id device)
     vlog("\tSubnormal values supported for floats? %s\n",
          no_yes[0 != (CL_FP_DENORM & gFloatCapabilities)]);
     vlog("\tCorrectly rounded divide and sqrt supported for floats? %s\n",
-         no_yes[0
-                != (CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT & gFloatCapabilities)]);
-    if (gToggleCorrectlyRoundedDivideSqrt)
-    {
-        gFloatCapabilities ^= CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT;
-    }
-    vlog("\tTesting with correctly rounded float divide and sqrt? %s\n",
          no_yes[0
                 != (CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT & gFloatCapabilities)]);
     vlog("\tTesting with FTZ mode ON for floats? %s\n",
