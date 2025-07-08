@@ -82,14 +82,10 @@ struct MutableDispatchWorkDim : public InfoMutableCommandBufferTest
                                         __global uint *dst1,
                                         __global uint *dst2)
             {
-                size_t gid0 = get_global_id(0);
-                dst0[gid0] = get_global_size(0);
-
-                size_t gid1 = get_global_id(1);
-                dst1[gid1] = get_global_size(1);
-
-                size_t gid2 = get_global_id(2);
-                dst2[gid2] = get_global_size(2);
+                size_t gid = get_global_linear_id();
+                dst0[gid] = get_global_size(0);
+                dst1[gid] = get_global_size(1);
+                dst2[gid] = get_global_size(2);
             })";
 
         cl_int error = create_single_kernel_helper(
@@ -216,7 +212,8 @@ struct MutableDispatchWorkDim : public InfoMutableCommandBufferTest
     std::vector<cl_uint> result_data;
 };
 
-REGISTER_TEST(mutable_dispatch_work_dim)
+// get_global_linear() used in kernel is an OpenCL 2.0 API
+REGISTER_TEST_VERSION(mutable_dispatch_work_dim, Version(2, 0))
 {
     return MakeAndRunTest<MutableDispatchWorkDim>(device, context, queue,
                                                   num_elements);
