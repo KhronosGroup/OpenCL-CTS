@@ -1,12 +1,22 @@
 //
-// Created by joshkell on 8/18/24.
+// Copyright (c) 2025 The Khronos Group Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 
-#include <cstring>
-#include <cstdlib>
 #include "debug_ahb.h"
 
-AHardwareBuffer_UsageFlags flag_list[] = {
+constexpr AHardwareBuffer_UsageFlags flag_list[] = {
         AHARDWAREBUFFER_USAGE_CPU_READ_RARELY,
         AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN,
         AHARDWAREBUFFER_USAGE_CPU_WRITE_NEVER,
@@ -22,10 +32,12 @@ AHardwareBuffer_UsageFlags flag_list[] = {
         AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER,
         AHARDWAREBUFFER_USAGE_GPU_CUBE_MAP,
         AHARDWAREBUFFER_USAGE_GPU_MIPMAP_COMPLETE,
+#if __ANDROID_API__ > 25
         AHARDWAREBUFFER_USAGE_FRONT_BUFFER, // This is not in older NDK 25
+#endif
 };
 
-char * ahardwareBufferDecodeUsageFlagsToString(AHardwareBuffer_UsageFlags flags) {
+std::string *ahardwareBufferDecodeUsageFlagsToString(AHardwareBuffer_UsageFlags flags) {
     size_t flags_len = 0;
     size_t num_flags = 0;
     const char *separator = "|";
@@ -42,7 +54,8 @@ char * ahardwareBufferDecodeUsageFlagsToString(AHardwareBuffer_UsageFlags flags)
         size_t res_size = strlen(unknown_flag) + 1;
         char *result = new char[res_size];
         strlcat(result, unknown_flag, res_size);
-        return result;
+        const auto result_str = new std::string(result);
+        return result_str;
     }
 
     size_t string_len = flags_len + ((num_flags-1) * strlen(separator)) + 1;
@@ -64,7 +77,8 @@ char * ahardwareBufferDecodeUsageFlagsToString(AHardwareBuffer_UsageFlags flags)
         }
     }
 
-    return result;
+    const auto result_str = new std::string(result);
+    return result_str;
 }
 
 const char * ahardwareBufferUsageFlagToString(AHardwareBuffer_UsageFlags flag) {
@@ -175,6 +189,7 @@ const char * ahardwareBufferFormatToString(AHardwareBuffer_Format format) {
         case AHARDWAREBUFFER_FORMAT_R8_UNORM:
             result = "AHARDWAREBUFFER_FORMAT_R8_UNORM";
             break;
+#if __ANDROID_API__ > 25
         case AHARDWAREBUFFER_FORMAT_R16_UINT: // This is not in older NDK 25
             result = "AHARDWAREBUFFER_FORMAT_R16_UINT";
             break;
@@ -184,6 +199,7 @@ const char * ahardwareBufferFormatToString(AHardwareBuffer_Format format) {
         case AHARDWAREBUFFER_FORMAT_R10G10B10A10_UNORM: // This is not in older NDK 25
             result = "AHARDWAREBUFFER_FORMAT_R10G10B10A10_UNORM";
             break;
+#endif
     }
     return result;
 }
