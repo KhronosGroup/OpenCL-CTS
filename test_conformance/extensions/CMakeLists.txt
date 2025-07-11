@@ -5,7 +5,7 @@
 add_subdirectory( cl_ext_cxx_for_opencl )
 add_subdirectory( cl_khr_command_buffer )
 add_subdirectory( cl_khr_dx9_media_sharing )
-if(ANDROID)
+if(ANDROID_PLATFORM GREATER 28)
     add_subdirectory( cl_khr_external_memory_ahb )
 endif ()
 add_subdirectory( cl_khr_external_memory_dma_buf )

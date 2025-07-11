@@ -18,21 +18,23 @@
 #include <android/hardware_buffer.h>
 #include <string>
 
-#define CHECK_AHARDWARE_BUFFER_SUPPORT(ahardwareBuffer_Desc, format)            \
-if(!AHardwareBuffer_isSupported(&ahardwareBuffer_Desc))                         \
-{                                                                               \
-    const std::string *usage_string = ahardwareBufferDecodeUsageFlagsToString(  \
-        static_cast<AHardwareBuffer_UsageFlags>(ahardwareBuffer_Desc.usage));   \
-        log_info("Unsupported format %s:\n   Usage flags %s\n   Size (%u, %u, layers = %u)\n",\
-        ahardwareBufferFormatToString(format.aHardwareBufferFormat),            \
-        usage_string->c_str(),                                                  \
-        ahardwareBuffer_Desc.width,                                             \
-        ahardwareBuffer_Desc.height,                                            \
-        ahardwareBuffer_Desc.layers);                                           \
-    delete [] usage_string;                                                     \
-    continue;                                                                   \
-}
+#define CHECK_AHARDWARE_BUFFER_SUPPORT(ahardwareBuffer_Desc, format)           \
+    if (!AHardwareBuffer_isSupported(&ahardwareBuffer_Desc))                   \
+    {                                                                          \
+        const std::string* usage_string =                                      \
+            ahardwareBufferDecodeUsageFlagsToString(                           \
+                static_cast<AHardwareBuffer_UsageFlags>(                       \
+                    ahardwareBuffer_Desc.usage));                              \
+        log_info("Unsupported format %s:\n   Usage flags %s\n   Size (%u, "    \
+                 "%u, layers = %u)\n",                                         \
+                 ahardwareBufferFormatToString(format.aHardwareBufferFormat),  \
+                 usage_string->c_str(), ahardwareBuffer_Desc.width,            \
+                 ahardwareBuffer_Desc.height, ahardwareBuffer_Desc.layers);    \
+        delete[] usage_string;                                                 \
+        continue;                                                              \
+    }
 
-const char * ahardwareBufferFormatToString(AHardwareBuffer_Format format);
-const char * ahardwareBufferUsageFlagToString(AHardwareBuffer_UsageFlags flag);
-std::string* ahardwareBufferDecodeUsageFlagsToString(AHardwareBuffer_UsageFlags flags);
+const char* ahardwareBufferFormatToString(AHardwareBuffer_Format format);
+const char* ahardwareBufferUsageFlagToString(AHardwareBuffer_UsageFlags flag);
+std::string*
+ahardwareBufferDecodeUsageFlagsToString(AHardwareBuffer_UsageFlags flags);

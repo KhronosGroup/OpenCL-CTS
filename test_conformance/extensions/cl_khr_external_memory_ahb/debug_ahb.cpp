@@ -17,39 +17,43 @@
 #include "debug_ahb.h"
 
 constexpr AHardwareBuffer_UsageFlags flag_list[] = {
-        AHARDWAREBUFFER_USAGE_CPU_READ_RARELY,
-        AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN,
-        AHARDWAREBUFFER_USAGE_CPU_WRITE_NEVER,
-        AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY,
-        AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN,
-        AHARDWAREBUFFER_USAGE_CPU_WRITE_MASK,
-        AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE,
-        AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER,
-        AHARDWAREBUFFER_USAGE_COMPOSER_OVERLAY,
-        AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT,
-        AHARDWAREBUFFER_USAGE_VIDEO_ENCODE,
-        AHARDWAREBUFFER_USAGE_SENSOR_DIRECT_DATA,
-        AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER,
-        AHARDWAREBUFFER_USAGE_GPU_CUBE_MAP,
-        AHARDWAREBUFFER_USAGE_GPU_MIPMAP_COMPLETE,
-#if __ANDROID_API__ > 25
-        AHARDWAREBUFFER_USAGE_FRONT_BUFFER, // This is not in older NDK 25
-#endif
+    AHARDWAREBUFFER_USAGE_CPU_READ_RARELY,
+    AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN,
+    AHARDWAREBUFFER_USAGE_CPU_WRITE_NEVER,
+    AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY,
+    AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN,
+    AHARDWAREBUFFER_USAGE_CPU_WRITE_MASK,
+    AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE,
+    AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER,
+    AHARDWAREBUFFER_USAGE_COMPOSER_OVERLAY,
+    AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT,
+    AHARDWAREBUFFER_USAGE_VIDEO_ENCODE,
+    AHARDWAREBUFFER_USAGE_SENSOR_DIRECT_DATA,
+    AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER,
+    AHARDWAREBUFFER_USAGE_GPU_CUBE_MAP,
+    AHARDWAREBUFFER_USAGE_GPU_MIPMAP_COMPLETE,
+    AHARDWAREBUFFER_USAGE_FRONT_BUFFER,
 };
 
-std::string *ahardwareBufferDecodeUsageFlagsToString(AHardwareBuffer_UsageFlags flags) {
+std::string *
+ahardwareBufferDecodeUsageFlagsToString(AHardwareBuffer_UsageFlags flags)
+{
     size_t flags_len = 0;
     size_t num_flags = 0;
     const char *separator = "|";
 
-    for(uint64_t f : flag_list) {
-        if(((f & flags) != 0) && ((f & flags) == f)) {
-            flags_len += strlen(ahardwareBufferUsageFlagToString(static_cast<AHardwareBuffer_UsageFlags>(f)));
+    for (uint64_t f : flag_list)
+    {
+        if (((f & flags) != 0) && ((f & flags) == f))
+        {
+            flags_len += strlen(ahardwareBufferUsageFlagToString(
+                static_cast<AHardwareBuffer_UsageFlags>(f)));
             num_flags++;
         }
     }
 
-    if(num_flags == 0) {
+    if (num_flags == 0)
+    {
         const char *unknown_flag = "UNKNOWN_FLAG";
         size_t res_size = strlen(unknown_flag) + 1;
         char *result = new char[res_size];
@@ -58,21 +62,23 @@ std::string *ahardwareBufferDecodeUsageFlagsToString(AHardwareBuffer_UsageFlags 
         return result_str;
     }
 
-    size_t string_len = flags_len + ((num_flags-1) * strlen(separator)) + 1;
+    size_t string_len = flags_len + ((num_flags - 1) * strlen(separator)) + 1;
     char *result = new char[string_len];
     memset(result, 0, string_len);
 
     size_t flag_counter = 0;
-    for(uint64_t f : flag_list) {
-        if(((f & flags) != 0) && ((f & flags) == f)) {
+    for (uint64_t f : flag_list)
+    {
+        if (((f & flags) != 0) && ((f & flags) == f))
+        {
             flag_counter++;
             strlcat(result,
-                    ahardwareBufferUsageFlagToString(static_cast<AHardwareBuffer_UsageFlags>(f)),
+                    ahardwareBufferUsageFlagToString(
+                        static_cast<AHardwareBuffer_UsageFlags>(f)),
                     string_len);
-            if(flag_counter < num_flags) {
-                strlcat(result,
-                        separator,
-                        string_len);
+            if (flag_counter < num_flags)
+            {
+                strlcat(result, separator, string_len);
             }
         }
     }
@@ -81,9 +87,11 @@ std::string *ahardwareBufferDecodeUsageFlagsToString(AHardwareBuffer_UsageFlags 
     return result_str;
 }
 
-const char * ahardwareBufferUsageFlagToString(AHardwareBuffer_UsageFlags flag) {
+const char *ahardwareBufferUsageFlagToString(AHardwareBuffer_UsageFlags flag)
+{
     const char *result = "";
-    switch (flag) {
+    switch (flag)
+    {
         case AHARDWAREBUFFER_USAGE_CPU_READ_NEVER:
             result = "AHARDWAREBUFFER_USAGE_CPU_READ_NEVER";
             break;
@@ -132,15 +140,16 @@ const char * ahardwareBufferUsageFlagToString(AHardwareBuffer_UsageFlags flag) {
         case AHARDWAREBUFFER_USAGE_GPU_MIPMAP_COMPLETE:
             result = "AHARDWAREBUFFER_USAGE_GPU_MIPMAP_COMPLETE";
             break;
-        default:
-            result = "Unknown flag";
+        default: result = "Unknown flag";
     }
     return result;
 }
 
-const char * ahardwareBufferFormatToString(AHardwareBuffer_Format format) {
+const char *ahardwareBufferFormatToString(AHardwareBuffer_Format format)
+{
     const char *result = "";
-    switch (format) {
+    switch (format)
+    {
         case AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM:
             result = "AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM";
             break;
@@ -189,17 +198,15 @@ const char * ahardwareBufferFormatToString(AHardwareBuffer_Format format) {
         case AHARDWAREBUFFER_FORMAT_R8_UNORM:
             result = "AHARDWAREBUFFER_FORMAT_R8_UNORM";
             break;
-#if __ANDROID_API__ > 25
-        case AHARDWAREBUFFER_FORMAT_R16_UINT: // This is not in older NDK 25
+        case AHARDWAREBUFFER_FORMAT_R16_UINT:
             result = "AHARDWAREBUFFER_FORMAT_R16_UINT";
             break;
-        case AHARDWAREBUFFER_FORMAT_R16G16_UINT: // This is not in older NDK 25
+        case AHARDWAREBUFFER_FORMAT_R16G16_UINT:
             result = "AHARDWAREBUFFER_FORMAT_R16G16_UINT";
             break;
-        case AHARDWAREBUFFER_FORMAT_R10G10B10A10_UNORM: // This is not in older NDK 25
+        case AHARDWAREBUFFER_FORMAT_R10G10B10A10_UNORM:
             result = "AHARDWAREBUFFER_FORMAT_R10G10B10A10_UNORM";
             break;
-#endif
     }
     return result;
 }
