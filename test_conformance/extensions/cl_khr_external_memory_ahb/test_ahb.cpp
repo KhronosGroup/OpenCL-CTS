@@ -25,7 +25,7 @@
 
 static bool isAHBUsageReadable(const AHardwareBuffer_UsageFlags usage)
 {
-    return (AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE | usage) != 0;
+    return (AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE & usage) != 0;
 }
 
 struct ahb_format_table
@@ -57,9 +57,13 @@ ahb_usage_table test_usages[] = {
         | AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE
         | AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER) },
     { static_cast<AHardwareBuffer_UsageFlags>(
-        AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE) },
+        AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE
+        | AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN
+        | AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN) },
     { static_cast<AHardwareBuffer_UsageFlags>(
-        AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER) },
+        AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER
+        | AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN
+        | AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN) },
 };
 
 ahb_format_table test_formats[] = {
