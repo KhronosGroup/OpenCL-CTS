@@ -193,7 +193,8 @@ RoundingMode get_round(void)
 //          basic_test_conversions.c in which case, these function are at
 //          liberty to do nothing.
 //
-#if defined(__i386__) || defined(__x86_64__) || defined(_WIN32)
+#if defined(__i386__) || defined(__x86_64__) || defined(_M_IX86)               \
+    || defined(_M_X64)
 #include <xmmintrin.h>
 #elif defined(__PPC__)
 #include <fpu_control.h>
@@ -203,17 +204,23 @@ RoundingMode get_round(void)
 void *FlushToZero(void)
 {
 #if defined(__APPLE__) || defined(__linux__) || defined(_WIN32)
-#if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)
+#if defined(__i386__) || defined(__x86_64__) || defined(_M_IX86)               \
+    || defined(_M_X64)
     union {
         unsigned int i;
         void *p;
     } u = { _mm_getcsr() };
     _mm_setcsr(u.i | 0x8040);
     return u.p;
-#elif defined(__arm__) || defined(__aarch64__)
+#elif defined(__arm__) || defined(__aarch64__) // Clang
     int64_t fpscr;
     _FPU_GETCW(fpscr);
     _FPU_SETCW(fpscr | FPSCR_FZ);
+    return NULL;
+#elif defined(_M_ARM64) // Visual Studio
+    uint64_t fpscr;
+    fpscr = _ReadStatusReg(ARM64_FPSR);
+    _WriteStatusReg(ARM64_FPCR, fpscr | (1U << 24));
     return NULL;
 #elif defined(__PPC__)
     fpu_control_t flags = 0;
@@ -237,16 +244,21 @@ void *FlushToZero(void)
 void UnFlushToZero(void *p)
 {
 #if defined(__APPLE__) || defined(__linux__) || defined(_WIN32)
-#if defined(__i386__) || defined(__x86_64__) || defined(_MSC_VER)
+#if defined(__i386__) || defined(__x86_64__) || defined(_M_IX86)               \
+    || defined(_M_X64)
     union {
         void *p;
         unsigned int i;
     } u = { p };
     _mm_setcsr(u.i);
-#elif defined(__arm__) || defined(__aarch64__)
+#elif defined(__arm__) || defined(__aarch64__) // Clang
     int64_t fpscr;
     _FPU_GETCW(fpscr);
     _FPU_SETCW(fpscr & ~FPSCR_FZ);
+#elif defined(_M_ARM64) // Visual Studio
+    uint64_t fpscr;
+    fpscr = _ReadStatusReg(ARM64_FPSR);
+    _WriteStatusReg(ARM64_FPCR, fpscr & ~(1U << 24));
 #elif defined(__PPC__)
     fpu_control_t flags = 0;
     _FPU_GETCW(flags);
