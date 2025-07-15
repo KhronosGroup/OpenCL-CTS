@@ -72,16 +72,36 @@ static int test_arrayreadwrite_impl(cl_device_id device, cl_context context,
         err = clEnqueueWriteBuffer(
             queue, buffer, CL_TRUE, offset * sizeof(cl_uint),
             sizeof(cl_uint) * cb, &reference_vals[offset], 0, nullptr, nullptr);
-        test_error(err, "clEnqueueWriteBuffer failed");
+        if (flags & CL_MEM_IMMUTABLE_EXT)
+        {
+            test_failure_error_ret(err, CL_INVALID_OPERATION,
+                                   "clEnqueueWriteBuffer is expected to fail "
+                                   "with CL_INVALID_OPERATION when the buffer "
+                                   "is created with CL_MEM_IMMUTABLE_EXT",
+                                   TEST_FAIL);
+        }
+        else
+        {
+            test_error(err, "clEnqueueWriteBuffer failed");
+        }
 
         err = clEnqueueReadBuffer(
             queue, buffer, CL_TRUE, offset * sizeof(cl_uint),
             cb * sizeof(cl_uint), &outptr[offset], 0, nullptr, nullptr);
         test_error(err, "clEnqueueReadBuffer failed");
 
+        const cl_uint* expected_buffer_values = nullptr;
+        if (flags & CL_MEM_IMMUTABLE_EXT)
+        {
+            expected_buffer_values = inptr.data();
+        }
+        else
+        {
+            expected_buffer_values = reference_vals.data();
+        }
         for (int j = offset; j < offset + cb; j++)
         {
-            if (reference_vals[j] != outptr[j])
+            if (expected_buffer_values[j] != outptr[j])
             {
                 log_error("ARRAY read, write test failed\n");
                 err = -1;
@@ -104,4 +124,12 @@ REGISTER_TEST(arrayreadwrite)
 {
     return test_arrayreadwrite_impl(device, context, queue, num_elements,
                                     CL_MEM_READ_WRITE);
+}
+
+REGISTER_TEST(immutable_arrayreadwrite)
+{
+    REQUIRE_EXTENSION("cl_ext_immutable_memory_objects");
+
+    return test_arrayreadwrite_impl(device, context, queue, num_elements,
+                                    CL_MEM_IMMUTABLE_EXT | CL_MEM_USE_HOST_PTR);
 }
