@@ -88,16 +88,20 @@ const char *sample_two_kernel_program[] = {
 "}\n" };
 
 const char *sample_read_only_image_test_kernel = {
-    "__kernel void read_only_image_test(__write_only image2d_t img, __global uint4 *dst)\n"
+    "__kernel void read_only_image_test(__write_only image2d_t img, __global "
+    "uint4 *dst)\n"
     "{\n"
-    "    write_imageui(img, (int2)(get_global_id(0), get_global_id(1)), dst[0]);\n"
+    "    write_imageui(img, (int2)(get_global_id(0), get_global_id(1)), "
+    "dst[0]);\n"
     "}\n"
 };
 
 const char *sample_write_only_image_test_kernel = {
-    "__kernel void write_only_image_test(__read_only image2d_t src, __global uint4 *dst)\n"
+    "__kernel void write_only_image_test(__read_only image2d_t src, __global "
+    "uint4 *dst)\n"
     "{\n"
-    "    dst[0]=read_imageui(src, (int2)(get_global_id(0), get_global_id(1)));\n"
+    "    dst[0]=read_imageui(src, (int2)(get_global_id(0), "
+    "get_global_id(1)));\n"
     "}\n"
 };
 
