@@ -55,7 +55,6 @@ struct Params
     uint32_t numImage2DDescriptors;
 };
 
-cl_uchar uuid[CL_UUID_SIZE_KHR];
 cl_device_id deviceId = NULL;
 size_t max_width = MAX_2D_IMAGE_WIDTH;
 size_t max_height = MAX_2D_IMAGE_HEIGHT;
@@ -195,9 +194,10 @@ const cl_kernel getKernelType(VulkanFormat format, cl_kernel kernel_float,
 }
 
 int run_test_with_two_queue(
-    cl_context &context, cl_command_queue &cmd_queue1,
-    cl_command_queue &cmd_queue2, cl_kernel *kernel_unsigned,
-    cl_kernel *kernel_signed, cl_kernel *kernel_float, VulkanDevice &vkDevice,
+    cl_context context, cl_command_queue cmd_queue1,
+    cl_command_queue cmd_queue2, clKernelWrapper *kernel_unsigned,
+    clKernelWrapper *kernel_signed, clKernelWrapper *kernel_float,
+    VulkanDevice &vkDevice,
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType)
 {
     cl_int err = CL_SUCCESS;
@@ -408,7 +408,6 @@ int run_test_with_two_queue(
                             }
 
                             size_t totalImageMemSize = 0;
-                            uint64_t interImageOffset = 0;
                             {
                                 VulkanImage2D vkImage2D(
                                     vkDevice, vkFormat, width, height,
@@ -732,9 +731,6 @@ int run_test_with_two_queue(
                                     "Failed to signal CL semaphore\n");
                             }
 
-                            unsigned int flags = 0;
-                            size_t mipmapLevelOffset = 0;
-                            cl_event eventReadImage = NULL;
                             clFinish(cmd_queue2);
                             for (int i = 0; i < num2DImages; i++)
                             {
@@ -817,9 +813,9 @@ CLEANUP:
 }
 
 int run_test_with_one_queue(
-    cl_context &context, cl_command_queue &cmd_queue1,
-    cl_kernel *kernel_unsigned, cl_kernel *kernel_signed,
-    cl_kernel *kernel_float, VulkanDevice &vkDevice,
+    cl_context context, cl_command_queue cmd_queue1,
+    clKernelWrapper *kernel_unsigned, clKernelWrapper *kernel_signed,
+    clKernelWrapper *kernel_float, VulkanDevice &vkDevice,
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType)
 {
     cl_int err = CL_SUCCESS;
@@ -1027,7 +1023,6 @@ int run_test_with_one_queue(
                                 }
                             }
                             size_t totalImageMemSize = 0;
-                            uint64_t interImageOffset = 0;
                             {
                                 VulkanImage2D vkImage2D(
                                     vkDevice, vkFormat, width, height,
@@ -1289,9 +1284,6 @@ int run_test_with_one_queue(
                                     "Failed to signal CL semaphore\n");
                             }
 
-                            unsigned int flags = 0;
-                            size_t mipmapLevelOffset = 0;
-                            cl_event eventReadImage = NULL;
                             for (int i = 0; i < num2DImages; i++)
                             {
                                 err = clEnqueueReadImage(
@@ -1508,20 +1500,16 @@ struct ImageCommonTest : public VulkanTestBase
         {
             if (numCQ == 2)
             {
-                err = run_test_with_two_queue(
-                    context, (cl_command_queue &)cmd_queue1,
-                    (cl_command_queue &)cmd_queue2,
-                    (cl_kernel *)kernel_unsigned, (cl_kernel *)kernel_signed,
-                    (cl_kernel *)kernel_float, *vkDevice,
-                    externalSemaphoreType);
+                err = run_test_with_two_queue(context, cmd_queue1, cmd_queue2,
+                                              kernel_unsigned, kernel_signed,
+                                              kernel_float, *vkDevice,
+                                              externalSemaphoreType);
             }
             else
             {
                 err = run_test_with_one_queue(
-                    context, (cl_command_queue &)cmd_queue1,
-                    (cl_kernel *)kernel_unsigned, (cl_kernel *)kernel_signed,
-                    (cl_kernel *)kernel_float, *vkDevice,
-                    externalSemaphoreType);
+                    context, cmd_queue1, kernel_unsigned, kernel_signed,
+                    kernel_float, *vkDevice, externalSemaphoreType);
             }
             test_error(err, "func_name failed \n");
         }

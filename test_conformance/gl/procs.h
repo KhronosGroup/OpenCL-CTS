@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -151,3 +151,5 @@ extern int test_image_methods_multisample(cl_device_id device,
 
 extern int test_renderbuffer_getinfo(cl_device_id device, cl_context context,
                                      cl_command_queue queue, int numElements);
+extern int test_queries(cl_device_id device, cl_context context,
+                        cl_command_queue queue, int);

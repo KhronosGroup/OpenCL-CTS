@@ -17,6 +17,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories (${CLConform_INCLUDE_DIR})
 
 list(APPEND CLConform_LIBRARIES vulkan_wrapper)
+set(CMAKE_COMPILE_WARNING_AS_ERROR OFF)
 set(CMAKE_CXX_FLAGS "-fpermissive")
 
 include_directories("../../common/vulkan_wrapper")
