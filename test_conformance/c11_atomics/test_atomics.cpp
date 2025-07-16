@@ -1232,20 +1232,21 @@ public:
 
         return true;
     }
-    bool VerifyExpected(const HostDataType &expected,
-                        const HostAtomicType *const testValue,
-                        cl_uint whichDestValue) override
+    bool IsTestNotAsExpected(const HostDataType &expected,
+                             const std::vector<HostAtomicType> &testValues,
+                             cl_uint whichDestValue) override
     {
         if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
         {
-            if (whichDestValue == 0 && testValue != nullptr)
+            if (whichDestValue == 0)
                 return std::abs((HOST_ATOMIC_FLOAT)expected
-                                - testValue[whichDestValue])
+                                - testValues[whichDestValue])
                     > max_error_fp32;
         }
         return CBasicTestMemOrderScope<
-            HostAtomicType, HostDataType>::VerifyExpected(expected, testValue,
-                                                          whichDestValue);
+            HostAtomicType, HostDataType>::IsTestNotAsExpected(expected,
+                                                               testValues,
+                                                               whichDestValue);
     }
     bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
                     HostAtomicType *finalValues) override
