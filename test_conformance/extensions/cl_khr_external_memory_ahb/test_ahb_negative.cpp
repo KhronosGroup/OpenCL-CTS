@@ -50,19 +50,21 @@ REGISTER_TEST(test_buffer_format_negative)
 
     if (!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
     {
-        std::string *usage_string = ahardwareBufferDecodeUsageFlagsToString(
-            static_cast<AHardwareBuffer_UsageFlags>(aHardwareBufferDesc.usage));
+        const std::string usage_string =
+            ahardwareBufferDecodeUsageFlagsToString(
+                static_cast<AHardwareBuffer_UsageFlags>(
+                    aHardwareBufferDesc.usage));
         log_info(
             "Unsupported format %s, usage flags %s\n",
-            ahardwareBufferFormatToString(static_cast<AHardwareBuffer_Format>(
-                aHardwareBufferDesc.format)),
-            usage_string->c_str());
-        delete[] usage_string;
+            ahardwareBufferFormatToString(
+                static_cast<AHardwareBuffer_Format>(aHardwareBufferDesc.format))
+                .c_str(),
+            usage_string.c_str());
         return TEST_SKIPPED_ITSELF;
     }
 
     AHardwareBuffer *aHardwareBuffer = nullptr;
-    int ahb_result =
+    const int ahb_result =
         AHardwareBuffer_allocate(&aHardwareBufferDesc, &aHardwareBuffer);
     if (ahb_result != 0)
     {
@@ -71,7 +73,8 @@ REGISTER_TEST(test_buffer_format_negative)
     }
     log_info("Testing %s\n",
              ahardwareBufferFormatToString(static_cast<AHardwareBuffer_Format>(
-                 aHardwareBufferDesc.format)));
+                                               aHardwareBufferDesc.format))
+                 .c_str());
 
     cl_mem_properties props[] = {
         CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
@@ -125,19 +128,21 @@ REGISTER_TEST(test_buffer_size_negative)
 
     if (!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
     {
-        std::string *usage_string = ahardwareBufferDecodeUsageFlagsToString(
-            static_cast<AHardwareBuffer_UsageFlags>(aHardwareBufferDesc.usage));
+        const std::string usage_string =
+            ahardwareBufferDecodeUsageFlagsToString(
+                static_cast<AHardwareBuffer_UsageFlags>(
+                    aHardwareBufferDesc.usage));
         log_info(
             "Unsupported format %s, usage flags %s\n",
-            ahardwareBufferFormatToString(static_cast<AHardwareBuffer_Format>(
-                aHardwareBufferDesc.format)),
-            usage_string->c_str());
-        delete[] usage_string;
+            ahardwareBufferFormatToString(
+                static_cast<AHardwareBuffer_Format>(aHardwareBufferDesc.format))
+                .c_str(),
+            usage_string.c_str());
         return TEST_SKIPPED_ITSELF;
     }
 
     AHardwareBuffer *aHardwareBuffer = nullptr;
-    int ahb_result =
+    const int ahb_result =
         AHardwareBuffer_allocate(&aHardwareBufferDesc, &aHardwareBuffer);
     if (ahb_result != 0)
     {
@@ -146,7 +151,8 @@ REGISTER_TEST(test_buffer_size_negative)
     }
     log_info("Testing %s\n",
              ahardwareBufferFormatToString(static_cast<AHardwareBuffer_Format>(
-                 aHardwareBufferDesc.format)));
+                                               aHardwareBufferDesc.format))
+                 .c_str());
 
     cl_mem_properties props[] = {
         CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
