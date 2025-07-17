@@ -77,6 +77,8 @@ public:
     cl_int allocate(const size_t count,
                     const std::vector<cl_svm_alloc_properties_khr> props_ = {})
     {
+        cl_int err;
+
         if (data != nullptr)
         {
             free();
@@ -111,7 +113,6 @@ public:
                 props.push_back(0);
             }
 
-            cl_int err;
             data = (T*)clSVMAllocWithPropertiesKHR(
                 context, props.empty() ? nullptr : props.data(), typeIndex,
                 count * sizeof(T), &err);
@@ -120,6 +121,8 @@ public:
 
         return CL_SUCCESS;
     }
+
+    void reset() { data = nullptr; }
 
     cl_int free()
     {
@@ -136,7 +139,7 @@ public:
                 test_error(err, "clSVMFreeWithPropertiesKHR failed");
             }
 
-            data = nullptr;
+            reset();
         }
 
         return CL_SUCCESS;
@@ -165,12 +168,18 @@ public:
 
             err = clEnqueueSVMUnmap(queue, data, 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMUnmap failed");
+
+            err = clFinish(queue);
+            test_error(err, "clFinish failed");
         }
         else if (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR)
         {
             err = clEnqueueSVMMemcpy(queue, CL_TRUE, data + offset, source,
                                      count * sizeof(T), 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMMemcpy failed");
+
+            err = clFinish(queue);
+            test_error(err, "clFinish failed");
         }
         else
         {
@@ -215,12 +224,18 @@ public:
 
             err = clEnqueueSVMUnmap(queue, data, 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMUnmap failed");
+
+            err = clFinish(queue);
+            test_error(err, "clFinish failed");
         }
         else if (caps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
         {
             err = clEnqueueSVMMemcpy(queue, CL_TRUE, dst, data + offset,
                                      count * sizeof(T), 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMMemcpy failed");
+
+            err = clFinish(queue);
+            test_error(err, "clFinish failed");
         }
         else
         {
