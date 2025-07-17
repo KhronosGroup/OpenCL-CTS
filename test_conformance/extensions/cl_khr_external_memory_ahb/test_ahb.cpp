@@ -119,7 +119,8 @@ REGISTER_TEST(test_images)
     for (const auto format : test_formats)
     {
         log_info("Testing %s\n",
-                 ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+                 ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                     .c_str());
         AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for (auto usage : test_usages)
@@ -215,7 +216,8 @@ REGISTER_TEST(test_images_read)
     for (auto format : test_formats)
     {
         log_info("Testing %s\n",
-                 ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+                 ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                     .c_str());
 
         AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
@@ -516,7 +518,8 @@ REGISTER_TEST(test_enqueue_read_image)
     for (auto format : test_formats)
     {
         log_info("Testing %s\n",
-                 ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+                 ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                     .c_str());
 
         AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
@@ -699,7 +702,8 @@ REGISTER_TEST(test_enqueue_copy_image)
     for (auto format : test_formats)
     {
         log_info("Testing %s\n",
-                 ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+                 ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                     .c_str());
 
         AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
@@ -1007,7 +1011,8 @@ REGISTER_TEST(test_enqueue_copy_image_to_buffer)
     for (auto format : test_formats)
     {
         log_info("Testing %s\n",
-                 ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+                 ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                     .c_str());
 
         AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
@@ -1128,8 +1133,7 @@ REGISTER_TEST(test_enqueue_copy_image_to_buffer)
                 test_error(err, "clEnqueueReadBuffer failed");
 
                 char *out_buffer_ptr = out_buffer.data();
-                char *srcData_ptr = (char *)srcData;
-
+                auto srcData_ptr = static_cast<char *>(srcData);
 
                 const size_t scanlineSize =
                     imageInfo.width * get_pixel_size(imageInfo.format);
@@ -1201,7 +1205,8 @@ REGISTER_TEST(test_enqueue_copy_buffer_to_image)
     for (auto format : test_formats)
     {
         log_info("Testing %s\n",
-                 ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+                 ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                     .c_str());
 
         AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
@@ -1401,7 +1406,8 @@ REGISTER_TEST(test_enqueue_write_image)
     for (auto format : test_formats)
     {
         log_info("Testing %s\n",
-                 ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+                 ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                     .c_str());
 
         AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
@@ -1598,7 +1604,8 @@ REGISTER_TEST(test_enqueue_fill_image)
     for (auto format : test_formats)
     {
         log_info("Testing %s\n",
-                 ahardwareBufferFormatToString(format.aHardwareBufferFormat));
+                 ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                     .c_str());
 
         AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
@@ -1852,7 +1859,8 @@ REGISTER_TEST(test_blob)
 
     log_info("Testing %s\n",
              ahardwareBufferFormatToString(static_cast<AHardwareBuffer_Format>(
-                 aHardwareBufferDesc.format)));
+                                               aHardwareBufferDesc.format))
+                 .c_str());
 
     for (auto resolution : test_sizes)
     {
@@ -1863,15 +1871,15 @@ REGISTER_TEST(test_blob)
 
         if (!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
         {
-            std::string *usage_string = ahardwareBufferDecodeUsageFlagsToString(
+            std::string usage_string = ahardwareBufferDecodeUsageFlagsToString(
                 static_cast<AHardwareBuffer_UsageFlags>(
                     aHardwareBufferDesc.usage));
             log_info("Unsupported format %s, usage flags %s\n",
                      ahardwareBufferFormatToString(
                          static_cast<AHardwareBuffer_Format>(
-                             aHardwareBufferDesc.format)),
-                     usage_string->c_str());
-            delete[] usage_string;
+                             aHardwareBufferDesc.format))
+                         .c_str(),
+                     usage_string.c_str());
             continue;
         }
 

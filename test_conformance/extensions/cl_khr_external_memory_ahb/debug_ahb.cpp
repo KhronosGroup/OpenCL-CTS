@@ -35,61 +35,39 @@ constexpr AHardwareBuffer_UsageFlags flag_list[] = {
     AHARDWAREBUFFER_USAGE_FRONT_BUFFER,
 };
 
-std::string *
-ahardwareBufferDecodeUsageFlagsToString(AHardwareBuffer_UsageFlags flags)
+std::string
+ahardwareBufferDecodeUsageFlagsToString(const AHardwareBuffer_UsageFlags flags)
 {
-    size_t flags_len = 0;
-    size_t num_flags = 0;
-    const char *separator = "|";
-
-    for (uint64_t f : flag_list)
+    if (flags == 0)
     {
-        if (((f & flags) != 0) && ((f & flags) == f))
+        return "UNKNOWN FLAG";
+    }
+
+    std::vector<std::string> active_flags;
+    for (const auto flag : flag_list)
+    {
+        if (flag & flags)
         {
-            flags_len += strlen(ahardwareBufferUsageFlagToString(
-                static_cast<AHardwareBuffer_UsageFlags>(f)));
-            num_flags++;
+            active_flags.push_back(ahardwareBufferUsageFlagToString(flag));
         }
     }
 
-    if (num_flags == 0)
+    if (active_flags.empty())
     {
-        const char *unknown_flag = "UNKNOWN_FLAG";
-        size_t res_size = strlen(unknown_flag) + 1;
-        char *result = new char[res_size];
-        strlcat(result, unknown_flag, res_size);
-        const auto result_str = new std::string(result);
-        return result_str;
+        return "UNKNOWN FLAG";
     }
 
-    size_t string_len = flags_len + ((num_flags - 1) * strlen(separator)) + 1;
-    char *result = new char[string_len];
-    memset(result, 0, string_len);
-
-    size_t flag_counter = 0;
-    for (uint64_t f : flag_list)
-    {
-        if (((f & flags) != 0) && ((f & flags) == f))
-        {
-            flag_counter++;
-            strlcat(result,
-                    ahardwareBufferUsageFlagToString(
-                        static_cast<AHardwareBuffer_UsageFlags>(f)),
-                    string_len);
-            if (flag_counter < num_flags)
-            {
-                strlcat(result, separator, string_len);
-            }
-        }
-    }
-
-    const auto result_str = new std::string(result);
-    return result_str;
+    return std::accumulate(active_flags.begin() + 1, active_flags.end(),
+                           active_flags.front(),
+                           [](std::string acc, const std::string& flag) {
+                               return std::move(acc) + "|" + flag;
+                           });
 }
 
-const char *ahardwareBufferUsageFlagToString(AHardwareBuffer_UsageFlags flag)
+std::string
+ahardwareBufferUsageFlagToString(const AHardwareBuffer_UsageFlags flag)
 {
-    const char *result = "";
+    std::string result;
     switch (flag)
     {
         case AHARDWAREBUFFER_USAGE_CPU_READ_NEVER:
@@ -145,9 +123,9 @@ const char *ahardwareBufferUsageFlagToString(AHardwareBuffer_UsageFlags flag)
     return result;
 }
 
-const char *ahardwareBufferFormatToString(AHardwareBuffer_Format format)
+std::string ahardwareBufferFormatToString(AHardwareBuffer_Format format)
 {
-    const char *result = "";
+    std::string result;
     switch (format)
     {
         case AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM:
