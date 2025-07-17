@@ -27,10 +27,13 @@ namespace {
 
 struct CallbackData
 {
-    CallbackData(cl_context ctx): context{ ctx }, status{ 0 }, svm_pointers{} {}
+    CallbackData(cl_context ctx, std::vector<cl_svm_capabilities_khr> &caps)
+        : context{ ctx }, status{ 0 }, svm_pointers{}, svm_caps{ caps }
+    {}
     cl_context context;
     std::atomic<cl_uint> status;
     std::vector<void *> svm_pointers;
+    std::vector<cl_svm_capabilities_khr> &svm_caps;
 };
 
 // callback which will be passed to clEnqueueSVMFree command
@@ -45,7 +48,15 @@ void CL_CALLBACK callback_svm_free(cl_command_queue queue,
     for (size_t i = 0; i < num_svm_pointers; ++i)
     {
         data->svm_pointers[i] = svm_pointers[i];
-        clSVMFree(data->context, svm_pointers[i]);
+
+        if (data->svm_caps[i] & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
+        {
+            align_free(data);
+        }
+        else
+        {
+            clSVMFree(data->context, svm_pointers[i]);
+        }
     }
 
     data->status.store(1, std::memory_order_release);
@@ -66,13 +77,15 @@ struct UnifiedSVMFree : UnifiedSVMBase
 
     // Test the clEnqueueSVMFree function for a vector of USM pointers
     // and validate the callback.
-    cl_int test_SVMFree(std::vector<void *> &buffers)
+    cl_int
+    test_SVMFreeCallback(std::vector<void *> &buffers,
+                         std::vector<cl_svm_capabilities_khr> &bufferCaps)
     {
         cl_int err = CL_SUCCESS;
 
         clEventWrapper event;
 
-        CallbackData data{ context };
+        CallbackData data{ context, bufferCaps };
 
         err = clEnqueueSVMFree(queue, buffers.size(), buffers.data(),
                                callback_svm_free, &data, 0, 0, &event);
@@ -105,12 +118,34 @@ struct UnifiedSVMFree : UnifiedSVMBase
         return CL_SUCCESS;
     }
 
+    cl_int test_SVMFree(std::vector<void *> &buffers)
+    {
+        cl_int err = CL_SUCCESS;
+
+        clEventWrapper event;
+
+        err = clEnqueueSVMFree(queue, buffers.size(), buffers.data(), nullptr,
+                               nullptr, 0, 0, &event);
+        test_error(err, "clEnqueueSVMFree failed");
+
+        err = clFinish(queue);
+        test_error(err, "clFinish failed");
+
+        err = check_event_type(event, CL_COMMAND_SVM_FREE);
+        test_error(err, "Invalid command type returned for clEnqueueSVMFree");
+
+        return CL_SUCCESS;
+    }
+
     cl_int run() override
     {
         cl_int err;
+
+        // Test clEnqueueSVMFree function with a callback
         for (int it = 0; it < test_iterations; it++)
         {
             std::vector<void *> buffers;
+            std::vector<cl_svm_capabilities_khr> bufferCaps;
 
             size_t numSVMBuffers = get_random_size_t(1, 20, d);
 
@@ -125,12 +160,55 @@ struct UnifiedSVMFree : UnifiedSVMBase
                 test_error(err, "SVM allocation failed");
 
                 buffers.push_back(mem->get_ptr());
+                bufferCaps.push_back(deviceUSVMCaps[typeIndex]);
 
                 mem->reset();
             }
 
-            err = test_SVMFree(buffers);
+            err = test_SVMFreeCallback(buffers, bufferCaps);
             test_error(err, "test_SVMFree");
+        }
+
+        // We need to filter out the SVM types that support system allocation
+        // as we cannot test clEnqueueSVMFree without a callback for them
+        std::vector<size_t> test_indexes;
+        for (size_t i = 0; i < deviceUSVMCaps.size(); i++)
+        {
+            auto caps = deviceUSVMCaps[i];
+            if (0 == (caps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR))
+            {
+                test_indexes.push_back(i);
+            }
+        }
+
+        if (!test_indexes.empty())
+        {
+            // Test clEnqueueSVMFree function with no callback
+            for (int it = 0; it < test_iterations; it++)
+            {
+                std::vector<void *> buffers;
+
+                size_t numSVMBuffers = get_random_size_t(1, 20, d);
+
+                while (buffers.size() != numSVMBuffers)
+                {
+                    size_t test_index =
+                        get_random_size_t(0, test_indexes.size() - 1, d);
+                    size_t typeIndex = test_indexes[test_index];
+
+                    auto mem = get_usvm_wrapper<cl_uchar>(typeIndex);
+
+                    err = mem->allocate(alloc_count);
+                    test_error(err, "SVM allocation failed");
+
+                    buffers.push_back(mem->get_ptr());
+
+                    mem->reset();
+                }
+
+                err = test_SVMFree(buffers);
+                test_error(err, "test_SVMFree");
+            }
         }
         return CL_SUCCESS;
     }

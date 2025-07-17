@@ -94,7 +94,7 @@ static inline cl_int check_event_type(cl_event event,
                                   sizeof(cl_command_type), &commandType, NULL);
     test_error(error, "clGetEventInfo failed");
 
-    return commandType == expectedCommandType ? CL_SUCCESS : TEST_FAIL;
+    return commandType == expectedCommandType ? CL_SUCCESS : CL_INVALID_VALUE;
 }
 
 static inline void generate_random_inputs(std::vector<cl_uchar> &v, MTdata d)

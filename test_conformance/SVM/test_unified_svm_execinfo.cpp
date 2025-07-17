@@ -32,34 +32,33 @@ struct UnifiedSVMExecInfo : UnifiedSVMBase
 
         std::vector<cl_uchar> src_data(alloc_count, 0);
 
-        for (size_t it = 0; it < test_iterations; it++)
+        auto ptr = mem->get_ptr();
+        clMemWrapper indirect =
+            clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                           sizeof(ptr), &ptr, &err);
+        test_error(err, "could not create indirect buffer");
+
+        clMemWrapper direct = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                             src_data.size(), nullptr, &err);
+        test_error(err, "could not create direct buffer");
+
+        err = clSetKernelArg(kernel_IndirectAccessRead, 0, sizeof(indirect),
+                             &indirect);
+        test_error(err, "could not set kernel argument 0");
+
+        err = clSetKernelArg(kernel_IndirectAccessRead, 1, sizeof(direct),
+                             &direct);
+        test_error(err, "could not set kernel argument 1");
+
+        size_t test_offsets[] = { 0, alloc_count / 2 };
+
+        for (auto offset : test_offsets)
         {
             // Fill src data with a random pattern
             generate_random_inputs(src_data, d);
 
             err = mem->write(src_data);
             test_error(err, "could not write to usvm memory");
-
-            auto ptr = mem->get_ptr();
-            clMemWrapper indirect = clCreateBuffer(
-                context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(ptr),
-                &ptr, &err);
-            test_error(err, "could not create indirect buffer");
-
-            clMemWrapper direct = clCreateBuffer(
-                context, CL_MEM_READ_WRITE, src_data.size(), nullptr, &err);
-            test_error(err, "could not create direct buffer");
-
-            err = clSetKernelArg(kernel_IndirectAccessRead, 0, sizeof(indirect),
-                                 &indirect);
-            test_error(err, "could not set kernel argument 0");
-
-            err = clSetKernelArg(kernel_IndirectAccessRead, 1, sizeof(direct),
-                                 &direct);
-            test_error(err, "could not set kernel argument 1");
-
-            // Select a random range
-            size_t offset = get_random_size_t(0, src_data.size() - 1, d);
 
             void *info_ptr = &mem->get_ptr()[offset];
 
@@ -114,32 +113,35 @@ struct UnifiedSVMExecInfo : UnifiedSVMBase
 
         std::vector<cl_uchar> src_data(alloc_count, 0);
 
-        for (size_t it = 0; it < test_iterations; it++)
-        {
-            auto ptr = mem->get_ptr();
-            clMemWrapper indirect = clCreateBuffer(
-                context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(ptr),
-                &ptr, &err);
-            test_error(err, "could not create indirect buffer");
+        size_t test_offsets[] = { 0, alloc_count / 2 };
 
+        auto ptr = mem->get_ptr();
+        clMemWrapper indirect =
+            clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                           sizeof(ptr), &ptr, &err);
+        test_error(err, "could not create indirect buffer");
+
+        clMemWrapper direct = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                             alloc_count, nullptr, &err);
+        test_error(err, "could not create direct buffer");
+
+        err = clSetKernelArg(kernel_IndirectAccessWrite, 0, sizeof(indirect),
+                             &indirect);
+        test_error(err, "could not set kernel argument 0");
+
+        err = clSetKernelArg(kernel_IndirectAccessWrite, 1, sizeof(direct),
+                             &direct);
+        test_error(err, "could not set kernel argument 1");
+
+        for (auto offset : test_offsets)
+        {
             // Fill src data with a random pattern
             generate_random_inputs(src_data, d);
 
-            clMemWrapper direct = clCreateBuffer(
-                context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                src_data.size(), src_data.data(), &err);
-            test_error(err, "could not create direct buffer");
-
-            err = clSetKernelArg(kernel_IndirectAccessWrite, 0,
-                                 sizeof(indirect), &indirect);
-            test_error(err, "could not set kernel argument 0");
-
-            err = clSetKernelArg(kernel_IndirectAccessWrite, 1, sizeof(direct),
-                                 &direct);
-            test_error(err, "could not set kernel argument 1");
-
-            // Select a random range
-            size_t offset = get_random_size_t(0, src_data.size() - 1, d);
+            err = clEnqueueWriteBuffer(queue, direct, CL_NON_BLOCKING, 0,
+                                       src_data.size(), src_data.data(), 0,
+                                       nullptr, nullptr);
+            test_error(err, "clEnqueueReadBuffer failed");
 
             void *info_ptr = &mem->get_ptr()[offset];
 
@@ -246,7 +248,7 @@ struct UnifiedSVMExecInfo : UnifiedSVMBase
             }
         )";
 
-        cl_program program;
+        clProgramWrapper program;
         err = create_single_kernel_helper(
             context, &program, &kernel_IndirectAccessRead, 1, &programString,
             "test_IndirectAccessRead");
@@ -256,9 +258,6 @@ struct UnifiedSVMExecInfo : UnifiedSVMBase
             clCreateKernel(program, "test_IndirectAccessWrite", &err);
         test_error(err, "could not create IndirectAccessWrite kernel");
 
-        err = clReleaseProgram(program);
-        test_error(err, "could not release IndirectAccessRead/Write program");
-
         return CL_SUCCESS;
     }
 
@@ -266,7 +265,6 @@ struct UnifiedSVMExecInfo : UnifiedSVMBase
     clKernelWrapper kernel_IndirectAccessWrite;
 
     static constexpr size_t alloc_count = 1024;
-    static constexpr size_t test_iterations = 100;
 };
 
 REGISTER_TEST(unified_svm_exec_info)

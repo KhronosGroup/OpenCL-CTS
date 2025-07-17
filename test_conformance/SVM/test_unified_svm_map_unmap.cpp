@@ -72,18 +72,21 @@ struct UnifiedSVMMapUnmap : UnifiedSVMBase
 
         for (cl_uint ti = 0; ti < max_ti; ti++)
         {
-            for (auto flags : test_flags)
+            if (deviceUSVMCaps[ti] & CL_SVM_CAPABILITY_HOST_MAP_KHR)
             {
-                auto mem = get_usvm_wrapper<cl_uchar>(ti);
+                for (auto flags : test_flags)
+                {
+                    auto mem = get_usvm_wrapper<cl_uchar>(ti);
 
-                err = mem->allocate(alloc_count);
-                test_error(err, "SVM allocation failed");
+                    err = mem->allocate(alloc_count);
+                    test_error(err, "SVM allocation failed");
 
-                err = test_SVMMapUnmap(mem.get(), flags);
-                test_error(err, "test_SVMMemfill");
+                    err = test_SVMMapUnmap(mem.get(), flags);
+                    test_error(err, "test_SVMMemfill");
 
-                err = mem->free();
-                test_error(err, "SVM free failed");
+                    err = mem->free();
+                    test_error(err, "SVM free failed");
+                }
             }
         }
         return CL_SUCCESS;

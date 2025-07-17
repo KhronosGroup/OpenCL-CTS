@@ -119,11 +119,6 @@ public:
             test_error(err, "clSVMAllocWithPropertiesKHR failed");
         }
 
-        if (!kernel_CopyMemory)
-        {
-            err = createCopyMemoryKernel();
-            test_error(err, "could not create CopyMemory kernel");
-        }
         return CL_SUCCESS;
     }
 
@@ -179,23 +174,9 @@ public:
         }
         else if (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR)
         {
-            err = clSetKernelArgSVMPointer(kernel_CopyMemory, 0,
-                                           static_cast<void*>(data + offset));
-            test_error(err, "clSetKernelArgSVMPointer failed");
-
-            clMemWrapper src_mem =
-                clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
-                               count * sizeof(T), const_cast<T*>(source), &err);
-            test_error(err, "clCreateBuffer failed.");
-
-            err =
-                clSetKernelArg(kernel_CopyMemory, 1, sizeof(src_mem), &src_mem);
-            test_error(err, "clSetKernelArg failed.");
-
-            size_t gws{ count * sizeof(T) };
-            err = clEnqueueNDRangeKernel(queue, kernel_CopyMemory, 1, nullptr,
-                                         &gws, nullptr, 0, nullptr, nullptr);
-            test_error(err, "clEnqueueNDRangeKernel failed\n");
+            err = clEnqueueSVMMemcpy(queue, CL_TRUE, data + offset, source,
+                                     count * sizeof(T), 0, nullptr, nullptr);
+            test_error(err, "clEnqueueSVMMemcpy failed");
 
             err = clFinish(queue);
             test_error(err, "clFinish failed");
@@ -249,28 +230,12 @@ public:
         }
         else if (caps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
         {
-            clMemWrapper dst_mem = clCreateBuffer(
-                context, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
-                count * sizeof(T), dst, &err);
-            test_error(err, "clCreateBuffer failed.");
+            err = clEnqueueSVMMemcpy(queue, CL_TRUE, dst, data + offset,
+                                     count * sizeof(T), 0, nullptr, nullptr);
+            test_error(err, "clEnqueueSVMMemcpy failed");
 
-            err =
-                clSetKernelArg(kernel_CopyMemory, 0, sizeof(dst_mem), &dst_mem);
-            test_error(err, "clSetKernelArg failed.");
-
-            err = clSetKernelArgSVMPointer(kernel_CopyMemory, 1,
-                                           static_cast<void*>(data + offset));
-            test_error(err, "clSetKernelArgSVMPointer failed");
-
-            size_t gws{ count * sizeof(T) };
-            err = clEnqueueNDRangeKernel(queue, kernel_CopyMemory, 1, nullptr,
-                                         &gws, nullptr, 0, nullptr, nullptr);
-            test_error(err, "clEnqueueNDRangeKernel failed");
-
-            err = clEnqueueReadBuffer(queue, dst_mem, CL_TRUE, 0,
-                                      count * sizeof(T), dst, 0, nullptr,
-                                      nullptr);
-            test_error(err, "clEnqueueReadBuffer failed");
+            err = clFinish(queue);
+            test_error(err, "clFinish failed");
         }
         else
         {
@@ -292,39 +257,12 @@ public:
     T* get_ptr() { return data; }
 
 private:
-    cl_int createCopyMemoryKernel()
-    {
-        cl_int err;
-
-        const char* programString = R"(
-            kernel void copyMemory(global char* dst, const global char* src)
-            {
-                dst[get_global_id(0)] = src[get_global_id(0)];
-            }
-        )";
-
-        if (context)
-        {
-            cl_program program;
-            err = create_single_kernel_helper(context, &program,
-                                              &kernel_CopyMemory, 1,
-                                              &programString, "copyMemory");
-            test_error(err, "could not create copyMemory kernel");
-
-            err = clReleaseProgram(program);
-            test_error(err, "could not release copyMemory program");
-        }
-        return CL_SUCCESS;
-    }
-
     cl_context context = nullptr;
     cl_device_id device = nullptr;
     cl_command_queue queue = nullptr;
     cl_uint typeIndex = 0;
     cl_svm_capabilities_khr caps = 0;
     size_t deviceMaxAlignment = 0;
-
-    clKernelWrapper kernel_CopyMemory;
 
     clSVMAllocWithPropertiesKHR_fn clSVMAllocWithPropertiesKHR = nullptr;
     clSVMFreeWithPropertiesKHR_fn clSVMFreeWithPropertiesKHR = nullptr;
