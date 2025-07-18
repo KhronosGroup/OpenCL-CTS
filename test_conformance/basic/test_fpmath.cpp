@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "harness/mathHelpers.h"
 #include "harness/rounding_mode.h"
 #include "harness/stringHelpers.h"
 

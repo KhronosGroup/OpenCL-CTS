@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "harness/mathHelpers.h"
 #include "harness/stringHelpers.h"
 
 #include <CL/cl_half.h>

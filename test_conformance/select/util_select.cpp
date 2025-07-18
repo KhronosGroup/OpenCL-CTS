@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "harness/errorHelpers.h"
+#include "harness/mathHelpers.h"
 #include "harness/testHarness.h"
 
 #include <stdio.h>

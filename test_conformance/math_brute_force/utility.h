@@ -19,6 +19,7 @@
 #include "harness/compat.h"
 #include "harness/rounding_mode.h"
 #include "harness/fpcontrol.h"
+#include "harness/mathHelpers.h"
 #include "harness/testHarness.h"
 #include "harness/ThreadPool.h"
 #include "harness/conversions.h"

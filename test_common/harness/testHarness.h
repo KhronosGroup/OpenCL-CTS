@@ -16,15 +16,11 @@
 #ifndef _testHarness_h
 #define _testHarness_h
 
-#if defined(__APPLE__)
-#include <OpenCL/cl_platform.h>
-#else
-#include <CL/cl_platform.h>
-#endif
 #include "clImageHelper.h"
-#include <cmath>
 #include <string>
 #include <sstream>
+
+#include <string>
 #include <vector>
 
 class Version {
@@ -268,14 +264,5 @@ void memset_pattern4(void *, const void *, size_t);
 
 extern void PrintArch(void);
 
-
-template <typename T> inline bool isnan_fp(const T &v) { return std::isnan(v); }
-
-template <> inline bool isnan_fp<cl_half>(const cl_half &v)
-{
-    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-    uint16_t h_mant = ((cl_half)v) & 0x3FF;
-    return (h_exp == 0x1F && h_mant != 0);
-}
 
 #endif // _testHarness_h

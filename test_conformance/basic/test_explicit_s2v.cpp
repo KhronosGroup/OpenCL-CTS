@@ -25,6 +25,7 @@
 
 #include <CL/cl_half.h>
 #include "harness/conversions.h"
+#include "harness/mathHelpers.h"
 #include "harness/typeWrappers.h"
 
 extern cl_half_rounding_mode halfRoundingMode;
