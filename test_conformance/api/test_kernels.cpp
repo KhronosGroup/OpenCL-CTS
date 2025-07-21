@@ -719,13 +719,12 @@ REGISTER_TEST(negative_invalid_arg_size_local)
     clKernelWrapper local_arg_kernel;
 
     // Setup the test
-    error = create_single_kernel_helper(context, &program, nullptr, 1,
-                                        &sample_local_size_test_kernel, nullptr);
+    error = create_single_kernel_helper(
+        context, &program, nullptr, 1, &sample_local_size_test_kernel, nullptr);
     test_error(error, "Unable to build test program");
 
     local_arg_kernel = clCreateKernel(program, "local_size_test", &error);
-    test_error(error,
-               "Unable to get local_size_test kernel for built program");
+    test_error(error, "Unable to get local_size_test kernel for built program");
 
     // Run the test
     error = clSetKernelArg(local_arg_kernel, 0, 0, nullptr);
