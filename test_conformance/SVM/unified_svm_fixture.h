@@ -77,8 +77,6 @@ public:
     cl_int allocate(const size_t count,
                     const std::vector<cl_svm_alloc_properties_khr> props_ = {})
     {
-        cl_int err;
-
         if (data != nullptr)
         {
             free();
@@ -113,6 +111,7 @@ public:
                 props.push_back(0);
             }
 
+            cl_int err;
             data = (T*)clSVMAllocWithPropertiesKHR(
                 context, props.empty() ? nullptr : props.data(), typeIndex,
                 count * sizeof(T), &err);
@@ -177,9 +176,6 @@ public:
             err = clEnqueueSVMMemcpy(queue, CL_TRUE, data + offset, source,
                                      count * sizeof(T), 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMMemcpy failed");
-
-            err = clFinish(queue);
-            test_error(err, "clFinish failed");
         }
         else
         {
@@ -233,9 +229,6 @@ public:
             err = clEnqueueSVMMemcpy(queue, CL_TRUE, dst, data + offset,
                                      count * sizeof(T), 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMMemcpy failed");
-
-            err = clFinish(queue);
-            test_error(err, "clFinish failed");
         }
         else
         {

@@ -106,13 +106,10 @@ struct UnifiedSVMSetArg : UnifiedSVMBase
             }
         )";
 
-        cl_program program;
+        clProgramWrapper program;
         err = create_single_kernel_helper(context, &program, &test_kernel, 1,
                                           &programString, "test_kernel");
         test_error(err, "could not create test_kernel kernel");
-
-        err = clReleaseProgram(program);
-        test_error(err, "could not release test_kernel program");
 
         return err;
     }
