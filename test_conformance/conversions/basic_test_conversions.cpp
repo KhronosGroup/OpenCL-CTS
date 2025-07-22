@@ -52,17 +52,17 @@
 
 #include "basic_test_conversions.h"
 
-#if defined(_WIN32)
+#if defined(_M_IX86) || defined(_M_X64)
 #include <mmintrin.h>
 #include <emmintrin.h>
-#else // !_WIN32
+#else
 #if defined(__SSE__)
 #include <xmmintrin.h>
 #endif
 #if defined(__SSE2__)
 #include <emmintrin.h>
 #endif
-#endif // _WIN32
+#endif
 
 cl_context gContext = NULL;
 cl_command_queue gQueue = NULL;
