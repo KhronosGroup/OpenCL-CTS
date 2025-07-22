@@ -224,6 +224,9 @@ void *FlushToZero(void)
 #elif defined(__mips__)
     fpa_bissr(FPA_CSR_FS);
     return NULL;
+#elif defined(__riscv)
+    #warning RISC-V does NOT support FTZ...
+    return NULL;
 #else
 #error Unknown arch
 #endif
@@ -254,6 +257,8 @@ void UnFlushToZero(void *p)
     _FPU_SETCW(flags);
 #elif defined(__mips__)
     fpa_bicsr(FPA_CSR_FS);
+#elif defined(__riscv)
+    #warning RISC-V does NOT support FTZ...
 #else
 #error Unknown arch
 #endif

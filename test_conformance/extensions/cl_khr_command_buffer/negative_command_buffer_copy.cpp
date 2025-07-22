@@ -84,7 +84,7 @@ protected:
     static constexpr size_t region[3] = { img_width, img_height, 1 };
     static constexpr cl_image_format format = { CL_RGBA, CL_UNSIGNED_INT8 };
     static constexpr size_t data_size =
-        img_width * img_height * num_channels * sizeof(uint8_t);
+        img_width * img_height * num_channels * sizeof(cl_uint);
     clMemWrapper image;
     clMemWrapper buffer;
     clMemWrapper in_mem;
