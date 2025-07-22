@@ -87,6 +87,13 @@ const char *sample_two_kernel_program[] = {
 "\n"
 "}\n" };
 
+const char *sample_mem_obj_size_test_kernel = R"(
+    __kernel void mem_obj_size_test(__global int *src, __global int *dst)
+    {
+        size_t  tid = get_global_id(0);
+        dst[tid] = src[tid];
+    }
+)";
 
 REGISTER_TEST(get_kernel_info)
 {
@@ -701,6 +708,45 @@ REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
                            "created with CL_MEM_IMMUTABLE_EXT is "
                            "passed to a write_only kernel argument",
                            TEST_FAIL);
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_invalid_arg_size_mem_obj)
+{
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper mem_obj_arg_kernel;
+
+    // Setup the test
+    error =
+        create_single_kernel_helper(context, &program, nullptr, 1,
+                                    &sample_mem_obj_size_test_kernel, nullptr);
+    test_error(error, "Unable to build test program");
+
+    mem_obj_arg_kernel = clCreateKernel(program, "mem_obj_size_test", &error);
+    test_error(error, "Unable to get local_size_test kernel for built program");
+
+
+    std::vector<cl_uchar> mem_data(256, 0);
+    clMemWrapper buffer = clCreateBuffer(
+        context, CL_MEM_USE_HOST_PTR, mem_data.size(), mem_data.data(), &error);
+    test_error(error, "clCreateBuffer failed");
+
+    // Run the test
+    error = clSetKernelArg(mem_obj_arg_kernel, 0, sizeof(buffer) * 2, &buffer);
+    test_failure_error_ret(
+        error, CL_INVALID_ARG_SIZE,
+        "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when "
+        "argument is a memory object and arg_size > sizeof(cl_mem)",
+        TEST_FAIL);
+
+    error = clSetKernelArg(mem_obj_arg_kernel, 0, sizeof(buffer) / 2, &buffer);
+    test_failure_error_ret(
+        error, CL_INVALID_ARG_SIZE,
+        "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when "
+        "argument is a memory object and arg_size < sizeof(cl_mem)",
+        TEST_FAIL);
 
     return TEST_PASS;
 }
