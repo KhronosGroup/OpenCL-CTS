@@ -287,7 +287,7 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
                   (int)0, (int)numSamples );
         return 1;
     }
-
+    image.reset();
     return 0;
 }
 
