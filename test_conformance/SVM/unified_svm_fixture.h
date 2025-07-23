@@ -129,6 +129,8 @@ public:
         return CL_SUCCESS;
     }
 
+    void reset() { data = nullptr; }
+
     cl_int free()
     {
         if (data)
@@ -144,7 +146,7 @@ public:
                 test_error(err, "clSVMFreeWithPropertiesKHR failed");
             }
 
-            data = nullptr;
+            reset();
         }
 
         return CL_SUCCESS;
@@ -173,6 +175,9 @@ public:
 
             err = clEnqueueSVMUnmap(queue, data, 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMUnmap failed");
+
+            err = clFinish(queue);
+            test_error(err, "clFinish failed");
         }
         else if (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR)
         {
@@ -223,6 +228,9 @@ public:
 
             err = clEnqueueSVMUnmap(queue, data, 0, nullptr, nullptr);
             test_error(err, "clEnqueueSVMUnmap failed");
+
+            err = clFinish(queue);
+            test_error(err, "clFinish failed");
         }
         else if (caps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
         {
