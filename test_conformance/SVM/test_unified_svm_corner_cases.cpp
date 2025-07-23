@@ -57,13 +57,10 @@ struct UnifiedSVMCornerCaseAllocFree : UnifiedSVMBase
         test_error(err,
                    "clFinish after clEnqueueSVMFree with empty set failed");
 
-        cl_command_type cmdType = 0;
-        err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                             &cmdType, nullptr);
-        test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        test_assert_error(
-            cmdType == CL_COMMAND_SVM_FREE,
-            "clEnqueueSVMFree did not return a CL_COMMAND_SVM_FREE event");
+        err = check_event_type(event, CL_COMMAND_SVM_FREE);
+        test_error(err,
+                   "clEnqueueSVMFree did not return a "
+                   "CL_COMMAND_SVM_FREE event");
 
         log_info("   testing asynchronous NULL pointer free\n");
         event = nullptr;
@@ -76,13 +73,10 @@ struct UnifiedSVMCornerCaseAllocFree : UnifiedSVMBase
         test_error(err,
                    "clFinish after clEnqueueSVMFree with NULL pointer failed");
 
-        cmdType = 0;
-        err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                             &cmdType, nullptr);
-        test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        test_assert_error(
-            cmdType == CL_COMMAND_SVM_FREE,
-            "clEnqueueSVMFree did not return a CL_COMMAND_SVM_FREE event");
+        err = check_event_type(event, CL_COMMAND_SVM_FREE);
+        test_error(err,
+                   "clEnqueueSVMFree did not return a "
+                   "CL_COMMAND_SVM_FREE event");
 
         return CL_SUCCESS;
     }
@@ -413,13 +407,10 @@ struct UnifiedSVMCornerCaseMemcpy : UnifiedSVMBase
                    "clEnqueueSVMMemcpy with a NULL destination pointer "
                    "returned an error");
 
-        cl_command_type cmdType = 0;
-        err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                             &cmdType, nullptr);
-        test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        test_assert_error(
-            cmdType == CL_COMMAND_SVM_MEMCPY,
-            "clEnqueueSVMMemcpy did not return a CL_COMMAND_SVM_MEMCPY event");
+        err = check_event_type(event, CL_COMMAND_SVM_MEMCPY);
+        test_error(err,
+                   "clEnqueueSVMMemcpy did not return a "
+                   "CL_COMMAND_SVM_MEMCPY event");
 
         event = nullptr;
         err = clEnqueueSVMMemcpy(queue, CL_TRUE, &value, nullptr, 0, 0, nullptr,
@@ -428,13 +419,11 @@ struct UnifiedSVMCornerCaseMemcpy : UnifiedSVMBase
             err,
             "clEnqueueSVMMemcpy with a NULL source pointer returned an error");
 
-        cmdType = 0;
-        err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                             &cmdType, nullptr);
-        test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        test_assert_error(
-            cmdType == CL_COMMAND_SVM_MEMCPY,
-            "clEnqueueSVMMemcpy did not return a CL_COMMAND_SVM_MEMCPY event");
+        err = check_event_type(event, CL_COMMAND_SVM_MEMCPY);
+        test_error(err,
+                   "clEnqueueSVMMemcpy did not return a "
+                   "CL_COMMAND_SVM_MEMCPY event");
+
 
         return CL_SUCCESS;
     }
@@ -451,13 +440,10 @@ struct UnifiedSVMCornerCaseMemcpy : UnifiedSVMBase
                    "clEnqueueSVMMemcpy with a bogus destination pointer "
                    "returned an error");
 
-        cl_command_type cmdType = 0;
-        err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                             &cmdType, nullptr);
-        test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        test_assert_error(
-            cmdType == CL_COMMAND_SVM_MEMCPY,
-            "clEnqueueSVMMemcpy did not return a CL_COMMAND_SVM_MEMCPY event");
+        err = check_event_type(event, CL_COMMAND_SVM_MEMCPY);
+        test_error(err,
+                   "clEnqueueSVMMemcpy did not return a "
+                   "CL_COMMAND_SVM_MEMCPY event");
 
         event = nullptr;
         err = clEnqueueSVMMemcpy(queue, CL_TRUE, &value, bogus, 0, 0, nullptr,
@@ -466,13 +452,11 @@ struct UnifiedSVMCornerCaseMemcpy : UnifiedSVMBase
             err,
             "clEnqueueSVMMemcpy with a bogus source pointer returned an error");
 
-        cmdType = 0;
-        err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                             &cmdType, nullptr);
-        test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        test_assert_error(
-            cmdType == CL_COMMAND_SVM_MEMCPY,
-            "clEnqueueSVMMemcpy did not return a CL_COMMAND_SVM_MEMCPY event");
+        err = check_event_type(event, CL_COMMAND_SVM_MEMCPY);
+        test_error(err,
+                   "clEnqueueSVMMemcpy did not return a "
+                   "CL_COMMAND_SVM_MEMCPY event");
+
 
         return CL_SUCCESS;
     }
@@ -492,13 +476,10 @@ struct UnifiedSVMCornerCaseMemcpy : UnifiedSVMBase
             err,
             "clEnqueueSVMMemcpy with valid SVM dst pointer returned an error");
 
-        cl_command_type cmdType = 0;
-        err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                             &cmdType, nullptr);
-        test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        test_assert_error(
-            cmdType == CL_COMMAND_SVM_MEMCPY,
-            "clEnqueueSVMMemcpy did not return a CL_COMMAND_SVM_MEMCPY event");
+        err = check_event_type(event, CL_COMMAND_SVM_MEMCPY);
+        test_error(err,
+                   "clEnqueueSVMMemcpy did not return a "
+                   "CL_COMMAND_SVM_MEMCPY event");
 
         event = nullptr;
         err = clEnqueueSVMMemcpy(queue, CL_TRUE, &value, mem->get_ptr(), 0, 0,
@@ -507,13 +488,10 @@ struct UnifiedSVMCornerCaseMemcpy : UnifiedSVMBase
             err,
             "clEnqueueSVMMemcpy with valid SVM src pointer returned an error");
 
-        cmdType = 0;
-        err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                             &cmdType, nullptr);
-        test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        test_assert_error(
-            cmdType == CL_COMMAND_SVM_MEMCPY,
-            "clEnqueueSVMMemcpy did not return a CL_COMMAND_SVM_MEMCPY event");
+        err = check_event_type(event, CL_COMMAND_SVM_MEMCPY);
+        test_error(err,
+                   "clEnqueueSVMMemcpy did not return a "
+                   "CL_COMMAND_SVM_MEMCPY event");
 
         return CL_SUCCESS;
     }
@@ -613,13 +591,10 @@ struct UnifiedSVMCornerCaseMemFill : UnifiedSVMBase
                    "clEnqueueSVMMemFill with a NULL destination pointer "
                    "returned an error");
 
-        cl_command_type cmdType = 0;
-        err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                             &cmdType, nullptr);
-        test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        test_assert_error(
-            cmdType == CL_COMMAND_SVM_MEMFILL,
-            "clEnqueueSVMMemcpy did not return a CL_COMMAND_SVM_MEMFILL event");
+        err = check_event_type(event, CL_COMMAND_SVM_MEMFILL);
+        test_error(err,
+                   "clEnqueueSVMMemFill did not return a "
+                   "CL_COMMAND_SVM_MEMFILL event");
 
         return CL_SUCCESS;
     }
@@ -636,13 +611,10 @@ struct UnifiedSVMCornerCaseMemFill : UnifiedSVMBase
                    "clEnqueueSVMMemFill with a bogus destination pointer "
                    "returned an error");
 
-        cl_command_type cmdType = 0;
-        err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                             &cmdType, nullptr);
-        test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        test_assert_error(
-            cmdType == CL_COMMAND_SVM_MEMFILL,
-            "clEnqueueSVMMemcpy did not return a CL_COMMAND_SVM_MEMFILL event");
+        err = check_event_type(event, CL_COMMAND_SVM_MEMFILL);
+        test_error(err,
+                   "clEnqueueSVMMemFill did not return a "
+                   "CL_COMMAND_SVM_MEMFILL event");
 
         return CL_SUCCESS;
     }
@@ -662,13 +634,10 @@ struct UnifiedSVMCornerCaseMemFill : UnifiedSVMBase
                    "clEnqueueSVMMemFill with a valid destination pointer "
                    "returned an error");
 
-        cl_command_type cmdType = 0;
-        err = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                             &cmdType, nullptr);
-        test_error(err, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        test_assert_error(
-            cmdType == CL_COMMAND_SVM_MEMFILL,
-            "clEnqueueSVMMemcpy did not return a CL_COMMAND_SVM_MEMFILL event");
+        err = check_event_type(event, CL_COMMAND_SVM_MEMFILL);
+        test_error(err,
+                   "clEnqueueSVMMemFill did not return a "
+                   "CL_COMMAND_SVM_MEMFILL event");
 
         return CL_SUCCESS;
     }
@@ -743,6 +712,133 @@ REGISTER_TEST(unified_svm_corner_case_mem_fill)
     }
 
     UnifiedSVMCornerCaseMemFill Test(context, device, queue, num_elements);
+    err = Test.setup();
+    test_error(err, "test setup failed");
+
+    err = Test.run();
+    test_error(err, "test failed");
+
+    return TEST_PASS;
+}
+
+struct UnifiedSVMCornerCaseMigrateMem : UnifiedSVMBase
+{
+    UnifiedSVMCornerCaseMigrateMem(cl_context context, cl_device_id device,
+                                   cl_command_queue queue, int num_elements)
+        : UnifiedSVMBase(context, device, queue, num_elements)
+    {}
+
+    cl_int test_NullPointer()
+    {
+        cl_int err;
+
+        const void* svm_pointers[] = { nullptr };
+        const size_t sizes[] = { 0 };
+        clEventWrapper event;
+        err = clEnqueueSVMMigrateMem(queue, 1, svm_pointers, sizes,
+                                     CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, 0,
+                                     nullptr, &event);
+        test_error(
+            err,
+            "clEnqueueSVMMigrateMem with a NULL pointer returned an error");
+
+        err = check_event_type(event, CL_COMMAND_SVM_MIGRATE_MEM);
+        test_error(err,
+                   "clEnqueueSVMMigrateMem did not return a "
+                   "CL_COMMAND_SVM_MIGRATE_MEM event");
+
+        return CL_SUCCESS;
+    }
+
+    cl_int test_ValidPointer(cl_uint typeIndex)
+    {
+        cl_int err;
+
+        auto mem = get_usvm_wrapper<cl_int>(typeIndex);
+        err = mem->allocate(1);
+
+        const void* svm_pointers[] = { mem->get_ptr() };
+        const size_t sizes[] = { 0 };
+        clEventWrapper event;
+        err = clEnqueueSVMMigrateMem(queue, 1, svm_pointers, sizes,
+                                     CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED, 0,
+                                     nullptr, &event);
+        test_error(err,
+                   "clEnqueueSVMMigrateMem with a valid pointer "
+                   "returned an error");
+
+        err = check_event_type(event, CL_COMMAND_SVM_MIGRATE_MEM);
+        test_error(err,
+                   "clEnqueueSVMMigrateMem did not return a "
+                   "CL_COMMAND_SVM_MIGRATE_MEM event");
+
+        return CL_SUCCESS;
+    }
+
+    cl_int run() override
+    {
+        cl_int err;
+
+        log_info("   testing clEnqueueSVMMigrateMem with a NULL pointer and a "
+                 "size of zero\n");
+        err = test_NullPointer();
+        test_error(
+            err,
+            "clEnqueueSVMMigrateMem with a NULL pointer and a size of zero "
+            "failed");
+
+        for (cl_uint ti = 0; ti < static_cast<cl_uint>(deviceUSVMCaps.size());
+             ti++)
+        {
+            log_info("   testing SVM type %u\n", ti);
+
+            log_info(
+                "     testing clEnqueueSVMMigrateMem with a valid pointer and "
+                "a size of zero\n");
+            err = test_ValidPointer(ti);
+            test_error(
+                err,
+                "clEnqueueSVMMigrateMem with a valid pointer and a size of "
+                "zero failed");
+        }
+
+        return CL_SUCCESS;
+    }
+};
+
+REGISTER_TEST(unified_svm_corner_case_migrate_mem)
+{
+    if (!is_extension_available(device, "cl_khr_unified_svm"))
+    {
+        log_info("cl_khr_unified_svm is not supported, skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_int err;
+
+    clContextWrapper contextWrapper;
+    clCommandQueueWrapper queueWrapper;
+
+    // For now: create a new context and queue.
+    // If we switch to a new test executable and run the tests without
+    // forceNoContextCreation then this can be removed, and we can just use the
+    // context and the queue from the harness.
+    if (context == nullptr)
+    {
+        contextWrapper =
+            clCreateContext(nullptr, 1, &device, nullptr, nullptr, &err);
+        test_error(err, "clCreateContext failed");
+        context = contextWrapper;
+    }
+
+    if (queue == nullptr)
+    {
+        queueWrapper = clCreateCommandQueue(context, device, 0, &err);
+        test_error(err, "clCreateCommandQueue failed");
+        queue = queueWrapper;
+    }
+
+    UnifiedSVMCornerCaseMigrateMem Test(context, device, queue, num_elements);
     err = Test.setup();
     test_error(err, "test setup failed");
 
