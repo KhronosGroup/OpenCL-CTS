@@ -132,30 +132,13 @@ struct UnifiedSVMCornerCaseSetKernelArg : UnifiedSVMBase
         : UnifiedSVMBase(context, device, queue, num_elements)
     {}
 
-    cl_int test_NullPointer()
+    cl_int test_PointerKernelArg(const void* test)
     {
-        cl_int err = clSetKernelArgSVMPointer(kernel_StorePointer, 0, nullptr);
-        test_error(
-            err,
-            "clSetKernelArgSVMPointer with a NULL pointer returned an error");
+        cl_int err = clSetKernelArgSVMPointer(kernel_StorePointer, 0, test);
+        test_error(err, "clSetKernelArgSVMPointer failed");
 
-        return CL_SUCCESS;
-    }
-
-    cl_int test_BogusPointer()
-    {
-        const void* bogus = (const void*)0xDEADBEEF;
-        cl_int err = clSetKernelArgSVMPointer(kernel_StorePointer, 0, bogus);
-        test_error(
-            err,
-            "clSetKernelArgSVMPointer with a bogus pointer returned an error");
-
-        clMemWrapper out = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                          sizeof(cl_int*), nullptr, &err);
-        test_error(err, "could not create destination buffer");
-
-        err = clSetKernelArg(kernel_StorePointer, 1, sizeof(out), &out);
-        test_error(err, "could not set kernel arguments");
+        err = clSetKernelArg(kernel_StorePointer, 1, sizeof(ptr_dst), &ptr_dst);
+        test_error(err, "clSetKernelArg failed");
 
         size_t global_work_size = 1;
         err = clEnqueueNDRangeKernel(queue, kernel_StorePointer, 1, nullptr,
@@ -166,12 +149,12 @@ struct UnifiedSVMCornerCaseSetKernelArg : UnifiedSVMBase
         err = clFinish(queue);
         test_error(err, "clFinish failed");
 
-        void* check = nullptr;
-        err = clEnqueueReadBuffer(queue, out, CL_TRUE, 0, sizeof(cl_int*),
+        void* check = &err;
+        err = clEnqueueReadBuffer(queue, ptr_dst, CL_TRUE, 0, sizeof(cl_int*),
                                   &check, 0, nullptr, nullptr);
         test_error(err, "could not read output buffer");
 
-        test_assert_error(check == bogus,
+        test_assert_error(check == test,
                           "stored pointer does not match input pointer");
 
         return CL_SUCCESS;
@@ -197,6 +180,10 @@ struct UnifiedSVMCornerCaseSetKernelArg : UnifiedSVMBase
                                         1, &programString, "test_StorePointer");
         test_error(err, "could not create StorePointer kernel");
 
+        ptr_dst = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int*),
+                                 nullptr, &err);
+        test_error(err, "could not create destination buffer");
+
         return CL_SUCCESS;
     }
 
@@ -205,17 +192,18 @@ struct UnifiedSVMCornerCaseSetKernelArg : UnifiedSVMBase
         cl_int err;
 
         log_info("   testing clSetKernelArgSVMPointer with a NULL pointer\n");
-        err = test_NullPointer();
+        err = test_PointerKernelArg(nullptr);
         test_error(err, "clSetKernelArgSVMPointer with a NULL pointer failed");
 
         log_info("   testing clSetKernelArgSVMPointer with a bogus pointer\n");
-        err = test_BogusPointer();
+        err = test_PointerKernelArg((const void*)0xDEADBEEF);
         test_error(err, "clSetKernelArgSVMPointer with a bogus pointer failed");
 
         return CL_SUCCESS;
     }
 
     clKernelWrapper kernel_StorePointer;
+    clMemWrapper ptr_dst;
 };
 
 REGISTER_TEST(unified_svm_corner_case_set_kernel_arg)
