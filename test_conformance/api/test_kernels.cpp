@@ -725,8 +725,8 @@ REGISTER_TEST(negative_invalid_arg_size_mem_obj)
     test_error(error, "Unable to build test program");
 
     mem_obj_arg_kernel = clCreateKernel(program, "mem_obj_size_test", &error);
-    test_error(error, "Unable to get local_size_test kernel for built program");
-
+    test_error(error,
+               "Unable to get mem_obj_size_test kernel for built program");
 
     std::vector<cl_uchar> mem_data(256, 0);
     clMemWrapper buffer = clCreateBuffer(
