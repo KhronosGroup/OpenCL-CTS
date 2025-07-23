@@ -87,6 +87,15 @@ const char *sample_two_kernel_program[] = {
 "\n"
 "}\n" };
 
+const char *sample_sampler_size_test_kernel = R"(
+    __kernel void sampler_size_test(sampler_t sampler, __read_only image2d_t src, __global float4 *dst)
+    {
+        int  tid = get_global_id(0);
+        int2 coord = (int2)(get_global_id(0), get_global_id(1));
+        float4 data = read_imagef(src, sampler, coord);
+        dst[tid] = data;
+    }
+)";
 
 REGISTER_TEST(get_kernel_info)
 {
@@ -701,6 +710,46 @@ REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
                            "created with CL_MEM_IMMUTABLE_EXT is "
                            "passed to a write_only kernel argument",
                            TEST_FAIL);
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_invalid_arg_size_sampler)
+{
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper sampler_arg_kernel;
+
+    // Setup the test
+    error =
+        create_single_kernel_helper(context, &program, nullptr, 1,
+                                    &sample_sampler_size_test_kernel, nullptr);
+    test_error(error, "Unable to build test program");
+
+    sampler_arg_kernel = clCreateKernel(program, "sampler_size_test", &error);
+    test_error(error,
+               "Unable to get sampler_size_test kernel for built program");
+
+    clSamplerWrapper sampler = clCreateSampler(
+        context, CL_FALSE, CL_ADDRESS_NONE, CL_FILTER_NEAREST, &error);
+    test_error(error, "Unable to create sampler");
+
+    // Run the test
+    error =
+        clSetKernelArg(sampler_arg_kernel, 0, sizeof(sampler) * 2, &sampler);
+    test_failure_error_ret(
+        error, CL_INVALID_ARG_SIZE,
+        "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when "
+        "argument is a memory object and arg_size > sizeof(cl_sampler)",
+        TEST_FAIL);
+
+    error =
+        clSetKernelArg(sampler_arg_kernel, 0, sizeof(sampler) / 2, &sampler);
+    test_failure_error_ret(
+        error, CL_INVALID_ARG_SIZE,
+        "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when "
+        "argument is a memory object and arg_size < sizeof(cl_sampler)",
+        TEST_FAIL);
 
     return TEST_PASS;
 }
