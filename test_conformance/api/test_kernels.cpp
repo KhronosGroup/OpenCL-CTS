@@ -714,7 +714,7 @@ REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
     return TEST_PASS;
 }
 
-REGISTER_TEST(negative_invalid_arg_size_sampler)
+REGISTER_TEST(negative_invalid_arg_size)
 {
     cl_int error = CL_SUCCESS;
     clProgramWrapper program;
@@ -734,7 +734,7 @@ REGISTER_TEST(negative_invalid_arg_size_sampler)
         context, CL_FALSE, CL_ADDRESS_NONE, CL_FILTER_NEAREST, &error);
     test_error(error, "Unable to create sampler");
 
-    // Run the test
+    // Run the test - CL_INVALID_ARG_SIZE
     error =
         clSetKernelArg(sampler_arg_kernel, 0, sizeof(sampler) * 2, &sampler);
     test_failure_error_ret(
