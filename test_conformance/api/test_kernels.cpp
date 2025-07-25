@@ -712,7 +712,7 @@ REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
     return TEST_PASS;
 }
 
-REGISTER_TEST(negative_invalid_arg_size_mem_obj)
+REGISTER_TEST(negative_invalid_arg_mem_obj)
 {
     cl_int error = CL_SUCCESS;
     clProgramWrapper program;
@@ -733,7 +733,7 @@ REGISTER_TEST(negative_invalid_arg_size_mem_obj)
         context, CL_MEM_USE_HOST_PTR, mem_data.size(), mem_data.data(), &error);
     test_error(error, "clCreateBuffer failed");
 
-    // Run the test
+    // Run the test - CL_INVALID_ARG_SIZE
     error = clSetKernelArg(mem_obj_arg_kernel, 0, sizeof(buffer) * 2, &buffer);
     test_failure_error_ret(
         error, CL_INVALID_ARG_SIZE,
