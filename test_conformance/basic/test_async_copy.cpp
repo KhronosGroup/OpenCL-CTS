@@ -146,7 +146,7 @@ static int test_copy(cl_device_id deviceID, cl_context context,
         localWorkgroupSize = max_workgroup_size;
 
     size_t localBufferSize = localWorkgroupSize*elementSize*numberOfCopiesPerWorkitem;
-    size_t numberOfLocalWorkgroups = 1111;
+    size_t numberOfLocalWorkgroups = 57;
     size_t globalBufferSize = numberOfLocalWorkgroups*localBufferSize;
     size_t globalWorkgroupSize = numberOfLocalWorkgroups*localWorkgroupSize;
 

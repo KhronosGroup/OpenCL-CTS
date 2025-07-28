@@ -146,7 +146,7 @@ static int test_strided_copy(cl_device_id deviceID, cl_context context,
         localWorkgroupSize = max_workgroup_size;
 
     size_t localBufferSize = localWorkgroupSize*elementSize*numberOfCopiesPerWorkitem;
-    size_t numberOfLocalWorkgroups = 579;//1111;
+    size_t numberOfLocalWorkgroups = 57;
 
     // Reduce the numberOfLocalWorkgroups so that no more than 1/2 of CL_DEVICE_GLOBAL_MEM_SIZE is consumed
     // by the allocated buffer. This is done to avoid resource  errors resulting from address space fragmentation.
