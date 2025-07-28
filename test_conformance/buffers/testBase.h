@@ -27,4 +27,8 @@ extern const char* flag_set_names[];
 
 #define NUM_FLAGS 5
 
+extern const cl_mem_flags immutable_flag_set[];
+extern const char* immutable_flag_set_names[];
+#define NUM_IMMUTABLE_FLAGS 3
+
 #endif // _testBase_h
