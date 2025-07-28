@@ -172,6 +172,42 @@ inline int IsFloatNaN(double x)
     return ((u.u & 0x7fffffffU) > 0x7F800000U);
 }
 
+inline int IsFloatSNaN(cl_uint u)
+{
+    return ((u & 0x7fffffff) > 0x7F800000)
+        && ((u & (1 << (CL_FLT_MANT_DIG - 2))) == 0);
+}
+
+inline int IsFloatQNaN(cl_uint u)
+{
+    return ((u & 0x7fffffff) > 0x7F800000)
+        && ((u & (1 << (CL_FLT_MANT_DIG - 2))) != 0);
+}
+
+inline int IsDoubleSNaN(cl_ulong u)
+{
+    return ((u & 0x7fffffffffffffffULL) > 0x7FF0000000000000ULL)
+        && ((u & (1ULL << (CL_DBL_MANT_DIG - 2))) == 0);
+}
+
+inline int IsDoubleQNaN(cl_ulong u)
+{
+    return ((u & 0x7fffffffffffffffULL) > 0x7FF0000000000000ULL)
+        && ((u & (1ULL << (CL_DBL_MANT_DIG - 2))) != 0);
+}
+
+inline int IsHalfSNaN(cl_ushort u)
+{
+    return ((u & 0x7FFF) > 0x7C00)
+        && ((u & (1 << (CL_HALF_MANT_DIG - 2))) == 0);
+}
+
+inline int IsHalfQNaN(cl_ushort u)
+{
+    return ((u & 0x7FFF) > 0x7C00)
+        && ((u & (1 << (CL_HALF_MANT_DIG - 2))) != 0);
+}
+
 inline bool IsHalfNaN(const cl_half v)
 {
     // Extract FP16 exponent and mantissa

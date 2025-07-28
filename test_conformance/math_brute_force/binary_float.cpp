@@ -216,6 +216,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     cl_int copysign_test = 0;
     RoundingMode oldRoundMode;
     int skipVerification = 0;
+    int fminfmax_test = !strcmp(name, "fmin") || !strcmp(name, "fmax");
 
     if (relaxedMode)
     {
@@ -447,6 +448,14 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 // If we aren't getting the correctly rounded result
                 if (t[j] != q[j])
                 {
+                    // For fmin/fmax, when either argument is a signaling NaN, a
+                    // quiet NaN return is also acceptable, which is respect to
+                    // C99, where signaling NaNs are supposed to get the same
+                    // IEEE treatment.
+                    if (fminfmax_test && IsFloatQNaN(q[j])
+                        && (IsFloatSNaN(p[j]) || IsFloatSNaN(p2[j])))
+                        continue;
+
                     float test = ((float *)q)[j];
                     double correct = ref_func(s[j], s2[j]);
 
