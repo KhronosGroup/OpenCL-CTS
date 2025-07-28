@@ -194,31 +194,27 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_features(cl_device_id device,
     }
 
     const Version clc_version = get_device_cl_c_version(device);
-    if (clc_version >= Version(2, 0))
+    bool has_all_OpenCL_C_20_features =
+        features.supports__opencl_c_atomic_order_acq_rel
+        && features.supports__opencl_c_atomic_order_seq_cst
+        && features.supports__opencl_c_atomic_scope_device
+        && features.supports__opencl_c_atomic_scope_all_devices
+        && features.supports__opencl_c_device_enqueue
+        && features.supports__opencl_c_generic_address_space
+        && features.supports__opencl_c_pipes
+        && features.supports__opencl_c_program_scope_global_variables
+        && features.supports__opencl_c_work_group_collective_functions;
+
+    if (features.supports__opencl_c_images)
     {
-        bool has_all_OpenCL_C_20_features =
-            features.supports__opencl_c_atomic_order_acq_rel
-            && features.supports__opencl_c_atomic_order_seq_cst
-            && features.supports__opencl_c_atomic_scope_device
-            && features.supports__opencl_c_atomic_scope_all_devices
-            && features.supports__opencl_c_device_enqueue
-            && features.supports__opencl_c_generic_address_space
-            && features.supports__opencl_c_pipes
-            && features.supports__opencl_c_program_scope_global_variables
-            && features.supports__opencl_c_work_group_collective_functions;
-
-        if (features.supports__opencl_c_images)
-        {
-            has_all_OpenCL_C_20_features = has_all_OpenCL_C_20_features
-                && features.supports__opencl_c_3d_image_writes
-                && features.supports__opencl_c_read_write_images;
-        }
-
-        test_assert_error(
-            has_all_OpenCL_C_20_features,
-            "At least one required OpenCL C 2.0 feature is missing!");
+        has_all_OpenCL_C_20_features = has_all_OpenCL_C_20_features
+            && features.supports__opencl_c_3d_image_writes
+            && features.supports__opencl_c_read_write_images;
     }
 
+    test_assert_error(
+        has_all_OpenCL_C_20_features,
+        "At least one required OpenCL C 2.0 feature is missing!");
     return TEST_PASS;
 }
 
@@ -297,10 +293,13 @@ REGISTER_TEST(opencl_c_versions)
 
     result |= test_CL_DEVICE_OPENCL_C_VERSION(device, context);
 
+    if (version == Version(2, 0)) {
+        result |= test_CL_DEVICE_OPENCL_C_VERSION_features(device, context);
+    }
+
     if (version >= Version(3, 0))
     {
         result |= test_CL_DEVICE_OPENCL_C_ALL_VERSIONS(device, context);
-        result |= test_CL_DEVICE_OPENCL_C_VERSION_features(device, context);
         result |= test_CL_DEVICE_OPENCL_C_VERSION_versions(device, context);
     }
 
