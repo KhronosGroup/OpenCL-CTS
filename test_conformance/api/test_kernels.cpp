@@ -714,8 +714,10 @@ REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
     return TEST_PASS;
 }
 
-REGISTER_TEST(negative_invalid_arg_size)
+REGISTER_TEST(negative_invalid_arg_sampler)
 {
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+
     cl_int error = CL_SUCCESS;
     clProgramWrapper program;
     clKernelWrapper sampler_arg_kernel;
@@ -740,7 +742,7 @@ REGISTER_TEST(negative_invalid_arg_size)
     test_failure_error_ret(
         error, CL_INVALID_ARG_SIZE,
         "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when "
-        "argument is a memory object and arg_size > sizeof(cl_sampler)",
+        "argument is a sampler object and arg_size > sizeof(cl_sampler)",
         TEST_FAIL);
 
     error =
@@ -748,7 +750,7 @@ REGISTER_TEST(negative_invalid_arg_size)
     test_failure_error_ret(
         error, CL_INVALID_ARG_SIZE,
         "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when "
-        "argument is a memory object and arg_size < sizeof(cl_sampler)",
+        "argument is a sampler object and arg_size < sizeof(cl_sampler)",
         TEST_FAIL);
 
     return TEST_PASS;
