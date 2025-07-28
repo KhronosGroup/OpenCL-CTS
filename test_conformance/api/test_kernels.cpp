@@ -716,6 +716,8 @@ REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
 
 REGISTER_TEST(negative_invalid_arg_sampler)
 {
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+
     cl_int error = CL_SUCCESS;
     clProgramWrapper program;
     clKernelWrapper sampler_arg_kernel;
@@ -730,12 +732,8 @@ REGISTER_TEST(negative_invalid_arg_sampler)
     test_error(error,
                "Unable to get sampler_size_test kernel for built program");
 
-    clSamplerWrapper sampler = clCreateSampler(
-        context, CL_FALSE, CL_ADDRESS_NONE, CL_FILTER_NEAREST, &error);
-    test_error(error, "Unable to create sampler");
-
     // Run the test - CL_INVALID_SAMPLER
-    error = clSetKernelArg(sampler_arg_kernel, 0, sizeof(sampler), nullptr);
+    error = clSetKernelArg(sampler_arg_kernel, 0, sizeof(cl_sampler), nullptr);
     test_failure_error_ret(
         error, CL_INVALID_SAMPLER,
         "clSetKernelArg is supposed to fail with CL_INVALID_SAMPLER when "
