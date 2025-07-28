@@ -1088,10 +1088,12 @@ REGISTER_TEST(min_max_image_buffer_size)
     pixelBytes = maxAllocSize / maxDimensionPixels;
     if (pixelBytes == 0)
     {
-        log_error("Value of CL_DEVICE_IMAGE_MAX_BUFFER_SIZE is greater than "
-                  "CL_MAX_MEM_ALLOC_SIZE so there is no way to allocate image "
-                  "of maximum size!\n");
-        return -1;
+        log_info(
+            "Note, the value of CL_DEVICE_IMAGE_MAX_BUFFER_SIZE is %zu pixels, "
+            "therefore the size of the allocated image may be larger than the "
+            "scaled CL_DEVICE_MAX_MEM_ALLOC_SIZE of %" PRIu64 " bytes.\n",
+            maxDimensionPixels, maxAllocSize);
+        pixelBytes = 1;
     }
 
     error = -1;
