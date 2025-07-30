@@ -39,7 +39,7 @@ REGISTER_TEST(non_uniform_2d_basic)
 
   // non_uniform_2d_prime_number_basic
   {
-    int primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
+    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
     if (primeNumber < 1) {
       log_error ("Cannot find proper prime number.");
       return -1;
@@ -52,12 +52,12 @@ REGISTER_TEST(non_uniform_2d_basic)
 
   // non_uniform_2d_two_prime_numbers_basic
   {
-    int primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
+    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
     if (primeNumber < 1) {
       log_error ("Cannot find proper prime number.");
       return -1;
     }
-    int primeNumber2 = 1759;
+    size_t primeNumber2 = 1759;
     size_t globalSize[] = {primeNumber2, primeNumber};
     size_t localSize[] = {16, maxWgSize/16};
 
@@ -66,7 +66,7 @@ REGISTER_TEST(non_uniform_2d_basic)
 
   // non_uniform_2d_prime_number_basic_2
   {
-    int primeNumber = 1327;
+    size_t primeNumber = 1327;
     size_t globalSize[] = {primeNumber, primeNumber};
     size_t localSize[] = {maxWgSize/32, 32};
 
@@ -83,12 +83,12 @@ REGISTER_TEST(non_uniform_2d_basic)
 
   // non_uniform_2d_two_prime_numbers_and_ls_null_basic
   {
-    int primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
+    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
     if (primeNumber < 1) {
       log_error ("Cannot find proper prime number.");
       return -1;
     }
-    unsigned int primeNumber2 = 1669;
+    size_t primeNumber2 = 1669;
     size_t globalSize[] = {primeNumber, primeNumber2};
     size_t *localSize = NULL;
 
@@ -97,7 +97,7 @@ REGISTER_TEST(non_uniform_2d_basic)
 
   // non_uniform_2d_prime_number_and_ls_null_basic
   {
-    unsigned int primeNumber = 1249;
+    size_t primeNumber = 1249;
     size_t globalSize[] = {primeNumber, primeNumber};
     size_t *localSize = NULL;
 
@@ -106,10 +106,10 @@ REGISTER_TEST(non_uniform_2d_basic)
 
   // non_uniform_2d_four_prime_numbers_basic
   {
-    unsigned int primeNumber = 1951;
-    unsigned int primeNumber2 = 911;
-    unsigned int primeNumber3 = 13;
-    unsigned int primeNumber4 = 17;
+    size_t primeNumber = 1951;
+    size_t primeNumber2 = 911;
+    size_t primeNumber3 = 13;
+    size_t primeNumber4 = 17;
 
     PrimeNumbers::Result2d fit2dResult;
     fit2dResult = PrimeNumbers::fitMaxPrime2d(primeNumber3, primeNumber4, maxWgSize);
@@ -122,13 +122,13 @@ REGISTER_TEST(non_uniform_2d_basic)
 
   // non_uniform_2d_three_prime_numbers_basic
   {
-    int primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize/2, maxWgSize);
+    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize/2, maxWgSize);
     if (primeNumber < 1) {
       log_error ("Cannot find proper prime number.");
       return -1;
     }
-    unsigned int primeNumber2 = 42967;
-    unsigned int primeNumber3 = 13;
+    size_t primeNumber2 = 42967;
+    size_t primeNumber3 = 13;
     size_t globalSize[] = {primeNumber2, primeNumber3};
     size_t localSize[] = {primeNumber, 1};
 
@@ -160,7 +160,7 @@ REGISTER_TEST(non_uniform_2d_atomics)
 
   // non_uniform_2d_prime_number_atomics
   {
-    int primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
+    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
     if (primeNumber < 1) {
       log_error ("Cannot find proper prime number.");
       return -1;
@@ -173,12 +173,12 @@ REGISTER_TEST(non_uniform_2d_atomics)
 
   // non_uniform_2d_two_prime_numbers_atomics
   {
-    int primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
+    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
     if (primeNumber < 1) {
       log_error ("Cannot find proper prime number.");
       return -1;
     }
-    int primeNumber2 = 1759;
+    size_t primeNumber2 = 1759;
     size_t globalSize[] = {primeNumber2, primeNumber};
     size_t localSize[] = {16, maxWgSize/16};
 
@@ -187,7 +187,7 @@ REGISTER_TEST(non_uniform_2d_atomics)
 
   // non_uniform_2d_prime_number_atomics_2
   {
-    int primeNumber = 1327;
+    size_t primeNumber = 1327;
     size_t globalSize[] = {primeNumber, primeNumber};
     size_t localSize[] = {maxWgSize/32, 32};
 
@@ -204,12 +204,12 @@ REGISTER_TEST(non_uniform_2d_atomics)
 
   // non_uniform_2d_two_prime_numbers_and_ls_null_atomics
   {
-    int primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
+    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
     if (primeNumber < 1) {
       log_error ("Cannot find proper prime number.");
       return -1;
     }
-    unsigned int primeNumber2 = 1669;
+    size_t primeNumber2 = 1669;
     size_t globalSize[] = {primeNumber, primeNumber2};
     size_t *localSize = NULL;
 
@@ -218,7 +218,7 @@ REGISTER_TEST(non_uniform_2d_atomics)
 
   // non_uniform_2d_prime_number_and_ls_null_atomics
   {
-    unsigned int primeNumber = 1249;
+    size_t primeNumber = 1249;
     size_t globalSize[] = {primeNumber, primeNumber};
     size_t *localSize = NULL;
 
@@ -227,10 +227,10 @@ REGISTER_TEST(non_uniform_2d_atomics)
 
   // non_uniform_2d_four_prime_numbers_atomics
   {
-    unsigned int primeNumber = 1951;
-    unsigned int primeNumber2 = 911;
-    unsigned int primeNumber3 = 13;
-    unsigned int primeNumber4 = 17;
+    size_t primeNumber = 1951;
+    size_t primeNumber2 = 911;
+    size_t primeNumber3 = 13;
+    size_t primeNumber4 = 17;
 
     PrimeNumbers::Result2d fit2dResult;
     fit2dResult = PrimeNumbers::fitMaxPrime2d(primeNumber3, primeNumber4, maxWgSize);
@@ -243,13 +243,13 @@ REGISTER_TEST(non_uniform_2d_atomics)
 
   // non_uniform_2d_three_prime_numbers_atomics
   {
-    int primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize/2, maxWgSize);
+    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize/2, maxWgSize);
     if (primeNumber < 1) {
       log_error ("Cannot find proper prime number.");
       return -1;
     }
-    unsigned int primeNumber2 = 42967;
-    unsigned int primeNumber3 = 13;
+    size_t primeNumber2 = 42967;
+    size_t primeNumber3 = 13;
     size_t globalSize[] = {primeNumber2, primeNumber3};
     size_t localSize[] = {primeNumber, 1};
 
@@ -281,7 +281,7 @@ REGISTER_TEST(non_uniform_2d_barriers)
 
   // non_uniform_2d_prime_number_barriers
   {
-    int primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
+    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
     if (primeNumber < 1) {
       log_error ("Cannot find proper prime number.");
       return -1;
@@ -294,12 +294,12 @@ REGISTER_TEST(non_uniform_2d_barriers)
 
   // non_uniform_2d_two_prime_numbers_barriers
   {
-    int primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
+    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
     if (primeNumber < 1) {
       log_error ("Cannot find proper prime number.");
       return -1;
     }
-    int primeNumber2 = 1759;
+    size_t primeNumber2 = 1759;
     size_t globalSize[] = {primeNumber2, primeNumber};
     size_t localSize[] = {16, maxWgSize/16};
 
@@ -308,7 +308,7 @@ REGISTER_TEST(non_uniform_2d_barriers)
 
   // non_uniform_2d_prime_number_barriers_2
   {
-    int primeNumber = 1327;
+    size_t primeNumber = 1327;
     size_t globalSize[] = {primeNumber, primeNumber};
     size_t localSize[] = {maxWgSize/32, 32};
 
@@ -325,12 +325,12 @@ REGISTER_TEST(non_uniform_2d_barriers)
 
   // non_uniform_2d_two_prime_numbers_and_ls_null_barriers
   {
-    int primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
+    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize, 2*maxWgSize);
     if (primeNumber < 1) {
       log_error ("Cannot find proper prime number.");
       return -1;
     }
-    unsigned int primeNumber2 = 1669;
+    size_t primeNumber2 = 1669;
     size_t globalSize[] = {primeNumber, primeNumber2};
     size_t *localSize = NULL;
 
@@ -339,7 +339,7 @@ REGISTER_TEST(non_uniform_2d_barriers)
 
   // non_uniform_2d_prime_number_and_ls_null_barriers
   {
-    unsigned int primeNumber = 1249;
+    size_t primeNumber = 1249;
     size_t globalSize[] = {primeNumber, primeNumber};
     size_t *localSize = NULL;
 
@@ -348,10 +348,10 @@ REGISTER_TEST(non_uniform_2d_barriers)
 
   // non_uniform_2d_four_prime_numbers_barriers
   {
-    unsigned int primeNumber = 1951;
-    unsigned int primeNumber2 = 911;
-    unsigned int primeNumber3 = 13;
-    unsigned int primeNumber4 = 17;
+    size_t primeNumber = 1951;
+    size_t primeNumber2 = 911;
+    size_t primeNumber3 = 13;
+    size_t primeNumber4 = 17;
     PrimeNumbers::Result2d fit2dResult;
     fit2dResult = PrimeNumbers::fitMaxPrime2d(primeNumber3, primeNumber4, maxWgSize);
     size_t globalSize[] = {primeNumber, primeNumber2};
@@ -362,13 +362,13 @@ REGISTER_TEST(non_uniform_2d_barriers)
 
   // non_uniform_2d_three_prime_numbers_barriers
   {
-    int primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize/2, maxWgSize);
+    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize/2, maxWgSize);
     if (primeNumber < 1) {
       log_error ("Cannot find proper prime number.");
       return -1;
     }
-    unsigned int primeNumber2 = 42967;
-    unsigned int primeNumber3 = 13;
+    size_t primeNumber2 = 42967;
+    size_t primeNumber3 = 13;
     size_t globalSize[] = {primeNumber2, primeNumber3};
     size_t localSize[] = {primeNumber, 1};
 
