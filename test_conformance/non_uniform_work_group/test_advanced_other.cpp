@@ -31,73 +31,88 @@ REGISTER_TEST(non_uniform_other_basic)
 
   // non_uniform_1d_two_prime_numbers_offset_basic
   {
-    size_t primeNumber = 42967;
-    size_t primeNumber2 = 113;
-    PrimeNumbers::Result1d fit1dResult;
+      size_t primeNumber = 42967;
+      size_t primeNumber2 = 113;
+      PrimeNumbers::Result1d fit1dResult;
 
-    fit1dResult = PrimeNumbers::fitMaxPrime1d(primeNumber2, maxWgSize );
+      fit1dResult = PrimeNumbers::fitMaxPrime1d(primeNumber2, maxWgSize);
 
-    size_t globalSize[] = {primeNumber};
-    size_t localSize[] = {fit1dResult.Val1};
-    size_t offset[] = {23};
+      size_t globalSize[] = { primeNumber };
+      size_t localSize[] = { fit1dResult.Val1 };
+      size_t offset[] = { 23 };
 
-    exec.runTestNonUniformWorkGroup(sizeof(globalSize)/sizeof(globalSize[0]), globalSize, localSize, offset, NULL, Range::BASIC);
+      exec.runTestNonUniformWorkGroup(
+          sizeof(globalSize) / sizeof(globalSize[0]), globalSize, localSize,
+          offset, NULL, Range::BASIC);
   }
 
   // non_uniform_2d_three_prime_numbers_offset_basic
   {
-    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize/2, maxWgSize);
-    if (primeNumber < 1) {
-      log_error ("Cannot find proper prime number.");
-      return -1;
-    }
-    size_t primeNumber2 = 42967;
-    size_t primeNumber3 = 13;
-    size_t globalSize[] = {primeNumber2, primeNumber3};
-    size_t localSize[] = {primeNumber, 1};
-    size_t offset[] = {23, 17};
+      size_t primeNumber =
+          PrimeNumbers::getPrimeNumberInRange(maxWgSize / 2, maxWgSize);
+      if (primeNumber < 1)
+      {
+          log_error("Cannot find proper prime number.");
+          return -1;
+      }
+      size_t primeNumber2 = 42967;
+      size_t primeNumber3 = 13;
+      size_t globalSize[] = { primeNumber2, primeNumber3 };
+      size_t localSize[] = { primeNumber, 1 };
+      size_t offset[] = { 23, 17 };
 
-    exec.runTestNonUniformWorkGroup(sizeof(globalSize)/sizeof(globalSize[0]), globalSize, localSize, offset, NULL, Range::BASIC);
+      exec.runTestNonUniformWorkGroup(
+          sizeof(globalSize) / sizeof(globalSize[0]), globalSize, localSize,
+          offset, NULL, Range::BASIC);
   }
 
   // non_uniform_3d_six_prime_numbers_offset_basic
   {
-    size_t primeNumber = 373;
-    size_t primeNumber2 = 13;
-    size_t primeNumber3 = 279;
-    size_t primeNumber4 = 3;
-    size_t primeNumber5 = 5;
-    size_t primeNumber6 = 7;
+      size_t primeNumber = 373;
+      size_t primeNumber2 = 13;
+      size_t primeNumber3 = 279;
+      size_t primeNumber4 = 3;
+      size_t primeNumber5 = 5;
+      size_t primeNumber6 = 7;
 
-    PrimeNumbers::Result3d fit3dResult;
+      PrimeNumbers::Result3d fit3dResult;
 
-    size_t globalSize[] = {primeNumber, primeNumber2, primeNumber3};
+      size_t globalSize[] = { primeNumber, primeNumber2, primeNumber3 };
 
-    fit3dResult = PrimeNumbers::fitMaxPrime3d(primeNumber4, primeNumber5, primeNumber6, maxWgSize );
+      fit3dResult = PrimeNumbers::fitMaxPrime3d(primeNumber4, primeNumber5,
+                                                primeNumber6, maxWgSize);
 
-    size_t localSize[] = {fit3dResult.Val1, fit3dResult.Val2, fit3dResult.Val3};
-    size_t offset[] = {11, 23, 17};
+      size_t localSize[] = { fit3dResult.Val1, fit3dResult.Val2,
+                             fit3dResult.Val3 };
+      size_t offset[] = { 11, 23, 17 };
 
-    exec.runTestNonUniformWorkGroup(sizeof(globalSize)/sizeof(globalSize[0]), globalSize, localSize, offset, NULL, Range::BASIC);
+      exec.runTestNonUniformWorkGroup(
+          sizeof(globalSize) / sizeof(globalSize[0]), globalSize, localSize,
+          offset, NULL, Range::BASIC);
   }
 
   // non_uniform_3d_six_prime_numbers_rwgs_basic
   {
-    size_t primeNumber = 373;
-    size_t primeNumber2 = 13;
-    size_t primeNumber3 = 279;
-    size_t primeNumber4 = 3;
-    size_t primeNumber5 = 5;
-    size_t primeNumber6 = 7;
-    PrimeNumbers::Result3d fit3dResult;
+      size_t primeNumber = 373;
+      size_t primeNumber2 = 13;
+      size_t primeNumber3 = 279;
+      size_t primeNumber4 = 3;
+      size_t primeNumber5 = 5;
+      size_t primeNumber6 = 7;
+      PrimeNumbers::Result3d fit3dResult;
 
-    fit3dResult = PrimeNumbers::fitMaxPrime3d(primeNumber4, primeNumber5, primeNumber6, maxWgSize );
+      fit3dResult = PrimeNumbers::fitMaxPrime3d(primeNumber4, primeNumber5,
+                                                primeNumber6, maxWgSize);
 
-    size_t globalSize[] = {primeNumber, primeNumber2, primeNumber3};
-    size_t localSize[] = {fit3dResult.Val1, fit3dResult.Val2, fit3dResult.Val3};
-    size_t reqdWorkGroupSize[] = {fit3dResult.Val1, fit3dResult.Val2, fit3dResult.Val3};
+      size_t globalSize[] = { primeNumber, primeNumber2, primeNumber3 };
+      size_t localSize[] = { fit3dResult.Val1, fit3dResult.Val2,
+                             fit3dResult.Val3 };
+      size_t reqdWorkGroupSize[] = { fit3dResult.Val1, fit3dResult.Val2,
+                                     fit3dResult.Val3 };
 
-    exec.runTestNonUniformWorkGroup(sizeof(globalSize)/sizeof(globalSize[0]), globalSize, localSize, NULL, reqdWorkGroupSize, Range::BASIC);
+      exec.runTestNonUniformWorkGroup(
+          sizeof(globalSize) / sizeof(globalSize[0]), globalSize, localSize,
+          NULL, reqdWorkGroupSize, Range::BASIC);
   }
 
   return exec.status();
@@ -117,71 +132,86 @@ REGISTER_TEST(non_uniform_other_atomics)
 
   // non_uniform_1d_two_prime_numbers_offset_atomics
   {
-    size_t primeNumber = 42967;
-    size_t primeNumber2 = 113;
-    PrimeNumbers::Result1d fit1dResult;
+      size_t primeNumber = 42967;
+      size_t primeNumber2 = 113;
+      PrimeNumbers::Result1d fit1dResult;
 
-    fit1dResult = PrimeNumbers::fitMaxPrime1d(primeNumber2, maxWgSize );
+      fit1dResult = PrimeNumbers::fitMaxPrime1d(primeNumber2, maxWgSize);
 
-    size_t globalSize[] = {primeNumber};
-    size_t localSize[] = {fit1dResult.Val1};
-    size_t offset[] = {23};
+      size_t globalSize[] = { primeNumber };
+      size_t localSize[] = { fit1dResult.Val1 };
+      size_t offset[] = { 23 };
 
-    exec.runTestNonUniformWorkGroup(sizeof(globalSize)/sizeof(globalSize[0]), globalSize, localSize, offset, NULL, Range::ATOMICS);
+      exec.runTestNonUniformWorkGroup(
+          sizeof(globalSize) / sizeof(globalSize[0]), globalSize, localSize,
+          offset, NULL, Range::ATOMICS);
   }
 
   // non_uniform_2d_three_prime_numbers_offset_atomics
   {
-    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize/2, maxWgSize);
-    if (primeNumber < 1) {
-      log_error ("Cannot find proper prime number.");
-      return -1;
-    }
-    size_t primeNumber2 = 42967;
-    size_t primeNumber3 = 13;
-    size_t globalSize[] = {primeNumber2, primeNumber3};
-    size_t localSize[] = {primeNumber, 1};
-    size_t offset[] = {23, 17};
+      size_t primeNumber =
+          PrimeNumbers::getPrimeNumberInRange(maxWgSize / 2, maxWgSize);
+      if (primeNumber < 1)
+      {
+          log_error("Cannot find proper prime number.");
+          return -1;
+      }
+      size_t primeNumber2 = 42967;
+      size_t primeNumber3 = 13;
+      size_t globalSize[] = { primeNumber2, primeNumber3 };
+      size_t localSize[] = { primeNumber, 1 };
+      size_t offset[] = { 23, 17 };
 
-    exec.runTestNonUniformWorkGroup(sizeof(globalSize)/sizeof(globalSize[0]), globalSize, localSize, offset, NULL, Range::ATOMICS);
+      exec.runTestNonUniformWorkGroup(
+          sizeof(globalSize) / sizeof(globalSize[0]), globalSize, localSize,
+          offset, NULL, Range::ATOMICS);
   }
 
   // non_uniform_3d_six_prime_numbers_offset_atomics
   {
-    size_t primeNumber = 373;
-    size_t primeNumber2 = 13;
-    size_t primeNumber3 = 279;
-    size_t primeNumber4 = 3;
-    size_t primeNumber5 = 5;
-    size_t primeNumber6 = 7;
-    PrimeNumbers::Result3d fit3dResult;
+      size_t primeNumber = 373;
+      size_t primeNumber2 = 13;
+      size_t primeNumber3 = 279;
+      size_t primeNumber4 = 3;
+      size_t primeNumber5 = 5;
+      size_t primeNumber6 = 7;
+      PrimeNumbers::Result3d fit3dResult;
 
-    fit3dResult = PrimeNumbers::fitMaxPrime3d(primeNumber4, primeNumber5, primeNumber6, maxWgSize );
+      fit3dResult = PrimeNumbers::fitMaxPrime3d(primeNumber4, primeNumber5,
+                                                primeNumber6, maxWgSize);
 
-    size_t globalSize[] = {primeNumber, primeNumber2, primeNumber3};
-    size_t localSize[] = {fit3dResult.Val1, fit3dResult.Val2, fit3dResult.Val3};
-    size_t offset[] = {11, 23, 17};
+      size_t globalSize[] = { primeNumber, primeNumber2, primeNumber3 };
+      size_t localSize[] = { fit3dResult.Val1, fit3dResult.Val2,
+                             fit3dResult.Val3 };
+      size_t offset[] = { 11, 23, 17 };
 
-    exec.runTestNonUniformWorkGroup(sizeof(globalSize)/sizeof(globalSize[0]), globalSize, localSize, offset, NULL, Range::ATOMICS);
+      exec.runTestNonUniformWorkGroup(
+          sizeof(globalSize) / sizeof(globalSize[0]), globalSize, localSize,
+          offset, NULL, Range::ATOMICS);
   }
 
   // non_uniform_3d_six_prime_numbers_rwgs_atomics
   {
-    size_t primeNumber = 373;
-    size_t primeNumber2 = 13;
-    size_t primeNumber3 = 279;
-    size_t primeNumber4 = 3;
-    size_t primeNumber5 = 5;
-    size_t primeNumber6 = 7;
-    PrimeNumbers::Result3d fit3dResult;
+      size_t primeNumber = 373;
+      size_t primeNumber2 = 13;
+      size_t primeNumber3 = 279;
+      size_t primeNumber4 = 3;
+      size_t primeNumber5 = 5;
+      size_t primeNumber6 = 7;
+      PrimeNumbers::Result3d fit3dResult;
 
-    fit3dResult = PrimeNumbers::fitMaxPrime3d(primeNumber4, primeNumber5, primeNumber6, maxWgSize );
+      fit3dResult = PrimeNumbers::fitMaxPrime3d(primeNumber4, primeNumber5,
+                                                primeNumber6, maxWgSize);
 
-    size_t globalSize[] = {primeNumber, primeNumber2, primeNumber3};
-    size_t localSize[] = {fit3dResult.Val1, fit3dResult.Val2, fit3dResult.Val3};
-    size_t reqdWorkGroupSize[] = {fit3dResult.Val1, fit3dResult.Val2, fit3dResult.Val3};
+      size_t globalSize[] = { primeNumber, primeNumber2, primeNumber3 };
+      size_t localSize[] = { fit3dResult.Val1, fit3dResult.Val2,
+                             fit3dResult.Val3 };
+      size_t reqdWorkGroupSize[] = { fit3dResult.Val1, fit3dResult.Val2,
+                                     fit3dResult.Val3 };
 
-    exec.runTestNonUniformWorkGroup(sizeof(globalSize)/sizeof(globalSize[0]), globalSize, localSize, NULL, reqdWorkGroupSize, Range::ATOMICS);
+      exec.runTestNonUniformWorkGroup(
+          sizeof(globalSize) / sizeof(globalSize[0]), globalSize, localSize,
+          NULL, reqdWorkGroupSize, Range::ATOMICS);
   }
 
   return exec.status();
@@ -201,74 +231,89 @@ REGISTER_TEST(non_uniform_other_barriers)
 
   // non_uniform_1d_two_prime_numbers_offset_barriers
   {
-    size_t primeNumber = 42967;
-    size_t primeNumber2 = 113;
-    PrimeNumbers::Result1d fit1dResult;
+      size_t primeNumber = 42967;
+      size_t primeNumber2 = 113;
+      PrimeNumbers::Result1d fit1dResult;
 
-    fit1dResult = PrimeNumbers::fitMaxPrime1d(primeNumber2, maxWgSize );
+      fit1dResult = PrimeNumbers::fitMaxPrime1d(primeNumber2, maxWgSize);
 
-    size_t globalSize[] = {primeNumber};
+      size_t globalSize[] = { primeNumber };
 
-    size_t localSize[] = {fit1dResult.Val1};
-    size_t offset[] = {23};
+      size_t localSize[] = { fit1dResult.Val1 };
+      size_t offset[] = { 23 };
 
-    exec.runTestNonUniformWorkGroup(sizeof(globalSize)/sizeof(globalSize[0]), globalSize, localSize, offset, NULL, Range::BARRIERS);
+      exec.runTestNonUniformWorkGroup(
+          sizeof(globalSize) / sizeof(globalSize[0]), globalSize, localSize,
+          offset, NULL, Range::BARRIERS);
   }
 
   // non_uniform_2d_three_prime_numbers_offset_barriers
   {
-    size_t primeNumber = PrimeNumbers::getPrimeNumberInRange(maxWgSize/2, maxWgSize);
-    if (primeNumber < 1) {
-      log_error ("Cannot find proper prime number.");
-      return -1;
-    }
-    size_t primeNumber2 = 42967;
-    size_t primeNumber3 = 13;
-    size_t globalSize[] = {primeNumber2, primeNumber3};
-    size_t localSize[] = {primeNumber, 1};
-    size_t offset[] = {23, 17};
+      size_t primeNumber =
+          PrimeNumbers::getPrimeNumberInRange(maxWgSize / 2, maxWgSize);
+      if (primeNumber < 1)
+      {
+          log_error("Cannot find proper prime number.");
+          return -1;
+      }
+      size_t primeNumber2 = 42967;
+      size_t primeNumber3 = 13;
+      size_t globalSize[] = { primeNumber2, primeNumber3 };
+      size_t localSize[] = { primeNumber, 1 };
+      size_t offset[] = { 23, 17 };
 
-    exec.runTestNonUniformWorkGroup(sizeof(globalSize)/sizeof(globalSize[0]), globalSize, localSize, offset, NULL, Range::BARRIERS);
+      exec.runTestNonUniformWorkGroup(
+          sizeof(globalSize) / sizeof(globalSize[0]), globalSize, localSize,
+          offset, NULL, Range::BARRIERS);
   }
 
   // non_uniform_3d_six_prime_numbers_offset_barriers
   {
-    size_t primeNumber = 373;
-    size_t primeNumber2 = 13;
-    size_t primeNumber3 = 279;
-    size_t primeNumber4 = 3;
-    size_t primeNumber5 = 5;
-    size_t primeNumber6 = 7;
-    PrimeNumbers::Result3d fit3dResult;
+      size_t primeNumber = 373;
+      size_t primeNumber2 = 13;
+      size_t primeNumber3 = 279;
+      size_t primeNumber4 = 3;
+      size_t primeNumber5 = 5;
+      size_t primeNumber6 = 7;
+      PrimeNumbers::Result3d fit3dResult;
 
-    fit3dResult = PrimeNumbers::fitMaxPrime3d(primeNumber4, primeNumber5, primeNumber6, maxWgSize );
+      fit3dResult = PrimeNumbers::fitMaxPrime3d(primeNumber4, primeNumber5,
+                                                primeNumber6, maxWgSize);
 
-    size_t globalSize[] = {primeNumber, primeNumber2, primeNumber3};
+      size_t globalSize[] = { primeNumber, primeNumber2, primeNumber3 };
 
-    size_t localSize[] = {fit3dResult.Val1, fit3dResult.Val2, fit3dResult.Val3};
-    size_t offset[] = {11, 23, 17};
+      size_t localSize[] = { fit3dResult.Val1, fit3dResult.Val2,
+                             fit3dResult.Val3 };
+      size_t offset[] = { 11, 23, 17 };
 
-    exec.runTestNonUniformWorkGroup(sizeof(globalSize)/sizeof(globalSize[0]), globalSize, localSize, offset, NULL, Range::BARRIERS);
+      exec.runTestNonUniformWorkGroup(
+          sizeof(globalSize) / sizeof(globalSize[0]), globalSize, localSize,
+          offset, NULL, Range::BARRIERS);
   }
 
   // non_uniform_3d_six_prime_numbers_rwgs_barriers
   {
-    size_t primeNumber = 373;
-    size_t primeNumber2 = 13;
-    size_t primeNumber3 = 279;
-    size_t primeNumber4 = 3;
-    size_t primeNumber5 = 5;
-    size_t primeNumber6 = 7;
-    PrimeNumbers::Result3d fit3dResult;
+      size_t primeNumber = 373;
+      size_t primeNumber2 = 13;
+      size_t primeNumber3 = 279;
+      size_t primeNumber4 = 3;
+      size_t primeNumber5 = 5;
+      size_t primeNumber6 = 7;
+      PrimeNumbers::Result3d fit3dResult;
 
-    fit3dResult = PrimeNumbers::fitMaxPrime3d(primeNumber4, primeNumber5, primeNumber6, maxWgSize );
+      fit3dResult = PrimeNumbers::fitMaxPrime3d(primeNumber4, primeNumber5,
+                                                primeNumber6, maxWgSize);
 
-    size_t globalSize[] = {primeNumber, primeNumber2, primeNumber3};
+      size_t globalSize[] = { primeNumber, primeNumber2, primeNumber3 };
 
-    size_t localSize[] = {fit3dResult.Val1, fit3dResult.Val2, fit3dResult.Val3};
-    size_t reqdWorkGroupSize[] = {fit3dResult.Val1, fit3dResult.Val2, fit3dResult.Val3};
+      size_t localSize[] = { fit3dResult.Val1, fit3dResult.Val2,
+                             fit3dResult.Val3 };
+      size_t reqdWorkGroupSize[] = { fit3dResult.Val1, fit3dResult.Val2,
+                                     fit3dResult.Val3 };
 
-    exec.runTestNonUniformWorkGroup(sizeof(globalSize)/sizeof(globalSize[0]), globalSize, localSize, NULL, reqdWorkGroupSize, Range::BARRIERS);
+      exec.runTestNonUniformWorkGroup(
+          sizeof(globalSize) / sizeof(globalSize[0]), globalSize, localSize,
+          NULL, reqdWorkGroupSize, Range::BARRIERS);
   }
 
   return exec.status();

@@ -26,7 +26,6 @@
 typedef std::vector<size_t> PrimeNumbersCollection;
 
 
-
 // Class responsible for distributing prime numbers
 class PrimeNumbers {
 
@@ -47,8 +46,8 @@ public:
   };
 
   static void generatePrimeNumbers (unsigned int maxValue);
-  static size_t getPrimeNumberInRange (size_t lowerValue, size_t higherValue);
-  static size_t getNextLowerPrimeNumber (size_t upperValue);
+  static size_t getPrimeNumberInRange(size_t lowerValue, size_t higherValue);
+  static size_t getNextLowerPrimeNumber(size_t upperValue);
   static Result1d fitMaxPrime1d(size_t Val1, size_t productMax);
   // Return val1 and Val2 which are largest prime numbers who's product is <= productMax
   static Result2d fitMaxPrime2d(size_t Val1, size_t Val2, size_t productMax);
