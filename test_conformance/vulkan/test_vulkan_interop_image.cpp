@@ -463,7 +463,7 @@ int run_test_with_two_queue(
 
                             cl_mem external_mem_image1[5];
                             cl_mem external_mem_image2[5];
-                            for (int i = 0; i < num2DImages; i++)
+                            for (uint32_t i = 0; i < num2DImages; i++)
                             {
                                 external_mem_image1[i] =
                                     externalMemory1[i]
@@ -631,7 +631,8 @@ int run_test_with_two_queue(
                                 err |= clSetKernelArg(updateKernelCQ2, 7,
                                                       sizeof(unsigned int),
                                                       &numMipLevels);
-                                for (int i = 0; i < num2DImages - 1; i++, ++j)
+                                for (uint32_t i = 0; i < num2DImages - 1;
+                                     i++, ++j)
                                 {
                                     err = clSetKernelArg(
                                         updateKernelCQ1, j, sizeof(cl_mem),
@@ -732,7 +733,7 @@ int run_test_with_two_queue(
                             }
 
                             clFinish(cmd_queue2);
-                            for (int i = 0; i < num2DImages; i++)
+                            for (uint32_t i = 0; i < num2DImages; i++)
                             {
                                 err = clEnqueueReadImage(
                                     cmd_queue1, external_mem_image2[i], CL_TRUE,
@@ -772,7 +773,7 @@ int run_test_with_two_queue(
                                     break;
                                 }
                             }
-                            for (int i = 0; i < num2DImages; i++)
+                            for (uint32_t i = 0; i < num2DImages; i++)
                             {
                                 delete vkImage2DListDeviceMemory1[i];
                                 delete vkImage2DListDeviceMemory2[i];
@@ -1083,7 +1084,7 @@ int run_test_with_one_queue(
 
                             cl_mem external_mem_image1[4];
                             cl_mem external_mem_image2[4];
-                            for (int i = 0; i < num2DImages; i++)
+                            for (uint32_t i = 0; i < num2DImages; i++)
                             {
                                 external_mem_image1[i] =
                                     externalMemory1[i]
@@ -1218,7 +1219,7 @@ int run_test_with_one_queue(
                                         break;
                                 }
                                 int j = 0;
-                                for (int i = 0; i < num2DImages; i++, ++j)
+                                for (uint32_t i = 0; i < num2DImages; i++, ++j)
                                 {
                                     err = clSetKernelArg(
                                         updateKernelCQ1, j, sizeof(cl_mem),
@@ -1284,7 +1285,7 @@ int run_test_with_one_queue(
                                     "Failed to signal CL semaphore\n");
                             }
 
-                            for (int i = 0; i < num2DImages; i++)
+                            for (uint32_t i = 0; i < num2DImages; i++)
                             {
                                 err = clEnqueueReadImage(
                                     cmd_queue1, external_mem_image2[i], CL_TRUE,
@@ -1324,7 +1325,7 @@ int run_test_with_one_queue(
                                     break;
                                 }
                             }
-                            for (int i = 0; i < num2DImages; i++)
+                            for (uint32_t i = 0; i < num2DImages; i++)
                             {
                                 delete vkImage2DListDeviceMemory1[i];
                                 delete vkImage2DListDeviceMemory2[i];
@@ -1423,7 +1424,7 @@ struct ImageCommonTest : public VulkanTestBase
 
         log_info("clCreateCommandQueue2 successful \n");
 
-        for (int i = 0; i < num_kernels; i++)
+        for (uint32_t i = 0; i < num_kernels; i++)
         {
             switch (i)
             {
@@ -1474,7 +1475,7 @@ struct ImageCommonTest : public VulkanTestBase
             }
             const char *sourceTexts[num_kernel_types] = { source_1, source_2,
                                                           source_3 };
-            for (int k = 0; k < num_kernel_types; k++)
+            for (uint32_t k = 0; k < num_kernel_types; k++)
             {
                 program_source_length = strlen(sourceTexts[k]);
                 program[k] = clCreateProgramWithSource(

@@ -84,8 +84,8 @@ struct ConsistencyExternalBufferTest : public VulkanTestBase
 
         vkDeviceMem->bindBuffer(vkBufferList[0], 0);
 
-        void* handle = NULL;
-        int fd;
+        [[maybe_unused]] void* handle = NULL;
+        [[maybe_unused]] int fd;
 
         std::vector<cl_mem_properties> extMemProperties{
             (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
@@ -243,8 +243,8 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
                                    vkExternalMemoryHandleType);
         vkDeviceMem->bindImage(vkImage2D, 0);
 
-        void* handle = NULL;
-        int fd;
+        [[maybe_unused]] void* handle = NULL;
+        [[maybe_unused]] int fd;
         std::vector<cl_mem_properties> extMemProperties{
             (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
             (cl_mem_properties)device,
@@ -386,9 +386,9 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
             VulkanSemaphore vkCl2Vksemaphore(*vkDevice, semaphoreHandleType);
             cl_semaphore_khr clCl2Vksemaphore;
             cl_semaphore_khr clVk2Clsemaphore;
-            void* handle1 = NULL;
-            void* handle2 = NULL;
-            int fd1, fd2;
+            [[maybe_unused]] void* handle1 = NULL;
+            [[maybe_unused]] void* handle2 = NULL;
+            [[maybe_unused]] int fd1, fd2;
             std::vector<cl_semaphore_properties_khr> sema_props1{
                 (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
                 (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,

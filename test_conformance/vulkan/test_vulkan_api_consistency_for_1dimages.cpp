@@ -101,8 +101,8 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
                                    vkExternalMemoryHandleType);
         vkDeviceMem->bindImage(vkImage1D, 0);
 
-        void* handle = NULL;
-        int fd;
+        [[maybe_unused]] void* handle = NULL;
+        [[maybe_unused]] int fd;
         std::vector<cl_mem_properties> extMemProperties{
             (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
             (cl_mem_properties)device,

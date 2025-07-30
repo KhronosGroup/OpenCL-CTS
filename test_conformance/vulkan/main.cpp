@@ -50,7 +50,7 @@ static void printUsage(const char *execName)
 
     log_info("Usage: %s [test_names] [options]\n", execName);
     log_info("Test names:\n");
-    for (int i = 0; i < test_registry::getInstance().num_tests(); i++)
+    for (unsigned int i = 0; i < test_registry::getInstance().num_tests(); i++)
     {
         log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
     }
