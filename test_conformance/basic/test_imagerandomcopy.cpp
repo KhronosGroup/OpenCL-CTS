@@ -123,8 +123,8 @@ REGISTER_TEST(imagerandomcopy)
     unsigned short    *rgba16_inptr, *rgba16_outptr;
     float            *rgbafp_inptr, *rgbafp_outptr;
     clMemWrapper            streams[6];
-    size_t                img_width = 512;
-    size_t                img_height = 512;
+    size_t img_width = 512;
+    size_t img_height = 512;
     int                i, j;
     cl_int          err;
     MTdata          d;
@@ -191,7 +191,8 @@ REGISTER_TEST(imagerandomcopy)
         }
 
         size_t origin[3]={0,0,0}, region[3]={img_width, img_height,1};
-        err = clEnqueueWriteImage(queue, streams[i*2], CL_TRUE, origin, region, 0, 0, p, 0, NULL, NULL);
+        err = clEnqueueWriteImage(queue, streams[i * 2], CL_TRUE, origin,
+                                  region, 0, 0, p, 0, NULL, NULL);
         test_error(err, "clEnqueueWriteImage failed");
 
         for (j=0; j<NUM_COPIES; j++)

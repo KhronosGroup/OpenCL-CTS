@@ -117,8 +117,8 @@ REGISTER_TEST(mri_multiple)
     cl_program        program;
     cl_kernel        kernel;
     size_t    threads[2];
-    size_t                img_width = 512;
-    size_t                img_height = 512;
+    size_t img_width = 512;
+    size_t img_height = 512;
     int                i, err;
     MTdata          d;
 

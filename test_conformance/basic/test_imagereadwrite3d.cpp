@@ -205,10 +205,10 @@ REGISTER_TEST(imagereadwrite3d)
     std::unique_ptr<unsigned short[]> rgba16_inptr, rgba16_outptr;
     std::unique_ptr<float[]> rgbafp_inptr, rgbafp_outptr;
     clMemWrapper    streams[3];
-    size_t       img_width = 64;
-    size_t       img_height = 64;
-    size_t       img_depth = 32;
-    size_t       img_slice = img_width * img_height;
+    size_t img_width = 64;
+    size_t img_height = 64;
+    size_t img_depth = 32;
+    size_t img_slice = img_width * img_height;
     int       num_tries = 30;
     int       i, j, err;
     MTdataHolder mtData(gRandomSeed);
@@ -257,12 +257,12 @@ REGISTER_TEST(imagereadwrite3d)
 
     for (i = 0, j = 0; i < num_tries * image_formats_count; i++, j++)
     {
-        size_t    x = (size_t)get_random_float(0, (float)img_width - 1, mtData);
-        size_t    y = (size_t)get_random_float(0, (float)img_height - 1, mtData);
-        size_t    z = (size_t)get_random_float(0, (float)img_depth - 1, mtData);
-        size_t    w = (size_t)get_random_float(1, (float)(img_width - x), mtData);
-        size_t    h = (size_t)get_random_float(1, (float)(img_height - y), mtData);
-        size_t    d = (size_t)get_random_float(1, (float)(img_depth - z), mtData);
+        size_t x = (size_t)get_random_float(0, (float)img_width - 1, mtData);
+        size_t y = (size_t)get_random_float(0, (float)img_height - 1, mtData);
+        size_t z = (size_t)get_random_float(0, (float)img_depth - 1, mtData);
+        size_t w = (size_t)get_random_float(1, (float)(img_width - x), mtData);
+        size_t h = (size_t)get_random_float(1, (float)(img_height - y), mtData);
+        size_t d = (size_t)get_random_float(1, (float)(img_depth - z), mtData);
         size_t    input_pitch, input_slice_pitch;
         int     set_input_pitch = (int)(genrand_int32(mtData) & 0x01);
         int     packed_update = (int)(genrand_int32(mtData) & 0x01);
@@ -401,7 +401,10 @@ REGISTER_TEST(imagereadwrite3d)
                                          img_width, img_height, img_depth);
                 if (err)
                 {
-                    log_error("x=%zu y=%zu z=%zu w=%zu h=%zu d=%zu pitch=%d, slice_pitch=%d, try=%d\n", x, y, z, w, h, d, (int)input_pitch, (int)input_slice_pitch, (int)i);
+                    log_error("x=%zu y=%zu z=%zu w=%zu h=%zu d=%zu pitch=%d, "
+                              "slice_pitch=%d, try=%d\n",
+                              x, y, z, w, h, d, (int)input_pitch,
+                              (int)input_slice_pitch, (int)i);
                     log_error("IMAGE RGBA8 read, write %s test failed\n", update_packed_pitch_name);
                 }
                 break;
@@ -411,7 +414,10 @@ REGISTER_TEST(imagereadwrite3d)
                                         img_width, img_height, img_depth);
                 if (err)
                 {
-                    log_error("x=%zu y=%zu z=%zu w=%zu h=%zu d=%zu pitch=%d, slice_pitch=%d, try=%d\n", x, y, z, w, h, d, (int)input_pitch, (int)input_slice_pitch, (int)i);
+                    log_error("x=%zu y=%zu z=%zu w=%zu h=%zu d=%zu pitch=%d, "
+                              "slice_pitch=%d, try=%d\n",
+                              x, y, z, w, h, d, (int)input_pitch,
+                              (int)input_slice_pitch, (int)i);
                     log_error("IMAGE RGBA16 read, write %s test failed\n", update_packed_pitch_name);
                 }
                 break;
@@ -421,7 +427,10 @@ REGISTER_TEST(imagereadwrite3d)
                                         img_width, img_height, img_depth);
                 if (err)
                 {
-                    log_error("x=%zu y=%zu z=%zu w=%zu h=%zu d=%zu pitch=%d, slice_pitch=%d, try=%d\n", x, y, z, w, h, d, (int)input_pitch, (int)input_slice_pitch, (int)i);
+                    log_error("x=%zu y=%zu z=%zu w=%zu h=%zu d=%zu pitch=%d, "
+                              "slice_pitch=%d, try=%d\n",
+                              x, y, z, w, h, d, (int)input_pitch,
+                              (int)input_slice_pitch, (int)i);
                     log_error("IMAGE RGBA FP read, write %s test failed\n", update_packed_pitch_name);
                 }
                 break;

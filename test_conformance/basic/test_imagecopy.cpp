@@ -197,10 +197,11 @@ static int test_imagecopy_impl(cl_device_id device, cl_context context,
                     copy_origin, copy_region, 0, NULL, NULL);
                 if (err)
                 {
-                    log_error("Copy %d (origin [%zu, %zu], size [%zu, %zu], image "
-                              "size [%zu x %zu]) Failed\n",
-                              copy_number, x, y, delta_w, delta_h, img_width,
-                              img_height);
+                    log_error(
+                        "Copy %d (origin [%zu, %zu], size [%zu, %zu], image "
+                        "size [%zu x %zu]) Failed\n",
+                        copy_number, x, y, delta_w, delta_h, img_width,
+                        img_height);
                 }
                 test_error(err, "clEnqueueCopyImage failed");
             }

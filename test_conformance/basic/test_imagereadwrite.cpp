@@ -195,8 +195,8 @@ REGISTER_TEST(imagereadwrite)
     std::unique_ptr<unsigned short[]> rgba16_inptr, rgba16_outptr;
     std::unique_ptr<float[]> rgbafp_inptr, rgbafp_outptr;
     clMemWrapper            streams[3];
-    size_t                img_width = 512;
-    size_t                img_height = 512;
+    size_t img_width = 512;
+    size_t img_height = 512;
     int                num_tries = 200;
     int                i, j, err;
     MTdataHolder d(gRandomSeed);
@@ -242,10 +242,10 @@ REGISTER_TEST(imagereadwrite)
 
     for (i = 0, j = 0; i < num_tries * image_formats_count; i++, j++)
     {
-        size_t    x = (size_t)get_random_float(0, img_width, d);
-        size_t    y = (size_t)get_random_float(0, img_height, d);
-        size_t    w = (size_t)get_random_float(1, (img_width - x), d);
-        size_t    h = (size_t)get_random_float(1, (img_height - y), d);
+        size_t x = (size_t)get_random_float(0, img_width, d);
+        size_t y = (size_t)get_random_float(0, img_height, d);
+        size_t w = (size_t)get_random_float(1, (img_width - x), d);
+        size_t h = (size_t)get_random_float(1, (img_height - y), d);
         size_t    input_pitch;
         int     set_input_pitch = (int)(genrand_int32(d) & 0x01);
         int     packed_update = (int)(genrand_int32(d) & 0x01);
@@ -386,7 +386,8 @@ REGISTER_TEST(imagereadwrite)
                                          img_width, img_height);
                 if (err)
                 {
-                    log_error("x=%zu y=%zu w=%zu h=%zu, pitch=%d, try=%d\n", x, y, w, h, (int)input_pitch, (int)i);
+                    log_error("x=%zu y=%zu w=%zu h=%zu, pitch=%d, try=%d\n", x,
+                              y, w, h, (int)input_pitch, (int)i);
                     log_error("IMAGE RGBA8 read, write %s test failed\n", update_packed_pitch_name);
                 }
                 break;
@@ -396,7 +397,8 @@ REGISTER_TEST(imagereadwrite)
                                         img_width, img_height);
                 if (err)
                 {
-                    log_error("x=%zu y=%zu w=%zu h=%zu, pitch=%d, try=%d\n", x, y, w, h, (int)input_pitch, (int)i);
+                    log_error("x=%zu y=%zu w=%zu h=%zu, pitch=%d, try=%d\n", x,
+                              y, w, h, (int)input_pitch, (int)i);
                     log_error("IMAGE RGBA16 read, write %s test failed\n", update_packed_pitch_name);
                 }
                 break;
@@ -406,7 +408,8 @@ REGISTER_TEST(imagereadwrite)
                                         img_width, img_height);
                 if (err)
                 {
-                    log_error("x=%zu y=%zu w=%zu h=%zu, pitch=%d, try=%d\n", x, y, w, h, (int)input_pitch, (int)i);
+                    log_error("x=%zu y=%zu w=%zu h=%zu, pitch=%d, try=%d\n", x,
+                              y, w, h, (int)input_pitch, (int)i);
                     log_error("IMAGE RGBA FP read, write %s test failed\n", update_packed_pitch_name);
                 }
                 break;
