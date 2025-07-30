@@ -708,13 +708,14 @@ REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
 REGISTER_TEST(negative_invalid_kernel)
 {
     cl_int error = CL_SUCCESS;
-    clKernelWrapper sampler_arg_kernel;
+    clKernelWrapper kernel;
 
     clMemWrapper mem = clCreateBuffer(context, CL_MEM_READ_ONLY,
                                       sizeof(cl_float), NULL, &error);
+    test_error(error, "clCreateBuffer failed");
 
     // Run the test - CL_INVALID_KERNEL
-    error = clSetKernelArg(sampler_arg_kernel, 0, sizeof(mem), &mem);
+    error = clSetKernelArg(kernel, 0, sizeof(mem), &mem);
     test_failure_error_ret(
         error, CL_INVALID_KERNEL,
         "clSetKernelArg is supposed to fail with CL_INVALID_KERNEL when kernel "
