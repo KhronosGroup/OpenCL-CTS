@@ -111,8 +111,8 @@ static int test_imagecopy_impl(cl_device_id device, cl_context context,
     std::unique_ptr<unsigned short[]> rgba16_inptr, rgba16_outptr;
     std::unique_ptr<float[]> rgbafp_inptr, rgbafp_outptr;
     clMemWrapper streams[6];
-    int img_width = 512;
-    int img_height = 512;
+    size_t img_width = 512;
+    size_t img_height = 512;
     int i, err;
     MTdataHolder d(gRandomSeed);
 
@@ -153,7 +153,7 @@ static int test_imagecopy_impl(cl_device_id device, cl_context context,
     for (i = 0; i < 3; i++)
     {
         void *p, *outp;
-        int x, y, delta_w = img_width / 8, delta_h = img_height / 16;
+        size_t x, y, delta_w = img_width / 8, delta_h = img_height / 16;
 
         switch (i)
         {
@@ -197,8 +197,8 @@ static int test_imagecopy_impl(cl_device_id device, cl_context context,
                     copy_origin, copy_region, 0, NULL, NULL);
                 if (err)
                 {
-                    log_error("Copy %d (origin [%d, %d], size [%d, %d], image "
-                              "size [%d x %d]) Failed\n",
+                    log_error("Copy %d (origin [%zu, %zu], size [%zu, %zu], image "
+                              "size [%zu x %zu]) Failed\n",
                               copy_number, x, y, delta_w, delta_h, img_width,
                               img_height);
                 }

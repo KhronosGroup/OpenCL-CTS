@@ -100,8 +100,8 @@ REGISTER_TEST(hostptr)
     cl_image_format     img_format;
     cl_uchar            *rgba8_inptr, *rgba8_outptr;
     void                *lock_buffer;
-    int                 img_width = 512;
-    int                 img_height = 512;
+    size_t                 img_width = 512;
+    size_t                 img_height = 512;
     cl_int              err;
     MTdata              d;
     RoundingMode        oldRoundMode;

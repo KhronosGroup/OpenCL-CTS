@@ -123,15 +123,15 @@ REGISTER_TEST(imagerandomcopy)
     unsigned short    *rgba16_inptr, *rgba16_outptr;
     float            *rgbafp_inptr, *rgbafp_outptr;
     clMemWrapper            streams[6];
-    int                img_width = 512;
-    int                img_height = 512;
+    size_t                img_width = 512;
+    size_t                img_height = 512;
     int                i, j;
     cl_int          err;
     MTdata          d;
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT( device )
 
-    log_info("Testing with image %d x %d.\n", img_width, img_height);
+    log_info("Testing with image %zu x %zu.\n", img_width, img_height);
 
     d = init_genrand( gRandomSeed );
     rgba8_inptr = (unsigned char *)generate_rgba8_image(img_width, img_height, d);
@@ -192,7 +192,6 @@ REGISTER_TEST(imagerandomcopy)
 
         size_t origin[3]={0,0,0}, region[3]={img_width, img_height,1};
         err = clEnqueueWriteImage(queue, streams[i*2], CL_TRUE, origin, region, 0, 0, p, 0, NULL, NULL);
-//        err = clWriteImage(context, streams[i*2], false, 0, 0, 0, img_width, img_height, 0, NULL, 0, 0, p, NULL);
         test_error(err, "clEnqueueWriteImage failed");
 
         for (j=0; j<NUM_COPIES; j++)
