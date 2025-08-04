@@ -174,9 +174,10 @@ struct ArgSizeTypesIterator
             if (type == kHalf)
                 ext_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
 
-            std::string program_source = str_sprintf(
-                std::string(sample_arg_size_test_kernel), ext_str.c_str(),
-                vecNameStr.str().c_str(), vecNameStr.str().c_str());
+            auto vt_name = vecNameStr.str();
+            std::string program_source =
+                str_sprintf(std::string(sample_arg_size_test_kernel),
+                            ext_str.c_str(), vt_name.c_str(), vt_name.c_str());
 
             const char *ptr = program_source.c_str();
             cl_int error = create_single_kernel_helper(
