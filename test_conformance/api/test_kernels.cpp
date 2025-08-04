@@ -153,9 +153,9 @@ struct ArgSizeTypesIterator
 
     template <typename TestType> void test_invalid_arg(ExplicitType type)
     {
-        unsigned int sizes[] = { 1, 2, 4, 8, 16 };
-        std::vector<char> buf;
-        for (unsigned i = 0; i < ARRAY_SIZE(sizes); i++)
+        std::array<unsigned int, 5> sizes = { 1, 2, 4, 8, 16 };
+        std::vector<char> buf(sizeof(cl_ulong16), 0);
+        for (unsigned i = 0; i < sizes.size(); i++)
         {
             clProgramWrapper program;
             clKernelWrapper kernel;
@@ -166,15 +166,15 @@ struct ArgSizeTypesIterator
             vecNameStr << get_explicit_type_name(type);
             if (sizes[i] != 1) vecNameStr << sizes[i];
 
-            std::stringstream sstr;
+            std::string ext_str;
             if (type == kDouble)
-                sstr << "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+                ext_str = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
 
             if (type == kHalf)
-                sstr << "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
+                ext_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
 
             std::string program_source = str_sprintf(
-                std::string(sample_arg_size_test_kernel), sstr.str().c_str(),
+                std::string(sample_arg_size_test_kernel), ext_str.c_str(),
                 vecNameStr.str().c_str(), vecNameStr.str().c_str());
 
             const char *ptr = program_source.c_str();
@@ -184,7 +184,6 @@ struct ArgSizeTypesIterator
             if (error != CL_SUCCESS)
                 throw std::runtime_error("Unable to build test program\n");
 
-            buf.resize(destStride);
             // Run the test
             size_t reduced = destStride / 2;
             error = clSetKernelArg(kernel, 0, reduced, buf.data());
