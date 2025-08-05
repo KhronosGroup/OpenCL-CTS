@@ -114,17 +114,18 @@ NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2210.
 
 ### Testing New SVM APIs
 
-* [X] `clSVMAllocWithPropertiesKHR`
+* `clSVMAllocWithPropertiesKHR`
     * [X] Test without a `CL_SVM_ALLOC_ALIGNMENT_KHR` property.
     * [X] Test without a `CL_SVM_ALLOC_ACCESS_FLAGS_KHR` property.
     * [X] For SVM types supporting `CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR`, test without a `CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR` device.
     * [X] Test with varying the `CL_SVM_ALLOC_ALIGNMENT_KHR` property - all powers of two from 1 to 128 inclusive?
     * [X] Test with varying the `CL_SVM_ALLOC_ACCESS_FLAGS_KHR` property - all combinations?
     * [X] Include at least one test with all properties: `CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR` plus `CL_SVM_ALLOC_ALIGNMENT_KHR` plus `CL_SVM_ALLOC_ACCESS_FLAGS_KHR`.
-    * [ ] TODO: Test zero-byte allocation?
-* [X] `clSVMFreeWithPropertiesKHR`
+    * [X] Test zero-byte allocation.
+* `clSVMFreeWithPropertiesKHR`
     * Tested by the fixture; no flags or properties to test..
-* [X] `clGetSVMPointerInfoKHR`
+    * [X] Test freeing `NULL`.
+* `clGetSVMPointerInfoKHR`
     * After allocating, perform each of the queries, both with and without an explicit `device` parameter, for the base pointer returned by the `clSVMAllocWithPropertiesKHR` and a pointer computed from the base pointer.
         * [X] `CL_SVM_INFO_TYPE_INDEX_KHR` - must match the index passed during allocation.
         * [X] `CL_SVM_INFO_CAPABILITIES_KHR` - must match the device capabilities for the explicit `device` parameter, or be a super-set of the platform capabilities otherwise.
@@ -141,7 +142,7 @@ NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2210.
         * [X] `CL_SVM_INFO_BASE_PTR_KHR` - must return `NULL`.
         * [X] `CL_SVM_INFO_SIZE_KHR` - must return `0`.
         * [X] `CL_SVM_INFO_ASSOCIATED_DEVICE_HANDLE_KHR` - must return `NULL`.
-* [X] `clGetSVMSuggestedTypeIndexKHR`
+* `clGetSVMSuggestedTypeIndexKHR`
     * [X] Pass each of the supported device capabilities as `required_capabilities` and verify that the capabilities at `suggested_type_index` satisfy the required capabilities.
     * [X] Test without a `CL_SVM_ALLOC_ALIGNMENT_KHR` property.
     * [X] Test without a `CL_SVM_ALLOC_ACCESS_FLAGS_KHR` property.
@@ -153,54 +154,56 @@ NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2210.
 NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2261.
 NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2280.
 NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2338.
+NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2436.
 
 ### Testing Existing SVM APIs
 
-* [ ] `clSetKernelExecInfo(CL_KERNEL_EXEC_INFO_SVM_PTRS)`
+* `clSetKernelExecInfo(CL_KERNEL_EXEC_INFO_SVM_PTRS)`
     * [X] Follow similar methodology as `CL_SVM_CAPABILITY_INDIRECT_ACCESS_KHR`, except set the indirectly accessed allocation explicitly.
     * [X] Test a pointer offset from the base pointer and verify that the entire allocation may be accessed indirectly.
-    * [ ] TODO: Pass an empty set and verify that this is not an error?
-    * [ ] TODO: Pass a `NULL` pointer verify that this is not an error?
-    * [ ] TODO: Pass a bogus pointer verify that this is not an error?
-* [ ] `clSetKernelArgSVMPointer`
+    * [X] Pass an empty set and verify that this is not an error.
+    * [X] Pass a `NULL` pointer verify that this is not an error.
+    * [X] Pass a bogus pointer verify that this is not an error.
+* `clSetKernelArgSVMPointer`
     * Generally do not need a targeted test, because this API will be exercised by any tests using SVM pointers in kernels.
-    * [ ] Ensure at least one test for each SVM type passes a pointer offset from the base pointer and accesses it in a kernel.
-    * [ ] TODO: Pass a `NULL` pointer, execute the kernel, and verify that no error occurs as long as the pointer is not dereferenced?
-    * [ ] TODO: Pass a bogus pointer, execute the kernel, and verify that no error occurs as long as the pointer is not dereferenced?
-* [ ] `clEnqueueSVMFree` (see: `test_enqueue_api.cpp`)
+    * [X] Ensure at least one test for each SVM type passes a pointer offset from the base pointer and accesses it in a kernel.
+    * [X] Pass a `NULL` pointer, execute the kernel, and verify that no error occurs as long as the pointer is not dereferenced?
+    * [X] Pass a bogus pointer, execute the kernel, and verify that no error occurs as long as the pointer is not dereferenced?
+* `clEnqueueSVMFree` (see: `test_enqueue_api.cpp`)
     * [X] Include an event on the command and verify that the event type is `CL_COMMAND_SVM_FREE`.
     * [X] Allocate memory for each type and verify that it can be freed asynchronously.
-    * [ ] TODO: Pass an empty set and verify that this is not an error?
-    * [ ] TODO: Pass a `NULL` pointer and verify that this is not an error?
-* [ ] `clEnqueueSVMMemcpy` (see: `test_enqueue_api.cpp`)
+    * [X] Pass an empty set and verify that this is not an error.
+    * [X] Pass a `NULL` pointer and verify that this is not an error.
+* `clEnqueueSVMMemcpy` (see: `test_enqueue_api.cpp`)
     * [X] Include an event on the command and verify that the event type is `CL_COMMAND_SVM_MEMCPY`.
     * [X] Test all combinations of SVM pointer and host pointer sources and destinations.
     * [X] Test a pointer offset from the base pointer as a memcpy source and destination.
     * [ ] TODO: Check document issue 10 and consider copying to other devices or contexts.
-    * [ ] TODO: Pass a `NULL` pointer and `size` equal to zero and verify that this is not an error, for both memcpy source and destination pointers?
-    * [ ] TODO: Pass a bogus pointer and `size` equal to zero and verify that this is not an error, for both memcpy source and destination pointers?
-    * [ ] TODO: For all SVM types, pass a valid pointer and `size` equal to zero and verify that this is not an error, for both memcpy source and destination pointers?
-* [ ] `clEnqueueSVMMemFill` (see: `test_enqueue_api.cpp`)
+    * [X] Pass a `NULL` pointer and `size` equal to zero and verify that this is not an error, for both memcpy source and destination pointers.
+    * [X] Pass a bogus pointer and `size` equal to zero and verify that this is not an error, for both memcpy source and destination pointers.
+    * [X] For all SVM types, pass a valid pointer and `size` equal to zero and verify that this is not an error, for both memcpy source and destination pointers.
+* `clEnqueueSVMMemFill` (see: `test_enqueue_api.cpp`)
     * [X] Include an event on the command and verify that the event type is `CL_COMMAND_SVM_MEMCPY`.
     * [X] Test multiple fill pattern sizes - all powers of two from 1 to 128 inclusive?
     * [X] Test a pointer offset from the base pointer as a fill destination.
     * [ ] TODO: Check document issue 9 and consider filling allocations for other devices or contexts.
-    * [ ] TODO: Pass a `NULL` pointer and `size` equal to zero and verify that this is not an error?
-    * [ ] TODO: Pass a bogus pointer and `size` equal to zero and verify that this is not an error?
-    * [ ] TODO: For all SVM types, pass a valid pointer and `size` equal to zero and verify that this is not an error?
-* [X] `clEnqueueSVMMap` / `clEnqueueSVMUnmap`
+    * [X] Pass a `NULL` pointer and `size` equal to zero and verify that this is not an error.
+    * [X] Pass a bogus pointer and `size` equal to zero and verify that this is not an error.
+    * [X] For all SVM types, pass a valid pointer and `size` equal to zero and verify that this is not an error.
+* `clEnqueueSVMMap` / `clEnqueueSVMUnmap`
     * [X] Include an event on the command and verify that the event type is `CL_COMMAND_SVM_MAP` / `CL_COMMAND_SVM_UNMAP`.
     * [X] Test all combinations of map flags: `CL_MAP_READ`, `CL_MAP_WRITE`, `CL_MAP_WRITE_INVALIDATE_REGION`, `CL_MAP_READ | CL_MAP_WRITE`.
-* [ ] `clEnqueueSVMMigrateMem`
+* `clEnqueueSVMMigrateMem`
     * [X] Include an event on the command and verify that the event type is `CL_COMMAND_SVM_MIGRATE_MEM`.
     * [X] Test all combinations of migration flags: `0`, `CL_MIGRATE_MEM_OBJECT_HOST`, `CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED`, `CL_MIGRATE_MEM_OBJECT_HOST | CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED`.
     * [X] Migrate an entire SVM allocation.
     * [X] Migrate a subset of an SVM allocation, starting from the base pointer.
     * [X] Migrate a subset of an SVM allocation, starting from a pointer offset from the base pointer.
-    * [ ] TODO: Migrate a `NULL` pointer with `size` equal to zero and verify that this is not an error?
-    * [ ] TODO: For all SVM types, migrate a valid pointer with `size` equal to zero and verify that this is not an error?
+    * [X] Migrate a `NULL` pointer with `size` equal to zero and verify that this is not an error.
+    * [X] For all SVM types, migrate a valid pointer with `size` equal to zero and verify that this is not an error.
 
 NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2441.
+NOTE: Added by https://github.com/KhronosGroup/OpenCL-CTS/pull/2436.
 
 ### Non-Conventional Uses
 
