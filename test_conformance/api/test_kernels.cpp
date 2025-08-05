@@ -16,6 +16,8 @@
 #include "testBase.h"
 #include "harness/typeWrappers.h"
 #include "harness/conversions.h"
+#include "harness/featureHelpers.h"
+#include "harness/stringHelpers.h"
 #include <vector>
 
 const char *sample_single_test_kernel[] = {
@@ -87,6 +89,14 @@ const char *sample_two_kernel_program[] = {
 "\n"
 "}\n" };
 
+const char *sample_arg_image_msaa_test_kernel = R"(
+    #pragma OPENCL EXTENSION cl_khr_gl_msaa_sharing : enable
+    __kernel void arg_image_test(%s src, __global float4 *dst)
+    {
+        int%s coord = (int%s)(get_global_id(0));
+        dst[0]=read_imagef(src, coord, 0);
+    }
+)";
 
 REGISTER_TEST(get_kernel_info)
 {
@@ -701,6 +711,62 @@ REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
                            "created with CL_MEM_IMMUTABLE_EXT is "
                            "passed to a write_only kernel argument",
                            TEST_FAIL);
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_set_kernel_arg_invalid_image_msaa)
+{
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+
+    if (!is_extension_available(device, "cl_khr_gl_msaa_sharing"))
+    {
+        log_info("Test not run because 'cl_khr_gl_msaa_sharing' extension is "
+                 "not supported by the tested device\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+
+    std::vector<std::pair<std::string, std::string>> image_types = {
+        { "image2d_msaa_t", "2" },
+        { "image2d_array_msaa_t", "4" },
+        { "image2d_msaa_depth_t", "4" },
+        { "image2d_array_msaa_depth_t", "4" }
+    };
+
+    constexpr cl_image_format format = { CL_RGBA, CL_UNSIGNED_INT8 };
+    constexpr size_t size_dim = 32;
+    clMemWrapper image =
+        create_image_2d(context, CL_MEM_READ_ONLY, &format, size_dim, size_dim,
+                        0, nullptr, &error);
+    test_error(error, "clCreateBuffer failed");
+
+    for (auto &el : image_types)
+    {
+        std::string program_source =
+            str_sprintf(std::string(sample_arg_image_msaa_test_kernel),
+                        el.first.c_str(), el.second.c_str(), el.second.c_str());
+
+        const char *ptr = program_source.c_str();
+        cl_int error = create_single_kernel_helper(context, &program, &kernel,
+                                                   1, &ptr, "arg_image_test");
+        test_error(error, "Unable to build test program");
+
+        kernel = clCreateKernel(program, "arg_image_test", &error);
+        test_error(error,
+                   "Unable to get arg_image_test kernel for built program");
+
+        error = clSetKernelArg(kernel, 0, sizeof(image), &image);
+        test_failure_error_ret(
+            error, CL_INVALID_MEM_OBJECT,
+            "clSetKernelArg is supposed to fail with CL_INVALID_MEM_OBJECT "
+            "when arg_value does not follow the rules described in spec for "
+            "msaa images",
+            TEST_FAIL);
+    }
 
     return TEST_PASS;
 }
