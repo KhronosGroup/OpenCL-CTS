@@ -337,6 +337,8 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
                                                       * buffer_size_multiplier,
                                                   nullptr, &error);
         test_error(error, "clCreateBuffer failed");
+        // Retain new output memory object until the end of the test.
+        retained_output_buffers.push_back(new_out_mem);
 
         cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(new_out_mem),
                                            &new_out_mem };
@@ -428,6 +430,8 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
 
     clKernelWrapper kernel_fill;
     clProgramWrapper program_fill;
+
+    std::vector<clMemWrapper> retained_output_buffers;
 
     const size_t test_global_work_size = 3 * sizeof(cl_int);
     const cl_int pattern_pri = 42;
