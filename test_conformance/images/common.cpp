@@ -248,7 +248,7 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
                 cl_mem_flags buffer_flags = CL_MEM_READ_WRITE;
                 if (enable_pitch)
                 {
-                    if (version.major() == 1)
+                    if (version.version_major() == 1)
                     {
                         host_ptr = malloc(imageInfo->rowPitch);
                     }
