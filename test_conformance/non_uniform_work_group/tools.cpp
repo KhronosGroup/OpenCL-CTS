@@ -46,28 +46,31 @@ void PrimeNumbers::generatePrimeNumbers (unsigned int maxValue) {
 }
 
 // Returns prime number for specified range
-int PrimeNumbers::getPrimeNumberInRange (size_t lowerValue, size_t higherValue) {
-  if(lowerValue >= higherValue)
-    return -1;
+size_t PrimeNumbers::getPrimeNumberInRange(size_t lowerValue,
+                                           size_t higherValue)
+{
+    if (lowerValue >= higherValue) return 0;
 
-  if(primeNumbers.back() < lowerValue)
-    return -2;
+    if (primeNumbers.back() < lowerValue) return 0;
 
-  PrimeNumbersCollection::iterator it = primeNumbers.begin();
+    PrimeNumbersCollection::iterator it = primeNumbers.begin();
 
-  for (; it != primeNumbers.end(); ++it) {
-    if (lowerValue<*it) {
-      if(higherValue>*it)
-        return *it;
-      else
-        return -3;
+    for (; it != primeNumbers.end(); ++it)
+    {
+        if (lowerValue < *it)
+        {
+            if (higherValue > *it)
+                return *it;
+            else
+                return 0;
+        }
     }
-  }
-  return -1;
+    return 0;
 }
 
 
-int PrimeNumbers::getNextLowerPrimeNumber(size_t upperValue) {
+size_t PrimeNumbers::getNextLowerPrimeNumber(size_t upperValue)
+{
     size_t retVal = 1;
 
     PrimeNumbersCollection::iterator it = primeNumbers.begin();

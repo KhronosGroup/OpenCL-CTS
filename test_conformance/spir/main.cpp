@@ -6911,12 +6911,13 @@ int main (int argc, const char* argv[])
         cl_device_id device = get_platform_device(device_type, choosen_device_index, choosen_platform_index);
         printDeviceHeader(device);
 
+        REQUIRE_EXTENSION("cl_khr_spir");
+
         std::vector<Version> versions;
         get_spir_version(device, versions);
 
-        if (!is_extension_available(device, "cl_khr_spir")
-            || (std::find(versions.begin(), versions.end(), Version{ 1, 2 })
-                == versions.end()))
+        if (std::find(versions.begin(), versions.end(), Version{ 1, 2 })
+            == versions.end())
         {
             log_info("Spir extension version 1.2 is not supported by the device\n");
             return 0;
