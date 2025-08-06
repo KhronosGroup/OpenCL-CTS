@@ -748,14 +748,14 @@ REGISTER_TEST(negative_invalid_arg_mem_obj)
     test_error(error, "clCreateBuffer failed");
 
     // Run the test - CL_INVALID_ARG_SIZE
-    error = clSetKernelArg(mem_obj_arg_kernel, 0, sizeof(buffer) * 2, &buffer);
+    error = clSetKernelArg(mem_obj_arg_kernel, 0, sizeof(cl_mem) * 2, &buffer);
     test_failure_error_ret(
         error, CL_INVALID_ARG_SIZE,
         "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when "
         "argument is a memory object and arg_size > sizeof(cl_mem)",
         TEST_FAIL);
 
-    error = clSetKernelArg(mem_obj_arg_kernel, 0, sizeof(buffer) / 2, &buffer);
+    error = clSetKernelArg(mem_obj_arg_kernel, 0, sizeof(cl_mem) / 2, &buffer);
     test_failure_error_ret(
         error, CL_INVALID_ARG_SIZE,
         "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when "
