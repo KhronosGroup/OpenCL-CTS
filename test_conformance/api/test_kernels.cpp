@@ -752,7 +752,7 @@ REGISTER_TEST(negative_invalid_arg_sampler)
 
     // Run the test - CL_INVALID_ARG_SIZE
     error =
-        clSetKernelArg(sampler_arg_kernel, 0, sizeof(sampler) * 2, &sampler);
+        clSetKernelArg(sampler_arg_kernel, 0, sizeof(cl_sampler) * 2, &sampler);
     test_failure_error_ret(
         error, CL_INVALID_ARG_SIZE,
         "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when "
@@ -760,7 +760,7 @@ REGISTER_TEST(negative_invalid_arg_sampler)
         TEST_FAIL);
 
     error =
-        clSetKernelArg(sampler_arg_kernel, 0, sizeof(sampler) / 2, &sampler);
+        clSetKernelArg(sampler_arg_kernel, 0, sizeof(cl_sampler) / 2, &sampler);
     test_failure_error_ret(
         error, CL_INVALID_ARG_SIZE,
         "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when "
