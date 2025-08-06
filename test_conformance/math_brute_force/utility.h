@@ -19,6 +19,7 @@
 #include "harness/compat.h"
 #include "harness/rounding_mode.h"
 #include "harness/fpcontrol.h"
+#include "harness/mathHelpers.h"
 #include "harness/testHarness.h"
 #include "harness/ThreadPool.h"
 #include "harness/conversions.h"
@@ -170,16 +171,6 @@ inline int IsFloatNaN(double x)
     } u;
     u.d = (cl_float)x;
     return ((u.u & 0x7fffffffU) > 0x7F800000U);
-}
-
-inline bool IsHalfNaN(const cl_half v)
-{
-    // Extract FP16 exponent and mantissa
-    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-    uint16_t h_mant = ((cl_half)v) & 0x3FF;
-
-    // NaN test
-    return (h_exp == 0x1F && h_mant != 0);
 }
 
 inline bool IsHalfInfinity(const cl_half v)

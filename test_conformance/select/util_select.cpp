@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 #include "harness/errorHelpers.h"
+#include "harness/mathHelpers.h"
+#include "harness/testHarness.h"
 
 #include <stdio.h>
 #include <cinttypes>
@@ -834,9 +836,9 @@ size_t check_half(const void *const test, const void *const correct,
         // Allow nans to be binary different
         for (i = 0; i < count; i++)
         {
-            float fcorrect = cl_half_to_float(c[i]);
-            float ftest = cl_half_to_float(t[i]);
-            if ((t[i] != c[i]) && !(isnan(fcorrect) && isnan(ftest)))
+            if ((t[i] != c[i])
+                && !(isnan_fp(cl_half_to_float(c[i]))
+                     && isnan_fp(cl_half_to_float(t[i]))))
             {
                 log_error("\n(check_half) Error for vector size %zu found at "
                           "0x%8.8zx (of 0x%8.8zx):  "
