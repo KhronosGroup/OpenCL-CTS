@@ -115,9 +115,9 @@ static int test_imagecopy3d_impl(cl_device_id device, cl_context context,
     std::unique_ptr<unsigned short[]> rgba16_inptr, rgba16_outptr;
     std::unique_ptr<float[]> rgbafp_inptr, rgbafp_outptr;
     clMemWrapper streams[6];
-    int img_width = 128;
-    int img_height = 128;
-    int img_depth = 64;
+    size_t img_width = 128;
+    size_t img_height = 128;
+    size_t img_depth = 64;
     int i;
     cl_int err;
     unsigned num_elements = img_width * img_height * img_depth * 4;

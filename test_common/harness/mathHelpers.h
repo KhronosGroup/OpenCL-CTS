@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2023 The Khronos Group Inc.
+// Copyright (c) 2025 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,30 +13,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef _mathHelpers_h
+#define _mathHelpers_h
 
-#pragma once
-
-#ifndef _testBase_h
-#define _testBase_h
-
-#include "harness/compat.h"
-#include "harness/mathHelpers.h"
-#include "harness/rounding_mode.h"
-
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include "procs.h"
-
-// Ensure max min macros are undefined - compilation issues when using min max from numeric_limits template class
-#if defined( max )
-    #undef max
+#if defined(__APPLE__)
+#include <OpenCL/cl_platform.h>
+#else
+#include <CL/cl_platform.h>
 #endif
+#include <cmath>
 
-#if defined( min )
-    #undef min
-#endif
+template <typename T> inline bool isnan_fp(const T &v) { return std::isnan(v); }
 
-#endif // _testBase_h
+template <> inline bool isnan_fp<cl_half>(const cl_half &v)
+{
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+    return (h_exp == 0x1F && h_mant != 0);
+}
+
+#endif // _mathHelpers_h

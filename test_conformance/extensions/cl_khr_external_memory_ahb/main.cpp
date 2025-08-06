@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2023 The Khronos Group Inc.
+// Copyright (c) 2025 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,29 +14,10 @@
 // limitations under the License.
 //
 
-#pragma once
+#include "harness/testHarness.h"
 
-#ifndef _testBase_h
-#define _testBase_h
-
-#include "harness/compat.h"
-#include "harness/mathHelpers.h"
-#include "harness/rounding_mode.h"
-
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include "procs.h"
-
-// Ensure max min macros are undefined - compilation issues when using min max from numeric_limits template class
-#if defined( max )
-    #undef max
-#endif
-
-#if defined( min )
-    #undef min
-#endif
-
-#endif // _testBase_h
+int main(int argc, const char *argv[])
+{
+    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
+                          test_registry::getInstance().definitions(), false, 0);
+}
