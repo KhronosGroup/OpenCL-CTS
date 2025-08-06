@@ -274,10 +274,10 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                     if (skipNanInf)
                     {
                         if (overflow[j] || IsHalfInfinity(correct)
-                            || IsHalfNaN(correct) || IsHalfInfinity(hp0[j])
-                            || IsHalfNaN(hp0[j]) || IsHalfInfinity(hp1[j])
-                            || IsHalfNaN(hp1[j]) || IsHalfInfinity(hp2[j])
-                            || IsHalfNaN(hp2[j]))
+                            || isnan_fp(correct) || IsHalfInfinity(hp0[j])
+                            || isnan_fp(hp0[j]) || IsHalfInfinity(hp1[j])
+                            || isnan_fp(hp1[j]) || IsHalfInfinity(hp2[j])
+                            || isnan_fp(hp2[j]))
                             continue;
                     }
 
@@ -318,9 +318,9 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                                 // Note: no double rounding here.  Reference
                                 // functions calculate in single precision.
                                 if (IsHalfInfinity(correct2)
-                                    || IsHalfNaN(correct2)
+                                    || isnan_fp(correct2)
                                     || IsHalfInfinity(correct3)
-                                    || IsHalfNaN(correct3))
+                                    || isnan_fp(correct3))
                                     continue;
                             }
 
@@ -381,13 +381,13 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                                     // Note: no double rounding here.  Reference
                                     // functions calculate in single precision.
                                     if (IsHalfInfinity(correct2)
-                                        || IsHalfNaN(correct2)
+                                        || isnan_fp(correct2)
                                         || IsHalfInfinity(correct3)
-                                        || IsHalfNaN(correct3)
+                                        || isnan_fp(correct3)
                                         || IsHalfInfinity(correct4)
-                                        || IsHalfNaN(correct4)
+                                        || isnan_fp(correct4)
                                         || IsHalfInfinity(correct5)
-                                        || IsHalfNaN(correct5))
+                                        || isnan_fp(correct5))
                                         continue;
                                 }
 
@@ -474,13 +474,13 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                                     // Note: no double rounding here.  Reference
                                     // functions calculate in single precision.
                                     if (IsHalfInfinity(correct2)
-                                        || IsHalfNaN(correct2)
+                                        || isnan_fp(correct2)
                                         || IsHalfInfinity(correct3)
-                                        || IsHalfNaN(correct3)
+                                        || isnan_fp(correct3)
                                         || IsHalfInfinity(correct4)
-                                        || IsHalfNaN(correct4)
+                                        || isnan_fp(correct4)
                                         || IsHalfInfinity(correct5)
-                                        || IsHalfNaN(correct5))
+                                        || isnan_fp(correct5))
                                         continue;
                                 }
 
@@ -551,9 +551,9 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                                 // Note: no double rounding here.  Reference
                                 // functions calculate in single precision.
                                 if (IsHalfInfinity(correct2)
-                                    || IsHalfNaN(correct2)
+                                    || isnan_fp(correct2)
                                     || IsHalfInfinity(correct3)
-                                    || IsHalfNaN(correct3))
+                                    || isnan_fp(correct3))
                                     continue;
                             }
 
@@ -613,13 +613,13 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                                     // Note: no double rounding here.  Reference
                                     // functions calculate in single precision.
                                     if (IsHalfInfinity(correct2)
-                                        || IsHalfNaN(correct2)
+                                        || isnan_fp(correct2)
                                         || IsHalfInfinity(correct3)
-                                        || IsHalfNaN(correct3)
+                                        || isnan_fp(correct3)
                                         || IsHalfInfinity(correct4)
-                                        || IsHalfNaN(correct4)
+                                        || isnan_fp(correct4)
                                         || IsHalfInfinity(correct5)
-                                        || IsHalfNaN(correct5))
+                                        || isnan_fp(correct5))
                                         continue;
                                 }
 
@@ -689,9 +689,9 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                                 // Note: no double rounding here.  Reference
                                 // functions calculate in single precision.
                                 if (IsHalfInfinity(correct2)
-                                    || IsHalfNaN(correct2)
+                                    || isnan_fp(correct2)
                                     || IsHalfInfinity(correct3)
-                                    || IsHalfNaN(correct3))
+                                    || isnan_fp(correct3))
                                     continue;
                             }
 
