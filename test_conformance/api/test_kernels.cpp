@@ -99,6 +99,20 @@ const char *sample_arg_image_test_kernel = R"(
     }
 )";
 
+const char *sample_read_only_image_test_kernel = R"(
+    __kernel void read_only_image_test(__write_only image2d_t img, __global uint4 *src)
+    {
+        write_imageui(img, (int2)(get_global_id(0), get_global_id(1)), src[0]);
+    }
+)";
+
+const char *sample_write_only_image_test_kernel = R"(
+    __kernel void write_only_image_test(__read_only image2d_t src, __global uint4 *dst)
+    {
+        dst[0]=read_imageui(src, (int2)(get_global_id(0), get_global_id(1)));
+    }
+)";
+
 REGISTER_TEST(get_kernel_info)
 {
     int error;
@@ -753,7 +767,7 @@ REGISTER_TEST(negative_set_kernel_arg_invalid_image)
         test_error(error,
                    "Unable to get arg_image_test kernel for built program");
 
-        error = clSetKernelArg(kernel, 0, sizeof(buffer), &buffer);
+        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &buffer);
         test_failure_error_ret(
             error, CL_INVALID_MEM_OBJECT,
             "clSetKernelArg is supposed to fail with CL_INVALID_MEM_OBJECT "
@@ -761,6 +775,61 @@ REGISTER_TEST(negative_set_kernel_arg_invalid_image)
             "depth memory object or memory array object argument",
             TEST_FAIL);
     }
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_set_read_write_image_arg)
+{
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper write_image_kernel, read_image_kernel;
+    clMemWrapper write_only_image, read_only_image;
+    const char *test_kernels[2] = { sample_read_only_image_test_kernel,
+                                    sample_write_only_image_test_kernel };
+    constexpr cl_image_format format = { CL_RGBA, CL_UNSIGNED_INT8 };
+    const int size_dim = 128;
+
+    // Setup the test
+    error = create_single_kernel_helper(context, &program, nullptr, 2,
+                                        test_kernels, nullptr);
+    test_error(error, "Unable to build test program");
+
+    read_image_kernel = clCreateKernel(program, "read_only_image_test", &error);
+    test_error(error,
+               "Unable to get read_only_image_test kernel for built program");
+
+    write_image_kernel =
+        clCreateKernel(program, "write_only_image_test", &error);
+    test_error(error,
+               "Unable to get write_only_image_test kernel for built program");
+
+    read_only_image = create_image_2d(context, CL_MEM_READ_ONLY, &format,
+                                      size_dim, size_dim, 0, nullptr, &error);
+    test_error(error, "create_image_2d failed");
+
+    write_only_image = create_image_2d(context, CL_MEM_WRITE_ONLY, &format,
+                                       size_dim, size_dim, 0, nullptr, &error);
+    test_error(error, "create_image_2d failed");
+
+    // Run the test
+    error = clSetKernelArg(read_image_kernel, 0, sizeof(read_only_image),
+                           &read_only_image);
+    test_failure_error_ret(error, CL_INVALID_ARG_VALUE,
+                           "clSetKernelArg is supposed to fail "
+                           "with CL_INVALID_ARG_VALUE when an image is "
+                           "created with CL_MEM_READ_ONLY is "
+                           "passed to a write_only kernel argument",
+                           TEST_FAIL);
+
+    error = clSetKernelArg(write_image_kernel, 0, sizeof(write_only_image),
+                           &write_only_image);
+    test_failure_error_ret(error, CL_INVALID_ARG_VALUE,
+                           "clSetKernelArg is supposed to fail "
+                           "with CL_INVALID_ARG_VALUE when an image is "
+                           "created with CL_MEM_WRITE_ONLY is "
+                           "passed to a read_only kernel argument",
+                           TEST_FAIL);
 
     return TEST_PASS;
 }
