@@ -757,7 +757,8 @@ REGISTER_TEST(negative_invalid_arg_queue)
     test_error(error, "Unable to get queue_test kernel for built program");
 
     // Run the test - CL_INVALID_DEVICE_QUEUE
-    error = clSetKernelArg(queue_arg_kernel, 0, sizeof(cl_command_queue), queue_arg);
+    error = clSetKernelArg(queue_arg_kernel, 0, sizeof(cl_command_queue),
+                           queue_arg);
     test_failure_error_ret(
         error, CL_INVALID_DEVICE_QUEUE,
         "clSetKernelArg is supposed to fail with CL_INVALID_DEVICE_QUEUE when "
