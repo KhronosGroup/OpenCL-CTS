@@ -630,7 +630,8 @@ int main(int argc, const char* argv[])
         s_wimpy_mode = true;
     }
 
-    if (s_wimpy_mode) {
+    if (s_wimpy_mode && !gListTests)
+    {
         log_info("\n");
         log_info("*** WARNING: Testing in Wimpy mode!                     ***\n");
         log_info("*** Wimpy mode is not sufficient to verify correctness. ***\n");

@@ -40,6 +40,7 @@ extern std::string gCompilationCachePath;
 extern std::string gCompilationProgram;
 extern bool gDisableSPIRVValidation;
 extern std::string gSPIRVValidator;
+extern bool gListTests;
 
 extern int parseCustomParam(int argc, const char *argv[],
                             const char *ignore = 0);
