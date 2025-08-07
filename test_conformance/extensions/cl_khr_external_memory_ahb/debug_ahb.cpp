@@ -173,6 +173,9 @@ std::string ahardwareBufferFormatToString(AHardwareBuffer_Format format)
         case AHARDWAREBUFFER_FORMAT_YCbCr_P010:
             result = "AHARDWAREBUFFER_FORMAT_YCbCr_P010";
             break;
+        case AHARDWAREBUFFER_FORMAT_YCbCr_P210:
+            result = "AHARDWAREBUFFER_FORMAT_YCbCr_P210";
+            break;
         case AHARDWAREBUFFER_FORMAT_R8_UNORM:
             result = "AHARDWAREBUFFER_FORMAT_R8_UNORM";
             break;
