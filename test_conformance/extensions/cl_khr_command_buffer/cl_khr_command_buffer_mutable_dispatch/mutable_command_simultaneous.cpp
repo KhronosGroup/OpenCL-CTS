@@ -297,6 +297,7 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
     {
         cl_int offset;
         std::vector<cl_int> output_buffer;
+        std::vector<cl_int> updated_output_buffer;
         // 0:user event, 1:offset-buffer fill event, 2:kernel done event
         clEventWrapper wait_events[3];
     };
@@ -337,6 +338,8 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
                                                       * buffer_size_multiplier,
                                                   nullptr, &error);
         test_error(error, "clCreateBuffer failed");
+        // Retain new output memory object until the end of the test.
+        retained_output_buffers.push_back(new_out_mem);
 
         cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(new_out_mem),
                                            &new_out_mem };
@@ -373,7 +376,7 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
 
         error = clEnqueueReadBuffer(work_queue, new_out_mem, CL_FALSE,
                                     pd.offset * sizeof(cl_int), data_size(),
-                                    pd.output_buffer.data(), 1,
+                                    pd.updated_output_buffer.data(), 1,
                                     &pd.wait_events[2], nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
@@ -388,8 +391,10 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
         cl_int offset = static_cast<cl_int>(num_elements);
 
         std::vector<SimulPassData> simul_passes = {
-            { 0, std::vector<cl_int>(num_elements) },
-            { offset, std::vector<cl_int>(num_elements) }
+            { 0, std::vector<cl_int>(num_elements),
+              std::vector<cl_int>(num_elements) },
+            { offset, std::vector<cl_int>(num_elements),
+              std::vector<cl_int>(num_elements) }
         };
 
         for (auto&& pass : simul_passes)
@@ -407,13 +412,26 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
         test_error(error, "clFinish failed");
 
         // verify the result buffers
-        for (auto&& pass : simul_passes)
+        auto& first_pass_output = simul_passes[0].output_buffer;
+        auto& first_pass_updated_output = simul_passes[0].updated_output_buffer;
+        auto& second_pass_output = simul_passes[1].output_buffer;
+        auto& second_pass_updated_output =
+            simul_passes[1].updated_output_buffer;
+        for (size_t i = 0; i < num_elements; i++)
         {
-            auto& res_data = pass.output_buffer;
-            for (size_t i = 0; i < num_elements; i++)
-            {
-                CHECK_VERIFICATION_ERROR(pattern_pri, res_data[i], i);
-            }
+            // First pass:
+            // Before updating, out_mem is copied from in_mem (pattern_pri)
+            CHECK_VERIFICATION_ERROR(pattern_pri, first_pass_output[i], i);
+            // After updating, new_out_mem is copied from in_mem (pattern_pri)
+            CHECK_VERIFICATION_ERROR(pattern_pri, first_pass_updated_output[i],
+                                     i);
+            // Second pass:
+            // Before updating, out_mem is filled with overwritten_pattern
+            CHECK_VERIFICATION_ERROR(overwritten_pattern, second_pass_output[i],
+                                     i);
+            // After updating, new_out_mem is copied from in_mem (pattern_pri)
+            CHECK_VERIFICATION_ERROR(pattern_pri, second_pass_updated_output[i],
+                                     i);
         }
 
         return CL_SUCCESS;
@@ -428,6 +446,8 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
 
     clKernelWrapper kernel_fill;
     clProgramWrapper program_fill;
+
+    std::vector<clMemWrapper> retained_output_buffers;
 
     const size_t test_global_work_size = 3 * sizeof(cl_int);
     const cl_int pattern_pri = 42;
@@ -605,35 +625,25 @@ struct CrossQueueSimultaneousMutableDispatchTest
 
 } // anonymous namespace
 
-int test_mutable_dispatch_out_of_order(cl_device_id device, cl_context context,
-                                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(mutable_dispatch_out_of_order)
 {
     return MakeAndRunTest<SimultaneousMutableDispatchTest<false, true>>(
         device, context, queue, num_elements);
 }
 
-int test_mutable_dispatch_simultaneous_out_of_order(cl_device_id device,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements)
+REGISTER_TEST(mutable_dispatch_simultaneous_out_of_order)
 {
     return MakeAndRunTest<SimultaneousMutableDispatchTest<true, true>>(
         device, context, queue, num_elements);
 }
 
-int test_mutable_dispatch_simultaneous_in_order(cl_device_id device,
-                                                cl_context context,
-                                                cl_command_queue queue,
-                                                int num_elements)
+REGISTER_TEST(mutable_dispatch_simultaneous_in_order)
 {
     return MakeAndRunTest<SimultaneousMutableDispatchTest<true, false>>(
         device, context, queue, num_elements);
 }
 
-int test_mutable_dispatch_simultaneous_cross_queue(cl_device_id device,
-                                                   cl_context context,
-                                                   cl_command_queue queue,
-                                                   int num_elements)
+REGISTER_TEST(mutable_dispatch_simultaneous_cross_queue)
 {
     return MakeAndRunTest<CrossQueueSimultaneousMutableDispatchTest>(
         device, context, queue, num_elements);

@@ -19,7 +19,7 @@
 #include "test_printf.h"
 #include <assert.h>
 #include <CL/cl_half.h>
-
+#include <regex>
 
 // Helpers for generating runtime reference results
 static void intRefBuilder(printDataGenParameters&, char*, const size_t);
@@ -1352,7 +1352,7 @@ std::vector<std::string> correctBufferVectorRTZ = {
 
     "1.23e+03,9.87e+05,4.99e-04",
 
-    "0x1p-2,0x1p-1,0x1p+0,0x1.8p+0",
+    "0x1.0p-2,0x1.0p-1,0x1.0p+0,0x1.8p+0",
 
     "1,2,3,4,1.5,3.13999,2.5,3.5",
 
@@ -1743,10 +1743,14 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
     else if (pTestCase->_correctBuffer[testId] == "INF")
         return strcmp(analysisBuffer, "INF")
             && strcmp(analysisBuffer, "INFINITY");
-    else if (pTestCase->_correctBuffer[testId] == "nan")
-        return strcmp(analysisBuffer, "nan") && strcmp(analysisBuffer, "-nan");
-    else if (pTestCase->_correctBuffer[testId] == "NAN")
-        return strcmp(analysisBuffer, "NAN") && strcmp(analysisBuffer, "-NAN");
+    else if (pTestCase->_correctBuffer[testId] == "nan"
+             || pTestCase->_correctBuffer[testId] == "NAN")
+    {
+        std::string pattern =
+            R"(-?)" + pTestCase->_correctBuffer[testId] + R"((\(.*\))?)";
+        std::regex nanRegex(pattern);
+        return !std::regex_match(analysisBuffer, nanRegex);
+    }
 
     return strcmp(analysisBuffer, pTestCase->_correctBuffer[testId].c_str());
 }

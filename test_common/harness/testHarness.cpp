@@ -197,8 +197,11 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     if (env_mode != NULL)
     {
         based_on_env_var = 1;
-        if (strcmp(env_mode, "gpu") == 0
-            || strcmp(env_mode, "CL_DEVICE_TYPE_GPU") == 0)
+        if (strcmp(env_mode, "all") == 0
+            || strcmp(env_mode, "CL_DEVICE_TYPE_ALL") == 0)
+            device_type = CL_DEVICE_TYPE_ALL;
+        else if (strcmp(env_mode, "gpu") == 0
+                 || strcmp(env_mode, "CL_DEVICE_TYPE_GPU") == 0)
             device_type = CL_DEVICE_TYPE_GPU;
         else if (strcmp(env_mode, "cpu") == 0
                  || strcmp(env_mode, "CL_DEVICE_TYPE_CPU") == 0)
@@ -271,7 +274,7 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
                  "(default 0).\n");
         log_info("\tid<num>\t\tIndicates device at index <num> should be used "
                  "(default 0).\n");
-        log_info("\t<device_type>\tcpu|gpu|accelerator|<CL_DEVICE_TYPE_*> "
+        log_info("\t<device_type>\tall|cpu|gpu|accelerator|<CL_DEVICE_TYPE_*> "
                  "(default CL_DEVICE_TYPE_DEFAULT)\n");
         log_info("\n");
         log_info("\tNOTE: You may pass environment variable "
@@ -320,8 +323,14 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     /* Do we have a CPU/GPU specification? */
     if (argc > 1)
     {
-        if (strcmp(argv[argc - 1], "gpu") == 0
-            || strcmp(argv[argc - 1], "CL_DEVICE_TYPE_GPU") == 0)
+        if (strcmp(argv[argc - 1], "all") == 0
+            || strcmp(argv[argc - 1], "CL_DEVICE_TYPE_ALL") == 0)
+        {
+            device_type = CL_DEVICE_TYPE_ALL;
+            argc--;
+        }
+        else if (strcmp(argv[argc - 1], "gpu") == 0
+                 || strcmp(argv[argc - 1], "CL_DEVICE_TYPE_GPU") == 0)
         {
             device_type = CL_DEVICE_TYPE_GPU;
             argc--;
@@ -376,6 +385,7 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
 
     switch (device_type)
     {
+        case CL_DEVICE_TYPE_ALL: log_info("Requesting any device "); break;
         case CL_DEVICE_TYPE_GPU: log_info("Requesting GPU device "); break;
         case CL_DEVICE_TYPE_CPU: log_info("Requesting CPU device "); break;
         case CL_DEVICE_TYPE_ACCELERATOR:

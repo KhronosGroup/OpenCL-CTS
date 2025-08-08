@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "harness/mathHelpers.h"
 #include "harness/testHarness.h"
 #include "harness/compat.h"
 #include "harness/ThreadPool.h"
@@ -68,12 +69,6 @@ cl_context gContext = NULL;
 cl_command_queue gQueue = NULL;
 int gStartTestNumber = -1;
 int gEndTestNumber = 0;
-#if defined(__APPLE__)
-int gTimeResults = 1;
-#else
-int gTimeResults = 0;
-#endif
-int gReportAverageTimes = 0;
 void *gIn = NULL;
 void *gRef = NULL;
 void *gAllowZ = NULL;
@@ -102,8 +97,6 @@ MTdata gMTdata;
 const char **argList = NULL;
 int argCount = 0;
 
-
-double SubtractTime(uint64_t endTime, uint64_t startTime);
 
 cl_half_rounding_mode DataInitInfo::halfRoundingMode = CL_HALF_RTE;
 cl_half_rounding_mode ConversionsTest::defaultHalfRoundingMode = CL_HALF_RTE;
@@ -318,7 +311,7 @@ int CalcRefValsPat<InType, OutType, InFP, OutFP>::check_result(void *test,
 {
     const cl_uchar *a = (const cl_uchar *)gAllowZ;
 
-    if (is_half<OutType, OutFP>())
+    if constexpr (is_half<OutType, OutFP>())
     {
         const cl_half *t = (const cl_half *)test;
         const cl_half *c = (const cl_half *)gRef;
@@ -335,7 +328,7 @@ int CalcRefValsPat<InType, OutType, InFP, OutFP>::check_result(void *test,
                 return i + 1;
             }
     }
-    else if (std::is_integral<OutType>::value)
+    else if constexpr (std::is_integral<OutType>::value)
     { // char/uchar/short/ushort/half/int/uint/long/ulong
         const OutType *t = (const OutType *)test;
         const OutType *c = (const OutType *)gRef;
@@ -350,7 +343,7 @@ int CalcRefValsPat<InType, OutType, InFP, OutFP>::check_result(void *test,
                 return i + 1;
             }
     }
-    else if (std::is_same<OutType, cl_float>::value)
+    else if constexpr (std::is_same<OutType, cl_float>::value)
     {
         // cast to integral - from original test
         const cl_uint *t = (const cl_uint *)test;
@@ -904,61 +897,6 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
 
     log_info("done.\n");
 
-    if (gTimeResults)
-    {
-        // Kick off tests for the various vector lengths
-        for (vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize;
-             vectorSize++)
-        {
-            size_t workItemCount = blockCount / vectorSizes[vectorSize];
-            if (vectorSizes[vectorSize] * gTypeSizes[outType] < 4)
-                workItemCount /=
-                    4 / (vectorSizes[vectorSize] * gTypeSizes[outType]);
-
-            double sum = 0.0;
-            double bestTime = INFINITY;
-            cl_uint k;
-            for (k = 0; k < PERF_LOOP_COUNT; k++)
-            {
-                uint64_t startTime = conv_test::GetTime();
-                if ((error = conv_test::RunKernel(
-                         writeInputBufferInfo.calcInfo[vectorSize]->kernel,
-                         gInBuffer, gOutBuffers[vectorSize], workItemCount)))
-                {
-                    gFailCount++;
-                    return error;
-                }
-
-                // Make sure OpenCL is done
-                if ((error = clFinish(gQueue)))
-                {
-                    vlog_error("Error %d at clFinish\n", error);
-                    return error;
-                }
-
-                uint64_t endTime = conv_test::GetTime();
-                double time = SubtractTime(endTime, startTime);
-                sum += time;
-                if (time < bestTime) bestTime = time;
-            }
-
-            if (gReportAverageTimes) bestTime = sum / PERF_LOOP_COUNT;
-            double clocksPerOp = bestTime * (double)gDeviceFrequency
-                * gComputeDevices * gSimdSize * 1e6
-                / (workItemCount * vectorSizes[vectorSize]);
-            if (0 == vectorSize)
-                vlog_perf(clocksPerOp, LOWER_IS_BETTER, "clocks / element",
-                          "implicit convert %s -> %s", gTypeNames[inType],
-                          gTypeNames[outType]);
-            else
-                vlog_perf(clocksPerOp, LOWER_IS_BETTER, "clocks / element",
-                          "convert_%s%s%s%s( %s%s )", gTypeNames[outType],
-                          sizeNames[vectorSize], gSaturationNames[sat],
-                          gRoundingModeNames[round], gTypeNames[inType],
-                          sizeNames[vectorSize]);
-        }
-    }
-
     if (gWimpyMode)
         vlog("\tWimp pass");
     else
@@ -976,33 +914,6 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
 
 #if !defined(__APPLE__)
 void memset_pattern4(void *dest, const void *src_pattern, size_t bytes);
-#endif
-
-#if defined(_MSC_VER)
-/* function is defined in "compat.h" */
-#else
-double SubtractTime(uint64_t endTime, uint64_t startTime)
-{
-    uint64_t diff = endTime - startTime;
-    static double conversion = 0.0;
-
-    if (0.0 == conversion)
-    {
-#if defined(__APPLE__)
-        mach_timebase_info_data_t info = { 0, 0 };
-        kern_return_t err = mach_timebase_info(&info);
-        if (0 == err)
-            conversion = 1e-9 * (double)info.numer / (double)info.denom;
-#else
-        // This function consumes output from GetTime() above, and converts the
-        // time to secionds.
-#warning need accurate ticks to seconds conversion factor here. Times are invalid.
-#endif
-    }
-
-    // strictly speaking we should also be subtracting out timer latency here
-    return conversion * (double)diff;
-}
 #endif
 
 void MapResultValuesComplete(const std::unique_ptr<CalcRefValsBase> &ptr);
@@ -1043,24 +954,6 @@ void MapResultValuesComplete(const std::unique_ptr<CalcRefValsBase> &info)
 
     // e was already released by WriteInputBufferComplete. It should be
     // destroyed automatically soon after we exit.
-}
-
-template <typename T> static bool isnan_fp(const T &v)
-{
-    if (std::is_same<T, cl_half>::value)
-    {
-        uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-        uint16_t h_mant = ((cl_half)v) & 0x3FF;
-        return (h_exp == 0x1F && h_mant != 0);
-    }
-    else
-    {
-#if !defined(_WIN32)
-        return std::isnan(v);
-#else
-        return _isnan(v);
-#endif
-    }
 }
 
 template <typename InType>
@@ -1350,20 +1243,6 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p)
     FixNanConversions(outType, inType, d, count, s);
 
     return CL_SUCCESS;
-}
-
-uint64_t GetTime(void)
-{
-#if defined(__APPLE__)
-    return mach_absolute_time();
-#elif defined(_MSC_VER)
-    return ReadTime();
-#else
-    // mach_absolute_time is a high precision timer with precision < 1
-    // microsecond.
-#warning need accurate clock here.  Times are invalid.
-    return 0;
-#endif
 }
 
 // Note: not called reentrantly

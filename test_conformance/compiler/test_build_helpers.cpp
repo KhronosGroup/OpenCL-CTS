@@ -791,7 +791,7 @@ REGISTER_TEST(get_program_info_mult_devices)
     if (program == nullptr)
     {
         log_error("ERROR: Unable to create reference program!\n");
-        return -1;
+        return TEST_FAIL;
     }
 
     err = clGetProgramInfo(program, CL_PROGRAM_NUM_DEVICES, sizeof(num_devices),
@@ -820,7 +820,7 @@ REGISTER_TEST(get_program_info_mult_devices)
             }
         }
         test_error_fail(
-            !found, "Unexpected result returned by CL_CONTEXT_DEVICES query");
+            !found, "Unexpected result returned by CL_PROGRAM_DEVICES query");
     }
 
     return TEST_PASS;

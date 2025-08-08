@@ -212,10 +212,7 @@ struct IterativeArgUpdateDispatch : BasicMutableCommandBufferTest
 
 }
 
-int test_mutable_command_iterative_arg_update(cl_device_id device,
-                                              cl_context context,
-                                              cl_command_queue queue,
-                                              int num_elements)
+REGISTER_TEST(mutable_command_iterative_arg_update)
 {
     return MakeAndRunTest<IterativeArgUpdateDispatch>(device, context, queue,
                                                       num_elements);

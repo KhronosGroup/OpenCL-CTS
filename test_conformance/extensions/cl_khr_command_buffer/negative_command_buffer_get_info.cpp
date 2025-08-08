@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 #include <vector>
 
 //--------------------------------------------------------------------------
@@ -259,66 +258,47 @@ struct GetCommandBufferInfo : public BasicCommandBufferTest
 };
 };
 
-int test_negative_get_command_buffer_info_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_get_command_buffer_info_invalid_command_buffer)
 {
     return MakeAndRunTest<GetCommandBufferInfoInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_get_command_buffer_info_not_supported_param_name(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_get_command_buffer_info_not_supported_param_name)
 {
     return MakeAndRunTest<
         GetCommandBufferInfo<CombufInfoTestMode::CITM_PARAM_NAME>>(
         device, context, queue, num_elements);
 }
 
-int test_negative_get_command_buffer_info_queues(cl_device_id device,
-                                                 cl_context context,
-                                                 cl_command_queue queue,
-                                                 int num_elements)
+REGISTER_TEST(negative_get_command_buffer_info_queues)
 {
     return MakeAndRunTest<
         GetCommandBufferInfo<CombufInfoTestMode::CITM_QUEUES>>(
         device, context, queue, num_elements);
 }
 
-int test_negative_get_command_buffer_info_ref_count(cl_device_id device,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements)
+REGISTER_TEST(negative_get_command_buffer_info_ref_count)
 {
     return MakeAndRunTest<
         GetCommandBufferInfo<CombufInfoTestMode::CITM_REF_COUNT>>(
         device, context, queue, num_elements);
 }
 
-int test_negative_get_command_buffer_info_state(cl_device_id device,
-                                                cl_context context,
-                                                cl_command_queue queue,
-                                                int num_elements)
+REGISTER_TEST(negative_get_command_buffer_info_state)
 {
     return MakeAndRunTest<GetCommandBufferInfo<CombufInfoTestMode::CITM_STATE>>(
         device, context, queue, num_elements);
 }
 
-int test_negative_get_command_buffer_info_prop_array(cl_device_id device,
-                                                     cl_context context,
-                                                     cl_command_queue queue,
-                                                     int num_elements)
+REGISTER_TEST(negative_get_command_buffer_info_prop_array)
 {
     return MakeAndRunTest<
         GetCommandBufferInfo<CombufInfoTestMode::CITM_PROP_ARRAY>>(
         device, context, queue, num_elements);
 }
 
-int test_negative_get_command_buffer_info_context(cl_device_id device,
-                                                  cl_context context,
-                                                  cl_command_queue queue,
-                                                  int num_elements)
+REGISTER_TEST(negative_get_command_buffer_info_context)
 {
     return MakeAndRunTest<
         GetCommandBufferInfo<CombufInfoTestMode::CITM_CONTEXT>>(

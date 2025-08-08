@@ -84,6 +84,58 @@ protected:
     clCommandBufferWrapper command_buffer;
 };
 
+// Test that CL_COMMAND_BUFFER_FLAGS_KHR bitfield is parsed correctly when
+// multiple flags are set.
+struct MultiFlagCreationTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+};
+
+// Test enqueuing a command-buffer containing a single NDRange command once
+struct BasicEnqueueTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+};
+
+// Test enqueuing a command-buffer containing multiple command, including
+// operations other than NDRange kernel execution.
+struct MixedCommandsTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+};
+
+// Test flushing the command-queue between command-buffer enqueues
+struct ExplicitFlushTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+    bool Skip() override;
+};
+
+// Test enqueueing a command-buffer twice separated by another enqueue operation
+struct InterleavedEnqueueTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+    bool Skip() override;
+};
+
+// Test releasing a command-buffer after it has been submitted for execution,
+// but before the user has waited on completion of the enqueue.
+struct EnqueueAndReleaseTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+};
 
 template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,

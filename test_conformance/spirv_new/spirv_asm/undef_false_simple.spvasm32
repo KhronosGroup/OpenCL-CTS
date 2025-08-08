@@ -28,7 +28,7 @@
          %13 = OpLabel
          %14 = OpUndef %bool
          %15 = OpSelect %uint %14 %uint_1 %uint_0
-         %16 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %16 = OpLoad %v3uint %gl_GlobalInvocationID
          %17 = OpCompositeExtract %uint %16 0
          %18 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %in %17
                OpStore %18 %15
