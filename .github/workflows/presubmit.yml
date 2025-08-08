@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         mainmatrix: [true]
-        os: [ubuntu-22.04, macos-latest, windows-latest]
+        os: [ubuntu-22.04, macos-latest, windows-latest, windows-11-arm]
         include:
           - os: ubuntu-22.04
             mainmatrix: true
