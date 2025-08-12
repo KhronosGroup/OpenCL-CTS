@@ -1343,20 +1343,46 @@ public:
 
         return true;
     }
-    bool VerifyExpected(const HostDataType &expected,
-                        const HostAtomicType *const testValue,
-                        cl_uint whichDestValue) override
+    bool IsTestNotAsExpected(const HostDataType &expected,
+                             const std::vector<HostAtomicType> &testValues,
+                             cl_uint whichDestValue) override
     {
         if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
         {
-            if (whichDestValue == 0 && testValue != nullptr)
+            if (whichDestValue == 0)
                 return std::abs((HOST_ATOMIC_DOUBLE)expected
-                                - testValue[whichDestValue])
+                                - testValues[whichDestValue])
                     > max_error;
         }
         return CBasicTestMemOrderScope<
-            HostAtomicType, HostDataType>::VerifyExpected(expected, testValue,
-                                                          whichDestValue);
+            HostAtomicType, HostDataType>::IsTestNotAsExpected(expected,
+                                                               testValues,
+                                                               whichDestValue);
+    }
+    bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
+                    HostAtomicType *finalValues) override
+    {
+        if (std::is_same<HostDataType, HOST_ATOMIC_DOUBLE>::value)
+        {
+            correct = true;
+            for (cl_uint i = 1; i < threadCount; i++)
+            {
+                if (refValues[i] != StartValue())
+                {
+                    std::stringstream sstr;
+                    sstr << "Thread " << i << " found " << refValues[i]
+                         << " mismatch(es)\n";
+                    log_error(sstr.str().c_str());
+                    correct = false;
+                }
+            }
+            return !correct;
+        }
+        return CBasicTestMemOrderScope<HostAtomicType,
+                                       HostDataType>::VerifyRefs(correct,
+                                                                 threadCount,
+                                                                 refValues,
+                                                                 finalValues);
     }
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
