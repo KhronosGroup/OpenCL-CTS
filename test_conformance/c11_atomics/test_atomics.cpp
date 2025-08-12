@@ -331,6 +331,7 @@ public:
                                   HostDataType>::MemoryOrderScopeStr;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryScopeStr;
     using CBasicTest<HostAtomicType, HostDataType>::CheckCapabilities;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
     CBasicTestLoad(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
                                                                 useSVM)
@@ -351,6 +352,21 @@ public:
         if (CheckCapabilities(MemoryScope(), MemoryOrder())
             == TEST_SKIPPED_ITSELF)
             return 0; // skip test - not applicable
+
+        if (CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DataType()
+                ._type
+            == TYPE_ATOMIC_HALF)
+        {
+            if (LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_LOAD_STORE_EXT)
+                    == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_LOAD_STORE_EXT)
+                    == 0)
+                return 0;
+        }
 
         return CBasicTestMemOrderScope<
             HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context,
@@ -385,7 +401,13 @@ public:
                                HostDataType *startRefValues,
                                cl_uint whichDestValue)
     {
-        expected = (HostDataType)whichDestValue;
+        if (CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DataType()
+                ._type
+            != TYPE_ATOMIC_HALF)
+            expected = (HostDataType)whichDestValue;
+        else
+            expected = cl_half_from_float(static_cast<float>(whichDestValue),
+                                          gHalfRoundingMode);
         return true;
     }
     virtual bool VerifyRefs(bool &correct, cl_uint threadCount,
@@ -395,11 +417,25 @@ public:
         correct = true;
         for (cl_uint i = 0; i < threadCount; i++)
         {
-            if (refValues[i] != (HostDataType)i)
+            if constexpr (std::is_same<HostDataType, cl_half>::value)
             {
-                log_error("Invalid value for thread %u\n", (cl_uint)i);
-                correct = false;
-                return true;
+                HostDataType test = cl_half_from_float(static_cast<float>(i),
+                                                       gHalfRoundingMode);
+                if (refValues[i] != test)
+                {
+                    log_error("Invalid value for thread %u\n", (cl_uint)i);
+                    correct = false;
+                    return true;
+                }
+            }
+            else
+            {
+                if (refValues[i] != (HostDataType)i)
+                {
+                    log_error("Invalid value for thread %u\n", (cl_uint)i);
+                    correct = false;
+                    return true;
+                }
             }
         }
         return true;
@@ -434,6 +470,15 @@ static int test_atomic_load_generic(cl_device_id deviceID, cl_context context,
         TYPE_ATOMIC_DOUBLE, useSVM);
     EXECUTE_TEST(error,
                  test_double.Execute(deviceID, context, queue, num_elements));
+
+    if (gFloatAtomicsSupported)
+    {
+        CBasicTestLoad<HOST_ATOMIC_HALF, HOST_HALF> test_half(TYPE_ATOMIC_HALF,
+                                                              useSVM);
+        EXECUTE_TEST(error,
+                     test_half.Execute(deviceID, context, queue, num_elements));
+    }
+
     if (AtomicTypeInfo(TYPE_ATOMIC_SIZE_T).Size(deviceID) == 4)
     {
         CBasicTestLoad<HOST_ATOMIC_INTPTR_T32, HOST_INTPTR_T32> test_intptr_t(
@@ -503,11 +548,36 @@ public:
                                   HostDataType>::MemoryOrderScopeStr;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::Iterations;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::IterationsStr;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
     CBasicTestExchange(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
                                                                 useSVM)
     {
-        StartValue(123456);
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+            StartValue(cl_half_from_float(static_cast<float>(1234),
+                                          gHalfRoundingMode));
+        else
+            StartValue(123456);
+    }
+    virtual int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
+                                  cl_command_queue queue)
+    {
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        {
+            if (LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_LOAD_STORE_EXT)
+                    == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_LOAD_STORE_EXT)
+                    == 0)
+                return 0;
+        }
+
+        return CBasicTestMemOrderScope<
+            HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context,
+                                                             queue);
     }
     virtual std::string ProgramCore()
     {
@@ -549,17 +619,35 @@ public:
         /* Any repeated value is treated as an error */
         std::vector<bool> tidFound(threadCount);
         bool startValueFound = false;
-        cl_uint i;
+        cl_uint startVal = StartValue();
 
-        for (i = 0; i <= threadCount; i++)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+            startVal = static_cast<cl_uint>(
+                cl_half_to_float(static_cast<cl_half>(StartValue())));
+
+        for (cl_uint i = 0; i <= threadCount; i++)
         {
-            cl_uint value;
+            cl_uint value = 0;
             if (i == threadCount)
-                value = (cl_uint)finalValues[0]; // additional value from atomic
+            {
+                if constexpr (!std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+                    value =
+                        (cl_uint)finalValues[0]; // additional value from atomic
                                                  // variable (last written)
+                else
+                    value =
+                        cl_half_to_float(static_cast<cl_half>(finalValues[0]));
+            }
             else
-                value = (cl_uint)refValues[i];
-            if (value == (cl_uint)StartValue())
+            {
+                if constexpr (!std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+                    value = (cl_uint)refValues[i];
+                else
+                    value =
+                        cl_half_to_float(static_cast<cl_half>(refValues[i]));
+            }
+
+            if (value == startVal)
             {
                 // Special initial value
                 if (startValueFound)
@@ -624,6 +712,13 @@ static int test_atomic_exchange_generic(cl_device_id deviceID,
         TYPE_ATOMIC_DOUBLE, useSVM);
     EXECUTE_TEST(error,
                  test_double.Execute(deviceID, context, queue, num_elements));
+    if (gFloatAtomicsSupported)
+    {
+        CBasicTestExchange<HOST_ATOMIC_HALF, HOST_HALF> test_half(
+            TYPE_ATOMIC_HALF, useSVM);
+        EXECUTE_TEST(error,
+                     test_half.Execute(deviceID, context, queue, num_elements));
+    }
     if (AtomicTypeInfo(TYPE_ATOMIC_SIZE_T).Size(deviceID) == 4)
     {
         CBasicTestExchange<HOST_ATOMIC_INTPTR_T32, HOST_INTPTR_T32>
