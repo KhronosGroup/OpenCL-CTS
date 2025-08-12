@@ -890,7 +890,14 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
         header += std::string("__global volatile ") + aTypeName + " destMemory["
             + ss.str() + "] = {\n";
         ss.str("");
-        ss << _startValue;
+
+        if (CBasicTest<HostAtomicType, HostDataType>::DataType()._type
+            != TYPE_ATOMIC_HALF)
+            ss << _startValue;
+        else
+            ss << static_cast<HostDataType>(
+                cl_half_to_float(static_cast<cl_half>(_startValue)));
+
         for (cl_uint i = 0; i < maxNumDestItems; i++)
         {
             if (aTypeName == "atomic_flag")

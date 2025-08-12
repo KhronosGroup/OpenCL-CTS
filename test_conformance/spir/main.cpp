@@ -6005,7 +6005,7 @@ public:
         clContextWrapper context;
         clCommandQueueWrapper queue;
         size_t num_modules = m_moduleNames.size();
-        std::vector<cl_program> programs(num_modules);
+        std::vector<clProgramWrapper> programs(num_modules);
         create_context_and_queue(dev, &context, &queue);
 
         for (size_t i=0; i<num_modules; i++)
@@ -6911,12 +6911,13 @@ int main (int argc, const char* argv[])
         cl_device_id device = get_platform_device(device_type, choosen_device_index, choosen_platform_index);
         printDeviceHeader(device);
 
+        REQUIRE_EXTENSION("cl_khr_spir");
+
         std::vector<Version> versions;
         get_spir_version(device, versions);
 
-        if (!is_extension_available(device, "cl_khr_spir")
-            || (std::find(versions.begin(), versions.end(), Version{ 1, 2 })
-                == versions.end()))
+        if (std::find(versions.begin(), versions.end(), Version{ 1, 2 })
+            == versions.end())
         {
             log_info("Spir extension version 1.2 is not supported by the device\n");
             return 0;
