@@ -272,7 +272,7 @@ int run_test_with_two_queue(
                 err |= clSetKernelArg(kernel_cq, 1, sizeof(cl_mem),
                                       (void *)&(buffers[0]));
 
-                for (int i = 0; i < vkBufferList.size() - 1; i++)
+                for (size_t i = 0; i < vkBufferList.size() - 1; i++)
                 {
                     err |=
                         clSetKernelArg(update_buffer_kernel, i + 1,
@@ -352,7 +352,7 @@ int run_test_with_two_queue(
                                    "Error: Failed read output, error\n");
 
             int calc_max_iter;
-            for (int i = 0; i < vkBufferList.size(); i++)
+            for (size_t i = 0; i < vkBufferList.size(); i++)
             {
                 if (i == 0)
                     calc_max_iter = (maxIter * 3);
@@ -602,7 +602,7 @@ int run_test_with_one_queue(
 
                 err = clSetKernelArg(update_buffer_kernel, 0, sizeof(uint32_t),
                                      (void *)&bufferSize);
-                for (int i = 0; i < vkBufferList.size(); i++)
+                for (size_t i = 0; i < vkBufferList.size(); i++)
                 {
                     err |=
                         clSetKernelArg(update_buffer_kernel, i + 1,
@@ -662,7 +662,7 @@ int run_test_with_one_queue(
                                    "Error: clEnqueueWriteBuffer \n");
 
             int calc_max_iter = (maxIter * 2);
-            for (int i = 0; i < vkBufferList.size(); i++)
+            for (size_t i = 0; i < vkBufferList.size(); i++)
             {
                 err = clSetKernelArg(verify_kernel, 0, sizeof(cl_mem),
                                      (void *)&(buffers[i]));
@@ -836,7 +836,7 @@ int run_test_with_multi_import_same_ctx(
                     vkExternalMemoryHandleType));
 
                 std::vector<clExternalMemory *> pExternalMemory;
-                for (size_t cl_bIdx = 0; cl_bIdx < numImports; cl_bIdx++)
+                for (int cl_bIdx = 0; cl_bIdx < numImports; cl_bIdx++)
                 {
                     pExternalMemory.push_back(
                         new clExternalMemory(vkBufferListDeviceMemory[bIdx],
@@ -857,7 +857,7 @@ int run_test_with_multi_import_same_ctx(
             {
                 vkBufferListDeviceMemory[bIdx]->bindBuffer(vkBufferList[bIdx],
                                                            0);
-                for (size_t cl_bIdx = 0; cl_bIdx < numImports; cl_bIdx++)
+                for (int cl_bIdx = 0; cl_bIdx < numImports; cl_bIdx++)
                 {
                     buffers[bIdx][cl_bIdx] = externalMemory[bIdx][cl_bIdx]
                                                  ->getExternalMemoryBuffer();
@@ -916,7 +916,7 @@ int run_test_with_multi_import_same_ctx(
                 {
                     err = clSetKernelArg(update_buffer_kernel, 0,
                                          sizeof(uint32_t), (void *)&bufferSize);
-                    for (int i = 0; i < numBuffers; i++)
+                    for (uint32_t i = 0; i < numBuffers; i++)
                     {
                         err |= clSetKernelArg(
                             update_buffer_kernel, i + 1, sizeof(cl_mem),
@@ -939,7 +939,7 @@ int run_test_with_multi_import_same_ctx(
                                            "Error: Failed to launch "
                                            "update_buffer_kernel, error\n ");
 
-                    for (int i = 0; i < numBuffers; i++)
+                    for (uint32_t i = 0; i < numBuffers; i++)
                     {
                         err = clEnqueueReleaseExternalMemObjectsKHRptr(
                             cmd_queue1, 1, &buffers[i][launchIter], 0, nullptr,
@@ -979,7 +979,7 @@ int run_test_with_multi_import_same_ctx(
 
             calc_max_iter = maxIter * (numImports + 1);
 
-            for (int i = 0; i < vkBufferList.size(); i++)
+            for (size_t i = 0; i < vkBufferList.size(); i++)
             {
                 err = clSetKernelArg(verify_kernel, 0, sizeof(cl_mem),
                                      (void *)&(buffers[i][0]));
@@ -1014,7 +1014,7 @@ int run_test_with_multi_import_same_ctx(
             }
             for (size_t i = 0; i < vkBufferList.size(); i++)
             {
-                for (size_t j = 0; j < numImports; j++)
+                for (int j = 0; j < numImports; j++)
                 {
                     delete externalMemory[i][j];
                 }
@@ -1184,7 +1184,7 @@ int run_test_with_multi_import_diff_ctx(
                     vkExternalMemoryHandleType));
                 std::vector<clExternalMemory *> pExternalMemory1;
                 std::vector<clExternalMemory *> pExternalMemory2;
-                for (size_t cl_bIdx = 0; cl_bIdx < numImports; cl_bIdx++)
+                for (int cl_bIdx = 0; cl_bIdx < numImports; cl_bIdx++)
                 {
                     pExternalMemory1.push_back(
                         new clExternalMemory(vkBufferListDeviceMemory[bIdx],
@@ -1209,7 +1209,7 @@ int run_test_with_multi_import_diff_ctx(
             {
                 vkBufferListDeviceMemory[bIdx]->bindBuffer(vkBufferList[bIdx],
                                                            0);
-                for (size_t cl_bIdx = 0; cl_bIdx < numImports; cl_bIdx++)
+                for (int cl_bIdx = 0; cl_bIdx < numImports; cl_bIdx++)
                 {
                     buffers1[bIdx][cl_bIdx] = externalMemory1[bIdx][cl_bIdx]
                                                   ->getExternalMemoryBuffer();
@@ -1282,7 +1282,7 @@ int run_test_with_multi_import_diff_ctx(
                     test_error_and_cleanup(err, CLEANUP,
                                            "Failed to set kernel arg");
 
-                    for (int i = 0; i < numBuffers; i++)
+                    for (uint32_t i = 0; i < numBuffers; i++)
                     {
                         err = clSetKernelArg(
                             update_buffer_kernel1[launchIter], i + 1,
@@ -1307,7 +1307,7 @@ int run_test_with_multi_import_diff_ctx(
                     test_error_and_cleanup(err, CLEANUP,
                                            "Error: Failed to launch "
                                            "update_buffer_kernel, error\n");
-                    for (int i = 0; i < numBuffers; i++)
+                    for (uint32_t i = 0; i < numBuffers; i++)
                     {
                         err = clEnqueueReleaseExternalMemObjectsKHRptr(
                             cmd_queue1, 1, &buffers1[i][launchIter], 0, nullptr,
@@ -1369,7 +1369,7 @@ int run_test_with_multi_import_diff_ctx(
                     test_error_and_cleanup(err, CLEANUP,
                                            "Failed to set kernel arg");
 
-                    for (int i = 0; i < numBuffers; i++)
+                    for (uint32_t i = 0; i < numBuffers; i++)
                     {
                         err = clSetKernelArg(
                             update_buffer_kernel2[launchIter], i + 1,
@@ -1394,7 +1394,7 @@ int run_test_with_multi_import_diff_ctx(
                     test_error_and_cleanup(err, CLEANUP,
                                            "Error: Failed to launch "
                                            "update_buffer_kernel, error\n ");
-                    for (int i = 0; i < numBuffers; i++)
+                    for (uint32_t i = 0; i < numBuffers; i++)
                     {
                         err = clEnqueueReleaseExternalMemObjectsKHRptr(
                             cmd_queue2, 1, &buffers2[i][launchIter], 0, nullptr,
@@ -1442,7 +1442,7 @@ int run_test_with_multi_import_diff_ctx(
                                    "Error: Failed read output, error  \n");
 
             calc_max_iter = maxIter * 2 * (numBuffers + 1);
-            for (int i = 0; i < numBuffers; i++)
+            for (uint32_t i = 0; i < numBuffers; i++)
             {
                 err = clSetKernelArg(verify_kernel, 0, sizeof(cl_mem),
                                      (void *)&(buffers1[i][0]));
@@ -1477,7 +1477,7 @@ int run_test_with_multi_import_diff_ctx(
                 }
             }
             *error_3 = 0;
-            for (int i = 0; i < vkBufferList.size(); i++)
+            for (size_t i = 0; i < vkBufferList.size(); i++)
             {
                 err = clSetKernelArg(verify_kernel2, 0, sizeof(cl_mem),
                                      (void *)&(buffers2[i][0]));
@@ -1513,7 +1513,7 @@ int run_test_with_multi_import_diff_ctx(
             }
             for (size_t i = 0; i < vkBufferList.size(); i++)
             {
-                for (size_t j = 0; j < numImports; j++)
+                for (int j = 0; j < numImports; j++)
                 {
                     delete externalMemory1[i][j];
                     delete externalMemory2[i][j];
