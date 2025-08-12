@@ -38,7 +38,7 @@ bool multiImport;
 bool multiCtx;
 bool debug_trace = false;
 bool useSingleImageKernel = false;
-bool useDeviceLocal = false;
+bool useDeviceLocal = true;
 bool useValidationLayers = false;
 bool disableNTHandleType = false;
 bool enableOffset = false;
@@ -50,7 +50,7 @@ static void printUsage(const char *execName)
 
     log_info("Usage: %s [test_names] [options]\n", execName);
     log_info("Test names:\n");
-    for (int i = 0; i < test_registry::getInstance().num_tests(); i++)
+    for (unsigned int i = 0; i < test_registry::getInstance().num_tests(); i++)
     {
         log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
     }
@@ -59,7 +59,7 @@ static void printUsage(const char *execName)
     log_info("\t--debug_trace - Enables additional debug info logging\n");
     log_info("\t--useSingleImageKernel - Use the same image "
              "(image_single_queue and image_multiple_queue tests)\n");
-    log_info("\t--useDeviceLocal - Skip tests that use images with local "
+    log_info("\t--disableDeviceLocal - Skip tests that use images with local "
              "memory type\n");
     log_info("\t--disableNTHandleType - Skip tests that use win32 external "
              "memory handle\n");
@@ -101,9 +101,9 @@ void parseParams(int &argc, const char *argv[])
                 useSingleImageKernel = true;
                 argsRemoveNum = 1;
             }
-            if (!strcmp(argv[i], "--useDeviceLocal"))
+            if (!strcmp(argv[i], "--disableDeviceLocal"))
             {
-                useDeviceLocal = true;
+                useDeviceLocal = false;
                 argsRemoveNum = 1;
             }
             if (!strcmp(argv[i], "--useValidationLayers"))

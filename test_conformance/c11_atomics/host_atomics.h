@@ -180,7 +180,10 @@ CorrespondingType host_atomic_load(volatile AtomicType *a,
                                    TExplicitMemoryOrderType order)
 {
 #if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-  return InterlockedExchangeAdd(a, 0);
+    if (sizeof(CorrespondingType) == 2)
+        auto prev = InterlockedOr16(reinterpret_cast<volatile SHORT *>(a), 0);
+    else
+        return InterlockedExchangeAdd(reinterpret_cast<volatile LONG *>(a), 0);
 #elif defined(__GNUC__)
   return __sync_add_and_fetch(a, 0);
 #else
