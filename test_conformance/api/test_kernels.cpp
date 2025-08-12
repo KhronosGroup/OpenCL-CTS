@@ -709,18 +709,18 @@ REGISTER_TEST(negative_invalid_arg_index)
 {
     cl_int error = CL_SUCCESS;
     clProgramWrapper program;
-    clKernelWrapper sampler_arg_kernel;
+    clKernelWrapper kernel;
 
     // Setup the test
     error = create_single_kernel_helper(context, &program, nullptr, 1,
                                         sample_single_test_kernel, nullptr);
     test_error(error, "Unable to build test program");
 
-    sampler_arg_kernel = clCreateKernel(program, "sample_test", &error);
+    kernel = clCreateKernel(program, "sample_test", &error);
     test_error(error, "Unable to get sample_test kernel for built program");
 
-    // Run the test - CL_INVALID_ARG_INDEX
-    error = clSetKernelArg(sampler_arg_kernel, 2, sizeof(cl_sampler), nullptr);
+    // Run the test - 2 index is out or range - expected CL_INVALID_ARG_INDEX
+    error = clSetKernelArg(kernel, 2, sizeof(cl_mem), nullptr);
     test_failure_error_ret(
         error, CL_INVALID_ARG_INDEX,
         "clSetKernelArg is supposed to fail with CL_INVALID_ARG_INDEX when "
