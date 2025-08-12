@@ -1226,7 +1226,7 @@ int run_test_with_multi_import_diff_ctx(
             vkCommandBuffer.dispatch(512, 1, 1);
             vkCommandBuffer.end();
 
-            for (uint32_t i = 0; i < numImports; i++)
+            for (int i = 0; i < numImports; i++)
             {
                 update_buffer_kernel1[i] = (numBuffers == 1)
                     ? kernel1[0]
