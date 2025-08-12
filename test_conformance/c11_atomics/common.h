@@ -174,6 +174,13 @@ public:
     {
         return false;
     }
+    virtual bool
+    IsTestNotAsExpected(const HostDataType &expected,
+                        const std::vector<HostAtomicType> &testValues,
+                        cl_uint whichDestValue)
+    {
+        return expected != testValues[whichDestValue];
+    }
     virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                               MTdata d)
     {
@@ -1449,7 +1456,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (expected != destItems[i])
+        if (IsTestNotAsExpected(expected, destItems, i))
         {
             std::stringstream logLine;
             logLine << "ERROR: Result " << i
