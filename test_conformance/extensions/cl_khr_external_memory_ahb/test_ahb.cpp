@@ -145,7 +145,7 @@ REGISTER_TEST(test_images)
                 }
 
                 const cl_mem_properties props[] = {
-                    CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+                    CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
                     reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
                 };
 
@@ -300,7 +300,7 @@ REGISTER_TEST(test_images_read)
                 }
 
                 cl_mem_properties props[] = {
-                    CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+                    CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
                     reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
                 };
 
@@ -602,7 +602,7 @@ REGISTER_TEST(test_enqueue_read_image)
                 }
 
                 const cl_mem_properties props[] = {
-                    CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+                    CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
                     reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
                 };
 
@@ -786,7 +786,7 @@ REGISTER_TEST(test_enqueue_copy_image)
                 }
 
                 cl_mem_properties props[] = {
-                    CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+                    CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
                     reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
                 };
 
@@ -1095,7 +1095,7 @@ REGISTER_TEST(test_enqueue_copy_image_to_buffer)
                 }
 
                 cl_mem_properties props[] = {
-                    CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+                    CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
                     reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
                 };
 
@@ -1274,7 +1274,7 @@ REGISTER_TEST(test_enqueue_copy_buffer_to_image)
                 test_error(err, "Failed to create CL buffer");
 
                 cl_mem_properties props[] = {
-                    CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+                    CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
                     reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
                 };
 
@@ -1452,7 +1452,7 @@ REGISTER_TEST(test_enqueue_write_image)
 
 
                 cl_mem_properties props[] = {
-                    CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+                    CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
                     reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
                 };
 
@@ -1649,7 +1649,7 @@ REGISTER_TEST(test_enqueue_fill_image)
                                   "AHB has unexpected height");
 
                 cl_mem_properties props[] = {
-                    CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+                    CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
                     reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
                 };
 
@@ -1894,7 +1894,7 @@ REGISTER_TEST(test_blob)
         }
 
         cl_mem_properties props[] = {
-            CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+            CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
             reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
         };
 
