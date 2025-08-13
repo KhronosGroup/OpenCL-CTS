@@ -28,8 +28,8 @@ public:
     Version(): m_major(0), m_minor(0) {}
 
     Version(cl_uint major, cl_uint minor): m_major(major), m_minor(minor) {}
-    int version_major() const { return m_major; }
-    int version_minor() const { return m_minor; }
+    int get_major() const { return m_major; }
+    int get_minor() const { return m_minor; }
     bool operator>(const Version &rhs) const
     {
         return to_uint() > rhs.to_uint();
