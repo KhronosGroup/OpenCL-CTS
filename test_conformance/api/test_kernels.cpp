@@ -690,7 +690,7 @@ REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
     test_error(error,
                "Unable to get sample_image_test kernel for built program");
 
-    std::vector<cl_uchar> mem_data(size_dim * size_dim);
+    std::vector<cl_uchar> mem_data(size_dim * size_dim * 4);
     buffer = clCreateBuffer(context, CL_MEM_IMMUTABLE_EXT | CL_MEM_USE_HOST_PTR,
                             sizeof(cl_int) * size_dim, mem_data.data(), &error);
     test_error(error, "clCreateBuffer failed");
