@@ -121,8 +121,8 @@ static cl_int get_device_semaphore_handle_types(
 // Confirm the semaphores can be successfully queried
 REGISTER_TEST_VERSION(external_semaphores_queries, Version(1, 2))
 {
-    REQUIRE_EXTENSION("cl_khr_semaphore");
-    REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_EXTENSION(CL_KHR_SEMAPHORE);
+    REQUIRE_EXTENSION(CL_KHR_EXTERNAL_SEMAPHORE);
 
     if (init_vulkan_device(1, &device))
     {
@@ -199,7 +199,7 @@ REGISTER_TEST_VERSION(external_semaphores_queries, Version(1, 2))
 
 REGISTER_TEST_VERSION(external_semaphores_cross_context, Version(1, 2))
 {
-    REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_EXTENSION(CL_KHR_EXTERNAL_SEMAPHORE);
 
     GET_PFN(device, clEnqueueSignalSemaphoresKHR);
     GET_PFN(device, clEnqueueWaitSemaphoresKHR);
@@ -322,7 +322,7 @@ REGISTER_TEST_VERSION(external_semaphores_cross_context, Version(1, 2))
 // Confirm that a signal followed by a wait will complete successfully
 REGISTER_TEST_VERSION(external_semaphores_simple_1, Version(1, 2))
 {
-    REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_EXTENSION(CL_KHR_EXTERNAL_SEMAPHORE);
 
     if (init_vulkan_device(1, &device))
     {
@@ -391,7 +391,7 @@ REGISTER_TEST_VERSION(external_semaphores_simple_1, Version(1, 2))
 // Confirm that a semaphore can be reused multiple times
 REGISTER_TEST_VERSION(external_semaphores_reuse, Version(1, 2))
 {
-    REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_EXTENSION(CL_KHR_EXTERNAL_SEMAPHORE);
 
     if (init_vulkan_device(1, &device))
     {
@@ -509,7 +509,7 @@ static int external_semaphore_cross_queue_helper(cl_device_id device,
                                                  cl_command_queue queue_1,
                                                  cl_command_queue queue_2)
 {
-    REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_EXTENSION(CL_KHR_EXTERNAL_SEMAPHORE);
 
     if (init_vulkan_device(1, &device))
     {
@@ -612,7 +612,7 @@ REGISTER_TEST_VERSION(external_semaphores_cross_queues_io, Version(1, 2))
 
 REGISTER_TEST_VERSION(external_semaphores_cross_queues_io2, Version(1, 2))
 {
-    REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_EXTENSION(CL_KHR_EXTERNAL_SEMAPHORE);
 
     if (init_vulkan_device(1, &device))
     {
@@ -714,7 +714,7 @@ REGISTER_TEST_VERSION(external_semaphores_cross_queues_io2, Version(1, 2))
 // Confirm that we can signal multiple semaphores with one command
 REGISTER_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2))
 {
-    REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_EXTENSION(CL_KHR_EXTERNAL_SEMAPHORE);
 
     if (init_vulkan_device(1, &device))
     {
@@ -796,7 +796,7 @@ REGISTER_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2))
 // Confirm that we can wait for multiple semaphores with one command
 REGISTER_TEST_VERSION(external_semaphores_multi_wait, Version(1, 2))
 {
-    REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_EXTENSION(CL_KHR_EXTERNAL_SEMAPHORE);
 
     if (init_vulkan_device(1, &device))
     {

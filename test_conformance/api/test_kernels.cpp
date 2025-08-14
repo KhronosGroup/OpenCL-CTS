@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -667,7 +667,7 @@ REGISTER_TEST(kernel_global_constant)
 
 REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
 {
-    REQUIRE_EXTENSION("cl_ext_immutable_memory_objects");
+    REQUIRE_EXTENSION(CL_EXT_IMMUTABLE_MEMORY_OBJECTS);
 
     cl_int error = CL_SUCCESS;
     clProgramWrapper program;

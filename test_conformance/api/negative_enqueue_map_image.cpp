@@ -29,7 +29,7 @@ REGISTER_TEST(negative_enqueue_map_image)
 {
     constexpr size_t image_dim = 32;
 
-    REQUIRE_EXTENSION("cl_ext_immutable_memory_objects");
+    REQUIRE_EXTENSION(CL_EXT_IMMUTABLE_MEMORY_OBJECTS);
 
     static constexpr cl_mem_flags mem_flags[]{
         CL_MEM_IMMUTABLE_EXT | CL_MEM_USE_HOST_PTR,
