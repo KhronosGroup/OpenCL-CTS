@@ -16,7 +16,8 @@
 
 #include "semaphore_dx_fence_base.h"
 
-// Confirm that a wait followed by a signal in DirectX 12 using an exported semaphore will complete successfully
+// Confirm that a wait followed by a signal in DirectX 12 using an exported
+// semaphore will complete successfully
 REGISTER_TEST(test_external_semaphores_export_dx_signal)
 {
     int errcode = CL_SUCCESS;
@@ -34,14 +35,20 @@ REGISTER_TEST(test_external_semaphores_export_dx_signal)
     GET_PFN(device, clGetSemaphoreHandleForTypeKHR);
 
     size_t export_types_size = 0;
-    errcode = clGetDeviceInfo(device, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR, 0, nullptr, &export_types_size);
+    errcode =
+        clGetDeviceInfo(device, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR, 0,
+                        nullptr, &export_types_size);
     test_error(errcode, "Could not query export semaphore handle types");
-    std::vector<cl_external_semaphore_handle_type_khr> export_types(export_types_size / sizeof(cl_external_semaphore_handle_type_khr));
-    errcode = clGetDeviceInfo(device, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
-        export_types_size, export_types.data(), nullptr);
+    std::vector<cl_external_semaphore_handle_type_khr> export_types(
+        export_types_size / sizeof(cl_external_semaphore_handle_type_khr));
+    errcode =
+        clGetDeviceInfo(device, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
+                        export_types_size, export_types.data(), nullptr);
     test_error(errcode, "Could not query export semaphore handle types");
 
-    if (std::find(export_types.begin(), export_types.end(), CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR) == export_types.end())
+    if (std::find(export_types.begin(), export_types.end(),
+                  CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR)
+        == export_types.end())
     {
         log_info("Could not find CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR between "
                  "the supported export types\n");
@@ -51,34 +58,41 @@ REGISTER_TEST(test_external_semaphores_export_dx_signal)
     constexpr cl_semaphore_properties_khr sem_props[] = {
         static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
         static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_BINARY_KHR),
-        static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
-        static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR),
-        static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
+        static_cast<cl_semaphore_properties_khr>(
+            CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
+        static_cast<cl_semaphore_properties_khr>(
+            CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR),
+        static_cast<cl_semaphore_properties_khr>(
+            CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
         0
     };
-    cl_semaphore_khr semaphore = clCreateSemaphoreWithPropertiesKHR(context, sem_props, &errcode);
+    cl_semaphore_khr semaphore =
+        clCreateSemaphoreWithPropertiesKHR(context, sem_props, &errcode);
     test_error(errcode, "Could not create semaphore");
 
     cl_bool is_exportable = CL_FALSE;
-    errcode = clGetSemaphoreInfoKHR(semaphore, CL_SEMAPHORE_EXPORTABLE_KHR, sizeof(is_exportable), &is_exportable, nullptr);
+    errcode =
+        clGetSemaphoreInfoKHR(semaphore, CL_SEMAPHORE_EXPORTABLE_KHR,
+                              sizeof(is_exportable), &is_exportable, nullptr);
     test_error(errcode, "Could not get semaphore info");
     test_error(!is_exportable, "Semaphore is not exportable");
 
     log_info("Calling clEnqueueWaitSemaphoresKHR\n");
     constexpr cl_semaphore_payload_khr semaphore_payload = 1;
     clEventWrapper wait_event;
-    errcode = clEnqueueWaitSemaphoresKHR(queue, 1, &semaphore,
-        &semaphore_payload, 0, nullptr, &wait_event);
+    errcode = clEnqueueWaitSemaphoresKHR(
+        queue, 1, &semaphore, &semaphore_payload, 0, nullptr, &wait_event);
     test_error(errcode, "Failed to wait semaphore");
 
     HANDLE semaphore_handle = nullptr;
-    errcode = clGetSemaphoreHandleForTypeKHR(semaphore, device, CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR,
+    errcode = clGetSemaphoreHandleForTypeKHR(
+        semaphore, device, CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR,
         sizeof(semaphore_handle), &semaphore_handle, nullptr);
     test_error(errcode, "Could not get semaphore handle");
 
     ID3D12Fence *fence = nullptr;
-    errcode = dx_wrapper.getDXDevice()->OpenSharedHandle(
-        semaphore_handle, IID_PPV_ARGS(&fence));
+    errcode = dx_wrapper.getDXDevice()->OpenSharedHandle(semaphore_handle,
+                                                         IID_PPV_ARGS(&fence));
     test_error(errcode, "Could not open semaphore handle");
 
     log_info("Calling fence->Signal()\n");
@@ -117,14 +131,20 @@ REGISTER_TEST(test_external_semaphores_export_dx_wait)
     GET_PFN(device, clGetSemaphoreHandleForTypeKHR);
 
     size_t export_types_size = 0;
-    errcode = clGetDeviceInfo(device, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR, 0, nullptr, &export_types_size);
+    errcode =
+        clGetDeviceInfo(device, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR, 0,
+                        nullptr, &export_types_size);
     test_error(errcode, "Could not query export semaphore handle types");
-    std::vector<cl_external_semaphore_handle_type_khr> export_types(export_types_size / sizeof(cl_external_semaphore_handle_type_khr));
-    errcode = clGetDeviceInfo(device, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
-        export_types_size, export_types.data(), nullptr);
+    std::vector<cl_external_semaphore_handle_type_khr> export_types(
+        export_types_size / sizeof(cl_external_semaphore_handle_type_khr));
+    errcode =
+        clGetDeviceInfo(device, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
+                        export_types_size, export_types.data(), nullptr);
     test_error(errcode, "Could not query export semaphore handle types");
 
-    if (std::find(export_types.begin(), export_types.end(), CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR) == export_types.end())
+    if (std::find(export_types.begin(), export_types.end(),
+                  CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR)
+        == export_types.end())
     {
         log_info("Could not find CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR between "
                  "the supported export types\n");
@@ -134,33 +154,41 @@ REGISTER_TEST(test_external_semaphores_export_dx_wait)
     constexpr cl_semaphore_properties_khr sem_props[] = {
         static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
         static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_BINARY_KHR),
-        static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
-        static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR),
-        static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
+        static_cast<cl_semaphore_properties_khr>(
+            CL_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR),
+        static_cast<cl_semaphore_properties_khr>(
+            CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR),
+        static_cast<cl_semaphore_properties_khr>(
+            CL_SEMAPHORE_EXPORT_HANDLE_TYPES_LIST_END_KHR),
         0
     };
-    cl_semaphore_khr semaphore = clCreateSemaphoreWithPropertiesKHR(context, sem_props, &errcode);
+    cl_semaphore_khr semaphore =
+        clCreateSemaphoreWithPropertiesKHR(context, sem_props, &errcode);
     test_error(errcode, "Could not create semaphore");
 
     cl_bool is_exportable = CL_FALSE;
-    errcode = clGetSemaphoreInfoKHR(semaphore, CL_SEMAPHORE_EXPORTABLE_KHR, sizeof(is_exportable), &is_exportable, nullptr);
+    errcode =
+        clGetSemaphoreInfoKHR(semaphore, CL_SEMAPHORE_EXPORTABLE_KHR,
+                              sizeof(is_exportable), &is_exportable, nullptr);
     test_error(errcode, "Could not get semaphore info");
     test_error(!is_exportable, "Semaphore is not exportable");
 
     log_info("Calling clEnqueueSignalSemaphoresKHR\n");
     constexpr cl_semaphore_payload_khr semaphore_payload = 1;
     clEventWrapper signal_event;
-    errcode = clEnqueueSignalSemaphoresKHR(queue, 1, &semaphore, &semaphore_payload, 0, nullptr, &signal_event);
+    errcode = clEnqueueSignalSemaphoresKHR(
+        queue, 1, &semaphore, &semaphore_payload, 0, nullptr, &signal_event);
     test_error(errcode, "Failed to signal semaphore");
 
     HANDLE semaphore_handle = nullptr;
-    errcode = clGetSemaphoreHandleForTypeKHR(semaphore, device, CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR,
+    errcode = clGetSemaphoreHandleForTypeKHR(
+        semaphore, device, CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR,
         sizeof(semaphore_handle), &semaphore_handle, nullptr);
     test_error(errcode, "Could not get semaphore handle");
 
     ID3D12Fence *fence = nullptr;
-    errcode = dx_wrapper.getDXDevice()->OpenSharedHandle(
-        semaphore_handle, IID_PPV_ARGS(&fence));
+    errcode = dx_wrapper.getDXDevice()->OpenSharedHandle(semaphore_handle,
+                                                         IID_PPV_ARGS(&fence));
     test_error(errcode, "Could not open semaphore handle");
 
     log_info("Calling dx_wrapper.get_d3d12_command_queue()->Wait()\n");
@@ -168,9 +196,10 @@ REGISTER_TEST(test_external_semaphores_export_dx_wait)
     test_error(FAILED(hr), "Failed to wait on D3D12 fence");
 
     log_info("Calling WaitForSingleObject\n");
-    if(fence->GetCompletedValue() < semaphore_payload)
+    if (fence->GetCompletedValue() < semaphore_payload)
     {
-        const HANDLE event = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
+        const HANDLE event =
+            CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
         hr = fence->SetEventOnCompletion(semaphore_payload, event);
         test_error(FAILED(hr), "Failed to set event on completion");
         WaitForSingleObject(event, INFINITE);

@@ -1,6 +1,6 @@
-if(WIN32)
-    include_directories (${CLConform_SOURCE_DIR}/test_common/harness
-            ${CLConform_INCLUDE_DIR} )
+if (WIN32)
+    include_directories(${CLConform_SOURCE_DIR}/test_common/harness
+            ${CLConform_INCLUDE_DIR})
     link_directories(${CL_LIB_DIR})
 
     list(APPEND CLConform_LIBRARIES directx_wrapper)
@@ -22,5 +22,5 @@ if(WIN32)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR})
     include_directories("../../common/directx_wrapper")
     include(../../CMakeCommon.txt)
-endif(WIN32)
+endif (WIN32)
 

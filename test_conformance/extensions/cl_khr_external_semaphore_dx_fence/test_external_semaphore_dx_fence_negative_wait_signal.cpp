@@ -16,7 +16,8 @@
 
 #include "semaphore_dx_fence_base.h"
 
-// Confirm that a wait without a semaphore payload list will return CL_INVALID_VALUE
+// Confirm that a wait without a semaphore payload list will return
+// CL_INVALID_VALUE
 REGISTER_TEST(test_external_semaphores_dx_fence_negative_wait)
 {
     int errcode = CL_SUCCESS;
@@ -30,23 +31,29 @@ REGISTER_TEST(test_external_semaphores_dx_fence_negative_wait)
     GET_PFN(device, clReleaseSemaphoreKHR);
     GET_PFN(device, clEnqueueWaitSemaphoresKHR);
 
-    test_error(!is_import_handle_available(device, CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR),
-    "Could not find CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR between the supported import types");
+    test_error(!is_import_handle_available(device,
+                                           CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR),
+               "Could not find CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR between the "
+               "supported import types");
 
     // Import D3D12 fence into OpenCL
     const DirectXFenceWrapper fence(dx_wrapper.getDXDevice());
     CLDXSemaphoreWrapper semaphore(device, context, dx_wrapper.getDXDevice());
     test_error(semaphore.createSemaphoreFromFence(*fence),
-        "Could not create semaphore");
+               "Could not create semaphore");
 
     log_info("Calling clEnqueueWaitSemaphoresKHR\n");
-    errcode = clEnqueueWaitSemaphoresKHR(queue, 1, &semaphore, nullptr, 0, nullptr, nullptr);
-    test_assert_error(errcode == CL_INVALID_VALUE, "Unexpected error code returned from clEnqueueWaitSemaphores");
+    errcode = clEnqueueWaitSemaphoresKHR(queue, 1, &semaphore, nullptr, 0,
+                                         nullptr, nullptr);
+    test_assert_error(
+        errcode == CL_INVALID_VALUE,
+        "Unexpected error code returned from clEnqueueWaitSemaphores");
 
     return TEST_PASS;
 }
 
-// Confirm that a signal without a semaphore payload list will return CL_INVALID_VALUE
+// Confirm that a signal without a semaphore payload list will return
+// CL_INVALID_VALUE
 REGISTER_TEST(test_external_semaphores_dx_fence_negative_signal)
 {
     int errcode = CL_SUCCESS;
@@ -60,18 +67,23 @@ REGISTER_TEST(test_external_semaphores_dx_fence_negative_signal)
     GET_PFN(device, clReleaseSemaphoreKHR);
     GET_PFN(device, clEnqueueSignalSemaphoresKHR);
 
-    test_error(!is_import_handle_available(device, CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR),
-    "Could not find CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR between the supported import types");
+    test_error(!is_import_handle_available(device,
+                                           CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR),
+               "Could not find CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR between the "
+               "supported import types");
 
     // Import D3D12 fence into OpenCL
     const DirectXFenceWrapper fence(dx_wrapper.getDXDevice());
     CLDXSemaphoreWrapper semaphore(device, context, dx_wrapper.getDXDevice());
     test_error(semaphore.createSemaphoreFromFence(*fence),
-        "Could not create semaphore");
+               "Could not create semaphore");
 
     log_info("Calling clEnqueueWaitSemaphoresKHR\n");
-    errcode = clEnqueueSignalSemaphoresKHR(queue, 1, &semaphore, nullptr, 0, nullptr, nullptr);
-    test_assert_error(errcode == CL_INVALID_VALUE, "Unexpected error code returned from clEnqueueSignalSemaphores");
+    errcode = clEnqueueSignalSemaphoresKHR(queue, 1, &semaphore, nullptr, 0,
+                                           nullptr, nullptr);
+    test_assert_error(
+        errcode == CL_INVALID_VALUE,
+        "Unexpected error code returned from clEnqueueSignalSemaphores");
 
     return TEST_PASS;
 }

@@ -28,7 +28,7 @@ DirectXWrapper::DirectXWrapper()
 
     D3D12_COMMAND_QUEUE_DESC desc{};
     desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-    desc.Type  = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
     hr = dx_device->CreateCommandQueue(&desc, IID_PPV_ARGS(&dx_command_queue));
     if (FAILED(hr))
     {
@@ -36,21 +36,31 @@ DirectXWrapper::DirectXWrapper()
     }
 
     hr = dx_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
-        IID_PPV_ARGS(&dx_command_allocator));
+                                           IID_PPV_ARGS(&dx_command_allocator));
     if (FAILED(hr))
     {
-        throw std::runtime_error("Failed to create DirectX 12 command allocator");
+        throw std::runtime_error(
+            "Failed to create DirectX 12 command allocator");
     }
 }
 
 DirectXWrapper::~DirectXWrapper()
 {
-    if(dx_command_allocator) {dx_command_allocator->Release();}
-    if(dx_command_queue) {dx_command_queue->Release();}
-    if(dx_device) {dx_device->Release();}
+    if (dx_command_allocator)
+    {
+        dx_command_allocator->Release();
+    }
+    if (dx_command_queue)
+    {
+        dx_command_queue->Release();
+    }
+    if (dx_device)
+    {
+        dx_device->Release();
+    }
 }
 
-ID3D12Device* DirectXWrapper::getDXDevice() const {return dx_device;}
+ID3D12Device* DirectXWrapper::getDXDevice() const { return dx_device; }
 
 ID3D12CommandQueue* DirectXWrapper::getDXCommandQueue() const
 {
@@ -68,8 +78,8 @@ DirectXFenceWrapper::DirectXFenceWrapper(ID3D12Device* dx_device)
     {
         throw std::runtime_error("ID3D12Device is not valid");
     }
-    const HRESULT hr = dx_device->CreateFence(0,D3D12_FENCE_FLAG_SHARED,
-        IID_PPV_ARGS(&dx_fence));
+    const HRESULT hr = dx_device->CreateFence(0, D3D12_FENCE_FLAG_SHARED,
+                                              IID_PPV_ARGS(&dx_fence));
     if (FAILED(hr))
     {
         throw std::runtime_error("Failed to create the DirectX fence");
@@ -78,6 +88,8 @@ DirectXFenceWrapper::DirectXFenceWrapper(ID3D12Device* dx_device)
 
 DirectXFenceWrapper::~DirectXFenceWrapper()
 {
-    if (dx_fence) {dx_fence->Release();}
+    if (dx_fence)
+    {
+        dx_fence->Release();
+    }
 }
-

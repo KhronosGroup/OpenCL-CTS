@@ -19,8 +19,7 @@
 #include <d3d12.h>
 #include <stdexcept>
 
-class DirectXWrapper
-{
+class DirectXWrapper {
 public:
     DirectXWrapper();
     ~DirectXWrapper();
@@ -35,12 +34,11 @@ protected:
     ID3D12CommandAllocator* dx_command_allocator = nullptr;
 };
 
-class DirectXFenceWrapper
-{
+class DirectXFenceWrapper {
 public:
     DirectXFenceWrapper(ID3D12Device* dx_device);
     ~DirectXFenceWrapper();
-    ID3D12Fence* operator *() const { return dx_fence; }
+    ID3D12Fence* operator*() const { return dx_fence; }
 
 private:
     ID3D12Fence* dx_fence = nullptr;
