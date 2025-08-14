@@ -25,7 +25,7 @@ class CLDXSemaphoreWrapper {
 public:
     CLDXSemaphoreWrapper(cl_device_id device, cl_context context,
                          ID3D12Device* dx_device)
-        : device(device), context(context), dx_device(dx_device) {};
+        : device(device), context(context), dx_device(dx_device){};
 
     int createSemaphoreFromFence(ID3D12Fence* fence)
     {
@@ -68,11 +68,11 @@ public:
 
 private:
     cl_semaphore_khr semaphore;
-    ID3D12Fence* fence;
+    ComPtr<ID3D12Fence> fence;
     HANDLE fence_handle;
     cl_device_id device;
     cl_context context;
-    ID3D12Device* dx_device;
+    ComPtr<ID3D12Device> dx_device;
 
     int releaseSemaphore() const
     {

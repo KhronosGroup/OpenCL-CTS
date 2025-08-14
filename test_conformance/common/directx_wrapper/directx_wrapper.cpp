@@ -44,31 +44,15 @@ DirectXWrapper::DirectXWrapper()
     }
 }
 
-DirectXWrapper::~DirectXWrapper()
-{
-    if (dx_command_allocator)
-    {
-        dx_command_allocator->Release();
-    }
-    if (dx_command_queue)
-    {
-        dx_command_queue->Release();
-    }
-    if (dx_device)
-    {
-        dx_device->Release();
-    }
-}
-
-ID3D12Device* DirectXWrapper::getDXDevice() const { return dx_device; }
+ID3D12Device* DirectXWrapper::getDXDevice() const { return dx_device.Get(); }
 
 ID3D12CommandQueue* DirectXWrapper::getDXCommandQueue() const
 {
-    return dx_command_queue;
+    return dx_command_queue.Get();
 }
 ID3D12CommandAllocator* DirectXWrapper::getDXCommandAllocator() const
 {
-    return dx_command_allocator;
+    return dx_command_allocator.Get();
 }
 
 DirectXFenceWrapper::DirectXFenceWrapper(ID3D12Device* dx_device)
@@ -83,13 +67,5 @@ DirectXFenceWrapper::DirectXFenceWrapper(ID3D12Device* dx_device)
     if (FAILED(hr))
     {
         throw std::runtime_error("Failed to create the DirectX fence");
-    }
-}
-
-DirectXFenceWrapper::~DirectXFenceWrapper()
-{
-    if (dx_fence)
-    {
-        dx_fence->Release();
     }
 }
