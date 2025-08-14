@@ -863,7 +863,7 @@ clExternalMemoryImage::clExternalMemoryImage(
     size_t clImageFormatSize;
     cl_image_desc image_desc;
     memset(&image_desc, 0x0, sizeof(cl_image_desc));
-    cl_image_format img_format = { 0 };
+    img_format = { 0 };
     const VkImageCreateInfo VulkanImageCreateInfo =
         image2D.getVkImageCreateInfo();
 
