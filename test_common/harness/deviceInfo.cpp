@@ -50,7 +50,7 @@ std::string get_device_info_string(cl_device_id device,
 }
 
 /* Determines if an extension is supported by a device. */
-int is_extension_available(cl_device_id device, const char *extensionName)
+bool is_extension_available(cl_device_id device, const char *extensionName)
 {
     std::string extString = get_device_extensions_string(device);
     std::istringstream ss(extString);
@@ -61,6 +61,30 @@ int is_extension_available(cl_device_id device, const char *extensionName)
         if (found == extensionName) return true;
     }
     return false;
+}
+
+bool is_extension_available(cl_device_id device, const char *extensionName,
+                            cl_version extensionVersion)
+{
+    const auto version = get_extension_version(device, extensionName);
+    if (!version)
+    {
+        return false;
+    }
+
+    const bool available = *version == extensionVersion;
+    if (!available)
+    {
+        log_info("Extension: %s supported with version: %u.%u.%u. Required "
+                 "version: %u.%u.%u\n",
+                 extensionName, CL_VERSION_MAJOR(*version),
+                 CL_VERSION_MINOR(*version), CL_VERSION_PATCH(*version),
+                 CL_VERSION_MAJOR(extensionVersion),
+                 CL_VERSION_MINOR(extensionVersion),
+                 CL_VERSION_PATCH(extensionVersion));
+    }
+
+    return available;
 }
 
 std::optional<cl_version> get_extension_version(cl_device_id device,
