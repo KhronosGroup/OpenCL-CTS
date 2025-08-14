@@ -63,7 +63,8 @@ int is_extension_available(cl_device_id device, const char *extensionName)
     return false;
 }
 
-cl_version get_extension_version(cl_device_id device, const char *extensionName)
+std::optional<cl_version> get_extension_version(cl_device_id device,
+                                                const char *extensionName)
 {
     cl_int err;
     size_t size;
@@ -72,8 +73,9 @@ cl_version get_extension_version(cl_device_id device, const char *extensionName)
                           &size);
     if (err != CL_SUCCESS)
     {
-        throw std::runtime_error("clGetDeviceInfo(CL_DEVICE_EXTENSIONS_WITH_"
-                                 "VERSION) failed to return size\n");
+        log_error("clGetDeviceInfo(CL_DEVICE_EXTENSIONS_WITH_"
+                  "VERSION) failed to return size\n");
+        return std::nullopt;
     }
 
     std::vector<cl_name_version> extensions(size / sizeof(cl_name_version));
@@ -81,8 +83,9 @@ cl_version get_extension_version(cl_device_id device, const char *extensionName)
                           extensions.data(), &size);
     if (err != CL_SUCCESS)
     {
-        throw std::runtime_error("clGetDeviceInfo(CL_DEVICE_EXTENSIONS_WITH_"
-                                 "VERSION) failed to return value\n");
+        log_error("clGetDeviceInfo(CL_DEVICE_EXTENSIONS_WITH_"
+                  "VERSION) failed to return value\n");
+        return std::nullopt;
     }
 
     for (auto &ext : extensions)
@@ -93,8 +96,8 @@ cl_version get_extension_version(cl_device_id device, const char *extensionName)
         }
     }
 
-    throw std::runtime_error("Extension " + std::string(extensionName)
-                             + " not supported by device!");
+    log_error("Extension %s not supported by device!\n", extensionName);
+    return std::nullopt;
 }
 
 /* Returns a string containing the supported extensions list for a device. */
