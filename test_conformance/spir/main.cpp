@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -6911,7 +6911,7 @@ int main (int argc, const char* argv[])
         cl_device_id device = get_platform_device(device_type, choosen_device_index, choosen_platform_index);
         printDeviceHeader(device);
 
-        REQUIRE_EXTENSION("cl_khr_spir");
+        REQUIRE_EXTENSION(CL_KHR_SPIR);
 
         std::vector<Version> versions;
         get_spir_version(device, versions);
@@ -6986,4 +6986,3 @@ int main (int argc, const char* argv[])
         return 3;
     }
 }
-

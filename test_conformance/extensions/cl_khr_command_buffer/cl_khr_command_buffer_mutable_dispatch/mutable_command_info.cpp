@@ -123,7 +123,7 @@ struct PropertiesArray : public InfoMutableCommandBufferTest
             || is_extension_available(device, "cl_khr_extended_versioning"))
         {
 
-            cl_version extension_version = get_extension_version(
+            auto extension_version = get_extension_version(
                 device, "cl_khr_command_buffer_mutable_dispatch");
 
             if (extension_version != CL_MAKE_VERSION(0, 9, 3))

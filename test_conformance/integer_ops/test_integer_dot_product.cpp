@@ -342,8 +342,14 @@ REGISTER_TEST(integer_dot_product)
     if ((deviceVersion >= Version(3, 0))
         || is_extension_available(device, "cl_khr_extended_versioning"))
     {
-        extensionVersion =
+        auto version =
             get_extension_version(device, "cl_khr_integer_dot_product");
+        if (!version)
+        {
+            return TEST_FAIL;
+        }
+
+        extensionVersion = *version;
     }
     else
     {
