@@ -3171,8 +3171,10 @@ public:
 
                         // who is the winner? - thread with lower private
                         // counter value
-                        if (myValue == hisRealValue) // forbidden result - fence
-                                                     // doesn't work
+
+                        // forbidden result - fence doesn't work
+                        if (myValue == hisRealValue
+                            && hisValue == myValueReadByHim)
                         {
                             log_error("ERROR: Atomic counter values #%u and "
                                       "#%u are the same (%u)\n",
