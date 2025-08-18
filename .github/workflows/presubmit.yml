@@ -158,7 +158,8 @@ jobs:
           fi
           cmake .. -G Ninja \
                 -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
-                -DCMAKE_CACHE_OPTIONS="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache" \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
                 -DCL_INCLUDE_DIR='${{ github.workspace }}'/OpenCL-Headers \
                 -DCL_LIB_DIR='${{ github.workspace }}'/OpenCL-ICD-Loader/build \
                 -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
