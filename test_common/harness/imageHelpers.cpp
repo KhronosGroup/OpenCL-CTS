@@ -137,10 +137,10 @@ uint32_t get_channel_order_channel_count(cl_channel_order order)
         case CL_RGx: return 2;
 
         case CL_RGB:
-        case CL_RGBx:
         case CL_sRGB:
         case CL_sRGBx: return 3;
 
+        case CL_RGBx:
         case CL_RGBA:
         case CL_ARGB:
         case CL_BGRA:
