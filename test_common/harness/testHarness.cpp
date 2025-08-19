@@ -22,6 +22,7 @@
 #include <cassert>
 #include <deque>
 #include <mutex>
+#include <set>
 #include <stdexcept>
 #include <thread>
 #include <vector>
@@ -172,12 +173,11 @@ void version_expected_info(const char *test_name, const char *api_name,
 
 static void list_tests(int testNum, test_definition testList[])
 {
-    std::vector<std::string> names;
+    std::set<std::string> names;
     for (int i = 0; i < testNum; i++)
     {
-        names.emplace_back(testList[i].name);
+        names.insert(testList[i].name);
     }
-    std::sort(names.begin(), names.end());
     for (const auto &name : names)
     {
         log_info("\t%s\n", name.c_str());
