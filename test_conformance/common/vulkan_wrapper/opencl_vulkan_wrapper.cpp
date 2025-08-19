@@ -1233,7 +1233,7 @@ int clExternalExportableSemaphore::signal(cl_command_queue cmd_queue)
         import.fd = fd;
         import.pNext = nullptr;
         import.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR;
-        import.flags = 0;
+        import.flags = VK_SEMAPHORE_IMPORT_TEMPORARY_BIT;
 
         VkResult res =
             vkImportSemaphoreFdKHR(m_deviceSemaphore.getDevice(), &import);
