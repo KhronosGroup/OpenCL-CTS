@@ -178,7 +178,7 @@ static void list_tests(int testNum, test_definition testList[])
         names.emplace_back(testList[i].name);
     }
     std::sort(names.begin(), names.end());
-    for (auto name : names)
+    for (const auto &name : names)
     {
         log_info("\t%s\n", name.c_str());
     }
