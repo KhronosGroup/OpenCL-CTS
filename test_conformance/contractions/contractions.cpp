@@ -284,6 +284,11 @@ int main( int argc, const char **argv )
 
 static int ParseArgs( int argc, const char **argv )
 {
+    if (gListTests)
+    {
+        return 0;
+    }
+
     gArgList = (const char **)calloc( argc, sizeof( char*) );
 
     if( NULL == gArgList )

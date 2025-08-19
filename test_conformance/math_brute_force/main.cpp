@@ -384,21 +384,24 @@ int main(int argc, const char *argv[])
     error = ParseArgs(argc, argv);
     if (error) return error;
 
-    // This takes a while, so prevent the machine from going to sleep.
-    PreventSleep();
-    atexit(ResumeSleep);
+    if (!gListTests)
+    {
+        // This takes a while, so prevent the machine from going to sleep.
+        PreventSleep();
+        atexit(ResumeSleep);
 
-    if (gSkipCorrectnessTesting)
-        vlog("*** Skipping correctness testing! ***\n\n");
-    else if (gStopOnError)
-        vlog("Stopping at first error.\n");
+        if (gSkipCorrectnessTesting)
+            vlog("*** Skipping correctness testing! ***\n\n");
+        else if (gStopOnError)
+            vlog("Stopping at first error.\n");
 
-    vlog("   \t                                        ");
-    if (gWimpyMode) vlog("   ");
-    if (!gSkipCorrectnessTesting) vlog("\t  max_ulps");
+        vlog("   \t                                        ");
+        if (gWimpyMode) vlog("   ");
+        if (!gSkipCorrectnessTesting) vlog("\t  max_ulps");
 
-    vlog("\n-------------------------------------------------------------------"
-         "----------------------------------------\n");
+        vlog("\n---------------------------------------------------------------"
+             "--------------------------------------------\n");
+    }
 
     gMTdata = MTdataHolder(gRandomSeed);
 
@@ -425,6 +428,10 @@ int main(int argc, const char *argv[])
 
 static int ParseArgs(int argc, const char **argv)
 {
+    if (gListTests)
+    {
+        return 0;
+    }
     // We only pass test names to runTestHarnessWithCheck, hence global command
     // line options defined by the harness cannot be used by the user.
     // To respect the implementation details of runTestHarnessWithCheck,
