@@ -60,6 +60,7 @@ int gInfNanSupport = 1;
 int gIsEmbedded = 0;
 int gHasLong = 1;
 bool gCoreILProgram = true;
+int gInvalidObject = InvalidObject::Nullptr;
 
 #define DEFAULT_NUM_ELEMENTS 0x4000
 
