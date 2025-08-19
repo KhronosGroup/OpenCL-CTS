@@ -17,6 +17,7 @@
 #define _deviceInfo_h
 
 #include <string>
+#include <optional>
 
 #include <CL/opencl.h>
 
@@ -26,12 +27,28 @@ std::string get_device_info_string(cl_device_id device,
                                    cl_device_info param_name);
 
 /* Determines if an extension is supported by a device. */
-int is_extension_available(cl_device_id device, const char *extensionName);
+bool is_extension_available(cl_device_id device, const char *extensionName);
 
-/* Returns the version of the extension the device supports or throws an
- * exception if the extension is not supported by the device. */
-cl_version get_extension_version(cl_device_id device,
-                                 const char *extensionName);
+/**
+ * @brief Check if an extension is supported by an OpenCL device.
+ *
+ * In addition to checking that the extension is in the list of extensions
+ * supported by the device, the function will check the extension version.
+ * To guarantee compatibility with any breaking changes, the function
+ * succeeds only on an exact version match.
+ *
+ * @param device           The OpenCL device to query.
+ * @param extensionName    The name of the extension to check for.
+ * @param extensionVersion The required extension version to be supported.
+ *
+ * @return True if the extension is supported by the device, and the supported
+ * extension version matches the requested version, false otherwise.
+ */
+bool is_extension_available(cl_device_id device, const char *extensionName,
+                            cl_version extensionVersion);
+
+std::optional<cl_version> get_extension_version(cl_device_id device,
+                                                const char *extensionName);
 
 /* Returns a string containing the supported extensions list for a device. */
 std::string get_device_extensions_string(cl_device_id device);

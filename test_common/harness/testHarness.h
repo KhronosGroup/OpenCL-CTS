@@ -150,16 +150,21 @@ template <typename T> T *register_test(const char *name, Version version)
 
 #define REGISTER_TEST(name) REGISTER_TEST_VERSION(name, Version(1, 2))
 
-#define REQUIRE_EXTENSION(name)                                                \
+#define REQUIRE_EXTENSION(ext)                                                 \
     do                                                                         \
     {                                                                          \
-        if (!is_extension_available(device, name))                             \
+        if (!is_extension_available(device, ext##_EXTENSION_NAME,              \
+                                    ext##_EXTENSION_VERSION))                  \
         {                                                                      \
-            log_info(name                                                      \
+            log_info(ext##_EXTENSION_NAME                                      \
                      " is not supported on this device. Skipping test.\n");    \
             return TEST_SKIPPED_ITSELF;                                        \
         }                                                                      \
     } while (0)
+
+#define HAS_EXTENSION(ext)                                                     \
+    is_extension_available(device, ext##_EXTENSION_NAME,                       \
+                           ext##_EXTENSION_VERSION)
 
 extern int gFailCount;
 extern int gTestCount;
