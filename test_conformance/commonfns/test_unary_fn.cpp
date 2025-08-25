@@ -57,7 +57,7 @@ namespace {
 template <typename T>
 int verify_degrees(const T *const inptr, const T *const outptr, int n)
 {
-    float error, max_error = 0.0f;
+    float error, max_error = -INFINITY;
     double r, max_val = NAN;
     int max_index = 0;
 
@@ -89,13 +89,16 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
     }
 
     if (std::is_same<T, half>::value)
-        log_info("degrees: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
-                 max_error, max_index, max_val, conv_to_flt(outptr[max_index]),
-                 max_val, conv_to_flt(outptr[max_index]));
+        log_info("degrees: Max error %f ulps at %d, input %a: *%a vs %a  (*%g "
+                 "vs %g)\n",
+                 max_error, max_index, conv_to_flt(inptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]));
     else
-        log_info("degrees: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
-                 max_error, max_index, max_val, outptr[max_index], max_val,
-                 outptr[max_index]);
+        log_info("degrees: Max error %f ulps at %d, input %a: *%a vs %a  (*%g "
+                 "vs %g)\n",
+                 max_error, max_index, conv_to_flt(inptr[max_index]), max_val,
+                 outptr[max_index], max_val, outptr[max_index]);
 
     return 0;
 }
