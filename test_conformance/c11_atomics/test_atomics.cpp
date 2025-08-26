@@ -34,6 +34,7 @@ public:
                                   HostDataType>::MemoryOrderScopeStr;
     using CBasicTest<HostAtomicType, HostDataType>::CheckCapabilities;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
+    using CBasicTest<HostAtomicType, HostDataType>::ConvertToHostDataType;
     CBasicTestStore(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
                                                                 useSVM)
@@ -85,7 +86,8 @@ public:
                               volatile HostAtomicType *destMemory,
                               HostDataType *oldValues)
     {
-        host_atomic_store(&destMemory[tid], (HostDataType)tid, MemoryOrder());
+        host_atomic_store(&destMemory[tid], ConvertToHostDataType(tid),
+                          MemoryOrder());
     }
     virtual bool ExpectedValue(HostDataType &expected, cl_uint threadCount,
                                HostDataType *startRefValues,
@@ -329,6 +331,7 @@ public:
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryScopeStr;
     using CBasicTest<HostAtomicType, HostDataType>::CheckCapabilities;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
+    using CBasicTest<HostAtomicType, HostDataType>::ConvertToHostDataType;
     CBasicTestLoad(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
                                                                 useSVM)
@@ -389,7 +392,7 @@ public:
                               volatile HostAtomicType *destMemory,
                               HostDataType *oldValues)
     {
-        host_atomic_store(&destMemory[tid], (HostDataType)tid,
+        host_atomic_store(&destMemory[tid], ConvertToHostDataType(tid),
                           MEMORY_ORDER_SEQ_CST);
         oldValues[tid] = host_atomic_load<HostAtomicType, HostDataType>(
             &destMemory[tid], MemoryOrder());
@@ -546,6 +549,7 @@ public:
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::Iterations;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::IterationsStr;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
+    using CBasicTest<HostAtomicType, HostDataType>::ConvertToHostDataType;
     CBasicTestExchange(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
                                                                 useSVM)
@@ -595,8 +599,8 @@ public:
                               volatile HostAtomicType *destMemory,
                               HostDataType *oldValues)
     {
-        oldValues[tid] = host_atomic_exchange(&destMemory[0], (HostDataType)tid,
-                                              MemoryOrder());
+        oldValues[tid] = host_atomic_exchange(
+            &destMemory[0], ConvertToHostDataType(tid), MemoryOrder());
         for (int i = 0; i < Iterations(); i++)
             oldValues[tid] = host_atomic_exchange(
                 &destMemory[0], oldValues[tid], MemoryOrder());
