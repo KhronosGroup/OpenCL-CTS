@@ -691,6 +691,15 @@ public:
                                            cl_context context,
                                            cl_command_queue queue)
     {
+        // Comparator for success and failure memory orders.
+        // Failure must not be stronger than success.
+        const auto compareOrderStrength = [](TExplicitMemoryOrderType success,
+                                             TExplicitMemoryOrderType failure) {
+            if (success == MEMORY_ORDER_RELEASE)
+                return failure == MEMORY_ORDER_RELAXED;
+            return failure <= success;
+        };
+
         // repeat test for each reasonable memory order/scope combination
         std::vector<TExplicitMemoryOrderType> memoryOrder;
         std::vector<TExplicitMemoryScopeType> memoryScope;
@@ -718,6 +727,9 @@ public:
                         && memoryScope[si] != MEMORY_SCOPE_EMPTY)
                         continue; // memory scope without memory order is not
                                   // allowed
+                    if (!compareOrderStrength(memoryOrder[oi],
+                                              memoryOrder[o2i]))
+                        continue;
                     MemoryOrder(memoryOrder[oi]);
                     MemoryOrder2(memoryOrder[o2i]);
                     MemoryScope(memoryScope[si]);
