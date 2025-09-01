@@ -826,8 +826,7 @@ int run_multiple_tests(cl_device_id deviceID, cl_context context, cl_command_que
 
     if (gWimpyMode && num == LONG_MATH_SHIFT_SIZE)
     {
-        log_info("Detected CL_WIMPY_MODE env\n");
-        log_info("Skipping long test\n");
+        log_info("Running in wimpy mode, skipping long test\n");
         return 0;
     }
 
