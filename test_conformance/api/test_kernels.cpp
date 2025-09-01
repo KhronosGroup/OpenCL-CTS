@@ -786,6 +786,8 @@ REGISTER_TEST(negative_set_read_write_image_arg)
     constexpr cl_image_format format = { CL_RGBA, CL_UNSIGNED_INT8 };
     const int size_dim = 128;
 
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device);
+
     // Setup the test
     error = create_single_kernel_helper(context, &program, nullptr, 2,
                                         test_kernels, nullptr);
