@@ -17,6 +17,7 @@
 #include <vulkan_interop_common.hpp>
 #include <string>
 #include "harness/errorHelpers.h"
+#include "harness/imageHelpers.h"
 #include "harness/os_helpers.h"
 #include <algorithm>
 
@@ -135,6 +136,38 @@ __kernel void image2DKernel(read_only image2d_t InputImage_1, write_only image2d
 const uint32_t num2DImagesList[] = { 1, 2, 4 };
 const uint32_t widthList[] = { 4, 64, 183, 1024 };
 const uint32_t heightList[] = { 4, 64, 365 };
+
+bool memcmp_images(const void *a, const void *b, size_t size,
+                   cl_image_format format)
+{
+    if (format.image_channel_data_type == CL_FLOAT)
+    {
+        const float *a_float = static_cast<const float *>(a);
+        const float *b_float = static_cast<const float *>(b);
+        return !std::equal(a_float, a_float + size / sizeof(*a_float), b_float,
+                           b_float + size / sizeof(*b_float),
+                           [](float a, float b) {
+                               if (isnan(a) && isnan(b)) return true;
+                               return a == b;
+                           });
+    }
+    else if (format.image_channel_data_type == CL_HALF_FLOAT)
+    {
+        const cl_half *a_half = static_cast<const cl_half *>(a);
+        const cl_half *b_half = static_cast<const cl_half *>(b);
+        return !std::equal(a_half, a_half + size / sizeof(*a_half), b_half,
+                           b_half + size / sizeof(*b_half),
+                           [](cl_half a, cl_half b) {
+                               if (is_half_nan(a) && is_half_nan(b))
+                                   return true;
+                               return a == b;
+                           });
+    }
+    else
+    {
+        return memcmp(a, b, size) != 0;
+    }
+}
 
 const cl_kernel getKernelType(VulkanFormat format, cl_kernel kernel_float,
                               cl_kernel kernel_signed,
@@ -744,8 +777,9 @@ int run_test_with_two_queue(
                                     "clEnqueueReadImage failed with"
                                     "error\n");
 
-                                if (memcmp(srcBufferPtr, dstBufferPtr,
-                                           srcBufSize))
+                                if (memcmp_images(
+                                        srcBufferPtr, dstBufferPtr, srcBufSize,
+                                        externalMemory2[i]->getImageFormat()))
                                 {
                                     log_info("Source and destination buffers "
                                              "don't match\n");
@@ -1296,8 +1330,9 @@ int run_test_with_one_queue(
                                     "clEnqueueReadImage failed with"
                                     "error\n");
 
-                                if (memcmp(srcBufferPtr, dstBufferPtr,
-                                           srcBufSize))
+                                if (memcmp_images(
+                                        srcBufferPtr, dstBufferPtr, srcBufSize,
+                                        externalMemory2[i]->getImageFormat()))
                                 {
                                     log_info("Source and destination buffers "
                                              "don't match\n");
