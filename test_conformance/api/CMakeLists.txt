@@ -1,5 +1,7 @@
 set(MODULE_NAME API)
 
+find_package(Python3 COMPONENTS Interpreter QUIET)
+
 set(${MODULE_NAME}_SOURCES
          main.cpp
          negative_platform.cpp
@@ -40,6 +42,20 @@ set(${MODULE_NAME}_SOURCES
          test_pipe_properties_queries.cpp
          test_wg_suggested_local_work_size.cpp
          test_device_command_queue.cpp
+         test_spirv_queries.cpp
+         ${CMAKE_CURRENT_BINARY_DIR}/spirv_capability_deps.def
 )
 
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/spirv_capability_deps.def
+    COMMENT "Generating spirv_capability_deps.def..."
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate_spirv_capability_deps.py
+            --grammar "${SPIRV_INCLUDE_DIR}/include/spirv/unified1/spirv.core.grammar.json"
+            --output "${CMAKE_CURRENT_BINARY_DIR}/spirv_capability_deps.def"
+    DEPENDS generate_spirv_capability_deps.py "${SPIRV_INCLUDE_DIR}/include/spirv/unified1/spirv.core.grammar.json"
+    USES_TERMINAL
+    VERBATIM)
+
 include(../CMakeCommon.txt)
+
+target_include_directories(${${MODULE_NAME}_OUT} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

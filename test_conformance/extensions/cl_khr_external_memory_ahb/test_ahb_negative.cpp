@@ -77,7 +77,7 @@ REGISTER_TEST(test_buffer_format_negative)
                  .c_str());
 
     cl_mem_properties props[] = {
-        CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+        CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
         reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
     };
 
@@ -155,7 +155,7 @@ REGISTER_TEST(test_buffer_size_negative)
                  .c_str());
 
     cl_mem_properties props[] = {
-        CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+        CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
         reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
     };
 
@@ -215,7 +215,7 @@ REGISTER_TEST(test_images_negative)
     }
 
     const cl_mem_properties props[] = {
-        CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+        CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
         reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
     };
 
