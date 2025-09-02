@@ -17,6 +17,7 @@
 #include <string.h>
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
+#include "harness/parseParameters.h"
 
 #include <vector>
 
@@ -24,10 +25,7 @@
 #include <time.h>
 
 
-
-
 #ifdef CL_VERSION_2_0
-extern int gWimpyMode;
 static const char enqueue_block_multi_queue[] =
     NL "#define BLOCK_COMPLETED 0"
     NL "#define BLOCK_SUBMITTED 1"

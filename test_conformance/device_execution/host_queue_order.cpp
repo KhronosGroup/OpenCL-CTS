@@ -17,14 +17,13 @@
 #include <string.h>
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
+#include "harness/parseParameters.h"
 
 #include <algorithm>
 #include <vector>
 
 #include "utils.h"
 #include <time.h>
-
-extern int gWimpyMode;
 
 #ifdef CL_VERSION_2_0
 
