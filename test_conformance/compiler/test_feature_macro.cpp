@@ -656,6 +656,32 @@ static int test_feature_macro_integer_dot_product_input_4x8bit(
                                         compiler_status, supported);
 }
 
+static int test_feature_macro_ext_image_unorm_int_2_101010(
+    cl_device_id deviceID, cl_context context, std::string test_macro_name,
+    cl_bool& supported)
+{
+    cl_int error = TEST_FAIL;
+    cl_bool api_status = CL_TRUE;
+    cl_bool compiler_status;
+    log_info("\n%s ...\n", test_macro_name.c_str());
+
+    if (!is_extension_available(deviceID, "cl_ext_image_unorm_int_2_101010"))
+    {
+        supported = false;
+        return TEST_PASS;
+    }
+
+    error = check_compiler_feature_info(deviceID, context, test_macro_name,
+                                        compiler_status);
+    if (error != CL_SUCCESS)
+    {
+        return error;
+    }
+
+    return feature_macro_verify_results(test_macro_name, api_status,
+                                        compiler_status, supported);
+}
+
 static int test_feature_macro_int64(cl_device_id deviceID, cl_context context,
                                     std::string test_macro_name,
                                     cl_bool& supported)
@@ -833,6 +859,7 @@ REGISTER_TEST_VERSION(features_macro, Version(3, 0))
     NEW_FEATURE_MACRO_TEST(int64);
     NEW_FEATURE_MACRO_TEST(integer_dot_product_input_4x8bit);
     NEW_FEATURE_MACRO_TEST(integer_dot_product_input_4x8bit_packed);
+    NEW_FEATURE_MACRO_TEST(ext_image_unorm_int_2_101010);
 
     error |= test_consistency_c_features_list(device, supported_features_vec);
 
