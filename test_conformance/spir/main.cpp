@@ -6782,7 +6782,8 @@ static int ParseCommandLine (int argc, const char *argv[],
         ListTests();
         return 0;
     }
-    else if (!strcmp(argv[1], "--list") || !strcmp(argv[1], "-list"))
+    else if ((argc > 1)
+             && (!strcmp(argv[1], "--list") || !strcmp(argv[1], "-list")))
     {
         ListTests();
         return 0;
