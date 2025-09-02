@@ -163,16 +163,24 @@ bool check_overlap_rect(size_t src_offset[3], size_t dst_offset[3],
 int copy_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst,
                 size_t doffset[3], size_t dregion[3])
 {
-    bool comp_pitch = (genrand_int32(mt) % 2) != 0 ? true : false;
-    // Copy between cl buffers.
-    size_t src_slice_pitch = (width[src] * height[src] != 1 && comp_pitch)
+    // Copy between cl buffers
+    // Compute or provide zero pitches randomly
+    size_t src_slice_pitch =
+        (width[src] * height[src] != 1 && ((genrand_int32(mt) % 2) != 0))
         ? width[src] * height[src]
         : 0;
-    size_t dst_slice_pitch = (width[dst] * height[dst] != 1 && comp_pitch)
+    size_t dst_slice_pitch =
+        (width[dst] * height[dst] != 1 && ((genrand_int32(mt) % 2) != 0))
         ? width[dst] * height[dst]
         : 0;
-    size_t src_row_pitch = comp_pitch ? width[src] : 0;
-    size_t dst_row_pitch = comp_pitch ? width[dst] : 0;
+    size_t src_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[src] : 0;
+    size_t dst_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[dst] : 0;
+
+    if (src == dst)
+    {
+        src_row_pitch = dst_row_pitch;
+        src_slice_pitch = dst_slice_pitch;
+    }
 
     cl_int err;
     if (check_overlap_rect(soffset, doffset, sregion, src))
@@ -538,18 +546,17 @@ static int test_bufferreadwriterect_impl(cl_device_id device,
         size_t operation = get_random_size_t(0,TotalOperations,mt);
 
         switch (operation) {
-            case 0: {
+            case 0:
                 log_info("%zu Copy %zu offset (%zu,%zu,%zu) -> %zu offset "
                          "(%zu,%zu,%zu) region (%zux%zux%zu = %zu)\n",
                          iter, src, soffset[0], soffset[1], soffset[2], dst,
                          doffset[0], doffset[1], doffset[2], sregion[0],
                          sregion[1], sregion[2],
                          sregion[0] * sregion[1] * sregion[2]);
-                if ((err = copy_region(src, soffset, sregion, dst, doffset,
-                                       dregion)))
+                if ((err = test_functions.copy(src, soffset, sregion, dst,
+                                               doffset, dregion)))
                     return err;
                 break;
-            }
             case 1:
                 log_info("%zu Read %zu offset (%zu,%zu,%zu) -> %zu offset "
                          "(%zu,%zu,%zu) region (%zux%zux%zu = %zu)\n",
