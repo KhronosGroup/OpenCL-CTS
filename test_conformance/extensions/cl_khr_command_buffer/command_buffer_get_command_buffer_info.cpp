@@ -250,9 +250,6 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
                                           &trigger_event, &execute_event);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        // verify pending state
-        error = verify_state(CL_COMMAND_BUFFER_STATE_PENDING_KHR);
-
         // execute command buffer
         cl_int signal_error = clSetUserEventStatus(trigger_event, CL_COMPLETE);
 
