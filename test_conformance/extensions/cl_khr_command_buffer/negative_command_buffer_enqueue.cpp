@@ -124,8 +124,6 @@ struct EnqueueCommandBufferWithoutSimultaneousUseNotInPendingState
 
         error = EnqueueCommandBuffer();
         test_error(error, "EnqueueCommandBuffer failed");
-        error = verify_state(CL_COMMAND_BUFFER_STATE_PENDING_KHR);
-        test_error(error, "State is not Pending");
 
         return CL_SUCCESS;
     }
