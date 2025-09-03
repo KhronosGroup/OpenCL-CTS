@@ -70,9 +70,9 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
             {
                int offset = get_global_id(0);
 
-               int4 color = read_imagei( source, sampler, offset );
+               uint4 color = read_imageui( source, sampler, offset );
 
-               write_imagei( dest, offset, color );
+               write_imageui( dest, offset, color );
             })";
 
         cl_int error;
@@ -260,9 +260,9 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
                int x = get_global_id(0);
                int y = get_global_id(1);
 
-               int4 color = read_imagei( source, sampler, (int2) (x, y) );
+               uint4 color = read_imageui( source, sampler, (int2) (x, y) );
 
-               write_imagei( dest, (int2) (x, y), color );
+               write_imageui( dest, (int2) (x, y), color );
             })";
 
         cl_int error;
