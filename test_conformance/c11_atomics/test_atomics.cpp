@@ -1419,8 +1419,7 @@ public:
                                 - cl_half_to_float(testValues[whichDestValue]))
                     > max_error;
         }
-        else
-        if (std::is_same<HostDataType, HOST_FLOAT>::value)
+        else if (std::is_same<HostDataType, HOST_FLOAT>::value)
         {
             if (whichDestValue == 0)
                 return std::abs((HOST_ATOMIC_FLOAT)expected
