@@ -216,6 +216,7 @@ int main(int argc, const char *argv[])
 {
     gReSeed = 1;
     bool modifiedSpvBinariesPath = false;
+    bool listTests = false;
     for (int i = 0; i < argc; ++i) {
         int argsRemoveNum = 0;
         if (argv[i] == spvBinariesPathArg) {
@@ -241,9 +242,12 @@ int main(int argc, const char *argv[])
             argc -= argsRemoveNum;
             --i;
         }
+        listTests |= (argv[i] == std::string("--list")
+                      || argv[i] == std::string("-list"));
     }
-    if (modifiedSpvBinariesPath == false) {
-       printUsage();
+    if (modifiedSpvBinariesPath == false && !listTests)
+    {
+        printUsage();
     }
 
     return runTestHarnessWithCheck(
