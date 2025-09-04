@@ -123,10 +123,6 @@ namespace {
 
 struct ArgSizeTypesIterator
 {
-    using TypeIter =
-        std::tuple<cl_char, cl_uchar, cl_short, cl_ushort, cl_int, cl_uint,
-                   cl_long, cl_ulong, cl_float, cl_half, cl_double>;
-
     ArgSizeTypesIterator(cl_device_id deviceID, cl_context context,
                          cl_command_queue queue)
         : type_num(0), context(context), queue(queue)
@@ -136,8 +132,14 @@ struct ArgSizeTypesIterator
         fp16_supported = is_extension_available(deviceID, "cl_khr_fp16");
         fp64_supported = is_extension_available(deviceID, "cl_khr_fp64");
 
-        TypeIter it;
-        for_each_elem(it);
+        bool doTest;
+
+        while (type_num < exp_types.size())
+        {
+            doTest = !skip_type(exp_types[type_num]);
+            if (doTest) test_invalid_arg(exp_types[type_num]);
+            type_num++;
+        }
     }
 
     bool skip_type(ExplicitType type)
@@ -153,29 +155,9 @@ struct ArgSizeTypesIterator
         return false;
     }
 
-    template <typename TestType> void iterate_type(const TestType &t)
+    void test_invalid_arg(ExplicitType type)
     {
-        bool doTest = !skip_type(exp_types[type_num]);
-        if (doTest) test_invalid_arg<TestType>(exp_types[type_num]);
-        type_num++;
-    }
-
-    template <std::size_t Out = 0, typename... Tp>
-    inline typename std::enable_if<Out == sizeof...(Tp), void>::type
-    for_each_elem(
-        const std::tuple<Tp...> &) // Unused arguments are given no names.
-    {}
-
-    template <std::size_t Out = 0, typename... Tp>
-        inline typename std::enable_if < Out<sizeof...(Tp), void>::type
-        for_each_elem(const std::tuple<Tp...> &t)
-    {
-        iterate_type(std::get<Out>(t));
-        for_each_elem<Out + 1, Tp...>(t);
-    }
-
-    template <typename TestType> void test_invalid_arg(ExplicitType type)
-    {
+        printf("\nTesting explicit type %d\n", type);
         std::array<unsigned int, 5> sizes = { 1, 2, 4, 8, 16 };
         std::vector<char> buf(sizeof(cl_ulong16), 0);
         for (unsigned i = 0; i < sizes.size(); i++)
