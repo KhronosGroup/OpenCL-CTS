@@ -25,12 +25,10 @@
 
 #include "utility.h"
 
-#if defined(__SSE__)                                                           \
-    || (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64)))
+#if defined(__SSE__) || _M_IX86_FP == 1
 #include <xmmintrin.h>
 #endif
-#if defined(__SSE2__)                                                          \
-    || (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64)))
+#if defined(__SSE2__) || _M_IX86_FP == 2 || defined(_M_X64)
 #include <emmintrin.h>
 #endif
 
@@ -721,9 +719,9 @@ double reference_tanpi(double x)
     double z = reference_fabs(x);
 
     // if big and even  -- caution: only works if x only has single precision
-    if (z >= HEX_DBL(+, 1, 0, +, 24))
+    if (!(z < HEX_DBL(+, 1, 0, +, 24)))
     {
-        if (z == INFINITY) return x - x; // nan
+        if (!isfinite(z)) return x - x; // nan
 
         return reference_copysign(
             0.0, x); // tanpi ( n ) is copysign( 0.0, n)  for even integers n.
@@ -855,8 +853,7 @@ double reference_add(double x, double y)
     volatile float a = (float)x;
     volatile float b = (float)y;
 
-#if defined(__SSE__)                                                           \
-    || (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64)))
+#if defined(__SSE__) || _M_IX86_FP == 1
     // defeat x87
     __m128 va = _mm_set_ss((float)a);
     __m128 vb = _mm_set_ss((float)b);
@@ -953,8 +950,7 @@ double reference_subtract(double x, double y)
 {
     volatile float a = (float)x;
     volatile float b = (float)y;
-#if defined(__SSE__)                                                           \
-    || (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64)))
+#if defined(__SSE__) || _M_IX86_FP == 1
     // defeat x87
     __m128 va = _mm_set_ss((float)a);
     __m128 vb = _mm_set_ss((float)b);
@@ -970,8 +966,7 @@ double reference_multiply(double x, double y)
 {
     volatile float a = (float)x;
     volatile float b = (float)y;
-#if defined(__SSE__)                                                           \
-    || (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64)))
+#if defined(__SSE__) || _M_IX86_FP == 1
     // defeat x87
     __m128 va = _mm_set_ss((float)a);
     __m128 vb = _mm_set_ss((float)b);
@@ -1223,6 +1218,8 @@ double reference_relaxed_exp2(double x) { return reference_exp2(x); }
 double reference_exp2(double x)
 { // Note: only suitable for verifying single precision. Doesn't have range of a
   // full double exp2 implementation.
+    if (isnan(x)) return x;
+
     if (x == 0.0) return 1.0;
 
     // separate x into fractional and integer parts
@@ -3014,7 +3011,7 @@ static inline void shift_right_sticky_128(cl_ulong *hi, cl_ulong *lo, int shift)
             sticky |= (0 != l);
             l = 0;
         }
-        else
+        else if (shift > 0)
         {
             sticky |= (0 != (l << (64 - shift)));
             l >>= shift;
@@ -3321,9 +3318,9 @@ long double reference_tanpil(long double x)
     long double z = reference_fabsl(x);
 
     // if big and even  -- caution: only works if x only has single precision
-    if (z >= HEX_LDBL(+, 1, 0, +, 53))
+    if (!(z < HEX_LDBL(+, 1, 0, +, 53)))
     {
-        if (z == INFINITY) return x - x; // nan
+        if (!isfinite(z)) return x - x; // nan
 
         return reference_copysignl(
             0.0L, x); // tanpi ( n ) is copysign( 0.0, n)  for even integers n.
@@ -5260,8 +5257,9 @@ static double reference_scalbn(double x, int n)
         u.d -= 1.0;
         e = (int)((u.l & 0x7ff0000000000000LL) >> 52) - 1022;
     }
+    if (n >= 2098) return reference_copysign(INFINITY, x);
     e += n;
-    if (e >= 2047 || n >= 2098) return reference_copysign(INFINITY, x);
+    if (e >= 2047) return reference_copysign(INFINITY, x);
     if (e < -51 || n < -2097) return reference_copysign(0.0, x);
     if (e <= 0)
     {

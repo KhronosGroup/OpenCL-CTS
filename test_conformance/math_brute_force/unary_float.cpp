@@ -581,10 +581,12 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         test_info.tgamma_arg_limit = 1755.455f;
     }
 
+    bool correctlyRounded = strcmp(f->name, "sqrt_cr") == 0;
+
     // Init the kernels
     BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
-                                test_info.programs, f->nameInCode,
-                                relaxedMode };
+                                test_info.programs,    f->nameInCode,
+                                relaxedMode,           correctlyRounded };
     if ((error = ThreadPool_Do(BuildKernelFn,
                                gMaxVectorSizeIndex - gMinVectorSizeIndex,
                                &build_info)))
