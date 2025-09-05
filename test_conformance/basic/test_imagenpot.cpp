@@ -82,8 +82,8 @@ REGISTER_TEST(imagenpot)
     cl_kernel        kernel;
     size_t    global_threads[3], local_threads[3];
     size_t            local_workgroup_size;
-    int                img_width;
-    int                img_height;
+    size_t img_width;
+    size_t img_height;
     int                err;
     cl_uint            m;
     size_t max_local_workgroup_size[3];

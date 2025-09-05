@@ -248,7 +248,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     }
 
     // Init input array
-    cl_ulong *p = (cl_ulong *)gIn + thread_id * buffer_elements;
+    cl_double *p = (cl_double *)gIn + thread_id * buffer_elements;
     cl_int *p2 = (cl_int *)gIn2 + thread_id * buffer_elements;
     size_t idx = 0;
     int totalSpecialValueCount = specialValuesCount * specialValuesIntCount;
@@ -257,7 +257,6 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     // Test edge cases
     if (job_id <= (cl_uint)lastSpecialJobIndex)
     {
-        cl_double *fp = (cl_double *)p;
         cl_int *ip2 = (cl_int *)p2;
         uint32_t x, y;
 
@@ -266,7 +265,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
         for (; idx < buffer_elements; idx++)
         {
-            fp[idx] = specialValues[x];
+            p[idx] = specialValues[x];
             ip2[idx] = specialValuesInt[y];
             if (++x >= specialValuesCount)
             {

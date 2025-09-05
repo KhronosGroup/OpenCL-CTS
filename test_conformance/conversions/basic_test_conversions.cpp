@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "harness/mathHelpers.h"
 #include "harness/testHarness.h"
 #include "harness/compat.h"
 #include "harness/ThreadPool.h"
@@ -52,17 +53,17 @@
 
 #include "basic_test_conversions.h"
 
-#if defined(_WIN32)
+#if defined(_M_IX86) || defined(_M_X64)
 #include <mmintrin.h>
 #include <emmintrin.h>
-#else // !_WIN32
+#else
 #if defined(__SSE__)
 #include <xmmintrin.h>
 #endif
 #if defined(__SSE2__)
 #include <emmintrin.h>
 #endif
-#endif // _WIN32
+#endif
 
 cl_context gContext = NULL;
 cl_command_queue gQueue = NULL;
@@ -953,24 +954,6 @@ void MapResultValuesComplete(const std::unique_ptr<CalcRefValsBase> &info)
 
     // e was already released by WriteInputBufferComplete. It should be
     // destroyed automatically soon after we exit.
-}
-
-template <typename T> static bool isnan_fp(const T &v)
-{
-    if (std::is_same<T, cl_half>::value)
-    {
-        uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-        uint16_t h_mant = ((cl_half)v) & 0x3FF;
-        return (h_exp == 0x1F && h_mant != 0);
-    }
-    else
-    {
-#if !defined(_WIN32)
-        return std::isnan(v);
-#else
-        return _isnan(v);
-#endif
-    }
 }
 
 template <typename InType>
