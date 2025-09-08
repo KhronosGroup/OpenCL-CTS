@@ -6713,6 +6713,14 @@ cl_device_id get_platform_device (cl_device_type device_type, cl_uint choosen_de
     return devices[choosen_device_index];
 }
 
+static void ListTests()
+{
+    for (unsigned int i = 0; i < (sizeof(spir_suites) / sizeof(sub_suite)); i++)
+    {
+        log_info("\t%s\n", spir_suites[i].name);
+    }
+}
+
 
 /**
  Parses the command line parameters and set the
@@ -6761,7 +6769,7 @@ static int ParseCommandLine (int argc, const char *argv[],
         /* Process the command line arguments */
 
     /* Special case: just list the tests */
-    if( ( argc > 1 ) && (!strcmp( argv[ 1 ], "-list" ) || !strcmp( argv[ 1 ], "-h" ) || !strcmp( argv[ 1 ], "--help" )))
+    if ((argc > 1) && (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")))
     {
         log_info( "Usage: %s [<suite name>] [pid<num>] [id<num>] [<device type>] [w32] [no-unzip]\n", argv[0] );
         log_info( "\t<suite name>\tOne or more of: (default all)\n");
@@ -6771,10 +6779,12 @@ static int ParseCommandLine (int argc, const char *argv[],
         log_info( "\tw32\t\tIndicates device address bits is 32.\n" );
         log_info( "\tno-unzip\t\tDo not extract test files from Zip; use existing.\n" );
 
-        for( unsigned int i = 0; i < (sizeof(spir_suites) / sizeof(sub_suite)); i++ )
-        {
-            log_info( "\t\t%s\n", spir_suites[i].name );
-        }
+        ListTests();
+        return 0;
+    }
+    else if (!strcmp(argv[1], "--list") || !strcmp(argv[1], "-list"))
+    {
+        ListTests();
         return 0;
     }
 
