@@ -359,6 +359,26 @@ REGISTER_TEST(null_required_work_group_size)
             clGetKernelSuggestedLocalWorkSizeKHR != nullptr;
     }
 
+    cl_uint device_max_dim = 0;
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,
+                            sizeof(device_max_dim), &device_max_dim, nullptr);
+    test_error(error,
+               "clGetDeviceInfo for CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS failed");
+    test_assert_error(device_max_dim >= 3,
+                      "CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS must be at least 3!");
+
+    std::vector<size_t> device_max_work_item_sizes(device_max_dim);
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
+                            sizeof(size_t) * device_max_dim,
+                            device_max_work_item_sizes.data(), nullptr);
+
+    size_t device_max_work_group_size = 0;
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE,
+                            sizeof(device_max_work_group_size),
+                            &device_max_work_group_size, nullptr);
+    test_error(error,
+               "clGetDeviceInfo for CL_DEVICE_MAX_WORK_GROUP_SIZE failed");
+
     clMemWrapper dst;
     dst = clCreateBuffer(context, CL_MEM_READ_WRITE, 3 * sizeof(cl_int),
                          nullptr, &error);
@@ -405,6 +425,23 @@ REGISTER_TEST(null_required_work_group_size)
         {
             const cl_int expected[3] = { 2, work_dim >= 2 ? 3 : 1,
                                          work_dim >= 3 ? 4 : 1 };
+            const size_t test_work_group_size =
+                expected[0] * expected[1] * expected[2];
+            if ((size_t)expected[0] > device_max_work_item_sizes[0]
+                || (size_t)expected[1] > device_max_work_item_sizes[1]
+                || (size_t)expected[2] > device_max_work_item_sizes[2]
+                || test_work_group_size > device_max_work_group_size)
+            {
+                log_info("Skipping test for work_dim = %u: required work group "
+                         "size (%i, %i, %i) (total %zu) exceeds device max "
+                         "work group size (%zu, %zu, %zu) (total %zu)\n",
+                         work_dim, expected[0], expected[1], expected[2],
+                         test_work_group_size, device_max_work_item_sizes[0],
+                         device_max_work_item_sizes[1],
+                         device_max_work_item_sizes[2],
+                         device_max_work_group_size);
+            }
+
             const cl_int zero = 0;
             error = clEnqueueFillBuffer(queue, dst, &zero, sizeof(zero), 0,
                                         sizeof(expected), 0, nullptr, nullptr);
