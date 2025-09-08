@@ -100,6 +100,17 @@ struct CommandBufferPipelined : public BasicCommandBufferTest
 
         error = clFinalizeCommandBufferKHR(cmd_buf);
         test_error(error, "clFinalizeCommandBufferKHR failed");
+
+        // Zero initialize buffer before starting test
+        cl_int zero_pattern = 0;
+        error =
+            clEnqueueFillBuffer(queue, out_mem, &zero_pattern, sizeof(cl_int),
+                                0, data_size(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueFillBuffer failed");
+
+        error = clFinish(queue);
+        test_error(error, "clFinish failed");
+
         return CL_SUCCESS;
     }
 
