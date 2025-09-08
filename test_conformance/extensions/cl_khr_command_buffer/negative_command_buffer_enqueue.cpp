@@ -429,6 +429,9 @@ struct EnqueueCommandBufferEventWaitListNullOrEventsNull
                                "CL_INVALID_EVENT_WAIT_LIST",
                                TEST_FAIL);
 
+        error = clSetUserEventStatus(event, CL_COMPLETE);
+        test_error(error, "Unable to set user event to complete");
+
         return CL_SUCCESS;
     }
 };
