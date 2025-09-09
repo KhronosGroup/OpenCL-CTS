@@ -52,8 +52,8 @@ BufferType* verify[TotalImages];
 BufferType* backing[TotalImages];
 
 // Temporary buffer used for read and write operations.
-BufferType* tmp_buffer;
-size_t tmp_buffer_size;
+std::vector<BufferType> tmp_buffer_read;
+std::vector<BufferType> tmp_buffer_write;
 
 size_t num_tries   = 50; // Number of randomly selected operations to perform.
 size_t alloc_scale = 2;   // Scale term applied buffer allocation size.
@@ -240,28 +240,45 @@ int verify_region(BufferType* device, size_t src, size_t soffset[3], size_t sreg
     return 0;
 }
 
-
 // This function invokes ReadBufferRect to read a region from the
 // specified source buffer into a temporary destination buffer. The
 // contents of the temporary buffer are then compared to the source
 // region of the corresponding verify buffer.
-int read_verify_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst, size_t doffset[3], size_t dregion[3]) {
-
+int read_verify_region(size_t src, size_t soffset[3], size_t sregion[3],
+                       size_t dst, size_t doffset[3], size_t dregion[3])
+{
     // Clear the temporary destination host buffer.
-    memset(tmp_buffer, 0xff, tmp_buffer_size);
+    if (tmp_buffer_read.empty())
+    {
+        log_error("Error: work buffer invalid\n");
+        return -1;
+    }
+    memset(tmp_buffer_read.data(), 0xff,
+           tmp_buffer_read.size() * sizeof(tmp_buffer_read.front()));
 
-    size_t src_slice_pitch = (width[src]*height[src] != 1) ? width[src]*height[src] : 0;
-    size_t dst_slice_pitch = (width[dst]*height[dst] != 1) ? width[dst]*height[dst] : 0;
+    // Compute or provide zero pitches randomly
+    size_t src_slice_pitch =
+        (width[src] * height[src] != 1 && ((genrand_int32(mt) % 2) != 0))
+        ? width[src] * height[src]
+        : 0;
+    size_t dst_slice_pitch =
+        (width[dst] * height[dst] != 1 && ((genrand_int32(mt) % 2) != 0))
+        ? width[dst] * height[dst]
+        : 0;
+    size_t src_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[src] : 0;
+    size_t dst_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[dst] : 0;
 
-    // Copy the source region of the cl buffer, to the destination region of the temporary buffer.
+    // Copy the source region of the cl buffer, to the destination region of the
+    // temporary buffer.
     CL_EXIT_ERROR(clEnqueueReadBufferRect(
                       gQueue, buffer[src], CL_TRUE, soffset, doffset, sregion,
-                      width[src], src_slice_pitch, width[dst], dst_slice_pitch,
-                      tmp_buffer, 0, NULL, NULL),
+                      src_row_pitch, src_slice_pitch, dst_row_pitch,
+                      dst_slice_pitch, tmp_buffer_read.data(), 0, NULL, NULL),
                   "clEnqueueCopyBufferRect failed between %u and %u",
                   (unsigned)src, (unsigned)dst);
 
-    return verify_region(tmp_buffer,src,soffset,sregion,dst,doffset);
+    return verify_region(tmp_buffer_read.data(), src, soffset, sregion, dst,
+                         doffset);
 }
 
 // This function performs the same verification check as
@@ -293,19 +310,28 @@ int map_verify_region(size_t src) {
 
 // This function generates a new temporary buffer and then writes a
 // region of it to a region in the specified destination buffer.
-int write_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst, size_t doffset[3], size_t dregion[3]) {
+int write_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst,
+                 size_t doffset[3], size_t dregion[3])
+{
+    // Compute or provide zero pitches randomly
+    size_t src_slice_pitch =
+        (width[src] * height[src] != 1 && ((genrand_int32(mt) % 2) != 0))
+        ? width[src] * height[src]
+        : 0;
+    size_t dst_slice_pitch =
+        (width[dst] * height[dst] != 1 && ((genrand_int32(mt) % 2) != 0))
+        ? width[dst] * height[dst]
+        : 0;
+    size_t src_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[src] : 0;
+    size_t dst_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[dst] : 0;
 
-    initialize_image(tmp_buffer, tmp_buffer_size, 1, 1, mt);
-    // memset(tmp_buffer, 0xf0, tmp_buffer_size);
-
-    size_t src_slice_pitch = (width[src]*height[src] != 1) ? width[src]*height[src] : 0;
-    size_t dst_slice_pitch = (width[dst]*height[dst] != 1) ? width[dst]*height[dst] : 0;
-
-    // Copy the source region of the cl buffer, to the destination region of the temporary buffer.
+    // Copy the source region of the cl buffer, to the destination region of the
+    // temporary buffer.
     CL_EXIT_ERROR(clEnqueueWriteBufferRect(
                       gQueue, buffer[dst], CL_TRUE, doffset, soffset,
-                      /*sregion,*/ dregion, width[dst], dst_slice_pitch,
-                      width[src], src_slice_pitch, tmp_buffer, 0, NULL, NULL),
+                      /*sregion,*/ dregion, dst_row_pitch, dst_slice_pitch,
+                      src_row_pitch, src_slice_pitch, tmp_buffer_write.data(),
+                      0, NULL, NULL),
                   "clEnqueueWriteBufferRect failed between %u and %u",
                   (unsigned)src, (unsigned)dst);
 
@@ -332,7 +358,7 @@ int write_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst, s
         size_t s_idx = (soffset[2]+sz)*sslice + (soffset[1]+sy)*spitch + soffset[0]+sx;
         size_t d_idx = (doffset[2]+dz)*dslice + (doffset[1]+dy)*dpitch + doffset[0]+dx;
 
-        verify[dst][d_idx] = tmp_buffer[s_idx];
+        verify[dst][d_idx] = tmp_buffer_write[s_idx];
     }
     return 0;
 }
@@ -422,8 +448,10 @@ static int test_bufferreadwriterect_impl(cl_device_id device,
     log_info("Total size: %zu MB (truncated)\n", total_bytes / 1048576);
 
     // Allocate a temporary buffer for read and write operations.
-    tmp_buffer_size  = max_size;
-    tmp_buffer = (BufferType*)malloc(tmp_buffer_size);
+    tmp_buffer_read.resize(max_size);
+    tmp_buffer_write.resize(max_size);
+    initialize_image(tmp_buffer_write.data(), tmp_buffer_write.size(), 1, 1,
+                     mt);
 
     // Initialize cl buffers
     log_info( "Initializing buffers\n" );
@@ -571,7 +599,6 @@ static int test_bufferreadwriterect_impl(cl_device_id device,
         free( verify[i] );
         clReleaseMemObject( buffer[i] );
     }
-    free( tmp_buffer );
 
     if (!err) {
         log_info("RECT read, write test passed\n");
