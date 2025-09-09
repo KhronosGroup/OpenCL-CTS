@@ -2608,53 +2608,177 @@ REGISTER_TEST(svm_atomic_fetch_xor2)
 template <typename HostAtomicType, typename HostDataType>
 class CBasicTestFetchMin
     : public CBasicTestMemOrderScope<HostAtomicType, HostDataType> {
+    double min_range;
+    double max_range;
+
 public:
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::StartValue;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DataType;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrder;
     using CBasicTestMemOrderScope<HostAtomicType,
                                   HostDataType>::MemoryOrderScopeStr;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
     CBasicTestFetchMin(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
-                                                                useSVM)
+                                                                useSVM),
+          min_range(-999.0), max_range(999.0)
     {
         StartValue(DataType().MaxValue());
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        {
+            CBasicTestMemOrderScope<HostAtomicType,
+                                    HostDataType>::OldValueCheck(false);
+        }
     }
-    virtual std::string ProgramCore()
+    std::string ProgramCore() override
     {
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
-        return "  oldValues[tid] = atomic_fetch_min" + postfix
-            + "(&destMemory[0], oldValues[tid] " + memoryOrderScope + ");\n";
-    }
-    virtual void HostFunction(cl_uint tid, cl_uint threadCount,
-                              volatile HostAtomicType *destMemory,
-                              HostDataType *oldValues)
-    {
-        oldValues[tid] = host_atomic_fetch_min(&destMemory[0], oldValues[tid],
-                                               MemoryOrder());
-    }
-    virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
-                              MTdata d)
-    {
-        for (cl_uint i = 0; i < threadCount; i++)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
         {
-            startRefValues[i] = genrand_int32(d);
-            if (sizeof(HostDataType) >= 8)
-                startRefValues[i] |= (HostDataType)genrand_int32(d) << 16;
+            return "  atomic_fetch_min" + postfix
+                + "(&destMemory[0], oldValues[tid] " + memoryOrderScope + ");\n"
+                + "  oldValues[tid] = atomic_fetch_min" + postfix
+                + "(&destMemory[tid], (" + DataType().AddSubOperandTypeName()
+                + ")0" + memoryOrderScope + ");\n";
+        }
+        else
+        {
+            return "  oldValues[tid] = atomic_fetch_min" + postfix
+                + "(&destMemory[0], oldValues[tid] " + memoryOrderScope
+                + ");\n";
+        }
+    }
+    void HostFunction(cl_uint tid, cl_uint threadCount,
+                      volatile HostAtomicType *destMemory,
+                      HostDataType *oldValues) override
+    {
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        {
+            host_atomic_fetch_min(&destMemory[0], oldValues[tid],
+                                  MemoryOrder());
+            oldValues[tid] = host_atomic_fetch_min(
+                &destMemory[tid], (HostDataType)0, MemoryOrder());
+        }
+        else
+        {
+            oldValues[tid] = host_atomic_fetch_min(
+                &destMemory[0], oldValues[tid], MemoryOrder());
+        }
+    }
+    bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
+                      MTdata d) override
+    {
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        {
+            for (cl_uint i = 0; i < threadCount; i++)
+            {
+                startRefValues[i] = get_random_float(min_range, max_range, d);
+            }
+        }
+        else
+        {
+            for (cl_uint i = 0; i < threadCount; i++)
+            {
+                startRefValues[i] = genrand_int32(d);
+                if (sizeof(HostDataType) >= 8)
+                {
+                    cl_ulong v = startRefValues[i];
+                    v |= (cl_ulong)genrand_int32(d) << 16;
+                    startRefValues[i] = v;
+                }
+            }
         }
         return true;
     }
-    virtual bool ExpectedValue(HostDataType &expected, cl_uint threadCount,
-                               HostDataType *startRefValues,
-                               cl_uint whichDestValue)
+    bool ExpectedValue(HostDataType &expected, cl_uint threadCount,
+                       HostDataType *startRefValues,
+                       cl_uint whichDestValue) override
     {
         expected = StartValue();
-        for (cl_uint i = 0; i < threadCount; i++)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
         {
-            if (startRefValues[i] < expected) expected = startRefValues[i];
+            if (whichDestValue == 0)
+                for (cl_uint i = 0; i < threadCount; i++)
+                    if (startRefValues[i] < expected)
+                        expected = startRefValues[i];
+        }
+        else
+        {
+            for (cl_uint i = 0; i < threadCount; i++)
+            {
+                if (startRefValues[i] < expected) expected = startRefValues[i];
+            }
         }
         return true;
+    }
+    bool IsTestNotAsExpected(const HostDataType &expected,
+                             const std::vector<HostAtomicType> &testValues,
+                             cl_uint whichDestValue) override
+    {
+        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        {
+            if (whichDestValue == 0)
+                return CBasicTestMemOrderScope<HostAtomicType, HostDataType>::
+                    IsTestNotAsExpected(expected, testValues, whichDestValue);
+            return false; // ignore all but 0 which stores final result
+        }
+        return CBasicTestMemOrderScope<
+            HostAtomicType, HostDataType>::IsTestNotAsExpected(expected,
+                                                               testValues,
+                                                               whichDestValue);
+    }
+    bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
+                    HostAtomicType *finalValues) override
+    {
+        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        {
+            correct = true;
+            for (cl_uint i = 1; i < threadCount; i++)
+            {
+                for (cl_uint i = 1; i < threadCount; i++)
+                {
+                    log_error("Thread %d found %d mismatch(es)\n", i,
+                              (cl_uint)refValues[i]);
+                    correct = false;
+                }
+            }
+            return !correct;
+        }
+        return CBasicTestMemOrderScope<HostAtomicType,
+                                       HostDataType>::VerifyRefs(correct,
+                                                                 threadCount,
+                                                                 refValues,
+                                                                 finalValues);
+    }
+    int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
+                          cl_command_queue queue) override
+    {
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        {
+            if (LocalMemory()
+                && (gFloatAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gFloatAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0;
+        }
+        return CBasicTestMemOrderScope<
+            HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context,
+                                                             queue);
+    }
+    cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
+    {
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        {
+            return threadCount;
+        }
+        return CBasicTestMemOrderScope<HostAtomicType,
+                                       HostDataType>::NumResults(threadCount,
+                                                                 deviceID);
     }
 };
 
@@ -2680,6 +2804,15 @@ static int test_atomic_fetch_min_generic(cl_device_id deviceID,
         TYPE_ATOMIC_ULONG, useSVM);
     EXECUTE_TEST(error,
                  test_ulong.Execute(deviceID, context, queue, num_elements));
+
+    if (gFloatAtomicsSupported)
+    {
+        CBasicTestFetchMin<HOST_ATOMIC_FLOAT, HOST_FLOAT> test_float(
+            TYPE_ATOMIC_FLOAT, useSVM);
+        EXECUTE_TEST(
+            error, test_float.Execute(deviceID, context, queue, num_elements));
+    }
+
     if (AtomicTypeInfo(TYPE_ATOMIC_SIZE_T).Size(deviceID) == 4)
     {
         CBasicTestFetchMin<HOST_ATOMIC_INTPTR_T32, HOST_INTPTR_T32>
@@ -2742,53 +2875,177 @@ REGISTER_TEST(svm_atomic_fetch_min)
 template <typename HostAtomicType, typename HostDataType>
 class CBasicTestFetchMax
     : public CBasicTestMemOrderScope<HostAtomicType, HostDataType> {
+    double min_range;
+    double max_range;
+
 public:
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::StartValue;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DataType;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrder;
     using CBasicTestMemOrderScope<HostAtomicType,
                                   HostDataType>::MemoryOrderScopeStr;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
     CBasicTestFetchMax(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
-                                                                useSVM)
+                                                                useSVM),
+          min_range(-999.0), max_range(999.0)
     {
         StartValue(DataType().MinValue());
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        {
+            CBasicTestMemOrderScope<HostAtomicType,
+                                    HostDataType>::OldValueCheck(false);
+        }
     }
-    virtual std::string ProgramCore()
+    std::string ProgramCore() override
     {
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
-        return "  oldValues[tid] = atomic_fetch_max" + postfix
-            + "(&destMemory[0], oldValues[tid] " + memoryOrderScope + ");\n";
-    }
-    virtual void HostFunction(cl_uint tid, cl_uint threadCount,
-                              volatile HostAtomicType *destMemory,
-                              HostDataType *oldValues)
-    {
-        oldValues[tid] = host_atomic_fetch_max(&destMemory[0], oldValues[tid],
-                                               MemoryOrder());
-    }
-    virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
-                              MTdata d)
-    {
-        for (cl_uint i = 0; i < threadCount; i++)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
         {
-            startRefValues[i] = genrand_int32(d);
-            if (sizeof(HostDataType) >= 8)
-                startRefValues[i] |= (HostDataType)genrand_int32(d) << 16;
+            return "  atomic_fetch_max" + postfix
+                + "(&destMemory[0], oldValues[tid] " + memoryOrderScope + ");\n"
+                + "  oldValues[tid] = atomic_fetch_max" + postfix
+                + "(&destMemory[tid], (" + DataType().AddSubOperandTypeName()
+                + ")0" + memoryOrderScope + ");\n";
+        }
+        else
+        {
+            return "  oldValues[tid] = atomic_fetch_max" + postfix
+                + "(&destMemory[0], oldValues[tid] " + memoryOrderScope
+                + ");\n";
+        }
+    }
+    void HostFunction(cl_uint tid, cl_uint threadCount,
+                      volatile HostAtomicType *destMemory,
+                      HostDataType *oldValues) override
+    {
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        {
+            host_atomic_fetch_max(&destMemory[0], oldValues[tid],
+                                  MemoryOrder());
+            oldValues[tid] = host_atomic_fetch_max(
+                &destMemory[tid], (HostDataType)0, MemoryOrder());
+        }
+        else
+        {
+            oldValues[tid] = host_atomic_fetch_max(
+                &destMemory[0], oldValues[tid], MemoryOrder());
+        }
+    }
+    bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
+                      MTdata d) override
+    {
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        {
+            for (cl_uint i = 0; i < threadCount; i++)
+            {
+                startRefValues[i] = get_random_float(min_range, max_range, d);
+            }
+        }
+        else
+        {
+            for (cl_uint i = 0; i < threadCount; i++)
+            {
+                startRefValues[i] = genrand_int32(d);
+                if (sizeof(HostDataType) >= 8)
+                {
+                    cl_ulong v = startRefValues[i];
+                    v |= (cl_ulong)genrand_int32(d) << 16;
+                    startRefValues[i] = v;
+                }
+            }
         }
         return true;
     }
-    virtual bool ExpectedValue(HostDataType &expected, cl_uint threadCount,
-                               HostDataType *startRefValues,
-                               cl_uint whichDestValue)
+    bool ExpectedValue(HostDataType &expected, cl_uint threadCount,
+                       HostDataType *startRefValues,
+                       cl_uint whichDestValue) override
     {
         expected = StartValue();
-        for (cl_uint i = 0; i < threadCount; i++)
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
         {
-            if (startRefValues[i] > expected) expected = startRefValues[i];
+            if (whichDestValue == 0)
+                for (cl_uint i = 0; i < threadCount; i++)
+                    if (startRefValues[i] > expected)
+                        expected = startRefValues[i];
+        }
+        else
+        {
+            for (cl_uint i = 0; i < threadCount; i++)
+            {
+                if (startRefValues[i] > expected) expected = startRefValues[i];
+            }
         }
         return true;
+    }
+    bool IsTestNotAsExpected(const HostDataType &expected,
+                             const std::vector<HostAtomicType> &testValues,
+                             cl_uint whichDestValue) override
+    {
+        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        {
+            if (whichDestValue == 0)
+                return CBasicTestMemOrderScope<HostAtomicType, HostDataType>::
+                    IsTestNotAsExpected(expected, testValues, whichDestValue);
+            return false; // ignore all but 0 which stores final result
+        }
+        return CBasicTestMemOrderScope<
+            HostAtomicType, HostDataType>::IsTestNotAsExpected(expected,
+                                                               testValues,
+                                                               whichDestValue);
+    }
+    bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
+                    HostAtomicType *finalValues) override
+    {
+        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        {
+            correct = true;
+            for (cl_uint i = 1; i < threadCount; i++)
+            {
+                if (refValues[i] != StartValue())
+                {
+                    log_error("Thread %d found %d mismatch(es)\n", i,
+                              (cl_uint)refValues[i]);
+                    correct = false;
+                }
+            }
+            return !correct;
+        }
+        return CBasicTestMemOrderScope<HostAtomicType,
+                                       HostDataType>::VerifyRefs(correct,
+                                                                 threadCount,
+                                                                 refValues,
+                                                                 finalValues);
+    }
+    int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
+                          cl_command_queue queue) override
+    {
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        {
+            if (LocalMemory()
+                && (gFloatAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gFloatAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0;
+        }
+        return CBasicTestMemOrderScope<
+            HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context,
+                                                             queue);
+    }
+    cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
+    {
+        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        {
+            return threadCount;
+        }
+        return CBasicTestMemOrderScope<HostAtomicType,
+                                       HostDataType>::NumResults(threadCount,
+                                                                 deviceID);
     }
 };
 
@@ -2814,6 +3071,15 @@ static int test_atomic_fetch_max_generic(cl_device_id deviceID,
         TYPE_ATOMIC_ULONG, useSVM);
     EXECUTE_TEST(error,
                  test_ulong.Execute(deviceID, context, queue, num_elements));
+
+    if (gFloatAtomicsSupported)
+    {
+        CBasicTestFetchMax<HOST_ATOMIC_FLOAT, HOST_FLOAT> test_float(
+            TYPE_ATOMIC_FLOAT, useSVM);
+        EXECUTE_TEST(
+            error, test_float.Execute(deviceID, context, queue, num_elements));
+    }
+
     if (AtomicTypeInfo(TYPE_ATOMIC_SIZE_T).Size(deviceID) == 4)
     {
         CBasicTestFetchMax<HOST_ATOMIC_INTPTR_T32, HOST_INTPTR_T32>

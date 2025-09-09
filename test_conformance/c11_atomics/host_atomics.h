@@ -172,19 +172,34 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
                                   TExplicitMemoryOrderType order_success,
                                   TExplicitMemoryOrderType order_failure)
 {
-  CorrespondingType tmp;
-#if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-  tmp = InterlockedCompareExchange(a, desired, *expected);
+    CorrespondingType tmp;
+    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_FLOAT>)
+    {
+        static std::mutex mtx;
+        std::lock_guard<std::mutex> lock(mtx);
+        tmp = *reinterpret_cast<volatile float *>(a);
+        if (tmp == *expected)
+        {
+            *reinterpret_cast<volatile float *>(a) = desired;
+            return true;
+        }
+        *expected = tmp;
+    }
+    else
+    {
+#if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
+
+        tmp = InterlockedCompareExchange(a, desired, *expected);
 #elif defined(__GNUC__)
-  tmp = __sync_val_compare_and_swap(a, *expected, desired);
+        tmp = __sync_val_compare_and_swap(a, *expected, desired);
 #else
-  log_info("Host function not implemented: atomic_compare_exchange\n");
-  tmp = 0;
+        log_info("Host function not implemented: atomic_compare_exchange\n");
+        tmp = 0;
 #endif
-  if(tmp == *expected)
-    return true;
-  *expected = tmp;
-  return false;
+        if (tmp == *expected) return true;
+        *expected = tmp;
+    }
+    return false;
 }
 
 template <typename AtomicType, typename CorrespondingType>
