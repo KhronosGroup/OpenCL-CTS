@@ -189,10 +189,7 @@ struct UnifiedSVMExecInfo : UnifiedSVMBase
     cl_int setup() override
     {
         cl_int err = UnifiedSVMBase::setup();
-        if (CL_SUCCESS != err)
-        {
-            return err;
-        }
+        test_error(err, "UnifiedSVMBase setup failed");
 
         return createIndirectAccessKernel();
     }
@@ -209,8 +206,7 @@ struct UnifiedSVMExecInfo : UnifiedSVMBase
             err = mem->allocate(alloc_count);
             test_error(err, "SVM allocation failed");
 
-            log_info("   testing clSetKernelExecInfo() SVM type %u \n",
-                     ti);
+            log_info("   testing clSetKernelExecInfo() SVM type %u \n", ti);
             err = test_svm_exec_info_read(mem.get());
             test_error(err, "test_svm_exec_info_read failed");
 
