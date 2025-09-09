@@ -27,7 +27,7 @@ BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
     : CommandBufferTestBase(device), context(context), queue(nullptr),
       num_elements(0), simultaneous_use_support(false),
       out_of_order_support(false), queue_out_of_order_support(false),
-      buffer_size_multiplier(1) /* extends buffer */, command_buffer(this)
+      buffer_size_multiplier(1), command_buffer(this)
 {
     cl_int error = clRetainCommandQueue(queue);
     if (error != CL_SUCCESS)

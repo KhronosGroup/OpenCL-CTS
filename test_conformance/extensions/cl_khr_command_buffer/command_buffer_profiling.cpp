@@ -285,7 +285,7 @@ REGISTER_TEST(profiling)
                                                   num_elements);
 }
 
-REGISTER_TEST(profiling_substitue_queue)
+REGISTER_TEST(profiling_substitute_queue)
 {
     return MakeAndRunTest<CommandBufferSubstituteQueueProfiling>(
         device, context, queue, num_elements);

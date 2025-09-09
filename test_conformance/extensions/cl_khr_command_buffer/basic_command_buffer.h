@@ -78,6 +78,11 @@ protected:
     bool queue_out_of_order_support;
     bool device_side_enqueue_support;
 
+    // Extends size of created 'in_mem' & 'out_mem' buffers, such that the same
+    // cl_mem buffer can be used across multiple enqueues of a command-buffer.
+    // Accessed in the kernel at an offset for each enqueue which is passed as
+    // a kernel parameter through the 'off_mem' buffer.
+    // See BasicCommandBufferTest::SetUpKernel() definition.
     unsigned buffer_size_multiplier;
     clCommandBufferWrapper command_buffer;
 };
