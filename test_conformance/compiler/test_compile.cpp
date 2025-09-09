@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #include "testBase.h"
+
+#include <filesystem>
+
 #if defined(_WIN32)
 #include <time.h>
 #elif defined(__linux__) || defined(__APPLE__)
@@ -3020,15 +3023,6 @@ REGISTER_TEST(execute_after_embedded_header_link)
     return 0;
 }
 
-#if defined(__APPLE__) || defined(__linux)
-#define _mkdir(x) mkdir(x, S_IRWXU)
-#define _chdir chdir
-#define _rmdir rmdir
-#define _unlink unlink
-#else
-#include <direct.h>
-#endif
-
 REGISTER_TEST(execute_after_included_header_link)
 {
     int error;
@@ -3047,100 +3041,60 @@ REGISTER_TEST(execute_after_included_header_link)
     }
 
     /* setup */
-#if (defined(__linux__) || defined(__APPLE__)) && (!defined(__ANDROID__))
-    /* Some tests systems doesn't allow one to write in the test directory */
-    if (_chdir("/tmp") != 0)
+    std::error_code ec;
+    auto temp_dir_path = std::filesystem::temp_directory_path(ec);
+    if (ec)
     {
-        log_error("ERROR: Unable to remove directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
+        log_error("ERROR: Unable to get the temporary directory path\n");
         return -1;
     }
-#endif
-    if (_mkdir("foo") != 0)
+    temp_dir_path = temp_dir_path / "foo" / "bar";
+    std::filesystem::create_directories(temp_dir_path, ec);
+    if (ec)
     {
-        log_error("ERROR: Unable to create directory foo! (in %s:%d)\n",
-                  __FILE__, __LINE__);
+        log_error("ERROR: Unable to create directory: %s, error: %d (%s)\n",
+                  temp_dir_path.u8string().c_str(), ec.value(),
+                  ec.message().c_str());
         return -1;
     }
-    if (_mkdir("foo/bar") != 0)
-    {
-        log_error("ERROR: Unable to create directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    if (_chdir("foo/bar") != 0)
-    {
-        log_error("ERROR: Unable to change to directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    FILE *simple_header_file = fopen(simple_header_name, "w");
+
+    const auto simple_header_path = temp_dir_path / simple_header_name;
+    FILE *simple_header_file =
+        fopen(simple_header_path.u8string().c_str(), "w");
     if (simple_header_file == NULL)
     {
         log_error("ERROR: Unable to create simple header file %s! (in %s:%d)\n",
-                  simple_header_name, __FILE__, __LINE__);
+                  simple_header_path.u8string().c_str(), __FILE__, __LINE__);
         return -1;
     }
     if (fprintf(simple_header_file, "%s", simple_header) < 0)
     {
         log_error(
             "ERROR: Unable to write to simple header file %s! (in %s:%d)\n",
-            simple_header_name, __FILE__, __LINE__);
+            simple_header_path.u8string().c_str(), __FILE__, __LINE__);
         return -1;
     }
     if (fclose(simple_header_file) != 0)
     {
         log_error("ERROR: Unable to close simple header file %s! (in %s:%d)\n",
-                  simple_header_name, __FILE__, __LINE__);
+                  simple_header_path.u8string().c_str(), __FILE__, __LINE__);
         return -1;
     }
-    if (_chdir("../..") != 0)
-    {
-        log_error("ERROR: Unable to change to original working directory! (in "
-                  "%s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-#if (defined(__linux__) || defined(__APPLE__)) && (!defined(__ANDROID__))
-    error = clCompileProgram(program, 1, &device, "-I/tmp/foo/bar", 0, NULL,
+
+    const std::string include_path =
+        std::string("-I") + temp_dir_path.generic_u8string();
+    error = clCompileProgram(program, 1, &device, include_path.c_str(), 0, NULL,
                              NULL, NULL, NULL);
-#else
-    error = clCompileProgram(program, 1, &device, "-Ifoo/bar", 0, NULL, NULL,
-                             NULL, NULL);
-#endif
     test_error(error,
                "Unable to compile a simple program with included header");
 
     /* cleanup */
-    if (_chdir("foo/bar") != 0)
+    std::filesystem::remove_all(temp_dir_path, ec);
+    if (ec)
     {
-        log_error("ERROR: Unable to change to directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    if (_unlink(simple_header_name) != 0)
-    {
-        log_error("ERROR: Unable to remove simple header file %s! (in %s:%d)\n",
-                  simple_header_name, __FILE__, __LINE__);
-        return -1;
-    }
-    if (_chdir("../..") != 0)
-    {
-        log_error("ERROR: Unable to change to original working directory! (in "
-                  "%s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    if (_rmdir("foo/bar") != 0)
-    {
-        log_error("ERROR: Unable to remove directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    if (_rmdir("foo") != 0)
-    {
-        log_error("ERROR: Unable to remove directory foo! (in %s:%d)\n",
-                  __FILE__, __LINE__);
+        log_error("ERROR: Unable to delete directory: %s, error: %d (%s)",
+                  temp_dir_path.u8string().c_str(), ec.value(),
+                  ec.message().c_str());
         return -1;
     }
 
