@@ -19,6 +19,9 @@
 #include <algorithm>
 #include <memory>
 
+constexpr cl_bitfield CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR =
+    ((cl_bitfield)1 << 63);
+
 static inline void parseSVMAllocProperties(
     std::vector<cl_svm_alloc_properties_khr> props, cl_device_id& device,
     cl_svm_alloc_access_flags_khr& accessFlags, size_t& alignment)
@@ -82,7 +85,7 @@ public:
             free();
         }
 
-        if (caps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
+        if (caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
         {
             if (count == 0)
             {
@@ -135,7 +138,7 @@ public:
     {
         if (data)
         {
-            if (caps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
+            if (caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
             {
                 align_free(data);
             }
@@ -316,6 +319,42 @@ struct UnifiedSVMBase
         test_error(
             err,
             "clGetDeviceInfo failed for CL_DEVICE_SVM_CAPABILITIES_KHR data");
+
+        test_assert_error(platformUSVMCaps.size() == deviceUSVMCaps.size(),
+                          "Platform SVM capability size does not match device "
+                          "SVM capability size!");
+
+        const size_t check = platformUSVMCaps.size();
+
+        // Look through the platform and device SVM capabilities.
+        // If our pseudo capability to indicate that the system allocator should
+        // be used is reported as a real capability, then we can't continue
+        // testing.
+        for (size_t ti = 0; ti < check; ti++)
+        {
+            auto caps = deviceUSVMCaps[ti];
+            if (caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
+            {
+                log_info("Unable to continue, device reports system allocator "
+                         "pseudo-capability as an SVM capability.\n");
+                return CL_INVALID_OPERATION;
+            }
+        }
+
+        // For any capabilities that support the system allocator, add a
+        // scenario testing with the system allocator vs. allocating via OpenCL.
+        for (size_t ti = 0; ti < check; ti++)
+        {
+            if (deviceUSVMCaps[ti] & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
+            {
+                deviceUSVMCaps.push_back(
+                    deviceUSVMCaps[ti]
+                    | CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR);
+                platformUSVMCaps.push_back(
+                    platformUSVMCaps[ti]
+                    | CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR);
+            }
+        }
 
         clSVMAllocWithPropertiesKHR = (clSVMAllocWithPropertiesKHR_fn)
             clGetExtensionFunctionAddressForPlatform(

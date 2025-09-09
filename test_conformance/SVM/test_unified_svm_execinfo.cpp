@@ -209,19 +209,13 @@ struct UnifiedSVMExecInfo : UnifiedSVMBase
             err = mem->allocate(alloc_count);
             test_error(err, "SVM allocation failed");
 
-            log_info("   testing clSetKernelArgSVMPointer() SVM type %u \n",
+            log_info("   testing clSetKernelExecInfo() SVM type %u \n",
                      ti);
             err = test_svm_exec_info_read(mem.get());
-            if (CL_SUCCESS != err)
-            {
-                return err;
-            }
+            test_error(err, "test_svm_exec_info_read failed");
 
             err = test_svm_exec_info_write(mem.get());
-            if (CL_SUCCESS != err)
-            {
-                return err;
-            }
+            test_error(err, "test_svm_exec_info_write failed");
 
             err = mem->free();
             test_error(err, "SVM free failed");

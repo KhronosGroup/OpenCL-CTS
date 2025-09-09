@@ -145,41 +145,10 @@ struct UnifiedSVMMemFill : UnifiedSVMBase
     {
         return std::unique_ptr<USVMWrapper<T>>(
             new USVMWrapper<T>(nullptr, nullptr, nullptr, CL_UINT_MAX,
-                               CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR
+                               CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR
                                    | CL_SVM_CAPABILITY_HOST_READ_KHR
                                    | CL_SVM_CAPABILITY_HOST_WRITE_KHR,
                                0, nullptr, nullptr, nullptr, nullptr));
-    }
-
-    bool check_for_common_memory_type(cl_uint srcTypeIndex,
-                                      cl_uint dstTypeIndex)
-    {
-
-        const auto srcCaps = deviceUSVMCaps[srcTypeIndex];
-        const auto dstCaps = deviceUSVMCaps[dstTypeIndex];
-
-        // Is either allocation a system allocation
-        if ((srcCaps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
-            || (dstCaps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR))
-        {
-            return true;
-        }
-
-        // Is it possible to use the host
-        if ((srcCaps & CL_SVM_CAPABILITY_HOST_READ_KHR)
-            && (dstCaps & CL_SVM_CAPABILITY_HOST_WRITE_KHR))
-        {
-            return true;
-        }
-
-        // Is it posible to use the device
-        if ((srcCaps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
-            && (dstCaps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR))
-        {
-            return true;
-        }
-
-        return false;
     }
 
     static constexpr size_t alloc_count = 1024;

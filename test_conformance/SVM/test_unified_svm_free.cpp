@@ -49,7 +49,7 @@ void CL_CALLBACK callback_svm_free(cl_command_queue queue,
     {
         data->svm_pointers[i] = svm_pointers[i];
 
-        if (data->svm_caps[i] & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
+        if (data->svm_caps[i] & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
         {
             align_free(data);
         }
@@ -175,7 +175,7 @@ struct UnifiedSVMFree : UnifiedSVMBase
         for (size_t i = 0; i < deviceUSVMCaps.size(); i++)
         {
             auto caps = deviceUSVMCaps[i];
-            if (0 == (caps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR))
+            if (0 == (caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR))
             {
                 test_indexes.push_back(i);
             }
