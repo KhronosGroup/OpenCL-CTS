@@ -44,27 +44,18 @@
 namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
-// printf tests for cl_khr_command_buffer which handles below cases:
-// -test cases for device side printf
-// -test cases for device side printf with a simultaneous use command-buffer
+// Test for cl_khr_command_buffer which handles a command-buffer containing a
+// printf kernel being repeatedly enqueued.
 
-template <bool simul_use>
 struct CommandBufferPrintfTest : public BasicCommandBufferTest
 {
     CommandBufferPrintfTest(cl_device_id device, cl_context context,
                             cl_command_queue queue)
-        : BasicCommandBufferTest(device, context, queue),
-          trigger_event(nullptr), wait_event(nullptr), file_descriptor(0),
-          printf_use_support(false)
+        : BasicCommandBufferTest(device, context, queue), file_descriptor(0)
     {
-        simultaneous_use_requested = simul_use;
-        if (simul_use)
-        {
-            buffer_size_multiplier = num_test_iters;
-        }
+        buffer_size_multiplier = num_test_iters;
     }
 
-    //--------------------------------------------------------------------------
     void ReleaseOutputStream(int fd)
     {
         fflush(stdout);
@@ -72,7 +63,6 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         close(fd);
     }
 
-    //--------------------------------------------------------------------------
     int AcquireOutputStream(int* error)
     {
         int fd = streamDup(fileno(stdout));
@@ -85,7 +75,6 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         return fd;
     }
 
-    //--------------------------------------------------------------------------
     void GetAnalysisBuffer(std::stringstream& buffer)
     {
         std::ifstream fp(temp_filename, std::ios::in);
@@ -95,7 +84,6 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         }
     }
 
-    //--------------------------------------------------------------------------
     void PurgeTempFile()
     {
         std::ofstream ofs(temp_filename,
@@ -103,9 +91,10 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         ofs.close();
     }
 
-    //--------------------------------------------------------------------------
     bool Skip() override
     {
+        if (BasicCommandBufferTest::Skip()) return true;
+
         // Query if device supports kernel printf use
         cl_device_command_buffer_capabilities_khr capabilities;
         cl_int error =
@@ -114,16 +103,13 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         test_error(error,
                    "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
 
-        printf_use_support =
+        const bool printf_use_support =
             (capabilities & CL_COMMAND_BUFFER_CAPABILITY_KERNEL_PRINTF_KHR)
             != 0;
 
-        if (!printf_use_support) return true;
-        return BasicCommandBufferTest::Skip()
-            || (simultaneous_use_requested && !simultaneous_use_support);
+        return !printf_use_support;
     }
 
-    //--------------------------------------------------------------------------
     cl_int SetUpKernel() override
     {
         cl_int error = CL_SUCCESS;
@@ -153,14 +139,12 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
     size_t data_size() const override
     {
         return sizeof(cl_char) * num_elements * buffer_size_multiplier
             * max_pattern_length;
     }
 
-    //--------------------------------------------------------------------------
     cl_int SetUpKernelArgs() override
     {
         cl_int error = CL_SUCCESS;
@@ -192,7 +176,6 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
     cl_int SetUp(int elements) override
     {
         auto pcFname = get_temp_filename();
@@ -209,39 +192,10 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         return BasicCommandBufferTest::SetUp(elements);
     }
 
-    //--------------------------------------------------------------------------
-    cl_int Run() override
-    {
-        cl_int error = CL_SUCCESS;
 
-        // record command buffer with primary queue
-        error = RecordCommandBuffer();
-        test_error(error, "RecordCommandBuffer failed");
-
-        if (simultaneous_use_support)
-        {
-            // enqueue simultaneous command-buffers with printf calls
-            error = RunSimultaneous();
-            test_error(error, "RunSimultaneous failed");
-        }
-        else
-        {
-            // enqueue single command-buffer with printf calls
-            error = RunSingle();
-            test_error(error, "RunSingle failed");
-        }
-
-        std::remove(temp_filename.c_str());
-
-        return CL_SUCCESS;
-    }
-
-    //--------------------------------------------------------------------------
     cl_int RecordCommandBuffer()
     {
-        cl_int error = CL_SUCCESS;
-
-        error = clCommandNDRangeKernelKHR(
+        cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
             nullptr, 0, nullptr, nullptr, nullptr);
         test_error(error, "clCommandNDRangeKernelKHR failed");
@@ -251,7 +205,6 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
 #define test_error_release_stdout(errCode, msg)                                \
     {                                                                          \
         auto errCodeResult = errCode;                                          \
@@ -263,96 +216,7 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         }                                                                      \
     }
 
-    //--------------------------------------------------------------------------
-    cl_int EnqueueSinglePass(const std::vector<cl_char>& pattern,
-                             std::vector<cl_char>& output_data)
-    {
-        cl_int error = CL_SUCCESS;
-        auto in_mem_size = sizeof(cl_char) * pattern.size();
-        error = clEnqueueWriteBuffer(queue, in_mem, CL_TRUE, 0, in_mem_size,
-                                     &pattern[0], 0, nullptr, nullptr);
-        test_error(error, "clEnqueueWriteBuffer failed");
-
-        test_assert_error(pattern.size() - 1 <= CL_UINT_MAX,
-                          "pattern.size() - 1 does not fit in a cl_uint");
-        cl_uint offset[] = { 0, static_cast<cl_uint>(pattern.size() - 1) };
-        error = clEnqueueWriteBuffer(queue, off_mem, CL_TRUE, 0, sizeof(offset),
-                                     offset, 0, nullptr, nullptr);
-        test_error(error, "clEnqueueWriteBuffer failed");
-
-        // redirect output stream to temporary file
-        file_descriptor = AcquireOutputStream(&error);
-        if (error != 0)
-        {
-            log_error("Error while redirection stdout to file");
-            return TEST_FAIL;
-        }
-
-        // enqueue command buffer with kernel containing printf command
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
-                                          nullptr, &wait_event);
-        test_error_release_stdout(error, "clEnqueueCommandBufferKHR failed");
-
-        fflush(stdout);
-
-        // Wait until kernel finishes its execution and (thus) the output
-        // printed from the kernel is immediately printed
-        error = clWaitForEvents(1, &wait_event);
-        test_error(error, "clWaitForEvents failed");
-
-        // output buffer contains pattern to be compared with printout
-        error = clEnqueueReadBuffer(queue, out_mem, CL_FALSE, 0, data_size(),
-                                    output_data.data(), 0, nullptr, nullptr);
-        test_error_release_stdout(error, "clEnqueueReadBuffer failed");
-
-        error = clFinish(queue);
-        test_error_release_stdout(error, "clFinish failed");
-
-        ReleaseOutputStream(file_descriptor);
-
-        // copy content of temporary file into string stream
-        std::stringstream sstr;
-        GetAnalysisBuffer(sstr);
-        if (sstr.str().size() != num_elements * offset[1])
-        {
-            log_error("GetAnalysisBuffer failed\n");
-            return TEST_FAIL;
-        }
-
-        // verify the result - compare printout and output buffer
-        for (size_t i = 0; i < num_elements * offset[1]; i++)
-        {
-            CHECK_VERIFICATION_ERROR(sstr.str().at(i), output_data[i], i);
-        }
-
-        return CL_SUCCESS;
-    }
-
-    //--------------------------------------------------------------------------
-    cl_int RunSingle()
-    {
-        cl_int error = CL_SUCCESS;
-        std::vector<cl_char> output_data(num_elements * max_pattern_length);
-
-        for (unsigned i = 0; i < num_test_iters; i++)
-        {
-            unsigned pattern_length =
-                std::max(min_pattern_length, rand() % max_pattern_length);
-            char pattern_character = 'a' + rand() % 26;
-            std::vector<cl_char> pattern(pattern_length + 1, pattern_character);
-            pattern[pattern_length] = '\0';
-            error = EnqueueSinglePass(pattern, output_data);
-            test_error(error, "EnqueueSinglePass failed");
-
-            output_data.assign(output_data.size(), 0);
-            PurgeTempFile();
-        }
-
-        return CL_SUCCESS;
-    }
-
-    //--------------------------------------------------------------------------
-    struct SimulPassData
+    struct EnqueuePassData
     {
         // null terminated character buffer
         std::vector<cl_char> pattern;
@@ -361,8 +225,7 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         std::vector<cl_char> output_buffer;
     };
 
-    //--------------------------------------------------------------------------
-    cl_int EnqueueSimultaneousPass(SimulPassData& pd)
+    cl_int EnqueuePass(EnqueuePassData& pd)
     {
         // write current pattern to device memory
         auto in_mem_size = sizeof(cl_char) * pd.pattern.size();
@@ -377,15 +240,8 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
                                  pd.offset, 0, nullptr, nullptr);
         test_error_release_stdout(error, "clEnqueueWriteBuffer failed");
 
-        // create user event to block simultaneous command buffers
-        if (!trigger_event)
-        {
-            trigger_event = clCreateUserEvent(context, &error);
-            test_error_release_stdout(error, "clCreateUserEvent failed");
-        }
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 1,
-                                          &trigger_event, nullptr);
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
         test_error_release_stdout(error, "clEnqueueCommandBufferKHR failed");
 
         // output buffer contains pattern to be compared with printout
@@ -398,14 +254,14 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-
-    //--------------------------------------------------------------------------
-    cl_int RunSimultaneous()
+    cl_int Run() override
     {
-        cl_int error = CL_SUCCESS;
+        cl_int error = RecordCommandBuffer();
+        test_error(error, "RecordCommandBuffer failed");
+
         cl_int offset = static_cast<cl_int>(num_elements * max_pattern_length);
 
-        std::vector<SimulPassData> simul_passes(num_test_iters);
+        std::vector<EnqueuePassData> enqueue_passes(num_test_iters);
 
         const int pattern_chars_range = 26;
         std::list<cl_char> pattern_chars;
@@ -413,7 +269,7 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
             pattern_chars.push_back(cl_char('a' + i));
 
         test_assert_error(pattern_chars.size() >= num_test_iters,
-                          "Number of simultaneous launches must be lower than "
+                          "Number of launches must be lower than "
                           "size of characters container");
 
         cl_int total_pattern_coverage = 0;
@@ -428,11 +284,12 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
 
             std::vector<cl_char> pattern(pattern_length + 1, pattern_character);
             pattern.back() = '\0';
-            simul_passes[i] = { pattern,
-                                { cl_int(i * offset), cl_int(pattern_length) },
-                                std::vector<cl_char>(num_elements
-                                                     * pattern_length) };
-            total_pattern_coverage += simul_passes[i].output_buffer.size();
+            enqueue_passes[i] = {
+                pattern,
+                { cl_int(i * offset), cl_int(pattern_length) },
+                std::vector<cl_char>(num_elements * pattern_length)
+            };
+            total_pattern_coverage += enqueue_passes[i].output_buffer.size();
             pattern_chars.erase(it);
         };
 
@@ -444,16 +301,13 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
             return TEST_FAIL;
         }
 
-        // enqueue read/write and command buffer operations
-        for (auto&& pass : simul_passes)
+        // enqueue read/write and command buffer operations, serialized
+        // by in-order queue
+        for (auto&& pass : enqueue_passes)
         {
-            error = EnqueueSimultaneousPass(pass);
-            test_error_release_stdout(error, "EnqueueSimultaneousPass failed");
+            error = EnqueuePass(pass);
+            test_error_release_stdout(error, "EnqueuePass failed");
         }
-
-        // execute command buffers
-        error = clSetUserEventStatus(trigger_event, CL_COMPLETE);
-        test_error_release_stdout(error, "clSetUserEventStatus failed");
 
         // flush streams
         fflush(stdout);
@@ -477,13 +331,13 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
         for (int i = 0; i < total_pattern_coverage; i++)
             counters_map[sstr.str().at(i)]++;
 
-        if (counters_map.size() != simul_passes.size())
+        if (counters_map.size() != enqueue_passes.size())
         {
             log_error("printout inconsistent with input data\n");
             return TEST_FAIL;
         }
 
-        for (auto&& pass : simul_passes)
+        for (auto&& pass : enqueue_passes)
         {
             auto& res_data = pass.output_buffer;
 
@@ -501,17 +355,12 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
             }
         }
 
+        std::remove(temp_filename.c_str());
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
-    clEventWrapper trigger_event = nullptr;
-    clEventWrapper wait_event = nullptr;
-
     std::string temp_filename;
     int file_descriptor;
-
-    bool printf_use_support;
 
     // specifies max test length for printf pattern
     const unsigned max_pattern_length = 6;
@@ -523,14 +372,8 @@ struct CommandBufferPrintfTest : public BasicCommandBufferTest
 
 } // anonymous namespace
 
-REGISTER_TEST(basic_printf)
+REGISTER_TEST(printf)
 {
-    return MakeAndRunTest<CommandBufferPrintfTest<false>>(device, context,
-                                                          queue, num_elements);
-}
-
-REGISTER_TEST(simultaneous_printf)
-{
-    return MakeAndRunTest<CommandBufferPrintfTest<true>>(device, context, queue,
-                                                         num_elements);
+    return MakeAndRunTest<CommandBufferPrintfTest>(device, context, queue,
+                                                   num_elements);
 }

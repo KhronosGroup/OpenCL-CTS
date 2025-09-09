@@ -27,9 +27,6 @@ BasicCommandBufferTest::BasicCommandBufferTest(cl_device_id device,
     : CommandBufferTestBase(device), context(context), queue(nullptr),
       num_elements(0), simultaneous_use_support(false),
       out_of_order_support(false), queue_out_of_order_support(false),
-      // try to use simultaneous path by default
-      simultaneous_use_requested(true),
-      // due to simultaneous cases extend buffer size
       buffer_size_multiplier(1), command_buffer(this)
 {
     cl_int error = clRetainCommandQueue(queue);
@@ -72,9 +69,8 @@ bool BasicCommandBufferTest::Skip()
                             sizeof(capabilities), &capabilities, NULL);
     test_error(error,
                "Unable to query CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR");
-    simultaneous_use_support = simultaneous_use_requested
-        && (capabilities & CL_COMMAND_BUFFER_CAPABILITY_SIMULTANEOUS_USE_KHR)
-            != 0;
+    simultaneous_use_support =
+        (capabilities & CL_COMMAND_BUFFER_CAPABILITY_SIMULTANEOUS_USE_KHR) != 0;
     out_of_order_support =
         supported_properties & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
     device_side_enqueue_support =
@@ -167,19 +163,7 @@ cl_int BasicCommandBufferTest::SetUp(int elements)
     error = SetUpKernelArgs();
     test_error(error, "SetUpKernelArgs failed");
 
-    if (simultaneous_use_support)
-    {
-        cl_command_buffer_properties_khr properties[3] = {
-            CL_COMMAND_BUFFER_FLAGS_KHR, CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR,
-            0
-        };
-        command_buffer =
-            clCreateCommandBufferKHR(1, &queue, properties, &error);
-    }
-    else
-    {
-        command_buffer = clCreateCommandBufferKHR(1, &queue, nullptr, &error);
-    }
+    command_buffer = clCreateCommandBufferKHR(1, &queue, nullptr, &error);
     test_error(error, "clCreateCommandBufferKHR failed");
 
     return CL_SUCCESS;
@@ -192,11 +176,6 @@ cl_int MultiFlagCreationTest::Run()
 
     // First try to find multiple flags that are supported by the driver and
     // device.
-    if (simultaneous_use_support)
-    {
-        flags |= CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
-    }
-
     if (is_extension_available(
             device, CL_KHR_COMMAND_BUFFER_MULTI_DEVICE_EXTENSION_NAME))
     {
@@ -207,6 +186,11 @@ cl_int MultiFlagCreationTest::Run()
             device, CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_NAME))
     {
         flags |= CL_COMMAND_BUFFER_MUTABLE_KHR;
+
+        if (simultaneous_use_support)
+        {
+            flags |= CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
+        }
     }
 
     cl_command_buffer_properties_khr props[] = { CL_COMMAND_BUFFER_FLAGS_KHR,
@@ -381,11 +365,6 @@ cl_int ExplicitFlushTest::Run()
     return CL_SUCCESS;
 }
 
-bool ExplicitFlushTest::Skip()
-{
-    return BasicCommandBufferTest::Skip() || !simultaneous_use_support;
-}
-
 cl_int InterleavedEnqueueTest::Run()
 {
     cl_int error = clCommandNDRangeKernelKHR(
@@ -429,11 +408,6 @@ cl_int InterleavedEnqueueTest::Run()
     }
 
     return CL_SUCCESS;
-}
-
-bool InterleavedEnqueueTest::Skip()
-{
-    return BasicCommandBufferTest::Skip() || !simultaneous_use_support;
 }
 
 cl_int EnqueueAndReleaseTest::Run()
