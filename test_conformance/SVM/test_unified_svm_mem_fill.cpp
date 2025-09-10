@@ -130,56 +130,19 @@ struct UnifiedSVMMemFill : UnifiedSVMBase
         // possible pattern sizes
         for (cl_uint ti = 0; ti < max_ti; ti++)
         {
-            log_info("   testing clEnqueueSVMMemFill() SVM type %u \n", ti);
-            err = test_svm_memfill(ti);
-            if (CL_SUCCESS != err)
+            const auto caps = deviceUSVMCaps[ti];
+            if (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR)
             {
-                return err;
+                log_info("   testing clEnqueueSVMMemFill() SVM type %u\n", ti);
+                err = test_svm_memfill(ti);
+                test_error(err, "test_svm_memfill failed");
+            }
+            else
+            {
+                log_info("   skipping clEnqueueSVMMemFill() SVM type %u\n", ti);
             }
         }
         return CL_SUCCESS;
-    }
-
-    template <typename T>
-    std::unique_ptr<USVMWrapper<T>> get_hostptr_usvm_wrapper()
-    {
-        return std::unique_ptr<USVMWrapper<T>>(
-            new USVMWrapper<T>(nullptr, nullptr, nullptr, CL_UINT_MAX,
-                               CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR
-                                   | CL_SVM_CAPABILITY_HOST_READ_KHR
-                                   | CL_SVM_CAPABILITY_HOST_WRITE_KHR,
-                               0, nullptr, nullptr, nullptr, nullptr));
-    }
-
-    bool check_for_common_memory_type(cl_uint srcTypeIndex,
-                                      cl_uint dstTypeIndex)
-    {
-
-        const auto srcCaps = deviceUSVMCaps[srcTypeIndex];
-        const auto dstCaps = deviceUSVMCaps[dstTypeIndex];
-
-        // Is either allocation a system allocation
-        if ((srcCaps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
-            || (dstCaps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR))
-        {
-            return true;
-        }
-
-        // Is it possible to use the host
-        if ((srcCaps & CL_SVM_CAPABILITY_HOST_READ_KHR)
-            && (dstCaps & CL_SVM_CAPABILITY_HOST_WRITE_KHR))
-        {
-            return true;
-        }
-
-        // Is it posible to use the device
-        if ((srcCaps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
-            && (dstCaps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR))
-        {
-            return true;
-        }
-
-        return false;
     }
 
     static constexpr size_t alloc_count = 1024;
