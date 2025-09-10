@@ -29,6 +29,7 @@
 #include <vector>
 #include <iostream>
 #include <string.h>
+#include <inttypes.h>
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 #include "harness/deviceInfo.h"
@@ -84,8 +85,8 @@ struct ConsistencyExternalBufferTest : public VulkanTestBase
 
         vkDeviceMem->bindBuffer(vkBufferList[0], 0);
 
-        void* handle = NULL;
-        int fd;
+        [[maybe_unused]] void* handle = NULL;
+        [[maybe_unused]] int fd;
 
         std::vector<cl_mem_properties> extMemProperties{
             (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
@@ -236,15 +237,15 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
         log_info("Memory type index: %u\n", (uint32_t)memoryTypeList[0]);
         log_info("Memory type property: %d\n",
                  memoryTypeList[0].getMemoryTypeProperty());
-        log_info("Image size : %ld\n", vkImage2D.getSize());
+        log_info("Image size : %" PRIu64 "\n", vkImage2D.getSize());
 
         VulkanDeviceMemory* vkDeviceMem =
             new VulkanDeviceMemory(*vkDevice, vkImage2D, memoryTypeList[0],
                                    vkExternalMemoryHandleType);
         vkDeviceMem->bindImage(vkImage2D, 0);
 
-        void* handle = NULL;
-        int fd;
+        [[maybe_unused]] void* handle = NULL;
+        [[maybe_unused]] int fd;
         std::vector<cl_mem_properties> extMemProperties{
             (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
             (cl_mem_properties)device,
@@ -386,9 +387,9 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
             VulkanSemaphore vkCl2Vksemaphore(*vkDevice, semaphoreHandleType);
             cl_semaphore_khr clCl2Vksemaphore;
             cl_semaphore_khr clVk2Clsemaphore;
-            void* handle1 = NULL;
-            void* handle2 = NULL;
-            int fd1, fd2;
+            [[maybe_unused]] void* handle1 = NULL;
+            [[maybe_unused]] void* handle2 = NULL;
+            [[maybe_unused]] int fd1, fd2;
             std::vector<cl_semaphore_properties_khr> sema_props1{
                 (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_KHR,
                 (cl_semaphore_properties_khr)CL_SEMAPHORE_TYPE_BINARY_KHR,

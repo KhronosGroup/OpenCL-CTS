@@ -35,9 +35,9 @@ static int test_imagearraycopy_single_format(
     std::unique_ptr<cl_uchar, decltype(&free)> bufptr{ nullptr, free },
         imgptr{ nullptr, free };
     clMemWrapper buffer, image;
-    const int img_width = 512;
-    const int img_height = 512;
-    const int img_depth = (image_type == CL_MEM_OBJECT_IMAGE3D) ? 32 : 1;
+    const size_t img_width = 512;
+    const size_t img_height = 512;
+    const size_t img_depth = (image_type == CL_MEM_OBJECT_IMAGE3D) ? 32 : 1;
     size_t elem_size;
     size_t buffer_size;
     cl_int err;

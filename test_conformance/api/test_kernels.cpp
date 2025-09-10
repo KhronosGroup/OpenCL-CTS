@@ -87,6 +87,35 @@ const char *sample_two_kernel_program[] = {
 "\n"
 "}\n" };
 
+const char *sample_mem_obj_size_test_kernel = R"(
+    __kernel void mem_obj_size_test(__global int *src, __global int *dst)
+    {
+        size_t  tid = get_global_id(0);
+        dst[tid] = src[tid];
+    }
+)";
+
+const char *sample_local_size_test_kernel = R"(
+    __kernel void local_size_test(__local int *src, __global int *dst)
+    {
+        size_t  tid = get_global_id(0);
+        dst[tid] = src[tid];
+    }
+)";
+
+const char *sample_read_only_image_test_kernel = R"(
+    __kernel void read_only_image_test(__write_only image2d_t img, __global uint4 *src)
+    {
+        write_imageui(img, (int2)(get_global_id(0), get_global_id(1)), src[0]);
+    }
+)";
+
+const char *sample_write_only_image_test_kernel = R"(
+    __kernel void write_only_image_test(__read_only image2d_t src, __global uint4 *dst)
+    {
+        dst[0]=read_imageui(src, (int2)(get_global_id(0), get_global_id(1)));
+    }
+)";
 
 REGISTER_TEST(get_kernel_info)
 {
@@ -669,7 +698,7 @@ REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
     test_error(error,
                "Unable to get sample_image_test kernel for built program");
 
-    std::vector<cl_uchar> mem_data(size_dim * size_dim);
+    std::vector<cl_uchar> mem_data(size_dim * size_dim * 4);
     buffer = clCreateBuffer(context, CL_MEM_IMMUTABLE_EXT | CL_MEM_USE_HOST_PTR,
                             sizeof(cl_int) * size_dim, mem_data.data(), &error);
     test_error(error, "clCreateBuffer failed");
@@ -700,6 +729,172 @@ REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
                            "with CL_INVALID_ARG_VALUE when an image is "
                            "created with CL_MEM_IMMUTABLE_EXT is "
                            "passed to a write_only kernel argument",
+                           TEST_FAIL);
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_invalid_arg_mem_obj)
+{
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper mem_obj_arg_kernel;
+
+    // Setup the test
+    error =
+        create_single_kernel_helper(context, &program, nullptr, 1,
+                                    &sample_mem_obj_size_test_kernel, nullptr);
+    test_error(error, "Unable to build test program");
+
+    mem_obj_arg_kernel = clCreateKernel(program, "mem_obj_size_test", &error);
+    test_error(error,
+               "Unable to get mem_obj_size_test kernel for built program");
+
+    std::vector<cl_uchar> mem_data(256, 0);
+    clMemWrapper buffer = clCreateBuffer(
+        context, CL_MEM_USE_HOST_PTR, mem_data.size(), mem_data.data(), &error);
+    test_error(error, "clCreateBuffer failed");
+
+    // Run the test - CL_INVALID_ARG_SIZE
+    error = clSetKernelArg(mem_obj_arg_kernel, 0, sizeof(cl_mem) * 2, &buffer);
+    test_failure_error_ret(
+        error, CL_INVALID_ARG_SIZE,
+        "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when "
+        "argument is a memory object and arg_size > sizeof(cl_mem)",
+        TEST_FAIL);
+
+    error = clSetKernelArg(mem_obj_arg_kernel, 0, sizeof(cl_mem) / 2, &buffer);
+    test_failure_error_ret(
+        error, CL_INVALID_ARG_SIZE,
+        "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when "
+        "argument is a memory object and arg_size < sizeof(cl_mem)",
+        TEST_FAIL);
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_invalid_kernel)
+{
+    cl_int error = CL_SUCCESS;
+    clKernelWrapper kernel;
+
+    clMemWrapper mem = clCreateBuffer(context, CL_MEM_READ_ONLY,
+                                      sizeof(cl_float), NULL, &error);
+    test_error(error, "clCreateBuffer failed");
+
+    // Run the test - CL_INVALID_KERNEL
+    error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &mem);
+    test_failure_error_ret(
+        error, CL_INVALID_KERNEL,
+        "clSetKernelArg is supposed to fail with CL_INVALID_KERNEL when kernel "
+        "is not a valid kernel object",
+        TEST_FAIL);
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_invalid_arg_index)
+{
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+
+    // Setup the test
+    error = create_single_kernel_helper(context, &program, nullptr, 1,
+                                        sample_single_test_kernel, nullptr);
+    test_error(error, "Unable to build test program");
+
+    kernel = clCreateKernel(program, "sample_test", &error);
+    test_error(error, "Unable to get sample_test kernel for built program");
+
+    // Run the test - 2 index is out or range - expected CL_INVALID_ARG_INDEX
+    error = clSetKernelArg(kernel, 2, sizeof(cl_mem), nullptr);
+    test_failure_error_ret(
+        error, CL_INVALID_ARG_INDEX,
+        "clSetKernelArg is supposed to fail with CL_INVALID_ARG_INDEX when "
+        "arg_index is not a valid argument index",
+        TEST_FAIL);
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_invalid_arg_size_local)
+{
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper local_arg_kernel;
+
+    // Setup the test
+    error = create_single_kernel_helper(
+        context, &program, nullptr, 1, &sample_local_size_test_kernel, nullptr);
+    test_error(error, "Unable to build test program");
+
+    local_arg_kernel = clCreateKernel(program, "local_size_test", &error);
+    test_error(error, "Unable to get local_size_test kernel for built program");
+
+    // Run the test
+    error = clSetKernelArg(local_arg_kernel, 0, 0, nullptr);
+    test_failure_error_ret(
+        error, CL_INVALID_ARG_SIZE,
+        "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when 0 is "
+        "passed to a local qualifier kernel argument",
+        TEST_FAIL);
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_set_read_write_image_arg)
+{
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper write_image_kernel, read_image_kernel;
+    clMemWrapper write_only_image, read_only_image;
+    const char *test_kernels[2] = { sample_read_only_image_test_kernel,
+                                    sample_write_only_image_test_kernel };
+    constexpr cl_image_format format = { CL_RGBA, CL_UNSIGNED_INT8 };
+    const int size_dim = 128;
+
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device);
+
+    // Setup the test
+    error = create_single_kernel_helper(context, &program, nullptr, 2,
+                                        test_kernels, nullptr);
+    test_error(error, "Unable to build test program");
+
+    read_image_kernel = clCreateKernel(program, "read_only_image_test", &error);
+    test_error(error,
+               "Unable to get read_only_image_test kernel for built program");
+
+    write_image_kernel =
+        clCreateKernel(program, "write_only_image_test", &error);
+    test_error(error,
+               "Unable to get write_only_image_test kernel for built program");
+
+    read_only_image = create_image_2d(context, CL_MEM_READ_ONLY, &format,
+                                      size_dim, size_dim, 0, nullptr, &error);
+    test_error(error, "create_image_2d failed");
+
+    write_only_image = create_image_2d(context, CL_MEM_WRITE_ONLY, &format,
+                                       size_dim, size_dim, 0, nullptr, &error);
+    test_error(error, "create_image_2d failed");
+
+    // Run the test
+    error = clSetKernelArg(read_image_kernel, 0, sizeof(read_only_image),
+                           &read_only_image);
+    test_failure_error_ret(error, CL_INVALID_ARG_VALUE,
+                           "clSetKernelArg is supposed to fail "
+                           "with CL_INVALID_ARG_VALUE when an image is "
+                           "created with CL_MEM_READ_ONLY is "
+                           "passed to a write_only kernel argument",
+                           TEST_FAIL);
+
+    error = clSetKernelArg(write_image_kernel, 0, sizeof(write_only_image),
+                           &write_only_image);
+    test_failure_error_ret(error, CL_INVALID_ARG_VALUE,
+                           "clSetKernelArg is supposed to fail "
+                           "with CL_INVALID_ARG_VALUE when an image is "
+                           "created with CL_MEM_WRITE_ONLY is "
+                           "passed to a read_only kernel argument",
                            TEST_FAIL);
 
     return TEST_PASS;
