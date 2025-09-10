@@ -766,7 +766,6 @@ REGISTER_TEST(negative_invalid_arg_size)
         else if (strchr(get_explicit_type_name(type), ' ') != 0)
             continue;
 
-        printf("\nTesting explicit type %d\n", type);
         std::array<unsigned int, 5> sizes = { 1, 2, 4, 8, 16 };
         std::vector<char> buf(sizeof(cl_ulong16), 0);
         for (unsigned i = 0; i < sizes.size(); i++)
