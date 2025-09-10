@@ -36,6 +36,7 @@ bool gDisableSPIRVValidation = false;
 std::string gSPIRVValidator = DEFAULT_SPIRV_VALIDATOR;
 unsigned gNumWorkerThreads;
 bool gListTests = false;
+bool gWimpyMode = false;
 
 void helpInfo()
 {
@@ -52,6 +53,10 @@ void helpInfo()
         Select parallel execution with the specified number of worker threads.
     --list
         List sub-tests
+    -w, --wimpy
+        Enable wimpy mode. It does not impact all tests. Impacted tests will run
+        with a very small subset of the tests. This option should not be used
+        for conformance submission (default: disabled).
 
 For offline compilation (binary and spir-v modes) only:
     --compilation-cache-mode <cache-mode>
@@ -111,6 +116,11 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
         {
             delArg++;
             gListTests = true;
+        }
+        else if (!strcmp(argv[i], "--wimpy") || !strcmp(argv[i], "-w"))
+        {
+            delArg++;
+            gWimpyMode = true;
         }
         else if (!strcmp(argv[i], "--compilation-mode"))
         {
