@@ -119,105 +119,6 @@ const char *sample_arg_size_test_kernel = R"(
     }
 )";
 
-namespace {
-
-struct ArgSizeTypesIterator
-{
-    ArgSizeTypesIterator(cl_device_id deviceID, cl_context context,
-                         cl_command_queue queue)
-        : type_num(0), context(context), queue(queue)
-    {
-        exp_types = { kChar, kUChar, kShort, kUShort, kInt,   kUInt,
-                      kLong, kULong, kFloat, kHalf,   kDouble };
-        fp16_supported = is_extension_available(deviceID, "cl_khr_fp16");
-        fp64_supported = is_extension_available(deviceID, "cl_khr_fp64");
-
-        bool doTest;
-
-        while (type_num < exp_types.size())
-        {
-            doTest = !skip_type(exp_types[type_num]);
-            if (doTest) test_invalid_arg(exp_types[type_num]);
-            type_num++;
-        }
-    }
-
-    bool skip_type(ExplicitType type)
-    {
-        if ((type == kLong || type == kULong) && !gHasLong)
-            return true;
-        else if (type == kDouble && !fp64_supported)
-            return true;
-        else if (type == kHalf && !fp16_supported)
-            return true;
-        else if (strchr(get_explicit_type_name(type), ' ') != 0)
-            return true;
-        return false;
-    }
-
-    void test_invalid_arg(ExplicitType type)
-    {
-        printf("\nTesting explicit type %d\n", type);
-        std::array<unsigned int, 5> sizes = { 1, 2, 4, 8, 16 };
-        std::vector<char> buf(sizeof(cl_ulong16), 0);
-        for (unsigned i = 0; i < sizes.size(); i++)
-        {
-            clProgramWrapper program;
-            clKernelWrapper kernel;
-
-            size_t destStride = get_explicit_type_size(type) * sizes[i];
-
-            std::ostringstream vecNameStr;
-            vecNameStr << get_explicit_type_name(type);
-            if (sizes[i] != 1) vecNameStr << sizes[i];
-
-            std::string ext_str;
-            if (type == kDouble)
-                ext_str = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
-
-            if (type == kHalf)
-                ext_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
-
-            auto vt_name = vecNameStr.str();
-            std::string program_source =
-                str_sprintf(std::string(sample_arg_size_test_kernel),
-                            ext_str.c_str(), vt_name.c_str(), vt_name.c_str());
-
-            const char *ptr = program_source.c_str();
-            cl_int error = create_single_kernel_helper(
-                context, &program, &kernel, 1, &ptr, "arg_size_test");
-
-            if (error != CL_SUCCESS)
-                throw std::runtime_error("Unable to build test program\n");
-
-            // Run the test
-            size_t reduced = destStride / 2;
-            error = clSetKernelArg(kernel, 0, reduced, buf.data());
-            if (error != CL_INVALID_ARG_SIZE)
-            {
-                std::stringstream sstr;
-                sstr << "clSetKernelArg is supposed to fail "
-                        "with CL_INVALID_ARG_SIZE with type "
-                     << vecNameStr.str() << " and sizeof " << reduced
-                     << std::endl;
-                throw std::runtime_error(sstr.str().c_str());
-            }
-        }
-    }
-
-protected:
-    bool fp16_supported;
-    bool fp64_supported;
-
-    unsigned int type_num;
-    cl_context context;
-    cl_command_queue queue;
-
-    std::vector<ExplicitType> exp_types;
-};
-
-}
-
 REGISTER_TEST(get_kernel_info)
 {
     int error;
@@ -837,14 +738,73 @@ REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
 
 REGISTER_TEST(negative_invalid_arg_size)
 {
-    try
+    std::vector<ExplicitType> exp_types = { kChar,  kUChar, kShort, kUShort,
+                                            kInt,   kUInt,  kLong,  kULong,
+                                            kFloat, kHalf,  kDouble };
+
+    bool fp16_supported = is_extension_available(device, "cl_khr_fp16");
+    bool fp64_supported = is_extension_available(device, "cl_khr_fp64");
+
+    for (unsigned int type_num = 0; type_num < exp_types.size(); type_num++)
     {
-        ArgSizeTypesIterator ti(device, context, queue);
-    } catch (const std::runtime_error &e)
-    {
-        log_error("%s", e.what());
-        return TEST_FAIL;
+        auto type = exp_types[type_num];
+
+        if ((type == kLong || type == kULong) && !gHasLong)
+            continue;
+        else if (type == kDouble && !fp64_supported)
+            continue;
+        else if (type == kHalf && !fp16_supported)
+            continue;
+        else if (strchr(get_explicit_type_name(type), ' ') != 0)
+            continue;
+
+        printf("\nTesting explicit type %d\n", type);
+        std::array<unsigned int, 5> sizes = { 1, 2, 4, 8, 16 };
+        std::vector<char> buf(sizeof(cl_ulong16), 0);
+        for (unsigned i = 0; i < sizes.size(); i++)
+        {
+            clProgramWrapper program;
+            clKernelWrapper kernel;
+
+            size_t destStride = get_explicit_type_size(type) * sizes[i];
+
+            std::ostringstream vecNameStr;
+            vecNameStr << get_explicit_type_name(type);
+            if (sizes[i] != 1) vecNameStr << sizes[i];
+
+            std::string ext_str;
+            if (type == kDouble)
+                ext_str = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+
+            if (type == kHalf)
+                ext_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
+
+            auto vt_name = vecNameStr.str();
+            std::string program_source =
+                str_sprintf(std::string(sample_arg_size_test_kernel),
+                            ext_str.c_str(), vt_name.c_str(), vt_name.c_str());
+
+            const char *ptr = program_source.c_str();
+            cl_int error = create_single_kernel_helper(
+                context, &program, &kernel, 1, &ptr, "arg_size_test");
+            test_error(error, "Unable to build test program!");
+
+            // Run the test
+            size_t reduced = destStride / 2;
+            error = clSetKernelArg(kernel, 0, reduced, buf.data());
+            if (error != CL_INVALID_ARG_SIZE)
+            {
+                std::stringstream sstr;
+                sstr << "clSetKernelArg is supposed to fail "
+                        "with CL_INVALID_ARG_SIZE with type "
+                     << vecNameStr.str() << " and sizeof " << reduced
+                     << std::endl;
+                log_error("%s", sstr.str().c_str());
+                return TEST_FAIL;
+            }
+        }
     }
+
     return TEST_PASS;
 }
 
