@@ -32,8 +32,8 @@ const std::string slash = "\\";
 #else
 const std::string slash = "/";
 #endif
-std::string compilerSpvBinaries = "test_conformance" + slash + "compiler"
-    + slash + "spirv_bin" + slash + "write_kernel.spv";
+std::string compilerSpvBinaries =
+    "compiler" + slash + "spirv_bin" + slash + "write_kernel.spv";
 
 const std::string spvExt = ".spv";
 
