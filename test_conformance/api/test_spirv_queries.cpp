@@ -18,6 +18,8 @@
 #include <map>
 #include <vector>
 
+#ifdef SPIRV_FILES_AVAILABLE
+
 #define SPV_ENABLE_UTILITY_CODE
 #include <spirv/unified1/spirv.hpp>
 
@@ -765,3 +767,15 @@ REGISTER_TEST(spirv_query_dependencies)
 
     return TEST_PASS;
 }
+
+#else
+
+REGISTER_TEST(spirv_query_extension_check_absence_of_files) {
+    if (is_extension_available(device, "cl_khr_spirv_queries"))
+    {
+        log_info("cl_khr_spirv_queries is supported; Enable proper tests!\n");
+        return TEST_FAIL;
+    }
+    return TEST_PASS;
+}
+#endif
