@@ -25,6 +25,43 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <fstream>
+
+#if defined(_WIN32)
+const std::string slash = "\\";
+#else
+const std::string slash = "/";
+#endif
+std::string compilerSpvBinaries = "test_conformance" + slash + "compiler"
+    + slash + "spirv_bin" + slash + "write_kernel.spv";
+
+const std::string spvExt = ".spv";
+
+std::vector<unsigned char> readBinary(const char *file_name)
+{
+    using namespace std;
+
+    ifstream file(file_name, ios::in | ios::binary | ios::ate);
+
+    std::vector<char> tmpBuffer(0);
+
+    if (file.is_open())
+    {
+        size_t size = file.tellg();
+        tmpBuffer.resize(size);
+        file.seekg(0, ios::beg);
+        file.read(&tmpBuffer[0], size);
+        file.close();
+    }
+    else
+    {
+        log_error("File %s not found\n", file_name);
+    }
+
+    std::vector<unsigned char> result(tmpBuffer.begin(), tmpBuffer.end());
+
+    return result;
+}
 
 namespace {
 
@@ -299,18 +336,12 @@ public:
             throw unload_test_failure("Failure getting device address bits");
         }
 
-        switch (address_bits)
-        {
-            case 32:
-                m_spirv_binary = write_kernel_32_spv.data();
-                m_spirv_size = write_kernel_32_spv.size();
-                break;
-            case 64:
-                m_spirv_binary = write_kernel_64_spv.data();
-                m_spirv_size = write_kernel_64_spv.size();
-                break;
-            default: throw unload_test_failure("Invalid address bits");
-        }
+        std::vector<unsigned char> kernel_buffer;
+
+        std::string file_name =
+            compilerSpvBinaries + std::to_string(address_bits);
+        m_spirv_binary = readBinary(file_name.c_str());
+        m_spirv_size = m_spirv_binary.size();
     }
 
     void create() final
@@ -320,7 +351,7 @@ public:
         assert(nullptr == m_program);
 
         cl_int err = CL_INVALID_PLATFORM;
-        m_program = m_CreateProgramWithIL(m_context, m_spirv_binary,
+        m_program = m_CreateProgramWithIL(m_context, &m_spirv_binary[0],
                                           m_spirv_size, &err);
         if (CL_SUCCESS != err)
             throw unload_test_failure("clCreateProgramWithIL()", err);
@@ -347,7 +378,7 @@ public:
     }
 
 private:
-    void *m_spirv_binary;
+    std::vector<unsigned char> m_spirv_binary;
     size_t m_spirv_size;
     bool m_enabled;
 
