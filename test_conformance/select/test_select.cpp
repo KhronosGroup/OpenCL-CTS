@@ -89,7 +89,6 @@ static void printUsage( void );
 // test their entire range and 64 bits test will test the 32 bit
 // range.  Otherwise, we test a subset of the range
 // [-min_short, min_short]
-static bool  s_wimpy_mode = false;
 static int s_wimpy_reduction_factor = 256;
 
 //-----------------------------------------
@@ -141,8 +140,9 @@ static void initCmpBuffer(void *cmp, Type cmptype, uint64_t start,
             break;
         }
         case 4: {
-            if (!s_wimpy_mode) {
-                uint32_t* ui = (uint32_t *)cmp;
+            if (!gWimpyMode)
+            {
+                uint32_t *ui = (uint32_t *)cmp;
                 for (size_t i = 0; i < count; ++i) ui[i] = (uint32_t)start++;
             }
             else {
@@ -323,7 +323,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
 
     cl_ulong blocks = type_size[stype] * 0x100000000ULL / BUFFER_SIZE;
     const size_t block_elements = BUFFER_SIZE / type_size[stype];
-    size_t step = s_wimpy_mode ? s_wimpy_reduction_factor : 1;
+    size_t step = gWimpyMode ? s_wimpy_reduction_factor : 1;
     cl_ulong cmp_stride = block_elements * step;
 
     // It is more efficient to create the tests all at once since we
@@ -474,7 +474,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
         } // for vecsize
     } // for i
 
-    if (!s_wimpy_mode)
+    if (!gWimpyMode)
         log_info(" Passed\n\n");
     else
         log_info(" Wimpy Passed\n\n");
@@ -603,13 +603,9 @@ int main(int argc, const char* argv[])
             arg++;
             while(*arg != '\0')
             {
-                switch(*arg) {
-                    case 'h':
-                        printUsage();
-                        return 0;
-                    case 'w':
-                        s_wimpy_mode = true;
-                        break;
+                switch (*arg)
+                {
+                    case 'h': printUsage(); return 0;
                     case '[':
                         parseWimpyReductionFactor(arg, s_wimpy_reduction_factor);
                         break;
@@ -626,11 +622,7 @@ int main(int argc, const char* argv[])
         }
     }
 
-    if (getenv("CL_WIMPY_MODE")) {
-        s_wimpy_mode = true;
-    }
-
-    if (s_wimpy_mode && !gListTests)
+    if (gWimpyMode && !gListTests)
     {
         log_info("\n");
         log_info("*** WARNING: Testing in Wimpy mode!                     ***\n");
@@ -652,7 +644,6 @@ static void printUsage( void )
 {
     log_info("test_select:  [-w] <optional: test_names> \n");
     log_info("\tdefault is to run the full test on the default device\n");
-    log_info("\t-w run in wimpy mode (smoke test)\n");
     log_info("\t-[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", s_wimpy_reduction_factor);
     log_info("\n");
     log_info("Test names:\n");
