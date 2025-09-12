@@ -770,7 +770,8 @@ REGISTER_TEST(spirv_query_dependencies)
 
 #else
 
-REGISTER_TEST(spirv_query_extension_check_absence_of_files) {
+REGISTER_TEST(spirv_query_extension_check_absence_of_files)
+{
     if (is_extension_available(device, "cl_khr_spirv_queries"))
     {
         log_info("cl_khr_spirv_queries is supported; Enable proper tests!\n");
