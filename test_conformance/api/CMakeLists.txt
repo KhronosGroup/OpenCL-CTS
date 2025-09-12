@@ -2,6 +2,11 @@ set(MODULE_NAME API)
 
 find_package(Python3 COMPONENTS Interpreter QUIET)
 
+if (SPIRV_INCLUDE_DIR)
+    set(SPIRV_CAPABILITY_FILE
+            ${CMAKE_CURRENT_BINARY_DIR}/spirv_capability_deps.def)
+endif (SPIRV_INCLUDE_DIR)
+
 set(${MODULE_NAME}_SOURCES
          main.cpp
          negative_platform.cpp
@@ -43,18 +48,22 @@ set(${MODULE_NAME}_SOURCES
          test_wg_suggested_local_work_size.cpp
          test_device_command_queue.cpp
          test_spirv_queries.cpp
-         ${CMAKE_CURRENT_BINARY_DIR}/spirv_capability_deps.def
+         ${SPIRV_CAPABILITY_FILE}
 )
 
-add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/spirv_capability_deps.def
-    COMMENT "Generating spirv_capability_deps.def..."
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate_spirv_capability_deps.py
-            --grammar "${SPIRV_INCLUDE_DIR}/include/spirv/unified1/spirv.core.grammar.json"
-            --output "${CMAKE_CURRENT_BINARY_DIR}/spirv_capability_deps.def"
-    DEPENDS generate_spirv_capability_deps.py "${SPIRV_INCLUDE_DIR}/include/spirv/unified1/spirv.core.grammar.json"
-    USES_TERMINAL
-    VERBATIM)
+if (SPIRV_INCLUDE_DIR)
+    set_gnulike_module_compile_flags("-DSPIRV_FILES_AVAILABLE")
+
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/spirv_capability_deps.def
+        COMMENT "Generating spirv_capability_deps.def..."
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate_spirv_capability_deps.py
+                --grammar "${SPIRV_INCLUDE_DIR}/include/spirv/unified1/spirv.core.grammar.json"
+                --output "${CMAKE_CURRENT_BINARY_DIR}/spirv_capability_deps.def"
+        DEPENDS generate_spirv_capability_deps.py "${SPIRV_INCLUDE_DIR}/include/spirv/unified1/spirv.core.grammar.json"
+        USES_TERMINAL
+        VERBATIM)
+endif (SPIRV_INCLUDE_DIR)
 
 include(../CMakeCommon.txt)
 
