@@ -15,7 +15,29 @@
 //
 
 #include "spirvInfo.h"
+#include "deviceInfo.h"
 #include "errorHelpers.h"
+
+#include <string>
+
+bool gVersionSkip = false;
+
+bool is_spirv_version_supported(cl_device_id deviceID, const char* version)
+{
+    std::string ilVersions = get_device_il_version_string(deviceID);
+
+    if (gVersionSkip)
+    {
+        log_info("    Skipping version check for %s.\n", version);
+        return true;
+    }
+    else if (ilVersions.find(version) == std::string::npos)
+    {
+        return false;
+    }
+
+    return true;
+}
 
 int get_device_spirv_queries(cl_device_id device,
                              std::vector<const char*>& extendedInstructionSets,

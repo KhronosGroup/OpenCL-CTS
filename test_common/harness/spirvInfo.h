@@ -20,6 +20,10 @@
 
 #include <CL/opencl.h>
 
+extern bool gVersionSkip;
+
+bool is_spirv_version_supported(cl_device_id deviceID, const char* version);
+
 int get_device_spirv_queries(cl_device_id device,
                              std::vector<const char*>& extendedInstructionSets,
                              std::vector<const char*>& extensions,

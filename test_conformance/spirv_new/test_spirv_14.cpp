@@ -15,7 +15,7 @@
 //
 
 #include "testBase.h"
-#include "spirvInfo.hpp"
+#include "spirvInfo.h"
 #include "types.hpp"
 
 #include <string>

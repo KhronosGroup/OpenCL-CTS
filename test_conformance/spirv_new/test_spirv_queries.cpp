@@ -15,7 +15,6 @@
 //
 #include "testBase.h"
 #include "spirvInfo.h"
-#include "spirvInfo.hpp"
 
 #include <algorithm>
 #include <map>

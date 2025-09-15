@@ -26,6 +26,8 @@
 #include <string>
 #include <sstream>
 
+#include "spirvInfo.h"
+
 #if defined(_WIN32)
 const std::string slash = "\\";
 #else
@@ -33,7 +35,6 @@ const std::string slash = "/";
 #endif
 
 const std::string spvExt = ".spv";
-bool gVersionSkip = false;
 std::string gAddrWidth = "";
 std::string spvBinariesPath = "spirv_bin";
 
