@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef _spirvQueries_h
-#define _spirvQueries_h
+#pragma once
+#ifndef _spirvInfo_h
+#define _spirvInfo_h
 
 #include <vector>
 
@@ -29,4 +30,4 @@ int get_device_spirv_queries(cl_device_id device,
                              std::vector<const char*>& extensions,
                              std::vector<cl_uint>& capabilities);
 
-#endif // _spirvQueries_h
+#endif // _spirvInfo_h
