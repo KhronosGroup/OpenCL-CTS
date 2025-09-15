@@ -73,17 +73,17 @@ REGISTER_TEST(spirv_query_consistency)
 {
     REQUIRE_EXTENSION("cl_khr_spirv_queries");
 
+    std::vector<const char*> queriedExtendedInstructionSets;
+    std::vector<const char*> queriedExtensions;
+    std::vector<cl_uint> queriedCapabilities;
+
+    cl_int error = doQueries(device, queriedExtendedInstructionSets,
+                                queriedExtensions, queriedCapabilities);
+    test_error_fail(error, "Unable to perform SPIR-V queries");
+
     auto ilVersions = get_device_il_version_string(device);
     if (ilVersions.find("SPIR-V") == std::string::npos)
     {
-        std::vector<const char*> queriedExtendedInstructionSets;
-        std::vector<const char*> queriedExtensions;
-        std::vector<cl_uint> queriedCapabilities;
-
-        cl_int error = doQueries(device, queriedExtendedInstructionSets,
-                                 queriedExtensions, queriedCapabilities);
-        test_error_fail(error, "Unable to perform SPIR-V queries");
-
         test_assert_error(
             queriedExtendedInstructionSets.empty(),
             "No SPIR-V versions supported, but "
@@ -94,6 +94,17 @@ REGISTER_TEST(spirv_query_consistency)
         test_assert_error(queriedCapabilities.empty(),
                           "No SPIR-V versions supported, but "
                           "CL_DEVICE_SPIRV_CAPABILITIES_KHR is not empty");
+    }
+    else
+    {
+        test_assert_error(
+            !queriedExtendedInstructionSets.empty(),
+            "SPIR-V is supported, but "
+            "CL_DEVICE_SPIRV_EXTENDED_INSTRUCTION_SETS_KHR is empty");
+        test_assert_error(
+            !queriedCapabilities.empty(),
+            "SPIR-V is supported, but "
+            "CL_DEVICE_SPIRV_CAPABILITIES_KHR is empty");
     }
 
     return TEST_PASS;
