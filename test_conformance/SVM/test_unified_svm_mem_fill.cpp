@@ -130,8 +130,7 @@ struct UnifiedSVMMemFill : UnifiedSVMBase
         // possible pattern sizes
         for (cl_uint ti = 0; ti < max_ti; ti++)
         {
-            const auto caps = deviceUSVMCaps[ti];
-            if (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR)
+            if (caps_compatibility_check(ti))
             {
                 log_info("   testing clEnqueueSVMMemFill() SVM type %u\n", ti);
                 err = test_svm_memfill(ti);
@@ -143,6 +142,13 @@ struct UnifiedSVMMemFill : UnifiedSVMBase
             }
         }
         return CL_SUCCESS;
+    }
+
+    bool caps_compatibility_check(cl_uint TypeIndex)
+    {
+
+        const auto caps = deviceUSVMCaps[TypeIndex];
+        return caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR;
     }
 
     static constexpr size_t alloc_count = 1024;

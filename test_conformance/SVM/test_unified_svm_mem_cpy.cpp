@@ -167,7 +167,7 @@ struct UnifiedSVMOPs : UnifiedSVMBase
         {
             for (cl_uint dst_ti = 0; dst_ti < max_ti; dst_ti++)
             {
-                if (check_for_common_memory_type(src_ti, dst_ti))
+                if (caps_compatibility_check(src_ti, dst_ti))
                 {
                     log_info(
                         "   testing clEnqueueSVMMemcpy() SVM type %u -> SVM "
@@ -210,35 +210,14 @@ struct UnifiedSVMOPs : UnifiedSVMBase
                                0, nullptr, nullptr, nullptr, nullptr));
     }
 
-    bool check_for_common_memory_type(cl_uint srcTypeIndex,
-                                      cl_uint dstTypeIndex)
+    bool caps_compatibility_check(cl_uint srcTypeIndex, cl_uint dstTypeIndex)
     {
 
         const auto srcCaps = deviceUSVMCaps[srcTypeIndex];
         const auto dstCaps = deviceUSVMCaps[dstTypeIndex];
 
-        // Is either allocation a system allocation
-        if ((srcCaps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
-            || (dstCaps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR))
-        {
-            return true;
-        }
-
-        // Is it possible to use the host
-        if ((srcCaps & CL_SVM_CAPABILITY_HOST_READ_KHR)
-            && (dstCaps & CL_SVM_CAPABILITY_HOST_WRITE_KHR))
-        {
-            return true;
-        }
-
-        // Is it posible to use the device
-        if ((srcCaps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
-            && (dstCaps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR))
-        {
-            return true;
-        }
-
-        return false;
+        return (srcCaps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
+            && (dstCaps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR);
     }
 
     static constexpr size_t alloc_count = 1024;
