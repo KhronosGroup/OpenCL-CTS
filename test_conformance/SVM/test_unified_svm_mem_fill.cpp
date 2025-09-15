@@ -130,25 +130,25 @@ struct UnifiedSVMMemFill : UnifiedSVMBase
         // possible pattern sizes
         for (cl_uint ti = 0; ti < max_ti; ti++)
         {
-            log_info("   testing clEnqueueSVMMemFill() SVM type %u \n", ti);
-            err = test_svm_memfill(ti);
-            if (CL_SUCCESS != err)
+            if (caps_compatibility_check(ti))
             {
-                return err;
+
+                log_info("   testing clEnqueueSVMMemFill() SVM type %u \n", ti);
+                err = test_svm_memfill(ti);
+                if (CL_SUCCESS != err)
+                {
+                    return err;
+                }
             }
         }
         return CL_SUCCESS;
     }
 
-    template <typename T>
-    std::unique_ptr<USVMWrapper<T>> get_hostptr_usvm_wrapper()
+    bool caps_compatibility_check(cl_uint TypeIndex)
     {
-        return std::unique_ptr<USVMWrapper<T>>(
-            new USVMWrapper<T>(nullptr, nullptr, nullptr, CL_UINT_MAX,
-                               CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR
-                                   | CL_SVM_CAPABILITY_HOST_READ_KHR
-                                   | CL_SVM_CAPABILITY_HOST_WRITE_KHR,
-                               0, nullptr, nullptr, nullptr, nullptr));
+
+        const auto caps = deviceUSVMCaps[TypeIndex];
+        return caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR;
     }
 
     static constexpr size_t alloc_count = 1024;
