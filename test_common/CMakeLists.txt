@@ -13,6 +13,7 @@ set(HARNESS_SOURCES
     harness/imageHelpers.cpp
     harness/kernelHelpers.cpp
     harness/deviceInfo.cpp
+    harness/spirvInfo.cpp
     harness/os_helpers.cpp
     harness/parseParameters.cpp
     harness/propertyHelpers.cpp

@@ -14,69 +14,14 @@
 // limitations under the License.
 //
 #include "testBase.h"
+#include "spirvInfo.h"
+#include "spirvInfo.hpp"
+
 #include <algorithm>
 #include <map>
-#include <vector>
 
 #define SPV_ENABLE_UTILITY_CODE
 #include <spirv/unified1/spirv.hpp>
-
-static bool is_spirv_version_supported(cl_device_id deviceID,
-                                       const std::string& version)
-{
-    std::string ilVersions = get_device_il_version_string(deviceID);
-    return ilVersions.find(version) != std::string::npos;
-}
-
-static int doQueries(cl_device_id device,
-                     std::vector<const char*>& extendedInstructionSets,
-                     std::vector<const char*>& extensions,
-                     std::vector<cl_uint>& capabilities)
-{
-    cl_int error = CL_SUCCESS;
-
-    size_t size = 0;
-    error =
-        clGetDeviceInfo(device, CL_DEVICE_SPIRV_EXTENDED_INSTRUCTION_SETS_KHR,
-                        0, nullptr, &size);
-    test_error(error,
-               "clGetDeviceInfo failed for "
-               "CL_DEVICE_SPIRV_EXTENDED_INSTRUCTION_SETS_KHR size\n");
-
-    extendedInstructionSets.resize(size / sizeof(const char*));
-    error =
-        clGetDeviceInfo(device, CL_DEVICE_SPIRV_EXTENDED_INSTRUCTION_SETS_KHR,
-                        size, extendedInstructionSets.data(), nullptr);
-    test_error(error,
-               "clGetDeviceInfo failed for "
-               "CL_DEVICE_SPIRV_EXTENDED_INSTRUCTION_SETS_KHR\n");
-
-    error = clGetDeviceInfo(device, CL_DEVICE_SPIRV_EXTENSIONS_KHR, 0, nullptr,
-                            &size);
-    test_error(
-        error,
-        "clGetDeviceInfo failed for CL_DEVICE_SPIRV_EXTENSIONS_KHR size\n");
-
-    extensions.resize(size / sizeof(const char*));
-    error = clGetDeviceInfo(device, CL_DEVICE_SPIRV_EXTENSIONS_KHR, size,
-                            extensions.data(), nullptr);
-    test_error(error,
-               "clGetDeviceInfo failed for CL_DEVICE_SPIRV_EXTENSIONS_KHR\n");
-
-    error = clGetDeviceInfo(device, CL_DEVICE_SPIRV_CAPABILITIES_KHR, 0,
-                            nullptr, &size);
-    test_error(
-        error,
-        "clGetDeviceInfo failed for CL_DEVICE_SPIRV_CAPABILITIES_KHR size\n");
-
-    capabilities.resize(size / sizeof(cl_uint));
-    error = clGetDeviceInfo(device, CL_DEVICE_SPIRV_CAPABILITIES_KHR, size,
-                            capabilities.data(), nullptr);
-    test_error(error,
-               "clGetDeviceInfo failed for CL_DEVICE_SPIRV_CAPABILITIES_KHR\n");
-
-    return CL_SUCCESS;
-}
 
 static int findRequirements(cl_device_id device,
                             std::vector<const char*>& extendedInstructionSets,
@@ -607,8 +552,8 @@ REGISTER_TEST(spirv_query_requirements)
     std::vector<const char*> queriedExtensions;
     std::vector<cl_uint> queriedCapabilities;
 
-    error = doQueries(device, queriedExtendedInstructionSets, queriedExtensions,
-                      queriedCapabilities);
+    error = get_device_spirv_queries(device, queriedExtendedInstructionSets,
+                                     queriedExtensions, queriedCapabilities);
     test_error_fail(error, "Unable to perform SPIR-V queries");
 
     std::vector<const char*> requiredExtendedInstructionSets;
@@ -682,8 +627,8 @@ REGISTER_TEST(spirv_query_dependencies)
     std::vector<const char*> queriedExtensions;
     std::vector<cl_uint> queriedCapabilities;
 
-    error = doQueries(device, queriedExtendedInstructionSets, queriedExtensions,
-                      queriedCapabilities);
+    error = get_device_spirv_queries(device, queriedExtendedInstructionSets,
+                                     queriedExtensions, queriedCapabilities);
     test_error_fail(error, "Unable to perform SPIR-V queries");
 
     struct CapabilityDependencies
@@ -718,7 +663,7 @@ REGISTER_TEST(spirv_query_dependencies)
         // Check if a SPIR-V version dependency is satisfied
         const auto& version_dep = it->second.version;
         if (!version_dep.empty()
-            && is_spirv_version_supported(device, version_dep))
+            && is_spirv_version_supported(device, version_dep.c_str()))
         {
             continue;
         }
