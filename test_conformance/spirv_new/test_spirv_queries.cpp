@@ -599,11 +599,7 @@ static int findRequirements(cl_device_id device,
 
 REGISTER_TEST(spirv_query_requirements)
 {
-    if (!is_extension_available(device, "cl_khr_spirv_queries"))
-    {
-        log_info("cl_khr_spirv_queries is not supported; skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_spirv_queries");
 
     cl_int error;
 
@@ -678,11 +674,7 @@ REGISTER_TEST(spirv_query_requirements)
 
 REGISTER_TEST(spirv_query_dependencies)
 {
-    if (!is_extension_available(device, "cl_khr_spirv_queries"))
-    {
-        log_info("cl_khr_spirv_queries is not supported; skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_spirv_queries");
 
     cl_int error;
 

@@ -1,5 +1,7 @@
 set(MODULE_NAME SPIRV_NEW)
 
+find_package(Python3 COMPONENTS Interpreter QUIET)
+
 set(${MODULE_NAME}_SOURCES
   main.cpp
   test_basic_versions.cpp
@@ -31,6 +33,8 @@ set(${MODULE_NAME}_SOURCES
   test_spirv_14.cpp
   test_spirv_15.cpp
   test_spirv_16.cpp
+  test_spirv_queries.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/spirv_capability_deps.def
 )
 
 set(TEST_HARNESS_SOURCES
@@ -38,9 +42,21 @@ set(TEST_HARNESS_SOURCES
   ../../test_conformance/math_brute_force/utility.cpp
 )
 
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/spirv_capability_deps.def
+    COMMENT "Generating spirv_capability_deps.def..."
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate_spirv_capability_deps.py
+            --grammar "${SPIRV_INCLUDE_DIR}/include/spirv/unified1/spirv.core.grammar.json"
+            --output "${CMAKE_CURRENT_BINARY_DIR}/spirv_capability_deps.def"
+    DEPENDS generate_spirv_capability_deps.py "${SPIRV_INCLUDE_DIR}/include/spirv/unified1/spirv.core.grammar.json"
+    USES_TERMINAL
+    VERBATIM)
+
 set(${MODULE_NAME}_SOURCES ${${MODULE_NAME}_SOURCES} ${TEST_HARNESS_SOURCES})
 
 include(../CMakeCommon.txt)
 
 add_subdirectory(spirv_asm)
 add_dependencies(${${MODULE_NAME}_OUT} spirv_new_binaries)
+
+target_include_directories(${${MODULE_NAME}_OUT} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
