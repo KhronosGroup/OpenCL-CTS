@@ -70,7 +70,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
     cl_int test_CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR(cl_uint typeIndex)
     {
         const auto caps = deviceUSVMCaps[typeIndex];
-        if (caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
+        if (caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
         {
             return CL_SUCCESS;
         }

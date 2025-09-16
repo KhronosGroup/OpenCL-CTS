@@ -57,7 +57,7 @@ struct UnifiedSVMAPIs : UnifiedSVMBase
         // that support CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR, as long as
         // this is not a system allocated type.
         if (caps & CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR
-            && !(caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR))
+            && !(caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR))
         {
             std::vector<cl_svm_alloc_properties_khr> props;
             props.push_back(CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR);
@@ -83,7 +83,7 @@ struct UnifiedSVMAPIs : UnifiedSVMBase
         // this is not a system allocated type.
         // !!! Check: Is this a valid test?
         if (caps & CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR
-            && !(caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR))
+            && !(caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR))
         {
             std::vector<cl_svm_alloc_properties_khr> props;
             props.push_back(CL_SVM_ALLOC_ASSOCIATED_DEVICE_HANDLE_KHR);
@@ -108,7 +108,7 @@ struct UnifiedSVMAPIs : UnifiedSVMBase
         // CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR, as long as this is not a
         // system allocated type.
         if (caps & CL_SVM_CAPABILITY_DEVICE_UNASSOCIATED_KHR
-            && !(caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR))
+            && !(caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR))
         {
             std::vector<cl_svm_alloc_properties_khr> props;
             props.push_back(0);
@@ -237,7 +237,7 @@ struct UnifiedSVMAPIs : UnifiedSVMBase
         cl_int err;
 
         // We cannot test queries for system allocated memory.
-        if (caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
+        if (caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
         {
             return CL_SUCCESS;
         }

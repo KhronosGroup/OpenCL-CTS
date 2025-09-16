@@ -135,7 +135,7 @@ struct UnifiedSVMOPs : UnifiedSVMBase
 
         // We check if the memory can be read by the host.
         if (caps & CL_SVM_CAPABILITY_HOST_READ_KHR
-            || caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
+            || caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
         {
             err = test_SVMMemcpy(mem.get(), hostMem.get());
             test_error(err, "test_SVMMemcpy");
@@ -143,7 +143,7 @@ struct UnifiedSVMOPs : UnifiedSVMBase
 
         // We check if the memory can be written by the host.
         if (caps & CL_SVM_CAPABILITY_HOST_WRITE_KHR
-            || caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
+            || caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
         {
             err = test_SVMMemcpy(hostMem.get(), mem.get());
             test_error(err, "test_SVMMemcpy");
@@ -208,7 +208,7 @@ struct UnifiedSVMOPs : UnifiedSVMBase
     {
         return std::unique_ptr<USVMWrapper<T>>(
             new USVMWrapper<T>(nullptr, nullptr, nullptr, CL_UINT_MAX,
-                               CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR
+                               PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR
                                    | CL_SVM_CAPABILITY_HOST_READ_KHR
                                    | CL_SVM_CAPABILITY_HOST_WRITE_KHR,
                                0, nullptr, nullptr, nullptr, nullptr));

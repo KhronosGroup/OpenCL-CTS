@@ -37,7 +37,7 @@ struct UnifiedSVMAPISuggestedTypeIndex : UnifiedSVMBase
         cl_svm_capabilities_khr allSupportedDeviceUSVMCaps = 0;
         for (const auto caps : deviceUSVMCaps)
         {
-            if (caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
+            if (caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
             {
                 // The system allocator pseudo-capability is not a real
                 // capability, so skip it.

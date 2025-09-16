@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <memory>
 
-constexpr cl_bitfield CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR =
+constexpr cl_bitfield PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR =
     ((cl_bitfield)1 << 63);
 
 static inline void parseSVMAllocProperties(
@@ -85,7 +85,7 @@ public:
             free();
         }
 
-        if (caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
+        if (caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
         {
             if (count == 0)
             {
@@ -138,7 +138,7 @@ public:
     {
         if (data)
         {
-            if (caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
+            if (caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
             {
                 align_free(data);
             }
@@ -333,7 +333,7 @@ struct UnifiedSVMBase
         for (size_t ti = 0; ti < check; ti++)
         {
             auto caps = deviceUSVMCaps[ti];
-            if (caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
+            if (caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
             {
                 log_info("Unable to continue, device reports system allocator "
                          "pseudo-capability as an SVM capability.\n");
@@ -349,10 +349,10 @@ struct UnifiedSVMBase
             {
                 deviceUSVMCaps.push_back(
                     deviceUSVMCaps[ti]
-                    | CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR);
+                    | PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR);
                 platformUSVMCaps.push_back(
                     platformUSVMCaps[ti]
-                    | CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR);
+                    | PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR);
             }
         }
 

@@ -49,7 +49,7 @@ void CL_CALLBACK callback_svm_free(cl_command_queue queue,
     {
         data->svm_pointers[i] = svm_pointers[i];
 
-        if (data->svm_caps[i] & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
+        if (data->svm_caps[i] & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
         {
             align_free(data);
         }
@@ -169,13 +169,13 @@ struct UnifiedSVMFree : UnifiedSVMBase
             test_error(err, "test_SVMFree");
         }
 
-        // We need to filter out the SVM types that support system allocation
+        // We need to filter out the SVM types that are system allocated
         // as we cannot test clEnqueueSVMFree without a callback for them
         std::vector<size_t> test_indexes;
         for (size_t i = 0; i < deviceUSVMCaps.size(); i++)
         {
             auto caps = deviceUSVMCaps[i];
-            if (0 == (caps & CL_SVM_PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR))
+            if (0 == (caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR))
             {
                 test_indexes.push_back(i);
             }
