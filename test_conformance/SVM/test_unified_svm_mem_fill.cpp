@@ -132,27 +132,16 @@ struct UnifiedSVMMemFill : UnifiedSVMBase
         {
             if (caps_compatibility_check(ti))
             {
-
-                log_info("   testing clEnqueueSVMMemFill() SVM type %u \n", ti);
+                log_info("   testing clEnqueueSVMMemFill() SVM type %u\n", ti);
                 err = test_svm_memfill(ti);
-                if (CL_SUCCESS != err)
-                {
-                    return err;
-                }
+                test_error(err, "test_svm_memfill failed");
+            }
+            else
+            {
+                log_info("   skipping clEnqueueSVMMemFill() SVM type %u\n", ti);
             }
         }
         return CL_SUCCESS;
-    }
-
-    template <typename T>
-    std::unique_ptr<USVMWrapper<T>> get_hostptr_usvm_wrapper()
-    {
-        return std::unique_ptr<USVMWrapper<T>>(
-            new USVMWrapper<T>(nullptr, nullptr, nullptr, CL_UINT_MAX,
-                               CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR
-                                   | CL_SVM_CAPABILITY_HOST_READ_KHR
-                                   | CL_SVM_CAPABILITY_HOST_WRITE_KHR,
-                               0, nullptr, nullptr, nullptr, nullptr));
     }
 
     bool caps_compatibility_check(cl_uint TypeIndex)
