@@ -92,13 +92,18 @@ template <typename T> struct Add
     using Type = T;
     static constexpr const char *opName = "add";
     static constexpr T identityValue = 0;
-    static T combine(T a, T b)
+    static T combine(T a, T b) { return a + b; }
+};
+
+template <> struct Add<cl_half>
+{
+    using Type = cl_half;
+    static constexpr const char *opName = "add";
+    static constexpr Type identityValue = 0;
+    static Type combine(Type a, Type b)
     {
-        if (std::is_same_v<T, cl_half>)
-            return cl_half_from_float(cl_half_to_float(a) + cl_half_to_float(b),
-                                      gHalfRoundingMode);
-        else
-            return a + b;
+        return cl_half_from_float(cl_half_to_float(a) + cl_half_to_float(b),
+                                  gHalfRoundingMode);
     }
 };
 
@@ -106,18 +111,22 @@ template <typename T> struct Max
 {
     using Type = T;
     static constexpr const char *opName = "max";
-    static constexpr T identityValue = std::is_same_v<T, cl_half>
-        ? g_half_min
-        : (std::is_integral_v<T> ? std::numeric_limits<T>::min()
-                                 : -std::numeric_limits<T>::max());
-    static T combine(T a, T b)
+    static constexpr T identityValue = std::is_integral_v<T>
+        ? std::numeric_limits<T>::min()
+        : -std::numeric_limits<T>::max();
+    static T combine(T a, T b) { return std::max(a, b); }
+};
+
+template <> struct Max<cl_half>
+{
+    using Type = cl_half;
+    static constexpr const char *opName = "max";
+    static constexpr Type identityValue = g_half_min;
+    static Type combine(Type a, Type b)
     {
-        if (std::is_same_v<T, cl_half>)
-            return cl_half_from_float(
-                std::max(cl_half_to_float(a), cl_half_to_float(b)),
-                gHalfRoundingMode);
-        else
-            return std::max(a, b);
+        return cl_half_from_float(
+            std::max(cl_half_to_float(a), cl_half_to_float(b)),
+            gHalfRoundingMode);
     }
 };
 
@@ -125,16 +134,20 @@ template <typename T> struct Min
 {
     using Type = T;
     static constexpr const char *opName = "min";
-    static constexpr T identityValue =
-        std::is_same_v<T, cl_half> ? g_half_max : std::numeric_limits<T>::max();
-    static T combine(T a, T b)
+    static constexpr T identityValue = std::numeric_limits<T>::max();
+    static T combine(T a, T b) { return std::min(a, b); }
+};
+
+template <> struct Min<cl_half>
+{
+    using Type = cl_half;
+    static constexpr const char *opName = "min";
+    static constexpr Type identityValue = g_half_max;
+    static Type combine(Type a, Type b)
     {
-        if (std::is_same_v<T, cl_half>)
-            return cl_half_from_float(
-                std::min(cl_half_to_float(a), cl_half_to_float(b)),
-                gHalfRoundingMode);
-        else
-            return std::min(a, b);
+        return cl_half_from_float(
+            std::min(cl_half_to_float(a), cl_half_to_float(b)),
+            gHalfRoundingMode);
     }
 };
 
@@ -148,6 +161,27 @@ template <typename C> struct Reduce
     static constexpr const char *deviceTypeName =
         TestTypeInfo<Type>::deviceName;
     static constexpr const char *kernelName = "test_wg_reduce";
+
+    static int check_result(const Type &test_value, const Type &reference,
+                            const Type &max_err = 0)
+    {
+        if constexpr (std::is_floating_point_v<Type>)
+        {
+            if (fabs(reference - test_value) > max_err) return -1;
+        }
+        else if constexpr (std::is_same_v<Type, cl_half>)
+        {
+            if (fabs(cl_half_to_float(reference) - cl_half_to_float(test_value))
+                > cl_half_to_float(max_err))
+                return -1;
+        }
+        else
+        {
+            if (reference != test_value) return -1;
+        }
+        return CL_SUCCESS;
+    }
+
     static int verify(Type *inptr, Type *outptr, size_t n_elems,
                       size_t max_wg_size, const Type &max_err = 0)
     {
@@ -163,34 +197,11 @@ template <typename C> struct Reduce
 
             for (size_t j = 0; j < wg_size; j++)
             {
-                if constexpr (std::is_floating_point_v<Type>)
+                if (check_result(outptr[i + j], result, max_err) != CL_SUCCESS)
                 {
-                    if (fabs(result - outptr[i + j]) > max_err)
-                    {
-                        log_info("%s_%s: Error at %zu\n", testName, testOpName,
-                                 i + j);
-                        return -1;
-                    }
-                }
-                else if (std::is_same_v<Type, cl_half>)
-                {
-                    if (fabs(cl_half_to_float(result)
-                             - cl_half_to_float(outptr[i + j]))
-                        > cl_half_to_float(max_err))
-                    {
-                        log_info("%s_%s: Error at %zu\n", testName, testOpName,
-                                 i + j);
-                        return -1;
-                    }
-                }
-                else
-                {
-                    if (result != outptr[i + j])
-                    {
-                        log_info("%s_%s: Error at %zu\n", testName, testOpName,
-                                 i + j);
-                        return -1;
-                    }
+                    log_info("%s_%s: Error at %zu\n", testName, testOpName,
+                             i + j);
+                    return -1;
                 }
             }
         }
