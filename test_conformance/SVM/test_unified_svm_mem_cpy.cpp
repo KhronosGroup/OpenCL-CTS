@@ -174,10 +174,14 @@ struct UnifiedSVMOPs : UnifiedSVMBase
                         "type %u\n",
                         src_ti, dst_ti);
                     err = test_svm_memcpy(src_ti, dst_ti);
-                    if (CL_SUCCESS != err)
-                    {
-                        return err;
-                    }
+                    test_error(err, "test_svm_memcpy failed");
+                }
+                else
+                {
+                    log_info(
+                        "   skipping clEnqueueSVMMemcpy() SVM type %u -> SVM "
+                        "type %u\n",
+                        src_ti, dst_ti);
                 }
             }
         }

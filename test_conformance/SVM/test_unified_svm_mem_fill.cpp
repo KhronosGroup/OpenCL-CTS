@@ -132,13 +132,13 @@ struct UnifiedSVMMemFill : UnifiedSVMBase
         {
             if (caps_compatibility_check(ti))
             {
-
-                log_info("   testing clEnqueueSVMMemFill() SVM type %u \n", ti);
+                log_info("   testing clEnqueueSVMMemFill() SVM type %u\n", ti);
                 err = test_svm_memfill(ti);
-                if (CL_SUCCESS != err)
-                {
-                    return err;
-                }
+                test_error(err, "test_svm_memfill failed");
+            }
+            else
+            {
+                log_info("   skipping clEnqueueSVMMemFill() SVM type %u\n", ti);
             }
         }
         return CL_SUCCESS;
