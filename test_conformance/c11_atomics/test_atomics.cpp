@@ -2951,13 +2951,10 @@ public:
         {
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
-            if constexpr (
-                std::is_same_v<
-                    HostDataType,
-                    HOST_ATOMIC_HALF>)
-                    StartValue(cl_half_from_float(-CL_HALF_MAX, gHalfRoundingMode));
-                else
-                    StartValue(-DataType().MaxValue());
+            if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+                StartValue(cl_half_from_float(-CL_HALF_MAX, gHalfRoundingMode));
+            else
+                StartValue(-DataType().MaxValue());
         }
         else
         {
