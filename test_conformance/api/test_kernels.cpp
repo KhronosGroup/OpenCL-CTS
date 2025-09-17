@@ -759,6 +759,36 @@ REGISTER_TEST(negative_invalid_arg_sampler)
     PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
 
     cl_int error = CL_SUCCESS;
+
+    clProgramWrapper program;
+    clKernelWrapper sampler_arg_kernel;
+
+    // Setup the test
+    error =
+        create_single_kernel_helper(context, &program, nullptr, 1,
+                                    &sample_sampler_size_test_kernel, nullptr);
+    test_error(error, "Unable to build test program");
+
+    sampler_arg_kernel = clCreateKernel(program, "sampler_size_test", &error);
+    test_error(error,
+               "Unable to get sampler_size_test kernel for built program");
+
+    // Run the test - CL_INVALID_SAMPLER
+    error = clSetKernelArg(sampler_arg_kernel, 0, sizeof(cl_sampler), nullptr);
+    test_failure_error_ret(
+        error, CL_INVALID_SAMPLER,
+        "clSetKernelArg is supposed to fail with CL_INVALID_SAMPLER when "
+        "argument is declared to be of type sampler_t and the specified "
+        "arg_value is not a valid sampler object",
+        TEST_FAIL);
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_invalid_arg_sampler_size)
+{
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+
+    cl_int error = CL_SUCCESS;
     clProgramWrapper program;
     clKernelWrapper sampler_arg_kernel;
 
