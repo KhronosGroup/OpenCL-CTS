@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,6 +16,8 @@
 #include "testBase.h"
 #include "harness/typeWrappers.h"
 #include "harness/conversions.h"
+#include "harness/stringHelpers.h"
+#include <array>
 #include <vector>
 
 const char *sample_single_test_kernel[] = {
@@ -124,6 +126,14 @@ const char *sample_write_only_image_test_kernel = R"(
     __kernel void write_only_image_test(__read_only image2d_t src, __global uint4 *dst)
     {
         dst[0]=read_imageui(src, (int2)(get_global_id(0), get_global_id(1)));
+    }
+)";
+
+const char *sample_arg_size_test_kernel = R"(
+    %s
+    __kernel void arg_size_test(%s src, __global %s *dst)
+    {
+        dst[0]=src;
     }
 )";
 
@@ -783,6 +793,76 @@ REGISTER_TEST(negative_invalid_arg_sampler)
         "argument is a sampler object and arg_size < sizeof(cl_sampler)",
         TEST_FAIL);
 
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_invalid_arg_size)
+{
+    std::vector<ExplicitType> exp_types = { kChar,  kUChar, kShort, kUShort,
+                                            kInt,   kUInt,  kLong,  kULong,
+                                            kFloat, kHalf,  kDouble };
+
+    bool fp16_supported = is_extension_available(device, "cl_khr_fp16");
+    bool fp64_supported = is_extension_available(device, "cl_khr_fp64");
+
+    for (unsigned int type_num = 0; type_num < exp_types.size(); type_num++)
+    {
+        auto type = exp_types[type_num];
+
+        if ((type == kLong || type == kULong) && !gHasLong)
+            continue;
+        else if (type == kDouble && !fp64_supported)
+            continue;
+        else if (type == kHalf && !fp16_supported)
+            continue;
+        else if (strchr(get_explicit_type_name(type), ' ') != 0)
+            continue;
+
+        std::array<unsigned int, 5> sizes = { 1, 2, 4, 8, 16 };
+        std::vector<char> buf(sizeof(cl_ulong16), 0);
+        for (unsigned i = 0; i < sizes.size(); i++)
+        {
+            clProgramWrapper program;
+            clKernelWrapper kernel;
+
+            size_t destStride = get_explicit_type_size(type) * sizes[i];
+
+            std::ostringstream vecNameStr;
+            vecNameStr << get_explicit_type_name(type);
+            if (sizes[i] != 1) vecNameStr << sizes[i];
+
+            std::string ext_str;
+            if (type == kDouble)
+                ext_str = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+
+            if (type == kHalf)
+                ext_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
+
+            auto vt_name = vecNameStr.str();
+            std::string program_source =
+                str_sprintf(std::string(sample_arg_size_test_kernel),
+                            ext_str.c_str(), vt_name.c_str(), vt_name.c_str());
+
+            const char *ptr = program_source.c_str();
+            cl_int error = create_single_kernel_helper(
+                context, &program, &kernel, 1, &ptr, "arg_size_test");
+            test_error(error, "Unable to build test program!");
+
+            // Run the test
+            size_t reduced = destStride / 2;
+            error = clSetKernelArg(kernel, 0, reduced, buf.data());
+            if (error != CL_INVALID_ARG_SIZE)
+            {
+                std::stringstream sstr;
+                sstr << "clSetKernelArg is supposed to fail "
+                        "with CL_INVALID_ARG_SIZE with type "
+                     << vecNameStr.str() << " and sizeof " << reduced
+                     << std::endl;
+                log_error("%s", sstr.str().c_str());
+                return TEST_FAIL;
+            }
+        }
+    }
     return TEST_PASS;
 }
 
