@@ -6005,7 +6005,7 @@ public:
         clContextWrapper context;
         clCommandQueueWrapper queue;
         size_t num_modules = m_moduleNames.size();
-        std::vector<cl_program> programs(num_modules);
+        std::vector<clProgramWrapper> programs(num_modules);
         create_context_and_queue(dev, &context, &queue);
 
         for (size_t i=0; i<num_modules; i++)
@@ -6713,6 +6713,14 @@ cl_device_id get_platform_device (cl_device_type device_type, cl_uint choosen_de
     return devices[choosen_device_index];
 }
 
+static void ListTests()
+{
+    for (unsigned int i = 0; i < (sizeof(spir_suites) / sizeof(sub_suite)); i++)
+    {
+        log_info("\t%s\n", spir_suites[i].name);
+    }
+}
+
 
 /**
  Parses the command line parameters and set the
@@ -6761,7 +6769,7 @@ static int ParseCommandLine (int argc, const char *argv[],
         /* Process the command line arguments */
 
     /* Special case: just list the tests */
-    if( ( argc > 1 ) && (!strcmp( argv[ 1 ], "-list" ) || !strcmp( argv[ 1 ], "-h" ) || !strcmp( argv[ 1 ], "--help" )))
+    if ((argc > 1) && (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")))
     {
         log_info( "Usage: %s [<suite name>] [pid<num>] [id<num>] [<device type>] [w32] [no-unzip]\n", argv[0] );
         log_info( "\t<suite name>\tOne or more of: (default all)\n");
@@ -6771,10 +6779,13 @@ static int ParseCommandLine (int argc, const char *argv[],
         log_info( "\tw32\t\tIndicates device address bits is 32.\n" );
         log_info( "\tno-unzip\t\tDo not extract test files from Zip; use existing.\n" );
 
-        for( unsigned int i = 0; i < (sizeof(spir_suites) / sizeof(sub_suite)); i++ )
-        {
-            log_info( "\t\t%s\n", spir_suites[i].name );
-        }
+        ListTests();
+        return 0;
+    }
+    else if ((argc > 1)
+             && (!strcmp(argv[1], "--list") || !strcmp(argv[1], "-list")))
+    {
+        ListTests();
         return 0;
     }
 
@@ -6911,12 +6922,13 @@ int main (int argc, const char* argv[])
         cl_device_id device = get_platform_device(device_type, choosen_device_index, choosen_platform_index);
         printDeviceHeader(device);
 
+        REQUIRE_EXTENSION("cl_khr_spir");
+
         std::vector<Version> versions;
         get_spir_version(device, versions);
 
-        if (!is_extension_available(device, "cl_khr_spir")
-            || (std::find(versions.begin(), versions.end(), Version{ 1, 2 })
-                == versions.end()))
+        if (std::find(versions.begin(), versions.end(), Version{ 1, 2 })
+            == versions.end())
         {
             log_info("Spir extension version 1.2 is not supported by the device\n");
             return 0;
