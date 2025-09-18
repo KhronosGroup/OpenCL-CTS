@@ -462,6 +462,22 @@ public:
         return ss.str();
     }
 
+    // Helper function to convert cl_uint to appropriate atomic value
+    HostDataType ConvertToHostDataType(cl_uint v)
+    {
+        if (DataType()._type == TYPE_ATOMIC_HALF)
+        {
+            // For half types, convert from float to proper half-precision bit
+            // pattern
+            return cl_half_from_float(static_cast<float>(v), gHalfRoundingMode);
+        }
+        else
+        {
+            // For non-half types, direct cast is fine
+            return static_cast<HostDataType>(v);
+        }
+    }
+
 private:
     const TExplicitAtomicType _dataType;
     const bool _useSVM;
