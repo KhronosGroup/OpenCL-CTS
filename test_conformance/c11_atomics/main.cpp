@@ -137,6 +137,7 @@ test_status InitCL(cl_device_id device) {
             device, CL_DEVICE_SINGLE_FP_ATOMIC_CAPABILITIES_EXT,
             sizeof(gFloatAtomicCaps), &gFloatAtomicCaps, nullptr);
         test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
+
         if (is_extension_available(device, "cl_khr_fp16"))
         {
             cl_int error = clGetDeviceInfo(

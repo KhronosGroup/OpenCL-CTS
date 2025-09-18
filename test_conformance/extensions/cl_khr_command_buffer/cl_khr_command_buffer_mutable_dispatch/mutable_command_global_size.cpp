@@ -135,7 +135,7 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
         for (size_t i = 0; i < num_elements; i++)
             if (i >= update_global_size && global_work_size != resultData[i])
             {
-                log_error("Data failed to verify: update_global_size != "
+                log_error("Data failed to verify: global_work_size != "
                           "resultData[%zu]=%d\n",
                           i, resultData[i]);
                 return TEST_FAIL;
@@ -154,7 +154,7 @@ struct MutableDispatchGlobalSize : public InfoMutableCommandBufferTest
 
     size_t info_global_size = 0;
     const size_t update_global_size = 3;
-    const size_t sizeToAllocate = global_work_size;
+    const size_t sizeToAllocate = global_work_size * sizeof(cl_int);
     const size_t num_elements = sizeToAllocate / sizeof(cl_int);
     cl_mutable_command_khr command = nullptr;
 };

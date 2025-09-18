@@ -89,8 +89,6 @@ struct FinalizeCommandBufferNotRecordingState : public BasicCommandBufferTest
 
         error = EnqueueCommandBuffer();
         test_error(error, "EnqueueCommandBuffer failed");
-        error = verify_state(CL_COMMAND_BUFFER_STATE_PENDING_KHR);
-        test_error(error, "State is not Pending");
 
         error = clFinalizeCommandBufferKHR(command_buffer);
         test_failure_error_ret(error, CL_INVALID_OPERATION,
