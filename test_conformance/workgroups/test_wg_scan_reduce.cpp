@@ -216,7 +216,7 @@ template <typename C> struct Reduce
                           Type> || std::is_same_v<Type, cl_half>)
         {
             std::vector<Type> ref_vals(max_wg_size, 0);
-            if (std::is_same_v<Type, cl_half>)
+            if constexpr (std::is_same_v<Type, cl_half>)
             {
                 // to prevent overflow limit range of randomization
                 float max_range = 99.0;
