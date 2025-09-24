@@ -25,6 +25,12 @@ if(USE_CL_EXPERIMENTAL)
   add_definitions(-DCL_EXPERIMENTAL)
 endif(USE_CL_EXPERIMENTAL)
 
+option(SANITIZER_THREAD "Build with the thread sanitiser" OFF)
+if (SANITIZER_THREAD)
+    add_compile_options(-fsanitize=thread)
+    add_link_options(-fsanitize=thread)
+endif (SANITIZER_THREAD)
+
 #-----------------------------------------------------------
 # Default Configurable Test Set
 #-----------------------------------------------------------
