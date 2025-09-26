@@ -24,6 +24,7 @@
 #include <unistd.h>
 #endif
 #include "harness/conversions.h"
+#include "harness/stringHelpers.h"
 
 #define MAX_LINE_SIZE_IN_PROGRAM 1024
 #define MAX_LOG_SIZE_IN_PROGRAM 2048
@@ -3059,12 +3060,13 @@ REGISTER_TEST(execute_after_included_header_link)
     }
 
     const auto simple_header_path = temp_dir_path / simple_header_name;
-    FILE *simple_header_file =
-        fopen(simple_header_path.u8string().c_str(), "w");
+    const std::string simple_header_path_str =
+        to_string(simple_header_path.u8string());
+    FILE *simple_header_file = fopen(simple_header_path_str.c_str(), "w");
     if (simple_header_file == NULL)
     {
         log_error("ERROR: Unable to create simple header file %s! (in %s:%d)\n",
-                  simple_header_path.u8string().c_str(), __FILE__, __LINE__);
+                  simple_header_path_str.c_str(), __FILE__, __LINE__);
         return -1;
     }
     if (fprintf(simple_header_file, "%s", simple_header) < 0)
@@ -3082,7 +3084,7 @@ REGISTER_TEST(execute_after_included_header_link)
     }
 
     const std::string include_path =
-        std::string("-I") + temp_dir_path.generic_u8string();
+        std::string("-I") + to_string(temp_dir_path.generic_u8string());
     error = clCompileProgram(program, 1, &device, include_path.c_str(), 0, NULL,
                              NULL, NULL, NULL);
     test_error(error,
