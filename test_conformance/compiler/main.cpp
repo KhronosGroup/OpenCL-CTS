@@ -17,9 +17,10 @@
 #include <filesystem>
 
 #include "harness/testHarness.h"
+#include "harness/stringHelpers.h"
 
 std::string spvBinariesPath =
-    (std::filesystem::path("compiler") / "spirv_bin").u8string();
+    to_string((std::filesystem::path("compiler") / "spirv_bin").u8string());
 const std::string spvBinariesPathArg = "--spirv-binaries-path";
 
 void printUsage()
