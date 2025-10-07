@@ -17,7 +17,7 @@ else()
     add_custom_command(
       OUTPUT ${VULKAN_TEST_RESOURCES}/buffer.spv
       COMMAND ${Vulkan_glslang_binary}
-              --target-env vulkan1.0
+              --target-env vulkan1.1
               -o ${VULKAN_TEST_RESOURCES}/buffer.spv
               ${CMAKE_CURRENT_SOURCE_DIR}/buffer.comp
       DEPENDS buffer.comp
@@ -35,7 +35,7 @@ else()
         add_custom_command(
           OUTPUT ${VULKAN_TEST_RESOURCES}/image2D_${GLSL_FORMAT}.spv
           COMMAND ${Vulkan_glslang_binary}
-                  --target-env vulkan1.0
+                  --target-env vulkan1.1
                   -o ${VULKAN_TEST_RESOURCES}/image2D_${GLSL_FORMAT}.spv
                   ${CMAKE_CURRENT_BINARY_DIR}/image2D_${GLSL_FORMAT}.comp
           DEPENDS image2D_${GLSL_FORMAT}.comp
