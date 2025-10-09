@@ -280,6 +280,9 @@ struct BarrierPipelined : public CommandBufferPipelined
             0, nullptr, out_of_order_command_buffer, 0, nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
+        error = clEnqueueBarrier(out_of_order_queue);
+        test_error(error, "clEnqueueBarrier failed");
+
         std::vector<cl_int> output_data(num_elements);
         error = clEnqueueReadBuffer(out_of_order_queue, out_mem, CL_TRUE, 0,
                                     data_size(), output_data.data(), 0, nullptr,
