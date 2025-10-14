@@ -122,7 +122,7 @@ CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingTyp
     else
     {
 #if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
-        return InterlockedExchangeAdd(a, c);
+        return InterlockedExchangeAdd(reinterpret_cast<volatile LONG *>(a), c);
 #elif defined(__GNUC__)
         return __sync_fetch_and_add(a, c);
 #else
