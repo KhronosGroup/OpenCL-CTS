@@ -2799,7 +2799,7 @@ public:
             correct = true;
             for (cl_uint i = 1; i < threadCount; i++)
             {
-                for (cl_uint i = 1; i < threadCount; i++)
+                if (refValues[i] != StartValue())
                 {
                     log_error("Thread %d found %d mismatch(es)\n", i,
                               (cl_uint)refValues[i]);
