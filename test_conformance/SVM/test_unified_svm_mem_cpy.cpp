@@ -135,7 +135,7 @@ struct UnifiedSVMOPs : UnifiedSVMBase
 
         // We check if the memory can be read by the host.
         if (caps & CL_SVM_CAPABILITY_HOST_READ_KHR
-            || caps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
+            || caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
         {
             err = test_SVMMemcpy(mem.get(), hostMem.get());
             test_error(err, "test_SVMMemcpy");
@@ -143,7 +143,7 @@ struct UnifiedSVMOPs : UnifiedSVMBase
 
         // We check if the memory can be written by the host.
         if (caps & CL_SVM_CAPABILITY_HOST_WRITE_KHR
-            || caps & CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR)
+            || caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
         {
             err = test_SVMMemcpy(hostMem.get(), mem.get());
             test_error(err, "test_SVMMemcpy");
@@ -162,7 +162,7 @@ struct UnifiedSVMOPs : UnifiedSVMBase
         cl_int err;
         cl_uint max_ti = static_cast<cl_uint>(deviceUSVMCaps.size());
 
-        // Test all possible comabinations between supported types
+        // Test all possible combinations between supported types
         for (cl_uint src_ti = 0; src_ti < max_ti; src_ti++)
         {
             for (cl_uint dst_ti = 0; dst_ti < max_ti; dst_ti++)
@@ -208,7 +208,7 @@ struct UnifiedSVMOPs : UnifiedSVMBase
     {
         return std::unique_ptr<USVMWrapper<T>>(
             new USVMWrapper<T>(nullptr, nullptr, nullptr, CL_UINT_MAX,
-                               CL_SVM_CAPABILITY_SYSTEM_ALLOCATED_KHR
+                               PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR
                                    | CL_SVM_CAPABILITY_HOST_READ_KHR
                                    | CL_SVM_CAPABILITY_HOST_WRITE_KHR,
                                0, nullptr, nullptr, nullptr, nullptr));
@@ -216,7 +216,6 @@ struct UnifiedSVMOPs : UnifiedSVMBase
 
     bool caps_compatibility_check(cl_uint srcTypeIndex, cl_uint dstTypeIndex)
     {
-
         const auto srcCaps = deviceUSVMCaps[srcTypeIndex];
         const auto dstCaps = deviceUSVMCaps[dstTypeIndex];
 
