@@ -3961,6 +3961,9 @@ private:
     struct TestDefinition _subCase;
 };
 
+#if 0
+// The tests below are likely incorrect and have been disabled.
+// See https://github.com/KhronosGroup/OpenCL-CTS/issues/2544
 static int test_atomic_fence_generic(cl_device_id deviceID, cl_context context,
                                      cl_command_queue queue, int num_elements,
                                      bool useSVM)
@@ -4040,3 +4043,4 @@ REGISTER_TEST(svm_atomic_fence)
     return test_atomic_fence_generic(device, context, queue, num_elements,
                                      true);
 }
+#endif
