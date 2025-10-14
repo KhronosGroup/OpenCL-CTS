@@ -1163,13 +1163,30 @@ REGISTER_TEST(svm_atomic_compare_exchange_weak)
                                                      num_elements, true);
 }
 
+template <typename T> double kahan_sum(const std::vector<T> &nums)
+{
+    return 0.0;
+}
+template <> double kahan_sum<double>(const std::vector<double> &nums)
+{
+    double sum = 0.0;
+    double compensation = 0.0;
+    for (double num : nums)
+    {
+        double y = num - compensation;
+        double t = sum + y;
+        compensation = (t - sum) - y;
+        sum = t;
+    }
+    return sum;
+}
 template <typename HostAtomicType, typename HostDataType>
 class CBasicTestFetchAdd
     : public CBasicTestMemOrderScope<HostAtomicType, HostDataType> {
 
     double min_range;
     double max_range;
-    double max_error_fp32;
+    double max_error;
     std::vector<HostDataType> ref_vals;
 
 public:
@@ -1182,11 +1199,14 @@ public:
     CBasicTestFetchAdd(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
                                                                 useSVM),
-          min_range(-999.0), max_range(999.0), max_error_fp32(0.0)
+          min_range(-999.0), max_range(999.0), max_error(0.0)
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
-            StartValue(0.f);
+            StartValue((HostDataType)0.0);
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
         }
@@ -1194,14 +1214,21 @@ public:
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             if (threadCount > ref_vals.size())
             {
                 ref_vals.resize(threadCount);
 
                 for (cl_uint i = 0; i < threadCount; i++)
-                    ref_vals[i] = get_random_float(min_range, max_range, d);
+                    if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
+                        ref_vals[i] =
+                            get_random_double(min_range, max_range, d);
+                    else
+                        ref_vals[i] = get_random_float(min_range, max_range, d);
 
                 memcpy(startRefValues, ref_vals.data(),
                        sizeof(HostDataType) * ref_vals.size());
@@ -1216,12 +1243,17 @@ public:
                 sums.push_back(
                     std::accumulate(ref_vals.rbegin(), ref_vals.rend(), 0.f));
 
-                std::sort(
-                    ref_vals.begin(), ref_vals.end(),
-                    [](float a, float b) { return std::abs(a) < std::abs(b); });
+                std::sort(ref_vals.begin(), ref_vals.end(),
+                          [](HostDataType a, HostDataType b) {
+                              return std::abs(a) < std::abs(b);
+                          });
 
                 double precise = 0.0;
-                for (auto elem : ref_vals) precise += double(elem);
+                if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
+                    precise = kahan_sum(ref_vals);
+                else
+                    for (auto elem : ref_vals) precise += double(elem);
+
                 sums.push_back(precise);
 
                 sums.push_back(
@@ -1231,8 +1263,7 @@ public:
                     std::accumulate(ref_vals.rbegin(), ref_vals.rend(), 0.f));
 
                 std::sort(sums.begin(), sums.end());
-                max_error_fp32 =
-                    std::abs((HOST_ATOMIC_FLOAT)sums.front() - sums.back());
+                max_error = std::abs(sums.front() - sums.back());
 
                 // restore unsorted order
                 memcpy(ref_vals.data(), startRefValues,
@@ -1252,7 +1283,10 @@ public:
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
 
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             return "  atomic_fetch_add" + postfix + "(&destMemory[0], ("
                 + DataType().AddSubOperandTypeName() + ")oldValues[tid]"
@@ -1286,7 +1320,10 @@ public:
                       volatile HostAtomicType *destMemory,
                       HostDataType *oldValues) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             host_atomic_fetch_add(&destMemory[0], (HostDataType)oldValues[tid],
                                   MemoryOrder());
@@ -1312,7 +1349,10 @@ public:
                        cl_uint whichDestValue) override
     {
         expected = StartValue();
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (whichDestValue == 0)
                 for (cl_uint i = 0; i < threadCount; i++)
@@ -1331,12 +1371,15 @@ public:
                              const std::vector<HostAtomicType> &testValues,
                              cl_uint whichDestValue) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_DOUBLE> || std::is_same<HostDataType, HOST_FLOAT>::value)
         {
             if (whichDestValue == 0)
-                return std::abs((HOST_ATOMIC_FLOAT)expected
+                return std::abs((HostDataType)expected
                                 - testValues[whichDestValue])
-                    > max_error_fp32;
+                    > max_error;
         }
         return CBasicTestMemOrderScope<
             HostAtomicType, HostDataType>::IsTestNotAsExpected(expected,
@@ -1346,7 +1389,8 @@ public:
     bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
                     HostAtomicType *finalValues) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if (std::is_same<HostDataType, HOST_DOUBLE>::value
+            || std::is_same<HostDataType, HOST_FLOAT>::value)
         {
             correct = true;
             for (cl_uint i = 1; i < threadCount; i++)
@@ -1369,7 +1413,18 @@ public:
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
+        {
+            if (LocalMemory()
+                && (gDoubleAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_ADD_EXT) == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gDoubleAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_ADD_EXT)
+                    == 0)
+                return 0;
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (LocalMemory()
                 && (gFloatAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_ADD_EXT) == 0)
@@ -1385,7 +1440,10 @@ public:
     }
     cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             return threadCount;
         }
@@ -1420,6 +1478,11 @@ static int test_atomic_fetch_add_generic(cl_device_id deviceID,
 
     if (gFloatAtomicsSupported)
     {
+        CBasicTestFetchAdd<HOST_ATOMIC_DOUBLE, HOST_DOUBLE> test_double(
+            TYPE_ATOMIC_DOUBLE, useSVM);
+        EXECUTE_TEST(
+            error, test_double.Execute(deviceID, context, queue, num_elements));
+
         CBasicTestFetchAdd<HOST_ATOMIC_FLOAT, HOST_FLOAT> test_float(
             TYPE_ATOMIC_FLOAT, useSVM);
         EXECUTE_TEST(

@@ -98,7 +98,10 @@ template <typename AtomicType, typename CorrespondingType>
 CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingType c,
                                         TExplicitMemoryOrderType order)
 {
-    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_FLOAT>)
+    if constexpr (
+        std::is_same_v<
+            AtomicType,
+            HOST_ATOMIC_FLOAT> || std::is_same_v<AtomicType, HOST_ATOMIC_DOUBLE>)
     {
         static std::mutex mx;
         std::lock_guard<std::mutex> lock(mx);

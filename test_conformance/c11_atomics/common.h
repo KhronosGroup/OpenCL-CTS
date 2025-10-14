@@ -79,6 +79,7 @@ extern cl_device_atomic_capabilities gAtomicMemCap,
 extern cl_half_rounding_mode gHalfRoundingMode;
 extern bool gFloatAtomicsSupported;
 extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
+extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
 extern cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps;
 
 extern const char *
