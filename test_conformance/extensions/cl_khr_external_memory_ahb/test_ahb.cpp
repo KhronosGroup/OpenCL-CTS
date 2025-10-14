@@ -394,7 +394,7 @@ REGISTER_TEST(test_images_read)
                 test_error(err, "clEnqueueNDRangeKernel failed");
 
                 err = clEnqueueReleaseExternalMemObjectsKHR(
-                    queue, 1, &opencl_image, 0, nullptr, nullptr);
+                    queue, 1, &imported_image, 0, nullptr, nullptr);
                 test_error(err, "clEnqueueReleaseExternalMemObjectsKHR failed");
 
                 // Read buffer and verify
