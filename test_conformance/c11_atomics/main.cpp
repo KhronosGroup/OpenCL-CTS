@@ -134,6 +134,7 @@ test_status InitCL(cl_device_id device) {
     if (is_extension_available(device, "cl_ext_float_atomics"))
     {
         gFloatAtomicsSupported = true;
+
         if (is_extension_available(device, "cl_khr_fp64"))
         {
             cl_int error = clGetDeviceInfo(
