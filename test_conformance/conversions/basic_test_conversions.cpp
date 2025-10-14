@@ -17,6 +17,7 @@
 #include "harness/testHarness.h"
 #include "harness/compat.h"
 #include "harness/ThreadPool.h"
+#include "harness/parseParameters.h"
 
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
@@ -77,7 +78,6 @@ cl_mem gInBuffer;
 cl_mem gOutBuffers[kCallStyleCount];
 size_t gComputeDevices = 0;
 uint32_t gDeviceFrequency = 0;
-int gWimpyMode = 0;
 int gWimpyReductionFactor = 128;
 int gSkipTesting = 0;
 int gForceFTZ = 0;
