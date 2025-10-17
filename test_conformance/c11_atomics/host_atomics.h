@@ -99,6 +99,15 @@ template <typename AtomicType, typename CorrespondingType>
 CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingType c,
                                         TExplicitMemoryOrderType order)
 {
+    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_HALF>)
+    {
+        static std::mutex mx;
+        std::lock_guard<std::mutex> lock(mx);
+        CorrespondingType old_value = *a;
+        *a = cl_half_from_float((cl_half_to_float(*a) + cl_half_to_float(c)),
+                                gHalfRoundingMode);
+        return old_value;
+    }
     if constexpr (
         std::is_same_v<
             AtomicType,
@@ -112,8 +121,8 @@ CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingTyp
     }
     else
     {
-#if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-        return InterlockedExchangeAdd(a, c);
+#if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
+        return InterlockedExchangeAdd(reinterpret_cast<volatile LONG *>(a), c);
 #elif defined(__GNUC__)
         return __sync_fetch_and_add(a, c);
 #else
