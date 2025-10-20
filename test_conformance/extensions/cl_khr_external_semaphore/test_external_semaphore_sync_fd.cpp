@@ -22,21 +22,6 @@ template <bool inorder> cl_int doTest(cl_device_id device, cl_context context)
 {
     cl_int err = CL_SUCCESS;
 
-    if (!is_extension_available(device, "cl_khr_external_semaphore"))
-    {
-        log_info(
-            "cl_khr_external_semaphore is not supported on this platoform. "
-            "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-
-    if (!is_extension_available(device, "cl_khr_external_semaphore_sync_fd"))
-    {
-        log_info("cl_khr_external_semaphore_sync_fd is not supported on this "
-                 "platoform. Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-
     clCommandQueueWrapper test_queue;
     if constexpr (inorder)
     {
@@ -142,6 +127,9 @@ template <bool inorder> cl_int doTest(cl_device_id device, cl_context context)
 // sync fd to a new semaphore
 REGISTER_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2))
 {
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_EXTENSION("cl_khr_external_semaphore_sync_fd");
+
     cl_int total_status = TEST_PASS;
     cl_int status = doTest<false>(device, context);
     if (status != TEST_PASS && status != TEST_SKIPPED_ITSELF)
