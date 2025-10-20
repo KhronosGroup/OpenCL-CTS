@@ -429,12 +429,14 @@ bool TestRunner::runBuildTest(cl_device_id device, const char *folder,
     BuildTask clBuild(clprog, device, cloptions.c_str());
     if (!clBuild.execute()) {
         std::cerr << clBuild.getErrorLog() << std::endl;
+        (*m_failureHandler)(test_name, "");
         return false;
     }
 
     SpirBuildTask bcBuild(bcprog, device, bcoptions.c_str());
     if (!bcBuild.execute()) {
         std::cerr << bcBuild.getErrorLog() << std::endl;
+        (*m_failureHandler)(test_name, "");
         return false;
     }
 
@@ -443,6 +445,7 @@ bool TestRunner::runBuildTest(cl_device_id device, const char *folder,
     if (clkernel_enumerator.size() != bckernel_enumerator.size()) {
         std::cerr << "number of kernels in test" << test_name
                   << " doesn't match in bc and cl files" << std::endl;
+        (*m_failureHandler)(test_name, "");
         return false;
     }
     KernelEnumerator::iterator it = clkernel_enumerator.begin(),
