@@ -121,6 +121,10 @@ REGISTER_TEST(svm_set_kernel_exec_info_svm_ptrs)
     error = clFinish(queues[0]);
     test_error(error, "clFinish failed.");
 
+    // Special case testing of unsetting previously set SVM pointers
+    error = clSetKernelExecInfo(k, CL_KERNEL_EXEC_INFO_SVM_PTRS, 0, NULL);
+    test_error(error, "Unsetting previously set SVM pointers using clSetKernelExecInfo failed");
+
     clEnqueueMapBuffer(queues[0], ba, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size, 0, NULL, NULL, &error);
     test_error(error, "clEnqueueMapBuffer failed");
     clEnqueueMapBuffer(queues[0], bb, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size, 0, NULL, NULL, &error);
