@@ -108,7 +108,7 @@ CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingTyp
                                 gHalfRoundingMode);
         return old_value;
     }
-    if constexpr (
+    else if constexpr (
         std::is_same_v<
             AtomicType,
             HOST_ATOMIC_FLOAT> || std::is_same_v<AtomicType, HOST_ATOMIC_DOUBLE>)
@@ -122,7 +122,7 @@ CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingTyp
     else
     {
 #if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
-        return InterlockedExchangeAdd(reinterpret_cast<volatile LONG *>(a), c);
+        return InterlockedExchangeAdd(a, c);
 #elif defined(__GNUC__)
         return __sync_fetch_and_add(a, c);
 #else

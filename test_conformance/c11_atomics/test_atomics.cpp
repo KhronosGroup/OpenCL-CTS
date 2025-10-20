@@ -417,7 +417,7 @@ public:
         correct = true;
         for (cl_uint i = 0; i < threadCount; i++)
         {
-            if constexpr (std::is_same<HostDataType, cl_half>::value)
+            if constexpr (std::is_same_v<HostDataType, cl_half>)
             {
                 HostDataType test = cl_half_from_float(static_cast<float>(i),
                                                        gHalfRoundingMode);
@@ -1202,10 +1202,9 @@ public:
           min_range(-999.0), max_range(999.0), max_error(0.0)
     {
         if constexpr (
-            std::is_same<HostDataType, HOST_HALF>::value
-            || std::is_same_v<
+            std::is_same_v<
                 HostDataType,
-                HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             StartValue((HostDataType)0.0);
             CBasicTestMemOrderScope<HostAtomicType,
@@ -1457,7 +1456,7 @@ public:
         else if constexpr (
             std::is_same_v<
                 HostDataType,
-                HOST_DOUBLE> || std::is_same<HostDataType, HOST_FLOAT>::value)
+                HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (whichDestValue == 0)
                 return std::abs((HostDataType)expected
@@ -1475,8 +1474,7 @@ public:
         if constexpr (
             std::is_same_v<
                 HostDataType,
-                HOST_HALF> || std::is_same<HostDataType, HOST_DOUBLE>::value
-            || std::is_same<HostDataType, HOST_FLOAT>::value)
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             correct = true;
             for (cl_uint i = 1; i < threadCount; i++)
@@ -1838,7 +1836,7 @@ public:
     bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
                     HostAtomicType *finalValues) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             correct = true;
             for (cl_uint i = 1; i < threadCount; i++)
@@ -2880,7 +2878,7 @@ public:
                              const std::vector<HostAtomicType> &testValues,
                              cl_uint whichDestValue) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (whichDestValue == 0)
                 return CBasicTestMemOrderScope<HostAtomicType, HostDataType>::
@@ -2895,7 +2893,7 @@ public:
     bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
                     HostAtomicType *finalValues) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             correct = true;
             for (cl_uint i = 1; i < threadCount; i++)
@@ -3147,7 +3145,7 @@ public:
                              const std::vector<HostAtomicType> &testValues,
                              cl_uint whichDestValue) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (whichDestValue == 0)
                 return CBasicTestMemOrderScope<HostAtomicType, HostDataType>::
@@ -3162,7 +3160,7 @@ public:
     bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
                     HostAtomicType *finalValues) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             correct = true;
             for (cl_uint i = 1; i < threadCount; i++)
