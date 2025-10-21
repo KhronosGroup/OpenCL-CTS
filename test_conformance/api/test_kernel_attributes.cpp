@@ -448,8 +448,8 @@ REGISTER_TEST(null_required_work_group_size)
 
             const size_t global_work_size[3] = { 2 * 32, 3 * 32, 4 * 32 };
             error = clEnqueueNDRangeKernel(queue, kernel, work_dim, nullptr,
-                                           global_work_size, nullptr, 0, nullptr,
-                                           nullptr);
+                                           global_work_size, nullptr, 0,
+                                           nullptr, nullptr);
             test_error(error, "clEnqueueNDRangeKernel failed");
 
             cl_int results[3] = { -1, -1, -1 };
