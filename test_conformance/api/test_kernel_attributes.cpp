@@ -386,7 +386,7 @@ REGISTER_TEST(null_required_work_group_size)
     struct KernelAttribInfo
     {
         std::string str;
-        cl_uint maxDim;
+        cl_uint max_dim;
     };
 
     std::vector<KernelAttribInfo> attribs;
@@ -394,7 +394,7 @@ REGISTER_TEST(null_required_work_group_size)
     attribs.push_back({ "__attribute__((reqd_work_group_size(2,3,1)))", 2 });
     attribs.push_back({ "__attribute__((reqd_work_group_size(2,3,4)))", 3 });
 
-    const std::string bodyStr = R"(
+    const std::string body_str = R"(
         __kernel void wg_size(__global int* dst)
         {
             if (get_global_id(0) == 0 &&
@@ -409,8 +409,8 @@ REGISTER_TEST(null_required_work_group_size)
 
     for (auto& attrib : attribs)
     {
-        const std::string sourceStr = attrib.str + bodyStr;
-        const char* source = sourceStr.c_str();
+        const std::string source_str = attrib.str + body_str;
+        const char* source = source_str.c_str();
 
         clProgramWrapper program;
         clKernelWrapper kernel;
@@ -421,7 +421,7 @@ REGISTER_TEST(null_required_work_group_size)
         error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &dst);
         test_error(error, "clSetKernelArg failed");
 
-        for (cl_uint work_dim = 1; work_dim <= attrib.maxDim; work_dim++)
+        for (cl_uint work_dim = 1; work_dim <= attrib.max_dim; work_dim++)
         {
             const cl_int expected[3] = { 2, work_dim >= 2 ? 3 : 1,
                                          work_dim >= 3 ? 4 : 1 };
@@ -446,9 +446,9 @@ REGISTER_TEST(null_required_work_group_size)
             error = clEnqueueFillBuffer(queue, dst, &zero, sizeof(zero), 0,
                                         sizeof(expected), 0, nullptr, nullptr);
 
-            const size_t globalWorkSize[3] = { 2 * 32, 3 * 32, 4 * 32 };
+            const size_t global_work_size[3] = { 2 * 32, 3 * 32, 4 * 32 };
             error = clEnqueueNDRangeKernel(queue, kernel, work_dim, nullptr,
-                                           globalWorkSize, nullptr, 0, nullptr,
+                                           global_work_size, nullptr, 0, nullptr,
                                            nullptr);
             test_error(error, "clEnqueueNDRangeKernel failed");
 
@@ -471,7 +471,7 @@ REGISTER_TEST(null_required_work_group_size)
             {
                 size_t suggested[3] = { 1, 1, 1 };
                 error = clGetKernelSuggestedLocalWorkSizeKHR(
-                    queue, kernel, work_dim, nullptr, globalWorkSize,
+                    queue, kernel, work_dim, nullptr, global_work_size,
                     suggested);
                 test_error(error,
                            "clGetKernelSuggestedLocalWorkSizeKHR failed");
