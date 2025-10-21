@@ -194,14 +194,28 @@ template<> cl_int AtomicTypeExtendedInfo<cl_int>::MinValue() {return CL_INT_MIN;
 template<> cl_uint AtomicTypeExtendedInfo<cl_uint>::MinValue() {return 0;}
 template<> cl_long AtomicTypeExtendedInfo<cl_long>::MinValue() {return CL_LONG_MIN;}
 template<> cl_ulong AtomicTypeExtendedInfo<cl_ulong>::MinValue() {return 0;}
-template<> cl_float AtomicTypeExtendedInfo<cl_float>::MinValue() {return CL_FLT_MIN;}
+template <> cl_half AtomicTypeExtendedInfo<cl_half>::MinValue()
+{
+    return cl_half_from_float(CL_HALF_MIN, gHalfRoundingMode);
+}
+template <> cl_float AtomicTypeExtendedInfo<cl_float>::MinValue()
+{
+    return CL_FLT_MIN;
+}
 template<> cl_double AtomicTypeExtendedInfo<cl_double>::MinValue() {return CL_DBL_MIN;}
 
 template<> cl_int AtomicTypeExtendedInfo<cl_int>::MaxValue() {return CL_INT_MAX;}
 template<> cl_uint AtomicTypeExtendedInfo<cl_uint>::MaxValue() {return CL_UINT_MAX;}
 template<> cl_long AtomicTypeExtendedInfo<cl_long>::MaxValue() {return CL_LONG_MAX;}
 template<> cl_ulong AtomicTypeExtendedInfo<cl_ulong>::MaxValue() {return CL_ULONG_MAX;}
-template<> cl_float AtomicTypeExtendedInfo<cl_float>::MaxValue() {return CL_FLT_MAX;}
+template <> cl_half AtomicTypeExtendedInfo<cl_half>::MaxValue()
+{
+    return cl_half_from_float(CL_HALF_MAX, gHalfRoundingMode);
+}
+template <> cl_float AtomicTypeExtendedInfo<cl_float>::MaxValue()
+{
+    return CL_FLT_MAX;
+}
 template<> cl_double AtomicTypeExtendedInfo<cl_double>::MaxValue() {return CL_DBL_MAX;}
 
 cl_int getSupportedMemoryOrdersAndScopes(
