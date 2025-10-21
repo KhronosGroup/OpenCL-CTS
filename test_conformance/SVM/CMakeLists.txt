@@ -15,6 +15,7 @@ set(${MODULE_NAME}_SOURCES
     test_shared_address_space_fine_grain.cpp
     test_shared_address_space_fine_grain_buffers.cpp
     test_shared_sub_buffers.cpp
+    test_size_zero.cpp
     test_migrate.cpp
 )
 
