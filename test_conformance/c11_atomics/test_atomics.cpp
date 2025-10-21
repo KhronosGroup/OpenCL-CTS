@@ -2687,7 +2687,10 @@ public:
           min_range(-999.0), max_range(999.0)
     {
         StartValue(DataType().MaxValue());
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
@@ -2697,7 +2700,10 @@ public:
     {
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             return "  atomic_fetch_min" + postfix
                 + "(&destMemory[0], oldValues[tid] " + memoryOrderScope + ");\n"
@@ -2716,7 +2722,10 @@ public:
                       volatile HostAtomicType *destMemory,
                       HostDataType *oldValues) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             host_atomic_fetch_min(&destMemory[0], oldValues[tid],
                                   MemoryOrder());
@@ -2732,7 +2741,16 @@ public:
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            for (cl_uint i = 0; i < threadCount; i++)
+            {
+                startRefValues[i] = cl_half_from_float(
+                    get_random_float(min_range, max_range, d),
+                    gHalfRoundingMode);
+            }
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             for (cl_uint i = 0; i < threadCount; i++)
             {
@@ -2759,7 +2777,19 @@ public:
                        cl_uint whichDestValue) override
     {
         expected = StartValue();
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            if (whichDestValue == 0)
+            {
+                for (cl_uint i = 0; i < threadCount; i++)
+                {
+                    if (cl_half_to_float(startRefValues[i])
+                        < cl_half_to_float(expected))
+                        expected = startRefValues[i];
+                }
+            }
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (whichDestValue == 0)
                 for (cl_uint i = 0; i < threadCount; i++)
@@ -2779,7 +2809,9 @@ public:
                              const std::vector<HostAtomicType> &testValues,
                              cl_uint whichDestValue) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if (std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same<HostDataType, HOST_FLOAT>::value)
         {
             if (whichDestValue == 0)
                 return CBasicTestMemOrderScope<HostAtomicType, HostDataType>::
@@ -2794,7 +2826,9 @@ public:
     bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
                     HostAtomicType *finalValues) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if (std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same<HostDataType, HOST_FLOAT>::value)
         {
             correct = true;
             for (cl_uint i = 1; i < threadCount; i++)
@@ -2817,7 +2851,19 @@ public:
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            if (LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0;
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (LocalMemory()
                 && (gFloatAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
@@ -2835,7 +2881,10 @@ public:
     }
     cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             return threadCount;
         }
@@ -2870,6 +2919,11 @@ static int test_atomic_fetch_min_generic(cl_device_id deviceID,
 
     if (gFloatAtomicsSupported)
     {
+        CBasicTestFetchMin<HOST_ATOMIC_HALF, HOST_HALF> test_half(
+            TYPE_ATOMIC_HALF, useSVM);
+        EXECUTE_TEST(error,
+                     test_half.Execute(deviceID, context, queue, num_elements));
+
         CBasicTestFetchMin<HOST_ATOMIC_FLOAT, HOST_FLOAT> test_float(
             TYPE_ATOMIC_FLOAT, useSVM);
         EXECUTE_TEST(
@@ -2953,18 +3007,31 @@ public:
                                                                 useSVM),
           min_range(-999.0), max_range(999.0)
     {
-        StartValue(DataType().MinValue());
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
+            if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+                StartValue(cl_half_from_float(-CL_HALF_MAX, gHalfRoundingMode));
+            else
+                StartValue(-DataType().MaxValue());
+        }
+        else
+        {
+            StartValue(DataType().MinValue());
         }
     }
     std::string ProgramCore() override
     {
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             return "  atomic_fetch_max" + postfix
                 + "(&destMemory[0], oldValues[tid] " + memoryOrderScope + ");\n"
@@ -2983,7 +3050,10 @@ public:
                       volatile HostAtomicType *destMemory,
                       HostDataType *oldValues) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             host_atomic_fetch_max(&destMemory[0], oldValues[tid],
                                   MemoryOrder());
@@ -2999,7 +3069,16 @@ public:
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            for (cl_uint i = 0; i < threadCount; i++)
+            {
+                startRefValues[i] = cl_half_from_float(
+                    get_random_float(min_range, max_range, d),
+                    gHalfRoundingMode);
+            }
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             for (cl_uint i = 0; i < threadCount; i++)
             {
@@ -3026,7 +3105,19 @@ public:
                        cl_uint whichDestValue) override
     {
         expected = StartValue();
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            if (whichDestValue == 0)
+            {
+                for (cl_uint i = 0; i < threadCount; i++)
+                {
+                    if (cl_half_to_float(startRefValues[i])
+                        > cl_half_to_float(expected))
+                        expected = startRefValues[i];
+                }
+            }
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (whichDestValue == 0)
                 for (cl_uint i = 0; i < threadCount; i++)
@@ -3046,7 +3137,9 @@ public:
                              const std::vector<HostAtomicType> &testValues,
                              cl_uint whichDestValue) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if (std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same<HostDataType, HOST_FLOAT>::value)
         {
             if (whichDestValue == 0)
                 return CBasicTestMemOrderScope<HostAtomicType, HostDataType>::
@@ -3061,7 +3154,9 @@ public:
     bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
                     HostAtomicType *finalValues) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if (std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same<HostDataType, HOST_FLOAT>::value)
         {
             correct = true;
             for (cl_uint i = 1; i < threadCount; i++)
@@ -3084,7 +3179,19 @@ public:
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            if (LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0;
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (LocalMemory()
                 && (gFloatAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
@@ -3102,7 +3209,10 @@ public:
     }
     cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             return threadCount;
         }
@@ -3137,6 +3247,11 @@ static int test_atomic_fetch_max_generic(cl_device_id deviceID,
 
     if (gFloatAtomicsSupported)
     {
+        CBasicTestFetchMax<HOST_ATOMIC_HALF, HOST_HALF> test_half(
+            TYPE_ATOMIC_HALF, useSVM);
+        EXECUTE_TEST(error,
+                     test_half.Execute(deviceID, context, queue, num_elements));
+
         CBasicTestFetchMax<HOST_ATOMIC_FLOAT, HOST_FLOAT> test_float(
             TYPE_ATOMIC_FLOAT, useSVM);
         EXECUTE_TEST(
