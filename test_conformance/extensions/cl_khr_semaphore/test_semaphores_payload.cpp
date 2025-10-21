@@ -28,10 +28,6 @@ struct PayloadSemaphore : public SemaphoreTestBase
     cl_int Run() override
     {
         cl_int err = CL_SUCCESS;
-        // Create ooo queue
-        clCommandQueueWrapper queue = clCreateCommandQueue(
-            context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
-        test_error(err, "Could not create command queue");
 
         // Create semaphore
         cl_semaphore_properties_khr sema_props[] = {
