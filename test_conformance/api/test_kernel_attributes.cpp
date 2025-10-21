@@ -341,7 +341,6 @@ REGISTER_TEST(null_required_work_group_size)
 {
     cl_int error = CL_SUCCESS;
 
-    bool checkSuggestedLocalWorkSize = false;
     clGetKernelSuggestedLocalWorkSizeKHR_fn
         clGetKernelSuggestedLocalWorkSizeKHR = nullptr;
     if (is_extension_available(device, "cl_khr_suggested_local_work_size"))
@@ -355,8 +354,9 @@ REGISTER_TEST(null_required_work_group_size)
             (clGetKernelSuggestedLocalWorkSizeKHR_fn)
                 clGetExtensionFunctionAddressForPlatform(
                     platform, "clGetKernelSuggestedLocalWorkSizeKHR");
-        checkSuggestedLocalWorkSize =
-            clGetKernelSuggestedLocalWorkSizeKHR != nullptr;
+        test_assert_error(clGetKernelSuggestedLocalWorkSizeKHR != nullptr,
+                          "Couldn't get function pointer for "
+                          "clGetKernelSuggestedLocalWorkSizeKHR");
     }
 
     cl_uint device_max_dim = 0;
@@ -467,7 +467,7 @@ REGISTER_TEST(null_required_work_group_size)
                 return TEST_FAIL;
             }
 
-            if (checkSuggestedLocalWorkSize)
+            if (clGetKernelSuggestedLocalWorkSizeKHR != nullptr)
             {
                 size_t suggested[3] = { 1, 1, 1 };
                 error = clGetKernelSuggestedLocalWorkSizeKHR(
