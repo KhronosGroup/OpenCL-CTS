@@ -185,7 +185,20 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
                                   TExplicitMemoryOrderType order_failure)
 {
     CorrespondingType tmp;
-    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_FLOAT>)
+    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_HALF>)
+    {
+        static std::mutex mtx;
+        std::lock_guard<std::mutex> lock(mtx);
+        tmp = *reinterpret_cast<volatile cl_half *>(a);
+
+        if (cl_half_to_float(tmp) == cl_half_to_float(*expected))
+        {
+            *reinterpret_cast<volatile cl_half *>(a) = desired;
+            return true;
+        }
+        *expected = tmp;
+    }
+    else if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_FLOAT>)
     {
         static std::mutex mtx;
         std::lock_guard<std::mutex> lock(mtx);
@@ -200,7 +213,6 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
     else
     {
 #if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
-
         tmp = InterlockedCompareExchange(a, desired, *expected);
 #elif defined(__GNUC__)
         tmp = __sync_val_compare_and_swap(a, *expected, desired);

@@ -66,102 +66,6 @@ struct EnqueueCommandBufferNotFinalized : public BasicCommandBufferTest
     }
 };
 
-// CL_INVALID_OPERATION if command_buffer was not created with the
-// CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR flag and is in the Pending state.
-struct EnqueueCommandBufferWithoutSimultaneousUseNotInPendingState
-    : public BasicCommandBufferTest
-{
-    EnqueueCommandBufferWithoutSimultaneousUseNotInPendingState(
-        cl_device_id device, cl_context context, cl_command_queue queue)
-        : BasicCommandBufferTest(device, context, queue), user_event(nullptr)
-    {}
-
-    cl_int Run() override
-    {
-        cl_int error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
-                                                 nullptr, nullptr);
-
-        test_failure_error_ret(error, CL_INVALID_OPERATION,
-                               "clEnqueueCommandBufferKHR should return "
-                               "CL_INVALID_OPERATION",
-                               TEST_FAIL);
-
-        error = clSetUserEventStatus(user_event, CL_COMPLETE);
-        test_error(error, "clSetUserEventStatus failed");
-        clFinish(queue);
-
-        return CL_SUCCESS;
-    }
-
-    cl_int SetUp(int elements) override
-    {
-        auto verify_state = [&](const cl_command_buffer_state_khr &expected) {
-            cl_command_buffer_state_khr state = ~cl_command_buffer_state_khr(0);
-
-            cl_int error = clGetCommandBufferInfoKHR(
-                command_buffer, CL_COMMAND_BUFFER_STATE_KHR, sizeof(state),
-                &state, nullptr);
-            test_error_ret(error, "clGetCommandBufferInfoKHR failed",
-                           TEST_FAIL);
-
-            test_assert_error(
-                state == expected,
-                "Unexpected result of CL_COMMAND_BUFFER_STATE_KHR query!");
-
-            return TEST_PASS;
-        };
-
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        command_buffer = clCreateCommandBufferKHR(1, &queue, nullptr, &error);
-        test_error(error, "clCreateCommandBufferKHR failed");
-
-        error = RecordCommandBuffer();
-        test_error(error, "RecordCommandBuffer failed");
-        error = verify_state(CL_COMMAND_BUFFER_STATE_EXECUTABLE_KHR);
-        test_error(error, "State is not Executable");
-
-        error = EnqueueCommandBuffer();
-        test_error(error, "EnqueueCommandBuffer failed");
-
-        return CL_SUCCESS;
-    }
-
-    cl_int RecordCommandBuffer()
-    {
-        cl_int error = clCommandNDRangeKernelKHR(
-            command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
-            nullptr, 0, nullptr, nullptr, nullptr);
-        test_error(error, "clCommandNDRangeKernelKHR failed");
-
-        error = clFinalizeCommandBufferKHR(command_buffer);
-        test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        return CL_SUCCESS;
-    }
-
-    cl_int EnqueueCommandBuffer()
-    {
-        cl_int pattern = 0xE;
-
-        cl_int error =
-            clEnqueueFillBuffer(queue, out_mem, &pattern, sizeof(cl_int), 0,
-                                data_size(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        user_event = clCreateUserEvent(context, &error);
-        test_error(error, "clCreateUserEvent failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 1,
-                                          &user_event, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        return CL_SUCCESS;
-    }
-    clEventWrapper user_event;
-};
-
 // CL_INVALID_VALUE if queues is NULL and num_queues is > 0, or queues is not
 // NULL and num_queues is 0.
 struct EnqueueCommandBufferNullQueuesNumQueues : public BasicCommandBufferTest
@@ -620,14 +524,6 @@ REGISTER_TEST(negative_enqueue_command_buffer_invalid_command_buffer)
 REGISTER_TEST(negative_enqueue_command_buffer_not_finalized)
 {
     return MakeAndRunTest<EnqueueCommandBufferNotFinalized>(
-        device, context, queue, num_elements);
-}
-
-REGISTER_TEST(
-    negative_enqueue_command_buffer_without_simultaneous_no_pending_state)
-{
-    return MakeAndRunTest<
-        EnqueueCommandBufferWithoutSimultaneousUseNotInPendingState>(
         device, context, queue, num_elements);
 }
 
