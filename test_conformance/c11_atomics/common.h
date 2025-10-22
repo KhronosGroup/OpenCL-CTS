@@ -24,8 +24,9 @@
 
 #include "CL/cl_half.h"
 
-#include <vector>
+#include <iomanip>
 #include <sstream>
+#include <vector>
 
 #define MAX_DEVICE_THREADS (gHost ? 0U : gMaxDeviceThreads)
 #define MAX_HOST_THREADS GetThreadCount()
@@ -74,10 +75,12 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+
 extern cl_half_rounding_mode gHalfRoundingMode;
 extern bool gFloatAtomicsSupported;
 extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
 extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
+extern cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps;
 
 extern const char *
 get_memory_order_type_name(TExplicitMemoryOrderType orderType);
@@ -175,12 +178,12 @@ public:
     {
         return false;
     }
-    virtual bool VerifyExpected(const HostDataType &expected,
-                                const HostAtomicType *const testValue,
-                                cl_uint whichDestValue)
+    virtual bool
+    IsTestNotAsExpected(const HostDataType &expected,
+                        const std::vector<HostAtomicType> &testValues,
+                        cl_uint whichDestValue)
     {
-        if (testValue != nullptr) return expected != testValue[whichDestValue];
-        return true;
+        return expected != testValues[whichDestValue];
     }
     virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                               MTdata d)
@@ -891,7 +894,16 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
         header += std::string("__global volatile ") + aTypeName + " destMemory["
             + ss.str() + "] = {\n";
         ss.str("");
-        ss << _startValue;
+
+        if (CBasicTest<HostAtomicType, HostDataType>::DataType()._type
+            == TYPE_ATOMIC_FLOAT)
+            ss << std::setprecision(10) << _startValue;
+        else if (CBasicTest<HostAtomicType, HostDataType>::DataType()._type
+                 == TYPE_ATOMIC_HALF)
+            ss << cl_half_to_float(static_cast<cl_half>(_startValue));
+        else
+            ss << _startValue;
+
         for (cl_uint i = 0; i < maxNumDestItems; i++)
         {
             if (aTypeName == "atomic_flag")
@@ -1450,7 +1462,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (VerifyExpected(expected, destItems.data(), i))
+        if (IsTestNotAsExpected(expected, destItems, i))
         {
             std::stringstream logLine;
             logLine << "ERROR: Result " << i

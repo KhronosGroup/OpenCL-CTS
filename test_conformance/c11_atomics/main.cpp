@@ -35,6 +35,7 @@ cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
 bool gFloatAtomicsSupported = false;
 cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps = 0;
 cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps = 0;
+cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps = 0;
 
 test_status InitCL(cl_device_id device) {
     auto version = get_device_cl_version(device);
@@ -140,6 +141,12 @@ test_status InitCL(cl_device_id device) {
                 sizeof(gDoubleAtomicCaps), &gDoubleAtomicCaps, nullptr);
             test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
         }
+
+        cl_int error = clGetDeviceInfo(
+            device, CL_DEVICE_SINGLE_FP_ATOMIC_CAPABILITIES_EXT,
+            sizeof(gFloatAtomicCaps), &gFloatAtomicCaps, nullptr);
+        test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
+
         if (is_extension_available(device, "cl_khr_fp16"))
         {
             cl_int error = clGetDeviceInfo(

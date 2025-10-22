@@ -17,6 +17,7 @@
 #include <string.h>
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
+#include "harness/parseParameters.h"
 
 #include <algorithm>
 #include <vector>
@@ -26,7 +27,6 @@
 
 
 #ifdef CL_VERSION_2_0
-extern int gWimpyMode;
 static const char *helper_ndrange_1d_glo[] = {
     NL,
     "void block_fn(int len, __global atomic_uint* val)" NL,
