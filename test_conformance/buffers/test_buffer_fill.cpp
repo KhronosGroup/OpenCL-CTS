@@ -900,7 +900,7 @@ REGISTER_TEST(buffer_fill_int)
     cl_int  *pattern[5];
     size_t  ptrSizes[5];
     int     n, i, err=0;
-    size_t  j, offset_elements, fill_elements;
+    size_t  offset_elements, fill_elements;
     int     (*foo)(void *,void *,int);
     MTdata  d = init_genrand( gRandomSeed );
 
@@ -921,17 +921,15 @@ REGISTER_TEST(buffer_fill_int)
         log_info( "Testing random fill from offset %d for %d elements: \n", (int)offset_elements, (int)fill_elements );
 
         for ( i = 0; i < 5; i++ ){
+            volatile size_t j = 0;
             pattern[i] = (cl_int *)malloc(ptrSizes[i]);
             for ( j = 0; j < ptrSizes[i] / ptrSizes[0]; j++ )
                 pattern[i][j] = TEST_PRIME_INT;
 
             inptr[i] = (cl_int *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
-            for ( j = 0; j < ptrSizes[i] * offset_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
-            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j++ )
+            memset(inptr[i], 0, ptrSizes[i] * num_elements);
+            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; ++j )
                 inptr[i][j] = TEST_PRIME_INT;
-            for ( j = ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j < ptrSizes[i] * num_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
 
             hostptr[i] = (cl_int *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
@@ -966,7 +964,7 @@ REGISTER_TEST(buffer_fill_uint)
     cl_uint *pattern[5];
     size_t  ptrSizes[5];
     int     n, i, err=0;
-    size_t  j, offset_elements, fill_elements;
+    size_t  offset_elements, fill_elements;
     MTdata  d = init_genrand( gRandomSeed );
     int     (*foo)(void *,void *,int);
 
@@ -987,17 +985,15 @@ REGISTER_TEST(buffer_fill_uint)
         log_info( "Testing random fill from offset %d for %d elements: \n", (int)offset_elements, (int)fill_elements );
 
         for ( i = 0; i < 5; i++ ){
+            volatile size_t j = 0;
             pattern[i] = (cl_uint *)malloc(ptrSizes[i]);
             for ( j = 0; j < ptrSizes[i] / ptrSizes[0]; j++ )
                 pattern[i][j] = TEST_PRIME_UINT;
 
             inptr[i] = (cl_uint *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
-            for ( j = 0; j < ptrSizes[i] * offset_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
-            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j++ )
+            memset(inptr[i], 0, ptrSizes[i] * num_elements);
+            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; ++j )
                 inptr[i][j] = TEST_PRIME_UINT;
-            for ( j = ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j < ptrSizes[i] * num_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
 
             hostptr[i] = (cl_uint *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
@@ -1032,7 +1028,7 @@ REGISTER_TEST(buffer_fill_short)
     cl_short *pattern[5];
     size_t   ptrSizes[5];
     int      n, i, err=0;
-    size_t   j, offset_elements, fill_elements;
+    size_t   offset_elements, fill_elements;
     MTdata   d = init_genrand( gRandomSeed );
     int      (*foo)(void *,void *,int);
 
@@ -1053,17 +1049,15 @@ REGISTER_TEST(buffer_fill_short)
         log_info( "Testing random fill from offset %d for %d elements: \n", (int)offset_elements, (int)fill_elements );
 
         for ( i = 0; i < 5; i++ ){
+            volatile size_t j = 0;
             pattern[i] = (cl_short *)malloc(ptrSizes[i]);
             for ( j = 0; j < ptrSizes[i] / ptrSizes[0]; j++ )
                 pattern[i][j] = TEST_PRIME_SHORT;
 
             inptr[i] = (cl_short *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
-            for ( j = 0; j < ptrSizes[i] * offset_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
-            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j++ )
+            memset(inptr[i], 0, ptrSizes[i] * num_elements);
+            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; ++j )
                 inptr[i][j] = TEST_PRIME_SHORT;
-            for ( j = ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j < ptrSizes[i] * num_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
 
             hostptr[i] = (cl_short *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
@@ -1098,7 +1092,7 @@ REGISTER_TEST(buffer_fill_ushort)
     cl_ushort *pattern[5];
     size_t    ptrSizes[5];
     int       n, i, err=0;
-    size_t    j, offset_elements, fill_elements;
+    size_t    offset_elements, fill_elements;
     MTdata    d = init_genrand( gRandomSeed );
     int       (*foo)(void *,void *,int);
 
@@ -1119,17 +1113,15 @@ REGISTER_TEST(buffer_fill_ushort)
         log_info( "Testing random fill from offset %d for %d elements: \n", (int)offset_elements, (int)fill_elements );
 
         for ( i = 0; i < 5; i++ ){
+            volatile size_t j = 0;
             pattern[i] = (cl_ushort *)malloc(ptrSizes[i]);
             for ( j = 0; j < ptrSizes[i] / ptrSizes[0]; j++ )
                 pattern[i][j] = TEST_PRIME_USHORT;
 
             inptr[i] = (cl_ushort *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
-            for ( j = 0; j < ptrSizes[i] * offset_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
-            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j++ )
+            memset(inptr[i], 0, ptrSizes[i] * num_elements);
+            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; ++j )
                 inptr[i][j] = TEST_PRIME_USHORT;
-            for ( j = ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j < ptrSizes[i] * num_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
 
             hostptr[i] = (cl_ushort *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
@@ -1164,7 +1156,7 @@ REGISTER_TEST(buffer_fill_char)
     cl_char *pattern[5];
     size_t  ptrSizes[5];
     int     n, i, err=0;
-    size_t  j, offset_elements, fill_elements;
+    size_t  offset_elements, fill_elements;
     MTdata  d = init_genrand( gRandomSeed );
     int     (*foo)(void *,void *,int);
 
@@ -1185,17 +1177,16 @@ REGISTER_TEST(buffer_fill_char)
         log_info( "Testing random fill from offset %d for %d elements: \n", (int)offset_elements, (int)fill_elements );
 
         for ( i = 0; i < 5; i++ ){
+            volatile size_t j = 0;
+
             pattern[i] = (cl_char *)malloc(ptrSizes[i]);
             for ( j = 0; j < ptrSizes[i] / ptrSizes[0]; j++ )
                 pattern[i][j] = TEST_PRIME_CHAR;
 
             inptr[i] = (cl_char *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
-            for ( j = 0; j < ptrSizes[i] * offset_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
-            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j++ )
+            memset(inptr[i], 0, ptrSizes[i] * num_elements);
+            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; ++j )
                 inptr[i][j] = TEST_PRIME_CHAR;
-            for ( j = ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j < ptrSizes[i] * num_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
 
             hostptr[i] = (cl_char *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
@@ -1230,7 +1221,7 @@ REGISTER_TEST(buffer_fill_uchar)
     cl_uchar *pattern[5];
     size_t   ptrSizes[5];
     int      n, i, err=0;
-    size_t   j, offset_elements, fill_elements;
+    size_t   offset_elements, fill_elements;
     MTdata   d = init_genrand( gRandomSeed );
     int      (*foo)(void *,void *,int);
 
@@ -1251,17 +1242,15 @@ REGISTER_TEST(buffer_fill_uchar)
         log_info( "Testing random fill from offset %d for %d elements: \n", (int)offset_elements, (int)fill_elements );
 
         for ( i = 0; i < 5; i++ ){
+            volatile size_t j = 0;
             pattern[i] = (cl_uchar *)malloc(ptrSizes[i]);
             for ( j = 0; j < ptrSizes[i] / ptrSizes[0]; j++ )
                 pattern[i][j] = TEST_PRIME_CHAR;
 
             inptr[i] = (cl_uchar *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
-            for ( j = 0; j < ptrSizes[i] * offset_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
-            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j++ )
+            memset(inptr[i], 0, ptrSizes[i] * num_elements);
+            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; ++j )
                 inptr[i][j] = TEST_PRIME_CHAR;
-            for ( j = ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j < ptrSizes[i] * num_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
 
             hostptr[i] = (cl_uchar *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
@@ -1296,7 +1285,7 @@ REGISTER_TEST(buffer_fill_long)
     cl_long *pattern[5];
     size_t  ptrSizes[5];
     int     n, i, err=0;
-    size_t  j, offset_elements, fill_elements;
+    size_t  offset_elements, fill_elements;
     MTdata  d = init_genrand( gRandomSeed );
     int     (*foo)(void *,void *,int);
 
@@ -1324,17 +1313,15 @@ REGISTER_TEST(buffer_fill_long)
         log_info( "Testing random fill from offset %d for %d elements: \n", (int)offset_elements, (int)fill_elements );
 
         for ( i = 0; i < 5; i++ ){
+            volatile size_t j = 0;
             pattern[i] = (cl_long *)malloc(ptrSizes[i]);
             for ( j = 0; j < ptrSizes[i] / ptrSizes[0]; j++ )
                 pattern[i][j] = TEST_PRIME_LONG;
 
             inptr[i] = (cl_long *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
-            for ( j = 0; j < ptrSizes[i] * offset_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
-            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j++ )
+            memset(inptr[i], 0, ptrSizes[i] * num_elements);
+            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; ++j )
                 inptr[i][j] = TEST_PRIME_LONG;
-            for ( j = ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j < ptrSizes[i] * num_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
 
             hostptr[i] = (cl_long *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
@@ -1369,7 +1356,7 @@ REGISTER_TEST(buffer_fill_ulong)
     cl_ulong *pattern[5];
     size_t   ptrSizes[5];
     int      n, i, err=0;
-    size_t   j, offset_elements, fill_elements;
+    size_t   offset_elements, fill_elements;
     MTdata   d = init_genrand( gRandomSeed );
     int      (*foo)(void *,void *,int);
 
@@ -1396,17 +1383,15 @@ REGISTER_TEST(buffer_fill_ulong)
         log_info( "Testing random fill from offset %d for %d elements: \n", (int)offset_elements, (int)fill_elements );
 
         for ( i = 0; i < 5; i++ ){
+            volatile size_t j = 0;
             pattern[i] = (cl_ulong *)malloc(ptrSizes[i]);
             for ( j = 0; j < ptrSizes[i] / ptrSizes[0]; j++ )
                 pattern[i][j] = TEST_PRIME_ULONG;
 
             inptr[i] = (cl_ulong *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
-            for ( j = 0; j < ptrSizes[i] * offset_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
-            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j++ )
+            memset(inptr[i], 0, ptrSizes[i] * num_elements);
+            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; ++j )
                 inptr[i][j] = TEST_PRIME_ULONG;
-            for ( j = ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j < ptrSizes[i] * num_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
 
             hostptr[i] = (cl_ulong *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
@@ -1441,7 +1426,7 @@ REGISTER_TEST(buffer_fill_float)
     cl_float *pattern[5];
     size_t   ptrSizes[5];
     int      n, i, err=0;
-    size_t   j, offset_elements, fill_elements;
+    size_t   offset_elements, fill_elements;
     MTdata   d = init_genrand( gRandomSeed );
     int      (*foo)(void *,void *,int);
 
@@ -1462,17 +1447,15 @@ REGISTER_TEST(buffer_fill_float)
         log_info( "Testing random fill from offset %d for %d elements: \n", (int)offset_elements, (int)fill_elements );
 
         for ( i = 0; i < 5; i++ ){
+            volatile size_t j = 0;
             pattern[i] = (cl_float *)malloc(ptrSizes[i]);
             for ( j = 0; j < ptrSizes[i] / ptrSizes[0]; j++ )
                 pattern[i][j] = TEST_PRIME_FLOAT;
 
             inptr[i] = (cl_float *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
-            for ( j = 0; j < ptrSizes[i] * offset_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
-            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j++ )
+            memset(inptr[i], 0, ptrSizes[i] * num_elements);
+            for ( j = ptrSizes[i] * offset_elements / ptrSizes[0]; j < ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; ++j )
                 inptr[i][j] = TEST_PRIME_FLOAT;
-            for ( j = ptrSizes[i] * (offset_elements + fill_elements) / ptrSizes[0]; j < ptrSizes[i] * num_elements / ptrSizes[0]; j++ )
-                inptr[i][j] = 0;
 
             hostptr[i] = (cl_float *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
