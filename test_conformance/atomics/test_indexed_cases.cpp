@@ -336,7 +336,8 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
         return -1;
     }
 
-    std::vector<cl_int> final_bin_assignments(number_of_bins * max_counts_per_bin);
+    std::vector<cl_int> final_bin_assignments(number_of_bins
+                                              * max_counts_per_bin);
     err = clEnqueueReadBuffer(queue, bins, true, 0,
                               sizeof(cl_int) * number_of_bins
                                   * max_counts_per_bin,
