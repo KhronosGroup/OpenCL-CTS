@@ -255,18 +255,12 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     }
 
     // Initialize our storage
-    std::unique_ptr<cl_int[]> l_bin_counts(new cl_int[number_of_bins]);
-    if (!l_bin_counts)
-    {
-        log_error("add_index_bin_test FAILED to allocate initial values for "
-                  "bin_counters.\n");
-        return -1;
-    }
+    std::vector<cl_int> l_bin_counts(number_of_bins);
     int i;
     for (i = 0; i < number_of_bins; i++) l_bin_counts[i] = 0;
     err = clEnqueueWriteBuffer(queue, bin_counters, true, 0,
                                sizeof(cl_int) * number_of_bins,
-                               l_bin_counts.get(), 0, NULL, NULL);
+                               l_bin_counts.data(), 0, NULL, NULL);
     if (err)
     {
         log_error("add_index_bin_test FAILED to set initial values for "
@@ -275,19 +269,12 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
         return -1;
     }
 
-    std::unique_ptr<cl_int[]> values(
-        new cl_int[number_of_bins * max_counts_per_bin]);
-    if (!values)
-    {
-        log_error(
-            "add_index_bin_test FAILED to allocate initial values for bins.\n");
-        return -1;
-    }
+    std::vector<cl_int> values(number_of_bins * max_counts_per_bin);
     for (i = 0; i < number_of_bins * max_counts_per_bin; i++) values[i] = -1;
     err = clEnqueueWriteBuffer(queue, bins, true, 0,
                                sizeof(cl_int) * number_of_bins
                                    * max_counts_per_bin,
-                               values.get(), 0, NULL, NULL);
+                               values.data(), 0, NULL, NULL);
     if (err)
     {
         log_error(
@@ -296,13 +283,7 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
         return -1;
     }
 
-    std::unique_ptr<cl_int[]> l_bin_assignments(new cl_int[number_of_items]);
-    if (!l_bin_assignments)
-    {
-        log_error("add_index_bin_test FAILED to allocate initial values for "
-                  "l_bin_assignments.\n");
-        return -1;
-    }
+    std::vector<cl_int> l_bin_assignments(number_of_items);
     for (i = 0; i < number_of_items; i++)
     {
         int bin = random_in_range(0, number_of_bins - 1, d);
@@ -326,7 +307,7 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
     }
     err = clEnqueueWriteBuffer(queue, bin_assignments, true, 0,
                                sizeof(cl_int) * number_of_items,
-                               l_bin_assignments.get(), 0, NULL, NULL);
+                               l_bin_assignments.data(), 0, NULL, NULL);
     if (err)
     {
         log_error("add_index_bin_test FAILED to set initial values for "
@@ -355,34 +336,21 @@ int add_index_bin_test(size_t *global_threads, cl_command_queue queue,
         return -1;
     }
 
-    std::unique_ptr<cl_int[]> final_bin_assignments(
-        new cl_int[number_of_bins * max_counts_per_bin]);
-    if (!final_bin_assignments)
-    {
-        log_error("add_index_bin_test FAILED to allocate initial values for "
-                  "final_bin_assignments.\n");
-        return -1;
-    }
+    std::vector<cl_int> final_bin_assignments(number_of_bins * max_counts_per_bin);
     err = clEnqueueReadBuffer(queue, bins, true, 0,
                               sizeof(cl_int) * number_of_bins
                                   * max_counts_per_bin,
-                              final_bin_assignments.get(), 0, NULL, NULL);
+                              final_bin_assignments.data(), 0, NULL, NULL);
     if (err)
     {
         log_error("add_index_bin_test FAILED to read back bins: %d\n", err);
         return -1;
     }
 
-    std::unique_ptr<cl_int[]> final_bin_counts(new cl_int[number_of_bins]);
-    if (!final_bin_counts)
-    {
-        log_error("add_index_bin_test FAILED to allocate initial values for "
-                  "final_bin_counts.\n");
-        return -1;
-    }
+    std::vector<cl_int> final_bin_counts(number_of_bins);
     err = clEnqueueReadBuffer(queue, bin_counters, true, 0,
                               sizeof(cl_int) * number_of_bins,
-                              final_bin_counts.get(), 0, NULL, NULL);
+                              final_bin_counts.data(), 0, NULL, NULL);
     if (err)
     {
         log_error("add_index_bin_test FAILED to read back bin_counters: %d\n",
