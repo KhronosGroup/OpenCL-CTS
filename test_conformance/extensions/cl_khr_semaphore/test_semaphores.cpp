@@ -26,37 +26,36 @@ namespace {
 
 const char* source = "__kernel void empty() {}";
 
-const char* source_write_int = "__kernel void write_int(int* out, int val) { out[0] = val; }"
+const char* source_write_int = "__kernel void write_int(__global int* out, int val) { out[0] = val; }";
 
 #define CREATE_KERNEL \
     clProgramWrapper program_write_int; \
     clKernelWrapper kernel_write_int; \
     err = create_single_kernel_helper(context, &program_write_int, &kernel_write_int, 1, \
                                       &source_write_int, "write_int"); \
+    size_t threads = 1; \
     test_error(err, "Could not create kernel")
 
 #define CREATE_BUFFER \
     int int_val = 45; \
     clMemWrapper buffer_write_int = clCreateBuffer(context, CL_MEM_READ_WRITE, \
-                                                   sizeof(cl_int), nullptr, &error); \
-    test_error(error, "clCreateBuffer failed")
+                                                   sizeof(cl_int), nullptr, &err); \
+    test_error(err, "clCreateBuffer failed")
 
 #define ENQUEUE_KERNEL(QUEUE, NUM_LIST, WAITLIST) \
-    error = clSetKernelArg(kernel_write_int, 0, sizeof(buffer_write_int), &buffer_write_int); \
-    test_error(error, "clSetKernelArg failed"); \
-    error = clSetKernelArg(kernel_write_int, 1, sizeof(int), &int_val); \
-    test_error(error, "clSetKernelArg failed"); \
-    size_t threads = 1; \
+    err = clSetKernelArg(kernel_write_int, 0, sizeof(buffer_write_int), &buffer_write_int); \
+    test_error(err, "clSetKernelArg failed"); \
+    err = clSetKernelArg(kernel_write_int, 1, sizeof(int), &int_val); \
+    test_error(err, "clSetKernelArg failed"); \
     err = clEnqueueNDRangeKernel(QUEUE, kernel_write_int, 1, nullptr, \
                                  &threads, nullptr, NUM_LIST, WAITLIST, nullptr); \
     test_error(err, "clEnqueueNDRangeKernel failed")
 
 #define ENQUEUE_KERNEL_WITH_EVENT(QUEUE, NUM_LIST, WAITLIST, EVENT) \
-    error = clSetKernelArg(kernel_write_int, 0, sizeof(buffer_write_int), &buffer_write_int); \
-    test_error(error, "clSetKernelArg failed"); \
-    error = clSetKernelArg(kernel_write_int, 1, sizeof(int), &int_val); \
-    test_error(error, "clSetKernelArg failed"); \
-    size_t threads = 1; \
+    err = clSetKernelArg(kernel_write_int, 0, sizeof(buffer_write_int), &buffer_write_int); \
+    test_error(err, "clSetKernelArg failed"); \
+    err = clSetKernelArg(kernel_write_int, 1, sizeof(int), &int_val); \
+    test_error(err, "clSetKernelArg failed"); \
     clEventWrapper EVENT; \
     err = clEnqueueNDRangeKernel(QUEUE, kernel_write_int, 1, nullptr, \
                                  &threads, nullptr, NUM_LIST, WAITLIST, &EVENT); \
