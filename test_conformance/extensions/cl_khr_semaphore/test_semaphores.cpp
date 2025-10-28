@@ -26,6 +26,42 @@ namespace {
 
 const char* source = "__kernel void empty() {}";
 
+const char* source_write_int = "__kernel void write_int(int* out, int val) { out[0] = val; }"
+
+#define CREATE_KERNEL \
+    clProgramWrapper program_write_int; \
+    clKernelWrapper kernel_write_int; \
+    err = create_single_kernel_helper(context, &program_write_int, &kernel_write_int, 1, \
+                                      &source_write_int, "write_int"); \
+    test_error(err, "Could not create kernel")
+
+#define CREATE_BUFFER \
+    int int_val = 45; \
+    clMemWrapper buffer_write_int = clCreateBuffer(context, CL_MEM_READ_WRITE, \
+                                                   sizeof(cl_int), nullptr, &error); \
+    test_error(error, "clCreateBuffer failed")
+
+#define ENQUEUE_KERNEL(QUEUE, NUM_LIST, WAITLIST) \
+    error = clSetKernelArg(kernel_write_int, 0, sizeof(buffer_write_int), &buffer_write_int); \
+    test_error(error, "clSetKernelArg failed"); \
+    error = clSetKernelArg(kernel_write_int, 1, sizeof(int), &int_val); \
+    test_error(error, "clSetKernelArg failed"); \
+    size_t threads = 1; \
+    err = clEnqueueNDRangeKernel(QUEUE, kernel_write_int, 1, nullptr, \
+                                 &threads, nullptr, NUM_LIST, WAITLIST, nullptr); \
+    test_error(err, "clEnqueueNDRangeKernel failed")
+
+#define ENQUEUE_KERNEL_WITH_EVENT(QUEUE, NUM_LIST, WAITLIST, EVENT) \
+    error = clSetKernelArg(kernel_write_int, 0, sizeof(buffer_write_int), &buffer_write_int); \
+    test_error(error, "clSetKernelArg failed"); \
+    error = clSetKernelArg(kernel_write_int, 1, sizeof(int), &int_val); \
+    test_error(error, "clSetKernelArg failed"); \
+    size_t threads = 1; \
+    clEventWrapper EVENT; \
+    err = clEnqueueNDRangeKernel(QUEUE, kernel_write_int, 1, nullptr, \
+                                 &threads, nullptr, NUM_LIST, WAITLIST, &EVENT); \
+    test_error(err, "clEnqueueNDRangeKernel failed")
+
 struct SimpleSemaphore1 : public SemaphoreTestBase
 {
     SimpleSemaphore1(cl_device_id device, cl_context context,
@@ -41,6 +77,9 @@ struct SimpleSemaphore1 : public SemaphoreTestBase
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
         test_error(err, "Could not create command queue");
 
+        CREATE_KERNEL;
+        CREATE_BUFFER;
+
         // Create semaphore
         cl_semaphore_properties_khr sema_props[] = {
             static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
@@ -52,10 +91,12 @@ struct SimpleSemaphore1 : public SemaphoreTestBase
             clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
         test_error(err, "Could not create semaphore");
 
+        ENQUEUE_KERNEL_WITH_EVENT(queue, 0, nullptr, write_int_event);
+
         // Signal semaphore
         clEventWrapper signal_event;
-        err = clEnqueueSignalSemaphoresKHR(queue, 1, semaphore, nullptr, 0,
-                                           nullptr, &signal_event);
+        err = clEnqueueSignalSemaphoresKHR(queue, 1, semaphore, nullptr, 1,
+                                           &write_int_event, &signal_event);
         test_error(err, "Could not signal semaphore");
 
         // Wait semaphore
@@ -63,6 +104,8 @@ struct SimpleSemaphore1 : public SemaphoreTestBase
         err = clEnqueueWaitSemaphoresKHR(queue, 1, semaphore, nullptr, 0,
                                          nullptr, &wait_event);
         test_error(err, "Could not wait semaphore");
+        
+        ENQUEUE_KERNEL(queue, 1, &wait_event);
 
         // Finish
         err = clFinish(queue);
