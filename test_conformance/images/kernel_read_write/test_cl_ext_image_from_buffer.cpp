@@ -629,7 +629,7 @@ int image_from_small_buffer_negative(cl_device_id device, cl_context context,
 
                 clCreateImage(context, flag, &format, &image_desc, nullptr,
                               &err);
-                test_failure_error(err, CL_INVALID_IMAGE_FORMAT_DESCRIPTOR,
+                test_failure_error(err, CL_INVALID_IMAGE_SIZE,
                                    "Unexpected clCreateImage return");
 
                 err = clReleaseMemObject(buffer);
