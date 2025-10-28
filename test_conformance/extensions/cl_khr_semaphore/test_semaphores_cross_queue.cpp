@@ -45,10 +45,12 @@ template <bool in_order> struct SemaphoreCrossQueue : public SemaphoreTestBase
             clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
         test_error(err, "Could not create semaphore");
 
+        ENQUEUE_KERNEL_WITH_EVENT(queue_1, 0, nullptr, write_int_event);
+
         // Signal semaphore on queue_1
         clEventWrapper signal_event;
-        err = clEnqueueSignalSemaphoresKHR(queue_1, 1, semaphore, nullptr, 0,
-                                           nullptr, &signal_event);
+        err = clEnqueueSignalSemaphoresKHR(queue_1, 1, semaphore, nullptr, 1,
+                                           &write_int_event, &signal_event);
         test_error(err, "Could not signal semaphore");
 
         // Wait semaphore on queue_2
@@ -56,6 +58,8 @@ template <bool in_order> struct SemaphoreCrossQueue : public SemaphoreTestBase
         err = clEnqueueWaitSemaphoresKHR(queue_2, 1, semaphore, nullptr, 0,
                                          nullptr, &wait_event);
         test_error(err, "Could not wait semaphore");
+
+        ENQUEUE_KERNEL(queue_2, 1, &wait_event);
 
         // Finish queue_1 and queue_2
         err = clFinish(queue_1);
@@ -219,29 +223,39 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
 
         if (single_queue)
         {
+            ENQUEUE_KERNEL_WITH_EVENT(producer_queue, 0, nullptr, write_int_event);
+            
             clEventWrapper sema_wait_event;
 
             // signal/wait with event dependency
             err = clEnqueueSignalSemaphoresKHR(producer_queue, 1, semaphore,
-                                               nullptr, 0, nullptr,
+                                               nullptr, 1, &write_int_event,
                                                &sema_wait_event);
             test_error(err, "Could not signal semaphore");
 
             // consumer and producer queues in sync through wait event
+            clEventWrapper second_wait_event;
             err = clEnqueueWaitSemaphoresKHR(consumer_queue, 1, semaphore,
                                              nullptr, 1, &sema_wait_event,
-                                             nullptr);
+                                             &second_wait_event);
             test_error(err, "Could not wait semaphore");
+
+            ENQUEUE_KERNEL(consumer_queue, 1, &second_wait_event);
         }
         else
         {
+            ENQUEUE_KERNEL_WITH_EVENT(producer_queue, 0, nullptr, write_int_event);
+            
             err = clEnqueueSignalSemaphoresKHR(producer_queue, 1, semaphore,
-                                               nullptr, 0, nullptr, nullptr);
+                                               nullptr, 1, &write_int_event, nullptr);
             test_error(err, "Could not signal semaphore");
 
+            clEventWrapper second_wait_event;
             err = clEnqueueWaitSemaphoresKHR(consumer_queue, 1, semaphore,
-                                             nullptr, 0, nullptr, nullptr);
+                                             nullptr, 0, nullptr, &second_wait_event);
             test_error(err, "Could not wait semaphore");
+
+            ENQUEUE_KERNEL(consumer_queue, 1, &second_wait_event);
         }
 
         err = clEnqueueBarrierWithWaitList(consumer_queue, 0, nullptr, nullptr);
