@@ -1668,12 +1668,22 @@ public:
                                                                 useSVM),
           min_range(-999.0), max_range(999.0), max_error(0.0)
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_FLOAT> || std::is_same_v<HostDataType, HOST_HALF>)
         {
             StartValue(0);
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
         }
+    }
+    template <typename Iterator>
+    HostDataType subtract(Iterator begin, Iterator end)
+    {
+        HostDataType res = 0;
+        for (auto it = begin; it != end; ++it) res = res - *it;
+        return res;
     }
     template <typename Iterator>
     float subtract_halfs(Iterator begin, Iterator end)
@@ -1690,12 +1700,53 @@ public:
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (threadCount > ref_vals.size())
             {
                 ref_vals.resize(threadCount);
+                for (cl_uint i = 0; i < threadCount; i++)
+                    ref_vals[i] = get_random_float(min_range, max_range, d);
 
+                memcpy(startRefValues, ref_vals.data(),
+                       sizeof(HostDataType) * ref_vals.size());
+
+                // Estimate highest possible subtraction error for given set.
+                std::vector<HostDataType> sums;
+                std::sort(ref_vals.begin(), ref_vals.end());
+                sums.push_back(subtract(ref_vals.begin(), ref_vals.end()));
+                sums.push_back(subtract(ref_vals.rbegin(), ref_vals.rend()));
+
+                std::sort(
+                    ref_vals.begin(), ref_vals.end(),
+                    [](float a, float b) { return std::abs(a) < std::abs(b); });
+
+                double precise = 0.0;
+                for (auto elem : ref_vals) precise += double(elem);
+                sums.push_back(precise);
+                sums.push_back(subtract(ref_vals.begin(), ref_vals.end()));
+                sums.push_back(subtract(ref_vals.rbegin(), ref_vals.rend()));
+
+                std::sort(sums.begin(), sums.end());
+                max_error =
+                    std::abs((HOST_ATOMIC_FLOAT)sums.front() - sums.back());
+
+                // restore unsorted order
+                memcpy(ref_vals.data(), startRefValues,
+                       sizeof(HostDataType) * ref_vals.size());
+            }
+            else
+            {
+                memcpy(startRefValues, ref_vals.data(),
+                       sizeof(HostDataType) * threadCount);
+            }
+            return true;
+        }
+        if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            if (threadCount > ref_vals.size())
+            {
+                ref_vals.resize(threadCount);
                 for (cl_uint i = 0; i < threadCount; i++)
                     ref_vals[i] = cl_half_from_float(
                         get_random_float(min_range, max_range, d),
@@ -1725,7 +1776,6 @@ public:
                 float precise = 0.f;
                 for (auto elem : ref_vals) precise -= cl_half_to_float(elem);
                 sums.push_back(precise);
-
                 sums.push_back(
                     subtract_halfs(ref_vals.begin(), ref_vals.end()));
                 sums.push_back(
@@ -1733,7 +1783,6 @@ public:
 
                 std::sort(sums.begin(), sums.end());
                 max_error = std::abs(sums.front() - sums.back());
-
                 // restore unsorted order
                 memcpy(ref_vals.data(), startRefValues,
                        sizeof(HostDataType) * ref_vals.size());
@@ -1752,7 +1801,10 @@ public:
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
 
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             return "  atomic_fetch_sub" + postfix + "(&destMemory[0], ("
                 + DataType().AddSubOperandTypeName() + ")oldValues[tid]"
@@ -1774,7 +1826,10 @@ public:
                       volatile HostAtomicType *destMemory,
                       HostDataType *oldValues) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             host_atomic_fetch_sub(&destMemory[0], (HostDataType)oldValues[tid],
                                   MemoryOrder());
@@ -1796,7 +1851,13 @@ public:
                        cl_uint whichDestValue) override
     {
         expected = StartValue();
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        {
+            if (whichDestValue == 0)
+                for (cl_uint i = 0; i < threadCount; i++)
+                    expected -= startRefValues[i];
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
             if (whichDestValue == 0)
             {
@@ -1821,7 +1882,14 @@ public:
                              const std::vector<HostAtomicType> &testValues,
                              cl_uint whichDestValue) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        {
+            if (whichDestValue == 0)
+                return std::abs((HOST_ATOMIC_FLOAT)expected
+                                - testValues[whichDestValue])
+                    > max_error;
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
             if (whichDestValue == 0)
                 return std::abs(cl_half_to_float(expected)
@@ -1859,7 +1927,17 @@ public:
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        {
+            if (LocalMemory()
+                && (gFloatAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_ADD_EXT) == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gFloatAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_ADD_EXT) == 0)
+                return 0;
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
             if (LocalMemory()
                 && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_ADD_EXT) == 0)
@@ -1875,7 +1953,10 @@ public:
     }
     cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             return threadCount;
         }
@@ -1910,6 +1991,11 @@ static int test_atomic_fetch_sub_generic(cl_device_id deviceID,
 
     if (gFloatAtomicsSupported)
     {
+        CBasicTestFetchSub<HOST_ATOMIC_FLOAT, HOST_FLOAT> test_float(
+            TYPE_ATOMIC_FLOAT, useSVM);
+        EXECUTE_TEST(
+            error, test_float.Execute(deviceID, context, queue, num_elements));
+
         CBasicTestFetchSub<HOST_ATOMIC_HALF, HOST_HALF> test_half(
             TYPE_ATOMIC_HALF, useSVM);
         EXECUTE_TEST(error,
