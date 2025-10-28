@@ -18,7 +18,6 @@
 
 #include "harness/testHarness.h"
 #include <mutex>
-
 #include "CL/cl_half.h"
 
 #ifdef WIN32
@@ -136,7 +135,15 @@ template <typename AtomicType, typename CorrespondingType>
 CorrespondingType host_atomic_fetch_sub(volatile AtomicType *a, CorrespondingType c,
                                         TExplicitMemoryOrderType order)
 {
-    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_HALF>)
+    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_FLOAT>)
+    {
+        static std::mutex mx;
+        std::lock_guard<std::mutex> lock(mx);
+        CorrespondingType old_value = *a;
+        *a -= c;
+        return old_value;
+    }
+    else if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_HALF>)
     {
         static std::mutex mx;
         std::lock_guard<std::mutex> lock(mx);
