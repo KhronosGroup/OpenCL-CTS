@@ -198,14 +198,17 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
         }
         *expected = tmp;
     }
-    else if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_FLOAT>)
+    else if constexpr (
+        std::is_same_v<
+            AtomicType,
+            HOST_ATOMIC_DOUBLE> || std::is_same_v<AtomicType, HOST_ATOMIC_FLOAT>)
     {
         static std::mutex mtx;
         std::lock_guard<std::mutex> lock(mtx);
         tmp = *reinterpret_cast<volatile float *>(a);
         if (tmp == *expected)
         {
-            *reinterpret_cast<volatile float *>(a) = desired;
+            *a = desired;
             return true;
         }
         *expected = tmp;
