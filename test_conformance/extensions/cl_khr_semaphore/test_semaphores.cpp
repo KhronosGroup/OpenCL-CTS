@@ -133,6 +133,9 @@ struct SemaphoreReuse : public SemaphoreTestBase
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
         test_error(err, "Could not create command queue");
 
+        CREATE_KERNEL;
+        CREATE_BUFFER;
+        
         // Create semaphore
         cl_semaphore_properties_khr sema_props[] = {
             static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
@@ -195,6 +198,8 @@ struct SemaphoreReuse : public SemaphoreTestBase
                                          nullptr, &wait_events[loop - 1]);
         test_error(err, "Could not wait semaphore");
 
+        ENQUEUE_KERNEL(queue, 1, &wait_events[loop - 1]);
+        
         // Finish
         err = clFinish(queue);
         test_error(err, "Could not finish queue");
@@ -227,6 +232,9 @@ struct SemaphoreMultiSignal : public SemaphoreTestBase
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
         test_error(err, "Could not create command queue");
 
+        CREATE_KERNEL;
+        CREATE_BUFFER;
+        
         // Create semaphore
         cl_semaphore_properties_khr sema_props[] = {
             static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
@@ -242,11 +250,13 @@ struct SemaphoreMultiSignal : public SemaphoreTestBase
             clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
         test_error(err, "Could not create semaphore");
 
+        ENQUEUE_KERNEL_WITH_EVENT(queue, 0, nullptr, write_int_event);
+        
         // Signal semaphore 1 and 2
         clEventWrapper signal_event;
         cl_semaphore_khr sema_list[] = { semaphore, semaphore_second };
-        err = clEnqueueSignalSemaphoresKHR(queue, 2, sema_list, nullptr, 0,
-                                           nullptr, &signal_event);
+        err = clEnqueueSignalSemaphoresKHR(queue, 2, sema_list, nullptr, 1,
+                                           &write_int_event, &signal_event);
         test_error(err, "Could not signal semaphore");
 
         // Wait semaphore 1
@@ -260,6 +270,9 @@ struct SemaphoreMultiSignal : public SemaphoreTestBase
         err = clEnqueueWaitSemaphoresKHR(queue, 1, semaphore_second, nullptr, 0,
                                          nullptr, &wait_2_event);
         test_error(err, "Could not wait semaphore");
+
+        cl_event waitlist[2] = { wait_1_event, wait_2_event };
+        ENQUEUE_KERNEL(queue, 2, waitlist);
 
         // Finish
         err = clFinish(queue);
@@ -291,6 +304,9 @@ struct SemaphoreMultiWait : public SemaphoreTestBase
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
         test_error(err, "Could not create command queue");
 
+        CREATE_KERNEL;
+        CREATE_BUFFER;
+        
         // Create semaphores
         cl_semaphore_properties_khr sema_props[] = {
             static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
@@ -306,16 +322,19 @@ struct SemaphoreMultiWait : public SemaphoreTestBase
             clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
         test_error(err, "Could not create semaphore");
 
+        ENQUEUE_KERNEL_WITH_EVENT(queue, 0, nullptr, write_int_event1);
+        ENQUEUE_KERNEL_WITH_EVENT(queue, 0, nullptr, write_int_event2);
+
         // Signal semaphore 1
         clEventWrapper signal_1_event;
-        err = clEnqueueSignalSemaphoresKHR(queue, 1, semaphore, nullptr, 0,
-                                           nullptr, &signal_1_event);
+        err = clEnqueueSignalSemaphoresKHR(queue, 1, semaphore, nullptr, 1,
+                                           &write_int_event1, &signal_1_event);
         test_error(err, "Could not signal semaphore");
 
         // Signal semaphore 2
         clEventWrapper signal_2_event;
         err = clEnqueueSignalSemaphoresKHR(queue, 1, semaphore_second, nullptr,
-                                           0, nullptr, &signal_2_event);
+                                           1, &write_int_event2, &signal_2_event);
         test_error(err, "Could not signal semaphore");
 
         // Wait semaphore 1 and 2
@@ -324,6 +343,8 @@ struct SemaphoreMultiWait : public SemaphoreTestBase
         err = clEnqueueWaitSemaphoresKHR(queue, 2, sema_list, nullptr, 0,
                                          nullptr, &wait_event);
         test_error(err, "Could not wait semaphore");
+            
+        ENQUEUE_KERNEL(queue, 1, &wait_event);
 
         // Finish
         err = clFinish(queue);
