@@ -2802,7 +2802,7 @@ public:
         if constexpr (
             std::is_same_v<
                 HostDataType,
-                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             return "  atomic_fetch_min" + postfix
                 + "(&destMemory[0], oldValues[tid] " + memoryOrderScope + ");\n"
@@ -2824,7 +2824,7 @@ public:
         if constexpr (
             std::is_same_v<
                 HostDataType,
-                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             host_atomic_fetch_min(&destMemory[0], oldValues[tid],
                                   MemoryOrder());
@@ -2849,7 +2849,10 @@ public:
                     gHalfRoundingMode);
             }
         }
-        else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        else if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             for (cl_uint i = 0; i < threadCount; i++)
             {
@@ -2910,7 +2913,7 @@ public:
     {
         if (std::is_same_v<
                 HostDataType,
-                HOST_HALF> || std::is_same<HostDataType, HOST_FLOAT>::value)
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             if (whichDestValue == 0)
                 return CBasicTestMemOrderScope<HostAtomicType, HostDataType>::
@@ -2962,6 +2965,18 @@ public:
                     == 0)
                 return 0;
         }
+        else if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
+        {
+            if (LocalMemory()
+                && (gDoubleAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gDoubleAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0;
+        }
         else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (LocalMemory()
@@ -2983,7 +2998,7 @@ public:
         if constexpr (
             std::is_same_v<
                 HostDataType,
-                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             return threadCount;
         }
@@ -3018,6 +3033,11 @@ static int test_atomic_fetch_min_generic(cl_device_id deviceID,
 
     if (gFloatAtomicsSupported)
     {
+        CBasicTestFetchMin<HOST_ATOMIC_DOUBLE, HOST_DOUBLE> test_double(
+            TYPE_ATOMIC_DOUBLE, useSVM);
+        EXECUTE_TEST(
+            error, test_double.Execute(deviceID, context, queue, num_elements));
+
         CBasicTestFetchMin<HOST_ATOMIC_HALF, HOST_HALF> test_half(
             TYPE_ATOMIC_HALF, useSVM);
         EXECUTE_TEST(error,
@@ -3130,7 +3150,7 @@ public:
         if constexpr (
             std::is_same_v<
                 HostDataType,
-                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             return "  atomic_fetch_max" + postfix
                 + "(&destMemory[0], oldValues[tid] " + memoryOrderScope + ");\n"
@@ -3152,7 +3172,7 @@ public:
         if constexpr (
             std::is_same_v<
                 HostDataType,
-                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             host_atomic_fetch_max(&destMemory[0], oldValues[tid],
                                   MemoryOrder());
@@ -3177,7 +3197,10 @@ public:
                     gHalfRoundingMode);
             }
         }
-        else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        else if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             for (cl_uint i = 0; i < threadCount; i++)
             {
@@ -3238,7 +3261,7 @@ public:
     {
         if (std::is_same_v<
                 HostDataType,
-                HOST_HALF> || std::is_same<HostDataType, HOST_FLOAT>::value)
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             if (whichDestValue == 0)
                 return CBasicTestMemOrderScope<HostAtomicType, HostDataType>::
@@ -3255,7 +3278,7 @@ public:
     {
         if (std::is_same_v<
                 HostDataType,
-                HOST_HALF> || std::is_same<HostDataType, HOST_FLOAT>::value)
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             correct = true;
             for (cl_uint i = 1; i < threadCount; i++)
@@ -3290,6 +3313,18 @@ public:
                     == 0)
                 return 0;
         }
+        else if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
+        {
+            if (LocalMemory()
+                && (gDoubleAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gDoubleAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0;
+        }
         else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (LocalMemory()
@@ -3311,7 +3346,7 @@ public:
         if constexpr (
             std::is_same_v<
                 HostDataType,
-                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT>)
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             return threadCount;
         }
@@ -3346,6 +3381,11 @@ static int test_atomic_fetch_max_generic(cl_device_id deviceID,
 
     if (gFloatAtomicsSupported)
     {
+        CBasicTestFetchMax<HOST_ATOMIC_DOUBLE, HOST_DOUBLE> test_double(
+            TYPE_ATOMIC_DOUBLE, useSVM);
+        EXECUTE_TEST(
+            error, test_double.Execute(deviceID, context, queue, num_elements));
+
         CBasicTestFetchMax<HOST_ATOMIC_HALF, HOST_HALF> test_half(
             TYPE_ATOMIC_HALF, useSVM);
         EXECUTE_TEST(error,
