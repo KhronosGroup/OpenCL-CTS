@@ -15,6 +15,7 @@
 //
 
 #include "debug_ahb.h"
+#include "harness/errorHelpers.h"
 
 constexpr AHardwareBuffer_UsageFlags flag_list[] = {
     AHARDWAREBUFFER_USAGE_CPU_READ_RARELY,
@@ -190,4 +191,28 @@ std::string ahardwareBufferFormatToString(AHardwareBuffer_Format format)
             break;
     }
     return result;
+}
+AHardwareBuffer *create_AHB(AHardwareBuffer_Desc *desc)
+{
+    AHardwareBuffer *buffer_ptr = nullptr;
+    int err = AHardwareBuffer_allocate(desc, &buffer_ptr);
+    if (err != 0)
+    {
+        throw std::runtime_error("AHardwareBuffer_allocate failed with code: "
+                                 + std::to_string(err) + "\n");
+    }
+    return buffer_ptr;
+}
+
+void log_unsupported_ahb_format(AHardwareBuffer_Desc aHardwareBufferDesc)
+{
+    std::string usage_string = ahardwareBufferDecodeUsageFlagsToString(
+        static_cast<AHardwareBuffer_UsageFlags>(aHardwareBufferDesc.usage));
+    log_info("Unsupported format %s:\n   Usage flags %s\n   Size (%u, %u, "
+             "layers = %u)\n",
+             ahardwareBufferFormatToString(static_cast<AHardwareBuffer_Format>(
+                                               aHardwareBufferDesc.format))
+                 .c_str(),
+             usage_string.c_str(), aHardwareBufferDesc.width,
+             aHardwareBufferDesc.height, aHardwareBufferDesc.layers);
 }
