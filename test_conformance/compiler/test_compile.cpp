@@ -3945,9 +3945,7 @@ REGISTER_TEST(compile_and_link_status_options_log)
 REGISTER_TEST(multiple_build_program)
 {
     cl_int error = CL_SUCCESS;
-    size_t threads = 0;
-
-    threads = std::min(num_elements, 512);
+    size_t threads = std::min(num_elements, 512);
 
     clProgramWrapper program = clCreateProgramWithSource(
         context, 1, &multi_build_test_kernel, nullptr, &error);
