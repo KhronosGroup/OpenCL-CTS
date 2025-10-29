@@ -91,10 +91,10 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
                 cl_version extension_version = get_extension_version(
                     device, "cl_khr_command_buffer_mutable_dispatch");
 
-                if (extension_version != CL_MAKE_VERSION(0, 9, 4))
+                if (extension_version != CL_MAKE_VERSION(0, 9, 5))
                 {
                     log_info("cl_khr_command_buffer_mutable_dispatch version "
-                             "0.9.4 is "
+                             "0.9.5 is "
                              "required to run the test, skipping.\n ");
                     extension_avaliable = false;
                 }
