@@ -18,6 +18,41 @@
 #include "harness/extensionHelpers.h"
 #include "harness/errorHelpers.h"
 
+const char* source_write_int = "__kernel void write_int(__global int* out, int val) { out[0] = val; }";
+
+#define CREATE_KERNEL \
+    clProgramWrapper program_write_int; \
+    clKernelWrapper kernel_write_int; \
+    err = create_single_kernel_helper(context, &program_write_int, &kernel_write_int, 1, \
+                                      &source_write_int, "write_int"); \
+    size_t threads = 1; \
+    test_error(err, "Could not create kernel")
+
+#define CREATE_BUFFER \
+    int int_val = 45; \
+    clMemWrapper buffer_write_int = clCreateBuffer(context, CL_MEM_READ_WRITE, \
+                                                   sizeof(cl_int), nullptr, &err); \
+    test_error(err, "clCreateBuffer failed")
+
+#define ENQUEUE_KERNEL(QUEUE, NUM_LIST, WAITLIST) \
+    err = clSetKernelArg(kernel_write_int, 0, sizeof(buffer_write_int), &buffer_write_int); \
+    test_error(err, "clSetKernelArg failed"); \
+    err = clSetKernelArg(kernel_write_int, 1, sizeof(int), &int_val); \
+    test_error(err, "clSetKernelArg failed"); \
+    err = clEnqueueNDRangeKernel(QUEUE, kernel_write_int, 1, nullptr, \
+                                 &threads, nullptr, NUM_LIST, WAITLIST, nullptr); \
+    test_error(err, "clEnqueueNDRangeKernel failed")
+
+#define ENQUEUE_KERNEL_WITH_EVENT(QUEUE, NUM_LIST, WAITLIST, EVENT) \
+    err = clSetKernelArg(kernel_write_int, 0, sizeof(buffer_write_int), &buffer_write_int); \
+    test_error(err, "clSetKernelArg failed"); \
+    err = clSetKernelArg(kernel_write_int, 1, sizeof(int), &int_val); \
+    test_error(err, "clSetKernelArg failed"); \
+    clEventWrapper EVENT; \
+    err = clEnqueueNDRangeKernel(QUEUE, kernel_write_int, 1, nullptr, \
+                                 &threads, nullptr, NUM_LIST, WAITLIST, &EVENT); \
+    test_error(err, "clEnqueueNDRangeKernel failed")
+
 // Test it is possible to export a semaphore to a sync fd and import the same
 // sync fd to a new semaphore
 REGISTER_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2))
@@ -63,6 +98,9 @@ REGISTER_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2))
         context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
     test_error(err, "Could not create command queue");
 
+    CREATE_KERNEL;
+    CREATE_BUFFER;
+
     // Create semaphore
     cl_semaphore_properties_khr sema_1_props[] = {
         static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
@@ -79,10 +117,12 @@ REGISTER_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2))
         clCreateSemaphoreWithPropertiesKHR(context, sema_1_props, &err);
     test_error(err, "Could not create semaphore");
 
+    ENQUEUE_KERNEL_WITH_EVENT(test_queue, 0, nullptr, write_int_event);
+    
     // Signal semaphore
     clEventWrapper signal_event;
-    err = clEnqueueSignalSemaphoresKHR(test_queue, 1, &sema_1, nullptr, 0,
-                                       nullptr, &signal_event);
+    err = clEnqueueSignalSemaphoresKHR(test_queue, 1, &sema_1, nullptr, 1,
+                                       &write_int_event, &signal_event);
     test_error(err, "Could not signal semaphore");
 
     // Extract sync fd
@@ -112,6 +152,8 @@ REGISTER_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2))
     err = clEnqueueWaitSemaphoresKHR(test_queue, 1, &sema_2, nullptr, 0,
                                      nullptr, &wait_event);
     test_error(err, "Could not wait semaphore");
+
+    ENQUEUE_KERNEL(test_queue, 1, &wait_event);
 
     // Finish
     err = clFinish(test_queue);
