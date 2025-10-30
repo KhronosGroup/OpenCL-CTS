@@ -56,38 +56,39 @@ static const char *source = "__kernel void empty() {}";
 
 const char* source_write_int = "__kernel void write_int(__global int* out, int val) { out[0] = val; }";
 
-#define CREATE_KERNEL \
-    clProgramWrapper program_write_int; \
-    clKernelWrapper kernel_write_int; \
-    err = create_single_kernel_helper(context, &program_write_int, &kernel_write_int, 1, \
+#define CREATE_KERNEL(ID, CONTEXT) \
+    clProgramWrapper program_write_int_##ID; \
+    clKernelWrapper kernel_write_int_##ID; \
+    err = create_single_kernel_helper(CONTEXT, &program_write_int_##ID, &kernel_write_int_##ID, 1, \
                                       &source_write_int, "write_int"); \
-    size_t threads = 1; \
+    size_t threads_##ID = 1; \
     test_error(err, "Could not create kernel")
 
-#define CREATE_BUFFER \
-    int int_val = 45; \
-    clMemWrapper buffer_write_int = clCreateBuffer(context, CL_MEM_READ_WRITE, \
-                                                   sizeof(cl_int), nullptr, &err); \
+#define CREATE_BUFFER(ID, CONTEXT) \
+    int int_val_##ID = 45; \
+    clMemWrapper buffer_write_int_##ID = clCreateBuffer(CONTEXT, CL_MEM_READ_WRITE, \
+                                                        sizeof(cl_int), nullptr, &err); \
     test_error(err, "clCreateBuffer failed")
 
-#define ENQUEUE_KERNEL(QUEUE, NUM_LIST, WAITLIST) \
-    err = clSetKernelArg(kernel_write_int, 0, sizeof(buffer_write_int), &buffer_write_int); \
+#define ENQUEUE_KERNEL(ID, QUEUE, NUM_LIST, WAITLIST) \
+    err = clSetKernelArg(kernel_write_int_##ID, 0, sizeof(buffer_write_int_##ID), &buffer_write_int_##ID); \
     test_error(err, "clSetKernelArg failed"); \
-    err = clSetKernelArg(kernel_write_int, 1, sizeof(int), &int_val); \
+    err = clSetKernelArg(kernel_write_int_##ID, 1, sizeof(int), &int_val_##ID); \
     test_error(err, "clSetKernelArg failed"); \
-    err = clEnqueueNDRangeKernel(QUEUE, kernel_write_int, 1, nullptr, \
-                                 &threads, nullptr, NUM_LIST, WAITLIST, nullptr); \
+    err = clEnqueueNDRangeKernel(QUEUE, kernel_write_int_##ID, 1, nullptr, \
+                                 &threads_##ID, nullptr, NUM_LIST, WAITLIST, nullptr); \
     test_error(err, "clEnqueueNDRangeKernel failed")
 
-#define ENQUEUE_KERNEL_WITH_EVENT(QUEUE, NUM_LIST, WAITLIST, EVENT) \
-    err = clSetKernelArg(kernel_write_int, 0, sizeof(buffer_write_int), &buffer_write_int); \
+#define ENQUEUE_KERNEL_WITH_EVENT(ID, QUEUE, NUM_LIST, WAITLIST, EVENT) \
+    err = clSetKernelArg(kernel_write_int_##ID, 0, sizeof(buffer_write_int_##ID), &buffer_write_int_##ID); \
     test_error(err, "clSetKernelArg failed"); \
-    err = clSetKernelArg(kernel_write_int, 1, sizeof(int), &int_val); \
+    err = clSetKernelArg(kernel_write_int_##ID, 1, sizeof(int), &int_val_##ID); \
     test_error(err, "clSetKernelArg failed"); \
     clEventWrapper EVENT; \
-    err = clEnqueueNDRangeKernel(QUEUE, kernel_write_int, 1, nullptr, \
-                                 &threads, nullptr, NUM_LIST, WAITLIST, &EVENT); \
+    err = clEnqueueNDRangeKernel(QUEUE, kernel_write_int_##ID, 1, nullptr, \
+                                 &threads_##ID, nullptr, NUM_LIST, WAITLIST, &EVENT); \
     test_error(err, "clEnqueueNDRangeKernel failed")
+
 
 static void log_info_semaphore_type(
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType)
@@ -284,8 +285,11 @@ REGISTER_TEST_VERSION(external_semaphores_cross_context, Version(1, 2))
         clCreateCommandQueue(context2, device, 0, &err);
     test_error(err, "Could not create command queue");
 
-    CREATE_KERNEL;
-    CREATE_BUFFER;
+    CREATE_KERNEL(1, context);
+    CREATE_KERNEL(2, context2);
+
+    CREATE_BUFFER(1, context);
+    CREATE_BUFFER(2, context2);
 
     if (import_export_handle_types.empty())
     {
@@ -306,7 +310,7 @@ REGISTER_TEST_VERSION(external_semaphores_cross_context, Version(1, 2))
             (cl_semaphore_properties_khr)0
         };
 
-        ENQUEUE_KERNEL_WITH_EVENT(queue1, 0, nullptr, write_int_event);
+        ENQUEUE_KERNEL_WITH_EVENT(1, queue1, 0, nullptr, write_int_event);
         
         // Signal semaphore on context1
         cl_semaphore_khr exportable_semaphore =
@@ -341,7 +345,7 @@ REGISTER_TEST_VERSION(external_semaphores_cross_context, Version(1, 2))
                                          nullptr, 0, nullptr, &wait_event);
         test_error(err, "Failed to signal semaphore on context1");
 
-        ENQUEUE_KERNEL(queue2, 1, &wait_event);
+        ENQUEUE_KERNEL(2, queue2, 0, NULL);
 
         err = clFlush(queue1);
         test_error(err, "Failed to flush queue1");
@@ -375,6 +379,7 @@ REGISTER_TEST_VERSION(external_semaphores_simple_1, Version(1, 2))
     }
 
     VulkanDevice vkDevice;
+    cl_int err = CL_SUCCESS;
 
     // Obtain pointers to semaphore's API
     GET_PFN(device, clEnqueueSignalSemaphoresKHR);
@@ -389,8 +394,8 @@ REGISTER_TEST_VERSION(external_semaphores_simple_1, Version(1, 2))
         test_fail("No external semaphore handle types found\n");
     }
 
-    CREATE_KERNEL;
-    CREATE_BUFFER;
+    CREATE_KERNEL(1, context);
+    CREATE_BUFFER(1, context);
 
     for (VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType :
          vkExternalSemaphoreHandleTypeList)
@@ -410,7 +415,7 @@ REGISTER_TEST_VERSION(external_semaphores_simple_1, Version(1, 2))
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
         test_error(err, "Could not create command queue");
 
-        ENQUEUE_KERNEL_WITH_EVENT(queue, 0, nullptr, write_int_event);
+        ENQUEUE_KERNEL_WITH_EVENT(1, queue, 0, nullptr, write_int_event);
 
         // Signal semaphore
         clEventWrapper signal_event;
@@ -424,7 +429,7 @@ REGISTER_TEST_VERSION(external_semaphores_simple_1, Version(1, 2))
                                          nullptr, 0, nullptr, &wait_event);
         test_error(err, "Could not wait semaphore");
 
-        ENQUEUE_KERNEL(queue, 1, &wait_event);
+        ENQUEUE_KERNEL(1, queue, 1, &wait_event);
 
         // Finish
         err = clFinish(queue);
@@ -451,6 +456,7 @@ REGISTER_TEST_VERSION(external_semaphores_reuse, Version(1, 2))
     }
 
     VulkanDevice vkDevice;
+    cl_int err = CL_SUCCESS;
 
     // Obtain pointers to semaphore's API
     GET_PFN(device, clEnqueueSignalSemaphoresKHR);
@@ -465,8 +471,8 @@ REGISTER_TEST_VERSION(external_semaphores_reuse, Version(1, 2))
         test_fail("No external semaphore handle types found\n");
     }
 
-    CREATE_KERNEL;
-    CREATE_BUFFER;
+    CREATE_KERNEL(1, context);
+    CREATE_BUFFER(1, context);
 
     for (VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType :
          vkExternalSemaphoreHandleTypeList)
@@ -539,7 +545,7 @@ REGISTER_TEST_VERSION(external_semaphores_reuse, Version(1, 2))
                                          &wait_events[loop - 1]);
         test_error(err, "Could not wait semaphore");
 
-        ENQUEUE_KERNEL(queue, 1, &wait_events[loop - 1]);
+        ENQUEUE_KERNEL(1, queue, 1, &wait_events[loop - 1]);
 
         // Finish
         err = clFinish(queue);
@@ -574,6 +580,7 @@ static int external_semaphore_cross_queue_helper(cl_device_id device,
     }
 
     VulkanDevice vkDevice;
+    cl_int err = CL_SUCCESS;
 
     // Obtain pointers to semaphore's API
     GET_PFN(device, clEnqueueSignalSemaphoresKHR);
@@ -588,8 +595,11 @@ static int external_semaphore_cross_queue_helper(cl_device_id device,
         test_fail("No external semaphore handle types found\n");
     }
 
-    CREATE_KERNEL;
-    CREATE_BUFFER;
+    CREATE_KERNEL(1, context);
+    CREATE_BUFFER(1, context);
+
+    CREATE_KERNEL(2, context);
+    CREATE_BUFFER(2, context);
 
     for (VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType :
          vkExternalSemaphoreHandleTypeList)
@@ -603,7 +613,7 @@ static int external_semaphore_cross_queue_helper(cl_device_id device,
 
         cl_int err = CL_SUCCESS;
 
-        ENQUEUE_KERNEL_WITH_EVENT(queue_1, 0, nullptr, write_int_event);
+        ENQUEUE_KERNEL_WITH_EVENT(1, queue_1, 0, nullptr, write_int_event);
 
         // Signal semaphore on queue_1
         clEventWrapper signal_event;
@@ -618,7 +628,7 @@ static int external_semaphore_cross_queue_helper(cl_device_id device,
                                          nullptr, 0, nullptr, &wait_event);
         test_error(err, "Could not wait semaphore");
 
-        ENQUEUE_KERNEL(queue_2, 1, &wait_event);
+        ENQUEUE_KERNEL(2, queue_2, 1, &wait_event);
 
         // Finish queue_1 and queue_2
         err = clFinish(queue_1);
@@ -707,8 +717,11 @@ REGISTER_TEST_VERSION(external_semaphores_cross_queues_io2, Version(1, 2))
         test_fail("No external semaphore handle types found\n");
     }
 
-    CREATE_KERNEL;
-    CREATE_BUFFER;
+    CREATE_KERNEL(1, context);
+    CREATE_BUFFER(1, context);
+
+    CREATE_KERNEL(2, context2);
+    CREATE_BUFFER(2, context2);
 
     for (VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType :
          vkExternalSemaphoreHandleTypeList)
@@ -731,7 +744,7 @@ REGISTER_TEST_VERSION(external_semaphores_cross_queues_io2, Version(1, 2))
             clCreateCommandQueue(context2, device, 0, &err);
         test_error(err, "Could not create command queue");
 
-        ENQUEUE_KERNEL_WITH_EVENT(queue1, 0, nullptr, write_int_event);
+        ENQUEUE_KERNEL_WITH_EVENT(1, queue1, 0, nullptr, write_int_event);
         
         // Signal semaphore 1
         clEventWrapper signal_1_event;
@@ -747,8 +760,8 @@ REGISTER_TEST_VERSION(external_semaphores_cross_queues_io2, Version(1, 2))
                                        nullptr, 0, nullptr, &wait_1_event);
         test_error(err, "Could not wait semaphore");
 
-        ENQUEUE_KERNEL(queue1, 1, &wait_1_event);
-        ENQUEUE_KERNEL(queue2, 0, nullptr, write_int_event_2);
+        ENQUEUE_KERNEL(1, queue1, 1, &wait_1_event);
+        ENQUEUE_KERNEL_WITH_EVENT(2, queue2, 0, nullptr, write_int_event_2);
 
         // Signal semaphore 2
         clEventWrapper signal_2_event;
@@ -764,7 +777,7 @@ REGISTER_TEST_VERSION(external_semaphores_cross_queues_io2, Version(1, 2))
                                        nullptr, 0, nullptr, &wait_2_event);
         test_error(err, "Could not wait semaphore");
 
-        ENQUEUE_KERNEL(queue2, 1, &wait_2_event);
+        ENQUEUE_KERNEL(2, queue2, 1, &wait_2_event);
 
         // Finish
         err = clFinish(queue1);
@@ -796,6 +809,7 @@ REGISTER_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2))
     }
 
     VulkanDevice vkDevice;
+    cl_int err = CL_SUCCESS;
 
     // Obtain pointers to semaphore's API
     GET_PFN(device, clEnqueueSignalSemaphoresKHR);
@@ -810,8 +824,8 @@ REGISTER_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2))
         test_fail("No external semaphore handle types found\n");
     }
 
-    CREATE_KERNEL;
-    CREATE_BUFFER;
+    CREATE_KERNEL(1, context);
+    CREATE_BUFFER(1, context);
 
     for (VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType :
          vkExternalSemaphoreHandleTypeList)
@@ -835,7 +849,7 @@ REGISTER_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2))
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
         test_error(err, "Could not create command queue");
 
-        ENQUEUE_KERNEL_WITH_EVENT(queue, 0, nullptr, write_int_event);
+        ENQUEUE_KERNEL_WITH_EVENT(1, queue, 0, nullptr, write_int_event);
         
         // Signal semaphore 1 and 2
         clEventWrapper signal_event;
@@ -851,7 +865,7 @@ REGISTER_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2))
                                          nullptr, 0, nullptr, &wait_1_event);
         test_error(err, "Could not wait semaphore");
 
-        ENQUEUE_KERNEL(queue, 1, &wait_1_event);
+        ENQUEUE_KERNEL(1, queue, 1, &wait_1_event);
 
         // Wait semaphore 2
         clEventWrapper wait_2_event;
@@ -859,7 +873,7 @@ REGISTER_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2))
                                          nullptr, 0, nullptr, &wait_2_event);
         test_error(err, "Could not wait semaphore");
         
-        ENQUEUE_KERNEL(queue, 1, &wait_2_event);
+        ENQUEUE_KERNEL(1, queue, 1, &wait_2_event);
 
         // Finish
         err = clFinish(queue);
@@ -887,6 +901,7 @@ REGISTER_TEST_VERSION(external_semaphores_multi_wait, Version(1, 2))
     }
 
     VulkanDevice vkDevice;
+    cl_int err = CL_SUCCESS;
 
     // Obtain pointers to semaphore's API
     GET_PFN(device, clEnqueueSignalSemaphoresKHR);
@@ -901,8 +916,8 @@ REGISTER_TEST_VERSION(external_semaphores_multi_wait, Version(1, 2))
         test_fail("No external semaphore handle types found\n");
     }
 
-    CREATE_KERNEL;
-    CREATE_BUFFER;
+    CREATE_KERNEL(1, context);
+    CREATE_BUFFER(1, context);
 
     for (VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType :
          vkExternalSemaphoreHandleTypeList)
@@ -926,22 +941,22 @@ REGISTER_TEST_VERSION(external_semaphores_multi_wait, Version(1, 2))
             context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
         test_error(err, "Could not create command queue");
 
-        ENQUEUE_KERNEL_WITH_EVENT(queue, 0, nullptr, write_int_event_1);
+        ENQUEUE_KERNEL_WITH_EVENT(1, queue, 0, nullptr, write_int_event_1);
         
         // Signal semaphore 1
         clEventWrapper signal_1_event;
         err =
             clEnqueueSignalSemaphoresKHR(queue, 1, &sema_ext_1.getCLSemaphore(),
-                                         nullptr, 1, write_int_event_1, &signal_1_event);
+                                         nullptr, 1, &write_int_event_1, &signal_1_event);
         test_error(err, "Could not signal semaphore");
 
-        ENQUEUE_KERNEL_WITH_EVENT(queue, 0, nullptr, write_int_event_2);
+        ENQUEUE_KERNEL_WITH_EVENT(1, queue, 0, nullptr, write_int_event_2);
         
         // Signal semaphore 2
         clEventWrapper signal_2_event;
         err =
             clEnqueueSignalSemaphoresKHR(queue, 1, &sema_ext_2.getCLSemaphore(),
-                                         nullptr, 1, write_int_event_2, &signal_2_event);
+                                         nullptr, 1, &write_int_event_2, &signal_2_event);
         test_error(err, "Could not signal semaphore");
 
         // Wait semaphore 1 and 2
@@ -952,7 +967,7 @@ REGISTER_TEST_VERSION(external_semaphores_multi_wait, Version(1, 2))
                                          nullptr, &wait_event);
         test_error(err, "Could not wait semaphore");
 
-        ENQUEUE_KERNEL(queue, 1, &wait_event);
+        ENQUEUE_KERNEL(1, queue, 1, &wait_event);
 
         // Finish
         err = clFinish(queue);

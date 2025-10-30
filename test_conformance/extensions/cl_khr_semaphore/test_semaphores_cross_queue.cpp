@@ -80,6 +80,9 @@ template <bool in_order> struct SemaphoreCrossQueue : public SemaphoreTestBase
             clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
         test_error(err, "Could not create semaphore");
 
+        CREATE_KERNEL;
+        CREATE_BUFFER;
+
         ENQUEUE_KERNEL_WITH_EVENT(queue_1, 0, nullptr, write_int_event);
 
         // Signal semaphore on queue_1
@@ -256,6 +259,9 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
         err = clEnqueueBarrierWithWaitList(producer_queue, 0, nullptr, nullptr);
         test_error(err, " clEnqueueBarrierWithWaitList ");
 
+        CREATE_KERNEL;
+        CREATE_BUFFER;
+
         if (single_queue)
         {
             ENQUEUE_KERNEL_WITH_EVENT(producer_queue, 0, nullptr, write_int_event);
@@ -297,9 +303,9 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
         test_error(err, " clEnqueueBarrierWithWaitList ");
 
         // enqueue consumer operations
-        size_t threads = (size_t)num_elems;
+        size_t threads_2 = (size_t)num_elems;
         err = clEnqueueNDRangeKernel(consumer_queue, kernel, 1, nullptr,
-                                     &threads, nullptr, 0, nullptr, nullptr);
+                                     &threads_2, nullptr, 0, nullptr, nullptr);
         test_error(err, "clEnqueueNDRangeKernel failed");
 
         err = clSetKernelArg(kernel, 0, sizeof(in_mem_B), &in_mem_B);
@@ -309,7 +315,7 @@ struct SemaphoreOutOfOrderOps : public SemaphoreTestBase
         test_error(err, "clSetKernelArg failed");
 
         err = clEnqueueNDRangeKernel(consumer_queue, kernel, 1, nullptr,
-                                     &threads, nullptr, 0, nullptr, nullptr);
+                                     &threads_2, nullptr, 0, nullptr, nullptr);
         test_error(err, "clEnqueueNDRangeKernel failed");
 
         err = clEnqueueBarrierWithWaitList(consumer_queue, 0, nullptr, nullptr);
