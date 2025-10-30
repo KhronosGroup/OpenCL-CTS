@@ -336,3 +336,161 @@ REGISTER_TEST(kernel_attributes)
     }
     return success ? TEST_PASS : TEST_FAIL;
 }
+
+REGISTER_TEST(null_required_work_group_size)
+{
+    cl_int error = CL_SUCCESS;
+
+    clGetKernelSuggestedLocalWorkSizeKHR_fn
+        clGetKernelSuggestedLocalWorkSizeKHR = nullptr;
+    if (is_extension_available(device, "cl_khr_suggested_local_work_size"))
+    {
+        cl_platform_id platform = nullptr;
+        error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
+                                &platform, NULL);
+        test_error(error, "clGetDeviceInfo for platform failed");
+
+        clGetKernelSuggestedLocalWorkSizeKHR =
+            (clGetKernelSuggestedLocalWorkSizeKHR_fn)
+                clGetExtensionFunctionAddressForPlatform(
+                    platform, "clGetKernelSuggestedLocalWorkSizeKHR");
+        test_assert_error(clGetKernelSuggestedLocalWorkSizeKHR != nullptr,
+                          "Couldn't get function pointer for "
+                          "clGetKernelSuggestedLocalWorkSizeKHR");
+    }
+
+    cl_uint device_max_dim = 0;
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,
+                            sizeof(device_max_dim), &device_max_dim, nullptr);
+    test_error(error,
+               "clGetDeviceInfo for CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS failed");
+    test_assert_error(device_max_dim >= 3,
+                      "CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS must be at least 3!");
+
+    std::vector<size_t> device_max_work_item_sizes(device_max_dim);
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
+                            sizeof(size_t) * device_max_dim,
+                            device_max_work_item_sizes.data(), nullptr);
+
+    size_t device_max_work_group_size = 0;
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE,
+                            sizeof(device_max_work_group_size),
+                            &device_max_work_group_size, nullptr);
+    test_error(error,
+               "clGetDeviceInfo for CL_DEVICE_MAX_WORK_GROUP_SIZE failed");
+
+    clMemWrapper dst;
+    dst = clCreateBuffer(context, CL_MEM_READ_WRITE, 3 * sizeof(cl_int),
+                         nullptr, &error);
+
+    struct KernelAttribInfo
+    {
+        std::string str;
+        cl_uint max_dim;
+    };
+
+    std::vector<KernelAttribInfo> attribs;
+    attribs.push_back({ "__attribute__((reqd_work_group_size(2,1,1)))", 1 });
+    attribs.push_back({ "__attribute__((reqd_work_group_size(2,3,1)))", 2 });
+    attribs.push_back({ "__attribute__((reqd_work_group_size(2,3,4)))", 3 });
+
+    const std::string body_str = R"(
+        __kernel void wg_size(__global int* dst)
+        {
+            if (get_global_id(0) == 0 &&
+                get_global_id(1) == 0 &&
+                get_global_id(2) == 0) {
+                dst[0] = get_local_size(0);
+                dst[1] = get_local_size(1);
+                dst[2] = get_local_size(2);
+            }
+        }
+    )";
+
+    for (auto& attrib : attribs)
+    {
+        const std::string source_str = attrib.str + body_str;
+        const char* source = source_str.c_str();
+
+        clProgramWrapper program;
+        clKernelWrapper kernel;
+        error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &source, "wg_size");
+        test_error(error, "Unable to create test kernel");
+
+        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &dst);
+        test_error(error, "clSetKernelArg failed");
+
+        for (cl_uint work_dim = 1; work_dim <= attrib.max_dim; work_dim++)
+        {
+            const cl_int expected[3] = { 2, work_dim >= 2 ? 3 : 1,
+                                         work_dim >= 3 ? 4 : 1 };
+            const size_t test_work_group_size =
+                expected[0] * expected[1] * expected[2];
+            if ((size_t)expected[0] > device_max_work_item_sizes[0]
+                || (size_t)expected[1] > device_max_work_item_sizes[1]
+                || (size_t)expected[2] > device_max_work_item_sizes[2]
+                || test_work_group_size > device_max_work_group_size)
+            {
+                log_info("Skipping test for work_dim = %u: required work group "
+                         "size (%i, %i, %i) (total %zu) exceeds device max "
+                         "work group size (%zu, %zu, %zu) (total %zu)\n",
+                         work_dim, expected[0], expected[1], expected[2],
+                         test_work_group_size, device_max_work_item_sizes[0],
+                         device_max_work_item_sizes[1],
+                         device_max_work_item_sizes[2],
+                         device_max_work_group_size);
+                continue;
+            }
+
+            const cl_int zero = 0;
+            error = clEnqueueFillBuffer(queue, dst, &zero, sizeof(zero), 0,
+                                        sizeof(expected), 0, nullptr, nullptr);
+
+            const size_t global_work_size[3] = { 2 * 32, 3 * 32, 4 * 32 };
+            error = clEnqueueNDRangeKernel(queue, kernel, work_dim, nullptr,
+                                           global_work_size, nullptr, 0,
+                                           nullptr, nullptr);
+            test_error(error, "clEnqueueNDRangeKernel failed");
+
+            cl_int results[3] = { -1, -1, -1 };
+            error = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0, sizeof(results),
+                                        results, 0, nullptr, nullptr);
+            test_error(error, "clEnqueueReadBuffer failed");
+
+            if (results[0] != expected[0] || results[1] != expected[1]
+                || results[2] != expected[2])
+            {
+                log_error("Executed local size mismatch with work_dim = %u: "
+                          "Expected (%d,%d,%d) got (%d,%d,%d)\n",
+                          work_dim, expected[0], expected[1], expected[2],
+                          results[0], results[1], results[2]);
+                return TEST_FAIL;
+            }
+
+            if (clGetKernelSuggestedLocalWorkSizeKHR != nullptr)
+            {
+                size_t suggested[3] = { 1, 1, 1 };
+                error = clGetKernelSuggestedLocalWorkSizeKHR(
+                    queue, kernel, work_dim, nullptr, global_work_size,
+                    suggested);
+                test_error(error,
+                           "clGetKernelSuggestedLocalWorkSizeKHR failed");
+
+                if ((cl_int)suggested[0] != expected[0]
+                    || (cl_int)suggested[1] != expected[1]
+                    || (cl_int)suggested[2] != expected[2])
+                {
+                    log_error("Suggested local size mismatch with work_dim = "
+                              "%u: Expected (%d,%d,%d) got (%d,%d,%d)\n",
+                              work_dim, expected[0], expected[1], expected[2],
+                              (cl_int)suggested[0], (cl_int)suggested[1],
+                              (cl_int)suggested[2]);
+                    return TEST_FAIL;
+                }
+            }
+        }
+    }
+
+    return TEST_PASS;
+}
