@@ -440,6 +440,7 @@ REGISTER_TEST(null_required_work_group_size)
                          device_max_work_item_sizes[1],
                          device_max_work_item_sizes[2],
                          device_max_work_group_size);
+                continue;
             }
 
             const cl_int zero = 0;
