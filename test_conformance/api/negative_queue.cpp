@@ -47,7 +47,7 @@ REGISTER_TEST(negative_create_command_queue)
     }
 
     cl_queue_properties invalid_property{ static_cast<cl_queue_properties>(
-        -1) };
+        ~CL_QUEUE_ALL_PROPERTIES) };
     clCreateCommandQueue(context, device, invalid_property, &err);
     test_failure_error_ret(
         err, CL_INVALID_VALUE,
