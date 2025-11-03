@@ -85,5 +85,16 @@ extern cl_int create_cl_objects(cl_device_id device_from_harness, const char** p
 
 extern const char *linked_list_create_and_verify_kernels[];
 
+static inline cl_int check_event_type(cl_event event,
+                                      cl_command_type expectedCommandType)
+{
+    cl_command_type commandType;
+    cl_int error = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE,
+                                  sizeof(cl_command_type), &commandType, NULL);
+    test_error(error, "clGetEventInfo failed");
+
+    return commandType == expectedCommandType ? CL_SUCCESS : CL_INVALID_VALUE;
+}
+
 #endif    // #ifndef __COMMON_H__
 

@@ -23,20 +23,21 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
     cl_int value = 42;
 
     clEventWrapper event;
-    cl_command_type cmdType = 0;
 
     // Try allocating zero bytes of SVM.
     // This should not crash.
-    void* svmZeroPtr =
-        clSVMAlloc(context, svmFlags, 0, svmFlags | CL_MEM_READ_WRITE);
-    log_info("      allocating zero bytes returned %p\n", svmZeroPtr);
+    {
+        void* svmZeroPtr =
+            clSVMAlloc(context, svmFlags, 0, svmFlags | CL_MEM_READ_WRITE);
+        log_info("      allocating zero bytes returned %p\n", svmZeroPtr);
 
-    // We should be able to free whatever we allocated.
-    clSVMFree(context, svmZeroPtr);
+        // We should be able to free whatever we allocated.
+        clSVMFree(context, svmZeroPtr);
 
-    // Try freeing an explicit NULL pointer.
-    // This should not crash.
-    clSVMFree(context, nullptr);
+        // Try freeing an explicit NULL pointer.
+        // This should not crash.
+        clSVMFree(context, nullptr);
+    }
 
     // Try to call clEnqueueSVMFree with an empty set
     event = nullptr; // Reset the event
@@ -46,19 +47,13 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
     log_info("      clEnqueueSVMFree with an empty set returned %s\n",
              IGetErrorString(error));
 
-    if (error == CL_SUCCESS)
-    {
-        error = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                               &cmdType, nullptr);
-        test_error(error, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        // test_assert_error(
-        //     cmdType == CL_COMMAND_SVM_FREE,
-        //     "Unexpected command type for clEnqueueSVMFree with an empty
-        //     set");
-        log_info("      clEnqueueSVMFree with an empty set has command type "
-                 "%4X (%4X)\n",
-                 cmdType, CL_COMMAND_SVM_FREE);
-    }
+    error = check_event_type(event, CL_COMMAND_SVM_FREE);
+    // test_error(error,
+    //            "clEnqueueSVMFree with an empty set did not return a "
+    //            "CL_COMMAND_SVM_FREE event");
+    log_info(
+        "      clEnqueueSVMFree with an empty set returned the %s event type\n",
+        error == CL_SUCCESS ? "correct" : "INCORRECT");
 
     // Try to call clEnqueueSVMFree with an explicit NULL pointer.
     {
@@ -69,23 +64,14 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
         // test_error(error, "clEnqueueSVMFree with NULL pointer failed");
         log_info("      clEnqueueSVMFree with NULL pointer returned %s\n",
                  IGetErrorString(error));
-    }
 
-    // Check that the event for clEnqueueSVMFree with an explicit NULL pointer
-    // has the right command type
-    if (error == CL_SUCCESS)
-    {
-        error = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                               &cmdType, nullptr);
-        test_error(error, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        // test_assert_error(
-        //     cmdType == CL_COMMAND_SVM_FREE,
-        //     "Unexpected command type for clEnqueueSVMFree with NULL
-        //     pointer");
-        log_info(
-            "      clEnqueueSVMFree with NULL pointer has command type %4X "
-            "(%4X)\n",
-            cmdType, CL_COMMAND_SVM_FREE);
+        error = check_event_type(event, CL_COMMAND_SVM_FREE);
+        // test_error(error,
+        //            "clEnqueueSVMFree with a NULL pointer did not return a "
+        //            "CL_COMMAND_SVM_FREE event");
+        log_info("      clEnqueueSVMFree with a NULL pointer returned the %s "
+                 "event type\n",
+                 error == CL_SUCCESS ? "correct" : "INCORRECT");
     }
 
     clSVMWrapper svmPtr(context, sizeof(value), svmFlags | CL_MEM_READ_WRITE);
@@ -99,21 +85,13 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
     log_info("      clEnqueueSVMMemFill with zero size returned %s\n",
              IGetErrorString(error));
 
-    // Check that the event for the zero-sized fill has the right command type
-    if (error == CL_SUCCESS)
-    {
-        error = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                               &cmdType, nullptr);
-        test_error(error, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        // test_assert_error(
-        //     cmdType == CL_COMMAND_SVM_MEMFILL,
-        //     "Unexpected command type for clEnqueueSVMMemFill with zero
-        //     size");
-        log_info(
-            "      clEnqueueSVMMemFill with zero size has command type %4X "
-            "(%4X)\n",
-            cmdType, CL_COMMAND_SVM_MEMFILL);
-    }
+    error = check_event_type(event, CL_COMMAND_SVM_MEMFILL);
+    // test_error(error,
+    //            "clEnqueueSVMMemFill with zero size did not return a "
+    //            "CL_COMMAND_SVM_MEMFILL event");
+    log_info("      clEnqueueSVMMemFill with zero size returned the %s "
+             "event type\n",
+             error == CL_SUCCESS ? "correct" : "INCORRECT");
 
     // Try copying zero bytes to the SVM pointer
     event = nullptr; // Reset the event
@@ -123,19 +101,13 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
     log_info("      clEnqueueSVMMemcpy to SVM with zero size returned %s\n",
              IGetErrorString(error));
 
-    // Check that the event for the zero-sized copy has the right command type
-    if (error == CL_SUCCESS)
-    {
-        error = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                               &cmdType, nullptr);
-        test_error(error, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        // test_assert_error(
-        //     cmdType == CL_COMMAND_SVM_MEMCPY,
-        //     "Unexpected command type for clEnqueueSVMMemcpy with zero size");
-        log_info("      clEnqueueSVMMemcpy to SVM with zero size has command "
-                 "type %4X (%4X)\n",
-                 cmdType, CL_COMMAND_SVM_MEMCPY);
-    }
+    error = check_event_type(event, CL_COMMAND_SVM_MEMCPY);
+    // test_error(error,
+    //            "clEnqueueSVMMemcpy to SVM with zero size did not return a "
+    //            "CL_COMMAND_SVM_MEMCPY event");
+    log_info("      clEnqueueSVMMemcpy to SVM with zero size returned the %s "
+             "event type\n",
+             error == CL_SUCCESS ? "correct" : "INCORRECT");
 
     // Try copying zero bytes from the SVM pointer
     event = nullptr; // Reset the event
@@ -145,19 +117,13 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
     log_info("      clEnqueueSVMMemcpy from SVM with zero size returned %s\n",
              IGetErrorString(error));
 
-    // Check that the event for the zero-sized copy has the right command type
-    if (error == CL_SUCCESS)
-    {
-        error = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                               &cmdType, nullptr);
-        test_error(error, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        // test_assert_error(
-        //     cmdType == CL_COMMAND_SVM_MEMCPY,
-        //     "Unexpected command type for clEnqueueSVMMemcpy with zero size");
-        log_info("      clEnqueueSVMMemcpy from SVM with zero size has command "
-                 "type %4X (%4X)\n",
-                 cmdType, CL_COMMAND_SVM_MEMCPY);
-    }
+    error = check_event_type(event, CL_COMMAND_SVM_MEMCPY);
+    // test_error(error,
+    //            "clEnqueueSVMMemcpy from SVM with zero size did not return a "
+    //            "CL_COMMAND_SVM_MEMCPY event");
+    log_info("      clEnqueueSVMMemcpy from SVM with zero size returned the %s "
+             "event type\n",
+             error == CL_SUCCESS ? "correct" : "INCORRECT");
 
     // Try migrating zero bytes of the SVM pointer
     {
@@ -170,21 +136,14 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
         // test_error(error, "clEnqueueSVMMigrateMem with zero size failed");
         log_info("      clEnqueueSVMMigrateMem with zero size returned %s\n",
                  IGetErrorString(error));
-    }
 
-    // Check that the event for the zero-sized migration has the right command
-    // type
-    if (error == CL_SUCCESS)
-    {
-        error = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                               &cmdType, nullptr);
-        test_error(error, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        // test_assert_error(cmdType == CL_COMMAND_SVM_MIGRATE_MEM,
-        //                   "Unexpected command type for clEnqueueSVMMigrateMem
-        //                   " "with zero size");
-        log_info("      clEnqueueSVMMigrateMem with zero size has command type "
-                 "%4X (%4X)\n",
-                 cmdType, CL_COMMAND_SVM_MIGRATE_MEM);
+        error = check_event_type(event, CL_COMMAND_SVM_MIGRATE_MEM);
+        // test_error(error,
+        //            "clEnqueueSVMMigrateMem with zero size did not return
+        //            a CL_COMMAND_SVM_MIGRATE_MEM event");
+        log_info("      clEnqueueSVMMigrateMem with zero size returned the %s "
+                 "event type\n",
+                 error == CL_SUCCESS ? "correct" : "INCORRECT");
     }
 
     // Try migrating zero bytes and a NULL pointer
@@ -198,24 +157,37 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
         // test_error(error, "clEnqueueSVMMigrateMem with NULL pointer failed");
         log_info("      clEnqueueSVMMigrateMem with NULL pointer returned %s\n",
                  IGetErrorString(error));
+
+        error = check_event_type(event, CL_COMMAND_SVM_MIGRATE_MEM);
+        // test_error(error,
+        //            "clEnqueueSVMMigrateMem with NULL pointer did not return
+        //            a CL_COMMAND_SVM_MIGRATE_MEM event");
+        log_info("      clEnqueueSVMMigrateMem with NULL pointer returned the "
+                 "%s event type\n",
+                 error == CL_SUCCESS ? "correct" : "INCORRECT");
     }
 
-    // Check that the event for the NULL pointer migration has the right command
-    // type
-    if (error == CL_SUCCESS)
+    // Try migrating a NULL pointer with NULL sizes
     {
-        error = clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cmdType),
-                               &cmdType, nullptr);
-        test_error(error, "clGetEventInfo failed for CL_EVENT_COMMAND_TYPE");
-        // test_assert_error(cmdType == CL_COMMAND_SVM_MIGRATE_MEM,
-        //                   "Unexpected command type for clEnqueueSVMMigrateMem
-        //                   " "with NULL pointer");
-        log_info(
-            "      clEnqueueSVMMigrateMem with NULL pointer has command type "
-            "%4X (%4X)\n",
-            cmdType, CL_COMMAND_SVM_MIGRATE_MEM);
-    }
+        const void* svm_pointers[] = { nullptr };
+        event = nullptr; // Reset the event
+        error = clEnqueueSVMMigrateMem(queue, 1, svm_pointers, nullptr,
+                                       CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED,
+                                       0, nullptr, &event);
+        // test_error(error, "clEnqueueSVMMigrateMem with NULL pointer and NULL
+        // sizes failed");
+        log_info("      clEnqueueSVMMigrateMem with NULL pointer and NULL "
+                 "sizes returned %s\n",
+                 IGetErrorString(error));
 
+        error = check_event_type(event, CL_COMMAND_SVM_MIGRATE_MEM);
+        // test_error(error,
+        //            "clEnqueueSVMMigrateMem with NULL pointer and NULL sizes
+        //            did not return a CL_COMMAND_SVM_MIGRATE_MEM event");
+        log_info("      clEnqueueSVMMigrateMem with NULL pointer and NULL "
+                 "sizes returned the %s event type\n",
+                 error == CL_SUCCESS ? "correct" : "INCORRECT");
+    }
 
     // Try to call clSetKernelExecInfo with an empty set
     error =
