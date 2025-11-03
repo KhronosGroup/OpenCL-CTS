@@ -131,22 +131,16 @@ struct CreateCommandBufferRepeatedProperties : public BasicCommandBufferTest
         if (BasicCommandBufferTest::Skip()) return true;
 
         bool skip = true;
-        if (simultaneous_use_support)
+        if (is_extension_available(
+                device, CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_NAME))
         {
-            rep_prop = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
+            rep_prop = CL_COMMAND_BUFFER_MUTABLE_KHR;
             skip = false;
         }
         else if (is_extension_available(
                      device, CL_KHR_COMMAND_BUFFER_MULTI_DEVICE_EXTENSION_NAME))
         {
             rep_prop = CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
-            skip = false;
-        }
-        else if (is_extension_available(
-                     device,
-                     CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_NAME))
-        {
-            rep_prop = CL_COMMAND_BUFFER_MUTABLE_KHR;
             skip = false;
         }
 
@@ -185,7 +179,9 @@ struct CreateCommandBufferNotSupportedProperties : public BasicCommandBufferTest
         if (BasicCommandBufferTest::Skip()) return true;
 
         bool skip = true;
-        if (!simultaneous_use_support)
+        if (is_extension_available(
+                device, CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_NAME)
+            && !simultaneous_use_support)
         {
             unsupported_prop = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
             skip = false;
