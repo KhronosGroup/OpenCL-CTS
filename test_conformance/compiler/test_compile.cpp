@@ -25,6 +25,7 @@
 #endif
 #include "harness/conversions.h"
 #include "harness/stringHelpers.h"
+#include "harness/parseParameters.h"
 
 #define MAX_LINE_SIZE_IN_PROGRAM 1024
 #define MAX_LOG_SIZE_IN_PROGRAM 2048
@@ -3944,6 +3945,13 @@ REGISTER_TEST(compile_and_link_status_options_log)
 
 REGISTER_TEST(multiple_build_program)
 {
+    if (gCompilationMode != kOnline)
+    {
+        log_info(
+            "Skipping multiple_build_program, compilation mode not online\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
     cl_int error = CL_SUCCESS;
     const size_t num_threads = num_elements;
 
