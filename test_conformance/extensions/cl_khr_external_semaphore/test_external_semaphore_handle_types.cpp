@@ -69,7 +69,7 @@ cl_int doTest(cl_device_id device, cl_context context, cl_command_queue queue,
     cl_semaphore_properties_khr sema_2_props[] = {
         static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_KHR),
         static_cast<cl_semaphore_properties_khr>(CL_SEMAPHORE_TYPE_BINARY_KHR),
-        handle_type, static_cast<cl_semaphore_properties_khr>(handle), 0
+        handle_type, (cl_semaphore_properties_khr)handle, 0
     };
 
     cl_semaphore_khr sema_2 =
