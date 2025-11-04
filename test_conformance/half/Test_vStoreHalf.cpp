@@ -16,6 +16,7 @@
 #include "harness/compat.h"
 #include "harness/kernelHelpers.h"
 #include "harness/testHarness.h"
+#include "harness/parseParameters.h"
 
 #include <string.h>
 
