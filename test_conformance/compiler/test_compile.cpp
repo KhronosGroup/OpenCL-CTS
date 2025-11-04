@@ -25,6 +25,7 @@
 #endif
 #include "harness/conversions.h"
 #include "harness/stringHelpers.h"
+#include "harness/parseParameters.h"
 
 #define MAX_LINE_SIZE_IN_PROGRAM 1024
 #define MAX_LOG_SIZE_IN_PROGRAM 2048
@@ -158,6 +159,14 @@ const char *link_static_struct_access = // use with compile_static_struct
 const char *link_static_function_access = // use with compile_static_function
     "extern int foo(int, int);\n"
     "int access_foo() { int blah = foo(3, 4); return blah + 5; }\n";
+
+const char *multi_build_test_kernel = R"(
+__kernel void test_kernel(__global int *dst)
+{
+    int tid = get_global_id(0);
+    dst[tid] = BUILD_OPT_VAL;
+}
+)";
 
 static int test_large_single_compile(cl_context context, cl_device_id deviceID,
                                      unsigned int numLines)
@@ -3932,4 +3941,101 @@ REGISTER_TEST(compile_and_link_status_options_log)
     }
 
     return 0;
+}
+
+REGISTER_TEST(multiple_build_program)
+{
+    if (gCompilationMode != kOnline)
+    {
+        log_info(
+            "Skipping multiple_build_program, compilation mode not online\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_int error = CL_SUCCESS;
+    const size_t num_threads = num_elements;
+
+    clProgramWrapper program = clCreateProgramWithSource(
+        context, 1, &multi_build_test_kernel, nullptr, &error);
+    test_error(error, "clCreateProgramWithSource failed");
+
+    clMemWrapper out_stream_0 = clCreateBuffer(
+        context, CL_MEM_READ_WRITE, sizeof(cl_int) * num_threads, NULL, &error);
+    test_error(error, "clCreateBuffer failed");
+
+    clMemWrapper out_stream_1 = clCreateBuffer(
+        context, CL_MEM_READ_WRITE, sizeof(cl_int) * num_threads, NULL, &error);
+    test_error(error, "clCreateBuffer failed");
+
+    {
+        /* Build with the macro defined */
+        error = clBuildProgram(program, 1, &device, "-DBUILD_OPT_VAL=1 ", NULL,
+                               NULL);
+        test_error(error, "clBuildProgram failed");
+
+        clKernelWrapper kernel0 =
+            clCreateKernel(program, "test_kernel", &error);
+        test_error(error, "clCreateKernel failed");
+
+        error = clSetKernelArg(kernel0, 0, sizeof(out_stream_0), &out_stream_0);
+        test_error(error, "clSetKernelArg failed");
+
+        error = clEnqueueNDRangeKernel(queue, kernel0, 1, NULL, &num_threads,
+                                       NULL, 0, NULL, NULL);
+        test_error(error, "clEnqueueNDRangeKernel failed");
+    }
+
+    {
+        /* Rebuild with the macro redefined */
+        error = clBuildProgram(program, 1, &device, "-DBUILD_OPT_VAL=2 ", NULL,
+                               NULL);
+        test_error(error, "clBuildProgram failed");
+
+        clKernelWrapper kernel1 =
+            clCreateKernel(program, "test_kernel", &error);
+        test_error(error, "clCreateKernel failed");
+
+        error = clSetKernelArg(kernel1, 0, sizeof(out_stream_1), &out_stream_1);
+        test_error(error, "clSetKernelArg failed");
+
+        error = clEnqueueNDRangeKernel(queue, kernel1, 1, NULL, &num_threads,
+                                       NULL, 0, NULL, NULL);
+        test_error(error, "clEnqueueNDRangeKernel failed");
+    }
+
+    error = clFinish(queue);
+    test_error(error, "clFinish failed");
+
+    std::vector<cl_int> test_values(num_threads, 0);
+    error = clEnqueueReadBuffer(queue, out_stream_0, true, 0,
+                                sizeof(cl_int) * num_threads,
+                                test_values.data(), 0, NULL, NULL);
+    test_error(error, "clEnqueueReadBuffer failed");
+
+    for (size_t i = 0; i < test_values.size(); i++)
+    {
+        if (test_values[i] != 1)
+        {
+            log_error("Unexpected test value %d for kernel0 at pos %zu.\n",
+                      test_values[i], i);
+            return TEST_FAIL;
+        }
+    }
+
+    error = clEnqueueReadBuffer(queue, out_stream_1, true, 0,
+                                sizeof(cl_int) * num_threads,
+                                test_values.data(), 0, NULL, NULL);
+    test_error(error, "clEnqueueReadBuffer failed");
+
+    for (size_t i = 0; i < test_values.size(); i++)
+    {
+        if (test_values[i] != 2)
+        {
+            log_error("Unexpected test value %d for kernel1 at pos %zu.\n",
+                      test_values[i], i);
+            return TEST_FAIL;
+        }
+    }
+
+    return TEST_PASS;
 }
