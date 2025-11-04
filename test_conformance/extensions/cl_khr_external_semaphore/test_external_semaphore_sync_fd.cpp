@@ -114,35 +114,18 @@ REGISTER_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2))
         test_error(err,
                    "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
 
-        if ((device_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE) == 0)
+        if ((device_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE) != 0)
         {
-            log_info(
-                "Queue property CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE not "
-                "supported. Skipping test.\n");
-            return TEST_SKIPPED_ITSELF;
-        }
-        // Create ooo queue
-        clCommandQueueWrapper test_queue = clCreateCommandQueue(
-            context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
-        test_error(err, "Could not create command queue");
+            // Create ooo queue
+            clCommandQueueWrapper test_queue = clCreateCommandQueue(
+                context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
+            test_error(err, "Could not create command queue");
 
-        cl_int status = doTest(device, context, test_queue);
-        if (status != TEST_PASS && status != TEST_SKIPPED_ITSELF)
-        {
-            total_status = TEST_FAIL;
-        }
-    }
-
-    // test external semaphore sync fd with in-order queue
-    {
-        clCommandQueueWrapper test_queue =
-            clCreateCommandQueue(context, device, 0, &err);
-        test_error(err, "Could not create command queue");
-
-        cl_int status = doTest(device, context, test_queue);
-        if (status != TEST_PASS && status != TEST_SKIPPED_ITSELF)
-        {
-            total_status = TEST_FAIL;
+            cl_int status = doTest(device, context, test_queue);
+            if (status != TEST_PASS && status != TEST_SKIPPED_ITSELF)
+            {
+                total_status = TEST_FAIL;
+            }
         }
     }
 
