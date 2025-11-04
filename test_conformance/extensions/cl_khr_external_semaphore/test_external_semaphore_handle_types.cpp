@@ -53,14 +53,14 @@ cl_int doTest(cl_device_id device, cl_context context, cl_command_queue queue,
 
 #ifdef _WIN32
     HANDLE handle;
-
 #else
     // Extract sync fd
     int handle = -1;
 #endif
     size_t handle_size;
-    err = clGetSemaphoreHandleForTypeKHR(sema_1, device, handle_type,
-                                         sizeof(handle), &handle, &handle_size);
+    err = clGetSemaphoreHandleForTypeKHR(
+        sema_1, device, handle_type, sizeof(handle),
+        reinterpret_cast<cl_semaphore_properties_khr*>(&handle), &handle_size);
     test_error(err, "Could not extract semaphore handle");
     test_assert_error(sizeof(handle) == handle_size, "Invalid handle size");
     test_assert_error(handle >= 0, "Invalid handle");
