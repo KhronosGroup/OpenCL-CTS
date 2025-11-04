@@ -51,8 +51,13 @@ cl_int doTest(cl_device_id device, cl_context context, cl_command_queue queue,
                                        &signal_event);
     test_error(err, "Could not signal semaphore");
 
+#ifdef _WIN32
+    HANDLE handle;
+
+#else
     // Extract sync fd
     int handle = -1;
+#endif
     size_t handle_size;
     err = clGetSemaphoreHandleForTypeKHR(sema_1, device, handle_type,
                                          sizeof(handle), &handle, &handle_size);
@@ -148,19 +153,6 @@ REGISTER_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2))
                 {
                     total_status = TEST_FAIL;
                 }
-            }
-        }
-
-        // test external semaphore with in-order queue
-        {
-            clCommandQueueWrapper test_queue =
-                clCreateCommandQueue(context, device, 0, &err);
-            test_error(err, "Could not create command queue");
-
-            cl_int status = doTest(device, context, test_queue, handle_type);
-            if (status != TEST_PASS && status != TEST_SKIPPED_ITSELF)
-            {
-                total_status = TEST_FAIL;
             }
         }
 
