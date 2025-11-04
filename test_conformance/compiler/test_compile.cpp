@@ -3945,18 +3945,18 @@ REGISTER_TEST(compile_and_link_status_options_log)
 REGISTER_TEST(multiple_build_program)
 {
     cl_int error = CL_SUCCESS;
-    size_t threads = std::min(num_elements, 512);
+    const size_t num_threads = num_elements;
 
     clProgramWrapper program = clCreateProgramWithSource(
         context, 1, &multi_build_test_kernel, nullptr, &error);
     test_error(error, "clCreateProgramWithSource failed");
 
     clMemWrapper out_stream_0 = clCreateBuffer(
-        context, CL_MEM_READ_WRITE, sizeof(cl_int) * threads, NULL, &error);
+        context, CL_MEM_READ_WRITE, sizeof(cl_int) * num_threads, NULL, &error);
     test_error(error, "clCreateBuffer failed");
 
     clMemWrapper out_stream_1 = clCreateBuffer(
-        context, CL_MEM_READ_WRITE, sizeof(cl_int) * threads, NULL, &error);
+        context, CL_MEM_READ_WRITE, sizeof(cl_int) * num_threads, NULL, &error);
     test_error(error, "clCreateBuffer failed");
 
     {
@@ -3972,8 +3972,8 @@ REGISTER_TEST(multiple_build_program)
         error = clSetKernelArg(kernel0, 0, sizeof(out_stream_0), &out_stream_0);
         test_error(error, "clSetKernelArg failed");
 
-        error = clEnqueueNDRangeKernel(queue, kernel0, 1, NULL, &threads, NULL,
-                                       0, NULL, NULL);
+        error = clEnqueueNDRangeKernel(queue, kernel0, 1, NULL, &num_threads,
+                                       NULL, 0, NULL, NULL);
         test_error(error, "clEnqueueNDRangeKernel failed");
     }
 
@@ -3990,18 +3990,18 @@ REGISTER_TEST(multiple_build_program)
         error = clSetKernelArg(kernel1, 0, sizeof(out_stream_1), &out_stream_1);
         test_error(error, "clSetKernelArg failed");
 
-        error = clEnqueueNDRangeKernel(queue, kernel1, 1, NULL, &threads, NULL,
-                                       0, NULL, NULL);
+        error = clEnqueueNDRangeKernel(queue, kernel1, 1, NULL, &num_threads,
+                                       NULL, 0, NULL, NULL);
         test_error(error, "clEnqueueNDRangeKernel failed");
     }
 
     error = clFinish(queue);
     test_error(error, "clFinish failed");
 
-    std::vector<cl_int> test_values(threads, 0);
+    std::vector<cl_int> test_values(num_threads, 0);
     error = clEnqueueReadBuffer(queue, out_stream_0, true, 0,
-                                sizeof(cl_int) * threads, test_values.data(), 0,
-                                NULL, NULL);
+                                sizeof(cl_int) * num_threads,
+                                test_values.data(), 0, NULL, NULL);
     test_error(error, "clEnqueueReadBuffer failed");
 
     for (size_t i = 0; i < test_values.size(); i++)
@@ -4015,8 +4015,8 @@ REGISTER_TEST(multiple_build_program)
     }
 
     error = clEnqueueReadBuffer(queue, out_stream_1, true, 0,
-                                sizeof(cl_int) * threads, test_values.data(), 0,
-                                NULL, NULL);
+                                sizeof(cl_int) * num_threads,
+                                test_values.data(), 0, NULL, NULL);
     test_error(error, "clEnqueueReadBuffer failed");
 
     for (size_t i = 0; i < test_values.size(); i++)
