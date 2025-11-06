@@ -23,6 +23,7 @@
 #include "harness/typeWrappers.h"
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #if (defined(_WIN32) || defined(_WIN64)) && defined(_MSC_VER)
     #include <windows.h>
@@ -94,6 +95,15 @@ static inline cl_int check_event_type(cl_event event,
     test_error(error, "clGetEventInfo failed");
 
     return commandType == expectedCommandType ? CL_SUCCESS : CL_INVALID_VALUE;
+}
+
+static inline void generate_random_inputs(std::vector<cl_uchar> &v, MTdata d)
+{
+    auto random_generator = [&d]() {
+        return static_cast<cl_uchar>(genrand_int32(d));
+    };
+
+    std::generate(v.begin(), v.end(), random_generator);
 }
 
 #endif    // #ifndef __COMMON_H__

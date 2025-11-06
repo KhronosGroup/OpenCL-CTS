@@ -188,4 +188,4 @@ jobs:
         with:
           fetch-depth: 0
       - name: Check code format
-        run: ./check-format.sh
+        run: ./check-format.sh origin/cl_khr_unified_svm
