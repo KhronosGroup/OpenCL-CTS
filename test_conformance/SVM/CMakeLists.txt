@@ -5,6 +5,7 @@ set(${MODULE_NAME}_SOURCES
     test_allocate_shared_buffer.cpp
     test_allocate_shared_buffer_negative.cpp
     test_byte_granularity.cpp
+    test_corner_cases.cpp
     test_cross_buffer_pointers.cpp
     test_enqueue_api.cpp
     test_fine_grain_memory_consistency.cpp
@@ -15,7 +16,6 @@ set(${MODULE_NAME}_SOURCES
     test_shared_address_space_fine_grain.cpp
     test_shared_address_space_fine_grain_buffers.cpp
     test_shared_sub_buffers.cpp
-    test_size_zero.cpp
     test_migrate.cpp
     test_unified_svm_consistency.cpp
     test_unified_svm_corner_cases.cpp

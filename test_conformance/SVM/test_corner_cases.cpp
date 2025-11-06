@@ -15,9 +15,9 @@
 //
 #include "common.h"
 
-static int svm_size_zero_helper(cl_device_id device, cl_context context,
-                                cl_command_queue queue, cl_kernel kernel,
-                                cl_svm_mem_flags svmFlags)
+static int svm_corner_case_helper(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, cl_kernel kernel,
+                                  cl_svm_mem_flags svmFlags)
 {
     cl_int error = CL_SUCCESS;
     cl_int value = 42;
@@ -164,7 +164,7 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
-REGISTER_TEST(svm_size_zero)
+REGISTER_TEST(svm_corner_cases)
 {
     // Note: These are SVM tests, not unified SVM tests, however the scenarios
     // they are testing are ambiguous pre-unified SVM. Therefore, we will only
@@ -212,20 +212,20 @@ REGISTER_TEST(svm_size_zero)
     if (svmCaps & CL_DEVICE_SVM_COARSE_GRAIN_BUFFER)
     {
         log_info("    testing coarse-grain SVM\n");
-        result |= svm_size_zero_helper(device, context, queue, kernel, 0);
+        result |= svm_corner_case_helper(device, context, queue, kernel, 0);
     }
     if (svmCaps & CL_DEVICE_SVM_FINE_GRAIN_BUFFER)
     {
         log_info("    testing fine-grain SVM\n");
-        result |= svm_size_zero_helper(device, context, queue, kernel,
-                                       CL_MEM_SVM_FINE_GRAIN_BUFFER);
+        result |= svm_corner_case_helper(device, context, queue, kernel,
+                                         CL_MEM_SVM_FINE_GRAIN_BUFFER);
     }
     if (svmCaps & (CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS))
     {
         log_info("    testing fine-grain SVM with atomics\n");
-        result |= svm_size_zero_helper(device, context, queue, kernel,
-                                       CL_MEM_SVM_FINE_GRAIN_BUFFER
-                                           | CL_MEM_SVM_ATOMICS);
+        result |= svm_corner_case_helper(device, context, queue, kernel,
+                                         CL_MEM_SVM_FINE_GRAIN_BUFFER
+                                             | CL_MEM_SVM_ATOMICS);
     }
 
     return result;
