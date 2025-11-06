@@ -79,11 +79,7 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
         : BasicCommandBufferTest(device, context, queue),
           command_buffer_sec(this), kernel_sec(nullptr), in_mem_sec(nullptr),
           out_mem_sec(nullptr), off_mem_sec(nullptr), test_event(nullptr)
-    {
-        simultaneous_use_requested =
-            (event_mode == EventMode::RET_COMBUF_WAIT_FOR_COMBUF) ? true
-                                                                  : false;
-    }
+    {}
 
     //--------------------------------------------------------------------------
     cl_int SetUpKernel() override
@@ -158,9 +154,6 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
     bool Skip() override
     {
         if (BasicCommandBufferTest::Skip()) return true;
-
-        if (simultaneous_use_requested && !simultaneous_use_support)
-            return true;
 
         if (out_of_order_requested && !out_of_order_support) return true;
 

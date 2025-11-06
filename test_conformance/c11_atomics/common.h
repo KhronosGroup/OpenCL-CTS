@@ -79,6 +79,7 @@ extern cl_device_atomic_capabilities gAtomicMemCap,
 extern cl_half_rounding_mode gHalfRoundingMode;
 extern bool gFloatAtomicsSupported;
 extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
+extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
 extern cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps;
 
 extern const char *
@@ -893,15 +894,16 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
         header += std::string("__global volatile ") + aTypeName + " destMemory["
             + ss.str() + "] = {\n";
         ss.str("");
+
         if (CBasicTest<HostAtomicType, HostDataType>::DataType()._type
             == TYPE_ATOMIC_FLOAT)
             ss << std::setprecision(10) << _startValue;
         else if (CBasicTest<HostAtomicType, HostDataType>::DataType()._type
                  == TYPE_ATOMIC_HALF)
-            ss << static_cast<HostDataType>(
-                cl_half_to_float(static_cast<cl_half>(_startValue)));
+            ss << cl_half_to_float(static_cast<cl_half>(_startValue));
         else
             ss << _startValue;
+
         for (cl_uint i = 0; i < maxNumDestItems; i++)
         {
             if (aTypeName == "atomic_flag")

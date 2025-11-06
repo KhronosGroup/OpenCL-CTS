@@ -18,7 +18,6 @@
 
 #include "harness/testHarness.h"
 #include <mutex>
-
 #include "CL/cl_half.h"
 
 #ifdef WIN32
@@ -99,7 +98,19 @@ template <typename AtomicType, typename CorrespondingType>
 CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingType c,
                                         TExplicitMemoryOrderType order)
 {
-    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_FLOAT>)
+    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_HALF>)
+    {
+        static std::mutex mx;
+        std::lock_guard<std::mutex> lock(mx);
+        CorrespondingType old_value = *a;
+        *a = cl_half_from_float((cl_half_to_float(*a) + cl_half_to_float(c)),
+                                gHalfRoundingMode);
+        return old_value;
+    }
+    else if constexpr (
+        std::is_same_v<
+            AtomicType,
+            HOST_ATOMIC_FLOAT> || std::is_same_v<AtomicType, HOST_ATOMIC_DOUBLE>)
     {
         static std::mutex mx;
         std::lock_guard<std::mutex> lock(mx);
@@ -109,7 +120,7 @@ CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingTyp
     }
     else
     {
-#if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
+#if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
         return InterlockedExchangeAdd(a, c);
 #elif defined(__GNUC__)
         return __sync_fetch_and_add(a, c);
@@ -124,7 +135,15 @@ template <typename AtomicType, typename CorrespondingType>
 CorrespondingType host_atomic_fetch_sub(volatile AtomicType *a, CorrespondingType c,
                                         TExplicitMemoryOrderType order)
 {
-    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_HALF>)
+    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_FLOAT>)
+    {
+        static std::mutex mx;
+        std::lock_guard<std::mutex> lock(mx);
+        CorrespondingType old_value = *a;
+        *a -= c;
+        return old_value;
+    }
+    else if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_HALF>)
     {
         static std::mutex mx;
         std::lock_guard<std::mutex> lock(mx);
@@ -173,14 +192,30 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
                                   TExplicitMemoryOrderType order_failure)
 {
     CorrespondingType tmp;
-    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_FLOAT>)
+    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_HALF>)
+    {
+        static std::mutex mtx;
+        std::lock_guard<std::mutex> lock(mtx);
+        tmp = *reinterpret_cast<volatile cl_half *>(a);
+
+        if (cl_half_to_float(tmp) == cl_half_to_float(*expected))
+        {
+            *reinterpret_cast<volatile cl_half *>(a) = desired;
+            return true;
+        }
+        *expected = tmp;
+    }
+    else if constexpr (
+        std::is_same_v<
+            AtomicType,
+            HOST_ATOMIC_DOUBLE> || std::is_same_v<AtomicType, HOST_ATOMIC_FLOAT>)
     {
         static std::mutex mtx;
         std::lock_guard<std::mutex> lock(mtx);
         tmp = *reinterpret_cast<volatile float *>(a);
         if (tmp == *expected)
         {
-            *reinterpret_cast<volatile float *>(a) = desired;
+            *a = desired;
             return true;
         }
         *expected = tmp;
@@ -188,7 +223,6 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
     else
     {
 #if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
-
         tmp = InterlockedCompareExchange(a, desired, *expected);
 #elif defined(__GNUC__)
         tmp = __sync_val_compare_and_swap(a, *expected, desired);
