@@ -23,6 +23,8 @@
 #include <cstring>
 #endif
 
+#include <stdint.h>
+
 #include "utility.h"
 
 #if defined(__SSE__) || _M_IX86_FP == 1
@@ -2118,6 +2120,11 @@ int reference_not(double x)
 }
 
 namespace {
+
+typedef __uint8_t u_int8_t;
+typedef __uint16_t u_int16_t;
+typedef __uint32_t u_int32_t;
+typedef __uint64_t u_int64_t;
 
 /*	$OpenBSD: polevll.c,v 1.2 2013/11/12 20:35:09 martynas Exp $	*/
 /*
