@@ -2121,10 +2121,10 @@ int reference_not(double x)
 
 namespace {
 
-typedef __uint8_t u_int8_t;
-typedef __uint16_t u_int16_t;
-typedef __uint32_t u_int32_t;
-typedef __uint64_t u_int64_t;
+typedef std::uint8_t u_int8_t;
+typedef std::uint16_t u_int16_t;
+typedef std::uint32_t u_int32_t;
+typedef std::uint64_t u_int64_t;
 
 /*	$OpenBSD: polevll.c,v 1.2 2013/11/12 20:35:09 martynas Exp $	*/
 /*
