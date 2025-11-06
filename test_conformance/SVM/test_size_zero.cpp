@@ -29,7 +29,6 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
     {
         void* svmZeroPtr =
             clSVMAlloc(context, svmFlags, 0, svmFlags | CL_MEM_READ_WRITE);
-        log_info("      allocating zero bytes returned %p\n", svmZeroPtr);
 
         // We should be able to free whatever we allocated.
         clSVMFree(context, svmZeroPtr);
@@ -43,17 +42,12 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
     event = nullptr; // Reset the event
     error = clEnqueueSVMFree(queue, 0, nullptr, nullptr, nullptr, 0, nullptr,
                              &event);
-    // test_error(error, "clEnqueueSVMFree with an empty set failed");
-    log_info("      clEnqueueSVMFree with an empty set returned %s\n",
-             IGetErrorString(error));
+    test_error(error, "clEnqueueSVMFree with an empty set failed");
 
     error = check_event_type(event, CL_COMMAND_SVM_FREE);
-    // test_error(error,
-    //            "clEnqueueSVMFree with an empty set did not return a "
-    //            "CL_COMMAND_SVM_FREE event");
-    log_info(
-        "      clEnqueueSVMFree with an empty set returned the %s event type\n",
-        error == CL_SUCCESS ? "correct" : "INCORRECT");
+    test_error(error,
+               "clEnqueueSVMFree with an empty set did not return a "
+               "CL_COMMAND_SVM_FREE event");
 
     // Try to call clEnqueueSVMFree with an explicit NULL pointer.
     {
@@ -61,17 +55,12 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
         event = nullptr; // Reset the event
         error = clEnqueueSVMFree(queue, 1, svm_pointers, nullptr, nullptr, 0,
                                  nullptr, &event);
-        // test_error(error, "clEnqueueSVMFree with NULL pointer failed");
-        log_info("      clEnqueueSVMFree with NULL pointer returned %s\n",
-                 IGetErrorString(error));
+        test_error(error, "clEnqueueSVMFree with NULL pointer failed");
 
         error = check_event_type(event, CL_COMMAND_SVM_FREE);
-        // test_error(error,
-        //            "clEnqueueSVMFree with a NULL pointer did not return a "
-        //            "CL_COMMAND_SVM_FREE event");
-        log_info("      clEnqueueSVMFree with a NULL pointer returned the %s "
-                 "event type\n",
-                 error == CL_SUCCESS ? "correct" : "INCORRECT");
+        test_error(error,
+                   "clEnqueueSVMFree with a NULL pointer did not return a "
+                   "CL_COMMAND_SVM_FREE event");
     }
 
     clSVMWrapper svmPtr(context, sizeof(value), svmFlags | CL_MEM_READ_WRITE);
@@ -81,49 +70,34 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
     event = nullptr; // Reset the event
     error = clEnqueueSVMMemFill(queue, svmPtr(), &value, sizeof(value), 0, 0,
                                 nullptr, &event);
-    // test_error(error, "clEnqueueSVMMemFill with zero size failed");
-    log_info("      clEnqueueSVMMemFill with zero size returned %s\n",
-             IGetErrorString(error));
+    test_error(error, "clEnqueueSVMMemFill with zero size failed");
 
     error = check_event_type(event, CL_COMMAND_SVM_MEMFILL);
-    // test_error(error,
-    //            "clEnqueueSVMMemFill with zero size did not return a "
-    //            "CL_COMMAND_SVM_MEMFILL event");
-    log_info("      clEnqueueSVMMemFill with zero size returned the %s "
-             "event type\n",
-             error == CL_SUCCESS ? "correct" : "INCORRECT");
+    test_error(error,
+               "clEnqueueSVMMemFill with zero size did not return a "
+               "CL_COMMAND_SVM_MEMFILL event");
 
     // Try copying zero bytes to the SVM pointer
     event = nullptr; // Reset the event
     error = clEnqueueSVMMemcpy(queue, CL_TRUE, svmPtr(), &value, 0, 0, nullptr,
                                &event);
-    // test_error(error, "clEnqueueSVMMemcpy to SVM with zero size failed");
-    log_info("      clEnqueueSVMMemcpy to SVM with zero size returned %s\n",
-             IGetErrorString(error));
+    test_error(error, "clEnqueueSVMMemcpy to SVM with zero size failed");
 
     error = check_event_type(event, CL_COMMAND_SVM_MEMCPY);
-    // test_error(error,
-    //            "clEnqueueSVMMemcpy to SVM with zero size did not return a "
-    //            "CL_COMMAND_SVM_MEMCPY event");
-    log_info("      clEnqueueSVMMemcpy to SVM with zero size returned the %s "
-             "event type\n",
-             error == CL_SUCCESS ? "correct" : "INCORRECT");
+    test_error(error,
+               "clEnqueueSVMMemcpy to SVM with zero size did not return a "
+               "CL_COMMAND_SVM_MEMCPY event");
 
     // Try copying zero bytes from the SVM pointer
     event = nullptr; // Reset the event
     error = clEnqueueSVMMemcpy(queue, CL_TRUE, &value, svmPtr(), 0, 0, nullptr,
                                &event);
-    // test_error(error, "clEnqueueSVMMemcpy from SVM with zero size failed");
-    log_info("      clEnqueueSVMMemcpy from SVM with zero size returned %s\n",
-             IGetErrorString(error));
+    test_error(error, "clEnqueueSVMMemcpy from SVM with zero size failed");
 
     error = check_event_type(event, CL_COMMAND_SVM_MEMCPY);
-    // test_error(error,
-    //            "clEnqueueSVMMemcpy from SVM with zero size did not return a "
-    //            "CL_COMMAND_SVM_MEMCPY event");
-    log_info("      clEnqueueSVMMemcpy from SVM with zero size returned the %s "
-             "event type\n",
-             error == CL_SUCCESS ? "correct" : "INCORRECT");
+    test_error(error,
+               "clEnqueueSVMMemcpy from SVM with zero size did not return a "
+               "CL_COMMAND_SVM_MEMCPY event");
 
     // Try migrating zero bytes of the SVM pointer
     {
@@ -133,17 +107,12 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
         error = clEnqueueSVMMigrateMem(queue, 1, svm_pointers, sizes,
                                        CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED,
                                        0, nullptr, &event);
-        // test_error(error, "clEnqueueSVMMigrateMem with zero size failed");
-        log_info("      clEnqueueSVMMigrateMem with zero size returned %s\n",
-                 IGetErrorString(error));
+        test_error(error, "clEnqueueSVMMigrateMem with zero size failed");
 
         error = check_event_type(event, CL_COMMAND_SVM_MIGRATE_MEM);
-        // test_error(error,
-        //            "clEnqueueSVMMigrateMem with zero size did not return
-        //            a CL_COMMAND_SVM_MIGRATE_MEM event");
-        log_info("      clEnqueueSVMMigrateMem with zero size returned the %s "
-                 "event type\n",
-                 error == CL_SUCCESS ? "correct" : "INCORRECT");
+        test_error(error,
+                   "clEnqueueSVMMigrateMem with zero size did not return a "
+                   "CL_COMMAND_SVM_MIGRATE_MEM event");
     }
 
     // Try migrating zero bytes and a NULL pointer
@@ -154,17 +123,12 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
         error = clEnqueueSVMMigrateMem(queue, 1, svm_pointers, sizes,
                                        CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED,
                                        0, nullptr, &event);
-        // test_error(error, "clEnqueueSVMMigrateMem with NULL pointer failed");
-        log_info("      clEnqueueSVMMigrateMem with NULL pointer returned %s\n",
-                 IGetErrorString(error));
+        test_error(error, "clEnqueueSVMMigrateMem with NULL pointer failed");
 
         error = check_event_type(event, CL_COMMAND_SVM_MIGRATE_MEM);
-        // test_error(error,
-        //            "clEnqueueSVMMigrateMem with NULL pointer did not return
-        //            a CL_COMMAND_SVM_MIGRATE_MEM event");
-        log_info("      clEnqueueSVMMigrateMem with NULL pointer returned the "
-                 "%s event type\n",
-                 error == CL_SUCCESS ? "correct" : "INCORRECT");
+        test_error(error,
+                   "clEnqueueSVMMigrateMem with NULL pointer did not return a "
+                   "CL_COMMAND_SVM_MIGRATE_MEM event");
     }
 
     // Try migrating a NULL pointer with NULL sizes
@@ -174,36 +138,27 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
         error = clEnqueueSVMMigrateMem(queue, 1, svm_pointers, nullptr,
                                        CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED,
                                        0, nullptr, &event);
-        // test_error(error, "clEnqueueSVMMigrateMem with NULL pointer and NULL
-        // sizes failed");
-        log_info("      clEnqueueSVMMigrateMem with NULL pointer and NULL "
-                 "sizes returned %s\n",
-                 IGetErrorString(error));
+        test_error(
+            error,
+            "clEnqueueSVMMigrateMem with NULL pointer and NULL sizes failed");
 
         error = check_event_type(event, CL_COMMAND_SVM_MIGRATE_MEM);
-        // test_error(error,
-        //            "clEnqueueSVMMigrateMem with NULL pointer and NULL sizes
-        //            did not return a CL_COMMAND_SVM_MIGRATE_MEM event");
-        log_info("      clEnqueueSVMMigrateMem with NULL pointer and NULL "
-                 "sizes returned the %s event type\n",
-                 error == CL_SUCCESS ? "correct" : "INCORRECT");
+        test_error(error,
+                   "clEnqueueSVMMigrateMem with NULL pointer and NULL sizes "
+                   "did not return a CL_COMMAND_SVM_MIGRATE_MEM event");
     }
 
     // Try to call clSetKernelExecInfo with an empty set
     error =
         clSetKernelExecInfo(kernel, CL_KERNEL_EXEC_INFO_SVM_PTRS, 0, nullptr);
-    // test_error(error, "clSetKernelExecInfo with an empty set failed");
-    log_info("      clSetKernelExecInfo with an empty set returned %s\n",
-             IGetErrorString(error));
+    test_error(error, "clSetKernelExecInfo with an empty set failed");
 
     // Try to call clSetKernelExecInfo with an explicit NULL pointer
     {
         void* svm_pointers[] = { nullptr };
         error = clSetKernelExecInfo(kernel, CL_KERNEL_EXEC_INFO_SVM_PTRS,
                                     sizeof(svm_pointers), svm_pointers);
-        // test_error(error, "clSetKernelExecInfo with NULL pointer failed");
-        log_info("      clSetKernelExecInfo with NULL pointer returned %s\n",
-                 IGetErrorString(error));
+        test_error(error, "clSetKernelExecInfo with NULL pointer failed");
     }
 
     return TEST_PASS;
@@ -211,6 +166,11 @@ static int svm_size_zero_helper(cl_device_id device, cl_context context,
 
 REGISTER_TEST(svm_size_zero)
 {
+    // Note: These are SVM tests, not unified SVM tests, however the scenarios
+    // they are testing are ambiguous pre-unified SVM. Therefore, we will only
+    // run these tests if the device supports unified SVM.
+    REQUIRE_EXTENSION("cl_khr_unified_svm");
+
     cl_int error;
 
     // Common test setup - context, queue, shared kernel and output buffer.
