@@ -20,9 +20,11 @@ namespace {
 
 struct PayloadSemaphore : public SemaphoreTestBase
 {
+    clSemaphoreWrapper sema_sec;
+
     PayloadSemaphore(cl_device_id device, cl_context context,
                      cl_command_queue queue, cl_int nelems)
-        : SemaphoreTestBase(device, context, queue, nelems)
+        : SemaphoreTestBase(device, context, queue, nelems), sema_sec(this)
     {}
 
     cl_int Run() override
@@ -40,24 +42,29 @@ struct PayloadSemaphore : public SemaphoreTestBase
             clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
         test_error(err, "Could not create semaphore");
 
-
-        clSemaphoreWrapper sema_sec = nullptr;
         sema_sec =
             clCreateSemaphoreWithPropertiesKHR(context, sema_props, &err);
         test_error(err, "Could not create semaphore");
 
-        cl_semaphore_payload_khr payload_list[] = { 1, 2 };
-        cl_semaphore_khr semaphores[2] = { semaphore, sema_sec };
+        {
+            cl_semaphore_payload_khr payload_list[] = { 1, 2 };
+            cl_semaphore_khr semaphores[2] = { semaphore, sema_sec };
 
-        // Signal semaphore
-        err = clEnqueueSignalSemaphoresKHR(queue, 2, semaphores, payload_list,
-                                           0, nullptr, nullptr);
-        test_error(err, "Could not signal semaphore");
+            // Signal semaphore
+            err = clEnqueueSignalSemaphoresKHR(
+                queue, 2, semaphores, payload_list, 0, nullptr, nullptr);
+            test_error(err, "Could not signal semaphore");
+        }
 
-        // Wait semaphore
-        err = clEnqueueWaitSemaphoresKHR(queue, 2, semaphores, payload_list, 0,
-                                         nullptr, nullptr);
-        test_error(err, "Could not wait semaphore");
+        {
+            cl_semaphore_payload_khr payload_list[] = { 3, 4 };
+            cl_semaphore_khr semaphores[2] = { semaphore, sema_sec };
+
+            // Wait semaphore
+            err = clEnqueueWaitSemaphoresKHR(queue, 2, semaphores, payload_list,
+                                             0, nullptr, nullptr);
+            test_error(err, "Could not wait semaphore");
+        }
 
         // Finish
         err = clFinish(queue);
