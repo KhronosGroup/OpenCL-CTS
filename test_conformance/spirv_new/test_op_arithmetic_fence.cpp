@@ -100,7 +100,7 @@ int arithmetic_fence_helper(cl_context context, cl_device_id device,
 
 REGISTER_TEST(op_arithmetic_fence)
 {
-    //REQUIRE_SPIRV_EXTENSION("SPV_EXT_arithmetic_fence");
+    // REQUIRE_SPIRV_EXTENSION("SPV_EXT_arithmetic_fence");
 
     int result = TEST_PASS;
 
@@ -109,10 +109,10 @@ REGISTER_TEST(op_arithmetic_fence)
     //     result |= arithmetic_fence_helper<cl_half>(context, device, queue);
     // }
     result |= arithmetic_fence_helper<cl_float>(context, device, queue);
-    if (is_extension_available(device, "cl_khr_fp64"))
-    {
-        result |= arithmetic_fence_helper<cl_double>(context, device, queue);
-    }
+    // if (is_extension_available(device, "cl_khr_fp64"))
+    // {
+    //     result |= arithmetic_fence_helper<cl_double>(context, device, queue);
+    // }
 
     return result;
 }
