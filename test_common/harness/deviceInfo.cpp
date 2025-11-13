@@ -109,6 +109,37 @@ std::string get_device_il_version_string(cl_device_id device)
     return get_device_info_string(device, CL_DEVICE_IL_VERSION);
 }
 
+/* Determines if a SPIR-V extension is supported by a device. */
+bool is_spirv_extension_available(cl_device_id device,
+                                  const char *spirvExtensionName)
+{
+    if (!is_extension_available(device, CL_KHR_SPIRV_QUERIES_EXTENSION_NAME))
+    {
+        return false;
+    }
+
+    cl_int err;
+    size_t sz = 0;
+    err = clGetDeviceInfo(device, CL_DEVICE_SPIRV_EXTENSIONS_KHR, 0, nullptr,
+                          &sz);
+    if (err != CL_SUCCESS) return false;
+
+    std::vector<const char *> extensions(sz / sizeof(const char *));
+    err = clGetDeviceInfo(device, CL_DEVICE_SPIRV_EXTENSIONS_KHR, sz,
+                          extensions.data(), nullptr);
+    if (err != CL_SUCCESS) return false;
+
+    for (auto &ext : extensions)
+    {
+        if (!strcmp(spirvExtensionName, ext))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 /* Returns a string containing the supported OpenCL version for a device. */
 std::string get_device_version_string(cl_device_id device)
 {
