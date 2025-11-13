@@ -117,13 +117,6 @@ __kernel void sample_test_D(__global float *src, __global int *dst)
 #endif
 )";
 
-const char *sample_name_size_test_kernel = R"(
-    __kernel void %s(int src, __global int *dst)
-    {
-        dst[0]=src;
-    }
-)";
-
 REGISTER_TEST(load_program_source)
 {
     int error;
@@ -1029,37 +1022,25 @@ cl_int test_kernel_name_len(cl_context context, cl_device_id device,
 
     for (cl_uint i = 0; i < length; ++i) name += buf[i % buf.size()];
 
+    const char *sample_name_size_test_kernel = R"(
+        __kernel void %s(int src, __global int *dst)
+        {
+            dst[0]=src;
+        }
+    )";
     std::string program_source =
         str_sprintf(std::string(sample_name_size_test_kernel), name.c_str());
     const char *ptr = program_source.c_str();
 
     {
-        clProgramWrapper program =
-            clCreateProgramWithSource(context, 1, &ptr, nullptr, &error);
+        clProgramWrapper program;
+        clKernelWrapper kernel;
+
+        error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                            name.c_str());
         if (error != CL_SUCCESS)
         {
             log_error("ERROR: Unable to create program with length of "
-                      "kernel name "
-                      "%d : %s! (%s from %s:%d)\n",
-                      length, name.c_str(), IGetErrorString(error), __FILE__,
-                      __LINE__);
-            return TEST_FAIL;
-        }
-
-        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-        if (error != CL_SUCCESS)
-        {
-            log_error("ERROR: Unable to build test program with length of "
-                      "kernel name "
-                      "%d :\n%s! (%s from %s:%d)\n",
-                      length, ptr, IGetErrorString(error), __FILE__, __LINE__);
-            return TEST_FAIL;
-        }
-
-        clKernelWrapper kernel = clCreateKernel(program, name.c_str(), &error);
-        if (error != CL_SUCCESS)
-        {
-            log_error("ERROR: Unable to create kernel with length of "
                       "kernel name "
                       "%d : %s! (%s from %s:%d)\n",
                       length, name.c_str(), IGetErrorString(error), __FILE__,
@@ -1086,7 +1067,7 @@ cl_int test_kernel_name_len(cl_context context, cl_device_id device,
         }
     }
 
-#if defined(CL_VERSION_1_2)
+    if (gCompilationMode == kOnline)
     {
         clProgramWrapper programObj =
             clCreateProgramWithSource(context, 1, &ptr, nullptr, &error);
@@ -1121,17 +1102,15 @@ cl_int test_kernel_name_len(cl_context context, cl_device_id device,
             clCreateKernel(linkedProgram, name.c_str(), &error);
         test_error(error, "clCreateKernel after link failed");
     }
-#endif
 
     return TEST_PASS;
 }
 
 REGISTER_TEST(kernel_name_size)
 {
-    cl_int status = TEST_PASS;
-    for (cl_uint len = 32; len < 2048; len *= 2)
+    for (cl_uint len = 32; len <= 2048; len *= 2)
     {
-        status = test_kernel_name_len(context, device, len);
+        cl_int status = test_kernel_name_len(context, device, len);
         if (status == TEST_FAIL)
         {
             log_error("ERROR: test_kernel_name_len failed with length %d\n",
