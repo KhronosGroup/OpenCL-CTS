@@ -18,13 +18,7 @@
 
 REGISTER_TEST(function_control_optnone)
 {
-    // TODO: need to define an extension or some other mechanism to advertise
-    // support for SPV_EXT_optnone.
-    if (false)
-    {
-        log_info("SPV_EXT_optnone is not supported; skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_SPIRV_EXTENSION("SPV_EXT_optnone");
 
     cl_int error = CL_SUCCESS;
 
