@@ -279,6 +279,9 @@ set(spirv_sources
     loop_merge_branch_none.spvasm64
     loop_merge_branch_unroll.spvasm32
     loop_merge_branch_unroll.spvasm64
+    ext_arithmetic_fence_double.spvasm64
+    ext_arithmetic_fence_float.spvasm64
+    ext_arithmetic_fence_half.spvasm64
     op_function_const.spvasm32
     op_function_const.spvasm64
     op_function_inline.spvasm32

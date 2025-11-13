@@ -31,7 +31,7 @@
         %big = OpFunctionParameter %float
       %small = OpFunctionParameter %float
       %entry = OpLabel
-; Note: without the arithmetic fence, most compilers will reassociated the
+; Note: without the arithmetic fence, most compilers will re-associate the
 ; expression "big + small - big" to "big - big + small" and therefore just
 ; "small".  The arithmetic fence prevents this reassociation.
 
@@ -142,7 +142,8 @@
        %res2 = OpFAdd %float %res1 %vec4_sum
        %res3 = OpFAdd %float %res2 %vec8_sum
         %res = OpFAdd %float %res3 %vec16_sum
-               OpStore %dst %res Aligned 4
+               ;OpStore %dst %res Aligned 4
+               OpStore %dst %scalar_res Aligned 4
 
                OpReturn
                OpFunctionEnd

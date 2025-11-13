@@ -161,6 +161,17 @@ template <typename T> T *register_test(const char *name, Version version)
         }                                                                      \
     } while (0)
 
+#define REQUIRE_SPIRV_EXTENSION(name)                                          \
+    do                                                                         \
+    {                                                                          \
+        if (!is_spirv_extension_available(device, name))                       \
+        {                                                                      \
+            log_info(name                                                      \
+                     " is not supported on this device. Skipping test.\n");    \
+            return TEST_SKIPPED_ITSELF;                                        \
+        }                                                                      \
+    } while (0)
+
 extern int gFailCount;
 extern int gTestCount;
 extern cl_uint gReSeed;

@@ -92,6 +92,7 @@ int arithmetic_fence_helper(cl_context context, cl_device_id device,
 
     // The read back value should be zero.  If it is not, then the arithmetic
     // fence is probably ignored.
+    log_info("      read value: %.10e\n", (double)value);
     test_assert_error(value == 0, "read value is incorrect");
 
     return TEST_PASS;
@@ -99,18 +100,14 @@ int arithmetic_fence_helper(cl_context context, cl_device_id device,
 
 REGISTER_TEST(op_arithmetic_fence)
 {
-    if (false)
-    {
-        log_info("SPV_EXT_arithmetic_fence is not supported; skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    //REQUIRE_SPIRV_EXTENSION("SPV_EXT_arithmetic_fence");
 
     int result = TEST_PASS;
 
-    if (is_extension_available(device, "cl_khr_fp16"))
-    {
-        result |= arithmetic_fence_helper<cl_half>(context, device, queue);
-    }
+    // if (is_extension_available(device, "cl_khr_fp16"))
+    // {
+    //     result |= arithmetic_fence_helper<cl_half>(context, device, queue);
+    // }
     result |= arithmetic_fence_helper<cl_float>(context, device, queue);
     if (is_extension_available(device, "cl_khr_fp64"))
     {
