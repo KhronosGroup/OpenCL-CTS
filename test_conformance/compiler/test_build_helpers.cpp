@@ -17,6 +17,10 @@
 #include "harness/testHarness.h"
 #include "harness/parseParameters.h"
 
+#include <array>
+#include <memory>
+#include <vector>
+
 const char *sample_kernel_code_single_line[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)\n"
 "{\n"
@@ -51,7 +55,6 @@ const char *sample_kernel_code_two_line[] = {
 "\n"
 "}\n" };
 
-
 const char *sample_kernel_code_bad_multi_line[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)",
 "{",
@@ -61,8 +64,59 @@ const char *sample_kernel_code_bad_multi_line[] = {
 "",
 "}" };
 
+const char *sample_multi_kernel_code_with_macro = R"(
+__kernel void sample_test_A(__global float *src, __global int *dst)
+{
+    size_t  tid = get_global_id(0);
+    dst[tid] = (int)src[tid];
+}
 
-int test_load_program_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+#ifdef USE_SAMPLE_TEST_B
+__kernel void sample_test_B(__global float *src, __global int *dst)
+{
+    size_t  tid = get_global_id(0);
+    dst[tid] = (int)src[tid];
+}
+#endif
+
+__kernel void sample_test_C(__global float *src, __global int *dst)
+{
+    size_t  tid = get_global_id(0);
+    dst[tid] = (int)src[tid];
+}
+)";
+
+const char *sample_multi_kernel_code_AB_with_macro = R"(
+__kernel void sample_test_A(__global float *src, __global int *dst)
+{
+    size_t tid = get_global_id(0);
+    dst[tid] = (int)src[tid];
+}
+#ifdef USE_SAMPLE_TEST_B
+__kernel void sample_test_B(__global float *src, __global int *dst)
+{
+    size_t tid = get_global_id(0);
+    dst[tid] = (int)src[tid];
+}
+#endif
+)";
+
+const char *sample_multi_kernel_code_CD_with_macro = R"(
+__kernel void sample_test_C(__global float *src, __global int *dst)
+{
+    size_t tid = get_global_id(0);
+    dst[tid] = (int)src[tid];
+}
+#ifdef USE_SAMPLE_TEST_D
+__kernel void sample_test_D(__global float *src, __global int *dst)
+{
+    size_t tid = get_global_id(0);
+    dst[tid] = (int)src[tid];
+}
+#endif
+)";
+
+REGISTER_TEST(load_program_source)
 {
     int error;
     clProgramWrapper program;
@@ -106,7 +160,7 @@ int test_load_program_source(cl_device_id deviceID, cl_context context, cl_comma
     return 0;
 }
 
-int test_load_multistring_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(load_multistring_source)
 {
     int error;
     clProgramWrapper program;
@@ -133,7 +187,7 @@ int test_load_multistring_source(cl_device_id deviceID, cl_context context, cl_c
     }
 
     /* Try compiling */
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
+    error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
     test_error( error, "Unable to build multi-line program source" );
 
     /* Should probably check binary here to verify the same results... */
@@ -143,7 +197,7 @@ int test_load_multistring_source(cl_device_id deviceID, cl_context context, cl_c
     return 0;
 }
 
-int test_load_two_kernel_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(load_two_kernel_source)
 {
     int error;
     cl_program program;
@@ -169,7 +223,7 @@ int test_load_two_kernel_source(cl_device_id deviceID, cl_context context, cl_co
     }
 
     /* Try compiling */
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
+    error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
     test_error( error, "Unable to build two-kernel program source" );
 
     /* Should probably check binary here to verify the same results... */
@@ -181,7 +235,7 @@ int test_load_two_kernel_source(cl_device_id deviceID, cl_context context, cl_co
     return 0;
 }
 
-int test_load_null_terminated_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(load_null_terminated_source)
 {
     int error;
     cl_program program;
@@ -196,7 +250,7 @@ int test_load_null_terminated_source(cl_device_id deviceID, cl_context context, 
     }
 
     /* Try compiling */
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
+    error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
     test_error( error, "Unable to build null-terminated program source" );
 
     /* Should probably check binary here to verify the same results... */
@@ -208,7 +262,7 @@ int test_load_null_terminated_source(cl_device_id deviceID, cl_context context, 
     return 0;
 }
 
-int test_load_null_terminated_multi_line_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(load_null_terminated_multi_line_source)
 {
     int error;
     cl_program program;
@@ -226,7 +280,7 @@ int test_load_null_terminated_multi_line_source(cl_device_id deviceID, cl_contex
     }
 
     /* Try compiling */
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
+    error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
     test_error( error, "Unable to build null-terminated program source" );
 
     /* Should probably check binary here to verify the same results... */
@@ -238,8 +292,7 @@ int test_load_null_terminated_multi_line_source(cl_device_id deviceID, cl_contex
     return 0;
 }
 
-
-int test_load_discreet_length_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(load_discreet_length_source)
 {
     int error;
     cl_program program;
@@ -270,7 +323,7 @@ int test_load_discreet_length_source(cl_device_id deviceID, cl_context context, 
     }
 
     /* Try compiling */
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
+    error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
     test_error( error, "Unable to build null-terminated program source" );
 
     /* Should probably check binary here to verify the same results... */
@@ -282,7 +335,7 @@ int test_load_discreet_length_source(cl_device_id deviceID, cl_context context, 
     return 0;
 }
 
-int test_load_null_terminated_partial_multi_line_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(load_null_terminated_partial_multi_line_source)
 {
     int error;
     cl_program program;
@@ -312,7 +365,7 @@ int test_load_null_terminated_partial_multi_line_source(cl_device_id deviceID, c
     }
 
     /* Try compiling */
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
+    error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
     test_error( error, "Unable to build null-terminated program source" );
 
     /* Should probably check binary here to verify the same results... */
@@ -324,7 +377,7 @@ int test_load_null_terminated_partial_multi_line_source(cl_device_id deviceID, c
     return 0;
 }
 
-int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(get_program_info)
 {
     int error;
     cl_program program;
@@ -333,8 +386,9 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
     size_t paramSize;
     cl_uint numInstances;
 
-
     error = create_single_kernel_helper_create_program(context, &program, 1, sample_kernel_code_single_line);
+    test_error(error, "create_single_kernel_helper_create_program failed");
+
     if( program == NULL )
     {
         log_error( "ERROR: Unable to create reference program!\n" );
@@ -346,18 +400,9 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
     error = clGetProgramInfo( program, CL_PROGRAM_DEVICES, sizeof( device1 ), &device1, NULL );
     test_error( error, "Unable to get device of program" );
 
-  /* Since the device IDs are opaque types we check the CL_DEVICE_VENDOR_ID which is unique for identical hardware. */
-  cl_uint device1_vid, deviceID_vid;
-  error = clGetDeviceInfo(device1, CL_DEVICE_VENDOR_ID, sizeof(device1_vid), &device1_vid, NULL );
-  test_error( error, "Unable to get device CL_DEVICE_VENDOR_ID" );
-  error = clGetDeviceInfo(deviceID, CL_DEVICE_VENDOR_ID, sizeof(deviceID_vid), &deviceID_vid, NULL );
-  test_error( error, "Unable to get device CL_DEVICE_VENDOR_ID" );
-
-    if( device1_vid != deviceID_vid )
-    {
-        log_error( "ERROR: Incorrect device returned for program! (Expected vendor ID 0x%x, got 0x%x)\n", deviceID_vid, device1_vid );
-        return -1;
-    }
+    /* Object comparability test. */
+    test_assert_error(device1 == device,
+                      "Unexpected result returned by CL_PROGRAM_DEVICES query");
 
     cl_uint devCount;
     error = clGetProgramInfo( program, CL_PROGRAM_NUM_DEVICES, sizeof( devCount ), &devCount, NULL );
@@ -422,7 +467,366 @@ int test_get_program_info(cl_device_id deviceID, cl_context context, cl_command_
     return 0;
 }
 
-int test_get_program_source(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(get_program_info_kernel_names)
+{
+    int error = CL_SUCCESS;
+    size_t total_kernels = 0;
+    size_t kernel_names_len = 0;
+
+    clProgramWrapper program = nullptr;
+
+    // 1) Program without build call. Query CL_PROGRAM_NUM_KERNELS and check
+    // that it fails with CL_INVALID_PROGRAM_EXECUTABLE. Query
+    // CL_PROGRAM_KERNEL_NAMES and check that it fails with
+    // CL_INVALID_PROGRAM_EXECUTABLE.
+    {
+        program = clCreateProgramWithSource(
+            context, 1, &sample_multi_kernel_code_with_macro, nullptr, &error);
+        test_error(error, "clCreateProgramWithSource failed");
+
+        error = clGetProgramInfo(program, CL_PROGRAM_NUM_KERNELS,
+                                 sizeof(size_t), &total_kernels, nullptr);
+        test_failure_error(error, CL_INVALID_PROGRAM_EXECUTABLE,
+                           "Unexpected clGetProgramInfo result");
+
+        error = clGetProgramInfo(program, CL_PROGRAM_KERNEL_NAMES, 0, nullptr,
+                                 &kernel_names_len);
+        test_failure_error(error, CL_INVALID_PROGRAM_EXECUTABLE,
+                           "Unexpected clGetProgramInfo result");
+    }
+
+    // 2) Build the program with the preprocessor macro undefined.
+    //    Query CL_PROGRAM_NUM_KERNELS and check that the correct number is
+    //    returned. Query CL_PROGRAM_KERNEL_NAMES and check that the right
+    //    kernel names are returned.
+    {
+        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
+        test_error(error, "clBuildProgram failed");
+
+        error = clGetProgramInfo(program, CL_PROGRAM_NUM_KERNELS,
+                                 sizeof(size_t), &total_kernels, nullptr);
+        test_error(error, "clGetProgramInfo failed");
+
+        test_assert_error(total_kernels == 2,
+                          "Unexpected clGetProgramInfo result");
+
+        error = clGetProgramInfo(program, CL_PROGRAM_KERNEL_NAMES, 0, nullptr,
+                                 &kernel_names_len);
+        test_error(error, "clGetProgramInfo failed");
+
+        std::vector<std::string> actual_names = { "sample_test_A",
+                                                  "sample_test_C" };
+
+        const size_t len = kernel_names_len + 1;
+        std::vector<char> kernel_names(len, '\0');
+        error =
+            clGetProgramInfo(program, CL_PROGRAM_KERNEL_NAMES, kernel_names_len,
+                             kernel_names.data(), &kernel_names_len);
+        test_error(error, "Unable to get kernel names list.");
+
+        std::string program_names = kernel_names.data();
+        for (const auto &name : actual_names)
+        {
+            test_assert_error(program_names.find(name) != std::string::npos,
+                              "Unexpected kernel name");
+        }
+
+        test_assert_error(program_names.find("sample_test_B")
+                              == std::string::npos,
+                          "sample_test_B should not be present");
+    }
+
+    // 3) Build the program again with the preprocessor macro defined.
+    //    Query CL_PROGRAM_NUM_KERNELS and check that the correct number is
+    //    returned. Query CL_PROGRAM_KERNEL_NAMES and check that the right
+    //    kernel names are returned.
+    {
+        const char *build_options = "-DUSE_SAMPLE_TEST_B";
+        error = clBuildProgram(program, 1, &device, build_options, nullptr,
+                               nullptr);
+        test_error(error, "clBuildProgram failed");
+
+        error = clGetProgramInfo(program, CL_PROGRAM_NUM_KERNELS,
+                                 sizeof(size_t), &total_kernels, nullptr);
+        test_error(error, "clGetProgramInfo failed");
+
+        test_assert_error(total_kernels == 3,
+                          "Unexpected clGetProgramInfo result");
+
+        error = clGetProgramInfo(program, CL_PROGRAM_KERNEL_NAMES, 0, nullptr,
+                                 &kernel_names_len);
+        test_error(error, "clGetProgramInfo failed");
+
+        std::vector<std::string> actual_names = { "sample_test_A",
+                                                  "sample_test_B",
+                                                  "sample_test_C" };
+
+        const size_t len = kernel_names_len + 1;
+        std::vector<char> kernel_names(len, '\0');
+        error =
+            clGetProgramInfo(program, CL_PROGRAM_KERNEL_NAMES, kernel_names_len,
+                             kernel_names.data(), &kernel_names_len);
+        test_error(error, "Unable to get kernel names list.");
+
+        std::string program_names = kernel_names.data();
+        for (const auto &name : actual_names)
+        {
+            test_assert_error(program_names.find(name) != std::string::npos,
+                              "Unexpected kernel name");
+        }
+    }
+    return CL_SUCCESS;
+}
+
+REGISTER_TEST(get_linked_program_info_kernel_names)
+{
+    int error = CL_SUCCESS;
+    size_t total_kernels = 0;
+    size_t kernel_names_len = 0;
+
+    clProgramWrapper program_AB = clCreateProgramWithSource(
+        context, 1, &sample_multi_kernel_code_AB_with_macro, nullptr, &error);
+    test_error(error, "clCreateProgramWithSource failed");
+
+    clProgramWrapper program_CD = clCreateProgramWithSource(
+        context, 1, &sample_multi_kernel_code_CD_with_macro, nullptr, &error);
+    test_error(error, "clCreateProgramWithSource failed");
+
+    clProgramWrapper program = nullptr;
+
+    // 1) Compile and link the programs with the preprocessor macro undefined.
+    //    Query CL_PROGRAM_NUM_KERNELS and check that the correct number is
+    //    returned. Query CL_PROGRAM_KERNEL_NAMES and check that the right
+    //    kernel names are returned.
+    {
+        error =
+            clCompileProgram(program_AB, 1, &device, nullptr, 0, 0, 0, 0, 0);
+        test_error(error, "clCompileProgram failed");
+
+        error =
+            clCompileProgram(program_CD, 1, &device, nullptr, 0, 0, 0, 0, 0);
+        test_error(error, "clCompileProgram failed");
+
+        cl_program progs[] = { program_AB, program_CD };
+        program =
+            clLinkProgram(context, 1, &device, "", 2, progs, 0, 0, &error);
+        test_error(error, "clLinkProgram failed");
+
+        error = clGetProgramInfo(program, CL_PROGRAM_NUM_KERNELS,
+                                 sizeof(size_t), &total_kernels, nullptr);
+        test_error(error, "clGetProgramInfo failed");
+
+        test_assert_error(total_kernels == 2,
+                          "Unexpected clGetProgramInfo result");
+
+        error = clGetProgramInfo(program, CL_PROGRAM_KERNEL_NAMES, 0, nullptr,
+                                 &kernel_names_len);
+        test_error(error, "clGetProgramInfo failed");
+
+        const size_t len = kernel_names_len + 1;
+        std::vector<char> kernel_names(len, '\0');
+        error =
+            clGetProgramInfo(program, CL_PROGRAM_KERNEL_NAMES, kernel_names_len,
+                             kernel_names.data(), &kernel_names_len);
+        test_error(error, "Unable to get kernel names list.");
+        std::string program_names = kernel_names.data();
+
+        std::vector<std::string> expected_names = { "sample_test_A",
+                                                    "sample_test_C" };
+        for (const auto &name : expected_names)
+        {
+            test_assert_error(program_names.find(name) != std::string::npos,
+                              "Unexpected kernel name");
+        }
+
+        std::vector<std::string> unexpected_names = { "sample_test_B",
+                                                      "sample_test_D" };
+        for (const auto &name : unexpected_names)
+        {
+            test_assert_error(program_names.find(name) == std::string::npos,
+                              "Unexpected kernel name");
+        }
+    }
+
+    // 2) Compile and link the programs with the preprocessor macro defined.
+    //    Query CL_PROGRAM_NUM_KERNELS and check that the correct number is
+    //    returned. Query CL_PROGRAM_KERNEL_NAMES and check that the right
+    //    kernel names are returned.
+    {
+        const char *build_options_B = "-DUSE_SAMPLE_TEST_B";
+        error = clCompileProgram(program_AB, 1, &device, build_options_B, 0, 0,
+                                 0, 0, 0);
+        test_error(error, "clCompileProgram failed");
+
+        const char *build_options_D = "-DUSE_SAMPLE_TEST_D";
+        error = clCompileProgram(program_CD, 1, &device, build_options_D, 0, 0,
+                                 0, 0, 0);
+        test_error(error, "clCompileProgram failed");
+
+        cl_program progs[] = { program_AB, program_CD };
+        program =
+            clLinkProgram(context, 1, &device, "", 2, progs, 0, 0, &error);
+        test_error(error, "clLinkProgram failed");
+
+        error = clGetProgramInfo(program, CL_PROGRAM_NUM_KERNELS,
+                                 sizeof(size_t), &total_kernels, nullptr);
+        test_error(error, "clGetProgramInfo failed");
+
+        test_assert_error(total_kernels == 4,
+                          "Unexpected clGetProgramInfo result");
+
+        error = clGetProgramInfo(program, CL_PROGRAM_KERNEL_NAMES, 0, nullptr,
+                                 &kernel_names_len);
+        test_error(error, "clGetProgramInfo failed");
+
+        std::vector<std::string> expected_names = {
+            "sample_test_A", "sample_test_B", "sample_test_C", "sample_test_D"
+        };
+
+        const size_t len = kernel_names_len + 1;
+        std::vector<char> kernel_names(len, '\0');
+        error =
+            clGetProgramInfo(program, CL_PROGRAM_KERNEL_NAMES, kernel_names_len,
+                             kernel_names.data(), &kernel_names_len);
+        test_error(error, "Could not find expected kernel name");
+
+        std::string program_names = kernel_names.data();
+        for (const auto &name : expected_names)
+        {
+            test_assert_error(program_names.find(name) != std::string::npos,
+                              "Unexpected kernel name");
+        }
+    }
+    return TEST_PASS;
+}
+
+REGISTER_TEST(get_program_info_mult_devices)
+{
+    size_t size = 0;
+
+    // query multi-device context and perform objects comparability test
+    cl_int err = clGetDeviceInfo(device, CL_DEVICE_PARTITION_PROPERTIES, 0,
+                                 nullptr, &size);
+    test_error_fail(err, "clGetDeviceInfo failed");
+
+    if (size == 0)
+    {
+        log_info("Can't partition device, test not supported\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    std::vector<cl_device_partition_property> supported_props(
+        size / sizeof(cl_device_partition_property), 0);
+    err = clGetDeviceInfo(device, CL_DEVICE_PARTITION_PROPERTIES,
+                          supported_props.size()
+                              * sizeof(cl_device_partition_property),
+                          supported_props.data(), &size);
+    test_error_fail(err, "clGetDeviceInfo failed");
+
+    if (supported_props.empty() || supported_props.front() == 0)
+    {
+        log_info("Can't partition device, test not supported\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_uint maxComputeUnits = 0;
+    err = clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS,
+                          sizeof(maxComputeUnits), &maxComputeUnits, nullptr);
+    test_error_ret(err, "Unable to get maximal number of compute units",
+                   TEST_FAIL);
+
+    std::vector<std::array<cl_device_partition_property, 5>> partition_props = {
+        { CL_DEVICE_PARTITION_EQUALLY, (cl_int)maxComputeUnits / 2, 0, 0, 0 },
+        { CL_DEVICE_PARTITION_BY_COUNTS, 1, (cl_int)maxComputeUnits - 1,
+          CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0 },
+        { CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN,
+          CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE, 0, 0, 0 }
+    };
+
+    std::unique_ptr<SubDevicesScopeGuarded> scope_guard;
+    cl_uint num_devices = 0;
+    for (auto &sup_prop : supported_props)
+    {
+        for (auto &prop : partition_props)
+        {
+            if (sup_prop == prop[0])
+            {
+                // how many sub-devices can we create?
+                err = clCreateSubDevices(device, prop.data(), 0, nullptr,
+                                         &num_devices);
+                test_error_fail(err, "clCreateSubDevices failed");
+                if (num_devices < 2) continue;
+
+                // get the list of subDevices
+                scope_guard.reset(new SubDevicesScopeGuarded(num_devices));
+                err = clCreateSubDevices(device, prop.data(), num_devices,
+                                         scope_guard->sub_devices.data(),
+                                         &num_devices);
+                test_error_fail(err, "clCreateSubDevices failed");
+                break;
+            }
+        }
+        if (scope_guard.get() != nullptr) break;
+    }
+
+    if (scope_guard.get() == nullptr)
+    {
+        log_info("Can't partition device, test not supported\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    /* Create a multi device context */
+    clContextWrapper multi_device_context = clCreateContext(
+        nullptr, (cl_uint)num_devices, scope_guard->sub_devices.data(), nullptr,
+        nullptr, &err);
+    test_error_ret(err, "Unable to create testing context",
+                   TEST_SKIPPED_ITSELF);
+
+    clProgramWrapper program = nullptr;
+    err = create_single_kernel_helper_create_program(
+        multi_device_context, &program, 1, sample_kernel_code_single_line);
+    test_error_ret(err, "create_single_kernel_helper_create_program failed",
+                   TEST_FAIL);
+
+    if (program == nullptr)
+    {
+        log_error("ERROR: Unable to create reference program!\n");
+        return TEST_FAIL;
+    }
+
+    err = clGetProgramInfo(program, CL_PROGRAM_NUM_DEVICES, sizeof(num_devices),
+                           &num_devices, nullptr);
+    test_error_ret(err, "Unable to get device count of program", TEST_FAIL);
+
+    test_assert_error_ret(
+        num_devices == scope_guard->sub_devices.size(),
+        "Program must be associated to exact number of devices\n", TEST_FAIL);
+
+    std::vector<cl_device_id> devices(num_devices);
+    err = clGetProgramInfo(program, CL_PROGRAM_DEVICES,
+                           num_devices * sizeof(cl_device_id), devices.data(),
+                           nullptr);
+    test_error_ret(err, "Unable to get devices of program", TEST_FAIL);
+
+    for (cl_uint i = 0; i < devices.size(); i++)
+    {
+        bool found = false;
+        for (auto &it : scope_guard->sub_devices)
+        {
+            if (it == devices[i])
+            {
+                found = true;
+                break;
+            }
+        }
+        test_error_fail(
+            !found, "Unexpected result returned by CL_PROGRAM_DEVICES query");
+    }
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(get_program_source)
 {
     cl_program program;
     int error;
@@ -477,7 +881,7 @@ int test_get_program_source(cl_device_id deviceID, cl_context context, cl_comman
     return 0;
 }
 
-int test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(get_program_build_info)
 {
     cl_program program;
     int error;
@@ -494,7 +898,8 @@ int test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_co
     }
 
     /* Make sure getting the length works */
-    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_STATUS, 0, NULL, &length );
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_STATUS, 0,
+                                  NULL, &length);
     test_error( error, "Unable to get program build status length" );
     if( length != sizeof( status ) )
     {
@@ -503,10 +908,11 @@ int test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_co
     }
 
     /* Now actually build it and verify the status */
-    error = clBuildProgram( program, 1, &deviceID, NULL, NULL, NULL );
+    error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
     test_error( error, "Unable to build program source" );
 
-    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_STATUS, sizeof( status ), &status, NULL );
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_STATUS,
+                                  sizeof(status), &status, NULL);
     test_error( error, "Unable to get program build status" );
     if( status != CL_BUILD_SUCCESS )
     {
@@ -517,7 +923,8 @@ int test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_co
     /***** Build log *****/
 
     /* Try getting the length */
-    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_LOG, 0, NULL, &length );
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0,
+                                  NULL, &length);
     test_error( error, "Unable to get program build log length" );
 
     log_info("Build log is %zu long.\n", length);
@@ -525,7 +932,8 @@ int test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_co
     buffer = (char*)malloc(length);
 
     /* Try normal source */
-    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_LOG, length, buffer, NULL );
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, length,
+                                  buffer, NULL);
     test_error( error, "Unable to get program build log" );
 
     if( buffer[length-1] != '\0' )
@@ -535,23 +943,27 @@ int test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_co
     }
 
     /* Try both at once */
-    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_LOG, length, buffer, &newLength );
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, length,
+                                  buffer, &newLength);
     test_error( error, "Unable to get program build log" );
 
     free(buffer);
 
     /***** Build options *****/
-    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_OPTIONS, 0, NULL, &length );
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_OPTIONS, 0,
+                                  NULL, &length);
     test_error( error, "Unable to get program build options length" );
 
     buffer = (char*)malloc(length);
 
     /* Try normal source */
-    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_OPTIONS, length, buffer, NULL );
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_OPTIONS,
+                                  length, buffer, NULL);
     test_error( error, "Unable to get program build options" );
 
     /* Try both at once */
-    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_OPTIONS, length, buffer, &newLength );
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_OPTIONS,
+                                  length, buffer, &newLength);
     test_error( error, "Unable to get program build options" );
 
     free(buffer);
@@ -567,19 +979,21 @@ int test_get_program_build_info(cl_device_id deviceID, cl_context context, cl_co
         return -1;
     }
 
-    error = clBuildProgram( program, 1, &deviceID, "-cl-opt-disable", NULL, NULL );
+    error = clBuildProgram(program, 1, &device, "-cl-opt-disable", NULL, NULL);
     if( error != CL_SUCCESS )
     {
         print_error( error, "Building with valid options failed!" );
         return -1;
     }
 
-    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_OPTIONS, 0, NULL, &length );
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_OPTIONS, 0,
+                                  NULL, &length);
     test_error( error, "Unable to get program build options" );
 
     buffer = (char*)malloc(length);
 
-    error = clGetProgramBuildInfo( program, deviceID, CL_PROGRAM_BUILD_OPTIONS, length, buffer, NULL );
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_OPTIONS,
+                                  length, buffer, NULL);
     test_error( error, "Unable to get program build options" );
     if( strcmp( (char *)buffer, "-cl-opt-disable" ) != 0 )
     {

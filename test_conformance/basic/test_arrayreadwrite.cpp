@@ -20,34 +20,42 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <vector>
 
+#include "testBase.h"
 
-#include "procs.h"
-
-
-int
-test_arrayreadwrite(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+static int test_arrayreadwrite_impl(cl_device_id device, cl_context context,
+                                    cl_command_queue queue, int num_elements,
+                                    cl_mem_flags flags)
 {
-    cl_uint                *inptr, *outptr;
-    cl_mem              streams[1];
+    clMemWrapper buffer;
     int                 num_tries = 400;
     num_elements = 1024 * 1024 * 4;
-    int                 i, j, err;
-    MTdata              d;
+    MTdataHolder d(gRandomSeed);
 
-    inptr = (cl_uint*)malloc(num_elements*sizeof(cl_uint));
-    outptr = (cl_uint*)malloc(num_elements*sizeof(cl_uint));
+    std::vector<cl_uint> reference_vals(num_elements);
+    std::vector<cl_uint> inptr(num_elements);
+    std::vector<cl_uint> outptr(num_elements);
 
     // randomize data
-    d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
+    for (int i = 0; i < num_elements; i++)
+    {
         inptr[i] = (cl_uint)(genrand_int32(d) & 0x7FFFFFFF);
+        reference_vals[i] = (cl_uint)(genrand_int32(d) & 0x7FFFFFFF);
+    }
 
-    streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                sizeof(cl_uint) * num_elements, NULL, &err);
+    void* host_ptr = nullptr;
+    if ((flags & CL_MEM_USE_HOST_PTR) || (flags & CL_MEM_COPY_HOST_PTR))
+    {
+        host_ptr = inptr.data();
+    }
+
+    cl_int err = CL_SUCCESS;
+    buffer = clCreateBuffer(context, flags, sizeof(cl_uint) * num_elements,
+                            host_ptr, &err);
     test_error(err, "clCreateBuffer failed");
 
-    for (i=0; i<num_tries; i++)
+    for (int i = 0; i < num_tries; i++)
     {
         int        offset;
         int        cb;
@@ -61,15 +69,19 @@ test_arrayreadwrite(cl_device_id device, cl_context context, cl_command_queue qu
         if (cb > (num_elements - offset))
             cb = num_elements - offset;
 
-        err = clEnqueueWriteBuffer(queue, streams[0], CL_TRUE, offset*sizeof(cl_uint), sizeof(cl_uint)*cb,&inptr[offset], 0, NULL, NULL);
+        err = clEnqueueWriteBuffer(
+            queue, buffer, CL_TRUE, offset * sizeof(cl_uint),
+            sizeof(cl_uint) * cb, &reference_vals[offset], 0, nullptr, nullptr);
         test_error(err, "clEnqueueWriteBuffer failed");
 
-        err = clEnqueueReadBuffer( queue, streams[0], CL_TRUE, offset*sizeof(cl_uint), cb*sizeof(cl_uint), &outptr[offset], 0, NULL, NULL );
+        err = clEnqueueReadBuffer(
+            queue, buffer, CL_TRUE, offset * sizeof(cl_uint),
+            cb * sizeof(cl_uint), &outptr[offset], 0, nullptr, nullptr);
         test_error(err, "clEnqueueReadBuffer failed");
 
-        for (j=offset; j<offset+cb; j++)
+        for (int j = offset; j < offset + cb; j++)
         {
-            if (inptr[j] != outptr[j])
+            if (reference_vals[j] != outptr[j])
             {
                 log_error("ARRAY read, write test failed\n");
                 err = -1;
@@ -81,11 +93,6 @@ test_arrayreadwrite(cl_device_id device, cl_context context, cl_command_queue qu
             break;
     }
 
-    free_mtdata(d);
-    clReleaseMemObject(streams[0]);
-    free(inptr);
-    free(outptr);
-
     if (!err)
         log_info("ARRAY read, write test passed\n");
 
@@ -93,4 +100,8 @@ test_arrayreadwrite(cl_device_id device, cl_context context, cl_command_queue qu
 }
 
 
-
+REGISTER_TEST(arrayreadwrite)
+{
+    return test_arrayreadwrite_impl(device, context, queue, num_elements,
+                                    CL_MEM_READ_WRITE);
+}

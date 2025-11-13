@@ -21,8 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 static unsigned char *
 generate_rgba8_image(int w, int h, MTdata d)
@@ -117,23 +116,22 @@ verify_rgbafp_image(float *image, float *outptr, int x, int y, int w, int h, int
 #define NUM_COPIES    10
 static const char *test_str_names[] = { "CL_RGBA CL_UNORM_INT8", "CL_RGBA CL_UNORM_INT16", "CL_RGBA CL_FLOAT" };
 
-int
-test_imagerandomcopy(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(imagerandomcopy)
 {
     cl_image_format    img_format;
     unsigned char    *rgba8_inptr, *rgba8_outptr;
     unsigned short    *rgba16_inptr, *rgba16_outptr;
     float            *rgbafp_inptr, *rgbafp_outptr;
     clMemWrapper            streams[6];
-    int                img_width = 512;
-    int                img_height = 512;
+    size_t img_width = 512;
+    size_t img_height = 512;
     int                i, j;
     cl_int          err;
     MTdata          d;
 
     PASSIVE_REQUIRE_IMAGE_SUPPORT( device )
 
-    log_info("Testing with image %d x %d.\n", img_width, img_height);
+    log_info("Testing with image %zu x %zu.\n", img_width, img_height);
 
     d = init_genrand( gRandomSeed );
     rgba8_inptr = (unsigned char *)generate_rgba8_image(img_width, img_height, d);
@@ -193,8 +191,8 @@ test_imagerandomcopy(cl_device_id device, cl_context context, cl_command_queue q
         }
 
         size_t origin[3]={0,0,0}, region[3]={img_width, img_height,1};
-        err = clEnqueueWriteImage(queue, streams[i*2], CL_TRUE, origin, region, 0, 0, p, 0, NULL, NULL);
-//        err = clWriteImage(context, streams[i*2], false, 0, 0, 0, img_width, img_height, 0, NULL, 0, 0, p, NULL);
+        err = clEnqueueWriteImage(queue, streams[i * 2], CL_TRUE, origin,
+                                  region, 0, 0, p, 0, NULL, NULL);
         test_error(err, "clEnqueueWriteImage failed");
 
         for (j=0; j<NUM_COPIES; j++)
@@ -271,6 +269,3 @@ test_imagerandomcopy(cl_device_id device, cl_context context, cl_command_queue q
 
     return err;
 }
-
-
-

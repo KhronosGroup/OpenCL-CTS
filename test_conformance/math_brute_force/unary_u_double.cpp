@@ -56,6 +56,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
     Force64BitFPUPrecision();
+    float double_ulps = getAllowedUlpError(f, kdouble, relaxedMode);
 
     // Init the kernels
     BuildKernelInfo build_info{ 1, kernels, programs, f->nameInCode,
@@ -116,18 +117,12 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_double);
             size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
-            if ((error = clSetKernelArg(kernels[j][thread_id], 0,
-                                        sizeof(gOutBuffer[j]), &gOutBuffer[j])))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
-            if ((error = clSetKernelArg(kernels[j][thread_id], 1,
-                                        sizeof(gInBuffer), &gInBuffer)))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
+            error = clSetKernelArg(kernels[j][thread_id], 0,
+                                   sizeof(gOutBuffer[j]), &gOutBuffer[j]);
+            test_error(error, "Failed to set kernel argument");
+            error = clSetKernelArg(kernels[j][thread_id], 1, sizeof(gInBuffer),
+                                   &gInBuffer);
+            test_error(error, "Failed to set kernel argument");
 
             if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j][thread_id],
                                                 1, NULL, &localCount, NULL, 0,
@@ -173,15 +168,14 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
                     double test = ((double *)q)[j];
                     long double correct = f->dfunc.f_u(s[j]);
                     float err = Bruteforce_Ulp_Error_Double(test, correct);
-                    int fail = !(fabsf(err) <= f->double_ulps);
+                    int fail = !(fabsf(err) <= double_ulps);
 
                     if (fail)
                     {
                         if (ftz || relaxedMode)
                         {
                             // retry per section 6.5.3.2
-                            if (IsDoubleResultSubnormal(correct,
-                                                        f->double_ulps))
+                            if (IsDoubleResultSubnormal(correct, double_ulps))
                             {
                                 fail = fail && (test != 0.0);
                                 if (!fail) err = 0.0f;

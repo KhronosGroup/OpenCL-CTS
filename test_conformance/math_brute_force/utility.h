@@ -19,9 +19,11 @@
 #include "harness/compat.h"
 #include "harness/rounding_mode.h"
 #include "harness/fpcontrol.h"
+#include "harness/mathHelpers.h"
 #include "harness/testHarness.h"
 #include "harness/ThreadPool.h"
 #include "harness/conversions.h"
+#include "harness/parseParameters.h"
 #include "CL/cl_half.h"
 
 #define BUFFER_SIZE (1024 * 1024 * 2)
@@ -59,7 +61,6 @@ extern cl_mem gOutBuffer2[VECTOR_SIZE_COUNT];
 extern int gSkipCorrectnessTesting;
 extern int gForceFTZ;
 extern int gFastRelaxedDerived;
-extern int gWimpyMode;
 extern int gHostFill;
 extern int gIsInRTZMode;
 extern int gHasHalf;
@@ -113,9 +114,6 @@ inline double DoubleFromUInt32(uint32_t bits)
     // return result
     return u.d;
 }
-
-void _LogBuildError(cl_program p, int line, const char *file);
-#define LogBuildError(program) _LogBuildError(program, __LINE__, __FILE__)
 
 // The spec is fairly clear that we may enforce a hard cutoff to prevent
 // premature flushing to zero.
@@ -173,16 +171,6 @@ inline int IsFloatNaN(double x)
     } u;
     u.d = (cl_float)x;
     return ((u.u & 0x7fffffffU) > 0x7F800000U);
-}
-
-inline bool IsHalfNaN(const cl_half v)
-{
-    // Extract FP16 exponent and mantissa
-    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-    uint16_t h_mant = ((cl_half)v) & 0x3FF;
-
-    // NaN test
-    return (h_exp == 0x1F && h_mant != 0);
 }
 
 inline bool IsHalfInfinity(const cl_half v)

@@ -284,29 +284,21 @@ struct MutableDispatchWorkGroups : public BasicMutableCommandBufferTest
     const size_t sizeToAllocate = 64 * sizeof(cl_int);
 };
 
-int test_command_buffer_with_no_additional_work_groups(cl_device_id device,
-                                                       cl_context context,
-                                                       cl_command_queue queue,
-                                                       int num_elements)
+REGISTER_TEST(command_buffer_with_no_additional_work_groups)
 {
 
     return MakeAndRunTest<MutableDispatchWorkGroups<0>>(device, context, queue,
                                                         num_elements);
 }
 
-int test_ndrange_with_no_additional_work_groups(cl_device_id device,
-                                                cl_context context,
-                                                cl_command_queue queue,
-                                                int num_elements)
+REGISTER_TEST(ndrange_with_no_additional_work_groups)
 {
 
     return MakeAndRunTest<MutableDispatchWorkGroups<1>>(device, context, queue,
                                                         num_elements);
 }
 
-int test_ndrange_command_buffer_with_no_additional_work_groups(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(ndrange_command_buffer_with_no_additional_work_groups)
 {
 
     return MakeAndRunTest<MutableDispatchWorkGroups<2>>(device, context, queue,

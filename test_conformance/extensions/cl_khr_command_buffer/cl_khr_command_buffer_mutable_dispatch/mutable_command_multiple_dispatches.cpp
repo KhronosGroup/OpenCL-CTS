@@ -33,9 +33,7 @@ struct MultipleCommandsDispatch : BasicMutableCommandBufferTest
                              cl_command_queue queue)
         : BasicMutableCommandBufferTest(device, context, queue),
           command_pri(nullptr), command_sec(nullptr)
-    {
-        simultaneous_use_requested = false;
-    }
+    {}
 
     bool Skip() override
     {
@@ -47,7 +45,7 @@ struct MultipleCommandsDispatch : BasicMutableCommandBufferTest
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
             && mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
 
-        // require mutable arguments capabillity
+        // require mutable arguments capability
         return !mutable_support;
     }
 
@@ -207,10 +205,7 @@ struct MultipleCommandsDispatch : BasicMutableCommandBufferTest
 
 }
 
-int test_mutable_command_multiple_dispatches(cl_device_id device,
-                                             cl_context context,
-                                             cl_command_queue queue,
-                                             int num_elements)
+REGISTER_TEST(mutable_command_multiple_dispatches)
 {
     return MakeAndRunTest<MultipleCommandsDispatch>(device, context, queue,
                                                     num_elements);

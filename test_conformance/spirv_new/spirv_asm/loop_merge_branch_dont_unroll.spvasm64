@@ -40,7 +40,7 @@
          %20 = OpLabel
          %21 = OpVariable %_ptr_Function_uint Function
          %22 = OpVariable %_ptr_Function_uint Function
-         %23 = OpLoad %v3ulong %gl_GlobalInvocationID Aligned 0
+         %23 = OpLoad %v3ulong %gl_GlobalInvocationID
          %24 = OpCompositeExtract %ulong %23 0
          %25 = OpShiftLeftLogical %ulong %24 %ulong_32
          %26 = OpShiftRightArithmetic %ulong %25 %ulong_32

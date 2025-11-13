@@ -15,7 +15,6 @@
 //
 
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 #include <vector>
 #include <thread>
@@ -80,11 +79,7 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
         : BasicCommandBufferTest(device, context, queue),
           command_buffer_sec(this), kernel_sec(nullptr), in_mem_sec(nullptr),
           out_mem_sec(nullptr), off_mem_sec(nullptr), test_event(nullptr)
-    {
-        simultaneous_use_requested =
-            (event_mode == EventMode::RET_COMBUF_WAIT_FOR_COMBUF) ? true
-                                                                  : false;
-    }
+    {}
 
     //--------------------------------------------------------------------------
     cl_int SetUpKernel() override
@@ -159,9 +154,6 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
     bool Skip() override
     {
         if (BasicCommandBufferTest::Skip()) return true;
-
-        if (simultaneous_use_requested && !simultaneous_use_support)
-            return true;
 
         if (out_of_order_requested && !out_of_order_support) return true;
 
@@ -823,10 +815,7 @@ struct CommandBufferEventSync : public BasicCommandBufferTest
 
 //--------------------------------------------------------------------------
 // return-events test cases for regular queue
-int test_regular_wait_for_command_buffer(cl_device_id device,
-                                         cl_context context,
-                                         cl_command_queue queue,
-                                         int num_elements)
+REGISTER_TEST(regular_wait_for_command_buffer)
 {
     int status = TEST_PASS;
     // The approach here is that test scenario which involves out-of-order
@@ -848,10 +837,7 @@ int test_regular_wait_for_command_buffer(cl_device_id device,
     return status;
 }
 
-int test_command_buffer_wait_for_command_buffer(cl_device_id device,
-                                                cl_context context,
-                                                cl_command_queue queue,
-                                                int num_elements)
+REGISTER_TEST(command_buffer_wait_for_command_buffer)
 {
     int status = TEST_PASS;
     // out-of-order command queue test
@@ -871,10 +857,7 @@ int test_command_buffer_wait_for_command_buffer(cl_device_id device,
     return status;
 }
 
-int test_command_buffer_wait_for_sec_command_buffer(cl_device_id device,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements)
+REGISTER_TEST(command_buffer_wait_for_sec_command_buffer)
 {
     int status = TEST_PASS;
     // out-of-order command queue test
@@ -894,8 +877,7 @@ int test_command_buffer_wait_for_sec_command_buffer(cl_device_id device,
     return status;
 }
 
-int test_return_event_callback(cl_device_id device, cl_context context,
-                               cl_command_queue queue, int num_elements)
+REGISTER_TEST(return_event_callback)
 {
     int status = TEST_PASS;
     // out-of-order command queue test
@@ -913,8 +895,7 @@ int test_return_event_callback(cl_device_id device, cl_context context,
     return status;
 }
 
-int test_clwaitforevents_single(cl_device_id device, cl_context context,
-                                cl_command_queue queue, int num_elements)
+REGISTER_TEST(clwaitforevents_single)
 {
     int status = TEST_PASS;
     // out-of-order command queue test
@@ -934,8 +915,7 @@ int test_clwaitforevents_single(cl_device_id device, cl_context context,
     return status;
 }
 
-int test_clwaitforevents(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(clwaitforevents)
 {
     int status = TEST_PASS;
     // out-of-order command queue test
@@ -953,10 +933,7 @@ int test_clwaitforevents(cl_device_id device, cl_context context,
     return status;
 }
 
-int test_command_buffer_wait_for_regular(cl_device_id device,
-                                         cl_context context,
-                                         cl_command_queue queue,
-                                         int num_elements)
+REGISTER_TEST(command_buffer_wait_for_regular)
 {
     int status = TEST_PASS;
     // out-of-order command queue test
@@ -976,8 +953,7 @@ int test_command_buffer_wait_for_regular(cl_device_id device,
     return status;
 }
 
-int test_wait_for_sec_queue_event(cl_device_id device, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+REGISTER_TEST(wait_for_sec_queue_event)
 {
     int status = TEST_PASS;
     // out-of-order command queue test
@@ -1000,8 +976,7 @@ int test_wait_for_sec_queue_event(cl_device_id device, cl_context context,
 //--------------------------------------------------------------------------
 // user-events test cases
 
-int test_user_event_wait(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(user_event_wait)
 {
     int status = TEST_PASS;
     // out-of-order command queue test
@@ -1019,8 +994,7 @@ int test_user_event_wait(cl_device_id device, cl_context context,
     return status;
 }
 
-int test_user_events_wait(cl_device_id device, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(user_events_wait)
 {
     int status = TEST_PASS;
     // out-of-order command queue test
@@ -1038,8 +1012,7 @@ int test_user_events_wait(cl_device_id device, cl_context context,
     return status;
 }
 
-int test_user_event_callback(cl_device_id device, cl_context context,
-                             cl_command_queue queue, int num_elements)
+REGISTER_TEST(user_event_callback)
 {
     int status = TEST_PASS;
     // out-of-order command queue test

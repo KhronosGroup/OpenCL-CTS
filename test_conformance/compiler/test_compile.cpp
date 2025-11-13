@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #include "testBase.h"
+
+#include <filesystem>
+
 #if defined(_WIN32)
 #include <time.h>
 #elif defined(__linux__) || defined(__APPLE__)
@@ -21,6 +24,7 @@
 #include <unistd.h>
 #endif
 #include "harness/conversions.h"
+#include "harness/stringHelpers.h"
 
 #define MAX_LINE_SIZE_IN_PROGRAM 1024
 #define MAX_LOG_SIZE_IN_PROGRAM 2048
@@ -155,8 +159,8 @@ const char *link_static_function_access = // use with compile_static_function
     "extern int foo(int, int);\n"
     "int access_foo() { int blah = foo(3, 4); return blah + 5; }\n";
 
-int test_large_single_compile(cl_context context, cl_device_id deviceID,
-                              unsigned int numLines)
+static int test_large_single_compile(cl_context context, cl_device_id deviceID,
+                                     unsigned int numLines)
 {
     int error;
     cl_program program;
@@ -219,8 +223,7 @@ int test_large_single_compile(cl_context context, cl_device_id deviceID,
     return 0;
 }
 
-int test_large_compile(cl_device_id deviceID, cl_context context,
-                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(large_compile)
 {
     unsigned int toTest[] = {
         64, 128, 256, 512, 1024, 2048, 4096, 0
@@ -240,7 +243,7 @@ int test_large_compile(cl_device_id deviceID, cl_context context,
         gettimeofday(&time1, NULL);
 #endif
 
-        if (test_large_single_compile(context, deviceID, toTest[i]) != 0)
+        if (test_large_single_compile(context, device, toTest[i]) != 0)
         {
             log_error(
                 "ERROR: long program test failed for %d lines! (in %s:%d)\n",
@@ -270,8 +273,10 @@ static int verifyCopyBuffer(cl_context context, cl_command_queue queue,
 #define _strdup strdup
 #endif
 
-int test_large_multi_file_library(cl_context context, cl_device_id deviceID,
-                                  cl_command_queue queue, unsigned int numLines)
+static int test_large_multi_file_library(cl_context context,
+                                         cl_device_id deviceID,
+                                         cl_command_queue queue,
+                                         unsigned int numLines)
 {
     int error;
     cl_program program;
@@ -419,8 +424,7 @@ int test_large_multi_file_library(cl_context context, cl_device_id deviceID,
     return 0;
 }
 
-int test_multi_file_libraries(cl_device_id deviceID, cl_context context,
-                              cl_command_queue queue, int num_elements)
+REGISTER_TEST(multi_file_libraries)
 {
     unsigned int toTest[] = {
         2, 4, 8, 16, 32, 64, 128, 256, 0
@@ -440,7 +444,7 @@ int test_multi_file_libraries(cl_device_id deviceID, cl_context context,
         gettimeofday(&time1, NULL);
 #endif
 
-        if (test_large_multi_file_library(context, deviceID, queue, toTest[i])
+        if (test_large_multi_file_library(context, device, queue, toTest[i])
             != 0)
         {
             log_error("ERROR: multi-file library program test failed for %d "
@@ -464,10 +468,10 @@ int test_multi_file_libraries(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_large_multiple_embedded_headers(cl_context context,
-                                         cl_device_id deviceID,
-                                         cl_command_queue queue,
-                                         unsigned int numLines)
+static int test_large_multiple_embedded_headers(cl_context context,
+                                                cl_device_id deviceID,
+                                                cl_command_queue queue,
+                                                unsigned int numLines)
 {
     int error;
     cl_program program;
@@ -641,8 +645,7 @@ int test_large_multiple_embedded_headers(cl_context context,
     return 0;
 }
 
-int test_multiple_embedded_headers(cl_device_id deviceID, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(multiple_embedded_headers)
 {
     unsigned int toTest[] = {
         2, 4, 8, 16, 32, 64, 128, 256, 0
@@ -663,7 +666,7 @@ int test_multiple_embedded_headers(cl_device_id deviceID, cl_context context,
         gettimeofday(&time1, NULL);
 #endif
 
-        if (test_large_multiple_embedded_headers(context, deviceID, queue,
+        if (test_large_multiple_embedded_headers(context, device, queue,
                                                  toTest[i])
             != 0)
         {
@@ -690,8 +693,10 @@ int test_multiple_embedded_headers(cl_device_id deviceID, cl_context context,
 
 double logbase(double a, double base) { return log(a) / log(base); }
 
-int test_large_multiple_libraries(cl_context context, cl_device_id deviceID,
-                                  cl_command_queue queue, unsigned int numLines)
+static int test_large_multiple_libraries(cl_context context,
+                                         cl_device_id deviceID,
+                                         cl_command_queue queue,
+                                         unsigned int numLines)
 {
     int error;
     cl_program *simple_kernels;
@@ -846,8 +851,7 @@ int test_large_multiple_libraries(cl_context context, cl_device_id deviceID,
     return 0;
 }
 
-int test_multiple_libraries(cl_device_id deviceID, cl_context context,
-                            cl_command_queue queue, int num_elements)
+REGISTER_TEST(multiple_libraries)
 {
     unsigned int toTest[] = {
         2, 8, 32, 128, 256, 0
@@ -867,7 +871,7 @@ int test_multiple_libraries(cl_device_id deviceID, cl_context context,
         gettimeofday(&time1, NULL);
 #endif
 
-        if (test_large_multiple_libraries(context, deviceID, queue, toTest[i])
+        if (test_large_multiple_libraries(context, device, queue, toTest[i])
             != 0)
         {
             log_error("ERROR: multiple library program test failed for %d "
@@ -891,10 +895,10 @@ int test_multiple_libraries(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_large_multiple_files_multiple_libraries(cl_context context,
-                                                 cl_device_id deviceID,
-                                                 cl_command_queue queue,
-                                                 unsigned int numLines)
+static int test_large_multiple_files_multiple_libraries(cl_context context,
+                                                        cl_device_id deviceID,
+                                                        cl_command_queue queue,
+                                                        unsigned int numLines)
 {
     int error;
     cl_program *simple_kernels;
@@ -1060,10 +1064,7 @@ int test_large_multiple_files_multiple_libraries(cl_context context,
     return 0;
 }
 
-int test_multiple_files_multiple_libraries(cl_device_id deviceID,
-                                           cl_context context,
-                                           cl_command_queue queue,
-                                           int num_elements)
+REGISTER_TEST(multiple_files_multiple_libraries)
 {
     unsigned int toTest[] = { 8, 32, 128, 256,
                               0 }; // 512, 2048, 8192, 32768, 0 };
@@ -1083,8 +1084,8 @@ int test_multiple_files_multiple_libraries(cl_device_id deviceID,
         gettimeofday(&time1, NULL);
 #endif
 
-        if (test_large_multiple_files_multiple_libraries(context, deviceID,
-                                                         queue, toTest[i])
+        if (test_large_multiple_files_multiple_libraries(context, device, queue,
+                                                         toTest[i])
             != 0)
         {
             log_error("ERROR: multiple files, multiple libraries program test "
@@ -1108,8 +1109,9 @@ int test_multiple_files_multiple_libraries(cl_device_id deviceID,
     return 0;
 }
 
-int test_large_multiple_files(cl_context context, cl_device_id deviceID,
-                              cl_command_queue queue, unsigned int numLines)
+static int test_large_multiple_files(cl_context context, cl_device_id deviceID,
+                                     cl_command_queue queue,
+                                     unsigned int numLines)
 {
     int error;
     const char **lines;
@@ -1232,8 +1234,7 @@ int test_large_multiple_files(cl_context context, cl_device_id deviceID,
     return 0;
 }
 
-int test_multiple_files(cl_device_id deviceID, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST(multiple_files)
 {
     unsigned int toTest[] = { 8, 32, 128, 256,
                               0 }; // 512, 2048, 8192, 32768, 0 };
@@ -1253,7 +1254,7 @@ int test_multiple_files(cl_device_id deviceID, cl_context context,
         gettimeofday(&time1, NULL);
 #endif
 
-        if (test_large_multiple_files(context, deviceID, queue, toTest[i]) != 0)
+        if (test_large_multiple_files(context, device, queue, toTest[i]) != 0)
         {
             log_error("ERROR: multiple files program test failed for %d lines! "
                       "(in %s:%d)\n\n",
@@ -1276,8 +1277,7 @@ int test_multiple_files(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_simple_compile_only(cl_device_id deviceID, cl_context context,
-                             cl_command_queue queue, int num_elements)
+REGISTER_TEST(simple_compile_only)
 {
     int error;
     cl_program program;
@@ -1293,8 +1293,8 @@ int test_simple_compile_only(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     /* All done! */
@@ -1304,8 +1304,7 @@ int test_simple_compile_only(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_simple_static_compile_only(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(simple_static_compile_only)
 {
     int error;
     cl_program program;
@@ -1323,8 +1322,8 @@ int test_simple_static_compile_only(cl_device_id deviceID, cl_context context,
     }
 
     log_info("Compiling a static variable...\n");
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple static variable program");
 
     /* All done! */
@@ -1342,8 +1341,8 @@ int test_simple_static_compile_only(cl_device_id deviceID, cl_context context,
     }
 
     log_info("Compiling a static struct...\n");
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple static variable program");
 
     /* All done! */
@@ -1361,8 +1360,8 @@ int test_simple_static_compile_only(cl_device_id deviceID, cl_context context,
     }
 
     log_info("Compiling a static function...\n");
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple static function program");
 
     /* All done! */
@@ -1372,8 +1371,7 @@ int test_simple_static_compile_only(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_simple_extern_compile_only(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(simple_extern_compile_only)
 {
     int error;
     cl_program program;
@@ -1390,8 +1388,8 @@ int test_simple_extern_compile_only(cl_device_id deviceID, cl_context context,
     }
 
     log_info("Compiling an extern kernel...\n");
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple extern kernel program");
 
     /* All done! */
@@ -1409,8 +1407,8 @@ int test_simple_extern_compile_only(cl_device_id deviceID, cl_context context,
     }
 
     log_info("Compiling an extern variable...\n");
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple extern variable program");
 
     /* All done! */
@@ -1428,8 +1426,8 @@ int test_simple_extern_compile_only(cl_device_id deviceID, cl_context context,
     }
 
     log_info("Compiling an extern struct...\n");
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple extern variable program");
 
     /* All done! */
@@ -1447,8 +1445,8 @@ int test_simple_extern_compile_only(cl_device_id deviceID, cl_context context,
     }
 
     log_info("Compiling an extern function...\n");
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple extern function program");
 
     /* All done! */
@@ -1500,8 +1498,7 @@ static void CL_CALLBACK simple_compile_callback(cl_program program,
              "compile_program_completion_event!\n");
 }
 
-int test_simple_compile_with_callback(cl_device_id deviceID, cl_context context,
-                                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(simple_compile_with_callback)
 {
     int error;
     cl_program program;
@@ -1525,7 +1522,7 @@ int test_simple_compile_with_callback(cl_device_id deviceID, cl_context context,
         once_upon_a_midnight_dreary, compile_program_completion_event
     };
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL,
+    error = clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL,
                              simple_compile_callback,
                              (void *)&simple_compile_user_data);
     test_error(error, "Unable to compile a simple program with a callback");
@@ -1545,10 +1542,7 @@ int test_simple_compile_with_callback(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_simple_embedded_header_compile(cl_device_id deviceID,
-                                        cl_context context,
-                                        cl_command_queue queue,
-                                        int num_elements)
+REGISTER_TEST(simple_embedded_header_compile)
 {
     int error;
     cl_program program, header;
@@ -1574,7 +1568,7 @@ int test_simple_embedded_header_compile(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 1, &header,
+    error = clCompileProgram(program, 1, &device, NULL, 1, &header,
                              &simple_header_name, NULL, NULL);
     test_error(error,
                "Unable to compile a simple program with embedded header");
@@ -1589,8 +1583,7 @@ int test_simple_embedded_header_compile(cl_device_id deviceID,
     return 0;
 }
 
-int test_simple_link_only(cl_device_id deviceID, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(simple_link_only)
 {
     int error;
     cl_program program;
@@ -1606,12 +1599,12 @@ int test_simple_link_only(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program my_newly_linked_program = clLinkProgram(
-        context, 1, &deviceID, NULL, 1, &program, NULL, NULL, &error);
+        context, 1, &device, NULL, 1, &program, NULL, NULL, &error);
     test_error(error, "Unable to link a simple program");
 
     /* All done! */
@@ -1624,10 +1617,7 @@ int test_simple_link_only(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_two_file_regular_variable_access(cl_device_id deviceID,
-                                          cl_context context,
-                                          cl_command_queue queue,
-                                          int num_elements)
+REGISTER_TEST(two_file_regular_variable_access)
 {
     int error;
     cl_program program, second_program, my_newly_linked_program;
@@ -1647,8 +1637,8 @@ int test_two_file_regular_variable_access(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error,
                "Unable to compile a simple program with regular function");
 
@@ -1662,14 +1652,14 @@ int test_two_file_regular_variable_access(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(second_program, 1, &deviceID, NULL, 0, NULL, NULL,
+    error = clCompileProgram(second_program, 1, &device, NULL, 0, NULL, NULL,
                              NULL, NULL);
     test_error(
         error,
         "Unable to compile a program that tries to access a regular variable");
 
     cl_program two_programs[2] = { program, second_program };
-    my_newly_linked_program = clLinkProgram(context, 1, &deviceID, NULL, 2,
+    my_newly_linked_program = clLinkProgram(context, 1, &device, NULL, 2,
                                             two_programs, NULL, NULL, &error);
     test_error(error,
                "clLinkProgram: Expected a different error code while linking a "
@@ -1688,10 +1678,7 @@ int test_two_file_regular_variable_access(cl_device_id deviceID,
     return 0;
 }
 
-int test_two_file_regular_struct_access(cl_device_id deviceID,
-                                        cl_context context,
-                                        cl_command_queue queue,
-                                        int num_elements)
+REGISTER_TEST(two_file_regular_struct_access)
 {
     int error;
     cl_program program, second_program, my_newly_linked_program;
@@ -1711,8 +1698,8 @@ int test_two_file_regular_struct_access(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program with regular struct");
 
     error = create_single_kernel_helper_create_program(
@@ -1725,14 +1712,14 @@ int test_two_file_regular_struct_access(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(second_program, 1, &deviceID, NULL, 0, NULL, NULL,
+    error = clCompileProgram(second_program, 1, &device, NULL, 0, NULL, NULL,
                              NULL, NULL);
     test_error(
         error,
         "Unable to compile a program that tries to access a regular struct");
 
     cl_program two_programs[2] = { program, second_program };
-    my_newly_linked_program = clLinkProgram(context, 1, &deviceID, NULL, 2,
+    my_newly_linked_program = clLinkProgram(context, 1, &device, NULL, 2,
                                             two_programs, NULL, NULL, &error);
     test_error(error,
                "clLinkProgram: Expected a different error code while linking a "
@@ -1752,10 +1739,7 @@ int test_two_file_regular_struct_access(cl_device_id deviceID,
 }
 
 
-int test_two_file_regular_function_access(cl_device_id deviceID,
-                                          cl_context context,
-                                          cl_command_queue queue,
-                                          int num_elements)
+REGISTER_TEST(two_file_regular_function_access)
 {
     int error;
     cl_program program, second_program, my_newly_linked_program;
@@ -1775,8 +1759,8 @@ int test_two_file_regular_function_access(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error,
                "Unable to compile a simple program with regular function");
 
@@ -1790,14 +1774,14 @@ int test_two_file_regular_function_access(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(second_program, 1, &deviceID, NULL, 0, NULL, NULL,
+    error = clCompileProgram(second_program, 1, &device, NULL, 0, NULL, NULL,
                              NULL, NULL);
     test_error(
         error,
         "Unable to compile a program that tries to access a regular function");
 
     cl_program two_programs[2] = { program, second_program };
-    my_newly_linked_program = clLinkProgram(context, 1, &deviceID, NULL, 2,
+    my_newly_linked_program = clLinkProgram(context, 1, &device, NULL, 2,
                                             two_programs, NULL, NULL, &error);
     test_error(error,
                "clLinkProgram: Expected a different error code while linking a "
@@ -1816,8 +1800,7 @@ int test_two_file_regular_function_access(cl_device_id deviceID,
     return 0;
 }
 
-int test_simple_embedded_header_link(cl_device_id deviceID, cl_context context,
-                                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(simple_embedded_header_link)
 {
     int error;
     cl_program program, header, simple_program;
@@ -1843,7 +1826,7 @@ int test_simple_embedded_header_link(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 1, &header,
+    error = clCompileProgram(program, 1, &device, NULL, 1, &header,
                              &simple_header_name, NULL, NULL);
     test_error(error,
                "Unable to compile a simple program with embedded header");
@@ -1858,13 +1841,13 @@ int test_simple_embedded_header_link(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(simple_program, 1, &deviceID, NULL, 0, NULL, NULL,
+    error = clCompileProgram(simple_program, 1, &device, NULL, 0, NULL, NULL,
                              NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program two_programs[2] = { program, simple_program };
     cl_program fully_linked_program = clLinkProgram(
-        context, 1, &deviceID, "", 2, two_programs, NULL, NULL, &error);
+        context, 1, &device, "", 2, two_programs, NULL, NULL, &error);
     test_error(error,
                "Unable to create an executable from two binaries, one compiled "
                "with embedded header");
@@ -1920,8 +1903,7 @@ static void CL_CALLBACK simple_link_callback(cl_program program,
              "link_program_completion_event event!\n");
 }
 
-int test_simple_link_with_callback(cl_device_id deviceID, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(simple_link_with_callback)
 {
     int error;
     cl_program program;
@@ -1938,8 +1920,8 @@ int test_simple_link_with_callback(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     link_program_completion_event = clCreateUserEvent(context, &error);
@@ -1949,7 +1931,7 @@ int test_simple_link_with_callback(cl_device_id deviceID, cl_context context,
                                                link_program_completion_event };
 
     cl_program my_linked_library = clLinkProgram(
-        context, 1, &deviceID, NULL, 1, &program, simple_link_callback,
+        context, 1, &device, NULL, 1, &program, simple_link_callback,
         (void *)&simple_link_user_data, &error);
     test_error(error, "Unable to link a simple program");
 
@@ -2108,10 +2090,7 @@ static int verifyCopyBuffer(cl_context context, cl_command_queue queue,
     return result;
 }
 
-int test_execute_after_simple_compile_and_link(cl_device_id deviceID,
-                                               cl_context context,
-                                               cl_command_queue queue,
-                                               int num_elements)
+REGISTER_TEST(execute_after_simple_compile_and_link)
 {
     int error;
     cl_program program;
@@ -2127,12 +2106,12 @@ int test_execute_after_simple_compile_and_link(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program my_newly_linked_program = clLinkProgram(
-        context, 1, &deviceID, NULL, 1, &program, NULL, NULL, &error);
+        context, 1, &device, NULL, 1, &program, NULL, NULL, &error);
     test_error(error, "Unable to link a simple program");
 
     cl_kernel kernel =
@@ -2155,9 +2134,7 @@ int test_execute_after_simple_compile_and_link(cl_device_id deviceID,
     return 0;
 }
 
-int test_execute_after_simple_compile_and_link_no_device_info(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(execute_after_simple_compile_and_link_no_device_info)
 {
     int error;
     cl_program program;
@@ -2201,9 +2178,7 @@ int test_execute_after_simple_compile_and_link_no_device_info(
     return 0;
 }
 
-int test_execute_after_simple_compile_and_link_with_defines(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(execute_after_simple_compile_and_link_with_defines)
 {
     int error;
     cl_program program;
@@ -2221,12 +2196,12 @@ int test_execute_after_simple_compile_and_link_with_defines(
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, "-DFIRST=5 -DSECOND=37", 0,
+    error = clCompileProgram(program, 1, &device, "-DFIRST=5 -DSECOND=37", 0,
                              NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program my_newly_linked_program = clLinkProgram(
-        context, 1, &deviceID, NULL, 1, &program, NULL, NULL, &error);
+        context, 1, &device, NULL, 1, &program, NULL, NULL, &error);
     test_error(error, "Unable to link a simple program");
 
     cl_kernel kernel =
@@ -2249,10 +2224,7 @@ int test_execute_after_simple_compile_and_link_with_defines(
     return 0;
 }
 
-int test_execute_after_serialize_reload_object(cl_device_id deviceID,
-                                               cl_context context,
-                                               cl_command_queue queue,
-                                               int num_elements)
+REGISTER_TEST(execute_after_serialize_reload_object)
 {
     int error;
     cl_program program;
@@ -2271,8 +2243,8 @@ int test_execute_after_serialize_reload_object(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     // Get the size of the resulting binary (only one device)
@@ -2320,13 +2292,12 @@ int test_execute_after_serialize_reload_object(cl_device_id deviceID,
 
     // use clCreateProgramWithBinary
     cl_program program_with_binary = clCreateProgramWithBinary(
-        context, 1, &deviceID, &binarySize, (const unsigned char **)buffers,
+        context, 1, &device, &binarySize, (const unsigned char **)buffers,
         loadErrors, &error);
     test_error(error, "Unable to create program with binary");
 
-    cl_program my_newly_linked_program =
-        clLinkProgram(context, 1, &deviceID, NULL, 1, &program_with_binary,
-                      NULL, NULL, &error);
+    cl_program my_newly_linked_program = clLinkProgram(
+        context, 1, &device, NULL, 1, &program_with_binary, NULL, NULL, &error);
     test_error(error, "Unable to link a simple program");
 
     cl_kernel kernel =
@@ -2354,10 +2325,7 @@ int test_execute_after_serialize_reload_object(cl_device_id deviceID,
     return 0;
 }
 
-int test_execute_after_serialize_reload_library(cl_device_id deviceID,
-                                                cl_context context,
-                                                cl_command_queue queue,
-                                                int num_elements)
+REGISTER_TEST(execute_after_serialize_reload_library)
 {
     int error;
     cl_program program, another_program;
@@ -2377,13 +2345,13 @@ int test_execute_after_serialize_reload_library(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program my_newly_minted_library =
-        clLinkProgram(context, 1, &deviceID, "-create-library", 1, &program,
-                      NULL, NULL, &error);
+        clLinkProgram(context, 1, &device, "-create-library", 1, &program, NULL,
+                      NULL, &error);
     test_error(error, "Unable to create a simple library");
 
 
@@ -2432,7 +2400,7 @@ int test_execute_after_serialize_reload_library(cl_device_id deviceID,
 
     // use clCreateProgramWithBinary
     cl_program library_with_binary = clCreateProgramWithBinary(
-        context, 1, &deviceID, &binarySize, (const unsigned char **)buffers,
+        context, 1, &device, &binarySize, (const unsigned char **)buffers,
         loadErrors, &error);
     test_error(error, "Unable to create program with binary");
 
@@ -2446,14 +2414,14 @@ int test_execute_after_serialize_reload_library(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(another_program, 1, &deviceID, NULL, 0, NULL, NULL,
+    error = clCompileProgram(another_program, 1, &device, NULL, 0, NULL, NULL,
                              NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program program_and_archive[2] = { another_program,
                                           library_with_binary };
     cl_program fully_linked_program = clLinkProgram(
-        context, 1, &deviceID, "", 2, program_and_archive, NULL, NULL, &error);
+        context, 1, &device, "", 2, program_and_archive, NULL, NULL, &error);
     test_error(error,
                "Unable to create an executable from a binary and a library");
 
@@ -2540,9 +2508,7 @@ static void CL_CALLBACK program_link_completion_callback(cl_program program,
              "link_program_completion_event event!\n");
 }
 
-int test_execute_after_simple_compile_and_link_with_callbacks(
-    cl_device_id deviceID, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(execute_after_simple_compile_and_link_with_callbacks)
 {
     int error;
     cl_program program;
@@ -2563,7 +2529,7 @@ int test_execute_after_simple_compile_and_link_with_callbacks(
     compile_program_completion_event = clCreateUserEvent(context, &error);
     test_error(error, "Unable to create a user event");
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL,
+    error = clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL,
                              program_compile_completion_callback,
                              (void *)compile_program_completion_event);
     test_error(error, "Unable to compile a simple program");
@@ -2580,7 +2546,7 @@ int test_execute_after_simple_compile_and_link_with_callbacks(
     test_error(error, "Unable to create a user event");
 
     cl_program my_newly_linked_program =
-        clLinkProgram(context, 1, &deviceID, NULL, 1, &program,
+        clLinkProgram(context, 1, &device, NULL, 1, &program,
                       program_link_completion_callback,
                       (void *)link_program_completion_event, &error);
     test_error(error, "Unable to link a simple program");
@@ -2613,8 +2579,7 @@ int test_execute_after_simple_compile_and_link_with_callbacks(
     return 0;
 }
 
-int test_simple_library_only(cl_device_id deviceID, cl_context context,
-                             cl_command_queue queue, int num_elements)
+REGISTER_TEST(simple_library_only)
 {
     int error;
     cl_program program;
@@ -2630,13 +2595,13 @@ int test_simple_library_only(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program my_newly_minted_library =
-        clLinkProgram(context, 1, &deviceID, "-create-library", 1, &program,
-                      NULL, NULL, &error);
+        clLinkProgram(context, 1, &device, "-create-library", 1, &program, NULL,
+                      NULL, &error);
     test_error(error, "Unable to create a simple library");
 
     /* All done! */
@@ -2649,8 +2614,7 @@ int test_simple_library_only(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_simple_library_with_callback(cl_device_id deviceID, cl_context context,
-                                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(simple_library_with_callback)
 {
     int error;
     cl_program program;
@@ -2667,8 +2631,8 @@ int test_simple_library_with_callback(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     link_program_completion_event = clCreateUserEvent(context, &error);
@@ -2678,7 +2642,7 @@ int test_simple_library_with_callback(cl_device_id deviceID, cl_context context,
                                                link_program_completion_event };
 
     cl_program my_newly_minted_library = clLinkProgram(
-        context, 1, &deviceID, "-create-library", 1, &program,
+        context, 1, &device, "-create-library", 1, &program,
         simple_link_callback, (void *)&simple_link_user_data, &error);
     test_error(error, "Unable to create a simple library");
 
@@ -2700,8 +2664,7 @@ int test_simple_library_with_callback(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_simple_library_with_link(cl_device_id deviceID, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+REGISTER_TEST(simple_library_with_link)
 {
     int error;
     cl_program program, another_program;
@@ -2717,13 +2680,13 @@ int test_simple_library_with_link(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program my_newly_minted_library =
-        clLinkProgram(context, 1, &deviceID, "-create-library", 1, &program,
-                      NULL, NULL, &error);
+        clLinkProgram(context, 1, &device, "-create-library", 1, &program, NULL,
+                      NULL, &error);
     test_error(error, "Unable to create a simple library");
 
     error = create_single_kernel_helper_create_program(
@@ -2736,14 +2699,14 @@ int test_simple_library_with_link(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(another_program, 1, &deviceID, NULL, 0, NULL, NULL,
+    error = clCompileProgram(another_program, 1, &device, NULL, 0, NULL, NULL,
                              NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program program_and_archive[2] = { another_program,
                                           my_newly_minted_library };
     cl_program fully_linked_program = clLinkProgram(
-        context, 1, &deviceID, "", 2, program_and_archive, NULL, NULL, &error);
+        context, 1, &device, "", 2, program_and_archive, NULL, NULL, &error);
     test_error(error,
                "Unable to create an executable from a binary and a library");
 
@@ -2763,10 +2726,7 @@ int test_simple_library_with_link(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_execute_after_simple_library_with_link(cl_device_id deviceID,
-                                                cl_context context,
-                                                cl_command_queue queue,
-                                                int num_elements)
+REGISTER_TEST(execute_after_simple_library_with_link)
 {
     int error;
     cl_program program, another_program;
@@ -2783,13 +2743,13 @@ int test_execute_after_simple_library_with_link(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program my_newly_minted_library =
-        clLinkProgram(context, 1, &deviceID, "-create-library", 1, &program,
-                      NULL, NULL, &error);
+        clLinkProgram(context, 1, &device, "-create-library", 1, &program, NULL,
+                      NULL, &error);
     test_error(error, "Unable to create a simple library");
 
     error = create_single_kernel_helper_create_program(
@@ -2802,14 +2762,14 @@ int test_execute_after_simple_library_with_link(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(another_program, 1, &deviceID, NULL, 0, NULL, NULL,
+    error = clCompileProgram(another_program, 1, &device, NULL, 0, NULL, NULL,
                              NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program program_and_archive[2] = { another_program,
                                           my_newly_minted_library };
     cl_program fully_linked_program = clLinkProgram(
-        context, 1, &deviceID, "", 2, program_and_archive, NULL, NULL, &error);
+        context, 1, &device, "", 2, program_and_archive, NULL, NULL, &error);
     test_error(error,
                "Unable to create an executable from a binary and a library");
 
@@ -2849,8 +2809,7 @@ int test_execute_after_simple_library_with_link(cl_device_id deviceID,
     return 0;
 }
 
-int test_two_file_link(cl_device_id deviceID, cl_context context,
-                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(two_file_link)
 {
     int error;
     cl_program program, another_program;
@@ -2866,8 +2825,8 @@ int test_two_file_link(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
 
@@ -2881,13 +2840,13 @@ int test_two_file_link(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(another_program, 1, &deviceID, NULL, 0, NULL, NULL,
+    error = clCompileProgram(another_program, 1, &device, NULL, 0, NULL, NULL,
                              NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program two_programs[2] = { program, another_program };
     cl_program fully_linked_program = clLinkProgram(
-        context, 1, &deviceID, "", 2, two_programs, NULL, NULL, &error);
+        context, 1, &device, "", 2, two_programs, NULL, NULL, &error);
     test_error(error, "Unable to create an executable from two binaries");
 
     /* All done! */
@@ -2903,8 +2862,7 @@ int test_two_file_link(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_execute_after_two_file_link(cl_device_id deviceID, cl_context context,
-                                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(execute_after_two_file_link)
 {
     int error;
     cl_program program, another_program;
@@ -2921,8 +2879,8 @@ int test_execute_after_two_file_link(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     error = create_single_kernel_helper_create_program(
@@ -2935,13 +2893,13 @@ int test_execute_after_two_file_link(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(another_program, 1, &deviceID, NULL, 0, NULL, NULL,
+    error = clCompileProgram(another_program, 1, &device, NULL, 0, NULL, NULL,
                              NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program two_programs[2] = { program, another_program };
     cl_program fully_linked_program = clLinkProgram(
-        context, 1, &deviceID, "", 2, two_programs, NULL, NULL, &error);
+        context, 1, &device, "", 2, two_programs, NULL, NULL, &error);
     test_error(error, "Unable to create an executable from two binaries");
 
     cl_kernel kernel =
@@ -2977,10 +2935,7 @@ int test_execute_after_two_file_link(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_execute_after_embedded_header_link(cl_device_id deviceID,
-                                            cl_context context,
-                                            cl_command_queue queue,
-                                            int num_elements)
+REGISTER_TEST(execute_after_embedded_header_link)
 {
     int error;
     cl_program program, header, simple_program;
@@ -3007,7 +2962,7 @@ int test_execute_after_embedded_header_link(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 1, &header,
+    error = clCompileProgram(program, 1, &device, NULL, 1, &header,
                              &simple_header_name, NULL, NULL);
     test_error(error,
                "Unable to compile a simple program with embedded header");
@@ -3022,13 +2977,13 @@ int test_execute_after_embedded_header_link(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(simple_program, 1, &deviceID, NULL, 0, NULL, NULL,
+    error = clCompileProgram(simple_program, 1, &device, NULL, 0, NULL, NULL,
                              NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program two_programs[2] = { program, simple_program };
     cl_program fully_linked_program = clLinkProgram(
-        context, 1, &deviceID, "", 2, two_programs, NULL, NULL, &error);
+        context, 1, &device, "", 2, two_programs, NULL, NULL, &error);
     test_error(error,
                "Unable to create an executable from two binaries, one compiled "
                "with embedded header");
@@ -3069,19 +3024,7 @@ int test_execute_after_embedded_header_link(cl_device_id deviceID,
     return 0;
 }
 
-#if defined(__APPLE__) || defined(__linux)
-#define _mkdir(x) mkdir(x, S_IRWXU)
-#define _chdir chdir
-#define _rmdir rmdir
-#define _unlink unlink
-#else
-#include <direct.h>
-#endif
-
-int test_execute_after_included_header_link(cl_device_id deviceID,
-                                            cl_context context,
-                                            cl_command_queue queue,
-                                            int num_elements)
+REGISTER_TEST(execute_after_included_header_link)
 {
     int error;
     cl_program program, simple_program;
@@ -3099,100 +3042,61 @@ int test_execute_after_included_header_link(cl_device_id deviceID,
     }
 
     /* setup */
-#if (defined(__linux__) || defined(__APPLE__)) && (!defined(__ANDROID__))
-    /* Some tests systems doesn't allow one to write in the test directory */
-    if (_chdir("/tmp") != 0)
+    std::error_code ec;
+    auto temp_dir_path = std::filesystem::temp_directory_path(ec);
+    if (ec)
     {
-        log_error("ERROR: Unable to remove directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
+        log_error("ERROR: Unable to get the temporary directory path\n");
         return -1;
     }
-#endif
-    if (_mkdir("foo") != 0)
+    temp_dir_path = temp_dir_path / "foo" / "bar";
+    std::filesystem::create_directories(temp_dir_path, ec);
+    if (ec)
     {
-        log_error("ERROR: Unable to create directory foo! (in %s:%d)\n",
-                  __FILE__, __LINE__);
+        log_error("ERROR: Unable to create directory: %s, error: %d (%s)\n",
+                  temp_dir_path.u8string().c_str(), ec.value(),
+                  ec.message().c_str());
         return -1;
     }
-    if (_mkdir("foo/bar") != 0)
-    {
-        log_error("ERROR: Unable to create directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    if (_chdir("foo/bar") != 0)
-    {
-        log_error("ERROR: Unable to change to directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    FILE *simple_header_file = fopen(simple_header_name, "w");
+
+    const auto simple_header_path = temp_dir_path / simple_header_name;
+    const std::string simple_header_path_str =
+        to_string(simple_header_path.u8string());
+    FILE *simple_header_file = fopen(simple_header_path_str.c_str(), "w");
     if (simple_header_file == NULL)
     {
         log_error("ERROR: Unable to create simple header file %s! (in %s:%d)\n",
-                  simple_header_name, __FILE__, __LINE__);
+                  simple_header_path_str.c_str(), __FILE__, __LINE__);
         return -1;
     }
     if (fprintf(simple_header_file, "%s", simple_header) < 0)
     {
         log_error(
             "ERROR: Unable to write to simple header file %s! (in %s:%d)\n",
-            simple_header_name, __FILE__, __LINE__);
+            simple_header_path.u8string().c_str(), __FILE__, __LINE__);
         return -1;
     }
     if (fclose(simple_header_file) != 0)
     {
         log_error("ERROR: Unable to close simple header file %s! (in %s:%d)\n",
-                  simple_header_name, __FILE__, __LINE__);
+                  simple_header_path.u8string().c_str(), __FILE__, __LINE__);
         return -1;
     }
-    if (_chdir("../..") != 0)
-    {
-        log_error("ERROR: Unable to change to original working directory! (in "
-                  "%s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-#if (defined(__linux__) || defined(__APPLE__)) && (!defined(__ANDROID__))
-    error = clCompileProgram(program, 1, &deviceID, "-I/tmp/foo/bar", 0, NULL,
+
+    const std::string include_path =
+        std::string("-I") + to_string(temp_dir_path.generic_u8string());
+    error = clCompileProgram(program, 1, &device, include_path.c_str(), 0, NULL,
                              NULL, NULL, NULL);
-#else
-    error = clCompileProgram(program, 1, &deviceID, "-Ifoo/bar", 0, NULL, NULL,
-                             NULL, NULL);
-#endif
     test_error(error,
                "Unable to compile a simple program with included header");
 
     /* cleanup */
-    if (_chdir("foo/bar") != 0)
+    std::filesystem::remove_all(temp_dir_path, ec);
+    if (ec)
     {
-        log_error("ERROR: Unable to change to directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    if (_unlink(simple_header_name) != 0)
-    {
-        log_error("ERROR: Unable to remove simple header file %s! (in %s:%d)\n",
-                  simple_header_name, __FILE__, __LINE__);
-        return -1;
-    }
-    if (_chdir("../..") != 0)
-    {
-        log_error("ERROR: Unable to change to original working directory! (in "
-                  "%s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    if (_rmdir("foo/bar") != 0)
-    {
-        log_error("ERROR: Unable to remove directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    if (_rmdir("foo") != 0)
-    {
-        log_error("ERROR: Unable to remove directory foo! (in %s:%d)\n",
-                  __FILE__, __LINE__);
+        log_error("ERROR: Unable to delete directory: %s, error: %d (%s)",
+                  temp_dir_path.u8string().c_str(), ec.value(),
+                  ec.message().c_str());
         return -1;
     }
 
@@ -3206,13 +3110,13 @@ int test_execute_after_included_header_link(cl_device_id deviceID,
         return -1;
     }
 
-    error = clCompileProgram(simple_program, 1, &deviceID, NULL, 0, NULL, NULL,
+    error = clCompileProgram(simple_program, 1, &device, NULL, 0, NULL, NULL,
                              NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program two_programs[2] = { program, simple_program };
     cl_program fully_linked_program = clLinkProgram(
-        context, 1, &deviceID, "", 2, two_programs, NULL, NULL, &error);
+        context, 1, &device, "", 2, two_programs, NULL, NULL, &error);
     test_error(error,
                "Unable to create an executable from two binaries, one compiled "
                "with embedded header");
@@ -3250,8 +3154,7 @@ int test_execute_after_included_header_link(cl_device_id deviceID,
     return 0;
 }
 
-int test_program_binary_type(cl_device_id deviceID, cl_context context,
-                             cl_command_queue queue, int num_elements)
+REGISTER_TEST(program_binary_type)
 {
     int error;
     cl_program program, another_program, program_with_binary,
@@ -3272,11 +3175,11 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(program, 1, &deviceID, NULL, 0, NULL, NULL, NULL,
-                             NULL);
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
-    error = clGetProgramBuildInfo(program, deviceID, CL_PROGRAM_BINARY_TYPE,
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BINARY_TYPE,
                                   sizeof(cl_program_binary_type), &program_type,
                                   NULL);
     test_error(error, "Unable to get program binary type");
@@ -3335,12 +3238,12 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context,
 
         // use clCreateProgramWithBinary
         program_with_binary = clCreateProgramWithBinary(
-            context, 1, &deviceID, &binarySize, (const unsigned char **)buffers,
+            context, 1, &device, &binarySize, (const unsigned char **)buffers,
             loadErrors, &error);
         test_error(error, "Unable to create program with binary");
 
         error = clGetProgramBuildInfo(
-            program_with_binary, deviceID, CL_PROGRAM_BINARY_TYPE,
+            program_with_binary, device, CL_PROGRAM_BINARY_TYPE,
             sizeof(cl_program_binary_type), &program_type, NULL);
         test_error(error, "Unable to get program binary type");
         if (program_type != CL_PROGRAM_BINARY_TYPE_COMPILED_OBJECT)
@@ -3356,11 +3259,11 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context,
     }
 
     cl_program my_newly_minted_library =
-        clLinkProgram(context, 1, &deviceID, "-create-library", 1,
+        clLinkProgram(context, 1, &device, "-create-library", 1,
                       &program_with_binary, NULL, NULL, &error);
     test_error(error, "Unable to create a simple library");
     error = clGetProgramBuildInfo(
-        my_newly_minted_library, deviceID, CL_PROGRAM_BINARY_TYPE,
+        my_newly_minted_library, device, CL_PROGRAM_BINARY_TYPE,
         sizeof(cl_program_binary_type), &program_type, NULL);
     test_error(error, "Unable to get program binary type");
     if (program_type != CL_PROGRAM_BINARY_TYPE_LIBRARY)
@@ -3417,11 +3320,11 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context,
 
     // use clCreateProgramWithBinary
     cl_program library_with_binary = clCreateProgramWithBinary(
-        context, 1, &deviceID, &binarySize, (const unsigned char **)buffers,
+        context, 1, &device, &binarySize, (const unsigned char **)buffers,
         loadErrors, &error);
     test_error(error, "Unable to create program with binary");
     error = clGetProgramBuildInfo(
-        library_with_binary, deviceID, CL_PROGRAM_BINARY_TYPE,
+        library_with_binary, device, CL_PROGRAM_BINARY_TYPE,
         sizeof(cl_program_binary_type), &program_type, NULL);
     test_error(error, "Unable to get program binary type");
     if (program_type != CL_PROGRAM_BINARY_TYPE_LIBRARY)
@@ -3444,19 +3347,19 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clCompileProgram(another_program, 1, &deviceID, NULL, 0, NULL, NULL,
+    error = clCompileProgram(another_program, 1, &device, NULL, 0, NULL, NULL,
                              NULL, NULL);
     test_error(error, "Unable to compile a simple program");
 
     cl_program program_and_archive[2] = { another_program,
                                           library_with_binary };
     cl_program fully_linked_program = clLinkProgram(
-        context, 1, &deviceID, "", 2, program_and_archive, NULL, NULL, &error);
+        context, 1, &device, "", 2, program_and_archive, NULL, NULL, &error);
     test_error(error,
                "Unable to create an executable from a binary and a library");
 
     error = clGetProgramBuildInfo(
-        fully_linked_program, deviceID, CL_PROGRAM_BINARY_TYPE,
+        fully_linked_program, device, CL_PROGRAM_BINARY_TYPE,
         sizeof(cl_program_binary_type), &program_type, NULL);
     test_error(error, "Unable to get program binary type");
     if (program_type != CL_PROGRAM_BINARY_TYPE_EXECUTABLE)
@@ -3515,12 +3418,12 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context,
 
         // use clCreateProgramWithBinary
         fully_linked_program_with_binary = clCreateProgramWithBinary(
-            context, 1, &deviceID, &binarySize, (const unsigned char **)buffers,
+            context, 1, &device, &binarySize, (const unsigned char **)buffers,
             loadErrors, &error);
         test_error(error, "Unable to create program with binary");
 
         error = clGetProgramBuildInfo(
-            fully_linked_program_with_binary, deviceID, CL_PROGRAM_BINARY_TYPE,
+            fully_linked_program_with_binary, device, CL_PROGRAM_BINARY_TYPE,
             sizeof(cl_program_binary_type), &program_type, NULL);
         test_error(error, "Unable to get program binary type");
         if (program_type != CL_PROGRAM_BINARY_TYPE_EXECUTABLE)
@@ -3535,7 +3438,7 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context,
         free(binary);
     }
 
-    error = clBuildProgram(fully_linked_program_with_binary, 1, &deviceID, NULL,
+    error = clBuildProgram(fully_linked_program_with_binary, 1, &device, NULL,
                            NULL, NULL);
     test_error(error, "Unable to build a simple program");
 
@@ -3575,9 +3478,9 @@ int test_program_binary_type(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    error = clBuildProgram(program, 1, &deviceID, NULL, NULL, NULL);
+    error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
     test_error(error, "Unable to build a simple program");
-    error = clGetProgramBuildInfo(program, deviceID, CL_PROGRAM_BINARY_TYPE,
+    error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BINARY_TYPE,
                                   sizeof(cl_program_binary_type), &program_type,
                                   NULL);
     test_error(error, "Unable to get program binary type");
@@ -3666,10 +3569,9 @@ void CL_CALLBACK test_notify_link_complete(cl_program program, void *userData)
     log_info("\n   <-- program successfully linked\n");
 }
 
-int test_large_compile_and_link_status_options_log(cl_context context,
-                                                   cl_device_id deviceID,
-                                                   cl_command_queue queue,
-                                                   unsigned int numLines)
+static int test_large_compile_and_link_status_options_log(
+    cl_context context, cl_device_id deviceID, cl_command_queue queue,
+    unsigned int numLines)
 {
     int error;
     cl_program program;
@@ -3987,10 +3889,7 @@ int test_large_compile_and_link_status_options_log(cl_context context,
     return 0;
 }
 
-int test_compile_and_link_status_options_log(cl_device_id deviceID,
-                                             cl_context context,
-                                             cl_command_queue queue,
-                                             int num_elements)
+REGISTER_TEST(compile_and_link_status_options_log)
 {
     unsigned int toTest[] = { 256, 0 }; // 512, 1024, 8192, 16384, 32768, 0 };
     unsigned int i;
@@ -4009,7 +3908,7 @@ int test_compile_and_link_status_options_log(cl_device_id deviceID,
         gettimeofday(&time1, NULL);
 #endif
 
-        if (test_large_compile_and_link_status_options_log(context, deviceID,
+        if (test_large_compile_and_link_status_options_log(context, device,
                                                            queue, toTest[i])
             != 0)
         {

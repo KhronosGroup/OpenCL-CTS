@@ -172,7 +172,12 @@ int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
     }
 
     err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
-    SPIRV_CHECK_ERROR(err, "Failed to build program");
+    if (err != CL_SUCCESS)
+    {
+        cl_int outputErr = OutputBuildLog(prog, deviceID);
+        SPIRV_CHECK_ERROR(outputErr, "OutputBuildLog failed");
+        return err;
+    }
 
     return err;
 }
@@ -211,6 +216,7 @@ int main(int argc, const char *argv[])
 {
     gReSeed = 1;
     bool modifiedSpvBinariesPath = false;
+    bool listTests = false;
     for (int i = 0; i < argc; ++i) {
         int argsRemoveNum = 0;
         if (argv[i] == spvBinariesPathArg) {
@@ -236,9 +242,12 @@ int main(int argc, const char *argv[])
             argc -= argsRemoveNum;
             --i;
         }
+        listTests |= (argv[i] == std::string("--list")
+                      || argv[i] == std::string("-list"));
     }
-    if (modifiedSpvBinariesPath == false) {
-       printUsage();
+    if (modifiedSpvBinariesPath == false && !listTests)
+    {
+        printUsage();
     }
 
     return runTestHarnessWithCheck(

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 The Khronos Group Inc.
+// Copyright (c) 2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,25 +32,22 @@
 #define BUFFERSIZE 3000
 
 
-const VulkanInstance &getVulkanInstance()
+const VulkanInstance &getVulkanInstance(bool useValidationLayers)
 {
-    static VulkanInstance instance;
+    static VulkanInstance instance(useValidationLayers);
     return instance;
 }
 
-const VulkanPhysicalDevice &getVulkanPhysicalDevice()
+const VulkanPhysicalDevice &getVulkanPhysicalDevice(bool useValidationLayers)
 {
-    size_t pdIdx;
+    size_t pdIdx = 0;
     cl_int errNum = 0;
-    cl_platform_id platform = NULL;
+    cl_platform_id platform = nullptr;
     cl_uchar uuid[CL_UUID_SIZE_KHR];
-    cl_device_id *devices;
-    char *extensions = NULL;
-    size_t extensionSize = 0;
     cl_uint num_devices = 0;
     cl_uint device_no = 0;
     const size_t bufsize = BUFFERSIZE;
-    const VulkanInstance &instance = getVulkanInstance();
+    const VulkanInstance &instance = getVulkanInstance(useValidationLayers);
     const VulkanPhysicalDeviceList &physicalDeviceList =
         instance.getPhysicalDeviceList();
 
@@ -69,14 +66,9 @@ const VulkanPhysicalDevice &getVulkanPhysicalDevice()
         throw std::runtime_error(
             "Error: clGetDeviceIDs failed in returning of devices\n");
     }
-    devices = (cl_device_id *)malloc(num_devices * sizeof(cl_device_id));
-    if (NULL == devices)
-    {
-        throw std::runtime_error(
-            "Error: Unable to allocate memory for devices\n");
-    }
-    errNum = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, num_devices, devices,
-                            NULL);
+    std::vector<cl_device_id> devices(num_devices);
+    errNum = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, num_devices,
+                            devices.data(), NULL);
     if (CL_SUCCESS != errNum)
     {
         throw std::runtime_error("Error: Failed to get deviceID.\n");
@@ -84,34 +76,14 @@ const VulkanPhysicalDevice &getVulkanPhysicalDevice()
     bool is_selected = false;
     for (device_no = 0; device_no < num_devices; device_no++)
     {
-        errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_EXTENSIONS, 0,
-                                 NULL, &extensionSize);
-        if (CL_SUCCESS != errNum)
-        {
-            throw std::runtime_error("Error in clGetDeviceInfo for getting "
-                                     "device_extension size....\n");
-        }
-        extensions = (char *)malloc(extensionSize);
-        if (NULL == extensions)
-        {
-            throw std::runtime_error(
-                "Unable to allocate memory for extensions\n");
-        }
-        errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_EXTENSIONS,
-                                 extensionSize, extensions, NULL);
-        if (CL_SUCCESS != errNum)
-        {
-            throw std::runtime_error("Error: Error in clGetDeviceInfo for "
-                                     "getting device_extension\n");
-        }
         errNum = clGetDeviceInfo(devices[device_no], CL_DEVICE_UUID_KHR,
-                                 CL_UUID_SIZE_KHR, uuid, &extensionSize);
+                                 CL_UUID_SIZE_KHR, uuid, nullptr);
         if (CL_SUCCESS != errNum)
         {
             throw std::runtime_error(
                 "Error: clGetDeviceInfo failed with error\n");
         }
-        free(extensions);
+
         for (pdIdx = 0; pdIdx < physicalDeviceList.size(); pdIdx++)
         {
             if (!memcmp(&uuid, physicalDeviceList[pdIdx].getUUID(),
@@ -139,10 +111,49 @@ const VulkanPhysicalDevice &getVulkanPhysicalDevice()
     return physicalDeviceList[pdIdx];
 }
 
-const VulkanQueueFamily &getVulkanQueueFamily(uint32_t queueFlags)
+const VulkanPhysicalDevice &
+getAssociatedVulkanPhysicalDevice(cl_device_id deviceId,
+                                  bool useValidationLayers)
+{
+    size_t pdIdx;
+    cl_int errNum = 0;
+    cl_uchar uuid[CL_UUID_SIZE_KHR];
+    const VulkanInstance &instance = getVulkanInstance(useValidationLayers);
+    const VulkanPhysicalDeviceList &physicalDeviceList =
+        instance.getPhysicalDeviceList();
+
+    errNum = clGetDeviceInfo(deviceId, CL_DEVICE_UUID_KHR, CL_UUID_SIZE_KHR,
+                             uuid, nullptr);
+    if (CL_SUCCESS != errNum)
+    {
+        throw std::runtime_error("Error: clGetDeviceInfo failed with error\n");
+    }
+    for (pdIdx = 0; pdIdx < physicalDeviceList.size(); pdIdx++)
+    {
+        if (!memcmp(&uuid, physicalDeviceList[pdIdx].getUUID(), VK_UUID_SIZE))
+        {
+            std::cout << "Selected physical device = "
+                      << physicalDeviceList[pdIdx] << std::endl;
+            break;
+        }
+    }
+
+    if ((pdIdx >= physicalDeviceList.size())
+        || (physicalDeviceList[pdIdx] == (VkPhysicalDevice)VK_NULL_HANDLE))
+    {
+        throw std::runtime_error("failed to find a suitable GPU!");
+    }
+    std::cout << "Selected physical device is: " << physicalDeviceList[pdIdx]
+              << std::endl;
+    return physicalDeviceList[pdIdx];
+}
+
+
+const VulkanQueueFamily &
+getVulkanQueueFamily(const VulkanPhysicalDevice &physicalDevice,
+                     uint32_t queueFlags)
 {
     size_t qfIdx;
-    const VulkanPhysicalDevice &physicalDevice = getVulkanPhysicalDevice();
     const VulkanQueueFamilyList &queueFamilyList =
         physicalDevice.getQueueFamilyList();
 
@@ -178,10 +189,10 @@ getVulkanMemoryType(const VulkanDevice &device,
     return memoryTypeList[mtIdx];
 }
 
-bool checkVkSupport()
+bool checkVkSupport(bool useValidationLayers)
 {
     bool result = true;
-    const VulkanInstance &instance = getVulkanInstance();
+    const VulkanInstance &instance = getVulkanInstance(useValidationLayers);
     const VulkanPhysicalDeviceList &physicalDeviceList =
         instance.getPhysicalDeviceList();
     if (physicalDeviceList() == NULL)
@@ -215,7 +226,8 @@ getDefaultVulkanQueueFamilyToQueueCountMap()
 }
 
 const std::vector<VulkanExternalMemoryHandleType>
-getSupportedVulkanExternalMemoryHandleTypeList()
+getSupportedVulkanExternalMemoryHandleTypeList(
+    const VulkanPhysicalDevice &physical_device)
 {
     std::vector<VulkanExternalMemoryHandleType> externalMemoryHandleTypeList;
 
@@ -228,8 +240,25 @@ getSupportedVulkanExternalMemoryHandleTypeList()
     externalMemoryHandleTypeList.push_back(
         VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT);
 #else
-    externalMemoryHandleTypeList.push_back(
-        VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD);
+    VkPhysicalDeviceExternalBufferInfo buffer_info = {};
+    buffer_info.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO;
+    buffer_info.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
+    buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+    VkExternalBufferProperties buffer_properties = {};
+    buffer_properties.sType = VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES;
+
+    vkGetPhysicalDeviceExternalBufferProperties(physical_device, &buffer_info,
+                                                &buffer_properties);
+
+    if (buffer_properties.externalMemoryProperties.externalMemoryFeatures
+        & VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT)
+    {
+
+        externalMemoryHandleTypeList.push_back(
+            VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD);
+    }
 #endif
 
     return externalMemoryHandleTypeList;
@@ -280,7 +309,9 @@ getSupportedVulkanExternalSemaphoreHandleTypeList(const VulkanDevice &vkDevice)
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO, nullptr,
             handle_type.vk_type
         };
-        VkExternalSemaphoreProperties query_result = {};
+        VkExternalSemaphoreProperties query_result = {
+            VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES
+        };
         vkGetPhysicalDeviceExternalSemaphorePropertiesKHR(
             vkDevice.getPhysicalDevice(), &handle_query, &query_result);
         if (query_result.externalSemaphoreFeatures
@@ -685,6 +716,7 @@ operator<<(std::ostream &os,
 {
     switch (externalMemoryHandleType)
     {
+        default:
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE: return os << "None";
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
             return os << "Opaque file descriptor";
@@ -705,6 +737,7 @@ operator<<(std::ostream &os,
 {
     switch (externalSemaphoreHandleType)
     {
+        default:
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NONE: return os << "None";
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD:
             return os << "Opaque file descriptor";

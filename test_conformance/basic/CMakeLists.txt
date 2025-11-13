@@ -1,9 +1,5 @@
 set(MODULE_NAME BASIC)
 
-if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
-    add_cxx_flag_if_supported(-Wno-narrowing)
-endif()
-
 set(${MODULE_NAME}_SOURCES
     main.cpp
     test_fpmath.cpp
@@ -71,6 +67,6 @@ if(APPLE)
     list(APPEND ${MODULE_NAME}_SOURCES test_queue_priority.cpp)
 endif(APPLE)
 
-set_gnulike_module_compile_flags("-Wno-sign-compare -Wno-format")
+set_gnulike_module_compile_flags("-Wno-sign-compare")
 
 include(../CMakeCommon.txt)

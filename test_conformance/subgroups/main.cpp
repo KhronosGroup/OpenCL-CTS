@@ -14,38 +14,14 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
-
-#include <stdio.h>
-#include <string.h>
-#include "procs.h"
 #include "harness/testHarness.h"
-#include "CL/cl_half.h"
+#include "harness/kernelHelpers.h"
+#include "harness/mt19937.cpp"
+
+#include <CL/cl_half.h>
 
 MTdata gMTdata;
 cl_half_rounding_mode g_rounding_mode;
-
-test_definition test_list[] = {
-    ADD_TEST_VERSION(sub_group_info_ext, Version(2, 0)),
-    ADD_TEST_VERSION(sub_group_info_core, Version(2, 1)),
-    ADD_TEST_VERSION(work_item_functions_ext, Version(2, 0)),
-    ADD_TEST_VERSION(work_item_functions_core, Version(2, 1)),
-    ADD_TEST_VERSION(subgroup_functions_ext, Version(2, 0)),
-    ADD_TEST_VERSION(subgroup_functions_core, Version(2, 1)),
-    ADD_TEST_VERSION(barrier_functions_ext, Version(2, 0)),
-    ADD_TEST_VERSION(barrier_functions_core, Version(2, 1)),
-    ADD_TEST_VERSION(ifp_ext, Version(2, 0)),
-    ADD_TEST_VERSION(ifp_core, Version(2, 1)),
-    ADD_TEST(subgroup_functions_extended_types),
-    ADD_TEST(subgroup_functions_non_uniform_vote),
-    ADD_TEST(subgroup_functions_non_uniform_arithmetic),
-    ADD_TEST(subgroup_functions_ballot),
-    ADD_TEST(subgroup_functions_clustered_reduce),
-    ADD_TEST(subgroup_functions_shuffle),
-    ADD_TEST(subgroup_functions_shuffle_relative),
-    ADD_TEST(subgroup_functions_rotate),
-};
-
-const int test_num = ARRAY_SIZE(test_list);
 
 static test_status InitCL(cl_device_id device)
 {
@@ -91,6 +67,7 @@ static test_status InitCL(cl_device_id device)
 int main(int argc, const char *argv[])
 {
     gMTdata = init_genrand(0);
-    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, 0,
-                                   InitCL);
+    return runTestHarnessWithCheck(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0, InitCL);
 }

@@ -21,8 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 static const char *image_to_image_kernel_integer_coord_code =
 "\n"
@@ -143,11 +142,10 @@ verify_byte_image(unsigned char *image, unsigned char *outptr, int w, int h, int
     return 0;
 }
 
-int
-test_image_multipass_integer_coord(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(image_multipass_integer_coord)
 {
-    int                 img_width = 512;
-    int                 img_height = 512;
+    size_t img_width = 512;
+    size_t img_height = 512;
     cl_image_format     img_format;
 
     int                 num_input_streams = 8;
@@ -397,11 +395,10 @@ test_image_multipass_integer_coord(cl_device_id device, cl_context context, cl_c
     return err;
 }
 
-int
-test_image_multipass_float_coord(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(image_multipass_float_coord)
 {
-    int                 img_width = 512;
-    int                 img_height = 512;
+    size_t img_width = 512;
+    size_t img_height = 512;
     cl_image_format     img_format;
 
     int                 num_input_streams = 8;
@@ -637,8 +634,3 @@ test_image_multipass_float_coord(cl_device_id device, cl_context context, cl_com
 
     return err;
 }
-
-
-
-
-

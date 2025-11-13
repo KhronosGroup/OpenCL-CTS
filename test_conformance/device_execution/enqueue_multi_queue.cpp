@@ -17,18 +17,15 @@
 #include <string.h>
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
+#include "harness/parseParameters.h"
 
 #include <vector>
 
-#include "procs.h"
 #include "utils.h"
 #include <time.h>
 
 
-
-
 #ifdef CL_VERSION_2_0
-extern int gWimpyMode;
 static const char enqueue_block_multi_queue[] =
     NL "#define BLOCK_COMPLETED 0"
     NL "#define BLOCK_SUBMITTED 1"
@@ -95,7 +92,7 @@ static int check_kernel_results(cl_int* results, cl_int len)
     return -1;
 }
 
-int test_enqueue_multi_queue(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(enqueue_multi_queue)
 {
     cl_uint i;
     cl_int k, err_ret, res = 0;
@@ -194,7 +191,6 @@ int test_enqueue_multi_queue(cl_device_id device, cl_context context, cl_command
     }
     return res;
 }
-
 
 
 #endif

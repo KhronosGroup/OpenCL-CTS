@@ -53,24 +53,6 @@ int g_arrVecSizes[kVectorSizeCount+kStrangeVectorSizeCount];
 int g_arrVecAligns[kLargestVectorSize+1];
 static int arrStrangeVecSizes[kStrangeVectorSizeCount] = {3};
 
-test_definition test_list[] = {
-    ADD_TEST( vload_half ),
-    ADD_TEST( vloada_half ),
-    ADD_TEST( vstore_half ),
-    ADD_TEST( vstorea_half ),
-    ADD_TEST( vstore_half_rte ),
-    ADD_TEST( vstorea_half_rte ),
-    ADD_TEST( vstore_half_rtz ),
-    ADD_TEST( vstorea_half_rtz ),
-    ADD_TEST( vstore_half_rtp ),
-    ADD_TEST( vstorea_half_rtp ),
-    ADD_TEST( vstore_half_rtn ),
-    ADD_TEST( vstorea_half_rtn ),
-    ADD_TEST( roundTrip ),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
-
 int main (int argc, const char **argv )
 {
     int error;
@@ -101,15 +83,10 @@ int main (int argc, const char **argv )
     if( (error = ParseArgs( argc, argv )) )
         goto exit;
 
-    if (gIsEmbedded) {
-        vlog( "\tProfile: Embedded\n" );
-    }else
-    {
-        vlog( "\tProfile: Full\n" );
-    }
-
     fflush( stdout );
-    error = runTestHarnessWithCheck( argCount, argList, test_num, test_list, true, 0, InitCL );
+    error = runTestHarnessWithCheck(
+        argCount, argList, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), true, 0, InitCL);
 
 exit:
     if(gQueue)
@@ -130,6 +107,10 @@ exit:
 
 static int ParseArgs( int argc, const char **argv )
 {
+    if (gListTests)
+    {
+        return 0;
+    }
     int i;
     argList = (const char **)calloc(argc, sizeof(char *));
     if( NULL == argList )
@@ -144,11 +125,12 @@ static int ParseArgs( int argc, const char **argv )
 #if (defined( __APPLE__ ) || defined(__linux__) || defined(__MINGW32__))
     { // Extract the app name
         char baseName[ MAXPATHLEN ];
-        strncpy( baseName, argv[0], MAXPATHLEN );
+        strncpy(baseName, argv[0], MAXPATHLEN - 1);
+        baseName[MAXPATHLEN - 1] = '\0';
         char *base = basename( baseName );
         if( NULL != base )
         {
-            strncpy( appName, base, sizeof( appName )  );
+            strncpy(appName, base, sizeof(appName) - 1);
             appName[ sizeof( appName ) -1 ] = '\0';
         }
     }
@@ -196,9 +178,6 @@ static int ParseArgs( int argc, const char **argv )
 
                     case 'r': gHostReset = true; break;
 
-                    case 'w':  // Wimpy mode
-                        gWimpyMode = true;
-                        break;
                     case '[':
                         parseWimpyReductionFactor( arg, gWimpyReductionFactor);
                         break;
@@ -217,12 +196,6 @@ static int ParseArgs( int argc, const char **argv )
         }
     }
 
-    if (getenv("CL_WIMPY_MODE")) {
-      vlog( "\n" );
-      vlog( "*** Detected CL_WIMPY_MODE env                          ***\n" );
-      gWimpyMode = 1;
-    }
-
     PrintArch();
     if( gWimpyMode )
     {
@@ -232,6 +205,16 @@ static int ParseArgs( int argc, const char **argv )
         vlog( "*** It gives warm fuzzy feelings and then nevers calls. ***\n\n" );
         vlog( "*** Wimpy Reduction Factor: %-27u ***\n\n", gWimpyReductionFactor);
     }
+
+    if (gIsEmbedded)
+    {
+        vlog("\tProfile: Embedded\n");
+    }
+    else
+    {
+        vlog("\tProfile: Full\n");
+    }
+
     return 0;
 }
 
@@ -242,13 +225,12 @@ static void PrintUsage( void )
          "supported)\n");
     vlog("\t\t-t\tToggle reporting performance data.\n");
     vlog("\t\t-r\tReset buffers on host instead of on device.\n");
-    vlog("\t\t-w\tRun in wimpy mode\n");
     vlog("\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
          "1-12, default factor(%u)\n",
          gWimpyReductionFactor);
     vlog("\t\t-h\tHelp\n");
-    for (int i = 0; i < test_num; i++)
+    for (size_t i = 0; i < test_registry::getInstance().num_tests(); i++)
     {
-        vlog("\t\t%s\n", test_list[i].name );
+        vlog("\t\t%s\n", test_registry::getInstance().definitions()[i].name);
     }
 }

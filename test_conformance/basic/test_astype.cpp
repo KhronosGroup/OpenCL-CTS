@@ -24,9 +24,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <vector>
-
-#include "procs.h"
-
 // clang-format off
 
 static char extension[128] = { 0 };
@@ -48,9 +45,10 @@ extension,
 
 // clang-format on
 
-int test_astype_set( cl_device_id device, cl_context context, cl_command_queue queue, ExplicitType inVecType, ExplicitType outVecType,
-                    unsigned int vecSize, unsigned int outVecSize,
-                    int numElements )
+static int test_astype_set(cl_device_id device, cl_context context,
+                           cl_command_queue queue, ExplicitType inVecType,
+                           ExplicitType outVecType, unsigned int vecSize,
+                           unsigned int outVecSize, int numElements)
 {
     int error;
 
@@ -179,7 +177,7 @@ int test_astype_set( cl_device_id device, cl_context context, cl_command_queue q
     return 0;
 }
 
-int test_astype(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
+REGISTER_TEST(astype)
 {
     // Note: although casting to different vector element sizes that match the same size (i.e. short2 -> char4) is
     // legal in OpenCL 1.0, the result is dependent on the device it runs on, which means there's no actual way
@@ -236,19 +234,24 @@ int test_astype(cl_device_id device, cl_context context, cl_command_queue queue,
                     {
                         continue;
                     }
-                    error += test_astype_set( device, context, queue, vecTypes[ inTypeIdx ], vecTypes[ outTypeIdx ], vecSizes[ sizeIdx ], vecSizes[outSizeIdx], n_elems );
+                    error += test_astype_set(
+                        device, context, queue, vecTypes[inTypeIdx],
+                        vecTypes[outTypeIdx], vecSizes[sizeIdx],
+                        vecSizes[outSizeIdx], num_elements);
                 }
             }
             if(get_explicit_type_size(vecTypes[inTypeIdx]) ==
                get_explicit_type_size(vecTypes[outTypeIdx])) {
                 // as_type3(vec4) allowed, as_type4(vec3) not allowed
-                error += test_astype_set( device, context, queue, vecTypes[ inTypeIdx ], vecTypes[ outTypeIdx ], 3, 4, n_elems );
-                error += test_astype_set( device, context, queue, vecTypes[ inTypeIdx ], vecTypes[ outTypeIdx ], 4, 3, n_elems );
+                error +=
+                    test_astype_set(device, context, queue, vecTypes[inTypeIdx],
+                                    vecTypes[outTypeIdx], 3, 4, num_elements);
+                error +=
+                    test_astype_set(device, context, queue, vecTypes[inTypeIdx],
+                                    vecTypes[outTypeIdx], 4, 3, num_elements);
             }
 
         }
     }
     return error;
 }
-
-

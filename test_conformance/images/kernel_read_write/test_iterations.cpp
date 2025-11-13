@@ -945,7 +945,7 @@ int validate_image_2D_sRGB_results(void *imageValues, void *resultValues, double
         // Validate float results
         float *resultPtr = (float *)(char *)resultValues;
         float expected[4], error=0.0f;
-        float maxErr = get_max_relative_error( imageInfo->format, imageSampler, 0 /*not 3D*/, CL_FILTER_LINEAR == imageSampler->filter_mode );
+
         for( size_t y = 0, j = 0; y < height_lod; y++ )
         {
             for( size_t x = 0; x < width_lod; x++, j++ )
@@ -1191,7 +1191,7 @@ int test_read_image_2D( cl_context context, cl_command_queue queue, cl_kernel ke
 {
     int error;
     static int initHalf = 0;
-    cl_mem imageBuffer;
+    cl_mem imageBuffer = nullptr;
     cl_mem_flags    image_read_write_flags = CL_MEM_READ_ONLY;
     size_t threads[2];
 

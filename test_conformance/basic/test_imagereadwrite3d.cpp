@@ -15,23 +15,22 @@
 //
 #include "harness/compat.h"
 
+#include <memory>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "testBase.h"
 
-#include "procs.h"
-
-static unsigned char *
+static std::unique_ptr<unsigned char[]>
 generate_rgba8_image(int w, int h, int d, MTdata mtData)
 {
-    unsigned char   *ptr = (unsigned char*)malloc(w * h * d *4);
-    int             i;
+    std::unique_ptr<unsigned char[]> ptr{ new unsigned char[w * h * d * 4] };
 
-    for (i=0; i<w*h*d*4; i++)
-            ptr[i] = (unsigned char)genrand_int32(mtData);
+    for (int i = 0; i < w * h * d * 4; i++)
+        ptr[i] = (unsigned char)genrand_int32(mtData);
 
     return ptr;
 }
@@ -78,8 +77,8 @@ update_image_from_image(void *out, void *in, int x, int y, int z, int w, int h, 
         }
 }
 
-static int
-verify_rgba8_image(unsigned char *image, unsigned char *outptr, int w, int h, int d)
+static int verify_rgba8_image(const unsigned char *image,
+                              const unsigned char *outptr, int w, int h, int d)
 {
     int     i;
 
@@ -96,14 +95,13 @@ verify_rgba8_image(unsigned char *image, unsigned char *outptr, int w, int h, in
 }
 
 
-static unsigned short *
+static std::unique_ptr<unsigned short[]>
 generate_rgba16_image(int w, int h, int d, MTdata mtData)
 {
-    unsigned short    *ptr = (unsigned short*)malloc(w * h * d * 4 * sizeof(unsigned short));
-    int             i;
+    std::unique_ptr<unsigned short[]> ptr{ new unsigned short[w * h * d * 4] };
 
-    for (i=0; i<w*h*d*4; i++)
-            ptr[i] = (unsigned short)genrand_int32(mtData);
+    for (int i = 0; i < w * h * d * 4; i++)
+        ptr[i] = (unsigned short)genrand_int32(mtData);
 
     return ptr;
 }
@@ -128,8 +126,9 @@ update_rgba16_image(unsigned short *p, int x, int y, int z, int w, int h, int d,
     }
 }
 
-static int
-verify_rgba16_image(unsigned short *image, unsigned short *outptr, int w, int h, int d)
+static int verify_rgba16_image(const unsigned short *image,
+                               const unsigned short *outptr, int w, int h,
+                               int d)
 {
     int     i;
 
@@ -146,14 +145,13 @@ verify_rgba16_image(unsigned short *image, unsigned short *outptr, int w, int h,
 }
 
 
-static float *
-generate_rgbafp_image(int w, int h, int d, MTdata mtData)
+static std::unique_ptr<float[]> generate_rgbafp_image(int w, int h, int d,
+                                                      MTdata mtData)
 {
-    float   *ptr = (float*)malloc(w * h * d *4 * sizeof(float));
-    int     i;
+    std::unique_ptr<float[]> ptr{ new float[w * h * d * 4] };
 
-    for (i=0; i<w*h*d*4; i++)
-            ptr[i] = get_random_float(-0x40000000, 0x40000000, mtData);
+    for (int i = 0; i < w * h * d * 4; i++)
+        ptr[i] = get_random_float(-0x40000000, 0x40000000, mtData);
 
     return ptr;
 }
@@ -178,8 +176,8 @@ update_rgbafp_image(float *p, int x, int y, int z, int w, int h, int d, int img_
         }
 }
 
-static int
-verify_rgbafp_image(float *image, float *outptr, int w, int h, int d)
+static int verify_rgbafp_image(const float *image, const float *outptr, int w,
+                               int h, int d)
 {
     int     i;
 
@@ -195,59 +193,59 @@ verify_rgbafp_image(float *image, float *outptr, int w, int h, int d)
     return 0;
 }
 
+static constexpr cl_image_format image_formats[] = { { CL_RGBA, CL_UNORM_INT8 },
+                                                     { CL_RGBA,
+                                                       CL_UNORM_INT16 },
+                                                     { CL_RGBA, CL_FLOAT } };
 
-int
-test_imagereadwrite3d(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(imagereadwrite3d)
 {
-    cl_image_format    img_format;
-    unsigned char    *rgba8_inptr, *rgba8_outptr;
-    unsigned short *rgba16_inptr, *rgba16_outptr;
-    float            *rgbafp_inptr, *rgbafp_outptr;
+    constexpr size_t image_formats_count = ARRAY_SIZE(image_formats);
+    std::unique_ptr<unsigned char[]> rgba8_inptr, rgba8_outptr;
+    std::unique_ptr<unsigned short[]> rgba16_inptr, rgba16_outptr;
+    std::unique_ptr<float[]> rgbafp_inptr, rgbafp_outptr;
     clMemWrapper    streams[3];
-    int       img_width = 64;
-    int       img_height = 64;
-    int       img_depth = 32;
-    int       img_slice = img_width * img_height;
+    size_t img_width = 64;
+    size_t img_height = 64;
+    size_t img_depth = 32;
+    size_t img_slice = img_width * img_height;
     int       num_tries = 30;
     int       i, j, err;
-    MTdata      mtData;
+    MTdataHolder mtData(gRandomSeed);
 
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( device )
 
-    mtData = init_genrand( gRandomSeed );
-    rgba8_inptr = (unsigned char *)generate_rgba8_image(img_width, img_height, img_depth, mtData);
-    rgba16_inptr = (unsigned short *)generate_rgba16_image(img_width, img_height, img_depth, mtData);
-    rgbafp_inptr = (float *)generate_rgbafp_image(img_width, img_height, img_depth, mtData);
+    rgba8_inptr =
+        generate_rgba8_image(img_width, img_height, img_depth, mtData);
+    rgba16_inptr =
+        generate_rgba16_image(img_width, img_height, img_depth, mtData);
+    rgbafp_inptr =
+        generate_rgbafp_image(img_width, img_height, img_depth, mtData);
 
-    rgba8_outptr = (unsigned char*)malloc(sizeof(unsigned char) * 4 * img_width * img_height * img_depth);
-    rgba16_outptr = (unsigned short*)malloc(sizeof(unsigned short) * 4 * img_width * img_height * img_depth);
-    rgbafp_outptr = (float*)malloc(sizeof(float) * 4 * img_width * img_height * img_depth);
+    rgba8_outptr.reset(
+        new unsigned char[4 * img_width * img_height * img_depth]);
+    rgba16_outptr.reset(
+        new unsigned short[4 * img_width * img_height * img_depth]);
+    rgbafp_outptr.reset(new float[4 * img_width * img_height * img_depth]);
 
-    img_format.image_channel_order = CL_RGBA;
-    img_format.image_channel_data_type = CL_UNORM_INT8;
-    streams[0] = create_image_3d(context, CL_MEM_READ_ONLY, &img_format, img_width, img_height, img_depth, 0, 0, NULL, &err);
-    test_error(err, "create_image_3d failed");
+    for (size_t index = 0; index < image_formats_count; ++index)
+    {
+        streams[index] = create_image_3d(
+            context, CL_MEM_READ_ONLY, &image_formats[index], img_width,
+            img_height, img_depth, 0, 0, nullptr, &err);
+        test_error(err, "create_image_3d failed");
+    }
 
-    img_format.image_channel_order = CL_RGBA;
-    img_format.image_channel_data_type = CL_UNORM_INT16;
-    streams[1] = create_image_3d(context, CL_MEM_READ_ONLY, &img_format, img_width, img_height, img_depth, 0, 0, NULL, &err);
-    test_error(err, "create_image_3d failed");
-
-    img_format.image_channel_order = CL_RGBA;
-    img_format.image_channel_data_type = CL_FLOAT;
-    streams[2] = create_image_3d(context, CL_MEM_READ_ONLY, &img_format, img_width, img_height, img_depth, 0, 0, NULL, &err);
-    test_error(err, "create_image_3d failed");
-
-    for (i=0; i<3; i++)
+    for (i = 0; i < image_formats_count; i++)
     {
         void    *p;
 
         if (i == 0)
-            p = (void *)rgba8_inptr;
+            p = rgba8_inptr.get();
         else if (i == 1)
-            p = (void *)rgba16_inptr;
+            p = rgba16_inptr.get();
         else
-            p = (void *)rgbafp_inptr;
+            p = rgbafp_inptr.get();
 
         size_t origin[3] = {0,0,0}, region[3] = {img_width, img_height, img_depth};
         err = clEnqueueWriteImage(queue, streams[i], CL_TRUE,
@@ -257,22 +255,24 @@ test_imagereadwrite3d(cl_device_id device, cl_context context, cl_command_queue 
         test_error(err, "clEnqueueWriteImage failed");
     }
 
-    for (i=0,j=0; i<num_tries*3; i++,j++)
+    for (i = 0, j = 0; i < num_tries * image_formats_count; i++, j++)
     {
-        int        x = (int)get_random_float(0, (float)img_width - 1, mtData);
-        int        y = (int)get_random_float(0, (float)img_height - 1, mtData);
-        int        z = (int)get_random_float(0, (float)img_depth - 1, mtData);
-        int        w = (int)get_random_float(1, (float)(img_width - x), mtData);
-        int        h = (int)get_random_float(1, (float)(img_height - y), mtData);
-        int        d = (int)get_random_float(1, (float)(img_depth - z), mtData);
+        size_t x = (size_t)get_random_float(0, (float)img_width - 1, mtData);
+        size_t y = (size_t)get_random_float(0, (float)img_height - 1, mtData);
+        size_t z = (size_t)get_random_float(0, (float)img_depth - 1, mtData);
+        size_t w = (size_t)get_random_float(1, (float)(img_width - x), mtData);
+        size_t h = (size_t)get_random_float(1, (float)(img_height - y), mtData);
+        size_t d = (size_t)get_random_float(1, (float)(img_depth - z), mtData);
         size_t    input_pitch, input_slice_pitch;
         int     set_input_pitch = (int)(genrand_int32(mtData) & 0x01);
         int     packed_update = (int)(genrand_int32(mtData) & 0x01);
         void    *p, *outp;
+        std::unique_ptr<unsigned char[]> p_rgba8;
+        std::unique_ptr<unsigned short[]> p_rgba16;
+        std::unique_ptr<float[]> p_rgbaf;
         int        elem_size;
 
-        if (j == 3)
-            j = 0;
+        if (j == image_formats_count) j = 0;
 
         // packed: the source image for the write is a whole image                                                                                                                                                                                                                                                      .
         // unpacked: the source image for the write is a subset within a larger image
@@ -282,43 +282,70 @@ test_imagereadwrite3d(cl_device_id device, cl_context context, cl_command_queue 
                 elem_size = 4;
                 if(packed_update)
                 {
-                    p = generate_rgba8_image(w, h, d, mtData);
-                    update_image_from_image(rgba8_inptr, p, x, y, z, w, h, d, img_width, img_height, img_depth, elem_size);
+                    p_rgba8 = generate_rgba8_image(w, h, d, mtData);
+                    p = p_rgba8.get();
+                    update_image_from_image(rgba8_inptr.get(), p, x, y, z, w, h,
+                                            d, img_width, img_height, img_depth,
+                                            elem_size);
                 }
                 else
                 {
-                    update_rgba8_image(rgba8_inptr, x, y, z, w, h, d, img_width, img_height, img_depth, mtData);
-                    p = (void *)(rgba8_inptr + ((z * img_slice + y * img_width + x) * 4));
+                    update_rgba8_image(rgba8_inptr.get(), x, y, z, w, h, d,
+                                       img_width, img_height, img_depth,
+                                       mtData);
+                    p = static_cast<void *>(
+                        rgba8_inptr.get()
+                        + ((z * img_slice + y * img_width + x) * 4));
                 }
-                outp = (void *)rgba8_outptr;
+                outp = static_cast<void *>(rgba8_outptr.get());
                 break;
             case 1:
                 elem_size = 2*4;
                 if(packed_update)
                 {
-                    p = generate_rgba16_image(w, h, d, mtData);
-                    update_image_from_image(rgba16_inptr, p, x, y, z, w, h, d, img_width, img_height, img_depth, elem_size);
+                    p_rgba16 = generate_rgba16_image(w, h, d, mtData);
+                    p = p_rgba16.get();
+                    update_image_from_image(rgba16_inptr.get(), p, x, y, z, w,
+                                            h, d, img_width, img_height,
+                                            img_depth, elem_size);
                 }
                 else
                 {
-                    update_rgba16_image(rgba16_inptr, x, y, z, w, h, d, img_width, img_height, img_depth, mtData);
-                    p = (void *)(rgba16_inptr + ((z * img_slice + y * img_width + x) * 4));
+                    update_rgba16_image(rgba16_inptr.get(), x, y, z, w, h, d,
+                                        img_width, img_height, img_depth,
+                                        mtData);
+                    p = static_cast<void *>(
+                        rgba16_inptr.get()
+                        + ((z * img_slice + y * img_width + x) * 4));
                 }
-                outp = (void *)rgba16_outptr;
+                outp = static_cast<void *>(rgba16_outptr.get());
                 break;
             case 2:
                 elem_size = 4*4;
                 if(packed_update)
                 {
-                    p = generate_rgbafp_image(w, h, d, mtData);
-                    update_image_from_image(rgbafp_inptr, p, x, y, z, w, h, d, img_width, img_height, img_depth, elem_size);
+                    p_rgbaf = generate_rgbafp_image(w, h, d, mtData);
+                    p = p_rgbaf.get();
+                    update_image_from_image(rgbafp_inptr.get(), p, x, y, z, w,
+                                            h, d, img_width, img_height,
+                                            img_depth, elem_size);
                 }
                 else
                 {
-                    update_rgbafp_image(rgbafp_inptr, x, y, z, w, h, d, img_width, img_height, img_depth, mtData);
-                    p = (void *)(rgbafp_inptr + ((z * img_slice + y * img_width + x) * 4));
+                    update_rgbafp_image(rgbafp_inptr.get(), x, y, z, w, h, d,
+                                        img_width, img_height, img_depth,
+                                        mtData);
+                    p = static_cast<void *>(
+                        rgbafp_inptr.get()
+                        + ((z * img_slice + y * img_width + x) * 4));
                 }
-                outp = (void *)rgbafp_outptr;
+                outp = static_cast<void *>(rgbafp_outptr.get());
+                break;
+            default:
+                log_error("ERROR Invalid j = %d\n", j);
+                elem_size = 0;
+                p = nullptr;
+                outp = nullptr;
                 break;
         }
 
@@ -356,8 +383,7 @@ test_imagereadwrite3d(cl_device_id device, cl_context context, cl_command_queue 
 
         if(packed_update)
         {
-            free(p);
-            p = NULL;
+            p = nullptr;
         }
 
         memset(outp, 0x7, img_width*img_height*img_depth*elem_size);
@@ -371,26 +397,40 @@ test_imagereadwrite3d(cl_device_id device, cl_context context, cl_command_queue 
         switch (j)
         {
             case 0:
-                err = verify_rgba8_image(rgba8_inptr, rgba8_outptr, img_width, img_height, img_depth);
+                err = verify_rgba8_image(rgba8_inptr.get(), rgba8_outptr.get(),
+                                         img_width, img_height, img_depth);
                 if (err)
                 {
-                    log_error("x=%d y=%d z=%d w=%d h=%d d=%d pitch=%d, slice_pitch=%d, try=%d\n", x, y, z, w, h, d, (int)input_pitch, (int)input_slice_pitch, (int)i);
+                    log_error("x=%zu y=%zu z=%zu w=%zu h=%zu d=%zu pitch=%d, "
+                              "slice_pitch=%d, try=%d\n",
+                              x, y, z, w, h, d, (int)input_pitch,
+                              (int)input_slice_pitch, (int)i);
                     log_error("IMAGE RGBA8 read, write %s test failed\n", update_packed_pitch_name);
                 }
                 break;
             case 1:
-                err = verify_rgba16_image(rgba16_inptr, rgba16_outptr, img_width, img_height, img_depth);
+                err =
+                    verify_rgba16_image(rgba16_inptr.get(), rgba16_outptr.get(),
+                                        img_width, img_height, img_depth);
                 if (err)
                 {
-                    log_error("x=%d y=%d z=%d w=%d h=%d d=%d pitch=%d, slice_pitch=%d, try=%d\n", x, y, z, w, h, d, (int)input_pitch, (int)input_slice_pitch, (int)i);
+                    log_error("x=%zu y=%zu z=%zu w=%zu h=%zu d=%zu pitch=%d, "
+                              "slice_pitch=%d, try=%d\n",
+                              x, y, z, w, h, d, (int)input_pitch,
+                              (int)input_slice_pitch, (int)i);
                     log_error("IMAGE RGBA16 read, write %s test failed\n", update_packed_pitch_name);
                 }
                 break;
             case 2:
-                err = verify_rgbafp_image(rgbafp_inptr, rgbafp_outptr, img_width, img_height, img_depth);
+                err =
+                    verify_rgbafp_image(rgbafp_inptr.get(), rgbafp_outptr.get(),
+                                        img_width, img_height, img_depth);
                 if (err)
                 {
-                    log_error("x=%d y=%d z=%d w=%d h=%d d=%d pitch=%d, slice_pitch=%d, try=%d\n", x, y, z, w, h, d, (int)input_pitch, (int)input_slice_pitch, (int)i);
+                    log_error("x=%zu y=%zu z=%zu w=%zu h=%zu d=%zu pitch=%d, "
+                              "slice_pitch=%d, try=%d\n",
+                              x, y, z, w, h, d, (int)input_pitch,
+                              (int)input_slice_pitch, (int)i);
                     log_error("IMAGE RGBA FP read, write %s test failed\n", update_packed_pitch_name);
                 }
                 break;
@@ -400,19 +440,8 @@ test_imagereadwrite3d(cl_device_id device, cl_context context, cl_command_queue 
             break;
     }
 
-    free_mtdata(mtData);
-    free(rgba8_inptr);
-    free(rgba16_inptr);
-    free(rgbafp_inptr);
-    free(rgba8_outptr);
-    free(rgba16_outptr);
-    free(rgbafp_outptr);
-
     if (!err)
         log_info("IMAGE read, write test passed\n");
 
     return err;
 }
-
-
-

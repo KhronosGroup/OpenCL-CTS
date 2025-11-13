@@ -63,7 +63,6 @@ extern int test_cl_image_read(cl_context context, cl_command_queue queue,
                               cl_image_format *outFormat, ExplicitType *outType,
                               void **outResultBuffer);
 
-extern int supportsHalf(cl_context context, bool *supports_half);
 
 static int test_attach_renderbuffer_read_image(
     cl_context context, cl_command_queue queue, GLenum glTarget,

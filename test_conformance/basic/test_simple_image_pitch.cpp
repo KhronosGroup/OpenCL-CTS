@@ -21,9 +21,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+#include "testBase.h"
 
-int test_simple_read_image_pitch(cl_device_id device, cl_context cl_context_, cl_command_queue q, int num_elements)
+REGISTER_TEST(simple_read_image_pitch)
 {
   cl_int err = CL_SUCCESS;
 
@@ -51,7 +51,9 @@ int test_simple_read_image_pitch(cl_device_id device, cl_context cl_context_, cl
   desc.image_width        = imageW;
   desc.image_height       = imageH;
 
-  cl_mem image = clCreateImage(cl_context_, CL_MEM_COPY_HOST_PTR|CL_MEM_READ_WRITE, &fmt, &desc, host_image, &err);
+  cl_mem image =
+      clCreateImage(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_WRITE, &fmt,
+                    &desc, host_image, &err);
   test_error(err,"clCreateImage");
 
   char* host_buffer = (char*)malloc(buffer_bytes);
@@ -61,7 +63,8 @@ int test_simple_read_image_pitch(cl_device_id device, cl_context cl_context_, cl
   size_t origin[] = { 0, 0, 0 };
   size_t region[] = { imageW, imageH, 1 };
 
-  err = clEnqueueReadImage(q, image, CL_TRUE, origin, region, bufferW, 0, host_buffer, 0, NULL, NULL);
+  err = clEnqueueReadImage(queue, image, CL_TRUE, origin, region, bufferW, 0,
+                           host_buffer, 0, NULL, NULL);
   test_error(err,"clEnqueueReadImage");
 
   size_t errors = 0;
@@ -69,12 +72,14 @@ int test_simple_read_image_pitch(cl_device_id device, cl_context cl_context_, cl
     for (size_t i=0;i<bufferW;++i) {
       char val = host_buffer[j*bufferW+i];
       if ((i<imageW*pixel_bytes) && (val != 0x1)) {
-        log_error("Bad value %x in image at (byte: %lu, row: %lu)\n",val,i,j);
-        ++errors;
+          log_error("Bad value %x in image at (byte: %zu, row: %zu)\n", val, i,
+                    j);
+          ++errors;
       }
       else if ((i>=imageW*pixel_bytes) && (val != 0xa)) {
-        log_error("Bad value %x outside image at (byte: %lu, row: %lu)\n",val,i,j);
-        ++errors;
+          log_error("Bad value %x outside image at (byte: %zu, row: %zu)\n",
+                    val, i, j);
+          ++errors;
       }
     }
   }
@@ -86,7 +91,7 @@ int test_simple_read_image_pitch(cl_device_id device, cl_context cl_context_, cl
   return errors == 0 ? TEST_PASS : TEST_FAIL;
 }
 
-int test_simple_write_image_pitch(cl_device_id device, cl_context cl_context_, cl_command_queue q, int num_elements)
+REGISTER_TEST(simple_write_image_pitch)
 {
   cl_int err = CL_SUCCESS;
 
@@ -114,7 +119,9 @@ int test_simple_write_image_pitch(cl_device_id device, cl_context cl_context_, c
   desc.image_width        = imageW;
   desc.image_height       = imageH;
 
-  cl_mem image = clCreateImage(cl_context_, CL_MEM_COPY_HOST_PTR|CL_MEM_READ_WRITE, &fmt, &desc, host_image, &err);
+  cl_mem image =
+      clCreateImage(context, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_WRITE, &fmt,
+                    &desc, host_image, &err);
   test_error(err,"clCreateImage");
 
   char* host_buffer = (char*)malloc(buffer_bytes);
@@ -124,11 +131,14 @@ int test_simple_write_image_pitch(cl_device_id device, cl_context cl_context_, c
   size_t origin[] = { 0, 0, 0 };
   size_t region[] = { imageW, imageH, 1 };
 
-  err = clEnqueueWriteImage(q, image, CL_TRUE, origin, region, bufferW, 0, host_buffer, 0, NULL, NULL);
+  err = clEnqueueWriteImage(queue, image, CL_TRUE, origin, region, bufferW, 0,
+                            host_buffer, 0, NULL, NULL);
   test_error(err,"clEnqueueWriteImage");
 
   size_t mapped_pitch = 0;
-  char* mapped_image = (char*)clEnqueueMapImage(q, image, CL_TRUE, CL_MAP_READ, origin, region, &mapped_pitch, NULL, 0, NULL, NULL, &err);
+  char* mapped_image = (char*)clEnqueueMapImage(
+      queue, image, CL_TRUE, CL_MAP_READ, origin, region, &mapped_pitch, NULL,
+      0, NULL, NULL, &err);
   test_error(err,"clEnqueueMapImage");
 
   size_t errors = 0;
@@ -136,13 +146,14 @@ int test_simple_write_image_pitch(cl_device_id device, cl_context cl_context_, c
     for (size_t i=0;i<mapped_pitch;++i) {
       char val = mapped_image[j*mapped_pitch+i];
       if ((i<imageW*pixel_bytes) && (val != 0xa)) {
-        log_error("Bad value %x in image at (byte: %lu, row: %lu)\n",val,i,j);
-        ++errors;
+          log_error("Bad value %x in image at (byte: %zu, row: %zu)\n", val, i,
+                    j);
+          ++errors;
       }
     }
   }
 
-  err = clEnqueueUnmapMemObject(q, image, (void *)mapped_image, 0, 0, 0);
+  err = clEnqueueUnmapMemObject(queue, image, (void*)mapped_image, 0, 0, 0);
   test_error(err,"clEnqueueUnmapMemObject");
 
   test_error(clReleaseMemObject(image),"clReleaseMemObject");

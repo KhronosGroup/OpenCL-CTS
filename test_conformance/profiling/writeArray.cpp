@@ -310,45 +310,6 @@ const char *stream_write_float_kernel_code[] = {
 static const char *float_kernel_name[] = { "test_stream_write_float", "test_stream_write_float2", "test_stream_write_float4", "test_stream_write_float8", "test_stream_write_float16" };
 
 
-const char *stream_write_half_kernel_code[] = {
-    "__kernel void test_stream_write_half(__global half *src, __global float *dst)\n"
-    "{\n"
-    "    int  tid = get_global_id(0);\n"
-    "\n"
-    "    dst[tid] = vload_half( tid * 2, src );\n"
-    "}\n",
-
-    "__kernel void test_stream_write_half2(__global half2 *src, __global float2 *dst)\n"
-    "{\n"
-    "    int  tid = get_global_id(0);\n"
-    "\n"
-    "    dst[tid] = vload_half2( tid * 2, src );\n"
-    "}\n",
-
-    "__kernel void test_stream_write_half4(__global half4 *src, __global float4 *dst)\n"
-    "{\n"
-    "    int  tid = get_global_id(0);\n"
-    "\n"
-    "    dst[tid] = vload_half4( tid * 2, src );\n"
-    "}\n",
-
-    "__kernel void test_stream_write_half8(__global half8 *src, __global float8 *dst)\n"
-    "{\n"
-    "    int  tid = get_global_id(0);\n"
-    "\n"
-    "    dst[tid] = vload_half8( tid * 2, src );\n"
-    "}\n",
-
-    "__kernel void test_stream_write_half16(__global half16 *src, __global float16 *dst)\n"
-    "{\n"
-    "    int  tid = get_global_id(0);\n"
-    "\n"
-    "    dst[tid] = vload_half16( tid * 2, src );\n"
-    "}\n" };
-
-static const char *half_kernel_name[] = { "test_stream_write_half", "test_stream_write_half2", "test_stream_write_half4", "test_stream_write_half8", "test_stream_write_half16" };
-
-
 const char *stream_write_long_kernel_code[] = {
     "__kernel void test_stream_write_long(__global long *src, __global long *dst)\n"
     "{\n"
@@ -540,21 +501,6 @@ static int verify_write_float( void *ptr1, void *ptr2, int n )
     float    *outptr = (float *)ptr2;
 
     for (i=0; i<n; i++){
-        if( outptr[i] != inptr[i] )
-            return -1;
-    }
-
-    return 0;
-}
-
-
-static int verify_write_half( void *ptr1, void *ptr2, int n )
-{
-    int        i;
-    cl_half *inptr = (cl_half *)ptr1;
-    cl_half *outptr = (cl_half *)ptr2;
-
-    for( i = 0; i < n; i++ ){
         if( outptr[i] != inptr[i] )
             return -1;
     }
@@ -1065,41 +1011,6 @@ REGISTER_TEST(write_array_float)
     return err;
 
 }    // end write_float_array()
-
-
-REGISTER_TEST(write_array_half)
-{
-    float    *inptr[5];
-    size_t    ptrSizes[5];
-    int        i, j, err;
-    int    (*foo)(void *,void *,int);
-    MTdata d = init_genrand( gRandomSeed );
-    foo = verify_write_half;
-
-    ptrSizes[0] = sizeof( cl_half );
-    ptrSizes[1] = ptrSizes[0] << 1;
-    ptrSizes[2] = ptrSizes[1] << 1;
-    ptrSizes[3] = ptrSizes[2] << 1;
-    ptrSizes[4] = ptrSizes[3] << 1;
-
-    for( i = 0; i < 5; i++ ){
-        inptr[i] = (float *)malloc(ptrSizes[i] * num_elements);
-
-        for( j = 0; (unsigned int)j < ptrSizes[i] * num_elements / ( ptrSizes[0] * 2 ); j++ )
-            inptr[i][j] = get_random_float( -FLT_MAX, FLT_MAX, d );
-    }
-
-    err = test_stream_write( device, context, queue, num_elements, sizeof( cl_half ), "half", 5, (void **)inptr,
-                            stream_write_half_kernel_code, half_kernel_name, foo, d );
-
-    for( i = 0; i < 5; i++ ){
-        free( (void *)inptr[i] );
-    }
-
-    free_mtdata(d);
-    return err;
-
-}    // end write_half_array()
 
 
 REGISTER_TEST(write_array_long)

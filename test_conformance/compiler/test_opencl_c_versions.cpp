@@ -56,9 +56,9 @@ static int test_CL_DEVICE_OPENCL_C_VERSION(cl_device_id device,
     // For OpenCL 2.x, the minimum required OpenCL C version is OpenCL C 2.0.
     // For other OpenCL versions, the minimum required OpenCL C version is
     // the same as the API version.
-    const Version min_clc_version = api_version == Version(3, 0)
-        ? Version(1, 2)
-        : api_version >= Version(2, 0) ? Version(2, 0) : api_version;
+    const Version min_clc_version = api_version == Version(3, 0) ? Version(1, 2)
+        : api_version >= Version(2, 0)                           ? Version(2, 0)
+                                                                 : api_version;
     if (clc_version < min_clc_version)
     {
         log_error("The minimum required OpenCL C version for API version %s is "
@@ -88,10 +88,10 @@ static int test_CL_DEVICE_OPENCL_C_VERSION(cl_device_id device,
         if (clc_version >= testcase.version)
         {
             clProgramWrapper program;
-            cl_int error =
-                create_single_kernel_helper_create_program_for_device(
-                    context, device, &program, 1, &test_kernel,
-                    testcase.buildOptions);
+            clKernelWrapper kernel;
+            cl_int error = create_single_kernel_helper(
+                context, &program, &kernel, 1, &test_kernel, "test",
+                testcase.buildOptions);
             test_error(error, "Unable to build program!");
 
             log_info("    successfully built program with build options '%s'\n",
@@ -152,9 +152,10 @@ static int test_CL_DEVICE_OPENCL_C_ALL_VERSIONS(cl_device_id device,
             buildOptions += std::to_string(minor);
 
             clProgramWrapper program;
-            error = create_single_kernel_helper_create_program_for_device(
-                context, device, &program, 1, &test_kernel,
-                buildOptions.c_str());
+            clKernelWrapper kernel;
+            error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                                &test_kernel, "test",
+                                                buildOptions.c_str());
             test_error(error, "Unable to build program!");
 
             log_info("    successfully built program with build options '%s'\n",
@@ -286,8 +287,7 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_versions(cl_device_id device,
     return TEST_PASS;
 }
 
-int test_opencl_c_versions(cl_device_id device, cl_context context,
-                           cl_command_queue queue, int num_elements)
+REGISTER_TEST(opencl_c_versions)
 {
     check_compiler_available(device);
 

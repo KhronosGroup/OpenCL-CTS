@@ -21,7 +21,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+#include <cinttypes>
+
+#include "testBase.h"
 
 #define CL_EXIT_ERROR(cmd,format,...)                \
 {                                \
@@ -36,7 +38,7 @@ log_error("\n");                        \
 typedef unsigned char BufferType;
 
 // Globals for test
-cl_command_queue queue;
+cl_command_queue gQueue;
 
 // Width and height of each pair of images.
 enum { TotalImages = 8 };
@@ -72,7 +74,7 @@ static void initialize_image(BufferType* ptr, size_t w, size_t h, size_t d, MTda
 
 // This function prints the contents of a buffer to standard error.
 void print_buffer(BufferType* buf, size_t w, size_t h, size_t d) {
-    log_error("Size = %lux%lux%lu (%lu total)\n",w,h,d,w*h*d);
+    log_error("Size = %zux%zux%zu (%zu total)\n", w, h, d, w * h * d);
     for (unsigned k=0; k!=d;++k) {
         log_error("Slice: %u\n",k);
         for (unsigned j=0; j!=h;++j) {
@@ -150,13 +152,12 @@ int copy_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst, si
         log_info( "Copy overlap reported, skipping copy buffer rect\n" );
         return CL_SUCCESS;
     } else {
-        if ((err = clEnqueueCopyBufferRect(queue,
-                                         buffer[src],buffer[dst],
-                                         soffset, doffset,
-                                         sregion,/*dregion,*/
-                                         width[src], src_slice_pitch,
-                                         width[dst], dst_slice_pitch,
-                                         0, NULL, NULL)) != CL_SUCCESS)
+        if ((err = clEnqueueCopyBufferRect(
+                 gQueue, buffer[src], buffer[dst], soffset, doffset,
+                 sregion, /*dregion,*/
+                 width[src], src_slice_pitch, width[dst], dst_slice_pitch, 0,
+                 NULL, NULL))
+            != CL_SUCCESS)
         {
             CL_EXIT_ERROR(err, "clEnqueueCopyBufferRect failed between %u and %u",(unsigned)src,(unsigned)dst);
         }
@@ -218,7 +219,9 @@ int verify_region(BufferType* device, size_t src, size_t soffset[3], size_t sreg
         size_t d_idx = (doffset[2]+sz)*dslice + (doffset[1]+sy)*dpitch + doffset[0]+sx;
 
         if (device[d_idx] != verify[src][s_idx]) {
-            log_error("Verify failed on comparsion %lu: coordinate (%lu, %lu, %lu) of region\n",i,sx,sy,sz);
+            log_error("Verify failed on comparsion %zu: coordinate (%zu, %zu, "
+                      "%zu) of region\n",
+                      i, sx, sy, sz);
             log_error("0x%02x != 0x%02x\n", device[d_idx], verify[src][s_idx]);
 #if 0
             // Uncomment this section to print buffers.
@@ -251,15 +254,12 @@ int read_verify_region(size_t src, size_t soffset[3], size_t sregion[3], size_t 
     size_t dst_slice_pitch = (width[dst]*height[dst] != 1) ? width[dst]*height[dst] : 0;
 
     // Copy the source region of the cl buffer, to the destination region of the temporary buffer.
-    CL_EXIT_ERROR(clEnqueueReadBufferRect(queue,
-                                          buffer[src],
-                                          CL_TRUE,
-                                          soffset,doffset,
-                                          sregion,
-                                          width[src], src_slice_pitch,
-                                          width[dst], dst_slice_pitch,
-                                          tmp_buffer,
-                                          0, NULL, NULL), "clEnqueueCopyBufferRect failed between %u and %u",(unsigned)src,(unsigned)dst);
+    CL_EXIT_ERROR(clEnqueueReadBufferRect(
+                      gQueue, buffer[src], CL_TRUE, soffset, doffset, sregion,
+                      width[src], src_slice_pitch, width[dst], dst_slice_pitch,
+                      tmp_buffer, 0, NULL, NULL),
+                  "clEnqueueCopyBufferRect failed between %u and %u",
+                  (unsigned)src, (unsigned)dst);
 
     return verify_region(tmp_buffer,src,soffset,sregion,dst,doffset);
 }
@@ -274,7 +274,9 @@ int map_verify_region(size_t src) {
 
     // Copy the source region of the cl buffer, to the destination region of the temporary buffer.
     cl_int err;
-    BufferType* mapped = (BufferType*)clEnqueueMapBuffer(queue,buffer[src],CL_TRUE,CL_MAP_READ,0,size_bytes,0,NULL,NULL,&err);
+    BufferType* mapped = (BufferType*)clEnqueueMapBuffer(
+        gQueue, buffer[src], CL_TRUE, CL_MAP_READ, 0, size_bytes, 0, NULL, NULL,
+        &err);
     CL_EXIT_ERROR(err, "clEnqueueMapBuffer failed for buffer %u",(unsigned)src);
 
     size_t soffset[] = { 0, 0, 0 };
@@ -282,8 +284,9 @@ int map_verify_region(size_t src) {
 
     int ret = verify_region(mapped,src,soffset,sregion,src,soffset);
 
-    CL_EXIT_ERROR(clEnqueueUnmapMemObject(queue,buffer[src],mapped,0,NULL,NULL),
-                  "clEnqueueUnmapMemObject failed for buffer %u",(unsigned)src);
+    CL_EXIT_ERROR(
+        clEnqueueUnmapMemObject(gQueue, buffer[src], mapped, 0, NULL, NULL),
+        "clEnqueueUnmapMemObject failed for buffer %u", (unsigned)src);
 
     return ret;
 }
@@ -299,15 +302,12 @@ int write_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst, s
     size_t dst_slice_pitch = (width[dst]*height[dst] != 1) ? width[dst]*height[dst] : 0;
 
     // Copy the source region of the cl buffer, to the destination region of the temporary buffer.
-    CL_EXIT_ERROR(clEnqueueWriteBufferRect(queue,
-                                           buffer[dst],
-                                           CL_TRUE,
-                                           doffset,soffset,
-    /*sregion,*/dregion,
-                                           width[dst], dst_slice_pitch,
-                                           width[src], src_slice_pitch,
-                                           tmp_buffer,
-                                           0, NULL, NULL), "clEnqueueWriteBufferRect failed between %u and %u",(unsigned)src,(unsigned)dst);
+    CL_EXIT_ERROR(clEnqueueWriteBufferRect(
+                      gQueue, buffer[dst], CL_TRUE, doffset, soffset,
+                      /*sregion,*/ dregion, width[dst], dst_slice_pitch,
+                      width[src], src_slice_pitch, tmp_buffer, 0, NULL, NULL),
+                  "clEnqueueWriteBufferRect failed between %u and %u",
+                  (unsigned)src, (unsigned)dst);
 
     // Copy from the temporary buffer to the host buffer.
     size_t spitch = width[src];
@@ -342,11 +342,23 @@ void CL_CALLBACK mem_obj_destructor_callback( cl_mem, void *data )
     free( data );
 }
 
-// This is the main test function for the conformance test.
-int
-test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_queue queue_, int num_elements)
+using test_fn = int (*)(size_t, size_t[3], size_t[3], size_t, size_t[3],
+                        size_t[3]);
+struct TestFunctions
 {
-    queue = queue_;
+    test_fn copy;
+    test_fn read;
+    test_fn write;
+};
+
+static int test_bufferreadwriterect_impl(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         int num_elements,
+                                         cl_map_flags buffer_flags,
+                                         const TestFunctions& test_functions)
+{
+    gQueue = queue;
     cl_int err;
 
     // Initialize the random number generator.
@@ -355,7 +367,8 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
     // Compute a maximum buffer size based on the number of test images and the device maximum.
     cl_ulong max_mem_alloc_size = 0;
     CL_EXIT_ERROR(clGetDeviceInfo(device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(cl_ulong), &max_mem_alloc_size, NULL),"Could not get device info");
-    log_info("CL_DEVICE_MAX_MEM_ALLOC_SIZE = %llu bytes.\n", max_mem_alloc_size);
+    log_info("CL_DEVICE_MAX_MEM_ALLOC_SIZE = %" PRIu64 " bytes.\n",
+             max_mem_alloc_size);
 
     // Confirm that the maximum allocation size is not zero.
     if (max_mem_alloc_size == 0) {
@@ -369,7 +382,7 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
         max_mem_alloc_dim = max_mem_alloc_size;
     }
 
-    log_info("Using maximum dimension      = %lu.\n", max_mem_alloc_dim);
+    log_info("Using maximum dimension      = %zu.\n", max_mem_alloc_dim);
 
     // Create pairs of cl buffers and host buffers on which operations will be mirrored.
     log_info("Creating %u pairs of random sized host and cl buffers.\n", TotalImages);
@@ -392,7 +405,8 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
 
         // Check to see if adequately sized buffers were found.
         if (tries >= max_tries) {
-            log_error("Error: Could not find random buffer sized less than %llu bytes in %lu tries.\n",
+            log_error("Error: Could not find random buffer sized less than "
+                      "%" PRIu64 " bytes in %zu tries.\n",
                       max_mem_alloc_size, max_tries);
             return -1;
         }
@@ -401,10 +415,11 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
         max_size = (size_bytes > max_size) ? size_bytes : max_size;
         total_bytes += size_bytes;
 
-        log_info("Buffer[%u] is (%lu,%lu,%lu) = %lu MB (truncated)\n",i,width[i],height[i],depth[i],(size_bytes)/1048576);
+        log_info("Buffer[%u] is (%zu,%zu,%zu) = %zu MB (truncated)\n", i,
+                 width[i], height[i], depth[i], (size_bytes) / 1048576);
     }
 
-    log_info( "Total size: %lu MB (truncated)\n", total_bytes/1048576 );
+    log_info("Total size: %zu MB (truncated)\n", total_bytes / 1048576);
 
     // Allocate a temporary buffer for read and write operations.
     tmp_buffer_size  = max_size;
@@ -432,7 +447,8 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
         memcpy(backing[i], verify[i], size_bytes);
 
         // Create the CL buffer.
-        buffer[i] = clCreateBuffer (context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE, size_bytes, backing[i], &err);
+        buffer[i] =
+            clCreateBuffer(context, buffer_flags, size_bytes, backing[i], &err);
         CL_EXIT_ERROR(err,"clCreateBuffer failed for buffer %u", i);
 
         // Make sure buffer is cleaned up appropriately if we encounter an error in the rest of the calls.
@@ -491,33 +507,36 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
 
         switch (operation) {
             case 0:
-                log_info("%lu Copy %lu offset (%lu,%lu,%lu) -> %lu offset (%lu,%lu,%lu) region (%lux%lux%lu = %lu)\n",
-                         iter,
-                         src, soffset[0], soffset[1], soffset[2],
-                         dst, doffset[0], doffset[1], doffset[2],
-                         sregion[0], sregion[1], sregion[2],
-                         sregion[0]*sregion[1]*sregion[2]);
-                if ((err = copy_region(src, soffset, sregion, dst, doffset, dregion)))
+                log_info("%zu Copy %zu offset (%zu,%zu,%zu) -> %zu offset "
+                         "(%zu,%zu,%zu) region (%zux%zux%zu = %zu)\n",
+                         iter, src, soffset[0], soffset[1], soffset[2], dst,
+                         doffset[0], doffset[1], doffset[2], sregion[0],
+                         sregion[1], sregion[2],
+                         sregion[0] * sregion[1] * sregion[2]);
+                if ((err = test_functions.copy(src, soffset, sregion, dst,
+                                               doffset, dregion)))
                     return err;
                 break;
             case 1:
-                log_info("%lu Read %lu offset (%lu,%lu,%lu) -> %lu offset (%lu,%lu,%lu) region (%lux%lux%lu = %lu)\n",
-                         iter,
-                         src, soffset[0], soffset[1], soffset[2],
-                         dst, doffset[0], doffset[1], doffset[2],
-                         sregion[0], sregion[1], sregion[2],
-                         sregion[0]*sregion[1]*sregion[2]);
-                if ((err = read_verify_region(src, soffset, sregion, dst, doffset, dregion)))
+                log_info("%zu Read %zu offset (%zu,%zu,%zu) -> %zu offset "
+                         "(%zu,%zu,%zu) region (%zux%zux%zu = %zu)\n",
+                         iter, src, soffset[0], soffset[1], soffset[2], dst,
+                         doffset[0], doffset[1], doffset[2], sregion[0],
+                         sregion[1], sregion[2],
+                         sregion[0] * sregion[1] * sregion[2]);
+                if ((err = test_functions.read(src, soffset, sregion, dst,
+                                               doffset, dregion)))
                     return err;
                 break;
             case 2:
-                log_info("%lu Write %lu offset (%lu,%lu,%lu) -> %lu offset (%lu,%lu,%lu) region (%lux%lux%lu = %lu)\n",
-                         iter,
-                         src, soffset[0], soffset[1], soffset[2],
-                         dst, doffset[0], doffset[1], doffset[2],
-                         sregion[0], sregion[1], sregion[2],
-                         sregion[0]*sregion[1]*sregion[2]);
-                if ((err = write_region(src, soffset, sregion, dst, doffset, dregion)))
+                log_info("%zu Write %zu offset (%zu,%zu,%zu) -> %zu offset "
+                         "(%zu,%zu,%zu) region (%zux%zux%zu = %zu)\n",
+                         iter, src, soffset[0], soffset[1], soffset[2], dst,
+                         doffset[0], doffset[1], doffset[2], sregion[0],
+                         sregion[1], sregion[2],
+                         sregion[0] * sregion[1] * sregion[2]);
+                if ((err = test_functions.write(src, soffset, sregion, dst,
+                                                doffset, dregion)))
                     return err;
                 break;
         }
@@ -526,11 +545,11 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
         // Uncomment this section to verify each operation.
         // If commented out, verification won't occur until the end of the
         // test, and it will not be possible to determine which operation failed.
-        log_info("Verify src %lu offset (%u,%u,%u) region (%lux%lux%lu)\n", src, 0, 0, 0, width[src], height[src], depth[src]);
+        log_info("Verify src %zu offset (%u,%u,%u) region (%zux%zux%zu)\n", src, 0, 0, 0, width[src], height[src], depth[src]);
         if (err = map_verify_region(src))
             return err;
 
-        log_info("Verify dst %lu offset (%u,%u,%u) region (%lux%lux%lu)\n", dst, 0, 0, 0, width[dst], height[dst], depth[dst]);
+        log_info("Verify dst %zu offset (%u,%u,%u) region (%zux%zux%zu)\n", dst, 0, 0, 0, width[dst], height[dst], depth[dst]);
         if (err = map_verify_region(dst))
             return err;
 
@@ -540,7 +559,8 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
     } // end main for loop.
 
     for (unsigned i=0;i<TotalImages;++i) {
-        log_info("Verify %u offset (%u,%u,%u) region (%lux%lux%lu)\n", i, 0, 0, 0, width[i], height[i], depth[i]);
+        log_info("Verify %u offset (%u,%u,%u) region (%zux%zux%zu)\n", i, 0, 0,
+                 0, width[i], height[i], depth[i]);
         if ((err = map_verify_region(i)))
             return err;
     }
@@ -560,5 +580,14 @@ test_bufferreadwriterect(cl_device_id device, cl_context context, cl_command_que
     return err;
 }
 
-
-
+// This is the main test function for the conformance test.
+REGISTER_TEST(bufferreadwriterect)
+{
+    TestFunctions test_functions;
+    test_functions.copy = copy_region;
+    test_functions.read = read_verify_region;
+    test_functions.write = write_region;
+    return test_bufferreadwriterect_impl(
+        device, context, queue, num_elements,
+        CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE, test_functions);
+}

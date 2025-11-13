@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 #include "harness/featureHelpers.h"
 
 //--------------------------------------------------------------------------
@@ -273,6 +272,8 @@ struct CommandNDRangeKernelNotSupportPrintf : public BasicCommandBufferTest
 
     bool Skip() override
     {
+        if (BasicCommandBufferTest::Skip()) return true;
+
         cl_device_command_buffer_capabilities_khr capabilities;
         cl_int error =
             clGetDeviceInfo(device, CL_DEVICE_COMMAND_BUFFER_CAPABILITIES_KHR,
@@ -353,6 +354,8 @@ struct CommandNDRangeKernelWithKernelEnqueueCall : public BasicCommandBufferTest
 
     bool Skip() override
     {
+        if (BasicCommandBufferTest::Skip()) return true;
+
         bool has_device_enqueue = false;
         bool cl_version_2_0_or_higher = false;
 
@@ -455,74 +458,55 @@ enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange,
 };
 };
 
-int test_negative_command_ndrange_queue_not_null(cl_device_id device,
-                                                 cl_context context,
-                                                 cl_command_queue queue,
-                                                 int num_elements)
+REGISTER_TEST(negative_command_ndrange_queue_not_null)
 {
     return MakeAndRunTest<CommandNDRangeKernelQueueNotNull>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_ndrange_kernel_with_different_context(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_ndrange_kernel_with_different_context)
 {
     return MakeAndRunTest<CommandNDRangeKernelKernelWithDifferentContext>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_ndrange_kernel_sync_points_null_or_num_zero(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_ndrange_kernel_sync_points_null_or_num_zero)
 {
     return MakeAndRunTest<CommandNDRangeKerneSyncPointsNullOrNumZero>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_ndrange_kernel_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_ndrange_kernel_invalid_command_buffer)
 {
     return MakeAndRunTest<CommandNDRangeKernelInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_ndrange_kernel_invalid_properties(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_ndrange_kernel_invalid_properties)
 {
     return MakeAndRunTest<CommandNDRangeKernelInvalidProperties>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_ndrange_kernel_command_buffer_finalized(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_ndrange_kernel_command_buffer_finalized)
 {
     return MakeAndRunTest<CommandNDRangeKernelCommandBufferFinalized>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_ndrange_kernel_mutable_handle_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_ndrange_kernel_mutable_handle_not_null)
 {
     return MakeAndRunTest<CommandNDRangeKernelMutableHandleNotNull>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_ndrange_kernel_not_support_printf(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_ndrange_kernel_not_support_printf)
 {
     return MakeAndRunTest<CommandNDRangeKernelNotSupportPrintf>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_ndrange_kernel_with_enqueue_call(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_ndrange_kernel_with_enqueue_call)
 {
     return MakeAndRunTest<CommandNDRangeKernelWithKernelEnqueueCall>(
         device, context, queue, num_elements);

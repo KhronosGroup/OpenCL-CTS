@@ -1,0 +1,37 @@
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+#extension GL_EXT_shader_explicit_arithmetic_types_int32 : enable
+
+#define MAX_2D_IMAGES               5
+#define MAX_2D_IMAGE_MIP_LEVELS     11
+#define MAX_2D_IMAGE_DESCRIPTORS    MAX_2D_IMAGES * MAX_2D_IMAGE_MIP_LEVELS
+
+layout(binding = 0) buffer Params
+{
+    uint32_t numImage2DDescriptors;
+};
+
+layout(binding = 1, ${GLSL_FORMAT}) uniform ${GLSL_TYPE_PREFIX}image2D image2DList[MAX_2D_IMAGE_DESCRIPTORS];
+layout(local_size_x = 32, local_size_y = 32) in;
+
+void main()
+{
+    uvec3 numThreads = gl_NumWorkGroups * gl_WorkGroupSize;
+    for (uint32_t image2DIdx = 0; image2DIdx < numImage2DDescriptors; image2DIdx++)
+	{
+        ivec2 imageDim = imageSize(image2DList[image2DIdx]);
+        uint32_t heightBy2 = imageDim.y / 2;
+        for (uint32_t row = gl_GlobalInvocationID.y; row < heightBy2; row += numThreads.y)
+		{
+            for (uint32_t col = gl_GlobalInvocationID.x; col < imageDim.x; col += numThreads.x)
+			{
+                ivec2 coordsA = ivec2(col, row);
+                ivec2 coordsB = ivec2(col, imageDim.y - row - 1);
+                ${GLSL_TYPE_PREFIX}vec4 dataA = imageLoad(image2DList[image2DIdx], coordsA);
+                ${GLSL_TYPE_PREFIX}vec4 dataB = imageLoad(image2DList[image2DIdx], coordsB);
+                imageStore(image2DList[image2DIdx], coordsA, dataB);
+                imageStore(image2DList[image2DIdx], coordsB, dataA);
+            }
+        }
+    }
+}

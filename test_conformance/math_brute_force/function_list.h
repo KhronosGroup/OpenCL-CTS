@@ -87,6 +87,7 @@ struct Func
     float float_ulps;
     float double_ulps;
     float half_ulps;
+    float half_embedded_ulps;
     float float_embedded_ulps;
     float relaxed_error;
     float relaxed_embedded_error;

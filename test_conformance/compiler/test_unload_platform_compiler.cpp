@@ -25,6 +25,41 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <fstream>
+
+#if defined(_WIN32)
+const std::string slash = "\\";
+#else
+const std::string slash = "/";
+#endif
+
+const std::string spvExt = ".spv";
+
+std::vector<unsigned char> readBinary(const char *file_name)
+{
+    using namespace std;
+
+    ifstream file(file_name, ios::in | ios::binary | ios::ate);
+
+    std::vector<char> tmpBuffer(0);
+
+    if (file.is_open())
+    {
+        size_t size = file.tellg();
+        tmpBuffer.resize(size);
+        file.seekg(0, ios::beg);
+        file.read(&tmpBuffer[0], size);
+        file.close();
+    }
+    else
+    {
+        log_error("File %s not found\n", file_name);
+    }
+
+    std::vector<unsigned char> result(tmpBuffer.begin(), tmpBuffer.end());
+
+    return result;
+}
 
 namespace {
 
@@ -299,18 +334,12 @@ public:
             throw unload_test_failure("Failure getting device address bits");
         }
 
-        switch (address_bits)
-        {
-            case 32:
-                m_spirv_binary = write_kernel_32_spv.data();
-                m_spirv_size = write_kernel_32_spv.size();
-                break;
-            case 64:
-                m_spirv_binary = write_kernel_64_spv.data();
-                m_spirv_size = write_kernel_64_spv.size();
-                break;
-            default: throw unload_test_failure("Invalid address bits");
-        }
+        std::vector<unsigned char> kernel_buffer;
+
+        std::string file_name = spvBinariesPath + slash + "write_kernel.spv"
+            + std::to_string(address_bits);
+        m_spirv_binary = readBinary(file_name.c_str());
+        m_spirv_size = m_spirv_binary.size();
     }
 
     void create() final
@@ -320,7 +349,7 @@ public:
         assert(nullptr == m_program);
 
         cl_int err = CL_INVALID_PLATFORM;
-        m_program = m_CreateProgramWithIL(m_context, m_spirv_binary,
+        m_program = m_CreateProgramWithIL(m_context, &m_spirv_binary[0],
                                           m_spirv_size, &err);
         if (CL_SUCCESS != err)
             throw unload_test_failure("clCreateProgramWithIL()", err);
@@ -347,7 +376,7 @@ public:
     }
 
 private:
-    void *m_spirv_binary;
+    std::vector<unsigned char> m_spirv_binary;
     size_t m_spirv_size;
     bool m_enabled;
 
@@ -378,7 +407,7 @@ static void unload_platform_compiler(const cl_platform_id platform)
 }
 
 /* Test calling the function with a valid platform */
-int test_unload_valid(cl_device_id device, cl_context, cl_command_queue, int)
+REGISTER_TEST(unload_valid)
 {
     const cl_platform_id platform = device_platform(device);
     const long int err = clUnloadPlatformCompiler(platform);
@@ -393,7 +422,8 @@ int test_unload_valid(cl_device_id device, cl_context, cl_command_queue, int)
 }
 
 /* Test calling the function with invalid platform */
-int test_unload_invalid(cl_device_id, cl_context, cl_command_queue, int)
+/* Disabling temporarily, see GitHub #977
+REGISTER_TEST(unload_invalid)
 {
     const long int err = clUnloadPlatformCompiler(nullptr);
 
@@ -405,10 +435,10 @@ int test_unload_invalid(cl_device_id, cl_context, cl_command_queue, int)
 
     return 0;
 }
+*/
 
 /* Test calling the function multiple times in a row */
-int test_unload_repeated(cl_device_id device, cl_context context,
-                         cl_command_queue, int)
+REGISTER_TEST(unload_repeated)
 {
     check_compiler_available(device);
 
@@ -438,8 +468,7 @@ int test_unload_repeated(cl_device_id device, cl_context context,
 }
 
 /* Test calling the function between compilation and linking of programs */
-int test_unload_compile_unload_link(cl_device_id device, cl_context context,
-                                    cl_command_queue, int)
+REGISTER_TEST(unload_compile_unload_link)
 {
     check_compiler_available(device);
 
@@ -469,9 +498,7 @@ int test_unload_compile_unload_link(cl_device_id device, cl_context context,
 }
 
 /* Test calling the function between program build and kernel creation */
-int test_unload_build_unload_create_kernel(cl_device_id device,
-                                           cl_context context, cl_command_queue,
-                                           int)
+REGISTER_TEST(unload_build_unload_create_kernel)
 {
     check_compiler_available(device);
 
@@ -501,8 +528,7 @@ int test_unload_build_unload_create_kernel(cl_device_id device,
 
 /* Test linking together two programs that were built with a call to the unload
  * function in between */
-int test_unload_link_different(cl_device_id device, cl_context context,
-                               cl_command_queue, int)
+REGISTER_TEST(unload_link_different)
 {
     check_compiler_available(device);
 
@@ -587,7 +613,7 @@ int test_unload_link_different(cl_device_id device, cl_context context,
         return 1;
     }
 
-    const clCommandQueueWrapper queue =
+    const clCommandQueueWrapper test_queue =
         clCreateCommandQueue(context, device, 0, &err);
     if (CL_SUCCESS != err)
     {
@@ -616,8 +642,8 @@ int test_unload_link_different(cl_device_id device, cl_context context,
     }
 
     static const size_t work_size = 1;
-    err = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &work_size, nullptr,
-                                 0, nullptr, nullptr);
+    err = clEnqueueNDRangeKernel(test_queue, kernel, 1, nullptr, &work_size,
+                                 nullptr, 0, nullptr, nullptr);
     if (CL_SUCCESS != err)
     {
         log_error("Test failure: clEnqueueNDRangeKernel() == %ld\n",
@@ -625,8 +651,8 @@ int test_unload_link_different(cl_device_id device, cl_context context,
         return 1;
     }
 
-    err = clEnqueueReadBuffer(queue, buffer, CL_BLOCKING, 0, sizeof(cl_uint),
-                              &value, 0, nullptr, nullptr);
+    err = clEnqueueReadBuffer(test_queue, buffer, CL_BLOCKING, 0,
+                              sizeof(cl_uint), &value, 0, nullptr, nullptr);
     if (CL_SUCCESS != err)
     {
         log_error("Test failure: clEnqueueReadBuffer() == %ld\n",
@@ -634,7 +660,7 @@ int test_unload_link_different(cl_device_id device, cl_context context,
         return 1;
     }
 
-    err = clFinish(queue);
+    err = clFinish(test_queue);
     if (CL_SUCCESS != err) throw unload_test_failure("clFinish()", err);
 
     if (42 != value)
@@ -649,8 +675,7 @@ int test_unload_link_different(cl_device_id device, cl_context context,
 
 /* Test calling the function in a thread while others threads are building
  * programs */
-int test_unload_build_threaded(cl_device_id device, cl_context context,
-                               cl_command_queue, int)
+REGISTER_TEST(unload_build_threaded)
 {
     using clock = std::chrono::steady_clock;
 
@@ -740,8 +765,7 @@ int test_unload_build_threaded(cl_device_id device, cl_context context,
 }
 
 /* Test grabbing program build information after calling the unload function */
-int test_unload_build_info(cl_device_id device, cl_context context,
-                           cl_command_queue, int)
+REGISTER_TEST(unload_build_info)
 {
     check_compiler_available(device);
 
@@ -903,8 +927,7 @@ int test_unload_build_info(cl_device_id device, cl_context context,
 
 /* Test calling the unload function between program building and fetching the
  * program binaries */
-int test_unload_program_binaries(cl_device_id device, cl_context context,
-                                 cl_command_queue, int)
+REGISTER_TEST(unload_program_binaries)
 {
     check_compiler_available(device);
 

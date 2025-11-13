@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 namespace {
 const char *conditional_kernel_code = R"(
@@ -56,8 +56,9 @@ __kernel void test_if(__global int *src, __global int *dst)
 int verify_if(std::vector<cl_int> input, std::vector<cl_int> output)
 {
     const cl_int results[] = {
-        0x12345678, 0x23456781, 0x34567812, 0x45678123,
-        0x56781234, 0x67812345, 0x78123456, 0x81234567,
+        (cl_int)0x12345678, (cl_int)0x23456781, (cl_int)0x34567812,
+        (cl_int)0x45678123, (cl_int)0x56781234, (cl_int)0x67812345,
+        (cl_int)0x78123456, (cl_int)0x81234567,
     };
 
     auto predicate = [&results](cl_int a, cl_int b) {
@@ -88,8 +89,7 @@ void generate_random_inputs(std::vector<cl_int> &v)
     std::generate(v.begin(), v.end(), random_generator);
 }
 }
-int test_if(cl_device_id device, cl_context context, cl_command_queue queue,
-            int num_elements)
+REGISTER_TEST(if)
 {
     clMemWrapper streams[2];
     clProgramWrapper program;

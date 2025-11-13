@@ -28,8 +28,8 @@ public:
     Version(): m_major(0), m_minor(0) {}
 
     Version(cl_uint major, cl_uint minor): m_major(major), m_minor(minor) {}
-    int major() const { return m_major; }
-    int minor() const { return m_minor; }
+    int get_major() const { return m_major; }
+    int get_minor() const { return m_minor; }
     bool operator>(const Version &rhs) const
     {
         return to_uint() > rhs.to_uint();
@@ -153,7 +153,7 @@ template <typename T> T *register_test(const char *name, Version version)
 #define REQUIRE_EXTENSION(name)                                                \
     do                                                                         \
     {                                                                          \
-        if (!is_extension_available(deviceID, name))                           \
+        if (!is_extension_available(device, name))                             \
         {                                                                      \
             log_info(name                                                      \
                      " is not supported on this device. Skipping test.\n");    \

@@ -21,8 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 const char *hostptr_kernel_code =
 "__kernel void test_hostptr(__global float *srcA, __global float *srcB, __global float *dst)\n"
@@ -92,8 +91,7 @@ verify_rgba8_image(unsigned char *image, unsigned char *outptr, int w, int h)
     return 0;
 }
 
-int
-test_hostptr(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(hostptr)
 {
     cl_float            *input_ptr[2], *output_ptr;
     cl_program            program;
@@ -102,8 +100,8 @@ test_hostptr(cl_device_id device, cl_context context, cl_command_queue queue, in
     cl_image_format     img_format;
     cl_uchar            *rgba8_inptr, *rgba8_outptr;
     void                *lock_buffer;
-    int                 img_width = 512;
-    int                 img_height = 512;
+    size_t img_width = 512;
+    size_t img_height = 512;
     cl_int              err;
     MTdata              d;
     RoundingMode        oldRoundMode;
@@ -282,8 +280,3 @@ test_hostptr(cl_device_id device, cl_context context, cl_command_queue queue, in
 
     return err;
 }
-
-
-
-
-

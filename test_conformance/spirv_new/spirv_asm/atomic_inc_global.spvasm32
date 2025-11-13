@@ -28,7 +28,7 @@
         %val = OpFunctionParameter %_ptr_CrossWorkgroup_uint
     %counter = OpFunctionParameter %_ptr_CrossWorkgroup_uint
          %13 = OpLabel
-         %14 = OpLoad %v3uint %__spirv_GlobalInvocationId Aligned 0
+         %14 = OpLoad %v3uint %__spirv_GlobalInvocationId
          %15 = OpCompositeExtract %uint %14 0
          %16 = OpAtomicIIncrement %uint %counter %uint_1 %uint_512
          %17 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %val %15

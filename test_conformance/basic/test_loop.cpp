@@ -23,7 +23,7 @@
 
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 namespace {
 const char *loop_kernel_code = R"(
@@ -68,8 +68,7 @@ int verify_loop(std::vector<cl_int> inptr, std::vector<cl_int> loopindx,
     return 0;
 }
 }
-int test_loop(cl_device_id device, cl_context context, cl_command_queue queue,
-              int num_elements)
+REGISTER_TEST(loop)
 {
     clMemWrapper streams[4];
     clProgramWrapper program;

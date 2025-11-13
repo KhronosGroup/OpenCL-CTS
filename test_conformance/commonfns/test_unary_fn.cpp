@@ -24,7 +24,6 @@
 #include "harness/stringHelpers.h"
 #include "harness/typeWrappers.h"
 
-#include "procs.h"
 #include "test_base.h"
 
 #ifndef M_PI
@@ -58,7 +57,7 @@ namespace {
 template <typename T>
 int verify_degrees(const T *const inptr, const T *const outptr, int n)
 {
-    float error, max_error = 0.0f;
+    float error, max_error = -INFINITY;
     double r, max_val = NAN;
     int max_index = 0;
 
@@ -66,10 +65,6 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
     {
         r = (180.0 / M_PI) * conv_to_dbl(inptr[i]);
 
-        if (std::is_same<T, half>::value)
-            if (!isfinite_fp(conv_to_half(r)) && !isfinite_fp(outptr[i]))
-                continue;
-
         error = UlpFn(outptr[i], r);
 
         if (fabsf(error) > max_error)
@@ -94,13 +89,16 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
     }
 
     if (std::is_same<T, half>::value)
-        log_info("degrees: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
-                 max_error, max_index, max_val, conv_to_flt(outptr[max_index]),
-                 max_val, conv_to_flt(outptr[max_index]));
+        log_info("degrees: Max error %f ulps at %d, input %a: *%a vs %a  (*%g "
+                 "vs %g)\n",
+                 max_error, max_index, conv_to_flt(inptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]));
     else
-        log_info("degrees: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
-                 max_error, max_index, max_val, outptr[max_index], max_val,
-                 outptr[max_index]);
+        log_info("degrees: Max error %f ulps at %d, input %a: *%a vs %a  (*%g "
+                 "vs %g)\n",
+                 max_error, max_index, conv_to_flt(inptr[max_index]), max_val,
+                 outptr[max_index], max_val, outptr[max_index]);
 
     return 0;
 }
@@ -108,17 +106,13 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
 template <typename T>
 int verify_radians(const T *const inptr, const T *const outptr, int n)
 {
-    float error, max_error = 0.0f;
+    float error, max_error = -INFINITY;
     double r, max_val = NAN;
     int max_index = 0;
 
     for (int i = 0, j = 0; i < n; i++, j++)
     {
         r = (M_PI / 180.0) * conv_to_dbl(inptr[i]);
-
-        if (std::is_same<T, half>::value)
-            if (!isfinite_fp(conv_to_half(r)) && !isfinite_fp(outptr[i]))
-                continue;
 
         error = UlpFn(outptr[i], r);
 
@@ -144,13 +138,16 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
     }
 
     if (std::is_same<T, half>::value)
-        log_info("radians: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
-                 max_error, max_index, max_val, conv_to_flt(outptr[max_index]),
-                 max_val, conv_to_flt(outptr[max_index]));
+        log_info("radians: Max error %f ulps at %d, input %a: *%a vs %a  (*%g "
+                 "vs %g)\n",
+                 max_error, max_index, conv_to_flt(inptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]));
     else
-        log_info("radians: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
-                 max_error, max_index, max_val, outptr[max_index], max_val,
-                 outptr[max_index]);
+        log_info("radians: Max error %f ulps at %d, input %a: *%a vs %a  (*%g "
+                 "vs %g)\n",
+                 max_error, max_index, conv_to_flt(inptr[max_index]), max_val,
+                 outptr[max_index], max_val, outptr[max_index]);
 
     return 0;
 }
@@ -385,22 +382,20 @@ cl_int SignTest::Run()
     return error;
 }
 
-int test_degrees(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int n_elems)
+REGISTER_TEST(degrees)
 {
-    return MakeAndRunTest<DegreesTest>(device, context, queue, n_elems,
+    return MakeAndRunTest<DegreesTest>(device, context, queue, num_elements,
                                        "degrees");
 }
 
-int test_radians(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int n_elems)
+REGISTER_TEST(radians)
 {
-    return MakeAndRunTest<RadiansTest>(device, context, queue, n_elems,
+    return MakeAndRunTest<RadiansTest>(device, context, queue, num_elements,
                                        "radians");
 }
 
-int test_sign(cl_device_id device, cl_context context, cl_command_queue queue,
-              int n_elems)
+REGISTER_TEST(sign)
 {
-    return MakeAndRunTest<SignTest>(device, context, queue, n_elems, "sign");
+    return MakeAndRunTest<SignTest>(device, context, queue, num_elements,
+                                    "sign");
 }

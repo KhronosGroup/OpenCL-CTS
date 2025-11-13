@@ -17,152 +17,41 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "procs.h"
 #include "harness/testHarness.h"
+#include "harness/mt19937.h"
 
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif
 
-test_definition test_list[] = {
-    ADD_TEST(integer_clz),
-    ADD_TEST_VERSION(integer_ctz, Version(2, 0)),
-    ADD_TEST(integer_hadd),
-    ADD_TEST(integer_rhadd),
-    ADD_TEST(integer_mul_hi),
-    ADD_TEST(integer_rotate),
-    ADD_TEST(integer_clamp),
-    ADD_TEST(integer_mad_sat),
-    ADD_TEST(integer_mad_hi),
-    ADD_TEST(integer_min),
-    ADD_TEST(integer_max),
-    ADD_TEST(integer_upsample),
-
-    ADD_TEST(integer_abs),
-    ADD_TEST(integer_abs_diff),
-    ADD_TEST(integer_add_sat),
-    ADD_TEST(integer_sub_sat),
-
-    ADD_TEST(integer_addAssign),
-    ADD_TEST(integer_subtractAssign),
-    ADD_TEST(integer_multiplyAssign),
-    ADD_TEST(integer_divideAssign),
-    ADD_TEST(integer_moduloAssign),
-    ADD_TEST(integer_andAssign),
-    ADD_TEST(integer_orAssign),
-    ADD_TEST(integer_exclusiveOrAssign),
-
-    ADD_TEST(unary_ops_increment),
-    ADD_TEST(unary_ops_decrement),
-    ADD_TEST(unary_ops_full),
-
-    ADD_TEST(integer_mul24),
-    ADD_TEST(integer_mad24),
-
-    ADD_TEST(extended_bit_ops_extract),
-    ADD_TEST(extended_bit_ops_insert),
-    ADD_TEST(extended_bit_ops_reverse),
-
-    ADD_TEST(long_math),
-    ADD_TEST(long_logic),
-    ADD_TEST(long_shift),
-    ADD_TEST(long_compare),
-
-    ADD_TEST(ulong_math),
-    ADD_TEST(ulong_logic),
-    ADD_TEST(ulong_shift),
-    ADD_TEST(ulong_compare),
-
-    ADD_TEST(int_math),
-    ADD_TEST(int_logic),
-    ADD_TEST(int_shift),
-    ADD_TEST(int_compare),
-
-    ADD_TEST(uint_math),
-    ADD_TEST(uint_logic),
-    ADD_TEST(uint_shift),
-    ADD_TEST(uint_compare),
-
-    ADD_TEST(short_math),
-    ADD_TEST(short_logic),
-    ADD_TEST(short_shift),
-    ADD_TEST(short_compare),
-
-    ADD_TEST(ushort_math),
-    ADD_TEST(ushort_logic),
-    ADD_TEST(ushort_shift),
-    ADD_TEST(ushort_compare),
-
-    ADD_TEST(char_math),
-    ADD_TEST(char_logic),
-    ADD_TEST(char_shift),
-    ADD_TEST(char_compare),
-
-    ADD_TEST(uchar_math),
-    ADD_TEST(uchar_logic),
-    ADD_TEST(uchar_shift),
-    ADD_TEST(uchar_compare),
-
-    ADD_TEST(popcount),
-
-    // Quick
-    ADD_TEST(quick_long_math),
-    ADD_TEST(quick_long_logic),
-    ADD_TEST(quick_long_shift),
-    ADD_TEST(quick_long_compare),
-
-    ADD_TEST(quick_ulong_math),
-    ADD_TEST(quick_ulong_logic),
-    ADD_TEST(quick_ulong_shift),
-    ADD_TEST(quick_ulong_compare),
-
-    ADD_TEST(quick_int_math),
-    ADD_TEST(quick_int_logic),
-    ADD_TEST(quick_int_shift),
-    ADD_TEST(quick_int_compare),
-
-    ADD_TEST(quick_uint_math),
-    ADD_TEST(quick_uint_logic),
-    ADD_TEST(quick_uint_shift),
-    ADD_TEST(quick_uint_compare),
-
-    ADD_TEST(quick_short_math),
-    ADD_TEST(quick_short_logic),
-    ADD_TEST(quick_short_shift),
-    ADD_TEST(quick_short_compare),
-
-    ADD_TEST(quick_ushort_math),
-    ADD_TEST(quick_ushort_logic),
-    ADD_TEST(quick_ushort_shift),
-    ADD_TEST(quick_ushort_compare),
-
-    ADD_TEST(quick_char_math),
-    ADD_TEST(quick_char_logic),
-    ADD_TEST(quick_char_shift),
-    ADD_TEST(quick_char_compare),
-
-    ADD_TEST(quick_uchar_math),
-    ADD_TEST(quick_uchar_logic),
-    ADD_TEST(quick_uchar_shift),
-    ADD_TEST(quick_uchar_compare),
-
-    ADD_TEST(vector_scalar),
-
-    ADD_TEST(integer_dot_product),
-};
-
-const int test_num = ARRAY_SIZE(test_list);
-
 void fill_test_values( cl_long *outBufferA, cl_long *outBufferB, size_t numElements, MTdata d )
 {
-    static const cl_long sUniqueValues[] = { 0x3333333333333333LL, 0x5555555555555555LL, 0x9999999999999999LL, 0xaaaaaaaaaaaaaaaaLL, 0xccccccccccccccccLL,
-        0x3030303030303030LL, 0x5050505050505050LL, 0x9090909090909090LL,  0xa0a0a0a0a0a0a0a0LL, 0xc0c0c0c0c0c0c0c0LL, 0xf0f0f0f0f0f0f0f0LL,
-        0x0303030303030303LL, 0x0505050505050505LL, 0x0909090909090909LL,  0x0a0a0a0a0a0a0a0aLL, 0x0c0c0c0c0c0c0c0cLL, 0x0f0f0f0f0f0f0f0fLL,
-        0x3300330033003300LL, 0x5500550055005500LL, 0x9900990099009900LL,  0xaa00aa00aa00aa00LL, 0xcc00cc00cc00cc00LL, 0xff00ff00ff00ff00LL,
-        0x0033003300330033LL, 0x0055005500550055LL, 0x0099009900990099LL,  0x00aa00aa00aa00aaLL, 0x00cc00cc00cc00ccLL, 0x00ff00ff00ff00ffLL,
-        0x3333333300000000LL, 0x5555555500000000LL, 0x9999999900000000LL,  0xaaaaaaaa00000000LL, 0xcccccccc00000000LL, 0xffffffff00000000LL,
-        0x0000000033333333LL, 0x0000000055555555LL, 0x0000000099999999LL,  0x00000000aaaaaaaaLL, 0x00000000ccccccccLL, 0x00000000ffffffffLL,
-        0x3333000000003333LL, 0x5555000000005555LL, 0x9999000000009999LL,  0xaaaa00000000aaaaLL, 0xcccc00000000ccccLL, 0xffff00000000ffffLL};
+    static const cl_long sUniqueValues[] = {
+        (cl_long)0x3333333333333333LL, (cl_long)0x5555555555555555LL,
+        (cl_long)0x9999999999999999LL, (cl_long)0xaaaaaaaaaaaaaaaaLL,
+        (cl_long)0xccccccccccccccccLL, (cl_long)0x3030303030303030LL,
+        (cl_long)0x5050505050505050LL, (cl_long)0x9090909090909090LL,
+        (cl_long)0xa0a0a0a0a0a0a0a0LL, (cl_long)0xc0c0c0c0c0c0c0c0LL,
+        (cl_long)0xf0f0f0f0f0f0f0f0LL, (cl_long)0x0303030303030303LL,
+        (cl_long)0x0505050505050505LL, (cl_long)0x0909090909090909LL,
+        (cl_long)0x0a0a0a0a0a0a0a0aLL, (cl_long)0x0c0c0c0c0c0c0c0cLL,
+        (cl_long)0x0f0f0f0f0f0f0f0fLL, (cl_long)0x3300330033003300LL,
+        (cl_long)0x5500550055005500LL, (cl_long)0x9900990099009900LL,
+        (cl_long)0xaa00aa00aa00aa00LL, (cl_long)0xcc00cc00cc00cc00LL,
+        (cl_long)0xff00ff00ff00ff00LL, (cl_long)0x0033003300330033LL,
+        (cl_long)0x0055005500550055LL, (cl_long)0x0099009900990099LL,
+        (cl_long)0x00aa00aa00aa00aaLL, (cl_long)0x00cc00cc00cc00ccLL,
+        (cl_long)0x00ff00ff00ff00ffLL, (cl_long)0x3333333300000000LL,
+        (cl_long)0x5555555500000000LL, (cl_long)0x9999999900000000LL,
+        (cl_long)0xaaaaaaaa00000000LL, (cl_long)0xcccccccc00000000LL,
+        (cl_long)0xffffffff00000000LL, (cl_long)0x0000000033333333LL,
+        (cl_long)0x0000000055555555LL, (cl_long)0x0000000099999999LL,
+        (cl_long)0x00000000aaaaaaaaLL, (cl_long)0x00000000ccccccccLL,
+        (cl_long)0x00000000ffffffffLL, (cl_long)0x3333000000003333LL,
+        (cl_long)0x5555000000005555LL, (cl_long)0x9999000000009999LL,
+        (cl_long)0xaaaa00000000aaaaLL, (cl_long)0xcccc00000000ccccLL,
+        (cl_long)0xffff00000000ffffLL
+    };
     static cl_long sSpecialValues[ 128 + 128 + 128 + ( sizeof( sUniqueValues ) / sizeof( sUniqueValues[ 0 ] ) ) ] = { 0 };
 
     if( sSpecialValues[ 0 ] == 0 )
@@ -218,6 +107,7 @@ void fill_test_values( cl_long *outBufferA, cl_long *outBufferB, size_t numEleme
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarness(argc, argv, test_num, test_list, false, 0);
+    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
+                          test_registry::getInstance().definitions(), false, 0);
 }
 

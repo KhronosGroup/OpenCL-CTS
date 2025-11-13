@@ -25,14 +25,21 @@
 #include <cassert>
 
 class VulkanInstance {
-    friend const VulkanInstance &getVulkanInstance();
+    friend const VulkanInstance &getVulkanInstance(bool useValidationLayers);
 
 protected:
     VkInstance m_vkInstance;
     VulkanPhysicalDeviceList m_physicalDeviceList;
+    VkDebugUtilsMessengerEXT m_debugMessenger;
+    bool m_useValidationLayers;
+    std::vector<const char *> m_validationLayers = {
+        "VK_LAYER_KHRONOS_validation",
+    };
 
-    VulkanInstance();
     VulkanInstance(const VulkanInstance &);
+
+public:
+    VulkanInstance(bool useValidationLayers = false);
     virtual ~VulkanInstance();
 
 public:
@@ -145,7 +152,7 @@ public:
     virtual ~VulkanDevice();
     const VulkanPhysicalDevice &getPhysicalDevice() const;
     VulkanQueue &
-    getQueue(const VulkanQueueFamily &queueFamily = getVulkanQueueFamily(),
+    getQueue(const VulkanQueueFamily &queueFamily /* = getVulkanQueueFamily()*/,
              uint32_t queueIndex = 0);
     operator VkDevice() const;
 };
@@ -478,12 +485,14 @@ public:
         VulkanExternalMemoryHandleType externalMemoryHandleType =
             VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE,
         VulkanImageCreateFlag imageCreateFlags = VULKAN_IMAGE_CREATE_FLAG_NONE,
-        VulkanImageTiling imageTiling = VULKAN_IMAGE_TILING_OPTIMAL,
+        VulkanImageTiling imageTiling = VULKAN_IMAGE_TILING_LINEAR,
         VulkanImageUsage imageUsage =
             VULKAN_IMAGE_USAGE_SAMPLED_STORAGE_TRANSFER_SRC_DST,
         VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
     virtual ~VulkanImage();
     virtual VulkanExtent3D getExtent3D(uint32_t mipLevel = 0) const;
+    virtual VkSubresourceLayout getSubresourceLayout() const;
+
     VulkanFormat getFormat() const;
     uint32_t getNumMipLevels() const;
     uint32_t getNumLayers() const;
@@ -553,7 +562,6 @@ public:
         VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
     virtual ~VulkanImage2D();
     virtual VulkanExtent3D getExtent3D(uint32_t mipLevel = 0) const;
-    virtual VkSubresourceLayout getSubresourceLayout() const;
 
     VulkanImage2D(const VulkanImage2D &image2D);
 };

@@ -21,8 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 static const char *multireadimage_kernel_code =
 "__kernel void test_multireadimage(read_only image2d_t img0, read_only image2d_t img1, \n"
@@ -110,8 +109,7 @@ verify_multireadimage(void *image[], float *outptr, int w, int h)
 }
 
 
-int
-test_mri_multiple(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(mri_multiple)
 {
     cl_mem            streams[4];
     cl_image_format    img_format;
@@ -119,8 +117,8 @@ test_mri_multiple(cl_device_id device, cl_context context, cl_command_queue queu
     cl_program        program;
     cl_kernel        kernel;
     size_t    threads[2];
-    int                img_width = 512;
-    int                img_height = 512;
+    size_t img_width = 512;
+    size_t img_height = 512;
     int                i, err;
     MTdata          d;
 
@@ -229,8 +227,3 @@ test_mri_multiple(cl_device_id device, cl_context context, cl_command_queue queu
 
     return err;
 }
-
-
-
-
-
