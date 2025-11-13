@@ -58,30 +58,28 @@ cl_uint AtomicTypeInfo::Size(cl_device_id device)
 {
   switch(_type)
   {
-  case TYPE_ATOMIC_INT:
-  case TYPE_ATOMIC_UINT:
-  case TYPE_ATOMIC_FLOAT:
-  case TYPE_ATOMIC_FLAG:
-    return sizeof(cl_int);
-  case TYPE_ATOMIC_LONG:
-  case TYPE_ATOMIC_ULONG:
-  case TYPE_ATOMIC_DOUBLE:
-    return sizeof(cl_long);
-  case TYPE_ATOMIC_INTPTR_T:
-  case TYPE_ATOMIC_UINTPTR_T:
-  case TYPE_ATOMIC_SIZE_T:
-  case TYPE_ATOMIC_PTRDIFF_T:
-    {
-      int error;
-      cl_uint addressBits = 0;
+      case TYPE_ATOMIC_HALF: return sizeof(cl_half);
+      case TYPE_ATOMIC_INT:
+      case TYPE_ATOMIC_UINT:
+      case TYPE_ATOMIC_FLOAT:
+      case TYPE_ATOMIC_FLAG: return sizeof(cl_int);
+      case TYPE_ATOMIC_LONG:
+      case TYPE_ATOMIC_ULONG:
+      case TYPE_ATOMIC_DOUBLE: return sizeof(cl_long);
+      case TYPE_ATOMIC_INTPTR_T:
+      case TYPE_ATOMIC_UINTPTR_T:
+      case TYPE_ATOMIC_SIZE_T:
+      case TYPE_ATOMIC_PTRDIFF_T: {
+          int error;
+          cl_uint addressBits = 0;
 
-      error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS, sizeof(addressBits), &addressBits, 0);
-      test_error_ret(error, "clGetDeviceInfo", 0);
+          error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS,
+                                  sizeof(addressBits), &addressBits, 0);
+          test_error_ret(error, "clGetDeviceInfo", 0);
 
-      return addressBits/8;
-    }
-  default:
-    return 0;
+          return addressBits / 8;
+      }
+      default: return 0;
   }
 }
 
@@ -93,6 +91,7 @@ const char *AtomicTypeInfo::AtomicTypeName()
     return "atomic_int";
   case TYPE_ATOMIC_UINT:
     return "atomic_uint";
+  case TYPE_ATOMIC_HALF: return "atomic_half";
   case TYPE_ATOMIC_FLOAT:
     return "atomic_float";
   case TYPE_ATOMIC_FLAG:
@@ -124,6 +123,7 @@ const char *AtomicTypeInfo::RegularTypeName()
     return "int";
   case TYPE_ATOMIC_UINT:
     return "uint";
+  case TYPE_ATOMIC_HALF: return "half";
   case TYPE_ATOMIC_FLOAT:
     return "float";
   case TYPE_ATOMIC_FLAG:
@@ -163,44 +163,68 @@ int AtomicTypeInfo::IsSupported(cl_device_id device)
 {
   switch(_type)
   {
-  case TYPE_ATOMIC_INT:
-  case TYPE_ATOMIC_UINT:
-  case TYPE_ATOMIC_FLOAT:
-  case TYPE_ATOMIC_FLAG:
-    return 1;
-  case TYPE_ATOMIC_LONG:
-  case TYPE_ATOMIC_ULONG:
-    return is_extension_available(device, "cl_khr_int64_base_atomics") &&
-      is_extension_available(device, "cl_khr_int64_extended_atomics");
-  case TYPE_ATOMIC_DOUBLE:
-    return is_extension_available(device, "cl_khr_int64_base_atomics") &&
-      is_extension_available(device, "cl_khr_int64_extended_atomics") &&
-      is_extension_available(device, "cl_khr_fp64");
-  case TYPE_ATOMIC_INTPTR_T:
-  case TYPE_ATOMIC_UINTPTR_T:
-  case TYPE_ATOMIC_SIZE_T:
-  case TYPE_ATOMIC_PTRDIFF_T:
-    if(Size(device) == 4)
-      return 1;
-    return is_extension_available(device, "cl_khr_int64_base_atomics") &&
-      is_extension_available(device, "cl_khr_int64_extended_atomics");
-  default:
-    return 0;
+      case TYPE_ATOMIC_HALF:
+          return is_extension_available(device, "cl_khr_fp16");
+      case TYPE_ATOMIC_INT:
+      case TYPE_ATOMIC_UINT:
+      case TYPE_ATOMIC_FLOAT:
+      case TYPE_ATOMIC_FLAG: return 1;
+      case TYPE_ATOMIC_LONG:
+      case TYPE_ATOMIC_ULONG:
+          return is_extension_available(device, "cl_khr_int64_base_atomics")
+              && is_extension_available(device,
+                                        "cl_khr_int64_extended_atomics");
+      case TYPE_ATOMIC_DOUBLE:
+          return is_extension_available(device, "cl_khr_int64_base_atomics")
+              && is_extension_available(device, "cl_khr_int64_extended_atomics")
+              && is_extension_available(device, "cl_khr_fp64");
+      case TYPE_ATOMIC_INTPTR_T:
+      case TYPE_ATOMIC_UINTPTR_T:
+      case TYPE_ATOMIC_SIZE_T:
+      case TYPE_ATOMIC_PTRDIFF_T:
+          if (Size(device) == 4) return 1;
+          return is_extension_available(device, "cl_khr_int64_base_atomics")
+              && is_extension_available(device,
+                                        "cl_khr_int64_extended_atomics");
+      default: return 0;
   }
 }
 
 template<> cl_int AtomicTypeExtendedInfo<cl_int>::MinValue() {return CL_INT_MIN;}
 template<> cl_uint AtomicTypeExtendedInfo<cl_uint>::MinValue() {return 0;}
 template<> cl_long AtomicTypeExtendedInfo<cl_long>::MinValue() {return CL_LONG_MIN;}
-template<> cl_ulong AtomicTypeExtendedInfo<cl_ulong>::MinValue() {return 0;}
-template<> cl_float AtomicTypeExtendedInfo<cl_float>::MinValue() {return CL_FLT_MIN;}
-template<> cl_double AtomicTypeExtendedInfo<cl_double>::MinValue() {return CL_DBL_MIN;}
+template <> cl_ulong AtomicTypeExtendedInfo<cl_ulong>::MinValue() { return 0; }
+template <> cl_half AtomicTypeExtendedInfo<cl_half>::MinValue()
+{
+    return cl_half_from_float(-CL_HALF_MAX, gHalfRoundingMode);
+}
+template <> cl_float AtomicTypeExtendedInfo<cl_float>::MinValue()
+{
+    return -CL_FLT_MAX;
+}
+template <> cl_double AtomicTypeExtendedInfo<cl_double>::MinValue()
+{
+    return -CL_DBL_MAX;
+}
 
-template<> cl_int AtomicTypeExtendedInfo<cl_int>::MaxValue() {return CL_INT_MAX;}
-template<> cl_uint AtomicTypeExtendedInfo<cl_uint>::MaxValue() {return CL_UINT_MAX;}
+template <> cl_int AtomicTypeExtendedInfo<cl_int>::MaxValue()
+{
+    return CL_INT_MAX;
+}
+template <> cl_uint AtomicTypeExtendedInfo<cl_uint>::MaxValue()
+{
+    return CL_UINT_MAX;
+}
 template<> cl_long AtomicTypeExtendedInfo<cl_long>::MaxValue() {return CL_LONG_MAX;}
 template<> cl_ulong AtomicTypeExtendedInfo<cl_ulong>::MaxValue() {return CL_ULONG_MAX;}
-template<> cl_float AtomicTypeExtendedInfo<cl_float>::MaxValue() {return CL_FLT_MAX;}
+template <> cl_half AtomicTypeExtendedInfo<cl_half>::MaxValue()
+{
+    return cl_half_from_float(CL_HALF_MAX, gHalfRoundingMode);
+}
+template <> cl_float AtomicTypeExtendedInfo<cl_float>::MaxValue()
+{
+    return CL_FLT_MAX;
+}
 template<> cl_double AtomicTypeExtendedInfo<cl_double>::MaxValue() {return CL_DBL_MAX;}
 
 cl_int getSupportedMemoryOrdersAndScopes(

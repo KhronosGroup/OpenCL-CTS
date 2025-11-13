@@ -179,31 +179,18 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
             // align working group size with the bigger output type
             size_t vectorSize = sizeValues[j] * sizeof(int32_t);
             size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
-            if ((error = clSetKernelArg(kernels[j][thread_id], 0,
-                                        sizeof(gOutBuffer[j]), &gOutBuffer[j])))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
-            if ((error =
-                     clSetKernelArg(kernels[j][thread_id], 1,
-                                    sizeof(gOutBuffer2[j]), &gOutBuffer2[j])))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
-            if ((error = clSetKernelArg(kernels[j][thread_id], 2,
-                                        sizeof(gInBuffer), &gInBuffer)))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
-            if ((error = clSetKernelArg(kernels[j][thread_id], 3,
-                                        sizeof(gInBuffer2), &gInBuffer2)))
-            {
-                LogBuildError(programs[j]);
-                return error;
-            }
+            error = clSetKernelArg(kernels[j][thread_id], 0,
+                                   sizeof(gOutBuffer[j]), &gOutBuffer[j]);
+            test_error(error, "Failed to set kernel argument");
+            error = clSetKernelArg(kernels[j][thread_id], 1,
+                                   sizeof(gOutBuffer2[j]), &gOutBuffer2[j]);
+            test_error(error, "Failed to set kernel argument");
+            error = clSetKernelArg(kernels[j][thread_id], 2, sizeof(gInBuffer),
+                                   &gInBuffer);
+            test_error(error, "Failed to set kernel argument");
+            error = clSetKernelArg(kernels[j][thread_id], 3, sizeof(gInBuffer2),
+                                   &gInBuffer2);
+            test_error(error, "Failed to set kernel argument");
 
             if ((error = clEnqueueNDRangeKernel(gQueue, kernels[j][thread_id],
                                                 1, NULL, &localCount, NULL, 0,
@@ -273,7 +260,7 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                 if (t[j] == q[j] && t2[j] == q2[j]) continue;
 
                 // Check for paired NaNs
-                if (IsHalfNaN(t[j]) && IsHalfNaN(q[j]) && t2[j] == q2[j])
+                if (isnan_fp(t[j]) && isnan_fp(q[j]) && t2[j] == q2[j])
                     continue;
 
                 cl_half test = ((cl_half *)q)[j];
@@ -295,7 +282,7 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                 // then the standard either neglects to say what is returned
                 // in iptr or leaves it undefined or implementation defined.
                 int iptrUndefined = IsHalfInfinity(p[j]) || (HTF(p2[j]) == 0.0f)
-                    || IsHalfNaN(p2[j]) || IsHalfNaN(p[j]);
+                    || isnan_fp(p2[j]) || isnan_fp(p[j]);
                 if (iptrUndefined) iErr = 0;
 
                 int fail = !(fabsf(err) <= half_ulps && iErr == 0);

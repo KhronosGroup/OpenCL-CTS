@@ -21,10 +21,12 @@
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
 ////////////////////////////////////////////////////////////////////////////////
-// mutable dispatch tests which handle following cases:
-// - out-of-order queue use
+// mutable dispatch tests which handles
+// - out-of-order queue with dependencies between command-buffer enqueues
 // - out-of-order queue with simultaneous use
+// - in-order queue with dependencies between command-buffer enqueues
 // - in-order queue with simultaneous use
+// - cross queue with dependencies between command-buffer enqueues
 // - cross-queue with simultaneous use
 
 namespace {
@@ -35,11 +37,10 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
     SimultaneousMutableDispatchTest(cl_device_id device, cl_context context,
                                     cl_command_queue queue)
         : BasicMutableCommandBufferTest(device, context, queue),
-          work_queue(nullptr), work_command_buffer(this), user_event(nullptr),
-          wait_pass_event(nullptr), command(nullptr)
+          work_queue(nullptr), work_command_buffer(this), new_in_mem(nullptr),
+          command(nullptr)
     {
         simultaneous_use_requested = simultaneous_request;
-        if (simultaneous_request) buffer_size_multiplier = 2;
     }
 
     cl_int SetUpKernel() override
@@ -48,26 +49,36 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
         test_error(error, "BasicCommandBufferTest::SetUpKernel failed");
 
         // create additional kernel to properly prepare output buffer for test
-        const char* kernel_str =
+        const char *kernel_str =
             R"(
-          __kernel void fill(int pattern, __global int* out, __global int*
-        offset)
+          __kernel void mul(__global int* out, __global int* in, int mul_val)
           {
               size_t id = get_global_id(0);
-              size_t ind = offset[0] + id ;
-              out[ind] = pattern;
+              out[id] = in[id] * mul_val;
           })";
 
         error = create_single_kernel_helper_create_program(
-            context, &program_fill, 1, &kernel_str);
+            context, &program_mul, 1, &kernel_str);
         test_error(error, "Failed to create program with source");
 
         error =
-            clBuildProgram(program_fill, 1, &device, nullptr, nullptr, nullptr);
+            clBuildProgram(program_mul, 1, &device, nullptr, nullptr, nullptr);
         test_error(error, "Failed to build program");
 
-        kernel_fill = clCreateKernel(program_fill, "fill", &error);
-        test_error(error, "Failed to create copy kernel");
+        kernel_mul = clCreateKernel(program_mul, "mul", &error);
+        test_error(error, "Failed to create multiply kernel");
+
+        new_out_mem = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+                                     sizeof(cl_int) * num_elements
+                                         * buffer_size_multiplier,
+                                     nullptr, &error);
+        test_error(error, "clCreateBuffer failed");
+
+        new_in_mem = clCreateBuffer(context, CL_MEM_READ_ONLY,
+                                    sizeof(cl_int) * num_elements
+                                        * buffer_size_multiplier,
+                                    nullptr, &error);
+        test_error(error, "clCreateBuffer failed");
 
         return CL_SUCCESS;
     }
@@ -77,14 +88,13 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
         cl_int error = BasicCommandBufferTest::SetUpKernelArgs();
         test_error(error, "BasicCommandBufferTest::SetUpKernelArgs failed");
 
-        error = clSetKernelArg(kernel_fill, 0, sizeof(cl_int),
-                               &overwritten_pattern);
+        error = clSetKernelArg(kernel_mul, 0, sizeof(out_mem), &out_mem);
         test_error(error, "clSetKernelArg failed");
 
-        error = clSetKernelArg(kernel_fill, 1, sizeof(out_mem), &out_mem);
+        error = clSetKernelArg(kernel_mul, 1, sizeof(off_mem), &in_mem);
         test_error(error, "clSetKernelArg failed");
 
-        error = clSetKernelArg(kernel_fill, 2, sizeof(off_mem), &off_mem);
+        error = clSetKernelArg(kernel_mul, 2, sizeof(cl_int), &pattern_pri);
         test_error(error, "clSetKernelArg failed");
 
         return CL_SUCCESS;
@@ -101,30 +111,28 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
                 context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
                 &error);
             test_error(error, "Unable to create command queue to test with");
-
-            cl_command_buffer_properties_khr prop =
-                CL_COMMAND_BUFFER_MUTABLE_KHR;
-            if (simultaneous_use_support)
-            {
-                prop |= CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
-            }
-
-            const cl_command_buffer_properties_khr props[] = {
-                CL_COMMAND_BUFFER_FLAGS_KHR,
-                prop,
-                0,
-            };
-
-            work_command_buffer =
-                clCreateCommandBufferKHR(1, &work_queue, props, &error);
-            test_error(error, "clCreateCommandBufferKHR failed");
         }
         else
         {
             work_queue = queue;
-            work_command_buffer = command_buffer;
         }
 
+        cl_command_buffer_properties_khr prop = CL_COMMAND_BUFFER_MUTABLE_KHR;
+
+        if (simultaneous_use_requested)
+        {
+            prop |= CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
+        }
+
+        const cl_command_buffer_properties_khr props[] = {
+            CL_COMMAND_BUFFER_FLAGS_KHR,
+            prop,
+            0,
+        };
+
+        work_command_buffer =
+            clCreateCommandBufferKHR(1, &work_queue, props, &error);
+        test_error(error, "clCreateCommandBufferKHR failed");
         return CL_SUCCESS;
     }
 
@@ -145,275 +153,245 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
             || !mutable_support;
     }
 
+    cl_int RecordCommandBuffer()
+    {
+        cl_int error = clCommandNDRangeKernelKHR(
+            work_command_buffer, nullptr, nullptr, kernel_mul, 1, nullptr,
+            &num_elements, nullptr, 0, nullptr, nullptr, &command);
+        test_error(error, "clCommandNDRangeKernelKHR failed");
+
+        error = clFinalizeCommandBufferKHR(work_command_buffer);
+        test_error(error, "clFinalizeCommandBufferKHR failed");
+
+        return CL_SUCCESS;
+    }
+
+    cl_int RunSerializedPass(std::vector<cl_int> &first_enqueue_output,
+                             std::vector<cl_int> &second_enqueue_output)
+    {
+        /* Serialize command-buffer enqueue, is a linear sequence of
+         * commands, with dependencies enforced using an in-order queue
+         * or cl_event dependencies.
+         *
+         * 1. Fill input buffer
+         * 2. Enqueue command-buffer doing: `output = a * input;
+         * 3. Read output buffer to host data so it can be verified later
+         * -  Update command to new input buffer, new `a` val and use output
+         *    buffer from previous invocation as new input buffer.
+         * 4. Enqueue command-buffer again.
+         * 5. Read new output buffer back to host data so it can be verified
+         *    later
+         *
+         */
+        clEventWrapper E[4];
+        cl_int error = clEnqueueFillBuffer(
+            work_queue, in_mem, &pattern_fill, sizeof(cl_int), 0, data_size(),
+            0, nullptr, (out_of_order_request ? &E[0] : nullptr));
+        test_error(error, "clEnqueueFillBuffer failed");
+
+        error = clEnqueueCommandBufferKHR(
+            0, nullptr, work_command_buffer, (out_of_order_request ? 1 : 0),
+            (out_of_order_request ? &E[0] : nullptr),
+            (out_of_order_request ? &E[1] : nullptr));
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        error = clEnqueueReadBuffer(work_queue, out_mem, CL_FALSE, 0,
+                                    data_size(), first_enqueue_output.data(),
+                                    (out_of_order_request ? 1 : 0),
+                                    (out_of_order_request ? &E[1] : nullptr),
+                                    (out_of_order_request ? &E[2] : nullptr));
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        cl_mutable_dispatch_arg_khr arg_1{ 0, sizeof(new_out_mem),
+                                           &new_out_mem };
+
+        cl_mutable_dispatch_arg_khr arg_2{ 1, sizeof(cl_mem), &out_mem };
+        cl_mutable_dispatch_arg_khr arg_3{ 2, sizeof(cl_int), &pattern_sec };
+
+        cl_mutable_dispatch_arg_khr args[] = { arg_1, arg_2, arg_3 };
+        cl_mutable_dispatch_config_khr dispatch_config{
+            command,
+            3 /* num_args */,
+            0 /* num_svm_arg */,
+            0 /* num_exec_infos */,
+            0 /* work_dim - 0 means no change to dimensions */,
+            args /* arg_list */,
+            nullptr /* arg_svm_list - nullptr means no change*/,
+            nullptr /* exec_info_list */,
+            nullptr /* global_work_offset */,
+            nullptr /* global_work_size */,
+            nullptr /* local_work_size */
+        };
+
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
+        };
+        const void* configs[1] = { &dispatch_config };
+        error = clUpdateMutableCommandsKHR(work_command_buffer, num_configs,
+                                           config_types, configs);
+        test_error(error, "clUpdateMutableCommandsKHR failed");
+
+        error = clEnqueueCommandBufferKHR(
+            0, nullptr, work_command_buffer, (out_of_order_request ? 1 : 0),
+            (out_of_order_request ? &E[2] : nullptr),
+            (out_of_order_request ? &E[3] : nullptr));
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        error = clEnqueueReadBuffer(
+            work_queue, new_out_mem, CL_FALSE, 0, data_size(),
+            second_enqueue_output.data(), (out_of_order_request ? 1 : 0),
+            (out_of_order_request ? &E[3] : nullptr), nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+        return CL_SUCCESS;
+    }
+
+    cl_int RunSimultaneousPass(std::vector<cl_int> &first_enqueue_output,
+                               std::vector<cl_int> &second_enqueue_output)
+    {
+        /* Simultaneous command-buffer pass enqueues a command-buffer twice
+         * without dependencies between the enqueues, but an update so that
+         * all the parameters are different to avoid race conditions in the
+         * kernel execution. The asynchronous task graph looks like:
+         *
+         *  (Fill input A buffer)         (Fill input B buffer)
+         *          |                               |
+         *  (Enqueue command_buffer)      (Enqueue updated command_buffer)
+         *          |                               |
+         *  (Read output A buffer)        (Read output B buffer)
+         */
+        clEventWrapper E[4];
+        cl_int error = clEnqueueFillBuffer(
+            work_queue, in_mem, &pattern_fill, sizeof(cl_int), 0, data_size(),
+            0, nullptr, (out_of_order_request ? &E[0] : nullptr));
+        test_error(error, "clEnqueueFillBuffer failed");
+
+        error = clEnqueueFillBuffer(work_queue, new_in_mem, &pattern_fill_2,
+                                    sizeof(cl_int), 0, data_size(), 0, nullptr,
+                                    (out_of_order_request ? &E[1] : nullptr));
+        test_error(error, "clEnqueueFillBuffer failed");
+
+        error = clEnqueueCommandBufferKHR(
+            0, nullptr, work_command_buffer, (out_of_order_request ? 1 : 0),
+            (out_of_order_request ? &E[0] : nullptr),
+            (out_of_order_request ? &E[2] : nullptr));
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        cl_mutable_dispatch_arg_khr arg_1{ 0, sizeof(new_out_mem),
+                                           &new_out_mem };
+        cl_mutable_dispatch_arg_khr arg_2{ 1, sizeof(cl_mem), &new_in_mem };
+        cl_mutable_dispatch_arg_khr arg_3{ 2, sizeof(cl_int), &pattern_sec };
+
+        cl_mutable_dispatch_arg_khr args[] = { arg_1, arg_2, arg_3 };
+        cl_mutable_dispatch_config_khr dispatch_config{
+            command,
+            3 /* num_args */,
+            0 /* num_svm_arg */,
+            0 /* num_exec_infos */,
+            0 /* work_dim - 0 means no change to dimensions */,
+            args /* arg_list */,
+            nullptr /* arg_svm_list - nullptr means no change*/,
+            nullptr /* exec_info_list */,
+            nullptr /* global_work_offset */,
+            nullptr /* global_work_size */,
+            nullptr /* local_work_size */
+        };
+
+        cl_uint num_configs = 1;
+        cl_command_buffer_update_type_khr config_types[1] = {
+            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
+        };
+        const void* configs[1] = { &dispatch_config };
+        error = clUpdateMutableCommandsKHR(work_command_buffer, num_configs,
+                                           config_types, configs);
+        test_error(error, "clUpdateMutableCommandsKHR failed");
+
+        error = clEnqueueCommandBufferKHR(
+            0, nullptr, work_command_buffer, (out_of_order_request ? 1 : 0),
+            (out_of_order_request ? &E[1] : nullptr),
+            (out_of_order_request ? &E[3] : nullptr));
+        test_error(error, "clEnqueueCommandBufferKHR failed");
+
+        error = clEnqueueReadBuffer(
+            work_queue, out_mem, CL_FALSE, 0, data_size(),
+            first_enqueue_output.data(), (out_of_order_request ? 1 : 0),
+            (out_of_order_request ? &E[2] : nullptr), nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        error = clEnqueueReadBuffer(
+            work_queue, new_out_mem, CL_FALSE, 0, data_size(),
+            second_enqueue_output.data(), (out_of_order_request ? 1 : 0),
+            (out_of_order_request ? &E[3] : nullptr), nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+        return CL_SUCCESS;
+    }
+
+    cl_int VerifySerializedPass(std::vector<cl_int> &first_enqueue_output,
+                                std::vector<cl_int> &second_enqueue_output)
+    {
+        const cl_int first_enqueue_ref = pattern_pri * pattern_fill;
+        const cl_int second_enqueue_ref = pattern_sec * first_enqueue_ref;
+        for (size_t i = 0; i < num_elements; i++)
+        {
+            CHECK_VERIFICATION_ERROR(first_enqueue_ref, first_enqueue_output[i],
+                                     i);
+            CHECK_VERIFICATION_ERROR(second_enqueue_ref,
+                                     second_enqueue_output[i], i);
+        }
+        return CL_SUCCESS;
+    }
+
+    cl_int VerifySimultaneousPass(std::vector<cl_int> &first_enqueue_output,
+                                  std::vector<cl_int> &second_enqueue_output)
+    {
+        const cl_int first_enqueue_ref = pattern_pri * pattern_fill;
+        const cl_int second_enqueue_ref = pattern_sec * pattern_fill_2;
+        for (size_t i = 0; i < num_elements; i++)
+        {
+            CHECK_VERIFICATION_ERROR(first_enqueue_ref, first_enqueue_output[i],
+                                     i);
+            CHECK_VERIFICATION_ERROR(second_enqueue_ref,
+                                     second_enqueue_output[i], i);
+        }
+        return CL_SUCCESS;
+    }
+
     cl_int Run() override
     {
-        cl_int error = CL_SUCCESS;
+        cl_int error = RecordCommandBuffer();
+        test_error(error, "RecordCommandBuffer failed");
 
-        if (simultaneous_use_support)
+        std::vector<cl_int> first_enqueue_output(num_elements);
+        std::vector<cl_int> second_enqueue_output(num_elements);
+
+        if (simultaneous_use_requested)
         {
-            // enqueue simultaneous command-buffers with out-of-order calls
-            error = RunSimultaneous();
-            test_error(error, "RunSimultaneous failed");
+            error = RunSimultaneousPass(first_enqueue_output,
+                                        second_enqueue_output);
+            test_error(error, "RunSimultaneousPass failed");
         }
         else
         {
-            // enqueue single command-buffer with out-of-order calls
-            error = RunSingle();
-            test_error(error, "RunSingle failed");
+            error =
+                RunSerializedPass(first_enqueue_output, second_enqueue_output);
+            test_error(error, "RunSerializedPass failed");
         }
-
-        return CL_SUCCESS;
-    }
-
-    cl_int RecordCommandBuffer()
-    {
-        cl_sync_point_khr sync_points[2];
-        const cl_int pattern = pattern_pri;
-        cl_int error = clCommandFillBufferKHR(
-            work_command_buffer, nullptr, nullptr, in_mem, &pattern,
-            sizeof(cl_int), 0, data_size(), 0, nullptr, &sync_points[0],
-            nullptr);
-        test_error(error, "clCommandFillBufferKHR failed");
-
-        error = clCommandFillBufferKHR(work_command_buffer, nullptr, nullptr,
-                                       out_mem, &overwritten_pattern,
-                                       sizeof(cl_int), 0, data_size(), 0,
-                                       nullptr, &sync_points[1], nullptr);
-        test_error(error, "clCommandFillBufferKHR failed");
-
-        error = clCommandNDRangeKernelKHR(
-            work_command_buffer, nullptr, nullptr, kernel, 1, nullptr,
-            &num_elements, nullptr, 2, sync_points, nullptr, &command);
-        test_error(error, "clCommandNDRangeKernelKHR failed");
-
-        error = clFinalizeCommandBufferKHR(work_command_buffer);
-        test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        return CL_SUCCESS;
-    }
-
-    cl_int RunSingle()
-    {
-        cl_int error;
-
-        error = RecordCommandBuffer();
-        test_error(error, "RecordCommandBuffer failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, work_command_buffer, 0,
-                                          nullptr, &single_event);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        std::vector<cl_int> output_data(num_elements);
-        error =
-            clEnqueueReadBuffer(work_queue, out_mem, CL_TRUE, 0, data_size(),
-                                output_data.data(), 1, &single_event, nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        for (size_t i = 0; i < num_elements; i++)
-        {
-            CHECK_VERIFICATION_ERROR(pattern_pri, output_data[i], i);
-        }
-
-        clMemWrapper new_out_mem = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
-                                                  sizeof(cl_int) * num_elements
-                                                      * buffer_size_multiplier,
-                                                  nullptr, &error);
-        test_error(error, "clCreateBuffer failed");
-
-        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(new_out_mem),
-                                           &new_out_mem };
-        cl_mutable_dispatch_arg_khr args[] = { arg_1 };
-
-        cl_mutable_dispatch_config_khr dispatch_config{
-            command,
-            1 /* num_args */,
-            0 /* num_svm_arg */,
-            0 /* num_exec_infos */,
-            0 /* work_dim - 0 means no change to dimensions */,
-            args /* arg_list */,
-            nullptr /* arg_svm_list - nullptr means no change*/,
-            nullptr /* exec_info_list */,
-            nullptr /* global_work_offset */,
-            nullptr /* global_work_size */,
-            nullptr /* local_work_size */
-        };
-
-        cl_uint num_configs = 1;
-        cl_command_buffer_update_type_khr config_types[1] = {
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
-        };
-        const void* configs[1] = { &dispatch_config };
-        error = clUpdateMutableCommandsKHR(work_command_buffer, num_configs,
-                                           config_types, configs);
-        test_error(error, "clUpdateMutableCommandsKHR failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, work_command_buffer, 0,
-                                          nullptr, &single_event);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        error = clEnqueueReadBuffer(work_queue, new_out_mem, CL_TRUE, 0,
-                                    data_size(), output_data.data(), 1,
-                                    &single_event, nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        for (size_t i = 0; i < num_elements; i++)
-        {
-            CHECK_VERIFICATION_ERROR(pattern_pri, output_data[i], i);
-        }
-
-        return CL_SUCCESS;
-    }
-
-    cl_int RecordSimultaneousCommandBuffer()
-    {
-        cl_sync_point_khr sync_points[2];
-        // for both simultaneous passes this call will fill entire in_mem buffer
-        cl_int error = clCommandFillBufferKHR(
-            work_command_buffer, nullptr, nullptr, in_mem, &pattern_pri,
-            sizeof(cl_int), 0, data_size() * buffer_size_multiplier, 0, nullptr,
-            &sync_points[0], nullptr);
-        test_error(error, "clCommandFillBufferKHR failed");
-
-        // to avoid overwriting the entire result buffer instead of filling
-        // only relevant part this additional kernel was introduced
-
-        error = clCommandNDRangeKernelKHR(
-            work_command_buffer, nullptr, nullptr, kernel_fill, 1, nullptr,
-            &num_elements, nullptr, 0, nullptr, &sync_points[1], &command);
-        test_error(error, "clCommandNDRangeKernelKHR failed");
-
-        error = clCommandNDRangeKernelKHR(
-            work_command_buffer, nullptr, nullptr, kernel, 1, nullptr,
-            &num_elements, nullptr, 2, sync_points, nullptr, &command);
-        test_error(error, "clCommandNDRangeKernelKHR failed");
-
-        error = clFinalizeCommandBufferKHR(work_command_buffer);
-        test_error(error, "clFinalizeCommandBufferKHR failed");
-
-        return CL_SUCCESS;
-    }
-
-    struct SimulPassData
-    {
-        cl_int offset;
-        std::vector<cl_int> output_buffer;
-        // 0:user event, 1:offset-buffer fill event, 2:kernel done event
-        clEventWrapper wait_events[3];
-    };
-
-    cl_int EnqueueSimultaneousPass(SimulPassData& pd)
-    {
-        cl_int error = CL_SUCCESS;
-        if (!user_event)
-        {
-            user_event = clCreateUserEvent(context, &error);
-            test_error(error, "clCreateUserEvent failed");
-        }
-
-        pd.wait_events[0] = user_event;
-
-        // filling offset buffer must wait for previous pass completeness
-        error = clEnqueueFillBuffer(
-            work_queue, off_mem, &pd.offset, sizeof(cl_int), 0, sizeof(cl_int),
-            (wait_pass_event != nullptr ? 1 : 0),
-            (wait_pass_event != nullptr ? &wait_pass_event : nullptr),
-            &pd.wait_events[1]);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        // command buffer execution must wait for two wait-events
-        error =
-            clEnqueueCommandBufferKHR(0, nullptr, work_command_buffer, 2,
-                                      &pd.wait_events[0], &pd.wait_events[2]);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        error = clEnqueueReadBuffer(work_queue, out_mem, CL_FALSE,
-                                    pd.offset * sizeof(cl_int), data_size(),
-                                    pd.output_buffer.data(), 1,
-                                    &pd.wait_events[2], nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        clMemWrapper new_out_mem = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
-                                                  sizeof(cl_int) * num_elements
-                                                      * buffer_size_multiplier,
-                                                  nullptr, &error);
-        test_error(error, "clCreateBuffer failed");
-
-        cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(new_out_mem),
-                                           &new_out_mem };
-        cl_mutable_dispatch_arg_khr args[] = { arg_1 };
-
-        cl_mutable_dispatch_config_khr dispatch_config{
-            command,
-            1 /* num_args */,
-            0 /* num_svm_arg */,
-            0 /* num_exec_infos */,
-            0 /* work_dim - 0 means no change to dimensions */,
-            args /* arg_list */,
-            nullptr /* arg_svm_list - nullptr means no change*/,
-            nullptr /* exec_info_list */,
-            nullptr /* global_work_offset */,
-            nullptr /* global_work_size */,
-            nullptr /* local_work_size */
-        };
-
-        cl_uint num_configs = 1;
-        cl_command_buffer_update_type_khr config_types[1] = {
-            CL_STRUCTURE_TYPE_MUTABLE_DISPATCH_CONFIG_KHR
-        };
-        const void* configs[1] = { &dispatch_config };
-        error = clUpdateMutableCommandsKHR(work_command_buffer, num_configs,
-                                           config_types, configs);
-        test_error(error, "clUpdateMutableCommandsKHR failed");
-
-        // command buffer execution must wait for two wait-events
-        error =
-            clEnqueueCommandBufferKHR(0, nullptr, work_command_buffer, 2,
-                                      &pd.wait_events[0], &pd.wait_events[2]);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        error = clEnqueueReadBuffer(work_queue, new_out_mem, CL_FALSE,
-                                    pd.offset * sizeof(cl_int), data_size(),
-                                    pd.output_buffer.data(), 1,
-                                    &pd.wait_events[2], nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        return CL_SUCCESS;
-    }
-
-    cl_int RunSimultaneous()
-    {
-        cl_int error = RecordSimultaneousCommandBuffer();
-        test_error(error, "RecordSimultaneousCommandBuffer failed");
-
-        cl_int offset = static_cast<cl_int>(num_elements);
-
-        std::vector<SimulPassData> simul_passes = {
-            { 0, std::vector<cl_int>(num_elements) },
-            { offset, std::vector<cl_int>(num_elements) }
-        };
-
-        for (auto&& pass : simul_passes)
-        {
-            error = EnqueueSimultaneousPass(pass);
-            test_error(error, "EnqueueSimultaneousPass failed");
-
-            wait_pass_event = pass.wait_events[2];
-        }
-
-        error = clSetUserEventStatus(user_event, CL_COMPLETE);
-        test_error(error, "clSetUserEventStatus failed");
 
         error = clFinish(work_queue);
         test_error(error, "clFinish failed");
 
         // verify the result buffers
-        for (auto&& pass : simul_passes)
+        if (simultaneous_use_requested)
         {
-            auto& res_data = pass.output_buffer;
-            for (size_t i = 0; i < num_elements; i++)
-            {
-                CHECK_VERIFICATION_ERROR(pattern_pri, res_data[i], i);
-            }
+            error = VerifySimultaneousPass(first_enqueue_output,
+                                           second_enqueue_output);
+            test_error(error, "VerifySimultaneousPass failed");
+        }
+        else
+        {
+            error = VerifySerializedPass(first_enqueue_output,
+                                         second_enqueue_output);
+            test_error(error, "VerifySerializedPass failed");
         }
 
         return CL_SUCCESS;
@@ -422,20 +400,20 @@ struct SimultaneousMutableDispatchTest : public BasicMutableCommandBufferTest
     clCommandQueueWrapper work_queue;
     clCommandBufferWrapper work_command_buffer;
 
-    clEventWrapper user_event;
-    clEventWrapper single_event;
-    clEventWrapper wait_pass_event;
+    clKernelWrapper kernel_mul;
+    clProgramWrapper program_mul;
 
-    clKernelWrapper kernel_fill;
-    clProgramWrapper program_fill;
+    clMemWrapper new_out_mem, new_in_mem;
 
-    const size_t test_global_work_size = 3 * sizeof(cl_int);
     const cl_int pattern_pri = 42;
+    const cl_int pattern_sec = 0xACDC;
+    const cl_int pattern_fill = 0xA;
+    const cl_int pattern_fill_2 = -3;
 
-    const cl_int overwritten_pattern = 0xACDC;
     cl_mutable_command_khr command;
 };
 
+template <bool simultaneous_use_request>
 struct CrossQueueSimultaneousMutableDispatchTest
     : public BasicMutableCommandBufferTest
 {
@@ -443,9 +421,9 @@ struct CrossQueueSimultaneousMutableDispatchTest
                                               cl_context context,
                                               cl_command_queue queue)
         : BasicMutableCommandBufferTest(device, context, queue),
-          queue_sec(nullptr), command(nullptr)
+          queue_sec(nullptr), new_out_mem(nullptr), command(nullptr)
     {
-        simultaneous_use_requested = true;
+        simultaneous_use_requested = simultaneous_use_request;
     }
 
     cl_int SetUpKernel() override
@@ -467,6 +445,11 @@ struct CrossQueueSimultaneousMutableDispatchTest
 
         kernel = clCreateKernel(program, "fill", &error);
         test_error(error, "Failed to create copy kernel");
+
+        new_out_mem =
+            clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+                           sizeof(cl_int) * num_elements, nullptr, &error);
+        test_error(error, "clCreateBuffer failed");
 
         return CL_SUCCESS;
     }
@@ -510,24 +493,18 @@ struct CrossQueueSimultaneousMutableDispatchTest
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
             && mutable_capabilities & CL_MUTABLE_DISPATCH_ARGUMENTS_KHR;
 
-        return !simultaneous_use_support || !mutable_support;
+        return (simultaneous_use_requested && !simultaneous_use_support)
+            || !mutable_support;
     }
 
     cl_int Run() override
     {
-        // record command buffer
-        cl_int pattern = 0;
-        cl_int error = clCommandFillBufferKHR(
-            command_buffer, nullptr, nullptr, out_mem, &pattern, sizeof(cl_int),
-            0, data_size(), 0, nullptr, nullptr, nullptr);
-        test_error(error, "clCommandFillBufferKHR failed");
-
         cl_command_properties_khr props[] = {
             CL_MUTABLE_DISPATCH_UPDATABLE_FIELDS_KHR,
             CL_MUTABLE_DISPATCH_ARGUMENTS_KHR, 0
         };
 
-        error = clCommandNDRangeKernelKHR(
+        cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, props, kernel, 1, nullptr, &num_elements,
             nullptr, 0, nullptr, nullptr, &command);
         test_error(error, "clCommandNDRangeKernelKHR failed");
@@ -535,15 +512,14 @@ struct CrossQueueSimultaneousMutableDispatchTest
         error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        // enqueue command buffer to default queue
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
-                                          nullptr, nullptr);
+        // If we are testing not using simultaneous-use then we need to use
+        // an event to serialize the execution order to the command-buffer
+        // submission to each queue.
+        clEventWrapper E;
+        error = clEnqueueCommandBufferKHR(
+            0, nullptr, command_buffer, 0, nullptr,
+            (simultaneous_use_requested ? nullptr : &E));
         test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        // update mutable parameters
-        clMemWrapper new_out_mem = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
-                                                  data_size(), nullptr, &error);
-        test_error(error, "clCreateBuffer failed");
 
         cl_mutable_dispatch_arg_khr arg_0{ 0, sizeof(cl_int), &pattern_sec };
         cl_mutable_dispatch_arg_khr arg_1{ 1, sizeof(new_out_mem),
@@ -574,30 +550,35 @@ struct CrossQueueSimultaneousMutableDispatchTest
         test_error(error, "clUpdateMutableCommandsKHR failed");
 
         // enqueue command buffer to non-default queue
-        error = clEnqueueCommandBufferKHR(1, &queue_sec, command_buffer, 0,
-                                          nullptr, nullptr);
+        error = clEnqueueCommandBufferKHR(
+            1, &queue_sec, command_buffer, (simultaneous_use_requested ? 0 : 1),
+            (simultaneous_use_requested ? nullptr : &E), nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        error = clFinish(queue_sec);
-        test_error(error, "clFinish failed");
 
         // read result of command buffer execution
         std::vector<cl_int> output_data(num_elements);
+        error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
+                                    output_data.data(), 0, nullptr, nullptr);
+        test_error(error, "clEnqueueReadBuffer failed");
+
+        std::vector<cl_int> sec_output_data(num_elements);
         error =
             clEnqueueReadBuffer(queue_sec, new_out_mem, CL_TRUE, 0, data_size(),
-                                output_data.data(), 0, nullptr, nullptr);
+                                sec_output_data.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
         // verify the result
         for (size_t i = 0; i < num_elements; i++)
         {
-            CHECK_VERIFICATION_ERROR(pattern_sec, output_data[i], i);
+            CHECK_VERIFICATION_ERROR(pattern_pri, output_data[i], i);
+            CHECK_VERIFICATION_ERROR(pattern_sec, sec_output_data[i], i);
         }
 
         return CL_SUCCESS;
     }
 
     clCommandQueueWrapper queue_sec;
+    clMemWrapper new_out_mem;
     const cl_int pattern_pri = 42;
     const cl_int pattern_sec = 0xACDC;
     cl_mutable_command_khr command;
@@ -605,36 +586,38 @@ struct CrossQueueSimultaneousMutableDispatchTest
 
 } // anonymous namespace
 
-int test_mutable_dispatch_out_of_order(cl_device_id device, cl_context context,
-                                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(mutable_dispatch_out_of_order)
 {
     return MakeAndRunTest<SimultaneousMutableDispatchTest<false, true>>(
         device, context, queue, num_elements);
 }
 
-int test_mutable_dispatch_simultaneous_out_of_order(cl_device_id device,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements)
+REGISTER_TEST(mutable_dispatch_simultaneous_out_of_order)
 {
     return MakeAndRunTest<SimultaneousMutableDispatchTest<true, true>>(
         device, context, queue, num_elements);
 }
 
-int test_mutable_dispatch_simultaneous_in_order(cl_device_id device,
-                                                cl_context context,
-                                                cl_command_queue queue,
-                                                int num_elements)
+REGISTER_TEST(mutable_dispatch_in_order)
+{
+    return MakeAndRunTest<SimultaneousMutableDispatchTest<false, false>>(
+        device, context, queue, num_elements);
+}
+
+REGISTER_TEST(mutable_dispatch_simultaneous_in_order)
 {
     return MakeAndRunTest<SimultaneousMutableDispatchTest<true, false>>(
         device, context, queue, num_elements);
 }
 
-int test_mutable_dispatch_simultaneous_cross_queue(cl_device_id device,
-                                                   cl_context context,
-                                                   cl_command_queue queue,
-                                                   int num_elements)
+REGISTER_TEST(mutable_dispatch_cross_queue)
 {
-    return MakeAndRunTest<CrossQueueSimultaneousMutableDispatchTest>(
+    return MakeAndRunTest<CrossQueueSimultaneousMutableDispatchTest<false>>(
+        device, context, queue, num_elements);
+}
+
+REGISTER_TEST(mutable_dispatch_simultaneous_cross_queue)
+{
+    return MakeAndRunTest<CrossQueueSimultaneousMutableDispatchTest<true>>(
         device, context, queue, num_elements);
 }

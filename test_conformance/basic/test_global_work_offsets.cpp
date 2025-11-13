@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include <ctype.h>
 
+#include "testBase.h"
 
 const char *work_offset_test[] = {
     "__kernel void test( __global int * outputID_A, \n"
@@ -36,11 +36,12 @@ const char *work_offset_test[] = {
 #define NUM_TESTS 16
 #define MAX_OFFSET 256
 
-#define CHECK_RANGE( v, m, c ) \
-    if( ( v >= (cl_int)m ) || ( v < 0 ) ) \
-    {    \
-        log_error( "ERROR: ouputID_%c[%lu]: %d is < 0 or >= %lu\n", c, i, v, m ); \
-        return -1;    \
+#define CHECK_RANGE(v, m, c)                                                   \
+    if ((v >= (cl_int)m) || (v < 0))                                           \
+    {                                                                          \
+        log_error("ERROR: ouputID_%c[%zu]: %d is < 0 or >= %zu\n", c, i, v,    \
+                  m);                                                          \
+        return -1;                                                             \
     }
 
 int check_results( size_t threads[], size_t offsets[], cl_int outputA[], cl_int outputB[], cl_int outputC[] )
@@ -76,13 +77,17 @@ int check_results( size_t threads[], size_t offsets[], cl_int outputA[], cl_int 
                     if( counts[ x ][ y ][ z ] < 1 )
                     {
                         if( missed < 3 )
-                            log_error( "ERROR: Map value (%ld,%ld,%ld) was missed%s\n", x, y, z, ( missed == 2 ) ? limitMsg : "" );
+                            log_error(
+                                "ERROR: Map value (%zu,%zu,%zu) was missed%s\n",
+                                x, y, z, (missed == 2) ? limitMsg : "");
                         missed++;
                     }
                     else if( counts[ x ][ y ][ z ] > 1 )
                     {
                         if( multiple < 3 )
-                            log_error( "ERROR: Map value (%ld,%ld,%ld) was returned multiple times%s\n", x, y, z, ( multiple == 2 ) ? limitMsg : "" );
+                            log_error("ERROR: Map value (%zu,%zu,%zu) was "
+                                      "returned multiple times%s\n",
+                                      x, y, z, (multiple == 2) ? limitMsg : "");
                         multiple++;
                     }
                 }
@@ -91,7 +96,9 @@ int check_results( size_t threads[], size_t offsets[], cl_int outputA[], cl_int 
                     if( counts[ x ][ y ][ z ] > 0 )
                     {
                         if( errored < 3 )
-                            log_error( "ERROR: Map value (%ld,%ld,%ld) was erroneously returned%s\n", x, y, z, ( errored == 2 ) ? limitMsg : "" );
+                            log_error("ERROR: Map value (%zu,%zu,%zu) was "
+                                      "erroneously returned%s\n",
+                                      x, y, z, (errored == 2) ? limitMsg : "");
                         errored++;
                     }
                 }
@@ -115,7 +122,7 @@ int check_results( size_t threads[], size_t offsets[], cl_int outputA[], cl_int 
     return ( missed | multiple | errored | corrected );
 }
 
-int test_global_work_offsets(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(global_work_offsets)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -161,9 +168,11 @@ int test_global_work_offsets(cl_device_id deviceID, cl_context context, cl_comma
         for( int j = 0; j < 3; j++ )
             offsets[ j ] = random_in_range( 0, MAX_OFFSET, seed );
 
-        log_info( "\tTesting %ld,%ld,%ld (%ld,%ld,%ld) with offsets (%ld,%ld,%ld)...\n",
-                 threads[ 0 ], threads[ 1 ], threads[ 2 ], localThreads[ 0 ], localThreads[ 1 ], localThreads[ 2 ],
-                 offsets[ 0 ], offsets[ 1 ], offsets[ 2 ] );
+        log_info("\tTesting %zu,%zu,%zu (%zu,%zu,%zu) with offsets "
+                 "(%zu,%zu,%zu)...\n",
+                 threads[0], threads[1], threads[2], localThreads[0],
+                 localThreads[1], localThreads[2], offsets[0], offsets[1],
+                 offsets[2]);
 
         // Now set up and run
         for( int i = 0; i < 3; i++ )
@@ -187,9 +196,11 @@ int test_global_work_offsets(cl_device_id deviceID, cl_context context, cl_comma
         // but they won't be in order, so we need to construct a count map to determine what we got
         if( check_results( threads, offsets, outputA, outputB, outputC ) )
         {
-            log_error( "\t(Test failed for global dim %ld,%ld,%ld, local dim %ld,%ld,%ld, offsets %ld,%ld,%ld)\n",
-                      threads[ 0 ], threads[ 1 ], threads[ 2 ], localThreads[ 0 ], localThreads[ 1 ], localThreads[ 2 ],
-                      offsets[ 0 ], offsets[ 1 ], offsets[ 2 ] );
+            log_error("\t(Test failed for global dim %zu,%zu,%zu, local dim "
+                      "%zu,%zu,%zu, offsets %zu,%zu,%zu)\n",
+                      threads[0], threads[1], threads[2], localThreads[0],
+                      localThreads[1], localThreads[2], offsets[0], offsets[1],
+                      offsets[2]);
             return -1;
         }
     }
@@ -211,7 +222,7 @@ const char *get_offset_test[] = {
     "}\n"
 };
 
-int test_get_global_offset(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(get_global_offset)
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
@@ -252,9 +263,11 @@ int test_get_global_offset(cl_device_id deviceID, cl_context context, cl_command
         for( int j = 0; j < 3; j++ )
             offsets[ j ] = random_in_range( 0, MAX_OFFSET, seed );
 
-        log_info( "\tTesting %ld,%ld,%ld (%ld,%ld,%ld) with offsets (%ld,%ld,%ld)...\n",
-                 threads[ 0 ], threads[ 1 ], threads[ 2 ], localThreads[ 0 ], localThreads[ 1 ], localThreads[ 2 ],
-                 offsets[ 0 ], offsets[ 1 ], offsets[ 2 ] );
+        log_info("\tTesting %zu,%zu,%zu (%zu,%zu,%zu) with offsets "
+                 "(%zu,%zu,%zu)...\n",
+                 threads[0], threads[1], threads[2], localThreads[0],
+                 localThreads[1], localThreads[2], offsets[0], offsets[1],
+                 offsets[2]);
 
         // Now set up and run
         error = clSetKernelArg( kernel, 0, sizeof( streams[0] ), &streams[0] );
@@ -273,7 +286,9 @@ int test_get_global_offset(cl_device_id deviceID, cl_context context, cl_command
         {
             if( outOffsets[ j ] != (cl_int)offsets[ j ] )
             {
-                log_error( "ERROR: get_global_offset( %d ) did not return expected value (expected %ld, got %d)\n", j, offsets[ j ], outOffsets[ j ] );
+                log_error("ERROR: get_global_offset( %d ) did not return "
+                          "expected value (expected %zu, got %d)\n",
+                          j, offsets[j], outOffsets[j]);
                 errors++;
             }
         }
@@ -285,4 +300,3 @@ int test_get_global_offset(cl_device_id deviceID, cl_context context, cl_command
     // All done!
     return 0;
 }
-

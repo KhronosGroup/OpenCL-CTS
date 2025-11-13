@@ -29,6 +29,7 @@
 #include <vector>
 #include <iostream>
 #include <string.h>
+#include <inttypes.h>
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 #include "harness/deviceInfo.h"
@@ -59,9 +60,9 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
 #else
         if (!is_extension_available(device, "cl_khr_external_memory_opaque_fd"))
         {
-            throw std::runtime_error(
-                "Device does not support cl_khr_external_memory_opaque_fd "
-                "extension \n");
+            log_info("Device does not support "
+                     "cl_khr_external_memory_opaque_fd extension \n");
+            return TEST_SKIPPED_ITSELF;
         }
 #endif
         uint32_t width = 256;
@@ -70,33 +71,39 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
         cl_image_format img_format = { 0 };
 
         VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
-            getSupportedVulkanExternalMemoryHandleTypeList()[0];
+            getSupportedVulkanExternalMemoryHandleTypeList(
+                vkDevice->getPhysicalDevice())[0];
 
-        VulkanImageTiling vulkanImageTiling =
-            vkClExternalMemoryHandleTilingAssumption(
-                device, vkExternalMemoryHandleType, &errNum);
+        auto vulkanImageTiling = vkClExternalMemoryHandleTilingAssumption(
+            device, vkExternalMemoryHandleType, &errNum);
         ASSERT_SUCCESS(errNum, "Failed to query OpenCL tiling mode");
+        if (vulkanImageTiling == std::nullopt)
+        {
+            log_info("No image tiling supported by both Vulkan and OpenCL "
+                     "could be found\n");
+            return TEST_SKIPPED_ITSELF;
+        }
+
 
         VulkanImage1D vkImage1D =
             VulkanImage1D(*vkDevice, VULKAN_FORMAT_R8G8B8A8_UNORM, width,
-                          vulkanImageTiling, 1, vkExternalMemoryHandleType);
+                          *vulkanImageTiling, 1, vkExternalMemoryHandleType);
 
         const VulkanMemoryTypeList& memoryTypeList =
             vkImage1D.getMemoryTypeList();
-        uint64_t totalImageMemSize = vkImage1D.getSize();
 
         log_info("Memory type index: %u\n", (uint32_t)memoryTypeList[0]);
         log_info("Memory type property: %d\n",
                  memoryTypeList[0].getMemoryTypeProperty());
-        log_info("Image size : %lu\n", totalImageMemSize);
+        log_info("Image size : %" PRIu64 "\n", vkImage1D.getSize());
 
         VulkanDeviceMemory* vkDeviceMem =
             new VulkanDeviceMemory(*vkDevice, vkImage1D, memoryTypeList[0],
                                    vkExternalMemoryHandleType);
         vkDeviceMem->bindImage(vkImage1D, 0);
 
-        void* handle = NULL;
-        int fd;
+        [[maybe_unused]] void* handle = NULL;
+        [[maybe_unused]] int fd;
         std::vector<cl_mem_properties> extMemProperties{
             (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
             (cl_mem_properties)device,
@@ -149,14 +156,12 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
         const VkImageCreateInfo VulkanImageCreateInfo =
             vkImage1D.getVkImageCreateInfo();
 
-        errNum = getCLImageInfoFromVkImageInfo(&VulkanImageCreateInfo,
-                                               totalImageMemSize, &img_format,
-                                               &image_desc);
-        if (errNum != CL_SUCCESS)
-        {
-            log_error("getCLImageInfoFromVkImageInfo failed!!!");
-            return TEST_FAIL;
-        }
+        auto layout = vkImage1D.getSubresourceLayout();
+        errNum = getCLImageInfoFromVkImageInfo(
+            device, &VulkanImageCreateInfo, &img_format, &image_desc,
+            vulkanImageTiling == VULKAN_IMAGE_TILING_LINEAR ? &layout
+                                                            : nullptr);
+        test_error_fail(errNum, "getCLImageInfoFromVkImageInfo failed!!!");
 
         clMemWrapper image;
 
@@ -165,16 +170,6 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
             context, extMemProperties.data(), CL_MEM_READ_WRITE, &img_format,
             &image_desc, NULL /* host_ptr */, &errNum);
         test_error(errNum, "Unable to create Image with Properties");
-        image.reset();
-
-        // Passing NULL properties and a valid image_format and image_desc
-        image = clCreateImageWithProperties(context, NULL, CL_MEM_READ_WRITE,
-                                            &img_format, &image_desc, NULL,
-                                            &errNum);
-        test_error(errNum,
-                   "Unable to create image with NULL properties "
-                   "with valid image format and image desc");
-
         image.reset();
 
         // Passing image_format as NULL
@@ -203,11 +198,8 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
 };
 }
 
-int test_consistency_external_for_1dimage(cl_device_id deviceID,
-                                          cl_context context,
-                                          cl_command_queue defaultQueue,
-                                          int num_elements)
+REGISTER_TEST(test_consistency_external_for_1dimage)
 {
-    return MakeAndRunTest<ConsistencyExternalImage1DTest>(
-        deviceID, context, defaultQueue, num_elements);
+    return MakeAndRunTest<ConsistencyExternalImage1DTest>(device, context,
+                                                          queue, num_elements);
 }

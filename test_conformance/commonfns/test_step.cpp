@@ -20,7 +20,6 @@
 
 #include "harness/stringHelpers.h"
 
-#include "procs.h"
 #include "test_base.h"
 
 const char *step_fn_code_pattern = "%s\n" /* optional pragma */
@@ -268,16 +267,14 @@ cl_int StepTest::Run()
     return error;
 }
 
-int test_step(cl_device_id device, cl_context context, cl_command_queue queue,
-              int n_elems)
+REGISTER_TEST(step)
 {
-    return MakeAndRunTest<StepTest>(device, context, queue, n_elems, "step",
-                                    true);
+    return MakeAndRunTest<StepTest>(device, context, queue, num_elements,
+                                    "step", true);
 }
 
-int test_stepf(cl_device_id device, cl_context context, cl_command_queue queue,
-               int n_elems)
+REGISTER_TEST(stepf)
 {
-    return MakeAndRunTest<StepTest>(device, context, queue, n_elems, "step",
-                                    false);
+    return MakeAndRunTest<StepTest>(device, context, queue, num_elements,
+                                    "step", false);
 }

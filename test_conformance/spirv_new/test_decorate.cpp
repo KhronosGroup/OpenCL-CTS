@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <limits>
 #include <cmath>
+#include <type_traits>
 
 #include <CL/cl_half.h>
 
@@ -216,29 +217,37 @@ static inline Ti generate_saturated_rhs_input(RandomSeed &seed)
 }
 
 template <typename Ti, typename Tl, typename To>
-static inline To compute_saturated_output(Ti lhs, Ti rhs,
-                                          cl_half_rounding_mode half_rounding)
+static inline
+    typename std::enable_if<std::is_same<Ti, cl_half>::value, To>::type
+    compute_saturated_output(Ti lhs, Ti rhs,
+                             cl_half_rounding_mode half_rounding)
 {
     constexpr auto loVal = std::numeric_limits<To>::min();
     constexpr auto hiVal = std::numeric_limits<To>::max();
 
-    if (std::is_same<Ti, cl_half>::value)
+    cl_float f = cl_half_to_float(lhs) * cl_half_to_float(rhs);
+
+    // Quantize to fp16:
+    f = cl_half_to_float(cl_half_from_float(f, half_rounding));
+
+    To val = static_cast<To>(std::min<float>(std::max<float>(f, loVal), hiVal));
+    if (isnan_fp(rhs))
     {
-        cl_float f = cl_half_to_float(lhs) * cl_half_to_float(rhs);
-
-        // Quantize to fp16:
-        f = cl_half_to_float(cl_half_from_float(f, half_rounding));
-
-        To val = (To)std::min<float>(std::max<float>(f, loVal), hiVal);
-        if (isnan(cl_half_to_float(rhs)))
-        {
-            val = 0;
-        }
-        return val;
+        val = 0;
     }
+    return val;
+}
 
-    Tl ival = (Tl)(lhs * rhs);
-    To val = (To)std::min<Ti>(std::max<Ti>(ival, loVal), hiVal);
+template <typename Ti, typename Tl, typename To>
+static inline
+    typename std::enable_if<!std::is_same<Ti, cl_half>::value, To>::type
+    compute_saturated_output(Ti lhs, Ti rhs, cl_half_rounding_mode)
+{
+    constexpr auto loVal = std::numeric_limits<To>::min();
+    constexpr auto hiVal = std::numeric_limits<To>::max();
+
+    Tl ival = static_cast<Tl>(lhs * rhs);
+    To val = static_cast<To>(std::min<Tl>(std::max<Tl>(ival, loVal), hiVal));
 
     if (isnan(rhs))
     {

@@ -1,0 +1,140 @@
+; kernel void printf_operands_scalar_int32(int i)
+; {
+;     printf("d = %d\n", i);
+;     printf("i = %i\n", i);
+;     printf("o = %o\n", i);
+;     printf("u = %u\n", i);
+;     printf("x = %x\n", i);
+;     printf("X = %X\n", i);
+;
+;     printf("hd = %hd\n", i);
+;     printf("hi = %hi\n", i);
+;     printf("ho = %ho\n", i);
+;     printf("hu = %hu\n", i);
+;     printf("hx = %hx\n", i);
+;     printf("hX = %hX\n", i);
+;
+;     printf("hhd = %hhd\n", i);
+;     printf("hhi = %hhi\n", i);
+;     printf("hho = %hho\n", i);
+;     printf("hhu = %hhu\n", i);
+;     printf("hhx = %hhx\n", i);
+;     printf("hhX = %hhX\n", i);
+; }
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability Int8
+        %clext = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %test "printf_operands_scalar_int32"
+      %uchar = OpTypeInt 8 0
+       %uint = OpTypeInt 32 0
+     %uint_8 = OpConstant %uint 8
+    %uint_10 = OpConstant %uint 10
+    %uint_12 = OpConstant %uint 12
+  %uchar_nul = OpConstant %uchar 0
+   %uchar_nl = OpConstant %uchar 10
+   %uchar_sp = OpConstant %uchar 32
+  %uchar_pct = OpConstant %uchar 37
+   %uchar_eq = OpConstant %uchar 61
+    %uchar_X = OpConstant %uchar 88
+    %uchar_d = OpConstant %uchar 100
+    %uchar_h = OpConstant %uchar 104
+    %uchar_i = OpConstant %uchar 105
+    %uchar_o = OpConstant %uchar 111
+    %uchar_u = OpConstant %uchar 117
+    %uchar_x = OpConstant %uchar 120
+   %string_8 = OpTypeArray %uchar %uint_8
+%cptr_string_8 = OpTypePointer UniformConstant %string_8
+  %string_10 = OpTypeArray %uchar %uint_10
+%cptr_string_10 = OpTypePointer UniformConstant %string_10
+  %string_12 = OpTypeArray %uchar %uint_12
+%cptr_string_12 = OpTypePointer UniformConstant %string_12
+       %void = OpTypeVoid
+ %kernel_sig = OpTypeFunction %void %uint
+  %cptr_char = OpTypePointer UniformConstant %uchar
+
+    %array_d = OpConstantComposite %string_8 %uchar_d %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_d %uchar_nl %uchar_nul ; "d = %d\n"
+   %string_d = OpVariable %cptr_string_8 UniformConstant %array_d
+    %array_i = OpConstantComposite %string_8 %uchar_i %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_i %uchar_nl %uchar_nul ; "i = %i\n"
+   %string_i = OpVariable %cptr_string_8 UniformConstant %array_i
+    %array_o = OpConstantComposite %string_8 %uchar_o %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_o %uchar_nl %uchar_nul ; "o = %o\n"
+   %string_o = OpVariable %cptr_string_8 UniformConstant %array_o
+    %array_u = OpConstantComposite %string_8 %uchar_u %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_u %uchar_nl %uchar_nul ; "u = %u\n"
+   %string_u = OpVariable %cptr_string_8 UniformConstant %array_u
+    %array_x = OpConstantComposite %string_8 %uchar_x %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_x %uchar_nl %uchar_nul ; "x = %x\n"
+   %string_x = OpVariable %cptr_string_8 UniformConstant %array_x
+    %array_X = OpConstantComposite %string_8 %uchar_X %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_X %uchar_nl %uchar_nul ; "X = %X\n"
+   %string_X = OpVariable %cptr_string_8 UniformConstant %array_X
+
+   %array_hd = OpConstantComposite %string_10 %uchar_h %uchar_d %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_h %uchar_d %uchar_nl %uchar_nul ; "hd = %hd\n"
+  %string_hd = OpVariable %cptr_string_10 UniformConstant %array_hd
+   %array_hi = OpConstantComposite %string_10 %uchar_h %uchar_i %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_h %uchar_i %uchar_nl %uchar_nul ; "hi = %hi\n"
+  %string_hi = OpVariable %cptr_string_10 UniformConstant %array_hi
+   %array_ho = OpConstantComposite %string_10 %uchar_h %uchar_o %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_h %uchar_o %uchar_nl %uchar_nul ; "ho = %ho\n"
+  %string_ho = OpVariable %cptr_string_10 UniformConstant %array_ho
+   %array_hu = OpConstantComposite %string_10 %uchar_h %uchar_u %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_h %uchar_u %uchar_nl %uchar_nul ; "hu = %hu\n"
+  %string_hu = OpVariable %cptr_string_10 UniformConstant %array_hu
+   %array_hx = OpConstantComposite %string_10 %uchar_h %uchar_x %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_h %uchar_x %uchar_nl %uchar_nul ; "hx = %hx\n"
+  %string_hx = OpVariable %cptr_string_10 UniformConstant %array_hx
+   %array_hX = OpConstantComposite %string_10 %uchar_h %uchar_X %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_h %uchar_X %uchar_nl %uchar_nul ; "hX = %hX\n"
+  %string_hX = OpVariable %cptr_string_10 UniformConstant %array_hX
+
+  %array_hhd = OpConstantComposite %string_12 %uchar_h %uchar_h %uchar_d %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_h %uchar_h %uchar_d %uchar_nl %uchar_nul ; "hhd = %hhd\n"
+ %string_hhd = OpVariable %cptr_string_12 UniformConstant %array_hhd
+  %array_hhi = OpConstantComposite %string_12 %uchar_h %uchar_h %uchar_i %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_h %uchar_h %uchar_i %uchar_nl %uchar_nul ; "hhi = %hhi\n"
+ %string_hhi = OpVariable %cptr_string_12 UniformConstant %array_hhi
+  %array_hho = OpConstantComposite %string_12 %uchar_h %uchar_h %uchar_o %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_h %uchar_h %uchar_o %uchar_nl %uchar_nul ; "hho = %hho\n"
+ %string_hho = OpVariable %cptr_string_12 UniformConstant %array_hho
+  %array_hhu = OpConstantComposite %string_12 %uchar_h %uchar_h %uchar_u %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_h %uchar_h %uchar_u %uchar_nl %uchar_nul ; "hhu = %hhu\n"
+ %string_hhu = OpVariable %cptr_string_12 UniformConstant %array_hhu
+  %array_hhx = OpConstantComposite %string_12 %uchar_h %uchar_h %uchar_x %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_h %uchar_h %uchar_x %uchar_nl %uchar_nul ; "hhx = %hhx\n"
+ %string_hhx = OpVariable %cptr_string_12 UniformConstant %array_hhx
+  %array_hhX = OpConstantComposite %string_12 %uchar_h %uchar_h %uchar_X %uchar_sp %uchar_eq %uchar_sp %uchar_pct %uchar_h %uchar_h %uchar_X %uchar_nl %uchar_nul ; "hhX = %hhX\n"
+ %string_hhX = OpVariable %cptr_string_12 UniformConstant %array_hhX
+
+       %test = OpFunction %void None %kernel_sig
+          %i = OpFunctionParameter %uint
+      %entry = OpLabel
+      %fmt_d = OpBitcast %cptr_char %string_d
+   %printf_d = OpExtInst %uint %clext printf %fmt_d %i
+      %fmt_i = OpBitcast %cptr_char %string_i
+   %printf_i = OpExtInst %uint %clext printf %fmt_i %i
+      %fmt_o = OpBitcast %cptr_char %string_o
+   %printf_o = OpExtInst %uint %clext printf %fmt_o %i
+      %fmt_u = OpBitcast %cptr_char %string_u
+   %printf_u = OpExtInst %uint %clext printf %fmt_u %i
+      %fmt_x = OpBitcast %cptr_char %string_x
+   %printf_x = OpExtInst %uint %clext printf %fmt_x %i
+      %fmt_X = OpBitcast %cptr_char %string_X
+   %printf_X = OpExtInst %uint %clext printf %fmt_X %i
+
+     %fmt_hd = OpBitcast %cptr_char %string_hd
+  %printf_hd = OpExtInst %uint %clext printf %fmt_hd %i
+     %fmt_hi = OpBitcast %cptr_char %string_hi
+  %printf_hi = OpExtInst %uint %clext printf %fmt_hi %i
+     %fmt_ho = OpBitcast %cptr_char %string_ho
+  %printf_ho = OpExtInst %uint %clext printf %fmt_ho %i
+     %fmt_hu = OpBitcast %cptr_char %string_hu
+  %printf_hu = OpExtInst %uint %clext printf %fmt_hu %i
+     %fmt_hx = OpBitcast %cptr_char %string_hx
+  %printf_hx = OpExtInst %uint %clext printf %fmt_hx %i
+     %fmt_hX = OpBitcast %cptr_char %string_hX
+  %printf_hX = OpExtInst %uint %clext printf %fmt_hX %i
+
+    %fmt_hhd = OpBitcast %cptr_char %string_hhd
+ %printf_hhd = OpExtInst %uint %clext printf %fmt_hhd %i
+    %fmt_hhi = OpBitcast %cptr_char %string_hhi
+ %printf_hhi = OpExtInst %uint %clext printf %fmt_hhi %i
+    %fmt_hho = OpBitcast %cptr_char %string_hho
+ %printf_hho = OpExtInst %uint %clext printf %fmt_hho %i
+    %fmt_hhu = OpBitcast %cptr_char %string_hhu
+ %printf_hhu = OpExtInst %uint %clext printf %fmt_hhu %i
+    %fmt_hhx = OpBitcast %cptr_char %string_hhx
+ %printf_hhx = OpExtInst %uint %clext printf %fmt_hhx %i
+    %fmt_hhX = OpBitcast %cptr_char %string_hhX
+ %printf_hhX = OpExtInst %uint %clext printf %fmt_hhX %i
+
+               OpReturn
+               OpFunctionEnd

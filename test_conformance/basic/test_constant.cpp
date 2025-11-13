@@ -22,9 +22,10 @@
 #include <sys/stat.h>
 
 #include <algorithm>
+#include <cinttypes>
 #include <vector>
 
-#include "procs.h"
+#include "testBase.h"
 
 namespace {
 const char* constant_kernel_code = R"(
@@ -99,8 +100,7 @@ template <typename T> void generate_random_inputs(std::vector<T>& v)
 }
 }
 
-int test_constant(cl_device_id device, cl_context context,
-                  cl_command_queue queue, int num_elements)
+REGISTER_TEST(constant)
 {
     clMemWrapper streams[3];
     clProgramWrapper program;
@@ -117,7 +117,8 @@ int test_constant(cl_device_id device, cl_context context,
     err = clGetDeviceInfo(device, CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE,
                           sizeof(maxSize), &maxSize, 0);
     test_error(err, "Unable to get max constant buffer size");
-    log_info("Device reports CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE %llu bytes.\n",
+    log_info("Device reports CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE %" PRIu64
+             " bytes.\n",
              maxSize);
 
     // Limit test buffer size to 1/4 of CL_DEVICE_GLOBAL_MEM_SIZE
@@ -140,8 +141,8 @@ int test_constant(cl_device_id device, cl_context context,
 
 
     log_info(
-        "Test will attempt to use %lu bytes with one %lu byte constant int "
-        "buffer and one %lu byte constant float buffer.\n",
+        "Test will attempt to use %zu bytes with one %zu byte constant int "
+        "buffer and one %zu byte constant float buffer.\n",
         constant_values * sizeof(cl_int) + constant_values * sizeof(cl_float),
         constant_values * sizeof(cl_int), constant_values * sizeof(cl_float));
 

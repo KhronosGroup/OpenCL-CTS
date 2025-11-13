@@ -94,7 +94,11 @@ const char *known_extensions[] = {
     "cl_khr_external_memory_dma_buf",
     "cl_khr_command_buffer",
     "cl_khr_command_buffer_mutable_dispatch",
-    "cl_khr_command_buffer_multi_device"
+    "cl_khr_command_buffer_mutable_memory_commands",
+    "cl_khr_command_buffer_multi_device",
+    "cl_khr_external_memory_android_hardware_buffer",
+    "cl_khr_unified_svm",
+    "cl_khr_spirv_queries"
 };
 // clang-format on
 
@@ -131,7 +135,7 @@ bool string_has_prefix(const char *str, const char *prefix)
     return strncmp(str, prefix, strlen(prefix)) == 0;
 }
 
-int test_compiler_defines_for_extensions(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
+REGISTER_TEST(compiler_defines_for_extensions)
 {
 
     int error;

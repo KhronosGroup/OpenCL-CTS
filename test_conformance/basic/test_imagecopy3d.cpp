@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,211 +20,226 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <memory>
 
+#include "testBase.h"
 
-#include "procs.h"
-
-static unsigned char *
+static std::unique_ptr<unsigned char[]>
 generate_uint8_image(unsigned num_elements, MTdata d)
 {
-    unsigned char *ptr = (unsigned char*)malloc(num_elements);
-    unsigned i;
+    std::unique_ptr<unsigned char[]> ptr{ new unsigned char[num_elements] };
 
-    for (i=0; i<num_elements; i++)
+    for (unsigned i = 0; i < num_elements; i++)
         ptr[i] = (unsigned char)genrand_int32(d);
 
     return ptr;
 }
 
-static int
-verify_uint8_image(unsigned char *image, unsigned char *outptr, unsigned num_elements)
+static int verify_uint8_image(const unsigned char *image,
+                              const unsigned char *outptr,
+                              unsigned num_elements)
 {
     unsigned i;
 
-    for (i=0; i<num_elements; i++)
+    for (i = 0; i < num_elements; i++)
     {
-        if (outptr[i] != image[i])
-            return -1;
+        if (outptr[i] != image[i]) return -1;
     }
 
     return 0;
 }
 
 
-static unsigned short *
+static std::unique_ptr<unsigned short[]>
 generate_uint16_image(unsigned num_elements, MTdata d)
 {
-    unsigned short    *ptr = (unsigned short *)malloc(num_elements * sizeof(unsigned short));
-    unsigned i;
+    std::unique_ptr<unsigned short[]> ptr{ new unsigned short[num_elements] };
 
-    for (i=0; i<num_elements; i++)
+    for (unsigned i = 0; i < num_elements; i++)
         ptr[i] = (unsigned short)genrand_int32(d);
 
     return ptr;
 }
 
-static int
-verify_uint16_image(unsigned short *image, unsigned short *outptr, unsigned num_elements)
+static int verify_uint16_image(const unsigned short *image,
+                               const unsigned short *outptr,
+                               unsigned num_elements)
 {
     unsigned i;
 
-    for (i=0; i<num_elements; i++)
+    for (i = 0; i < num_elements; i++)
     {
-        if (outptr[i] != image[i])
-            return -1;
+        if (outptr[i] != image[i]) return -1;
     }
 
     return 0;
 }
 
 
-static float *
-generate_float_image(unsigned num_elements, MTdata d)
+static std::unique_ptr<float[]> generate_float_image(unsigned num_elements,
+                                                     MTdata d)
 {
-    float   *ptr = (float*)malloc(num_elements * sizeof(float));
-    unsigned i;
+    std::unique_ptr<float[]> ptr{ new float[num_elements] };
 
-    for (i=0; i<num_elements; i++)
+    for (unsigned i = 0; i < num_elements; i++)
         ptr[i] = get_random_float(-0x40000000, 0x40000000, d);
 
     return ptr;
 }
 
-static int
-verify_float_image(float *image, float *outptr, unsigned num_elements)
+static int verify_float_image(const float *image, const float *outptr,
+                              unsigned num_elements)
 {
     unsigned i;
 
-    for (i=0; i<num_elements; i++)
+    for (i = 0; i < num_elements; i++)
     {
-        if (outptr[i] != image[i])
-            return -1;
+        if (outptr[i] != image[i]) return -1;
     }
 
     return 0;
 }
 
+static constexpr cl_image_format image_formats[] = { { CL_RGBA, CL_UNORM_INT8 },
+                                                     { CL_RGBA,
+                                                       CL_UNORM_INT16 },
+                                                     { CL_RGBA, CL_FLOAT } };
 
-int
-test_imagecopy3d(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements_ignored)
+static int test_imagecopy3d_impl(cl_device_id device, cl_context context,
+                                 cl_command_queue queue,
+                                 int num_elements_ignored,
+                                 cl_mem_flags src_image_flags)
 {
-    cl_image_format    img_format;
-    unsigned char    *rgba8_inptr, *rgba8_outptr;
-    unsigned short *rgba16_inptr, *rgba16_outptr;
-    float *rgbafp_inptr, *rgbafp_outptr;
+    constexpr size_t image_formats_count = ARRAY_SIZE(image_formats);
+    std::unique_ptr<unsigned char[]> rgba8_inptr, rgba8_outptr;
+    std::unique_ptr<unsigned short[]> rgba16_inptr, rgba16_outptr;
+    std::unique_ptr<float[]> rgbafp_inptr, rgbafp_outptr;
     clMemWrapper streams[6];
-    int img_width = 128;
-    int img_height = 128;
-    int img_depth = 64;
+    size_t img_width = 128;
+    size_t img_height = 128;
+    size_t img_depth = 64;
     int i;
-    cl_int        err;
-    unsigned    num_elements = img_width * img_height * img_depth * 4;
-    MTdata      d;
+    cl_int err;
+    unsigned num_elements = img_width * img_height * img_depth * 4;
+    MTdataHolder d(gRandomSeed);
 
-    PASSIVE_REQUIRE_3D_IMAGE_SUPPORT( device )
+    rgba8_inptr = generate_uint8_image(num_elements, d);
+    rgba16_inptr = generate_uint16_image(num_elements, d);
+    rgbafp_inptr = generate_float_image(num_elements, d);
 
-    d = init_genrand( gRandomSeed );
-    rgba8_inptr = (unsigned char *)generate_uint8_image(num_elements, d);
-    rgba16_inptr = (unsigned short *)generate_uint16_image(num_elements, d);
-    rgbafp_inptr = (float *)generate_float_image(num_elements, d);
-    free_mtdata(d); d = NULL;
+    rgba8_outptr.reset(new unsigned char[num_elements]);
+    rgba16_outptr.reset(new unsigned short[num_elements]);
+    rgbafp_outptr.reset(new float[num_elements]);
 
-    rgba8_outptr = (unsigned char*)malloc(sizeof(unsigned char) * num_elements);
-    rgba16_outptr = (unsigned short*)malloc(sizeof(unsigned short) * num_elements);
-    rgbafp_outptr = (float*)malloc(sizeof(float) * num_elements);
-
-    img_format.image_channel_order = CL_RGBA;
-    img_format.image_channel_data_type = CL_UNORM_INT8;
-    streams[0] = create_image_3d(context, CL_MEM_READ_ONLY, &img_format, img_width, img_height, img_depth, 0, 0, NULL, &err);
-    test_error(err, "create_image_3d failed");
-    streams[1] = create_image_3d(context, CL_MEM_READ_ONLY, &img_format, img_width, img_height, img_depth, 0, 0, NULL, &err);
-    test_error(err, "create_image_3d failed");
-
-    img_format.image_channel_order = CL_RGBA;
-    img_format.image_channel_data_type = CL_UNORM_INT16;
-    streams[2] = create_image_3d(context, CL_MEM_READ_ONLY, &img_format, img_width, img_height, img_depth, 0, 0, NULL, &err);
-    test_error(err, "create_image_3d failed");
-    streams[3] = create_image_3d(context, CL_MEM_READ_ONLY, &img_format, img_width, img_height, img_depth, 0, 0, NULL, &err);
-    test_error(err, "create_image_3d failed");
-
-    img_format.image_channel_order = CL_RGBA;
-    img_format.image_channel_data_type = CL_FLOAT;
-    streams[4] = create_image_3d(context, CL_MEM_READ_ONLY, &img_format, img_width, img_height, img_depth, 0, 0, NULL, &err);
-    test_error(err, "create_image_3d failed");
-    streams[5] = create_image_3d(context, CL_MEM_READ_ONLY, &img_format, img_width, img_height, img_depth, 0, 0, NULL, &err);
-    test_error(err, "create_image_3d failed");
-
-    for (i=0; i<3; i++)
+    for (size_t index = 0; index < image_formats_count; ++index)
     {
-        void    *p, *outp;
-        int        x, y, z, delta_w = img_width/8, delta_h = img_height/16, delta_d = img_depth/4;
+        void *ptr = nullptr;
+        if (src_image_flags & CL_MEM_USE_HOST_PTR
+            || src_image_flags & CL_MEM_COPY_HOST_PTR)
+        {
+            switch (index)
+            {
+                case 0: ptr = rgba8_inptr.get(); break;
+                case 1: ptr = rgba16_inptr.get(); break;
+                case 2: ptr = rgbafp_inptr.get(); break;
+                default: break;
+            }
+        }
+        streams[index * 2] =
+            create_image_3d(context, src_image_flags, &image_formats[index],
+                            img_width, img_height, img_depth, 0, 0, ptr, &err);
+        test_error(err, "create_image_3d failed");
+
+        streams[index * 2 + 1] = create_image_3d(
+            context, CL_MEM_READ_ONLY, &image_formats[index], img_width,
+            img_height, img_depth, 0, 0, nullptr, &err);
+        test_error(err, "create_image_3d failed");
+    }
+
+    for (i = 0; i < image_formats_count; i++)
+    {
+        void *p, *outp;
+        int x, y, z, delta_w = img_width / 8, delta_h = img_height / 16,
+                     delta_d = img_depth / 4;
 
         switch (i)
         {
             case 0:
-                p = (void *)rgba8_inptr;
-                outp = (void *)rgba8_outptr;
+                p = rgba8_inptr.get();
+                outp = rgba8_outptr.get();
                 break;
             case 1:
-                p = (void *)rgba16_inptr;
-                outp = (void *)rgba16_outptr;
+                p = rgba16_inptr.get();
+                outp = rgba16_outptr.get();
                 break;
             case 2:
-                p = (void *)rgbafp_inptr;
-                outp = (void *)rgbafp_outptr;
+                p = rgbafp_inptr.get();
+                outp = rgbafp_outptr.get();
                 break;
         }
 
-        size_t origin[3]={0,0,0}, region[3]={img_width, img_height, img_depth};
-        err = clEnqueueWriteImage(queue, streams[i*2], CL_TRUE, origin, region, 0, 0, p, 0, NULL, NULL);
-        test_error(err, "clEnqueueWriteImage failed");
-
-        for (z=0; z<img_depth; z+=delta_d)
+        size_t origin[3] = { 0, 0, 0 },
+               region[3] = { img_width, img_height, img_depth };
+        if (!(src_image_flags & CL_MEM_USE_HOST_PTR
+              || src_image_flags & CL_MEM_COPY_HOST_PTR))
         {
-            for (y=0; y<img_height; y+=delta_h)
-            {
-                for (x=0; x<img_width; x+=delta_w)
-                {
-                  origin[0] = x; origin[1] = y; origin[2] = z;
-                  region[0] = delta_w; region[1] = delta_h; region[2] = delta_d;
+            err = clEnqueueWriteImage(queue, streams[i * 2], CL_TRUE, origin,
+                                      region, 0, 0, p, 0, nullptr, nullptr);
+            test_error(err, "clEnqueueWriteImage failed");
+        }
 
-                  err = clEnqueueCopyImage(queue, streams[i*2], streams[i*2+1], origin, origin, region, 0, NULL, NULL);
-                  test_error(err, "clEnqueueCopyImage failed");
+        for (z = 0; z < img_depth; z += delta_d)
+        {
+            for (y = 0; y < img_height; y += delta_h)
+            {
+                for (x = 0; x < img_width; x += delta_w)
+                {
+                    origin[0] = x;
+                    origin[1] = y;
+                    origin[2] = z;
+                    region[0] = delta_w;
+                    region[1] = delta_h;
+                    region[2] = delta_d;
+
+                    err = clEnqueueCopyImage(queue, streams[i * 2],
+                                             streams[i * 2 + 1], origin, origin,
+                                             region, 0, NULL, NULL);
+                    test_error(err, "clEnqueueCopyImage failed");
                 }
             }
         }
 
-        origin[0] = 0; origin[1] = 0; origin[2] = 0;
-        region[0] = img_width; region[1] = img_height; region[2] = img_depth;
-        err = clEnqueueReadImage(queue, streams[i*2+1], CL_TRUE, origin, region, 0, 0, outp, 0, NULL, NULL);
+        origin[0] = 0;
+        origin[1] = 0;
+        origin[2] = 0;
+        region[0] = img_width;
+        region[1] = img_height;
+        region[2] = img_depth;
+        err = clEnqueueReadImage(queue, streams[i * 2 + 1], CL_TRUE, origin,
+                                 region, 0, 0, outp, 0, NULL, NULL);
         test_error(err, "clEnqueueReadImage failed");
 
         switch (i)
         {
             case 0:
-                err = verify_uint8_image(rgba8_inptr, rgba8_outptr, num_elements);
-        if (err) log_error("Failed uint8\n");
+                err = verify_uint8_image(rgba8_inptr.get(), rgba8_outptr.get(),
+                                         num_elements);
+                if (err) log_error("Failed uint8\n");
                 break;
             case 1:
-                err = verify_uint16_image(rgba16_inptr, rgba16_outptr, num_elements);
-        if (err) log_error("Failed uint16\n");
+                err = verify_uint16_image(rgba16_inptr.get(),
+                                          rgba16_outptr.get(), num_elements);
+                if (err) log_error("Failed uint16\n");
                 break;
             case 2:
-                err = verify_float_image(rgbafp_inptr, rgbafp_outptr, num_elements);
-        if (err) log_error("Failed float\n");
+                err = verify_float_image(rgbafp_inptr.get(),
+                                         rgbafp_outptr.get(), num_elements);
+                if (err) log_error("Failed float\n");
                 break;
         }
 
-        if (err)
-            break;
+        if (err) break;
     }
-
-  free(rgba8_inptr);
-  free(rgba16_inptr);
-  free(rgbafp_inptr);
-  free(rgba8_outptr);
-  free(rgba16_outptr);
-  free(rgbafp_outptr);
 
     if (err)
         log_error("IMAGE3D copy test failed\n");
@@ -234,5 +249,10 @@ test_imagecopy3d(cl_device_id device, cl_context context, cl_command_queue queue
     return err;
 }
 
+REGISTER_TEST(imagecopy3d)
+{
+    PASSIVE_REQUIRE_3D_IMAGE_SUPPORT(device);
 
-
+    return test_imagecopy3d_impl(device, context, queue, num_elements,
+                                 CL_MEM_READ_WRITE);
+}

@@ -14,7 +14,9 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
+#include "command_buffer_with_immutable_memory.h"
+#include "imageHelpers.h"
+#include <vector>
 
 //--------------------------------------------------------------------------
 template <bool check_image_support>
@@ -578,100 +580,359 @@ struct CommandBufferCopyImageMutableHandleNotNull
         return CL_SUCCESS;
     }
 };
+
+struct CommandBufferCopyToImmutableImage
+    : public CommandBufferWithImmutableMemoryObjectsTest<
+          CommandBufferCopyBaseTest<true>>
+{
+    using CommandBufferWithImmutableMemoryObjectsTest::
+        CommandBufferWithImmutableMemoryObjectsTest;
+
+    cl_int Run() override
+    {
+        cl_int error = clCommandFillImageKHR(
+            command_buffer, nullptr, nullptr, src_image, fill_color_1, origin,
+            region, 0, nullptr, nullptr, nullptr);
+
+        test_error(error, "clCommandFillImageKHR failed");
+
+        error = clCommandCopyImageKHR(command_buffer, nullptr, nullptr,
+                                      src_image, dst_image, origin, origin,
+                                      region, 0, 0, nullptr, nullptr);
+
+        test_failure_error_ret(error, CL_INVALID_OPERATION,
+                               "clCommandCopyImageKHR is supposed to fail "
+                               "with CL_INVALID_OPERATION when dst_image is "
+                               "created with CL_MEM_IMMUTABLE_EXT",
+                               TEST_FAIL);
+
+        return CL_SUCCESS;
+    }
+
+    cl_int SetUp(int elements) override
+    {
+        cl_int error = BasicCommandBufferTest::SetUp(elements);
+        test_error(error, "BasicCommandBufferTest::SetUp failed");
+
+        src_image = create_image_2d(context, CL_MEM_READ_ONLY, &format,
+                                    img_width, img_height, 0, nullptr, &error);
+        test_error(error, "create_image_2d failed");
+
+        size_t pixel_size = get_pixel_size(&format);
+        size_t image_size =
+            pixel_size * sizeof(cl_uchar) * img_width * img_height;
+
+        std::vector<cl_uchar> imgptr(image_size);
+
+        dst_image = create_image_2d(
+            context, CL_MEM_IMMUTABLE_EXT | CL_MEM_COPY_HOST_PTR, &format,
+            img_width, img_height, 0, imgptr.data(), &error);
+        test_error(error, "create_image_2d failed");
+
+        return CL_SUCCESS;
+    }
+
+    clMemWrapper dst_image;
+    clMemWrapper src_image;
+    static constexpr cl_uint pattern_1 = 0x05;
+    const cl_uint fill_color_1[4] = { pattern_1, pattern_1, pattern_1,
+                                      pattern_1 };
+};
+
+struct CommandBufferCopyToImmutableBuffer
+    : public CommandBufferWithImmutableMemoryObjectsTest<
+          CommandBufferCopyBaseTest<false>>
+{
+    using CommandBufferWithImmutableMemoryObjectsTest::
+        CommandBufferWithImmutableMemoryObjectsTest;
+
+    cl_int Run() override
+    {
+        cl_int error = clCommandCopyBufferKHR(command_buffer, nullptr, nullptr,
+                                              in_mem, buffer, 0, 0, data_size,
+                                              0, nullptr, nullptr, nullptr);
+        test_failure_error_ret(error, CL_INVALID_OPERATION,
+                               "clCommandCopyBufferKHR is supposed to fail "
+                               "with CL_INVALID_OPERATION when dst_buffer is "
+                               "created with CL_MEM_IMMUTABLE_EXT",
+                               TEST_FAIL);
+        return CL_SUCCESS;
+    }
+
+    cl_int SetUp(int elements) override
+    {
+        cl_int error = BasicCommandBufferTest::SetUp(elements);
+        test_error(error, "BasicCommandBufferTest::SetUp failed");
+
+        in_mem = clCreateBuffer(context, CL_MEM_READ_ONLY, data_size, nullptr,
+                                &error);
+        test_error(error, "clCreateBuffer failed");
+
+        std::vector<cl_uchar> data(data_size);
+
+        buffer =
+            clCreateBuffer(context, CL_MEM_IMMUTABLE_EXT | CL_MEM_COPY_HOST_PTR,
+                           data_size, data.data(), &error);
+        test_error(error, "clCreateBuffer failed");
+
+        return CL_SUCCESS;
+    }
+};
+
+struct CommandBufferCopyBufferToImmutableImage
+    : public CommandBufferWithImmutableMemoryObjectsTest<
+          CommandBufferCopyBaseTest<true>>
+{
+    using CommandBufferWithImmutableMemoryObjectsTest::
+        CommandBufferWithImmutableMemoryObjectsTest;
+
+    cl_int Run() override
+    {
+        cl_int error = clCommandFillBufferKHR(
+            command_buffer, nullptr, nullptr, buffer, &pattern_1,
+            sizeof(pattern_1), 0, data_size, 0, nullptr, nullptr, nullptr);
+
+        test_error(error, "clCommandFillBufferKHR failed");
+
+        error = clCommandCopyBufferToImageKHR(command_buffer, nullptr, nullptr,
+                                              buffer, image, 0, origin, region,
+                                              0, 0, nullptr, nullptr);
+
+        test_failure_error_ret(
+            error, CL_INVALID_OPERATION,
+            "clCommandCopyBufferToImageKHR is supposed to fail "
+            "with CL_INVALID_OPERATION when dst_image is "
+            "created with CL_MEM_IMMUTABLE_EXT",
+            TEST_FAIL);
+
+        return CL_SUCCESS;
+    }
+
+    cl_int SetUp(int elements) override
+    {
+        cl_int error = BasicCommandBufferTest::SetUp(elements);
+        test_error(error, "BasicCommandBufferTest::SetUp failed");
+
+        buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, data_size, nullptr,
+                                &error);
+        test_error(error, "Unable to create buffer");
+
+        size_t pixel_size = get_pixel_size(&format);
+        size_t image_size =
+            pixel_size * sizeof(cl_uchar) * img_width * img_height;
+
+        std::vector<cl_uchar> imgptr(image_size);
+
+        image = create_image_2d(
+            context, CL_MEM_IMMUTABLE_EXT | CL_MEM_COPY_HOST_PTR, &format,
+            img_width, img_height, 0, imgptr.data(), &error);
+        test_error(error, "create_image_2d failed");
+
+        return CL_SUCCESS;
+    }
+
+    const uint8_t pattern_1 = 0x05;
+};
+
+struct CommandBufferCopyImageToImmutableBuffer
+    : public CommandBufferWithImmutableMemoryObjectsTest<
+          CommandBufferCopyBaseTest<true>>
+{
+    using CommandBufferWithImmutableMemoryObjectsTest::
+        CommandBufferWithImmutableMemoryObjectsTest;
+
+    cl_int Run() override
+    {
+        cl_int error = clCommandFillImageKHR(
+            command_buffer, nullptr, nullptr, image, fill_color_1, origin,
+            region, 0, nullptr, nullptr, nullptr);
+
+        test_error(error, "clCommandFillImageKHR failed");
+
+        error = clCommandCopyImageToBufferKHR(command_buffer, nullptr, nullptr,
+                                              image, buffer, origin, region, 0,
+                                              0, nullptr, nullptr, nullptr);
+
+        test_failure_error_ret(
+            error, CL_INVALID_OPERATION,
+            "clCommandCopyImageToBufferKHR is supposed to fail "
+            "with CL_INVALID_OPERATION when dst_buffer is "
+            "created with CL_MEM_IMMUTABLE_EXT",
+            TEST_FAIL);
+
+        return CL_SUCCESS;
+    }
+
+    cl_int SetUp(int elements) override
+    {
+        cl_int error = BasicCommandBufferTest::SetUp(elements);
+        test_error(error, "BasicCommandBufferTest::SetUp failed");
+
+        image = create_image_2d(context, CL_MEM_READ_WRITE, &format, img_width,
+                                img_height, 0, NULL, &error);
+        test_error(error, "create_image_2d failed");
+
+        std::vector<cl_uchar> data(data_size);
+
+        buffer =
+            clCreateBuffer(context, CL_MEM_IMMUTABLE_EXT | CL_MEM_COPY_HOST_PTR,
+                           data_size, data.data(), &error);
+        test_error(error, "Unable to create buffer");
+
+        return CL_SUCCESS;
+    }
+
+    static constexpr cl_uint pattern_1 = 0x12;
+    const cl_uint fill_color_1[4] = { pattern_1, pattern_1, pattern_1,
+                                      pattern_1 };
+};
+
+struct CommandBufferCopyToImmutableBufferRect
+    : public CommandBufferWithImmutableMemoryObjectsTest<
+          CommandBufferCopyBaseTest<false>>
+{
+    using CommandBufferWithImmutableMemoryObjectsTest::
+        CommandBufferWithImmutableMemoryObjectsTest;
+
+    cl_int Run() override
+    {
+        cl_int error = clCommandCopyBufferRectKHR(
+            command_buffer, nullptr, nullptr, in_mem, buffer, origin, origin,
+            region, 0, 0, 0, 0, 0, nullptr, nullptr, nullptr);
+        test_failure_error_ret(error, CL_INVALID_OPERATION,
+                               "clCommandCopyBufferRectKHR is supposed to fail "
+                               "with CL_INVALID_OPERATION when dst_buffer is "
+                               "created with CL_MEM_IMMUTABLE_EXT",
+                               TEST_FAIL);
+        return CL_SUCCESS;
+    }
+
+    cl_int SetUp(int elements) override
+    {
+        cl_int error = BasicCommandBufferTest::SetUp(elements);
+        test_error(error, "BasicCommandBufferTest::SetUp failed");
+
+        in_mem = clCreateBuffer(context, CL_MEM_READ_ONLY, data_size, nullptr,
+                                &error);
+        test_error(error, "clCreateBuffer failed");
+
+        std::vector<cl_uchar> data(data_size);
+
+        buffer =
+            clCreateBuffer(context, CL_MEM_IMMUTABLE_EXT | CL_MEM_COPY_HOST_PTR,
+                           data_size, data.data(), &error);
+        test_error(error, "clCreateBuffer failed");
+
+        return CL_SUCCESS;
+    }
+};
 }
 
-int test_negative_command_buffer_command_copy_buffer_queue_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_copy_buffer_queue_not_null)
 {
     return MakeAndRunTest<CommandBufferCopyBufferQueueNotNull>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_image_queue_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_copy_image_queue_not_null)
 {
     return MakeAndRunTest<CommandBufferCopyImageQueueNotNull>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_buffer_different_contexts(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_copy_buffer_different_contexts)
 {
     return MakeAndRunTest<CommandBufferCopyBufferDifferentContexts>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_image_different_contexts(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_copy_image_different_contexts)
 {
     return MakeAndRunTest<CommandBufferCopyImageDifferentContexts>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_buffer_sync_points_null_or_num_zero(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_copy_buffer_sync_points_null_or_num_zero)
 {
     return MakeAndRunTest<CommandBufferCopyBufferSyncPointsNullOrNumZero>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_image_sync_points_null_or_num_zero(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_copy_image_sync_points_null_or_num_zero)
 {
     return MakeAndRunTest<CommandBufferCopyImageSyncPointsNullOrNumZero>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_buffer_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_copy_buffer_invalid_command_buffer)
 {
     return MakeAndRunTest<CommandBufferCopyBufferInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_image_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_copy_image_invalid_command_buffer)
 {
     return MakeAndRunTest<CommandBufferCopyImageInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_buffer_finalized_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_copy_buffer_finalized_command_buffer)
 {
     return MakeAndRunTest<CommandBufferCopyBufferFinalizedCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_image_finalized_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_copy_image_finalized_command_buffer)
 {
     return MakeAndRunTest<CommandBufferCopyImageFinalizedCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_buffer_mutable_handle_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_copy_buffer_mutable_handle_not_null)
 {
     return MakeAndRunTest<CommandBufferCopyBufferMutableHandleNotNull>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_copy_image_mutable_handle_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_copy_image_mutable_handle_not_null)
 {
     return MakeAndRunTest<CommandBufferCopyImageMutableHandleNotNull>(
+        device, context, queue, num_elements);
+}
+
+REGISTER_TEST(negative_copy_to_immutable_buffer)
+{
+    return MakeAndRunTest<CommandBufferCopyToImmutableBuffer>(
+        device, context, queue, num_elements);
+}
+
+REGISTER_TEST(negative_copy_to_immutable_buffer_rect)
+{
+    return MakeAndRunTest<CommandBufferCopyToImmutableBufferRect>(
+        device, context, queue, num_elements);
+}
+
+REGISTER_TEST(negative_copy_image_to_immutable_buffer)
+{
+    return MakeAndRunTest<CommandBufferCopyImageToImmutableBuffer>(
+        device, context, queue, num_elements);
+}
+
+REGISTER_TEST(negative_copy_to_immutable_image)
+{
+    return MakeAndRunTest<CommandBufferCopyToImmutableImage>(
+        device, context, queue, num_elements);
+}
+
+REGISTER_TEST(negative_copy_buffer_to_immutable_image)
+{
+    return MakeAndRunTest<CommandBufferCopyBufferToImmutableImage>(
         device, context, queue, num_elements);
 }

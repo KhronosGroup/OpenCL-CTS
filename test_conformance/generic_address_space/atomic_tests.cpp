@@ -35,7 +35,7 @@ kernel void testKernel(global atomic_int* globalPtr, local atomic_int* localPtr)
     int wgid = get_group_id(0);
     int wgsize = get_local_size(0);
 
-    if (tid == 0) atomic_store(localPtr, 0);
+    if (tid == 0) atomic_store_explicit(localPtr, 0, memory_order_relaxed, memory_scope_work_group);
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -47,12 +47,12 @@ kernel void testKernel(global atomic_int* globalPtr, local atomic_int* localPtr)
     if ((wgid % 2) == 0)
         ptr = localPtr;
 
-    int inc = atomic_fetch_add(ptr, 1);
+    int inc = atomic_fetch_add_explicit(ptr, 1, memory_order_relaxed, memory_scope_work_group);
 
     // In the cases where the local memory ptr was used,
     // save off the final value.
     if ((wgid % 2) == 0 && inc == (wgsize-1))
-        atomic_store(&globalPtr[wgid], inc);
+        atomic_store_explicit(&globalPtr[wgid], inc, memory_order_relaxed, memory_scope_work_group);
 }
 )OpenCLC";
 
@@ -67,7 +67,7 @@ kernel void testKernel(global atomic_int* globalPtr, local atomic_int* localPtr)
     int wgid = get_group_id(0);
     int wgsize = get_local_size(0);
 
-    if (tid == 0) atomic_store(localPtr, 0);
+    if (tid == 0) atomic_store_explicit(localPtr, 0, memory_order_relaxed, memory_scope_work_group);
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -79,22 +79,24 @@ kernel void testKernel(global atomic_int* globalPtr, local atomic_int* localPtr)
     if ((tid % 2) == 0)
         ptr = localPtr;
 
-    atomic_fetch_add(ptr, 1);
+    atomic_fetch_add_explicit(ptr, 1, memory_order_relaxed, memory_scope_work_group);
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
     // In the cases where the local memory ptr was used,
     // save off the final value.
     if (tid == 0)
-        atomic_store(&globalPtr[(wgid * 2) + 1], atomic_load(localPtr));
+        atomic_store_explicit(&globalPtr[(wgid * 2) + 1],
+                                atomic_load_explicit(localPtr, memory_order_relaxed, memory_scope_work_group),
+                                memory_order_relaxed,
+                                memory_scope_work_group);
 }
 )OpenCLC";
 }
 
-int test_generic_atomics_invariant(cl_device_id deviceID, cl_context context,
-                                   cl_command_queue queue, int)
+REGISTER_TEST(generic_atomics_invariant)
 {
-    const auto version = get_device_cl_version(deviceID);
+    const auto version = get_device_cl_version(device);
 
     if (version < Version(2, 0)) return TEST_SKIPPED_ITSELF;
 
@@ -108,7 +110,7 @@ int test_generic_atomics_invariant(cl_device_id deviceID, cl_context context,
 
     size_t wgSize, retSize;
     // Attempt to find the simd unit size for the device.
-    err = clGetKernelWorkGroupInfo(kernel, deviceID,
+    err = clGetKernelWorkGroupInfo(kernel, device,
                                    CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
                                    sizeof(wgSize), &wgSize, &retSize);
     test_error(err, "clGetKernelWorkGroupInfo failed");
@@ -154,10 +156,9 @@ int test_generic_atomics_invariant(cl_device_id deviceID, cl_context context,
     return CL_SUCCESS;
 }
 
-int test_generic_atomics_variant(cl_device_id deviceID, cl_context context,
-                                 cl_command_queue queue, int)
+REGISTER_TEST(generic_atomics_variant)
 {
-    const auto version = get_device_cl_version(deviceID);
+    const auto version = get_device_cl_version(device);
 
     if (version < Version(2, 0)) return TEST_SKIPPED_ITSELF;
 
@@ -171,7 +172,7 @@ int test_generic_atomics_variant(cl_device_id deviceID, cl_context context,
 
     size_t wgSize, retSize;
     // Attempt to find the simd unit size for the device.
-    err = clGetKernelWorkGroupInfo(kernel, deviceID,
+    err = clGetKernelWorkGroupInfo(kernel, device,
                                    CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
                                    sizeof(wgSize), &wgSize, &retSize);
     test_error(err, "clGetKernelWorkGroupInfo failed");

@@ -111,6 +111,7 @@ const char *IGetErrorString(int clErrorCode)
             return "CL_INVALID_SYNC_POINT_WAIT_LIST_KHR";
         case CL_INVALID_COMMAND_BUFFER_KHR:
             return "CL_INVALID_COMMAND_BUFFER_KHR";
+        case CL_INVALID_SEMAPHORE_KHR: return "CL_INVALID_SEMAPHORE_KHR";
         default: return "(unknown)";
     }
 }
@@ -212,6 +213,12 @@ const char *GetChannelTypeName(cl_channel_type type)
         case CL_UNORM_INT24: return "CL_UNORM_INT24";
         case CL_UNSIGNED_INT_RAW10_EXT: return "CL_UNSIGNED_INT_RAW10_EXT";
         case CL_UNSIGNED_INT_RAW12_EXT: return "CL_UNSIGNED_INT_RAW12_EXT";
+        case CL_UNSIGNED_INT10X6_EXT: return "CL_UNSIGNED_INT10X6_EXT";
+        case CL_UNSIGNED_INT12X4_EXT: return "CL_UNSIGNED_INT12X4_EXT";
+        case CL_UNSIGNED_INT14X2_EXT: return "CL_UNSIGNED_INT14X2_EXT";
+        case CL_UNORM_INT10X6_EXT: return "CL_UNORM_INT10X6_EXT";
+        case CL_UNORM_INT12X4_EXT: return "CL_UNORM_INT12X4_EXT";
+        case CL_UNORM_INT14X2_EXT: return "CL_UNORM_INT14X2_EXT";
         default: return NULL;
     }
 }
@@ -237,10 +244,16 @@ int IsChannelTypeSupported(cl_channel_type type)
         case CL_UNSIGNED_INT16:
         case CL_UNSIGNED_INT32:
         case CL_HALF_FLOAT:
-        case CL_FLOAT: return 1;
+        case CL_FLOAT:
 #ifdef CL_SFIXED14_APPLE
-        case CL_SFIXED14_APPLE: return 1;
+        case CL_SFIXED14_APPLE:
 #endif
+        case CL_UNSIGNED_INT10X6_EXT:
+        case CL_UNSIGNED_INT12X4_EXT:
+        case CL_UNSIGNED_INT14X2_EXT:
+        case CL_UNORM_INT10X6_EXT:
+        case CL_UNORM_INT12X4_EXT:
+        case CL_UNORM_INT14X2_EXT: return 1;
         default: return 0;
     }
 }
@@ -374,8 +387,7 @@ static float Ulp_Error_Half_Float(float test, double reference)
     }
 
     // reference is a normal power of two or a zero
-    int ulp_exp =
-        HALF_MANT_DIG - 1 - std::max(ilogb(reference) - 1, HALF_MIN_EXP - 1);
+    int ulp_exp = HALF_MANT_DIG - std::max(ilogb(reference), HALF_MIN_EXP);
 
     // Scale the exponent of the error
     return (float)scalbn(testVal - reference, ulp_exp);
@@ -456,8 +468,7 @@ float Ulp_Error(float test, double reference)
 
     // reference is a normal power of two or a zero
     // The unbiased exponent of the ulp unit place
-    int ulp_exp =
-        FLT_MANT_DIG - 1 - std::max(ilogb(reference) - 1, FLT_MIN_EXP - 1);
+    int ulp_exp = FLT_MANT_DIG - std::max(ilogb(reference), FLT_MIN_EXP);
 
     // Scale the exponent of the error
     return (float)scalbn(testVal - reference, ulp_exp);
@@ -540,8 +551,7 @@ float Ulp_Error_Double(double test, long double reference)
 
     // reference is a normal power of two or a zero
     // The unbiased exponent of the ulp unit place
-    int ulp_exp =
-        DBL_MANT_DIG - 1 - std::max(ilogbl(reference) - 1, DBL_MIN_EXP - 1);
+    int ulp_exp = DBL_MANT_DIG - std::max(ilogbl(reference), DBL_MIN_EXP);
 
     // Scale the exponent of the error
     float result = (float)scalbnl(testVal - reference, ulp_exp);
@@ -552,6 +562,39 @@ float Ulp_Error_Double(double test, long double reference)
         result += copysignf(0.5f, result);
 
     return result;
+}
+
+cl_int OutputBuildLog(cl_program program, const cl_device_id device)
+{
+    size_t size_ret;
+
+    // Get the build status
+    cl_build_status build_status;
+    cl_int error =
+        clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_STATUS,
+                              sizeof(build_status), &build_status, &size_ret);
+    test_error(error, "Unable to query build status");
+
+    // If the build failed then print the status, obtain the build log and
+    // print it.
+    if (build_status != CL_BUILD_SUCCESS)
+    {
+        log_error("ERROR: CL_PROGRAM_BUILD_STATUS=%d\n", (int)build_status);
+        error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0,
+                                      nullptr, &size_ret);
+        test_error(error, "Unable to query build log size");
+
+        char *build_log = (char *)malloc(size_ret);
+        error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG,
+                                      size_ret, build_log, &size_ret);
+        test_error(error, "Unable to query build log");
+
+        log_error("ERROR: CL_PROGRAM_BUILD_LOG:\n%s\n", build_log);
+
+        free(build_log);
+    }
+
+    return CL_SUCCESS;
 }
 
 cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
@@ -593,33 +636,8 @@ cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
         unsigned int i;
         for (i = 0; i < num_devices; i++)
         {
-
-            // Get the build status
-            cl_build_status build_status;
-            error = clGetProgramBuildInfo(
-                program, device_list[i], CL_PROGRAM_BUILD_STATUS,
-                sizeof(build_status), &build_status, &size_ret);
-            test_error(error, "Unable to query build status");
-
-            // If the build failed then log the status, and allocate the build
-            // log, log it and free it
-            if (build_status != CL_BUILD_SUCCESS)
-            {
-
-                log_error("ERROR: CL_PROGRAM_BUILD_STATUS=%d\n",
-                          (int)build_status);
-                error = clGetProgramBuildInfo(program, device_list[i],
-                                              CL_PROGRAM_BUILD_LOG, 0, NULL,
-                                              &size_ret);
-                test_error(error, "Unable to query build log size");
-                char *build_log = (char *)malloc(size_ret);
-                error = clGetProgramBuildInfo(program, device_list[i],
-                                              CL_PROGRAM_BUILD_LOG, size_ret,
-                                              build_log, &size_ret);
-                test_error(error, "Unable to query build log");
-                log_error("ERROR: CL_PROGRAM_BUILD_LOG:\n%s\n", build_log);
-                free(build_log);
-            }
+            error = OutputBuildLog(program, device_list[i]);
+            test_error(error, "OutputBuildLog failed");
         }
 
         // Was the number of devices given

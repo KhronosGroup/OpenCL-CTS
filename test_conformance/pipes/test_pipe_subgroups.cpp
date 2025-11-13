@@ -21,8 +21,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+#include "harness/testHarness.h"
 #include "harness/errorHelpers.h"
+#include "harness/typeWrappers.h"
+
 #define TEST_INT_VALUE 100
 
 const char* pipe_subgroups_kernel_code = {
@@ -86,7 +88,7 @@ static int verify_result(void *ptr1, void *ptr2, int n)
     return 0;
 }
 
-int test_pipe_subgroups_divergence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(pipe_subgroups_divergence)
 {
     clMemWrapper pipe;
     clMemWrapper buffers[3];
@@ -112,7 +114,7 @@ int test_pipe_subgroups_divergence(cl_device_id deviceID, cl_context context, cl
 
     global_work_size[0] = (cl_uint)num_elements;
 
-    if (!is_extension_available(deviceID, "cl_khr_subgroups"))
+    if (!is_extension_available(device, "cl_khr_subgroups"))
     {
         log_info("cl_khr_subgroups is not supported on this platform. Skipping "
                  "test.\n");
@@ -165,7 +167,7 @@ int test_pipe_subgroups_divergence(cl_device_id deviceID, cl_context context, cl
     test_error_ret(err, " Unable to get work group size to use", -1);
 
     cl_platform_id platform;
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM, sizeof(platform),
+    err = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
                           &platform, NULL);
     test_error_ret(err, " clGetDeviceInfo failed", -1);
 
@@ -173,7 +175,10 @@ int test_pipe_subgroups_divergence(cl_device_id deviceID, cl_context context, cl
         (clGetKernelSubGroupInfoKHR_fn)clGetExtensionFunctionAddressForPlatform(
             platform, "clGetKernelSubGroupInfoKHR");
 
-    err = clGetKernelSubGroupInfoKHR(kernel[0], deviceID, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR, sizeof(local_work_size[0]), &local_work_size[0], sizeof(subgroup_count), &subgroup_count, NULL);
+    err = clGetKernelSubGroupInfoKHR(
+        kernel[0], device, CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE_KHR,
+        sizeof(local_work_size[0]), &local_work_size[0], sizeof(subgroup_count),
+        &subgroup_count, NULL);
     test_error_ret(err, " clGetKernelSubGroupInfoKHR failed", -1);
     if(subgroup_count <= 1)
     {

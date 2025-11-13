@@ -8,17 +8,21 @@ if(${Vulkan_glslang_binary} STREQUAL "Vulkan_glslang_binary-NOTFOUND")
 else()
     message(STATUS "Found glslang: ${Vulkan_glslang_binary}")
 
+    if(NOT DEFINED VULKAN_TEST_RESOURCES)
+        set(VULKAN_TEST_RESOURCES ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
+
     set(vulkan_spirv_files "")
 
     add_custom_command(
-      OUTPUT buffer.spv
+      OUTPUT ${VULKAN_TEST_RESOURCES}/buffer.spv
       COMMAND ${Vulkan_glslang_binary}
-              --target-env vulkan1.0
-              -o ${CMAKE_CURRENT_BINARY_DIR}/buffer.spv
+              --target-env vulkan1.1
+              -o ${VULKAN_TEST_RESOURCES}/buffer.spv
               ${CMAKE_CURRENT_SOURCE_DIR}/buffer.comp
       DEPENDS buffer.comp
       VERBATIM)
-    list(APPEND vulkan_spirv_files ${CMAKE_CURRENT_BINARY_DIR}/buffer.spv)
+    list(APPEND vulkan_spirv_files ${VULKAN_TEST_RESOURCES}/buffer.spv)
 
     file(STRINGS "image2D_test_formats.txt" image2D_formats)
 
@@ -29,15 +33,22 @@ else()
         configure_file(image2D.comp.in image2D_${GLSL_FORMAT}.comp)
 
         add_custom_command(
-          OUTPUT image2D_${GLSL_FORMAT}.spv
+          OUTPUT ${VULKAN_TEST_RESOURCES}/image2D_${GLSL_FORMAT}.spv
           COMMAND ${Vulkan_glslang_binary}
-                  --target-env vulkan1.0
-                  -o ${CMAKE_CURRENT_BINARY_DIR}/image2D_${GLSL_FORMAT}.spv
+                  --target-env vulkan1.1
+                  -o ${VULKAN_TEST_RESOURCES}/image2D_${GLSL_FORMAT}.spv
                   ${CMAKE_CURRENT_BINARY_DIR}/image2D_${GLSL_FORMAT}.comp
           DEPENDS image2D_${GLSL_FORMAT}.comp
           VERBATIM)
-        list(APPEND vulkan_spirv_files ${CMAKE_CURRENT_BINARY_DIR}/image2D_${GLSL_FORMAT}.spv)
+        list(APPEND vulkan_spirv_files ${VULKAN_TEST_RESOURCES}/image2D_${GLSL_FORMAT}.spv)
     endforeach()
 
     add_custom_target(vulkan_shaders DEPENDS ${vulkan_spirv_files})
+
+    include(GNUInstallDirs)
+
+    install(DIRECTORY
+                ${CMAKE_CURRENT_BINARY_DIR}
+            DESTINATION
+                ${CMAKE_INSTALL_BINDIR}/$<CONFIG>)
 endif()

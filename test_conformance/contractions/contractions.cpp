@@ -218,106 +218,37 @@ float ppc_mul(float a, float b)
 }
 #endif
 
-int test_contractions_float_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest(0);
-}
+REGISTER_TEST(contractions_float_0) { return RunTest(0); }
 
-int test_contractions_float_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest(1);
-}
+REGISTER_TEST(contractions_float_1) { return RunTest(1); }
 
-int test_contractions_float_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest(2);
-}
+REGISTER_TEST(contractions_float_2) { return RunTest(2); }
 
-int test_contractions_float_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest(3);
-}
+REGISTER_TEST(contractions_float_3) { return RunTest(3); }
 
-int test_contractions_float_4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest(4);
-}
+REGISTER_TEST(contractions_float_4) { return RunTest(4); }
 
-int test_contractions_float_5(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest(5);
-}
+REGISTER_TEST(contractions_float_5) { return RunTest(5); }
 
-int test_contractions_float_6(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest(6);
-}
+REGISTER_TEST(contractions_float_6) { return RunTest(6); }
 
-int test_contractions_float_7(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest(7);
-}
+REGISTER_TEST(contractions_float_7) { return RunTest(7); }
 
-int test_contractions_double_0(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest_Double(0);
-}
+REGISTER_TEST(contractions_double_0) { return RunTest_Double(0); }
 
-int test_contractions_double_1(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest_Double(1);
-}
+REGISTER_TEST(contractions_double_1) { return RunTest_Double(1); }
 
-int test_contractions_double_2(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest_Double(2);
-}
+REGISTER_TEST(contractions_double_2) { return RunTest_Double(2); }
 
-int test_contractions_double_3(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest_Double(3);
-}
+REGISTER_TEST(contractions_double_3) { return RunTest_Double(3); }
 
-int test_contractions_double_4(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest_Double(4);
-}
+REGISTER_TEST(contractions_double_4) { return RunTest_Double(4); }
 
-int test_contractions_double_5(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest_Double(5);
-}
+REGISTER_TEST(contractions_double_5) { return RunTest_Double(5); }
 
-int test_contractions_double_6(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest_Double(6);
-}
+REGISTER_TEST(contractions_double_6) { return RunTest_Double(6); }
 
-int test_contractions_double_7(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
-{
-    return RunTest_Double(7);
-}
-
-test_definition test_list[] = {
-    ADD_TEST( contractions_float_0 ),
-    ADD_TEST( contractions_float_1 ),
-    ADD_TEST( contractions_float_2 ),
-    ADD_TEST( contractions_float_3 ),
-    ADD_TEST( contractions_float_4 ),
-    ADD_TEST( contractions_float_5 ),
-    ADD_TEST( contractions_float_6 ),
-    ADD_TEST( contractions_float_7 ),
-    ADD_TEST( contractions_double_0 ),
-    ADD_TEST( contractions_double_1 ),
-    ADD_TEST( contractions_double_2 ),
-    ADD_TEST( contractions_double_3 ),
-    ADD_TEST( contractions_double_4 ),
-    ADD_TEST( contractions_double_5 ),
-    ADD_TEST( contractions_double_6 ),
-    ADD_TEST( contractions_double_7 ),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
+REGISTER_TEST(contractions_double_7) { return RunTest_Double(7); }
 
 int main( int argc, const char **argv )
 {
@@ -331,7 +262,9 @@ int main( int argc, const char **argv )
 
     if( !error )
     {
-        error = runTestHarnessWithCheck( gArgCount, gArgList, test_num, test_list, true, 0, InitCL );
+        error = runTestHarnessWithCheck(
+            gArgCount, gArgList, test_registry::getInstance().num_tests(),
+            test_registry::getInstance().definitions(), true, 0, InitCL);
     }
 
     if( gQueue )
@@ -351,6 +284,11 @@ int main( int argc, const char **argv )
 
 static int ParseArgs( int argc, const char **argv )
 {
+    if (gListTests)
+    {
+        return 0;
+    }
+
     gArgList = (const char **)calloc( argc, sizeof( char*) );
 
     if( NULL == gArgList )
@@ -365,16 +303,18 @@ static int ParseArgs( int argc, const char **argv )
     int length_of_seed = 0;
 
     { // Extract the app name
-        strncpy( appName, argv[0], MAXPATHLEN );
+        strncpy(appName, argv[0], MAXPATHLEN - 1);
+        appName[MAXPATHLEN - 1] = '\0';
 
 #if (defined( __APPLE__ ) || defined(__linux__) || defined(__MINGW32__))
         char baseName[MAXPATHLEN];
         char *base = NULL;
-        strncpy( baseName, argv[0], MAXPATHLEN );
+        strncpy(baseName, argv[0], MAXPATHLEN - 1);
+        baseName[MAXPATHLEN - 1] = '\0';
         base = basename( baseName );
         if( NULL != base )
         {
-            strncpy( appName, base, sizeof( appName )  );
+            strncpy(appName, base, sizeof(appName) - 1);
             appName[ sizeof( appName ) -1 ] = '\0';
         }
 #elif defined (_WIN32)
@@ -385,7 +325,7 @@ static int ParseArgs( int argc, const char **argv )
                                    fname, _MAX_FNAME, ext, _MAX_EXT );
         if (err == 0) { // no error
             strcat (fname, ext); //just cat them, size of frame can keep both
-            strncpy (appName, fname, sizeof(appName));
+            strncpy(appName, fname, sizeof(appName) - 1);
             appName[ sizeof( appName ) -1 ] = '\0';
         }
 #endif
@@ -448,9 +388,9 @@ static void PrintUsage( void )
     vlog( "\t\t-sNUMBER set random seed.\n");
     vlog( "\n" );
     vlog( "\tTest names:\n" );
-    for( int i = 0; i < test_num; i++ )
+    for (size_t i = 0; i < test_registry::getInstance().num_tests(); i++)
     {
-        vlog( "\t\t%s\n", test_list[i].name );
+        vlog("\t\t%s\n", test_registry::getInstance().definitions()[i].name);
     }
 }
 
