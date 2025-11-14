@@ -104,7 +104,7 @@ struct MutableDispatchDeferArguments : public BasicMutableCommandBufferTest
         if (state != expected)
         {
             log_error("Unexpected result of CL_COMMAND_BUFFER_STATE_KHR query. "
-                      "Expected %u, but was %u",
+                      "Expected %u, but was %u\n",
                       expected, state);
             return false;
         }
