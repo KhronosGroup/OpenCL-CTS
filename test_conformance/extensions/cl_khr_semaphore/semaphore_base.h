@@ -38,13 +38,14 @@ struct SemaphoreBase
         test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
 
         // If it is supported get the addresses of all the APIs here.
-        GET_EXTENSION_ADDRESS(device, clCreateSemaphoreWithPropertiesKHR);
-        GET_EXTENSION_ADDRESS(device, clEnqueueSignalSemaphoresKHR);
-        GET_EXTENSION_ADDRESS(device, clEnqueueWaitSemaphoresKHR);
-        GET_EXTENSION_ADDRESS(device, clReleaseSemaphoreKHR);
-        GET_EXTENSION_ADDRESS(device, clGetSemaphoreInfoKHR);
-        GET_EXTENSION_ADDRESS(device, clRetainSemaphoreKHR);
-        GET_EXTENSION_ADDRESS(device, clGetSemaphoreHandleForTypeKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device,
+                                       clCreateSemaphoreWithPropertiesKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clEnqueueSignalSemaphoresKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clEnqueueWaitSemaphoresKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clReleaseSemaphoreKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clGetSemaphoreInfoKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clRetainSemaphoreKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clGetSemaphoreHandleForTypeKHR);
 
         return CL_SUCCESS;
     }

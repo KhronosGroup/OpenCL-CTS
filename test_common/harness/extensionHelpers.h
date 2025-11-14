@@ -32,7 +32,7 @@
         }                                                                      \
     } while (false)
 
-#define GET_EXTENSION_ADDRESS(device, FUNC)                                    \
+#define GET_FUNCTION_EXTENSION_ADDRESS(device, FUNC)                           \
     FUNC =                                                                     \
         reinterpret_cast<FUNC##_fn>(clGetExtensionFunctionAddressForPlatform(  \
             getPlatformFromDevice(device), #FUNC));                            \

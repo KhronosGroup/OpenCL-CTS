@@ -52,13 +52,14 @@ struct DXFenceTestBase
         REQUIRE_EXTENSION("cl_khr_external_semaphore_dx_fence");
 
         // Obtain pointers to semaphore's API
-        GET_EXTENSION_ADDRESS(device, clCreateSemaphoreWithPropertiesKHR);
-        GET_EXTENSION_ADDRESS(device, clReleaseSemaphoreKHR);
-        GET_EXTENSION_ADDRESS(device, clEnqueueSignalSemaphoresKHR);
-        GET_EXTENSION_ADDRESS(device, clEnqueueWaitSemaphoresKHR);
-        GET_EXTENSION_ADDRESS(device, clGetSemaphoreHandleForTypeKHR);
-        GET_EXTENSION_ADDRESS(device, clRetainSemaphoreKHR);
-        GET_EXTENSION_ADDRESS(device, clGetSemaphoreInfoKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device,
+                                       clCreateSemaphoreWithPropertiesKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clReleaseSemaphoreKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clEnqueueSignalSemaphoresKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clEnqueueWaitSemaphoresKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clGetSemaphoreHandleForTypeKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clRetainSemaphoreKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clGetSemaphoreInfoKHR);
 
         test_error(
             !is_import_handle_available(CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR),
