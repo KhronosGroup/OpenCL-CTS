@@ -107,28 +107,23 @@ CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingTyp
                                 gHalfRoundingMode);
         return old_value;
     }
+    else if constexpr (
+        std::is_same_v<
+            AtomicType,
+            HOST_ATOMIC_FLOAT> || std::is_same_v<AtomicType, HOST_ATOMIC_DOUBLE>)
+    {
+        static std::mutex mx;
+        std::lock_guard<std::mutex> lock(mx);
+        CorrespondingType old_value = *a;
+        *a += c;
+        return old_value;
+    }
     else
     {
-#if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-        if constexpr (
-            std::is_same_v<
-                AtomicType,
-                HOST_ATOMIC_INT> || std::is_same_v<AtomicType, HOST_ATOMIC_UINT>)
-            return InterlockedExchangeAdd((volatile cl_uint *)a, c);
-        else if constexpr (
-            std::is_same_v<
-                AtomicType,
-                HOST_ATOMIC_LONG> || std::is_same_v<AtomicType, HOST_ATOMIC_ULONG>)
-            return InterlockedExchangeAdd64((volatile cl_long *)a, c);
+#if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
+        return InterlockedExchangeAdd(a, c);
 #elif defined(__GNUC__)
-        if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_INT>)
-            return __sync_fetch_and_add((volatile cl_int *)a, c);
-        else if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_UINT>)
-            return __sync_fetch_and_add((volatile cl_uint *)a, c);
-        else if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_LONG>)
-            return __sync_fetch_and_add((volatile cl_long *)a, c);
-        else if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_ULONG>)
-            return __sync_fetch_and_add((volatile cl_ulong *)a, c);
+        return __sync_fetch_and_add(a, c);
 #else
         log_info("Host function not implemented: atomic_fetch_add\n");
         return 0;
@@ -140,14 +135,34 @@ template <typename AtomicType, typename CorrespondingType>
 CorrespondingType host_atomic_fetch_sub(volatile AtomicType *a, CorrespondingType c,
                                         TExplicitMemoryOrderType order)
 {
-#if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-  return InterlockedExchangeSubtract(a, c);
+    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_FLOAT>)
+    {
+        static std::mutex mx;
+        std::lock_guard<std::mutex> lock(mx);
+        CorrespondingType old_value = *a;
+        *a -= c;
+        return old_value;
+    }
+    else if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_HALF>)
+    {
+        static std::mutex mx;
+        std::lock_guard<std::mutex> lock(mx);
+        CorrespondingType old_value = *a;
+        *a = cl_half_from_float((cl_half_to_float(*a) - cl_half_to_float(c)),
+                                gHalfRoundingMode);
+        return old_value;
+    }
+    else
+    {
+#if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
+        return InterlockedExchangeSubtract(a, c);
 #elif defined(__GNUC__)
-  return __sync_fetch_and_sub(a, c);
+        return __sync_fetch_and_sub(a, c);
 #else
-  log_info("Host function not implemented: atomic_fetch_sub\n");
-  return 0;
+        log_info("Host function not implemented: atomic_fetch_sub\n");
+        return 0;
 #endif
+    }
 }
 
 template <typename AtomicType, typename CorrespondingType>
@@ -155,9 +170,12 @@ CorrespondingType host_atomic_exchange(volatile AtomicType *a, CorrespondingType
                                        TExplicitMemoryOrderType order)
 {
 #if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-  return InterlockedExchange(a, c);
+    if (sizeof(CorrespondingType) == 2)
+        return InterlockedExchange16(reinterpret_cast<volatile SHORT *>(a), c);
+    else
+        return InterlockedExchange(reinterpret_cast<volatile LONG *>(a), c);
 #elif defined(__GNUC__)
-  return __sync_lock_test_and_set(a, c);
+    return __sync_lock_test_and_set(a, c);
 #else
   log_info("Host function not implemented: atomic_exchange\n");
   return 0;
@@ -173,19 +191,49 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
                                   TExplicitMemoryOrderType order_success,
                                   TExplicitMemoryOrderType order_failure)
 {
-  CorrespondingType tmp;
-#if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-  tmp = InterlockedCompareExchange(a, desired, *expected);
+    CorrespondingType tmp;
+    if constexpr (std::is_same_v<AtomicType, HOST_ATOMIC_HALF>)
+    {
+        static std::mutex mtx;
+        std::lock_guard<std::mutex> lock(mtx);
+        tmp = *reinterpret_cast<volatile cl_half *>(a);
+
+        if (cl_half_to_float(tmp) == cl_half_to_float(*expected))
+        {
+            *reinterpret_cast<volatile cl_half *>(a) = desired;
+            return true;
+        }
+        *expected = tmp;
+    }
+    else if constexpr (
+        std::is_same_v<
+            AtomicType,
+            HOST_ATOMIC_DOUBLE> || std::is_same_v<AtomicType, HOST_ATOMIC_FLOAT>)
+    {
+        static std::mutex mtx;
+        std::lock_guard<std::mutex> lock(mtx);
+        tmp = *reinterpret_cast<volatile float *>(a);
+        if (tmp == *expected)
+        {
+            *a = desired;
+            return true;
+        }
+        *expected = tmp;
+    }
+    else
+    {
+#if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
+        tmp = InterlockedCompareExchange(a, desired, *expected);
 #elif defined(__GNUC__)
-  tmp = __sync_val_compare_and_swap(a, *expected, desired);
+        tmp = __sync_val_compare_and_swap(a, *expected, desired);
 #else
-  log_info("Host function not implemented: atomic_compare_exchange\n");
-  tmp = 0;
+        log_info("Host function not implemented: atomic_compare_exchange\n");
+        tmp = 0;
 #endif
-  if(tmp == *expected)
-    return true;
-  *expected = tmp;
-  return false;
+        if (tmp == *expected) return true;
+        *expected = tmp;
+    }
+    return false;
 }
 
 template <typename AtomicType, typename CorrespondingType>
@@ -193,7 +241,10 @@ CorrespondingType host_atomic_load(volatile AtomicType *a,
                                    TExplicitMemoryOrderType order)
 {
 #if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
-  return InterlockedExchangeAdd(a, 0);
+    if (sizeof(CorrespondingType) == 2)
+        auto prev = InterlockedOr16(reinterpret_cast<volatile SHORT *>(a), 0);
+    else
+        return InterlockedExchangeAdd(reinterpret_cast<volatile LONG *>(a), 0);
 #elif defined(__GNUC__)
   return __sync_add_and_fetch(a, 0);
 #else

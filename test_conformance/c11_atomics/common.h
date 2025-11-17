@@ -26,8 +26,8 @@
 
 #include <iomanip>
 #include <limits>
-#include <vector>
 #include <sstream>
+#include <vector>
 
 #define MAX_DEVICE_THREADS (gHost ? 0U : gMaxDeviceThreads)
 #define MAX_HOST_THREADS GetThreadCount()
@@ -80,6 +80,12 @@ extern cl_half_rounding_mode gHalfRoundingMode;
 extern bool gFloatAtomicsSupported;
 extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
 extern cl_device_fp_config gHalfCaps;
+
+extern cl_half_rounding_mode gHalfRoundingMode;
+extern bool gFloatAtomicsSupported;
+extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
+extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
+extern cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps;
 
 extern const char *
 get_memory_order_type_name(TExplicitMemoryOrderType orderType);
@@ -197,13 +203,12 @@ public:
     {
         return false;
     }
-    virtual bool VerifyExpected(const HostDataType &expected,
-                                const HostAtomicType *const testValue,
-                                const HostDataType *startRefValues,
-                                cl_uint whichDestValue)
+    virtual bool
+    IsTestNotAsExpected(const HostDataType &expected,
+                        const std::vector<HostAtomicType> &testValues,
+                        cl_uint whichDestValue)
     {
-        if (testValue != nullptr) return expected != testValue[whichDestValue];
-        return true;
+        return expected != testValues[whichDestValue];
     }
     virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                               MTdata d)
@@ -922,7 +927,9 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
             + ss.str() + "] = {\n";
         ss.str("");
 
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+            ss << std::setprecision(10) << _startValue;
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
             if (IsHalfInfinity(_startValue))
                 ss << ((_startValue & 0x8000) != 0 ? "-" : "") << "INFINITY";
@@ -1494,8 +1501,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (VerifyExpected(expected, destItems.data(), startRefValues.data(),
-                           i))
+        if (IsTestNotAsExpected(expected, destItems, i))
         {
             std::stringstream logLine;
             logLine << "ERROR: Result " << i
