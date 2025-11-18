@@ -18,38 +18,9 @@
 #include "harness/extensionHelpers.h"
 #include "harness/errorHelpers.h"
 
-// Test it is possible to export a semaphore to a sync fd and import the same
-// sync fd to a new semaphore
-REGISTER_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2))
+cl_int doTest(cl_device_id device, cl_context context, cl_command_queue queue)
 {
     cl_int err = CL_SUCCESS;
-
-    if (!is_extension_available(device, "cl_khr_external_semaphore"))
-    {
-        log_info(
-            "cl_khr_external_semaphore is not supported on this platoform. "
-            "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-
-    if (!is_extension_available(device, "cl_khr_external_semaphore_sync_fd"))
-    {
-        log_info("cl_khr_external_semaphore_sync_fd is not supported on this "
-                 "platoform. Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-
-    cl_command_queue_properties device_props = 0;
-    err = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
-                          sizeof(device_props), &device_props, NULL);
-    test_error(err, "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
-
-    if ((device_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE) == 0)
-    {
-        log_info("Queue property CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE not "
-                 "supported. Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
 
     // Obtain pointers to semaphore's API
     GET_PFN(device, clCreateSemaphoreWithPropertiesKHR);
@@ -57,11 +28,6 @@ REGISTER_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2))
     GET_PFN(device, clEnqueueWaitSemaphoresKHR);
     GET_PFN(device, clGetSemaphoreHandleForTypeKHR);
     GET_PFN(device, clReleaseSemaphoreKHR);
-
-    // Create ooo queue
-    clCommandQueueWrapper test_queue = clCreateCommandQueue(
-        context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
-    test_error(err, "Could not create command queue");
 
     // Create semaphore
     cl_semaphore_properties_khr sema_1_props[] = {
@@ -81,8 +47,8 @@ REGISTER_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2))
 
     // Signal semaphore
     clEventWrapper signal_event;
-    err = clEnqueueSignalSemaphoresKHR(test_queue, 1, &sema_1, nullptr, 0,
-                                       nullptr, &signal_event);
+    err = clEnqueueSignalSemaphoresKHR(queue, 1, &sema_1, nullptr, 0, nullptr,
+                                       &signal_event);
     test_error(err, "Could not signal semaphore");
 
     // Extract sync fd
@@ -109,12 +75,12 @@ REGISTER_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2))
 
     // Wait semaphore
     clEventWrapper wait_event;
-    err = clEnqueueWaitSemaphoresKHR(test_queue, 1, &sema_2, nullptr, 0,
-                                     nullptr, &wait_event);
+    err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema_2, nullptr, 0, nullptr,
+                                     &wait_event);
     test_error(err, "Could not wait semaphore");
 
     // Finish
-    err = clFinish(test_queue);
+    err = clFinish(queue);
     test_error(err, "Could not finish queue");
 
     // Check all events are completed
@@ -128,4 +94,49 @@ REGISTER_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2))
     err = clReleaseSemaphoreKHR(sema_2);
     test_error(err, "Could not release semaphore");
     return TEST_PASS;
+}
+
+// Test it is possible to export a semaphore to a sync fd and import the same
+// sync fd to a new semaphore
+REGISTER_TEST_VERSION(external_semaphores_import_export_fd, Version(1, 2))
+{
+    REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_EXTENSION("cl_khr_external_semaphore_sync_fd");
+
+    cl_int err = CL_SUCCESS;
+    cl_int total_status = TEST_PASS;
+
+    // test external semaphore sync fd with out-of-order queue
+    {
+        cl_command_queue_properties device_props = 0;
+        err = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
+                              sizeof(device_props), &device_props, NULL);
+        test_error(err,
+                   "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
+
+        if ((device_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE) != 0)
+        {
+            // Create ooo queue
+            clCommandQueueWrapper test_queue = clCreateCommandQueue(
+                context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
+            test_error(err, "Could not create command queue");
+
+            cl_int status = doTest(device, context, test_queue);
+            if (status != TEST_PASS && status != TEST_SKIPPED_ITSELF)
+            {
+                total_status = TEST_FAIL;
+            }
+        }
+    }
+
+    // test external semaphore sync fd with in-order harness queue
+    {
+        cl_int status = doTest(device, context, queue);
+        if (status != TEST_PASS && status != TEST_SKIPPED_ITSELF)
+        {
+            total_status = TEST_FAIL;
+        }
+    }
+
+    return total_status;
 }
