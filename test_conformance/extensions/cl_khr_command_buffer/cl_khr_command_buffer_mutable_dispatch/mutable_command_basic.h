@@ -76,12 +76,10 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
 
     bool Skip() override
     {
-        bool extension_avaliable =
-            is_extension_available(device,
-                                   "cl_khr_command_buffer_mutable_dispatch")
-            == true;
+        bool extension_available = is_extension_available(
+            device, "cl_khr_command_buffer_mutable_dispatch");
 
-        if (extension_avaliable)
+        if (extension_available)
         {
             Version device_version = get_device_cl_version(device);
             if ((device_version >= Version(3, 0))
@@ -96,7 +94,7 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
                     log_info("cl_khr_command_buffer_mutable_dispatch version "
                              "0.9.4 is "
                              "required to run the test, skipping.\n ");
-                    extension_avaliable = false;
+                    extension_available = false;
                 }
             }
         }
@@ -109,7 +107,7 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
             && mutable_capabilities != 0;
 
-        return !mutable_support || !extension_avaliable
+        return !mutable_support || !extension_available
             || BasicCommandBufferTest::Skip();
     }
 
