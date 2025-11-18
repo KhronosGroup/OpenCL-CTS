@@ -382,6 +382,7 @@ REGISTER_TEST(null_required_work_group_size)
     clMemWrapper dst;
     dst = clCreateBuffer(context, CL_MEM_READ_WRITE, 3 * sizeof(cl_int),
                          nullptr, &error);
+    test_error(error, "clCreateBuffer failed");
 
     struct KernelAttribInfo
     {
@@ -446,6 +447,7 @@ REGISTER_TEST(null_required_work_group_size)
             const cl_int zero = 0;
             error = clEnqueueFillBuffer(queue, dst, &zero, sizeof(zero), 0,
                                         sizeof(expected), 0, nullptr, nullptr);
+            test_error(error, "clEnqueueFillBuffer failed");
 
             const size_t global_work_size[3] = { 2 * 32, 3 * 32, 4 * 32 };
             error = clEnqueueNDRangeKernel(queue, kernel, work_dim, nullptr,
