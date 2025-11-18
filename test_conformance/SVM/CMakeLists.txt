@@ -5,6 +5,7 @@ set(${MODULE_NAME}_SOURCES
     test_allocate_shared_buffer.cpp
     test_allocate_shared_buffer_negative.cpp
     test_byte_granularity.cpp
+    test_corner_cases.cpp
     test_cross_buffer_pointers.cpp
     test_enqueue_api.cpp
     test_fine_grain_memory_consistency.cpp
