@@ -26,9 +26,9 @@ class DirectXWrapper {
 public:
     DirectXWrapper();
 
-    ID3D12Device* getDXDevice() const;
-    ID3D12CommandQueue* getDXCommandQueue() const;
-    ID3D12CommandAllocator* getDXCommandAllocator() const;
+    [[nodiscard]] ID3D12Device* getDXDevice() const;
+    [[nodiscard]] ID3D12CommandQueue* getDXCommandQueue() const;
+    [[nodiscard]] ID3D12CommandAllocator* getDXCommandAllocator() const;
 
 protected:
     ComPtr<ID3D12Device> dx_device = nullptr;
@@ -39,7 +39,7 @@ protected:
 class DirectXFenceWrapper {
 public:
     DirectXFenceWrapper(ID3D12Device* dx_device);
-    ID3D12Fence* operator*() const { return dx_fence.Get(); }
+    [[nodiscard]] ID3D12Fence* get() const { return dx_fence.Get(); }
 
 private:
     ComPtr<ID3D12Fence> dx_fence = nullptr;
