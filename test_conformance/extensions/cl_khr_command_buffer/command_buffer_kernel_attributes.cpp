@@ -86,11 +86,15 @@ struct KernelAttributesReqGroupSizeTest : public BasicCommandBufferTest
                    "clGetDeviceInfo for CL_DEVICE_MAX_WORK_GROUP_SIZE failed");
 
 
-        std::vector<std::pair<std::string, std::uint16_t>> attribs = {
-            { "__attribute__((reqd_work_group_size(2,1,1)))", 1 },
-            { "__attribute__((reqd_work_group_size(2,3,1)))", 2 },
-            { "__attribute__((reqd_work_group_size(2,3,4)))", 3 }
+        struct KernelAttribInfo
+        {
+            cl_int wgs[3];
+            cl_uint min_dim;
         };
+
+        std::vector<KernelAttribInfo> attribs = { { { 2, 1, 1 }, 1 },
+                                                  { { 2, 3, 1 }, 2 },
+                                                  { { 2, 3, 4 }, 3 } };
 
         const std::string body_str = R"(
                     __kernel void wg_size(__global int* dst)
@@ -108,7 +112,12 @@ struct KernelAttributesReqGroupSizeTest : public BasicCommandBufferTest
 
         for (auto& attrib : attribs)
         {
-            const std::string source_str = attrib.first + body_str;
+            const std::string attrib_str =
+                "__attribute__((reqd_work_group_size("
+                + std::to_string(attrib.wgs[0]) + ","
+                + std::to_string(attrib.wgs[1]) + ","
+                + std::to_string(attrib.wgs[2]) + ")))";
+            const std::string source_str = attrib_str + body_str;
             const char* source = source_str.c_str();
 
             clProgramWrapper program;
@@ -120,22 +129,20 @@ struct KernelAttributesReqGroupSizeTest : public BasicCommandBufferTest
             error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &dst);
             test_error(error, "clSetKernelArg failed");
 
-            for (cl_uint work_dim = 1; work_dim <= attrib.second; work_dim++)
+            for (cl_uint work_dim = attrib.min_dim; work_dim <= 3; work_dim++)
             {
-                const cl_int expected[3] = { 2, work_dim >= 2 ? 3 : 1,
-                                             work_dim >= 3 ? 4 : 1 };
                 const size_t test_work_group_size =
-                    expected[0] * expected[1] * expected[2];
-                if ((size_t)expected[0] > device_max_work_item_sizes[0]
-                    || (size_t)expected[1] > device_max_work_item_sizes[1]
-                    || (size_t)expected[2] > device_max_work_item_sizes[2]
+                    attrib.wgs[0] * attrib.wgs[1] * attrib.wgs[2];
+                if ((size_t)attrib.wgs[0] > device_max_work_item_sizes[0]
+                    || (size_t)attrib.wgs[1] > device_max_work_item_sizes[1]
+                    || (size_t)attrib.wgs[2] > device_max_work_item_sizes[2]
                     || test_work_group_size > device_max_work_group_size)
                 {
                     log_info(
                         "Skipping test for work_dim = %u: required work group "
                         "size (%i, %i, %i) (total %zu) exceeds device max "
                         "work group size (%zu, %zu, %zu) (total %zu)\n",
-                        work_dim, expected[0], expected[1], expected[2],
+                        work_dim, attrib.wgs[0], attrib.wgs[1], attrib.wgs[2],
                         test_work_group_size, device_max_work_item_sizes[0],
                         device_max_work_item_sizes[1],
                         device_max_work_item_sizes[2],
@@ -146,7 +153,7 @@ struct KernelAttributesReqGroupSizeTest : public BasicCommandBufferTest
                 const cl_int zero = 0;
                 error = clCommandFillBufferKHR(
                     command_buffer, nullptr, nullptr, dst, &zero, sizeof(zero),
-                    0, sizeof(expected), 0, nullptr, nullptr, nullptr);
+                    0, sizeof(attrib.wgs), 0, nullptr, nullptr, nullptr);
                 test_error(error, "clCommandFillBufferKHR failed");
 
                 const size_t global_work_size[3] = { 2 * 32, 3 * 32, 4 * 32 };
@@ -169,13 +176,13 @@ struct KernelAttributesReqGroupSizeTest : public BasicCommandBufferTest
                 test_error(error, "clEnqueueReadBuffer failed");
 
                 // Verify the result
-                if (results[0] != expected[0] || results[1] != expected[1]
-                    || results[2] != expected[2])
+                if (results[0] != attrib.wgs[0] || results[1] != attrib.wgs[1]
+                    || results[2] != attrib.wgs[2])
                 {
                     log_error(
                         "Executed local size mismatch with work_dim = %u: "
                         "Expected (%d,%d,%d) got (%d,%d,%d)\n",
-                        work_dim, expected[0], expected[1], expected[2],
+                        work_dim, attrib.wgs[0], attrib.wgs[1], attrib.wgs[2],
                         results[0], results[1], results[2]);
                     return TEST_FAIL;
                 }
@@ -189,16 +196,16 @@ struct KernelAttributesReqGroupSizeTest : public BasicCommandBufferTest
                     test_error(error,
                                "clGetKernelSuggestedLocalWorkSizeKHR failed");
 
-                    if ((cl_int)suggested[0] != expected[0]
-                        || (cl_int)suggested[1] != expected[1]
-                        || (cl_int)suggested[2] != expected[2])
+                    if (suggested[0] != (size_t)attrib.wgs[0]
+                        || suggested[1] != (size_t)attrib.wgs[1]
+                        || suggested[2] != (size_t)attrib.wgs[2])
                     {
                         log_error(
                             "Suggested local size mismatch with work_dim = "
-                            "%u: Expected (%d,%d,%d) got (%d,%d,%d)\n",
-                            work_dim, expected[0], expected[1], expected[2],
-                            (cl_int)suggested[0], (cl_int)suggested[1],
-                            (cl_int)suggested[2]);
+                            "%u: Expected (%d,%d,%d) got (%zu,%zu,%zu)\n",
+                            work_dim, attrib.wgs[0], attrib.wgs[1],
+                            attrib.wgs[2], suggested[0], suggested[1],
+                            suggested[2]);
                         return TEST_FAIL;
                     }
                 }
