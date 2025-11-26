@@ -45,7 +45,7 @@ public:
     // Convert from semantic values
     HostHalf(cl_uint value = 0)
         : value(
-              cl_half_from_float(static_cast<float>(value), gHalfRoundingMode))
+            cl_half_from_float(static_cast<float>(value), gHalfRoundingMode))
     {}
     HostHalf(int value): HostHalf(static_cast<cl_uint>(value)) {}
     HostHalf(float value): value(cl_half_from_float(value, gHalfRoundingMode))
@@ -95,7 +95,7 @@ public:
 #undef GENERIC_OP
 
 #define INPLACE_OP(op)                                                         \
-    HostHalf &operator op## = (const HostHalf &other)                          \
+    HostHalf &operator op##=(const HostHalf &other)                          \
     {                                                                          \
         value = cl_half_from_float(cl_half_to_float(value)                     \
                                        op cl_half_to_float(other.value),       \
