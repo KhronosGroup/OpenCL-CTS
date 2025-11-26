@@ -95,7 +95,7 @@ public:
 #undef GENERIC_OP
 
 #define INPLACE_OP(op)                                                         \
-    HostHalf &operator op##=(const HostHalf &other)                          \
+    HostHalf &operator op##=(const HostHalf &other)                            \
     {                                                                          \
         value = cl_half_from_float(cl_half_to_float(value)                     \
                                        op cl_half_to_float(other.value),       \
