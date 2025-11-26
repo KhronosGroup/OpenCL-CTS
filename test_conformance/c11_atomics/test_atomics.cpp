@@ -596,11 +596,12 @@ public:
             cl_uint value = 0;
             if (i == threadCount)
             {
-                value = static_cast<cl_uint>(static_cast<HostDataType>(finalValues[0]));
+                value = static_cast<cl_uint>(
+                    static_cast<HostDataType>(finalValues[0]));
             }
             else
             {
-                    value = static_cast<cl_uint>(refValues[i]);
+                value = static_cast<cl_uint>(refValues[i]);
             }
 
             if (value == startVal)
@@ -1194,11 +1195,12 @@ public:
                 std::vector<HostDataType> sums;
                 std::sort(ref_vals.begin(), ref_vals.end());
 
-                sums.push_back(
-                    std::accumulate(ref_vals.begin(), ref_vals.end(), static_cast<HostDataType>(0.f)));
+                sums.push_back(std::accumulate(ref_vals.begin(), ref_vals.end(),
+                                               static_cast<HostDataType>(0.f)));
 
-                sums.push_back(
-                    std::accumulate(ref_vals.rbegin(), ref_vals.rend(), static_cast<HostDataType>(0.f)));
+                sums.push_back(std::accumulate(ref_vals.rbegin(),
+                                               ref_vals.rend(),
+                                               static_cast<HostDataType>(0.f)));
 
                 std::sort(ref_vals.begin(), ref_vals.end(),
                           [](HostDataType a, HostDataType b) {
@@ -1213,20 +1215,24 @@ public:
 
                 sums.push_back(precise);
 
-                sums.push_back(
-                    std::accumulate(ref_vals.begin(), ref_vals.end(), static_cast<HostDataType>(0.f)));
+                sums.push_back(std::accumulate(ref_vals.begin(), ref_vals.end(),
+                                               static_cast<HostDataType>(0.f)));
 
-                sums.push_back(
-                    std::accumulate(ref_vals.rbegin(), ref_vals.rend(), static_cast<HostDataType>(0.f)));
+                sums.push_back(std::accumulate(ref_vals.rbegin(),
+                                               ref_vals.rend(),
+                                               static_cast<HostDataType>(0.f)));
 
                 std::sort(sums.begin(), sums.end());
-                assert(std::all_of(sums.begin(), sums.end(), [](const HostDataType &val) {
-                    return std::isfinite(static_cast<double>(val));
-                }) && "Infinite summation value detected!");
+                assert(std::all_of(sums.begin(), sums.end(),
+                                   [](const HostDataType &val) {
+                                       return std::isfinite(
+                                           static_cast<double>(val));
+                                   })
+                       && "Infinite summation value detected!");
                 max_error = std::abs(sums.front() - sums.back());
 
-                log_info("Max allowed error for %u elements: %.10f\n", threadCount,
-                         max_error);
+                log_info("Max allowed error for %u elements: %.10f\n",
+                         threadCount, max_error);
 
                 // restore unsorted order
                 memcpy(ref_vals.data(), startRefValues,
@@ -1328,7 +1334,10 @@ public:
         if constexpr (is_host_fp_v<HostDataType>)
         {
             if (whichDestValue == 0)
-                return std::abs(static_cast<double>(expected - static_cast<HostDataType>(testValues[whichDestValue])))
+                return std::abs(
+                           static_cast<double>(expected
+                                               - static_cast<HostDataType>(
+                                                   testValues[whichDestValue])))
                     > max_error;
         }
         return CBasicTestMemOrderScope<
@@ -1571,9 +1580,10 @@ public:
                 sums.push_back(subtract(ref_vals.begin(), ref_vals.end()));
                 sums.push_back(subtract(ref_vals.rbegin(), ref_vals.rend()));
 
-                std::sort(
-                    ref_vals.begin(), ref_vals.end(),
-                    [](HostDataType a, HostDataType b) { return std::abs(a) < std::abs(b); });
+                std::sort(ref_vals.begin(), ref_vals.end(),
+                          [](HostDataType a, HostDataType b) {
+                              return std::abs(a) < std::abs(b);
+                          });
 
                 double precise = 0.0;
                 for (auto elem : ref_vals) precise += double(elem);
@@ -1582,14 +1592,16 @@ public:
                 sums.push_back(subtract(ref_vals.rbegin(), ref_vals.rend()));
 
                 std::sort(sums.begin(), sums.end());
-                assert(std::all_of(sums.begin(), sums.end(), [](const HostDataType &val) {
-                    return std::isfinite(static_cast<double>(val));
-                }) && "Infinite subtraction value detected!");
-                max_error =
-                    std::abs(sums.front() - sums.back());
+                assert(std::all_of(sums.begin(), sums.end(),
+                                   [](const HostDataType &val) {
+                                       return std::isfinite(
+                                           static_cast<double>(val));
+                                   })
+                       && "Infinite subtraction value detected!");
+                max_error = std::abs(sums.front() - sums.back());
 
-                log_info("Max allowed error for %u elements: %.10f\n", threadCount,
-                         max_error);
+                log_info("Max allowed error for %u elements: %.10f\n",
+                         threadCount, max_error);
 
                 // restore unsorted order
                 memcpy(ref_vals.data(), startRefValues,
@@ -1674,8 +1686,10 @@ public:
         if constexpr (is_host_fp_v<HostDataType>)
         {
             if (whichDestValue == 0)
-                return std::abs(static_cast<double>(expected
-                                - static_cast<HostDataType>(testValues[whichDestValue])))
+                return std::abs(
+                           static_cast<double>(expected
+                                               - static_cast<HostDataType>(
+                                                   testValues[whichDestValue])))
                     > max_error;
         }
         return CBasicTestMemOrderScope<
@@ -2777,8 +2791,9 @@ public:
             {
                 if (refValues[i] != StartValue())
                 {
-                    log_error("Thread %d found %lf mismatch(es), start value=%lf\n", i,
-                              (double)refValues[i], (double)StartValue());
+                    log_error(
+                        "Thread %d found %lf mismatch(es), start value=%lf\n",
+                        i, (double)refValues[i], (double)StartValue());
                     correct = false;
                 }
             }
@@ -3016,7 +3031,8 @@ public:
         {
             for (cl_uint i = 0; i < threadCount; i++)
             {
-                startRefValues[i] = static_cast<HostDataType>(get_random_float(min_range, max_range, d));
+                startRefValues[i] = static_cast<HostDataType>(
+                    get_random_float(min_range, max_range, d));
             }
         }
         else
@@ -3081,8 +3097,9 @@ public:
             {
                 if (refValues[i] != StartValue())
                 {
-                    log_error("Thread %d found %lf mismatch(es), start value=%lf\n", i,
-                              (double)refValues[i], (double)StartValue());
+                    log_error(
+                        "Thread %d found %lf mismatch(es), start value=%lf\n",
+                        i, (double)refValues[i], (double)StartValue());
                     correct = false;
                 }
             }

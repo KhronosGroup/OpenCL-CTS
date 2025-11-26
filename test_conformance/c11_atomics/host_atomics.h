@@ -42,73 +42,87 @@ enum TExplicitMemoryOrderType
 // Wrapper class for half-precision
 class HostHalf {
 public:
-  // Convert from semantic values
-  HostHalf(cl_uint value = 0) : value(cl_half_from_float(static_cast<float>(value), gHalfRoundingMode)) {}
-  HostHalf(int value) : HostHalf(static_cast<cl_uint>(value)) {}
-  HostHalf(float value) : value(cl_half_from_float(value, gHalfRoundingMode)) {}
-  HostHalf(double value) : HostHalf(static_cast<float>(value)) {}
+    // Convert from semantic values
+    HostHalf(cl_uint value = 0)
+        : value(
+              cl_half_from_float(static_cast<float>(value), gHalfRoundingMode))
+    {}
+    HostHalf(int value): HostHalf(static_cast<cl_uint>(value)) {}
+    HostHalf(float value): value(cl_half_from_float(value, gHalfRoundingMode))
+    {}
+    HostHalf(double value): HostHalf(static_cast<float>(value)) {}
 
-  // Convert to semantic values
-  operator cl_uint() const { return static_cast<cl_uint>(cl_half_to_float(value)); }
-  operator float() const { return cl_half_to_float(value); }
-  operator double() const { return static_cast<double>(cl_half_to_float(value)); }
+    // Convert to semantic values
+    operator cl_uint() const
+    {
+        return static_cast<cl_uint>(cl_half_to_float(value));
+    }
+    operator float() const { return cl_half_to_float(value); }
+    operator double() const
+    {
+        return static_cast<double>(cl_half_to_float(value));
+    }
 
-  // Construct from bit representation
-  HostHalf(cl_half value) : value(value) {}
+    // Construct from bit representation
+    HostHalf(cl_half value): value(value) {}
 
-  // Get the underlying bit representation
-  operator cl_half() const { return value; }
+    // Get the underlying bit representation
+    operator cl_half() const { return value; }
 
-  HostHalf operator-() const
-  {
-    return HostHalf(cl_half_from_float(-cl_half_to_float(value), gHalfRoundingMode));
-  }
+    HostHalf operator-() const
+    {
+        return HostHalf(
+            cl_half_from_float(-cl_half_to_float(value), gHalfRoundingMode));
+    }
 
-#define GENERIC_OP(RetType, op)                                      \
-  RetType operator op(const HostHalf &other) const                  \
-  {                                                             \
-    return RetType(cl_half_to_float(value) op cl_half_to_float(other.value)); \
-  }
+#define GENERIC_OP(RetType, op)                                                \
+    RetType operator op(const HostHalf &other) const                           \
+    {                                                                          \
+        return RetType(cl_half_to_float(value)                                 \
+                           op cl_half_to_float(other.value));                  \
+    }
 
-  GENERIC_OP(bool, ==)
-  GENERIC_OP(bool, !=)
-  GENERIC_OP(bool, <)
-  GENERIC_OP(bool, <=)
-  GENERIC_OP(bool, >)
-  GENERIC_OP(bool, >=)
-  GENERIC_OP(HostHalf, +)
-  GENERIC_OP(HostHalf, -)
-  GENERIC_OP(HostHalf, *)
-  GENERIC_OP(HostHalf, /)
+    GENERIC_OP(bool, ==)
+    GENERIC_OP(bool, !=)
+    GENERIC_OP(bool, <)
+    GENERIC_OP(bool, <=)
+    GENERIC_OP(bool, >)
+    GENERIC_OP(bool, >=)
+    GENERIC_OP(HostHalf, +)
+    GENERIC_OP(HostHalf, -)
+    GENERIC_OP(HostHalf, *)
+    GENERIC_OP(HostHalf, /)
 #undef GENERIC_OP
 
-#define INPLACE_OP(op)                     \
-  HostHalf &operator op##=(const HostHalf &other) \
-  {                                   \
-    value = cl_half_from_float(          \
-        cl_half_to_float(value) op cl_half_to_float(other.value), \
-        gHalfRoundingMode);             \
-    return *this;                     \
-  }
-  INPLACE_OP(+)
-  INPLACE_OP(-)
-  INPLACE_OP(*)
-  INPLACE_OP(/)
+#define INPLACE_OP(op)                                                         \
+    HostHalf &operator op## = (const HostHalf &other)                          \
+    {                                                                          \
+        value = cl_half_from_float(cl_half_to_float(value)                     \
+                                       op cl_half_to_float(other.value),       \
+                                   gHalfRoundingMode);                         \
+        return *this;                                                          \
+    }
+    INPLACE_OP(+)
+    INPLACE_OP(-)
+    INPLACE_OP(*)
+    INPLACE_OP(/)
 #undef INPLACE_OP
 
-  friend std::ostream &operator<<(std::ostream &os, const HostHalf &hh)
-  {
-    float f = cl_half_to_float(hh.value);
-    os << f;
-    return os;
-  }
+    friend std::ostream &operator<<(std::ostream &os, const HostHalf &hh)
+    {
+        float f = cl_half_to_float(hh.value);
+        os << f;
+        return os;
+    }
+
 private:
-  cl_half value;
+    cl_half value;
 };
 
 namespace std {
-inline HostHalf abs(const HostHalf &value) {
-  return value < HostHalf(0) ? -value : value;
+inline HostHalf abs(const HostHalf &value)
+{
+    return value < HostHalf(0) ? -value : value;
 }
 } // namespace std
 
@@ -148,7 +162,7 @@ inline HostHalf abs(const HostHalf &value) {
 #define HOST_UINT               cl_uint
 #define HOST_LONG               cl_long
 #define HOST_ULONG              cl_ulong
-#define HOST_HALF               HostHalf
+#define HOST_HALF HostHalf
 #define HOST_FLOAT              cl_float
 #define HOST_DOUBLE             cl_double
 
@@ -167,16 +181,16 @@ inline HostHalf abs(const HostHalf &value) {
 extern cl_half_rounding_mode gHalfRoundingMode;
 
 template <typename HostAtomicType>
-constexpr bool is_host_atomic_fp_v = std::disjunction_v<
-    std::is_same<HostAtomicType, HOST_ATOMIC_HALF>,
-    std::is_same<HostAtomicType, HOST_ATOMIC_FLOAT>,
-    std::is_same<HostAtomicType, HOST_ATOMIC_DOUBLE>>;
+constexpr bool is_host_atomic_fp_v =
+    std::disjunction_v<std::is_same<HostAtomicType, HOST_ATOMIC_HALF>,
+                       std::is_same<HostAtomicType, HOST_ATOMIC_FLOAT>,
+                       std::is_same<HostAtomicType, HOST_ATOMIC_DOUBLE>>;
 
 template <typename HostDataType>
-constexpr bool is_host_fp_v = std::disjunction_v<
-    std::is_same<HostDataType, HOST_HALF>,
-    std::is_same<HostDataType, HOST_FLOAT>,
-    std::is_same<HostDataType, HOST_DOUBLE>>;
+constexpr bool is_host_fp_v =
+    std::disjunction_v<std::is_same<HostDataType, HOST_HALF>,
+                       std::is_same<HostDataType, HOST_FLOAT>,
+                       std::is_same<HostDataType, HOST_DOUBLE>>;
 
 // host atomic functions
 void host_atomic_thread_fence(TExplicitMemoryOrderType order);
@@ -239,9 +253,11 @@ CorrespondingType host_atomic_exchange(volatile AtomicType *a, CorrespondingType
 {
 #if defined( _MSC_VER ) || (defined( __INTEL_COMPILER ) && defined(WIN32))
     if constexpr (sizeof(CorrespondingType) == 2)
-        return InterlockedExchange16(reinterpret_cast<volatile SHORT *>(a), *reinterpret_cast<SHORT *>(&c));
+        return InterlockedExchange16(reinterpret_cast<volatile SHORT *>(a),
+                                     *reinterpret_cast<SHORT *>(&c));
     else
-        return InterlockedExchange(reinterpret_cast<volatile LONG *>(a), *reinterpret_cast<LONG *>(&c));
+        return InterlockedExchange(reinterpret_cast<volatile LONG *>(a),
+                                   *reinterpret_cast<LONG *>(&c));
 #elif defined(__GNUC__)
     return __sync_lock_test_and_set(a, *reinterpret_cast<AtomicType *>(&c));
 #else
