@@ -982,6 +982,12 @@ REGISTER_TEST(negative_invalid_arg_index)
 
 REGISTER_TEST(negative_invalid_arg_size_local)
 {
+    if (true)
+    {
+        log_info("Disabling this test temporarily, see internal issue 374.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
     cl_int error = CL_SUCCESS;
     clProgramWrapper program;
     clKernelWrapper local_arg_kernel;

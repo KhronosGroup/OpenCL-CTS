@@ -15,6 +15,9 @@
 //
 #include "testBase.h"
 #include "harness/os_helpers.h"
+#include "harness/testHarness.h"
+
+#include <array>
 
 const char *preprocessor_test_kernel[] = {
 "__kernel void sample_test(__global int *dst)\n"
@@ -42,26 +45,22 @@ const char *include_test_kernel[] = {
 "\n"
 "}\n" };
 
-const char *options_test_kernel[] = {
-    "__kernel void sample_test(__global float *src, __global int *dst)\n"
-    "{\n"
-    "    size_t tid = get_global_id(0);\n"
-    "    dst[tid] = (int)src[tid];\n"
-    "}\n"
-};
+const char *options_test_kernel[] = { "__kernel void sample_test() {}\n" };
 
-const char *optimization_options[] = {
-    "-cl-single-precision-constant",
-    "-cl-denorms-are-zero",
-    "-cl-opt-disable",
-    "-cl-mad-enable",
-    "-cl-no-signed-zeros",
-    "-cl-unsafe-math-optimizations",
-    "-cl-finite-math-only",
-    "-cl-fast-relaxed-math",
-    "-w",
-    "-Werror",
-    };
+std::array optimization_options{
+    std::pair{ "-cl-single-precision-constant", Version(1, 0) },
+    std::pair{ "-cl-denorms-are-zero", Version(1, 0) },
+    std::pair{ "-cl-opt-disable", Version(1, 0) },
+    std::pair{ "-cl-mad-enable", Version(1, 0) },
+    std::pair{ "-cl-no-signed-zeros", Version(1, 0) },
+    std::pair{ "-cl-unsafe-math-optimizations", Version(1, 0) },
+    std::pair{ "-cl-finite-math-only", Version(1, 0) },
+    std::pair{ "-cl-fast-relaxed-math", Version(1, 0) },
+    std::pair{ "-w", Version(1, 0) },
+    std::pair{ "-Werror", Version(1, 0) },
+    std::pair{ "-cl-uniform-work-group-size", Version(2, 0) },
+    std::pair{ "-cl-no-subgroup-ifp", Version(2, 1) },
+};
 
 cl_int get_result_from_program( cl_context context, cl_command_queue queue, cl_program program, cl_int *outValue )
 {
@@ -93,31 +92,41 @@ REGISTER_TEST(options_build_optimizations)
     int error;
     cl_build_status status;
 
-    for(size_t i = 0; i < sizeof(optimization_options) / (sizeof(char*)); i++) {
+    Version version = get_device_cl_version(device);
 
-        clProgramWrapper program;
-        error = create_single_kernel_helper_create_program(context, &program, 1, options_test_kernel, optimization_options[i]);
-        if( program == NULL || error != CL_SUCCESS )
+    for (const auto &optimization_option : optimization_options)
+    {
+        if (version < optimization_option.second)
         {
-            log_error( "ERROR: Unable to create reference program!\n" );
+            continue;
+        }
+
+        const char *option = optimization_option.first;
+        clProgramWrapper program;
+        error = create_single_kernel_helper_create_program(
+            context, &program, 1, options_test_kernel, option);
+        if (program == NULL || error != CL_SUCCESS)
+        {
+            log_error("ERROR: Unable to create reference program!\n");
             return -1;
         }
 
         /* Build with the macro defined */
-        log_info("Testing optimization option '%s'\n", optimization_options[i]);
-        error = clBuildProgram(program, 1, &device, optimization_options[i],
-                               NULL, NULL);
-        test_error( error, "Test program did not properly build" );
+        log_info("Testing optimization option '%s'\n", option);
+        error = clBuildProgram(program, 1, &device, option, NULL, NULL);
+        test_error(error, "Test program did not properly build");
 
         error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_STATUS,
                                       sizeof(status), &status, NULL);
-        test_error( error, "Unable to get program build status" );
+        test_error(error, "Unable to get program build status");
 
-        if( (int)status != CL_BUILD_SUCCESS )
+        if ((int)status != CL_BUILD_SUCCESS)
         {
-            log_info("Building with optimization option '%s' failed to compile!\n", optimization_options[i]);
-            print_error( error, "Failed to build with optimization defined")
-            return -1;
+            log_info(
+                "Building with optimization option '%s' failed to compile!\n",
+                option);
+            print_error(error,
+                        "Failed to build with optimization defined") return -1;
         }
     }
     return 0;
@@ -414,4 +423,51 @@ REGISTER_TEST(options_denorm_cache)
     }
 
     return 0;
+}
+
+REGISTER_TEST(options_uniform_work_group_size)
+{
+    if (get_device_cl_version(device) < Version(2, 0))
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
+    const char *options = "-cl-uniform-work-group-size";
+    clProgramWrapper program;
+    int error = create_single_kernel_helper_create_program(
+        context, &program, 1, options_test_kernel, options);
+    if (program == NULL || error != CL_SUCCESS)
+    {
+        log_error("Error: Unable to create reference program!\n");
+        return TEST_FAIL;
+    }
+    error = clBuildProgram(program, 1, &device, options, NULL, NULL);
+    test_error(error, "Test program did not properly build");
+
+    clKernelWrapper kernel = clCreateKernel(program, "sample_test", &error);
+    test_error(error, "Unable to create kernel");
+
+    size_t global_work_size = 4;
+    size_t uniform_local_work_size = 2;
+    error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global_work_size,
+                                   &uniform_local_work_size, 0, NULL, NULL);
+    test_error(error,
+               "Unable to enqueue NDRange kernel with uniform work group size");
+    error = clFinish(queue);
+    test_error(error, "Unable to finish");
+
+    size_t non_uniform_local_work_size = 3;
+    error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global_work_size,
+                                   &non_uniform_local_work_size, 0, NULL, NULL);
+
+    if (error != CL_INVALID_WORK_GROUP_SIZE)
+    {
+        log_error(
+            "Error: expected error 'CL_INVALID_WORK_GROUP_SIZE' (got '%s') "
+            "trying to enqueue kernel compiled with '%s' with non-uniform work "
+            "group size\n",
+            IGetErrorString(error), options);
+        return TEST_FAIL;
+    }
+
+    return TEST_PASS;
 }
