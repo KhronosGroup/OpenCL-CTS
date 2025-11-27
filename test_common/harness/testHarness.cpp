@@ -278,6 +278,16 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
         return EXIT_SUCCESS;
     }
 
+    gWimpyMode |= (getenv("CL_WIMPY_MODE") != nullptr);
+    if (gWimpyMode)
+    {
+        log_info("\n");
+        log_info("**************************\n");
+        log_info("*** Wimpy mode enabled ***\n");
+        log_info("**************************\n");
+        log_info("\n");
+    }
+
     if ((argc > 1) && (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")))
     {
         char *fileName = getenv("CL_CONFORMANCE_RESULTS_FILENAME");
