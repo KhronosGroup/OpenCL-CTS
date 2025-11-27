@@ -96,6 +96,23 @@ static const char *diff_images_kernel_source = {
         })"
 };
 
+static const char *lifetime_kernel_source = {
+    R"(
+            __kernel void increment_buffer(global uchar* buffer)
+            {
+                int tid = get_global_id(0);
+                buffer[tid] ++;
+            }
+
+            __kernel void set_image_color(write_only image2d_t ahb_image, float4 set_color)
+            {
+                int tidX = get_global_id(0);
+                int tidY = get_global_id(1);
+
+                write_imagef(ahb_image, (int2)( tidX, tidY ), set_color);
+            })"
+};
+
 // Checks that the inferred image format is correct
 REGISTER_TEST(images)
 {
@@ -1855,5 +1872,291 @@ REGISTER_TEST(blob)
         test_error(clReleaseMemObject(buffer), "Failed to release buffer");
     }
 
+    return TEST_PASS;
+}
+
+/*
+ * For cl buffer and cl image
+ *  Create a AHB
+ *  Create a mem object from the AHB
+ *  Release the AHB
+ *  Read and write using the mem object
+ *  Verify reads and writes
+ */
+REGISTER_TEST(lifetime_buffer)
+{
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
+
+    cl_int err;
+    constexpr cl_uint buffer_size = 4096;
+    std::vector<uint8_t> host_buffer(buffer_size, 1);
+    clMemWrapper imported_buffer;
+
+    {
+        // Check if AHB descriptors for buffers and images are supported
+        AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
+        aHardwareBufferDesc.width = buffer_size;
+        aHardwareBufferDesc.height = 1;
+        aHardwareBufferDesc.layers = 1;
+        aHardwareBufferDesc.format = AHARDWAREBUFFER_FORMAT_BLOB;
+        aHardwareBufferDesc.usage = AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN
+            | AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN;
+
+        if (!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
+        {
+            log_unsupported_ahb_format(aHardwareBufferDesc);
+            return TEST_SKIPPED_ITSELF;
+        }
+
+        log_info("Testing buffer lifetime\n");
+
+        AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+
+        const cl_mem_properties props[] = {
+            CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
+            aHardwareBuffer.get_props(),
+            0,
+        };
+
+        imported_buffer = clCreateBufferWithProperties(
+            context, props, CL_MEM_READ_WRITE, 0, nullptr, &err);
+        test_error(err, "Failed to create CL buffer from AHardwareBuffer");
+
+        // Fill AHB buffer
+        void *data_ptr = nullptr;
+        int ahb_result = AHardwareBuffer_lock(
+            aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN, -1, nullptr,
+            &data_ptr);
+        if (ahb_result != 0)
+        {
+            log_error("AHardwareBuffer_lock failed with code %d\n", ahb_result);
+            return TEST_FAIL;
+        }
+
+        memcpy(data_ptr, host_buffer.data(), buffer_size);
+
+        ahb_result = AHardwareBuffer_unlock(aHardwareBuffer, nullptr);
+        if (ahb_result != 0)
+        {
+            log_error("AHardwareBuffer_unlock failed with code %d\n",
+                      ahb_result);
+            return TEST_FAIL;
+        }
+    } // Release test scope reference to AHB
+
+
+    // Verify buffer read by comparing to host buffer
+    std::vector<uint8_t> read_buffer(buffer_size);
+    err = clEnqueueReadBuffer(queue, imported_buffer, true, 0, buffer_size,
+                              read_buffer.data(), 0, nullptr, nullptr);
+    test_error(err, "failed clEnqueueReadBuffer");
+
+    for (size_t i = 0; i < buffer_size; i++)
+    {
+        if (read_buffer[i] != host_buffer[i])
+        {
+            log_error("At position %zu expected value: %u but got value: %u\n",
+                      i, host_buffer[i], read_buffer[i]);
+            return TEST_FAIL;
+        }
+    }
+
+    // Attempt buffer write
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &lifetime_kernel_source,
+                                      "increment_buffer");
+    test_error(err, "kernel creation failed");
+
+    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &imported_buffer);
+    test_error(err, "clSetKernelArg failed");
+
+    size_t gws[1] = { buffer_size };
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, gws, nullptr, 0,
+                                 nullptr, nullptr);
+    test_error(err, "Failed clEnqueueNDRangeKernel");
+
+    // Verify write
+    err = clEnqueueReadBuffer(queue, imported_buffer, true, 0, buffer_size,
+                              read_buffer.data(), 0, nullptr, nullptr);
+    test_error(err, "failed clEnqueueReadBuffer");
+
+    for (size_t i = 0; i < buffer_size; i++)
+    {
+        if (read_buffer[i]
+            != host_buffer[i] + 1) // Kernel incremented each index by 1
+        {
+            log_error("At position %zu expected value: %u but got value: %u\n",
+                      i, host_buffer[i], read_buffer[i]);
+            return TEST_FAIL;
+        }
+    }
+
+    return TEST_PASS;
+}
+
+
+REGISTER_TEST(lifetime_image)
+{
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
+
+    int err;
+    const AHardwareBuffer_Format aHardwareBufferFormat =
+        AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM;
+    const cl_image_format clImageFormat = { CL_RGBA, CL_UNORM_INT8 };
+    const size_t pixel_size = get_pixel_size(&clImageFormat);
+
+    for (auto resolution : test_sizes)
+    {
+        const size_t image_size =
+            resolution.width * resolution.height * pixel_size;
+
+        std::vector<uint8_t> host_image_data(image_size, 1);
+        clMemWrapper imported_image;
+        {
+            // Check if AHB descriptors for buffers and images are supported
+            AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
+            aHardwareBufferDesc.width = resolution.width;
+            aHardwareBufferDesc.height = resolution.height;
+            aHardwareBufferDesc.layers = 1;
+            aHardwareBufferDesc.format = aHardwareBufferFormat;
+            aHardwareBufferDesc.usage = AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN
+                | AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN;
+
+            if (!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
+            {
+                log_unsupported_ahb_format(aHardwareBufferDesc);
+                continue;
+            }
+
+            log_info("Testing image lifetime\n");
+
+            AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+
+            const cl_mem_properties props_image[] = {
+                CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
+                aHardwareBuffer.get_props(),
+                0,
+            };
+
+            imported_image = clCreateImageWithProperties(
+                context, props_image, CL_MEM_READ_WRITE, nullptr, nullptr,
+                nullptr, &err);
+            test_error(err, "Failed to create CL image from AHardwareBuffer");
+
+            void *data_ptr = nullptr;
+            int ahb_result = AHardwareBuffer_lock(
+                aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN, -1,
+                nullptr, &data_ptr);
+            if (ahb_result != 0)
+            {
+                log_error("AHardwareBuffer_lock failed with code %d\n",
+                          ahb_result);
+                return TEST_FAIL;
+            }
+
+            memcpy(data_ptr, host_image_data.data(), image_size);
+
+            ahb_result = AHardwareBuffer_unlock(aHardwareBuffer, nullptr);
+            if (ahb_result != 0)
+            {
+                log_error("AHardwareBuffer_unlock failed with code %d\n",
+                          ahb_result);
+                return TEST_FAIL;
+            }
+        } // Release test scope reference to AHB
+
+
+        // Verify image read using host data
+        size_t origin[3] = { 0, 0, 0 };
+        size_t region[3] = { resolution.width, resolution.height, 1 };
+        size_t row_pitch;
+        uint8_t *mapped_image_ptr = static_cast<uint8_t *>(clEnqueueMapImage(
+            queue, imported_image, true, CL_MAP_READ, origin, region,
+            &row_pitch, nullptr, 0, nullptr, nullptr, &err));
+        test_error(err, "clEnqueueMapImage failed");
+
+        for (size_t row = 0; row < resolution.height; ++row)
+        {
+            for (size_t col = 0; col < resolution.width; ++col)
+            {
+                size_t mapped_image_idx = row * row_pitch + col;
+                size_t host_image_idx = row * resolution.width + col;
+                if (mapped_image_ptr[mapped_image_idx]
+                    != host_image_data[host_image_idx])
+                {
+                    log_error(
+                        "At position (%zu, %zu) expected value: %u but got "
+                        "value: %u\n",
+                        row, col, host_image_data[host_image_idx],
+                        mapped_image_ptr[mapped_image_idx]);
+                    return TEST_FAIL;
+                }
+            }
+        }
+
+        err = clEnqueueUnmapMemObject(queue, imported_image, mapped_image_ptr,
+                                      0, nullptr, nullptr);
+        test_error(err, "clEnqueueUnmapMemObject failed");
+
+        err = clFinish(queue);
+        test_error(err, "clFinish failed");
+
+
+        // Attempt image write
+        clProgramWrapper program;
+        clKernelWrapper kernel;
+        err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                          &lifetime_kernel_source,
+                                          "set_image_color");
+        test_error(err, "kernel creation failed");
+
+        err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &imported_image);
+        test_error(err, "clSetKernelArg failed");
+
+        cl_float4 color = { { 0.5f, 0.5f, 0.5f, 0.5f } };
+        err = clSetKernelArg(kernel, 1, sizeof(cl_float4), &color);
+        test_error(err, "clSetKernelArg failed");
+
+        std::vector<size_t> gws = { resolution.width, resolution.height };
+        err = clEnqueueNDRangeKernel(queue, kernel, 2, nullptr, gws.data(),
+                                     nullptr, 0, nullptr, nullptr);
+        test_error(err, "Failed clEnqueueNDRangeKernel");
+
+        err = clFinish(queue);
+        test_error(err, "clFinish failed");
+
+
+        // Verify image write
+        mapped_image_ptr = static_cast<uint8_t *>(clEnqueueMapImage(
+            queue, imported_image, true, CL_MAP_READ, origin, region,
+            &row_pitch, nullptr, 0, nullptr, nullptr, &err));
+        test_error(err, "clEnqueueMapImage failed");
+
+        for (size_t row = 0; row < resolution.height; ++row)
+        {
+            for (size_t col = 0; col < resolution.width; ++col)
+            {
+                size_t mapped_image_idx = row * row_pitch + col;
+                if (128 != mapped_image_ptr[mapped_image_idx])
+                {
+                    log_error(
+                        "At position (%zu, %zu) expected value: %u but got "
+                        "value: %u\n",
+                        row, col, 128, mapped_image_ptr[mapped_image_idx]);
+                    return TEST_FAIL;
+                }
+            }
+        }
+
+        err = clEnqueueUnmapMemObject(queue, imported_image, mapped_image_ptr,
+                                      0, nullptr, nullptr);
+        test_error(err, "clEnqueueUnmapMemObject failed");
+
+        err = clFinish(queue);
+        test_error(err, "clFinish failed");
+    }
     return TEST_PASS;
 }
