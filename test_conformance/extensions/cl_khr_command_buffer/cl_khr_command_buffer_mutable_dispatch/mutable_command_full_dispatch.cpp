@@ -20,6 +20,7 @@
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
 
+#include <algorithm>
 #include <vector>
 
 namespace {
