@@ -120,8 +120,6 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p);
 uint64_t GetTime(void);
 
 void WriteInputBufferComplete(void *);
-void *FlushToZero(void);
-void UnFlushToZero(void *);
 }
 
 struct CalcRefValsBase
