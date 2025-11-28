@@ -237,12 +237,38 @@ static int test_strided_copy_all_types(cl_device_id deviceID,
                                        cl_command_queue queue,
                                        const char *kernelCode)
 {
-    const std::vector<ExplicitType> vecType = { kChar,  kUChar, kShort, kUShort,
-                                                kInt,   kUInt,  kLong,  kULong,
-                                                kFloat, kHalf,  kDouble };
-    const unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
-    const unsigned int strideSizes[] = { 1, 3, 4, 5, 0 };
+    std::vector<ExplicitType> vecType = { kChar,  kUChar, kShort, kUShort,
+                                          kInt,   kUInt,  kLong,  kULong,
+                                          kFloat, kHalf,  kDouble };
     unsigned int size, typeIndex, stride;
+    std::vector<unsigned int> vecSizes;
+    std::vector<unsigned int> strideSizes;
+
+    if (gUseDataType)
+    {
+        log_info("WARNING: Running subset of data types !\n");
+        vecType = gVecType;
+    }
+
+    if (gUseVectorSize)
+    {
+        log_info("WARNING: Running for vector size: %d only !\n",
+                 gUseVectorSize);
+        vecSizes.assign({ gUseVectorSize, 0 });
+    }
+    else
+    {
+        vecSizes.assign({ 1, 2, 3, 4, 8, 16, 0 });
+    }
+    if (gUseStride)
+    {
+        log_info("WARNING: Running for stride: %d only !\n", gUseStride);
+        strideSizes.assign({ gUseStride, 0 });
+    }
+    else
+    {
+        strideSizes.assign({ 1, 3, 4, 5, 0 });
+    }
 
     int errors = 0;
 
