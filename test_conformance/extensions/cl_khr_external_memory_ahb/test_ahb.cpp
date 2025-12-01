@@ -1239,8 +1239,8 @@ REGISTER_TEST(enqueue_copy_buffer_to_image)
                 imageInfo.type = format.clMemObjectType;
                 imageInfo.width = resolution.width;
                 imageInfo.height = resolution.height;
-                imageInfo.rowPitch = resolution.width * resolution.height
-                    * pixelSize; // data is tightly packed in buffer
+                // data is tightly packed in buffer
+                imageInfo.rowPitch = resolution.width * pixelSize;
                 test_assert_error(imageInfo.rowPitch
                                       >= pixelSize * imageInfo.width,
                                   "Row pitch is smaller than width");
@@ -1446,8 +1446,8 @@ REGISTER_TEST(enqueue_write_image)
                 imageInfo.type = format.clMemObjectType;
                 imageInfo.width = resolution.width;
                 imageInfo.height = resolution.height;
-                imageInfo.rowPitch = resolution.width * resolution.height
-                    * pixelSize; // Data is tightly packed
+                // Data is tightly packed
+                imageInfo.rowPitch = resolution.width * pixelSize;
                 test_assert_error(imageInfo.rowPitch
                                       >= pixelSize * imageInfo.width,
                                   "Row pitch is smaller than width");
@@ -1637,8 +1637,8 @@ REGISTER_TEST(enqueue_fill_image)
                 imageInfo.type = format.clMemObjectType;
                 imageInfo.width = resolution.width;
                 imageInfo.height = resolution.height;
-                imageInfo.rowPitch = resolution.width * resolution.height
-                    * pixelSize; // Data is tightly packed
+                imageInfo.rowPitch = resolution.width * pixelSize;
+                // Data is tightly packed
                 test_assert_error(imageInfo.rowPitch
                                       >= pixelSize * imageInfo.width,
                                   "Row pitch is smaller than width");
