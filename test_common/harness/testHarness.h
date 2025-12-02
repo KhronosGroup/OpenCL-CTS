@@ -22,6 +22,7 @@
 
 #include <string>
 #include <vector>
+#include <type_traits>
 
 class Version {
 public:
@@ -257,6 +258,37 @@ extern std::string get_platform_info_string(cl_platform_id platform,
                                             cl_platform_info param_name);
 extern bool is_platform_extension_available(cl_platform_id platform,
                                             const char *extensionName);
+enum InvalidObject
+{
+    Nullptr = 1 << 0,
+    ValidObjectWrongType = 1 << 1,
+};
+
+extern int gInvalidObject;
+
+
+template <typename T> std::vector<T> get_invalid_objects(cl_device_id device)
+{
+    std::vector<T> ret;
+    if ((gInvalidObject & InvalidObject::Nullptr)
+        && !(std::is_same<T, cl_platform_id>::value))
+    {
+        ret.push_back(nullptr);
+    }
+    if (gInvalidObject & InvalidObject::ValidObjectWrongType)
+    {
+        if (std::is_same<T, cl_device_id>::value)
+        {
+            cl_platform_id platform = getPlatformFromDevice(device);
+            ret.push_back(reinterpret_cast<T>(platform));
+        }
+        else
+        {
+            ret.push_back(reinterpret_cast<T>(device));
+        }
+    }
+    return ret;
+}
 
 #if !defined(__APPLE__)
 void memset_pattern4(void *, const void *, size_t);
