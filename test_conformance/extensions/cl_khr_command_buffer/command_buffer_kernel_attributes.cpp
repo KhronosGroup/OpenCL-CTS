@@ -16,8 +16,6 @@
 
 #include "basic_command_buffer.h"
 
-#include <vector>
-
 namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,10 +24,24 @@ namespace {
 
 struct KernelAttributesReqGroupSizeTest : public BasicCommandBufferTest
 {
+    inline static const std::string body_str = R"(
+        __kernel void wg_size(__global int* dst)
+        {
+            if (get_global_id(0) == 0 &&
+                get_global_id(1) == 0 &&
+                get_global_id(2) == 0) {
+                dst[0] = get_local_size(0);
+                dst[1] = get_local_size(1);
+                dst[2] = get_local_size(2);
+            }
+        }
+    )";
+
     KernelAttributesReqGroupSizeTest(cl_device_id device, cl_context context,
                                      cl_command_queue queue)
         : BasicCommandBufferTest(device, context, queue), dst(nullptr),
-          clGetKernelSuggestedLocalWorkSizeKHR(nullptr)
+          clGetKernelSuggestedLocalWorkSizeKHR(nullptr),
+          device_max_work_group_size(0)
     {}
 
     cl_int SetUp(int elements) override
@@ -57,13 +69,9 @@ struct KernelAttributesReqGroupSizeTest : public BasicCommandBufferTest
                              nullptr, &error);
         test_error(error, "clCreateBuffer failed");
 
-        return CL_SUCCESS;
-    }
 
-    cl_int Run() override
-    {
         cl_uint device_max_dim = 0;
-        cl_int error =
+        error =
             clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,
                             sizeof(device_max_dim), &device_max_dim, nullptr);
         test_error(
@@ -73,19 +81,23 @@ struct KernelAttributesReqGroupSizeTest : public BasicCommandBufferTest
             device_max_dim >= 3,
             "CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS must be at least 3!");
 
-        std::vector<size_t> device_max_work_item_sizes(device_max_dim);
+        device_max_work_item_sizes.resize(device_max_dim);
         error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
                                 sizeof(size_t) * device_max_dim,
                                 device_max_work_item_sizes.data(), nullptr);
 
-        size_t device_max_work_group_size = 0;
         error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE,
                                 sizeof(device_max_work_group_size),
                                 &device_max_work_group_size, nullptr);
         test_error(error,
                    "clGetDeviceInfo for CL_DEVICE_MAX_WORK_GROUP_SIZE failed");
 
+        return CL_SUCCESS;
+    }
 
+    cl_int Run() override
+    {
+        cl_int error = CL_SUCCESS;
         struct KernelAttribInfo
         {
             cl_int wgs[3];
@@ -95,20 +107,6 @@ struct KernelAttributesReqGroupSizeTest : public BasicCommandBufferTest
         std::vector<KernelAttribInfo> attribs = { { { 2, 1, 1 }, 1 },
                                                   { { 2, 3, 1 }, 2 },
                                                   { { 2, 3, 4 }, 3 } };
-
-        const std::string body_str = R"(
-                    __kernel void wg_size(__global int* dst)
-                    {
-                        if (get_global_id(0) == 0 &&
-                            get_global_id(1) == 0 &&
-                            get_global_id(2) == 0) {
-                            dst[0] = get_local_size(0);
-                            dst[1] = get_local_size(1);
-                            dst[2] = get_local_size(2);
-                        }
-                    }
-                )";
-
 
         for (auto& attrib : attribs)
         {
@@ -223,6 +221,9 @@ struct KernelAttributesReqGroupSizeTest : public BasicCommandBufferTest
     clMemWrapper dst;
     clGetKernelSuggestedLocalWorkSizeKHR_fn
         clGetKernelSuggestedLocalWorkSizeKHR;
+
+    size_t device_max_work_group_size;
+    std::vector<size_t> device_max_work_item_sizes;
 };
 
 } // anonymous namespace
