@@ -129,8 +129,8 @@ static const char *helper_ndrange_2d_glo[] = {
     "}" NL,
     "" NL,
     "kernel void helper_ndrange_2d_glo(__global int* res, uint n, uint len, "
-    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
-    "val,  __global uint* ofs_arr)" NL,
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
     "{" NL,
     "  size_t tid = get_global_id(0);" NL,
     "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
@@ -156,8 +156,8 @@ static const char *helper_ndrange_2d_loc[] = {
     "}" NL,
     "" NL,
     "kernel void helper_ndrange_2d_loc(__global int* res, uint n, uint len, "
-    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
-    "val,  __global uint* ofs_arr)" NL,
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
     "{" NL,
     "  size_t tid = get_global_id(0);" NL,
     "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
@@ -193,8 +193,8 @@ static const char *helper_ndrange_2d_ofs[] = {
     "}" NL,
     "" NL,
     "kernel void helper_ndrange_2d_ofs(__global int* res, uint n, uint len, "
-    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
-    "val,  __global uint* ofs_arr)" NL,
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
     "{" NL,
     "  size_t tid = get_global_id(0);" NL,
     "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
@@ -233,8 +233,8 @@ static const char *helper_ndrange_3d_glo[] = {
     "}" NL,
     "" NL,
     "kernel void helper_ndrange_3d_glo(__global int* res, uint n, uint len, "
-    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
-    "val,  __global uint* ofs_arr)" NL,
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
     "{" NL,
     "  size_t tid = get_global_id(0);" NL,
     "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
@@ -266,8 +266,8 @@ static const char *helper_ndrange_3d_loc[] = {
     "}" NL,
     "" NL,
     "kernel void helper_ndrange_3d_loc(__global int* res, uint n, uint len, "
-    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
-    "val,  __global uint* ofs_arr)" NL,
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
     "{" NL,
     "  size_t tid = get_global_id(0);" NL,
     "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
@@ -306,8 +306,8 @@ static const char *helper_ndrange_3d_ofs[] = {
     "}" NL,
     "" NL,
     "kernel void helper_ndrange_3d_ofs(__global int* res, uint n, uint len, "
-    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
-    "val,  __global uint* ofs_arr)" NL,
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
     "{" NL,
     "  size_t tid = get_global_id(0);" NL,
     "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
