@@ -101,7 +101,10 @@ REGISTER_TEST(options_build_optimizations)
             continue;
         }
 
-        const char *option = optimization_option.first;
+        auto build_options = std::string("-cl-std=CL")
+            + optimization_option.second.to_string() + " "
+            + optimization_option.first;
+        const char *option = build_options.c_str();
         clProgramWrapper program;
         error = create_single_kernel_helper_create_program(
             context, &program, 1, options_test_kernel, option);
