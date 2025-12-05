@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "kernelHelpers.h"
 #include "testBase.h"
 #include "harness/os_helpers.h"
 #include "harness/testHarness.h"
@@ -102,7 +103,7 @@ REGISTER_TEST(options_build_optimizations)
         }
 
         auto build_options = std::string("-cl-std=CL")
-            + optimization_option.second.to_string() + " "
+            + get_max_OpenCL_C_for_context(context).to_string() + " "
             + optimization_option.first;
         const char *option = build_options.c_str();
         clProgramWrapper program;
@@ -434,7 +435,10 @@ REGISTER_TEST(options_uniform_work_group_size)
     {
         return TEST_SKIPPED_ITSELF;
     }
-    const char *options = "-cl-std=CL2.0 -cl-uniform-work-group-size";
+    std::string build_options = "-cl-std=CL"
+        + get_max_OpenCL_C_for_context(context).to_string()
+        + " -cl-uniform-work-group-size";
+    const char *options = build_options.c_str();
     clProgramWrapper program;
     int error = create_single_kernel_helper_create_program(
         context, &program, 1, options_test_kernel, options);
