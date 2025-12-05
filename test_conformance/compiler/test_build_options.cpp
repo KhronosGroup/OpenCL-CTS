@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "kernelHelpers.h"
 #include "testBase.h"
+#include "harness/kernelHelpers.h"
 #include "harness/os_helpers.h"
 #include "harness/testHarness.h"
 
