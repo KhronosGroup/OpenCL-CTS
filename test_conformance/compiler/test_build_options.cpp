@@ -434,7 +434,7 @@ REGISTER_TEST(options_uniform_work_group_size)
     {
         return TEST_SKIPPED_ITSELF;
     }
-    const char *options = "-cl-uniform-work-group-size";
+    const char *options = "-cl-std=CL2.0 -cl-uniform-work-group-size";
     clProgramWrapper program;
     int error = create_single_kernel_helper_create_program(
         context, &program, 1, options_test_kernel, options);
