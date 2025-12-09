@@ -734,6 +734,28 @@ public:
                                            cl_context context,
                                            cl_command_queue queue)
     {
+        // Comparator for orders and scopes.
+        const auto checkValidity = [](TExplicitMemoryOrderType success,
+                                      TExplicitMemoryOrderType failure,
+                                      TExplicitMemoryScopeType scope) {
+            // Both memory order arguments must be set (or neither).
+            if ((success == MEMORY_ORDER_EMPTY || failure == MEMORY_ORDER_EMPTY)
+                && success != failure)
+                return false;
+
+            // Memory scope without memory order is disallowed.
+            if (success == MEMORY_ORDER_EMPTY && scope != MEMORY_SCOPE_EMPTY)
+                return false;
+
+            // Failure must not be release or acq_rel.
+            if (failure == MEMORY_ORDER_RELEASE
+                || failure == MEMORY_ORDER_ACQ_REL)
+                return false;
+
+            // Failure must not be stronger than success.
+            return failure <= success;
+        };
+
         // repeat test for each reasonable memory order/scope combination
         std::vector<TExplicitMemoryOrderType> memoryOrder;
         std::vector<TExplicitMemoryScopeType> memoryScope;
@@ -751,16 +773,10 @@ public:
             {
                 for (unsigned si = 0; si < memoryScope.size(); si++)
                 {
-                    if ((memoryOrder[oi] == MEMORY_ORDER_EMPTY
-                         || memoryOrder[o2i] == MEMORY_ORDER_EMPTY)
-                        && memoryOrder[oi] != memoryOrder[o2i])
-                        continue; // both memory order arguments must be set (or
-                                  // none)
-                    if ((memoryOrder[oi] == MEMORY_ORDER_EMPTY
-                         || memoryOrder[o2i] == MEMORY_ORDER_EMPTY)
-                        && memoryScope[si] != MEMORY_SCOPE_EMPTY)
-                        continue; // memory scope without memory order is not
-                                  // allowed
+                    if (!checkValidity(memoryOrder[oi], memoryOrder[o2i],
+                                       memoryScope[si]))
+                        continue;
+
                     MemoryOrder(memoryOrder[oi]);
                     MemoryOrder2(memoryOrder[o2i]);
                     MemoryScope(memoryScope[si]);
