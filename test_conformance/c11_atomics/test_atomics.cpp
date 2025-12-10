@@ -1530,7 +1530,7 @@ template <> double kahan_sub<double>(const std::vector<double> &nums)
     {
         double y = num - compensation;
         double t = sum - y;
-        compensation = (t - sum) - y;
+        compensation = (t - sum) + y;
         sum = t;
     }
     return sum;
