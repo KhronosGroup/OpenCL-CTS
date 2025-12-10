@@ -1603,16 +1603,16 @@ public:
                           [](HostDataType a, HostDataType b) {
                               return std::abs(a) < std::abs(b);
                           });
-                sums.push_back(subtract(ref_vals.begin(), ref_vals.end()));
-                sums.push_back(subtract(ref_vals.rbegin(), ref_vals.rend()));
 
                 double precise = 0.0;
                 if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
                     precise = kahan_sub(ref_vals);
                 else
-                    for (auto elem : ref_vals)
-                        precise += double(elem);
+                    for (auto elem : ref_vals) precise += double(elem);
                 sums.push_back(precise);
+
+                sums.push_back(subtract(ref_vals.begin(), ref_vals.end()));
+                sums.push_back(subtract(ref_vals.rbegin(), ref_vals.rend()));
 
                 std::sort(sums.begin(), sums.end());
                 assert(std::all_of(sums.begin(), sums.end(),
