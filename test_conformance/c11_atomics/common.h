@@ -264,12 +264,12 @@ public:
                                       cl_command_queue queue)
     {
         int error = 0;
-        DeclaredInProgram(false);
+        SetDeclaredInProgram(false);
         EXECUTE_TEST(error,
                      ExecuteForEachPointerType(deviceID, context, queue));
         if (!UseSVM())
         {
-            DeclaredInProgram(true);
+            SetDeclaredInProgram(true);
             EXECUTE_TEST(error,
                          ExecuteForEachPointerType(deviceID, context, queue));
         }
@@ -450,7 +450,7 @@ public:
     HostDataType StartValue() { return _startValue; }
     void SetLocalMemory(bool local) { _localMemory = local; }
     bool LocalMemory() { return _localMemory; }
-    void DeclaredInProgram(bool declaredInProgram)
+    void SetDeclaredInProgram(bool declaredInProgram)
     {
         _declaredInProgram = declaredInProgram;
     }
@@ -947,14 +947,8 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
             ss << std::setprecision(10) << _startValue;
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
-            if (IsHalfInfinity(_startValue))
-                ss << ((_startValue & 0x8000) != 0 ? "-" : "") << "INFINITY";
-            else if (IsHalfNaN(_startValue))
-                ss << "0.0h / 0.0h";
-            else
-                ss << std::setprecision(
-                    std::numeric_limits<float>::max_digits10)
-                   << cl_half_to_float(_startValue);
+            ss << std::setprecision(std::numeric_limits<float>::max_digits10)
+               << cl_half_to_float(_startValue);
         }
         else
             ss << _startValue;
