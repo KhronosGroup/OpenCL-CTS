@@ -50,7 +50,7 @@ std::string get_device_info_string(cl_device_id device,
 }
 
 /* Determines if an extension is supported by a device. */
-int is_extension_available(cl_device_id device, const char *extensionName)
+bool is_extension_available(cl_device_id device, const char *extensionName)
 {
     std::string extString = get_device_extensions_string(device);
     std::istringstream ss(extString);

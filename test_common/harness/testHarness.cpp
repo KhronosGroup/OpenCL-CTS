@@ -22,6 +22,7 @@
 #include <cassert>
 #include <deque>
 #include <mutex>
+#include <set>
 #include <stdexcept>
 #include <thread>
 #include <vector>
@@ -59,6 +60,7 @@ int gInfNanSupport = 1;
 int gIsEmbedded = 0;
 int gHasLong = 1;
 bool gCoreILProgram = true;
+int gInvalidObject = InvalidObject::Nullptr;
 
 #define DEFAULT_NUM_ELEMENTS 0x4000
 
@@ -169,6 +171,19 @@ void version_expected_info(const char *test_name, const char *api_name,
              "reports %s version %s)\n",
              test_name, api_name, expected_version, api_name, device_version);
 }
+
+static void list_tests(int testNum, test_definition testList[])
+{
+    std::set<std::string> names;
+    for (int i = 0; i < testNum; i++)
+    {
+        names.insert(testList[i].name);
+    }
+    for (const auto &name : names)
+    {
+        log_info("\t%s\n", name.c_str());
+    }
+}
 int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
                             test_definition testList[],
                             int forceNoContextCreation,
@@ -258,10 +273,23 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
         return EXIT_FAILURE;
     }
 
-    /* Special case: just list the tests */
-    if ((argc > 1)
-        && (!strcmp(argv[1], "-list") || !strcmp(argv[1], "-h")
-            || !strcmp(argv[1], "--help")))
+    if (gListTests)
+    {
+        list_tests(testNum, testList);
+        return EXIT_SUCCESS;
+    }
+
+    gWimpyMode |= (getenv("CL_WIMPY_MODE") != nullptr);
+    if (gWimpyMode)
+    {
+        log_info("\n");
+        log_info("**************************\n");
+        log_info("*** Wimpy mode enabled ***\n");
+        log_info("**************************\n");
+        log_info("\n");
+    }
+
+    if ((argc > 1) && (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")))
     {
         char *fileName = getenv("CL_CONFORMANCE_RESULTS_FILENAME");
 
@@ -284,10 +312,7 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
 
         log_info("\n");
         log_info("Test names:\n");
-        for (int i = 0; i < testNum; i++)
-        {
-            log_info("\t%s\n", testList[i].name);
-        }
+        list_tests(testNum, testList);
         return EXIT_SUCCESS;
     }
 

@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #include "testBase.h"
+
+#include <filesystem>
+
 #if defined(_WIN32)
 #include <time.h>
 #elif defined(__linux__) || defined(__APPLE__)
@@ -21,6 +24,8 @@
 #include <unistd.h>
 #endif
 #include "harness/conversions.h"
+#include "harness/stringHelpers.h"
+#include "harness/parseParameters.h"
 
 #define MAX_LINE_SIZE_IN_PROGRAM 1024
 #define MAX_LOG_SIZE_IN_PROGRAM 2048
@@ -154,6 +159,14 @@ const char *link_static_struct_access = // use with compile_static_struct
 const char *link_static_function_access = // use with compile_static_function
     "extern int foo(int, int);\n"
     "int access_foo() { int blah = foo(3, 4); return blah + 5; }\n";
+
+const char *multi_build_test_kernel = R"(
+__kernel void test_kernel(__global int *dst)
+{
+    int tid = get_global_id(0);
+    dst[tid] = BUILD_OPT_VAL;
+}
+)";
 
 static int test_large_single_compile(cl_context context, cl_device_id deviceID,
                                      unsigned int numLines)
@@ -3020,15 +3033,6 @@ REGISTER_TEST(execute_after_embedded_header_link)
     return 0;
 }
 
-#if defined(__APPLE__) || defined(__linux)
-#define _mkdir(x) mkdir(x, S_IRWXU)
-#define _chdir chdir
-#define _rmdir rmdir
-#define _unlink unlink
-#else
-#include <direct.h>
-#endif
-
 REGISTER_TEST(execute_after_included_header_link)
 {
     int error;
@@ -3047,100 +3051,61 @@ REGISTER_TEST(execute_after_included_header_link)
     }
 
     /* setup */
-#if (defined(__linux__) || defined(__APPLE__)) && (!defined(__ANDROID__))
-    /* Some tests systems doesn't allow one to write in the test directory */
-    if (_chdir("/tmp") != 0)
+    std::error_code ec;
+    auto temp_dir_path = std::filesystem::temp_directory_path(ec);
+    if (ec)
     {
-        log_error("ERROR: Unable to remove directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
+        log_error("ERROR: Unable to get the temporary directory path\n");
         return -1;
     }
-#endif
-    if (_mkdir("foo") != 0)
+    temp_dir_path = temp_dir_path / "foo" / "bar";
+    std::filesystem::create_directories(temp_dir_path, ec);
+    if (ec)
     {
-        log_error("ERROR: Unable to create directory foo! (in %s:%d)\n",
-                  __FILE__, __LINE__);
+        log_error("ERROR: Unable to create directory: %s, error: %d (%s)\n",
+                  temp_dir_path.u8string().c_str(), ec.value(),
+                  ec.message().c_str());
         return -1;
     }
-    if (_mkdir("foo/bar") != 0)
-    {
-        log_error("ERROR: Unable to create directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    if (_chdir("foo/bar") != 0)
-    {
-        log_error("ERROR: Unable to change to directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    FILE *simple_header_file = fopen(simple_header_name, "w");
+
+    const auto simple_header_path = temp_dir_path / simple_header_name;
+    const std::string simple_header_path_str =
+        to_string(simple_header_path.u8string());
+    FILE *simple_header_file = fopen(simple_header_path_str.c_str(), "w");
     if (simple_header_file == NULL)
     {
         log_error("ERROR: Unable to create simple header file %s! (in %s:%d)\n",
-                  simple_header_name, __FILE__, __LINE__);
+                  simple_header_path_str.c_str(), __FILE__, __LINE__);
         return -1;
     }
     if (fprintf(simple_header_file, "%s", simple_header) < 0)
     {
         log_error(
             "ERROR: Unable to write to simple header file %s! (in %s:%d)\n",
-            simple_header_name, __FILE__, __LINE__);
+            simple_header_path.u8string().c_str(), __FILE__, __LINE__);
         return -1;
     }
     if (fclose(simple_header_file) != 0)
     {
         log_error("ERROR: Unable to close simple header file %s! (in %s:%d)\n",
-                  simple_header_name, __FILE__, __LINE__);
+                  simple_header_path.u8string().c_str(), __FILE__, __LINE__);
         return -1;
     }
-    if (_chdir("../..") != 0)
-    {
-        log_error("ERROR: Unable to change to original working directory! (in "
-                  "%s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-#if (defined(__linux__) || defined(__APPLE__)) && (!defined(__ANDROID__))
-    error = clCompileProgram(program, 1, &device, "-I/tmp/foo/bar", 0, NULL,
+
+    const std::string include_path =
+        std::string("-I") + to_string(temp_dir_path.generic_u8string());
+    error = clCompileProgram(program, 1, &device, include_path.c_str(), 0, NULL,
                              NULL, NULL, NULL);
-#else
-    error = clCompileProgram(program, 1, &device, "-Ifoo/bar", 0, NULL, NULL,
-                             NULL, NULL);
-#endif
     test_error(error,
                "Unable to compile a simple program with included header");
 
     /* cleanup */
-    if (_chdir("foo/bar") != 0)
+    std::filesystem::remove_all(temp_dir_path, ec);
+    if (ec)
     {
-        log_error("ERROR: Unable to change to directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    if (_unlink(simple_header_name) != 0)
-    {
-        log_error("ERROR: Unable to remove simple header file %s! (in %s:%d)\n",
-                  simple_header_name, __FILE__, __LINE__);
-        return -1;
-    }
-    if (_chdir("../..") != 0)
-    {
-        log_error("ERROR: Unable to change to original working directory! (in "
-                  "%s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    if (_rmdir("foo/bar") != 0)
-    {
-        log_error("ERROR: Unable to remove directory foo/bar! (in %s:%d)\n",
-                  __FILE__, __LINE__);
-        return -1;
-    }
-    if (_rmdir("foo") != 0)
-    {
-        log_error("ERROR: Unable to remove directory foo! (in %s:%d)\n",
-                  __FILE__, __LINE__);
+        log_error("ERROR: Unable to delete directory: %s, error: %d (%s)",
+                  temp_dir_path.u8string().c_str(), ec.value(),
+                  ec.message().c_str());
         return -1;
     }
 
@@ -3976,4 +3941,104 @@ REGISTER_TEST(compile_and_link_status_options_log)
     }
 
     return 0;
+}
+
+REGISTER_TEST(multiple_build_program)
+{
+    if (gCompilationMode != kOnline)
+    {
+        log_info(
+            "Skipping multiple_build_program, compilation mode not online\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    cl_int error = CL_SUCCESS;
+    const size_t num_threads = num_elements;
+
+    clProgramWrapper program = clCreateProgramWithSource(
+        context, 1, &multi_build_test_kernel, nullptr, &error);
+    test_error(error, "clCreateProgramWithSource failed");
+
+    clMemWrapper out_stream_0 = clCreateBuffer(
+        context, CL_MEM_READ_WRITE, sizeof(cl_int) * num_threads, NULL, &error);
+    test_error(error, "clCreateBuffer failed");
+
+    clMemWrapper out_stream_1 = clCreateBuffer(
+        context, CL_MEM_READ_WRITE, sizeof(cl_int) * num_threads, NULL, &error);
+    test_error(error, "clCreateBuffer failed");
+
+    {
+        /* Build with the macro defined */
+        error = clBuildProgram(program, 1, &device, "-DBUILD_OPT_VAL=1 ", NULL,
+                               NULL);
+        test_error(error, "clBuildProgram failed");
+
+        clKernelWrapper kernel0 =
+            clCreateKernel(program, "test_kernel", &error);
+        test_error(error, "clCreateKernel failed");
+
+        error = clSetKernelArg(kernel0, 0, sizeof(out_stream_0), &out_stream_0);
+        test_error(error, "clSetKernelArg failed");
+
+        error = clEnqueueNDRangeKernel(queue, kernel0, 1, NULL, &num_threads,
+                                       NULL, 0, NULL, NULL);
+        test_error(error, "clEnqueueNDRangeKernel failed");
+
+        error = clFinish(queue);
+        test_error(error, "clFinish failed");
+    }
+
+    {
+        /* Rebuild with the macro redefined */
+        error = clBuildProgram(program, 1, &device, "-DBUILD_OPT_VAL=2 ", NULL,
+                               NULL);
+        test_error(error, "clBuildProgram failed");
+
+        clKernelWrapper kernel1 =
+            clCreateKernel(program, "test_kernel", &error);
+        test_error(error, "clCreateKernel failed");
+
+        error = clSetKernelArg(kernel1, 0, sizeof(out_stream_1), &out_stream_1);
+        test_error(error, "clSetKernelArg failed");
+
+        error = clEnqueueNDRangeKernel(queue, kernel1, 1, NULL, &num_threads,
+                                       NULL, 0, NULL, NULL);
+        test_error(error, "clEnqueueNDRangeKernel failed");
+
+        error = clFinish(queue);
+        test_error(error, "clFinish failed");
+    }
+
+    std::vector<cl_int> test_values(num_threads, 0);
+    error = clEnqueueReadBuffer(queue, out_stream_0, true, 0,
+                                sizeof(cl_int) * num_threads,
+                                test_values.data(), 0, NULL, NULL);
+    test_error(error, "clEnqueueReadBuffer failed");
+
+    for (size_t i = 0; i < test_values.size(); i++)
+    {
+        if (test_values[i] != 1)
+        {
+            log_error("Unexpected test value %d for kernel0 at pos %zu.\n",
+                      test_values[i], i);
+            return TEST_FAIL;
+        }
+    }
+
+    error = clEnqueueReadBuffer(queue, out_stream_1, true, 0,
+                                sizeof(cl_int) * num_threads,
+                                test_values.data(), 0, NULL, NULL);
+    test_error(error, "clEnqueueReadBuffer failed");
+
+    for (size_t i = 0; i < test_values.size(); i++)
+    {
+        if (test_values[i] != 2)
+        {
+            log_error("Unexpected test value %d for kernel1 at pos %zu.\n",
+                      test_values[i], i);
+            return TEST_FAIL;
+        }
+    }
+
+    return TEST_PASS;
 }
