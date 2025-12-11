@@ -1600,7 +1600,7 @@ public:
                     0xbbff, /* Largest negative fraction */
                 };
 
-                if (0 != (CL_FP_DENORM & gHalfCaps))
+                if (0 != (CL_FP_DENORM & gHalfFPConfig))
                 {
                     special_values.push_back(0x0001 /* Smallest denormal */);
                     special_values.push_back(0x03ff /* Largest denormal */);
@@ -1709,7 +1709,7 @@ public:
                 && CBasicTestMemOrderScope<HostAtomicType,
                                            HostDataType>::DeclaredInProgram())
             {
-                if ((gHalfCaps & CL_FP_INF_NAN) == 0) return 0;
+                if ((gHalfFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
         }
         return CBasicTestMemOrderScope<

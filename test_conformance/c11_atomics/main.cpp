@@ -36,7 +36,7 @@ bool gFloatAtomicsSupported = false;
 cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps = 0;
 cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps = 0;
 cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps = 0;
-cl_device_fp_config gHalfCaps = 0;
+cl_device_fp_config gHalfFPConfig = 0;
 
 test_status InitCL(cl_device_id device) {
     auto version = get_device_cl_version(device);
@@ -171,8 +171,9 @@ test_status InitCL(cl_device_id device) {
                 return TEST_FAIL;
             }
 
-            error = clGetDeviceInfo(device, CL_DEVICE_HALF_FP_CONFIG,
-                                    sizeof(gHalfCaps), &gHalfCaps, NULL);
+            error =
+                clGetDeviceInfo(device, CL_DEVICE_HALF_FP_CONFIG,
+                                sizeof(gHalfFPConfig), &gHalfFPConfig, NULL);
             test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
         }
     }
