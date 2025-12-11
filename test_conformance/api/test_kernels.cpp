@@ -772,8 +772,9 @@ REGISTER_TEST(negative_invalid_arg_queue)
     get_device_cl_c_features(device, features);
 
     const Version clc_version = get_device_latest_cl_c_version(device);
-    if ((clc_version < Version(2, 0))
-        || !features.supports__opencl_c_device_enqueue)
+    if (clc_version < Version(2, 0)
+        || (clc_version >= Version(3, 0)
+            && !features.supports__opencl_c_device_enqueue))
         return TEST_SKIPPED_ITSELF;
 
     std::string build_opts = "-cl-std=CL" + clc_version.to_string();
@@ -794,7 +795,16 @@ REGISTER_TEST(negative_invalid_arg_queue)
 
     // Run the test - CL_INVALID_DEVICE_QUEUE
     error = clSetKernelArg(queue_arg_kernel, 0, sizeof(cl_command_queue),
-                           queue_arg);
+                           &queue_arg);
+    test_failure_error_ret(
+        error, CL_INVALID_DEVICE_QUEUE,
+        "clSetKernelArg is supposed to fail with CL_INVALID_DEVICE_QUEUE when "
+        "the specified arg_value is not a valid device queue object",
+        TEST_FAIL);
+
+    // Run the test with host-side queue and expect CL_INVALID_DEVICE_QUEUE
+    error =
+        clSetKernelArg(queue_arg_kernel, 0, sizeof(cl_command_queue), queue);
     test_failure_error_ret(
         error, CL_INVALID_DEVICE_QUEUE,
         "clSetKernelArg is supposed to fail with CL_INVALID_DEVICE_QUEUE when "
