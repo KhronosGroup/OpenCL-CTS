@@ -25,6 +25,7 @@
 #include "CL/cl_half.h"
 
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include <vector>
 
@@ -75,6 +76,10 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+extern cl_half_rounding_mode gHalfRoundingMode;
+extern bool gFloatAtomicsSupported;
+extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
+extern cl_device_fp_config gHalfFPConfig;
 
 extern cl_half_rounding_mode gHalfRoundingMode;
 extern bool gFloatAtomicsSupported;
@@ -90,6 +95,26 @@ get_memory_scope_type_name(TExplicitMemoryScopeType scopeType);
 extern cl_int getSupportedMemoryOrdersAndScopes(
     cl_device_id device, std::vector<TExplicitMemoryOrderType> &memoryOrders,
     std::vector<TExplicitMemoryScopeType> &memoryScopes);
+
+inline bool IsHalfNaN(const cl_half v)
+{
+    // Extract FP16 exponent and mantissa
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+
+    // NaN test
+    return (h_exp == 0x1F && h_mant != 0);
+}
+
+inline bool IsHalfInfinity(const cl_half v)
+{
+    // Extract FP16 exponent and mantissa
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+
+    // Inf test
+    return (h_exp == 0x1F && h_mant == 0);
+}
 
 class AtomicTypeInfo {
 public:
@@ -154,12 +179,12 @@ public:
         return 0;
     }
     CBasicTest(TExplicitAtomicType dataType, bool useSVM)
-        : CTest(), _maxDeviceThreads(MAX_DEVICE_THREADS), _dataType(dataType),
-          _useSVM(useSVM), _startValue(255), _localMemory(false),
-          _declaredInProgram(false), _usedInFunction(false),
-          _genericAddrSpace(false), _oldValueCheck(true),
-          _localRefValues(false), _maxGroupSize(0), _passCount(0),
-          _iterations(gInternalIterations)
+        : CTest(), _dataType(dataType), _useSVM(useSVM), _startValue(255),
+          _localMemory(false), _declaredInProgram(false),
+          _usedInFunction(false), _genericAddrSpace(false),
+          _oldValueCheck(true), _localRefValues(false), _maxGroupSize(0),
+          _passCount(0), _iterations(gInternalIterations),
+          _maxDeviceThreads(MAX_DEVICE_THREADS), _deviceThreads(0)
     {}
     virtual ~CBasicTest()
     {
@@ -239,12 +264,12 @@ public:
                                       cl_command_queue queue)
     {
         int error = 0;
-        DeclaredInProgram(false);
+        SetDeclaredInProgram(false);
         EXECUTE_TEST(error,
                      ExecuteForEachPointerType(deviceID, context, queue));
         if (!UseSVM())
         {
-            DeclaredInProgram(true);
+            SetDeclaredInProgram(true);
             EXECUTE_TEST(error,
                          ExecuteForEachPointerType(deviceID, context, queue));
         }
@@ -255,13 +280,13 @@ public:
                                            cl_command_queue queue)
     {
         int error = 0;
-        if (_maxDeviceThreads > 0 && !UseSVM())
+        if (_deviceThreads > 0 && !UseSVM())
         {
             SetLocalMemory(true);
             EXECUTE_TEST(
                 error, ExecuteForEachDeclarationType(deviceID, context, queue));
         }
-        if (_maxDeviceThreads + MaxHostThreads() > 0)
+        if (_deviceThreads + MaxHostThreads() > 0)
         {
             SetLocalMemory(false);
             EXECUTE_TEST(
@@ -270,7 +295,7 @@ public:
         return error;
     }
     virtual int Execute(cl_device_id deviceID, cl_context context,
-                        cl_command_queue queue, int num_elements)
+                        cl_command_queue queue, int num_elements) override
     {
         if (sizeof(HostAtomicType) != DataType().Size(deviceID))
         {
@@ -310,7 +335,12 @@ public:
             if (UseSVM()) return 0;
             _maxDeviceThreads = 0;
         }
-        if (_maxDeviceThreads + MaxHostThreads() == 0) return 0;
+
+        _deviceThreads = (num_elements > 0)
+            ? std::min(cl_uint(num_elements), _maxDeviceThreads)
+            : _maxDeviceThreads;
+
+        if (_deviceThreads + MaxHostThreads() == 0) return 0;
         return ExecuteForEachParameterSet(deviceID, context, queue);
     }
     virtual void HostFunction(cl_uint tid, cl_uint threadCount,
@@ -323,7 +353,7 @@ public:
     {
         return AtomicTypeExtendedInfo<HostDataType>(_dataType);
     }
-    cl_uint _maxDeviceThreads;
+
     virtual cl_uint MaxHostThreads()
     {
         if (UseSVM() || gHost)
@@ -420,7 +450,7 @@ public:
     HostDataType StartValue() { return _startValue; }
     void SetLocalMemory(bool local) { _localMemory = local; }
     bool LocalMemory() { return _localMemory; }
-    void DeclaredInProgram(bool declaredInProgram)
+    void SetDeclaredInProgram(bool declaredInProgram)
     {
         _declaredInProgram = declaredInProgram;
     }
@@ -477,6 +507,8 @@ private:
     cl_uint _currentGroupSize;
     cl_uint _passCount;
     const cl_int _iterations;
+    cl_uint _maxDeviceThreads;
+    cl_uint _deviceThreads;
 };
 
 template <typename HostAtomicType, typename HostDataType>
@@ -911,12 +943,13 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
             + ss.str() + "] = {\n";
         ss.str("");
 
-        if (CBasicTest<HostAtomicType, HostDataType>::DataType()._type
-            == TYPE_ATOMIC_FLOAT)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
             ss << std::setprecision(10) << _startValue;
-        else if (CBasicTest<HostAtomicType, HostDataType>::DataType()._type
-                 == TYPE_ATOMIC_HALF)
-            ss << cl_half_to_float(static_cast<cl_half>(_startValue));
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            ss << std::setprecision(std::numeric_limits<float>::max_digits10)
+               << cl_half_to_float(_startValue);
+        }
         else
             ss << _startValue;
 
@@ -1153,7 +1186,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
     MTdata d;
     size_t typeSize = DataType().Size(deviceID);
 
-    deviceThreadCount = _maxDeviceThreads;
+    deviceThreadCount = _deviceThreads;
     hostThreadCount = MaxHostThreads();
     threadCount = deviceThreadCount + hostThreadCount;
 
