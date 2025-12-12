@@ -18,6 +18,7 @@ set(${MODULE_NAME}_SOURCES
     command_buffer_test_event_info.cpp
     command_buffer_finalize.cpp
     command_buffer_pipelined_enqueue.cpp
+    command_buffer_kernel_attributes.cpp
     negative_command_buffer_finalize.cpp
     negative_command_buffer_svm_mem.cpp
     negative_command_buffer_copy_image.cpp
