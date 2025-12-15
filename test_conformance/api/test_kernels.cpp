@@ -785,13 +785,10 @@ REGISTER_TEST(negative_invalid_arg_queue)
     clCommandQueueWrapper queue_arg;
 
     // Setup the test
-    error = create_single_kernel_helper(context, &program, nullptr, 1,
+    error = create_single_kernel_helper(context, &program, &queue_arg_kernel, 1,
                                         &sample_queue_test_kernel, "queue_test",
                                         build_opts.c_str());
-    test_error(error, "Unable to build test program");
-
-    queue_arg_kernel = clCreateKernel(program, "queue_test", &error);
-    test_error(error, "Unable to get queue_test kernel for built program");
+    test_error(error, "Unable to create test kernel");
 
     // Run the test - CL_INVALID_DEVICE_QUEUE
     error = clSetKernelArg(queue_arg_kernel, 0, sizeof(cl_command_queue),
