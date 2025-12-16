@@ -66,7 +66,6 @@ int gSkipCorrectnessTesting = 0;
 static int gStopOnError = 0;
 static bool gSkipRestOfTests;
 int gForceFTZ = 0;
-int gWimpyMode = 0;
 int gHostFill = 0;
 static int gHasDouble = 0;
 static int gTestFloat = 1;
@@ -384,21 +383,24 @@ int main(int argc, const char *argv[])
     error = ParseArgs(argc, argv);
     if (error) return error;
 
-    // This takes a while, so prevent the machine from going to sleep.
-    PreventSleep();
-    atexit(ResumeSleep);
+    if (!gListTests)
+    {
+        // This takes a while, so prevent the machine from going to sleep.
+        PreventSleep();
+        atexit(ResumeSleep);
 
-    if (gSkipCorrectnessTesting)
-        vlog("*** Skipping correctness testing! ***\n\n");
-    else if (gStopOnError)
-        vlog("Stopping at first error.\n");
+        if (gSkipCorrectnessTesting)
+            vlog("*** Skipping correctness testing! ***\n\n");
+        else if (gStopOnError)
+            vlog("Stopping at first error.\n");
 
-    vlog("   \t                                        ");
-    if (gWimpyMode) vlog("   ");
-    if (!gSkipCorrectnessTesting) vlog("\t  max_ulps");
+        vlog("   \t                                        ");
+        if (gWimpyMode) vlog("   ");
+        if (!gSkipCorrectnessTesting) vlog("\t  max_ulps");
 
-    vlog("\n-------------------------------------------------------------------"
-         "----------------------------------------\n");
+        vlog("\n---------------------------------------------------------------"
+             "--------------------------------------------\n");
+    }
 
     gMTdata = MTdataHolder(gRandomSeed);
 
@@ -425,6 +427,10 @@ int main(int argc, const char *argv[])
 
 static int ParseArgs(int argc, const char **argv)
 {
+    if (gListTests)
+    {
+        return 0;
+    }
     // We only pass test names to runTestHarnessWithCheck, hence global command
     // line options defined by the harness cannot be used by the user.
     // To respect the implementation details of runTestHarnessWithCheck,
@@ -494,10 +500,6 @@ static int ParseArgs(int argc, const char **argv)
                     case 's': gStopOnError ^= 1; break;
 
                     case 'v': gVerboseBruteForce ^= 1; break;
-
-                    case 'w': // wimpy mode
-                        gWimpyMode ^= 1;
-                        break;
 
                     case '[':
                         parseWimpyReductionFactor(arg, gWimpyReductionFactor);
@@ -578,14 +580,6 @@ static int ParseArgs(int argc, const char **argv)
         }
     }
 
-    // Check for the wimpy mode environment variable
-    if (getenv("CL_WIMPY_MODE"))
-    {
-        vlog("\n");
-        vlog("*** Detected CL_WIMPY_MODE env                          ***\n");
-        gWimpyMode = 1;
-    }
-
     PrintArch();
 
     if (gWimpyMode)
@@ -640,7 +634,6 @@ static void PrintUsage(void)
          "accuracy checks.)\n");
     vlog("\t\t-m\tToggle run multi-threaded. (Default: on) )\n");
     vlog("\t\t-s\tStop on error\n");
-    vlog("\t\t-w\tToggle Wimpy Mode, * Not a valid test * \n");
     vlog("\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
          "1-10, default factor(%u)\n",
          gWimpyReductionFactor);

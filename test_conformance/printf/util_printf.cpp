@@ -1032,6 +1032,9 @@ testCase testCaseChar = {
 
 std::vector<printDataGenParameters> printStringGenParameters = {
 
+    // empty format, no data representation
+    { {""} },
+
     // empty format
     { {""}, "\"foo\"" },
 
@@ -1089,6 +1092,8 @@ std::vector<printDataGenParameters> printStringGenParameters = {
 //---------------------------------------------------------
 
 std::vector<std::string> correctBufferString = {
+
+    "",
 
     "",
 
