@@ -17,6 +17,7 @@
 #include "harness/testHarness.h"
 #include "harness/compat.h"
 #include "harness/ThreadPool.h"
+#include "harness/parseParameters.h"
 
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
@@ -53,17 +54,17 @@
 
 #include "basic_test_conversions.h"
 
-#if defined(_WIN32)
+#if defined(_M_IX86) || defined(_M_X64)
 #include <mmintrin.h>
 #include <emmintrin.h>
-#else // !_WIN32
+#else
 #if defined(__SSE__)
 #include <xmmintrin.h>
 #endif
 #if defined(__SSE2__)
 #include <emmintrin.h>
 #endif
-#endif // _WIN32
+#endif
 
 cl_context gContext = NULL;
 cl_command_queue gQueue = NULL;
@@ -77,7 +78,6 @@ cl_mem gInBuffer;
 cl_mem gOutBuffers[kCallStyleCount];
 size_t gComputeDevices = 0;
 uint32_t gDeviceFrequency = 0;
-int gWimpyMode = 0;
 int gWimpyReductionFactor = 128;
 int gSkipTesting = 0;
 int gForceFTZ = 0;
