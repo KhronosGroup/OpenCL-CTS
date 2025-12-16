@@ -183,7 +183,8 @@ public:
                         const std::vector<HostAtomicType> &testValues,
                         cl_uint whichDestValue)
     {
-        return expected != testValues[whichDestValue];
+        return expected
+            != static_cast<HostDataType>(testValues[whichDestValue]);
     }
     virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                               MTdata d)
@@ -911,12 +912,9 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
             + ss.str() + "] = {\n";
         ss.str("");
 
-        if (CBasicTest<HostAtomicType, HostDataType>::DataType()._type
-            == TYPE_ATOMIC_FLOAT)
-            ss << std::setprecision(10) << _startValue;
-        else if (CBasicTest<HostAtomicType, HostDataType>::DataType()._type
-                 == TYPE_ATOMIC_HALF)
-            ss << cl_half_to_float(static_cast<cl_half>(_startValue));
+        if constexpr (is_host_fp_v<HostDataType>)
+            ss << std::hexfloat
+               << _startValue; // use hex format for accurate representation
         else
             ss << _startValue;
 
@@ -1305,7 +1303,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
     numDestItems = NumResults(threadCount, deviceID);
 
     destItems.resize(numDestItems);
-    for (cl_uint i = 0; i < numDestItems; i++) destItems[i] = _startValue;
+    for (cl_uint i = 0; i < numDestItems; i++)
+        destItems[i] = static_cast<HostAtomicType>(_startValue);
 
     // Create main buffer with atomic variables (array size dependent on
     // particular test)
@@ -1483,7 +1482,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
             std::stringstream logLine;
             logLine << "ERROR: Result " << i
                     << " from kernel does not validate! (should be " << expected
-                    << ", was " << destItems[i] << ")\n";
+                    << ", was " << static_cast<HostDataType>(destItems[i])
+                    << ")\n";
             log_error("%s", logLine.str().c_str());
             for (i = 0; i < threadCount; i++)
             {
@@ -1550,7 +1550,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                                  // clEnqueueNDRangeKernel
     {
         /* Re-write the starting value */
-        for (size_t i = 0; i < numDestItems; i++) destItems[i] = _startValue;
+        for (size_t i = 0; i < numDestItems; i++)
+            destItems[i] = static_cast<HostAtomicType>(_startValue);
         refValues[0] = 0;
         if (deviceThreadCount > 0)
         {
