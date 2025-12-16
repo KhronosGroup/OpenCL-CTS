@@ -769,12 +769,7 @@ REGISTER_TEST(negative_set_kernel_arg_invalid_image_msaa)
 {
     PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
 
-    if (!is_extension_available(device, "cl_khr_gl_msaa_sharing"))
-    {
-        log_info("Test not run because 'cl_khr_gl_msaa_sharing' extension is "
-                 "not supported by the tested device\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+    REQUIRE_EXTENSION("cl_khr_gl_msaa_sharing");
 
     cl_int error = CL_SUCCESS;
     clProgramWrapper program;
