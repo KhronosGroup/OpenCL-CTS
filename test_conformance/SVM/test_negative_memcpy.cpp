@@ -15,7 +15,7 @@
 //
 #include "common.h"
 
-REGISTER_TEST(svm_negative_dst_overlap_src)
+REGISTER_TEST(svm_negative_memcpy_overlap)
 {
     cl_int err = CL_SUCCESS;
 
@@ -25,7 +25,7 @@ REGISTER_TEST(svm_negative_dst_overlap_src)
 
     if (err != CL_SUCCESS || caps == 0)
     {
-        log_error("svm_negative_dst_overlap_src: SVM is not supported on this "
+        log_error("svm_negative_memcpy_overlap: SVM is not supported on this "
                   "device\n");
         return TEST_SKIP;
     }
@@ -35,146 +35,73 @@ REGISTER_TEST(svm_negative_dst_overlap_src)
     cl_uint num_devices = 0;
     err = create_cl_objects(device, NULL, &contextWrapper, NULL, &queues[0],
                             &num_devices, 0);
-    test_error(err, "svm_negative_dst_overlap_src: create_cl_objects failed");
+    test_error(err, "svm_negative_memcpy_overlap: create_cl_objects failed");
 
-    context = contextWrapper;
     queue = queues[0];
 
     const size_t dataSize = 32;
 
-    char *data_buf =
-        (char *)clSVMAlloc(contextWrapper, CL_MEM_READ_WRITE, dataSize * 2, 0);
-    if (!data_buf)
+    clSVMWrapper data_buf =
+        clSVMWrapper(contextWrapper, dataSize * 2, CL_MEM_READ_WRITE);
+
+    test_assert_error(data_buf() != nullptr, "clSVMAlloc failed");
+
+    // 1. A case where the end of the source memory partially overlaps the
+    // beginning of the destination memory.
     {
-        log_error(
-            "svm_negative_dst_overlap_src: invalid result for clSVMAlloc\n");
-        return TEST_FAIL;
+        char *src = (char *)data_buf();
+        char *dst = src + dataSize / 2;
+
+        err = clEnqueueSVMMemcpy(queue, CL_TRUE, dst, src, dataSize, 0, NULL,
+                                 NULL);
+
+        if (err != CL_MEM_COPY_OVERLAP)
+        {
+            log_error(
+                "svm_negative_memcpy_overlap: invalid result for "
+                "clEnqueueSVMMemcpy, expected CL_MEM_COPY_OVERLAP, got %s\n",
+                IGetErrorString(err));
+            return TEST_FAIL;
+        }
     }
 
-    char *src = data_buf;
-    char *dst = src + dataSize / 2;
-
-    err = clEnqueueSVMMemcpy(queue, CL_TRUE, dst, src, dataSize, 0, NULL, NULL);
-
-    clSVMFree(context, data_buf);
-
-    if (err != CL_MEM_COPY_OVERLAP)
+    // 2. A case where the beginning of the source memory partially overlaps the
+    // end of the destination memory.
     {
-        log_error("svm_negative_dst_overlap_src: invalid result for "
-                  "clEnqueueSVMMemcpy, expected CL_MEM_COPY_OVERLAP, got %s\n",
-                  IGetErrorString(err));
-        return TEST_FAIL;
+        char *dst = (char *)data_buf();
+        char *src = dst + dataSize / 2;
+
+        err = clEnqueueSVMMemcpy(queue, CL_TRUE, dst, src, dataSize, 0, NULL,
+                                 NULL);
+
+        if (err != CL_MEM_COPY_OVERLAP)
+        {
+            log_error(
+                "svm_negative_memcpy_overlap: invalid result for "
+                "clEnqueueSVMMemcpy, expected CL_MEM_COPY_OVERLAP, got %s\n",
+                IGetErrorString(err));
+            return TEST_FAIL;
+        }
     }
 
-    return TEST_PASS;
-}
-
-REGISTER_TEST(svm_negative_src_overlap_dst)
-{
-    cl_int err = CL_SUCCESS;
-
-    cl_device_svm_capabilities caps = 0;
-    err = clGetDeviceInfo(device, CL_DEVICE_SVM_CAPABILITIES, sizeof(caps),
-                          &caps, NULL);
-
-    if (err != CL_SUCCESS || caps == 0)
+    // 3. A case where the source memory completely overlaps the destination
+    // memory.
     {
-        log_error("svm_negative_dst_overlap_src: SVM is not supported on this "
-                  "device\n");
-        return TEST_SKIP;
+        char *src = (char *)data_buf();
+        char *dst = (char *)data_buf();
+
+        err = clEnqueueSVMMemcpy(queue, CL_TRUE, dst, src, dataSize, 0, NULL,
+                                 NULL);
+
+        if (err != CL_MEM_COPY_OVERLAP)
+        {
+            log_error(
+                "svm_negative_memcpy_overlap: invalid result for "
+                "clEnqueueSVMMemcpy, expected CL_MEM_COPY_OVERLAP, got %s\n",
+                IGetErrorString(err));
+            return TEST_FAIL;
+        }
     }
-
-    clContextWrapper contextWrapper = NULL;
-    clCommandQueueWrapper queues[MAXQ];
-    cl_uint num_devices = 0;
-    err = create_cl_objects(device, NULL, &contextWrapper, NULL, &queues[0],
-                            &num_devices, 0);
-    test_error(err, "svm_negative_src_overlap_dst: create_cl_objects failed");
-
-    context = contextWrapper;
-    queue = queues[0];
-
-    const size_t dataSize = 32;
-
-    char *data_buf =
-        (char *)clSVMAlloc(context, CL_MEM_READ_WRITE, dataSize * 2, 0);
-    if (!data_buf)
-    {
-        log_error(
-            "svm_negative_src_overlap_dst: invalid result for clSVMAlloc\n");
-        return TEST_FAIL;
-    }
-
-    char *dst = data_buf;
-    char *src = dst + dataSize / 2;
-
-    err = clEnqueueSVMMemcpy(queue, CL_TRUE, dst, src, dataSize, 0, NULL, NULL);
-
-    if (err != CL_MEM_COPY_OVERLAP)
-    {
-        clSVMFree(context, data_buf);
-        log_error("svm_negative_src_overlap_dst: invalid result for "
-                  "clEnqueueSVMMemcpy, expected CL_MEM_COPY_OVERLAP, got %s\n",
-                  IGetErrorString(err));
-        return TEST_FAIL;
-    }
-
-    clSVMFree(context, data_buf);
-
-    return TEST_PASS;
-}
-
-REGISTER_TEST(svm_negative_src_total_overlap)
-{
-    cl_int err = CL_SUCCESS;
-
-    cl_device_svm_capabilities caps = 0;
-    err = clGetDeviceInfo(device, CL_DEVICE_SVM_CAPABILITIES, sizeof(caps),
-                          &caps, NULL);
-
-    if (err != CL_SUCCESS || caps == 0)
-    {
-        log_error("svm_negative_dst_overlap_src: SVM is not supported on this "
-                  "device\n");
-        return TEST_SKIP;
-    }
-
-    clContextWrapper contextWrapper = NULL;
-    clCommandQueueWrapper queues[MAXQ];
-    cl_uint num_devices = 0;
-    err = create_cl_objects(device, NULL, &contextWrapper, NULL, &queues[0],
-                            &num_devices, 0);
-    test_error(err, "svm_negative_src_total_overlap: create_cl_objects failed");
-
-    context = contextWrapper;
-    queue = queues[0];
-
-    const size_t dataSize = 32;
-
-    char *data_buf =
-        (char *)clSVMAlloc(context, CL_MEM_READ_WRITE, dataSize, 0);
-    if (!data_buf)
-    {
-        log_error(
-            "svm_negative_src_total_overlap: invalid result for clSVMAlloc\n");
-        return TEST_FAIL;
-    }
-
-    char *src = data_buf;
-    char *dst = data_buf;
-
-    err = clEnqueueSVMMemcpy(queue, CL_TRUE, dst, src, dataSize, 0, NULL, NULL);
-
-    if (err != CL_MEM_COPY_OVERLAP)
-    {
-        clSVMFree(context, data_buf);
-        log_error("svm_negative_src_total_overlap: invalid result for "
-                  "clEnqueueSVMMemcpy, expected CL_MEM_COPY_OVERLAP, got %s\n",
-                  IGetErrorString(err));
-        return TEST_FAIL;
-    }
-
-    clSVMFree(context, data_buf);
 
     return TEST_PASS;
 }
