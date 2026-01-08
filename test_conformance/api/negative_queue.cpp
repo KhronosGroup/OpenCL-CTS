@@ -349,24 +349,34 @@ REGISTER_TEST_VERSION(negative_set_default_device_command_queue, Version(2, 1))
     }
 
     {
-        constexpr cl_queue_properties props[] = {
-            CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0
-        };
-        clCommandQueueWrapper not_on_device_queue =
-            clCreateCommandQueueWithProperties(context, device, props, &err);
-        test_error_fail(err, "clCreateCommandQueueWithProperties failed");
-        err = clSetDefaultDeviceCommandQueue(context, device,
-                                             not_on_device_queue);
-        if (err != CL_INVALID_OPERATION && err != CL_INVALID_COMMAND_QUEUE)
+        cl_command_queue_properties queue_properties;
+        err =
+            clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
+                            sizeof(queue_properties), &queue_properties, NULL);
+        test_error(err, "Unable to query CL_DEVICE_QUEUE_PROPERTIES");
+        if (queue_properties & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)
         {
-            log_error("ERROR: %s! (Got %s, expected (%s) from %s:%d)\n",
-                      "clSetDefaultDeviceCommandQueue should return "
-                      "CL_INVALID_OPERATION or CL_INVALID_COMMAND_QUEUE when: "
-                      "\"command_queue is not a valid command-queue for "
-                      "device\" using a command queue that is not on device",
-                      IGetErrorString(err),
-                      "CL_INVALID_OPERATION or CL_INVALID_COMMAND_QUEUE",
-                      __FILE__, __LINE__);
+            constexpr cl_queue_properties props[] = {
+                CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0
+            };
+            clCommandQueueWrapper not_on_device_queue =
+                clCreateCommandQueueWithProperties(context, device, props,
+                                                   &err);
+            test_error_fail(err, "clCreateCommandQueueWithProperties failed");
+            err = clSetDefaultDeviceCommandQueue(context, device,
+                                                 not_on_device_queue);
+            if (err != CL_INVALID_OPERATION && err != CL_INVALID_COMMAND_QUEUE)
+            {
+                log_error(
+                    "ERROR: %s! (Got %s, expected (%s) from %s:%d)\n",
+                    "clSetDefaultDeviceCommandQueue should return "
+                    "CL_INVALID_OPERATION or CL_INVALID_COMMAND_QUEUE when: "
+                    "\"command_queue is not a valid command-queue for "
+                    "device\" using a command queue that is not on device",
+                    IGetErrorString(err),
+                    "CL_INVALID_OPERATION or CL_INVALID_COMMAND_QUEUE",
+                    __FILE__, __LINE__);
+            }
         }
     }
 
