@@ -660,8 +660,18 @@ static int test_buffer_write(cl_device_id deviceID, cl_context context,
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
+            // Skip immutable memory flags
+            if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
             for (dst_flag_id = 0; dst_flag_id < NUM_FLAGS; dst_flag_id++)
             {
+                // Skip immutable memory flags
+                if (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT)
+                {
+                    continue;
+                }
                 clMemWrapper buffers[2];
 
                 if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
@@ -834,8 +844,19 @@ REGISTER_TEST(buffer_write_struct)
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
+            // Skip immutable memory flags
+            if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
             for (dst_flag_id = 0; dst_flag_id < NUM_FLAGS; dst_flag_id++)
             {
+                // Skip immutable memory flags
+                if (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT)
+                {
+                    continue;
+                }
+
                 clMemWrapper buffers[2];
 
                 inptr[i] = (TestStruct *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
@@ -996,7 +1017,17 @@ static int test_buffer_write_array_async(
     ptrSizes[4] = ptrSizes[3] << 1;
 
     for (src_flag_id=0; src_flag_id < NUM_FLAGS; src_flag_id++) {
+        // Skip immutable memory flags
+        if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+        {
+            continue;
+        }
         for (dst_flag_id=0; dst_flag_id < NUM_FLAGS; dst_flag_id++) {
+            // Skip immutable memory flags
+            if (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
             log_info("Testing with cl_mem_flags src: %s dst: %s\n", flag_set_names[src_flag_id], flag_set_names[dst_flag_id]);
 
             loops = ( loops < 5 ? loops : 5 );
@@ -1974,3 +2005,256 @@ REGISTER_TEST(buffer_write_async_ulong)
 
 }   // end test_buffer_ulong_write_array_async()
 
+
+int immutable_test_buffer_write(cl_device_id device, cl_context context,
+                                cl_command_queue queue, int num_elements,
+                                size_t size, const char *type, int loops,
+                                void *inptr[5], const char *kernelCode[],
+                                const char *kernelName[],
+                                int (*fn)(void *, void *, int), MTdataHolder &d)
+{
+    REQUIRE_EXTENSION("cl_ext_immutable_memory_objects");
+
+    void *outptr[5];
+    clProgramWrapper program[5];
+    clKernelWrapper kernel[5];
+    size_t ptrSizes[5];
+    size_t global_work_size[3];
+    cl_int err;
+    int i;
+    int src_flag_id, dst_flag_id;
+    int total_errors = 0;
+
+    size_t min_alignment = get_min_alignment(context);
+
+    global_work_size[0] = (size_t)num_elements;
+
+    ptrSizes[0] = size;
+    ptrSizes[1] = ptrSizes[0] << 1;
+    ptrSizes[2] = ptrSizes[1] << 1;
+    ptrSizes[3] = ptrSizes[2] << 1;
+    ptrSizes[4] = ptrSizes[3] << 1;
+
+    loops = (loops < 5 ? loops : 5);
+    for (i = 0; i < loops; i++)
+    {
+        err = create_single_kernel_helper(context, &program[i], &kernel[i], 1,
+                                          &kernelCode[i], kernelName[i]);
+        if (err)
+        {
+            log_error(" Error creating program for %s\n", type);
+            return TEST_FAIL;
+        }
+
+        for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
+        {
+            // Testing writing from immutable flags
+            if (!(flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT))
+            {
+                continue;
+            }
+            for (dst_flag_id = 0; dst_flag_id < NUM_FLAGS; dst_flag_id++)
+            {
+                // Skip immutable memory flags
+                if (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT)
+                {
+                    continue;
+                }
+
+                cl_mem_flags src_mem_flags = flag_set[src_flag_id];
+                cl_mem_flags dst_mem_flags = flag_set[dst_flag_id];
+                clMemWrapper buffers[2];
+
+                buffers[0] =
+                    clCreateBuffer(context, src_mem_flags,
+                                   ptrSizes[i] * num_elements, inptr[i], &err);
+
+                if (nullptr == buffers[0] || CL_SUCCESS != err)
+                {
+                    align_free(outptr[i]);
+                    print_error(err, " clCreateBuffer failed\n");
+                    return TEST_FAIL;
+                }
+                if (!strcmp(type, "half"))
+                {
+                    outptr[i] = align_malloc(ptrSizes[i] * (num_elements * 2),
+                                             min_alignment);
+                    buffers[1] = clCreateBuffer(context, dst_mem_flags,
+                                                ptrSizes[i] * 2 * num_elements,
+                                                outptr[i], &err);
+                }
+                else
+                {
+                    outptr[i] =
+                        align_malloc(ptrSizes[i] * num_elements, min_alignment);
+                    if ((dst_mem_flags & CL_MEM_USE_HOST_PTR)
+                        || (dst_mem_flags & CL_MEM_COPY_HOST_PTR))
+                        buffers[1] = clCreateBuffer(context, dst_mem_flags,
+                                                    ptrSizes[i] * num_elements,
+                                                    outptr[i], &err);
+                    else
+                        buffers[1] = clCreateBuffer(context, dst_mem_flags,
+                                                    ptrSizes[i] * num_elements,
+                                                    nullptr, &err);
+                }
+                if (err)
+                {
+                    align_free(outptr[i]);
+                    print_error(err, " clCreateBuffer failed\n");
+                    return TEST_FAIL;
+                }
+
+                err = clSetKernelArg(kernel[i], 0, sizeof(cl_mem),
+                                     (void *)&buffers[0]);
+                err |= clSetKernelArg(kernel[i], 1, sizeof(cl_mem),
+                                      (void *)&buffers[1]);
+                if (err != CL_SUCCESS)
+                {
+                    align_free(outptr[i]);
+                    print_error(err, " clSetKernelArg failed");
+                    return TEST_FAIL;
+                }
+
+                err = clEnqueueNDRangeKernel(queue, kernel[i], 1, nullptr,
+                                             global_work_size, nullptr, 0,
+                                             nullptr, nullptr);
+                if (err != CL_SUCCESS)
+                {
+                    print_error(err, " clEnqueueNDRangeKernel failed");
+                    align_free(outptr[i]);
+                    return TEST_FAIL;
+                }
+
+                err = clEnqueueReadBuffer(queue, buffers[1], true, 0,
+                                          ptrSizes[i] * num_elements, outptr[i],
+                                          0, nullptr, nullptr);
+
+                if (err != CL_SUCCESS)
+                {
+                    align_free(outptr[i]);
+                    print_error(err, " clEnqueueReadBuffer failed");
+                    return TEST_FAIL;
+                }
+
+                if (fn(inptr[i], outptr[i],
+                       (int)(ptrSizes[i] * (size_t)num_elements / ptrSizes[0])))
+                {
+                    log_error(
+                        " %s%d test failed. cl_mem_flags src: %s, dst: %s\n",
+                        type, 1 << i, flag_set_names[src_flag_id],
+                        flag_set_names[dst_flag_id]);
+                    total_errors++;
+                }
+                else
+                {
+                    log_info(
+                        " %s%d test passed. cl_mem_flags src: %s, dst: %s\n",
+                        type, 1 << i, flag_set_names[src_flag_id],
+                        flag_set_names[dst_flag_id]);
+                }
+                // cleanup
+                align_free(outptr[i]);
+            }
+        } // dst cl_mem_flag
+    } // src cl_mem_flag
+
+    return total_errors;
+
+} // end test_buffer_write()
+
+REGISTER_TEST(write_from_immutable_buffer_to_buffer)
+{
+    REQUIRE_EXTENSION("cl_ext_immutable_memory_objects");
+
+    static const char *immutable_buffer_write_int_kernel_code[] = {
+        R"(
+      __kernel void test_buffer_write_int(constant int *src, __global int *dst)
+      {
+        int  tid = get_global_id(0);
+
+        dst[tid] = src[tid];
+      })",
+
+        R"(
+      __kernel void test_buffer_write_int2(constant int2 *src, __global int2 *dst)
+      {
+        int  tid = get_global_id(0);
+
+        dst[tid] = src[tid];
+      })",
+
+        R"(
+      __kernel void test_buffer_write_int4(constant int4 *src, __global int4 *dst)
+      {
+        int  tid = get_global_id(0);
+
+        dst[tid] = src[tid];
+      })",
+
+        R"(
+      __kernel void test_buffer_write_int8(constant int8 *src, __global int8 *dst)
+      {
+        int  tid = get_global_id(0);
+
+        dst[tid] = src[tid];
+      })",
+
+        R"(
+      __kernel void test_buffer_write_int16(constant int16 *src, __global int16 *dst)
+      {
+        int  tid = get_global_id(0);
+
+        dst[tid] = src[tid];
+      })"
+    };
+
+    static const char *immutable_int_kernel_name[] = {
+        "test_buffer_write_int", "test_buffer_write_int2",
+        "test_buffer_write_int4", "test_buffer_write_int8",
+        "test_buffer_write_int16"
+    };
+
+    if (gTestMap)
+    {
+        log_error("Immutable buffers cannot be mapped with CL_MEM_WRITE\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    int *inptr[5];
+    size_t ptrSizes[5];
+    int i, err;
+    cl_uint j;
+    int (*foo)(void *, void *, int);
+    MTdataHolder d(gRandomSeed);
+
+    size_t min_alignment = get_min_alignment(context);
+
+    foo = verify_write_int;
+
+    ptrSizes[0] = sizeof(cl_int);
+    ptrSizes[1] = ptrSizes[0] << 1;
+    ptrSizes[2] = ptrSizes[1] << 1;
+    ptrSizes[3] = ptrSizes[2] << 1;
+    ptrSizes[4] = ptrSizes[3] << 1;
+
+    for (i = 0; i < 5; i++)
+    {
+        inptr[i] =
+            (int *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
+
+        for (j = 0; j < ptrSizes[i] * num_elements / ptrSizes[0]; j++)
+            inptr[i][j] = (int)genrand_int32(d);
+    }
+
+    err = immutable_test_buffer_write(device, context, queue, num_elements,
+                                      sizeof(cl_int), "int", 5, (void **)inptr,
+                                      immutable_buffer_write_int_kernel_code,
+                                      immutable_int_kernel_name, foo, d);
+
+    for (i = 0; i < 5; i++)
+    {
+        align_free((void *)inptr[i]);
+    }
+
+    return err;
+}

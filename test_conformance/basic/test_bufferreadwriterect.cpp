@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "errorHelpers.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -194,6 +195,43 @@ int copy_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst, si
     return 0;
 }
 
+int immutable_copy_region(size_t src, size_t soffset[3], size_t sregion[3],
+                          size_t dst, size_t doffset[3], size_t dregion[3])
+{
+
+    // Copy between cl buffers.
+    size_t src_slice_pitch =
+        (width[src] * height[src] != 1) ? width[src] * height[src] : 0;
+    size_t dst_slice_pitch =
+        (width[dst] * height[dst] != 1) ? width[dst] * height[dst] : 0;
+    size_t src_row_pitch = width[src];
+
+    cl_int err;
+    if (check_overlap_rect(soffset, doffset, sregion, src_row_pitch,
+                           src_slice_pitch))
+    {
+        log_info("Copy overlap reported, skipping copy buffer rect\n");
+        return CL_SUCCESS;
+    }
+    else
+    {
+        err = clEnqueueCopyBufferRect(gQueue, buffer[src], buffer[dst], soffset,
+                                      doffset, sregion, /*dregion,*/
+                                      width[src], src_slice_pitch, width[dst],
+                                      dst_slice_pitch, 0, nullptr, nullptr);
+        if (err != CL_INVALID_OPERATION)
+        {
+            log_error(
+                "clEnqueueCopyBufferRect should return "
+                "CL_INVALID_OPERATION but returned %s between %zu and %zu",
+                IGetErrorString(err), src, dst);
+            return TEST_FAIL;
+        }
+    }
+
+    return TEST_PASS;
+}
+
 // This function compares the destination region in the buffer pointed
 // to by device, to the source region of the specified verify buffer.
 int verify_region(BufferType* device, size_t src, size_t soffset[3], size_t sregion[3], size_t dst, size_t doffset[3]) {
@@ -335,6 +373,32 @@ int write_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst, s
         verify[dst][d_idx] = tmp_buffer[s_idx];
     }
     return 0;
+}
+
+int immutable_write_region(size_t src, size_t soffset[3], size_t sregion[3],
+                           size_t dst, size_t doffset[3], size_t dregion[3])
+{
+    initialize_image(tmp_buffer, tmp_buffer_size, 1, 1, mt);
+
+    size_t src_slice_pitch =
+        (width[src] * height[src] != 1) ? width[src] * height[src] : 0;
+    size_t dst_slice_pitch =
+        (width[dst] * height[dst] != 1) ? width[dst] * height[dst] : 0;
+
+    cl_int error = clEnqueueWriteBufferRect(
+        gQueue, buffer[dst], CL_TRUE, doffset, soffset, dregion, width[dst],
+        dst_slice_pitch, width[src], src_slice_pitch, tmp_buffer, 0, nullptr,
+        nullptr);
+
+    if (error != CL_INVALID_OPERATION)
+    {
+        log_error("clEnqueueWriteBufferRect should return CL_INVALID_OPERATION "
+                  "but retured %s between %zu and %zu",
+                  IGetErrorString(error), src, dst);
+        return TEST_FAIL;
+    }
+
+    return TEST_PASS;
 }
 
 void CL_CALLBACK mem_obj_destructor_callback( cl_mem, void *data )
@@ -590,4 +654,17 @@ REGISTER_TEST(bufferreadwriterect)
     return test_bufferreadwriterect_impl(
         device, context, queue, num_elements,
         CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE, test_functions);
+}
+
+REGISTER_TEST(immutable_bufferreadwriterect)
+{
+    REQUIRE_EXTENSION("cl_ext_immutable_memory_objects");
+
+    TestFunctions test_functions;
+    test_functions.copy = immutable_copy_region;
+    test_functions.read = read_verify_region;
+    test_functions.write = immutable_write_region;
+    return test_bufferreadwriterect_impl(
+        device, context, queue, num_elements,
+        CL_MEM_USE_HOST_PTR | CL_MEM_IMMUTABLE_EXT, test_functions);
 }
