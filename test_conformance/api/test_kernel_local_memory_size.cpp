@@ -78,8 +78,7 @@ __kernel void local_param_local_memory_kernel(__local int* local_ptr,
 }
 )CLC";
 
-int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
-                                  cl_command_queue queue, int num_elements)
+REGISTER_TEST(kernel_local_memory_size)
 {
     int error;
     clProgramWrapper program;
@@ -97,7 +96,7 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
     }
 
     error = clGetKernelWorkGroupInfo(
-        kernel, deviceID, CL_KERNEL_LOCAL_MEM_SIZE, sizeof(kernel_local_usage),
+        kernel, device, CL_KERNEL_LOCAL_MEM_SIZE, sizeof(kernel_local_usage),
         &kernel_local_usage, &param_value_size_ret);
     test_error(error,
                "clGetKernelWorkGroupInfo for CL_KERNEL_LOCAL_MEM_SIZE failed");
@@ -154,6 +153,8 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
                       "kernel local mem size failed");
 
 
+    program.reset();
+    kernel.reset();
     // Check memory needed to execute empty kernel with __local parameter with
     // setKernelArg
     if (create_single_kernel_helper(context, &program, &kernel, 1,
@@ -194,7 +195,7 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
     test_error(error, "clEnqueueReadBuffer failed");
 
     error = clGetKernelWorkGroupInfo(
-        kernel, deviceID, CL_KERNEL_LOCAL_MEM_SIZE, sizeof(kernel_local_usage),
+        kernel, device, CL_KERNEL_LOCAL_MEM_SIZE, sizeof(kernel_local_usage),
         &kernel_local_usage, &param_value_size_ret);
     test_error(error,
                "clGetKernelWorkGroupInfo for CL_KERNEL_LOCAL_MEM_SIZE failed");
@@ -226,6 +227,8 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
                       "kernel local mem size failed");
 
 
+    program.reset();
+    kernel.reset();
     // Check memory needed to execute kernel with __local variable and __local
     // parameter with setKernelArg
     if (create_single_kernel_helper(context, &program, &kernel, 1,
@@ -268,7 +271,7 @@ int test_kernel_local_memory_size(cl_device_id deviceID, cl_context context,
 
 
     error = clGetKernelWorkGroupInfo(
-        kernel, deviceID, CL_KERNEL_LOCAL_MEM_SIZE, sizeof(kernel_local_usage),
+        kernel, device, CL_KERNEL_LOCAL_MEM_SIZE, sizeof(kernel_local_usage),
         &kernel_local_usage, &param_value_size_ret);
     test_error(error,
                "clGetKernelWorkGroupInfo for CL_KERNEL_LOCAL_MEM_SIZE failed");

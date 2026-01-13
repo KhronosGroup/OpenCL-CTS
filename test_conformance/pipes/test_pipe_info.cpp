@@ -13,14 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
+
+#include <cinttypes>
+
+#include "harness/testHarness.h"
+#include "harness/typeWrappers.h"
 #include "harness/parseParameters.h"
 
 const char* pipe_kernel_code = {
     "__kernel void pipe_kernel(__write_only pipe int out_pipe)\n"
     "{}\n" };
 
-int test_pipe_info( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(pipe_info)
 {
     clMemWrapper pipe;
     cl_int err;
@@ -73,7 +77,7 @@ int test_pipe_info( cl_device_id deviceID, cl_context context, cl_command_queue 
         test_error_fail(err, "clGetKernelArgInfo failed");
         if (arg_type_qualifier != CL_KERNEL_ARG_TYPE_PIPE)
         {
-            test_fail("ERROR: Incorrect type qualifier: %i\n",
+            test_fail("ERROR: Incorrect type qualifier: 0x%" PRIx64 "\n",
                       arg_type_qualifier);
         }
     }

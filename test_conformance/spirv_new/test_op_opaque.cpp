@@ -17,7 +17,7 @@
 #include "testBase.h"
 #include "types.hpp"
 
-TEST_SPIRV_FUNC(op_type_opaque_simple)
+REGISTER_TEST(op_type_opaque_simple)
 {
     const char *name = "opaque";
     cl_int err = CL_SUCCESS;
@@ -41,7 +41,7 @@ TEST_SPIRV_FUNC(op_type_opaque_simple)
     else
     {
         cl_platform_id platform;
-        err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM,
+        err = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
                               sizeof(cl_platform_id), &platform, NULL);
         SPIRV_CHECK_ERROR(err,
                           "Failed to get platform info with clGetDeviceInfo");
@@ -61,7 +61,7 @@ TEST_SPIRV_FUNC(op_type_opaque_simple)
             err, "Failed to create program with clCreateProgramWithILKHR");
     }
 
-    err = clCompileProgram(prog, 1, &deviceID,
+    err = clCompileProgram(prog, 1, &device,
                            NULL, // options
                            0, // num headers
                            NULL, // input headers

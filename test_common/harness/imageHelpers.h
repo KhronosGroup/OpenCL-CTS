@@ -126,6 +126,7 @@ typedef struct
     const cl_image_format *format;
     cl_mem buffer;
     cl_mem_object_type type;
+    cl_mem_flags mem_flags;
     cl_uint num_mip_levels;
 } image_descriptor;
 
@@ -445,6 +446,27 @@ void read_image_pixel(void *imageData, image_descriptor *imageInfo, int x,
             uint16_t lo_val = (dPtr[2] & (0xF << bit_index)) >> bit_index;
 
             tempData[0] = (T)(hi_val | lo_val);
+            break;
+        }
+        case CL_UNSIGNED_INT10X6_EXT: {
+            cl_short *dPtr = (cl_short *)ptr;
+            const size_t channelCount = get_format_channel_count(format);
+            for (i = 0; i < channelCount; i++)
+                tempData[i] = (dPtr[i] >> 6) & 0x3ff;
+            break;
+        }
+        case CL_UNSIGNED_INT12X4_EXT: {
+            cl_short *dPtr = (cl_short *)ptr;
+            const size_t channelCount = get_format_channel_count(format);
+            for (i = 0; i < channelCount; i++)
+                tempData[i] = (dPtr[i] >> 4) & 0xfff;
+            break;
+        }
+        case CL_UNSIGNED_INT14X2_EXT: {
+            cl_short *dPtr = (cl_short *)ptr;
+            const size_t channelCount = get_format_channel_count(format);
+            for (i = 0; i < channelCount; i++)
+                tempData[i] = (dPtr[i] >> 2) & 0x3fff;
             break;
         }
     }

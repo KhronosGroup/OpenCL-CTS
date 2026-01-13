@@ -13,7 +13,12 @@ Compiling the CTS requires the following CMake configuration options to be set:
 
 * `CL_INCLUDE_DIR` Points to the unified
   [OpenCL-Headers](https://github.com/KhronosGroup/OpenCL-Headers).
+* `SPIRV_INCLUDE_DIR` Points to the unified
+  [SPIRV-Headers](https://github.com/KhronosGroup/SPIRV-Headers).
 * `CL_LIB_DIR` Directory containing the OpenCL library to build against.
+* `SPIRV_TOOLS_DIR` Directory containing the `spirv-as` and `spirv-val` binaries
+   to be used in the CTS build process. Alternatively, the location to these binaries
+   can be provided via the `PATH` variable.
 * `OPENCL_LIBRARIES` Name of the OpenCL library to link.
 
 It is advised that the [OpenCL ICD-Loader](https://github.com/KhronosGroup/OpenCL-ICD-Loader)
@@ -28,17 +33,29 @@ a build, and compile.
 ```sh
 git clone https://github.com/KhronosGroup/OpenCL-CTS.git
 git clone https://github.com/KhronosGroup/OpenCL-Headers.git
+git clone https://github.com/KhronosGroup/SPIRV-Headers.git
 git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
+git clone https://github.com/KhronosGroup/SPIRV-Tools.git
+git clone https://github.com/KhronosGroup/SPIRV-Headers.git SPIRV-Tools/external/spirv-headers
+git clone https://github.com/google/effcee.git SPIRV-Tools/external/effcee
+git clone https://github.com/google/re2.git SPIRV-Tools/external/re2
+
 
 mkdir OpenCL-ICD-Loader/build
 cmake -S OpenCL-ICD-Loader -B OpenCL-ICD-Loader/build \
       -DOPENCL_ICD_LOADER_HEADERS_DIR=$PWD/OpenCL-Headers
 cmake --build ./OpenCL-ICD-Loader/build --config Release
 
+mkdir SPIRV-Tools/build
+cmake -S SPIRV-Tools -B SPIRV-Tools/build -DSPIRV_SKIP_TESTS=ON
+cmake --build SPIRV-Tools/build --config Release
+
 mkdir OpenCL-CTS/build
 cmake -S OpenCL-CTS -B OpenCL-CTS/build \
       -DCL_INCLUDE_DIR=$PWD/OpenCL-Headers \
+      -DSPIRV_INCLUDE_DIR=$PWD/SPIRV-Headers \
       -DCL_LIB_DIR=$PWD/OpenCL-ICD-Loader/build \
+      -DSPIRV_TOOLS_DIR=$PWD/SPIRV-Tools/build/tools/ \
       -DOPENCL_LIBRARIES=OpenCL
 cmake --build OpenCL-CTS/build --config Release
 ```

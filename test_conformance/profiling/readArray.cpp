@@ -322,45 +322,6 @@ const char *stream_read_float_kernel_code[] = {
 const char *float_kernel_name[] = { "test_stream_read_float", "test_stream_read_float2", "test_stream_read_float4", "test_stream_read_float8", "test_stream_read_float16" };
 
 
-const char *stream_read_half_kernel_code[] = {
-"__kernel void test_stream_read_half(__global half *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = (half)119;\n"
-"}\n",
-
-"__kernel void test_stream_read_half2(__global half2 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = (half)119;\n"
-"}\n",
-
-"__kernel void test_stream_read_half4(__global half4 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = (half)119;\n"
-"}\n",
-
-"__kernel void test_stream_read_half8(__global half8 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = (half)119;\n"
-"}\n",
-
-"__kernel void test_stream_read_half16(__global half16 *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = (half)119;\n"
-"}\n" };
-
-const char *half_kernel_name[] = { "test_stream_read_half", "test_stream_read_half2", "test_stream_read_half4", "test_stream_read_half8", "test_stream_read_half16" };
-
-
 const char *stream_read_char_kernel_code[] = {
 "__kernel void test_stream_read_char(__global char *dst)\n"
 "{\n"
@@ -548,20 +509,6 @@ static int verify_read_float( void *ptr, int n )
 
     for (i=0; i<n; i++){
         if( outptr[i] != TEST_PRIME_FLOAT )
-            return -1;
-    }
-
-    return 0;
-}
-
-
-static int verify_read_half( void *ptr, int n )
-{
-    int        i;
-    float    *outptr = (float *)ptr;
-
-    for( i = 0; i < n / 2; i++ ){
-        if( outptr[i] != TEST_PRIME_HALF )
             return -1;
     }
 
@@ -758,7 +705,7 @@ int test_stream_read( cl_device_id device, cl_context context, cl_command_queue 
 }    // end test_stream_read()
 
 
-int test_read_array_int( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_int)
 {
     int    (*foo)(void *,int);
     foo = verify_read_int;
@@ -768,7 +715,7 @@ int test_read_array_int( cl_device_id device, cl_context context, cl_command_que
 }
 
 
-int test_read_array_uint( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_uint)
 {
     int    (*foo)(void *,int);
     foo = verify_read_uint;
@@ -778,7 +725,7 @@ int test_read_array_uint( cl_device_id device, cl_context context, cl_command_qu
 }
 
 
-int test_read_array_long( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_long)
 {
     int    (*foo)(void *,int);
     foo = verify_read_long;
@@ -794,7 +741,7 @@ int test_read_array_long( cl_device_id device, cl_context context, cl_command_qu
 }
 
 
-int test_read_array_ulong( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_ulong)
 {
     int    (*foo)(void *,int);
     foo = verify_read_ulong;
@@ -810,7 +757,7 @@ int test_read_array_ulong( cl_device_id device, cl_context context, cl_command_q
 }
 
 
-int test_read_array_short( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_short)
 {
     int    (*foo)(void *,int);
     foo = verify_read_short;
@@ -820,7 +767,7 @@ int test_read_array_short( cl_device_id device, cl_context context, cl_command_q
 }
 
 
-int test_read_array_ushort( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_ushort)
 {
     int    (*foo)(void *,int);
     foo = verify_read_ushort;
@@ -830,7 +777,7 @@ int test_read_array_ushort( cl_device_id device, cl_context context, cl_command_
 }
 
 
-int test_read_array_float( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_float)
 {
     int    (*foo)(void *,int);
     foo = verify_read_float;
@@ -840,17 +787,7 @@ int test_read_array_float( cl_device_id device, cl_context context, cl_command_q
 }
 
 
-int test_read_array_half( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
-{
-    int    (*foo)(void *,int);
-    foo = verify_read_half;
-
-    return test_stream_read( device, context, queue, num_elements, sizeof( cl_half ), "half", 5,
-                             stream_read_half_kernel_code, half_kernel_name, foo );
-}
-
-
-int test_read_array_char( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_char)
 {
     int    (*foo)(void *,int);
     foo = verify_read_char;
@@ -860,7 +797,7 @@ int test_read_array_char( cl_device_id device, cl_context context, cl_command_qu
 }
 
 
-int test_read_array_uchar( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_uchar)
 {
     int    (*foo)(void *,int);
     foo = verify_read_uchar;
@@ -870,7 +807,7 @@ int test_read_array_uchar( cl_device_id device, cl_context context, cl_command_q
 }
 
 
-int test_read_array_struct( cl_device_id device, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(read_array_struct)
 {
     int    (*foo)(void *,int);
     foo = verify_read_struct;

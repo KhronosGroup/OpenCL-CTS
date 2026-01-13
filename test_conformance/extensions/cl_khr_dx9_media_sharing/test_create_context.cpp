@@ -24,7 +24,7 @@ int context_create(cl_device_id deviceID, cl_context context,
     CResult result;
 
     // create device
-    std::auto_ptr<CDeviceWrapper> deviceWrapper;
+    std::unique_ptr<CDeviceWrapper> deviceWrapper;
     if (!DeviceCreate(adapterType, deviceWrapper))
     {
         result.ResultSub(CResult::TEST_ERROR);
@@ -68,7 +68,7 @@ int context_create(cl_device_id deviceID, cl_context context,
         }
 
         void *objectSharedHandle = 0;
-        std::auto_ptr<CSurfaceWrapper> surface;
+        std::unique_ptr<CSurfaceWrapper> surface;
         if (!MediaSurfaceCreate(
                 adapterType, width, height, surfaceFormat, *deviceWrapper,
                 surface, (sharedHandle == SHARED_HANDLE_ENABLED) ? true : false,
@@ -292,8 +292,7 @@ int context_create(cl_device_id deviceID, cl_context context,
     return result.Result();
 }
 
-int test_context_create(cl_device_id deviceID, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST(context_create)
 {
     const unsigned int WIDTH = 256;
     const unsigned int HEIGHT = 256;
@@ -341,8 +340,8 @@ int test_context_create(cl_device_id deviceID, cl_context context,
                         continue;
 
                     if (context_create(
-                            deviceID, context, queue, num_elements, WIDTH,
-                            HEIGHT, contextFuncs[contextFuncIdx],
+                            device, context, queue, num_elements, WIDTH, HEIGHT,
+                            contextFuncs[contextFuncIdx],
                             adapterTypes[adapterTypeIdx], formats[formatIdx],
                             sharedHandleTypes[sharedHandleIdx])
                         != 0)

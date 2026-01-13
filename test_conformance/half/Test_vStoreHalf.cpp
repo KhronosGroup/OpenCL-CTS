@@ -16,6 +16,7 @@
 #include "harness/compat.h"
 #include "harness/kernelHelpers.h"
 #include "harness/testHarness.h"
+#include "harness/parseParameters.h"
 
 #include <string.h>
 
@@ -247,89 +248,79 @@ static cl_half double2half_rtn(double f)
     return cl_half_from_double(f, CL_HALF_RTN);
 }
 
-int test_vstore_half(cl_device_id deviceID, cl_context context,
-                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(vstore_half)
 {
-    switch (get_default_rounding_mode(deviceID))
+    switch (get_default_rounding_mode(device))
     {
         case CL_FP_ROUND_TO_ZERO:
-            return Test_vStoreHalf_private(deviceID, float2half_rtz,
+            return Test_vStoreHalf_private(device, float2half_rtz,
                                            double2half_rte, "");
         case 0: return -1;
         default:
-            return Test_vStoreHalf_private(deviceID, float2half_rte,
+            return Test_vStoreHalf_private(device, float2half_rte,
                                            double2half_rte, "");
     }
 }
 
-int test_vstore_half_rte(cl_device_id deviceID, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(vstore_half_rte)
 {
-    return Test_vStoreHalf_private(deviceID, float2half_rte, double2half_rte,
+    return Test_vStoreHalf_private(device, float2half_rte, double2half_rte,
                                    "_rte");
 }
 
-int test_vstore_half_rtz(cl_device_id deviceID, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(vstore_half_rtz)
 {
-    return Test_vStoreHalf_private(deviceID, float2half_rtz, double2half_rtz,
+    return Test_vStoreHalf_private(device, float2half_rtz, double2half_rtz,
                                    "_rtz");
 }
 
-int test_vstore_half_rtp(cl_device_id deviceID, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(vstore_half_rtp)
 {
-    return Test_vStoreHalf_private(deviceID, float2half_rtp, double2half_rtp,
+    return Test_vStoreHalf_private(device, float2half_rtp, double2half_rtp,
                                    "_rtp");
 }
 
-int test_vstore_half_rtn(cl_device_id deviceID, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(vstore_half_rtn)
 {
-    return Test_vStoreHalf_private(deviceID, float2half_rtn, double2half_rtn,
+    return Test_vStoreHalf_private(device, float2half_rtn, double2half_rtn,
                                    "_rtn");
 }
 
-int test_vstorea_half(cl_device_id deviceID, cl_context context,
-                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(vstorea_half)
 {
-    switch (get_default_rounding_mode(deviceID))
+    switch (get_default_rounding_mode(device))
     {
         case CL_FP_ROUND_TO_ZERO:
-            return Test_vStoreaHalf_private(deviceID, float2half_rtz,
+            return Test_vStoreaHalf_private(device, float2half_rtz,
                                             double2half_rte, "");
         case 0: return -1;
         default:
-            return Test_vStoreaHalf_private(deviceID, float2half_rte,
+            return Test_vStoreaHalf_private(device, float2half_rte,
                                             double2half_rte, "");
     }
 }
 
-int test_vstorea_half_rte(cl_device_id deviceID, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(vstorea_half_rte)
 {
-    return Test_vStoreaHalf_private(deviceID, float2half_rte, double2half_rte,
+    return Test_vStoreaHalf_private(device, float2half_rte, double2half_rte,
                                     "_rte");
 }
 
-int test_vstorea_half_rtz(cl_device_id deviceID, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(vstorea_half_rtz)
 {
-    return Test_vStoreaHalf_private(deviceID, float2half_rtz, double2half_rtz,
+    return Test_vStoreaHalf_private(device, float2half_rtz, double2half_rtz,
                                     "_rtz");
 }
 
-int test_vstorea_half_rtp(cl_device_id deviceID, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(vstorea_half_rtp)
 {
-    return Test_vStoreaHalf_private(deviceID, float2half_rtp, double2half_rtp,
+    return Test_vStoreaHalf_private(device, float2half_rtp, double2half_rtp,
                                     "_rtp");
 }
 
-int test_vstorea_half_rtn(cl_device_id deviceID, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(vstorea_half_rtn)
 {
-    return Test_vStoreaHalf_private(deviceID, float2half_rtn, double2half_rtn,
+    return Test_vStoreaHalf_private(device, float2half_rtn, double2half_rtn,
                                     "_rtn");
 }
 
@@ -341,8 +332,8 @@ int Test_vStoreHalf_private(cl_device_id device, f2h referenceFunc,
     int vectorSize, error;
     cl_program programs[kVectorSizeCount + kStrangeVectorSizeCount][3];
     cl_kernel kernels[kVectorSizeCount + kStrangeVectorSizeCount][3];
-    cl_program resetProgram;
-    cl_kernel resetKernel;
+    cl_program resetProgram = nullptr;
+    cl_kernel resetKernel = nullptr;
 
     uint64_t time[kVectorSizeCount + kStrangeVectorSizeCount] = { 0 };
     uint64_t min_time[kVectorSizeCount + kStrangeVectorSizeCount] = { 0 };
@@ -1225,8 +1216,8 @@ int Test_vStoreaHalf_private(cl_device_id device, f2h referenceFunc,
     int vectorSize, error;
     cl_program programs[kVectorSizeCount + kStrangeVectorSizeCount][3];
     cl_kernel kernels[kVectorSizeCount + kStrangeVectorSizeCount][3];
-    cl_program resetProgram;
-    cl_kernel resetKernel;
+    cl_program resetProgram = nullptr;
+    cl_kernel resetKernel = nullptr;
 
     uint64_t time[kVectorSizeCount + kStrangeVectorSizeCount] = { 0 };
     uint64_t min_time[kVectorSizeCount + kStrangeVectorSizeCount] = { 0 };

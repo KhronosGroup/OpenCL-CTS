@@ -33,13 +33,13 @@
         %rhs = OpFunctionParameter %_ptr_CrossWorkgroup_uint
          %16 = OpLabel
          %17 = OpVariable %_ptr_Function_uint Function
-         %18 = OpLoad %v3uint %gl_GlobalInvocationID Aligned 0
+         %18 = OpLoad %v3uint %gl_GlobalInvocationID
          %19 = OpCompositeExtract %uint %18 0
          %20 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %lhs %19
          %21 = OpLoad %uint %20 Aligned 4
          %22 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %rhs %19
          %23 = OpLoad %uint %22 Aligned 4
-         %24 = OpSLessThan %bool %21 %23
+         %24 = OpULessThan %bool %21 %23
                OpBranchConditional %24 %25 %26
          %25 = OpLabel
          %27 = OpISub %uint %23 %21

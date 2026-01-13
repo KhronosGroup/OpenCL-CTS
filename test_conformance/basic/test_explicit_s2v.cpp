@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include <cmath>
-using std::isnan;
 #include "harness/compat.h"
 
 #include <stdio.h>
@@ -25,9 +24,8 @@ using std::isnan;
 #include <vector>
 
 #include <CL/cl_half.h>
-
-#include "procs.h"
 #include "harness/conversions.h"
+#include "harness/mathHelpers.h"
 #include "harness/typeWrappers.h"
 
 extern cl_half_rounding_mode halfRoundingMode;
@@ -104,20 +102,11 @@ const char * kernel_explicit_s2v_set[NUM_VEC_TYPES][NUM_VEC_TYPES][5] = {
 
 // clang-format on
 
-bool IsHalfNaN(cl_half v)
-{
-    // Extract FP16 exponent and mantissa
-    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-    uint16_t h_mant = ((cl_half)v) & 0x3FF;
-
-    // NaN test
-    return (h_exp == 0x1F && h_mant != 0);
-}
-
-int test_explicit_s2v_function(cl_context context, cl_command_queue queue,
-                               cl_kernel kernel, ExplicitType srcType,
-                               unsigned int count, ExplicitType destType,
-                               unsigned int vecSize, void *inputData)
+static int test_explicit_s2v_function(cl_context context,
+                                      cl_command_queue queue, cl_kernel kernel,
+                                      ExplicitType srcType, unsigned int count,
+                                      ExplicitType destType,
+                                      unsigned int vecSize, void *inputData)
 {
     int error;
     clMemWrapper streams[2];
@@ -184,20 +173,21 @@ int test_explicit_s2v_function(cl_context context, cl_command_queue queue,
             {
                 bool isSrcNaN =
                     (((srcType == kHalf)
-                      && IsHalfNaN(*reinterpret_cast<cl_half *>(inPtr)))
+                      && isnan_fp(*reinterpret_cast<cl_half *>(inPtr)))
                      || ((srcType == kFloat)
-                         && isnan(*reinterpret_cast<cl_float *>(inPtr)))
+                         && isnan_fp(*reinterpret_cast<cl_float *>(inPtr)))
                      || ((srcType == kDouble)
-                         && isnan(*reinterpret_cast<cl_double *>(inPtr))));
-                bool isDestNaN = (((destType == kHalf)
-                                   && IsHalfNaN(*reinterpret_cast<cl_half *>(
-                                       outPtr + destTypeSize * s)))
-                                  || ((destType == kFloat)
-                                      && isnan(*reinterpret_cast<cl_float *>(
-                                          outPtr + destTypeSize * s)))
-                                  || ((destType == kDouble)
-                                      && isnan(*reinterpret_cast<cl_double *>(
-                                          outPtr + destTypeSize * s))));
+                         && isnan_fp(*reinterpret_cast<cl_double *>(inPtr))));
+                bool isDestNaN =
+                    (((destType == kHalf)
+                      && isnan_fp(*reinterpret_cast<cl_half *>(
+                          outPtr + destTypeSize * s)))
+                     || ((destType == kFloat)
+                         && isnan_fp(*reinterpret_cast<cl_float *>(
+                             outPtr + destTypeSize * s)))
+                     || ((destType == kDouble)
+                         && isnan_fp(*reinterpret_cast<cl_double *>(
+                             outPtr + destTypeSize * s))));
 
                 if (isSrcNaN && isDestNaN)
                 {
@@ -387,12 +377,11 @@ protected:
 
 } // anonymous namespace
 
-int test_explicit_s2v(cl_device_id deviceID, cl_context context,
-                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(explicit_s2v)
 {
     try
     {
-        TypesIterator(deviceID, context, queue);
+        TypesIterator(device, context, queue);
     } catch (const std::runtime_error &e)
     {
         log_error("%s", e.what());

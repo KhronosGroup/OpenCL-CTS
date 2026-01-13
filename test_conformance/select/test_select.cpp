@@ -89,7 +89,6 @@ static void printUsage( void );
 // test their entire range and 64 bits test will test the 32 bit
 // range.  Otherwise, we test a subset of the range
 // [-min_short, min_short]
-static bool  s_wimpy_mode = false;
 static int s_wimpy_reduction_factor = 256;
 
 //-----------------------------------------
@@ -141,8 +140,9 @@ static void initCmpBuffer(void *cmp, Type cmptype, uint64_t start,
             break;
         }
         case 4: {
-            if (!s_wimpy_mode) {
-                uint32_t* ui = (uint32_t *)cmp;
+            if (!gWimpyMode)
+            {
+                uint32_t *ui = (uint32_t *)cmp;
                 for (size_t i = 0; i < count; ++i) ui[i] = (uint32_t)start++;
             }
             else {
@@ -261,14 +261,18 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr,
     switch( vec_len )
     {
         case 1:
-            strncpy(stypename, type_name[srctype], sizeof(stypename));
-            strncpy(ctypename, type_name[cmptype], sizeof(ctypename));
+            strncpy(stypename, type_name[srctype], sizeof(stypename) - 1);
+            stypename[sizeof(stypename) - 1] = '\0';
+            strncpy(ctypename, type_name[cmptype], sizeof(ctypename) - 1);
+            ctypename[sizeof(ctypename) - 1] = '\0';
             snprintf(testname, sizeof(testname), "select_%s_%s", stypename, ctypename );
             log_info("Building %s(%s, %s, %s)\n", testname, stypename, stypename, ctypename);
             break;
         case 3:
-            strncpy(stypename, type_name[srctype], sizeof(stypename));
-            strncpy(ctypename, type_name[cmptype], sizeof(ctypename));
+            strncpy(stypename, type_name[srctype], sizeof(stypename) - 1);
+            stypename[sizeof(stypename) - 1] = '\0';
+            strncpy(ctypename, type_name[cmptype], sizeof(ctypename) - 1);
+            ctypename[sizeof(ctypename) - 1] = '\0';
             snprintf(testname, sizeof(testname), "select_%s3_%s3", stypename, ctypename );
             log_info("Building %s(%s3, %s3, %s3)\n", testname, stypename, stypename, ctypename);
             break;
@@ -319,7 +323,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
 
     cl_ulong blocks = type_size[stype] * 0x100000000ULL / BUFFER_SIZE;
     const size_t block_elements = BUFFER_SIZE / type_size[stype];
-    size_t step = s_wimpy_mode ? s_wimpy_reduction_factor : 1;
+    size_t step = gWimpyMode ? s_wimpy_reduction_factor : 1;
     cl_ulong cmp_stride = block_elements * step;
 
     // It is more efficient to create the tests all at once since we
@@ -470,7 +474,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
         } // for vecsize
     } // for i
 
-    if (!s_wimpy_mode)
+    if (!gWimpyMode)
         log_info(" Passed\n\n");
     else
         log_info(" Wimpy Passed\n\n");
@@ -478,112 +482,94 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     return err;
 }
 
-int test_select_uchar_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_uchar_uchar)
 {
-    return doTest(queue, context, kuchar, kuchar, deviceID);
+    return doTest(queue, context, kuchar, kuchar, device);
 }
-int test_select_uchar_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_uchar_char)
 {
-    return doTest(queue, context, kuchar, kchar, deviceID);
+    return doTest(queue, context, kuchar, kchar, device);
 }
-int test_select_char_uchar(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_char_uchar)
 {
-    return doTest(queue, context, kchar, kuchar, deviceID);
+    return doTest(queue, context, kchar, kuchar, device);
 }
-int test_select_char_char(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_char_char)
 {
-    return doTest(queue, context, kchar, kchar, deviceID);
+    return doTest(queue, context, kchar, kchar, device);
 }
-int test_select_ushort_ushort(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_ushort_ushort)
 {
-    return doTest(queue, context, kushort, kushort, deviceID);
+    return doTest(queue, context, kushort, kushort, device);
 }
-int test_select_ushort_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_ushort_short)
 {
-    return doTest(queue, context, kushort, kshort, deviceID);
+    return doTest(queue, context, kushort, kshort, device);
 }
-int test_select_short_ushort(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_short_ushort)
 {
-    return doTest(queue, context, kshort, kushort, deviceID);
+    return doTest(queue, context, kshort, kushort, device);
 }
-int test_select_short_short(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_short_short)
 {
-    return doTest(queue, context, kshort, kshort, deviceID);
+    return doTest(queue, context, kshort, kshort, device);
 }
-int test_select_half_ushort(cl_device_id deviceID, cl_context context,
-                            cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_half_ushort)
 {
-    return doTest(queue, context, khalf, kushort, deviceID);
+    return doTest(queue, context, khalf, kushort, device);
 }
-int test_select_half_short(cl_device_id deviceID, cl_context context,
-                           cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_half_short)
 {
-    return doTest(queue, context, khalf, kshort, deviceID);
+    return doTest(queue, context, khalf, kshort, device);
 }
-int test_select_uint_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_uint_uint)
 {
-    return doTest(queue, context, kuint, kuint, deviceID);
+    return doTest(queue, context, kuint, kuint, device);
 }
-int test_select_uint_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_uint_int)
 {
-    return doTest(queue, context, kuint, kint, deviceID);
+    return doTest(queue, context, kuint, kint, device);
 }
-int test_select_int_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_int_uint)
 {
-    return doTest(queue, context, kint, kuint, deviceID);
+    return doTest(queue, context, kint, kuint, device);
 }
-int test_select_int_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_int_int)
 {
-    return doTest(queue, context, kint, kint, deviceID);
+    return doTest(queue, context, kint, kint, device);
 }
-int test_select_float_uint(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_float_uint)
 {
-    return doTest(queue, context, kfloat, kuint, deviceID);
+    return doTest(queue, context, kfloat, kuint, device);
 }
-int test_select_float_int(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_float_int)
 {
-    return doTest(queue, context, kfloat, kint, deviceID);
+    return doTest(queue, context, kfloat, kint, device);
 }
-int test_select_ulong_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_ulong_ulong)
 {
-    return doTest(queue, context, kulong, kulong, deviceID);
+    return doTest(queue, context, kulong, kulong, device);
 }
-int test_select_ulong_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_ulong_long)
 {
-    return doTest(queue, context, kulong, klong, deviceID);
+    return doTest(queue, context, kulong, klong, device);
 }
-int test_select_long_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_long_ulong)
 {
-    return doTest(queue, context, klong, kulong, deviceID);
+    return doTest(queue, context, klong, kulong, device);
 }
-int test_select_long_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_long_long)
 {
-    return doTest(queue, context, klong, klong, deviceID);
+    return doTest(queue, context, klong, klong, device);
 }
-int test_select_double_ulong(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_double_ulong)
 {
-    return doTest(queue, context, kdouble, kulong, deviceID);
+    return doTest(queue, context, kdouble, kulong, device);
 }
-int test_select_double_long(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(select_double_long)
 {
-    return doTest(queue, context, kdouble, klong, deviceID);
+    return doTest(queue, context, kdouble, klong, device);
 }
-
-test_definition test_list[] = {
-    ADD_TEST(select_uchar_uchar),   ADD_TEST(select_uchar_char),
-    ADD_TEST(select_char_uchar),    ADD_TEST(select_char_char),
-    ADD_TEST(select_ushort_ushort), ADD_TEST(select_ushort_short),
-    ADD_TEST(select_short_ushort),  ADD_TEST(select_short_short),
-    ADD_TEST(select_half_ushort),   ADD_TEST(select_half_short),
-    ADD_TEST(select_uint_uint),     ADD_TEST(select_uint_int),
-    ADD_TEST(select_int_uint),      ADD_TEST(select_int_int),
-    ADD_TEST(select_float_uint),    ADD_TEST(select_float_int),
-    ADD_TEST(select_ulong_ulong),   ADD_TEST(select_ulong_long),
-    ADD_TEST(select_long_ulong),    ADD_TEST(select_long_long),
-    ADD_TEST(select_double_ulong),  ADD_TEST(select_double_long),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
 
 int main(int argc, const char* argv[])
 {
@@ -617,13 +603,9 @@ int main(int argc, const char* argv[])
             arg++;
             while(*arg != '\0')
             {
-                switch(*arg) {
-                    case 'h':
-                        printUsage();
-                        return 0;
-                    case 'w':
-                        s_wimpy_mode = true;
-                        break;
+                switch (*arg)
+                {
+                    case 'h': printUsage(); return 0;
                     case '[':
                         parseWimpyReductionFactor(arg, s_wimpy_reduction_factor);
                         break;
@@ -640,11 +622,8 @@ int main(int argc, const char* argv[])
         }
     }
 
-    if (getenv("CL_WIMPY_MODE")) {
-        s_wimpy_mode = true;
-    }
-
-    if (s_wimpy_mode) {
+    if (gWimpyMode && !gListTests)
+    {
         log_info("\n");
         log_info("*** WARNING: Testing in Wimpy mode!                     ***\n");
         log_info("*** Wimpy mode is not sufficient to verify correctness. ***\n");
@@ -652,7 +631,9 @@ int main(int argc, const char* argv[])
         log_info("*** Wimpy Reduction Factor: %-27u ***\n\n", s_wimpy_reduction_factor);
     }
 
-    int err = runTestHarness(argCount, argList, test_num, test_list, false, 0);
+    int err = runTestHarness(
+        argCount, argList, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0);
 
     free( argList );
 
@@ -663,12 +644,11 @@ static void printUsage( void )
 {
     log_info("test_select:  [-w] <optional: test_names> \n");
     log_info("\tdefault is to run the full test on the default device\n");
-    log_info("\t-w run in wimpy mode (smoke test)\n");
     log_info("\t-[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", s_wimpy_reduction_factor);
     log_info("\n");
     log_info("Test names:\n");
-    for( int i = 0; i < test_num; i++ )
+    for (size_t i = 0; i < test_registry::getInstance().num_tests(); i++)
     {
-        log_info( "\t%s\n", test_list[i].name );
+        log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
     }
 }

@@ -17,16 +17,15 @@
 #include <string.h>
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
+#include "harness/parseParameters.h"
 
 #include <vector>
 
-#include "procs.h"
 #include "utils.h"
 #include <time.h>
 
 
 #ifdef CL_VERSION_2_0
-extern int gWimpyMode;
 static int nestingLevel = 3;
 
 static const char* enqueue_1D_wg_size_single[] =
@@ -1637,7 +1636,7 @@ static const kernel_src_check sources_enqueue_wg_size[] =
     { KERNEL(enqueue_mix_wg_size_all_diff), check_all_diff_mix }
 };
 
-int test_enqueue_wg_size(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(enqueue_wg_size)
 {
     MTdata d;
     cl_uint i, k;

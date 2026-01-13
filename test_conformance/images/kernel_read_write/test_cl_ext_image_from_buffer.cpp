@@ -629,7 +629,7 @@ int image_from_small_buffer_negative(cl_device_id device, cl_context context,
 
                 clCreateImage(context, flag, &format, &image_desc, nullptr,
                               &err);
-                test_failure_error(err, CL_INVALID_MEM_OBJECT,
+                test_failure_error(err, CL_INVALID_IMAGE_SIZE,
                                    "Unexpected clCreateImage return");
 
                 err = clReleaseMemObject(buffer);
@@ -769,7 +769,7 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
                 err = clFinish(queue);
                 test_error(err, "Error clFinish");
 
-                cl_mem image1d_buffer;
+                cl_mem image1d_buffer = nullptr;
                 if (imageType == CL_MEM_OBJECT_IMAGE1D_BUFFER)
                 {
                     image1d_buffer = clCreateBuffer(context, flag, buffer_size,

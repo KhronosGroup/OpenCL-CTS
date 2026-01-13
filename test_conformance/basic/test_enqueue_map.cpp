@@ -20,9 +20,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
-
-#include "procs.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 
@@ -32,6 +29,9 @@ const cl_mem_flags flag_set[] = {
   CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR,
   CL_MEM_USE_HOST_PTR,
   CL_MEM_COPY_HOST_PTR,
+  CL_MEM_USE_HOST_PTR | CL_MEM_IMMUTABLE_EXT,
+  CL_MEM_COPY_HOST_PTR | CL_MEM_IMMUTABLE_EXT,
+  CL_MEM_COPY_HOST_PTR | CL_MEM_ALLOC_HOST_PTR | CL_MEM_IMMUTABLE_EXT,
   0
 };
 
@@ -40,15 +40,17 @@ const char *flag_set_names[] = {
   "CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR",
   "CL_MEM_USE_HOST_PTR",
   "CL_MEM_COPY_HOST_PTR",
+  "CL_MEM_USE_HOST_PTR | CL_MEM_IMMUTABLE_EXT",
+  "CL_MEM_COPY_HOST_PTR | CL_MEM_IMMUTABLE_EXT",
+  "CL_MEM_COPY_HOST_PTR | CL_MEM_ALLOC_HOST_PTR | CL_MEM_IMMUTABLE_EXT",
   "0"
 };
 // clang-format on
 
-int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context,
-                            cl_command_queue queue, int num_elements)
+REGISTER_TEST(enqueue_map_buffer)
 {
     int error;
-    const size_t bufferSize = 256 * 256;
+    constexpr size_t bufferSize = 256 * 256;
     MTdataHolder d{ gRandomSeed };
     BufferOwningPtr<cl_char> hostPtrData{ malloc(bufferSize) };
     BufferOwningPtr<cl_char> referenceData{ malloc(bufferSize) };
@@ -61,18 +63,28 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context,
         log_info("Testing with cl_mem_flags src: %s\n",
                  flag_set_names[src_flag_id]);
 
+        if ((flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            && !is_extension_available(device,
+                                       "cl_ext_immutable_memory_objects"))
+        {
+            log_info("Device does not support CL_MEM_IMMUTABLE_EXT. "
+                     "Skipping the memory flag.\n");
+            continue;
+        }
+
         generate_random_data(kChar, (unsigned int)bufferSize, d, hostPtrData);
         memcpy(referenceData, hostPtrData, bufferSize);
 
         void *hostPtr = nullptr;
         cl_mem_flags flags = flag_set[src_flag_id];
+        const bool is_immutable_buffer = flags & CL_MEM_IMMUTABLE_EXT;
         bool hasHostPtr =
             (flags & CL_MEM_USE_HOST_PTR) || (flags & CL_MEM_COPY_HOST_PTR);
         if (hasHostPtr) hostPtr = hostPtrData;
         memObject = clCreateBuffer(context, flags, bufferSize, hostPtr, &error);
         test_error(error, "Unable to create testing buffer");
 
-        if (!hasHostPtr)
+        if (!hasHostPtr && !is_immutable_buffer)
         {
             error =
                 clEnqueueWriteBuffer(queue, memObject, CL_TRUE, 0, bufferSize,
@@ -90,7 +102,18 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context,
             cl_char *mappedRegion = (cl_char *)clEnqueueMapBuffer(
                 queue, memObject, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, offset,
                 length, 0, NULL, NULL, &error);
-            if (error != CL_SUCCESS)
+
+            // Mapping should fail if the buffer is immutable
+            if (is_immutable_buffer)
+            {
+                test_failure_error_ret(
+                    error, CL_INVALID_OPERATION,
+                    "clEnqueueMapBuffer call was expected to fail "
+                    "with CL_INVALID_OPERATION",
+                    TEST_FAIL);
+                continue;
+            }
+            else if (error != CL_SUCCESS)
             {
                 print_error(error, "clEnqueueMapBuffer call failed");
                 log_error("\tOffset: %d  Length: %d\n", (int)offset,
@@ -126,6 +149,11 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context,
                                     finalData, 0, NULL, NULL);
         test_error(error, "Unable to read results");
 
+        if (is_immutable_buffer && !hasHostPtr)
+        {
+            continue;
+        }
+
         for (size_t q = 0; q < bufferSize; q++)
         {
             if (referenceData[q] != finalData[q])
@@ -141,15 +169,15 @@ int test_enqueue_map_buffer(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_enqueue_map_image(cl_device_id deviceID, cl_context context,
-                           cl_command_queue queue, int num_elements)
+REGISTER_TEST(enqueue_map_image)
 {
     int error;
-    cl_image_format format = { CL_RGBA, CL_UNSIGNED_INT32 };
-    const size_t imageSize = 256;
-    const size_t imageDataSize = imageSize * imageSize * 4 * sizeof(cl_uint);
+    constexpr cl_image_format format = { CL_RGBA, CL_UNSIGNED_INT32 };
+    constexpr size_t imageSize = 256;
+    constexpr size_t imageDataSize =
+        imageSize * imageSize * 4 * sizeof(cl_uint);
 
-    PASSIVE_REQUIRE_IMAGE_SUPPORT(deviceID)
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
 
     BufferOwningPtr<cl_uint> hostPtrData{ malloc(imageDataSize) };
     BufferOwningPtr<cl_uint> referenceData{ malloc(imageDataSize) };
@@ -163,20 +191,30 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context,
         log_info("Testing with cl_mem_flags src: %s\n",
                  flag_set_names[src_flag_id]);
 
+        if ((flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            && !is_extension_available(device,
+                                       "cl_ext_immutable_memory_objects"))
+        {
+            log_info("Device does not support CL_MEM_IMMUTABLE_EXT. "
+                     "Skipping the memory flag.\n");
+            continue;
+        }
+
         generate_random_data(kUInt, (unsigned int)(imageSize * imageSize * 4),
                              d, hostPtrData);
         memcpy(referenceData, hostPtrData, imageDataSize);
 
         cl_mem_flags flags = flag_set[src_flag_id];
+        bool is_immutable_image = flags & CL_MEM_IMMUTABLE_EXT;
         bool hasHostPtr =
             (flags & CL_MEM_USE_HOST_PTR) || (flags & CL_MEM_COPY_HOST_PTR);
         void *hostPtr = nullptr;
         if (hasHostPtr) hostPtr = hostPtrData;
-        memObject = create_image_2d(context, CL_MEM_READ_WRITE | flags, &format,
-                                    imageSize, imageSize, 0, hostPtr, &error);
+        memObject = create_image_2d(context, flags, &format, imageSize,
+                                    imageSize, 0, hostPtr, &error);
         test_error(error, "Unable to create testing buffer");
 
-        if (!hasHostPtr)
+        if (!hasHostPtr && !is_immutable_image)
         {
             size_t write_origin[3] = { 0, 0, 0 },
                    write_region[3] = { imageSize, imageSize, 1 };
@@ -203,7 +241,17 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context,
             cl_uint *mappedRegion = (cl_uint *)clEnqueueMapImage(
                 queue, memObject, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, offset,
                 region, &rowPitch, NULL, 0, NULL, NULL, &error);
-            if (error != CL_SUCCESS)
+
+            if (is_immutable_image)
+            {
+                test_failure_error_ret(
+                    error, CL_INVALID_OPERATION,
+                    "clEnqueueMapImage call was expected to fail "
+                    "with CL_INVALID_OPERATION",
+                    TEST_FAIL);
+                continue;
+            }
+            else if (error != CL_SUCCESS)
             {
                 print_error(error, "clEnqueueMapImage call failed");
                 log_error("\tOffset: %d,%d  Region: %d,%d\n", (int)offset[0],
@@ -249,6 +297,11 @@ int test_enqueue_map_image(cl_device_id deviceID, cl_context context,
         error = clEnqueueReadImage(queue, memObject, CL_TRUE, finalOrigin,
                                    finalRegion, 0, 0, finalData, 0, NULL, NULL);
         test_error(error, "Unable to read results");
+
+        if (is_immutable_image && !hasHostPtr)
+        {
+            continue;
+        }
 
         for (size_t q = 0; q < imageSize * imageSize * 4; q++)
         {

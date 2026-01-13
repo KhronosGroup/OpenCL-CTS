@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
+#include "testBase.h"
 
 #include <algorithm>
 #include <vector>
@@ -232,7 +232,11 @@ size_t find_subbuffer_by_index( SubBufferWrapper * subBuffers, size_t numSubBuff
 
 // This tests the read/write capabilities of sub buffers (if we are read/write, the sub buffers
 // can't overlap)
-int test_sub_buffers_read_write_core( cl_context context, cl_command_queue queueA, cl_command_queue queueB, size_t mainSize, size_t addressAlign )
+static int test_sub_buffers_read_write_core(cl_context context,
+                                            cl_command_queue queueA,
+                                            cl_command_queue queueB,
+                                            size_t mainSize,
+                                            size_t addressAlign)
 {
     clMemWrapper mainBuffer;
     SubBufferWrapper subBuffers[ 8 ];
@@ -344,16 +348,26 @@ int test_sub_buffers_read_write_core( cl_context context, cl_command_queue queue
                     size_t sbThatFailed = find_subbuffer_by_index( subBuffers, numSubBuffers, i + j );
                     if ( sbThatFailed == numSubBuffers )
                     {
-                        log_error( "ERROR: Validation failure outside of a sub-buffer! (Shouldn't be possible, but it happened at index %ld out of %ld...)\n", i + j, mainSize );
+                        log_error("ERROR: Validation failure outside of a "
+                                  "sub-buffer! (Shouldn't be possible, but it "
+                                  "happened at index %zu out of %zu...)\n",
+                                  i + j, mainSize);
                         // Since this is a nonsensical, don't bother continuing to check
                         // (we will, however, print our map of sub-buffers for comparison)
                         for ( size_t k = 0; k < numSubBuffers; k++ )
                         {
-                            log_error( "\tBuffer %ld: %ld to %ld (length %ld)\n", k, subBuffers[ k ].mOrigin, subBuffers[ k ].mOrigin + subBuffers[ k ].mSize, subBuffers[ k ].mSize );
+                            log_error("\tBuffer %zu: %zu to %zu (length %zu)\n",
+                                      k, subBuffers[k].mOrigin,
+                                      subBuffers[k].mOrigin
+                                          + subBuffers[k].mSize,
+                                      subBuffers[k].mSize);
                         }
                         return -1;
                     }
-                    log_error( "ERROR: Validation failure on sub-buffer %ld (start: %ld, length: %ld)\n", sbThatFailed, subBuffers[ sbThatFailed ].mOrigin, subBuffers[ sbThatFailed ].mSize );
+                    log_error("ERROR: Validation failure on sub-buffer %zu "
+                              "(start: %zu, length: %zu)\n",
+                              sbThatFailed, subBuffers[sbThatFailed].mOrigin,
+                              subBuffers[sbThatFailed].mSize);
                     size_t newPos = subBuffers[ sbThatFailed ].mOrigin + subBuffers[ sbThatFailed ].mSize - 1;
                     i = newPos & ~65535;
                     j = newPos - i;
@@ -370,18 +384,19 @@ int test_sub_buffers_read_write_core( cl_context context, cl_command_queue queue
     return numErrors;
 }
 
-int test_sub_buffers_read_write( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(sub_buffers_read_write)
 {
     cl_int error;
     size_t mainSize;
     cl_uint addressAlignBits;
 
     // Get the size of the main buffer to use
-    error = get_reasonable_buffer_size( deviceID, mainSize );
+    error = get_reasonable_buffer_size(device, mainSize);
     test_error( error, "Unable to get reasonable buffer size" );
 
     // Determine the alignment of the device so we can make sure sub buffers are valid
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MEM_BASE_ADDR_ALIGN, sizeof( addressAlignBits ), &addressAlignBits, NULL );
+    error = clGetDeviceInfo(device, CL_DEVICE_MEM_BASE_ADDR_ALIGN,
+                            sizeof(addressAlignBits), &addressAlignBits, NULL);
     test_error( error, "Unable to get device's address alignment" );
 
     size_t addressAlign = addressAlignBits/8;
@@ -392,19 +407,19 @@ int test_sub_buffers_read_write( cl_device_id deviceID, cl_context context, cl_c
 // This test performs the same basic operations as sub_buffers_read_write, but instead of a single
 // device, it creates a context and buffer shared between two devices, then executes commands
 // on queues for each device to ensure that everything still operates as expected.
-int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(sub_buffers_read_write_dual_devices)
 {
     cl_int error;
 
 
     // First obtain the second device
-    cl_device_id otherDevice = GetOpposingDevice( deviceID );
+    cl_device_id otherDevice = GetOpposingDevice(device);
     if ( otherDevice == NULL )
     {
         log_error( "ERROR: Unable to obtain a second device for sub-buffer dual-device test.\n" );
         return -1;
     }
-    if ( otherDevice == deviceID )
+    if (otherDevice == device)
     {
         log_info( "Note: Unable to run dual-device sub-buffer test (only one device available). Skipping test (implicitly passing).\n" );
         return 0;
@@ -423,12 +438,13 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
              device_name.data());
 
     // Create a shared context for these two devices
-    cl_device_id devices[ 2 ] = { deviceID, otherDevice };
+    cl_device_id devices[2] = { device, otherDevice };
     clContextWrapper testingContext = clCreateContext( NULL, 2, devices, NULL, NULL, &error );
     test_error( error, "Unable to create shared context" );
 
     // Create two queues (can't use the existing one, because it's on the wrong context)
-    clCommandQueueWrapper queue1 = clCreateCommandQueue( testingContext, deviceID, 0, &error );
+    clCommandQueueWrapper queue1 =
+        clCreateCommandQueue(testingContext, device, 0, &error);
     test_error( error, "Unable to create command queue on main device" );
 
     clCommandQueueWrapper queue2 = clCreateCommandQueue( testingContext, otherDevice, 0, &error );
@@ -436,7 +452,7 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
 
     // Determine the reasonable buffer size and address alignment that applies to BOTH devices
     size_t maxBuffer1, maxBuffer2;
-    error = get_reasonable_buffer_size( deviceID, maxBuffer1 );
+    error = get_reasonable_buffer_size(device, maxBuffer1);
     test_error( error, "Unable to get buffer size for main device" );
 
     error = get_reasonable_buffer_size( otherDevice, maxBuffer2 );
@@ -444,7 +460,9 @@ int test_sub_buffers_read_write_dual_devices( cl_device_id deviceID, cl_context 
     maxBuffer1 = std::min(maxBuffer1, maxBuffer2);
 
     cl_uint addressAlign1Bits, addressAlign2Bits;
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MEM_BASE_ADDR_ALIGN, sizeof( addressAlign1Bits ), &addressAlign1Bits, NULL );
+    error =
+        clGetDeviceInfo(device, CL_DEVICE_MEM_BASE_ADDR_ALIGN,
+                        sizeof(addressAlign1Bits), &addressAlign1Bits, NULL);
     test_error( error, "Unable to get main device's address alignment" );
 
     error = clGetDeviceInfo( otherDevice, CL_DEVICE_MEM_BASE_ADDR_ALIGN, sizeof( addressAlign2Bits ), &addressAlign2Bits, NULL );
@@ -493,7 +511,7 @@ cl_int read_buffer_via_kernel( cl_context context, cl_command_queue queue, cl_me
 }
 
 
-int test_sub_buffers_overlapping( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(sub_buffers_overlapping)
 {
     cl_int error;
     size_t mainSize;
@@ -504,14 +522,15 @@ int test_sub_buffers_overlapping( cl_device_id deviceID, cl_context context, cl_
 
 
     // Create the main buffer to test against
-    error = get_reasonable_buffer_size( deviceID, mainSize );
+    error = get_reasonable_buffer_size(device, mainSize);
     test_error( error, "Unable to get reasonable buffer size" );
 
     mainBuffer = clCreateBuffer( context, CL_MEM_READ_WRITE, mainSize, NULL, &error );
     test_error( error, "Unable to create test main buffer" );
 
     // Determine the alignment of the device so we can make sure sub buffers are valid
-    error = clGetDeviceInfo( deviceID, CL_DEVICE_MEM_BASE_ADDR_ALIGN, sizeof( addressAlign ), &addressAlign, NULL );
+    error = clGetDeviceInfo(device, CL_DEVICE_MEM_BASE_ADDR_ALIGN,
+                            sizeof(addressAlign), &addressAlign, NULL);
     test_error( error, "Unable to get device's address alignment" );
 
     // Create some sub-buffers to use. Note: they don't have to not overlap (we actually *want* them to overlap)
@@ -589,8 +608,10 @@ int test_sub_buffers_overlapping( cl_device_id deviceID, cl_context context, cl_
         }
     }
 
-    log_info( "\tTesting %d sub-buffers with %lld overlapping Kbytes (%d%%; as many as %ld buffers overlapping at once)\n",
-              16, ( delta / 1024LL ), (int)( delta * 100LL / (long long)mainSize ), maxOverlap );
+    log_info("\tTesting %d sub-buffers with %lld overlapping Kbytes (%d%%; as "
+             "many as %zu buffers overlapping at once)\n",
+             16, (delta / 1024LL), (int)(delta * 100LL / (long long)mainSize),
+             maxOverlap);
 
     // Write some random contents to the main buffer
     cl_char * contents = new cl_char[ mainSize ];
@@ -615,7 +636,7 @@ int test_sub_buffers_overlapping( cl_device_id deviceID, cl_context context, cl_
 
         if ( memcmp( tempBuffer, contents + subBuffers[ i ].mOrigin, subBuffers[ i ].mSize ) != 0 )
         {
-            log_error( "ERROR: Validation for sub-buffer %ld failed!\n", i );
+            log_error("ERROR: Validation for sub-buffer %zu failed!\n", i);
             numErrors++;
         }
     }
@@ -626,4 +647,3 @@ int test_sub_buffers_overlapping( cl_device_id deviceID, cl_context context, cl_
 
     return numErrors;
 }
-

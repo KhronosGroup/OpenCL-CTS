@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include "subhelpers.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
@@ -297,8 +296,9 @@ int test_ifp(cl_device_id device, cl_context context, cl_command_queue queue,
     WorkGroupParams test_params(global_work_size, local_work_size);
     test_params.use_core_subgroups = useCoreSubgroups;
     test_params.dynsc = NUM_LOC + 1;
-    error = test<cl_int, IFP>::run(device, context, queue, num_elements,
-                                   "test_ifp", ifp_source, test_params);
+    error =
+        subgroup_test<cl_int, IFP>::run(device, context, queue, num_elements,
+                                        "test_ifp", ifp_source, test_params);
     return error;
 }
 
@@ -331,8 +331,7 @@ static test_status checkIFPSupport(cl_device_id device, bool &ifpSupport)
     return TEST_PASS;
 }
 
-int test_ifp_core(cl_device_id device, cl_context context,
-                  cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(ifp_core, Version(2, 1))
 {
     bool ifpSupport = true;
     test_status error;
@@ -350,8 +349,7 @@ int test_ifp_core(cl_device_id device, cl_context context,
     return test_ifp(device, context, queue, num_elements, true);
 }
 
-int test_ifp_ext(cl_device_id device, cl_context context,
-                 cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(ifp_ext, Version(2, 0))
 {
     bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
     bool ifpSupport = true;

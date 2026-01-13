@@ -35,7 +35,8 @@ const char *test_kernels[] = { "__kernel void kernelA(__global uint *dst)\n"
 #define MAX_DEVICES 32
 #define MAX_QUEUES 1000
 
-int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices, int num_elements)
+static int test_device_set(size_t deviceCount, size_t queueCount,
+                           cl_device_id *devices, int num_elements)
 {
     int error;
     clContextWrapper context;
@@ -53,22 +54,27 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
     RandomSeed seed( gRandomSeed );
 
     if (deviceCount > MAX_DEVICES) {
-       log_error("Number of devices in set (%ld) is greater than the number for which the test was written (%d).", deviceCount, MAX_DEVICES);
-    return -1;
+        log_error("Number of devices in set (%zu) is greater than the number "
+                  "for which the test was written (%d).",
+                  deviceCount, MAX_DEVICES);
+        return -1;
   }
 
   if (queueCount > MAX_QUEUES) {
-       log_error("Number of queues (%ld) is greater than the number for which the test was written (%d).", queueCount, MAX_QUEUES);
-    return -1;
+      log_error("Number of queues (%zu) is greater than the number for which "
+                "the test was written (%d).",
+                queueCount, MAX_QUEUES);
+      return -1;
   }
 
-  log_info("Testing with %ld queues on %ld devices, %ld kernel executions.\n", queueCount, deviceCount, queueCount*num_elements/TEST_SIZE);
+  log_info("Testing with %zu queues on %zu devices, %zu kernel executions.\n",
+           queueCount, deviceCount, queueCount * num_elements / TEST_SIZE);
 
   for (i=0; i<deviceCount; i++) {
     char deviceName[4096] = "";
     error = clGetDeviceInfo(devices[i], CL_DEVICE_NAME, sizeof(deviceName), deviceName, NULL);
     test_error(error, "clGetDeviceInfo CL_DEVICE_NAME failed");
-    log_info("Device %ld is \"%s\".\n", i, deviceName);
+    log_info("Device %zu is \"%s\".\n", i, deviceName);
   }
 
     /* Create a context */
@@ -158,14 +164,19 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
     {
       if( expectedResults[ i ] != outputData[ i ] )
       {
-        log_error( "ERROR: Sample data did not verify for queue %d on device %ld (sample %d, expected %d, got %d)\n",
-                  q, q % deviceCount, (int)i, expectedResults[ i ], outputData[ i ] );
-        for (size_t j=0; j<deviceCount; j++) {
-          if (expectedResultsOneDevice[j][i] == outputData[i])
-            log_info("Sample consistent with only device %ld having modified the data.\n", j);
-        }
-        errorsThisTime++;
-        break;
+          log_error("ERROR: Sample data did not verify for queue %d on device "
+                    "%zu (sample %d, expected %d, got %d)\n",
+                    q, q % deviceCount, (int)i, expectedResults[i],
+                    outputData[i]);
+          for (size_t j = 0; j < deviceCount; j++)
+          {
+              if (expectedResultsOneDevice[j][i] == outputData[i])
+                  log_info("Sample consistent with only device %zu having "
+                           "modified the data.\n",
+                           j);
+          }
+          errorsThisTime++;
+          break;
       }
     }
     if (errorsThisTime)
@@ -177,7 +188,7 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
   return 0;
 }
 
-int test_two_devices(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(two_devices)
 {
     cl_platform_id platform;
     cl_device_id devices[2];
@@ -205,7 +216,7 @@ int test_two_devices(cl_device_id deviceID, cl_context context, cl_command_queue
     return test_device_set( 2, 2, devices, num_elements );
 }
 
-int test_max_devices(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(max_devices)
 {
     cl_platform_id platform;
     cl_device_id devices[MAX_DEVICES];
@@ -225,8 +236,7 @@ int test_max_devices(cl_device_id deviceID, cl_context context, cl_command_queue
     return test_device_set( deviceCount, deviceCount, devices, num_elements );
 }
 
-int test_hundred_queues(cl_device_id device, cl_context contextIgnore, cl_command_queue queueIgnore, int num_elements)
+REGISTER_TEST(hundred_queues)
 {
-  return test_device_set( 1, 100, &device, num_elements );
+    return test_device_set(1, 100, &device, num_elements);
 }
-

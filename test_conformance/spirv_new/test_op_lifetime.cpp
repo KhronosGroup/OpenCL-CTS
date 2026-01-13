@@ -83,25 +83,24 @@ int test_op_lifetime(cl_device_id deviceID,
     return 0;
 }
 
-#define TEST_LIFETIME(name)                                 \
-    TEST_SPIRV_FUNC(op_##name)                              \
-    {                                                       \
-        const int num = 1 << 10;                            \
-        RandomSeed seed(gRandomSeed);                       \
-                                                            \
-        std::vector<cl_int> lhs(num);                       \
-        std::vector<cl_int> rhs(num);                       \
-        std::vector<cl_int> out(num);                       \
-                                                            \
-        for (int i = 0; i < num; i++) {                     \
-            lhs[i] = genrand<int>(seed);                    \
-            rhs[i] = genrand<int>(seed);                    \
-            out[i] = lhs[i] - rhs[i];                       \
-        }                                                   \
-                                                            \
-        return test_op_lifetime(deviceID, context, queue,   \
-                                #name,                      \
-                                lhs, rhs, out);             \
-    }                                                       \
+#define TEST_LIFETIME(name)                                                    \
+    REGISTER_TEST(op_##name)                                                   \
+    {                                                                          \
+        const int num = 1 << 10;                                               \
+        RandomSeed seed(gRandomSeed);                                          \
+                                                                               \
+        std::vector<cl_int> lhs(num);                                          \
+        std::vector<cl_int> rhs(num);                                          \
+        std::vector<cl_int> out(num);                                          \
+                                                                               \
+        for (int i = 0; i < num; i++)                                          \
+        {                                                                      \
+            lhs[i] = genrand<int>(seed);                                       \
+            rhs[i] = genrand<int>(seed);                                       \
+            out[i] = lhs[i] - rhs[i];                                          \
+        }                                                                      \
+                                                                               \
+        return test_op_lifetime(device, context, queue, #name, lhs, rhs, out); \
+    }
 
 TEST_LIFETIME(lifetime_simple)

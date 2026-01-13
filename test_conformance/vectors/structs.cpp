@@ -18,6 +18,8 @@
 
 #include "defines.h"
 
+#include "harness/parseParameters.h"
+
 #define DEBUG_MEM_ALLOC 0
 
 /** typedef struct _bufferStruct
@@ -223,7 +225,7 @@ void initContents(bufferStruct *pBufferStruct, clState *pClState,
             break;
         }
         case 4: {
-            if (!g_wimpyMode)
+            if (!gWimpyMode)
             {
                 uint32_t *ui = (uint32_t *)(pBufferStruct->m_pIn);
                 for (i = 0; i < countIn; ++i)
@@ -369,7 +371,7 @@ int checkCorrectnessStep(bufferStruct *pBufferStruct, clState *pClState,
     {
         if (targetArr[i] != targetSize)
         {
-            vlog_error("Error %ld (of %ld).  Expected %d, got %d\n", i,
+            vlog_error("Error %zu (of %zu).  Expected %d, got %d\n", i,
                        pClState->m_numThreads, targetSize, targetArr[i]);
             return -1;
         }

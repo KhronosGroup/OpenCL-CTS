@@ -29,7 +29,12 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     BuildKernelInfo &info = *(BuildKernelInfo *)p;
     auto generator = [](const std::string &kernel_name, const char *builtin,
                         cl_uint vector_size_index) {
-        return GetUnaryKernel(kernel_name, builtin, ParameterType::Double,
+        const char *builtinCall = builtin;
+        if (strcmp(builtin, "reciprocal") == 0)
+        {
+            builtinCall = "((RETTYPE)(1.0))/";
+        }
+        return GetUnaryKernel(kernel_name, builtinCall, ParameterType::Double,
                               ParameterType::Double, vector_size_index);
     };
     return BuildKernels(info, job_id, generator);
@@ -176,20 +181,12 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
             (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
         cl_kernel kernel = job->k[j][thread_id]; // each worker thread has its
                                                  // own copy of the cl_kernel
-        cl_program program = job->programs[j];
 
-        if ((error = clSetKernelArg(kernel, 0, sizeof(tinfo->outBuf[j]),
-                                    &tinfo->outBuf[j])))
-        {
-            LogBuildError(program);
-            return error;
-        }
-        if ((error = clSetKernelArg(kernel, 1, sizeof(tinfo->inBuf),
-                                    &tinfo->inBuf)))
-        {
-            LogBuildError(program);
-            return error;
-        }
+        error = clSetKernelArg(kernel, 0, sizeof(tinfo->outBuf[j]),
+                               &tinfo->outBuf[j]);
+        test_error(error, "Failed to set kernel argument");
+        error = clSetKernelArg(kernel, 1, sizeof(tinfo->inBuf), &tinfo->inBuf);
+        test_error(error, "Failed to set kernel argument");
 
         if ((error = clEnqueueNDRangeKernel(tinfo->tQueue, kernel, 1, NULL,
                                             &vectorCount, NULL, 0, NULL, NULL)))
@@ -357,7 +354,7 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     }
 
     test_info.f = f;
-    test_info.ulps = f->double_ulps;
+    test_info.ulps = getAllowedUlpError(f, kdouble, relaxedMode);
     test_info.ftz = f->ftz || gForceFTZ;
     test_info.relaxedMode = relaxedMode;
 

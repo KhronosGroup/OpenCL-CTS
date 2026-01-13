@@ -23,7 +23,7 @@ int memory_access(cl_device_id deviceID, cl_context context,
 {
     CResult result;
 
-    std::auto_ptr<CDeviceWrapper> deviceWrapper;
+    std::unique_ptr<CDeviceWrapper> deviceWrapper;
     // creates device
     if (!DeviceCreate(adapterType, deviceWrapper))
     {
@@ -74,7 +74,7 @@ int memory_access(cl_device_id deviceID, cl_context context,
         }
 
         void *objectSharedHandle = 0;
-        std::auto_ptr<CSurfaceWrapper> surface;
+        std::unique_ptr<CSurfaceWrapper> surface;
 
         // creates surface
         if (!MediaSurfaceCreate(
@@ -442,14 +442,13 @@ int memory_access(cl_device_id deviceID, cl_context context,
     return result.Result();
 }
 
-int test_memory_access(cl_device_id deviceID, cl_context context,
-                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(memory_access)
 {
     CResult result;
 
 #if defined(_WIN32)
     // D3D9
-    if (memory_access(deviceID, context, queue, num_elements, 256, 256,
+    if (memory_access(device, context, queue, num_elements, 256, 256,
                       CL_ADAPTER_D3D9_KHR, SURFACE_FORMAT_NV12,
                       SHARED_HANDLE_DISABLED)
         != 0)
@@ -458,7 +457,7 @@ int test_memory_access(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (memory_access(deviceID, context, queue, num_elements, 512, 256,
+    if (memory_access(device, context, queue, num_elements, 512, 256,
                       CL_ADAPTER_D3D9_KHR, SURFACE_FORMAT_YV12,
                       SHARED_HANDLE_DISABLED)
         != 0)
@@ -468,7 +467,7 @@ int test_memory_access(cl_device_id deviceID, cl_context context,
     }
 
     // D3D9EX
-    if (memory_access(deviceID, context, queue, num_elements, 256, 512,
+    if (memory_access(device, context, queue, num_elements, 256, 512,
                       CL_ADAPTER_D3D9EX_KHR, SURFACE_FORMAT_NV12,
                       SHARED_HANDLE_DISABLED)
         != 0)
@@ -477,7 +476,7 @@ int test_memory_access(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (memory_access(deviceID, context, queue, num_elements, 512, 256,
+    if (memory_access(device, context, queue, num_elements, 512, 256,
                       CL_ADAPTER_D3D9EX_KHR, SURFACE_FORMAT_NV12,
                       SHARED_HANDLE_ENABLED)
         != 0)
@@ -486,7 +485,7 @@ int test_memory_access(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (memory_access(deviceID, context, queue, num_elements, 256, 256,
+    if (memory_access(device, context, queue, num_elements, 256, 256,
                       CL_ADAPTER_D3D9EX_KHR, SURFACE_FORMAT_YV12,
                       SHARED_HANDLE_DISABLED)
         != 0)
@@ -495,7 +494,7 @@ int test_memory_access(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (memory_access(deviceID, context, queue, num_elements, 128, 128,
+    if (memory_access(device, context, queue, num_elements, 128, 128,
                       CL_ADAPTER_D3D9EX_KHR, SURFACE_FORMAT_YV12,
                       SHARED_HANDLE_ENABLED)
         != 0)
@@ -505,7 +504,7 @@ int test_memory_access(cl_device_id deviceID, cl_context context,
     }
 
     // DXVA
-    if (memory_access(deviceID, context, queue, num_elements, 128, 128,
+    if (memory_access(device, context, queue, num_elements, 128, 128,
                       CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_NV12,
                       SHARED_HANDLE_DISABLED)
         != 0)
@@ -514,7 +513,7 @@ int test_memory_access(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (memory_access(deviceID, context, queue, num_elements, 64, 64,
+    if (memory_access(device, context, queue, num_elements, 64, 64,
                       CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_NV12,
                       SHARED_HANDLE_ENABLED)
         != 0)
@@ -523,7 +522,7 @@ int test_memory_access(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (memory_access(deviceID, context, queue, num_elements, 512, 512,
+    if (memory_access(device, context, queue, num_elements, 512, 512,
                       CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_YV12,
                       SHARED_HANDLE_DISABLED)
         != 0)
@@ -532,7 +531,7 @@ int test_memory_access(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (memory_access(deviceID, context, queue, num_elements, 1024, 1024,
+    if (memory_access(device, context, queue, num_elements, 1024, 1024,
                       CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_YV12,
                       SHARED_HANDLE_ENABLED)
         != 0)

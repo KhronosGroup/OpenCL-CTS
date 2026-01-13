@@ -16,7 +16,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "procs.h"
 #include "test_base.h"
 #include "harness/kernelHelpers.h"
 
@@ -35,17 +34,6 @@ static void initVecSizes() {
         g_arrVecSizes[i] = g_arrStrangeVectorSizes[i-kVectorSizeCount];
     }
 }
-
-test_definition test_list[] = {
-    ADD_TEST(clamp),      ADD_TEST(degrees),     ADD_TEST(fmax),
-    ADD_TEST(fmaxf),      ADD_TEST(fmin),        ADD_TEST(fminf),
-    ADD_TEST(max),        ADD_TEST(maxf),        ADD_TEST(min),
-    ADD_TEST(minf),       ADD_TEST(mix),         ADD_TEST(mixf),
-    ADD_TEST(radians),    ADD_TEST(step),        ADD_TEST(stepf),
-    ADD_TEST(smoothstep), ADD_TEST(smoothstepf), ADD_TEST(sign),
-};
-
-const int test_num = ARRAY_SIZE( test_list );
 
 test_status InitCL(cl_device_id device)
 {
@@ -79,6 +67,7 @@ int main(int argc, const char *argv[])
     BaseFunctionTest::type2name[sizeof(float)] = "float";
     BaseFunctionTest::type2name[sizeof(double)] = "double";
 
-    return runTestHarnessWithCheck(argc, argv, test_num, test_list, false, 0,
-                                   InitCL);
+    return runTestHarnessWithCheck(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0, InitCL);
 }

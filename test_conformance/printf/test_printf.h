@@ -70,14 +70,15 @@ struct printDataGenParameters
 {
     std::vector<std::string> genericFormats;
     const char* dataRepresentation;
-    const char* vectorFormatFlag;
-    const char* vectorFormatSpecifier;
-    const char* dataType;
-    const char* vectorSize;
-    const char* addrSpaceArgumentTypeQualifier;
-    const char* addrSpaceVariableTypeQualifier;
-    const char* addrSpaceParameter;
-    const char* addrSpacePAdd;
+    const char* vectorFormatFlag = nullptr;
+    const char* vectorFormatSpecifier = nullptr;
+    const char* dataType = nullptr;
+    const char* vectorSize = nullptr;
+    const char* addrSpaceArgumentTypeQualifier = nullptr;
+    const char* addrSpaceVariableTypeQualifier = nullptr;
+    const char* addrSpaceParameter = nullptr;
+    const char* addrSpacePAdd = nullptr;
+    bool allowFallbackTest = false;
 };
 
 // Reference results - filled out at run-time
@@ -111,6 +112,9 @@ struct testCase
                     char*,
                     const size_t);                       //function pointer for generating reference results
     Type dataType;                                       //the data type that will be printed during reference result generation (used for setting rounding mode)
+    bool (*fallbackTestFN)(const char*,
+                           const char*) =
+        nullptr; // function pointer to perform fallback test if required
 };
 
 extern const char* strType[];

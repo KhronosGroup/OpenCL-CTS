@@ -23,7 +23,7 @@
 #include <sys/stat.h>
 #include <CL/cl_half.h>
 
-#include "procs.h"
+#include "testBase.h"
 
 //#define HK_DO_NOT_RUN_SHORT_ASYNC    1
 //#define HK_DO_NOT_RUN_USHORT_ASYNC    1
@@ -618,8 +618,11 @@ static int verify_read_struct(TestStruct *outptr, int n)
 }
 
 //----- the test functions
-int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, size_t size, char *type, int loops,
-                      const char *kernelCode[], const char *kernelName[], int (*fn)(void *,int) )
+static int test_buffer_read(cl_device_id deviceID, cl_context context,
+                            cl_command_queue queue, int num_elements,
+                            size_t size, char *type, int loops,
+                            const char *kernelCode[], const char *kernelName[],
+                            int (*fn)(void *, int))
 {
     void        *outptr[5];
     void        *inptr[5];
@@ -663,6 +666,12 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
+            // Skip immutable memory flags
+            if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
+
             clMemWrapper buffer;
             outptr[i] = align_malloc( ptrSizes[i] * num_elements, min_alignment);
             if ( ! outptr[i] ){
@@ -758,8 +767,12 @@ int test_buffer_read( cl_device_id deviceID, cl_context context, cl_command_queu
 
 }   // end test_buffer_read()
 
-int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, size_t size, char *type, int loops,
-                            const char *kernelCode[], const char *kernelName[], int (*fn)(void *,int) )
+static int test_buffer_read_async(cl_device_id deviceID, cl_context context,
+                                  cl_command_queue queue, int num_elements,
+                                  size_t size, char *type, int loops,
+                                  const char *kernelCode[],
+                                  const char *kernelName[],
+                                  int (*fn)(void *, int))
 {
     clProgramWrapper program[5];
     clKernelWrapper kernel[5];
@@ -802,6 +815,12 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
+            // Skip immutable memory flags
+            if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
+
             clMemWrapper buffer;
             clEventWrapper event;
             outptr[i] = align_malloc(ptrSizes[i] * num_elements, min_alignment);
@@ -894,8 +913,10 @@ int test_buffer_read_async( cl_device_id deviceID, cl_context context, cl_comman
 }   // end test_buffer_read_array_async()
 
 
-int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, size_t size, char *type, int loops,
-                                    const char *kernelCode[], const char *kernelName[], int (*fn)(void *,int) )
+static int test_buffer_read_array_barrier(
+    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    int num_elements, size_t size, char *type, int loops,
+    const char *kernelCode[], const char *kernelName[], int (*fn)(void *, int))
 {
     clProgramWrapper program[5];
     clKernelWrapper kernel[5];
@@ -937,6 +958,12 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
+            // Skip immutable memory flags
+            if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
+
             clMemWrapper buffer;
             clEventWrapper event;
             outptr[i] = align_malloc(ptrSizes[i] * num_elements, min_alignment);
@@ -1033,12 +1060,14 @@ int test_buffer_read_array_barrier( cl_device_id deviceID, cl_context context, c
 }   // end test_buffer_read_array_barrier()
 
 
-#define DECLARE_READ_TEST(type, realType) \
-int test_buffer_read_##type( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )    \
-{ \
-return test_buffer_read( deviceID, context, queue, num_elements, sizeof( realType ), (char*)#type, 5, \
-buffer_read_##type##_kernel_code, type##_kernel_name, verify_read_##type ); \
-}
+#define DECLARE_READ_TEST(type, realType)                                      \
+    REGISTER_TEST(buffer_read_##type)                                          \
+    {                                                                          \
+        return test_buffer_read(device, context, queue, num_elements,          \
+                                sizeof(realType), (char *)#type, 5,            \
+                                buffer_read_##type##_kernel_code,              \
+                                type##_kernel_name, verify_read_##type);       \
+    }
 
 DECLARE_READ_TEST(int, cl_int)
 DECLARE_READ_TEST(uint, cl_uint)
@@ -1050,21 +1079,24 @@ DECLARE_READ_TEST(float, cl_float)
 DECLARE_READ_TEST(char, cl_char)
 DECLARE_READ_TEST(uchar, cl_uchar)
 
-int test_buffer_read_half(cl_device_id deviceID, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(buffer_read_half)
 {
-    PASSIVE_REQUIRE_FP16_SUPPORT(deviceID)
-    return test_buffer_read( deviceID, context, queue, num_elements, sizeof( cl_float ) / 2, (char*)"half", 5,
-                             buffer_read_half_kernel_code, half_kernel_name, verify_read_half );
+    PASSIVE_REQUIRE_FP16_SUPPORT(device)
+    return test_buffer_read(device, context, queue, num_elements,
+                            sizeof(cl_float) / 2, (char *)"half", 5,
+                            buffer_read_half_kernel_code, half_kernel_name,
+                            verify_read_half);
 }
 
 
-#define DECLARE_ASYNC_TEST(type, realType) \
-int test_buffer_read_async_##type( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )    \
-{ \
-return test_buffer_read_async( deviceID, context, queue, num_elements, sizeof( realType ), (char*)#type, 5, \
-buffer_read_##type##_kernel_code, type##_kernel_name, verify_read_##type ); \
-}
+#define DECLARE_ASYNC_TEST(type, realType)                                     \
+    REGISTER_TEST(buffer_read_async_##type)                                    \
+    {                                                                          \
+        return test_buffer_read_async(device, context, queue, num_elements,    \
+                                      sizeof(realType), (char *)#type, 5,      \
+                                      buffer_read_##type##_kernel_code,        \
+                                      type##_kernel_name, verify_read_##type); \
+    }
 
 DECLARE_ASYNC_TEST(char, cl_char)
 DECLARE_ASYNC_TEST(uchar, cl_uchar)
@@ -1077,12 +1109,14 @@ DECLARE_ASYNC_TEST(ulong, cl_ulong)
 DECLARE_ASYNC_TEST(float, cl_float)
 
 
-#define DECLARE_BARRIER_TEST(type, realType) \
-int test_buffer_read_array_barrier_##type( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )    \
-{ \
-return test_buffer_read_array_barrier( deviceID, context, queue, num_elements, sizeof( realType ), (char*)#type, 5, \
-buffer_read_##type##_kernel_code, type##_kernel_name, verify_read_##type ); \
-}
+#define DECLARE_BARRIER_TEST(type, realType)                                   \
+    REGISTER_TEST(buffer_read_array_barrier_##type)                            \
+    {                                                                          \
+        return test_buffer_read_array_barrier(                                 \
+            device, context, queue, num_elements, sizeof(realType),            \
+            (char *)#type, 5, buffer_read_##type##_kernel_code,                \
+            type##_kernel_name, verify_read_##type);                           \
+    }
 
 DECLARE_BARRIER_TEST(int, cl_int)
 DECLARE_BARRIER_TEST(uint, cl_uint)
@@ -1094,7 +1128,7 @@ DECLARE_BARRIER_TEST(char, cl_char)
 DECLARE_BARRIER_TEST(uchar, cl_uchar)
 DECLARE_BARRIER_TEST(float, cl_float)
 
-int test_buffer_read_struct(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(buffer_read_struct)
 {
     cl_mem      buffers[1];
     TestStruct  *output_ptr;
@@ -1305,7 +1339,7 @@ static int testRandomReadSize( cl_device_id deviceID, cl_context context, cl_com
 }   // end testRandomReadSize()
 
 
-int test_buffer_read_random_size(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(buffer_read_random_size)
 {
     int     err = 0;
     int     i;
@@ -1317,7 +1351,8 @@ int test_buffer_read_random_size(cl_device_id deviceID, cl_context context, cl_c
     for ( i = 0; i < 8; i++ ){
         start = (cl_uint)get_random_float( 0.f, (float)(num_elements - 8), d );
         size = (size_t)get_random_float( 8.f, (float)(num_elements - start), d );
-        if (testRandomReadSize( deviceID, context, queue, num_elements, start, size ))
+        if (testRandomReadSize(device, context, queue, num_elements, start,
+                               size))
             err++;
     }
 
@@ -1325,4 +1360,3 @@ int test_buffer_read_random_size(cl_device_id deviceID, cl_context context, cl_c
 
     return err;
 }
-

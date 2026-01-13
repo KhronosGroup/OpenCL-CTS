@@ -67,21 +67,18 @@ int test_function(cl_device_id deviceID,
 }
 
 
-#define TEST_FUNCTION(TYPE)                     \
-    TEST_SPIRV_FUNC(function_##TYPE)            \
-    {                                           \
-        int num = 1 << 20;                      \
-        std::vector<cl_float> in(num);          \
-        RandomSeed seed(gRandomSeed);           \
-        for (int i = 0; i < num; i++) {         \
-            in[i] = genrand<cl_float>(seed);    \
-        }                                       \
-        return test_function(deviceID,          \
-                             context,           \
-                             queue,             \
-                             #TYPE,             \
-                             in);               \
-    }                                           \
+#define TEST_FUNCTION(TYPE)                                                    \
+    REGISTER_TEST(function_##TYPE)                                             \
+    {                                                                          \
+        int num = 1 << 20;                                                     \
+        std::vector<cl_float> in(num);                                         \
+        RandomSeed seed(gRandomSeed);                                          \
+        for (int i = 0; i < num; i++)                                          \
+        {                                                                      \
+            in[i] = genrand<cl_float>(seed);                                   \
+        }                                                                      \
+        return test_function(device, context, queue, #TYPE, in);               \
+    }
 
 TEST_FUNCTION(none)
 TEST_FUNCTION(inline)

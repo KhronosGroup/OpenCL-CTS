@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "procs.h"
 #include "subhelpers.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
@@ -164,23 +163,22 @@ int test_barrier_functions(cl_device_id device, cl_context context,
     constexpr size_t local_work_size = 200;
     WorkGroupParams test_params(global_work_size, local_work_size);
     test_params.use_core_subgroups = useCoreSubgroups;
-    error = test<cl_int, BAR<0>>::run(device, context, queue, num_elements,
-                                      "test_lbar", lbar_source, test_params);
-    error |= test<cl_int, BAR<1>, global_work_size>::run(
+    error = subgroup_test<cl_int, BAR<0>>::run(device, context, queue,
+                                               num_elements, "test_lbar",
+                                               lbar_source, test_params);
+    error |= subgroup_test<cl_int, BAR<1>, global_work_size>::run(
         device, context, queue, num_elements, "test_gbar", gbar_source,
         test_params);
 
     return error;
 }
 
-int test_barrier_functions_core(cl_device_id device, cl_context context,
-                                cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(barrier_functions_core, Version(2, 1))
 {
     return test_barrier_functions(device, context, queue, num_elements, true);
 }
 
-int test_barrier_functions_ext(cl_device_id device, cl_context context,
-                               cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(barrier_functions_ext, Version(2, 0))
 {
     bool hasExtension = is_extension_available(device, "cl_khr_subgroups");
 

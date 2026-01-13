@@ -50,8 +50,6 @@
 #include "harness/errorHelpers.h"
 #include "harness/featureHelpers.h"
 #include "harness/mt19937.h"
-#include "procs.h"
-
 
 ////////////////////
 // Device capabilities
@@ -1100,7 +1098,7 @@ static int check_global_initialization(cl_context context, cl_program program,
     test_error_ret(status, "Failed to read buffer from device", status);
     if (is_init_valid == 0)
     {
-        log_error("Unexpected default values were detected");
+        log_error("Unexpected default values were detected\n");
         return 1;
     }
 
@@ -1266,7 +1264,7 @@ static int l_write_read_for_type(cl_device_id device, cl_context context,
             }
 
             cl_uchar* read_ptr = (cl_uchar*)clEnqueueMapBuffer(
-                queue, read_mem, CL_TRUE, CL_MAP_READ, 0, read_data_size, 0, 0,
+                queue, read_mem, CL_TRUE, CL_MAP_WRITE, 0, read_data_size, 0, 0,
                 0, 0);
             memset(read_data, -1, read_data_size);
             clEnqueueUnmapMemObject(queue, read_mem, read_ptr, 0, 0, 0);
@@ -1505,7 +1503,7 @@ static int l_init_write_read_for_type(cl_device_id device, cl_context context,
             clEnqueueUnmapMemObject(queue, write_mem, write_ptr, 0, 0, 0);
 
             cl_uchar* read_ptr = (cl_uchar*)clEnqueueMapBuffer(
-                queue, read_mem, CL_TRUE, CL_MAP_READ, 0, read_data_size, 0, 0,
+                queue, read_mem, CL_TRUE, CL_MAP_WRITE, 0, read_data_size, 0, 0,
                 0, 0);
             memset(read_data, -1, read_data_size);
             clEnqueueUnmapMemObject(queue, read_mem, read_ptr, 0, 0, 0);
@@ -2006,8 +2004,7 @@ static cl_int should_skip(cl_device_id device, cl_bool& skip)
 
 
 // Test support for variables at program scope. Miscellaneous
-int test_progvar_prog_scope_misc(cl_device_id device, cl_context context,
-                                 cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(progvar_prog_scope_misc, Version(2, 0))
 {
     cl_bool skip{ CL_FALSE };
     auto error = should_skip(device, skip);
@@ -2038,8 +2035,7 @@ int test_progvar_prog_scope_misc(cl_device_id device, cl_context context,
 
 
 // Test support for variables at program scope. Unitialized data
-int test_progvar_prog_scope_uninit(cl_device_id device, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(progvar_prog_scope_uninit, Version(2, 0))
 {
     cl_bool skip{ CL_FALSE };
     auto error = should_skip(device, skip);
@@ -2068,8 +2064,7 @@ int test_progvar_prog_scope_uninit(cl_device_id device, cl_context context,
 }
 
 // Test support for variables at program scope. Initialized data.
-int test_progvar_prog_scope_init(cl_device_id device, cl_context context,
-                                 cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(progvar_prog_scope_init, Version(2, 0))
 {
     cl_bool skip{ CL_FALSE };
     auto error = should_skip(device, skip);
@@ -2098,8 +2093,7 @@ int test_progvar_prog_scope_init(cl_device_id device, cl_context context,
 
 
 // A simple test for support of static variables inside a kernel.
-int test_progvar_func_scope(cl_device_id device, cl_context context,
-                            cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(progvar_func_scope, Version(2, 0))
 {
     cl_bool skip{ CL_FALSE };
     auto error = should_skip(device, skip);

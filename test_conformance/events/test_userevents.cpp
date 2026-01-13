@@ -28,18 +28,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // CL error checking.
 
-#if defined(_MSC_VER)
-#define CL_EXIT_ERROR(cmd, ...)                                                \
-    {                                                                          \
-        if ((cmd) != CL_SUCCESS)                                               \
-        {                                                                      \
-            log_error("CL ERROR: %s %u: ", __FILE__, __LINE__);                \
-            log_error(##__VA_ARGS__);                                          \
-            log_error("\n");                                                   \
-            return -1;                                                         \
-        }                                                                      \
-    }
-#else
 #define CL_EXIT_ERROR(cmd, format, ...)                                        \
     {                                                                          \
         if ((cmd) != CL_SUCCESS)                                               \
@@ -50,7 +38,6 @@
             return -1;                                                         \
         }                                                                      \
     }
-#endif
 
 #define CL_EXIT_BUILD_ERROR(cmd, program, format, ...)                         \
     {                                                                          \
@@ -91,8 +78,7 @@ enum
     MaxDevices = 8
 };
 
-int test_userevents(cl_device_id deviceID, cl_context context,
-                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(userevents)
 {
 
     cl_int err;

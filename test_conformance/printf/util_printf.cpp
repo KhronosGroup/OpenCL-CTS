@@ -19,15 +19,18 @@
 #include "test_printf.h"
 #include <assert.h>
 #include <CL/cl_half.h>
-
+#include <regex>
 
 // Helpers for generating runtime reference results
 static void intRefBuilder(printDataGenParameters&, char*, const size_t);
 static void halfRefBuilder(printDataGenParameters&, char* rResult,
                            const size_t);
 static void floatRefBuilder(printDataGenParameters&, char* rResult, const size_t);
+static bool floatRefTest(const char* refResult, const char* analysisBuffer);
 static void doubleRefBuilder(printDataGenParameters&, char* rResult,
                              const size_t);
+static bool doubleRefTest(const char* refResult, const char* analysisBuffer);
+
 static void octalRefBuilder(printDataGenParameters&, char*, const size_t);
 static void unsignedRefBuilder(printDataGenParameters&, char*, const size_t);
 static void hexRefBuilder(printDataGenParameters&, char*, const size_t);
@@ -468,12 +471,12 @@ std::vector<printDataGenParameters> printFloatGenParameters = {
 
     // Double argument representing floating-point,in [-]xh.hhhhpAd style
 
-    { { "%.6a" }, "0.1f" },
+    { { "%.6a" }, "0.5f", 0, 0, 0, 0, 0, 0, 0, 0, true },
 
     //(Minimum)Ten-wide,Double argument representing floating-point,in
     // xh.hhhhpAd style,default(right)-justified
 
-    { { "%10.2a" }, "9990.235f" },
+    { { "%10.2a" }, "1.5f", 0, 0, 0, 0, 0, 0, 0, 0, true },
 
     //(Minimum)Ten-wide,two positions after the decimal,with
     // a blank space inserted before the value, default(right)-justified
@@ -502,8 +505,9 @@ testCase testCaseFloat = {
 
     floatRefBuilder,
 
-    kfloat
+    kfloat,
 
+    floatRefTest
 };
 
 //==============================================
@@ -673,12 +677,12 @@ std::vector<printDataGenParameters> printDoubleGenParameters = {
 
     // Double argument representing floating-point,in [-]xh.hhhhpAd style
 
-    { { "%.6a" }, "0.1" },
+    { { "%.6a" }, "0.5", 0, 0, 0, 0, 0, 0, 0, 0, true },
 
     //(Minimum)Ten-wide,Double argument representing floating-point,in
     // xh.hhhhpAd style,default(right)-justified
 
-    { { "%10.2a" }, "9990.235" },
+    { { "%10.2a" }, "1.5", 0, 0, 0, 0, 0, 0, 0, 0, true },
 };
 
 //---------------------------------------------------------
@@ -697,8 +701,9 @@ testCase testCaseDouble = {
 
     doubleRefBuilder,
 
-    kdouble
+    kdouble,
 
+    doubleRefTest
 };
 
 //==============================================
@@ -1032,6 +1037,9 @@ testCase testCaseChar = {
 
 std::vector<printDataGenParameters> printStringGenParameters = {
 
+    // empty format, no data representation
+    { {""} },
+
     // empty format
     { {""}, "\"foo\"" },
 
@@ -1089,6 +1097,8 @@ std::vector<printDataGenParameters> printStringGenParameters = {
 //---------------------------------------------------------
 
 std::vector<std::string> correctBufferString = {
+
+    "",
 
     "",
 
@@ -1328,6 +1338,33 @@ std::vector<std::string> correctBufferVector = {
     "0x1.0p-2,0x1.0p-1,0x1.0p+0,0x1.8p+0",
 
     "1,2,3,4,1.5,3.14,2.5,3.5",
+
+    "1,2,3,4,5,6,7,10,11,0,40,100,200,400,1000,2000",
+
+    "+1,-2,+3,-4,+5,-6,+7,-8",
+
+    "00512,01024,262144,1048576"
+};
+
+std::vector<std::string> correctBufferVectorRTZ = {
+
+    "1.00,2.00,3.00,4.00",
+
+    "0xfa,0xfb",
+
+    "0x1234,0x8765",
+
+    "0x12345678,0x87654321",
+
+    "12345678,98765432",
+
+    "1.00,2.00,3.00,4.00",
+
+    "1.23e+03,9.87e+05,4.99e-04",
+
+    "0x1.0p-2,0x1.0p-1,0x1.0p+0,0x1.8p+0",
+
+    "1,2,3,4,1.5,3.13999,2.5,3.5",
 
     "1,2,3,4,5,6,7,10,11,0,40,100,200,400,1000,2000",
 
@@ -1716,12 +1753,24 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
     else if (pTestCase->_correctBuffer[testId] == "INF")
         return strcmp(analysisBuffer, "INF")
             && strcmp(analysisBuffer, "INFINITY");
-    else if (pTestCase->_correctBuffer[testId] == "nan")
-        return strcmp(analysisBuffer, "nan") && strcmp(analysisBuffer, "-nan");
-    else if (pTestCase->_correctBuffer[testId] == "NAN")
-        return strcmp(analysisBuffer, "NAN") && strcmp(analysisBuffer, "-NAN");
+    else if (pTestCase->_correctBuffer[testId] == "nan"
+             || pTestCase->_correctBuffer[testId] == "NAN")
+    {
+        std::string pattern =
+            R"(-?)" + pTestCase->_correctBuffer[testId] + R"((\(.*\))?)";
+        std::regex nanRegex(pattern);
+        return !std::regex_match(analysisBuffer, nanRegex);
+    }
 
-    return strcmp(analysisBuffer, pTestCase->_correctBuffer[testId].c_str());
+    size_t ret =
+        strcmp(analysisBuffer, pTestCase->_correctBuffer[testId].c_str());
+
+    if (ret != 0 && pTestCase->_genParameters[testId].allowFallbackTest
+        && pTestCase->fallbackTestFN)
+        if (pTestCase->fallbackTestFN(
+                analysisBuffer, pTestCase->_correctBuffer[testId].c_str()))
+            return 0;
+    return ret;
 }
 
 static void intRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
@@ -1745,11 +1794,25 @@ static void floatRefBuilder(printDataGenParameters& params, char* refResult, con
              strtof(params.dataRepresentation, NULL));
 }
 
+static bool floatRefTest(const char* refResult, const char* analysisBuffer)
+{
+    float test = strtof(analysisBuffer, NULL);
+    float expected = strtof(refResult, NULL);
+    return test == expected;
+}
+
 static void doubleRefBuilder(printDataGenParameters& params, char* refResult,
                              const size_t refSize)
 {
     snprintf(refResult, refSize, params.genericFormats.front().c_str(),
              strtod(params.dataRepresentation, NULL));
+}
+
+static bool doubleRefTest(const char* refResult, const char* analysisBuffer)
+{
+    double test = strtod(analysisBuffer, NULL);
+    double expected = strtod(refResult, NULL);
+    return test == expected;
 }
 
 static void octalRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
@@ -1822,7 +1885,14 @@ void generateRef(const cl_device_id device)
             as they're constant and hard-coded
         */
         if (caseToTest->printFN == NULL)
+        {
+            if (caseToTest->_type == TYPE_VECTOR
+                && fpConfigSingle == CL_FP_ROUND_TO_ZERO)
+            {
+                caseToTest->_correctBuffer = correctBufferVectorRTZ;
+            }
             continue;
+        }
 
         // Make sure the reference result is empty
         assert(caseToTest->_correctBuffer.size() == 0);

@@ -161,29 +161,29 @@ int test_vector_times_scalar(cl_device_id deviceID,
     return 0;
 }
 
-#define TEST_VECTOR_TIMES_SCALAR(TYPE, N)                       \
-    TEST_SPIRV_FUNC(op_vector_times_scalar_##TYPE)              \
-    {                                                           \
-        if (sizeof(cl_##TYPE) == 2) {                           \
-            PASSIVE_REQUIRE_FP16_SUPPORT(deviceID);             \
-        }                                                       \
-        typedef cl_##TYPE##N Tv;                                \
-        typedef cl_##TYPE Ts;                                   \
-        const int num = 1 << 20;                                \
-        std::vector<Tv> lhs(num);                               \
-        std::vector<Ts> rhs(num);                               \
-                                                                \
-        RandomSeed seed(gRandomSeed);                           \
-                                                                \
-        for (int i = 0; i < num; i++) {                         \
-            lhs[i] = genrandReal<cl_##TYPE##N>(seed);           \
-            rhs[i] = genrandReal<cl_##TYPE>(seed);              \
-        }                                                       \
-                                                                \
-        return test_vector_times_scalar<Tv, Ts>(deviceID,       \
-                                                context, queue, \
-                                                #TYPE,          \
-                                                lhs, rhs);      \
+#define TEST_VECTOR_TIMES_SCALAR(TYPE, N)                                      \
+    REGISTER_TEST(op_vector_times_scalar_##TYPE)                               \
+    {                                                                          \
+        if (sizeof(cl_##TYPE) == 2)                                            \
+        {                                                                      \
+            PASSIVE_REQUIRE_FP16_SUPPORT(device);                              \
+        }                                                                      \
+        typedef cl_##TYPE##N Tv;                                               \
+        typedef cl_##TYPE Ts;                                                  \
+        const int num = 1 << 20;                                               \
+        std::vector<Tv> lhs(num);                                              \
+        std::vector<Ts> rhs(num);                                              \
+                                                                               \
+        RandomSeed seed(gRandomSeed);                                          \
+                                                                               \
+        for (int i = 0; i < num; i++)                                          \
+        {                                                                      \
+            lhs[i] = genrandReal<cl_##TYPE##N>(seed);                          \
+            rhs[i] = genrandReal<cl_##TYPE>(seed);                             \
+        }                                                                      \
+                                                                               \
+        return test_vector_times_scalar<Tv, Ts>(device, context, queue, #TYPE, \
+                                                lhs, rhs);                     \
     }
 
 

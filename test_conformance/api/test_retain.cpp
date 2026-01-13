@@ -30,28 +30,28 @@
 log_error( "ERROR: Instance count for test object is not valid! (should be %d, really is %d)\n", rightValue, c ); \
 return -1;    }
 
-int test_retain_queue_single(cl_device_id deviceID, cl_context context, cl_command_queue queueNotUsed, int num_elements)
+REGISTER_TEST(retain_queue_single)
 {
-    cl_command_queue queue;
+    cl_command_queue cmd_queue;
     cl_uint numInstances;
     int err;
 
 
     /* Create a test queue */
-    queue = clCreateCommandQueue( context, deviceID, 0, &err );
+    cmd_queue = clCreateCommandQueue(context, device, 0, &err);
     test_error( err, "Unable to create command queue to test with" );
 
     /* Test the instance count */
-    GET_QUEUE_INSTANCE_COUNT( queue );
+    GET_QUEUE_INSTANCE_COUNT(cmd_queue);
     test_error( err, "Unable to get queue instance count" );
     VERIFY_INSTANCE_COUNT( numInstances, 1 );
 
     /* Now release the program */
-    clReleaseCommandQueue( queue );
+    clReleaseCommandQueue(cmd_queue);
 #ifdef VERIFY_AFTER_RELEASE
     /* We're not allowed to get the instance count after the object has been completely released. But that's
      exactly how we can tell the release worked--by making sure getting the instance count fails! */
-    GET_QUEUE_INSTANCE_COUNT( queue );
+    GET_QUEUE_INSTANCE_COUNT(cmd_queue);
     if( err != CL_INVALID_COMMAND_QUEUE )
     {
         print_error( err, "Command queue was not properly released" );
@@ -62,65 +62,65 @@ int test_retain_queue_single(cl_device_id deviceID, cl_context context, cl_comma
     return 0;
 }
 
-int test_retain_queue_multiple(cl_device_id deviceID, cl_context context, cl_command_queue queueNotUsed, int num_elements)
+REGISTER_TEST(retain_queue_multiple)
 {
-    cl_command_queue queue;
+    cl_command_queue cmd_queue;
     unsigned int numInstances, i;
     int err;
 
 
     /* Create a test program */
-    queue = clCreateCommandQueue( context, deviceID, 0, &err );
+    cmd_queue = clCreateCommandQueue(context, device, 0, &err);
     test_error( err, "Unable to create command queue to test with" );
 
     /* Increment 9 times, which should bring the count to 10 */
     for( i = 0; i < 9; i++ )
     {
-        clRetainCommandQueue( queue );
+        clRetainCommandQueue(cmd_queue);
     }
 
     /* Test the instance count */
-    GET_QUEUE_INSTANCE_COUNT( queue );
+    GET_QUEUE_INSTANCE_COUNT(cmd_queue);
     test_error( err, "Unable to get queue instance count" );
     VERIFY_INSTANCE_COUNT( numInstances, 10 );
 
     /* Now release 5 times, which should take us to 5 */
     for( i = 0; i < 5; i++ )
     {
-        clReleaseCommandQueue( queue );
+        clReleaseCommandQueue(cmd_queue);
     }
 
-    GET_QUEUE_INSTANCE_COUNT( queue );
+    GET_QUEUE_INSTANCE_COUNT(cmd_queue);
     test_error( err, "Unable to get queue instance count" );
     VERIFY_INSTANCE_COUNT( numInstances, 5 );
 
     /* Retain again three times, which should take us to 8 */
     for( i = 0; i < 3; i++ )
     {
-        clRetainCommandQueue( queue );
+        clRetainCommandQueue(cmd_queue);
     }
 
-    GET_QUEUE_INSTANCE_COUNT( queue );
+    GET_QUEUE_INSTANCE_COUNT(cmd_queue);
     test_error( err, "Unable to get queue instance count" );
     VERIFY_INSTANCE_COUNT( numInstances, 8 );
 
     /* Release 7 times, which should take it to 1 */
     for( i = 0; i < 7; i++ )
     {
-        clReleaseCommandQueue( queue );
+        clReleaseCommandQueue(cmd_queue);
     }
 
-    GET_QUEUE_INSTANCE_COUNT( queue );
+    GET_QUEUE_INSTANCE_COUNT(cmd_queue);
     test_error( err, "Unable to get queue instance count" );
     VERIFY_INSTANCE_COUNT( numInstances, 1 );
 
     /* And one last one */
-    clReleaseCommandQueue( queue );
+    clReleaseCommandQueue(cmd_queue);
 
 #ifdef VERIFY_AFTER_RELEASE
     /* We're not allowed to get the instance count after the object has been completely released. But that's
      exactly how we can tell the release worked--by making sure getting the instance count fails! */
-    GET_QUEUE_INSTANCE_COUNT( queue );
+    GET_QUEUE_INSTANCE_COUNT(cmd_queue);
     if( err != CL_INVALID_COMMAND_QUEUE )
     {
         print_error( err, "Command queue was not properly released" );
@@ -131,7 +131,7 @@ int test_retain_queue_multiple(cl_device_id deviceID, cl_context context, cl_com
     return 0;
 }
 
-int test_retain_mem_object_single(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(retain_mem_object_single)
 {
     cl_mem object;
     cl_uint numInstances;
@@ -163,7 +163,7 @@ int test_retain_mem_object_single(cl_device_id deviceID, cl_context context, cl_
     return 0;
 }
 
-int test_retain_mem_object_multiple(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(retain_mem_object_multiple)
 {
     cl_mem object;
     unsigned int numInstances, i;
@@ -232,7 +232,7 @@ int test_retain_mem_object_multiple(cl_device_id deviceID, cl_context context, c
     return 0;
 }
 
-int test_retain_mem_object_set_kernel_arg(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(retain_mem_object_set_kernel_arg)
 {
     int err;
     cl_mem buffer = nullptr;

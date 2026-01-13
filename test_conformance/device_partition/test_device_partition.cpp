@@ -229,11 +229,14 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
     RandomSeed seed( gRandomSeed );
 
     if (queueCount > MAX_QUEUES) {
-        log_error("Number of queues (%ld) is greater than the number for which the test was written (%d).", queueCount, MAX_QUEUES);
+        log_error("Number of queues (%zu) is greater than the number for which "
+                  "the test was written (%d).",
+                  queueCount, MAX_QUEUES);
         return -1;
     }
 
-    log_info("Testing with %ld queues on %ld devices, %ld kernel executions.\n", queueCount, deviceCount, queueCount*num_elements/TEST_SIZE);
+    log_info("Testing with %zu queues on %zu devices, %zu kernel executions.\n",
+             queueCount, deviceCount, queueCount * num_elements / TEST_SIZE);
 
     for (i=0; i<deviceCount; i++) {
         size_t deviceNameSize;
@@ -242,7 +245,7 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
         char *deviceName = (char *)alloca(deviceNameSize * (sizeof(char)));
         error = clGetDeviceInfo(devices[i], CL_DEVICE_NAME, deviceNameSize, deviceName, NULL);
         test_error(error, "clGetDeviceInfo CL_DEVICE_NAME failed");
-        log_info("Device %ld is \"%s\".\n", i, deviceName);
+        log_info("Device %zu is \"%s\".\n", i, deviceName);
     }
 
     /* Create a context */
@@ -332,11 +335,15 @@ int test_device_set(size_t deviceCount, size_t queueCount, cl_device_id *devices
         {
             if( expectedResults[ i ] != outputData[ i ] )
             {
-                log_error( "ERROR: Sample data did not verify for queue %d on device %ld (sample %d, expected %d, got %d)\n",
-                    q, q % deviceCount, (int)i, expectedResults[ i ], outputData[ i ] );
+                log_error("ERROR: Sample data did not verify for queue %d on "
+                          "device %zu (sample %zu, expected %d, got %d)\n",
+                          q, q % deviceCount, i, expectedResults[i],
+                          outputData[i]);
                 for (size_t j=0; j<deviceCount; j++) {
                     if (expectedResultsOneDevice[j][i] == outputData[i])
-                        log_info("Sample consistent with only device %ld having modified the data.\n", j);
+                        log_info("Sample consistent with only device %zu "
+                                 "having modified the data.\n",
+                                 j);
                 }
                 errorsThisTime++;
                 break;
@@ -409,14 +416,16 @@ int test_device_partition_type_support(cl_device_id parentDevice, const cl_devic
     return -1;
 }
 
-int test_partition_of_device(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, cl_device_partition_property *partition_type,
+int test_partition_of_device(cl_device_id device, cl_context context,
+                             cl_command_queue queue, int num_elements,
+                             cl_device_partition_property *partition_type,
                              cl_uint starting_property, cl_uint ending_property)
 {
     cl_uint maxComputeUnits;
     cl_uint maxSubDevices;    // maximal number of sub-devices that can be created in one call to clCreateSubDevices
     int err = 0;
 
-    if (init_device_partition_test(deviceID, maxComputeUnits, maxSubDevices) != 0)
+    if (init_device_partition_test(device, maxComputeUnits, maxSubDevices) != 0)
         return -1;
 
     if (maxComputeUnits <= 1)
@@ -425,10 +434,11 @@ int test_partition_of_device(cl_device_id deviceID, cl_context context, cl_comma
     if (partition_type != NULL)
     { // if we're not the root device
       size_t psize;
-      err = clGetDeviceInfo(deviceID, CL_DEVICE_PARTITION_TYPE, 0,  NULL, &psize);
+      err = clGetDeviceInfo(device, CL_DEVICE_PARTITION_TYPE, 0, NULL, &psize);
       test_error( err, "Unable to get CL_DEVICE_PARTITION_TYPE" );
       cl_device_partition_property *properties_returned = (cl_device_partition_property *)alloca(psize);
-      err = clGetDeviceInfo(deviceID, CL_DEVICE_PARTITION_TYPE, psize, (void *) properties_returned, NULL);
+      err = clGetDeviceInfo(device, CL_DEVICE_PARTITION_TYPE, psize,
+                            (void *)properties_returned, NULL);
       test_error( err, "Unable to get CL_DEVICE_PARTITION_TYPE" );
 
       // test returned type
@@ -441,9 +451,12 @@ int test_partition_of_device(cl_device_id deviceID, cl_context context, cl_comma
                properties_returned[1] == CL_DEVICE_AFFINITY_DOMAIN_L3_CACHE ||
                properties_returned[1] == CL_DEVICE_AFFINITY_DOMAIN_L2_CACHE ||
                properties_returned[1] == CL_DEVICE_AFFINITY_DOMAIN_L1_CACHE))) {
-            log_error("properties_returned[%d] 0x%x != 0x%x partition_type[%d].", i, properties_returned[i], partition_type[i], i);
-            return -1;
-              }
+              log_error(
+                  "properties_returned[%d] 0x%x != 0x%x partition_type[%d].", i,
+                  static_cast<unsigned int>(properties_returned[i]),
+                  static_cast<unsigned int>(partition_type[i]), i);
+              return -1;
+          }
         }
       } // for
     }
@@ -470,39 +483,46 @@ int test_partition_of_device(cl_device_id deviceID, cl_context context, cl_comma
     // loop thru each type, creating sub-devices for each type
     for (cl_uint i = starting_property;i < ending_property;i++) {
 
-      if (test_device_partition_type_support(deviceID, partitionProp[i][0], partitionProp[i][1]) != 0)
-      {
-        if (partitionProp[i][0] == CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN)
+        if (test_device_partition_type_support(device, partitionProp[i][0],
+                                               partitionProp[i][1])
+            != 0)
         {
-          log_info( "Device partition type \"%s\" \"%s\" is not supported on device %p. Skipping test...\n",
-                      printPartition(partitionProp[i][0]),
-                      printAffinity(partitionProp[i][1]), deviceID);
-        }
-        else
-        {
-          log_info( "Device partition type \"%s\" is not supported on device %p. Skipping test...\n",
-                      printPartition(partitionProp[i][0]), deviceID);
-        }
-        continue;
+            if (partitionProp[i][0] == CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN)
+            {
+                log_info("Device partition type \"%s\" \"%s\" is not supported "
+                         "on device %p. Skipping test...\n",
+                         printPartition(partitionProp[i][0]),
+                         printAffinity(partitionProp[i][1]), device);
+            }
+            else
+            {
+                log_info("Device partition type \"%s\" is not supported on "
+                         "device %p. Skipping test...\n",
+                         printPartition(partitionProp[i][0]), device);
+            }
+            continue;
       }
 
       if (partitionProp[i][0] == CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN)
       {
-        log_info("Testing on device %p partition type \"%s\" \"%s\"\n", deviceID, printPartition(partitionProp[i][0]),
-                  printAffinity(partitionProp[i][1]));
+          log_info("Testing on device %p partition type \"%s\" \"%s\"\n",
+                   device, printPartition(partitionProp[i][0]),
+                   printAffinity(partitionProp[i][1]));
       }
       else
       {
-        log_info("Testing on device %p partition type \"%s\" (%d,%d)\n", deviceID, printPartition(partitionProp[i][0]),
-                  partitionProp[i][1], partitionProp[i][2]);
+          log_info("Testing on device %p partition type \"%s\" (%d,%d)\n",
+                   device, printPartition(partitionProp[i][0]),
+                   static_cast<unsigned int>(partitionProp[i][1]),
+                   static_cast<unsigned int>(partitionProp[i][2]));
       }
 
       cl_uint deviceCount;
 
       // how many sub-devices can we create?
-      err = clCreateSubDevices(deviceID, partitionProp[i], 0, NULL, &deviceCount);
+      err = clCreateSubDevices(device, partitionProp[i], 0, NULL, &deviceCount);
       if ( err == CL_DEVICE_PARTITION_FAILED ) {
-          log_info( "The device %p could not be further partitioned.\n", deviceID );
+          log_info("The device %p could not be further partitioned.\n", device);
           continue;
       }
       test_error( err, "Failed to get number of sub-devices" );
@@ -510,7 +530,8 @@ int test_partition_of_device(cl_device_id deviceID, cl_context context, cl_comma
       // get the list of subDevices
       //  create room for 1 more device_id, so that we can put the parent device in there.
       cl_device_id *subDevices = (cl_device_id*)alloca(sizeof(cl_device_id) * (deviceCount + 1));
-      err = clCreateSubDevices(deviceID, partitionProp[i], deviceCount, subDevices, &deviceCount);
+      err = clCreateSubDevices(device, partitionProp[i], deviceCount,
+                               subDevices, &deviceCount);
       test_error( err, "Actual creation of sub-devices failed" );
 
       log_info("Testing on all devices in context\n");
@@ -520,8 +541,9 @@ int test_partition_of_device(cl_device_id deviceID, cl_context context, cl_comma
           log_info("Testing on a parent device for context\n");
 
           // add the parent device
-          subDevices[deviceCount] = deviceID;
-          err = test_device_set(deviceCount + 1, deviceCount, subDevices, num_elements, &deviceID);
+          subDevices[deviceCount] = device;
+          err = test_device_set(deviceCount + 1, deviceCount, subDevices,
+                                num_elements, &device);
       }
       if (err != 0)
       {
@@ -545,52 +567,61 @@ int test_partition_of_device(cl_device_id deviceID, cl_context context, cl_comma
 
     } // for
 
-    log_info("Testing on all device %p finished\n", deviceID);
+    log_info("Testing on all device %p finished\n", device);
     return 0;
 }
 
 
-int test_partition_equally(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(partition_equally)
 {
-  return test_partition_of_device(deviceID, context, queue, num_elements, NULL, 0, 1);
+    return test_partition_of_device(device, context, queue, num_elements, NULL,
+                                    0, 1);
 }
 
-int test_partition_by_counts(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(partition_by_counts)
 {
-  return test_partition_of_device(deviceID, context, queue, num_elements, NULL, 1, 2);
+    return test_partition_of_device(device, context, queue, num_elements, NULL,
+                                    1, 2);
 }
 
-int test_partition_by_affinity_domain_numa(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(partition_by_affinity_domain_numa)
 {
-  return test_partition_of_device(deviceID, context, queue, num_elements, NULL, 2, 3);
+    return test_partition_of_device(device, context, queue, num_elements, NULL,
+                                    2, 3);
 }
 
-int test_partition_by_affinity_domain_l4_cache(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(partition_by_affinity_domain_l4_cache)
 {
-  return test_partition_of_device(deviceID, context, queue, num_elements, NULL, 3, 4);
+    return test_partition_of_device(device, context, queue, num_elements, NULL,
+                                    3, 4);
 }
 
-int test_partition_by_affinity_domain_l3_cache(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(partition_by_affinity_domain_l3_cache)
 {
-  return test_partition_of_device(deviceID, context, queue, num_elements, NULL, 4, 5);
+    return test_partition_of_device(device, context, queue, num_elements, NULL,
+                                    4, 5);
 }
 
-int test_partition_by_affinity_domain_l2_cache(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(partition_by_affinity_domain_l2_cache)
 {
-  return test_partition_of_device(deviceID, context, queue, num_elements, NULL, 5, 6);
+    return test_partition_of_device(device, context, queue, num_elements, NULL,
+                                    5, 6);
 }
 
-int test_partition_by_affinity_domain_l1_cache(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(partition_by_affinity_domain_l1_cache)
 {
-  return test_partition_of_device(deviceID, context, queue, num_elements, NULL, 6, 7);
+    return test_partition_of_device(device, context, queue, num_elements, NULL,
+                                    6, 7);
 }
 
-int test_partition_by_affinity_domain_next_partitionable(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(partition_by_affinity_domain_next_partitionable)
 {
-  return test_partition_of_device(deviceID, context, queue, num_elements, NULL, 7, 8);
+    return test_partition_of_device(device, context, queue, num_elements, NULL,
+                                    7, 8);
 }
 
-int test_partition_all(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(partition_all)
 {
-  return test_partition_of_device(deviceID, context, queue, num_elements, NULL, 0, 8);
+    return test_partition_of_device(device, context, queue, num_elements, NULL,
+                                    0, 8);
 }

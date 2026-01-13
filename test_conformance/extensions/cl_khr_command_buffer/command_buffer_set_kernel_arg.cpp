@@ -15,7 +15,6 @@
 //
 
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 #include <vector>
 
@@ -23,25 +22,22 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////
 // clSetKernelArg tests for cl_khr_command_buffer which handles below cases:
-// -test interactions of clSetKernelArg with command-buffers
-// -test interactions of clSetKernelArg on a command-buffer pending execution
+// -test interactions of clSetKernelArg after command-buffer finalize but
+//  before enqueue
+// -test interactions of clSetKernelArg between command-buffer enqueue
 
-template <bool simul_use>
+template <bool enqueue_test>
 struct CommandBufferSetKernelArg : public BasicCommandBufferTest
 {
     CommandBufferSetKernelArg(cl_device_id device, cl_context context,
                               cl_command_queue queue)
-        : BasicCommandBufferTest(device, context, queue), trigger_event(nullptr)
+        : BasicCommandBufferTest(device, context, queue)
     {
-        simultaneous_use_requested = simul_use;
-        if (simul_use) buffer_size_multiplier = 2;
+        if (enqueue_test) buffer_size_multiplier = 2;
     }
 
-    //--------------------------------------------------------------------------
     cl_int SetUpKernel() override
     {
-        cl_int error = CL_SUCCESS;
-
         const char* kernel_str =
             R"(
             __kernel void copy(int in, __global int* out, __global int* offset)
@@ -51,8 +47,8 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
                 out[ind] = in;
             })";
 
-        error = create_single_kernel_helper_create_program(context, &program, 1,
-                                                           &kernel_str);
+        cl_int error = create_single_kernel_helper_create_program(
+            context, &program, 1, &kernel_str);
         test_error(error, "Failed to create program with source");
 
         error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
@@ -64,7 +60,6 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
     cl_int SetUpKernelArgs() override
     {
         cl_int error = CL_SUCCESS;
@@ -100,15 +95,14 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
     cl_int Run() override
     {
         cl_int error = CL_SUCCESS;
-        if (simultaneous_use_requested)
+        if (enqueue_test)
         {
-            // enqueue simultaneous command-buffers with clSetKernelArg calls
-            error = RunSimultaneous();
-            test_error(error, "RunSimultaneous failed");
+            // enqueue command-buffers with clSetKernelArg calls in between
+            error = RunMultipleEnqueue();
+            test_error(error, "RunMultipleEnqueue failed");
         }
         else
         {
@@ -120,12 +114,9 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
     cl_int RecordCommandBuffer()
     {
-        cl_int error = CL_SUCCESS;
-
-        error = clCommandNDRangeKernelKHR(
+        cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
             nullptr, 0, nullptr, nullptr, nullptr);
         test_error(error, "clCommandNDRangeKernelKHR failed");
@@ -149,14 +140,12 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
     cl_int RunSingle()
     {
-        cl_int error = CL_SUCCESS;
         std::vector<cl_int> output_data(num_elements);
 
         // record command buffer
-        error = RecordCommandBuffer();
+        cl_int error = RecordCommandBuffer();
         test_error(error, "RecordCommandBuffer failed");
 
         const cl_int pattern_base = 0;
@@ -188,20 +177,16 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
-    struct SimulPassData
+    struct EnqueuePassData
     {
         cl_int pattern;
         cl_int offset;
         std::vector<cl_int> output_buffer;
     };
 
-    //--------------------------------------------------------------------------
-    cl_int RecordSimultaneousCommandBuffer() const
+    cl_int RecordEnqueueCommandBuffer() const
     {
-        cl_int error = CL_SUCCESS;
-
-        error = clCommandNDRangeKernelKHR(
+        cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
             nullptr, 0, nullptr, nullptr, nullptr);
         test_error(error, "clCommandNDRangeKernelKHR failed");
@@ -211,8 +196,7 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
-    cl_int EnqueueSimultaneousPass(SimulPassData& pd)
+    cl_int EnqueuePass(EnqueuePassData& pd)
     {
         cl_int error = clEnqueueFillBuffer(
             queue, out_mem, &pd.pattern, sizeof(cl_int),
@@ -223,14 +207,8 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
                                     0, sizeof(cl_int), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
 
-        if (!trigger_event)
-        {
-            trigger_event = clCreateUserEvent(context, &error);
-            test_error(error, "clCreateUserEvent failed");
-        }
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 1,
-                                          &trigger_event, nullptr);
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         error = clEnqueueReadBuffer(
@@ -241,49 +219,39 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
-    cl_int RunSimultaneous()
+    cl_int RunMultipleEnqueue()
     {
-        cl_int error = CL_SUCCESS;
-
         // record command buffer with primary queue
-        error = RecordSimultaneousCommandBuffer();
-        test_error(error, "RecordSimultaneousCommandBuffer failed");
+        cl_int error = RecordEnqueueCommandBuffer();
+        test_error(error, "RecordEnqueeuCommandBuffer failed");
 
-        std::vector<SimulPassData> simul_passes = {
-            { 0, 0, std::vector<cl_int>(num_elements) }
+        cl_int offset = static_cast<cl_int>(num_elements);
+        std::vector<EnqueuePassData> enqueue_passes = {
+            { 0, 0, std::vector<cl_int>(num_elements) },
+            { 1, offset, std::vector<cl_int>(num_elements) }
         };
 
-        error = EnqueueSimultaneousPass(simul_passes.front());
-        test_error(error, "EnqueueSimultaneousPass 1 failed");
-
-        // changing kernel args at this point should have no effect,
-        // test will verify if clSetKernelArg didn't affect command-buffer
-        cl_int in_arg = pattern_sec;
-        error = clSetKernelArg(kernel, 0, sizeof(cl_int), &in_arg);
-        test_error(error, "clSetKernelArg failed");
-
-        error = clSetKernelArg(kernel, 1, sizeof(out_mem_k2), &out_mem_k2);
-        test_error(error, "clSetKernelArg failed");
-
-        if (simultaneous_use_support)
+        for (auto&& pass : enqueue_passes)
         {
-            cl_int offset = static_cast<cl_int>(num_elements);
-            simul_passes.push_back(
-                { 1, offset, std::vector<cl_int>(num_elements) });
+            // changing kernel args at this point should have no effect,
+            // test will verify if clSetKernelArg didn't affect command-buffer
+            cl_int in_arg = pattern_sec;
+            error = clSetKernelArg(kernel, 0, sizeof(cl_int), &in_arg);
+            test_error(error, "clSetKernelArg failed");
 
-            error = EnqueueSimultaneousPass(simul_passes.back());
-            test_error(error, "EnqueueSimultaneousPass 2 failed");
+            error = clSetKernelArg(kernel, 1, sizeof(out_mem_k2), &out_mem_k2);
+            test_error(error, "clSetKernelArg failed");
+
+
+            error = EnqueuePass(pass);
+            test_error(error, "EnqueuePass failed");
         }
-
-        error = clSetUserEventStatus(trigger_event, CL_COMPLETE);
-        test_error(error, "clSetUserEventStatus failed");
 
         error = clFinish(queue);
         test_error(error, "clFinish failed");
 
         // verify the result buffer
-        for (auto&& pass : simul_passes)
+        for (auto&& pass : enqueue_passes)
         {
             auto& res_data = pass.output_buffer;
             for (size_t i = 0; i < num_elements; i++)
@@ -295,9 +263,6 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
-    clEventWrapper trigger_event = nullptr;
-
     const cl_int pattern_pri = 2;
     const cl_int pattern_sec = 3;
 
@@ -306,15 +271,13 @@ struct CommandBufferSetKernelArg : public BasicCommandBufferTest
 
 } // anonymous namespace
 
-int test_basic_set_kernel_arg(cl_device_id device, cl_context context,
-                              cl_command_queue queue, int num_elements)
+REGISTER_TEST(set_kernel_arg_after_finalize)
 {
     return MakeAndRunTest<CommandBufferSetKernelArg<false>>(
         device, context, queue, num_elements);
 }
 
-int test_pending_set_kernel_arg(cl_device_id device, cl_context context,
-                                cl_command_queue queue, int num_elements)
+REGISTER_TEST(set_kernel_arg_after_enqueue)
 {
     return MakeAndRunTest<CommandBufferSetKernelArg<true>>(device, context,
                                                            queue, num_elements);

@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
-// 
+// Copyright (c) 2017-2025 The Khronos Group Inc.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,18 +14,14 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "harness/typeWrappers.h"
-#include "harness/conversions.h"
 
-const char* zero_sized_enqueue_test_kernel[] = {
-    "__kernel void foo_kernel(__global int *dst)\n"
-    "{\n"
-    "    int  tid = get_global_id(0);\n"
-    "\n"
-    "    dst[tid] = 1;\n"
-    "\n"
-    "}\n"
-};
+const char* zero_sized_enqueue_test_kernel = R"(
+__kernel void foo_kernel(__global int *dst)
+{
+    int  tid = get_global_id(0);
+    dst[tid] = 1;
+}
+)";
 
 const int bufSize = 128;
 
@@ -58,7 +54,8 @@ cl_int test_zero_sized_enqueue_and_test_output_buffer(cl_command_queue queue, cl
     return clEnqueueUnmapMemObject(queue, buf, output, 0, NULL, NULL);
 }
 
-int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+int test_zero_sized_enqueue_helper(cl_device_id device, cl_context context,
+                                   cl_command_queue queue, int num_elements)
 {
     int error;
     clProgramWrapper program;
@@ -80,15 +77,20 @@ int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl
     output_stream =
         clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
                        bufSize * sizeof(int), NULL, &error);
+    test_error(error, "clCreateBuffer failed.");
 
     // Initialise output buffer.
     int output_buffer_data = 0;
     error = clEnqueueFillBuffer(queue, output_stream, &output_buffer_data,
                                 sizeof(int), 0, sizeof(int) * bufSize, 0, NULL,
                                 NULL);
+    test_error(error, "clEnqueueFillBuffer failed.");
 
     /* Create a kernel to test with */
-    if( create_single_kernel_helper( context, &program, &kernel, 1, zero_sized_enqueue_test_kernel, "foo_kernel" ) != 0 )
+    if (create_single_kernel_helper(context, &program, &kernel, 1,
+                                    &zero_sized_enqueue_test_kernel,
+                                    "foo_kernel")
+        != 0)
     {
         return -1;
     }
@@ -97,6 +99,16 @@ int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl
     test_error( error, "clSetKernelArg failed." );
 
     // Simple API return code tests for 1D, 2D and 3D zero sized ND range.
+    error = test_zero_sized_enqueue_and_test_output_buffer(
+        queue, kernel, output_stream, 1, nullptr);
+    test_error(error, "1D null sized kernel enqueue failed.");
+    error = test_zero_sized_enqueue_and_test_output_buffer(
+        queue, kernel, output_stream, 2, nullptr);
+    test_error(error, "2D null sized kernel enqueue failed.");
+    error = test_zero_sized_enqueue_and_test_output_buffer(
+        queue, kernel, output_stream, 3, nullptr);
+    test_error(error, "3D null sized kernel enqueue failed.");
+
     error = test_zero_sized_enqueue_and_test_output_buffer(
         queue, kernel, output_stream, 1, &ndrange1);
     test_error( error, "1D zero sized kernel enqueue failed." );
@@ -155,6 +167,17 @@ int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl
         return -1;
     }
 
+    cl_command_type cmdtype;
+    error = clGetEventInfo(ev, CL_EVENT_COMMAND_TYPE, sizeof(cmdtype), &cmdtype,
+                           NULL);
+    test_error(error, "Failed to get event command type.");
+    if (cmdtype != CL_COMMAND_NDRANGE_KERNEL)
+    {
+        log_error(
+            "ERROR: incorrect zero sized kernel enqueue event command type.\n");
+        return -1;
+    }
+
     cl_int sta;
     error = clGetEventInfo(ev, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(cl_int), &sta, NULL);
     test_error( error, "Failed to get event status.");
@@ -185,9 +208,10 @@ int test_zero_sized_enqueue_helper(cl_device_id deviceID, cl_context context, cl
 }
 
 
-int test_zero_sized_enqueue(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(zero_sized_enqueue, Version(2, 1))
 {
-    int res = test_zero_sized_enqueue_helper(deviceID, context, queue, num_elements);
+    int res =
+        test_zero_sized_enqueue_helper(device, context, queue, num_elements);
     if (res != 0)
     {
         return res;
@@ -195,7 +219,9 @@ int test_zero_sized_enqueue(cl_device_id deviceID, cl_context context, cl_comman
 
     // now test out of order queue
     cl_command_queue_properties props;
-    cl_int error = clGetDeviceInfo(deviceID, CL_DEVICE_QUEUE_PROPERTIES, sizeof(cl_command_queue_properties), &props, NULL);
+    cl_int error =
+        clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
+                        sizeof(cl_command_queue_properties), &props, NULL);
     test_error( error, "clGetDeviceInfo failed.");
 
     if (props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)
@@ -207,10 +233,12 @@ int test_zero_sized_enqueue(cl_device_id deviceID, cl_context context, cl_comman
             0
         };
 
-        clCommandQueueWrapper ooqueue = clCreateCommandQueueWithProperties(context, deviceID, queue_prop_def, &error);
+        clCommandQueueWrapper ooqueue = clCreateCommandQueueWithProperties(
+            context, device, queue_prop_def, &error);
         test_error( error, "clCreateCommandQueueWithProperties failed.");
 
-        res = test_zero_sized_enqueue_helper(deviceID, context, ooqueue, num_elements);
+        res = test_zero_sized_enqueue_helper(device, context, ooqueue,
+                                             num_elements);
     }
 
     return res;

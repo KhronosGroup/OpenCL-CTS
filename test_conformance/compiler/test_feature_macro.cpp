@@ -17,6 +17,7 @@
 #include <vector>
 #include <algorithm>
 #include "errorHelpers.h"
+#include "harness/featureHelpers.h"
 
 const char* macro_supported_source = R"(kernel void enabled(global int * buf) {
         int n = get_global_id(0);
@@ -204,10 +205,10 @@ int feature_macro_verify_results(std::string test_macro_name,
     return error;
 }
 
-int test_feature_macro_atomic_order_acq_rel(cl_device_id deviceID,
-                                            cl_context context,
-                                            std::string test_macro_name,
-                                            cl_bool& supported)
+static int test_feature_macro_atomic_order_acq_rel(cl_device_id deviceID,
+                                                   cl_context context,
+                                                   std::string test_macro_name,
+                                                   cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
@@ -232,10 +233,10 @@ int test_feature_macro_atomic_order_acq_rel(cl_device_id deviceID,
                                         compiler_status, supported);
 }
 
-int test_feature_macro_atomic_order_seq_cst(cl_device_id deviceID,
-                                            cl_context context,
-                                            std::string test_macro_name,
-                                            cl_bool& supported)
+static int test_feature_macro_atomic_order_seq_cst(cl_device_id deviceID,
+                                                   cl_context context,
+                                                   std::string test_macro_name,
+                                                   cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
@@ -261,10 +262,10 @@ int test_feature_macro_atomic_order_seq_cst(cl_device_id deviceID,
                                         compiler_status, supported);
 }
 
-int test_feature_macro_atomic_scope_device(cl_device_id deviceID,
-                                           cl_context context,
-                                           std::string test_macro_name,
-                                           cl_bool& supported)
+static int test_feature_macro_atomic_scope_device(cl_device_id deviceID,
+                                                  cl_context context,
+                                                  std::string test_macro_name,
+                                                  cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
@@ -288,10 +289,9 @@ int test_feature_macro_atomic_scope_device(cl_device_id deviceID,
                                         compiler_status, supported);
 }
 
-int test_feature_macro_atomic_scope_all_devices(cl_device_id deviceID,
-                                                cl_context context,
-                                                std::string test_macro_name,
-                                                cl_bool& supported)
+static int test_feature_macro_atomic_scope_all_devices(
+    cl_device_id deviceID, cl_context context, std::string test_macro_name,
+    cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
@@ -315,10 +315,10 @@ int test_feature_macro_atomic_scope_all_devices(cl_device_id deviceID,
                                         compiler_status, supported);
 }
 
-int test_feature_macro_3d_image_writes(cl_device_id deviceID,
-                                       cl_context context,
-                                       std::string test_macro_name,
-                                       cl_bool& supported)
+static int test_feature_macro_3d_image_writes(cl_device_id deviceID,
+                                              cl_context context,
+                                              std::string test_macro_name,
+                                              cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
@@ -342,9 +342,10 @@ int test_feature_macro_3d_image_writes(cl_device_id deviceID,
                                         compiler_status, supported);
 }
 
-int test_feature_macro_device_enqueue(cl_device_id deviceID, cl_context context,
-                                      std::string test_macro_name,
-                                      cl_bool& supported)
+static int test_feature_macro_device_enqueue(cl_device_id deviceID,
+                                             cl_context context,
+                                             std::string test_macro_name,
+                                             cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
@@ -370,10 +371,10 @@ int test_feature_macro_device_enqueue(cl_device_id deviceID, cl_context context,
                                         compiler_status, supported);
 }
 
-int test_feature_macro_generic_address_space(cl_device_id deviceID,
-                                             cl_context context,
-                                             std::string test_macro_name,
-                                             cl_bool& supported)
+static int test_feature_macro_generic_address_space(cl_device_id deviceID,
+                                                    cl_context context,
+                                                    std::string test_macro_name,
+                                                    cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
@@ -397,8 +398,9 @@ int test_feature_macro_generic_address_space(cl_device_id deviceID,
                                         compiler_status, supported);
 }
 
-int test_feature_macro_pipes(cl_device_id deviceID, cl_context context,
-                             std::string test_macro_name, cl_bool& supported)
+static int test_feature_macro_pipes(cl_device_id deviceID, cl_context context,
+                                    std::string test_macro_name,
+                                    cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
@@ -422,7 +424,7 @@ int test_feature_macro_pipes(cl_device_id deviceID, cl_context context,
                                         compiler_status, supported);
 }
 
-int test_feature_macro_program_scope_global_variables(
+static int test_feature_macro_program_scope_global_variables(
     cl_device_id deviceID, cl_context context, std::string test_macro_name,
     cl_bool& supported)
 {
@@ -448,10 +450,10 @@ int test_feature_macro_program_scope_global_variables(
                                         compiler_status, supported);
 }
 
-int test_feature_macro_read_write_images(cl_device_id deviceID,
-                                         cl_context context,
-                                         std::string test_macro_name,
-                                         cl_bool& supported)
+static int test_feature_macro_read_write_images(cl_device_id deviceID,
+                                                cl_context context,
+                                                std::string test_macro_name,
+                                                cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
@@ -475,9 +477,10 @@ int test_feature_macro_read_write_images(cl_device_id deviceID,
                                         compiler_status, supported);
 }
 
-int test_feature_macro_subgroups(cl_device_id deviceID, cl_context context,
-                                 std::string test_macro_name,
-                                 cl_bool& supported)
+static int test_feature_macro_subgroups(cl_device_id deviceID,
+                                        cl_context context,
+                                        std::string test_macro_name,
+                                        cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
@@ -501,7 +504,7 @@ int test_feature_macro_subgroups(cl_device_id deviceID, cl_context context,
                                         compiler_status, supported);
 }
 
-int test_feature_macro_work_group_collective_functions(
+static int test_feature_macro_work_group_collective_functions(
     cl_device_id deviceID, cl_context context, std::string test_macro_name,
     cl_bool& supported)
 {
@@ -528,8 +531,9 @@ int test_feature_macro_work_group_collective_functions(
                                         compiler_status, supported);
 }
 
-int test_feature_macro_images(cl_device_id deviceID, cl_context context,
-                              std::string test_macro_name, cl_bool& supported)
+static int test_feature_macro_images(cl_device_id deviceID, cl_context context,
+                                     std::string test_macro_name,
+                                     cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
@@ -553,8 +557,9 @@ int test_feature_macro_images(cl_device_id deviceID, cl_context context,
                                         compiler_status, supported);
 }
 
-int test_feature_macro_fp64(cl_device_id deviceID, cl_context context,
-                            std::string test_macro_name, cl_bool& supported)
+static int test_feature_macro_fp64(cl_device_id deviceID, cl_context context,
+                                   std::string test_macro_name,
+                                   cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
@@ -579,7 +584,7 @@ int test_feature_macro_fp64(cl_device_id deviceID, cl_context context,
                                         compiler_status, supported);
 }
 
-int test_feature_macro_integer_dot_product_input_4x8bit_packed(
+static int test_feature_macro_integer_dot_product_input_4x8bit_packed(
     cl_device_id deviceID, cl_context context, std::string test_macro_name,
     cl_bool& supported)
 {
@@ -615,7 +620,7 @@ int test_feature_macro_integer_dot_product_input_4x8bit_packed(
                                         compiler_status, supported);
 }
 
-int test_feature_macro_integer_dot_product_input_4x8bit(
+static int test_feature_macro_integer_dot_product_input_4x8bit(
     cl_device_id deviceID, cl_context context, std::string test_macro_name,
     cl_bool& supported)
 {
@@ -651,8 +656,35 @@ int test_feature_macro_integer_dot_product_input_4x8bit(
                                         compiler_status, supported);
 }
 
-int test_feature_macro_int64(cl_device_id deviceID, cl_context context,
-                             std::string test_macro_name, cl_bool& supported)
+static int test_feature_macro_ext_image_unorm_int_2_101010(
+    cl_device_id deviceID, cl_context context, std::string test_macro_name,
+    cl_bool& supported)
+{
+    cl_int error = TEST_FAIL;
+    cl_bool api_status = CL_TRUE;
+    cl_bool compiler_status;
+    log_info("\n%s ...\n", test_macro_name.c_str());
+
+    if (!is_extension_available(deviceID, "cl_ext_image_unorm_int_2_101010"))
+    {
+        supported = false;
+        return TEST_PASS;
+    }
+
+    error = check_compiler_feature_info(deviceID, context, test_macro_name,
+                                        compiler_status);
+    if (error != CL_SUCCESS)
+    {
+        return error;
+    }
+
+    return feature_macro_verify_results(test_macro_name, api_status,
+                                        compiler_status, supported);
+}
+
+static int test_feature_macro_int64(cl_device_id deviceID, cl_context context,
+                                    std::string test_macro_name,
+                                    cl_bool& supported)
 {
     cl_int error = TEST_FAIL;
     cl_bool api_status;
@@ -721,8 +753,8 @@ int test_feature_macro_int64(cl_device_id deviceID, cl_context context,
                                         compiler_status, supported);
 }
 
-int test_consistency_c_features_list(cl_device_id deviceID,
-                                     std::vector<std::string> vec_to_cmp)
+static int test_consistency_c_features_list(cl_device_id deviceID,
+                                            std::vector<std::string> vec_to_cmp)
 {
     log_info("\nComparison list of features: CL_DEVICE_OPENCL_C_FEATURES vs "
              "API/compiler queries.\n");
@@ -791,13 +823,12 @@ int test_consistency_c_features_list(cl_device_id deviceID,
 
 #define NEW_FEATURE_MACRO_TEST(feat)                                           \
     test_macro_name = "__opencl_c_" #feat;                                     \
-    error |= test_feature_macro_##feat(deviceID, context, test_macro_name,     \
+    error |= test_feature_macro_##feat(device, context, test_macro_name,       \
                                        supported);                             \
     if (supported) supported_features_vec.push_back(test_macro_name);
 
 
-int test_features_macro(cl_device_id deviceID, cl_context context,
-                        cl_command_queue queue, int num_elements)
+REGISTER_TEST_VERSION(features_macro, Version(3, 0))
 {
 
     // Note: Not checking that the feature array is empty for the compiler not
@@ -805,7 +836,7 @@ int test_features_macro(cl_device_id deviceID, cl_context context,
     // support compilation from OpenCL C source, this query may return an empty
     // array."  It "may" return an empty array implies that an implementation
     // also "may not".
-    check_compiler_available(deviceID);
+    check_compiler_available(device);
 
     int error = TEST_PASS;
     cl_bool supported = CL_FALSE;
@@ -828,8 +859,61 @@ int test_features_macro(cl_device_id deviceID, cl_context context,
     NEW_FEATURE_MACRO_TEST(int64);
     NEW_FEATURE_MACRO_TEST(integer_dot_product_input_4x8bit);
     NEW_FEATURE_MACRO_TEST(integer_dot_product_input_4x8bit_packed);
+    NEW_FEATURE_MACRO_TEST(ext_image_unorm_int_2_101010);
 
-    error |= test_consistency_c_features_list(deviceID, supported_features_vec);
+    error |= test_consistency_c_features_list(device, supported_features_vec);
 
     return error;
+}
+
+// This test checks that a supported feature comes with other required features
+REGISTER_TEST(features_macro_coupling)
+{
+    OpenCLCFeatures features;
+    int error = get_device_cl_c_features(device, features);
+    if (error)
+    {
+        log_error("Couldn't query OpenCL C features for the device!\n");
+        return TEST_FAIL;
+    }
+
+    if (features.supports__opencl_c_3d_image_writes
+        && !features.supports__opencl_c_images)
+    {
+        log_error("OpenCL C compilers that define the feature macro "
+                  "__opencl_c_3d_image_writes must also define the feature "
+                  "macro __opencl_c_images!\n");
+        return TEST_FAIL;
+    }
+
+    if (features.supports__opencl_c_device_enqueue
+        && !(features.supports__opencl_c_program_scope_global_variables
+             && features.supports__opencl_c_generic_address_space))
+    {
+        log_error("OpenCL C compilers that define the feature macro "
+                  "__opencl_c_device_enqueue must also define "
+                  "__opencl_c_generic_address_space and "
+                  "__opencl_c_program_scope_global_variables!\n");
+        return TEST_FAIL;
+    }
+
+    if (features.supports__opencl_c_pipes
+        && !features.supports__opencl_c_generic_address_space)
+    {
+        log_error("OpenCL C compilers that define the feature macro "
+                  "__opencl_c_pipes must also define the feature macro "
+                  "__opencl_c_generic_address_space!\n");
+        return TEST_FAIL;
+    }
+
+    if (features.supports__opencl_c_read_write_images
+        && !features.supports__opencl_c_images)
+    {
+        log_error("OpenCL C compilers that define the feature macro "
+                  "__opencl_c_read_write_images must also define the feature "
+                  "macro __opencl_c_images!\n");
+        return TEST_FAIL;
+    }
+
+    return TEST_PASS;
 }

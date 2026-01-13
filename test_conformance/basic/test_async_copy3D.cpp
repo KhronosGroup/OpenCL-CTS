@@ -13,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../test_common/harness/compat.h"
-
 #include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,8 +20,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "../../test_common/harness/conversions.h"
-#include "procs.h"
+#include "testBase.h"
 
 static const char *async_global_to_local_kernel3D = R"OpenCLC(
 #pragma OPENCL EXTENSION cl_khr_extended_async_copies : enable
@@ -124,16 +121,17 @@ __kernel void test_fn(const __global VarSizeStruct *src, __global VarSizeStruct 
 }
 )OpenCLC";
 
-int test_copy3D(const cl_device_id deviceID, const cl_context context,
-                const cl_command_queue queue, const char *const kernelCode,
-                const size_t elementSize, const int srcLineMargin,
-                const int dstLineMargin, const int srcPlaneMargin,
-                const int dstPlaneMargin, const bool localIsDst)
+static int test_copy3D(const cl_device_id deviceID, const cl_context context,
+                       const cl_command_queue queue,
+                       const char *const kernelCode, const size_t elementSize,
+                       const int srcLineMargin, const int dstLineMargin,
+                       const int srcPlaneMargin, const int dstPlaneMargin,
+                       const bool localIsDst)
 {
     int error;
 
     log_info(
-        "Testing %d byte element with srcLineMargin = %d, dstLineMargin = %d, "
+        "Testing %zu byte element with srcLineMargin = %d, dstLineMargin = %d, "
         "srcPlaneMargin = %d, dstPlaneMargin = %d\n",
         elementSize, srcLineMargin, dstLineMargin, srcPlaneMargin,
         dstPlaneMargin);
@@ -255,8 +253,8 @@ int test_copy3D(const cl_device_id deviceID, const cl_context context,
 
     if ((localBufferSize / 4) > max_work_group_size)
     {
-        log_info("Skipping due to resource requirements local:%db  "
-                 "max_work_group_size:%d\n",
+        log_info("Skipping due to resource requirements local:%zub  "
+                 "max_work_group_size:%zu\n",
                  localBufferSize, max_work_group_size);
         return 0;
     }
@@ -445,9 +443,9 @@ int test_copy3D(const cl_device_id deviceID, const cl_context context,
     return failuresPrinted ? -1 : 0;
 }
 
-int test_copy3D_all_types(cl_device_id deviceID, cl_context context,
-                          cl_command_queue queue, const char *kernelCode,
-                          bool localIsDst)
+static int test_copy3D_all_types(cl_device_id deviceID, cl_context context,
+                                 cl_command_queue queue, const char *kernelCode,
+                                 bool localIsDst)
 {
     const unsigned int elemSizes[] = { 1, 2,  3,  4,  5,  6, 7,
                                        8, 13, 16, 32, 47, 64 };
@@ -500,16 +498,14 @@ int test_copy3D_all_types(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-int test_async_copy_global_to_local3D(cl_device_id deviceID, cl_context context,
-                                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(async_copy_global_to_local3D)
 {
-    return test_copy3D_all_types(deviceID, context, queue,
+    return test_copy3D_all_types(device, context, queue,
                                  async_global_to_local_kernel3D, true);
 }
 
-int test_async_copy_local_to_global3D(cl_device_id deviceID, cl_context context,
-                                      cl_command_queue queue, int num_elements)
+REGISTER_TEST(async_copy_local_to_global3D)
 {
-    return test_copy3D_all_types(deviceID, context, queue,
+    return test_copy3D_all_types(device, context, queue,
                                  async_local_to_global_kernel3D, false);
 }

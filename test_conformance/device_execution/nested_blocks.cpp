@@ -17,10 +17,10 @@
 #include <string.h>
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
+#include "harness/parseParameters.h"
 
 #include <vector>
 
-#include "procs.h"
 #include "utils.h"
 #include <time.h>
 
@@ -28,7 +28,6 @@
 #ifdef CL_VERSION_2_0
 
 static int gNestingLevel = 4;
-extern int gWimpyMode;
 
 static const char* enqueue_nested_blocks_single[] =
 {
@@ -303,7 +302,7 @@ static const kernel_src_check sources_nested_blocks[] =
     { KERNEL(enqueue_nested_blocks_all_diff), check_all_diff }
 };
 
-int test_enqueue_nested_blocks(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(enqueue_nested_blocks)
 {
     cl_uint i, k;
     cl_int err_ret, res = 0;

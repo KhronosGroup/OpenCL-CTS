@@ -64,14 +64,13 @@ int test_copy(cl_device_id deviceID, cl_context context,
     return 0;
 }
 
-#define TEST_COPY(NAME, type, value)                    \
-    TEST_SPIRV_FUNC(op_copy_##NAME##_simple)            \
-    {                                                   \
-        std::vector<type> results(1024, (type)value);   \
-        return test_copy(deviceID, context, queue,      \
-                         "copy_" #NAME "_simple",       \
-                         results);                      \
-    }                                                   \
+#define TEST_COPY(NAME, type, value)                                           \
+    REGISTER_TEST(op_copy_##NAME##_simple)                                     \
+    {                                                                          \
+        std::vector<type> results(1024, (type)value);                          \
+        return test_copy(device, context, queue, "copy_" #NAME "_simple",      \
+                         results);                                             \
+    }
 
 // Integer tests
 TEST_COPY(int   , cl_int   , 123                )
@@ -94,36 +93,38 @@ TEST_COPY(short , cl_short , 32000              )
 TEST_COPY(float   , cl_float  , 3.1415927        )
 TEST_COPY(double  , cl_double , 3.141592653589793)
 
-TEST_SPIRV_FUNC(op_copy_int4_simple)
+REGISTER_TEST(op_copy_int4_simple)
 {
     cl_int4 value = { { 123, 122, 121, 119 } };
     std::vector<cl_int4> results(256, value);
-    return test_copy(deviceID, context, queue, "copy_int4_simple", results);
+    return test_copy(device, context, queue, "copy_int4_simple", results);
 }
 
-TEST_SPIRV_FUNC(op_copy_int3_simple)
+REGISTER_TEST(op_copy_int3_simple)
 {
     cl_int3 value = { { 123, 122, 121, 0 } };
     std::vector<cl_int3> results(256, value);
-    return test_copy(deviceID, context, queue, "copy_int3_simple",
-                     results, isVectorNotEqual<cl_int3, 3>);
+    return test_copy(device, context, queue, "copy_int3_simple", results,
+                     isVectorNotEqual<cl_int3, 3>);
 }
 
-TEST_SPIRV_FUNC(op_copy_struct_int_float_simple)
+REGISTER_TEST(op_copy_struct_int_float_simple)
 {
     AbstractStruct2<int, float> value = {1024, 3.1415};
     std::vector<AbstractStruct2<int, float> > results(256, value);
-    return test_copy(deviceID, context, queue, "copy_struct_int_float_simple", results);
+    return test_copy(device, context, queue, "copy_struct_int_float_simple",
+                     results);
 }
 
-TEST_SPIRV_FUNC(op_copy_struct_int_char_simple)
+REGISTER_TEST(op_copy_struct_int_char_simple)
 {
     AbstractStruct2<int, char> value = { 2100483600, (char)128 };
     std::vector<AbstractStruct2<int, char> > results(256, value);
-    return test_copy(deviceID, context, queue, "copy_struct_int_char_simple", results);
+    return test_copy(device, context, queue, "copy_struct_int_char_simple",
+                     results);
 }
 
-TEST_SPIRV_FUNC(op_copy_struct_struct_simple)
+REGISTER_TEST(op_copy_struct_struct_simple)
 {
     typedef AbstractStruct2<int, char> CustomType1;
     typedef AbstractStruct2<cl_int2, CustomType1> CustomType2;
@@ -133,14 +134,13 @@ TEST_SPIRV_FUNC(op_copy_struct_struct_simple)
     CustomType2 value2 = {intvals, value1};
 
     std::vector<CustomType2> results(256, value2);
-    return test_copy(deviceID, context, queue, "copy_struct_struct_simple", results);
+    return test_copy(device, context, queue, "copy_struct_struct_simple",
+                     results);
 }
 
-TEST_SPIRV_FUNC(op_copy_half_simple)
+REGISTER_TEST(op_copy_half_simple)
 {
-    PASSIVE_REQUIRE_FP16_SUPPORT(deviceID);
+    PASSIVE_REQUIRE_FP16_SUPPORT(device);
     std::vector<cl_float> results(1024, 3.25);
-    return test_copy(deviceID, context, queue,
-                     "copy_half_simple",
-                     results);
+    return test_copy(device, context, queue, "copy_half_simple", results);
 }

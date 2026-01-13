@@ -24,8 +24,6 @@
 #include "testBase.h"
 #include "harness/typeWrappers.h"
 #include "harness/testHarness.h"
-#include "procs.h"
-
 
 enum { SUCCESS, FAILURE };
 typedef enum { NON_NULL_PATH, ADDROF_NULL_PATH, NULL_PATH } test_type;
@@ -150,8 +148,7 @@ static int test_setargs_and_execution(cl_command_queue queue, cl_kernel kernel,
     return test_success;
 }
 
-int test_null_buffer_arg(cl_device_id device, cl_context context,
-    cl_command_queue queue, int num_elements)
+REGISTER_TEST(null_buffer_arg)
 {
     unsigned int test_success = 0;
     unsigned int buffer_size;

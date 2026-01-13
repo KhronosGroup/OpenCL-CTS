@@ -72,8 +72,10 @@ public:
         size_t passCount = std::count(results.begin(), results.end(), 1);
         if (passCount != results.size()) {
             std::vector<cl_uint>::iterator iter = std::find(results.begin(), results.end(), 0);
-            log_error("Verification on device failed at index %ld\n", std::distance(results.begin(), iter));
-            log_error("%ld out of %ld failed\n", (results.size()-passCount), results.size());
+            log_error("Verification on device failed at index %td\n",
+                      std::distance(results.begin(), iter));
+            log_error("%zu out of %zu failed\n", (results.size() - passCount),
+                      results.size());
             return -1;
         }
 
@@ -84,7 +86,8 @@ public:
         cl_int result = CL_SUCCESS;
 
         for (std::vector<std::string>::const_iterator it = _kernels.begin(); it != _kernels.end(); ++it) {
-            log_info("Executing subcase #%ld out of %ld\n", (it - _kernels.begin() + 1), _kernels.size());
+            log_info("Executing subcase #%zu out of %zu\n",
+                     (it - _kernels.begin() + 1), _kernels.size());
 
             result |= ExecuteSubcase(deviceID, context, queue, num_elements, *it);
         }
@@ -96,15 +99,20 @@ private:
     const std::vector<std::string> _kernels;
 };
 
-int test_max_number_of_params(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(max_number_of_params)
+{
     cl_int error;
 
     size_t deviceMaxParameterSize;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_PARAMETER_SIZE, sizeof(deviceMaxParameterSize), &deviceMaxParameterSize, NULL);
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_PARAMETER_SIZE,
+                            sizeof(deviceMaxParameterSize),
+                            &deviceMaxParameterSize, NULL);
     test_error(error, "clGetDeviceInfo failed");
 
     size_t deviceAddressBits;
-    error = clGetDeviceInfo(deviceID, CL_DEVICE_ADDRESS_BITS, sizeof(deviceAddressBits), &deviceAddressBits, NULL);
+    error =
+        clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS,
+                        sizeof(deviceAddressBits), &deviceAddressBits, NULL);
     test_error(error, "clGetDeviceInfo failed");
 
     size_t maxParams = deviceMaxParameterSize / (deviceAddressBits / 8);
@@ -171,5 +179,5 @@ int test_max_number_of_params(cl_device_id deviceID, cl_context context, cl_comm
 
     CStressTest test(KERNEL_FUNCTION);
 
-    return test.Execute(deviceID, context, queue, num_elements);
+    return test.Execute(device, context, queue, num_elements);
 }

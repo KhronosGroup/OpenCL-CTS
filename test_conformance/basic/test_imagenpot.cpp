@@ -21,8 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 static const char *rgba8888_kernel_code =
 "\n"
@@ -74,8 +73,7 @@ verify_rgba8888_image(unsigned char *src, unsigned char *dst, int w, int h)
 int    img_width_selection[] = { 97, 111, 322, 479 };
 int    img_height_selection[] = { 149, 222, 754, 385 };
 
-int
-test_imagenpot(cl_device_id device_id, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(imagenpot)
 {
     cl_mem            streams[2];
     cl_image_format    img_format;
@@ -84,17 +82,18 @@ test_imagenpot(cl_device_id device_id, cl_context context, cl_command_queue queu
     cl_kernel        kernel;
     size_t    global_threads[3], local_threads[3];
     size_t            local_workgroup_size;
-    int                img_width;
-    int                img_height;
+    size_t img_width;
+    size_t img_height;
     int                err;
     cl_uint            m;
     size_t max_local_workgroup_size[3];
     MTdata          d;
 
-    PASSIVE_REQUIRE_IMAGE_SUPPORT( device_id )
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
 
     cl_device_type device_type;
-    err = clGetDeviceInfo(device_id, CL_DEVICE_TYPE, sizeof(device_type), &device_type, NULL);
+    err = clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(device_type),
+                          &device_type, NULL);
     if (err) {
         log_error("Failed to get device type: %d\n",err);
         return -1;
@@ -163,10 +162,14 @@ test_imagenpot(cl_device_id device_id, cl_context context, cl_command_queue queu
             return -1;
         }
 
-        err = clGetKernelWorkGroupInfo(kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(local_workgroup_size), &local_workgroup_size, NULL);
+        err = clGetKernelWorkGroupInfo(
+            kernel, device, CL_KERNEL_WORK_GROUP_SIZE,
+            sizeof(local_workgroup_size), &local_workgroup_size, NULL);
         test_error(err, "clGetKernelWorkGroupInfo for CL_KERNEL_WORK_GROUP_SIZE failed");
 
-        err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(max_local_workgroup_size), max_local_workgroup_size, NULL);
+        err = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
+                              sizeof(max_local_workgroup_size),
+                              max_local_workgroup_size, NULL);
         test_error(err, "clGetDeviceInfo failed for CL_DEVICE_MAX_WORK_ITEM_SIZES");
 
         // Pick the minimum of the device and the kernel
@@ -214,8 +217,3 @@ test_imagenpot(cl_device_id device_id, cl_context context, cl_command_queue queu
 
     return err;
 }
-
-
-
-
-

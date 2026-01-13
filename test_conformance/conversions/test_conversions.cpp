@@ -92,8 +92,7 @@ char appName[64] = "ctest";
 int gMultithread = 1;
 
 
-int test_conversions(cl_device_id device, cl_context context,
-                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(conversions)
 {
     if (argCount)
     {
@@ -108,18 +107,40 @@ int test_conversions(cl_device_id device, cl_context context,
 }
 
 
-test_definition test_list[] = {
-    ADD_TEST(conversions),
-};
-
-const int test_num = ARRAY_SIZE(test_list);
-
-
 int main(int argc, const char **argv)
 {
     int error;
 
     argc = parseCustomParam(argc, argv);
+    if (gListTests)
+    {
+        for (unsigned dst = 0; dst < kTypeCount; dst++)
+        {
+            for (unsigned src = 0; src < kTypeCount; src++)
+            {
+                for (unsigned sat = 0; sat < 2; sat++)
+                {
+                    // skip illegal saturated conversions to float type
+                    if (gSaturationNames[sat] == std::string("_sat")
+                        && (gTypeNames[dst] == std::string("float")
+                            || gTypeNames[dst] == std::string("half")
+                            || gTypeNames[dst] == std::string("double")))
+                    {
+                        continue;
+                    }
+                    for (unsigned rnd = 0; rnd < kRoundingModeCount; rnd++)
+                    {
+                        vlog("\t%s\n",
+                             (std::string(gTypeNames[dst])
+                              + gSaturationNames[sat] + gRoundingModeNames[rnd]
+                              + "_" + gTypeNames[src])
+                                 .c_str());
+                    }
+                }
+            }
+        }
+        return 0;
+    }
     if (argc == -1)
     {
         return 1;
@@ -148,8 +169,9 @@ int main(int argc, const char **argv)
     gMTdata = init_genrand(gRandomSeed);
 
     const char *arg[] = { argv[0] };
-    int ret =
-        runTestHarnessWithCheck(1, arg, test_num, test_list, true, 0, InitCL);
+    int ret = runTestHarnessWithCheck(
+        1, arg, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), true, 0, InitCL);
 
     free_mtdata(gMTdata);
     if (gQueue)
@@ -182,11 +204,12 @@ static int ParseArgs(int argc, const char **argv)
 #if (defined(__APPLE__) || defined(__linux__) || defined(__MINGW32__))
     { // Extract the app name
         char baseName[MAXPATHLEN];
-        strncpy(baseName, argv[0], MAXPATHLEN);
+        strncpy(baseName, argv[0], MAXPATHLEN - 1);
+        baseName[sizeof(baseName) - 1] = '\0';
         char *base = basename(baseName);
         if (NULL != base)
         {
-            strncpy(appName, base, sizeof(appName));
+            strncpy(appName, base, sizeof(appName) - 1);
             appName[sizeof(appName) - 1] = '\0';
         }
     }
@@ -200,7 +223,7 @@ static int ParseArgs(int argc, const char **argv)
         if (err == 0)
         { // no error
             strcat(fname, ext); // just cat them, size of frame can keep both
-            strncpy(appName, fname, sizeof(appName));
+            strncpy(appName, fname, sizeof(appName) - 1);
             appName[sizeof(appName) - 1] = '\0';
         }
     }
@@ -224,7 +247,6 @@ static int ParseArgs(int argc, const char **argv)
                     case 'h': gTestHalfs ^= 1; break;
                     case 'l': gSkipTesting ^= 1; break;
                     case 'm': gMultithread ^= 1; break;
-                    case 'w': gWimpyMode ^= 1; break;
                     case '[':
                         parseWimpyReductionFactor(arg, gWimpyReductionFactor);
                         break;
@@ -232,8 +254,6 @@ static int ParseArgs(int argc, const char **argv)
                         gForceFTZ ^= 1;
                         gForceHalfFTZ ^= 1;
                         break;
-                    case 't': gTimeResults ^= 1; break;
-                    case 'a': gReportAverageTimes ^= 1; break;
                     case '1':
                         if (arg[1] == '6')
                         {
@@ -295,14 +315,6 @@ static int ParseArgs(int argc, const char **argv)
         }
     }
 
-    // Check for the wimpy mode environment variable
-    if (getenv("CL_WIMPY_MODE"))
-    {
-        vlog("\n");
-        vlog("*** Detected CL_WIMPY_MODE env                          ***\n");
-        gWimpyMode = 1;
-    }
-
     vlog("\n");
 
     PrintArch();
@@ -343,9 +355,6 @@ static void PrintUsage(void)
     vlog("\t\t-l\tToggle link check mode. When on, testing is skipped, and we "
          "just check to see that the kernels build. (Off by default.)\n");
     vlog("\t\t-m\tToggle Multithreading. (On by default.)\n");
-    vlog("\t\t-w\tToggle wimpy mode. When wimpy mode is on, we run a very "
-         "small subset of the tests for each fn. NOT A VALID TEST! (Off by "
-         "default.)\n");
     vlog(" \t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
          "1-12, default factor(%u)\n",
          gWimpyReductionFactor);
@@ -534,7 +543,7 @@ test_status InitCL(cl_device_id device)
     vlog("\tCL C Version: %s\n", c);
     clGetDeviceInfo(device, CL_DRIVER_VERSION, sizeof(c), c, NULL);
     vlog("\tDriver Version: %s\n", c);
-    vlog("\tProcessing with %ld devices\n", gComputeDevices);
+    vlog("\tProcessing with %zu devices\n", gComputeDevices);
     vlog("\tDevice Frequency: %d MHz\n", gDeviceFrequency);
     vlog("\tSubnormal values supported for floats? %s\n",
          no_yes[0 != (CL_FP_DENORM & floatCapabilities)]);

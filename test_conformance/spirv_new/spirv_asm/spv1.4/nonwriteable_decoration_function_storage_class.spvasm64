@@ -1,0 +1,21 @@
+; SPIR-V
+; Version: 1.4
+               OpCapability Addresses
+               OpCapability Kernel
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "nonwriteable_test"
+               OpDecorate %pvalue NonWritable
+       %uint = OpTypeInt 32 0
+       %void = OpTypeVoid
+   %gptr_int = OpTypePointer CrossWorkgroup %uint
+   %pptr_int = OpTypePointer Function %uint
+ %kernel_sig = OpTypeFunction %void %gptr_int
+    %uint_42 = OpConstant %uint 42
+     %kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %gptr_int
+      %entry = OpLabel
+     %pvalue = OpVariable %pptr_int Function %uint_42
+      %value = OpLoad %uint %pvalue
+               OpStore %dst %value
+               OpReturn
+               OpFunctionEnd

@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "harness/typeWrappers.h"
 
 #include <stdio.h>
 #include <iostream>
@@ -21,7 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+
 #include <CL/cl_ext.h>
 
 const char* wg_scan_local_work_group_size = R"(
@@ -207,7 +208,7 @@ int do_test_work_group_suggested_local_size(
     bool (*skip_cond)(size_t), size_t start, size_t end, size_t incr,
     cl_ulong max_local_mem_size, size_t global_work_offset[], num_dims dim)
 {
-    int err;
+    int err = 0;
     size_t test_values[] = { 1, 1, 1 };
     std::string kernel_names[6] = {
         "test_wg_scan_local_work_group_size",
@@ -276,9 +277,7 @@ int do_test_work_group_suggested_local_size(
     return err;
 }
 
-int test_work_group_suggested_local_size_1D(cl_device_id device,
-                                            cl_context context,
-                                            cl_command_queue queue, int n_elems)
+REGISTER_TEST(work_group_suggested_local_size_1D)
 {
     if (!is_extension_available(device, "cl_khr_suggested_local_work_size"))
     {
@@ -380,9 +379,7 @@ int test_work_group_suggested_local_size_1D(cl_device_id device,
     return err;
 }
 
-int test_work_group_suggested_local_size_2D(cl_device_id device,
-                                            cl_context context,
-                                            cl_command_queue queue, int n_elems)
+REGISTER_TEST(work_group_suggested_local_size_2D)
 {
     if (!is_extension_available(device, "cl_khr_suggested_local_work_size"))
     {
@@ -485,9 +482,7 @@ int test_work_group_suggested_local_size_2D(cl_device_id device,
     return err;
 }
 
-int test_work_group_suggested_local_size_3D(cl_device_id device,
-                                            cl_context context,
-                                            cl_command_queue queue, int n_elems)
+REGISTER_TEST(work_group_suggested_local_size_3D)
 {
     if (!is_extension_available(device, "cl_khr_suggested_local_work_size"))
     {

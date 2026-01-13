@@ -30,26 +30,6 @@ enum class RunMode
     RM_SIGNAL
 };
 
-// scope guard helper to ensure proper releasing of sub devices
-struct SubDevicesScopeGuarded
-{
-    SubDevicesScopeGuarded(const cl_int dev_count)
-    {
-        sub_devices.resize(dev_count);
-    }
-    ~SubDevicesScopeGuarded()
-    {
-        for (auto& device : sub_devices)
-        {
-            cl_int err = clReleaseDevice(device);
-            if (err != CL_SUCCESS)
-                log_error("\n Releasing sub-device failed \n");
-        }
-    }
-
-    std::vector<cl_device_id> sub_devices;
-};
-
 // the device associated with command_queue is not same as one of the devices
 // specified by CL_SEMAPHORE_DEVICE_HANDLE_LIST_KHR at the time of creating one
 // or more of sema_objects.
@@ -57,8 +37,8 @@ struct SubDevicesScopeGuarded
 template <RunMode mode> struct InvalidCommandQueue : public SemaphoreTestBase
 {
     InvalidCommandQueue(cl_device_id device, cl_context context,
-                        cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                        cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -179,8 +159,8 @@ template <RunMode mode> struct InvalidCommandQueue : public SemaphoreTestBase
 template <RunMode mode> struct InvalidValue : public SemaphoreTestBase
 {
     InvalidValue(cl_device_id device, cl_context context,
-                 cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                 cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -214,8 +194,8 @@ template <RunMode mode> struct InvalidValue : public SemaphoreTestBase
 template <RunMode mode> struct InvalidSemaphore : public SemaphoreTestBase
 {
     InvalidSemaphore(cl_device_id device, cl_context context,
-                     cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                     cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -255,8 +235,8 @@ template <RunMode mode> struct InvalidSemaphore : public SemaphoreTestBase
 template <RunMode mode> struct InvalidContext : public SemaphoreTestBase
 {
     InvalidContext(cl_device_id device, cl_context context,
-                   cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                   cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -343,8 +323,8 @@ template <RunMode mode> struct InvalidContext : public SemaphoreTestBase
 template <RunMode mode> struct InvalidEventWaitList : public SemaphoreTestBase
 {
     InvalidEventWaitList(cl_device_id device, cl_context context,
-                         cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                         cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -437,8 +417,8 @@ template <RunMode mode> struct InvalidEventWaitList : public SemaphoreTestBase
 template <RunMode mode> struct InvalidEventStatus : public SemaphoreTestBase
 {
     InvalidEventStatus(cl_device_id device, cl_context context,
-                       cl_command_queue queue)
-        : SemaphoreTestBase(device, context, queue)
+                       cl_command_queue queue, cl_int nelems)
+        : SemaphoreTestBase(device, context, queue, nelems)
     {}
 
     cl_int Run() override
@@ -494,107 +474,81 @@ template <RunMode mode> struct InvalidEventStatus : public SemaphoreTestBase
 
 }
 
-int test_semaphores_negative_wait_invalid_command_queue(cl_device_id device,
-                                                        cl_context context,
-                                                        cl_command_queue queue,
-                                                        int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_wait_invalid_command_queue,
+                      Version(1, 2))
 {
     return MakeAndRunTest<InvalidCommandQueue<RunMode::RM_WAIT>>(
-        device, context, queue);
+        device, context, queue, num_elements);
 }
 
-int test_semaphores_negative_wait_invalid_value(cl_device_id device,
-                                                cl_context context,
-                                                cl_command_queue queue,
-                                                int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_wait_invalid_value, Version(1, 2))
 {
     return MakeAndRunTest<InvalidValue<RunMode::RM_WAIT>>(device, context,
-                                                          queue);
+                                                          queue, num_elements);
 }
 
-int test_semaphores_negative_wait_invalid_semaphore(cl_device_id device,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_wait_invalid_semaphore, Version(1, 2))
 {
-    return MakeAndRunTest<InvalidSemaphore<RunMode::RM_WAIT>>(device, context,
-                                                              queue);
+    return MakeAndRunTest<InvalidSemaphore<RunMode::RM_WAIT>>(
+        device, context, queue, num_elements);
 }
 
-int test_semaphores_negative_wait_invalid_context(cl_device_id device,
-                                                  cl_context context,
-                                                  cl_command_queue queue,
-                                                  int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_wait_invalid_context, Version(1, 2))
 {
-    return MakeAndRunTest<InvalidContext<RunMode::RM_WAIT>>(device, context,
-                                                            queue);
+    return MakeAndRunTest<InvalidContext<RunMode::RM_WAIT>>(
+        device, context, queue, num_elements);
 }
 
-int test_semaphores_negative_wait_invalid_event_wait_list(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_wait_invalid_event_wait_list,
+                      Version(1, 2))
 {
     return MakeAndRunTest<InvalidEventWaitList<RunMode::RM_WAIT>>(
-        device, context, queue);
+        device, context, queue, num_elements);
 }
 
-int test_semaphores_negative_wait_invalid_event_status(cl_device_id device,
-                                                       cl_context context,
-                                                       cl_command_queue queue,
-                                                       int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_wait_invalid_event_status,
+                      Version(1, 2))
 {
-    return MakeAndRunTest<InvalidEventStatus<RunMode::RM_WAIT>>(device, context,
-                                                                queue);
+    return MakeAndRunTest<InvalidEventStatus<RunMode::RM_WAIT>>(
+        device, context, queue, num_elements);
 }
 
-int test_semaphores_negative_signal_invalid_command_queue(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_signal_invalid_command_queue,
+                      Version(1, 2))
 {
     return MakeAndRunTest<InvalidCommandQueue<RunMode::RM_SIGNAL>>(
-        device, context, queue);
+        device, context, queue, num_elements);
 }
 
-int test_semaphores_negative_signal_invalid_value(cl_device_id device,
-                                                  cl_context context,
-                                                  cl_command_queue queue,
-                                                  int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_signal_invalid_value, Version(1, 2))
 {
-    return MakeAndRunTest<InvalidValue<RunMode::RM_SIGNAL>>(device, context,
-                                                            queue);
+    return MakeAndRunTest<InvalidValue<RunMode::RM_SIGNAL>>(
+        device, context, queue, num_elements);
 }
 
-int test_semaphores_negative_signal_invalid_semaphore(cl_device_id device,
-                                                      cl_context context,
-                                                      cl_command_queue queue,
-                                                      int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_signal_invalid_semaphore,
+                      Version(1, 2))
 {
-    return MakeAndRunTest<InvalidSemaphore<RunMode::RM_SIGNAL>>(device, context,
-                                                                queue);
+    return MakeAndRunTest<InvalidSemaphore<RunMode::RM_SIGNAL>>(
+        device, context, queue, num_elements);
 }
 
-int test_semaphores_negative_signal_invalid_context(cl_device_id device,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_signal_invalid_context, Version(1, 2))
 {
-    return MakeAndRunTest<InvalidContext<RunMode::RM_SIGNAL>>(device, context,
-                                                              queue);
+    return MakeAndRunTest<InvalidContext<RunMode::RM_SIGNAL>>(
+        device, context, queue, num_elements);
 }
 
-int test_semaphores_negative_signal_invalid_event_wait_list(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_signal_invalid_event_wait_list,
+                      Version(1, 2))
 {
     return MakeAndRunTest<InvalidEventWaitList<RunMode::RM_SIGNAL>>(
-        device, context, queue);
+        device, context, queue, num_elements);
 }
 
-int test_semaphores_negative_signal_invalid_event_status(cl_device_id device,
-                                                         cl_context context,
-                                                         cl_command_queue queue,
-                                                         int num_elements)
+REGISTER_TEST_VERSION(semaphores_negative_signal_invalid_event_status,
+                      Version(1, 2))
 {
     return MakeAndRunTest<InvalidEventStatus<RunMode::RM_SIGNAL>>(
-        device, context, queue);
+        device, context, queue, num_elements);
 }

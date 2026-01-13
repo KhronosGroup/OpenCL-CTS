@@ -41,25 +41,23 @@ const char* svm_flag_set_names[] = {
 };
 
 
-int test_svm_allocate_shared_buffer_negative(cl_device_id deviceID,
-                                             cl_context context2,
-                                             cl_command_queue queue,
-                                             int num_elements)
+REGISTER_TEST(svm_allocate_shared_buffer_negative)
 {
-    clContextWrapper context = NULL;
+    clContextWrapper contextWrapper = NULL;
     clProgramWrapper program = NULL;
     cl_uint num_devices = 0;
     cl_int err = CL_SUCCESS;
     clCommandQueueWrapper queues[MAXQ];
 
     cl_device_svm_capabilities caps;
-    err = clGetDeviceInfo(deviceID, CL_DEVICE_SVM_CAPABILITIES,
+    err = clGetDeviceInfo(device, CL_DEVICE_SVM_CAPABILITIES,
                           sizeof(cl_device_svm_capabilities), &caps, NULL);
     test_error(err, "clGetDeviceInfo failed for CL_DEVICE_SVM_CAPABILITIES");
 
     // under construction...
-    err = create_cl_objects(deviceID, NULL, &context, &program, &queues[0],
+    err = create_cl_objects(device, NULL, &contextWrapper, &program, &queues[0],
                             &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
+    context = contextWrapper;
     if (err) return err;
 
     size_t size = 1024;

@@ -16,8 +16,7 @@
 
 #include "testBase.h"
 
-int test_negative_get_platform_ids(cl_device_id deviceID, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(negative_get_platform_ids)
 {
     cl_platform_id platform;
     cl_int err = clGetPlatformIDs(0, &platform, nullptr);
@@ -37,14 +36,24 @@ int test_negative_get_platform_ids(cl_device_id deviceID, cl_context context,
     return TEST_PASS;
 }
 
-int test_negative_get_platform_info(cl_device_id deviceID, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(negative_get_platform_info)
 {
-    cl_platform_id platform = getPlatformFromDevice(deviceID);
+    cl_platform_id platform = getPlatformFromDevice(device);
+
+    cl_int err(CL_SUCCESS);
+    for (auto invalid_platform : get_invalid_objects<cl_platform_id>(device))
+    {
+        err = clGetPlatformInfo(invalid_platform, CL_PLATFORM_VERSION,
+                                sizeof(char*), nullptr, nullptr);
+        test_failure_error_ret(err, CL_INVALID_PLATFORM,
+                               "clGetPlatformInfo should return "
+                               "CL_INVALID_PLATFORM  when: \"platform "
+                               "is not a valid platform\"",
+                               TEST_FAIL);
+    }
 
     constexpr cl_platform_info INVALID_PARAM_VALUE = 0;
-    cl_int err =
-        clGetPlatformInfo(platform, INVALID_PARAM_VALUE, 0, nullptr, nullptr);
+    err = clGetPlatformInfo(platform, INVALID_PARAM_VALUE, 0, nullptr, nullptr);
     test_failure_error_ret(
         err, CL_INVALID_VALUE,
         "clGetPlatformInfo should return CL_INVALID_VALUE when: \"param_name "

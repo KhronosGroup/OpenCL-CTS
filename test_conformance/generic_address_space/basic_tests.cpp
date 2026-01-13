@@ -70,8 +70,10 @@ public:
         size_t passCount = std::count(results.begin(), results.end(), 1);
         if (passCount != results.size()) {
             std::vector<cl_uint>::iterator iter = std::find(results.begin(), results.end(), 0);
-            log_error("Verification on device failed at index %ld\n", std::distance(results.begin(), iter));
-            log_error("%ld out of %ld failed\n", (results.size()-passCount), results.size());
+            log_error("Verification on device failed at index %td\n",
+                      std::distance(results.begin(), iter));
+            log_error("%zu out of %zu failed\n", (results.size() - passCount),
+                      results.size());
             return -1;
         }
 
@@ -82,7 +84,8 @@ public:
         cl_int result = CL_SUCCESS;
 
         for (std::vector<std::string>::const_iterator it = _kernels.begin(); it != _kernels.end(); ++it) {
-            log_info("Executing subcase #%ld out of %ld\n", (it - _kernels.begin() + 1), _kernels.size());
+            log_info("Executing subcase #%zu out of %zu\n",
+                     (it - _kernels.begin() + 1), _kernels.size());
 
             result |= ExecuteSubcase(deviceID, context, queue, num_elements, *it);
         }
@@ -94,7 +97,8 @@ private:
     const std::vector<std::string> _kernels;
 };
 
-int test_function_get_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(function_get_fence)
+{
     const std::string KERNEL_FUNCTION = common::CONFORMANCE_VERIFY_FENCE +
         NL
         NL "__global int gint = 1;"
@@ -139,10 +143,11 @@ int test_function_get_fence(cl_device_id deviceID, cl_context context, cl_comman
 
     CBasicTest test(KERNEL_FUNCTION);
 
-    return test.Execute(deviceID, context, queue, num_elements);
+    return test.Execute(device, context, queue, num_elements);
 }
 
-int test_function_to_address_space(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(function_to_address_space)
+{
     const std::string KERNEL_FUNCTION =
         NL
         NL "__global int gint = 1;"
@@ -187,10 +192,11 @@ int test_function_to_address_space(cl_device_id deviceID, cl_context context, cl
 
     CBasicTest test(KERNEL_FUNCTION);
 
-    return test.Execute(deviceID, context, queue, num_elements);
+    return test.Execute(device, context, queue, num_elements);
 }
 
-int test_variable_get_fence(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(variable_get_fence)
+{
     const std::string KERNEL_FUNCTION = common::CONFORMANCE_VERIFY_FENCE +
         NL
         NL "__global int gint = 1;"
@@ -220,10 +226,11 @@ int test_variable_get_fence(cl_device_id deviceID, cl_context context, cl_comman
 
     CBasicTest test(KERNEL_FUNCTION);
 
-    return test.Execute(deviceID, context, queue, num_elements);
+    return test.Execute(device, context, queue, num_elements);
 }
 
-int test_variable_to_address_space(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(variable_to_address_space)
+{
     const std::string KERNEL_FUNCTION =
         NL
         NL "__global int gint = 1;"
@@ -253,10 +260,11 @@ int test_variable_to_address_space(cl_device_id deviceID, cl_context context, cl
 
     CBasicTest test(KERNEL_FUNCTION);
 
-    return test.Execute(deviceID, context, queue, num_elements);
+    return test.Execute(device, context, queue, num_elements);
 }
 
-int test_casting(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(casting)
+{
     std::vector<std::string> KERNEL_FUNCTIONS;
 
     // pointers to global, local or private are implicitly convertible to generic
@@ -342,10 +350,11 @@ int test_casting(cl_device_id deviceID, cl_context context, cl_command_queue que
 
     CBasicTest test(KERNEL_FUNCTIONS);
 
-    return test.Execute(deviceID, context, queue, num_elements);
+    return test.Execute(device, context, queue, num_elements);
 }
 
-int test_conditional_casting(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(conditional_casting)
+{
     const std::string KERNEL_FUNCTION = common::CONFORMANCE_VERIFY_FENCE +
         NL
         NL "__global int gint = 1;"
@@ -373,10 +382,11 @@ int test_conditional_casting(cl_device_id deviceID, cl_context context, cl_comma
 
     CBasicTest test(KERNEL_FUNCTION);
 
-    return test.Execute(deviceID, context, queue, num_elements);
+    return test.Execute(device, context, queue, num_elements);
 }
 
-int test_chain_casting(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(chain_casting)
+{
     const std::string KERNEL_FUNCTION = common::CONFORMANCE_VERIFY_FENCE +
         NL
         NL "__global int gint = 1;"
@@ -404,10 +414,11 @@ int test_chain_casting(cl_device_id deviceID, cl_context context, cl_command_que
         NL;
     CBasicTest test(KERNEL_FUNCTION);
 
-    return test.Execute(deviceID, context, queue, num_elements);
+    return test.Execute(device, context, queue, num_elements);
 }
 
-int test_ternary_operator_casting(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(ternary_operator_casting)
+{
     const std::string KERNEL_FUNCTION = common::CONFORMANCE_VERIFY_FENCE +
         NL
         NL "__global int gint = 1;"
@@ -432,10 +443,11 @@ int test_ternary_operator_casting(cl_device_id deviceID, cl_context context, cl_
 
     CBasicTest test(KERNEL_FUNCTION);
 
-    return test.Execute(deviceID, context, queue, num_elements);
+    return test.Execute(device, context, queue, num_elements);
 }
 
-int test_language_struct(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(language_struct)
+{
     std::vector<std::string> KERNEL_FUNCTIONS;
 
     // implicit private struct
@@ -585,10 +597,11 @@ int test_language_struct(cl_device_id deviceID, cl_context context, cl_command_q
 
     CBasicTest test(KERNEL_FUNCTIONS);
 
-    return test.Execute(deviceID, context, queue, num_elements);
+    return test.Execute(device, context, queue, num_elements);
 }
 
-int test_language_union(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(language_union)
+{
     std::vector<std::string> KERNEL_FUNCTIONS;
 
     KERNEL_FUNCTIONS.push_back(common::CONFORMANCE_VERIFY_FENCE +
@@ -723,10 +736,11 @@ int test_language_union(cl_device_id deviceID, cl_context context, cl_command_qu
 
     CBasicTest test(KERNEL_FUNCTIONS);
 
-    return test.Execute(deviceID, context, queue, num_elements);
+    return test.Execute(device, context, queue, num_elements);
 }
 
-int test_multiple_calls_same_function(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(multiple_calls_same_function)
+{
     const std::string KERNEL_FUNCTION =
         NL
         NL "int shift2(const int *ptr, int arg) {"
@@ -756,10 +770,11 @@ int test_multiple_calls_same_function(cl_device_id deviceID, cl_context context,
 
     CBasicTest test(KERNEL_FUNCTION);
 
-    return test.Execute(deviceID, context, queue, num_elements);
+    return test.Execute(device, context, queue, num_elements);
 }
 
-int test_compare_pointers(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements) {
+REGISTER_TEST(compare_pointers)
+{
     std::vector<std::string> KERNEL_FUNCTIONS;
 
     KERNEL_FUNCTIONS.push_back(
@@ -881,5 +896,5 @@ int test_compare_pointers(cl_device_id deviceID, cl_context context, cl_command_
 
     CBasicTest test(KERNEL_FUNCTIONS);
 
-    return test.Execute(deviceID, context, queue, num_elements);
+    return test.Execute(device, context, queue, num_elements);
 }

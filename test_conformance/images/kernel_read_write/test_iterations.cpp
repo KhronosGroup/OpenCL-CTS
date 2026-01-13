@@ -97,7 +97,9 @@ template <class T> int determine_validation_error( void *imagePtr, image_descrip
         {
             if( (--numClamped) == 0 )
             {
-                log_error( "ERROR: TEST FAILED: Read is erroneously clamping coordinates for image size %ld x %ld!\n", imageInfo->width, imageInfo->height );
+                log_error("ERROR: TEST FAILED: Read is erroneously clamping "
+                          "coordinates for image size %zu x %zu!\n",
+                          imageInfo->width, imageInfo->height);
                 if (imageInfo->format->image_channel_order == CL_DEPTH)
                 {
                     if( printAsFloat )
@@ -139,7 +141,9 @@ template <class T> int determine_validation_error( void *imagePtr, image_descrip
         {
             if( (--numClamped) == 0 )
             {
-                log_error( "ERROR: TEST FAILED: Clamping is erroneously returning border color for image size %ld x %ld!\n", imageInfo->width, imageInfo->height );
+                log_error("ERROR: TEST FAILED: Clamping is erroneously "
+                          "returning border color for image size %zu x %zu!\n",
+                          imageInfo->width, imageInfo->height);
                 if (imageInfo->format->image_channel_order == CL_DEPTH)
                 {
                     if( printAsFloat )
@@ -203,7 +207,8 @@ template <class T> int determine_validation_error( void *imagePtr, image_descrip
                                     (int)resultPtr[ 0 ], (int)resultPtr[ 1 ], (int)resultPtr[ 2 ], (int)resultPtr[ 3 ] );
             }
         }
-        log_error( "img size %ld,%ld (pitch %ld)", imageInfo->width, imageInfo->height, imageInfo->rowPitch );
+        log_error("img size %zu,%zu (pitch %zu)", imageInfo->width,
+                  imageInfo->height, imageInfo->rowPitch);
         if( clamped )
         {
             log_error( " which would clamp to %d,%d\n", clampedX, clampedY );
@@ -940,7 +945,7 @@ int validate_image_2D_sRGB_results(void *imageValues, void *resultValues, double
         // Validate float results
         float *resultPtr = (float *)(char *)resultValues;
         float expected[4], error=0.0f;
-        float maxErr = get_max_relative_error( imageInfo->format, imageSampler, 0 /*not 3D*/, CL_FILTER_LINEAR == imageSampler->filter_mode );
+
         for( size_t y = 0, j = 0; y < height_lod; y++ )
         {
             for( size_t x = 0; x < width_lod; x++, j++ )
@@ -1186,7 +1191,7 @@ int test_read_image_2D( cl_context context, cl_command_queue queue, cl_kernel ke
 {
     int error;
     static int initHalf = 0;
-    cl_mem imageBuffer;
+    cl_mem imageBuffer = nullptr;
     cl_mem_flags    image_read_write_flags = CL_MEM_READ_ONLY;
     size_t threads[2];
 

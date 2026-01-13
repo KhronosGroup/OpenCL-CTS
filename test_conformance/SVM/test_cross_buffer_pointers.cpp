@@ -128,93 +128,128 @@ cl_int verify_linked_lists_on_host(int ci, cl_command_queue cmdq, cl_mem nodes, 
 // on another device or the host.
 // The linked list nodes are allocated from two different buffers this is done to ensure that cross buffer pointers work correctly.
 // This basic test is performed for all combinations of devices and the host.
-int test_svm_cross_buffer_pointers_coarse_grain(cl_device_id deviceID, cl_context context2, cl_command_queue queue, int num_elements)
+REGISTER_TEST(svm_cross_buffer_pointers_coarse_grain)
 {
-  clContextWrapper    context = NULL;
-  clProgramWrapper    program = NULL;
-  cl_uint     num_devices = 0;
-  cl_int      error = CL_SUCCESS;
-  clCommandQueueWrapper queues[MAXQ];
+    clContextWrapper contextWrapper = NULL;
+    clProgramWrapper program = NULL;
+    cl_uint num_devices = 0;
+    cl_int error = CL_SUCCESS;
+    clCommandQueueWrapper queues[MAXQ];
 
-  error = create_cl_objects(deviceID, &SVMCrossBufferPointers_test_kernel[0], &context, &program, &queues[0], &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
-  if(error) return -1;
+    error = create_cl_objects(device, &SVMCrossBufferPointers_test_kernel[0],
+                              &contextWrapper, &program, &queues[0],
+                              &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
+    context = contextWrapper;
+    if (error) return -1;
 
-  size_t numLists =  num_elements;
-  cl_int ListLength = 32;
+    size_t numLists = num_elements;
+    cl_int ListLength = 32;
 
-  clKernelWrapper kernel_create_lists = clCreateKernel(program, "create_linked_lists", &error);
-  test_error(error, "clCreateKernel failed");
+    clKernelWrapper kernel_create_lists =
+        clCreateKernel(program, "create_linked_lists", &error);
+    test_error(error, "clCreateKernel failed");
 
-  clKernelWrapper kernel_verify_lists = clCreateKernel(program, "verify_linked_lists", &error);
-  test_error(error, "clCreateKernel failed");
+    clKernelWrapper kernel_verify_lists =
+        clCreateKernel(program, "verify_linked_lists", &error);
+    test_error(error, "clCreateKernel failed");
 
-  // this buffer holds some of the linked list nodes.
-  Node* pNodes = (Node*) clSVMAlloc(context, CL_MEM_READ_WRITE, sizeof(Node)*ListLength*numLists, 0);
+    // this buffer holds some of the linked list nodes.
+    Node *pNodes = (Node *)clSVMAlloc(context, CL_MEM_READ_WRITE,
+                                      sizeof(Node) * ListLength * numLists, 0);
 
-  // this buffer holds some of the linked list nodes.
-  Node* pNodes2 = (Node*) clSVMAlloc(context, CL_MEM_READ_WRITE, sizeof(Node)*ListLength*numLists, 0);
+    // this buffer holds some of the linked list nodes.
+    Node *pNodes2 = (Node *)clSVMAlloc(context, CL_MEM_READ_WRITE,
+                                       sizeof(Node) * ListLength * numLists, 0);
 
-  {
-    clMemWrapper nodes = clCreateBuffer(context, CL_MEM_USE_HOST_PTR, sizeof(Node)*ListLength*numLists, pNodes, &error);
-    test_error(error, "clCreateBuffer failed.");
-
-    clMemWrapper nodes2 = clCreateBuffer(context, CL_MEM_USE_HOST_PTR, sizeof(Node)*ListLength*numLists, pNodes2, &error);
-    test_error(error, "clCreateBuffer failed.");
-
-    // this buffer holds the index into the nodes buffer that is used for node allocation
-    clMemWrapper allocator = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                            sizeof(size_t), NULL, &error);
-    test_error(error, "clCreateBuffer failed.");
-
-    // this buffer holds the count of correct nodes which is computed by the verify kernel.
-    clMemWrapper num_correct = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int), NULL, &error);
-    test_error(error, "clCreateBuffer failed.");
-
-    error |= clSetKernelArg(kernel_create_lists, 0, sizeof(void*), (void *) &nodes);
-    //error |= clSetKernelArgSVMPointer(kernel_create_lists, 0, (void *) pNodes);
-    error |= clSetKernelArg(kernel_create_lists, 1, sizeof(void*), (void *) &nodes2);
-    error |= clSetKernelArg(kernel_create_lists, 2, sizeof(void*), (void *) &allocator);
-    error |= clSetKernelArg(kernel_create_lists, 3, sizeof(cl_int),   (void *) &ListLength);
-
-    error |= clSetKernelArg(kernel_verify_lists, 0, sizeof(void*), (void *) &nodes);
-    error |= clSetKernelArg(kernel_verify_lists, 1, sizeof(void*), (void *) &nodes2);
-    error |= clSetKernelArg(kernel_verify_lists, 2, sizeof(void*), (void *) &num_correct);
-    error |= clSetKernelArg(kernel_verify_lists, 3, sizeof(cl_int),   (void *) &ListLength);
-    test_error(error, "clSetKernelArg failed");
-
-    // Create linked list on one device and verify on another device (or the host).
-    // Do this for all possible combinations of devices and host within the platform.
-    for (int ci=0; ci<(int)num_devices+1; ci++)  // ci is CreationIndex, index of device/q to create linked list on
     {
-      for (int vi=0; vi<(int)num_devices+1; vi++)  // vi is VerificationIndex, index of device/q to verify linked list on
-      {
-        if(ci == num_devices) // last device index represents the host, note the num_device+1 above.
-        {
-          error = create_linked_lists_on_host(queues[0], nodes, nodes2, ListLength, numLists);
-          if(error) return -1;
-        }
-        else
-        {
-          error = create_linked_lists_on_device(ci, queues[ci], allocator, kernel_create_lists, numLists);
-          if(error) return -1;
-        }
+        clMemWrapper nodes = clCreateBuffer(
+            context, CL_MEM_USE_HOST_PTR, sizeof(Node) * ListLength * numLists,
+            pNodes, &error);
+        test_error(error, "clCreateBuffer failed.");
 
-        if(vi == num_devices)
-        {
-          error = verify_linked_lists_on_host(vi, queues[0], nodes, nodes2, ListLength, numLists);
-          if(error) return -1;
-        }
-        else
-        {
-          error = verify_linked_lists_on_device(vi, queues[vi], num_correct, kernel_verify_lists, ListLength, numLists);
-          if(error) return -1;
-        }
-      } // inner loop, vi
-    } // outer loop, ci
-  }
+        clMemWrapper nodes2 = clCreateBuffer(
+            context, CL_MEM_USE_HOST_PTR, sizeof(Node) * ListLength * numLists,
+            pNodes2, &error);
+        test_error(error, "clCreateBuffer failed.");
 
-  clSVMFree(context, pNodes2);
-  clSVMFree(context, pNodes);
+        // this buffer holds the index into the nodes buffer that is used for
+        // node allocation
+        clMemWrapper allocator = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                                sizeof(size_t), NULL, &error);
+        test_error(error, "clCreateBuffer failed.");
 
-  return 0;
+        // this buffer holds the count of correct nodes which is computed by the
+        // verify kernel.
+        clMemWrapper num_correct = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                                  sizeof(cl_int), NULL, &error);
+        test_error(error, "clCreateBuffer failed.");
+
+        error |= clSetKernelArg(kernel_create_lists, 0, sizeof(void *),
+                                (void *)&nodes);
+        // error |= clSetKernelArgSVMPointer(kernel_create_lists, 0, (void *)
+        // pNodes);
+        error |= clSetKernelArg(kernel_create_lists, 1, sizeof(void *),
+                                (void *)&nodes2);
+        error |= clSetKernelArg(kernel_create_lists, 2, sizeof(void *),
+                                (void *)&allocator);
+        error |= clSetKernelArg(kernel_create_lists, 3, sizeof(cl_int),
+                                (void *)&ListLength);
+
+        error |= clSetKernelArg(kernel_verify_lists, 0, sizeof(void *),
+                                (void *)&nodes);
+        error |= clSetKernelArg(kernel_verify_lists, 1, sizeof(void *),
+                                (void *)&nodes2);
+        error |= clSetKernelArg(kernel_verify_lists, 2, sizeof(void *),
+                                (void *)&num_correct);
+        error |= clSetKernelArg(kernel_verify_lists, 3, sizeof(cl_int),
+                                (void *)&ListLength);
+        test_error(error, "clSetKernelArg failed");
+
+        // Create linked list on one device and verify on another device (or the
+        // host). Do this for all possible combinations of devices and host
+        // within the platform.
+        for (int ci = 0; ci < (int)num_devices + 1;
+             ci++) // ci is CreationIndex, index of device/q to create linked
+                   // list on
+        {
+            for (int vi = 0; vi < (int)num_devices + 1;
+                 vi++) // vi is VerificationIndex, index of device/q to verify
+                       // linked list on
+            {
+                if (ci == num_devices) // last device index represents the host,
+                                       // note the num_device+1 above.
+                {
+                    error = create_linked_lists_on_host(
+                        queues[0], nodes, nodes2, ListLength, numLists);
+                    if (error) return -1;
+                }
+                else
+                {
+                    error = create_linked_lists_on_device(
+                        ci, queues[ci], allocator, kernel_create_lists,
+                        numLists);
+                    if (error) return -1;
+                }
+
+                if (vi == num_devices)
+                {
+                    error = verify_linked_lists_on_host(
+                        vi, queues[0], nodes, nodes2, ListLength, numLists);
+                    if (error) return -1;
+                }
+                else
+                {
+                    error = verify_linked_lists_on_device(
+                        vi, queues[vi], num_correct, kernel_verify_lists,
+                        ListLength, numLists);
+                    if (error) return -1;
+                }
+            } // inner loop, vi
+        } // outer loop, ci
+    }
+
+    clSVMFree(context, pNodes2);
+    clSVMFree(context, pNodes);
+
+    return 0;
 }

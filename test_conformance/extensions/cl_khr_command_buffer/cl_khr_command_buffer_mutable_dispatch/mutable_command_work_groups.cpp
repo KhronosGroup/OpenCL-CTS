@@ -82,13 +82,41 @@ struct MutableDispatchWorkGroups : public BasicMutableCommandBufferTest
             || BasicMutableCommandBufferTest::Skip();
     }
 
+    cl_int SetUpKernel() override
+    {
+        // Create kernel
+        const char *num_groups_kernel =
+            R"(
+                __kernel void sample_test(__global int *dst)
+            {
+                size_t tid = get_global_id(0);
+                dst[tid] = get_num_groups(0);
+            })";
+
+        cl_int error = create_single_kernel_helper(
+            context, &program, &kernel, 1, &num_groups_kernel, "sample_test");
+        test_error(error, "Creating kernel failed");
+
+        return CL_SUCCESS;
+    }
+
+    cl_int SetUpKernelArgs() override
+    {
+        cl_int error = CL_SUCCESS;
+        stream = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeToAllocate,
+                                nullptr, &error);
+        test_error(error, "Creating src buffer");
+
+        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &stream);
+        test_error(error, "Unable to set indexed kernel arguments");
+
+        return CL_SUCCESS;
+    }
+
     cl_int SetUp(int elements) override
     {
         cl_int error = BasicMutableCommandBufferTest::SetUp(elements);
         test_error(error, "BasicMutableCommandBufferTest::SetUp failed");
-
-        error = SetUpKernel();
-        test_error(error, "SetUpKernel failed");
 
         cl_command_buffer_properties_khr properties[5];
         int index = 0;
@@ -110,23 +138,7 @@ struct MutableDispatchWorkGroups : public BasicMutableCommandBufferTest
 
     cl_int Run() override
     {
-        const char *num_groups_kernel =
-            R"(
-                __kernel void sample_test(__global int *dst)
-            {
-                size_t tid = get_global_id(0);
-                dst[tid] = get_num_groups(0);
-            })";
-        cl_int error = create_single_kernel_helper(
-            context, &program, &kernel, 1, &num_groups_kernel, "sample_test");
-        test_error(error, "Creating kernel failed");
-
-        clMemWrapper stream = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                             sizeToAllocate, nullptr, &error);
-
-        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &stream);
-        test_error(error, "Unable to set indexed kernel arguments");
-
+        cl_int error = CL_SUCCESS;
         // Record an ND-range kernel of the kernel above in the command buffer
         // with a non-null local work size so that the resulting number of
         // workgroups will be greater than 1.
@@ -262,6 +274,7 @@ struct MutableDispatchWorkGroups : public BasicMutableCommandBufferTest
 
     clCommandBufferWrapper single_command_buffer;
     cl_mutable_command_khr command = nullptr;
+    clMemWrapper stream;
     Configuration config;
 
     size_t info_global_size = 0;
@@ -271,29 +284,21 @@ struct MutableDispatchWorkGroups : public BasicMutableCommandBufferTest
     const size_t sizeToAllocate = 64 * sizeof(cl_int);
 };
 
-int test_command_buffer_with_no_additional_work_groups(cl_device_id device,
-                                                       cl_context context,
-                                                       cl_command_queue queue,
-                                                       int num_elements)
+REGISTER_TEST(command_buffer_with_no_additional_work_groups)
 {
 
     return MakeAndRunTest<MutableDispatchWorkGroups<0>>(device, context, queue,
                                                         num_elements);
 }
 
-int test_ndrange_with_no_additional_work_groups(cl_device_id device,
-                                                cl_context context,
-                                                cl_command_queue queue,
-                                                int num_elements)
+REGISTER_TEST(ndrange_with_no_additional_work_groups)
 {
 
     return MakeAndRunTest<MutableDispatchWorkGroups<1>>(device, context, queue,
                                                         num_elements);
 }
 
-int test_ndrange_command_buffer_with_no_additional_work_groups(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(ndrange_command_buffer_with_no_additional_work_groups)
 {
 
     return MakeAndRunTest<MutableDispatchWorkGroups<2>>(device, context, queue,

@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+#include "testBase.h"
 #include "harness/errorHelpers.h"
 
 #define TEST_PRIME_CHAR        0x77
@@ -557,10 +557,13 @@ static int verify_fill_struct( void *ptr1, void *ptr2, int n )
 }
 
 
-
-int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, size_t size, char *type,
-                     int loops, void *inptr[5], void *hostptr[5], void *pattern[5], size_t offset_elements, size_t fill_elements,
-                     const char *kernelCode[], const char *kernelName[], int (*fn)(void *,void *,int) )
+static int test_buffer_fill(cl_device_id deviceID, cl_context context,
+                            cl_command_queue queue, int num_elements,
+                            size_t size, char *type, int loops, void *inptr[5],
+                            void *hostptr[5], void *pattern[5],
+                            size_t offset_elements, size_t fill_elements,
+                            const char *kernelCode[], const char *kernelName[],
+                            int (*fn)(void *, void *, int))
 {
     void        *outptr[5];
     clProgramWrapper program[5];
@@ -595,6 +598,12 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
+            // Skip immutable memory flags
+            if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
+
             clEventWrapper event[2];
             clMemWrapper buffers[2];
             if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
@@ -700,7 +709,7 @@ int test_buffer_fill( cl_device_id deviceID, cl_context context, cl_command_queu
 }   // end test_buffer_fill()
 
 
-int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_fill_struct)
 {
     TestStruct pattern;
     size_t      ptrSize = sizeof( TestStruct );
@@ -718,6 +727,12 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
 
     for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
     {
+        // Skip immutable memory flags
+        if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+        {
+            continue;
+        }
+
         clProgramWrapper program;
         clKernelWrapper kernel;
         log_info("Testing with cl_mem_flags: %s\n",
@@ -890,7 +905,7 @@ int test_buffer_fill_struct( cl_device_id deviceID, cl_context context, cl_comma
 }   // end test_buffer_fill_struct()
 
 
-int test_buffer_fill_int( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_fill_int)
 {
     cl_int  *inptr[5];
     cl_int  *hostptr[5];
@@ -934,10 +949,11 @@ int test_buffer_fill_int( cl_device_id deviceID, cl_context context, cl_command_
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
         }
 
-        if (test_buffer_fill( deviceID, context, queue, num_elements, sizeof( cl_int ), (char*)"int",
-                             5, (void**)inptr, (void**)hostptr, (void**)pattern,
+        if (test_buffer_fill(device, context, queue, num_elements,
+                             sizeof(cl_int), (char *)"int", 5, (void **)inptr,
+                             (void **)hostptr, (void **)pattern,
                              offset_elements, fill_elements,
-                             buffer_fill_int_kernel_code, int_kernel_name, foo ))
+                             buffer_fill_int_kernel_code, int_kernel_name, foo))
             err++;
 
         for ( i = 0; i < 5; i++ ){
@@ -955,7 +971,7 @@ int test_buffer_fill_int( cl_device_id deviceID, cl_context context, cl_command_
 }   // end test_buffer_int_fill()
 
 
-int test_buffer_fill_uint( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_fill_uint)
 {
     cl_uint *inptr[5];
     cl_uint *hostptr[5];
@@ -999,10 +1015,11 @@ int test_buffer_fill_uint( cl_device_id deviceID, cl_context context, cl_command
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
         }
 
-        if (test_buffer_fill( deviceID, context, queue, num_elements, sizeof( cl_uint ), (char*)"uint",
-                             5, (void**)inptr, (void**)hostptr, (void**)pattern,
-                             offset_elements, fill_elements,
-                             buffer_fill_uint_kernel_code, uint_kernel_name, foo ))
+        if (test_buffer_fill(
+                device, context, queue, num_elements, sizeof(cl_uint),
+                (char *)"uint", 5, (void **)inptr, (void **)hostptr,
+                (void **)pattern, offset_elements, fill_elements,
+                buffer_fill_uint_kernel_code, uint_kernel_name, foo))
             err++;
 
         for ( i = 0; i < 5; i++ ){
@@ -1020,7 +1037,7 @@ int test_buffer_fill_uint( cl_device_id deviceID, cl_context context, cl_command
 }   // end test_buffer_uint_fill()
 
 
-int test_buffer_fill_short( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_fill_short)
 {
     cl_short *inptr[5];
     cl_short *hostptr[5];
@@ -1064,10 +1081,11 @@ int test_buffer_fill_short( cl_device_id deviceID, cl_context context, cl_comman
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
         }
 
-        if (test_buffer_fill( deviceID, context, queue, num_elements, sizeof( cl_short ), (char*)"short",
-                             5, (void**)inptr, (void**)hostptr, (void**)pattern,
-                             offset_elements, fill_elements,
-                             buffer_fill_short_kernel_code, short_kernel_name, foo ))
+        if (test_buffer_fill(
+                device, context, queue, num_elements, sizeof(cl_short),
+                (char *)"short", 5, (void **)inptr, (void **)hostptr,
+                (void **)pattern, offset_elements, fill_elements,
+                buffer_fill_short_kernel_code, short_kernel_name, foo))
             err++;
 
         for ( i = 0; i < 5; i++ ){
@@ -1085,7 +1103,7 @@ int test_buffer_fill_short( cl_device_id deviceID, cl_context context, cl_comman
 }   // end test_buffer_short_fill()
 
 
-int test_buffer_fill_ushort( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_fill_ushort)
 {
     cl_ushort *inptr[5];
     cl_ushort *hostptr[5];
@@ -1129,10 +1147,11 @@ int test_buffer_fill_ushort( cl_device_id deviceID, cl_context context, cl_comma
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
         }
 
-        if (test_buffer_fill( deviceID, context, queue, num_elements, sizeof( cl_ushort ), (char*)"ushort",
-                             5, (void**)inptr, (void**)hostptr, (void**)pattern,
-                             offset_elements, fill_elements,
-                             buffer_fill_ushort_kernel_code, ushort_kernel_name, foo ))
+        if (test_buffer_fill(
+                device, context, queue, num_elements, sizeof(cl_ushort),
+                (char *)"ushort", 5, (void **)inptr, (void **)hostptr,
+                (void **)pattern, offset_elements, fill_elements,
+                buffer_fill_ushort_kernel_code, ushort_kernel_name, foo))
             err++;
 
         for ( i = 0; i < 5; i++ ){
@@ -1150,7 +1169,7 @@ int test_buffer_fill_ushort( cl_device_id deviceID, cl_context context, cl_comma
 }   // end test_buffer_ushort_fill()
 
 
-int test_buffer_fill_char( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_fill_char)
 {
     cl_char *inptr[5];
     cl_char *hostptr[5];
@@ -1194,10 +1213,11 @@ int test_buffer_fill_char( cl_device_id deviceID, cl_context context, cl_command
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
         }
 
-        if (test_buffer_fill( deviceID, context, queue, num_elements, sizeof( cl_char ), (char*)"char",
-                             5, (void**)inptr, (void**)hostptr, (void**)pattern,
-                             offset_elements, fill_elements,
-                             buffer_fill_char_kernel_code, char_kernel_name, foo ))
+        if (test_buffer_fill(
+                device, context, queue, num_elements, sizeof(cl_char),
+                (char *)"char", 5, (void **)inptr, (void **)hostptr,
+                (void **)pattern, offset_elements, fill_elements,
+                buffer_fill_char_kernel_code, char_kernel_name, foo))
             err++;
 
         for ( i = 0; i < 5; i++ ){
@@ -1215,7 +1235,7 @@ int test_buffer_fill_char( cl_device_id deviceID, cl_context context, cl_command
 }   // end test_buffer_char_fill()
 
 
-int test_buffer_fill_uchar( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_fill_uchar)
 {
     cl_uchar *inptr[5];
     cl_uchar *hostptr[5];
@@ -1259,10 +1279,11 @@ int test_buffer_fill_uchar( cl_device_id deviceID, cl_context context, cl_comman
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
         }
 
-        if (test_buffer_fill( deviceID, context, queue, num_elements, sizeof( cl_uchar ), (char*)"uchar",
-                             5, (void**)inptr, (void**)hostptr, (void**)pattern,
-                             offset_elements, fill_elements,
-                             buffer_fill_uchar_kernel_code, uchar_kernel_name, foo ))
+        if (test_buffer_fill(
+                device, context, queue, num_elements, sizeof(cl_uchar),
+                (char *)"uchar", 5, (void **)inptr, (void **)hostptr,
+                (void **)pattern, offset_elements, fill_elements,
+                buffer_fill_uchar_kernel_code, uchar_kernel_name, foo))
             err++;
 
         for ( i = 0; i < 5; i++ ){
@@ -1280,7 +1301,7 @@ int test_buffer_fill_uchar( cl_device_id deviceID, cl_context context, cl_comman
 }   // end test_buffer_uchar_fill()
 
 
-int test_buffer_fill_long( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_fill_long)
 {
     cl_long *inptr[5];
     cl_long *hostptr[5];
@@ -1331,10 +1352,11 @@ int test_buffer_fill_long( cl_device_id deviceID, cl_context context, cl_command
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
         }
 
-        if (test_buffer_fill( deviceID, context, queue, num_elements, sizeof( cl_long ), (char*)"long",
-                             5, (void**)inptr, (void**)hostptr, (void**)pattern,
-                             offset_elements, fill_elements,
-                             buffer_fill_long_kernel_code, long_kernel_name, foo ))
+        if (test_buffer_fill(
+                device, context, queue, num_elements, sizeof(cl_long),
+                (char *)"long", 5, (void **)inptr, (void **)hostptr,
+                (void **)pattern, offset_elements, fill_elements,
+                buffer_fill_long_kernel_code, long_kernel_name, foo))
             err++;
 
         for ( i = 0; i < 5; i++ ){
@@ -1352,7 +1374,7 @@ int test_buffer_fill_long( cl_device_id deviceID, cl_context context, cl_command
 }   // end test_buffer_long_fill()
 
 
-int test_buffer_fill_ulong( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_fill_ulong)
 {
     cl_ulong *inptr[5];
     cl_ulong *hostptr[5];
@@ -1402,10 +1424,11 @@ int test_buffer_fill_ulong( cl_device_id deviceID, cl_context context, cl_comman
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
         }
 
-        if (test_buffer_fill( deviceID, context, queue, num_elements, sizeof( cl_ulong ), (char*)"ulong",
-                             5, (void**)inptr, (void**)hostptr, (void**)pattern,
-                             offset_elements, fill_elements,
-                             buffer_fill_ulong_kernel_code, ulong_kernel_name, foo ))
+        if (test_buffer_fill(
+                device, context, queue, num_elements, sizeof(cl_ulong),
+                (char *)"ulong", 5, (void **)inptr, (void **)hostptr,
+                (void **)pattern, offset_elements, fill_elements,
+                buffer_fill_ulong_kernel_code, ulong_kernel_name, foo))
             err++;
 
         for ( i = 0; i < 5; i++ ){
@@ -1423,7 +1446,7 @@ int test_buffer_fill_ulong( cl_device_id deviceID, cl_context context, cl_comman
 }   // end test_buffer_ulong_fill()
 
 
-int test_buffer_fill_float( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_fill_float)
 {
     cl_float *inptr[5];
     cl_float *hostptr[5];
@@ -1467,10 +1490,11 @@ int test_buffer_fill_float( cl_device_id deviceID, cl_context context, cl_comman
             memset(hostptr[i], 0, ptrSizes[i] * num_elements);
         }
 
-        if (test_buffer_fill( deviceID, context, queue, num_elements, sizeof( cl_float ), (char*)"float",
-                             5, (void**)inptr, (void**)hostptr, (void**)pattern,
-                             offset_elements, fill_elements,
-                             buffer_fill_float_kernel_code, float_kernel_name, foo ))
+        if (test_buffer_fill(
+                device, context, queue, num_elements, sizeof(cl_float),
+                (char *)"float", 5, (void **)inptr, (void **)hostptr,
+                (void **)pattern, offset_elements, fill_elements,
+                buffer_fill_float_kernel_code, float_kernel_name, foo))
             err++;
 
         for ( i = 0; i < 5; i++ ){

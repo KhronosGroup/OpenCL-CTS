@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "procs.h"
+#include "testBase.h"
 #include "harness/errorHelpers.h"
 
 
@@ -621,8 +621,11 @@ static int verify_write_struct( void *ptr1, void *ptr2, int n )
 }
 
 
-int test_buffer_write( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, size_t size, char *type, int loops,
-                       void *inptr[5], const char *kernelCode[], const char *kernelName[], int (*fn)(void *,void *,int), MTdata d )
+static int test_buffer_write(cl_device_id deviceID, cl_context context,
+                             cl_command_queue queue, int num_elements,
+                             size_t size, char *type, int loops, void *inptr[5],
+                             const char *kernelCode[], const char *kernelName[],
+                             int (*fn)(void *, void *, int), MTdata d)
 {
     void        *outptr[5];
     clProgramWrapper program[5];
@@ -657,8 +660,18 @@ int test_buffer_write( cl_device_id deviceID, cl_context context, cl_command_que
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
+            // Skip immutable memory flags
+            if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
             for (dst_flag_id = 0; dst_flag_id < NUM_FLAGS; dst_flag_id++)
             {
+                // Skip immutable memory flags
+                if (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT)
+                {
+                    continue;
+                }
                 clMemWrapper buffers[2];
 
                 if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
@@ -787,9 +800,7 @@ int test_buffer_write( cl_device_id deviceID, cl_context context, cl_command_que
 }   // end test_buffer_write()
 
 
-
-
-int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_struct)
 {
 
     void        *outptr[5];
@@ -833,8 +844,19 @@ int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_comm
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
+            // Skip immutable memory flags
+            if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
             for (dst_flag_id = 0; dst_flag_id < NUM_FLAGS; dst_flag_id++)
             {
+                // Skip immutable memory flags
+                if (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT)
+                {
+                    continue;
+                }
+
                 clMemWrapper buffers[2];
 
                 inptr[i] = (TestStruct *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
@@ -852,8 +874,8 @@ int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_comm
                     buffers[0] =
                         clCreateBuffer(context, flag_set[src_flag_id],
                                        ptrSizes[i] * num_elements, NULL, &err);
-                if ( err ){
-                    align_free( outptr[i] );
+                if (err)
+                {
                     print_error(err, " clCreateBuffer failed\n" );
                     free_mtdata(d);
                     return -1;
@@ -966,8 +988,11 @@ int test_buffer_write_struct( cl_device_id deviceID, cl_context context, cl_comm
 }   // end test_buffer_struct_write()
 
 
-int test_buffer_write_array_async( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, size_t size, char *type, int loops,
-                                   void *inptr[5], const char *kernelCode[], const char *kernelName[], int (*fn)(void *,void *,int) )
+static int test_buffer_write_array_async(
+    cl_device_id deviceID, cl_context context, cl_command_queue queue,
+    int num_elements, size_t size, char *type, int loops, void *inptr[5],
+    const char *kernelCode[], const char *kernelName[],
+    int (*fn)(void *, void *, int))
 {
     cl_mem      buffers[10];
     void        *outptr[5];
@@ -992,7 +1017,17 @@ int test_buffer_write_array_async( cl_device_id deviceID, cl_context context, cl
     ptrSizes[4] = ptrSizes[3] << 1;
 
     for (src_flag_id=0; src_flag_id < NUM_FLAGS; src_flag_id++) {
+        // Skip immutable memory flags
+        if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+        {
+            continue;
+        }
         for (dst_flag_id=0; dst_flag_id < NUM_FLAGS; dst_flag_id++) {
+            // Skip immutable memory flags
+            if (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
             log_info("Testing with cl_mem_flags src: %s dst: %s\n", flag_set_names[src_flag_id], flag_set_names[dst_flag_id]);
 
             loops = ( loops < 5 ? loops : 5 );
@@ -1098,7 +1133,7 @@ int test_buffer_write_array_async( cl_device_id deviceID, cl_context context, cl
 }   // end test_buffer_write_array_async()
 
 
-int test_buffer_write_int( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_int)
 {
     int     *inptr[5];
     size_t  ptrSizes[5];
@@ -1124,8 +1159,9 @@ int test_buffer_write_int( cl_device_id deviceID, cl_context context, cl_command
             inptr[i][j] = (int)genrand_int32(d);
     }
 
-    err = test_buffer_write( deviceID, context, queue, num_elements, sizeof( cl_int ), (char*)"int", 5, (void**)inptr,
-                             buffer_write_int_kernel_code, int_kernel_name, foo, d );
+    err = test_buffer_write(
+        device, context, queue, num_elements, sizeof(cl_int), (char *)"int", 5,
+        (void **)inptr, buffer_write_int_kernel_code, int_kernel_name, foo, d);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1137,7 +1173,7 @@ int test_buffer_write_int( cl_device_id deviceID, cl_context context, cl_command
 }   // end test_buffer_int_write()
 
 
-int test_buffer_write_uint( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_uint)
 {
     cl_uint *inptr[5];
     size_t  ptrSizes[5];
@@ -1163,8 +1199,10 @@ int test_buffer_write_uint( cl_device_id deviceID, cl_context context, cl_comman
             inptr[i][j] = genrand_int32(d);
     }
 
-    err = test_buffer_write( deviceID, context, queue, num_elements, sizeof( cl_uint ), (char*)"uint", 5, (void**)inptr,
-                             buffer_write_uint_kernel_code, uint_kernel_name, foo, d );
+    err = test_buffer_write(device, context, queue, num_elements,
+                            sizeof(cl_uint), (char *)"uint", 5, (void **)inptr,
+                            buffer_write_uint_kernel_code, uint_kernel_name,
+                            foo, d);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1176,7 +1214,7 @@ int test_buffer_write_uint( cl_device_id deviceID, cl_context context, cl_comman
 }   // end test_buffer_uint_write()
 
 
-int test_buffer_write_short( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_short)
 {
     short   *inptr[5];
     size_t  ptrSizes[5];
@@ -1202,8 +1240,10 @@ int test_buffer_write_short( cl_device_id deviceID, cl_context context, cl_comma
             inptr[i][j] = (cl_short)genrand_int32(d);
     }
 
-    err = test_buffer_write( deviceID, context, queue, num_elements, sizeof( cl_short ), (char*)"short", 5, (void**)inptr,
-                             buffer_write_short_kernel_code, short_kernel_name, foo, d );
+    err = test_buffer_write(device, context, queue, num_elements,
+                            sizeof(cl_short), (char *)"short", 5,
+                            (void **)inptr, buffer_write_short_kernel_code,
+                            short_kernel_name, foo, d);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1216,7 +1256,7 @@ int test_buffer_write_short( cl_device_id deviceID, cl_context context, cl_comma
 }   // end test_buffer_short_write()
 
 
-int test_buffer_write_ushort( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_ushort)
 {
     cl_ushort *inptr[5];
     size_t    ptrSizes[5];
@@ -1242,8 +1282,10 @@ int test_buffer_write_ushort( cl_device_id deviceID, cl_context context, cl_comm
             inptr[i][j] = (cl_ushort)genrand_int32(d);
     }
 
-    err = test_buffer_write( deviceID, context, queue, num_elements, sizeof( cl_ushort ), (char*)"ushort", 5, (void**)inptr,
-                             buffer_write_ushort_kernel_code, ushort_kernel_name, foo, d );
+    err = test_buffer_write(device, context, queue, num_elements,
+                            sizeof(cl_ushort), (char *)"ushort", 5,
+                            (void **)inptr, buffer_write_ushort_kernel_code,
+                            ushort_kernel_name, foo, d);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1256,7 +1298,7 @@ int test_buffer_write_ushort( cl_device_id deviceID, cl_context context, cl_comm
 }   // end test_buffer_ushort_write()
 
 
-int test_buffer_write_char( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_char)
 {
     char    *inptr[5];
     size_t  ptrSizes[5];
@@ -1282,8 +1324,10 @@ int test_buffer_write_char( cl_device_id deviceID, cl_context context, cl_comman
             inptr[i][j] = (char)genrand_int32(d);
     }
 
-    err = test_buffer_write( deviceID, context, queue, num_elements, sizeof( cl_char ), (char*)"char", 5, (void**)inptr,
-                             buffer_write_char_kernel_code, char_kernel_name, foo, d );
+    err = test_buffer_write(device, context, queue, num_elements,
+                            sizeof(cl_char), (char *)"char", 5, (void **)inptr,
+                            buffer_write_char_kernel_code, char_kernel_name,
+                            foo, d);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1296,7 +1340,7 @@ int test_buffer_write_char( cl_device_id deviceID, cl_context context, cl_comman
 }   // end test_buffer_char_write()
 
 
-int test_buffer_write_uchar( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_uchar)
 {
     uchar   *inptr[5];
     size_t  ptrSizes[5];
@@ -1322,8 +1366,10 @@ int test_buffer_write_uchar( cl_device_id deviceID, cl_context context, cl_comma
             inptr[i][j] = (uchar)genrand_int32(d);
     }
 
-    err = test_buffer_write( deviceID, context, queue, num_elements, sizeof( cl_uchar ), (char*)"uchar", 5, (void**)inptr,
-                             buffer_write_uchar_kernel_code, uchar_kernel_name, foo, d );
+    err = test_buffer_write(device, context, queue, num_elements,
+                            sizeof(cl_uchar), (char *)"uchar", 5,
+                            (void **)inptr, buffer_write_uchar_kernel_code,
+                            uchar_kernel_name, foo, d);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1336,7 +1382,7 @@ int test_buffer_write_uchar( cl_device_id deviceID, cl_context context, cl_comma
 }   // end test_buffer_uchar_write()
 
 
-int test_buffer_write_float( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_float)
 {
     float   *inptr[5];
     size_t  ptrSizes[5];
@@ -1362,8 +1408,10 @@ int test_buffer_write_float( cl_device_id deviceID, cl_context context, cl_comma
             inptr[i][j] = get_random_float( -FLT_MAX, FLT_MAX, d );
     }
 
-    err = test_buffer_write( deviceID, context, queue, num_elements, sizeof( cl_float ), (char*)"float", 5, (void**)inptr,
-                             buffer_write_float_kernel_code, float_kernel_name, foo, d );
+    err = test_buffer_write(device, context, queue, num_elements,
+                            sizeof(cl_float), (char *)"float", 5,
+                            (void **)inptr, buffer_write_float_kernel_code,
+                            float_kernel_name, foo, d);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1375,9 +1423,9 @@ int test_buffer_write_float( cl_device_id deviceID, cl_context context, cl_comma
 }   // end test_buffer_float_write()
 
 
-int test_buffer_write_half( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_half)
 {
-    PASSIVE_REQUIRE_FP16_SUPPORT(deviceID)
+    PASSIVE_REQUIRE_FP16_SUPPORT(device)
     float   *inptr[5];
     size_t  ptrSizes[5];
     int     i, err;
@@ -1402,7 +1450,7 @@ int test_buffer_write_half( cl_device_id deviceID, cl_context context, cl_comman
             inptr[i][j] = get_random_float( -FLT_MAX, FLT_MAX, d );
     }
 
-    err = test_buffer_write(deviceID, context, queue, num_elements,
+    err = test_buffer_write(device, context, queue, num_elements,
                             sizeof(cl_half), (char *)"half", 5, (void **)inptr,
                             buffer_write_half_kernel_code, half_kernel_name,
                             foo, d);
@@ -1417,7 +1465,7 @@ int test_buffer_write_half( cl_device_id deviceID, cl_context context, cl_comman
 }   // end test_buffer_half_write()
 
 
-int test_buffer_write_long( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_long)
 {
     cl_long *inptr[5];
     size_t  ptrSizes[5];
@@ -1450,8 +1498,10 @@ int test_buffer_write_long( cl_device_id deviceID, cl_context context, cl_comman
             inptr[i][j] = (cl_long) genrand_int32(d) ^ ((cl_long) genrand_int32(d) << 32);
     }
 
-    err = test_buffer_write( deviceID, context, queue, num_elements, sizeof( cl_long ), (char*)"cl_long", 5, (void**)inptr,
-                             buffer_write_long_kernel_code, long_kernel_name, foo, d );
+    err = test_buffer_write(device, context, queue, num_elements,
+                            sizeof(cl_long), (char *)"cl_long", 5,
+                            (void **)inptr, buffer_write_long_kernel_code,
+                            long_kernel_name, foo, d);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1463,7 +1513,7 @@ int test_buffer_write_long( cl_device_id deviceID, cl_context context, cl_comman
 }   // end test_buffer_long_write()
 
 
-int test_buffer_write_ulong( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_ulong)
 {
     cl_ulong *inptr[5];
     size_t   ptrSizes[5];
@@ -1495,8 +1545,10 @@ int test_buffer_write_ulong( cl_device_id deviceID, cl_context context, cl_comma
             inptr[i][j] = (cl_ulong) genrand_int32(d) | ((cl_ulong) genrand_int32(d) << 32);
     }
 
-    err = test_buffer_write( deviceID, context, queue, num_elements, sizeof( cl_ulong ), (char*)"ulong long", 5, (void**)inptr,
-                             buffer_write_ulong_kernel_code, ulong_kernel_name, foo, d );
+    err = test_buffer_write(device, context, queue, num_elements,
+                            sizeof(cl_ulong), (char *)"ulong long", 5,
+                            (void **)inptr, buffer_write_ulong_kernel_code,
+                            ulong_kernel_name, foo, d);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1509,68 +1561,68 @@ int test_buffer_write_ulong( cl_device_id deviceID, cl_context context, cl_comma
 }   // end test_buffer_ulong_write()
 
 
-int test_buffer_map_write_int( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_map_write_int)
 {
     gTestMap = 1;
-    return test_buffer_write_int(deviceID, context, queue, num_elements);
+    return test_buffer_write_int(device, context, queue, num_elements);
 }
 
-int test_buffer_map_write_uint( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_map_write_uint)
 {
     gTestMap = 1;
-    return test_buffer_write_uint(deviceID, context, queue, num_elements);
+    return test_buffer_write_uint(device, context, queue, num_elements);
 }
 
-int test_buffer_map_write_long( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_map_write_long)
 {
     gTestMap = 1;
-    return test_buffer_write_long(deviceID, context, queue, num_elements);
+    return test_buffer_write_long(device, context, queue, num_elements);
 }
 
-int test_buffer_map_write_ulong( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_map_write_ulong)
 {
     gTestMap = 1;
-    return test_buffer_write_ulong(deviceID, context, queue, num_elements);
+    return test_buffer_write_ulong(device, context, queue, num_elements);
 }
 
-int test_buffer_map_write_short( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_map_write_short)
 {
     gTestMap = 1;
-    return test_buffer_write_short(deviceID, context, queue, num_elements);
+    return test_buffer_write_short(device, context, queue, num_elements);
 }
 
-int test_buffer_map_write_ushort( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_map_write_ushort)
 {
     gTestMap = 1;
-    return test_buffer_write_ushort(deviceID, context, queue, num_elements);
+    return test_buffer_write_ushort(device, context, queue, num_elements);
 }
 
-int test_buffer_map_write_char( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_map_write_char)
 {
     gTestMap = 1;
-    return test_buffer_write_char(deviceID, context, queue, num_elements);
+    return test_buffer_write_char(device, context, queue, num_elements);
 }
 
-int test_buffer_map_write_uchar( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_map_write_uchar)
 {
     gTestMap = 1;
-    return test_buffer_write_uchar(deviceID, context, queue, num_elements);
+    return test_buffer_write_uchar(device, context, queue, num_elements);
 }
 
-int test_buffer_map_write_float( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_map_write_float)
 {
     gTestMap = 1;
-    return test_buffer_write_float(deviceID, context, queue, num_elements);
+    return test_buffer_write_float(device, context, queue, num_elements);
 }
 
-int test_buffer_map_write_struct( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_map_write_struct)
 {
     gTestMap = 1;
-    return test_buffer_write_struct(deviceID, context, queue, num_elements);
+    return test_buffer_write_struct(device, context, queue, num_elements);
 }
 
 
-int test_buffer_write_async_int( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_async_int)
 {
     int     *inptr[5];
     size_t  ptrSizes[5];
@@ -1596,8 +1648,9 @@ int test_buffer_write_async_int( cl_device_id deviceID, cl_context context, cl_c
             inptr[i][j] = (int)genrand_int32(d);
     }
 
-    err = test_buffer_write_array_async( deviceID, context, queue, num_elements, sizeof( cl_int ), (char*)"int", 5, (void**)inptr,
-                                         buffer_write_int_kernel_code, int_kernel_name, foo );
+    err = test_buffer_write_array_async(
+        device, context, queue, num_elements, sizeof(cl_int), (char *)"int", 5,
+        (void **)inptr, buffer_write_int_kernel_code, int_kernel_name, foo);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1609,7 +1662,7 @@ int test_buffer_write_async_int( cl_device_id deviceID, cl_context context, cl_c
 }   // end test_buffer_int_write_array_async()
 
 
-int test_buffer_write_async_uint( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_async_uint)
 {
     cl_uint *inptr[5];
     size_t  ptrSizes[5];
@@ -1635,8 +1688,10 @@ int test_buffer_write_async_uint( cl_device_id deviceID, cl_context context, cl_
             inptr[i][j] = (cl_uint)genrand_int32(d);
     }
 
-    err = test_buffer_write_array_async( deviceID, context, queue, num_elements, sizeof( cl_uint ), (char*)"uint", 5, (void**)inptr,
-                                         buffer_write_uint_kernel_code, uint_kernel_name, foo );
+    err = test_buffer_write_array_async(
+        device, context, queue, num_elements, sizeof(cl_uint), (char *)"uint",
+        5, (void **)inptr, buffer_write_uint_kernel_code, uint_kernel_name,
+        foo);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1648,7 +1703,7 @@ int test_buffer_write_async_uint( cl_device_id deviceID, cl_context context, cl_
 }   // end test_buffer_uint_write_array_async()
 
 
-int test_buffer_write_async_short( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_async_short)
 {
     short   *inptr[5];
     size_t  ptrSizes[5];
@@ -1674,8 +1729,10 @@ int test_buffer_write_async_short( cl_device_id deviceID, cl_context context, cl
             inptr[i][j] = (short)genrand_int32(d);
     }
 
-    err = test_buffer_write_array_async( deviceID, context, queue, num_elements, sizeof( cl_short ), (char*)"short", 5, (void**)inptr,
-                                         buffer_write_short_kernel_code, short_kernel_name, foo );
+    err = test_buffer_write_array_async(
+        device, context, queue, num_elements, sizeof(cl_short), (char *)"short",
+        5, (void **)inptr, buffer_write_short_kernel_code, short_kernel_name,
+        foo);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1688,7 +1745,7 @@ int test_buffer_write_async_short( cl_device_id deviceID, cl_context context, cl
 }   // end test_buffer_short_write_array_async()
 
 
-int test_buffer_write_async_ushort( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_async_ushort)
 {
     cl_ushort *inptr[5];
     size_t    ptrSizes[5];
@@ -1714,8 +1771,10 @@ int test_buffer_write_async_ushort( cl_device_id deviceID, cl_context context, c
             inptr[i][j] = (cl_ushort)genrand_int32(d);
     }
 
-    err = test_buffer_write_array_async( deviceID, context, queue, num_elements, sizeof( cl_ushort ), (char*)"ushort", 5, (void**)inptr,
-                                         buffer_write_ushort_kernel_code, ushort_kernel_name, foo );
+    err = test_buffer_write_array_async(
+        device, context, queue, num_elements, sizeof(cl_ushort),
+        (char *)"ushort", 5, (void **)inptr, buffer_write_ushort_kernel_code,
+        ushort_kernel_name, foo);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1728,7 +1787,7 @@ int test_buffer_write_async_ushort( cl_device_id deviceID, cl_context context, c
 }   // end test_buffer_ushort_write_array_async()
 
 
-int test_buffer_write_async_char( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_async_char)
 {
     char    *inptr[5];
     size_t  ptrSizes[5];
@@ -1754,8 +1813,10 @@ int test_buffer_write_async_char( cl_device_id deviceID, cl_context context, cl_
             inptr[i][j] = (char)genrand_int32(d);
     }
 
-    err = test_buffer_write_array_async( deviceID, context, queue, num_elements, sizeof( cl_char ), (char*)"char", 5, (void**)inptr,
-                                         buffer_write_char_kernel_code, char_kernel_name, foo );
+    err = test_buffer_write_array_async(
+        device, context, queue, num_elements, sizeof(cl_char), (char *)"char",
+        5, (void **)inptr, buffer_write_char_kernel_code, char_kernel_name,
+        foo);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1768,7 +1829,7 @@ int test_buffer_write_async_char( cl_device_id deviceID, cl_context context, cl_
 }   // end test_buffer_char_write_array_async()
 
 
-int test_buffer_write_async_uchar( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_async_uchar)
 {
     uchar   *inptr[5];
     size_t  ptrSizes[5];
@@ -1794,8 +1855,10 @@ int test_buffer_write_async_uchar( cl_device_id deviceID, cl_context context, cl
             inptr[i][j] = (uchar)genrand_int32(d);
     }
 
-    err = test_buffer_write_array_async( deviceID, context, queue, num_elements, sizeof( cl_uchar ), (char*)"uchar", 5, (void**)inptr,
-                                         buffer_write_uchar_kernel_code, uchar_kernel_name, foo );
+    err = test_buffer_write_array_async(
+        device, context, queue, num_elements, sizeof(cl_uchar), (char *)"uchar",
+        5, (void **)inptr, buffer_write_uchar_kernel_code, uchar_kernel_name,
+        foo);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1808,7 +1871,7 @@ int test_buffer_write_async_uchar( cl_device_id deviceID, cl_context context, cl
 }   // end test_buffer_uchar_write_array_async()
 
 
-int test_buffer_write_async_float( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_async_float)
 {
     float   *inptr[5];
     size_t  ptrSizes[5];
@@ -1834,8 +1897,10 @@ int test_buffer_write_async_float( cl_device_id deviceID, cl_context context, cl
             inptr[i][j] = get_random_float( -FLT_MAX, FLT_MAX, d );
     }
 
-    err = test_buffer_write_array_async( deviceID, context, queue, num_elements, sizeof( cl_float ), (char*)"float", 5, (void**)inptr,
-                                         buffer_write_float_kernel_code, float_kernel_name, foo );
+    err = test_buffer_write_array_async(
+        device, context, queue, num_elements, sizeof(cl_float), (char *)"float",
+        5, (void **)inptr, buffer_write_float_kernel_code, float_kernel_name,
+        foo);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1847,7 +1912,7 @@ int test_buffer_write_async_float( cl_device_id deviceID, cl_context context, cl
 }   // end test_buffer_float_write_array_async()
 
 
-int test_buffer_write_async_long( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_async_long)
 {
     cl_long *inptr[5];
     size_t  ptrSizes[5];
@@ -1879,8 +1944,10 @@ int test_buffer_write_async_long( cl_device_id deviceID, cl_context context, cl_
             inptr[i][j] = ((cl_long) genrand_int32(d)) ^ ((cl_long) genrand_int32(d) << 32);
     }
 
-    err = test_buffer_write_array_async( deviceID, context, queue, num_elements, sizeof( cl_long ), (char*)"cl_long", 5, (void**)inptr,
-                                         buffer_write_long_kernel_code, long_kernel_name, foo );
+    err = test_buffer_write_array_async(
+        device, context, queue, num_elements, sizeof(cl_long),
+        (char *)"cl_long", 5, (void **)inptr, buffer_write_long_kernel_code,
+        long_kernel_name, foo);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1892,7 +1959,7 @@ int test_buffer_write_async_long( cl_device_id deviceID, cl_context context, cl_
 }   // end test_buffer_long_write_array_async()
 
 
-int test_buffer_write_async_ulong( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements )
+REGISTER_TEST(buffer_write_async_ulong)
 {
     cl_ulong *inptr[5];
     size_t   ptrSizes[5];
@@ -1924,8 +1991,10 @@ int test_buffer_write_async_ulong( cl_device_id deviceID, cl_context context, cl
             inptr[i][j] = (cl_ulong) genrand_int32(d) | ((cl_ulong) genrand_int32(d) << 32);
     }
 
-    err = test_buffer_write_array_async( deviceID, context, queue, num_elements, sizeof( cl_ulong ), (char*)"ulong long", 5, (void**)inptr,
-                                         buffer_write_ulong_kernel_code, ulong_kernel_name, foo );
+    err = test_buffer_write_array_async(
+        device, context, queue, num_elements, sizeof(cl_ulong),
+        (char *)"ulong long", 5, (void **)inptr, buffer_write_ulong_kernel_code,
+        ulong_kernel_name, foo);
 
     for ( i = 0; i < 5; i++ ){
         align_free( (void *)inptr[i] );
@@ -1936,3 +2005,256 @@ int test_buffer_write_async_ulong( cl_device_id deviceID, cl_context context, cl
 
 }   // end test_buffer_ulong_write_array_async()
 
+
+int immutable_test_buffer_write(cl_device_id device, cl_context context,
+                                cl_command_queue queue, int num_elements,
+                                size_t size, const char *type, int loops,
+                                void *inptr[5], const char *kernelCode[],
+                                const char *kernelName[],
+                                int (*fn)(void *, void *, int), MTdataHolder &d)
+{
+    REQUIRE_EXTENSION("cl_ext_immutable_memory_objects");
+
+    void *outptr[5];
+    clProgramWrapper program[5];
+    clKernelWrapper kernel[5];
+    size_t ptrSizes[5];
+    size_t global_work_size[3];
+    cl_int err;
+    int i;
+    int src_flag_id, dst_flag_id;
+    int total_errors = 0;
+
+    size_t min_alignment = get_min_alignment(context);
+
+    global_work_size[0] = (size_t)num_elements;
+
+    ptrSizes[0] = size;
+    ptrSizes[1] = ptrSizes[0] << 1;
+    ptrSizes[2] = ptrSizes[1] << 1;
+    ptrSizes[3] = ptrSizes[2] << 1;
+    ptrSizes[4] = ptrSizes[3] << 1;
+
+    loops = (loops < 5 ? loops : 5);
+    for (i = 0; i < loops; i++)
+    {
+        err = create_single_kernel_helper(context, &program[i], &kernel[i], 1,
+                                          &kernelCode[i], kernelName[i]);
+        if (err)
+        {
+            log_error(" Error creating program for %s\n", type);
+            return TEST_FAIL;
+        }
+
+        for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
+        {
+            // Testing writing from immutable flags
+            if (!(flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT))
+            {
+                continue;
+            }
+            for (dst_flag_id = 0; dst_flag_id < NUM_FLAGS; dst_flag_id++)
+            {
+                // Skip immutable memory flags
+                if (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT)
+                {
+                    continue;
+                }
+
+                cl_mem_flags src_mem_flags = flag_set[src_flag_id];
+                cl_mem_flags dst_mem_flags = flag_set[dst_flag_id];
+                clMemWrapper buffers[2];
+
+                buffers[0] =
+                    clCreateBuffer(context, src_mem_flags,
+                                   ptrSizes[i] * num_elements, inptr[i], &err);
+
+                if (nullptr == buffers[0] || CL_SUCCESS != err)
+                {
+                    align_free(outptr[i]);
+                    print_error(err, " clCreateBuffer failed\n");
+                    return TEST_FAIL;
+                }
+                if (!strcmp(type, "half"))
+                {
+                    outptr[i] = align_malloc(ptrSizes[i] * (num_elements * 2),
+                                             min_alignment);
+                    buffers[1] = clCreateBuffer(context, dst_mem_flags,
+                                                ptrSizes[i] * 2 * num_elements,
+                                                outptr[i], &err);
+                }
+                else
+                {
+                    outptr[i] =
+                        align_malloc(ptrSizes[i] * num_elements, min_alignment);
+                    if ((dst_mem_flags & CL_MEM_USE_HOST_PTR)
+                        || (dst_mem_flags & CL_MEM_COPY_HOST_PTR))
+                        buffers[1] = clCreateBuffer(context, dst_mem_flags,
+                                                    ptrSizes[i] * num_elements,
+                                                    outptr[i], &err);
+                    else
+                        buffers[1] = clCreateBuffer(context, dst_mem_flags,
+                                                    ptrSizes[i] * num_elements,
+                                                    nullptr, &err);
+                }
+                if (err)
+                {
+                    align_free(outptr[i]);
+                    print_error(err, " clCreateBuffer failed\n");
+                    return TEST_FAIL;
+                }
+
+                err = clSetKernelArg(kernel[i], 0, sizeof(cl_mem),
+                                     (void *)&buffers[0]);
+                err |= clSetKernelArg(kernel[i], 1, sizeof(cl_mem),
+                                      (void *)&buffers[1]);
+                if (err != CL_SUCCESS)
+                {
+                    align_free(outptr[i]);
+                    print_error(err, " clSetKernelArg failed");
+                    return TEST_FAIL;
+                }
+
+                err = clEnqueueNDRangeKernel(queue, kernel[i], 1, nullptr,
+                                             global_work_size, nullptr, 0,
+                                             nullptr, nullptr);
+                if (err != CL_SUCCESS)
+                {
+                    print_error(err, " clEnqueueNDRangeKernel failed");
+                    align_free(outptr[i]);
+                    return TEST_FAIL;
+                }
+
+                err = clEnqueueReadBuffer(queue, buffers[1], true, 0,
+                                          ptrSizes[i] * num_elements, outptr[i],
+                                          0, nullptr, nullptr);
+
+                if (err != CL_SUCCESS)
+                {
+                    align_free(outptr[i]);
+                    print_error(err, " clEnqueueReadBuffer failed");
+                    return TEST_FAIL;
+                }
+
+                if (fn(inptr[i], outptr[i],
+                       (int)(ptrSizes[i] * (size_t)num_elements / ptrSizes[0])))
+                {
+                    log_error(
+                        " %s%d test failed. cl_mem_flags src: %s, dst: %s\n",
+                        type, 1 << i, flag_set_names[src_flag_id],
+                        flag_set_names[dst_flag_id]);
+                    total_errors++;
+                }
+                else
+                {
+                    log_info(
+                        " %s%d test passed. cl_mem_flags src: %s, dst: %s\n",
+                        type, 1 << i, flag_set_names[src_flag_id],
+                        flag_set_names[dst_flag_id]);
+                }
+                // cleanup
+                align_free(outptr[i]);
+            }
+        } // dst cl_mem_flag
+    } // src cl_mem_flag
+
+    return total_errors;
+
+} // end test_buffer_write()
+
+REGISTER_TEST(write_from_immutable_buffer_to_buffer)
+{
+    REQUIRE_EXTENSION("cl_ext_immutable_memory_objects");
+
+    static const char *immutable_buffer_write_int_kernel_code[] = {
+        R"(
+      __kernel void test_buffer_write_int(constant int *src, __global int *dst)
+      {
+        int  tid = get_global_id(0);
+
+        dst[tid] = src[tid];
+      })",
+
+        R"(
+      __kernel void test_buffer_write_int2(constant int2 *src, __global int2 *dst)
+      {
+        int  tid = get_global_id(0);
+
+        dst[tid] = src[tid];
+      })",
+
+        R"(
+      __kernel void test_buffer_write_int4(constant int4 *src, __global int4 *dst)
+      {
+        int  tid = get_global_id(0);
+
+        dst[tid] = src[tid];
+      })",
+
+        R"(
+      __kernel void test_buffer_write_int8(constant int8 *src, __global int8 *dst)
+      {
+        int  tid = get_global_id(0);
+
+        dst[tid] = src[tid];
+      })",
+
+        R"(
+      __kernel void test_buffer_write_int16(constant int16 *src, __global int16 *dst)
+      {
+        int  tid = get_global_id(0);
+
+        dst[tid] = src[tid];
+      })"
+    };
+
+    static const char *immutable_int_kernel_name[] = {
+        "test_buffer_write_int", "test_buffer_write_int2",
+        "test_buffer_write_int4", "test_buffer_write_int8",
+        "test_buffer_write_int16"
+    };
+
+    if (gTestMap)
+    {
+        log_error("Immutable buffers cannot be mapped with CL_MEM_WRITE\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    int *inptr[5];
+    size_t ptrSizes[5];
+    int i, err;
+    cl_uint j;
+    int (*foo)(void *, void *, int);
+    MTdataHolder d(gRandomSeed);
+
+    size_t min_alignment = get_min_alignment(context);
+
+    foo = verify_write_int;
+
+    ptrSizes[0] = sizeof(cl_int);
+    ptrSizes[1] = ptrSizes[0] << 1;
+    ptrSizes[2] = ptrSizes[1] << 1;
+    ptrSizes[3] = ptrSizes[2] << 1;
+    ptrSizes[4] = ptrSizes[3] << 1;
+
+    for (i = 0; i < 5; i++)
+    {
+        inptr[i] =
+            (int *)align_malloc(ptrSizes[i] * num_elements, min_alignment);
+
+        for (j = 0; j < ptrSizes[i] * num_elements / ptrSizes[0]; j++)
+            inptr[i][j] = (int)genrand_int32(d);
+    }
+
+    err = immutable_test_buffer_write(device, context, queue, num_elements,
+                                      sizeof(cl_int), "int", 5, (void **)inptr,
+                                      immutable_buffer_write_int_kernel_code,
+                                      immutable_int_kernel_name, foo, d);
+
+    for (i = 0; i < 5; i++)
+    {
+        align_free((void *)inptr[i]);
+    }
+
+    return err;
+}

@@ -50,13 +50,14 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
 
     virtual cl_int SetUp(int elements) override
     {
-        BasicCommandBufferTest::SetUp(elements);
+        cl_int error = BasicCommandBufferTest::SetUp(elements);
+        test_error(error, "BasicCommandBufferTest::SetUp failed");
 
-        cl_int error = init_extension_functions();
+        error = init_extension_functions();
         test_error(error, "Unable to initialise extension functions");
 
         cl_command_buffer_properties_khr prop = CL_COMMAND_BUFFER_MUTABLE_KHR;
-        if (simultaneous_use_support)
+        if (simultaneous_use_requested)
         {
             prop |= CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
         }
@@ -75,25 +76,27 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
 
     bool Skip() override
     {
-        bool extension_avaliable =
-            is_extension_available(device,
-                                   "cl_khr_command_buffer_mutable_dispatch")
-            == true;
+        bool extension_available = is_extension_available(
+            device, "cl_khr_command_buffer_mutable_dispatch");
 
-        if (extension_avaliable) {
-         // API breaking changes occur at revision 0.9.2, check implementation
-         // matches tested API
-         Version device_version = get_device_cl_version(device);
-         if ((device_version >= Version(3, 0))
-            || is_extension_available(device, "cl_khr_extended_versioning")) {
+        if (extension_available)
+        {
+            Version device_version = get_device_cl_version(device);
+            if ((device_version >= Version(3, 0))
+                || is_extension_available(device, "cl_khr_extended_versioning"))
+            {
 
-           cl_version extension_version =
-            get_extension_version(device, "cl_khr_command_buffer_mutable_dispatch");
+                cl_version extension_version = get_extension_version(
+                    device, "cl_khr_command_buffer_mutable_dispatch");
 
-          if (extension_version < CL_MAKE_VERSION(0, 9, 2)) {
-            extension_avaliable = false;
-          }
-         }
+                if (extension_version != CL_MAKE_VERSION(0, 9, 5))
+                {
+                    log_info("cl_khr_command_buffer_mutable_dispatch version "
+                             "0.9.5 is "
+                             "required to run the test, skipping.\n ");
+                    extension_available = false;
+                }
+            }
         }
 
         cl_mutable_dispatch_fields_khr mutable_capabilities;
@@ -104,7 +107,7 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
                 sizeof(mutable_capabilities), &mutable_capabilities, nullptr)
             && mutable_capabilities != 0;
 
-        return !mutable_support || !extension_avaliable
+        return !mutable_support || !extension_available
             || BasicCommandBufferTest::Skip();
     }
 
@@ -124,6 +127,7 @@ struct BasicMutableCommandBufferTest : BasicCommandBufferTest
     }
 
     clUpdateMutableCommandsKHR_fn clUpdateMutableCommandsKHR = nullptr;
+    bool simultaneous_use_requested = false;
 
     const char* kernelString = "__kernel void empty() {}";
     const size_t global_work_size = 4 * 16;

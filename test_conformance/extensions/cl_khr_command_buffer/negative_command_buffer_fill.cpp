@@ -14,7 +14,8 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
+#include "command_buffer_with_immutable_memory.h"
+#include "imageHelpers.h"
 #include <vector>
 
 //--------------------------------------------------------------------------
@@ -457,101 +458,179 @@ struct CommandBufferCommandFillImageMutableHandleNotNull
     }
 };
 
+// CL_INVALID_OPERATION if destination buffer is immutable memory
+struct CommandBufferCommandFillImmutableBuffer
+    : CommandBufferWithImmutableMemoryObjectsTest<CommandFillBaseTest<false>>
+{
+    using CommandBufferWithImmutableMemoryObjectsTest::
+        CommandBufferWithImmutableMemoryObjectsTest;
+
+    cl_int Run() override
+    {
+        cl_int error = clCommandFillBufferKHR(
+            command_buffer, nullptr, nullptr, buffer, &pattern_1,
+            sizeof(pattern_1), 0, buffer_size, 0, nullptr, nullptr, nullptr);
+
+        test_failure_error_ret(error, CL_INVALID_OPERATION,
+                               "clCommandFillBufferKHR is supposed to fail "
+                               "with CL_INVALID_OPERATION when buffer is "
+                               "created with CL_MEM_IMMUTABLE_EXT",
+                               TEST_FAIL);
+
+        return CL_SUCCESS;
+    }
+
+    cl_int SetUp(int elements) override
+    {
+        cl_int error = BasicCommandBufferTest::SetUp(elements);
+        test_error(error, "BasicCommandBufferTest::SetUp failed");
+
+        std::vector<cl_uchar> data(buffer_size);
+
+        buffer =
+            clCreateBuffer(context, CL_MEM_IMMUTABLE_EXT | CL_MEM_COPY_HOST_PTR,
+                           buffer_size, data.data(), &error);
+        test_error(error, "clCreateBuffer failed");
+
+        return CL_SUCCESS;
+    }
+
+    clMemWrapper buffer;
+    const size_t buffer_size = 512;
+    const uint8_t pattern_1 = 0x0f;
+};
+
+struct CommandBufferCommandFillImmutableImage
+    : CommandBufferWithImmutableMemoryObjectsTest<CommandFillBaseTest<true>>
+{
+    using CommandBufferWithImmutableMemoryObjectsTest::
+        CommandBufferWithImmutableMemoryObjectsTest;
+
+    cl_int Run() override
+    {
+        cl_int error = clCommandFillImageKHR(
+            command_buffer, nullptr, nullptr, image, fill_color_1, origin,
+            region, 0, nullptr, nullptr, nullptr);
+
+        test_failure_error_ret(error, CL_INVALID_OPERATION,
+                               "clCommandFillImageKHR is supposed to fail "
+                               "with CL_INVALID_OPERATION when image is "
+                               "created with CL_MEM_IMMUTABLE_EXT",
+                               TEST_FAIL);
+
+        return CL_SUCCESS;
+    }
+
+    cl_int SetUp(int elements) override
+    {
+        cl_int error = BasicCommandBufferTest::SetUp(elements);
+        test_error(error, "BasicCommandBufferTest::SetUp failed");
+
+        size_t pixel_size = get_pixel_size(&formats);
+        size_t image_size = pixel_size * sizeof(cl_uchar) * 512 * 512;
+
+        std::vector<cl_uchar> imgptr(image_size);
+
+        image = create_image_2d(context,
+                                CL_MEM_IMMUTABLE_EXT | CL_MEM_COPY_HOST_PTR,
+                                &formats, 512, 512, 0, imgptr.data(), &error);
+        test_error(error, "create_image_2d failed");
+
+        return CL_SUCCESS;
+    }
+
+    clMemWrapper image;
+};
 }
 
-int test_negative_command_buffer_command_fill_buffer_queue_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_fill_buffer_queue_not_null)
 {
     return MakeAndRunTest<CommandBufferCommandFillBufferQueueNotNull>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_fill_image_queue_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_fill_image_queue_not_null)
 {
     return MakeAndRunTest<CommandBufferCommandFillImageQueueNotNull>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_fill_buffer_context_not_same(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_fill_buffer_context_not_same)
 {
     return MakeAndRunTest<CommandBufferCommandFillBufferContextNotSame>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_fill_image_context_not_same(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_fill_image_context_not_same)
 {
     return MakeAndRunTest<CommandBufferCommandFillImageContextNotSame>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_fill_buffer_sync_points_null_or_num_zero(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_fill_buffer_sync_points_null_or_num_zero)
 {
     return MakeAndRunTest<
         CommandBufferCommandFillBufferSyncPointsNullOrNumZero>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_fill_image_sync_points_null_or_num_zero(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_fill_image_sync_points_null_or_num_zero)
 {
     return MakeAndRunTest<CommandBufferCommandFillImageSyncPointsNullOrNumZero>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_fill_buffer_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_fill_buffer_invalid_command_buffer)
 {
     return MakeAndRunTest<CommandBufferCommandFillBufferInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_fill_image_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_command_buffer_command_fill_image_invalid_command_buffer)
 {
     return MakeAndRunTest<CommandBufferCommandFillImageInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_fill_buffer_finalized_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_fill_buffer_finalized_command_buffer)
 {
     return MakeAndRunTest<CommandBufferCommandFillBufferFinalizedCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_fill_image_finalized_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_fill_image_finalized_command_buffer)
 {
     return MakeAndRunTest<CommandBufferCommandFillImageFinalizedCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_fill_buffer_mutable_handle_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_fill_buffer_mutable_handle_not_null)
 {
     return MakeAndRunTest<CommandBufferCommandFillBufferMutableHandleNotNull>(
         device, context, queue, num_elements);
 }
 
-int test_negative_command_buffer_command_fill_image_mutable_handle_not_null(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(
+    negative_command_buffer_command_fill_image_mutable_handle_not_null)
 {
     return MakeAndRunTest<CommandBufferCommandFillImageMutableHandleNotNull>(
+        device, context, queue, num_elements);
+}
+
+REGISTER_TEST(negative_fill_immutable_image)
+{
+    return MakeAndRunTest<CommandBufferCommandFillImmutableImage>(
+        device, context, queue, num_elements);
+}
+
+REGISTER_TEST(negative_fill_immutable_buffer)
+{
+    return MakeAndRunTest<CommandBufferCommandFillImmutableBuffer>(
         device, context, queue, num_elements);
 }

@@ -21,8 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-#include "procs.h"
+#include "testBase.h"
 
 #define MAX_LOCAL_STORAGE_SIZE  256
 #define MAX_LOCAL_STORAGE_SIZE_STRING "256"
@@ -56,7 +55,7 @@ const char *kernelSource[] = {
     "}\n"
 };
 
-int test_local_kernel_scope(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(local_kernel_scope)
 {
     cl_int error;
     clProgramWrapper program;
@@ -82,7 +81,8 @@ int test_local_kernel_scope(cl_device_id device, cl_context context, cl_command_
     while( testSize < 1024 )
         testSize += workGroupSize;
     size_t numGroups = testSize / workGroupSize;
-    log_info( "\tTesting with %ld groups, %ld elements per group...\n", numGroups, workGroupSize );
+    log_info("\tTesting with %zu groups, %zu elements per group...\n",
+             numGroups, workGroupSize);
 
     // Create two buffers for operation
     cl_uint *inputData = (cl_uint*)malloc( testSize * sizeof(cl_uint) );
@@ -124,7 +124,9 @@ int test_local_kernel_scope(cl_device_id device, cl_context context, cl_command_
 
         if( outputData[ i ] != localMax )
         {
-            log_error( "ERROR: Local max validation failed! (expected %u, got %u for i=%lu)\n", localMax, outputData[ i ] , i );
+            log_error("ERROR: Local max validation failed! (expected %u, got "
+                      "%u for i=%zu)\n",
+                      localMax, outputData[i], i);
             free(inputData);
             free(outputData);
             return -1;
@@ -135,5 +137,3 @@ int test_local_kernel_scope(cl_device_id device, cl_context context, cl_command_
     free(outputData);
     return 0;
 }
-
-

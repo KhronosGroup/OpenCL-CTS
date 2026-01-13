@@ -17,17 +17,16 @@
 #include <string.h>
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
+#include "harness/parseParameters.h"
 
 #include <algorithm>
 #include <vector>
 
-#include "procs.h"
 #include "utils.h"
 #include <time.h>
 
 
 #ifdef CL_VERSION_2_0
-extern int gWimpyMode;
 static const char *helper_ndrange_1d_glo[] = {
     NL,
     "void block_fn(int len, __global atomic_uint* val)" NL,
@@ -130,8 +129,8 @@ static const char *helper_ndrange_2d_glo[] = {
     "}" NL,
     "" NL,
     "kernel void helper_ndrange_2d_glo(__global int* res, uint n, uint len, "
-    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
-    "val,  __global uint* ofs_arr)" NL,
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
     "{" NL,
     "  size_t tid = get_global_id(0);" NL,
     "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
@@ -157,8 +156,8 @@ static const char *helper_ndrange_2d_loc[] = {
     "}" NL,
     "" NL,
     "kernel void helper_ndrange_2d_loc(__global int* res, uint n, uint len, "
-    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
-    "val,  __global uint* ofs_arr)" NL,
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
     "{" NL,
     "  size_t tid = get_global_id(0);" NL,
     "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
@@ -194,8 +193,8 @@ static const char *helper_ndrange_2d_ofs[] = {
     "}" NL,
     "" NL,
     "kernel void helper_ndrange_2d_ofs(__global int* res, uint n, uint len, "
-    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
-    "val,  __global uint* ofs_arr)" NL,
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
     "{" NL,
     "  size_t tid = get_global_id(0);" NL,
     "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
@@ -234,8 +233,8 @@ static const char *helper_ndrange_3d_glo[] = {
     "}" NL,
     "" NL,
     "kernel void helper_ndrange_3d_glo(__global int* res, uint n, uint len, "
-    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
-    "val,  __global uint* ofs_arr)" NL,
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
     "{" NL,
     "  size_t tid = get_global_id(0);" NL,
     "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
@@ -267,8 +266,8 @@ static const char *helper_ndrange_3d_loc[] = {
     "}" NL,
     "" NL,
     "kernel void helper_ndrange_3d_loc(__global int* res, uint n, uint len, "
-    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
-    "val,  __global uint* ofs_arr)" NL,
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
     "{" NL,
     "  size_t tid = get_global_id(0);" NL,
     "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
@@ -307,8 +306,8 @@ static const char *helper_ndrange_3d_ofs[] = {
     "}" NL,
     "" NL,
     "kernel void helper_ndrange_3d_ofs(__global int* res, uint n, uint len, "
-    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global int* "
-    "val,  __global uint* ofs_arr)" NL,
+    "__global uint* glob_size_arr, __global uint* loc_size_arr, __global "
+    "atomic_uint* val,  __global uint* ofs_arr)" NL,
     "{" NL,
     "  size_t tid = get_global_id(0);" NL,
     "  void (^kernelBlock)(void) = ^{ block_fn(len, val); };" NL,
@@ -609,7 +608,7 @@ static int check_kernel_results(cl_int* results, cl_int len, std::vector<cl_uint
     return -1;
 }
 
-int test_enqueue_ndrange(cl_device_id device, cl_context context, cl_command_queue queue, int num_elements)
+REGISTER_TEST(enqueue_ndrange)
 {
     MTdata d;
     cl_uint i;

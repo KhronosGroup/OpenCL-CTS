@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.12.0)
 
 set( CONFORMANCE_SUFFIX "" )
 set(CLConform_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -7,7 +7,7 @@ project(CLConform${CONFORMANCE_SUFFIX})
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_definitions(-DCL_TARGET_OPENCL_VERSION=300)
@@ -18,17 +18,25 @@ add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_2_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_1_APIS=1)
 add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_0_APIS=1)
 add_definitions(-DCL_NO_EXTENSION_PROTOTYPES)
+add_definitions(-DCL_ENABLE_BETA_EXTENSIONS)
 
 option(USE_CL_EXPERIMENTAL "Use Experimental definitions" OFF)
 if(USE_CL_EXPERIMENTAL)
   add_definitions(-DCL_EXPERIMENTAL)
 endif(USE_CL_EXPERIMENTAL)
 
+option(SANITIZER_THREAD "Build with the thread sanitiser" OFF)
+if (SANITIZER_THREAD)
+    add_compile_options(-fsanitize=thread)
+    add_link_options(-fsanitize=thread)
+endif (SANITIZER_THREAD)
+
 #-----------------------------------------------------------
 # Default Configurable Test Set
 #-----------------------------------------------------------
 option(D3D10_IS_SUPPORTED "Run DirectX 10 interop tests" OFF)
 option(D3D11_IS_SUPPORTED "Run DirectX 11 interop tests" OFF)
+option(D3D12_IS_SUPPORTED "Run DirectX 12 interop tests" OFF)
 option(GL_IS_SUPPORTED "Run OpenGL interop tests" OFF)
 option(GLES_IS_SUPPORTED "Run OpenGL ES interop tests" OFF)
 option(VULKAN_IS_SUPPORTED "Run Vulkan interop tests" OFF)
@@ -57,6 +65,12 @@ else(CL_INCLUDE_DIR AND CL_LIB_DIR)
     message(STATUS "OpenCL hasn't been found!")
     message(FATAL_ERROR "Either install OpenCL or pass -DCL_INCLUDE_DIR and -DCL_LIB_DIR")
 endif(CL_INCLUDE_DIR AND CL_LIB_DIR)
+
+# SPIRV_INCLUDE_DIR - path to dir with SPIR-V headers
+if(NOT SPIRV_INCLUDE_DIR)
+    message(STATUS "SPIR-V headers haven't been found!")
+    message(FATAL_ERROR "Pass -DSPIRV_INCLUDE_DIR")
+endif(NOT SPIRV_INCLUDE_DIR)
 
 # CLConform_GL_LIBRARIES_DIR - path to OpenGL libraries
 if(GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
@@ -99,15 +113,19 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
     add_cxx_flag_if_supported(-Wmisleading-indentation)
     add_cxx_flag_if_supported(-Wunused-function)
     add_cxx_flag_if_supported(-Wunused-variable)
-    add_cxx_flag_if_supported(-Werror)
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+      set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
+    else()
+      add_cxx_flag_if_supported(-Werror)
+    endif()
     if(NOT CMAKE_BUILD_TYPE MATCHES "Release|RelWithDebInfo|MinSizeRel")
         # Enable more warnings if not doing a release build.
         add_cxx_flag_if_supported(-Wall)
     endif()
-    add_cxx_flag_if_supported(-Wno-format)
     add_cxx_flag_if_supported(-Wno-error=cpp) # Allow #warning directive
     add_cxx_flag_if_supported(-Wno-unknown-pragmas) # Issue #785
     add_cxx_flag_if_supported(-Wno-error=asm-operand-widths) # Issue #784
+    add_cxx_flag_if_supported(-Wno-strict-aliasing)  # Issue 2234
 
     # -msse -mfpmath=sse to force gcc to use sse for float math,
     # avoiding excess precision problems that cause tests like int2float
@@ -152,8 +170,14 @@ if(MSVC)
 endif()
 
 if( WIN32 AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" )
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:strict -fp:source")
+    set(Shared_Flags_Intel "-Qlong-double -Qpc80 /DWIN32 /D_WINDOWS /W3 /GR /EHsc -nologo -Od -D_CRT_NONSTDC_NO_WARNINGS -EHsc -Wall -fp:strict")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Shared_Flags_Intel}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Shared_Flags_Intel}")
+    if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "IntelLLVM"))
+        set(ICC_Extra_Flags "-Qdiag-disable:68,111,177,186,161,869,1028,2259,2553,181,239,265,1188 -fp:source")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ICC_Extra_Flags}")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ICC_Extra_Flags}")
+    endif()
 endif()
 
 # To handle addresses larger than 2 gigabytes for 32bit targets
@@ -184,6 +208,7 @@ if(APPLE)
 endif(APPLE)
 
 include_directories(SYSTEM ${CL_INCLUDE_DIR})
+include_directories(SYSTEM ${SPIRV_INCLUDE_DIR}/include)
 include_directories(${CLConform_SOURCE_DIR}/test_common/harness
                     ${CLConform_SOURCE_DIR}/test_common/gles
                     ${CLConform_SOURCE_DIR}/test_common/gl

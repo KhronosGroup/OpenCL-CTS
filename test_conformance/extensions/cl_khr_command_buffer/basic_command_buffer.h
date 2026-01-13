@@ -75,13 +75,68 @@ protected:
     // Device support query results
     bool simultaneous_use_support;
     bool out_of_order_support;
+    bool queue_out_of_order_support;
+    bool device_side_enqueue_support;
 
-    // user request for simultaneous use
-    bool simultaneous_use_requested;
+    // Extends size of created 'in_mem' & 'out_mem' buffers, such that the same
+    // cl_mem buffer can be used across multiple enqueues of a command-buffer.
+    // Accessed in the kernel at an offset for each enqueue which is passed as
+    // a kernel parameter through the 'off_mem' buffer.
+    // See BasicCommandBufferTest::SetUpKernel() definition.
     unsigned buffer_size_multiplier;
     clCommandBufferWrapper command_buffer;
 };
 
+// Test that CL_COMMAND_BUFFER_FLAGS_KHR bitfield is parsed correctly when
+// multiple flags are set.
+struct MultiFlagCreationTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+};
+
+// Test enqueuing a command-buffer containing a single NDRange command once
+struct BasicEnqueueTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+};
+
+// Test enqueuing a command-buffer containing multiple command, including
+// operations other than NDRange kernel execution.
+struct MixedCommandsTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+};
+
+// Test flushing the command-queue between command-buffer enqueues
+struct ExplicitFlushTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+};
+
+// Test enqueueing a command-buffer twice separated by another enqueue operation
+struct InterleavedEnqueueTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+};
+
+// Test releasing a command-buffer after it has been submitted for execution,
+// but before the user has waited on completion of the enqueue.
+struct EnqueueAndReleaseTest : public BasicCommandBufferTest
+{
+    using BasicCommandBufferTest::BasicCommandBufferTest;
+
+    cl_int Run() override;
+};
 
 template <class T>
 int MakeAndRunTest(cl_device_id device, cl_context context,
@@ -102,11 +157,9 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
         cl_version extension_version =
             get_extension_version(device, "cl_khr_command_buffer");
 
-        if (extension_version < CL_MAKE_VERSION(0, 9, 5))
+        if (extension_version != CL_MAKE_VERSION(0, 9, 8))
         {
-
-            log_info("cl_khr_command_buffer version 0.9.5 or later is required "
-                     "to run "
+            log_info("cl_khr_command_buffer version 0.9.8 is required to run "
                      "the test, skipping.\n ");
             return TEST_SKIPPED_ITSELF;
         }

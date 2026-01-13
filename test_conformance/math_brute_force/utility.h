@@ -19,9 +19,11 @@
 #include "harness/compat.h"
 #include "harness/rounding_mode.h"
 #include "harness/fpcontrol.h"
+#include "harness/mathHelpers.h"
 #include "harness/testHarness.h"
 #include "harness/ThreadPool.h"
 #include "harness/conversions.h"
+#include "harness/parseParameters.h"
 #include "CL/cl_half.h"
 
 #define BUFFER_SIZE (1024 * 1024 * 2)
@@ -59,7 +61,6 @@ extern cl_mem gOutBuffer2[VECTOR_SIZE_COUNT];
 extern int gSkipCorrectnessTesting;
 extern int gForceFTZ;
 extern int gFastRelaxedDerived;
-extern int gWimpyMode;
 extern int gHostFill;
 extern int gIsInRTZMode;
 extern int gHasHalf;
@@ -113,9 +114,6 @@ inline double DoubleFromUInt32(uint32_t bits)
     // return result
     return u.d;
 }
-
-void _LogBuildError(cl_program p, int line, const char *file);
-#define LogBuildError(program) _LogBuildError(program, __LINE__, __FILE__)
 
 // The spec is fairly clear that we may enforce a hard cutoff to prevent
 // premature flushing to zero.
@@ -175,16 +173,6 @@ inline int IsFloatNaN(double x)
     return ((u.u & 0x7fffffffU) > 0x7F800000U);
 }
 
-inline bool IsHalfNaN(const cl_half v)
-{
-    // Extract FP16 exponent and mantissa
-    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-    uint16_t h_mant = ((cl_half)v) & 0x3FF;
-
-    // NaN test
-    return (h_exp == 0x1F && h_mant != 0);
-}
-
 inline bool IsHalfInfinity(const cl_half v)
 {
     // Extract FP16 exponent and mantissa
@@ -215,7 +203,8 @@ inline void Force64BitFPUPrecision(void)
     __asm__ __volatile__("fstcw %0" : "=m"(orig_cw));
     new_cw = orig_cw | 0x0300; // set precision to 64-bit
     __asm__ __volatile__("fldcw  %0" ::"m"(new_cw));
-#elif defined(_WIN32) && defined(__INTEL_COMPILER)
+#elif defined(_WIN32)                                                          \
+    && (defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER))
     // Unfortunately, usual method (`_controlfp( _PC_64, _MCW_PC );') does *not*
     // work on win.x64: > On the x64 architecture, changing the floating point
     // precision is not supported. (Taken from

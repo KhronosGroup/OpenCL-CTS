@@ -428,66 +428,128 @@ size_t GetElementNBytes(const cl_image_format *format)
     return result;
 }
 
-cl_int get2DImageDimensions(const VkImageCreateInfo *VulkanImageCreateInfo,
-                            cl_image_format *img_fmt, size_t totalImageSize,
-                            size_t &width, size_t &height)
+cl_int getImageDimensions(const VkImageCreateInfo *VulkanImageCreateInfo,
+                          cl_image_format *img_fmt, cl_image_desc *img_desc,
+                          VkExtent3D max_ext, const VkSubresourceLayout *layout)
 {
-    cl_int result = CL_SUCCESS;
-    if (totalImageSize == 0)
+    test_assert_error(
+        VulkanImageCreateInfo != nullptr,
+        "getImageDimensions: invalid VulkanImageCreateInfo pointer!");
+    test_assert_error(img_fmt != nullptr,
+                      "getImageDimensions: invalid img_fmt pointer!");
+    test_assert_error(img_desc != nullptr,
+                      "getImageDimensions: invalid img_desc pointer!");
+
+    img_desc->image_depth = VulkanImageCreateInfo->extent.depth;
+    img_desc->image_width = VulkanImageCreateInfo->extent.width;
+    img_desc->image_height = VulkanImageCreateInfo->extent.height;
+
+    if (layout != nullptr)
     {
-        result = CL_INVALID_VALUE;
+        size_t element_size = GetElementNBytes(img_fmt);
+        size_t row_pitch = element_size * VulkanImageCreateInfo->extent.width;
+        row_pitch = row_pitch < layout->rowPitch ? layout->rowPitch : row_pitch;
+        img_desc->image_row_pitch = row_pitch;
+
+        size_t slice_pitch = row_pitch * VulkanImageCreateInfo->extent.height;
+        slice_pitch =
+            slice_pitch < layout->depthPitch ? layout->depthPitch : slice_pitch;
+        img_desc->image_slice_pitch = slice_pitch;
     }
-    size_t element_size = GetElementNBytes(img_fmt);
-    size_t row_pitch = element_size * VulkanImageCreateInfo->extent.width;
-    row_pitch = row_pitch % 64 == 0 ? row_pitch : ((row_pitch / 64) + 1) * 64;
 
-    width = row_pitch / element_size;
-    height = totalImageSize / row_pitch;
+    switch (img_desc->image_type)
+    {
+        case CL_MEM_OBJECT_IMAGE3D:
+            test_assert_error(img_desc->image_depth >= 1
+                                  && img_desc->image_depth <= max_ext.depth,
+                              "getImageDimensions: invalid image depth!");
+        case CL_MEM_OBJECT_IMAGE2D:
+            test_assert_error(img_desc->image_height >= 1
+                                  && img_desc->image_height <= max_ext.height,
+                              "getImageDimensions: invalid image height!");
+        case CL_MEM_OBJECT_IMAGE1D:
+            test_assert_error(img_desc->image_width >= 1
+                                  && img_desc->image_width <= max_ext.width,
+                              "getImageDimensions: invalid image width!");
+    }
 
-    return result;
+    return CL_SUCCESS;
 }
 
 cl_int
-getCLImageInfoFromVkImageInfo(const VkImageCreateInfo *VulkanImageCreateInfo,
-                              size_t totalImageSize, cl_image_format *img_fmt,
-                              cl_image_desc *img_desc)
+getCLImageInfoFromVkImageInfo(const cl_device_id device,
+                              const VkImageCreateInfo *VulkanImageCreateInfo,
+                              cl_image_format *img_fmt, cl_image_desc *img_desc,
+                              const VkSubresourceLayout *layout)
 {
-    cl_int result = CL_SUCCESS;
+    cl_int error = CL_SUCCESS;
 
     cl_image_format clImgFormat = { 0 };
-    result =
+    error =
         getCLFormatFromVkFormat(VulkanImageCreateInfo->format, &clImgFormat);
-    if (CL_SUCCESS != result)
+    if (CL_SUCCESS != error)
     {
-        return result;
+        return error;
     }
     memcpy(img_fmt, &clImgFormat, sizeof(cl_image_format));
 
     img_desc->image_type = getImageTypeFromVk(VulkanImageCreateInfo->imageType);
-    if (CL_INVALID_VALUE == img_desc->image_type)
+    if (CL_INVALID_VALUE == static_cast<cl_int>(img_desc->image_type))
     {
         return CL_INVALID_VALUE;
     }
 
-    result =
-        get2DImageDimensions(VulkanImageCreateInfo, img_fmt, totalImageSize,
-                             img_desc->image_width, img_desc->image_height);
-    if (CL_SUCCESS != result)
+    VkExtent3D max_ext = { 0, 0, 0 };
+
+    size_t width = 0, height = 0, depth = 0;
+    if (img_desc->image_type == CL_MEM_OBJECT_IMAGE3D)
     {
-        throw std::runtime_error("get2DImageDimensions failed!!!");
+        error = clGetDeviceInfo(device, CL_DEVICE_IMAGE3D_MAX_WIDTH,
+                                sizeof(width), &width, NULL);
+        test_error(error, "Unable to get CL_DEVICE_IMAGE3D_MAX_WIDTH");
+        error = clGetDeviceInfo(device, CL_DEVICE_IMAGE3D_MAX_HEIGHT,
+                                sizeof(height), &height, NULL);
+        test_error(error, "Unable to get CL_DEVICE_IMAGE3D_MAX_HEIGHT");
+        error = clGetDeviceInfo(device, CL_DEVICE_IMAGE3D_MAX_DEPTH,
+                                sizeof(depth), &depth, NULL);
+        test_error(error, "Unable to get CL_DEVICE_IMAGE3D_MAX_DEPTH");
+    }
+    else
+    {
+        error = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_WIDTH,
+                                sizeof(width), &width, NULL);
+        test_error(error, "Unable to get CL_DEVICE_IMAGE2D_MAX_WIDTH");
+        error = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_HEIGHT,
+                                sizeof(height), &height, NULL);
+        test_error(error, "Unable to get CL_DEVICE_IMAGE2D_MAX_HEIGHT");
+    }
+
+    max_ext.depth = depth;
+    max_ext.height = height;
+    max_ext.width = width;
+
+    // If image_row_pitch is zero and the image is created from an external
+    // memory handle, then the image row pitch is implementation-defined
+    img_desc->image_row_pitch = 0;
+    // If image_slice_pitch is zero and the image is created from an external
+    // memory handle, then the image slice pitch is implementation-defined
+    img_desc->image_slice_pitch = 0;
+
+    error = getImageDimensions(VulkanImageCreateInfo, img_fmt, img_desc,
+                               max_ext, layout);
+    if (CL_SUCCESS != error)
+    {
+        throw std::runtime_error("getImageDimensions failed!!!");
     }
 
     img_desc->image_depth =
         static_cast<size_t>(VulkanImageCreateInfo->extent.depth);
     img_desc->image_array_size = 0;
-    img_desc->image_row_pitch = 0; // Row pitch set to zero as host_ptr is NULL
-    img_desc->image_slice_pitch =
-        img_desc->image_row_pitch * img_desc->image_height;
     img_desc->num_mip_levels = 0;
     img_desc->num_samples = 0;
     img_desc->buffer = NULL;
 
-    return result;
+    return error;
 }
 
 cl_int check_external_memory_handle_type(
@@ -503,6 +565,8 @@ cl_int check_external_memory_handle_type(
     errNum = clGetDeviceInfo(deviceID,
                              CL_DEVICE_EXTERNAL_MEMORY_IMPORT_HANDLE_TYPES_KHR,
                              0, NULL, &handle_type_size);
+    test_error(errNum, "clGetDeviceInfo failed");
+
     handle_type =
         (cl_external_memory_handle_type_khr *)malloc(handle_type_size);
 
@@ -527,8 +591,8 @@ cl_int check_external_memory_handle_type(
     return CL_INVALID_VALUE;
 }
 
-cl_int check_external_semaphore_handle_type(
-    cl_device_id deviceID,
+void check_external_semaphore_handle_type(
+    cl_device_id device,
     cl_external_semaphore_handle_type_khr requiredHandleType,
     cl_device_info queryParamName)
 {
@@ -538,7 +602,8 @@ cl_int check_external_semaphore_handle_type(
     cl_int errNum = CL_SUCCESS;
 
     errNum =
-        clGetDeviceInfo(deviceID, queryParamName, 0, NULL, &handle_type_size);
+        clGetDeviceInfo(device, queryParamName, 0, NULL, &handle_type_size);
+    ASSERT_SUCCESS(errNum, "clGetDeviceInfo");
 
     if (handle_type_size == 0)
     {
@@ -546,31 +611,37 @@ cl_int check_external_semaphore_handle_type(
                   queryParamName == CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR
                       ? "importing"
                       : "exporting");
-        return CL_INVALID_VALUE;
+
+        throw std::runtime_error("");
     }
 
     handle_type =
         (cl_external_semaphore_handle_type_khr *)malloc(handle_type_size);
 
-    errNum = clGetDeviceInfo(deviceID, queryParamName, handle_type_size,
+    errNum = clGetDeviceInfo(device, queryParamName, handle_type_size,
                              handle_type, NULL);
+    ASSERT_SUCCESS(errNum, "clGetDeviceInfo");
 
-    test_error(
-        errNum,
-        "Unable to query supported device semaphore handle types list\n");
-
+    bool found = false;
     for (i = 0; i < handle_type_size; i++)
     {
         if (requiredHandleType == handle_type[i])
         {
-            return CL_SUCCESS;
+            found = true;
+            break;
         }
     }
-    log_error("cl_khr_external_semaphore extension is missing support for %d\n",
-              requiredHandleType);
 
-    return CL_INVALID_VALUE;
+    if (!found)
+    {
+        log_error("cl_khr_external_semaphore extension is missing support for "
+                  "handle type %d\n",
+                  requiredHandleType);
+
+        throw std::runtime_error("");
+    }
 }
+
 clExternalMemory::clExternalMemory() {}
 
 clExternalMemory::clExternalMemory(const clExternalMemory &externalMemory)
@@ -607,19 +678,20 @@ clExternalMemory::clExternalMemory(
 #ifdef _WIN32
             log_info("Opaque file descriptors are not supported on Windows\n");
             ASSERT(0);
-#endif
+#else
             fd = (int)deviceMemory->getHandle(externalMemoryHandleType);
             err = check_external_memory_handle_type(
                 devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
             extMemProperties.push_back(
                 (cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
             extMemProperties.push_back((cl_mem_properties)fd);
+#endif
             break;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
 #ifndef _WIN32
+            log_info("Opaque NT handles are only supported on Windows\n");
             ASSERT(0);
 #else
-            log_info(" Opaque NT handles are only supported on Windows\n");
             handle = deviceMemory->getHandle(externalMemoryHandleType);
             err = check_external_memory_handle_type(
                 devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
@@ -628,11 +700,35 @@ clExternalMemory::clExternalMemory(
             extMemProperties.push_back((cl_mem_properties)handle);
 #endif
             break;
-        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_NAME: {
 #ifndef _WIN32
+            log_info("Opaque NT handles are only supported on Windows\n");
             ASSERT(0);
 #else
+            const std::wstring &name = deviceMemory->getName();
+            if (name.size())
+            {
+                err = check_external_memory_handle_type(
+                    devList[0],
+                    CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR);
+                extMemProperties.push_back(
+                    (cl_mem_properties)
+                        CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR);
+                extMemProperties.push_back((cl_mem_properties)name.c_str());
+            }
+            else
+            {
+                throw std::runtime_error("Unsupported operation: import via "
+                                         "name but no name provided\n");
+            }
+#endif
+        }
+        break;
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
+#ifndef _WIN32
             log_info("Opaque D3DKMT handles are only supported on Windows\n");
+            ASSERT(0);
+#else
             handle = deviceMemory->getHandle(externalMemoryHandleType);
             err = check_external_memory_handle_type(
                 devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR);
@@ -643,13 +739,13 @@ clExternalMemory::clExternalMemory(
 #endif
             break;
         default:
-            ASSERT(0);
             log_error("Unsupported external memory handle type\n");
+            ASSERT(0);
             break;
     }
     if (CL_SUCCESS != err)
     {
-        throw std::runtime_error("Unsupported external memory type\n ");
+        throw std::runtime_error("Unsupported external memory type\n");
     }
 
     extMemProperties.push_back(
@@ -664,7 +760,7 @@ clExternalMemory::clExternalMemory(
     if (CL_SUCCESS != err)
     {
         log_error("clCreateBufferWithProperties failed with %d\n", err);
-        throw std::runtime_error("clCreateBufferWithProperties failed ");
+        throw std::runtime_error("clCreateBufferWithProperties failed\n");
     }
 }
 clExternalMemoryImage::clExternalMemoryImage(
@@ -677,12 +773,16 @@ clExternalMemoryImage::clExternalMemoryImage(
     std::vector<cl_mem_properties> extMemProperties1;
     cl_device_id devList[] = { deviceId, NULL };
 
-    VulkanImageTiling vulkanImageTiling =
-        vkClExternalMemoryHandleTilingAssumption(
-            deviceId, externalMemoryHandleType, &errcode_ret);
+    auto vulkanImageTiling = vkClExternalMemoryHandleTilingAssumption(
+        deviceId, externalMemoryHandleType, &errcode_ret);
     if (CL_SUCCESS != errcode_ret)
     {
         throw std::runtime_error("Failed to query OpenCL tiling mode");
+    }
+    if (vulkanImageTiling == std::nullopt)
+    {
+        throw std::runtime_error(
+            "Could not find image tiling supported by both Vulkan and OpenCL");
     }
 
 #ifdef _WIN32
@@ -704,7 +804,6 @@ clExternalMemoryImage::clExternalMemoryImage(
     {
 #ifdef _WIN32
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
-            log_info("Opaque NT handles are only supported on Windows\n");
             handle = deviceMemory.getHandle(externalMemoryHandleType);
             errcode_ret = check_external_memory_handle_type(
                 devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
@@ -712,8 +811,26 @@ clExternalMemoryImage::clExternalMemoryImage(
                 (cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KHR);
             extMemProperties1.push_back((cl_mem_properties)handle);
             break;
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_NAME: {
+            const std::wstring &name = deviceMemory.getName();
+            if (name.size())
+            {
+                errcode_ret = check_external_memory_handle_type(
+                    devList[0],
+                    CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR);
+                extMemProperties1.push_back(
+                    (cl_mem_properties)
+                        CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR);
+                extMemProperties1.push_back((cl_mem_properties)name.c_str());
+            }
+            else
+            {
+                throw std::runtime_error("Unsupported operation: import via "
+                                         "name but no name provided\n");
+            }
+        }
+        break;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
-            log_info("Opaque D3DKMT handles are only supported on Windows\n");
             handle = deviceMemory.getHandle(externalMemoryHandleType);
             errcode_ret = check_external_memory_handle_type(
                 devList[0], CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR);
@@ -733,27 +850,28 @@ clExternalMemoryImage::clExternalMemoryImage(
             break;
 #endif
         default:
-            ASSERT(0);
             log_error("Unsupported external memory handle type\n");
+            ASSERT(0);
             break;
     }
     if (CL_SUCCESS != errcode_ret)
     {
-        throw std::runtime_error("Unsupported external memory type\n ");
+        throw std::runtime_error("Unsupported external memory type\n");
     }
+
     // Set cl_image_desc
     size_t clImageFormatSize;
     cl_image_desc image_desc;
     memset(&image_desc, 0x0, sizeof(cl_image_desc));
-    cl_image_format img_format = { 0 };
+    img_format = { 0 };
     const VkImageCreateInfo VulkanImageCreateInfo =
         image2D.getVkImageCreateInfo();
 
     errcode_ret = getCLImageInfoFromVkImageInfo(
-        &VulkanImageCreateInfo, image2D.getSize(), &img_format, &image_desc);
+        deviceId, &VulkanImageCreateInfo, &img_format, &image_desc);
     if (CL_SUCCESS != errcode_ret)
     {
-        throw std::runtime_error("getCLImageInfoFromVkImageInfo failed!!!");
+        throw std::runtime_error("getCLImageInfoFromVkImageInfo failed\n");
     }
 
     // If OpenCL will assume linear, query the Vulkan image's row pitch,
@@ -776,7 +894,7 @@ clExternalMemoryImage::clExternalMemoryImage(
         &image_desc, NULL, &errcode_ret);
     if (CL_SUCCESS != errcode_ret)
     {
-        throw std::runtime_error("clCreateImageWithProperties failed!!!");
+        throw std::runtime_error("clCreateImageWithProperties failed\n");
     }
 }
 
@@ -809,9 +927,15 @@ clExternalImportableSemaphore::clExternalImportableSemaphore(
     cl_device_id deviceId)
     : m_deviceSemaphore(semaphore)
 {
-
     cl_int err = 0;
     cl_device_id devList[] = { deviceId, NULL };
+    cl_external_semaphore_handle_type_khr clSemaphoreHandleType =
+        getCLSemaphoreTypeFromVulkanType(externalSemaphoreHandleType);
+
+    check_external_semaphore_handle_type(
+        deviceId, clSemaphoreHandleType,
+        CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR);
+
     m_externalHandleType = externalSemaphoreHandleType;
     m_externalSemaphore = nullptr;
     m_device = deviceId;
@@ -824,52 +948,68 @@ clExternalImportableSemaphore::clExternalImportableSemaphore(
     switch (externalSemaphoreHandleType)
     {
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD:
+#ifdef _WIN32
+            log_info("Opaque file descriptors are not supported on Windows\n");
+            ASSERT(0);
+#else
             fd = (int)semaphore.getHandle(externalSemaphoreHandleType);
-            err = check_external_semaphore_handle_type(
-                devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
             sema_props.push_back(
                 (cl_semaphore_properties_khr)CL_SEMAPHORE_HANDLE_OPAQUE_FD_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)fd);
+#endif
             break;
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT:
 #ifndef _WIN32
+            log_info("Opaque NT handles are only supported on Windows\n");
             ASSERT(0);
 #else
-            log_info(" Opaque NT handles are only supported on Windows\n");
-            handle = semaphore.getName().size()
-                ? NULL
-                : semaphore.getHandle(externalSemaphoreHandleType);
-            err = check_external_semaphore_handle_type(
-                devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
+            handle = semaphore.getHandle(externalSemaphoreHandleType);
             sema_props.push_back((cl_semaphore_properties_khr)
                                      CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)handle);
 #endif
             break;
-        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT:
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_NT_NAME: {
 #ifndef _WIN32
+            log_info("Opaque NT handles are only supported on Windows\n");
             ASSERT(0);
 #else
-            log_info(" Opaque D3DKMT handles are only supported on Windows\n");
+            const std::wstring &name = semaphore.getName();
+            if (name.size())
+            {
+                sema_props.push_back(
+                    (cl_semaphore_properties_khr)
+                        CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_NAME_KHR);
+                sema_props.push_back((cl_semaphore_properties_khr)name.c_str());
+            }
+            else
+            {
+                throw std::runtime_error("Unsupported operation: import via "
+                                         "name but no name provided\n");
+            }
+#endif
+        }
+        break;
+        case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT:
+#ifndef _WIN32
+            log_info("Opaque D3DKMT handles are only supported on Windows\n");
+            ASSERT(0);
+#else
             handle = semaphore.getHandle(externalSemaphoreHandleType);
-            err = check_external_semaphore_handle_type(
-                devList[0], CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)
                                      CL_SEMAPHORE_HANDLE_OPAQUE_WIN32_KMT_KHR);
             sema_props.push_back((cl_semaphore_properties_khr)handle);
 #endif
             break;
         case VULKAN_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD:
-            err = check_external_semaphore_handle_type(
-                devList[0], CL_SEMAPHORE_HANDLE_SYNC_FD_KHR);
-
             sema_props.push_back(static_cast<cl_semaphore_properties_khr>(
                 CL_SEMAPHORE_HANDLE_SYNC_FD_KHR));
             sema_props.push_back(static_cast<cl_semaphore_properties_khr>(-1));
             break;
+
         default:
-            ASSERT(0);
             log_error("Unsupported external memory handle type\n");
+            ASSERT(0);
             break;
     }
     if (CL_SUCCESS != err)
@@ -941,11 +1081,15 @@ clExternalExportableSemaphore::clExternalExportableSemaphore(
     cl_device_id deviceId)
     : m_deviceSemaphore(semaphore)
 {
-
     cl_int err = 0;
     cl_device_id devList[] = { deviceId, NULL };
     cl_external_semaphore_handle_type_khr clSemaphoreHandleType =
         getCLSemaphoreTypeFromVulkanType(externalSemaphoreHandleType);
+
+    check_external_semaphore_handle_type(
+        deviceId, clSemaphoreHandleType,
+        CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR);
+
     m_externalHandleType = externalSemaphoreHandleType;
     m_externalSemaphore = nullptr;
     m_device = deviceId;
@@ -1089,7 +1233,7 @@ int clExternalExportableSemaphore::signal(cl_command_queue cmd_queue)
         import.fd = fd;
         import.pNext = nullptr;
         import.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR;
-        import.flags = 0;
+        import.flags = VK_SEMAPHORE_IMPORT_TEMPORARY_BIT;
 
         VkResult res =
             vkImportSemaphoreFdKHR(m_deviceSemaphore.getDevice(), &import);
@@ -1119,6 +1263,10 @@ cl_external_memory_handle_type_khr vkToOpenCLExternalMemoryHandleType(
 {
     switch (vkExternalMemoryHandleType)
     {
+        default:
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE:
+            log_error("Unexpected external memory handle type\n");
+            return 0;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
             return CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR;
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT:
@@ -1126,17 +1274,17 @@ cl_external_memory_handle_type_khr vkToOpenCLExternalMemoryHandleType(
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT:
         case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_KMT:
             return CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_KMT_KHR;
-        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_NONE: return 0;
+        case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_NT_NAME:
+            return CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_WIN32_NAME_KHR;
     }
     return 0;
 }
 
-VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
+std::optional<VulkanImageTiling> vkClExternalMemoryHandleTilingAssumption(
     cl_device_id deviceId,
     VulkanExternalMemoryHandleType vkExternalMemoryHandleType, int *error_ret)
 {
     size_t size = 0;
-    VulkanImageTiling mode = VULKAN_IMAGE_TILING_OPTIMAL;
 
     assert(error_ret
            != nullptr); // errcode_ret is not optional, it must be checked
@@ -1147,12 +1295,12 @@ VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
         0, nullptr, &size);
     if (*error_ret != CL_SUCCESS)
     {
-        return mode;
+        return std::nullopt;
     }
 
     if (size == 0)
     {
-        return mode;
+        return std::nullopt;
     }
 
     std::vector<cl_external_memory_handle_type_khr> assume_linear_types(
@@ -1164,7 +1312,7 @@ VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
         size, assume_linear_types.data(), nullptr);
     if (*error_ret != CL_SUCCESS)
     {
-        return mode;
+        return std::nullopt;
     }
 
     if (std::find(
@@ -1172,8 +1320,8 @@ VulkanImageTiling vkClExternalMemoryHandleTilingAssumption(
             vkToOpenCLExternalMemoryHandleType(vkExternalMemoryHandleType))
         != assume_linear_types.end())
     {
-        mode = VULKAN_IMAGE_TILING_LINEAR;
+        return VULKAN_IMAGE_TILING_LINEAR;
     }
 
-    return mode;
+    return std::nullopt;
 }

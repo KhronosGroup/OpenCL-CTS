@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "harness/mathHelpers.h"
 #include "harness/stringHelpers.h"
 
 #include <CL/cl_half.h>
@@ -368,8 +369,8 @@ int RelationalsFPTest::test_equiv_kernel(unsigned int vecSize,
                 {
                     if (gInfNanSupport == 0)
                     {
-                        if (isnan(inDataA[i * vecSize + j])
-                            || isnan(inDataB[i * vecSize + j]))
+                        if (isnan_fp(inDataA[i * vecSize + j])
+                            || isnan_fp(inDataB[i * vecSize + j]))
                             fail = 0;
                         else
                             fail = 1;
@@ -595,48 +596,42 @@ cl_int IsLessGreaterFPTest::SetUp(int elements)
     return RelationalsFPTest::SetUp(elements);
 }
 
-int test_relational_isequal(cl_device_id device, cl_context context,
-                            cl_command_queue queue, int numElements)
+REGISTER_TEST(relational_isequal)
 {
-    return MakeAndRunTest<IsEqualFPTest>(device, context, queue, numElements);
+    return MakeAndRunTest<IsEqualFPTest>(device, context, queue, num_elements);
 }
 
-int test_relational_isnotequal(cl_device_id device, cl_context context,
-                               cl_command_queue queue, int numElements)
+REGISTER_TEST(relational_isnotequal)
 {
     return MakeAndRunTest<IsNotEqualFPTest>(device, context, queue,
-                                            numElements);
+                                            num_elements);
 }
 
-int test_relational_isgreater(cl_device_id device, cl_context context,
-                              cl_command_queue queue, int numElements)
+REGISTER_TEST(relational_isgreater)
 {
-    return MakeAndRunTest<IsGreaterFPTest>(device, context, queue, numElements);
+    return MakeAndRunTest<IsGreaterFPTest>(device, context, queue,
+                                           num_elements);
 }
 
-int test_relational_isgreaterequal(cl_device_id device, cl_context context,
-                                   cl_command_queue queue, int numElements)
+REGISTER_TEST(relational_isgreaterequal)
 {
     return MakeAndRunTest<IsGreaterEqualFPTest>(device, context, queue,
-                                                numElements);
+                                                num_elements);
 }
 
-int test_relational_isless(cl_device_id device, cl_context context,
-                           cl_command_queue queue, int numElements)
+REGISTER_TEST(relational_isless)
 {
-    return MakeAndRunTest<IsLessFPTest>(device, context, queue, numElements);
+    return MakeAndRunTest<IsLessFPTest>(device, context, queue, num_elements);
 }
 
-int test_relational_islessequal(cl_device_id device, cl_context context,
-                                cl_command_queue queue, int numElements)
+REGISTER_TEST(relational_islessequal)
 {
     return MakeAndRunTest<IsLessEqualFPTest>(device, context, queue,
-                                             numElements);
+                                             num_elements);
 }
 
-int test_relational_islessgreater(cl_device_id device, cl_context context,
-                                  cl_command_queue queue, int numElements)
+REGISTER_TEST(relational_islessgreater)
 {
     return MakeAndRunTest<IsLessGreaterFPTest>(device, context, queue,
-                                               numElements);
+                                               num_elements);
 }

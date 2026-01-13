@@ -26,11 +26,16 @@ const char *buffer_kernel_pattern = {
     "\tint tid = get_global_id(0);\n"
     "\tuint r = 0;\n"
     "\t%s i;\n"
-    "\tfor(i=(%s)tid*(%s)per_item; i<(%s)(1+tid)*(%s)per_item; i++) {\n"
     "%s"
-    "\t}\n"
     "\tresult[tid] = r;\n"
     "}\n"
+};
+
+const char *accumulate_pattern = {
+    "\t%s end%d = min((%s)(1+tid)*(%s)per_item, array_sizes[%d]);\n"
+    "\tfor(i=(%s)tid*(%s)per_item; i<end%d; i++) {\n"
+    "\t\tr += buffer%d[i];\n"
+    "\t}\n"
 };
 
 const char *image_kernel_pattern = {
@@ -159,7 +164,7 @@ int check_image(cl_command_queue queue, cl_mem mem)
 int execute_kernel(cl_context context, cl_command_queue *queue,
                    cl_device_id device_id, int test, cl_mem mems[],
                    int number_of_mems_used, int verify_checksum,
-                   unsigned int number_of_work_itmes)
+                   unsigned int number_of_work_items)
 {
 
     char *argument_string;
@@ -174,24 +179,38 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
     cl_uint per_item;
     cl_uint per_item_uint;
     cl_uint final_result;
-    std::vector<cl_uint> returned_results(number_of_work_itmes);
+    std::vector<cl_uint> returned_results(number_of_work_items);
     clEventWrapper event;
     cl_int event_status;
 
     // Allocate memory for the kernel source
+    char *used_pattern = nullptr;
+    if (test == BUFFER || test == BUFFER_NON_BLOCKING)
+    {
+        used_pattern = (char *)accumulate_pattern;
+    }
+    else if (test == IMAGE_READ || test == IMAGE_READ_NON_BLOCKING)
+    {
+        used_pattern = (char *)read_pattern;
+    }
+    else if (test == IMAGE_WRITE || test == IMAGE_WRITE_NON_BLOCKING)
+    {
+        used_pattern = (char *)write_pattern;
+    }
     argument_string =
         (char *)malloc(sizeof(char) * MAX_NUMBER_TO_ALLOCATE * 64);
     access_string = (char *)malloc(sizeof(char) * MAX_NUMBER_TO_ALLOCATE
-                                   * (strlen(read_pattern) + 10));
+                                   * (strlen(used_pattern) + 10));
     kernel_string = (char *)malloc(sizeof(char) * MAX_NUMBER_TO_ALLOCATE
-                                       * (strlen(read_pattern) + 10 + 64)
+                                       * (strlen(used_pattern) + 10 + 64)
                                    + 1024);
+
     argument_string[0] = '\0';
     access_string[0] = '\0';
     kernel_string[0] = '\0';
 
     // Zero the results.
-    for (i = 0; i < number_of_work_itmes; i++) returned_results[i] = 0;
+    for (i = 0; i < number_of_work_items; i++) returned_results[i] = 0;
 
     // detect if device supports ulong/int64
     // detect whether profile of the device is embedded
@@ -209,13 +228,6 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
     // Build the kernel source
     if (test == BUFFER || test == BUFFER_NON_BLOCKING)
     {
-        for (i = 0; i < number_of_mems_used; i++)
-        {
-            sprintf(argument_string + strlen(argument_string),
-                    " __global uint *buffer%d, ", i);
-            sprintf(access_string + strlen(access_string),
-                    "\t\tif (i<array_sizes[%d]) r += buffer%d[i];\n", i, i);
-        }
         char type[10];
         if (support64)
         {
@@ -225,8 +237,15 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
         {
             sprintf(type, "uint");
         }
+        for (i = 0; i < number_of_mems_used; i++)
+        {
+            sprintf(argument_string + strlen(argument_string),
+                    " __global uint *buffer%d, ", i);
+            sprintf(access_string + strlen(access_string), accumulate_pattern,
+                    type, i, type, type, i, type, type, i, i);
+        }
         sprintf(kernel_string, buffer_kernel_pattern, argument_string, type,
-                type, type, type, type, type, access_string);
+                type, access_string);
     }
     else if (test == IMAGE_READ || test == IMAGE_READ_NON_BLOCKING)
     {
@@ -282,14 +301,14 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
     // Set the result
     result_mem =
         clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                       sizeof(cl_uint) * number_of_work_itmes,
+                       sizeof(cl_uint) * number_of_work_items,
                        returned_results.data(), &error);
     test_error(error, "clCreateBuffer failed");
     error = clSetKernelArg(kernel, i, sizeof(result_mem), &result_mem);
     test_error(error, "clSetKernelArg failed");
 
     // Thread dimensions for execution
-    global_dims[0] = number_of_work_itmes;
+    global_dims[0] = number_of_work_items;
     global_dims[1] = 1;
     global_dims[2] = 1;
 
@@ -373,8 +392,8 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
     if (result != SUCCEEDED)
     {
         if (result == FAILED_TOO_BIG)
-            log_info("\t\tExecute kernel failed: %s (global dim: %ld, local "
-                     "dim: %ld)\n",
+            log_info("\t\tExecute kernel failed: %s (global dim: %zu, local "
+                     "dim: %zu)\n",
                      IGetErrorString(error), global_dims[0], local_dims[0]);
         else
             print_error(error, "clEnqueueNDRangeKernel failed");
@@ -427,7 +446,7 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
     // Verify the checksum.
     // Read back the result
     error = clEnqueueReadBuffer(*queue, result_mem, CL_TRUE, 0,
-                                sizeof(cl_uint) * number_of_work_itmes,
+                                sizeof(cl_uint) * number_of_work_items,
                                 returned_results.data(), 0, NULL, NULL);
     test_error_abort(error, "clEnqueueReadBuffer failed");
     final_result = 0;
@@ -436,7 +455,7 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
     {
         // For buffers or read images we are just looking at the sum of what
         // each thread summed up
-        for (i = 0; i < number_of_work_itmes; i++)
+        for (i = 0; i < number_of_work_items; i++)
         {
             final_result += returned_results[i];
         }

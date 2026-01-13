@@ -16,6 +16,7 @@
 #include "testBase.h"
 #include <limits.h>
 #include <ctype.h>
+#include <cinttypes>
 #ifndef _WIN32
 #include <unistd.h>
 #endif
@@ -93,7 +94,11 @@ const char *known_extensions[] = {
     "cl_khr_external_memory_dma_buf",
     "cl_khr_command_buffer",
     "cl_khr_command_buffer_mutable_dispatch",
-    "cl_khr_command_buffer_multi_device"
+    "cl_khr_command_buffer_mutable_memory_commands",
+    "cl_khr_command_buffer_multi_device",
+    "cl_khr_external_memory_android_hardware_buffer",
+    "cl_khr_unified_svm",
+    "cl_khr_spirv_queries"
 };
 // clang-format on
 
@@ -130,7 +135,7 @@ bool string_has_prefix(const char *str, const char *prefix)
     return strncmp(str, prefix, strlen(prefix)) == 0;
 }
 
-int test_compiler_defines_for_extensions(cl_device_id device, cl_context context, cl_command_queue queue, int n_elems )
+REGISTER_TEST(compiler_defines_for_extensions)
 {
 
     int error;
@@ -216,7 +221,9 @@ int test_compiler_defines_for_extensions(cl_device_id device, cl_context context
         char *extension = (char *)malloc((extension_length + 1) * sizeof(char));
         if (extension == NULL)
         {
-            log_error( "Error: unable to allocate memory to hold extension name: %ld chars\n", extension_length );
+            log_error("Error: unable to allocate memory to hold extension "
+                      "name: %" PRIdPTR " chars\n",
+                      extension_length);
             return -1;
         }
         extensions_supported[num_of_supported_extensions] = extension;

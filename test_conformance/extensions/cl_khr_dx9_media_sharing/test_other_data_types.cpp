@@ -57,7 +57,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
         return result.Result();
     }
 
-    std::auto_ptr<CDeviceWrapper> deviceWrapper;
+    std::unique_ptr<CDeviceWrapper> deviceWrapper;
     if (!DeviceCreate(adapterType, deviceWrapper))
     {
         result.ResultSub(CResult::TEST_ERROR);
@@ -158,7 +158,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
         }
 
         void *objectSrcHandle = 0;
-        std::auto_ptr<CSurfaceWrapper> surfaceSrc;
+        std::unique_ptr<CSurfaceWrapper> surfaceSrc;
         if (!MediaSurfaceCreate(adapterType, width, height, surfaceFormat,
                                 *deviceWrapper, surfaceSrc,
                                 (sharedHandle == SHARED_HANDLE_ENABLED) ? true
@@ -172,7 +172,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
         }
 
         void *objectDstHandle = 0;
-        std::auto_ptr<CSurfaceWrapper> surfaceDst;
+        std::unique_ptr<CSurfaceWrapper> surfaceDst;
         if (!MediaSurfaceCreate(adapterType, width, height, surfaceFormat,
                                 *deviceWrapper, surfaceDst,
                                 (sharedHandle == SHARED_HANDLE_ENABLED) ? true
@@ -527,15 +527,14 @@ int other_data_types(cl_device_id deviceID, cl_context context,
     return result.Result();
 }
 
-int test_other_data_types(cl_device_id deviceID, cl_context context,
-                          cl_command_queue queue, int num_elements)
+REGISTER_TEST(other_data_types)
 {
     CResult result;
 
 #if defined(_WIN32)
     // D3D9
-    if (other_data_types<cl_float>(deviceID, context, queue, num_elements, 10,
-                                   64, 256, CL_ADAPTER_D3D9_KHR,
+    if (other_data_types<cl_float>(device, context, queue, num_elements, 10, 64,
+                                   256, CL_ADAPTER_D3D9_KHR,
                                    SURFACE_FORMAT_R32F, SHARED_HANDLE_DISABLED)
         != 0)
     {
@@ -543,16 +542,16 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_half>(deviceID, context, queue, num_elements, 10,
-                                  256, 128, CL_ADAPTER_D3D9_KHR,
-                                  SURFACE_FORMAT_R16F, SHARED_HANDLE_DISABLED)
+    if (other_data_types<cl_half>(device, context, queue, num_elements, 10, 256,
+                                  128, CL_ADAPTER_D3D9_KHR, SURFACE_FORMAT_R16F,
+                                  SHARED_HANDLE_DISABLED)
         != 0)
     {
         log_error("\nTest case (D3D9, R16F, no shared handle) failed\n\n");
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_ushort>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_ushort>(device, context, queue, num_elements, 10,
                                     512, 256, CL_ADAPTER_D3D9_KHR,
                                     SURFACE_FORMAT_L16, SHARED_HANDLE_DISABLED)
         != 0)
@@ -561,7 +560,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    256, 512, CL_ADAPTER_D3D9_KHR,
                                    SURFACE_FORMAT_A8, SHARED_HANDLE_DISABLED)
         != 0)
@@ -570,7 +569,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    1024, 32, CL_ADAPTER_D3D9_KHR,
                                    SURFACE_FORMAT_L8, SHARED_HANDLE_DISABLED)
         != 0)
@@ -580,7 +579,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
     }
 
     if (other_data_types<cl_float>(
-            deviceID, context, queue, num_elements, 10, 32, 1024,
+            device, context, queue, num_elements, 10, 32, 1024,
             CL_ADAPTER_D3D9_KHR, SURFACE_FORMAT_G32R32F, SHARED_HANDLE_DISABLED)
         != 0)
     {
@@ -589,7 +588,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
     }
 
     if (other_data_types<cl_half>(
-            deviceID, context, queue, num_elements, 10, 64, 64,
+            device, context, queue, num_elements, 10, 64, 64,
             CL_ADAPTER_D3D9_KHR, SURFACE_FORMAT_G16R16F, SHARED_HANDLE_DISABLED)
         != 0)
     {
@@ -598,7 +597,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
     }
 
     if (other_data_types<cl_ushort>(
-            deviceID, context, queue, num_elements, 10, 256, 256,
+            device, context, queue, num_elements, 10, 256, 256,
             CL_ADAPTER_D3D9_KHR, SURFACE_FORMAT_G16R16, SHARED_HANDLE_DISABLED)
         != 0)
     {
@@ -606,7 +605,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    512, 128, CL_ADAPTER_D3D9_KHR,
                                    SURFACE_FORMAT_A8L8, SHARED_HANDLE_DISABLED)
         != 0)
@@ -615,7 +614,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_float>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_float>(device, context, queue, num_elements, 10,
                                    128, 512, CL_ADAPTER_D3D9_KHR,
                                    SURFACE_FORMAT_A32B32G32R32F,
                                    SHARED_HANDLE_DISABLED)
@@ -626,8 +625,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_half>(deviceID, context, queue, num_elements, 10,
-                                  128, 128, CL_ADAPTER_D3D9_KHR,
+    if (other_data_types<cl_half>(device, context, queue, num_elements, 10, 128,
+                                  128, CL_ADAPTER_D3D9_KHR,
                                   SURFACE_FORMAT_A16B16G16R16F,
                                   SHARED_HANDLE_DISABLED)
         != 0)
@@ -637,7 +636,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_ushort>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_ushort>(device, context, queue, num_elements, 10,
                                     64, 128, CL_ADAPTER_D3D9_KHR,
                                     SURFACE_FORMAT_A16B16G16R16,
                                     SHARED_HANDLE_DISABLED)
@@ -648,7 +647,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    128, 64, CL_ADAPTER_D3D9_KHR,
                                    SURFACE_FORMAT_A8B8G8R8,
                                    SHARED_HANDLE_DISABLED)
@@ -658,8 +657,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
-                                   16, 512, CL_ADAPTER_D3D9_KHR,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10, 16,
+                                   512, CL_ADAPTER_D3D9_KHR,
                                    SURFACE_FORMAT_X8B8G8R8,
                                    SHARED_HANDLE_DISABLED)
         != 0)
@@ -668,7 +667,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    512, 16, CL_ADAPTER_D3D9_KHR,
                                    SURFACE_FORMAT_A8R8G8B8,
                                    SHARED_HANDLE_DISABLED)
@@ -678,7 +677,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    256, 256, CL_ADAPTER_D3D9_KHR,
                                    SURFACE_FORMAT_X8R8G8B8,
                                    SHARED_HANDLE_DISABLED)
@@ -690,8 +689,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
 
     // D3D9EX
 
-    if (other_data_types<cl_float>(deviceID, context, queue, num_elements, 10,
-                                   64, 256, CL_ADAPTER_D3D9EX_KHR,
+    if (other_data_types<cl_float>(device, context, queue, num_elements, 10, 64,
+                                   256, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_R32F, SHARED_HANDLE_DISABLED)
         != 0)
     {
@@ -699,8 +698,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_float>(deviceID, context, queue, num_elements, 10,
-                                   64, 256, CL_ADAPTER_D3D9EX_KHR,
+    if (other_data_types<cl_float>(device, context, queue, num_elements, 10, 64,
+                                   256, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_R32F, SHARED_HANDLE_ENABLED)
         != 0)
     {
@@ -708,8 +707,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_half>(deviceID, context, queue, num_elements, 10,
-                                  256, 128, CL_ADAPTER_D3D9EX_KHR,
+    if (other_data_types<cl_half>(device, context, queue, num_elements, 10, 256,
+                                  128, CL_ADAPTER_D3D9EX_KHR,
                                   SURFACE_FORMAT_R16F, SHARED_HANDLE_DISABLED)
         != 0)
     {
@@ -717,8 +716,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_half>(deviceID, context, queue, num_elements, 10,
-                                  256, 128, CL_ADAPTER_D3D9EX_KHR,
+    if (other_data_types<cl_half>(device, context, queue, num_elements, 10, 256,
+                                  128, CL_ADAPTER_D3D9EX_KHR,
                                   SURFACE_FORMAT_R16F, SHARED_HANDLE_ENABLED)
         != 0)
     {
@@ -726,7 +725,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_ushort>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_ushort>(device, context, queue, num_elements, 10,
                                     512, 256, CL_ADAPTER_D3D9EX_KHR,
                                     SURFACE_FORMAT_L16, SHARED_HANDLE_DISABLED)
         != 0)
@@ -735,7 +734,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_ushort>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_ushort>(device, context, queue, num_elements, 10,
                                     512, 256, CL_ADAPTER_D3D9EX_KHR,
                                     SURFACE_FORMAT_L16, SHARED_HANDLE_ENABLED)
         != 0)
@@ -744,7 +743,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    256, 512, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_A8, SHARED_HANDLE_DISABLED)
         != 0)
@@ -753,7 +752,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    256, 512, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_A8, SHARED_HANDLE_ENABLED)
         != 0)
@@ -762,7 +761,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    1024, 32, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_L8, SHARED_HANDLE_DISABLED)
         != 0)
@@ -771,7 +770,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    1024, 32, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_L8, SHARED_HANDLE_ENABLED)
         != 0)
@@ -780,8 +779,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_float>(deviceID, context, queue, num_elements, 10,
-                                   32, 1024, CL_ADAPTER_D3D9EX_KHR,
+    if (other_data_types<cl_float>(device, context, queue, num_elements, 10, 32,
+                                   1024, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_G32R32F,
                                    SHARED_HANDLE_DISABLED)
         != 0)
@@ -790,8 +789,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_float>(deviceID, context, queue, num_elements, 10,
-                                   32, 1024, CL_ADAPTER_D3D9EX_KHR,
+    if (other_data_types<cl_float>(device, context, queue, num_elements, 10, 32,
+                                   1024, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_G32R32F,
                                    SHARED_HANDLE_ENABLED)
         != 0)
@@ -800,8 +799,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_half>(deviceID, context, queue, num_elements, 10,
-                                  64, 64, CL_ADAPTER_D3D9EX_KHR,
+    if (other_data_types<cl_half>(device, context, queue, num_elements, 10, 64,
+                                  64, CL_ADAPTER_D3D9EX_KHR,
                                   SURFACE_FORMAT_G16R16F,
                                   SHARED_HANDLE_DISABLED)
         != 0)
@@ -810,8 +809,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_half>(deviceID, context, queue, num_elements, 10,
-                                  64, 64, CL_ADAPTER_D3D9EX_KHR,
+    if (other_data_types<cl_half>(device, context, queue, num_elements, 10, 64,
+                                  64, CL_ADAPTER_D3D9EX_KHR,
                                   SURFACE_FORMAT_G16R16F, SHARED_HANDLE_ENABLED)
         != 0)
     {
@@ -819,7 +818,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_ushort>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_ushort>(device, context, queue, num_elements, 10,
                                     256, 256, CL_ADAPTER_D3D9EX_KHR,
                                     SURFACE_FORMAT_G16R16,
                                     SHARED_HANDLE_DISABLED)
@@ -830,7 +829,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
     }
 
     if (other_data_types<cl_ushort>(
-            deviceID, context, queue, num_elements, 10, 256, 256,
+            device, context, queue, num_elements, 10, 256, 256,
             CL_ADAPTER_D3D9EX_KHR, SURFACE_FORMAT_G16R16, SHARED_HANDLE_ENABLED)
         != 0)
     {
@@ -838,7 +837,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    512, 128, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_A8L8, SHARED_HANDLE_DISABLED)
         != 0)
@@ -847,7 +846,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    512, 128, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_A8L8, SHARED_HANDLE_ENABLED)
         != 0)
@@ -856,7 +855,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_float>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_float>(device, context, queue, num_elements, 10,
                                    128, 512, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_A32B32G32R32F,
                                    SHARED_HANDLE_DISABLED)
@@ -867,7 +866,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_float>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_float>(device, context, queue, num_elements, 10,
                                    128, 512, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_A32B32G32R32F,
                                    SHARED_HANDLE_ENABLED)
@@ -878,8 +877,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_half>(deviceID, context, queue, num_elements, 10,
-                                  128, 128, CL_ADAPTER_D3D9EX_KHR,
+    if (other_data_types<cl_half>(device, context, queue, num_elements, 10, 128,
+                                  128, CL_ADAPTER_D3D9EX_KHR,
                                   SURFACE_FORMAT_A16B16G16R16F,
                                   SHARED_HANDLE_DISABLED)
         != 0)
@@ -889,8 +888,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_half>(deviceID, context, queue, num_elements, 10,
-                                  128, 128, CL_ADAPTER_D3D9EX_KHR,
+    if (other_data_types<cl_half>(device, context, queue, num_elements, 10, 128,
+                                  128, CL_ADAPTER_D3D9EX_KHR,
                                   SURFACE_FORMAT_A16B16G16R16F,
                                   SHARED_HANDLE_ENABLED)
         != 0)
@@ -900,7 +899,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_ushort>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_ushort>(device, context, queue, num_elements, 10,
                                     64, 128, CL_ADAPTER_D3D9EX_KHR,
                                     SURFACE_FORMAT_A16B16G16R16,
                                     SHARED_HANDLE_DISABLED)
@@ -911,7 +910,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_ushort>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_ushort>(device, context, queue, num_elements, 10,
                                     64, 128, CL_ADAPTER_D3D9EX_KHR,
                                     SURFACE_FORMAT_A16B16G16R16,
                                     SHARED_HANDLE_ENABLED)
@@ -922,7 +921,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    128, 64, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_A8B8G8R8,
                                    SHARED_HANDLE_DISABLED)
@@ -933,7 +932,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    128, 64, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_A8B8G8R8,
                                    SHARED_HANDLE_ENABLED)
@@ -943,8 +942,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
-                                   16, 512, CL_ADAPTER_D3D9EX_KHR,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10, 16,
+                                   512, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_X8B8G8R8,
                                    SHARED_HANDLE_DISABLED)
         != 0)
@@ -954,8 +953,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
-                                   16, 512, CL_ADAPTER_D3D9EX_KHR,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10, 16,
+                                   512, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_X8B8G8R8,
                                    SHARED_HANDLE_ENABLED)
         != 0)
@@ -964,7 +963,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    512, 16, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_A8R8G8B8,
                                    SHARED_HANDLE_DISABLED)
@@ -975,7 +974,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    512, 16, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_A8R8G8B8,
                                    SHARED_HANDLE_ENABLED)
@@ -985,7 +984,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    256, 256, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_X8R8G8B8,
                                    SHARED_HANDLE_DISABLED)
@@ -996,7 +995,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    256, 256, CL_ADAPTER_D3D9EX_KHR,
                                    SURFACE_FORMAT_X8R8G8B8,
                                    SHARED_HANDLE_ENABLED)
@@ -1008,8 +1007,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
 
     // DXVA
 
-    if (other_data_types<cl_float>(deviceID, context, queue, num_elements, 10,
-                                   64, 256, CL_ADAPTER_DXVA_KHR,
+    if (other_data_types<cl_float>(device, context, queue, num_elements, 10, 64,
+                                   256, CL_ADAPTER_DXVA_KHR,
                                    SURFACE_FORMAT_R32F, SHARED_HANDLE_DISABLED)
         != 0)
     {
@@ -1017,8 +1016,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_float>(deviceID, context, queue, num_elements, 10,
-                                   64, 256, CL_ADAPTER_DXVA_KHR,
+    if (other_data_types<cl_float>(device, context, queue, num_elements, 10, 64,
+                                   256, CL_ADAPTER_DXVA_KHR,
                                    SURFACE_FORMAT_R32F, SHARED_HANDLE_ENABLED)
         != 0)
     {
@@ -1026,25 +1025,25 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_half>(deviceID, context, queue, num_elements, 10,
-                                  256, 128, CL_ADAPTER_DXVA_KHR,
-                                  SURFACE_FORMAT_R16F, SHARED_HANDLE_DISABLED)
+    if (other_data_types<cl_half>(device, context, queue, num_elements, 10, 256,
+                                  128, CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_R16F,
+                                  SHARED_HANDLE_DISABLED)
         != 0)
     {
         log_error("\nTest case (DXVA, R16F, no shared handle) failed\n\n");
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_half>(deviceID, context, queue, num_elements, 10,
-                                  256, 128, CL_ADAPTER_DXVA_KHR,
-                                  SURFACE_FORMAT_R16F, SHARED_HANDLE_ENABLED)
+    if (other_data_types<cl_half>(device, context, queue, num_elements, 10, 256,
+                                  128, CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_R16F,
+                                  SHARED_HANDLE_ENABLED)
         != 0)
     {
         log_error("\nTest case (DXVA, R16F, shared handle) failed\n\n");
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_ushort>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_ushort>(device, context, queue, num_elements, 10,
                                     512, 256, CL_ADAPTER_DXVA_KHR,
                                     SURFACE_FORMAT_L16, SHARED_HANDLE_DISABLED)
         != 0)
@@ -1053,7 +1052,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_ushort>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_ushort>(device, context, queue, num_elements, 10,
                                     512, 256, CL_ADAPTER_DXVA_KHR,
                                     SURFACE_FORMAT_L16, SHARED_HANDLE_ENABLED)
         != 0)
@@ -1062,7 +1061,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    256, 512, CL_ADAPTER_DXVA_KHR,
                                    SURFACE_FORMAT_A8, SHARED_HANDLE_DISABLED)
         != 0)
@@ -1071,7 +1070,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    256, 512, CL_ADAPTER_DXVA_KHR,
                                    SURFACE_FORMAT_A8, SHARED_HANDLE_ENABLED)
         != 0)
@@ -1080,7 +1079,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    1024, 32, CL_ADAPTER_DXVA_KHR,
                                    SURFACE_FORMAT_L8, SHARED_HANDLE_DISABLED)
         != 0)
@@ -1089,7 +1088,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    1024, 32, CL_ADAPTER_DXVA_KHR,
                                    SURFACE_FORMAT_L8, SHARED_HANDLE_ENABLED)
         != 0)
@@ -1099,7 +1098,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
     }
 
     if (other_data_types<cl_float>(
-            deviceID, context, queue, num_elements, 10, 32, 1024,
+            device, context, queue, num_elements, 10, 32, 1024,
             CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_G32R32F, SHARED_HANDLE_DISABLED)
         != 0)
     {
@@ -1108,7 +1107,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
     }
 
     if (other_data_types<cl_float>(
-            deviceID, context, queue, num_elements, 10, 32, 1024,
+            device, context, queue, num_elements, 10, 32, 1024,
             CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_G32R32F, SHARED_HANDLE_ENABLED)
         != 0)
     {
@@ -1117,7 +1116,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
     }
 
     if (other_data_types<cl_half>(
-            deviceID, context, queue, num_elements, 10, 64, 64,
+            device, context, queue, num_elements, 10, 64, 64,
             CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_G16R16F, SHARED_HANDLE_DISABLED)
         != 0)
     {
@@ -1125,8 +1124,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_half>(deviceID, context, queue, num_elements, 10,
-                                  64, 64, CL_ADAPTER_DXVA_KHR,
+    if (other_data_types<cl_half>(device, context, queue, num_elements, 10, 64,
+                                  64, CL_ADAPTER_DXVA_KHR,
                                   SURFACE_FORMAT_G16R16F, SHARED_HANDLE_ENABLED)
         != 0)
     {
@@ -1135,7 +1134,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
     }
 
     if (other_data_types<cl_ushort>(
-            deviceID, context, queue, num_elements, 10, 256, 256,
+            device, context, queue, num_elements, 10, 256, 256,
             CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_G16R16, SHARED_HANDLE_DISABLED)
         != 0)
     {
@@ -1144,7 +1143,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
     }
 
     if (other_data_types<cl_ushort>(
-            deviceID, context, queue, num_elements, 10, 256, 256,
+            device, context, queue, num_elements, 10, 256, 256,
             CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_G16R16, SHARED_HANDLE_ENABLED)
         != 0)
     {
@@ -1152,7 +1151,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    512, 128, CL_ADAPTER_DXVA_KHR,
                                    SURFACE_FORMAT_A8L8, SHARED_HANDLE_DISABLED)
         != 0)
@@ -1161,7 +1160,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    512, 128, CL_ADAPTER_DXVA_KHR,
                                    SURFACE_FORMAT_A8L8, SHARED_HANDLE_ENABLED)
         != 0)
@@ -1170,7 +1169,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_float>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_float>(device, context, queue, num_elements, 10,
                                    128, 512, CL_ADAPTER_DXVA_KHR,
                                    SURFACE_FORMAT_A32B32G32R32F,
                                    SHARED_HANDLE_DISABLED)
@@ -1181,7 +1180,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_float>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_float>(device, context, queue, num_elements, 10,
                                    128, 512, CL_ADAPTER_DXVA_KHR,
                                    SURFACE_FORMAT_A32B32G32R32F,
                                    SHARED_HANDLE_ENABLED)
@@ -1192,8 +1191,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_half>(deviceID, context, queue, num_elements, 10,
-                                  128, 128, CL_ADAPTER_DXVA_KHR,
+    if (other_data_types<cl_half>(device, context, queue, num_elements, 10, 128,
+                                  128, CL_ADAPTER_DXVA_KHR,
                                   SURFACE_FORMAT_A16B16G16R16F,
                                   SHARED_HANDLE_DISABLED)
         != 0)
@@ -1203,8 +1202,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_half>(deviceID, context, queue, num_elements, 10,
-                                  128, 128, CL_ADAPTER_DXVA_KHR,
+    if (other_data_types<cl_half>(device, context, queue, num_elements, 10, 128,
+                                  128, CL_ADAPTER_DXVA_KHR,
                                   SURFACE_FORMAT_A16B16G16R16F,
                                   SHARED_HANDLE_ENABLED)
         != 0)
@@ -1214,7 +1213,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_ushort>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_ushort>(device, context, queue, num_elements, 10,
                                     64, 128, CL_ADAPTER_DXVA_KHR,
                                     SURFACE_FORMAT_A16B16G16R16,
                                     SHARED_HANDLE_DISABLED)
@@ -1225,7 +1224,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_ushort>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_ushort>(device, context, queue, num_elements, 10,
                                     64, 128, CL_ADAPTER_DXVA_KHR,
                                     SURFACE_FORMAT_A16B16G16R16,
                                     SHARED_HANDLE_ENABLED)
@@ -1235,7 +1234,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    128, 64, CL_ADAPTER_DXVA_KHR,
                                    SURFACE_FORMAT_A8B8G8R8,
                                    SHARED_HANDLE_DISABLED)
@@ -1246,7 +1245,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
     }
 
     if (other_data_types<cl_uchar>(
-            deviceID, context, queue, num_elements, 10, 128, 64,
+            device, context, queue, num_elements, 10, 128, 64,
             CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_A8B8G8R8, SHARED_HANDLE_ENABLED)
         != 0)
     {
@@ -1254,8 +1253,8 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
-                                   16, 512, CL_ADAPTER_DXVA_KHR,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10, 16,
+                                   512, CL_ADAPTER_DXVA_KHR,
                                    SURFACE_FORMAT_X8B8G8R8,
                                    SHARED_HANDLE_DISABLED)
         != 0)
@@ -1265,7 +1264,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
     }
 
     if (other_data_types<cl_uchar>(
-            deviceID, context, queue, num_elements, 10, 16, 512,
+            device, context, queue, num_elements, 10, 16, 512,
             CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_X8B8G8R8, SHARED_HANDLE_ENABLED)
         != 0)
     {
@@ -1273,7 +1272,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    512, 16, CL_ADAPTER_DXVA_KHR,
                                    SURFACE_FORMAT_A8R8G8B8,
                                    SHARED_HANDLE_DISABLED)
@@ -1284,7 +1283,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
     }
 
     if (other_data_types<cl_uchar>(
-            deviceID, context, queue, num_elements, 10, 512, 16,
+            device, context, queue, num_elements, 10, 512, 16,
             CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_A8R8G8B8, SHARED_HANDLE_ENABLED)
         != 0)
     {
@@ -1292,7 +1291,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-    if (other_data_types<cl_uchar>(deviceID, context, queue, num_elements, 10,
+    if (other_data_types<cl_uchar>(device, context, queue, num_elements, 10,
                                    256, 256, CL_ADAPTER_DXVA_KHR,
                                    SURFACE_FORMAT_X8R8G8B8,
                                    SHARED_HANDLE_DISABLED)
@@ -1303,7 +1302,7 @@ int test_other_data_types(cl_device_id deviceID, cl_context context,
     }
 
     if (other_data_types<cl_uchar>(
-            deviceID, context, queue, num_elements, 10, 256, 256,
+            device, context, queue, num_elements, 10, 256, 256,
             CL_ADAPTER_DXVA_KHR, SURFACE_FORMAT_X8R8G8B8, SHARED_HANDLE_ENABLED)
         != 0)
     {
