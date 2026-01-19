@@ -147,6 +147,7 @@ VulkanInstance::VulkanInstance(bool useValidationLayers)
         // return WAIVED;
     }
 
+    VK_GET_NULL_INSTANCE_PROC_ADDR(vkGetPhysicalDeviceFeatures2);
     VK_GET_NULL_INSTANCE_PROC_ADDR(vkEnumerateInstanceVersion);
     VK_GET_NULL_INSTANCE_PROC_ADDR(vkEnumerateInstanceLayerProperties);
     VK_GET_NULL_INSTANCE_PROC_ADDR(vkCreateInstance);
@@ -612,7 +613,8 @@ VulkanDevice::VulkanDevice(const VulkanDevice &device)
 
 VulkanDevice::VulkanDevice(
     const VulkanPhysicalDevice &physicalDevice,
-    const VulkanQueueFamilyToQueueCountMap &queueFamilyToQueueCountMap)
+    const VulkanQueueFamilyToQueueCountMap &queueFamilyToQueueCountMap,
+    bool useShaderInt8)
     : m_physicalDevice(physicalDevice), m_vkDevice(NULL)
 {
     uint32_t maxQueueCount = 0;
@@ -676,7 +678,56 @@ VulkanDevice::VulkanDevice(
         enabledExtensionNameList.data();
     vkDeviceCreateInfo.pEnabledFeatures = NULL;
 
-    vkCreateDevice(physicalDevice, &vkDeviceCreateInfo, NULL, &m_vkDevice);
+    if (useShaderInt8)
+    {
+        VkPhysicalDeviceShaderFloat16Int8Features int8Features{};
+        int8Features.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
+
+        VkPhysicalDevice8BitStorageFeatures storage8Features{};
+        storage8Features.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
+
+        // łańcuch pNext
+        int8Features.pNext = &storage8Features;
+
+        VkPhysicalDeviceFeatures2 features2{};
+        features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        features2.pNext = &int8Features;
+
+        vkGetPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+        if (!int8Features.shaderInt8
+            || !storage8Features.storageBuffer8BitAccess)
+        {
+            throw std::runtime_error("shaderInt8 not supported!\n");
+        }
+
+        VkPhysicalDevice8BitStorageFeatures storage8Enable{};
+        storage8Enable.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
+        storage8Enable.storageBuffer8BitAccess = VK_TRUE;
+
+        VkPhysicalDeviceShaderFloat16Int8Features int8Enable{};
+        int8Enable.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
+        int8Enable.shaderInt8 = VK_TRUE;
+        int8Enable.pNext = &storage8Enable;
+
+        vkDeviceCreateInfo.pNext = &int8Enable;
+
+        enabledExtensionNameList.push_back(VK_KHR_8BIT_STORAGE_EXTENSION_NAME);
+        vkDeviceCreateInfo.ppEnabledExtensionNames =
+            enabledExtensionNameList.data();
+        vkDeviceCreateInfo.enabledExtensionCount =
+            (uint32_t)enabledExtensionNameList.size();
+
+        vkCreateDevice(physicalDevice, &vkDeviceCreateInfo, NULL, &m_vkDevice);
+    }
+    else
+    {
+        vkCreateDevice(physicalDevice, &vkDeviceCreateInfo, NULL, &m_vkDevice);
+    }
 
     for (uint32_t qfIdx = 0;
          qfIdx < (uint32_t)m_physicalDevice.getQueueFamilyList().size();
