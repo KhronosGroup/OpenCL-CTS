@@ -7,6 +7,7 @@ set(${MODULE_NAME}_SOURCES
   test_decorate.cpp
   test_extinst_printf.cpp
   test_get_program_il.cpp
+  test_integer_dot_product.cpp
   test_linkage.cpp
   test_no_integer_wrap_decoration.cpp
   test_op_atomic.cpp
