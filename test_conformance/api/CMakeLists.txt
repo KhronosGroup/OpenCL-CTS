@@ -6,6 +6,7 @@ set(${MODULE_NAME}_SOURCES
          main.cpp
          negative_platform.cpp
          negative_queue.cpp
+         negative_context.cpp
          negative_enqueue_marker.cpp
          negative_enqueue_map_image.cpp
          negative_device.cpp
