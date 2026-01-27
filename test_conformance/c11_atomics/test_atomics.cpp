@@ -1439,6 +1439,12 @@ public:
     {
         if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
+            // StartValue is used as an index divisor in the following test
+            // logic. It is set to the number of special values, which allows
+            // threads to be mapped deterministically onto the input data array.
+            // This enables repeated add operations arranged so that every
+            // special value is added to every other one (“all-to-all”).
+
             auto spec_vals = GetSpecialValues();
             StartValue(cl_half_from_float(spec_vals.size(), gHalfRoundingMode));
             CBasicTestMemOrderScope<HostAtomicType,
@@ -1518,6 +1524,14 @@ public:
 
         if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
+            // The start_value variable (set by StartValue) is used
+            // as a divisor of the thread index when selecting the operand for
+            // atomic_fetch_add. This groups threads into blocks corresponding
+            // to the number of special values and implements an “all-to-all”
+            // addition pattern. As a result, each destination element is
+            // updated using different combinations of input values, enabling
+            // consistent comparison between host and device execution.
+
             return std::string(DataType().AddSubOperandTypeName())
                 + " start_value = atomic_load_explicit(destMemory+tid, "
                   "memory_order_relaxed, memory_scope_work_group);\n"
