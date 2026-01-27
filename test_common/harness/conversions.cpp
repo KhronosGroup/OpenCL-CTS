@@ -23,10 +23,10 @@
 
 #include <CL/cl_half.h>
 
-#if defined(__SSE__) || defined(_MSC_VER)
+#if defined(__SSE__) || _M_IX86_FP == 1
 #include <xmmintrin.h>
 #endif
-#if defined(__SSE2__) || defined(_MSC_VER)
+#if defined(__SSE2__) || _M_IX86_FP == 2 || defined(_M_X64)
 #include <emmintrin.h>
 #endif
 
@@ -110,7 +110,7 @@ static long lrintf_clamped(float f)
         volatile float x = f;
         float magicVal = magic[f < 0];
 
-#if defined(__SSE__) || defined(_WIN32)
+#if defined(__SSE__) || _M_IX86_FP == 1
         // Defeat x87 based arithmetic, which cant do FTZ, and will round this
         // incorrectly
         __m128 v = _mm_set_ss(x);
@@ -150,7 +150,7 @@ static long lrint_clamped(double f)
     {
         volatile double x = f;
         double magicVal = magic[f < 0];
-#if defined(__SSE2__) || (defined(_MSC_VER))
+#if defined(__SSE2__) || _M_IX86_FP == 2 || defined(_M_X64)
         // Defeat x87 based arithmetic, which cant do FTZ, and will round this
         // incorrectly
         __m128d v = _mm_set_sd(x);

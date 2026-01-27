@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 
 //--------------------------------------------------------------------------
@@ -45,19 +44,8 @@ struct FinalizeCommandBufferNotRecordingState : public BasicCommandBufferTest
     FinalizeCommandBufferNotRecordingState(cl_device_id device,
                                            cl_context context,
                                            cl_command_queue queue)
-        : BasicCommandBufferTest(device, context, queue), user_event(nullptr)
+        : BasicCommandBufferTest(device, context, queue)
     {}
-
-    cl_int SetUp(int elements) override
-    {
-        cl_int error = BasicCommandBufferTest::SetUp(elements);
-        test_error(error, "BasicCommandBufferTest::SetUp failed");
-
-        user_event = clCreateUserEvent(context, &error);
-        test_error(error, "clCreateUserEvent failed");
-
-        return CL_SUCCESS;
-    }
 
     cl_int Run() override
     {
@@ -88,20 +76,6 @@ struct FinalizeCommandBufferNotRecordingState : public BasicCommandBufferTest
                                "CL_INVALID_OPERATION",
                                TEST_FAIL);
 
-        error = EnqueueCommandBuffer();
-        test_error(error, "EnqueueCommandBuffer failed");
-        error = verify_state(CL_COMMAND_BUFFER_STATE_PENDING_KHR);
-        test_error(error, "State is not Pending");
-
-        error = clFinalizeCommandBufferKHR(command_buffer);
-        test_failure_error_ret(error, CL_INVALID_OPERATION,
-                               "clFinalizeCommandBufferKHR should return "
-                               "CL_INVALID_OPERATION",
-                               TEST_FAIL);
-
-        clSetUserEventStatus(user_event, CL_COMPLETE);
-        clFinish(queue);
-
         return CL_SUCCESS;
     }
 
@@ -117,36 +91,16 @@ struct FinalizeCommandBufferNotRecordingState : public BasicCommandBufferTest
 
         return CL_SUCCESS;
     }
-
-    cl_int EnqueueCommandBuffer()
-    {
-        cl_int pattern = 0xE;
-        cl_int error =
-            clEnqueueFillBuffer(queue, out_mem, &pattern, sizeof(cl_int), 0,
-                                data_size(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 1,
-                                          &user_event, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        return CL_SUCCESS;
-    }
-    clEventWrapper user_event;
 };
 };
 
-int test_negative_finalize_command_buffer_invalid_command_buffer(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_finalize_command_buffer_invalid_command_buffer)
 {
     return MakeAndRunTest<FinalizeCommandBufferInvalidCommandBuffer>(
         device, context, queue, num_elements);
 }
 
-int test_negative_finalize_command_buffer_not_recording_state(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_finalize_command_buffer_not_recording_state)
 {
     return MakeAndRunTest<FinalizeCommandBufferNotRecordingState>(
         device, context, queue, num_elements);

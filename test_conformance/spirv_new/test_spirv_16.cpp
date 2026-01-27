@@ -29,6 +29,8 @@ REGISTER_TEST(spirv16_image_operand_nontemporal)
         return TEST_SKIPPED_ITSELF;
     }
 
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device);
+
     cl_int error = CL_SUCCESS;
 
     clProgramWrapper prog;

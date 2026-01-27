@@ -15,7 +15,6 @@
 //
 
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 #include <vector>
 
@@ -87,21 +86,17 @@ cl_int VerifyResult(const clEventWrapper& event)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Command-buffer profiling test cases:
-// -all commands are recorded to a single command-queue
-// -profiling a command-buffer with simultaneous use
-template <bool simultaneous_request>
+// Command-buffer profiling test for enqueuing command-buffer twice and checking
+// the profiling counters on the events returned.
 struct CommandBufferProfiling : public BasicCommandBufferTest
 {
     CommandBufferProfiling(cl_device_id device, cl_context context,
                            cl_command_queue queue)
-        : BasicCommandBufferTest(device, context, queue), wait_event(nullptr)
+        : BasicCommandBufferTest(device, context, queue)
     {
-        simultaneous_use_requested = simultaneous_request;
-        if (simultaneous_request) buffer_size_multiplier = 2;
+        buffer_size_multiplier = 2; // Do two enqueues of command-buffer
     }
 
-    //--------------------------------------------------------------------------
     bool Skip() override
     {
         if (BasicCommandBufferTest::Skip()) return true;
@@ -128,10 +123,9 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
                 "Queue property CL_QUEUE_PROFILING_ENABLE not supported \n");
             return true;
         }
-        return (simultaneous_use_requested && !simultaneous_use_support);
+        return false;
     }
 
-    //--------------------------------------------------------------------------
     cl_int SetUp(int elements) override
     {
 
@@ -157,37 +151,45 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
         return BasicCommandBufferTest::SetUp(elements);
     }
 
-    //--------------------------------------------------------------------------
+    struct EnqueuePassData
+    {
+        cl_int offset;
+        clEventWrapper query_event;
+    };
+
     cl_int Run() override
     {
-        cl_int error = CL_SUCCESS;
-
-        // record command buffer
-        error = RecordCommandBuffer();
+        cl_int error = RecordCommandBuffer();
         test_error(error, "RecordCommandBuffer failed");
 
-        if (simultaneous_use_requested)
+        cl_int offset = static_cast<cl_int>(num_elements);
+
+        std::vector<EnqueuePassData> enqueue_passes = {
+            { 0, clEventWrapper() }, { offset, clEventWrapper() }
+        };
+
+        // In-order queue serialized the command-buffer submissions
+        for (auto&& pass : enqueue_passes)
         {
-            // enqueue simultaneous command-buffers with profiling command queue
-            error = RunSimultaneous();
-            test_error(error, "RunSimultaneous failed");
+            error = EnqueuePass(pass);
+            test_error(error, "EnqueueSerializedPass failed");
         }
-        else
+
+        error = clFinish(queue);
+        test_error(error, "clFinish failed");
+
+        for (auto&& pass : enqueue_passes)
         {
-            // enqueue single command-buffer with profiling command queue
-            error = RunSingle();
-            test_error(error, "RunSingle failed");
+            error = VerifyResult(pass.query_event);
+            test_error(error, "VerifyResult failed");
         }
 
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
     cl_int RecordCommandBuffer()
     {
-        cl_int error = CL_SUCCESS;
-
-        error = clCommandNDRangeKernelKHR(
+        cl_int error = clCommandNDRangeKernelKHR(
             command_buffer, nullptr, nullptr, kernel, 1, nullptr, &num_elements,
             nullptr, 0, nullptr, nullptr, nullptr);
         test_error(error, "clCommandNDRangeKernelKHR failed");
@@ -197,41 +199,7 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
-    cl_int RunSingle()
-    {
-        cl_int error = CL_SUCCESS;
-        std::vector<cl_int> output_data(num_elements);
-
-        error = clEnqueueFillBuffer(queue, in_mem, &pattern, sizeof(cl_int), 0,
-                                    data_size(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        clEventWrapper query_event;
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
-                                          nullptr, &query_event);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        error = clEnqueueReadBuffer(queue, out_mem, CL_TRUE, 0, data_size(),
-                                    output_data.data(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        error = VerifyResult(query_event);
-        test_error(error, "VerifyResult failed");
-
-        return CL_SUCCESS;
-    }
-
-    //--------------------------------------------------------------------------
-    struct SimulPassData
-    {
-        cl_int offset;
-        std::vector<cl_int> output_buffer;
-        clEventWrapper query_event;
-    };
-
-    //--------------------------------------------------------------------------
-    cl_int EnqueueSimultaneousPass(SimulPassData& pd)
+    cl_int EnqueuePass(EnqueuePassData& pd)
     {
         cl_int error = clEnqueueFillBuffer(
             queue, out_mem, &pattern, sizeof(cl_int),
@@ -242,58 +210,12 @@ struct CommandBufferProfiling : public BasicCommandBufferTest
                                     0, sizeof(cl_int), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
 
-        if (!wait_event)
-        {
-            wait_event = clCreateUserEvent(context, &error);
-            test_error(error, "clCreateUserEvent failed");
-        }
-
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 1,
-                                          &wait_event, &pd.query_event);
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, &pd.query_event);
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
-        error = clEnqueueReadBuffer(
-            queue, out_mem, CL_FALSE, pd.offset * sizeof(cl_int), data_size(),
-            pd.output_buffer.data(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueReadBuffer failed");
-
         return CL_SUCCESS;
     }
-
-    //--------------------------------------------------------------------------
-    cl_int RunSimultaneous()
-    {
-        cl_int error = CL_SUCCESS;
-        cl_int offset = static_cast<cl_int>(num_elements);
-
-        std::vector<SimulPassData> simul_passes = {
-            { 0, std::vector<cl_int>(num_elements) },
-            { offset, std::vector<cl_int>(num_elements) }
-        };
-
-        for (auto&& pass : simul_passes)
-        {
-            error = EnqueueSimultaneousPass(pass);
-            test_error(error, "EnqueueSimultaneousPass failed");
-        }
-
-        error = clSetUserEventStatus(wait_event, CL_COMPLETE);
-        test_error(error, "clSetUserEventStatus failed");
-
-        error = clFinish(queue);
-        test_error(error, "clFinish failed");
-
-        for (auto&& pass : simul_passes)
-        {
-            error = VerifyResult(pass.query_event);
-            test_error(error, "VerifyResult failed");
-        }
-
-        return CL_SUCCESS;
-    }
-
-    //--------------------------------------------------------------------------
-    clEventWrapper wait_event;
 
     const cl_int pattern = 0xA;
 };
@@ -357,22 +279,13 @@ struct CommandBufferSubstituteQueueProfiling : public BasicCommandBufferTest
 };
 } // anonymous namespace
 
-int test_basic_profiling(cl_device_id device, cl_context context,
-                         cl_command_queue queue, int num_elements)
+REGISTER_TEST(profiling)
 {
-    return MakeAndRunTest<CommandBufferProfiling<false>>(device, context, queue,
-                                                         num_elements);
+    return MakeAndRunTest<CommandBufferProfiling>(device, context, queue,
+                                                  num_elements);
 }
 
-int test_simultaneous_profiling(cl_device_id device, cl_context context,
-                                cl_command_queue queue, int num_elements)
-{
-    return MakeAndRunTest<CommandBufferProfiling<true>>(device, context, queue,
-                                                        num_elements);
-}
-
-int test_substitute_queue_profiling(cl_device_id device, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(profiling_substitute_queue)
 {
     return MakeAndRunTest<CommandBufferSubstituteQueueProfiling>(
         device, context, queue, num_elements);

@@ -70,9 +70,9 @@ struct MutableDispatchImage1DArguments : public BasicMutableCommandBufferTest
             {
                int offset = get_global_id(0);
 
-               int4 color = read_imagei( source, sampler, offset );
+               uint4 color = read_imageui( source, sampler, offset );
 
-               write_imagei( dest, offset, color );
+               write_imageui( dest, offset, color );
             })";
 
         cl_int error;
@@ -260,9 +260,9 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
                int x = get_global_id(0);
                int y = get_global_id(1);
 
-               int4 color = read_imagei( source, sampler, (int2) (x, y) );
+               uint4 color = read_imageui( source, sampler, (int2) (x, y) );
 
-               write_imagei( dest, (int2) (x, y), color );
+               write_imageui( dest, (int2) (x, y), color );
             })";
 
         cl_int error;
@@ -412,19 +412,13 @@ struct MutableDispatchImage2DArguments : public BasicMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-int test_mutable_dispatch_image_1d_arguments(cl_device_id device,
-                                             cl_context context,
-                                             cl_command_queue queue,
-                                             int num_elements)
+REGISTER_TEST(mutable_dispatch_image_1d_arguments)
 {
     return MakeAndRunTest<MutableDispatchImage1DArguments>(device, context,
                                                            queue, num_elements);
 }
 
-int test_mutable_dispatch_image_2d_arguments(cl_device_id device,
-                                             cl_context context,
-                                             cl_command_queue queue,
-                                             int num_elements)
+REGISTER_TEST(mutable_dispatch_image_2d_arguments)
 {
     return MakeAndRunTest<MutableDispatchImage2DArguments>(device, context,
                                                            queue, num_elements);

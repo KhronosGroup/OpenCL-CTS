@@ -119,9 +119,7 @@ static cl_int get_device_semaphore_handle_types(
 }
 
 // Confirm the semaphores can be successfully queried
-int test_external_semaphores_queries(cl_device_id device, cl_context context,
-                                     cl_command_queue defaultQueue,
-                                     int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_queries, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_semaphore");
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
@@ -199,11 +197,11 @@ int test_external_semaphores_queries(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
-int test_external_semaphores_cross_context(cl_device_id device,
-                                           cl_context context,
-                                           cl_command_queue defaultQueue,
-                                           int num_elements)
+cl_int doTestImportExport(cl_device_id device, cl_context contexts[2],
+                          cl_command_queue queues[2])
 {
+    cl_int err = CL_SUCCESS;
+
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
     GET_PFN(device, clEnqueueSignalSemaphoresKHR);
@@ -215,7 +213,6 @@ int test_external_semaphores_cross_context(cl_device_id device,
     std::vector<cl_external_semaphore_handle_type_khr> import_handle_types;
     std::vector<cl_external_semaphore_handle_type_khr> export_handle_types;
 
-    cl_int err = CL_SUCCESS;
     err = get_device_semaphore_handle_types(
         device, CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR,
         import_handle_types);
@@ -242,17 +239,9 @@ int test_external_semaphores_cross_context(cl_device_id device,
         export_handle_types.begin(), export_handle_types.end(),
         std::back_inserter(import_export_handle_types));
 
-    cl_context context2 =
-        clCreateContext(NULL, 1, &device, notify_callback, NULL, &err);
-    test_error(err, "Failed to create context2");
-
-    clCommandQueueWrapper queue1 =
-        clCreateCommandQueue(context, device, 0, &err);
-    test_error(err, "Could not create command queue");
-
-    clCommandQueueWrapper queue2 =
-        clCreateCommandQueue(context2, device, 0, &err);
-    test_error(err, "Could not create command queue");
+    cl_context& context2 = contexts[1];
+    cl_command_queue& queue1 = queues[0];
+    cl_command_queue& queue2 = queues[1];
 
     if (import_export_handle_types.empty())
     {
@@ -275,7 +264,7 @@ int test_external_semaphores_cross_context(cl_device_id device,
 
         // Signal semaphore on context1
         cl_semaphore_khr exportable_semaphore =
-            clCreateSemaphoreWithPropertiesKHR(context, export_props, &err);
+            clCreateSemaphoreWithPropertiesKHR(contexts[0], export_props, &err);
         test_error(err, "Failed to create exportable semaphore");
 
         err = clEnqueueSignalSemaphoresKHR(queue1, 1, &exportable_semaphore,
@@ -318,16 +307,79 @@ int test_external_semaphores_cross_context(cl_device_id device,
         test_error(err, "Failed to release semaphore");
     }
 
-    err = clReleaseContext(context2);
-    test_error(err, "Failed to release context2");
-
     return TEST_PASS;
 }
+
+REGISTER_TEST_VERSION(external_semaphores_cross_context, Version(1, 2))
+{
+    cl_int err = CL_SUCCESS;
+
+    clContextWrapper context_sec =
+        clCreateContext(NULL, 1, &device, notify_callback, NULL, &err);
+    test_error(err, "Failed to create context2");
+    cl_context contexts[2] = { context, context_sec };
+
+    clCommandQueueWrapper queue0 =
+        clCreateCommandQueue(context, device, 0, &err);
+    test_error(err, "Could not create command queue");
+
+    clCommandQueueWrapper queue1 =
+        clCreateCommandQueue(contexts[1], device, 0, &err);
+    test_error(err, "Could not create command queue");
+    cl_command_queue queues[2] = { queue0, queue1 };
+
+    return doTestImportExport(device, contexts, queues);
+}
+
+REGISTER_TEST_VERSION(external_semaphores_import_export, Version(1, 2))
+{
+    cl_int err = CL_SUCCESS;
+    cl_int total_status = TEST_PASS;
+
+    // test external semaphores with out-of-order queue
+    {
+        cl_command_queue_properties device_props = 0;
+        err = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
+                              sizeof(device_props), &device_props, NULL);
+        test_error(err,
+                   "clGetDeviceInfo for CL_DEVICE_QUEUE_PROPERTIES failed");
+
+        if ((device_props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE) != 0)
+        {
+            // Create ooo queue
+            clCommandQueueWrapper test_queue = clCreateCommandQueue(
+                context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
+            test_error(err, "Could not create command queue");
+
+            cl_command_queue queues[2] = { test_queue, test_queue };
+            cl_context contexts[2] = { context, context };
+
+            cl_int status = doTestImportExport(device, contexts, queues);
+            if (status != TEST_PASS && status != TEST_SKIPPED_ITSELF)
+            {
+                total_status = TEST_FAIL;
+            }
+        }
+    }
+
+    // test external semaphore sync fd with in-order harness queue
+    {
+        cl_command_queue queues[2] = { queue, queue };
+        cl_context contexts[2] = { context, context };
+
+        cl_int status = doTestImportExport(device, contexts, queues);
+        if (status != TEST_PASS && status != TEST_SKIPPED_ITSELF)
+        {
+            total_status = TEST_FAIL;
+        }
+    }
+
+    return total_status;
+}
+
 
 // Confirm that a signal followed by a wait will complete successfully
-int test_external_semaphores_simple_1(cl_device_id device, cl_context context,
-                                      cl_command_queue defaultQueue,
-                                      int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_simple_1, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
@@ -361,10 +413,8 @@ int test_external_semaphores_simple_1(cl_device_id device, cl_context context,
         VulkanSemaphore vkVk2CLSemaphore(vkDevice,
                                          vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore *raw_sema_ext = NULL;
-        CREATE_OPENCL_SEMAPHORE(raw_sema_ext, vkVk2CLSemaphore, context,
-                                vkExternalSemaphoreHandleType, device, true);
-        std::unique_ptr<clExternalSemaphore> sema_ext(raw_sema_ext);
+        auto sema_ext = clExternalImportableSemaphore(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, device);
 
         cl_int err = CL_SUCCESS;
 
@@ -375,14 +425,13 @@ int test_external_semaphores_simple_1(cl_device_id device, cl_context context,
 
         // Signal semaphore
         clEventWrapper signal_event;
-        err =
-            clEnqueueSignalSemaphoresKHR(queue, 1, &sema_ext->getCLSemaphore(),
-                                         nullptr, 0, nullptr, &signal_event);
+        err = clEnqueueSignalSemaphoresKHR(queue, 1, &sema_ext.getCLSemaphore(),
+                                           nullptr, 0, nullptr, &signal_event);
         test_error(err, "Could not signal semaphore");
 
         // Wait semaphore
         clEventWrapper wait_event;
-        err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema_ext->getCLSemaphore(),
+        err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema_ext.getCLSemaphore(),
                                          nullptr, 0, nullptr, &wait_event);
         test_error(err, "Could not wait semaphore");
 
@@ -391,114 +440,6 @@ int test_external_semaphores_simple_1(cl_device_id device, cl_context context,
         test_error(err, "Could not finish queue");
 
         // Ensure all events are completed
-        test_assert_event_complete(signal_event);
-        test_assert_event_complete(wait_event);
-    }
-
-    return TEST_PASS;
-}
-
-// Confirm that signal a semaphore with no event dependencies will not result
-// in an implicit dependency on everything previously submitted
-int test_external_semaphores_simple_2(cl_device_id device, cl_context context,
-                                      cl_command_queue defaultQueue,
-                                      int num_elements)
-{
-    REQUIRE_EXTENSION("cl_khr_external_semaphore");
-
-    if (init_vulkan_device(1, &device))
-    {
-        log_info("Cannot initialise Vulkan. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-
-    VulkanDevice vkDevice;
-
-    // Obtain pointers to semaphore's API
-    GET_PFN(device, clEnqueueSignalSemaphoresKHR);
-    GET_PFN(device, clEnqueueWaitSemaphoresKHR);
-
-    std::vector<VulkanExternalSemaphoreHandleType>
-        vkExternalSemaphoreHandleTypeList =
-            getSupportedInteropExternalSemaphoreHandleTypes(device, vkDevice);
-
-    if (vkExternalSemaphoreHandleTypeList.empty())
-    {
-        test_fail("No external semaphore handle types found\n");
-    }
-
-    for (VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType :
-         vkExternalSemaphoreHandleTypeList)
-    {
-        log_info_semaphore_type(vkExternalSemaphoreHandleType);
-        VulkanSemaphore vkVk2CLSemaphore(vkDevice,
-                                         vkExternalSemaphoreHandleType);
-
-        clExternalSemaphore *raw_sema_ext = NULL;
-        CREATE_OPENCL_SEMAPHORE(raw_sema_ext, vkVk2CLSemaphore, context,
-                                vkExternalSemaphoreHandleType, device, true);
-        std::unique_ptr<clExternalSemaphore> sema_ext(raw_sema_ext);
-
-        cl_int err = CL_SUCCESS;
-
-        // Create ooo queue
-        clCommandQueueWrapper queue = clCreateCommandQueue(
-            context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
-        test_error(err, "Could not create command queue");
-
-        // Create user event
-        clEventWrapper user_event = clCreateUserEvent(context, &err);
-        test_error(err, "Could not create user event");
-
-        // Create Kernel
-        clProgramWrapper program;
-        clKernelWrapper kernel;
-        err = create_single_kernel_helper(context, &program, &kernel, 1,
-                                          &source, "empty");
-        test_error(err, "Could not create kernel");
-
-        // Enqueue task_1 (dependency on user_event)
-        clEventWrapper task_1_event;
-        err = clEnqueueTask(queue, kernel, 1, &user_event, &task_1_event);
-        test_error(err, "Could not enqueue task 1");
-
-        // Signal semaphore
-        clEventWrapper signal_event;
-        err =
-            clEnqueueSignalSemaphoresKHR(queue, 1, &sema_ext->getCLSemaphore(),
-                                         nullptr, 0, nullptr, &signal_event);
-        test_error(err, "Could not signal semaphore");
-
-        // Wait semaphore
-        clEventWrapper wait_event;
-        err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema_ext->getCLSemaphore(),
-                                         nullptr, 0, nullptr, &wait_event);
-        test_error(err, "Could not wait semaphore");
-
-        // Flush and delay
-        err = clFlush(queue);
-        test_error(err, "Could not flush queue");
-
-        cl_event event_list[] = { signal_event, wait_event };
-        err = clWaitForEvents(2, event_list);
-        test_error(err, "Could not wait on events");
-
-        // Ensure all events are completed except for task_1
-        test_assert_event_inprogress(task_1_event);
-        test_assert_event_complete(signal_event);
-        test_assert_event_complete(wait_event);
-
-        // Complete user_event
-        err = clSetUserEventStatus(user_event, CL_COMPLETE);
-        test_error(err, "Could not set user event to CL_COMPLETE");
-
-        // Finish
-        err = clFinish(queue);
-        test_error(err, "Could not finish queue");
-
-        // Ensure all events are completed
-        test_assert_event_complete(task_1_event);
         test_assert_event_complete(signal_event);
         test_assert_event_complete(wait_event);
     }
@@ -507,9 +448,7 @@ int test_external_semaphores_simple_2(cl_device_id device, cl_context context,
 }
 
 // Confirm that a semaphore can be reused multiple times
-int test_external_semaphores_reuse(cl_device_id device, cl_context context,
-                                   cl_command_queue defaultQueue,
-                                   int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_reuse, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
@@ -542,10 +481,8 @@ int test_external_semaphores_reuse(cl_device_id device, cl_context context,
         VulkanSemaphore vkVk2CLSemaphore(vkDevice,
                                          vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore *raw_sema_ext = NULL;
-        CREATE_OPENCL_SEMAPHORE(raw_sema_ext, vkVk2CLSemaphore, context,
-                                vkExternalSemaphoreHandleType, device, true);
-        std::unique_ptr<clExternalSemaphore> sema_ext(raw_sema_ext);
+        auto sema_ext = clExternalImportableSemaphore(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, device);
 
         cl_int err = CL_SUCCESS;
 
@@ -571,9 +508,9 @@ int test_external_semaphores_reuse(cl_device_id device, cl_context context,
         test_error(err, "Unable to enqueue task_1");
 
         // Signal semaphore (dependency on task_1)
-        err = clEnqueueSignalSemaphoresKHR(
-            queue, 1, &sema_ext->getCLSemaphore(), nullptr, 1, &task_events[0],
-            &signal_events[0]);
+        err = clEnqueueSignalSemaphoresKHR(queue, 1, &sema_ext.getCLSemaphore(),
+                                           nullptr, 1, &task_events[0],
+                                           &signal_events[0]);
         test_error(err, "Could not signal semaphore");
 
         // In a loop
@@ -582,7 +519,7 @@ int test_external_semaphores_reuse(cl_device_id device, cl_context context,
         {
             // Wait semaphore
             err = clEnqueueWaitSemaphoresKHR(
-                queue, 1, &sema_ext->getCLSemaphore(), nullptr, 0, nullptr,
+                queue, 1, &sema_ext.getCLSemaphore(), nullptr, 0, nullptr,
                 &wait_events[loop - 1]);
             test_error(err, "Could not wait semaphore");
 
@@ -597,13 +534,13 @@ int test_external_semaphores_reuse(cl_device_id device, cl_context context,
 
             // Signal semaphore (dependency on task_loop)
             err = clEnqueueSignalSemaphoresKHR(
-                queue, 1, &sema_ext->getCLSemaphore(), nullptr, 1,
+                queue, 1, &sema_ext.getCLSemaphore(), nullptr, 1,
                 &task_events[loop], &signal_events[loop]);
             test_error(err, "Could not signal semaphore");
         }
 
         // Wait semaphore
-        err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema_ext->getCLSemaphore(),
+        err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema_ext.getCLSemaphore(),
                                          nullptr, 0, nullptr,
                                          &wait_events[loop - 1]);
         test_error(err, "Could not wait semaphore");
@@ -662,25 +599,22 @@ static int external_semaphore_cross_queue_helper(cl_device_id device,
         VulkanSemaphore vkVk2CLSemaphore(vkDevice,
                                          vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore *raw_sema_ext = NULL;
-        CREATE_OPENCL_SEMAPHORE(raw_sema_ext, vkVk2CLSemaphore, context,
-                                vkExternalSemaphoreHandleType, device, true);
-        std::unique_ptr<clExternalSemaphore> sema_ext(raw_sema_ext);
+        auto sema_ext = clExternalImportableSemaphore(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, device);
 
         cl_int err = CL_SUCCESS;
 
         // Signal semaphore on queue_1
         clEventWrapper signal_event;
-        err = clEnqueueSignalSemaphoresKHR(queue_1, 1,
-                                           &sema_ext->getCLSemaphore(), nullptr,
-                                           0, nullptr, &signal_event);
+        err =
+            clEnqueueSignalSemaphoresKHR(queue_1, 1, &sema_ext.getCLSemaphore(),
+                                         nullptr, 0, nullptr, &signal_event);
         test_error(err, "Could not signal semaphore");
 
         // Wait semaphore on queue_2
         clEventWrapper wait_event;
-        err =
-            clEnqueueWaitSemaphoresKHR(queue_2, 1, &sema_ext->getCLSemaphore(),
-                                       nullptr, 0, nullptr, &wait_event);
+        err = clEnqueueWaitSemaphoresKHR(queue_2, 1, &sema_ext.getCLSemaphore(),
+                                         nullptr, 0, nullptr, &wait_event);
         test_error(err, "Could not wait semaphore");
 
         // Finish queue_1 and queue_2
@@ -700,51 +634,42 @@ static int external_semaphore_cross_queue_helper(cl_device_id device,
 
 
 // Confirm that a semaphore works across different ooo queues
-int test_external_semaphores_cross_queues_ooo(cl_device_id deviceID,
-                                              cl_context context,
-                                              cl_command_queue defaultQueue,
-                                              int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_cross_queues_ooo, Version(1, 2))
 {
     cl_int err;
 
     // Create ooo queues
     clCommandQueueWrapper queue_1 = clCreateCommandQueue(
-        context, deviceID, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
+        context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
     test_error(err, "Could not create command queue");
 
     clCommandQueueWrapper queue_2 = clCreateCommandQueue(
-        context, deviceID, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
+        context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);
     test_error(err, "Could not create command queue");
 
-    return external_semaphore_cross_queue_helper(deviceID, context, queue_1,
+    return external_semaphore_cross_queue_helper(device, context, queue_1,
                                                  queue_2);
 }
 
 // Confirm that a semaphore works across different in-order queues
-int test_external_semaphores_cross_queues_io(cl_device_id deviceID,
-                                             cl_context context,
-                                             cl_command_queue defaultQueue,
-                                             int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_cross_queues_io, Version(1, 2))
 {
     cl_int err;
 
     // Create in-order queues
     clCommandQueueWrapper queue_1 =
-        clCreateCommandQueue(context, deviceID, 0, &err);
+        clCreateCommandQueue(context, device, 0, &err);
     test_error(err, "Could not create command queue");
 
     clCommandQueueWrapper queue_2 =
-        clCreateCommandQueue(context, deviceID, 0, &err);
+        clCreateCommandQueue(context, device, 0, &err);
     test_error(err, "Could not create command queue");
 
-    return external_semaphore_cross_queue_helper(deviceID, context, queue_1,
+    return external_semaphore_cross_queue_helper(device, context, queue_1,
                                                  queue_2);
 }
 
-int test_external_semaphores_cross_queues_io2(cl_device_id device,
-                                              cl_context context,
-                                              cl_command_queue defaultQueue,
-                                              int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_cross_queues_io2, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
@@ -786,15 +711,11 @@ int test_external_semaphores_cross_queues_io2(cl_device_id device,
         VulkanSemaphore vkVk2CLSemaphore(vkDevice,
                                          vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore *raw_sema_ext_1 = NULL;
-        CREATE_OPENCL_SEMAPHORE(raw_sema_ext_1, vkVk2CLSemaphore, context,
-                                vkExternalSemaphoreHandleType, device, true);
-        std::unique_ptr<clExternalSemaphore> sema_ext_1(raw_sema_ext_1);
+        auto sema_ext_1 = clExternalImportableSemaphore(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, device);
 
-        clExternalSemaphore *raw_sema_ext_2 = NULL;
-        CREATE_OPENCL_SEMAPHORE(raw_sema_ext_2, vkVk2CLSemaphore, context2,
-                                vkExternalSemaphoreHandleType, device, true);
-        std::unique_ptr<clExternalSemaphore> sema_ext_2(raw_sema_ext_2);
+        auto sema_ext_2 = clExternalImportableSemaphore(
+            vkVk2CLSemaphore, context2, vkExternalSemaphoreHandleType, device);
 
         clCommandQueueWrapper queue1 =
             clCreateCommandQueue(context, device, 0, &err);
@@ -807,28 +728,28 @@ int test_external_semaphores_cross_queues_io2(cl_device_id device,
         // Signal semaphore 1
         clEventWrapper signal_1_event;
         err = clEnqueueSignalSemaphoresKHR(
-            queue1, 1, &sema_ext_1->getCLSemaphore(), nullptr, 0, nullptr,
+            queue1, 1, &sema_ext_1.getCLSemaphore(), nullptr, 0, nullptr,
             &signal_1_event);
         test_error(err, "Could not signal semaphore");
 
         // Wait semaphore 1
         clEventWrapper wait_1_event;
         err =
-            clEnqueueWaitSemaphoresKHR(queue1, 1, &sema_ext_1->getCLSemaphore(),
+            clEnqueueWaitSemaphoresKHR(queue1, 1, &sema_ext_1.getCLSemaphore(),
                                        nullptr, 0, nullptr, &wait_1_event);
         test_error(err, "Could not wait semaphore");
 
         // Signal semaphore 2
         clEventWrapper signal_2_event;
         err = clEnqueueSignalSemaphoresKHR(
-            queue2, 1, &sema_ext_2->getCLSemaphore(), nullptr, 0, nullptr,
+            queue2, 1, &sema_ext_2.getCLSemaphore(), nullptr, 0, nullptr,
             &signal_2_event);
         test_error(err, "Could not signal semaphore");
 
         // Wait semaphore 2
         clEventWrapper wait_2_event;
         err =
-            clEnqueueWaitSemaphoresKHR(queue2, 1, &sema_ext_2->getCLSemaphore(),
+            clEnqueueWaitSemaphoresKHR(queue2, 1, &sema_ext_2.getCLSemaphore(),
                                        nullptr, 0, nullptr, &wait_2_event);
         test_error(err, "Could not wait semaphore");
 
@@ -850,10 +771,7 @@ int test_external_semaphores_cross_queues_io2(cl_device_id device,
 }
 
 // Confirm that we can signal multiple semaphores with one command
-int test_external_semaphores_multi_signal(cl_device_id device,
-                                          cl_context context,
-                                          cl_command_queue defaultQueue,
-                                          int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
@@ -888,15 +806,11 @@ int test_external_semaphores_multi_signal(cl_device_id device,
         VulkanSemaphore vkVk2CLSemaphore2(vkDevice,
                                           vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore *raw_sema_ext_1 = NULL;
-        CREATE_OPENCL_SEMAPHORE(raw_sema_ext_1, vkVk2CLSemaphore1, context,
-                                vkExternalSemaphoreHandleType, device, true);
-        std::unique_ptr<clExternalSemaphore> sema_ext_1(raw_sema_ext_1);
+        auto sema_ext_1 = clExternalImportableSemaphore(
+            vkVk2CLSemaphore1, context, vkExternalSemaphoreHandleType, device);
 
-        clExternalSemaphore *raw_sema_ext_2 = NULL;
-        CREATE_OPENCL_SEMAPHORE(raw_sema_ext_2, vkVk2CLSemaphore2, context,
-                                vkExternalSemaphoreHandleType, device, true);
-        std::unique_ptr<clExternalSemaphore> sema_ext_2(raw_sema_ext_2);
+        auto sema_ext_2 = clExternalImportableSemaphore(
+            vkVk2CLSemaphore2, context, vkExternalSemaphoreHandleType, device);
 
         cl_int err = CL_SUCCESS;
 
@@ -907,24 +821,22 @@ int test_external_semaphores_multi_signal(cl_device_id device,
 
         // Signal semaphore 1 and 2
         clEventWrapper signal_event;
-        cl_semaphore_khr sema_list[] = { sema_ext_1->getCLSemaphore(),
-                                         sema_ext_2->getCLSemaphore() };
+        cl_semaphore_khr sema_list[] = { sema_ext_1.getCLSemaphore(),
+                                         sema_ext_2.getCLSemaphore() };
         err = clEnqueueSignalSemaphoresKHR(queue, 2, sema_list, nullptr, 0,
                                            nullptr, &signal_event);
         test_error(err, "Could not signal semaphore");
 
         // Wait semaphore 1
         clEventWrapper wait_1_event;
-        err =
-            clEnqueueWaitSemaphoresKHR(queue, 1, &sema_ext_1->getCLSemaphore(),
-                                       nullptr, 0, nullptr, &wait_1_event);
+        err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema_ext_1.getCLSemaphore(),
+                                         nullptr, 0, nullptr, &wait_1_event);
         test_error(err, "Could not wait semaphore");
 
         // Wait semaphore 2
         clEventWrapper wait_2_event;
-        err =
-            clEnqueueWaitSemaphoresKHR(queue, 1, &sema_ext_2->getCLSemaphore(),
-                                       nullptr, 0, nullptr, &wait_2_event);
+        err = clEnqueueWaitSemaphoresKHR(queue, 1, &sema_ext_2.getCLSemaphore(),
+                                         nullptr, 0, nullptr, &wait_2_event);
         test_error(err, "Could not wait semaphore");
 
         // Finish
@@ -941,9 +853,7 @@ int test_external_semaphores_multi_signal(cl_device_id device,
 }
 
 // Confirm that we can wait for multiple semaphores with one command
-int test_external_semaphores_multi_wait(cl_device_id device, cl_context context,
-                                        cl_command_queue defaultQueue,
-                                        int num_elements)
+REGISTER_TEST_VERSION(external_semaphores_multi_wait, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
@@ -978,15 +888,11 @@ int test_external_semaphores_multi_wait(cl_device_id device, cl_context context,
         VulkanSemaphore vkVk2CLSemaphore2(vkDevice,
                                           vkExternalSemaphoreHandleType);
 
-        clExternalSemaphore *raw_sema_ext_1 = NULL;
-        CREATE_OPENCL_SEMAPHORE(raw_sema_ext_1, vkVk2CLSemaphore1, context,
-                                vkExternalSemaphoreHandleType, device, true);
-        std::unique_ptr<clExternalSemaphore> sema_ext_1(raw_sema_ext_1);
+        auto sema_ext_1 = clExternalImportableSemaphore(
+            vkVk2CLSemaphore1, context, vkExternalSemaphoreHandleType, device);
 
-        clExternalSemaphore *raw_sema_ext_2 = NULL;
-        CREATE_OPENCL_SEMAPHORE(raw_sema_ext_2, vkVk2CLSemaphore2, context,
-                                vkExternalSemaphoreHandleType, device, true);
-        std::unique_ptr<clExternalSemaphore> sema_ext_2(raw_sema_ext_2);
+        auto sema_ext_2 = clExternalImportableSemaphore(
+            vkVk2CLSemaphore2, context, vkExternalSemaphoreHandleType, device);
 
         cl_int err = CL_SUCCESS;
 
@@ -997,22 +903,22 @@ int test_external_semaphores_multi_wait(cl_device_id device, cl_context context,
 
         // Signal semaphore 1
         clEventWrapper signal_1_event;
-        err = clEnqueueSignalSemaphoresKHR(
-            queue, 1, &sema_ext_1->getCLSemaphore(), nullptr, 0, nullptr,
-            &signal_1_event);
+        err =
+            clEnqueueSignalSemaphoresKHR(queue, 1, &sema_ext_1.getCLSemaphore(),
+                                         nullptr, 0, nullptr, &signal_1_event);
         test_error(err, "Could not signal semaphore");
 
         // Signal semaphore 2
         clEventWrapper signal_2_event;
-        err = clEnqueueSignalSemaphoresKHR(
-            queue, 1, &sema_ext_2->getCLSemaphore(), nullptr, 0, nullptr,
-            &signal_2_event);
+        err =
+            clEnqueueSignalSemaphoresKHR(queue, 1, &sema_ext_2.getCLSemaphore(),
+                                         nullptr, 0, nullptr, &signal_2_event);
         test_error(err, "Could not signal semaphore");
 
         // Wait semaphore 1 and 2
         clEventWrapper wait_event;
-        cl_semaphore_khr sema_list[] = { sema_ext_1->getCLSemaphore(),
-                                         sema_ext_2->getCLSemaphore() };
+        cl_semaphore_khr sema_list[] = { sema_ext_1.getCLSemaphore(),
+                                         sema_ext_2.getCLSemaphore() };
         err = clEnqueueWaitSemaphoresKHR(queue, 2, sema_list, nullptr, 0,
                                          nullptr, &wait_event);
         test_error(err, "Could not wait semaphore");

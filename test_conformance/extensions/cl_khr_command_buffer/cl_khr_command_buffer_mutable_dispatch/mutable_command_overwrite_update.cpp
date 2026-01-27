@@ -34,9 +34,7 @@ struct OverwriteUpdateDispatch : BasicMutableCommandBufferTest
                             cl_command_queue queue)
         : BasicMutableCommandBufferTest(device, context, queue),
           command(nullptr)
-    {
-        simultaneous_use_requested = false;
-    }
+    {}
 
     bool Skip() override
     {
@@ -215,10 +213,7 @@ struct OverwriteUpdateDispatch : BasicMutableCommandBufferTest
 
 }
 
-int test_mutable_command_overwrite_update(cl_device_id device,
-                                          cl_context context,
-                                          cl_command_queue queue,
-                                          int num_elements)
+REGISTER_TEST(mutable_command_overwrite_update)
 {
     return MakeAndRunTest<OverwriteUpdateDispatch>(device, context, queue,
                                                    num_elements);

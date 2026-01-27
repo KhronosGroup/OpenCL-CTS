@@ -436,7 +436,14 @@ void *ThreadPool_WorkerFunc(void *p)
 
                 // drop run count to 0
                 gRunCount = 0;
+#if defined(_M_IX86) || defined(_M_X64)
                 _mm_mfence();
+#elif defined(_M_ARM64)
+                __dmb(_ARM64_BARRIER_ISHST);
+#else
+#error Architecture needs an implementation
+#endif
+
 #else
                 if (pthread_mutex_lock(&gAtomicLock))
                     log_error(
@@ -703,7 +710,13 @@ void ThreadPool_Exit(void)
     // http://gcc.gnu.org/onlinedocs/gcc/Atomic-Builtins.html#Atomic-Builtins
     __sync_synchronize();
 #elif defined(_MSC_VER)
+#if defined(_M_IX86) || defined(_M_X64)
     _mm_mfence();
+#elif defined(_M_ARM64)
+    __dmb(_ARM64_BARRIER_ISHST);
+#else
+#error Architecture needs an implementation
+#endif
 #else
 #warning If this is a weakly ordered memory system, please add a memory barrier here to force this and everything else to memory before we proceed
 #endif

@@ -24,8 +24,10 @@
 
 #include <iomanip>
 #include <limits>
-#include <vector>
 #include <sstream>
+#include <vector>
+
+#include "CL/cl_half.h"
 
 #define MAX_DEVICE_THREADS (gHost ? 0U : gMaxDeviceThreads)
 #define MAX_HOST_THREADS GetThreadCount()
@@ -40,6 +42,7 @@ enum TExplicitAtomicType
     TYPE_ATOMIC_UINT,
     TYPE_ATOMIC_LONG,
     TYPE_ATOMIC_ULONG,
+    TYPE_ATOMIC_HALF,
     TYPE_ATOMIC_FLOAT,
     TYPE_ATOMIC_DOUBLE,
     TYPE_ATOMIC_INTPTR_T,
@@ -76,6 +79,12 @@ extern cl_device_atomic_capabilities gAtomicMemCap,
 extern bool gFloatAtomicsSupported;
 extern cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps;
 extern cl_device_fp_config gFloatCaps;
+
+extern cl_half_rounding_mode gHalfRoundingMode;
+extern bool gFloatAtomicsSupported;
+extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
+extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
+extern cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps;
 
 extern const char *
 get_memory_order_type_name(TExplicitMemoryOrderType orderType);
@@ -173,13 +182,14 @@ public:
     {
         return false;
     }
-    virtual bool VerifyExpected(const HostDataType &expected,
-                                const HostAtomicType *const testValue,
-                                const HostDataType *startRefValues,
-                                cl_uint whichDestValue)
+
+    virtual bool
+    IsTestNotAsExpected(const HostDataType &expected,
+                        const std::vector<HostAtomicType> &testValues,
+                        cl_uint whichDestValue)
     {
-        if (testValue != nullptr) return expected != testValue[whichDestValue];
-        return true;
+        return expected
+            != static_cast<HostDataType>(testValues[whichDestValue]);
     }
     virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                               MTdata d)
@@ -705,6 +715,28 @@ public:
                                            cl_context context,
                                            cl_command_queue queue)
     {
+        // Comparator for orders and scopes.
+        const auto checkValidity = [](TExplicitMemoryOrderType success,
+                                      TExplicitMemoryOrderType failure,
+                                      TExplicitMemoryScopeType scope) {
+            // Both memory order arguments must be set (or neither).
+            if ((success == MEMORY_ORDER_EMPTY || failure == MEMORY_ORDER_EMPTY)
+                && success != failure)
+                return false;
+
+            // Memory scope without memory order is disallowed.
+            if (success == MEMORY_ORDER_EMPTY && scope != MEMORY_SCOPE_EMPTY)
+                return false;
+
+            // Failure must not be release or acq_rel.
+            if (failure == MEMORY_ORDER_RELEASE
+                || failure == MEMORY_ORDER_ACQ_REL)
+                return false;
+
+            // Failure must not be stronger than success.
+            return failure <= success;
+        };
+
         // repeat test for each reasonable memory order/scope combination
         std::vector<TExplicitMemoryOrderType> memoryOrder;
         std::vector<TExplicitMemoryScopeType> memoryScope;
@@ -722,16 +754,10 @@ public:
             {
                 for (unsigned si = 0; si < memoryScope.size(); si++)
                 {
-                    if ((memoryOrder[oi] == MEMORY_ORDER_EMPTY
-                         || memoryOrder[o2i] == MEMORY_ORDER_EMPTY)
-                        && memoryOrder[oi] != memoryOrder[o2i])
-                        continue; // both memory order arguments must be set (or
-                                  // none)
-                    if ((memoryOrder[oi] == MEMORY_ORDER_EMPTY
-                         || memoryOrder[o2i] == MEMORY_ORDER_EMPTY)
-                        && memoryScope[si] != MEMORY_SCOPE_EMPTY)
-                        continue; // memory scope without memory order is not
-                                  // allowed
+                    if (!checkValidity(memoryOrder[oi], memoryOrder[o2i],
+                                       memoryScope[si]))
+                        continue;
+
                     MemoryOrder(memoryOrder[oi]);
                     MemoryOrder2(memoryOrder[o2i]);
                     MemoryScope(memoryScope[si]);
@@ -801,6 +827,8 @@ CBasicTest<HostAtomicType, HostDataType>::PragmaHeader(cl_device_id deviceID)
     }
     if (_dataType == TYPE_ATOMIC_DOUBLE)
         pragma += "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n";
+    if (_dataType == TYPE_ATOMIC_HALF)
+        pragma += "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
     return pragma;
 }
 
@@ -896,7 +924,7 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
             + ss.str() + "] = {\n";
         ss.str("");
 
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
         {
             if (std::isinf(_startValue))
                 ss << (_startValue < 0 ? "-" : "") << "INFINITY";
@@ -907,6 +935,9 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
                     std::numeric_limits<HostDataType>::max_digits10)
                    << _startValue;
         }
+        else if constexpr (std::is_same<HostDataType, HOST_ATOMIC_HALF>::value)
+            ss << std::hexfloat
+               << _startValue; // use hex format for accurate representation
         else
             ss << _startValue;
 
@@ -1295,7 +1326,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
     numDestItems = NumResults(threadCount, deviceID);
 
     destItems.resize(numDestItems);
-    for (cl_uint i = 0; i < numDestItems; i++) destItems[i] = _startValue;
+    for (cl_uint i = 0; i < numDestItems; i++)
+        destItems[i] = static_cast<HostAtomicType>(_startValue);
 
     // Create main buffer with atomic variables (array size dependent on
     // particular test)
@@ -1468,13 +1500,13 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (VerifyExpected(expected, destItems.data(), startRefValues.data(),
-                           i))
+        if (IsTestNotAsExpected(expected, destItems, i))
         {
             std::stringstream logLine;
             logLine << "ERROR: Result " << i
                     << " from kernel does not validate! (should be " << expected
-                    << ", was " << destItems[i] << ")\n";
+                    << ", was " << static_cast<HostDataType>(destItems[i])
+                    << ")\n";
             log_error("%s", logLine.str().c_str());
             for (i = 0; i < threadCount; i++)
             {
@@ -1541,7 +1573,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                                  // clEnqueueNDRangeKernel
     {
         /* Re-write the starting value */
-        for (size_t i = 0; i < numDestItems; i++) destItems[i] = _startValue;
+        for (size_t i = 0; i < numDestItems; i++)
+            destItems[i] = static_cast<HostAtomicType>(_startValue);
         refValues[0] = 0;
         if (deviceThreadCount > 0)
         {

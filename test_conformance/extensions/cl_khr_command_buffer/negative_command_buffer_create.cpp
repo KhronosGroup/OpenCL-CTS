@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 
 //--------------------------------------------------------------------------
@@ -132,22 +131,16 @@ struct CreateCommandBufferRepeatedProperties : public BasicCommandBufferTest
         if (BasicCommandBufferTest::Skip()) return true;
 
         bool skip = true;
-        if (simultaneous_use_support)
+        if (is_extension_available(
+                device, CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_NAME))
         {
-            rep_prop = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
+            rep_prop = CL_COMMAND_BUFFER_MUTABLE_KHR;
             skip = false;
         }
         else if (is_extension_available(
                      device, CL_KHR_COMMAND_BUFFER_MULTI_DEVICE_EXTENSION_NAME))
         {
             rep_prop = CL_COMMAND_BUFFER_DEVICE_SIDE_SYNC_KHR;
-            skip = false;
-        }
-        else if (is_extension_available(
-                     device,
-                     CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_NAME))
-        {
-            rep_prop = CL_COMMAND_BUFFER_MUTABLE_KHR;
             skip = false;
         }
 
@@ -186,7 +179,9 @@ struct CreateCommandBufferNotSupportedProperties : public BasicCommandBufferTest
         if (BasicCommandBufferTest::Skip()) return true;
 
         bool skip = true;
-        if (!simultaneous_use_support)
+        if (is_extension_available(
+                device, CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_NAME)
+            && !simultaneous_use_support)
         {
             unsupported_prop = CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR;
             skip = false;
@@ -199,35 +194,25 @@ struct CreateCommandBufferNotSupportedProperties : public BasicCommandBufferTest
 };
 };
 
-int test_negative_create_command_buffer_num_queues(cl_device_id device,
-                                                   cl_context context,
-                                                   cl_command_queue queue,
-                                                   int num_elements)
+REGISTER_TEST(negative_create_command_buffer_num_queues)
 {
     return MakeAndRunTest<CreateCommandBufferNumQueues>(device, context, queue,
                                                         num_elements);
 }
 
-int test_negative_create_command_buffer_null_queues(cl_device_id device,
-                                                    cl_context context,
-                                                    cl_command_queue queue,
-                                                    int num_elements)
+REGISTER_TEST(negative_create_command_buffer_null_queues)
 {
     return MakeAndRunTest<CreateCommandBufferNullQueues>(device, context, queue,
                                                          num_elements);
 }
 
-int test_negative_create_command_buffer_repeated_properties(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_create_command_buffer_repeated_properties)
 {
     return MakeAndRunTest<CreateCommandBufferRepeatedProperties>(
         device, context, queue, num_elements);
 }
 
-int test_negative_create_command_buffer_not_supported_properties(
-    cl_device_id device, cl_context context, cl_command_queue queue,
-    int num_elements)
+REGISTER_TEST(negative_create_command_buffer_not_supported_properties)
 {
     return MakeAndRunTest<CreateCommandBufferNotSupportedProperties>(
         device, context, queue, num_elements);

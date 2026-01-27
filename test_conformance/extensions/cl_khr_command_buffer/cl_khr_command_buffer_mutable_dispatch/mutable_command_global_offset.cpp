@@ -160,9 +160,7 @@ struct MutableDispatchGlobalOffset : InfoMutableCommandBufferTest
     cl_mutable_command_khr command = nullptr;
 };
 
-int test_mutable_dispatch_global_offset(cl_device_id device, cl_context context,
-                                        cl_command_queue queue,
-                                        int num_elements)
+REGISTER_TEST(mutable_dispatch_global_offset)
 {
 
     return MakeAndRunTest<MutableDispatchGlobalOffset>(device, context, queue,

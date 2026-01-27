@@ -16,7 +16,6 @@
 
 #include <extensionHelpers.h>
 #include "typeWrappers.h"
-#include "procs.h"
 #include "testHarness.h"
 #include <vector>
 #include <iostream>
@@ -116,26 +115,6 @@ struct PropertiesArray : public InfoMutableCommandBufferTest
                     cl_command_queue queue)
         : InfoMutableCommandBufferTest(device, context, queue)
     {}
-
-    virtual bool Skip() override
-    {
-        Version device_version = get_device_cl_version(device);
-        if ((device_version >= Version(3, 0))
-            || is_extension_available(device, "cl_khr_extended_versioning"))
-        {
-
-            cl_version extension_version = get_extension_version(
-                device, "cl_khr_command_buffer_mutable_dispatch");
-
-            if (extension_version != CL_MAKE_VERSION(0, 9, 3))
-            {
-                log_info("cl_khr_command_buffer_mutable_dispatch version 0.9.3 "
-                         "is required to run the test, skipping.\n ");
-                return true;
-            }
-        }
-        return InfoMutableCommandBufferTest::Skip();
-    }
 
     cl_int Run() override
     {
@@ -441,76 +420,56 @@ struct InfoLocalWorkSize : public InfoMutableCommandBufferTest
     size_t test_local_work_size = 0;
 };
 
-int test_mutable_command_info_device_query(cl_device_id device,
-                                           cl_context context,
-                                           cl_command_queue queue,
-                                           int num_elements)
+REGISTER_TEST(mutable_command_info_device_query)
 {
     return MakeAndRunTest<InfoDeviceQuery>(device, context, queue,
                                            num_elements);
 }
 
-int test_mutable_command_info_buffer(cl_device_id device, cl_context context,
-                                     cl_command_queue queue, int num_elements)
+REGISTER_TEST(mutable_command_info_buffer)
 {
     return MakeAndRunTest<InfoBuffer>(device, context, queue, num_elements);
 }
 
-int test_mutable_command_properties_array(cl_device_id device,
-                                          cl_context context,
-                                          cl_command_queue queue,
-                                          int num_elements)
+REGISTER_TEST(mutable_command_properties_array)
 {
     return MakeAndRunTest<PropertiesArray>(device, context, queue,
                                            num_elements);
 }
 
-int test_mutable_command_kernel(cl_device_id device, cl_context context,
-                                cl_command_queue queue, int num_elements)
+REGISTER_TEST(mutable_command_kernel)
 {
     return MakeAndRunTest<Kernel>(device, context, queue, num_elements);
 }
 
-int test_mutable_command_dimensions(cl_device_id device, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(mutable_command_dimensions)
 {
     return MakeAndRunTest<Dimensions>(device, context, queue, num_elements);
 }
 
-int test_mutable_command_info_type(cl_device_id device, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(mutable_command_info_type)
 {
     return MakeAndRunTest<InfoType>(device, context, queue, num_elements);
 }
 
-int test_mutable_command_info_queue(cl_device_id device, cl_context context,
-                                    cl_command_queue queue, int num_elements)
+REGISTER_TEST(mutable_command_info_queue)
 {
     return MakeAndRunTest<InfoQueue>(device, context, queue, num_elements);
 }
 
-int test_mutable_command_info_global_work_offset(cl_device_id device,
-                                                 cl_context context,
-                                                 cl_command_queue queue,
-                                                 int num_elements)
+REGISTER_TEST(mutable_command_info_global_work_offset)
 {
     return MakeAndRunTest<InfoGlobalWorkOffset>(device, context, queue,
                                                 num_elements);
 }
 
-int test_mutable_command_info_global_work_size(cl_device_id device,
-                                               cl_context context,
-                                               cl_command_queue queue,
-                                               int num_elements)
+REGISTER_TEST(mutable_command_info_global_work_size)
 {
     return MakeAndRunTest<InfoGlobalWorkSize>(device, context, queue,
                                               num_elements);
 }
 
-int test_mutable_command_info_local_work_size(cl_device_id device,
-                                              cl_context context,
-                                              cl_command_queue queue,
-                                              int num_elements)
+REGISTER_TEST(mutable_command_info_local_work_size)
 {
     return MakeAndRunTest<InfoLocalWorkSize>(device, context, queue,
                                              num_elements);

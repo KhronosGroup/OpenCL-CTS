@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "basic_command_buffer.h"
-#include "procs.h"
 
 #include <vector>
 
@@ -24,21 +23,16 @@ namespace {
 // Command-queue substitution tests which handles below cases:
 // -substitution on queue without properties
 // -substitution on queue with properties
-// -simultaneous use queue substitution
 
-template <bool prop_use, bool simul_use>
+template <bool prop_use>
 struct SubstituteQueueTest : public BasicCommandBufferTest
 {
     SubstituteQueueTest(cl_device_id device, cl_context context,
                         cl_command_queue queue)
         : BasicCommandBufferTest(device, context, queue),
-          properties_use_requested(prop_use), user_event(nullptr)
-    {
-        simultaneous_use_requested = simul_use;
-        if (simul_use) buffer_size_multiplier = 2;
-    }
+          properties_use_requested(prop_use)
+    {}
 
-    //--------------------------------------------------------------------------
     bool Skip() override
     {
         if (properties_use_requested)
@@ -58,11 +52,9 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
                 return true;
         }
 
-        return BasicCommandBufferTest::Skip()
-            || (simultaneous_use_requested && !simultaneous_use_support);
+        return BasicCommandBufferTest::Skip();
     }
 
-    //--------------------------------------------------------------------------
     cl_int SetUp(int elements) override
     {
         // By default command queue is created without properties,
@@ -82,7 +74,6 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         return BasicCommandBufferTest::SetUp(elements);
     }
 
-    //--------------------------------------------------------------------------
     cl_int Run() override
     {
         // record command buffer with primary queue
@@ -107,23 +98,14 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
             test_error(error, "clCreateCommandQueue failed");
         }
 
-        if (simultaneous_use_support)
-        {
-            // enque simultaneous command-buffers with substitute queue
-            error = RunSimultaneous(new_queue);
-            test_error(error, "RunSimultaneous failed");
-        }
-        else
-        {
-            // enque single command-buffer with substitute queue
-            error = RunSingle(new_queue);
-            test_error(error, "RunSingle failed");
-        }
+
+        // enqueue single command-buffer with substitute queue
+        error = RunSingle(new_queue);
+        test_error(error, "RunSingle failed");
 
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
     cl_int RecordCommandBuffer()
     {
         cl_int error = clCommandNDRangeKernelKHR(
@@ -136,14 +118,13 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
     cl_int RunSingle(const cl_command_queue& q)
     {
-        cl_int error = CL_SUCCESS;
         std::vector<cl_int> output_data(num_elements);
 
-        error = clEnqueueFillBuffer(q, in_mem, &pattern_pri, sizeof(cl_int), 0,
-                                    data_size(), 0, nullptr, nullptr);
+        cl_int error =
+            clEnqueueFillBuffer(q, in_mem, &pattern_pri, sizeof(cl_int), 0,
+                                data_size(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueFillBuffer failed");
 
         cl_command_queue queues[] = { q };
@@ -166,90 +147,8 @@ struct SubstituteQueueTest : public BasicCommandBufferTest
         return CL_SUCCESS;
     }
 
-    //--------------------------------------------------------------------------
-    struct SimulPassData
-    {
-        cl_int pattern;
-        cl_int offset;
-        cl_command_queue queue;
-        std::vector<cl_int> output_buffer;
-    };
-
-    //--------------------------------------------------------------------------
-    cl_int EnqueueSimultaneousPass(SimulPassData& pd)
-    {
-        cl_int error = clEnqueueFillBuffer(
-            pd.queue, in_mem, &pd.pattern, sizeof(cl_int),
-            pd.offset * sizeof(cl_int), data_size(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        error =
-            clEnqueueFillBuffer(pd.queue, off_mem, &pd.offset, sizeof(cl_int),
-                                0, sizeof(cl_int), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        if (!user_event)
-        {
-            user_event = clCreateUserEvent(context, &error);
-            test_error(error, "clCreateUserEvent failed");
-        }
-
-        cl_command_queue queues[] = { pd.queue };
-        error = clEnqueueCommandBufferKHR(1, queues, command_buffer, 1,
-                                          &user_event, nullptr);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        error = clEnqueueReadBuffer(
-            pd.queue, out_mem, CL_FALSE, pd.offset * sizeof(cl_int),
-            data_size(), pd.output_buffer.data(), 0, nullptr, nullptr);
-
-        test_error(error, "clEnqueueReadBuffer failed");
-
-        return CL_SUCCESS;
-    }
-
-    //--------------------------------------------------------------------------
-    cl_int RunSimultaneous(const cl_command_queue& q)
-    {
-        cl_int error = CL_SUCCESS;
-        cl_int offset = static_cast<cl_int>(num_elements);
-
-        std::vector<SimulPassData> simul_passes = {
-            { pattern_pri, 0, q, std::vector<cl_int>(num_elements) },
-            { pattern_sec, offset, q, std::vector<cl_int>(num_elements) }
-        };
-
-        for (auto&& pass : simul_passes)
-        {
-            error = EnqueueSimultaneousPass(pass);
-            test_error(error, "EnqueuePass failed");
-        }
-
-        error = clSetUserEventStatus(user_event, CL_COMPLETE);
-        test_error(error, "clSetUserEventStatus failed");
-
-        for (auto&& pass : simul_passes)
-        {
-            error = clFinish(pass.queue);
-            test_error(error, "clFinish failed");
-
-            auto& res_data = pass.output_buffer;
-
-            for (size_t i = 0; i < num_elements; i++)
-            {
-                CHECK_VERIFICATION_ERROR(pass.pattern, res_data[i], i);
-            }
-        }
-
-        return CL_SUCCESS;
-    }
-
-    //--------------------------------------------------------------------------
     const cl_int pattern_pri = 0xB;
-    const cl_int pattern_sec = 0xC;
-
     bool properties_use_requested;
-    clEventWrapper user_event;
 };
 
 // Command-queue substitution tests which handles below cases:
@@ -396,38 +295,25 @@ struct QueueOrderTest : public BasicCommandBufferTest
 };
 } // anonymous namespace
 
-int test_queue_substitution(cl_device_id device, cl_context context,
-                            cl_command_queue queue, int num_elements)
+REGISTER_TEST(queue_substitution)
 {
-    return MakeAndRunTest<SubstituteQueueTest<false, false>>(
-        device, context, queue, num_elements);
+    return MakeAndRunTest<SubstituteQueueTest<false>>(device, context, queue,
+                                                      num_elements);
 }
 
-int test_properties_queue_substitution(cl_device_id device, cl_context context,
-                                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(queue_substitution_properties)
 {
-    return MakeAndRunTest<SubstituteQueueTest<true, false>>(
-        device, context, queue, num_elements);
+    return MakeAndRunTest<SubstituteQueueTest<true>>(device, context, queue,
+                                                     num_elements);
 }
 
-int test_simultaneous_queue_substitution(cl_device_id device,
-                                         cl_context context,
-                                         cl_command_queue queue,
-                                         int num_elements)
-{
-    return MakeAndRunTest<SubstituteQueueTest<false, true>>(
-        device, context, queue, num_elements);
-}
-
-int test_queue_substitute_in_order(cl_device_id device, cl_context context,
-                                   cl_command_queue queue, int num_elements)
+REGISTER_TEST(queue_substitute_in_order)
 {
     return MakeAndRunTest<QueueOrderTest<false>>(device, context, queue,
                                                  num_elements);
 }
 
-int test_queue_substitute_out_of_order(cl_device_id device, cl_context context,
-                                       cl_command_queue queue, int num_elements)
+REGISTER_TEST(queue_substitute_out_of_order)
 {
     return MakeAndRunTest<QueueOrderTest<true>>(device, context, queue,
                                                 num_elements);

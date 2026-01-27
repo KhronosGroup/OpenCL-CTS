@@ -15,6 +15,7 @@
 //
 #include "harness/compat.h"
 
+#include <memory>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,210 +37,355 @@ static int verify_copy_buffer(int *inptr, int *outptr, int n)
     return 0;
 }
 
+using alignedOwningPtr = std::unique_ptr<cl_int[], decltype(&align_free)>;
 
-static int test_copy( cl_command_queue queue, cl_context context, int num_elements, MTdata d )
+static int test_copy(cl_device_id device, cl_command_queue queue,
+                     cl_context context, int num_elements, MTdata d)
 {
-    cl_mem  buffers[2];
-    cl_int  *int_input_ptr, *int_output_ptr;
-    cl_int  err;
-    int     i;
-    int     src_flag_id, dst_flag_id;
-    int     errors = 0;
+    clMemWrapper buffers[2];
+    cl_int err = CL_SUCCESS;
 
     size_t  min_alignment = get_min_alignment(context);
 
-    int_input_ptr = (cl_int*) align_malloc(sizeof(cl_int) * num_elements, min_alignment);
-    int_output_ptr = (cl_int*)align_malloc(sizeof(cl_int) * num_elements, min_alignment);
+    alignedOwningPtr invalid_ptr{
+        (cl_int *)align_malloc(sizeof(cl_int) * num_elements, min_alignment),
+        align_free
+    };
+    if (!invalid_ptr)
+    {
+        log_error(" unable to allocate %zu bytes of memory\n",
+                  sizeof(cl_int) * num_elements);
+        return TEST_FAIL;
+    }
+    alignedOwningPtr out_ptr{ (cl_int *)align_malloc(
+                                  sizeof(cl_int) * num_elements, min_alignment),
+                              align_free };
+    if (!out_ptr)
+    {
+        log_error(" unable to allocate %zu bytes of memory\n",
+                  sizeof(cl_int) * num_elements);
+        return TEST_FAIL;
+    }
+    alignedOwningPtr reference_ptr{
+        (cl_int *)align_malloc(sizeof(cl_int) * num_elements, min_alignment),
+        align_free
+    };
+    if (!reference_ptr)
+    {
+        log_error(" unable to allocate %zu bytes of memory\n",
+                  sizeof(cl_int) * num_elements);
+        return TEST_FAIL;
+    }
 
-    for (src_flag_id=0; src_flag_id < NUM_FLAGS; src_flag_id++) {
-        for (dst_flag_id=0; dst_flag_id < NUM_FLAGS; dst_flag_id++) {
+    const bool has_immutable_memory_extension =
+        is_extension_available(device, "cl_ext_immutable_memory_objects");
+
+    for (int src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
+    {
+        for (int dst_flag_id = 0; dst_flag_id < NUM_FLAGS; dst_flag_id++)
+        {
+            if (((flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+                 || (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT))
+                && !has_immutable_memory_extension)
+            {
+                continue;
+            }
             log_info("Testing with cl_mem_flags src: %s dst: %s\n", flag_set_names[src_flag_id], flag_set_names[dst_flag_id]);
 
-            for (i=0; i<num_elements; i++){
-                int_input_ptr[i] = (int)genrand_int32( d );
-                int_output_ptr[i] = 0xdeaddead; // seed with incorrect data
+            for (int i = 0; i < num_elements; i++)
+            {
+                invalid_ptr[i] = static_cast<int>(0xdeaddead);
+                out_ptr[i] = static_cast<int>(0xdeadbeef);
+                reference_ptr[i] = (int)genrand_int32(d);
             }
 
             if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
-                buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],  sizeof(cl_int) * num_elements, int_input_ptr, &err);
+                buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],
+                                            sizeof(cl_int) * num_elements,
+                                            reference_ptr.get(), &err);
             else
-                buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],  sizeof(cl_int) * num_elements, NULL, &err);
+                buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],
+                                            sizeof(cl_int) * num_elements,
+                                            nullptr, &err);
             if ( err != CL_SUCCESS ){
-                print_error(err, " clCreateBuffer failed\n" );
-                align_free( (void *)int_input_ptr );
-                align_free( (void *)int_output_ptr );
-                return -1;
+                print_error(err, "clCreateBuffer failed\n");
+                return TEST_FAIL;
             }
 
             if ((flag_set[dst_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[dst_flag_id] & CL_MEM_COPY_HOST_PTR))
-                buffers[1] = clCreateBuffer(context, flag_set[dst_flag_id],  sizeof(cl_int) * num_elements, int_output_ptr, &err);
+                buffers[1] = clCreateBuffer(context, flag_set[dst_flag_id],
+                                            sizeof(cl_int) * num_elements,
+                                            invalid_ptr.get(), &err);
             else
-                buffers[1] = clCreateBuffer(context, flag_set[dst_flag_id],  sizeof(cl_int) * num_elements, NULL, &err);
+                buffers[1] = clCreateBuffer(context, flag_set[dst_flag_id],
+                                            sizeof(cl_int) * num_elements,
+                                            nullptr, &err);
             if ( err != CL_SUCCESS ){
-                print_error(err, " clCreateBuffer failed\n" );
-                clReleaseMemObject( buffers[0] );
-                align_free( (void *)int_input_ptr );
-                align_free( (void *)int_output_ptr );
-                return -1;
+                print_error(err, "clCreateBuffer failed\n");
+                return TEST_FAIL;
             }
 
-            if (!(flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) && !(flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR)) {
-                err = clEnqueueWriteBuffer(queue, buffers[0], CL_TRUE, 0, sizeof(cl_int)*num_elements, (void *)int_input_ptr, 0, NULL, NULL);
+            if (!(flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR)
+                && !(flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
+            {
+                err = clEnqueueWriteBuffer(queue, buffers[0], CL_TRUE, 0,
+                                           sizeof(cl_int) * num_elements,
+                                           reference_ptr.get(), 0, nullptr,
+                                           nullptr);
                 if ( err != CL_SUCCESS ){
-                    print_error( err, "clEnqueueWriteBuffer failed" );
-                    clReleaseMemObject( buffers[0] );
-                    clReleaseMemObject( buffers[1] );
-                    align_free( (void *)int_output_ptr );
-                    align_free( (void *)int_input_ptr );
-                    return -1;
+                    print_error(err, "clEnqueueWriteBuffer failed\n");
+                    return TEST_FAIL;
                 }
             }
 
-            err = clEnqueueCopyBuffer(queue, buffers[0], buffers[1], 0, 0, sizeof(cl_int)*num_elements, 0, NULL, NULL);
-            if ( err != CL_SUCCESS ){
-                print_error( err, "clCopyArray failed" );
-                clReleaseMemObject( buffers[0] );
-                clReleaseMemObject( buffers[1] );
-                align_free( (void *)int_output_ptr );
-                align_free( (void *)int_input_ptr );
-                return -1;
+            err = clEnqueueCopyBuffer(queue, buffers[0], buffers[1], 0, 0,
+                                      sizeof(cl_int) * num_elements, 0, nullptr,
+                                      nullptr);
+            if ((flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT))
+            {
+                if (err != CL_INVALID_OPERATION)
+                {
+                    test_failure_error_ret(err, CL_INVALID_OPERATION,
+                                           "clEnqueueCopyBuffer should return "
+                                           "CL_INVALID_OPERATION when: "
+                                           "\"dst_buffer is created with "
+                                           "CL_MEM_IMMUTABLE_EXT flag\"",
+                                           TEST_FAIL);
+                    return TEST_FAIL;
+                }
+            }
+            else if (err != CL_SUCCESS)
+            {
+                print_error(err, "clCopyArray failed\n");
+                return TEST_FAIL;
             }
 
-            err = clEnqueueReadBuffer( queue, buffers[1], true, 0, sizeof(int)*num_elements, (void *)int_output_ptr, 0, NULL, NULL );
-            if ( err != CL_SUCCESS ){
-                print_error( err, "clEnqueueReadBuffer failed" );
-                clReleaseMemObject( buffers[0] );
-                clReleaseMemObject( buffers[1] );
-                align_free( (void *)int_output_ptr );
-                align_free( (void *)int_input_ptr );
-                return -1;
+            err = clEnqueueReadBuffer(queue, buffers[0], true, 0,
+                                      sizeof(int) * num_elements, out_ptr.get(),
+                                      0, nullptr, nullptr);
+            if (verify_copy_buffer(reference_ptr.get(), out_ptr.get(),
+                                   num_elements))
+            {
+                log_error("test failed\n");
+                return TEST_FAIL;
+            }
+            else
+            {
+                log_info("test passed\n");
             }
 
-            if ( verify_copy_buffer(int_input_ptr, int_output_ptr, num_elements) ){
-                log_error( " test failed\n" );
-                errors++;
+            // Reset out_ptr
+            for (int i = 0; i < num_elements; i++)
+            {
+                out_ptr[i] = (int)0xdeadbeef; // seed with incorrect data
             }
-            else{
-                log_info( " test passed\n" );
+            err = clEnqueueReadBuffer(queue, buffers[1], true, 0,
+                                      sizeof(int) * num_elements, out_ptr.get(),
+                                      0, nullptr, nullptr);
+            if ( err != CL_SUCCESS ){
+                print_error(err, "clEnqueueReadBuffer failed\n");
+                return TEST_FAIL;
             }
-    // cleanup
-            clReleaseMemObject( buffers[0] );
-            clReleaseMemObject( buffers[1] );
+
+            int *target_buffer = reference_ptr.get();
+            if (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                target_buffer = invalid_ptr.get();
+            }
+
+            if (verify_copy_buffer(target_buffer, out_ptr.get(), num_elements))
+            {
+                log_error("test failed\n");
+                return TEST_FAIL;
+            }
+            else
+            {
+                log_info("test passed\n");
+            }
         } // dst flags
-    }  // src flags
-    // cleanup
-    align_free( (void *)int_output_ptr );
-    align_free( (void *)int_input_ptr );
+    } // src flags
 
-    return errors;
+    return TEST_PASS;
 
 }   // end test_copy()
 
 
-static int testPartialCopy( cl_command_queue queue, cl_context context, int num_elements, cl_uint srcStart, cl_uint dstStart, int size, MTdata d )
+static int testPartialCopy(cl_device_id device, cl_command_queue queue,
+                           cl_context context, int num_elements,
+                           cl_uint srcStart, cl_uint dstStart, int size,
+                           MTdata d)
 {
-    cl_mem  buffers[2];
-    int     *inptr, *outptr;
-    cl_int  err;
-    int     i;
-    int     src_flag_id, dst_flag_id;
-    int     errors = 0;
+    clMemWrapper buffers[2];
+    cl_int err = CL_SUCCESS;
 
     size_t  min_alignment = get_min_alignment(context);
 
-    inptr = (int *)align_malloc( sizeof(int) * num_elements, min_alignment);
-    if ( ! inptr ){
-        log_error( " unable to allocate %d bytes of memory\n", (int)sizeof(int) * num_elements );
-        return -1;
+    alignedOwningPtr invalid_ptr{
+        (cl_int *)align_malloc(sizeof(cl_int) * num_elements, min_alignment),
+        align_free
+    };
+    if (!invalid_ptr)
+    {
+        log_error(" unable to allocate %zu bytes of memory\n",
+                  sizeof(cl_int) * num_elements);
+        return TEST_FAIL;
     }
-    outptr = (int *)align_malloc( sizeof(int) * num_elements, min_alignment);
-    if ( ! outptr ){
-        log_error( " unable to allocate %d bytes of memory\n", (int)sizeof(int) * num_elements );
-        align_free( (void *)inptr );
-        return -1;
+    alignedOwningPtr out_ptr{ (cl_int *)align_malloc(
+                                  sizeof(cl_int) * num_elements, min_alignment),
+                              align_free };
+    if (!out_ptr)
+    {
+        log_error(" unable to allocate %zu bytes of memory\n",
+                  sizeof(cl_int) * num_elements);
+        return TEST_FAIL;
+    }
+    alignedOwningPtr reference_ptr{
+        (cl_int *)align_malloc(sizeof(cl_int) * num_elements, min_alignment),
+        align_free
+    };
+    if (!reference_ptr)
+    {
+        log_error(" unable to allocate %zu bytes of memory\n",
+                  sizeof(cl_int) * num_elements);
+        return TEST_FAIL;
     }
 
-    for (src_flag_id=0; src_flag_id < NUM_FLAGS; src_flag_id++) {
-        for (dst_flag_id=0; dst_flag_id < NUM_FLAGS; dst_flag_id++) {
+    const bool has_immutable_memory_extension =
+        is_extension_available(device, "cl_ext_immutable_memory_objects");
+
+    for (int src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
+    {
+        for (int dst_flag_id = 0; dst_flag_id < NUM_FLAGS; dst_flag_id++)
+        {
+            if (((flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+                 || (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT))
+                && !has_immutable_memory_extension)
+            {
+                continue;
+            }
             log_info("Testing with cl_mem_flags src: %s dst: %s\n", flag_set_names[src_flag_id], flag_set_names[dst_flag_id]);
 
-            for (i=0; i<num_elements; i++){
-                inptr[i] = (int)genrand_int32( d );
-                outptr[i] = (int)0xdeaddead;    // seed with incorrect data
+            for (int i = 0; i < num_elements; i++)
+            {
+                invalid_ptr[i] = static_cast<int>(0xdeaddead);
+                out_ptr[i] = static_cast<int>(0xdeadbeef);
+                reference_ptr[i] = (int)genrand_int32(d);
             }
 
             if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
-                buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],  sizeof(cl_int) * num_elements, inptr, &err);
+                buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],
+                                            sizeof(cl_int) * num_elements,
+                                            reference_ptr.get(), &err);
             else
-                buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],  sizeof(cl_int) * num_elements, NULL, &err);
+                buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],
+                                            sizeof(cl_int) * num_elements,
+                                            nullptr, &err);
             if ( err != CL_SUCCESS ){
-                print_error(err, " clCreateBuffer failed\n" )
-                align_free( (void *)outptr );
-                align_free( (void *)inptr );
-                return -1;
+                print_error(err, "clCreateBuffer failed\n");
+                return TEST_FAIL;
             }
 
             if ((flag_set[dst_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[dst_flag_id] & CL_MEM_COPY_HOST_PTR))
-                buffers[1] = clCreateBuffer(context, flag_set[dst_flag_id],  sizeof(cl_int) * num_elements, outptr, &err);
+                buffers[1] = clCreateBuffer(context, flag_set[dst_flag_id],
+                                            sizeof(cl_int) * num_elements,
+                                            invalid_ptr.get(), &err);
             else
-                buffers[1] = clCreateBuffer(context, flag_set[dst_flag_id],  sizeof(cl_int) * num_elements, NULL, &err);
+                buffers[1] = clCreateBuffer(context, flag_set[dst_flag_id],
+                                            sizeof(cl_int) * num_elements,
+                                            nullptr, &err);
             if ( err != CL_SUCCESS ){
-                print_error(err, " clCreateBuffer failed\n" );
-                clReleaseMemObject( buffers[0] );
-                align_free( (void *)outptr );
-                align_free( (void *)inptr );
-                return -1;
+                print_error(err, "clCreateBuffer failed\n");
+                return TEST_FAIL;
             }
 
-            if (!(flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) && !(flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR)){
-                err = clEnqueueWriteBuffer(queue, buffers[0], CL_TRUE, 0, sizeof(cl_int)*num_elements, (void *)inptr, 0, NULL, NULL);
+            if (!(flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR)
+                && !(flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
+            {
+                err = clEnqueueWriteBuffer(queue, buffers[0], CL_TRUE, 0,
+                                           sizeof(cl_int) * num_elements,
+                                           reference_ptr.get(), 0, nullptr,
+                                           nullptr);
                 if ( err != CL_SUCCESS ){
-                    print_error( err, "clEnqueueWriteBuffer failed" );
-                    clReleaseMemObject( buffers[1] );
-                    clReleaseMemObject( buffers[0] );
-                    align_free( (void *)outptr );
-                    align_free( (void *)inptr );
-                    return -1;
+                    print_error(err, "clEnqueueWriteBuffer failed\n");
+                    return TEST_FAIL;
                 }
             }
 
-            err = clEnqueueCopyBuffer(queue, buffers[0], buffers[1], srcStart*sizeof(cl_int), dstStart*sizeof(cl_int), sizeof(cl_int)*size, 0, NULL, NULL);
-            if ( err != CL_SUCCESS){
-                print_error( err, "clEnqueueCopyBuffer failed" );
-                clReleaseMemObject( buffers[1] );
-                clReleaseMemObject( buffers[0] );
-                align_free( (void *)outptr );
-                align_free( (void *)inptr );
-                return -1;
+            err = clEnqueueCopyBuffer(
+                queue, buffers[0], buffers[1], srcStart * sizeof(cl_int),
+                dstStart * sizeof(cl_int), sizeof(cl_int) * size, 0, nullptr,
+                nullptr);
+            if ((flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT))
+            {
+                if (err != CL_INVALID_OPERATION)
+                {
+                    test_failure_error_ret(err, CL_INVALID_OPERATION,
+                                           "clEnqueueCopyBuffer should return "
+                                           "CL_INVALID_OPERATION when: "
+                                           "\"dst_buffer is created with "
+                                           "CL_MEM_IMMUTABLE_EXT flag\"",
+                                           TEST_FAIL);
+                }
+            }
+            else if (err != CL_SUCCESS)
+            {
+                print_error(err, "clCopyArray failed\n");
+                return TEST_FAIL;
             }
 
-            err = clEnqueueReadBuffer( queue, buffers[1], true, 0, sizeof(int)*num_elements, (void *)outptr, 0, NULL, NULL );
-            if ( err != CL_SUCCESS){
-                print_error( err, "clEnqueueReadBuffer failed" );
-                clReleaseMemObject( buffers[1] );
-                clReleaseMemObject( buffers[0] );
-                align_free( (void *)outptr );
-                align_free( (void *)inptr );
-                return -1;
+            err = clEnqueueReadBuffer(queue, buffers[0], true, 0,
+                                      sizeof(int) * num_elements, out_ptr.get(),
+                                      0, nullptr, nullptr);
+            if (err != CL_SUCCESS)
+            {
+                print_error(err, "clEnqueueReadBuffer failed\n");
+                return TEST_FAIL;
+            }
+            if (verify_copy_buffer(reference_ptr.get(), out_ptr.get(),
+                                   num_elements))
+            {
+                log_error("test failed\n");
+                return TEST_FAIL;
+            }
+            else
+            {
+                log_info("test passed\n");
             }
 
-            if ( verify_copy_buffer(inptr + srcStart, outptr + dstStart, size) ){
-                log_error("buffer_COPY test failed\n");
-                errors++;
+            // Reset out_ptr
+            for (int i = 0; i < num_elements; i++)
+            {
+                out_ptr[i] = (int)0xdeadbeef; // seed with incorrect data
             }
-            else{
-                log_info("buffer_COPY test passed\n");
+            err = clEnqueueReadBuffer(queue, buffers[1], true, 0,
+                                      sizeof(int) * num_elements, out_ptr.get(),
+                                      0, nullptr, nullptr);
+            if (err != CL_SUCCESS)
+            {
+                print_error(err, "clEnqueueReadBuffer failed\n");
+                return TEST_FAIL;
             }
-    // cleanup
-            clReleaseMemObject( buffers[1] );
-            clReleaseMemObject( buffers[0] );
+
+            cl_int *target_buffer = reference_ptr.get() + srcStart;
+            if (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                target_buffer = invalid_ptr.get();
+            }
+
+            if (verify_copy_buffer(target_buffer, out_ptr.get() + dstStart,
+                                   size))
+            {
+                log_error("test failed\n");
+                return TEST_FAIL;
+            }
+            else
+            {
+                log_info("test passed\n");
+            }
         } // dst mem flags
     } // src mem flags
-    // cleanup
-    align_free( (void *)outptr );
-    align_free( (void *)inptr );
 
-    return errors;
+    return TEST_PASS;
 
 }   // end testPartialCopy()
 
@@ -252,15 +398,19 @@ REGISTER_TEST(buffer_copy)
 
     // test the preset size
     log_info( "set size: %d: ", num_elements );
-    if (test_copy( queue, context, num_elements, d ))
+    if (test_copy(device, queue, context, num_elements, d) != TEST_PASS)
+    {
         err++;
+    }
 
     // now test random sizes
     for ( i = 0; i < 8; i++ ){
         size = (int)get_random_float(2.f,131072.f, d);
         log_info( "random size: %d: ", size );
-        if (test_copy( queue, context, size, d ))
+        if (test_copy(device, queue, context, size, d) != TEST_PASS)
+        {
             err++;
+        }
     }
 
     free_mtdata(d);
@@ -283,8 +433,12 @@ REGISTER_TEST(buffer_partial_copy)
         size = (int)get_random_float( 8.f, (float)(num_elements - srcStart), d );
         dstStart = (cl_uint)get_random_float( 0.f, (float)(num_elements - size), d );
         log_info( "random partial copy from %d to %d, size: %d: ", (int)srcStart, (int)dstStart, size );
-        if (testPartialCopy( queue, context, num_elements, srcStart, dstStart, size, d ))
+        if (testPartialCopy(device, queue, context, num_elements, srcStart,
+                            dstStart, size, d)
+            != TEST_PASS)
+        {
             err++;
+        }
     }
 
     free_mtdata(d);
