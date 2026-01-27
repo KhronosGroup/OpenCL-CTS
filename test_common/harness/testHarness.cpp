@@ -1167,6 +1167,53 @@ cl_device_id GetOpposingDevice(cl_device_id device)
     return NULL;
 }
 
+static Version get_cl_version_from_string(const char *check)
+{
+    if (strstr(check, "OpenCL 1.0") == check)
+        return Version(1, 0);
+    else if (strstr(check, "OpenCL 1.1") == check)
+        return Version(1, 1);
+    else if (strstr(check, "OpenCL 1.2") == check)
+        return Version(1, 2);
+    else if (strstr(check, "OpenCL 2.0") == check)
+        return Version(2, 0);
+    else if (strstr(check, "OpenCL 2.1") == check)
+        return Version(2, 1);
+    else if (strstr(check, "OpenCL 2.2") == check)
+        return Version(2, 2);
+    else if (strstr(check, "OpenCL 3.0") == check)
+        return Version(3, 0);
+    else if (strstr(check, "OpenCL 3.1") == check)
+        return Version(3, 1);
+
+    throw std::runtime_error(std::string("Unknown OpenCL version: ") + check);
+}
+
+Version get_platform_cl_version(cl_platform_id platform)
+{
+    size_t str_size;
+    cl_int err =
+        clGetPlatformInfo(platform, CL_PLATFORM_VERSION, 0, NULL, &str_size);
+    ASSERT_SUCCESS(err, "clGetPlatformInfo");
+
+    std::vector<char> str(str_size);
+    err = clGetPlatformInfo(platform, CL_PLATFORM_VERSION, str_size, str.data(),
+                            NULL);
+    ASSERT_SUCCESS(err, "clGetPlatformInfo");
+
+    return get_cl_version_from_string(str.data());
+}
+
+Version get_platform_cl_version(cl_device_id device)
+{
+    cl_platform_id platform;
+    cl_int err = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
+                                 &platform, NULL);
+    ASSERT_SUCCESS(err, "clGetDeviceInfo");
+
+    return get_platform_cl_version(platform);
+}
+
 Version get_device_cl_version(cl_device_id device)
 {
     size_t str_size;
@@ -1178,23 +1225,7 @@ Version get_device_cl_version(cl_device_id device)
         clGetDeviceInfo(device, CL_DEVICE_VERSION, str_size, str.data(), NULL);
     ASSERT_SUCCESS(err, "clGetDeviceInfo");
 
-    if (strstr(str.data(), "OpenCL 1.0") != NULL)
-        return Version(1, 0);
-    else if (strstr(str.data(), "OpenCL 1.1") != NULL)
-        return Version(1, 1);
-    else if (strstr(str.data(), "OpenCL 1.2") != NULL)
-        return Version(1, 2);
-    else if (strstr(str.data(), "OpenCL 2.0") != NULL)
-        return Version(2, 0);
-    else if (strstr(str.data(), "OpenCL 2.1") != NULL)
-        return Version(2, 1);
-    else if (strstr(str.data(), "OpenCL 2.2") != NULL)
-        return Version(2, 2);
-    else if (strstr(str.data(), "OpenCL 3.0") != NULL)
-        return Version(3, 0);
-
-    throw std::runtime_error(std::string("Unknown OpenCL version: ")
-                             + str.data());
+    return get_cl_version_from_string(str.data());
 }
 
 bool check_device_spirv_version_reported(cl_device_id device)
