@@ -116,6 +116,11 @@ double reference_ldexp(double x, int n);
 
 double reference_assignment(double x);
 int reference_not(double x);
+
+double reference_erfc(double x);
+double reference_erf(double x);
+double reference_tgamma(double x);
+
 // -- for testing fast-relaxed
 
 double reference_relaxed_acos(double);
@@ -238,6 +243,6 @@ int reference_notl(long double x);
 
 long double reference_erfcl(long double x);
 long double reference_erfl(long double x);
-double reference_erfc(double x);
-double reference_erf(double x);
+long double reference_tgammal(long double x);
+
 #endif
