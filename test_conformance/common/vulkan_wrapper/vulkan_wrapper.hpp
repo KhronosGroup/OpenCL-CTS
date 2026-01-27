@@ -148,7 +148,8 @@ public:
     VulkanDevice(
         const VulkanPhysicalDevice &physicalDevice = getVulkanPhysicalDevice(),
         const VulkanQueueFamilyToQueueCountMap &queueFamilyToQueueCountMap =
-            getDefaultVulkanQueueFamilyToQueueCountMap());
+            getDefaultVulkanQueueFamilyToQueueCountMap(),
+        bool useShaderInt8 = false);
     virtual ~VulkanDevice();
     const VulkanPhysicalDevice &getPhysicalDevice() const;
     VulkanQueue &
