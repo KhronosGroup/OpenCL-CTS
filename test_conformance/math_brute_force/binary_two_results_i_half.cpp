@@ -260,7 +260,7 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                 if (t[j] == q[j] && t2[j] == q2[j]) continue;
 
                 // Check for paired NaNs
-                if (IsHalfNaN(t[j]) && IsHalfNaN(q[j]) && t2[j] == q2[j])
+                if (isnan_fp(t[j]) && isnan_fp(q[j]) && t2[j] == q2[j])
                     continue;
 
                 cl_half test = ((cl_half *)q)[j];
@@ -282,7 +282,7 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                 // then the standard either neglects to say what is returned
                 // in iptr or leaves it undefined or implementation defined.
                 int iptrUndefined = IsHalfInfinity(p[j]) || (HTF(p2[j]) == 0.0f)
-                    || IsHalfNaN(p2[j]) || IsHalfNaN(p[j]);
+                    || isnan_fp(p2[j]) || isnan_fp(p[j]);
                 if (iptrUndefined) iErr = 0;
 
                 int fail = !(fabsf(err) <= half_ulps && iErr == 0);
