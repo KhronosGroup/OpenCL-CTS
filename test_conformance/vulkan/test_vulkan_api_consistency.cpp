@@ -26,6 +26,7 @@
 #endif
 
 #include <assert.h>
+#include <memory>
 #include <vector>
 #include <iostream>
 #include <string.h>
@@ -79,9 +80,9 @@ struct ConsistencyExternalBufferTest : public VulkanTestBase
 
         VulkanBufferList vkBufferList(1, *vkDevice, bufferSize,
                                       vkExternalMemoryHandleType);
-        VulkanDeviceMemory* vkDeviceMem = new VulkanDeviceMemory(
+        std::unique_ptr<VulkanDeviceMemory> vkDeviceMem(new VulkanDeviceMemory(
             *vkDevice, vkBufferList[0], memoryTypeList[0],
-            vkExternalMemoryHandleType);
+            vkExternalMemoryHandleType));
 
         vkDeviceMem->bindBuffer(vkBufferList[0], 0);
 
