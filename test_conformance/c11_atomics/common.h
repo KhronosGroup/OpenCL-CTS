@@ -22,12 +22,12 @@
 
 #include "host_atomics.h"
 
-#include "CL/cl_half.h"
-
 #include <iomanip>
 #include <limits>
 #include <sstream>
 #include <vector>
+
+#include "CL/cl_half.h"
 
 #define MAX_DEVICE_THREADS (gHost ? 0U : gMaxDeviceThreads)
 #define MAX_HOST_THREADS GetThreadCount()
@@ -76,9 +76,8 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
-extern cl_half_rounding_mode gHalfRoundingMode;
-extern bool gFloatAtomicsSupported;
-extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
+
+extern cl_device_fp_config gDoubleCaps;
 extern cl_device_fp_config gHalfFPConfig;
 
 extern cl_half_rounding_mode gHalfRoundingMode;
@@ -924,9 +923,19 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
             + ss.str() + "] = {\n";
         ss.str("");
 
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_ATOMIC_DOUBLE> || std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
         {
-            ss << std::setprecision(10) << _startValue;
+            if (std::isinf(_startValue))
+                ss << (_startValue < 0 ? "-" : "") << "INFINITY";
+            else if (std::isnan(_startValue))
+                ss << "0.0 / 0.0";
+            else
+                ss << std::setprecision(
+                    std::numeric_limits<HostDataType>::max_digits10)
+                   << _startValue;
         }
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
