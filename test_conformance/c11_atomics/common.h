@@ -937,7 +937,7 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
                     std::numeric_limits<HostDataType>::max_digits10)
                    << _startValue;
         }
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        else if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
             ss << std::hexfloat
                << _startValue; // use hex format for accurate representation
         else
