@@ -1431,14 +1431,29 @@ public:
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::StartValue;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DataType;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
+    using CBasicTestMemOrderScope<HostAtomicType,
+                                  HostDataType>::DeclaredInProgram;
     CBasicTestFetchAddSpecialFloats(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
                                                                 useSVM)
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
+        // StartValue is used as an index divisor in the following test
+        // logic. It is set to the number of special values, which allows
+        // threads to be mapped deterministically onto the input data array.
+        // This enables repeated add operations arranged so that every
+        // special value is added to every other one (“all-to-all”).
+
+        if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             auto spec_vals = GetSpecialValues();
             StartValue(spec_vals.size());
+            CBasicTestMemOrderScope<HostAtomicType,
+                                    HostDataType>::OldValueCheck(false);
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            auto spec_vals = GetSpecialValues();
+            StartValue(cl_half_from_float(spec_vals.size(), gHalfRoundingMode));
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
         }
@@ -1447,8 +1462,7 @@ public:
     static std::vector<HostDataType> &GetSpecialValues()
     {
         static std::vector<HostDataType> special_values;
-
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
+        if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             const HostDataType test_value_zero =
                 static_cast<HostDataType>(0.0f);
@@ -1484,14 +1498,45 @@ public:
                 }
             }
         }
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            if (special_values.empty())
+            {
+                special_values = {
+                    0xffff, 0x0000, 0x7c00, /*INFINITY*/
+                    0xfc00, /*-INFINITY*/
+                    0x8000, /*-0*/
+                    0x7bff, /*HALF_MAX*/
+                    0x0400, /*HALF_MIN*/
+                    0x3c00, /* 1 */
+                    0xbc00, /* -1 */
+                    0x3555, /*nearest value to 1/3*/
+                    0x3bff, /*largest number less than one*/
+                    0xc000, /* -2 */
+                    0xfbff, /* -HALF_MAX */
+                    0x8400, /* -HALF_MIN */
+                    0x4248, /* M_PI_H */
+                    0xc248, /* -M_PI_H */
+                    0xbbff, /* Largest negative fraction */
+                };
 
+                if (0 != (CL_FP_DENORM & gHalfFPConfig))
+                {
+                    special_values.push_back(0x0001 /* Smallest denormal */);
+                    special_values.push_back(0x03ff /* Largest denormal */);
+                }
+            }
+        }
         return special_values;
     }
 
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             if (threadCount > ref_vals.size())
             {
@@ -1522,8 +1567,19 @@ public:
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
 
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
+            // The start_value variable (set by StartValue) is used
+            // as a divisor of the thread index when selecting the operand for
+            // atomic_fetch_add. This groups threads into blocks corresponding
+            // to the number of special values and implements an “all-to-all”
+            // addition pattern. As a result, each destination element is
+            // updated using different combinations of input values, enabling
+            // consistent comparison between host and device execution.
+
             return std::string(DataType().AddSubOperandTypeName())
                 + " start_value = atomic_load_explicit(destMemory+tid, "
                   "memory_order_relaxed, memory_scope_work_group);\n"
@@ -1540,7 +1596,10 @@ public:
                       volatile HostAtomicType *destMemory,
                       HostDataType *oldValues) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             auto spec_vals = GetSpecialValues();
             host_atomic_store(&destMemory[tid], (HostDataType)oldValues[tid],
@@ -1555,11 +1614,20 @@ public:
                        cl_uint whichDestValue) override
     {
         expected = StartValue();
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
+        if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             auto spec_vals = GetSpecialValues();
             expected = startRefValues[whichDestValue]
                 + startRefValues[whichDestValue / spec_vals.size()];
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            auto spec_vals = GetSpecialValues();
+            expected = cl_half_from_float(
+                cl_half_to_float(startRefValues[whichDestValue])
+                    + cl_half_to_float(
+                        startRefValues[whichDestValue / spec_vals.size()]),
+                gHalfRoundingMode);
         }
 
         return true;
@@ -1568,10 +1636,17 @@ public:
                              const std::vector<HostAtomicType> &testValues,
                              cl_uint whichDestValue) override
     {
-        if (std::isnan(testValues[whichDestValue]) && std::isnan(expected))
-            return false;
+        if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            return static_cast<cl_half>(expected) != testValues[whichDestValue];
+        }
         else
-            return expected != testValues[whichDestValue];
+        {
+            if (std::isnan(testValues[whichDestValue]) && std::isnan(expected))
+                return false;
+            else
+                return expected != testValues[whichDestValue];
+        }
 
         return CBasicTestMemOrderScope<
             HostAtomicType, HostDataType>::IsTestNotAsExpected(expected,
@@ -1581,7 +1656,7 @@ public:
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
+        if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             if (LocalMemory()
                 && (gDoubleAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_ADD_EXT) == 0)
@@ -1600,13 +1675,36 @@ public:
                 if ((gDoubleCaps & CL_FP_INF_NAN) == 0) return 0;
             }
         }
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            if (DeclaredInProgram()) return 0; // skip test - not applicable
+
+            if (LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_ADD_EXT) == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_ADD_EXT) == 0)
+                return 0;
+
+            if (!CBasicTestMemOrderScope<HostAtomicType,
+                                         HostDataType>::LocalMemory()
+                && CBasicTestMemOrderScope<HostAtomicType,
+                                           HostDataType>::DeclaredInProgram())
+            {
+                if ((gHalfFPConfig & CL_FP_INF_NAN) == 0) return 0;
+            }
+        }
         return CBasicTestMemOrderScope<
             HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context,
                                                              queue);
     }
     cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_DOUBLE>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             return threadCount;
         }
@@ -1651,6 +1749,16 @@ static int test_atomic_fetch_add_generic(cl_device_id deviceID,
                      test_spec_double.Execute(deviceID, context, queue,
                                               spec_vals_fp64.size()
                                                   * spec_vals_fp64.size()));
+        auto spec_vals_halfs =
+            CBasicTestFetchAddSpecialFloats<HOST_ATOMIC_HALF,
+                                            HOST_HALF>::GetSpecialValues();
+
+        CBasicTestFetchAddSpecialFloats<HOST_ATOMIC_HALF, HOST_HALF>
+            test_spec_half(TYPE_ATOMIC_HALF, useSVM);
+        EXECUTE_TEST(error,
+                     test_spec_half.Execute(deviceID, context, queue,
+                                            spec_vals_halfs.size()
+                                                * spec_vals_halfs.size()));
 
         CBasicTestFetchAdd<HOST_ATOMIC_HALF, HOST_HALF> test_half(
             TYPE_ATOMIC_HALF, useSVM);

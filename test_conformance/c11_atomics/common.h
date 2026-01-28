@@ -76,9 +76,9 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
-extern bool gFloatAtomicsSupported;
-extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
+
 extern cl_device_fp_config gDoubleCaps;
+extern cl_device_fp_config gHalfFPConfig;
 
 extern cl_half_rounding_mode gHalfRoundingMode;
 extern bool gFloatAtomicsSupported;
@@ -244,12 +244,12 @@ public:
                                       cl_command_queue queue)
     {
         int error = 0;
-        DeclaredInProgram(false);
+        SetDeclaredInProgram(false);
         EXECUTE_TEST(error,
                      ExecuteForEachPointerType(deviceID, context, queue));
         if (!UseSVM())
         {
-            DeclaredInProgram(true);
+            SetDeclaredInProgram(true);
             EXECUTE_TEST(error,
                          ExecuteForEachPointerType(deviceID, context, queue));
         }
@@ -430,7 +430,7 @@ public:
     HostDataType StartValue() { return _startValue; }
     void SetLocalMemory(bool local) { _localMemory = local; }
     bool LocalMemory() { return _localMemory; }
-    void DeclaredInProgram(bool declaredInProgram)
+    void SetDeclaredInProgram(bool declaredInProgram)
     {
         _declaredInProgram = declaredInProgram;
     }
@@ -937,9 +937,11 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
                     std::numeric_limits<HostDataType>::max_digits10)
                    << _startValue;
         }
-        else if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
-            ss << std::hexfloat
-               << _startValue; // use hex format for accurate representation
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            ss << std::setprecision(std::numeric_limits<float>::max_digits10)
+               << cl_half_to_float(_startValue);
+        }
         else
             ss << _startValue;
 
