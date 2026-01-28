@@ -16,6 +16,7 @@
 #include "testBase.h"
 #include "harness/kernelHelpers.h"
 #include "harness/os_helpers.h"
+#include "harness/parseParameters.h"
 #include "harness/testHarness.h"
 
 #include <array>
@@ -432,6 +433,11 @@ REGISTER_TEST(options_denorm_cache)
 REGISTER_TEST(options_uniform_work_group_size)
 {
     if (get_device_cl_version(device) < Version(2, 0))
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
+    // There is currently no way to represent this option in SPIR-V.
+    if (gCompilationMode == kSpir_v)
     {
         return TEST_SKIPPED_ITSELF;
     }
