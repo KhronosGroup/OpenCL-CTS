@@ -3145,14 +3145,20 @@ public:
     using CBasicTestMemOrderScope<HostAtomicType,
                                   HostDataType>::MemoryOrderScopeStr;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
-    CBasicTestFetchMinSpecialFloats(TExplicitAtomicType dataType,
-                                    const HostDataType &special, bool useSVM)
+    CBasicTestFetchMinSpecialFloats(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
                                                                 useSVM)
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        // StartValue is used as an index divisor in the following test
+        // logic. It is set to the number of special values, which allows
+        // threads to be mapped deterministically onto the input data array.
+        // This enables repeated add operations arranged so that every
+        // special value is added to every other one (“all-to-all”).
+
+        if (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
-            StartValue(special);
+            auto spec_vals = GetSpecialValues();
+            StartValue(spec_vals.size());
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
         }
@@ -3161,7 +3167,7 @@ public:
     static std::vector<HostDataType> &GetSpecialValues()
     {
         static std::vector<HostDataType> special_values;
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_FLOAT>)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             const HostDataType test_value_zero =
                 static_cast<HostDataType>(0.0f);
@@ -3204,18 +3210,23 @@ public:
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (threadCount > ref_vals.size())
             {
                 ref_vals.assign(threadCount, 0);
                 auto spec_vals = GetSpecialValues();
 
-                memcpy(ref_vals.data(), spec_vals.data(),
-                       sizeof(HostDataType)
-                           * (ref_vals.data() < spec_vals.data()
-                                  ? threadCount
-                                  : spec_vals.size()));
+                cl_uint total_cnt = 0;
+                while (total_cnt < threadCount)
+                {
+                    cl_uint block_cnt =
+                        std::min((cl_int)(threadCount - total_cnt),
+                                 (cl_int)spec_vals.size());
+                    memcpy(&ref_vals.at(total_cnt), spec_vals.data(),
+                           sizeof(HostDataType) * block_cnt);
+                    total_cnt += block_cnt;
+                }
             }
 
             memcpy(startRefValues, ref_vals.data(),
@@ -3227,27 +3238,48 @@ public:
     }
     std::string ProgramCore() override
     {
+        // The start_value variable (set by StartValue) is used
+        // as a divisor of the thread index when selecting the operand for
+        // atomic_fetch_add. This groups threads into blocks corresponding
+        // to the number of special values and implements an “all-to-all”
+        // addition pattern. As a result, each destination element is
+        // updated using different combinations of input values, enabling
+        // consistent comparison between host and device execution.
+
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
-        return "  oldValues[tid] = atomic_fetch_min" + postfix
-            + "(&destMemory[tid], oldValues[tid] " + memoryOrderScope + ");\n";
+        return std::string(DataType().AddSubOperandTypeName())
+            + "  start_value = atomic_load_explicit(destMemory+tid, "
+              "memory_order_relaxed, memory_scope_work_group);\n"
+              "  atomic_store_explicit(destMemory+tid, oldValues[tid], "
+              "memory_order_relaxed, memory_scope_work_group);\n"
+              "  atomic_fetch_min"
+            + postfix + "(&destMemory[tid], ("
+            + DataType().AddSubOperandTypeName()
+            + ")oldValues[tid/(int)start_value]" + memoryOrderScope + ");\n";
     }
     void HostFunction(cl_uint tid, cl_uint threadCount,
                       volatile HostAtomicType *destMemory,
                       HostDataType *oldValues) override
     {
-        oldValues[tid] = host_atomic_fetch_min(&destMemory[tid], oldValues[tid],
-                                               MemoryOrder());
+        auto spec_vals = GetSpecialValues();
+        host_atomic_store(&destMemory[tid], (HostDataType)oldValues[tid],
+                          MEMORY_ORDER_SEQ_CST);
+        host_atomic_fetch_min(&destMemory[tid],
+                              (HostDataType)oldValues[tid / spec_vals.size()],
+                              MemoryOrder());
     }
     bool ExpectedValue(HostDataType &expected, cl_uint threadCount,
                        HostDataType *startRefValues,
                        cl_uint whichDestValue) override
     {
         expected = StartValue();
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
-            if (startRefValues[whichDestValue] < expected)
-                expected = startRefValues[whichDestValue];
+            auto spec_vals = GetSpecialValues();
+            expected =
+                std::min(startRefValues[whichDestValue],
+                         startRefValues[whichDestValue / spec_vals.size()]);
         }
         return true;
     }
@@ -3258,28 +3290,35 @@ public:
     {
         if (testValues[whichDestValue] != expected)
         {
+            auto spec_vals = GetSpecialValues();
             // special cases
             // min(-0, +0) = min(+0, -0) = +0 or -0,
             if (((startRefValues[whichDestValue] == -0.f)
-                 && (StartValue() == 0.f))
+                 && (startRefValues[whichDestValue / spec_vals.size()] == 0.f))
                 || ((startRefValues[whichDestValue] == 0.f)
-                    && (StartValue() == -0.f)))
+                    && (startRefValues[whichDestValue / spec_vals.size()]
+                        == -0.f)))
                 return false;
-            else if (is_qnan(StartValue())
+            else if (is_qnan(startRefValues[whichDestValue / spec_vals.size()])
                      || is_qnan(startRefValues[whichDestValue]))
             {
                 // min(x, qNaN) = min(qNaN, x) = x,
                 // min(qNaN, qNaN) = qNaN,
-                if (is_qnan(StartValue())
+                if (is_qnan(startRefValues[whichDestValue / spec_vals.size()])
                     && is_qnan(startRefValues[whichDestValue]))
                     return !is_qnan(testValues[whichDestValue]);
-                else if (is_qnan(StartValue()))
-                    return testValues[whichDestValue]
-                        != startRefValues[whichDestValue];
+                else if (is_qnan(
+                             startRefValues[whichDestValue / spec_vals.size()]))
+                    return !std::isnan(testValues[whichDestValue])
+                        && testValues[whichDestValue]
+                        != startRefValues[whichDestValue]; // NaN != NaN always
+                                                           // true
                 else
-                    return testValues[whichDestValue] != StartValue();
+                    return !std::isnan(testValues[whichDestValue])
+                        && testValues[whichDestValue]
+                        != startRefValues[whichDestValue / spec_vals.size()];
             }
-            else if (is_snan(StartValue())
+            else if (is_snan(startRefValues[whichDestValue / spec_vals.size()])
                      || is_snan(startRefValues[whichDestValue]))
             {
                 // min(x, sNaN) = min(sNaN, x) = NaN or x, and
@@ -3287,7 +3326,8 @@ public:
                 if (std::isnan(testValues[whichDestValue])
                     || testValues[whichDestValue]
                         == startRefValues[whichDestValue]
-                    || testValues[whichDestValue] == StartValue())
+                    || testValues[whichDestValue]
+                        == startRefValues[whichDestValue / spec_vals.size()])
                     return false;
             }
         }
@@ -3301,7 +3341,7 @@ public:
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (LocalMemory()
                 && (gFloatAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
@@ -3327,7 +3367,7 @@ public:
     }
     cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             return threadCount;
         }
@@ -3366,14 +3406,11 @@ static int test_atomic_fetch_min_generic(cl_device_id deviceID,
             CBasicTestFetchMinSpecialFloats<HOST_ATOMIC_FLOAT,
                                             HOST_FLOAT>::GetSpecialValues();
 
-        int num_elems = spec_vals.size();
-        for (auto &elem : spec_vals)
-        {
-            CBasicTestFetchMinSpecialFloats<HOST_ATOMIC_FLOAT, HOST_FLOAT>
-                test_float(TYPE_ATOMIC_FLOAT, elem, useSVM);
-            EXECUTE_TEST(
-                error, test_float.Execute(deviceID, context, queue, num_elems));
-        }
+        CBasicTestFetchMinSpecialFloats<HOST_ATOMIC_FLOAT, HOST_FLOAT>
+            test_spec_float(TYPE_ATOMIC_FLOAT, useSVM);
+        EXECUTE_TEST(
+            error,
+            test_spec_float.Execute(deviceID, context, queue, num_elements));
 
         CBasicTestFetchMin<HOST_ATOMIC_DOUBLE, HOST_DOUBLE> test_double(
             TYPE_ATOMIC_DOUBLE, useSVM);
