@@ -22,12 +22,13 @@
 
 #include "host_atomics.h"
 
-#include "CL/cl_half.h"
-
+#include <algorithm>
 #include <iomanip>
 #include <limits>
 #include <sstream>
 #include <vector>
+
+#include "CL/cl_half.h"
 
 #define MAX_DEVICE_THREADS (gHost ? 0U : gMaxDeviceThreads)
 #define MAX_HOST_THREADS GetThreadCount()
@@ -76,10 +77,9 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
-extern cl_half_rounding_mode gHalfRoundingMode;
-extern bool gFloatAtomicsSupported;
-extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
+
 extern cl_device_fp_config gHalfFPConfig;
+extern cl_device_fp_config gFloatCaps;
 
 extern cl_half_rounding_mode gHalfRoundingMode;
 extern bool gFloatAtomicsSupported;
@@ -95,6 +95,37 @@ get_memory_scope_type_name(TExplicitMemoryScopeType scopeType);
 extern cl_int getSupportedMemoryOrdersAndScopes(
     cl_device_id device, std::vector<TExplicitMemoryOrderType> &memoryOrders,
     std::vector<TExplicitMemoryScopeType> &memoryScopes);
+
+union FloatIntUnion {
+    float f;
+    uint32_t i;
+};
+
+template <typename HostDataType> bool is_qnan(const HostDataType &value)
+{
+    if constexpr (std::is_same_v<HostDataType, float>)
+    {
+        FloatIntUnion u;
+        u.f = value;
+        if ((u.i & 0x7F800000) != 0x7F800000) return false;
+        return (u.i & 0x00400000) != 0;
+    }
+    else
+        return std::isnan(value);
+}
+
+template <typename HostDataType> bool is_snan(const HostDataType &value)
+{
+    if constexpr (std::is_same_v<HostDataType, float>)
+    {
+        FloatIntUnion u;
+        u.f = value;
+        if ((u.i & 0x7F800000) != 0x7F800000) return false;
+        return (u.i & 0x00400000) == 0;
+    }
+    else
+        return std::isnan(value);
+}
 
 class AtomicTypeInfo {
 public:
@@ -186,6 +217,7 @@ public:
     virtual bool
     IsTestNotAsExpected(const HostDataType &expected,
                         const std::vector<HostAtomicType> &testValues,
+                        const std::vector<HostDataType> &startRefValues,
                         cl_uint whichDestValue)
     {
         return expected
@@ -924,9 +956,16 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
             + ss.str() + "] = {\n";
         ss.str("");
 
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (std::is_same<HostDataType, HOST_FLOAT>::value)
         {
-            ss << std::setprecision(10) << _startValue;
+            if (std::isinf(_startValue))
+                ss << (_startValue < 0 ? "-" : "") << "INFINITY";
+            else if (std::isnan(_startValue))
+                ss << "0.0f / 0.0f";
+            else
+                ss << std::setprecision(
+                    std::numeric_limits<HostDataType>::max_digits10)
+                   << _startValue;
         }
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
@@ -1495,7 +1534,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (IsTestNotAsExpected(expected, destItems, i))
+        if (IsTestNotAsExpected(expected, destItems, startRefValues, i))
         {
             std::stringstream logLine;
             logLine << "ERROR: Result " << i
