@@ -231,7 +231,7 @@ static inline
     f = cl_half_to_float(cl_half_from_float(f, half_rounding));
 
     To val = static_cast<To>(std::min<float>(std::max<float>(f, loVal), hiVal));
-    if (isnan(cl_half_to_float(rhs)))
+    if (isnan_fp(rhs))
     {
         val = 0;
     }

@@ -71,8 +71,10 @@ extern pfnclEnqueueReleaseExternalMemObjectsKHR
 extern pfnclReleaseSemaphoreKHR clReleaseSemaphoreKHRptr;
 extern pfnclReImportSemaphoreSyncFdKHR pfnclReImportSemaphoreSyncFdKHRptr;
 
-cl_int getCLImageInfoFromVkImageInfo(const VkImageCreateInfo *, size_t,
-                                     cl_image_format *, cl_image_desc *);
+cl_int
+getCLImageInfoFromVkImageInfo(const cl_device_id, const VkImageCreateInfo *,
+                              cl_image_format *, cl_image_desc *,
+                              const VkSubresourceLayout *layout = nullptr);
 cl_int check_external_memory_handle_type(
     cl_device_id deviceID,
     cl_external_memory_handle_type_khr requiredHandleType);
@@ -104,6 +106,7 @@ protected:
     cl_mem m_externalMemory;
     int fd;
     void *handle;
+    cl_image_format img_format;
     clExternalMemoryImage();
 
 public:
@@ -115,6 +118,7 @@ public:
         cl_device_id deviceId);
     virtual ~clExternalMemoryImage();
     cl_mem getExternalMemoryImage();
+    cl_image_format getImageFormat() { return img_format; };
 };
 
 class clExternalSemaphore {

@@ -108,7 +108,11 @@ REGISTER_TEST_VERSION(sub_group_dispatch, Version(2, 1))
                             nullptr);
     test_error(error, "clGetDeviceInfo failed");
 
-    max_local = max_work_item_sizes[0];
+    error = clGetKernelWorkGroupInfo(kernel, device, CL_KERNEL_WORK_GROUP_SIZE,
+                                     sizeof(max_local), &max_local, nullptr);
+    test_error(error, "clGetKernelWorkGroupInfo failed");
+
+    max_local = std::min(max_local, max_work_item_sizes[0]);
 
     error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform),
                             (void *)&platform, NULL);

@@ -22,6 +22,7 @@
 
 #include "harness/conversions.h"
 #include "harness/ThreadPool.h"
+#include "harness/parseParameters.h"
 
 #define NUM_TESTS 23
 
@@ -823,10 +824,10 @@ int run_specific_test(cl_device_id deviceID, cl_context context, cl_command_queu
 int run_multiple_tests(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num, int *tests, int total_tests) {
     int errors = 0;
 
-    if (getenv("CL_WIMPY_MODE") && num == LONG_MATH_SHIFT_SIZE) {
-      log_info("Detected CL_WIMPY_MODE env\n");
-      log_info("Skipping long test\n");
-      return 0;
+    if (gWimpyMode && num == LONG_MATH_SHIFT_SIZE)
+    {
+        log_info("Running in wimpy mode, skipping long test\n");
+        return 0;
     }
 
     int i;
