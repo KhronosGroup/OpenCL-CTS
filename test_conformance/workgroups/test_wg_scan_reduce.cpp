@@ -21,6 +21,10 @@
 
 #include "testBase.h"
 
+cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
+constexpr cl_half g_half_min = 0xfbff;
+constexpr cl_half g_half_max = 0x7bff;
+
 static std::string make_kernel_string(const std::string &type,
                                       const std::string &kernelName,
                                       const std::string &func)
@@ -64,6 +68,25 @@ template <> struct TestTypeInfo<cl_ulong>
     static constexpr const char *deviceName = "ulong";
 };
 
+template <> struct TestTypeInfo<cl_double>
+{
+    static constexpr const char *deviceName = "double";
+};
+
+template <> struct TestTypeInfo<cl_float>
+{
+    static constexpr const char *deviceName = "float";
+};
+
+// please keep in mind cl_half type on host side is the same as uint16_t,
+// therefore, if you will add below 16-bit unsigned int type support it will be
+// likely confused with cl_half
+
+template <> struct TestTypeInfo<cl_half>
+{
+    static constexpr const char *deviceName = "half";
+};
+
 template <typename T> struct Add
 {
     using Type = T;
@@ -72,12 +95,39 @@ template <typename T> struct Add
     static T combine(T a, T b) { return a + b; }
 };
 
+template <> struct Add<cl_half>
+{
+    using Type = cl_half;
+    static constexpr const char *opName = "add";
+    static constexpr Type identityValue = 0;
+    static Type combine(Type a, Type b)
+    {
+        return cl_half_from_float(cl_half_to_float(a) + cl_half_to_float(b),
+                                  gHalfRoundingMode);
+    }
+};
+
 template <typename T> struct Max
 {
     using Type = T;
     static constexpr const char *opName = "max";
-    static constexpr T identityValue = std::numeric_limits<T>::min();
+    static constexpr T identityValue = std::is_integral_v<T>
+        ? std::numeric_limits<T>::min()
+        : -std::numeric_limits<T>::max();
     static T combine(T a, T b) { return std::max(a, b); }
+};
+
+template <> struct Max<cl_half>
+{
+    using Type = cl_half;
+    static constexpr const char *opName = "max";
+    static constexpr Type identityValue = g_half_min;
+    static Type combine(Type a, Type b)
+    {
+        return cl_half_from_float(
+            std::max(cl_half_to_float(a), cl_half_to_float(b)),
+            gHalfRoundingMode);
+    }
 };
 
 template <typename T> struct Min
@@ -88,17 +138,52 @@ template <typename T> struct Min
     static T combine(T a, T b) { return std::min(a, b); }
 };
 
+template <> struct Min<cl_half>
+{
+    using Type = cl_half;
+    static constexpr const char *opName = "min";
+    static constexpr Type identityValue = g_half_max;
+    static Type combine(Type a, Type b)
+    {
+        return cl_half_from_float(
+            std::min(cl_half_to_float(a), cl_half_to_float(b)),
+            gHalfRoundingMode);
+    }
+};
+
 template <typename C> struct Reduce
 {
     using Type = typename C::Type;
+    using Operation = C;
 
     static constexpr const char *testName = "work_group_reduce";
     static constexpr const char *testOpName = C::opName;
     static constexpr const char *deviceTypeName =
         TestTypeInfo<Type>::deviceName;
     static constexpr const char *kernelName = "test_wg_reduce";
+
+    static int check_result(const Type &test_value, const Type &reference,
+                            const Type &max_err = 0)
+    {
+        if constexpr (std::is_floating_point_v<Type>)
+        {
+            if (fabs(reference - test_value) > max_err) return -1;
+        }
+        else if constexpr (std::is_same_v<Type, cl_half>)
+        {
+            if (fabs(cl_half_to_float(reference) - cl_half_to_float(test_value))
+                > cl_half_to_float(max_err))
+                return -1;
+        }
+        else
+        {
+            if (reference != test_value) return -1;
+        }
+        return CL_SUCCESS;
+    }
+
     static int verify(Type *inptr, Type *outptr, size_t n_elems,
-                      size_t max_wg_size)
+                      size_t max_wg_size, const Type &max_err = 0)
     {
         for (size_t i = 0; i < n_elems; i += max_wg_size)
         {
@@ -112,7 +197,7 @@ template <typename C> struct Reduce
 
             for (size_t j = 0; j < wg_size; j++)
             {
-                if (result != outptr[i + j])
+                if (check_result(outptr[i + j], result, max_err) != CL_SUCCESS)
                 {
                     log_info("%s_%s: Error at %zu\n", testName, testOpName,
                              i + j);
@@ -122,11 +207,92 @@ template <typename C> struct Reduce
         }
         return 0;
     }
+
+    static void generate_reference_values(Type *inptr, size_t n_elems,
+                                          size_t max_wg_size, Type &max_err = 0)
+    {
+        MTdataHolder d(gRandomSeed);
+        if constexpr (std::is_floating_point_v<
+                          Type> || std::is_same_v<Type, cl_half>)
+        {
+            std::vector<Type> ref_vals(max_wg_size, 0);
+            if constexpr (std::is_same_v<Type, cl_half>)
+            {
+                // to prevent overflow limit range of randomization
+                float max_range = 99.0;
+                float min_range = -99.0;
+                // generate reference values for one work group
+                for (size_t j = 0; j < max_wg_size; j++)
+                    ref_vals[j] = cl_half_from_float(
+                        get_random_float(min_range, max_range, d),
+                        gHalfRoundingMode);
+
+                // populate reference data across all work groups
+                for (size_t i = 0; i < (size_t)n_elems; i += max_wg_size)
+                {
+                    size_t wg_size = std::min(max_wg_size, n_elems - i);
+                    memcpy(&inptr[i], ref_vals.data(), sizeof(Type) * wg_size);
+                }
+
+                if constexpr (std::is_same_v<Operation, Add<Type>>)
+                {
+                    // compute maximal summation error
+                    std::sort(ref_vals.begin(), ref_vals.end(),
+                              [](cl_half a, cl_half b) {
+                                  return std::abs(cl_half_to_float(a))
+                                      < std::abs(cl_half_to_float(b));
+                              });
+
+                    float s = 0.f;
+                    for (auto it = ref_vals.begin(); it != ref_vals.end(); ++it)
+                        s += std::abs(cl_half_to_float(*it));
+                    max_err = cl_half_from_float(
+                        fabs((max_wg_size - 1) * CL_HALF_EPSILON * s),
+                        gHalfRoundingMode);
+                }
+            }
+            else
+            {
+                double max_range = 999.0;
+                double min_range = -999.0;
+                for (size_t j = 0; j < max_wg_size; j++)
+                    ref_vals[j] = get_random_float(min_range, max_range, d);
+
+                for (size_t i = 0; i < (size_t)n_elems; i += max_wg_size)
+                {
+                    size_t work_group_size = std::min(max_wg_size, n_elems - i);
+                    memcpy(&inptr[i], ref_vals.data(),
+                           sizeof(Type) * work_group_size);
+                }
+
+                if constexpr (std::is_same_v<Operation, Add<Type>>)
+                {
+                    // compute maximal summation error
+                    std::sort(ref_vals.begin(), ref_vals.end());
+                    Type abs_sum = 0;
+                    for (auto elem : ref_vals) abs_sum += fabs(elem);
+                    // Higham, N. J. (2002). Accuracy and Stability of Numerical
+                    // Algorithms (2nd ed.), Chapter 4: Summation, Section 2:
+                    // Error Analysis (worst case error summation)
+                    max_err = (max_wg_size - 1)
+                        * (std::is_same_v<Type, cl_float> ? CL_FLT_EPSILON
+                                                          : CL_DBL_EPSILON)
+                        * abs_sum;
+                }
+            }
+        }
+        else
+        {
+            for (size_t i = 0; i < n_elems; i++)
+                inptr[i] = (Type)genrand_int64(d);
+        }
+    }
 };
 
 template <typename C> struct ScanInclusive
 {
     using Type = typename C::Type;
+    using Operation = C;
 
     static constexpr const char *testName = "work_group_scan_inclusive";
     static constexpr const char *testOpName = C::opName;
@@ -134,7 +300,7 @@ template <typename C> struct ScanInclusive
         TestTypeInfo<Type>::deviceName;
     static constexpr const char *kernelName = "test_wg_scan_inclusive";
     static int verify(Type *inptr, Type *outptr, size_t n_elems,
-                      size_t max_wg_size)
+                      size_t max_wg_size, const Type &max_err = 0)
     {
         for (size_t i = 0; i < n_elems; i += max_wg_size)
         {
@@ -154,11 +320,19 @@ template <typename C> struct ScanInclusive
         }
         return 0;
     }
+
+    static void generate_reference_values(Type *inptr, size_t n_elems,
+                                          size_t max_wg_size, Type &max_err = 0)
+    {
+        MTdataHolder d(gRandomSeed);
+        for (size_t i = 0; i < n_elems; i++) inptr[i] = (Type)genrand_int64(d);
+    }
 };
 
 template <typename C> struct ScanExclusive
 {
     using Type = typename C::Type;
+    using Operation = C;
 
     static constexpr const char *testName = "work_group_scan_exclusive";
     static constexpr const char *testOpName = C::opName;
@@ -166,7 +340,7 @@ template <typename C> struct ScanExclusive
         TestTypeInfo<Type>::deviceName;
     static constexpr const char *kernelName = "test_wg_scan_exclusive";
     static int verify(Type *inptr, Type *outptr, size_t n_elems,
-                      size_t max_wg_size)
+                      size_t max_wg_size, const Type &max_err = 0)
     {
         for (size_t i = 0; i < n_elems; i += max_wg_size)
         {
@@ -185,6 +359,13 @@ template <typename C> struct ScanExclusive
             }
         }
         return 0;
+    }
+
+    static void generate_reference_values(Type *inptr, size_t n_elems,
+                                          size_t max_wg_size, Type &max_err = 0)
+    {
+        MTdataHolder d(gRandomSeed);
+        for (size_t i = 0; i < n_elems; i++) inptr[i] = (Type)genrand_int64(d);
     }
 };
 
@@ -193,7 +374,6 @@ static int run_test(cl_device_id device, cl_context context,
                     cl_command_queue queue, int n_elems)
 {
     using T = typename TestInfo::Type;
-
     cl_int err = CL_SUCCESS;
 
     clProgramWrapper program;
@@ -231,11 +411,9 @@ static int run_test(cl_device_id device, cl_context context,
 
     std::vector<T> input_ptr(n_elems);
 
-    MTdataHolder d(gRandomSeed);
-    for (int i = 0; i < n_elems; i++)
-    {
-        input_ptr[i] = (T)genrand_int64(d);
-    }
+    T max_err = 0;
+    TestInfo::generate_reference_values(input_ptr.data(), n_elems, wg_size[0],
+                                        max_err);
 
     err = clEnqueueWriteBuffer(queue, src, CL_TRUE, 0, sizeof(T) * n_elems,
                                input_ptr.data(), 0, NULL, NULL);
@@ -260,10 +438,10 @@ static int run_test(cl_device_id device, cl_context context,
     test_error(err, "clEnqueueReadBuffer to read read dst buffer failed");
 
     if (TestInfo::verify(input_ptr.data(), output_ptr.data(), n_elems,
-                         wg_size[0]))
+                         wg_size[0], max_err))
     {
-        log_error("%s_%s %s failed\n", TestInfo::testName, TestInfo::testOpName,
-                  TestInfo::deviceTypeName);
+        log_error("%s_%s %s verify failed\n", TestInfo::testName,
+                  TestInfo::testOpName, TestInfo::deviceTypeName);
         return TEST_FAIL;
     }
 
@@ -289,6 +467,37 @@ REGISTER_TEST_VERSION(work_group_reduce_add, Version(2, 0))
                                                   num_elements);
     }
 
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        const cl_device_fp_config fpConfigHalf =
+            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
+        if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTE;
+        }
+        else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTZ;
+        }
+        else
+        {
+            log_error("Error while acquiring half rounding mode\n");
+            return TEST_FAIL;
+        }
+
+        result |= run_test<Reduce<Add<cl_half>>>(device, context, queue,
+                                                 num_elements);
+    }
+
+    result |=
+        run_test<Reduce<Add<cl_float>>>(device, context, queue, num_elements);
+
+    if (is_extension_available(device, "cl_khr_fp64"))
+    {
+        result |= run_test<Reduce<Add<cl_double>>>(device, context, queue,
+                                                   num_elements);
+    }
+
     return result;
 }
 
@@ -309,6 +518,37 @@ REGISTER_TEST_VERSION(work_group_reduce_max, Version(2, 0))
                                                   num_elements);
     }
 
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        const cl_device_fp_config fpConfigHalf =
+            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
+        if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTE;
+        }
+        else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTZ;
+        }
+        else
+        {
+            log_error("Error while acquiring half rounding mode\n");
+            return TEST_FAIL;
+        }
+
+        result |= run_test<Reduce<Max<cl_half>>>(device, context, queue,
+                                                 num_elements);
+    }
+
+    result |=
+        run_test<Reduce<Max<cl_float>>>(device, context, queue, num_elements);
+
+    if (is_extension_available(device, "cl_khr_fp64"))
+    {
+        result |= run_test<Reduce<Max<cl_double>>>(device, context, queue,
+                                                   num_elements);
+    }
+
     return result;
 }
 
@@ -327,6 +567,37 @@ REGISTER_TEST_VERSION(work_group_reduce_min, Version(2, 0))
                                                  num_elements);
         result |= run_test<Reduce<Min<cl_ulong>>>(device, context, queue,
                                                   num_elements);
+    }
+
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        const cl_device_fp_config fpConfigHalf =
+            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
+        if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTE;
+        }
+        else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTZ;
+        }
+        else
+        {
+            log_error("Error while acquiring half rounding mode\n");
+            return TEST_FAIL;
+        }
+
+        result |= run_test<Reduce<Min<cl_half>>>(device, context, queue,
+                                                 num_elements);
+    }
+
+    result |=
+        run_test<Reduce<Min<cl_float>>>(device, context, queue, num_elements);
+
+    if (is_extension_available(device, "cl_khr_fp64"))
+    {
+        result |= run_test<Reduce<Min<cl_double>>>(device, context, queue,
+                                                   num_elements);
     }
 
     return result;
