@@ -19,6 +19,14 @@
 #if D3D12_IS_SUPPORTED
 #include <d3d12.h>
 #endif
+#if D3D11_IS_SUPPORTED
+#include <cl/cl_d3d11.h>
+#endif
+#if D3D10_IS_SUPPORTED
+#include <cl/cl_d3d10.h>
+#endif
+
+#include <vector>
 #include <wrl/client.h>
 
 using namespace Microsoft::WRL;
@@ -46,5 +54,35 @@ public:
 private:
     ComPtr<ID3D12Fence> dx_fence = nullptr;
     ComPtr<ID3D12Device> dx_device = nullptr;
+};
+#endif
+
+#if D3D11_IS_SUPPORTED
+struct DirectX11Wrapper
+{
+    struct DeviceEntry
+    {
+        ComPtr<IDXGIAdapter> dx_adapter;
+        ComPtr<ID3D11Device> dx_device;
+    };
+
+    DirectX11Wrapper();
+
+    std::vector<DeviceEntry> devices;
+};
+#endif
+
+#if D3D10_IS_SUPPORTED
+struct DirectX10Wrapper
+{
+    struct DeviceEntry
+    {
+        ComPtr<IDXGIAdapter> dx_adapter;
+        ComPtr<ID3D10Device> dx_device;
+    };
+
+    DirectX10Wrapper();
+
+    std::vector<DeviceEntry> devices;
 };
 #endif

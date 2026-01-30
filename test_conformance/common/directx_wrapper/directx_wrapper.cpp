@@ -73,3 +73,65 @@ DirectX12FenceWrapper::DirectX12FenceWrapper(ID3D12Device* dx_device)
     }
 }
 #endif
+
+#if D3D11_IS_SUPPORTED
+DirectX11Wrapper::DirectX11Wrapper()
+{
+    ComPtr<IDXGIFactory> factory;
+    HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(factory.GetAddressOf()));
+    if (FAILED(hr))
+    {
+        throw std::runtime_error("Failed to create DXGI factory");
+    }
+
+    UINT i = 0;
+    ComPtr<IDXGIAdapter> adapter;
+    while (factory->EnumAdapters(i, adapter.GetAddressOf())
+           != DXGI_ERROR_NOT_FOUND)
+    {
+        ++i;
+
+        ComPtr<ID3D11Device> device;
+        hr = D3D11CreateDevice(adapter.Get(), D3D_DRIVER_TYPE_HARDWARE, nullptr,
+                               0, nullptr, 0, D3D11_SDK_VERSION,
+                               device.GetAddressOf(), nullptr, nullptr);
+        if (FAILED(hr))
+        {
+            throw std::runtime_error("Failed to create DirectX 10 device");
+        }
+
+        devices.push_back({ adapter, device });
+    }
+}
+#endif
+
+#if D3D10_IS_SUPPORTED
+DirectX10Wrapper::DirectX10Wrapper()
+{
+    ComPtr<IDXGIFactory> factory;
+    HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(factory.GetAddressOf()));
+    if (FAILED(hr))
+    {
+        throw std::runtime_error("Failed to create DXGI factory");
+    }
+
+    UINT i = 0;
+    ComPtr<IDXGIAdapter> adapter;
+    while (factory->EnumAdapters(i, adapter.GetAddressOf())
+           != DXGI_ERROR_NOT_FOUND)
+    {
+        ++i;
+
+        ComPtr<ID3D10Device> device;
+        hr = D3D10CreateDevice(adapter.Get(), D3D10_DRIVER_TYPE_HARDWARE,
+                               nullptr, 0, D3D10_SDK_VERSION,
+                               device.GetAddressOf());
+        if (FAILED(hr))
+        {
+            throw std::runtime_error("Failed to create DirectX 10 device");
+        }
+
+        devices.push_back({ adapter, device });
+    }
+}
+#endif
