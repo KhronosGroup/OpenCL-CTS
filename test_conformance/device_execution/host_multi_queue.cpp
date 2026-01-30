@@ -17,6 +17,7 @@
 #include <string.h>
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
+#include "harness/parseParameters.h"
 
 #include <vector>
 
@@ -25,7 +26,6 @@
 
 
 #ifdef CL_VERSION_2_0
-extern int gWimpyMode;
 static const char* multi_queue_simple_block1[] =
 {
     NL, "void block_fn(size_t tid, int mul, __global int* res)"

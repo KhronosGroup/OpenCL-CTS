@@ -44,3 +44,9 @@ REGISTER_TEST(explicit_flush)
     return MakeAndRunTest<ExplicitFlushTest>(device, context, queue,
                                              num_elements);
 }
+
+REGISTER_TEST(enqueue_and_release)
+{
+    return MakeAndRunTest<EnqueueAndReleaseTest>(device, context, queue,
+                                                 num_elements);
+}
