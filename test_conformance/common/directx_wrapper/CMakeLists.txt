@@ -9,8 +9,12 @@ target_include_directories(directx_wrapper
 
 target_compile_definitions(directx_wrapper
     PUBLIC
+        $<$<BOOL:${D3D10_IS_SUPPORTED}>:D3D10_IS_SUPPORTED>
+        $<$<BOOL:${D3D11_IS_SUPPORTED}>:D3D11_IS_SUPPORTED>
         $<$<BOOL:${D3D12_IS_SUPPORTED}>:D3D12_IS_SUPPORTED>)
 
 target_link_libraries(directx_wrapper
     dxgi
+    $<$<BOOL:${D3D10_IS_SUPPORTED}>:d3d10>
+    $<$<BOOL:${D3D11_IS_SUPPORTED}>:d3d11>
     $<$<BOOL:${D3D12_IS_SUPPORTED}>:d3d12>)
