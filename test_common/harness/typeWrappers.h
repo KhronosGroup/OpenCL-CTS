@@ -16,6 +16,7 @@
 #ifndef _typeWrappers_h
 #define _typeWrappers_h
 
+#include <cstddef>
 #if !defined(_WIN32)
 #include <sys/mman.h>
 #endif
@@ -182,6 +183,20 @@ public:
     {
         if (Ptr) clSVMFree(Ctx, Ptr);
     }
+
+    bool operator==(const clSVMWrapper &other) const noexcept
+    {
+        return Ctx == other.Ctx && Ptr == other.Ptr;
+    }
+
+    bool operator!=(const clSVMWrapper &other) const noexcept
+    {
+        return !(*this == other);
+    }
+
+    bool operator==(std::nullptr_t) const noexcept { return Ptr == nullptr; }
+
+    bool operator!=(std::nullptr_t) const noexcept { return Ptr != nullptr; }
 
     void *operator()() const { return Ptr; }
 };
