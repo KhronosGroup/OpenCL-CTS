@@ -261,50 +261,6 @@ TestNonUniformWorkGroup::TestNonUniformWorkGroup(
         return;
     }
 
-    // For OpenCL-3.0 support for non-uniform workgroups is optional, it's still
-    // useful to run these tests since we can verify the behavior of the
-    // get_enqueued_local_size() builtin for uniform workgroups, so we round up
-    // the global size to insure uniform workgroups on those 3.0 devices.
-    // We only need to do this when localSize is non-null, otherwise the driver
-    // will select a value for localSize which will be uniform on devices that
-    // don't support non-uniform work-groups.
-    if (nullptr != localSize && get_device_cl_version(device) >= Version(3, 0))
-    {
-        // Query for the non-uniform work-group support.
-        cl_bool are_non_uniform_sub_groups_supported{ CL_FALSE };
-        auto error =
-            clGetDeviceInfo(device, CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT,
-                            sizeof(are_non_uniform_sub_groups_supported),
-                            &are_non_uniform_sub_groups_supported, nullptr);
-        if (error)
-        {
-            print_error(error,
-                        "clGetDeviceInfo failed for "
-                        "CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT");
-            // This signals an error to the caller (see above).
-            _globalSize[0] = 0;
-            return;
-        }
-
-        // If non-uniform work-groups are not supported round up the global
-        // sizes so workgroups are uniform and we have at least one.
-        if (CL_FALSE == are_non_uniform_sub_groups_supported)
-        {
-            log_info(
-                "WARNING: Non-uniform work-groups are not supported on this "
-                "device.\n Running test with uniform work-groups.\n");
-            for (unsigned dim = 0; dim < dims; ++dim)
-            {
-                auto global_size_before = globalSize[dim];
-                auto global_size_rounded = global_size_before
-                    + (localSize[dim] - global_size_before % localSize[dim]);
-                globalSize[dim] = global_size_rounded;
-                log_info("Rounding globalSize[%d] = %zu -> %zu\n", dim,
-                         global_size_before, global_size_rounded);
-            }
-        }
-    }
-
     cl_uint i;
     _globalWorkOffset_IsNull = true;
     _localSize_IsNull = true;
@@ -536,6 +492,48 @@ int TestNonUniformWorkGroup::prepareDevice () {
     if(_enqueuedLocalSize[i] > _maxWorkItemSizes[i]) {
       _enqueuedLocalSize[i] = _maxWorkItemSizes[i];
     }
+  }
+
+  // For OpenCL-3.0 support for non-uniform workgroups is optional, it's still
+  // useful to run these tests since we can verify the behavior of the
+  // get_enqueued_local_size() builtin for uniform workgroups, so we round up
+  // the global size to insure uniform workgroups on those 3.0 devices.
+  // We only need to do this when localSize is non-null, otherwise the driver
+  // will select a value for localSize which will be uniform on devices that
+  // don't support non-uniform work-groups.
+  if (get_device_cl_version(_device) >= Version(3, 0))
+  {
+      // Query for the non-uniform work-group support.
+      cl_bool are_non_uniform_sub_groups_supported{ CL_FALSE };
+      auto error =
+          clGetDeviceInfo(_device, CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT,
+                          sizeof(are_non_uniform_sub_groups_supported),
+                          &are_non_uniform_sub_groups_supported, nullptr);
+      if (error)
+      {
+          print_error(error,
+                      "clGetDeviceInfo failed for "
+                      "CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT");
+          return -1;
+      }
+
+      // If non-uniform work-groups are not supported round up the global
+      // sizes so workgroups are uniform and we have at least one.
+      if (CL_FALSE == are_non_uniform_sub_groups_supported)
+      {
+          log_info("WARNING: Non-uniform work-groups are not supported on this "
+                   "device.\n Running test with uniform work-groups.\n");
+          for (unsigned dim = 0; dim < _dims; ++dim)
+          {
+              auto global_size_before = _globalSize[dim];
+              auto global_size_rounded = global_size_before
+                  + (_enqueuedLocalSize[dim]
+                     - global_size_before % _enqueuedLocalSize[dim]);
+              _globalSize[dim] = global_size_rounded;
+              log_info("Rounding _globalSize[%d] = %zu -> %zu\n", dim,
+                       global_size_before, global_size_rounded);
+          }
+      }
   }
 
   if(_localSize_IsNull == false)
