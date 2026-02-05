@@ -1071,7 +1071,8 @@ VulkanComputePipeline::VulkanComputePipeline(
 
 VulkanComputePipeline::VulkanComputePipeline(
     const VulkanDevice &device, const VulkanPipelineLayout &pipelineLayout,
-    const VulkanShaderModule &shaderModule, const std::string &entryFuncName)
+    const VulkanShaderModule &shaderModule, const std::string &entryFuncName,
+    const VkSpecializationInfo *spec)
     : VulkanPipeline(device)
 {
     VkPipelineShaderStageCreateInfo vkPipelineShaderStageCreateInfo = {};
@@ -1083,6 +1084,8 @@ VulkanComputePipeline::VulkanComputePipeline(
     vkPipelineShaderStageCreateInfo.module = shaderModule;
     vkPipelineShaderStageCreateInfo.pName = entryFuncName.c_str();
     vkPipelineShaderStageCreateInfo.pSpecializationInfo = NULL;
+
+    if (spec) vkPipelineShaderStageCreateInfo.pSpecializationInfo = spec;
 
     VkComputePipelineCreateInfo vkComputePipelineCreateInfo = {};
     vkComputePipelineCreateInfo.sType =
@@ -1333,12 +1336,12 @@ void VulkanDescriptorSet::update(uint32_t binding,
     vkUpdateDescriptorSets(m_device, 1, &vkWriteDescriptorSet, 0, NULL);
 }
 
-void VulkanDescriptorSet::updateArray(uint32_t binding,
+void VulkanDescriptorSet::updateArray(uint32_t binding, unsigned numImages,
                                       const VulkanImageViewList &imageViewList)
 {
     VkDescriptorImageInfo *vkDescriptorImageInfo =
         new VkDescriptorImageInfo[imageViewList.size()];
-    for (size_t i = 0; i < imageViewList.size(); i++)
+    for (size_t i = 0; i < numImages; i++)
     {
         vkDescriptorImageInfo[i].sampler = VK_NULL_HANDLE;
         vkDescriptorImageInfo[i].imageView = imageViewList[i];
@@ -1351,7 +1354,7 @@ void VulkanDescriptorSet::updateArray(uint32_t binding,
     vkWriteDescriptorSet.dstSet = m_vkDescriptorSet;
     vkWriteDescriptorSet.dstBinding = binding;
     vkWriteDescriptorSet.dstArrayElement = 0;
-    vkWriteDescriptorSet.descriptorCount = imageViewList.size();
+    vkWriteDescriptorSet.descriptorCount = numImages;
     vkWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
     vkWriteDescriptorSet.pImageInfo = vkDescriptorImageInfo;
     vkWriteDescriptorSet.pBufferInfo = NULL;
