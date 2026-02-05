@@ -296,7 +296,8 @@ public:
     VulkanComputePipeline(const VulkanDevice &device,
                           const VulkanPipelineLayout &pipelineLayout,
                           const VulkanShaderModule &shaderModule,
-                          const std::string &entryFuncName = "main");
+                          const std::string &entryFuncName = "main",
+                          const VkSpecializationInfo *spec = nullptr);
     virtual ~VulkanComputePipeline();
     VulkanPipelineBindPoint getPipelineBindPoint() const;
 };
