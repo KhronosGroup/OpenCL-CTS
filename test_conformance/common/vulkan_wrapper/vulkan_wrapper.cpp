@@ -688,7 +688,6 @@ VulkanDevice::VulkanDevice(
         storage8Features.sType =
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
 
-        // łańcuch pNext
         int8Features.pNext = &storage8Features;
 
         VkPhysicalDeviceFeatures2 features2{};
