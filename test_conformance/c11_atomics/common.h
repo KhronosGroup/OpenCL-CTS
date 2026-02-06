@@ -926,7 +926,14 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
 
         if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
-            ss << std::setprecision(10) << _startValue;
+            ss << std::setprecision(std::numeric_limits<cl_float>::max_digits10)
+               << _startValue;
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
+        {
+            ss << std::setprecision(
+                std::numeric_limits<cl_double>::max_digits10)
+               << _startValue;
         }
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
