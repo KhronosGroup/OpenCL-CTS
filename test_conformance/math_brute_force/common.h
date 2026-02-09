@@ -131,7 +131,6 @@ struct TestInfoBase
 
     // Result limit for half_sin/half_cos/half_tan.
     float half_sin_cos_tan_limit = -1.f;
-    float tgamma_arg_limit = 0.f;
 
     // Whether the test is being run in relaxed mode.
     bool relaxedMode = false;
