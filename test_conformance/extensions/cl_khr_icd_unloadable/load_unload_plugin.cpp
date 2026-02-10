@@ -15,19 +15,7 @@
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 
-#if defined _WIN32 || defined __CYGWIN__
-#ifdef __GNUC__
-#define PLUGIN_API __attribute__((dllexport))
-#else
-#define PLUGIN_API __declspec(dllexport)
-#endif
-#else
-#if __GNUC__ >= 4
-#define PLUGIN_API __attribute__((visibility("default")))
-#else
-#define PLUGIN_API
-#endif
-#endif
+#include <array>
 
 REGISTER_TEST(execute_kernel)
 {
@@ -78,6 +66,20 @@ REGISTER_TEST(execute_kernel)
 
     return TEST_PASS;
 }
+
+#if defined _WIN32 || defined __CYGWIN__
+#ifdef __GNUC__
+#define PLUGIN_API __attribute__((dllexport))
+#else
+#define PLUGIN_API __declspec(dllexport)
+#endif
+#else
+#if __GNUC__ >= 4
+#define PLUGIN_API __attribute__((visibility("default")))
+#else
+#define PLUGIN_API
+#endif
+#endif
 
 #ifdef __cplusplus
 extern "C" {

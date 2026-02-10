@@ -28,7 +28,8 @@ using PluginHandle = HMODULE;
 #define GetFunctionAddress(_handle, _name) ::GetProcAddress(_handle, _name)
 #else
 using PluginHandle = void *;
-#define LoadPlugin() ::dlopen("libLoadUnloadPlugin.so", RTLD_LAZY | RTLD_LOCAL)
+#define LoadPlugin()                                                           \
+    ::dlopen("./libLoadUnloadPlugin.so", RTLD_LAZY | RTLD_LOCAL)
 #define ClosePlugin(_handle) ::dlclose(_handle)
 #define GetFunctionAddress(_handle, _name) ::dlsym(_handle, _name)
 #endif
