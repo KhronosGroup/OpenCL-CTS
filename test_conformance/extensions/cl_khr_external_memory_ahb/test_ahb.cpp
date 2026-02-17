@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+#include "harness/deviceInfo.h"
 #include "harness/compat.h"
 #include "harness/kernelHelpers.h"
 #include "harness/imageHelpers.h"
@@ -2332,6 +2333,111 @@ REGISTER_TEST(sub_buffer)
                     return TEST_FAIL;
                 }
             }
+        }
+    }
+    return TEST_PASS;
+}
+
+/* Testing clEnqueueMapBuffer & clEnqueueUnmapMemObject
+ *  Create AHB
+ *  Create CL buffer from AHB
+ *  Write to AHB by locking it
+ *  Verify write using clEnqueueMapBuffer clEnqueueUnmapMemObject
+ */
+REGISTER_TEST(enqueue_map_buffer)
+{
+    cl_int err;
+    RandomSeed seed(gRandomSeed);
+
+    REQUIRE_EXTENSION("cl_khr_external_memory");
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
+
+    const ahb_format_table test_format = { AHARDWAREBUFFER_FORMAT_BLOB };
+
+    AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
+    aHardwareBufferDesc.format = test_format.aHardwareBufferFormat;
+    for (auto usage : test_buffer_usages)
+    {
+        aHardwareBufferDesc.usage = usage.usageFlags;
+        for (uint32_t buffer_size : test_buffer_sizes)
+        {
+            if (buffer_size > get_device_info_max_mem_alloc_size(device))
+            {
+                continue;
+            }
+
+            aHardwareBufferDesc.width = buffer_size;
+            aHardwareBufferDesc.height = 1;
+            aHardwareBufferDesc.layers = 1;
+
+            CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, test_format);
+
+            AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+            log_info("Testing usage: %s, buffer size: %u\n",
+                     ahardwareBufferDecodeUsageFlagsToString(usage.usageFlags)
+                         .c_str(),
+                     buffer_size);
+
+            cl_mem_properties props[] = {
+                CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
+                aHardwareBuffer.get_props(), 0
+            };
+
+            clMemWrapper buffer = clCreateBufferWithProperties(
+                context, props, CL_MEM_READ_WRITE, 0, nullptr, &err);
+            test_error(err, "Failed to create CL buffer from AHardwareBuffer");
+
+
+            void *hardware_buffer_data = nullptr;
+            int ahb_result = AHardwareBuffer_lock(
+                aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN, -1,
+                nullptr, &hardware_buffer_data);
+            if (ahb_result != 0)
+            {
+                log_error("AHardwareBuffer_lock failed with code %d\n",
+                          ahb_result);
+                return TEST_FAIL;
+            }
+
+            std::vector<uint8_t> host_buffer(buffer_size);
+
+            generate_random_data(ExplicitType::kUnsignedChar, buffer_size, seed,
+                                 host_buffer.data());
+
+            memcpy(hardware_buffer_data, host_buffer.data(), buffer_size);
+
+            ahb_result = AHardwareBuffer_unlock(aHardwareBuffer, nullptr);
+            if (ahb_result != 0)
+            {
+                log_error("AHardwareBuffer_unlock failed with code %d\n",
+                          ahb_result);
+                return TEST_FAIL;
+            }
+
+            void *mapped_ptr =
+                clEnqueueMapBuffer(queue, buffer, CL_BLOCKING, CL_MAP_READ, 0,
+                                   buffer_size, 0, nullptr, nullptr, &err);
+            test_error(err, "clEnqueueMapBuffer failed");
+
+            uint8_t *mapped_data = static_cast<uint8_t *>(mapped_ptr);
+
+            for (size_t i = 0; i < buffer_size; ++i)
+            {
+                if (host_buffer[i] != mapped_data[i])
+                {
+                    log_error(
+                        "At position i=%zu expected value %u but got %u\n", i,
+                        host_buffer[i], mapped_data[i]);
+                    return TEST_FAIL;
+                }
+            }
+
+            err = clEnqueueUnmapMemObject(queue, buffer, mapped_ptr, 0, nullptr,
+                                          nullptr);
+            test_error(err, "clEnqueueUnmapMemObject failed");
+
+            err = clFinish(queue);
+            test_error(err, "clFinish failed");
         }
     }
     return TEST_PASS;
