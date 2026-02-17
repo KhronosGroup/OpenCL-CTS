@@ -1491,7 +1491,7 @@ public:
                     std::numeric_limits<HostDataType>::max(),
                 };
 
-                if (0 != (CL_FP_DENORM & gDoubleCaps))
+                if (0 != (CL_FP_DENORM & gDoubleFPConfig))
                 {
                     special_values.push_back(
                         std::numeric_limits<HostDataType>::denorm_min());
@@ -1672,7 +1672,7 @@ public:
                 && CBasicTestMemOrderScope<HostAtomicType,
                                            HostDataType>::DeclaredInProgram())
             {
-                if ((gDoubleCaps & CL_FP_INF_NAN) == 0) return 0;
+                if ((gDoubleFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
         }
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)

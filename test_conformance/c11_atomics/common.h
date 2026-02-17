@@ -77,7 +77,7 @@ extern int
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
 
-extern cl_device_fp_config gDoubleCaps;
+extern cl_device_fp_config gDoubleFPConfig;
 extern cl_device_fp_config gHalfFPConfig;
 
 extern cl_half_rounding_mode gHalfRoundingMode;
