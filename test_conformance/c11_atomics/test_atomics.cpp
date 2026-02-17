@@ -1443,7 +1443,7 @@ public:
         // This enables repeated add operations arranged so that every
         // special value is added to every other one (“all-to-all”).
 
-        if constexpr (std::is_same<HostDataType, HOST_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             auto spec_vals = GetSpecialValues();
             StartValue(spec_vals.size());
@@ -1488,7 +1488,7 @@ public:
                     std::numeric_limits<HostDataType>::max(),
                 };
 
-                if (0 != (CL_FP_DENORM & gFloatCaps))
+                if (0 != (CL_FP_DENORM & gFloatFPConfig))
                 {
                     special_values.push_back(
                         std::numeric_limits<HostDataType>::denorm_min());
@@ -1670,7 +1670,7 @@ public:
                 && CBasicTestMemOrderScope<HostAtomicType,
                                            HostDataType>::DeclaredInProgram())
             {
-                if ((gFloatCaps & CL_FP_INF_NAN) == 0) return 0;
+                if ((gFloatFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
         }
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)

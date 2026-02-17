@@ -77,7 +77,7 @@ extern int
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
 
-extern cl_device_fp_config gFloatCaps;
+extern cl_device_fp_config gFloatFPConfig;
 extern cl_device_fp_config gHalfFPConfig;
 
 extern cl_half_rounding_mode gHalfRoundingMode;
@@ -924,7 +924,7 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
             + ss.str() + "] = {\n";
         ss.str("");
 
-        if constexpr (std::is_same<HostDataType, HOST_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (std::isinf(_startValue))
                 ss << (_startValue < 0 ? "-" : "") << "INFINITY";

@@ -32,7 +32,7 @@ int gMaxDeviceThreads = 1024; // maximum number of threads executed on OCL devic
 cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
 
-cl_device_fp_config gFloatCaps = 0;
+cl_device_fp_config gFloatFPConfig = 0;
 cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
 bool gFloatAtomicsSupported = false;
 cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps = 0;
@@ -151,7 +151,7 @@ test_status InitCL(cl_device_id device) {
         test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
 
         error = clGetDeviceInfo(device, CL_DEVICE_SINGLE_FP_CONFIG,
-                                sizeof(gFloatCaps), &gFloatCaps, NULL);
+                                sizeof(gFloatFPConfig), &gFloatFPConfig, NULL);
         test_error_ret(
             error,
             "Unable to run INFINITY/NAN tests (unable to get FP_CONFIG bits)",
