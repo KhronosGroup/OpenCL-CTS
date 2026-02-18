@@ -1526,7 +1526,7 @@ REGISTER_TEST(min_max_constant_buffer_size)
     size_t threads[1], localThreads[1];
     cl_int *constantData, *resultData;
     cl_ulong maxSize, stepSize, currentSize, maxGlobalSize, maxAllocSize;
-    int i;
+    size_t i;
     cl_event event;
     cl_int event_status;
     MTdata d;
@@ -1556,6 +1556,8 @@ REGISTER_TEST(min_max_constant_buffer_size)
 
     maxAllocSize = get_device_info_max_mem_alloc_size(
         device, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
+    log_info("Reported max alloc size of %" PRIu64 " bytes.\n",
+             (uint64_t)maxAllocSize);
 
     if (maxSize > maxAllocSize) maxSize = maxAllocSize;
 
@@ -1590,7 +1592,7 @@ REGISTER_TEST(min_max_constant_buffer_size)
             return EXIT_FAILURE;
         }
 
-        for (i = 0; i < (int)(numberOfInts); i++)
+        for (i = 0; i < numberOfInts; i++)
             constantData[i] = (int)genrand_int32(d);
 
         clMemWrapper streams[3];
@@ -1678,11 +1680,11 @@ REGISTER_TEST(min_max_constant_buffer_size)
                                     sizeToAllocate, resultData, 0, NULL, NULL);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        for (i = 0; i < (int)(numberOfInts); i++)
+        for (i = 0; i < numberOfInts; i++)
             if (constantData[i] != resultData[i])
             {
-                log_error("Data failed to verify: constantData[%d]=%d != "
-                          "resultData[%d]=%d\n",
+                log_error("Data failed to verify: constantData[%zu]=%d != "
+                          "resultData[%zu]=%d\n",
                           i, constantData[i], i, resultData[i]);
                 free(constantData);
                 free(resultData);

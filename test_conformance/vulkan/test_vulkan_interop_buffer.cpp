@@ -1586,7 +1586,7 @@ struct BufferTestBase : public VulkanTestBase
 {
     BufferTestBase(cl_device_id device, cl_context context,
                    cl_command_queue queue, cl_int nelems)
-        : VulkanTestBase(device, context, queue, nelems)
+        : VulkanTestBase(device, context, queue, nelems, true)
     {}
 
     int test_buffer_common(bool use_fence)
