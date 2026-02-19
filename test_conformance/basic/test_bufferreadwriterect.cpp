@@ -89,48 +89,70 @@ void print_buffer(BufferType* buf, size_t w, size_t h, size_t d) {
 }
 
 // Returns true if the two specified regions overlap.
-bool check_overlap_rect(size_t src_offset[3],
-                        size_t dst_offset[3],
-                        size_t region[3],
-                        size_t row_pitch,
-                        size_t slice_pitch)
+bool check_overlap_rect(size_t src_offset[3], size_t dst_offset[3],
+                        size_t region[3], size_t src)
 {
+    // Copy between cl buffers.
+    size_t slice_pitch =
+        (width[src] * height[src] != 1) ? width[src] * height[src] : 0;
+    size_t row_pitch = width[src];
+
     const size_t src_min[] = { src_offset[0], src_offset[1], src_offset[2] };
-    const size_t src_max[] = { src_offset[0] + region[0], src_offset[1] + region[1], src_offset[2] + region[2] };
+    const size_t src_max[] = { src_offset[0] + region[0],
+                               src_offset[1] + region[1],
+                               src_offset[2] + region[2] };
 
     const size_t dst_min[] = { dst_offset[0], dst_offset[1], dst_offset[2] };
     const size_t dst_max[] = { dst_offset[0] + region[0],
                                dst_offset[1] + region[1],
-                               dst_offset[2] + region[2]};
-// Check for overlap
-        bool overlap = true;
-        unsigned i;
-        for (i = 0; i != 3; ++i)
-        {
-            overlap = overlap && (src_min[i] < dst_max[i]) && (src_max[i] > dst_min[i]);
-        }
+                               dst_offset[2] + region[2] };
+    // Check for overlap
+    bool overlap = true;
+    unsigned i;
+    for (i = 0; i != 3; ++i)
+    {
+        overlap =
+            overlap && (src_min[i] < dst_max[i]) && (src_max[i] > dst_min[i]);
+    }
 
-    size_t dst_start = dst_offset[2] * slice_pitch + dst_offset[1] * row_pitch + dst_offset[0];
-    size_t dst_end = dst_start + (region[2] * slice_pitch +
-                                  region[1] * row_pitch + region[0]);
-    size_t src_start = src_offset[2] * slice_pitch + src_offset[1] * row_pitch + src_offset[0];
-    size_t src_end = src_start + (region[2] * slice_pitch +
-                                  region[1] * row_pitch + region[0]);
-    if (!overlap) {
-        size_t delta_src_x = (src_offset[0] + region[0] > row_pitch) ?
-            src_offset[0] + region[0] - row_pitch : 0; size_t delta_dst_x = (dst_offset[0] + region[0] > row_pitch) ?
-            dst_offset[0] + region[0] - row_pitch : 0;
-        if ((delta_src_x > 0 && delta_src_x > dst_offset[0]) ||
-            (delta_dst_x > 0 && delta_dst_x > src_offset[0])) {
-            if ((src_start <= dst_start && dst_start < src_end) || (dst_start <= src_start && src_start < dst_end)) overlap = true;
+    size_t dst_start =
+        dst_offset[2] * slice_pitch + dst_offset[1] * row_pitch + dst_offset[0];
+    size_t dst_end = dst_start
+        + (region[2] * slice_pitch + region[1] * row_pitch + region[0]);
+    size_t src_start =
+        src_offset[2] * slice_pitch + src_offset[1] * row_pitch + src_offset[0];
+    size_t src_end = src_start
+        + (region[2] * slice_pitch + region[1] * row_pitch + region[0]);
+    if (!overlap)
+    {
+        size_t delta_src_x = (src_offset[0] + region[0] > row_pitch)
+            ? src_offset[0] + region[0] - row_pitch
+            : 0;
+        size_t delta_dst_x = (dst_offset[0] + region[0] > row_pitch)
+            ? dst_offset[0] + region[0] - row_pitch
+            : 0;
+        if ((delta_src_x > 0 && delta_src_x > dst_offset[0])
+            || (delta_dst_x > 0 && delta_dst_x > src_offset[0]))
+        {
+            if ((src_start <= dst_start && dst_start < src_end)
+                || (dst_start <= src_start && src_start < dst_end))
+                overlap = true;
         }
-        if (region[2] > 1) {
-            size_t src_height = slice_pitch / row_pitch; size_t dst_height = slice_pitch / row_pitch;
-            size_t delta_src_y = (src_offset[1] + region[1] > src_height) ? src_offset[1] + region[1] - src_height : 0;
-            size_t delta_dst_y = (dst_offset[1] + region[1] > dst_height) ? dst_offset[1] + region[1] - dst_height : 0;
-            if ((delta_src_y > 0 && delta_src_y > dst_offset[1]) ||
-                (delta_dst_y > 0 && delta_dst_y > src_offset[1])) {
-                if ((src_start <= dst_start && dst_start < src_end) || (dst_start <= src_start && src_start < dst_end))
+        if (region[2] > 1)
+        {
+            size_t src_height = slice_pitch / row_pitch;
+            size_t dst_height = slice_pitch / row_pitch;
+            size_t delta_src_y = (src_offset[1] + region[1] > src_height)
+                ? src_offset[1] + region[1] - src_height
+                : 0;
+            size_t delta_dst_y = (dst_offset[1] + region[1] > dst_height)
+                ? dst_offset[1] + region[1] - dst_height
+                : 0;
+            if ((delta_src_y > 0 && delta_src_y > dst_offset[1])
+                || (delta_dst_y > 0 && delta_dst_y > src_offset[1]))
+            {
+                if ((src_start <= dst_start && dst_start < src_end)
+                    || (dst_start <= src_start && src_start < dst_end))
                     overlap = true;
             }
         }
@@ -138,29 +160,47 @@ bool check_overlap_rect(size_t src_offset[3],
     return overlap;
 }
 
-
-
 // This function invokes the CopyBufferRect CL command and then mirrors the operation on the host side verify buffers.
-int copy_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst, size_t doffset[3], size_t dregion[3]) {
+int copy_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst,
+                size_t doffset[3], size_t dregion[3])
+{
+    // Copy between cl buffers
+    // Compute or provide zero pitches randomly
+    size_t src_slice_pitch =
+        (width[src] * height[src] != 1 && ((genrand_int32(mt) % 2) != 0))
+        ? width[src] * height[src]
+        : 0;
+    size_t dst_slice_pitch =
+        (width[dst] * height[dst] != 1 && ((genrand_int32(mt) % 2) != 0))
+        ? width[dst] * height[dst]
+        : 0;
+    size_t src_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[src] : 0;
+    size_t dst_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[dst] : 0;
 
-    // Copy between cl buffers.
-    size_t src_slice_pitch = (width[src]*height[src] != 1) ? width[src]*height[src] : 0;
-    size_t dst_slice_pitch = (width[dst]*height[dst] != 1) ? width[dst]*height[dst] : 0;
-    size_t src_row_pitch = width[src];
+    if (src == dst)
+    {
+        src_row_pitch = dst_row_pitch;
+        src_slice_pitch = dst_slice_pitch;
+    }
 
     cl_int err;
-    if (check_overlap_rect(soffset,doffset,sregion,src_row_pitch, src_slice_pitch)) {
-        log_info( "Copy overlap reported, skipping copy buffer rect\n" );
+    if (check_overlap_rect(soffset, doffset, sregion, src))
+    {
+        log_info("Copy overlap reported, skipping copy buffer rect\n");
         return CL_SUCCESS;
-    } else {
+    }
+    else
+    {
         if ((err = clEnqueueCopyBufferRect(
                  gQueue, buffer[src], buffer[dst], soffset, doffset,
                  sregion, /*dregion,*/
-                 width[src], src_slice_pitch, width[dst], dst_slice_pitch, 0,
-                 NULL, NULL))
+                 src_row_pitch, src_slice_pitch, dst_row_pitch, dst_slice_pitch,
+                 0, NULL, NULL))
             != CL_SUCCESS)
         {
-            CL_EXIT_ERROR(err, "clEnqueueCopyBufferRect failed between %u and %u",(unsigned)src,(unsigned)dst);
+            CL_EXIT_ERROR(err,
+                          "clEnqueueCopyBufferRect failed between %u and %u",
+                          (unsigned)src, (unsigned)dst);
         }
     }
 
