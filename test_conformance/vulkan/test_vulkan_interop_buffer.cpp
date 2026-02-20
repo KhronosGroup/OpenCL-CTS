@@ -188,13 +188,15 @@ int run_test_with_two_queue(
             log_info("Memory type property: %d\n",
                      memoryType.getMemoryTypeProperty());
 
-            VulkanBufferList vkBufferList(numBuffers, vkDevice, bufferSize,
-                                          vkExternalMemoryHandleType);
+            std::unique_ptr<VulkanBufferList> vkBufferList{
+                new VulkanBufferList(numBuffers, vkDevice, bufferSize,
+                                     vkExternalMemoryHandleType)
+            };
 
             for (size_t bIdx = 0; bIdx < numBuffers; bIdx++)
             {
                 vkBufferListDeviceMemory.push_back(new VulkanDeviceMemory(
-                    vkDevice, vkBufferList[bIdx], memoryType,
+                    vkDevice, (*vkBufferList)[bIdx], memoryType,
                     vkExternalMemoryHandleType));
                 externalMemory.push_back(new clExternalMemory(
                     vkBufferListDeviceMemory[bIdx], vkExternalMemoryHandleType,
@@ -208,13 +210,13 @@ int run_test_with_two_queue(
             params->interBufferOffset = 0;
             vkParamsDeviceMemory.unmap();
             vkDescriptorSet.update(0, vkParamsBuffer);
-            for (size_t bIdx = 0; bIdx < vkBufferList.size(); bIdx++)
+            for (size_t bIdx = 0; bIdx < vkBufferList->size(); bIdx++)
             {
-                vkBufferListDeviceMemory[bIdx]->bindBuffer(vkBufferList[bIdx],
-                                                           0);
+                vkBufferListDeviceMemory[bIdx]->bindBuffer(
+                    (*vkBufferList)[bIdx], 0);
                 buffers[bIdx] = externalMemory[bIdx]->getExternalMemoryBuffer();
             }
-            vkDescriptorSet.updateArray(1, numBuffers, vkBufferList);
+            vkDescriptorSet.updateArray(1, numBuffers, (*vkBufferList));
             vkCommandBuffer.begin();
             vkCommandBuffer.bindPipeline(vkComputePipeline);
             vkCommandBuffer.bindDescriptorSets(
@@ -222,15 +224,15 @@ int run_test_with_two_queue(
             vkCommandBuffer.dispatch(512, 1, 1);
             vkCommandBuffer.end();
 
-            if (vkBufferList.size() == 2)
+            if (vkBufferList->size() == 2)
             {
                 update_buffer_kernel = kernel[0];
             }
-            else if (vkBufferList.size() == 3)
+            else if (vkBufferList->size() == 3)
             {
                 update_buffer_kernel = kernel[1];
             }
-            else if (vkBufferList.size() == 5)
+            else if (vkBufferList->size() == 5)
             {
                 update_buffer_kernel = kernel[2];
             }
@@ -272,16 +274,16 @@ int run_test_with_two_queue(
                 err |= clSetKernelArg(kernel_cq, 1, sizeof(cl_mem),
                                       (void *)&(buffers[0]));
 
-                for (size_t i = 0; i < vkBufferList.size() - 1; i++)
+                for (size_t i = 0; i < vkBufferList->size() - 1; i++)
                 {
                     err |=
                         clSetKernelArg(update_buffer_kernel, i + 1,
                                        sizeof(cl_mem), (void *)&(buffers[i]));
                 }
 
-                err |=
-                    clSetKernelArg(kernel_cq, 2, sizeof(cl_mem),
-                                   (void *)&(buffers[vkBufferList.size() - 1]));
+                err |= clSetKernelArg(
+                    kernel_cq, 2, sizeof(cl_mem),
+                    (void *)&(buffers[vkBufferList->size() - 1]));
                 test_error_and_cleanup(
                     err, CLEANUP,
                     "Error: Failed to set arg values for kernel\n");
@@ -290,7 +292,7 @@ int run_test_with_two_queue(
 
                 cl_event acquire_event = nullptr;
                 err = clEnqueueAcquireExternalMemObjectsKHRptr(
-                    cmd_queue1, vkBufferList.size(), buffers, 0, nullptr,
+                    cmd_queue1, vkBufferList->size(), buffers, 0, nullptr,
                     &acquire_event);
                 test_error_and_cleanup(err, CLEANUP,
                                        "Failed to acquire buffers");
@@ -312,7 +314,7 @@ int run_test_with_two_queue(
                     "error\n");
 
                 err = clEnqueueReleaseExternalMemObjectsKHRptr(
-                    cmd_queue2, vkBufferList.size(), buffers, 0, nullptr,
+                    cmd_queue2, vkBufferList->size(), buffers, 0, nullptr,
                     nullptr);
                 test_error_and_cleanup(err, CLEANUP,
                                        "Failed to release buffers");
@@ -352,7 +354,7 @@ int run_test_with_two_queue(
                                    "Error: Failed read output, error\n");
 
             int calc_max_iter;
-            for (size_t i = 0; i < vkBufferList.size(); i++)
+            for (size_t i = 0; i < vkBufferList->size(); i++)
             {
                 if (i == 0)
                     calc_max_iter = (maxIter * 3);
@@ -390,7 +392,8 @@ int run_test_with_two_queue(
                         "&&&& vulkan_opencl_buffer test FAILED\n");
                 }
             }
-            for (size_t i = 0; i < vkBufferList.size(); i++)
+            vkBufferList.reset(nullptr);
+            for (size_t i = 0; i < vkBufferListDeviceMemory.size(); i++)
             {
                 delete vkBufferListDeviceMemory[i];
                 delete externalMemory[i];
@@ -521,13 +524,15 @@ int run_test_with_one_queue(
             log_info("Memory type property: %d\n",
                      memoryType.getMemoryTypeProperty());
 
-            VulkanBufferList vkBufferList(numBuffers, vkDevice, bufferSize,
-                                          vkExternalMemoryHandleType);
+            std::unique_ptr<VulkanBufferList> vkBufferList{
+                new VulkanBufferList(numBuffers, vkDevice, bufferSize,
+                                     vkExternalMemoryHandleType)
+            };
 
             for (size_t bIdx = 0; bIdx < numBuffers; bIdx++)
             {
                 vkBufferListDeviceMemory.push_back(new VulkanDeviceMemory(
-                    vkDevice, vkBufferList[bIdx], memoryType,
+                    vkDevice, (*vkBufferList)[bIdx], memoryType,
                     vkExternalMemoryHandleType));
                 externalMemory.push_back(new clExternalMemory(
                     vkBufferListDeviceMemory[bIdx], vkExternalMemoryHandleType,
@@ -541,13 +546,13 @@ int run_test_with_one_queue(
             params->interBufferOffset = 0;
             vkParamsDeviceMemory.unmap();
             vkDescriptorSet.update(0, vkParamsBuffer);
-            for (size_t bIdx = 0; bIdx < vkBufferList.size(); bIdx++)
+            for (size_t bIdx = 0; bIdx < vkBufferList->size(); bIdx++)
             {
-                vkBufferListDeviceMemory[bIdx]->bindBuffer(vkBufferList[bIdx],
-                                                           0);
+                vkBufferListDeviceMemory[bIdx]->bindBuffer(
+                    (*vkBufferList)[bIdx], 0);
                 buffers[bIdx] = externalMemory[bIdx]->getExternalMemoryBuffer();
             }
-            vkDescriptorSet.updateArray(1, vkBufferList.size(), vkBufferList);
+            vkDescriptorSet.updateArray(1, vkBufferList->size(), *vkBufferList);
 
             vkCommandBuffer.begin();
             vkCommandBuffer.bindPipeline(vkComputePipeline);
@@ -556,15 +561,15 @@ int run_test_with_one_queue(
             vkCommandBuffer.dispatch(512, 1, 1);
             vkCommandBuffer.end();
 
-            if (vkBufferList.size() == 1)
+            if (vkBufferList->size() == 1)
             {
                 update_buffer_kernel = kernel[0];
             }
-            else if (vkBufferList.size() == 2)
+            else if (vkBufferList->size() == 2)
             {
                 update_buffer_kernel = kernel[1];
             }
-            else if (vkBufferList.size() == 4)
+            else if (vkBufferList->size() == 4)
             {
                 update_buffer_kernel = kernel[2];
             }
@@ -602,7 +607,7 @@ int run_test_with_one_queue(
 
                 err = clSetKernelArg(update_buffer_kernel, 0, sizeof(uint32_t),
                                      (void *)&bufferSize);
-                for (size_t i = 0; i < vkBufferList.size(); i++)
+                for (size_t i = 0; i < vkBufferList->size(); i++)
                 {
                     err |=
                         clSetKernelArg(update_buffer_kernel, i + 1,
@@ -613,7 +618,7 @@ int run_test_with_one_queue(
                     "Error: Failed to set arg values for kernel\n");
 
                 err = clEnqueueAcquireExternalMemObjectsKHRptr(
-                    cmd_queue1, vkBufferList.size(), buffers, 0, nullptr,
+                    cmd_queue1, vkBufferList->size(), buffers, 0, nullptr,
                     nullptr);
                 test_error_and_cleanup(err, CLEANUP,
                                        "Failed to acquire buffers");
@@ -627,7 +632,7 @@ int run_test_with_one_queue(
                     " error\n");
 
                 err = clEnqueueReleaseExternalMemObjectsKHRptr(
-                    cmd_queue1, vkBufferList.size(), buffers, 0, nullptr,
+                    cmd_queue1, vkBufferList->size(), buffers, 0, nullptr,
                     nullptr);
                 test_error_and_cleanup(err, CLEANUP,
                                        "Failed to release buffers");
@@ -662,7 +667,7 @@ int run_test_with_one_queue(
                                    "Error: clEnqueueWriteBuffer \n");
 
             int calc_max_iter = (maxIter * 2);
-            for (size_t i = 0; i < vkBufferList.size(); i++)
+            for (size_t i = 0; i < vkBufferList->size(); i++)
             {
                 err = clSetKernelArg(verify_kernel, 0, sizeof(cl_mem),
                                      (void *)&(buffers[i]));
@@ -695,7 +700,9 @@ int run_test_with_one_queue(
                         "&&&& vulkan_opencl_buffer test FAILED\n");
                 }
             }
-            for (size_t i = 0; i < vkBufferList.size(); i++)
+
+            vkBufferList.reset(nullptr);
+            for (size_t i = 0; i < vkBufferListDeviceMemory.size(); i++)
             {
                 delete vkBufferListDeviceMemory[i];
                 delete externalMemory[i];
@@ -826,13 +833,15 @@ int run_test_with_multi_import_same_ctx(
 
 
             cl_mem buffers[MAX_BUFFERS][MAX_IMPORTS];
-            VulkanBufferList vkBufferList(numBuffers, vkDevice, bufferSize,
-                                          vkExternalMemoryHandleType);
+            std::unique_ptr<VulkanBufferList> vkBufferList{
+                new VulkanBufferList(numBuffers, vkDevice, bufferSize,
+                                     vkExternalMemoryHandleType)
+            };
 
             for (size_t bIdx = 0; bIdx < numBuffers; bIdx++)
             {
                 vkBufferListDeviceMemory.push_back(new VulkanDeviceMemory(
-                    vkDevice, vkBufferList[bIdx], memoryType,
+                    vkDevice, (*vkBufferList)[bIdx], memoryType,
                     vkExternalMemoryHandleType));
 
                 std::vector<clExternalMemory *> pExternalMemory;
@@ -853,17 +862,17 @@ int run_test_with_multi_import_same_ctx(
             params->interBufferOffset = 0;
             vkParamsDeviceMemory.unmap();
             vkDescriptorSet.update(0, vkParamsBuffer);
-            for (size_t bIdx = 0; bIdx < vkBufferList.size(); bIdx++)
+            for (size_t bIdx = 0; bIdx < vkBufferList->size(); bIdx++)
             {
-                vkBufferListDeviceMemory[bIdx]->bindBuffer(vkBufferList[bIdx],
-                                                           0);
+                vkBufferListDeviceMemory[bIdx]->bindBuffer(
+                    (*vkBufferList)[bIdx], 0);
                 for (int cl_bIdx = 0; cl_bIdx < numImports; cl_bIdx++)
                 {
                     buffers[bIdx][cl_bIdx] = externalMemory[bIdx][cl_bIdx]
                                                  ->getExternalMemoryBuffer();
                 }
             }
-            vkDescriptorSet.updateArray(1, numBuffers, vkBufferList);
+            vkDescriptorSet.updateArray(1, numBuffers, (*vkBufferList));
             vkCommandBuffer.begin();
             vkCommandBuffer.bindPipeline(vkComputePipeline);
             vkCommandBuffer.bindDescriptorSets(
@@ -979,7 +988,7 @@ int run_test_with_multi_import_same_ctx(
 
             calc_max_iter = maxIter * (numImports + 1);
 
-            for (size_t i = 0; i < vkBufferList.size(); i++)
+            for (size_t i = 0; i < vkBufferList->size(); i++)
             {
                 err = clSetKernelArg(verify_kernel, 0, sizeof(cl_mem),
                                      (void *)&(buffers[i][0]));
@@ -1012,13 +1021,14 @@ int run_test_with_multi_import_same_ctx(
                         err, CLEANUP, " vulkan_opencl_buffer test FAILED\n");
                 }
             }
-            for (size_t i = 0; i < vkBufferList.size(); i++)
+            for (size_t i = 0; i < vkBufferList->size(); i++)
             {
                 for (int j = 0; j < numImports; j++)
                 {
                     delete externalMemory[i][j];
                 }
             }
+            vkBufferList.reset(nullptr);
             for (size_t i = 0; i < vkBufferListDeviceMemory.size(); i++)
             {
                 delete vkBufferListDeviceMemory[i];
@@ -1174,13 +1184,16 @@ int run_test_with_multi_import_diff_ctx(
             cl_mem buffers1[MAX_BUFFERS][MAX_IMPORTS];
             cl_mem buffers2[MAX_BUFFERS][MAX_IMPORTS];
             pBufferSize = bufferSize;
-            VulkanBufferList vkBufferList(numBuffers, vkDevice, pBufferSize,
-                                          vkExternalMemoryHandleType);
+
+            std::unique_ptr<VulkanBufferList> vkBufferList{
+                new VulkanBufferList(numBuffers, vkDevice, pBufferSize,
+                                     vkExternalMemoryHandleType)
+            };
 
             for (size_t bIdx = 0; bIdx < numBuffers; bIdx++)
             {
                 vkBufferListDeviceMemory.push_back(new VulkanDeviceMemory(
-                    vkDevice, vkBufferList[bIdx], memoryType,
+                    vkDevice, (*vkBufferList)[bIdx], memoryType,
                     vkExternalMemoryHandleType));
                 std::vector<clExternalMemory *> pExternalMemory1;
                 std::vector<clExternalMemory *> pExternalMemory2;
@@ -1205,10 +1218,10 @@ int run_test_with_multi_import_diff_ctx(
             params->bufferSize = pBufferSize;
             vkParamsDeviceMemory.unmap();
             vkDescriptorSet.update(0, vkParamsBuffer);
-            for (size_t bIdx = 0; bIdx < vkBufferList.size(); bIdx++)
+            for (size_t bIdx = 0; bIdx < vkBufferList->size(); bIdx++)
             {
-                vkBufferListDeviceMemory[bIdx]->bindBuffer(vkBufferList[bIdx],
-                                                           0);
+                vkBufferListDeviceMemory[bIdx]->bindBuffer(
+                    (*vkBufferList)[bIdx], 0);
                 for (int cl_bIdx = 0; cl_bIdx < numImports; cl_bIdx++)
                 {
                     buffers1[bIdx][cl_bIdx] = externalMemory1[bIdx][cl_bIdx]
@@ -1218,7 +1231,7 @@ int run_test_with_multi_import_diff_ctx(
                 }
             }
 
-            vkDescriptorSet.updateArray(1, numBuffers, vkBufferList);
+            vkDescriptorSet.updateArray(1, numBuffers, (*vkBufferList));
             vkCommandBuffer.begin();
             vkCommandBuffer.bindPipeline(vkComputePipeline);
             vkCommandBuffer.bindDescriptorSets(
@@ -1477,7 +1490,7 @@ int run_test_with_multi_import_diff_ctx(
                 }
             }
             *error_3 = 0;
-            for (size_t i = 0; i < vkBufferList.size(); i++)
+            for (size_t i = 0; i < vkBufferList->size(); i++)
             {
                 err = clSetKernelArg(verify_kernel2, 0, sizeof(cl_mem),
                                      (void *)&(buffers2[i][0]));
@@ -1511,7 +1524,7 @@ int run_test_with_multi_import_diff_ctx(
                         "&&&& vulkan_opencl_buffer test FAILED\n");
                 }
             }
-            for (size_t i = 0; i < vkBufferList.size(); i++)
+            for (size_t i = 0; i < vkBufferList->size(); i++)
             {
                 for (int j = 0; j < numImports; j++)
                 {
@@ -1519,6 +1532,7 @@ int run_test_with_multi_import_diff_ctx(
                     delete externalMemory2[i][j];
                 }
             }
+            vkBufferList.reset(nullptr);
             for (size_t i = 0; i < vkBufferListDeviceMemory.size(); i++)
             {
                 delete vkBufferListDeviceMemory[i];
