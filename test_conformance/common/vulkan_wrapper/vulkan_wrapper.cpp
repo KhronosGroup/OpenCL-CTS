@@ -728,6 +728,30 @@ VulkanDevice::VulkanDevice(
         vkCreateDevice(physicalDevice, &vkDeviceCreateInfo, NULL, &m_vkDevice);
     }
 
+    VkPhysicalDeviceCoherentMemoryFeaturesAMD coherentFeatures = {};
+    coherentFeatures.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD;
+
+    VkPhysicalDeviceFeatures2 enabledFeatures = {};
+    enabledFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    enabledFeatures.pNext = &coherentFeatures;
+
+    vkGetPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
+
+    // Build device-level memory type list with only legally usable types
+    auto &memTypeList = physicalDevice.getMemoryTypeList();
+    for (size_t i = 0; i < memTypeList.size(); i++)
+    {
+        const VulkanMemoryType &mt = memTypeList[i];
+        VulkanMemoryTypeProperty flags = mt.getMemoryTypeProperty();
+        if ((flags & VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD)
+            && !coherentFeatures.deviceCoherentMemory)
+        {
+            continue; // feature not enabled, skip
+        }
+        m_memoryTypeList.add(mt);
+    }
+
     for (uint32_t qfIdx = 0;
          qfIdx < (uint32_t)m_physicalDevice.getQueueFamilyList().size();
          qfIdx++)
@@ -775,6 +799,11 @@ VulkanQueue &VulkanDevice::getQueue(const VulkanQueueFamily &queueFamily,
 }
 
 VulkanDevice::operator VkDevice() const { return m_vkDevice; }
+
+const VulkanMemoryTypeList &VulkanDevice::getMemoryTypeList() const
+{
+    return m_memoryTypeList;
+}
 
 ////////////////////////////////
 // VulkanFence implementation //
@@ -1810,8 +1839,7 @@ VulkanBuffer::VulkanBuffer(
 
     m_size = vkMemoryRequirements.memoryRequirements.size;
     m_alignment = vkMemoryRequirements.memoryRequirements.alignment;
-    const VulkanMemoryTypeList &memoryTypeList =
-        m_device.getPhysicalDevice().getMemoryTypeList();
+    const VulkanMemoryTypeList &memoryTypeList = m_device.getMemoryTypeList();
     for (size_t mtIdx = 0; mtIdx < memoryTypeList.size(); mtIdx++)
     {
         uint32_t memoryTypeIndex = memoryTypeList[mtIdx];
@@ -1920,8 +1948,7 @@ VulkanImage::VulkanImage(
     m_alignment = vkMemoryRequirements.memoryRequirements.alignment;
     m_dedicated = vkMemoryDedicatedRequirements.requiresDedicatedAllocation;
 
-    const VulkanMemoryTypeList &memoryTypeList =
-        m_device.getPhysicalDevice().getMemoryTypeList();
+    const VulkanMemoryTypeList &memoryTypeList = m_device.getMemoryTypeList();
     for (size_t mtIdx = 0; mtIdx < memoryTypeList.size(); mtIdx++)
     {
         uint32_t memoryTypeIndex = memoryTypeList[mtIdx];
