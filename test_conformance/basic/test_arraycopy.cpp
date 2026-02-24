@@ -103,9 +103,9 @@ REGISTER_TEST(arraycopy)
 #pragma mark framework backing (no client data)
 
     log_info("Testing with clEnqueueWriteBuffer and clEnqueueCopyBuffer\n");
-    cl_uint *input_mapped_ptr =
-        clEnqueueMapBuffer(queue, streams[0], CL_BLOCKING, CL_MAP_WRITE, 0,
-                           sizeof(cl_uint) * num_elements, 0, NULL, NULL, &err);
+    cl_uint *input_mapped_ptr = (cl_uint *)clEnqueueMapBuffer(
+        queue, streams[0], CL_BLOCKING, CL_MAP_WRITE, 0,
+        sizeof(cl_uint) * num_elements, 0, NULL, NULL, &err);
     test_error(err, "clEnqueueMapBuffer failed");
     // randomize data
     for (i = 0; i < num_elements; i++)
