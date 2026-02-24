@@ -88,6 +88,12 @@ static int test_waitlist(cl_device_id device, cl_context context,
         log_info("WARNING: Reference event(s) already completed before we "
                  "could execute test event! Possible that the reference event "
                  "blocked (implicitly passing)\n");
+        // necessary to execute these to avoid memleak with UnmapBufferAction
+        if (PRINT_OPS) log_info("\tExecuting action to test...\n");
+        error = actionToTest->Execute(queue, (multiple) ? 2 : 1, &events[0],
+                                      &events[2]);
+        test_error(error, "Unable to execute test event");
+
         return 0;
     }
 

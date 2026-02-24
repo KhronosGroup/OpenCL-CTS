@@ -914,6 +914,7 @@ void callTestFunctions(test_definition testList[],
         for (auto th : threads)
         {
             th->join();
+            delete th;
         }
         assert(gTestQueue.size() == 0);
     }
