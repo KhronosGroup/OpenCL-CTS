@@ -3297,7 +3297,7 @@ public:
         // This enables repeated add operations arranged so that every
         // special value is added to every other one (“all-to-all”).
 
-        if (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             auto spec_vals = GetSpecialValues();
             StartValue(spec_vals.size());
