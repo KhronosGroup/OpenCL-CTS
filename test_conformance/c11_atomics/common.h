@@ -78,8 +78,9 @@ extern int
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
 
+extern cl_device_fp_config gDoubleFPConfig;
+extern cl_device_fp_config gFloatFPConfig;
 extern cl_device_fp_config gHalfFPConfig;
-extern cl_device_fp_config gFloatCaps;
 
 extern cl_half_rounding_mode gHalfRoundingMode;
 extern bool gFloatAtomicsSupported;
@@ -214,6 +215,7 @@ public:
     {
         return false;
     }
+
     virtual bool
     IsTestNotAsExpected(const HostDataType &expected,
                         const std::vector<HostAtomicType> &testValues,
@@ -956,12 +958,15 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
             + ss.str() + "] = {\n";
         ss.str("");
 
-        if constexpr (std::is_same<HostDataType, HOST_FLOAT>::value)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (std::isinf(_startValue))
                 ss << (_startValue < 0 ? "-" : "") << "INFINITY";
             else if (std::isnan(_startValue))
-                ss << "0.0f / 0.0f";
+                ss << "0.0 / 0.0";
             else
                 ss << std::setprecision(
                     std::numeric_limits<HostDataType>::max_digits10)

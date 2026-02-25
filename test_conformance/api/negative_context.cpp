@@ -198,7 +198,7 @@ REGISTER_TEST(negative_create_context_from_type)
         {
             test_object_failure_ret(
                 tmp_context, err, CL_DEVICE_NOT_FOUND,
-                "clCreateContextFromType should return CL_DEVICE_NOT_AVAILABLE "
+                "clCreateContextFromType should return CL_DEVICE_NOT_FOUND "
                 "when: \"no devices that match device_type and property values "
                 "specified in properties are currently available\"",
                 TEST_FAIL);
