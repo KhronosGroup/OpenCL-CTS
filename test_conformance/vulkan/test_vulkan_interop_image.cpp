@@ -17,6 +17,7 @@
 #include <vulkan_interop_common.hpp>
 #include <string>
 #include "harness/errorHelpers.h"
+#include "harness/imageHelpers.h"
 #include "harness/os_helpers.h"
 #include <algorithm>
 
@@ -55,7 +56,6 @@ struct Params
     uint32_t numImage2DDescriptors;
 };
 
-cl_uchar uuid[CL_UUID_SIZE_KHR];
 cl_device_id deviceId = NULL;
 size_t max_width = MAX_2D_IMAGE_WIDTH;
 size_t max_height = MAX_2D_IMAGE_HEIGHT;
@@ -137,6 +137,38 @@ const uint32_t num2DImagesList[] = { 1, 2, 4 };
 const uint32_t widthList[] = { 4, 64, 183, 1024 };
 const uint32_t heightList[] = { 4, 64, 365 };
 
+bool memcmp_images(const void *a, const void *b, size_t size,
+                   cl_image_format format)
+{
+    if (format.image_channel_data_type == CL_FLOAT)
+    {
+        const float *a_float = static_cast<const float *>(a);
+        const float *b_float = static_cast<const float *>(b);
+        return !std::equal(a_float, a_float + size / sizeof(*a_float), b_float,
+                           b_float + size / sizeof(*b_float),
+                           [](float a, float b) {
+                               if (isnan(a) && isnan(b)) return true;
+                               return a == b;
+                           });
+    }
+    else if (format.image_channel_data_type == CL_HALF_FLOAT)
+    {
+        const cl_half *a_half = static_cast<const cl_half *>(a);
+        const cl_half *b_half = static_cast<const cl_half *>(b);
+        return !std::equal(a_half, a_half + size / sizeof(*a_half), b_half,
+                           b_half + size / sizeof(*b_half),
+                           [](cl_half a, cl_half b) {
+                               if (is_half_nan(a) && is_half_nan(b))
+                                   return true;
+                               return a == b;
+                           });
+    }
+    else
+    {
+        return memcmp(a, b, size) != 0;
+    }
+}
+
 const cl_kernel getKernelType(VulkanFormat format, cl_kernel kernel_float,
                               cl_kernel kernel_signed,
                               cl_kernel kernel_unsigned)
@@ -195,9 +227,10 @@ const cl_kernel getKernelType(VulkanFormat format, cl_kernel kernel_float,
 }
 
 int run_test_with_two_queue(
-    cl_context &context, cl_command_queue &cmd_queue1,
-    cl_command_queue &cmd_queue2, cl_kernel *kernel_unsigned,
-    cl_kernel *kernel_signed, cl_kernel *kernel_float, VulkanDevice &vkDevice,
+    cl_context context, cl_command_queue cmd_queue1,
+    cl_command_queue cmd_queue2, clKernelWrapper *kernel_unsigned,
+    clKernelWrapper *kernel_signed, clKernelWrapper *kernel_float,
+    VulkanDevice &vkDevice,
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType)
 {
     cl_int err = CL_SUCCESS;
@@ -408,7 +441,6 @@ int run_test_with_two_queue(
                             }
 
                             size_t totalImageMemSize = 0;
-                            uint64_t interImageOffset = 0;
                             {
                                 VulkanImage2D vkImage2D(
                                     vkDevice, vkFormat, width, height,
@@ -464,7 +496,7 @@ int run_test_with_two_queue(
 
                             cl_mem external_mem_image1[5];
                             cl_mem external_mem_image2[5];
-                            for (int i = 0; i < num2DImages; i++)
+                            for (uint32_t i = 0; i < num2DImages; i++)
                             {
                                 external_mem_image1[i] =
                                     externalMemory1[i]
@@ -632,7 +664,8 @@ int run_test_with_two_queue(
                                 err |= clSetKernelArg(updateKernelCQ2, 7,
                                                       sizeof(unsigned int),
                                                       &numMipLevels);
-                                for (int i = 0; i < num2DImages - 1; i++, ++j)
+                                for (uint32_t i = 0; i < num2DImages - 1;
+                                     i++, ++j)
                                 {
                                     err = clSetKernelArg(
                                         updateKernelCQ1, j, sizeof(cl_mem),
@@ -732,11 +765,8 @@ int run_test_with_two_queue(
                                     "Failed to signal CL semaphore\n");
                             }
 
-                            unsigned int flags = 0;
-                            size_t mipmapLevelOffset = 0;
-                            cl_event eventReadImage = NULL;
                             clFinish(cmd_queue2);
-                            for (int i = 0; i < num2DImages; i++)
+                            for (uint32_t i = 0; i < num2DImages; i++)
                             {
                                 err = clEnqueueReadImage(
                                     cmd_queue1, external_mem_image2[i], CL_TRUE,
@@ -747,8 +777,9 @@ int run_test_with_two_queue(
                                     "clEnqueueReadImage failed with"
                                     "error\n");
 
-                                if (memcmp(srcBufferPtr, dstBufferPtr,
-                                           srcBufSize))
+                                if (memcmp_images(
+                                        srcBufferPtr, dstBufferPtr, srcBufSize,
+                                        externalMemory2[i]->getImageFormat()))
                                 {
                                     log_info("Source and destination buffers "
                                              "don't match\n");
@@ -776,7 +807,7 @@ int run_test_with_two_queue(
                                     break;
                                 }
                             }
-                            for (int i = 0; i < num2DImages; i++)
+                            for (uint32_t i = 0; i < num2DImages; i++)
                             {
                                 delete vkImage2DListDeviceMemory1[i];
                                 delete vkImage2DListDeviceMemory2[i];
@@ -817,9 +848,9 @@ CLEANUP:
 }
 
 int run_test_with_one_queue(
-    cl_context &context, cl_command_queue &cmd_queue1,
-    cl_kernel *kernel_unsigned, cl_kernel *kernel_signed,
-    cl_kernel *kernel_float, VulkanDevice &vkDevice,
+    cl_context context, cl_command_queue cmd_queue1,
+    clKernelWrapper *kernel_unsigned, clKernelWrapper *kernel_signed,
+    clKernelWrapper *kernel_float, VulkanDevice &vkDevice,
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType)
 {
     cl_int err = CL_SUCCESS;
@@ -1027,7 +1058,6 @@ int run_test_with_one_queue(
                                 }
                             }
                             size_t totalImageMemSize = 0;
-                            uint64_t interImageOffset = 0;
                             {
                                 VulkanImage2D vkImage2D(
                                     vkDevice, vkFormat, width, height,
@@ -1088,7 +1118,7 @@ int run_test_with_one_queue(
 
                             cl_mem external_mem_image1[4];
                             cl_mem external_mem_image2[4];
-                            for (int i = 0; i < num2DImages; i++)
+                            for (uint32_t i = 0; i < num2DImages; i++)
                             {
                                 external_mem_image1[i] =
                                     externalMemory1[i]
@@ -1223,7 +1253,7 @@ int run_test_with_one_queue(
                                         break;
                                 }
                                 int j = 0;
-                                for (int i = 0; i < num2DImages; i++, ++j)
+                                for (uint32_t i = 0; i < num2DImages; i++, ++j)
                                 {
                                     err = clSetKernelArg(
                                         updateKernelCQ1, j, sizeof(cl_mem),
@@ -1289,10 +1319,7 @@ int run_test_with_one_queue(
                                     "Failed to signal CL semaphore\n");
                             }
 
-                            unsigned int flags = 0;
-                            size_t mipmapLevelOffset = 0;
-                            cl_event eventReadImage = NULL;
-                            for (int i = 0; i < num2DImages; i++)
+                            for (uint32_t i = 0; i < num2DImages; i++)
                             {
                                 err = clEnqueueReadImage(
                                     cmd_queue1, external_mem_image2[i], CL_TRUE,
@@ -1303,8 +1330,9 @@ int run_test_with_one_queue(
                                     "clEnqueueReadImage failed with"
                                     "error\n");
 
-                                if (memcmp(srcBufferPtr, dstBufferPtr,
-                                           srcBufSize))
+                                if (memcmp_images(
+                                        srcBufferPtr, dstBufferPtr, srcBufSize,
+                                        externalMemory2[i]->getImageFormat()))
                                 {
                                     log_info("Source and destination buffers "
                                              "don't match\n");
@@ -1332,7 +1360,7 @@ int run_test_with_one_queue(
                                     break;
                                 }
                             }
-                            for (int i = 0; i < num2DImages; i++)
+                            for (uint32_t i = 0; i < num2DImages; i++)
                             {
                                 delete vkImage2DListDeviceMemory1[i];
                                 delete vkImage2DListDeviceMemory2[i];
@@ -1431,7 +1459,7 @@ struct ImageCommonTest : public VulkanTestBase
 
         log_info("clCreateCommandQueue2 successful \n");
 
-        for (int i = 0; i < num_kernels; i++)
+        for (uint32_t i = 0; i < num_kernels; i++)
         {
             switch (i)
             {
@@ -1482,7 +1510,7 @@ struct ImageCommonTest : public VulkanTestBase
             }
             const char *sourceTexts[num_kernel_types] = { source_1, source_2,
                                                           source_3 };
-            for (int k = 0; k < num_kernel_types; k++)
+            for (uint32_t k = 0; k < num_kernel_types; k++)
             {
                 program_source_length = strlen(sourceTexts[k]);
                 program[k] = clCreateProgramWithSource(
@@ -1508,20 +1536,16 @@ struct ImageCommonTest : public VulkanTestBase
         {
             if (numCQ == 2)
             {
-                err = run_test_with_two_queue(
-                    context, (cl_command_queue &)cmd_queue1,
-                    (cl_command_queue &)cmd_queue2,
-                    (cl_kernel *)kernel_unsigned, (cl_kernel *)kernel_signed,
-                    (cl_kernel *)kernel_float, *vkDevice,
-                    externalSemaphoreType);
+                err = run_test_with_two_queue(context, cmd_queue1, cmd_queue2,
+                                              kernel_unsigned, kernel_signed,
+                                              kernel_float, *vkDevice,
+                                              externalSemaphoreType);
             }
             else
             {
                 err = run_test_with_one_queue(
-                    context, (cl_command_queue &)cmd_queue1,
-                    (cl_kernel *)kernel_unsigned, (cl_kernel *)kernel_signed,
-                    (cl_kernel *)kernel_float, *vkDevice,
-                    externalSemaphoreType);
+                    context, cmd_queue1, kernel_unsigned, kernel_signed,
+                    kernel_float, *vkDevice, externalSemaphoreType);
             }
             test_error(err, "func_name failed \n");
         }

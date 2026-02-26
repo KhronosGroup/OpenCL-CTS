@@ -23,6 +23,7 @@
 #include "harness/deviceInfo.h"
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
+#include "harness/extensionHelpers.h"
 
 struct SemaphoreBase
 {
@@ -37,27 +38,15 @@ struct SemaphoreBase
         test_error(error, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed");
 
         // If it is supported get the addresses of all the APIs here.
-        // clang-format off
-#define GET_EXTENSION_ADDRESS(FUNC)                                            \
-        FUNC = reinterpret_cast<FUNC##_fn>(                                    \
-            clGetExtensionFunctionAddressForPlatform(platform, #FUNC));        \
-        if (FUNC == nullptr)                                                   \
-        {                                                                      \
-            log_error("ERROR: clGetExtensionFunctionAddressForPlatform failed" \
-                      " with " #FUNC "\n");                                    \
-            return TEST_FAIL;                                                  \
-        }
-        // clang-format on
+        GET_FUNCTION_EXTENSION_ADDRESS(device,
+                                       clCreateSemaphoreWithPropertiesKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clEnqueueSignalSemaphoresKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clEnqueueWaitSemaphoresKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clReleaseSemaphoreKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clGetSemaphoreInfoKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clRetainSemaphoreKHR);
+        GET_FUNCTION_EXTENSION_ADDRESS(device, clGetSemaphoreHandleForTypeKHR);
 
-        GET_EXTENSION_ADDRESS(clCreateSemaphoreWithPropertiesKHR);
-        GET_EXTENSION_ADDRESS(clEnqueueSignalSemaphoresKHR);
-        GET_EXTENSION_ADDRESS(clEnqueueWaitSemaphoresKHR);
-        GET_EXTENSION_ADDRESS(clReleaseSemaphoreKHR);
-        GET_EXTENSION_ADDRESS(clGetSemaphoreInfoKHR);
-        GET_EXTENSION_ADDRESS(clRetainSemaphoreKHR);
-        GET_EXTENSION_ADDRESS(clGetSemaphoreHandleForTypeKHR);
-
-#undef GET_EXTENSION_ADDRESS
         return CL_SUCCESS;
     }
 

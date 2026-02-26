@@ -80,7 +80,6 @@ extern int gHasDouble;
 extern int gTestDouble;
 extern int gHasHalfs;
 extern int gTestHalfs;
-extern int gWimpyMode;
 extern int gWimpyReductionFactor;
 extern int gSkipTesting;
 extern int gMinVectorSize;

@@ -56,6 +56,7 @@ const char *known_extensions[] = {
     "cl_khr_integer_dot_product",
     "cl_khr_subgroup_rotate",
     "cl_khr_kernel_clock",
+    "cl_khr_icd_unloadable",
     // API-only extensions after this point.  If you add above here, modify
     // first_API_extension below.
     "cl_khr_icd",
@@ -94,7 +95,11 @@ const char *known_extensions[] = {
     "cl_khr_external_memory_dma_buf",
     "cl_khr_command_buffer",
     "cl_khr_command_buffer_mutable_dispatch",
-    "cl_khr_command_buffer_multi_device"
+    "cl_khr_command_buffer_mutable_memory_commands",
+    "cl_khr_command_buffer_multi_device",
+    "cl_khr_external_memory_android_hardware_buffer",
+    "cl_khr_unified_svm",
+    "cl_khr_spirv_queries"
 };
 // clang-format on
 

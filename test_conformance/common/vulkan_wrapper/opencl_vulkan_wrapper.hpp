@@ -106,6 +106,7 @@ protected:
     cl_mem m_externalMemory;
     int fd;
     void *handle;
+    cl_image_format img_format;
     clExternalMemoryImage();
 
 public:
@@ -117,6 +118,7 @@ public:
         cl_device_id deviceId);
     virtual ~clExternalMemoryImage();
     cl_mem getExternalMemoryImage();
+    cl_image_format getImageFormat() { return img_format; };
 };
 
 class clExternalSemaphore {

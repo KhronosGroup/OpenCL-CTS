@@ -18,7 +18,7 @@
 
 const char *kernelCode = "__kernel void kernel_empty(){}";
 
-REGISTER_TEST(profiling_timebase)
+REGISTER_TEST_VERSION(profiling_timebase, Version(2, 1))
 {
     Version version = get_device_cl_version(device);
     cl_platform_id platform = getPlatformFromDevice(device);

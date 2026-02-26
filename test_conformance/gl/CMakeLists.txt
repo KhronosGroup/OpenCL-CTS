@@ -29,6 +29,7 @@ set (${MODULE_NAME}_SOURCES
     test_renderbuffer.cpp
     test_renderbuffer_info.cpp
     test_fence_sync.cpp
+    test_queries.cpp
     helpers.cpp
     ../../test_common/gl/helpers.cpp
     )

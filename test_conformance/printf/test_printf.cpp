@@ -1101,19 +1101,18 @@ int main(int argc, const char* argv[])
         argCount, argList, test_registry::getInstance().num_tests(),
         test_registry::getInstance().definitions(), true, 0, InitCL);
 
-    if(gQueue)
+    if (gQueue)
     {
         int error = clFinish(gQueue);
-        if (error) {
+        if (error)
+        {
             log_error("clFinish failed: %d\n", error);
         }
+        if (clReleaseCommandQueue(gQueue) != CL_SUCCESS)
+            log_error("clReleaseCommandQueue\n");
     }
-
-    if(clReleaseCommandQueue(gQueue)!=CL_SUCCESS)
-        log_error("clReleaseCommandQueue\n");
-    if(clReleaseContext(gContext)!= CL_SUCCESS)
+    if (gContext && clReleaseContext(gContext) != CL_SUCCESS)
         log_error("clReleaseContext\n");
-
 
     free(argList);
     remove(gFileName);

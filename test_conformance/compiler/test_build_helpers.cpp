@@ -16,6 +16,7 @@
 #include "testBase.h"
 #include "harness/testHarness.h"
 #include "harness/parseParameters.h"
+#include "harness/stringHelpers.h"
 
 #include <array>
 #include <memory>
@@ -1008,4 +1009,114 @@ REGISTER_TEST(get_program_build_info)
     test_error( error, "Unable to release program object" );
 
     return 0;
+}
+
+cl_int test_kernel_name_len(cl_context context, cl_device_id device,
+                            const cl_uint length)
+{
+    cl_int error = CL_SUCCESS;
+
+    std::string buf = { "abcdefghijklmnopqrstuvwxyz" };
+    std::string name;
+    name.reserve(length);
+
+    for (cl_uint i = 0; i < length; ++i) name += buf[i % buf.size()];
+
+    const char *sample_name_size_test_kernel = R"(
+        __kernel void %s(int src, __global int *dst)
+        {
+            dst[0]=src;
+        }
+    )";
+    std::string program_source =
+        str_sprintf(std::string(sample_name_size_test_kernel), name.c_str());
+    const char *ptr = program_source.c_str();
+
+    {
+        clProgramWrapper program;
+        clKernelWrapper kernel;
+
+        error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                            name.c_str());
+        if (error != CL_SUCCESS)
+        {
+            log_error("ERROR: Unable to create program with length of "
+                      "kernel name "
+                      "%d : %s! (%s from %s:%d)\n",
+                      length, name.c_str(), IGetErrorString(error), __FILE__,
+                      __LINE__);
+            return TEST_FAIL;
+        }
+
+        // query kernel name
+        size_t kernel_name_size = 0;
+        error = clGetKernelInfo(kernel, CL_KERNEL_FUNCTION_NAME, 0, nullptr,
+                                &kernel_name_size);
+        test_error(error, "clGetKernelInfo (size) failed");
+
+        std::vector<char> kernel_name(kernel_name_size);
+        error = clGetKernelInfo(kernel, CL_KERNEL_FUNCTION_NAME,
+                                kernel_name_size, kernel_name.data(), nullptr);
+        test_error(error, "clGetKernelInfo (name) failed");
+
+        if (name != std::string(kernel_name.data()))
+        {
+            log_error("Kernel name mismatch! expected=%s got=%s\n",
+                      name.c_str(), kernel_name.data());
+            return TEST_FAIL;
+        }
+    }
+
+    if (gCompilationMode == kOnline)
+    {
+        clProgramWrapper programObj =
+            clCreateProgramWithSource(context, 1, &ptr, nullptr, &error);
+        test_error(error, "clCreateProgramWithSource failed (compile)");
+
+        error = clCompileProgram(programObj, 0, nullptr, nullptr, 0, nullptr,
+                                 nullptr, nullptr, nullptr);
+        if (error != CL_SUCCESS)
+        {
+            log_error("ERROR: Unable to compile program with length of "
+                      "kernel name "
+                      "%d : %s! (%s from %s:%d)\n",
+                      length, name.c_str(), IGetErrorString(error), __FILE__,
+                      __LINE__);
+            return TEST_FAIL;
+        }
+
+        clProgramWrapper linkedProgram =
+            clLinkProgram(context, 0, nullptr, nullptr, 1, &programObj, nullptr,
+                          nullptr, &error);
+        if (error != CL_SUCCESS)
+        {
+            log_error("ERROR: Unable to link program with length of "
+                      "kernel name "
+                      "%d : %s! (%s from %s:%d)\n",
+                      length, name.c_str(), IGetErrorString(error), __FILE__,
+                      __LINE__);
+            return TEST_FAIL;
+        }
+
+        clKernelWrapper kernel =
+            clCreateKernel(linkedProgram, name.c_str(), &error);
+        test_error(error, "clCreateKernel after link failed");
+    }
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(kernel_name_size)
+{
+    for (cl_uint len = 32; len <= 2048; len *= 2)
+    {
+        cl_int status = test_kernel_name_len(context, device, len);
+        if (status == TEST_FAIL)
+        {
+            log_error("ERROR: test_kernel_name_len failed with length %d\n",
+                      len);
+            return TEST_FAIL;
+        }
+    }
+    return TEST_PASS;
 }
