@@ -2348,7 +2348,36 @@ smallarg:
 
 }
 
-double reference_tgamma(double x) { return olm_tgammal(x); }
+double reference_tgamma(double x)
+{
+    if (x < 0.0f)
+    {
+        float fx = x;
+        if (fx == std::floor(fx))
+        {
+            return std::numeric_limits<double>::signaling_NaN();
+        }
+
+        // The gamma function satisfies the reflection formula:
+        //   tgamma(x) = pi / (sin(pi*x) * tgamma(1-x))
+        // For large negative non-integer arguments, tgamma(1-x) should overflow
+        // to +inf, causing the reflection formula pi/(sin(pi*x)*tgamma(1-x)) to
+        // collapse to +/-0. However, reference olm_tgamma does not handle this
+        // case correctly, so it must be handled externally. The sign is
+        // determined analytically from the alternating sign rule: for x in
+        // (-(n+1), -n), sign(tgamma(x)) = (-1)^(n+1). The threshold at which
+        // tgamma(1-x) overflows float128 (~10^4932 max) is around argument
+        // 1756, so x < -1755 is sufficient to trigger this path.
+
+        if (x < -1755.0f)
+        {
+            long n = (long)std::floor(-fx);
+            bool negative = (n % 2 == 0);
+            return negative ? -0.0 : 0.0;
+        }
+    }
+    return olm_tgammal(x);
+}
 
 #pragma mark -
 #pragma mark Double testing
@@ -6046,4 +6075,32 @@ long double reference_erfl(long double x) { return erf(x); }
 
 double reference_erfc(double x) { return erfc(x); }
 double reference_erf(double x) { return erf(x); }
-long double reference_tgammal(long double x) { return olm_tgammal(x); }
+long double reference_tgammal(long double x)
+{
+    if (x < 0.0)
+    {
+        if (x == std::floor(x))
+        {
+            return std::numeric_limits<long double>::signaling_NaN();
+        }
+
+        // The gamma function satisfies the reflection formula:
+        //   tgamma(x) = pi / (sin(pi*x) * tgamma(1-x))
+        // For large negative non-integer arguments, tgamma(1-x) should overflow
+        // to +inf, causing the reflection formula pi/(sin(pi*x)*tgamma(1-x)) to
+        // collapse to +/-0. However, reference olm_tgamma does not handle this
+        // case correctly, so it must be handled externally. The sign is
+        // determined analytically from the alternating sign rule: for x in
+        // (-(n+1), -n), sign(tgamma(x)) = (-1)^(n+1). The threshold at which
+        // tgamma(1-x) overflows float128 (~10^4932 max) is around argument
+        // 1756, so x < -1755 is sufficient to trigger this path.
+
+        if (x < -1755.0)
+        {
+            long n = (long)std::floor(-x);
+            bool negative = (n % 2 == 0);
+            return negative ? -0.0L : 0.0L;
+        }
+    }
+    return olm_tgammal(x);
+}
