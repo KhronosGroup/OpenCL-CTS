@@ -26,6 +26,68 @@
 #include <sstream>
 #include <vector>
 
+template <>
+bool host_atomic_compare_exchange<float, float>(
+    volatile float *a, float *expected, float desired,
+    TExplicitMemoryOrderType order_success,
+    TExplicitMemoryOrderType order_failure)
+{
+    union FloatInt {
+        float f;
+        uint32_t i;
+    };
+    FloatInt a2{ *a };
+    FloatInt expected2{ *expected };
+    FloatInt desired2{ desired };
+    FloatInt tmp;
+#if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
+    tmp.i = InterlockedCompareExchange(&a2.i, desired2.i, expected2.i);
+#elif defined(__GNUC__)
+    tmp.i = __sync_val_compare_and_swap(&a2.i, expected2.i, desired2.i);
+#else
+    log_info("Host function not implemented: atomic_compare_exchange\n");
+    tmp.i = 0;
+#endif
+    if (tmp.i == expected2.i)
+    {
+        *a = a2.f;
+        return true;
+    }
+    *expected = tmp.f;
+    return false;
+}
+
+template <>
+bool host_atomic_compare_exchange<double, double>(
+    volatile double *a, double *expected, double desired,
+    TExplicitMemoryOrderType order_success,
+    TExplicitMemoryOrderType order_failure)
+{
+    union DoubleInt64 {
+        double d;
+        uint64_t i;
+    };
+    DoubleInt64 a2{ *a };
+    DoubleInt64 expected2{ *expected };
+    DoubleInt64 desired2{ desired };
+    DoubleInt64 tmp;
+#if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
+    tmp.i = InterlockedCompareExchange(&a2.i, desired2.i, expected2.i);
+#elif defined(__GNUC__)
+    tmp.i = __sync_val_compare_and_swap(&a2.i, expected2.i, desired2.i);
+#else
+    log_info("Host function not implemented: atomic_compare_exchange\n");
+    tmp.i = 0;
+#endif
+    if (tmp.i == expected2.i)
+    {
+        *a = a2.d;
+        return true;
+    }
+    *expected = tmp.d;
+    return false;
+}
+
 template <typename HostAtomicType, typename HostDataType>
 class CBasicTestStore
     : public CBasicTestMemOrderScope<HostAtomicType, HostDataType> {
@@ -930,6 +992,14 @@ static int test_atomic_compare_exchange_strong_generic(cl_device_id deviceID,
         TYPE_ATOMIC_ULONG, useSVM);
     EXECUTE_TEST(error,
                  test_ulong.Execute(deviceID, context, queue, num_elements));
+    CBasicTestCompareStrong<HOST_ATOMIC_FLOAT, HOST_FLOAT> test_float(
+        TYPE_ATOMIC_FLOAT, useSVM);
+    EXECUTE_TEST(error,
+                 test_float.Execute(deviceID, context, queue, num_elements));
+    CBasicTestCompareStrong<HOST_ATOMIC_DOUBLE, HOST_DOUBLE> test_double(
+        TYPE_ATOMIC_DOUBLE, useSVM);
+    EXECUTE_TEST(error,
+                 test_double.Execute(deviceID, context, queue, num_elements));
     if (AtomicTypeInfo(TYPE_ATOMIC_SIZE_T).Size(deviceID) == 4)
     {
         CBasicTestCompareStrong<HOST_ATOMIC_INTPTR_T32, HOST_INTPTR_T32>
@@ -1061,6 +1131,14 @@ static int test_atomic_compare_exchange_weak_generic(cl_device_id deviceID,
         TYPE_ATOMIC_ULONG, useSVM);
     EXECUTE_TEST(error,
                  test_ulong.Execute(deviceID, context, queue, num_elements));
+    CBasicTestCompareWeak<HOST_ATOMIC_FLOAT, HOST_FLOAT> test_float(
+        TYPE_ATOMIC_FLOAT, useSVM);
+    EXECUTE_TEST(error,
+                 test_float.Execute(deviceID, context, queue, num_elements));
+    CBasicTestCompareWeak<HOST_ATOMIC_DOUBLE, HOST_DOUBLE> test_double(
+        TYPE_ATOMIC_DOUBLE, useSVM);
+    EXECUTE_TEST(error,
+                 test_double.Execute(deviceID, context, queue, num_elements));
     if (AtomicTypeInfo(TYPE_ATOMIC_SIZE_T).Size(deviceID) == 4)
     {
         CBasicTestCompareWeak<HOST_ATOMIC_INTPTR_T32, HOST_INTPTR_T32>
