@@ -141,7 +141,6 @@ std::string get_kernel_name(const std::string &source)
         {
             kernelsList = kernelsList.substr(0, MAX_LEN_FOR_KERNEL_LIST + 1);
             kernelsList[kernelsList.size() - 1] = '.';
-            kernelsList[kernelsList.size() - 1] = '.';
         }
         oss << kernelsList;
     }
@@ -678,7 +677,7 @@ static int create_single_kernel_helper_create_program_offline(
     return CL_SUCCESS;
 }
 
-static int create_single_kernel_helper_create_program(
+static int create_single_kernel_helper_create_program_internal(
     cl_context context, cl_device_id device, cl_program *outProgram,
     unsigned int numKernelLines, const char **kernelProgram,
     const char *buildOptions, CompilationMode compilationMode)
@@ -729,29 +728,9 @@ int create_single_kernel_helper_create_program(cl_context context,
                                                const char **kernelProgram,
                                                const char *buildOptions)
 {
-    return create_single_kernel_helper_create_program(
+    return create_single_kernel_helper_create_program_internal(
         context, NULL, outProgram, numKernelLines, kernelProgram, buildOptions,
         gCompilationMode);
-}
-
-int create_single_kernel_helper_create_program_for_device(
-    cl_context context, cl_device_id device, cl_program *outProgram,
-    unsigned int numKernelLines, const char **kernelProgram,
-    const char *buildOptions)
-{
-    return create_single_kernel_helper_create_program(
-        context, device, outProgram, numKernelLines, kernelProgram,
-        buildOptions, gCompilationMode);
-}
-
-int create_single_kernel_helper_with_build_options(
-    cl_context context, cl_program *outProgram, cl_kernel *outKernel,
-    unsigned int numKernelLines, const char **kernelProgram,
-    const char *kernelName, const char *buildOptions)
-{
-    return create_single_kernel_helper(context, outProgram, outKernel,
-                                       numKernelLines, kernelProgram,
-                                       kernelName, buildOptions);
 }
 
 // Creates and builds OpenCL C/C++ program, and creates a kernel
@@ -1239,8 +1218,8 @@ int is_image_format_supported(cl_context context, cl_mem_flags flags,
 {
     cl_image_format *list;
     cl_uint count = 0;
-    cl_int err = clGetSupportedImageFormats(context, flags, image_type, 128,
-                                            NULL, &count);
+    cl_int err =
+        clGetSupportedImageFormats(context, flags, image_type, 0, NULL, &count);
     if (count == 0) return 0;
 
     list = (cl_image_format *)malloc(count * sizeof(cl_image_format));
@@ -1276,7 +1255,6 @@ int is_image_format_supported(cl_context context, cl_mem_flags flags,
     return (i < count) ? 1 : 0;
 }
 
-size_t get_pixel_bytes(const cl_image_format *fmt);
 size_t get_pixel_bytes(const cl_image_format *fmt)
 {
     size_t chanCount;

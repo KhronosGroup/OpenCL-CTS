@@ -336,9 +336,9 @@ int test_cl_image_write(cl_context context, cl_command_queue queue,
             get_explicit_type_name(*outType), suffix, convert);
 
     programPtr = kernelSource;
-    if (create_single_kernel_helper_with_build_options(
-            context, &program, &kernel, 1, (const char **)&programPtr,
-            "sample_test", ""))
+    if (create_single_kernel_helper(context, &program, &kernel, 1,
+                                    (const char **)&programPtr, "sample_test",
+                                    ""))
     {
         return -1;
     }

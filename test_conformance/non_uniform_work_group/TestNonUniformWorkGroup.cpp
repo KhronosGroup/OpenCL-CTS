@@ -557,8 +557,9 @@ int TestNonUniformWorkGroup::prepareDevice () {
   if (_testRange & Range::BARRIERS)
     buildOptions += " -D TESTBARRIERS";
 
-  err = create_single_kernel_helper_with_build_options (_context, &_program, &_testKernel, 1,
-    &KERNEL_FUNCTION, "testKernel", buildOptions.c_str());
+  err = create_single_kernel_helper(_context, &_program, &_testKernel, 1,
+                                    &KERNEL_FUNCTION, "testKernel",
+                                    buildOptions.c_str());
   if (err)
   {
     log_error("Error %d in line: %d of file %s\n", err, __LINE__, __FILE__);
@@ -842,8 +843,9 @@ int SubTestExecutor::calculateWorkGroupSize(size_t &maxWgSize, int testRange) {
   if (testRange & Range::BARRIERS)
     buildOptions += " -D TESTBARRIERS";
 
-  err = create_single_kernel_helper_with_build_options (_context, &program, &testKernel, 1,
-    &KERNEL_FUNCTION, "testKernel", buildOptions.c_str());
+  err = create_single_kernel_helper(_context, &program, &testKernel, 1,
+                                    &KERNEL_FUNCTION, "testKernel",
+                                    buildOptions.c_str());
   if (err)
   {
     log_error("Error %d in line: %d of file %s\n", err, __LINE__, __FILE__);
