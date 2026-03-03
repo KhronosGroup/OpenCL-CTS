@@ -758,7 +758,7 @@ static int test_buffer_read(cl_device_id deviceID, cl_context context,
                                       NULL, NULL);
             if (err != CL_SUCCESS)
             {
-                print_error( err, "clEnqueueReadBuffer failed" );;
+                print_error( err, "clEnqueueReadBuffer failed" );
                 return -1;
             }
 
