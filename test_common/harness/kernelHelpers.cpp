@@ -677,17 +677,18 @@ static int create_single_kernel_helper_create_program_offline(
     return CL_SUCCESS;
 }
 
-static int create_single_kernel_helper_create_program_internal(
-    cl_context context, cl_device_id device, cl_program *outProgram,
-    unsigned int numKernelLines, const char **kernelProgram,
-    const char *buildOptions, CompilationMode compilationMode)
+int create_single_kernel_helper_create_program(cl_context context,
+                                               cl_program *outProgram,
+                                               unsigned int numKernelLines,
+                                               const char **kernelProgram,
+                                               const char *buildOptions)
 {
     std::lock_guard<std::mutex> compiler_lock(gCompilerMutex);
 
     std::string filePrefix =
         get_unique_filename_prefix(numKernelLines, kernelProgram, buildOptions);
     bool shouldSaveToDisk = should_save_kernel_source_to_disk(
-        compilationMode, gCompilationCacheMode, gCompilationCachePath,
+        gCompilationMode, gCompilationCacheMode, gCompilationCachePath,
         filePrefix);
 
     if (shouldSaveToDisk)
@@ -700,7 +701,7 @@ static int create_single_kernel_helper_create_program_internal(
             return -1;
         }
     }
-    if (compilationMode == kOnline)
+    if (gCompilationMode == kOnline)
     {
         int error = CL_SUCCESS;
 
@@ -717,20 +718,9 @@ static int create_single_kernel_helper_create_program_internal(
     else
     {
         return create_single_kernel_helper_create_program_offline(
-            context, device, outProgram, numKernelLines, kernelProgram,
-            buildOptions, compilationMode);
+            context, nullptr, outProgram, numKernelLines, kernelProgram,
+            buildOptions, gCompilationMode);
     }
-}
-
-int create_single_kernel_helper_create_program(cl_context context,
-                                               cl_program *outProgram,
-                                               unsigned int numKernelLines,
-                                               const char **kernelProgram,
-                                               const char *buildOptions)
-{
-    return create_single_kernel_helper_create_program_internal(
-        context, NULL, outProgram, numKernelLines, kernelProgram, buildOptions,
-        gCompilationMode);
 }
 
 // Creates and builds OpenCL C/C++ program, and creates a kernel

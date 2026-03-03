@@ -1246,8 +1246,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                 + FunctionCode() + KernelCode(numDestItems);
             programLine = programSource.c_str();
             if (create_single_kernel_helper(context, &program, &kernel, 1,
-                                            &programLine, "test_atomic_kernel",
-                                            gOldAPI ? "" : nullptr))
+                                            &programLine, "test_atomic_kernel"))
             {
                 return -1;
             }

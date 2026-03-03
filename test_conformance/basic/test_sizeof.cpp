@@ -50,8 +50,8 @@ cl_int get_type_size( cl_context context, cl_command_queue queue, const char *ty
     {
         sizeof_kernel_code[0] = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
     }
-    cl_int err = create_single_kernel_helper(
-        context, &p, &k, 4, sizeof_kernel_code, "test_sizeof", nullptr);
+    cl_int err = create_single_kernel_helper(context, &p, &k, 4,
+                                             sizeof_kernel_code, "test_sizeof");
     test_error(err, "Failed to build kernel/program.");
 
     m = clCreateBuffer( context, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR, sizeof( cl_ulong ), size, &err );

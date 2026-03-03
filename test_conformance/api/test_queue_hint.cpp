@@ -87,7 +87,7 @@ REGISTER_TEST(queue_hint)
     clKernelWrapper kernel;
 
     err = create_single_kernel_helper(context, &program, &kernel, 1,
-                                      queue_hint_test_kernel, "vec_cpy", NULL);
+                                      queue_hint_test_kernel, "vec_cpy");
     if (err != 0)
     {
         return err;
