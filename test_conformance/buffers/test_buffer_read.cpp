@@ -617,6 +617,11 @@ static int verify_read_struct(TestStruct *outptr, int n)
     return 0;
 }
 
+static void callback_align_free(cl_mem memobj, void* userData)
+{
+    align_free(userData);
+}
+
 //----- the test functions
 static int test_buffer_read(cl_device_id deviceID, cl_context context,
                             cl_command_queue queue, int num_elements,
@@ -700,11 +705,26 @@ static int test_buffer_read(cl_device_id deviceID, cl_context context,
                 return -1;
             }
 
+            err = clSetMemObjectDestructorCallback(buffer, callback_align_free, inptr[i]);
+            if (err != CL_SUCCESS)
+            {
+                print_error(err, " clCreateBuffer failed\n" );
+                align_free( outptr[i] );
+                align_free( inptr[i] );
+                return -1;
+            }
+            
+            err = clSetMemObjectDestructorCallback(buffer, callback_align_free, outptr[i]);
+            if (err != CL_SUCCESS)
+            {
+                print_error(err, " clCreateBuffer failed\n" );
+                align_free( outptr[i] );
+                return -1;
+            }
+
             err = clSetKernelArg(kernel[i], 0, sizeof(cl_mem), (void *)&buffer);
             if ( err != CL_SUCCESS ){
                 print_error( err, "clSetKernelArg failed" );
-                align_free( outptr[i] );
-                align_free( inptr[i] );
                 return -1;
             }
 
@@ -712,8 +732,6 @@ static int test_buffer_read(cl_device_id deviceID, cl_context context,
                                          global_work_size, NULL, 0, NULL, NULL);
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueNDRangeKernel failed" );
-                align_free( outptr[i] );
-                align_free( inptr[i] );
                 return -1;
             }
 
@@ -722,8 +740,6 @@ static int test_buffer_read(cl_device_id deviceID, cl_context context,
                                       NULL, NULL);
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueReadBuffer failed" );
-                align_free( outptr[i] );
-                align_free( inptr[i] );
                 return -1;
             }
 
@@ -742,9 +758,7 @@ static int test_buffer_read(cl_device_id deviceID, cl_context context,
                                       NULL, NULL);
             if (err != CL_SUCCESS)
             {
-                print_error( err, "clEnqueueReadBuffer failed" );
-                align_free( outptr[i] );
-                align_free( inptr[i] );
+                print_error( err, "clEnqueueReadBuffer failed" );;
                 return -1;
             }
 
@@ -755,11 +769,6 @@ static int test_buffer_read(cl_device_id deviceID, cl_context context,
             else{
                 log_info( " %s%d test passed in-place readback\n", type, 1<<i );
             }
-
-
-            // cleanup
-            align_free( outptr[i] );
-            align_free( inptr[i] );
         }
     } // mem flag
 
@@ -851,19 +860,32 @@ static int test_buffer_read_async(cl_device_id deviceID, cl_context context,
                 return -1;
             }
 
+            err = clSetMemObjectDestructorCallback(buffer, callback_align_free, inptr[i]);
+            if (err != CL_SUCCESS)
+            {
+                print_error(err, " clCreateBuffer failed\n" );
+                align_free( outptr[i] );
+                align_free( inptr[i] );
+                return -1;
+            }
+            
+            err = clSetMemObjectDestructorCallback(buffer, callback_align_free, outptr[i]);
+            if (err != CL_SUCCESS)
+            {
+                print_error(err, " clCreateBuffer failed\n" );
+                align_free( outptr[i] );
+                return -1;
+            }
+
             err = clSetKernelArg(kernel[i], 0, sizeof(cl_mem), (void *)&buffer);
             if ( err != CL_SUCCESS ){
                 print_error( err, "clSetKernelArg failed" );
-                align_free( outptr[i] );
-                align_free( inptr[i] );
                 return -1;
             }
 
             err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueNDRangeKernel failed" );
-                align_free( outptr[i] );
-                align_free( inptr[i] );
                 return -1;
             }
 
@@ -879,15 +901,11 @@ static int test_buffer_read_async(cl_device_id deviceID, cl_context context,
 #endif
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueReadBuffer failed" );
-                align_free( outptr[i] );
-                align_free( inptr[i] );
                 return -1;
             }
             err = clWaitForEvents(1, &event );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clWaitForEvents() failed" );
-                align_free( outptr[i] );
-                align_free( inptr[i] );
                 return -1;
             }
 
@@ -900,10 +918,6 @@ static int test_buffer_read_async(cl_device_id deviceID, cl_context context,
                 log_info(" %s%d test passed. cl_mem_flags src: %s\n", type,
                          1 << i, flag_set_names[src_flag_id]);
             }
-
-            // cleanup
-            align_free( outptr[i] );
-            align_free( inptr[i] );
         }
     } // mem flags
 
@@ -993,19 +1007,32 @@ static int test_buffer_read_array_barrier(
                 return -1;
             }
 
+            err = clSetMemObjectDestructorCallback(buffer, callback_align_free, inptr[i]);
+            if (err != CL_SUCCESS)
+            {
+                print_error(err, " clCreateBuffer failed\n" );
+                align_free( outptr[i] );
+                align_free( inptr[i] );
+                return -1;
+            }
+            
+            err = clSetMemObjectDestructorCallback(buffer, callback_align_free, outptr[i]);
+            if (err != CL_SUCCESS)
+            {
+                print_error(err, " clCreateBuffer failed\n" );
+                align_free( outptr[i] );
+                return -1;
+            }
+
             err = clSetKernelArg(kernel[i], 0, sizeof(cl_mem), (void *)&buffer);
             if ( err != CL_SUCCESS ){
                 print_error( err, "clSetKernelArgs failed" );
-                align_free( outptr[i] );
-                align_free( inptr[i] );
                 return -1;
             }
 
             err = clEnqueueNDRangeKernel( queue, kernel[i], 1, NULL, global_work_size, NULL, 0, NULL, NULL );
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueNDRangeKernel failed" );
-                align_free( outptr[i] );
-                align_free( inptr[i] );
                 return -1;
             }
 
@@ -1021,22 +1048,17 @@ static int test_buffer_read_array_barrier(
 #endif
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueReadBuffer failed" );
-                align_free( outptr[i] );
-                align_free( inptr[i] );
                 return -1;
             }
             err = clEnqueueBarrierWithWaitList(queue, 0, NULL, NULL);
             if ( err != CL_SUCCESS ){
                 print_error( err, "clEnqueueBarrierWithWaitList() failed" );
-                align_free( outptr[i] );
                 return -1;
             }
 
             err = clWaitForEvents(1, &event);
             if ( err != CL_SUCCESS ){
                 print_error( err, "clWaitForEvents() failed" );
-                align_free( outptr[i] );
-                align_free( inptr[i] );
                 return -1;
             }
 
@@ -1049,10 +1071,6 @@ static int test_buffer_read_array_barrier(
                 log_info(" %s%d test passed. cl_mem_flags src: %s\n", type,
                          1 << i, flag_set_names[src_flag_id]);
             }
-
-            // cleanup
-            align_free( outptr[i] );
-            align_free( inptr[i] );
         }
     } // cl_mem flags
     return total_errors;
