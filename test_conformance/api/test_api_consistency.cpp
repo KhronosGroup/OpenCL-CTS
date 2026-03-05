@@ -921,7 +921,6 @@ REGISTER_TEST_VERSION(consistency_il_programs, Version(3, 0))
                           "support cl_khr_il_program");
 
         // Test setup:
-
         error = create_single_kernel_helper(context, &program, &kernel, 1,
                                             &test_kernel, "test");
         test_error(error, "Unable to create test kernel");
@@ -961,6 +960,127 @@ REGISTER_TEST_VERSION(consistency_il_programs, Version(3, 0))
                            "clSetProgramSpecializationConstant did not return "
                            "CL_INVALID_OPERATION");
     }
+    else
+    {
+        cl_bool compilerAvail;
+        cl_int err =
+            clGetDeviceInfo(device, CL_DEVICE_COMPILER_AVAILABLE,
+                            sizeof(compilerAvail), &compilerAvail, nullptr);
+        test_error_fail(err, "clGetDeviceInfo failed");
+
+        if (!compilerAvail)
+        {
+            cl_uint specConst = 42;
+            error = clSetProgramSpecializationConstant(
+                program, 0, sizeof(specConst), &specConst);
+            test_failure_error(
+                error, CL_COMPILER_NOT_AVAILABLE,
+                "No compiler available for device but "
+                "clSetProgramSpecializationConstant did not return "
+                "CL_COMPILER_NOT_AVAILABLE");
+        }
+    }
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(consistency_missing_compiler)
+{
+    cl_bool compilerAvail = true;
+    cl_int err =
+        clGetDeviceInfo(device, CL_DEVICE_COMPILER_AVAILABLE,
+                        sizeof(compilerAvail), &compilerAvail, nullptr);
+    test_error_fail(err, "clGetDeviceInfo failed");
+
+    if (compilerAvail)
+    {
+        log_info("Can't perform compiler consistency check\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    const char* sample_kernel = R"(
+        __kernel void sample_test_C(__global float *src, __global int *dst)
+        {
+            size_t tid = get_global_id(0);
+            dst[tid] = (int)src[tid];
+        }
+    )";
+
+    size_t line_length = strlen(sample_kernel);
+
+    /* New OpenCL API only has one entry point, so go ahead and just try it */
+    clProgramWrapper program = clCreateProgramWithSource(
+        context, 1, &sample_kernel, &line_length, &err);
+    test_error(err, "Unable to create reference program");
+
+    /* clCompileProgram consistency check */
+    err = clCompileProgram(program, 1, &device, nullptr, 0, nullptr, nullptr,
+                           nullptr, nullptr);
+    test_failure_error_ret(err, CL_COMPILER_NOT_AVAILABLE,
+                           "clCompileProgram should return "
+                           "CL_COMPILER_NOT_AVAILABLE",
+                           TEST_FAIL);
+
+    /* clBuildProgram consistency check */
+    err = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
+    test_failure_error_ret(err, CL_COMPILER_NOT_AVAILABLE,
+                           "clBuildProgram should return "
+                           "CL_COMPILER_NOT_AVAILABLE",
+                           TEST_FAIL);
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(consistency_missing_linker)
+{
+    cl_bool compilerAvail = true;
+    cl_int err =
+        clGetDeviceInfo(device, CL_DEVICE_COMPILER_AVAILABLE,
+                        sizeof(compilerAvail), &compilerAvail, nullptr);
+    test_error_fail(err, "clGetDeviceInfo failed");
+
+    cl_bool linkerAvail = true;
+    err = clGetDeviceInfo(device, CL_DEVICE_LINKER_AVAILABLE,
+                          sizeof(linkerAvail), &linkerAvail, nullptr);
+    test_error_fail(err, "clGetDeviceInfo failed");
+
+    if (linkerAvail || !compilerAvail)
+    {
+        log_info("Can't perform linker consistency check\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    const char* sample_kernel = R"(
+        __kernel void sample_test_C(__global float *src, __global int *dst)
+        {
+            size_t tid = get_global_id(0);
+            dst[tid] = (int)src[tid];
+        }
+    )";
+
+    size_t line_length = strlen(sample_kernel);
+    clProgramWrapper program = clCreateProgramWithSource(
+        context, 1, &sample_kernel, &line_length, &err);
+    test_error(err, "Unable to create reference program");
+
+    /* clCompileProgram consistency check */
+    err = clCompileProgram(program, 1, &device, nullptr, 0, nullptr, nullptr,
+                           nullptr, nullptr);
+    test_error(err, "clCompileProgram failed");
+
+    clProgramWrapper linked =
+        clLinkProgram(context, 1, &device, "", 1, &program, 0, 0, &err);
+    test_failure_error_ret(err, CL_LINKER_NOT_AVAILABLE,
+                           "clLinkProgram should return "
+                           "CL_LINKER_NOT_AVAILABLE",
+                           TEST_FAIL);
+
+    /* clBuildProgram consistency check */
+    err = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
+    test_failure_error_ret(err, CL_COMPILER_NOT_AVAILABLE,
+                           "clBuildProgram should return "
+                           "CL_COMPILER_NOT_AVAILABLE",
+                           TEST_FAIL);
 
     return TEST_PASS;
 }
