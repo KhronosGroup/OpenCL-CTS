@@ -81,10 +81,11 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 include(CheckCXXCompilerFlag)
 
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)")
-    set(CLConform_TARGET_ARCH ARM)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)")
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)" OR
+   CMAKE_VS_PLATFORM_NAME MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)")
     set(CLConform_TARGET_ARCH ARM64)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)")
+    set(CLConform_TARGET_ARCH ARM)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "amd64.*|x86_64.*|AMD64.*")
     set(CLConform_TARGET_ARCH x86_64)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i686.*|i386.*|x86.*")
@@ -139,8 +140,12 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
         add_cxx_flag_if_supported(-frounding-math)
     endif()
 else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /D__SSE__")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D__SSE__")
+    # Curb the inclusion of SSE headers when compiling for non x86 targets
+    if(${CLConform_TARGET_ARCH} STREQUAL "x86_64" OR ${CLConform_TARGET_ARCH}
+            STREQUAL "x86")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /D__SSE__")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D__SSE__")
+    endif()
 endif()
 
 # Set a module's COMPILE_FLAGS if using gcc or clang.
