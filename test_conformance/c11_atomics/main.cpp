@@ -190,6 +190,18 @@ test_status InitCL(cl_device_id device) {
                                 sizeof(gHalfFPConfig), &gHalfFPConfig, NULL);
             test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
         }
+
+        error = clGetDeviceInfo(
+            device, CL_DEVICE_SINGLE_FP_ATOMIC_CAPABILITIES_EXT,
+            sizeof(gFloatAtomicCaps), &gFloatAtomicCaps, nullptr);
+        test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
+
+        error = clGetDeviceInfo(device, CL_DEVICE_SINGLE_FP_CONFIG,
+                                sizeof(gFloatFPConfig), &gFloatFPConfig, NULL);
+        test_error_ret(
+            error,
+            "Unable to run INFINITY/NAN tests (unable to get FP_CONFIG bits)",
+            TEST_FAIL);
     }
 
     return TEST_PASS;

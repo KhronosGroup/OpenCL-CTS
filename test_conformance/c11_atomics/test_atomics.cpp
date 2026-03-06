@@ -2159,6 +2159,197 @@ public:
     }
 };
 
+template <typename HostAtomicType, typename HostDataType>
+class CBasicTestFetchSubSpecialFloats
+    : public CBasicTestMemOrderScope<HostAtomicType, HostDataType> {
+
+    std::vector<HostDataType> ref_vals;
+
+public:
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MemoryOrder;
+    using CBasicTestMemOrderScope<HostAtomicType,
+                                  HostDataType>::MemoryOrderScopeStr;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::StartValue;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DataType;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
+    CBasicTestFetchSubSpecialFloats(TExplicitAtomicType dataType, bool useSVM)
+        : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
+                                                                useSVM)
+    {
+        if (std::is_same<HostDataType, HOST_FLOAT>::value)
+        {
+            auto spec_vals = GetSpecialValues();
+            StartValue(spec_vals.size());
+            CBasicTestMemOrderScope<HostAtomicType,
+                                    HostDataType>::OldValueCheck(false);
+        }
+    }
+
+    static std::vector<HostDataType> &GetSpecialValues()
+    {
+        const float test_value_zero = 0.0f;
+        const float test_value_minus_zero = -0.0f;
+        const float test_value_without_fraction = 2.0f;
+        const float test_value_with_fraction = 2.2f;
+
+        static std::vector<HostDataType> special_values;
+
+        if (special_values.empty())
+        {
+            special_values = {
+                static_cast<HostDataType>(test_value_minus_zero),
+                static_cast<HostDataType>(test_value_zero),
+                static_cast<HostDataType>(test_value_without_fraction),
+                static_cast<HostDataType>(test_value_with_fraction),
+                std::numeric_limits<HostDataType>::infinity(),
+                std::numeric_limits<HostDataType>::quiet_NaN(),
+                std::numeric_limits<HostDataType>::signaling_NaN(),
+                -std::numeric_limits<HostDataType>::infinity(),
+                -std::numeric_limits<HostDataType>::quiet_NaN(),
+                -std::numeric_limits<HostDataType>::signaling_NaN(),
+                std::numeric_limits<HostDataType>::lowest(),
+                std::numeric_limits<HostDataType>::min(),
+                std::numeric_limits<HostDataType>::max(),
+            };
+
+            if (0 != (CL_FP_DENORM & gFloatFPConfig))
+            {
+                special_values.push_back(
+                    std::numeric_limits<HostDataType>::denorm_min());
+            }
+        }
+
+        return special_values;
+    }
+
+    bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
+                      MTdata d) override
+    {
+        if (std::is_same<HostDataType, HOST_FLOAT>::value)
+        {
+            if (threadCount > ref_vals.size())
+            {
+                ref_vals.assign(threadCount, 0);
+                auto spec_vals = GetSpecialValues();
+
+                cl_uint total_cnt = 0;
+                while (total_cnt < threadCount)
+                {
+                    cl_uint block_cnt =
+                        std::min((cl_int)(threadCount - total_cnt),
+                                 (cl_int)spec_vals.size());
+                    memcpy(&ref_vals.at(total_cnt), spec_vals.data(),
+                           sizeof(HostDataType) * block_cnt);
+                    total_cnt += block_cnt;
+                }
+            }
+
+            memcpy(startRefValues, ref_vals.data(),
+                   sizeof(HostDataType) * threadCount);
+
+            return true;
+        }
+        return false;
+    }
+    std::string ProgramCore() override
+    {
+        std::string memoryOrderScope = MemoryOrderScopeStr();
+        std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
+
+        if (std::is_same<HostDataType, HOST_FLOAT>::value)
+        {
+            return std::string(DataType().AddSubOperandTypeName())
+                + " start_value = atomic_load_explicit(destMemory+tid, "
+                  "memory_order_relaxed, memory_scope_work_group);\n"
+                  "  atomic_store_explicit(destMemory+tid, oldValues[tid], "
+                  "memory_order_relaxed, memory_scope_work_group);\n"
+                  "  atomic_fetch_sub"
+                + postfix + "(&destMemory[tid], ("
+                + DataType().AddSubOperandTypeName()
+                + ")oldValues[tid/(int)start_value]" + memoryOrderScope
+                + ");\n";
+        }
+    }
+    void HostFunction(cl_uint tid, cl_uint threadCount,
+                      volatile HostAtomicType *destMemory,
+                      HostDataType *oldValues) override
+    {
+        if (std::is_same<HostDataType, HOST_FLOAT>::value)
+        {
+            auto spec_vals = GetSpecialValues();
+            host_atomic_store(&destMemory[tid], (HostDataType)oldValues[tid],
+                              MEMORY_ORDER_SEQ_CST);
+            host_atomic_fetch_sub(
+                &destMemory[tid],
+                (HostDataType)oldValues[tid / spec_vals.size()], MemoryOrder());
+        }
+    }
+    bool ExpectedValue(HostDataType &expected, cl_uint threadCount,
+                       HostDataType *startRefValues,
+                       cl_uint whichDestValue) override
+    {
+        expected = StartValue();
+        if (std::is_same<HostDataType, HOST_FLOAT>::value)
+        {
+            auto spec_vals = GetSpecialValues();
+            expected = startRefValues[whichDestValue]
+                - startRefValues[whichDestValue / spec_vals.size()];
+        }
+
+        return true;
+    }
+
+    bool IsTestNotAsExpected(const HostDataType &expected,
+                             const std::vector<HostAtomicType> &testValues,
+                             cl_uint whichDestValue) override
+    {
+        if (std::isnan(testValues[whichDestValue]) && std::isnan(expected))
+            return false;
+        else
+            return expected != testValues[whichDestValue];
+
+        return CBasicTestMemOrderScope<
+            HostAtomicType, HostDataType>::IsTestNotAsExpected(expected,
+                                                               testValues,
+                                                               whichDestValue);
+    }
+    int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
+                          cl_command_queue queue) override
+    {
+        if (std::is_same<HostDataType, HOST_FLOAT>::value)
+        {
+            if (LocalMemory()
+                && (gFloatAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_ADD_EXT) == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gFloatAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_ADD_EXT) == 0)
+                return 0;
+
+            if (!CBasicTestMemOrderScope<HostAtomicType,
+                                         HostDataType>::LocalMemory()
+                && CBasicTestMemOrderScope<HostAtomicType,
+                                           HostDataType>::DeclaredInProgram())
+            {
+                if ((gFloatFPConfig & CL_FP_INF_NAN) == 0) return 0;
+            }
+        }
+        return CBasicTestMemOrderScope<
+            HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context,
+                                                             queue);
+    }
+    cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
+    {
+        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        {
+            return threadCount;
+        }
+        return CBasicTestMemOrderScope<HostAtomicType,
+                                       HostDataType>::NumResults(threadCount,
+                                                                 deviceID);
+    }
+};
+
 static int test_atomic_fetch_sub_generic(cl_device_id deviceID,
                                          cl_context context,
                                          cl_command_queue queue,
@@ -2184,6 +2375,17 @@ static int test_atomic_fetch_sub_generic(cl_device_id deviceID,
 
     if (gFloatAtomicsSupported)
     {
+        auto spec_vals_fp32 =
+            CBasicTestFetchSubSpecialFloats<HOST_ATOMIC_FLOAT,
+                                            HOST_FLOAT>::GetSpecialValues();
+
+        CBasicTestFetchSubSpecialFloats<HOST_ATOMIC_FLOAT, HOST_FLOAT>
+            test_spec_float(TYPE_ATOMIC_FLOAT, useSVM);
+        EXECUTE_TEST(error,
+                     test_spec_float.Execute(deviceID, context, queue,
+                                             spec_vals_fp32.size()
+                                                 * spec_vals_fp32.size()));
+
         CBasicTestFetchSub<HOST_ATOMIC_DOUBLE, HOST_DOUBLE> test_double(
             TYPE_ATOMIC_DOUBLE, useSVM);
         EXECUTE_TEST(
