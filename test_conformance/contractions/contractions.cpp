@@ -827,6 +827,7 @@ test_status InitCL( cl_device_id device )
             // reference result computation (see DisableFTZ call above)
             RestoreFPState(&oldMode);
         }
+        free(bufSkip);
     }
 
     char c[1000];
