@@ -2375,16 +2375,11 @@ static int test_atomic_fetch_sub_generic(cl_device_id deviceID,
 
     if (gFloatAtomicsSupported)
     {
-        auto spec_vals_fp32 =
-            CBasicTestFetchSubSpecialFloats<HOST_ATOMIC_FLOAT,
-                                            HOST_FLOAT>::GetSpecialValues();
-
         CBasicTestFetchSubSpecialFloats<HOST_ATOMIC_FLOAT, HOST_FLOAT>
             test_spec_float(TYPE_ATOMIC_FLOAT, useSVM);
-        EXECUTE_TEST(error,
-                     test_spec_float.Execute(deviceID, context, queue,
-                                             spec_vals_fp32.size()
-                                                 * spec_vals_fp32.size()));
+        EXECUTE_TEST(
+            error,
+            test_spec_float.Execute(deviceID, context, queue, num_elements));
 
         CBasicTestFetchSub<HOST_ATOMIC_DOUBLE, HOST_DOUBLE> test_double(
             TYPE_ATOMIC_DOUBLE, useSVM);
