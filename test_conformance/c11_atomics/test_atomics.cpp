@@ -1780,38 +1780,23 @@ static int test_atomic_fetch_add_generic(cl_device_id deviceID,
 
     if (gFloatAtomicsSupported)
     {
-        auto spec_vals_fp64 =
-            CBasicTestFetchAddSpecialFloats<HOST_ATOMIC_DOUBLE,
-                                            HOST_DOUBLE>::GetSpecialValues();
-
         CBasicTestFetchAddSpecialFloats<HOST_ATOMIC_DOUBLE, HOST_DOUBLE>
             test_spec_double(TYPE_ATOMIC_DOUBLE, useSVM);
-        EXECUTE_TEST(error,
-                     test_spec_double.Execute(deviceID, context, queue,
-                                              spec_vals_fp64.size()
-                                                  * spec_vals_fp64.size()));
-
-        auto spec_vals_fp32 =
-            CBasicTestFetchAddSpecialFloats<HOST_ATOMIC_FLOAT,
-                                            HOST_FLOAT>::GetSpecialValues();
+        EXECUTE_TEST(
+            error,
+            test_spec_double.Execute(deviceID, context, queue, num_elements));
 
         CBasicTestFetchAddSpecialFloats<HOST_ATOMIC_FLOAT, HOST_FLOAT>
             test_spec_float(TYPE_ATOMIC_FLOAT, useSVM);
-        EXECUTE_TEST(error,
-                     test_spec_float.Execute(deviceID, context, queue,
-                                             spec_vals_fp32.size()
-                                                 * spec_vals_fp32.size()));
-
-        auto spec_vals_halfs =
-            CBasicTestFetchAddSpecialFloats<HOST_ATOMIC_HALF,
-                                            HOST_HALF>::GetSpecialValues();
+        EXECUTE_TEST(
+            error,
+            test_spec_float.Execute(deviceID, context, queue, num_elements));
 
         CBasicTestFetchAddSpecialFloats<HOST_ATOMIC_HALF, HOST_HALF>
             test_spec_half(TYPE_ATOMIC_HALF, useSVM);
-        EXECUTE_TEST(error,
-                     test_spec_half.Execute(deviceID, context, queue,
-                                            spec_vals_halfs.size()
-                                                * spec_vals_halfs.size()));
+        EXECUTE_TEST(
+            error,
+            test_spec_half.Execute(deviceID, context, queue, num_elements));
 
         CBasicTestFetchAdd<HOST_ATOMIC_HALF, HOST_HALF> test_half(
             TYPE_ATOMIC_HALF, useSVM);
@@ -3544,10 +3529,6 @@ static int test_atomic_fetch_min_generic(cl_device_id deviceID,
 
     if (gFloatAtomicsSupported)
     {
-        auto spec_vals =
-            CBasicTestFetchMinSpecialFloats<HOST_ATOMIC_FLOAT,
-                                            HOST_FLOAT>::GetSpecialValues();
-
         CBasicTestFetchMinSpecialFloats<HOST_ATOMIC_FLOAT, HOST_FLOAT>
             test_spec_float(TYPE_ATOMIC_FLOAT, useSVM);
         EXECUTE_TEST(
