@@ -3854,10 +3854,6 @@ static int test_atomic_fetch_max_generic(cl_device_id deviceID,
 
     if (gFloatAtomicsSupported)
     {
-        auto spec_vals =
-            CBasicTestFetchMaxSpecialFloats<HOST_ATOMIC_FLOAT,
-                                            HOST_FLOAT>::GetSpecialValues();
-
         CBasicTestFetchMaxSpecialFloats<HOST_ATOMIC_FLOAT, HOST_FLOAT>
             test_spec_float(TYPE_ATOMIC_FLOAT, useSVM);
         EXECUTE_TEST(
