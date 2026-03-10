@@ -1245,9 +1245,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
             programSource = PragmaHeader(deviceID) + ProgramHeader(numDestItems)
                 + FunctionCode() + KernelCode(numDestItems);
             programLine = programSource.c_str();
-            if (create_single_kernel_helper_with_build_options(
-                    context, &program, &kernel, 1, &programLine,
-                    "test_atomic_kernel", gOldAPI ? "" : nullptr))
+            if (create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &programLine, "test_atomic_kernel"))
             {
                 return -1;
             }
