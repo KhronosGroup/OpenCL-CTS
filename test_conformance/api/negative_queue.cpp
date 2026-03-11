@@ -425,7 +425,7 @@ REGISTER_TEST(negative_get_command_queue_info)
     if (device_supports_on_device_queue(device))
     {
         const cl_queue_properties properties[] = {
-            CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0
+            CL_QUEUE_ON_DEVICE, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0
         };
         cl_int err = CL_INVALID_VALUE;
         clCommandQueueWrapper cmd_queue = clCreateCommandQueueWithProperties(
