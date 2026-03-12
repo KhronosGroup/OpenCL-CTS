@@ -157,6 +157,8 @@ REGISTER_TEST(svm_byte_granularity)
     for (cl_uint i = 0; i < num_devices; i++)
         clSVMFree(context, error_counts[i]);
 
+    free(error_counts);
+
     if (failed) return -1;
     return 0;
 }

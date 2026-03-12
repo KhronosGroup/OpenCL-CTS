@@ -280,7 +280,7 @@ REGISTER_TEST(min_max_read_image_args)
     size_t maxParameterSize;
     cl_event event;
     cl_int event_status;
-    cl_float image_data[4 * 4];
+    cl_float image_data[4 * 4 * 4]; // 4 x 4 RGBA
     float image_result = 0.0f;
     float actual_image_result;
     cl_uint minRequiredReadImages = gIsEmbedded ? 8 : 128;
@@ -1131,7 +1131,7 @@ REGISTER_TEST(min_max_image_buffer_size)
     streams[1] =
         create_image_1d(context, CL_MEM_READ_ONLY, &image_format_desc,
                         maxDimensionPixels, 0, NULL, streams[0], &error);
-    if ((streams[0] == NULL) || (error != CL_SUCCESS))
+    if ((streams[1] == NULL) || (error != CL_SUCCESS))
     {
         print_error(error,
                     "1D Image from buffer creation failed for maximum image "
