@@ -72,5 +72,6 @@ int main(int argc, const char *argv[])
         ClosePlugin(plugin);
     }
 
+    log_info("All testing complete.\n");
     return result;
 }
