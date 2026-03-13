@@ -27,7 +27,7 @@ using PluginHandle = HMODULE;
 #define GetFunctionAddress(_handle, _name) ::GetProcAddress(_handle, _name)
 #else
 using PluginHandle = void *;
-#define LoadPlugin() ::dlopen("./libLoadUnloadPlugin.so", RTLD_LAZY)
+#define LoadPlugin() ::dlopen("./libLoadUnloadPlugin.so", RTLD_NOW)
 #define ClosePlugin(_handle) ::dlclose(_handle)
 #define GetFunctionAddress(_handle, _name) ::dlsym(_handle, _name)
 #endif
@@ -38,10 +38,12 @@ typedef TestFunction_t *TestFunction_ptr;
 int main(int argc, const char *argv[])
 {
     constexpr int iterations = 5;
-    for (int i = 0; i < iterations; i++)
+    int result = EXIT_SUCCESS;
+    for (int i = 0; i < iterations && result == EXIT_SUCCESS; i++)
     {
         log_info("Iteration %d of %d...\n", i + 1, iterations);
 
+        log_info("Loading plugin...\n");
         PluginHandle plugin = LoadPlugin();
         if (!plugin)
         {
@@ -49,6 +51,7 @@ int main(int argc, const char *argv[])
             return EXIT_FAILURE;
         }
 
+        log_info("Getting test pointer...\n");
         TestFunction_ptr testFunction = reinterpret_cast<TestFunction_ptr>(
             GetFunctionAddress(plugin, "do_test"));
         if (!testFunction)
@@ -58,16 +61,16 @@ int main(int argc, const char *argv[])
             return EXIT_FAILURE;
         }
 
-        int result = testFunction(argc, argv);
+        log_info("Running test...\n");
+        result = testFunction(argc, argv);
         if (result != EXIT_SUCCESS)
         {
             log_error("Test function failed!\n");
-            ClosePlugin(plugin);
-            return result;
         }
 
+        log_info("Closing plugin...\n");
         ClosePlugin(plugin);
     }
 
-    return EXIT_SUCCESS;
+    return result;
 }
