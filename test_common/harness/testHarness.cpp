@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "testHarness.h"
+#include "stringHelpers.h"
 #include "compat.h"
 #include <algorithm>
 #include <stdio.h>
@@ -21,6 +22,7 @@
 #include <string.h>
 #include <cassert>
 #include <deque>
+#include <filesystem>
 #include <mutex>
 #include <set>
 #include <stdexcept>
@@ -32,6 +34,8 @@
 #include "typeWrappers.h"
 #include "imageHelpers.h"
 #include "parseParameters.h"
+
+namespace fs = std::filesystem;
 
 #if !defined(_WIN32)
 #include <sys/utsname.h>
@@ -95,11 +99,25 @@ static int saveResultsToJson(const char *suiteName, test_definition testList[],
         return EXIT_SUCCESS;
     }
 
-    FILE *file = fopen(fileName, "w");
+    fs::path file_path(fileName);
+
+    // When running under Bazel test, prepend the Bazel output directory to
+    // the provided path
+    if (nullptr != getenv("BAZEL_TEST"))
+    {
+        char *bazel_output_dir = getenv("TEST_UNDECLARED_OUTPUTS_DIR");
+        if (nullptr != bazel_output_dir)
+        {
+            file_path = fs::path(bazel_output_dir) / file_path;
+        }
+    }
+
+    auto file_path_str = to_string(file_path.u8string());
+    FILE *file = fopen(file_path_str.c_str(), "w");
     if (NULL == file)
     {
         log_error("ERROR: Failed to open '%s' for writing results.\n",
-                  fileName);
+                  file_path_str.c_str());
         return EXIT_FAILURE;
     }
 
@@ -128,7 +146,8 @@ static int saveResultsToJson(const char *suiteName, test_definition testList[],
 
     int ret = fclose(file) ? EXIT_FAILURE : EXIT_SUCCESS;
 
-    log_info("Saving results to %s: %s!\n", fileName, save_map[ret]);
+    log_info("Saving results to %s: %s!\n", file_path_str.c_str(),
+             save_map[ret]);
 
     return ret;
 }
@@ -309,6 +328,8 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
                  "CL_CONFORMANCE_RESULTS_FILENAME (currently '%s')\n",
                  fileName != NULL ? fileName : "<undefined>");
         log_info("\t      to save results to JSON file.\n");
+        log_info("\t      When running in Bazel test this is relative to "
+                 "$TEST_UNDECLARED_OUTPUTS_DIR.\n");
 
         log_info("\n");
         log_info("Test names:\n");
