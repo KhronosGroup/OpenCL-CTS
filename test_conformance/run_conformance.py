@@ -255,8 +255,11 @@ def run_tests(tests):
         run_time = (time.time() - start_time)
 
         # Move print the finish status
+        #  TEST_SKIP = 2, TEST_SKIPPED_ITSELF = -100
         if result == 0:
             print("(" + get_time() + ")     PASSED " + test_name.ljust(40) + ": (" + str(int(run_time)).rjust(3) + "s, test " + str(test_number).rjust(3) + os.sep + str(len(tests)) + ")", end='')
+        else if result == 2 or result == -100:
+            print("(" + get_time() + ")     SKIPPED " + test_name.ljust(40) + ": (" + str(int(run_time)).rjust(3) + "s, test " + str(test_number).rjust(3) + os.sep + str(len(tests)) + ")", end='')
         else:
             print("(" + get_time() + ")     FAILED " + test_name.ljust(40) + ": (" + str(int(run_time)).rjust(3) + "s, test " + str(test_number).rjust(3) + os.sep + str(len(tests)) + ")", end='')
 
@@ -265,13 +268,15 @@ def run_tests(tests):
         log_file.flush()
 
         print("")
-        if result != 0:
+        if result == 0:
+            log_file.write("     (" + get_time() + ")     Test " + test_name + " passed in " + str(run_time) + "s\n")
+        else if result == 2 or result == -100:
+            log_file.write("     (" + get_time() + ")     Test " + test_name + " skipped in " + str(run_time) + "s\n")
+        else:
             log_file.write("  *******************************************************************************************\n")
             log_file.write("  *  (" + get_time() + ")     Test " + test_name + " ==> FAILED: " + str(result) + "\n")
             log_file.write("  *******************************************************************************************\n")
             failures = failures + 1
-        else:
-            log_file.write("     (" + get_time() + ")     Test " + test_name + " passed in " + str(run_time) + "s\n")
 
         log_file.write("     ----------------------------------------------------------------------------------------\n")
         log_file.write("\n")

@@ -19,6 +19,7 @@
 #include "harness/testHarness.h"
 #include "harness/deviceInfo.h"
 
+
 static const char* test_kernel = R"CLC(
 __kernel void test(__global int* dst) {
     dst[0] = 0;
@@ -940,14 +941,22 @@ REGISTER_TEST_VERSION(consistency_il_programs, Version(3, 0))
         // clCreateProgramWithIL
         // Returns CL_INVALID_OPERATION if no devices in context support
         // Intermediate Language Programs.
-
+        // May return also CL_INVALID_VALUE if SPIR-V validity is checked
+        // before testing device support
         cl_uint bogus = 0xDEADBEEF;
         clProgramWrapper ilProgram =
             clCreateProgramWithIL(context, &bogus, sizeof(bogus), &error);
-        test_failure_error(
-            error, CL_INVALID_OPERATION,
-            "Device does not support IL Programs but clCreateProgramWithIL did "
-            "not return CL_INVALID_OPERATION");
+
+        if (error != CL_INVALID_VALUE && error != CL_INVALID_OPERATION)
+        {
+            log_error("ERROR: %s! (Got %s, expected (%s) from %s:%d)\n",
+                      "Device does not support IL Programs but"
+                      "clCreateProgramWithIL did not return accepted value",
+                      IGetErrorString(error),
+                      "CL_INVALID_OPERATION or CL_INVALID_VALUE", __FILE__,
+                      __LINE__);
+            return TEST_FAIL;
+        }
 
         // clSetProgramSpecializationConstant
         // Returns CL_INVALID_OPERATION if no devices associated with program
