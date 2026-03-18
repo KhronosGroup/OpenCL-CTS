@@ -35,12 +35,12 @@ cpu_bit_insert(T tbase, T tinsert, cl_uint offset, cl_uint count)
     cl_ulong base = static_cast<cl_ulong>(tbase);
     cl_ulong insert = static_cast<cl_ulong>(tinsert);
 
-    cl_ulong mask = 0;
+    cl_ulong result = base;
     if (offset < 64)
-        mask = (count < 64) ? ((1ULL << count) - 1) << offset : ~0ULL;
-    cl_ulong shifted = 0;
-    if (offset < 64) shifted = (insert << offset);
-    cl_ulong result = (shifted & mask) | (base & ~mask);
+    {
+        cl_ulong mask = (count < 64) ? ((1ULL << count) - 1) << offset : ~0ULL;
+        result = ((insert << offset) & mask) | (base & ~mask);
+    }
 
     return static_cast<typename std::make_unsigned<T>::type>(result);
 }
