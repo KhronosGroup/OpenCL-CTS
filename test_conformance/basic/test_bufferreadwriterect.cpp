@@ -455,12 +455,10 @@ struct TestFunctions
     test_fn write;
 };
 
-int test_bufferreadwriterect_impl(cl_device_id device,
-                                         cl_context context,
-                                         cl_command_queue queue,
-                                         int num_elements,
-                                         cl_map_flags buffer_flags,
-                                         const TestFunctions& test_functions)
+int test_bufferreadwriterect_impl(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, int num_elements,
+                                  cl_map_flags buffer_flags,
+                                  const TestFunctions& test_functions)
 {
     gQueue = queue;
     cl_int err;
