@@ -25,6 +25,7 @@
 
 #include "testBase.h"
 
+#define TEST_READWRITERECT_PRINT_BUFFER 0
 #define CL_EXIT_ERROR(cmd,format,...)                \
 {                                \
 if ((cmd) != CL_SUCCESS) {                    \
@@ -34,6 +35,8 @@ log_error("\n");                        \
 /*abort();*/                \
 }                                \
 }
+
+namespace {
 
 typedef unsigned char BufferType;
 
@@ -47,12 +50,11 @@ size_t height [TotalImages];
 size_t depth  [TotalImages];
 
 // cl buffer and host buffer.
-cl_mem buffer [TotalImages];
-BufferType* verify[TotalImages];
-BufferType* backing[TotalImages];
+clMemWrapper buffer[TotalImages];
+std::vector<BufferType> verify[TotalImages];
 
 // Temporary buffer used for read and write operations.
-BufferType* tmp_buffer;
+std::vector<BufferType> tmp_buffer;
 size_t tmp_buffer_size;
 
 size_t num_tries   = 50; // Number of randomly selected operations to perform.
@@ -60,7 +62,7 @@ size_t alloc_scale = 2;   // Scale term applied buffer allocation size.
 MTdata mt;
 
 // Initialize a buffer in host memory containing random values of the specified size.
-static void initialize_image(BufferType* ptr, size_t w, size_t h, size_t d, MTdata mt)
+void initialize_image(BufferType* ptr, size_t w, size_t h, size_t d, MTdata mt)
 {
     enum { ElementSize = sizeof(BufferType)/sizeof(unsigned char) };
 
@@ -72,6 +74,7 @@ static void initialize_image(BufferType* ptr, size_t w, size_t h, size_t d, MTda
     }
 }
 
+#if TEST_READWRITERECT_PRINT_BUFFER
 // This function prints the contents of a buffer to standard error.
 void print_buffer(BufferType* buf, size_t w, size_t h, size_t d) {
     log_error("Size = %zux%zux%zu (%zu total)\n", w, h, d, w * h * d);
@@ -86,6 +89,7 @@ void print_buffer(BufferType* buf, size_t w, size_t h, size_t d) {
         log_error("\n");
     }
 }
+#endif
 
 // Returns true if the two specified regions overlap.
 bool check_overlap_rect(size_t src_offset[3], size_t dst_offset[3],
@@ -206,11 +210,12 @@ int copy_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst,
     // Copy between host buffers.
     size_t total = sregion[0] * sregion[1] * sregion[2];
 
-    size_t spitch = width[src];
-    size_t sslice = width[src]*height[src];
-
-    size_t dpitch = width[dst];
-    size_t dslice = width[dst]*height[dst];
+    size_t spitch = (src_row_pitch == 0) ? sregion[0] : src_row_pitch;
+    size_t sslice =
+        (src_slice_pitch == 0) ? sregion[1] * spitch : src_slice_pitch;
+    size_t dpitch = (dst_row_pitch == 0) ? sregion[0] : dst_row_pitch;
+    size_t dslice =
+        (dst_slice_pitch == 0) ? sregion[1] * dpitch : dst_slice_pitch;
 
     for (size_t i = 0; i != total; ++i) {
 
@@ -263,7 +268,7 @@ int verify_region(BufferType* device, size_t src, size_t soffset[3], size_t sreg
                       "%zu) of region\n",
                       i, sx, sy, sz);
             log_error("0x%02x != 0x%02x\n", device[d_idx], verify[src][s_idx]);
-#if 0
+#if TEST_READWRITERECT_PRINT_BUFFER
             // Uncomment this section to print buffers.
             log_error("Device (copy): [%lu]\n",dst);
             print_buffer(device,width[dst],height[dst],depth[dst]);
@@ -280,7 +285,6 @@ int verify_region(BufferType* device, size_t src, size_t soffset[3], size_t sreg
     return 0;
 }
 
-
 // This function invokes ReadBufferRect to read a region from the
 // specified source buffer into a temporary destination buffer. The
 // contents of the temporary buffer are then compared to the source
@@ -288,7 +292,7 @@ int verify_region(BufferType* device, size_t src, size_t soffset[3], size_t sreg
 int read_verify_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst, size_t doffset[3], size_t dregion[3]) {
 
     // Clear the temporary destination host buffer.
-    memset(tmp_buffer, 0xff, tmp_buffer_size);
+    memset(tmp_buffer.data(), 0xff, tmp_buffer_size * sizeof(BufferType));
 
     size_t src_slice_pitch = (width[src]*height[src] != 1) ? width[src]*height[src] : 0;
     size_t dst_slice_pitch = (width[dst]*height[dst] != 1) ? width[dst]*height[dst] : 0;
@@ -297,11 +301,12 @@ int read_verify_region(size_t src, size_t soffset[3], size_t sregion[3], size_t 
     CL_EXIT_ERROR(clEnqueueReadBufferRect(
                       gQueue, buffer[src], CL_TRUE, soffset, doffset, sregion,
                       width[src], src_slice_pitch, width[dst], dst_slice_pitch,
-                      tmp_buffer, 0, NULL, NULL),
+                      tmp_buffer.data(), 0, NULL, NULL),
                   "clEnqueueCopyBufferRect failed between %u and %u",
                   (unsigned)src, (unsigned)dst);
 
-    return verify_region(tmp_buffer,src,soffset,sregion,dst,doffset);
+    return verify_region(tmp_buffer.data(), src, soffset, sregion, dst,
+                         doffset);
 }
 
 // This function performs the same verification check as
@@ -335,19 +340,20 @@ int map_verify_region(size_t src) {
 // region of it to a region in the specified destination buffer.
 int write_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst, size_t doffset[3], size_t dregion[3]) {
 
-    initialize_image(tmp_buffer, tmp_buffer_size, 1, 1, mt);
+    initialize_image(tmp_buffer.data(), tmp_buffer_size, 1, 1, mt);
     // memset(tmp_buffer, 0xf0, tmp_buffer_size);
 
     size_t src_slice_pitch = (width[src]*height[src] != 1) ? width[src]*height[src] : 0;
     size_t dst_slice_pitch = (width[dst]*height[dst] != 1) ? width[dst]*height[dst] : 0;
 
     // Copy the source region of the cl buffer, to the destination region of the temporary buffer.
-    CL_EXIT_ERROR(clEnqueueWriteBufferRect(
-                      gQueue, buffer[dst], CL_TRUE, doffset, soffset,
-                      /*sregion,*/ dregion, width[dst], dst_slice_pitch,
-                      width[src], src_slice_pitch, tmp_buffer, 0, NULL, NULL),
-                  "clEnqueueWriteBufferRect failed between %u and %u",
-                  (unsigned)src, (unsigned)dst);
+    CL_EXIT_ERROR(
+        clEnqueueWriteBufferRect(gQueue, buffer[dst], CL_TRUE, doffset, soffset,
+                                 /*sregion,*/ dregion, width[dst],
+                                 dst_slice_pitch, width[src], src_slice_pitch,
+                                 tmp_buffer.data(), 0, NULL, NULL),
+        "clEnqueueWriteBufferRect failed between %u and %u", (unsigned)src,
+        (unsigned)dst);
 
     // Copy from the temporary buffer to the host buffer.
     size_t spitch = width[src];
@@ -375,11 +381,6 @@ int write_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst, s
         verify[dst][d_idx] = tmp_buffer[s_idx];
     }
     return 0;
-}
-
-void CL_CALLBACK mem_obj_destructor_callback( cl_mem, void *data )
-{
-    free( data );
 }
 
 using test_fn = int (*)(size_t, size_t[3], size_t[3], size_t, size_t[3],
@@ -463,37 +464,28 @@ static int test_bufferreadwriterect_impl(cl_device_id device,
 
     // Allocate a temporary buffer for read and write operations.
     tmp_buffer_size  = max_size;
-    tmp_buffer = (BufferType*)malloc(tmp_buffer_size);
+    tmp_buffer.resize(tmp_buffer_size, 0);
 
     // Initialize cl buffers
     log_info( "Initializing buffers\n" );
     for (unsigned i=0; i != TotalImages; ++i) {
 
-        size_t size_bytes = width[i]*height[i]*depth[i]*sizeof(BufferType);
+        size_t num_elems = width[i] * height[i] * depth[i];
+        size_t size_bytes = num_elems * sizeof(BufferType);
 
         // Allocate a host copy of the buffer for verification.
-        verify[i] = (BufferType*)malloc(size_bytes);
-        CL_EXIT_ERROR(verify[i] ? CL_SUCCESS : -1, "malloc of host buffer failed for buffer %u", i);
-
-        // Allocate the buffer in host memory.
-        backing[i] = (BufferType*)malloc(size_bytes);
-        CL_EXIT_ERROR(backing[i] ? CL_SUCCESS : -1, "malloc of backing buffer failed for buffer %u", i);
+        verify[i].resize(num_elems);
+        CL_EXIT_ERROR(verify[i].data() ? CL_SUCCESS : -1,
+                      "malloc of host buffer failed for buffer %u", i);
 
         // Generate a random buffer.
         log_info( "Initializing buffer %u\n", i );
-        initialize_image(verify[i], width[i], height[i], depth[i], mt);
-
-        // Copy the image into a buffer which will passed to CL.
-        memcpy(backing[i], verify[i], size_bytes);
+        initialize_image(verify[i].data(), width[i], height[i], depth[i], mt);
 
         // Create the CL buffer.
-        buffer[i] =
-            clCreateBuffer(context, buffer_flags, size_bytes, backing[i], &err);
-        CL_EXIT_ERROR(err,"clCreateBuffer failed for buffer %u", i);
-
-        // Make sure buffer is cleaned up appropriately if we encounter an error in the rest of the calls.
-        err = clSetMemObjectDestructorCallback( buffer[i], mem_obj_destructor_callback, backing[i] );
-        CL_EXIT_ERROR(err, "Unable to set mem object destructor callback" );
+        buffer[i] = clCreateBuffer(context, buffer_flags, size_bytes,
+                                   verify[i].data(), &err);
+        CL_EXIT_ERROR(err, "clCreateBuffer failed for buffer %u", i);
     }
 
     // Main test loop, run num_tries times.
@@ -607,11 +599,6 @@ static int test_bufferreadwriterect_impl(cl_device_id device,
 
     // Clean-up.
     free_mtdata(mt);
-    for (unsigned i=0;i<TotalImages;++i) {
-        free( verify[i] );
-        clReleaseMemObject( buffer[i] );
-    }
-    free( tmp_buffer );
 
     if (!err) {
         log_info("RECT read, write test passed\n");
@@ -619,6 +606,8 @@ static int test_bufferreadwriterect_impl(cl_device_id device,
 
     return err;
 }
+
+} // end anonymous namespace
 
 // This is the main test function for the conformance test.
 REGISTER_TEST(bufferreadwriterect)
