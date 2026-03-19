@@ -36,6 +36,7 @@ bool gDisableSPIRVValidation = false;
 std::string gSPIRVValidator = DEFAULT_SPIRV_VALIDATOR;
 unsigned gNumWorkerThreads;
 bool gListTests = false;
+bool gWimpyMode = false;
 
 void helpInfo()
 {
@@ -52,6 +53,17 @@ void helpInfo()
         Select parallel execution with the specified number of worker threads.
     --list
         List sub-tests
+    -w, --wimpy
+        Enable wimpy mode. It does not impact all tests. Impacted tests will run
+        with a very small subset of the tests. This option should not be used
+        for conformance submission (default: disabled).
+
+    --invalid-object-scenarios=<option_1>,<option_2>....
+        Specify different scenarios to use when
+        testing for object validity. Options can be:
+           nullptr                 To use a nullptr (default)
+           valid_object_wrong_type To use a valid_object which is not the correct type
+        NOTE: valid_object_wrong_type option is not required for OpenCL conformance.
 
 For offline compilation (binary and spir-v modes) only:
     --compilation-cache-mode <cache-mode>
@@ -99,6 +111,7 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
         }
 
         delArg = 0;
+        size_t i_object_length = strlen("--invalid-object-scenarios=");
 
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
         {
@@ -111,6 +124,11 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
         {
             delArg++;
             gListTests = true;
+        }
+        else if (!strcmp(argv[i], "--wimpy") || !strcmp(argv[i], "-w"))
+        {
+            delArg++;
+            gWimpyMode = true;
         }
         else if (!strcmp(argv[i], "--compilation-mode"))
         {
@@ -251,6 +269,32 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
             {
                 log_error("Program argument for --spirv-validator was not "
                           "specified.\n");
+                return -1;
+            }
+        }
+        else if (!strncmp(argv[i],
+                          "--invalid-object-scenarios=", i_object_length))
+        {
+            if (strlen(argv[i]) > i_object_length)
+            {
+                delArg++;
+                gInvalidObject = 0;
+                std::string invalid_objects(argv[i]);
+
+                if (invalid_objects.find("nullptr") != std::string::npos)
+                {
+                    gInvalidObject |= InvalidObject::Nullptr;
+                }
+                if (invalid_objects.find("valid_object_wrong_type")
+                    != std::string::npos)
+                {
+                    gInvalidObject |= InvalidObject::ValidObjectWrongType;
+                }
+            }
+            else
+            {
+                log_error("Program argument for --invalid-object-scenarios was "
+                          "not specified.\n");
                 return -1;
             }
         }

@@ -20,6 +20,7 @@
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
 
+#include <algorithm>
 #include <vector>
 
 namespace {
@@ -126,7 +127,20 @@ struct MutableCommandFullDispatch : InfoMutableCommandBufferTest
             &workgroupinfo_size, NULL);
         test_error(error, "clGetKernelWorkGroupInfo failed");
 
-        group_size = std::min(num_elements, workgroupinfo_size);
+        cl_uint max_work_dimension = 0;
+        error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,
+                                sizeof(max_work_dimension), &max_work_dimension,
+                                NULL);
+        test_error(error, "clGetDeviceInfo failed");
+
+        std::vector<size_t> max_work_item_sizes(max_work_dimension, 0);
+        error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
+                                sizeof(size_t) * max_work_item_sizes.size(),
+                                max_work_item_sizes.data(), NULL);
+        test_error(error, "clGetDeviceInfo failed");
+
+        group_size = std::min(
+            { num_elements, workgroupinfo_size, max_work_item_sizes[0] });
         const size_t size_to_allocate_src = group_size * sizeof(cl_int);
 
         // create and initialize source buffer

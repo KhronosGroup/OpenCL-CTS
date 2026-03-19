@@ -200,7 +200,7 @@ int main(int argc, const char *argv[])
         }
     }
 
-    if (argc > 1 && strcmp(argv[1], "-list") == 0)
+    if (gListTests)
     {
         log_info("Available 2.x tests:\n");
         for (int i = 0; i < test_num; i++)

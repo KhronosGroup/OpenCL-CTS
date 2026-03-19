@@ -25,11 +25,18 @@ if(USE_CL_EXPERIMENTAL)
   add_definitions(-DCL_EXPERIMENTAL)
 endif(USE_CL_EXPERIMENTAL)
 
+option(SANITIZER_THREAD "Build with the thread sanitiser" OFF)
+if (SANITIZER_THREAD)
+    add_compile_options(-fsanitize=thread)
+    add_link_options(-fsanitize=thread)
+endif (SANITIZER_THREAD)
+
 #-----------------------------------------------------------
 # Default Configurable Test Set
 #-----------------------------------------------------------
 option(D3D10_IS_SUPPORTED "Run DirectX 10 interop tests" OFF)
 option(D3D11_IS_SUPPORTED "Run DirectX 11 interop tests" OFF)
+option(D3D12_IS_SUPPORTED "Run DirectX 12 interop tests" OFF)
 option(GL_IS_SUPPORTED "Run OpenGL interop tests" OFF)
 option(GLES_IS_SUPPORTED "Run OpenGL ES interop tests" OFF)
 option(VULKAN_IS_SUPPORTED "Run Vulkan interop tests" OFF)

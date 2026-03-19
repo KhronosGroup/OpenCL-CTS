@@ -66,7 +66,6 @@ int gSkipCorrectnessTesting = 0;
 static int gStopOnError = 0;
 static bool gSkipRestOfTests;
 int gForceFTZ = 0;
-int gWimpyMode = 0;
 int gHostFill = 0;
 static int gHasDouble = 0;
 static int gTestFloat = 1;
@@ -502,10 +501,6 @@ static int ParseArgs(int argc, const char **argv)
 
                     case 'v': gVerboseBruteForce ^= 1; break;
 
-                    case 'w': // wimpy mode
-                        gWimpyMode ^= 1;
-                        break;
-
                     case '[':
                         parseWimpyReductionFactor(arg, gWimpyReductionFactor);
                         break;
@@ -585,14 +580,6 @@ static int ParseArgs(int argc, const char **argv)
         }
     }
 
-    // Check for the wimpy mode environment variable
-    if (getenv("CL_WIMPY_MODE"))
-    {
-        vlog("\n");
-        vlog("*** Detected CL_WIMPY_MODE env                          ***\n");
-        gWimpyMode = 1;
-    }
-
     PrintArch();
 
     if (gWimpyMode)
@@ -647,7 +634,6 @@ static void PrintUsage(void)
          "accuracy checks.)\n");
     vlog("\t\t-m\tToggle run multi-threaded. (Default: on) )\n");
     vlog("\t\t-s\tStop on error\n");
-    vlog("\t\t-w\tToggle Wimpy Mode, * Not a valid test * \n");
     vlog("\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
          "1-10, default factor(%u)\n",
          gWimpyReductionFactor);

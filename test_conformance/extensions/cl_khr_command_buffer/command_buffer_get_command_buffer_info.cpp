@@ -48,6 +48,39 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
         : BasicCommandBufferTest(device, context, queue)
     {}
 
+    bool Skip() override
+    {
+        if (BasicCommandBufferTest::Skip()) return true;
+
+        if (test_mode == CombufInfoTestMode::CITM_PROP_ARRAY)
+        {
+            return !simultaneous_use_support
+                || !(is_extension_available(
+                    device,
+                    CL_KHR_COMMAND_BUFFER_MUTABLE_DISPATCH_EXTENSION_NAME));
+        }
+
+        return false;
+    }
+
+    cl_int SetUp(int elements) override
+    {
+
+        cl_int error = BasicCommandBufferTest::SetUp(elements);
+        test_error(error, "BasicCommandBufferTest::SetUp() failed");
+        if (test_mode == CombufInfoTestMode::CITM_PROP_ARRAY)
+        {
+            cl_command_buffer_properties_khr properties[3] = {
+                CL_COMMAND_BUFFER_FLAGS_KHR,
+                CL_COMMAND_BUFFER_SIMULTANEOUS_USE_KHR, 0
+            };
+            command_buffer =
+                clCreateCommandBufferKHR(1, &queue, properties, &error);
+            test_error(error, "clCreateCommandBufferKHR failed");
+        }
+        return CL_SUCCESS;
+    }
+
     //--------------------------------------------------------------------------
     cl_int Run() override
     {
@@ -232,33 +265,6 @@ struct CommandBufferGetCommandBufferInfo : public BasicCommandBufferTest
         // record command buffer
         error = RecordCommandBuffer();
         test_error(error, "RecordCommandBuffer failed");
-
-        // verify executable state
-        error = verify_state(CL_COMMAND_BUFFER_STATE_EXECUTABLE_KHR);
-        test_error(error, "verify_state failed");
-
-        error = clEnqueueFillBuffer(queue, out_mem, &pattern, sizeof(cl_int), 0,
-                                    data_size(), 0, nullptr, nullptr);
-        test_error(error, "clEnqueueFillBuffer failed");
-
-        clEventWrapper trigger_event = clCreateUserEvent(context, &error);
-        test_error(error, "clCreateUserEvent failed");
-
-        clEventWrapper execute_event;
-        // enqueued command buffer blocked on user event
-        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 1,
-                                          &trigger_event, &execute_event);
-        test_error(error, "clEnqueueCommandBufferKHR failed");
-
-        // execute command buffer
-        cl_int signal_error = clSetUserEventStatus(trigger_event, CL_COMPLETE);
-
-        test_error(error, "verify_state failed");
-
-        test_error(signal_error, "clSetUserEventStatus failed");
-
-        error = clWaitForEvents(1, &execute_event);
-        test_error(error, "Unable to wait for execute event");
 
         // verify executable state
         error = verify_state(CL_COMMAND_BUFFER_STATE_EXECUTABLE_KHR);

@@ -178,9 +178,6 @@ static int ParseArgs( int argc, const char **argv )
 
                     case 'r': gHostReset = true; break;
 
-                    case 'w':  // Wimpy mode
-                        gWimpyMode = true;
-                        break;
                     case '[':
                         parseWimpyReductionFactor( arg, gWimpyReductionFactor);
                         break;
@@ -197,12 +194,6 @@ static int ParseArgs( int argc, const char **argv )
             argList[ argCount ] = arg;
             argCount++;
         }
-    }
-
-    if (getenv("CL_WIMPY_MODE")) {
-      vlog( "\n" );
-      vlog( "*** Detected CL_WIMPY_MODE env                          ***\n" );
-      gWimpyMode = 1;
     }
 
     PrintArch();
@@ -234,7 +225,6 @@ static void PrintUsage( void )
          "supported)\n");
     vlog("\t\t-t\tToggle reporting performance data.\n");
     vlog("\t\t-r\tReset buffers on host instead of on device.\n");
-    vlog("\t\t-w\tRun in wimpy mode\n");
     vlog("\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
          "1-12, default factor(%u)\n",
          gWimpyReductionFactor);

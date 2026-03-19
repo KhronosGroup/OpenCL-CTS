@@ -592,6 +592,12 @@ static int test_buffer_map_read( cl_device_id deviceID, cl_context context, cl_c
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
+            // Skip immutable memory flags
+            if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
+
             clMemWrapper buffer;
             outptr[i] = align_malloc( ptrSizes[i] * num_elements, min_alignment);
             if ( ! outptr[i] ){
@@ -671,6 +677,101 @@ static int test_buffer_map_read( cl_device_id deviceID, cl_context context, cl_c
 
 }   // end test_buffer_map_read()
 
+int test_immutable_buffer_map(cl_device_id device, cl_context context,
+                              cl_command_queue queue, int num_elements,
+                              size_t size, const char *type, int loops)
+{
+    REQUIRE_EXTENSION("cl_ext_immutable_memory_objects");
+
+    void *outptr[5];
+    cl_int err;
+    int i;
+    size_t ptrSizes[5];
+    int total_errors = 0;
+    MTdataHolder mtdata(gRandomSeed);
+
+    size_t min_alignment = get_min_alignment(context);
+
+    ptrSizes[0] = size;
+    ptrSizes[1] = ptrSizes[0] << 1;
+    ptrSizes[2] = ptrSizes[1] << 1;
+    ptrSizes[3] = ptrSizes[2] << 1;
+    ptrSizes[4] = ptrSizes[3] << 1;
+
+    // embedded devices don't support long/ulong so skip over
+    if (!gHasLong && strstr(type, "long")) return TEST_SKIPPED_ITSELF;
+
+    for (i = 0; i < loops; i++)
+    {
+        for (int src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
+        {
+            // Testing writing from immutable flags
+            if (!(flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT))
+            {
+                continue;
+            }
+
+            clMemWrapper buffer;
+            outptr[i] = align_malloc(ptrSizes[i] * num_elements, min_alignment);
+            if (!outptr[i])
+            {
+                log_error(" unable to allocate %d bytes of memory\n",
+                          (int)ptrSizes[i] * num_elements);
+                return TEST_FAIL;
+            }
+            generate_random_data(kUChar, ptrSizes[i] * num_elements, mtdata,
+                                 outptr[i]);
+
+            buffer =
+                clCreateBuffer(context, flag_set[src_flag_id],
+                               ptrSizes[i] * num_elements, outptr[i], &err);
+
+            if (nullptr == buffer || CL_SUCCESS != err)
+            {
+                print_error(err, "clCreateBuffer failed\n");
+                align_free(outptr[i]);
+                return TEST_FAIL;
+            }
+
+            void *mappedPtr = clEnqueueMapBuffer(
+                queue, buffer, CL_TRUE, CL_MAP_READ, 0,
+                ptrSizes[i] * num_elements, 0, nullptr, nullptr, &err);
+            if (err != CL_SUCCESS)
+            {
+                print_error(err, "clEnqueueMapBuffer failed");
+                align_free(outptr[i]);
+                return TEST_FAIL;
+            }
+
+            if (memcmp(mappedPtr, outptr[i], ptrSizes[i] * num_elements) != 0)
+            {
+                log_error(" %s%d test failed. cl_mem_flags src: %s\n", type,
+                          1 << i, flag_set_names[src_flag_id]);
+                total_errors++;
+            }
+            else
+            {
+                log_info(" %s%d test passed. cl_mem_flags src: %s\n", type,
+                         1 << i, flag_set_names[src_flag_id]);
+            }
+
+            err = clEnqueueUnmapMemObject(queue, buffer, mappedPtr, 0, nullptr,
+                                          nullptr);
+            test_error(err, "clEnqueueUnmapMemObject failed");
+
+            // If we are using the outptr[i] as backing via USE_HOST_PTR we need
+            // to make sure we are done before freeing.
+            if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR))
+            {
+                err = clFinish(queue);
+                test_error(err, "clFinish failed");
+            }
+            align_free(outptr[i]);
+        }
+    } // cl_mem_flags
+
+    return total_errors > 0 ? TEST_FAIL : TEST_PASS;
+}
 
 #define DECLARE_LOCK_TEST(type, realType)                                      \
     REGISTER_TEST(buffer_map_read_##type)                                      \
@@ -690,6 +791,28 @@ DECLARE_LOCK_TEST(ushort, cl_ushort)
 DECLARE_LOCK_TEST(char, cl_char)
 DECLARE_LOCK_TEST(uchar, cl_uchar)
 DECLARE_LOCK_TEST(float, cl_float)
+
+#undef DECLARE_LOCK_TEST
+
+#define DECLARE_LOCK_TEST(type, realType)                                      \
+    REGISTER_TEST(immutable_buffer_map_##type)                                 \
+    {                                                                          \
+        return test_immutable_buffer_map(device, context, queue, num_elements, \
+                                         sizeof(realType), #type, 5);          \
+    }
+
+DECLARE_LOCK_TEST(int, cl_int)
+DECLARE_LOCK_TEST(uint, cl_uint)
+DECLARE_LOCK_TEST(long, cl_long)
+DECLARE_LOCK_TEST(ulong, cl_ulong)
+DECLARE_LOCK_TEST(short, cl_short)
+DECLARE_LOCK_TEST(ushort, cl_ushort)
+DECLARE_LOCK_TEST(char, cl_char)
+DECLARE_LOCK_TEST(uchar, cl_uchar)
+DECLARE_LOCK_TEST(float, cl_float)
+
+#undef DECLARE_LOCK_TEST
+
 
 REGISTER_TEST(buffer_map_read_struct)
 {

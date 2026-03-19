@@ -60,6 +60,7 @@ int gInfNanSupport = 1;
 int gIsEmbedded = 0;
 int gHasLong = 1;
 bool gCoreILProgram = true;
+int gInvalidObject = InvalidObject::Nullptr;
 
 #define DEFAULT_NUM_ELEMENTS 0x4000
 
@@ -276,6 +277,16 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     {
         list_tests(testNum, testList);
         return EXIT_SUCCESS;
+    }
+
+    gWimpyMode |= (getenv("CL_WIMPY_MODE") != nullptr);
+    if (gWimpyMode)
+    {
+        log_info("\n");
+        log_info("**************************\n");
+        log_info("*** Wimpy mode enabled ***\n");
+        log_info("**************************\n");
+        log_info("\n");
     }
 
     if ((argc > 1) && (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")))
