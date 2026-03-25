@@ -664,7 +664,6 @@ const char *subtests_to_skip_with_offline_compiler[] = {
     "load_discreet_length_source",
     "get_program_info_kernel_names",
     "get_linked_program_info_kernel_names",
-    "get_program_info_mult_devices",
     "get_program_source",
     "get_program_build_info",
     "options_build_optimizations",
