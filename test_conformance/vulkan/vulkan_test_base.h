@@ -37,11 +37,13 @@ inline void params_reset()
 struct VulkanTestBase
 {
     VulkanTestBase(cl_device_id device, cl_context context,
-                   cl_command_queue queue, cl_int nelems)
+                   cl_command_queue queue, cl_int nelems,
+                   bool useShaderInt8 = false)
         : device(device), context(context), num_elems(nelems)
     {
         vkDevice.reset(new VulkanDevice(
-            getAssociatedVulkanPhysicalDevice(device, useValidationLayers)));
+            getAssociatedVulkanPhysicalDevice(device, useValidationLayers),
+            getDefaultVulkanQueueFamilyToQueueCountMap(), useShaderInt8));
 
         cl_platform_id platform;
         cl_int error = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,

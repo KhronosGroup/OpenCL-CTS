@@ -31,11 +31,14 @@ int gInternalIterations = 10000; // internal test iterations for atomic operatio
 int gMaxDeviceThreads = 1024; // maximum number of threads executed on OCL device
 cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+cl_device_fp_config gDoubleFPConfig = 0;
+cl_device_fp_config gFloatFPConfig = 0;
 cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
 bool gFloatAtomicsSupported = false;
 cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps = 0;
 cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps = 0;
 cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps = 0;
+cl_device_fp_config gHalfFPConfig = 0;
 
 test_status InitCL(cl_device_id device) {
     auto version = get_device_cl_version(device);
@@ -134,12 +137,16 @@ test_status InitCL(cl_device_id device) {
     if (is_extension_available(device, "cl_ext_float_atomics"))
     {
         gFloatAtomicsSupported = true;
-
         if (is_extension_available(device, "cl_khr_fp64"))
         {
             cl_int error = clGetDeviceInfo(
                 device, CL_DEVICE_DOUBLE_FP_ATOMIC_CAPABILITIES_EXT,
                 sizeof(gDoubleAtomicCaps), &gDoubleAtomicCaps, nullptr);
+            test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
+
+            error = clGetDeviceInfo(device, CL_DEVICE_DOUBLE_FP_CONFIG,
+                                    sizeof(gDoubleFPConfig), &gDoubleFPConfig,
+                                    NULL);
             test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
         }
 
@@ -147,6 +154,13 @@ test_status InitCL(cl_device_id device) {
             device, CL_DEVICE_SINGLE_FP_ATOMIC_CAPABILITIES_EXT,
             sizeof(gFloatAtomicCaps), &gFloatAtomicCaps, nullptr);
         test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
+
+        error = clGetDeviceInfo(device, CL_DEVICE_SINGLE_FP_CONFIG,
+                                sizeof(gFloatFPConfig), &gFloatFPConfig, NULL);
+        test_error_ret(
+            error,
+            "Unable to run INFINITY/NAN tests (unable to get FP_CONFIG bits)",
+            TEST_FAIL);
 
         if (is_extension_available(device, "cl_khr_fp16"))
         {
@@ -170,6 +184,11 @@ test_status InitCL(cl_device_id device) {
                 log_error("Error while acquiring half rounding mode\n");
                 return TEST_FAIL;
             }
+
+            error =
+                clGetDeviceInfo(device, CL_DEVICE_HALF_FP_CONFIG,
+                                sizeof(gHalfFPConfig), &gHalfFPConfig, NULL);
+            test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
         }
     }
 

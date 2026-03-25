@@ -148,7 +148,8 @@ public:
     VulkanDevice(
         const VulkanPhysicalDevice &physicalDevice = getVulkanPhysicalDevice(),
         const VulkanQueueFamilyToQueueCountMap &queueFamilyToQueueCountMap =
-            getDefaultVulkanQueueFamilyToQueueCountMap());
+            getDefaultVulkanQueueFamilyToQueueCountMap(),
+        bool useShaderInt8 = false);
     virtual ~VulkanDevice();
     const VulkanPhysicalDevice &getPhysicalDevice() const;
     VulkanQueue &
@@ -296,7 +297,8 @@ public:
     VulkanComputePipeline(const VulkanDevice &device,
                           const VulkanPipelineLayout &pipelineLayout,
                           const VulkanShaderModule &shaderModule,
-                          const std::string &entryFuncName = "main");
+                          const std::string &entryFuncName = "main",
+                          const VkSpecializationInfo *spec = nullptr);
     virtual ~VulkanComputePipeline();
     VulkanPipelineBindPoint getPipelineBindPoint() const;
 };

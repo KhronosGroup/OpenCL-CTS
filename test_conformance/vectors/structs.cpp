@@ -341,9 +341,9 @@ int checkCorrectnessAlign(bufferStruct *pBufferStruct, clState *pClState,
     {
         if ((targetArr[i]) % minAlign != (cl_uint)0)
         {
-            vlog_error(
-                "Error %zu (of %zu).  Expected a multiple of %zx, got %x\n", i,
-                pClState->m_numThreads, minAlign, targetArr[i]);
+            vlog_error("Error in work-item %zu (of %zu).  Expected a multiple "
+                       "of 0x%zx, got 0x%x\n",
+                       i, pClState->m_numThreads, minAlign, targetArr[i]);
             return -1;
         }
     }
@@ -371,8 +371,9 @@ int checkCorrectnessStep(bufferStruct *pBufferStruct, clState *pClState,
     {
         if (targetArr[i] != targetSize)
         {
-            vlog_error("Error %zu (of %zu).  Expected %d, got %d\n", i,
-                       pClState->m_numThreads, targetSize, targetArr[i]);
+            vlog_error(
+                "Error in work-item %zu (of %zu).  Expected %d, got %d\n", i,
+                pClState->m_numThreads, targetSize, targetArr[i]);
             return -1;
         }
     }
@@ -390,10 +391,11 @@ int checkPackedCorrectness(bufferStruct *pBufferStruct, clState *pClState,
     {
         if ((targetArr[i] - beforeSize) % totSize != (cl_uint)0)
         {
-            vlog_error(
-                "Error %zu (of %zu).  Expected %zu more than a multiple of "
-                "%zu, got %d \n",
-                i, pClState->m_numThreads, beforeSize, totSize, targetArr[i]);
+            vlog_error("Error in work-item %zu (of %zu).  Expected %zu more "
+                       "than a multiple of "
+                       "%zu, got %d \n",
+                       i, pClState->m_numThreads, beforeSize, totSize,
+                       targetArr[i]);
             return -1;
         }
     }

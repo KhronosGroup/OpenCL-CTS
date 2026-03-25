@@ -757,7 +757,7 @@ REGISTER_TEST(spirv_query_dependencies)
         }
         for (const auto& extension_dep : it->second.extensions)
         {
-            log_error("Checked for SPIR-V extension %s.n",
+            log_error("Checked for SPIR-V extension %s.\n",
                       extension_dep.c_str());
         }
         return TEST_FAIL;

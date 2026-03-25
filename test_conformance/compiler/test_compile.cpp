@@ -3983,6 +3983,9 @@ REGISTER_TEST(multiple_build_program)
         error = clEnqueueNDRangeKernel(queue, kernel0, 1, NULL, &num_threads,
                                        NULL, 0, NULL, NULL);
         test_error(error, "clEnqueueNDRangeKernel failed");
+
+        error = clFinish(queue);
+        test_error(error, "clFinish failed");
     }
 
     {
@@ -4001,10 +4004,10 @@ REGISTER_TEST(multiple_build_program)
         error = clEnqueueNDRangeKernel(queue, kernel1, 1, NULL, &num_threads,
                                        NULL, 0, NULL, NULL);
         test_error(error, "clEnqueueNDRangeKernel failed");
-    }
 
-    error = clFinish(queue);
-    test_error(error, "clFinish failed");
+        error = clFinish(queue);
+        test_error(error, "clFinish failed");
+    }
 
     std::vector<cl_int> test_values(num_threads, 0);
     error = clEnqueueReadBuffer(queue, out_stream_0, true, 0,
