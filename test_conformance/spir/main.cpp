@@ -6939,8 +6939,8 @@ int main(int argc, const char *argv[])
 
         if (!is_extension_available(device, "cl_khr_spir"))
         {
-            log_info(
-                "cl_khr_spir is not supported on this device. Skipping test.\n");
+            log_info("cl_khr_spir is not supported on this device. Skipping "
+                     "test.\n");
             return 0;
         }
 
