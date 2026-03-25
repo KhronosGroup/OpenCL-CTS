@@ -6937,7 +6937,12 @@ int main(int argc, const char *argv[])
             device_type, choosen_device_index, choosen_platform_index);
         printDeviceHeader(device);
 
-        REQUIRE_EXTENSION("cl_khr_spir");
+        if (!is_extension_available(device, "cl_khr_spir"))
+        {
+            log_info(
+                "cl_khr_spir is not supported on this device. Skipping test.\n");
+            return 0;
+        }
 
         std::vector<Version> versions;
         get_spir_version(device, versions);
