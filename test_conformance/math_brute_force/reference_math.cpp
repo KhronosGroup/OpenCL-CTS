@@ -962,6 +962,8 @@ double reference_subtract(double x, double y)
     return a;
 }
 
+double reference_negation(double v) { return -v; }
+
 double reference_multiply(double x, double y)
 {
     volatile float a = (float)x;
@@ -3206,6 +3208,8 @@ long double reference_subtractl(long double x, long double y)
 #endif
     return (long double)a;
 }
+
+long double reference_negationl(long double v) { return -v; }
 
 long double reference_multiplyl(long double x, long double y)
 {
