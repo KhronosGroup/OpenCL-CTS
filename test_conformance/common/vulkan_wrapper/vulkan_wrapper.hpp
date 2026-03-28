@@ -137,10 +137,13 @@ public:
 };
 
 class VulkanDevice {
+    friend class VulkanMemoryTypeList;
+
 protected:
     const VulkanPhysicalDevice &m_physicalDevice;
     VkDevice m_vkDevice;
     VulkanQueueFamilyToQueueListMap m_queueFamilyIndexToQueueListMap;
+    VulkanMemoryTypeList m_memoryTypeList;
 
     VulkanDevice(const VulkanDevice &device);
 
@@ -155,6 +158,7 @@ public:
     VulkanQueue &
     getQueue(const VulkanQueueFamily &queueFamily /* = getVulkanQueueFamily()*/,
              uint32_t queueIndex = 0);
+    const VulkanMemoryTypeList &getMemoryTypeList() const;
     operator VkDevice() const;
 };
 
