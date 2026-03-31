@@ -589,7 +589,8 @@ struct UnifiedSVMCornerCaseMemFill : UnifiedSVMBase
 
     cl_int test_BogusPointer()
     {
-        void* bogus = (void*)0xDEADBEEF;
+        // Note: the destination pointer must be aligned to the pattern size
+        void* bogus = (void*)0xBEEF0000;
         const cl_int pattern = 0;
 
         clEventWrapper event;
