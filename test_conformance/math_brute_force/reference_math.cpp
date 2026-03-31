@@ -3620,13 +3620,10 @@ long double reference_rintl(long double x)
     // mantissa can represent more than LDBL_MANT_DIG binary digits.
     x = rintl(x);
 #else
-    static long double magic[2] = { 0.0L, 0.0L };
-
-    if (0.0L == magic[0])
-    {
-        magic[0] = scalbnl(0.5L, LDBL_MANT_DIG);
-        magic[1] = scalbnl(-0.5L, LDBL_MANT_DIG);
-    }
+    const long double magic[2] = {
+        9223372036854775808.0L, // scalbnl(0.5L, LDBL_MANT_DIG)
+        -9223372036854775808.0L // scalbnl(-0.5L, LDBL_MANT_DIG)
+    };
 
     if (reference_fabsl(x) < magic[0] && x != 0.0L)
     {
