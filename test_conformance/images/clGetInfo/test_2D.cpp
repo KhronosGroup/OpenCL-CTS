@@ -107,7 +107,6 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
                 log_error( "ERROR: Unable to create 1D image array of size %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->arraySize, IGetErrorString( error ) );
                 break;
-                break;
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
                 log_error( "ERROR: Unable to create 2D image array of size %d x %d x %d (%s)", (int)imageInfo->width, (int)imageInfo->height, (int)imageInfo->arraySize, IGetErrorString( error ) );
                 break;
@@ -148,9 +147,82 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
     error = clGetImageInfo( image, CL_IMAGE_ROW_PITCH, sizeof( outRowPitch ), &outRowPitch, NULL );
     test_error( error, "Unable to get image info (row pitch)" );
 
-  size_t outSlicePitch;
-  error = clGetImageInfo( image, CL_IMAGE_SLICE_PITCH, sizeof( outSlicePitch ), &outSlicePitch, NULL );
-  test_error( error, "Unable to get image info (slice pitch)" );
+    size_t outSlicePitch;
+    error = clGetImageInfo(image, CL_IMAGE_SLICE_PITCH, sizeof(outSlicePitch),
+                           &outSlicePitch, NULL);
+    test_error(error, "Unable to get image info (slice pitch)");
+
+    if (imageInfo->type == CL_MEM_OBJECT_IMAGE2D
+        || imageInfo->type == CL_MEM_OBJECT_IMAGE3D
+        || imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
+    {
+        const size_t calc_row =
+            imageInfo->width * get_pixel_size(imageInfo->format);
+        const bool use_host = (flags & CL_MEM_USE_HOST_PTR) != 0;
+        const bool copy_host = (flags & CL_MEM_COPY_HOST_PTR) != 0;
+
+        // USE_HOST_PTR + custom row_pitch: must match what user passes
+        // everything else: must equal calc_row
+        const size_t expected_row =
+            (use_host && row_pitch != 0) ? row_pitch : calc_row;
+
+        // Expected slice pitch for image type:
+        // USE_HOST_PTR + custom slice_pitch: must match what user passes
+        // USE_HOST_PTR + slice_pitch==0: driver computes as expected_row *
+        size_t calc_slice = 0;
+        switch (imageInfo->type)
+        {
+            case CL_MEM_OBJECT_IMAGE3D:
+            case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+                calc_slice = expected_row * imageInfo->height;
+                break;
+            default: break;
+        }
+
+        const size_t expected_slice =
+            (use_host && slice_pitch != 0) ? slice_pitch : calc_slice;
+
+        if (use_host || !copy_host)
+        {
+            // USE_HOST_PTR and default/ALLOC_HOST_PTR creation
+            if (outRowPitch != expected_row)
+            {
+                log_error(
+                    "ERROR: CL_IMAGE_ROW_PITCH mismatch "
+                    "(flags=0x%lx row_pitch=%zu): expected %zu, got %zu\n",
+                    (unsigned long)flags, row_pitch, expected_row, outRowPitch);
+                return 1;
+            }
+
+            if (outSlicePitch != expected_slice)
+            {
+                log_error(
+                    "ERROR: CL_IMAGE_SLICE_PITCH mismatch "
+                    "(flags=0x%lx slice_pitch=%zu): expected %zu, got %zu\n",
+                    (unsigned long)flags, slice_pitch, expected_slice,
+                    outSlicePitch);
+                return 1;
+            }
+        }
+        else
+        {
+            // COPY_HOST_PTR: may relayout -> only require non-zero
+            if (outRowPitch == 0)
+            {
+                log_error(
+                    "ERROR: CL_IMAGE_ROW_PITCH is 0 for COPY_HOST_PTR image\n");
+                return 1;
+            }
+
+            if (imageInfo->type != CL_MEM_OBJECT_IMAGE2D && outSlicePitch == 0)
+            {
+                log_error("ERROR: CL_IMAGE_SLICE_PITCH is 0 for COPY_HOST_PTR "
+                          "3D/array image\n");
+                return 1;
+            }
+        }
+    }
+
     if( imageInfo->type == CL_MEM_OBJECT_IMAGE1D && outSlicePitch != 0 )
     {
         log_error( "ERROR: slice pitch returned is invalid! (expected %d, got %d)\n",
