@@ -515,6 +515,8 @@ test_status InitCL( cl_device_id device )
         "}\n"
         "\n" };
 
+    const char *buildOptions = gForceFTZ ? "-cl-denorms-are-zero" : "";
+
     for (i = 0; i < sizeof(sizeNames) / sizeof(sizeNames[0]); i++)
     {
         size_t strCount = sizeof(kernels) / sizeof(kernels[0]);
@@ -522,7 +524,8 @@ test_status InitCL( cl_device_id device )
 
         for (j = 2; j < strCount; j += 2) kernels[j] = sizeNames[i];
         error = create_single_kernel_helper(gContext, &gProgram[i], nullptr,
-                                            strCount, kernels, nullptr);
+                                            strCount, kernels, nullptr,
+                                            buildOptions);
         if (CL_SUCCESS != error || nullptr == gProgram[i])
         {
             log_error("Error: Unable to create test program! (%s) (in %s:%d)\n",
@@ -542,7 +545,7 @@ test_status InitCL( cl_device_id device )
             for (j = 2; j < strCount; j += 2) kernels[j] = sizeNames_double[i];
             error = create_single_kernel_helper(gContext, &gProgram_double[i],
                                                 nullptr, strCount, kernels,
-                                                nullptr);
+                                                nullptr, buildOptions);
             if (CL_SUCCESS != error || nullptr == gProgram_double[i])
             {
                 log_error(
