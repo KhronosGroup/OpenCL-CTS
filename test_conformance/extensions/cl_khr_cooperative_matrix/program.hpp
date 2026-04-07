@@ -51,11 +51,13 @@ public:
 
 private:
     void genTypeDecls();
+    void genSizeConstants();
     void genConstants();
+    void genMatrixTypes();
     void genVariables();
     void genBody();
 
-    void emitConversionTypes();
+    bool needsConversion() const;
     std::string emitConversion();
 
     std::ostringstream spirv_text;
