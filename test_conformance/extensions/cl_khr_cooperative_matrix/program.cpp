@@ -172,6 +172,40 @@ void ProgramGenerator::genTypeDecls()
     spirv_text << "\n";
 }
 
+void ProgramGenerator::genSizeConstants()
+{
+    switch (variant.order)
+    {
+        // clang-format off
+        case Variant::OperandOrder::OpA:
+        case Variant::OperandOrder::OpAA:
+            spirv_text << R"(
+    %sizeM = OpConstant %i32 )" << variant.inputA.nRows << R"(
+    %sizeN = OpConstant %i32 )" << variant.inputA.nCols;
+            break;
+        case Variant::OperandOrder::OpB:
+        case Variant::OperandOrder::OpBB:
+            spirv_text << R"(
+    %sizeM = OpConstant %i32 )" << variant.inputB.nRows << R"(
+    %sizeN = OpConstant %i32 )" << variant.inputB.nCols;
+            break;
+        case Variant::OperandOrder::OpC:
+        case Variant::OperandOrder::OpCC:
+            spirv_text << R"(
+    %sizeM = OpConstant %i32 )" << variant.inputC.nRows << R"(
+    %sizeN = OpConstant %i32 )" << variant.inputC.nCols;
+            break;
+        case Variant::OperandOrder::OpABC:
+            spirv_text << R"(
+    %sizeM = OpConstant %i32 )" << variant.inputA.nRows << R"(
+    %sizeK = OpConstant %i32 )" << variant.inputA.nCols << R"(
+    %sizeN = OpConstant %i32 )" << variant.inputB.nCols;
+            break;
+            // clang-format on
+    }
+    spirv_text << "\n";
+}
+
 void ProgramGenerator::genConstants()
 {
     auto getResTy = [this]() {
@@ -576,55 +610,61 @@ void ProgramGenerator::genBody()
     // clang-format on
 }
 
-void ProgramGenerator::emitConversionTypes()
+bool ProgramGenerator::needsConversion() const
 {
-    if (op == CoopMatOp::convert)
-    {
-        std::vector<const Matrix *> inputs;
-        variant.getInputsForOperation(inputs);
-        assert(inputs.size() == 1 && "conversions must be unary");
-        const Matrix *input = inputs.front();
+    std::vector<const Matrix *> inputs;
+    variant.getInputsForOperation(inputs);
+    assert(inputs.size() == 1 && "conversions must be unary");
+    const Matrix *input = inputs.front();
 
-        const cl_device_cooperative_matrix_component_type_khr inputElementType =
-            input->elementType;
-        const cl_device_cooperative_matrix_component_type_khr
-            outputElementType = variant.output.elementType;
+    const cl_device_cooperative_matrix_component_type_khr inputElementType =
+        input->elementType;
+    const cl_device_cooperative_matrix_component_type_khr outputElementType =
+        variant.output.elementType;
 
-        const bool needsConvert = isFloatType(inputElementType)
-            || isFloatType(outputElementType)
-            || elementSizeOf(inputElementType)
-                != elementSizeOf(outputElementType);
-        if (needsConvert)
+    // The OpenCL SPIR-V Environment Specification requires Signedness to be
+    // equal to zero. When testing for variants that require a conversion
+    // between integers of the same bit width, no code needs to be generated.
+    return isFloatType(inputElementType) || isFloatType(outputElementType)
+        || elementSizeOf(inputElementType) != elementSizeOf(outputElementType);
+}
+
+void ProgramGenerator::genMatrixTypes()
+{
+    auto getDims = [this](int matrixIdx) {
+        if (variant.order == Variant::OperandOrder::OpABC)
         {
-            const char *elementType =
-                showScalarType(variant.output.elementType);
-            const char *numRows;
-            const char *numCols;
-
-            switch (variant.order)
+            // For ternary operations, matrices have different dimensions.
+            switch (matrixIdx)
             {
-                case Variant::OperandOrder::OpA:
-                    numRows = "%sizeM";
-                    numCols = "%sizeK";
-                    break;
-                case Variant::OperandOrder::OpB:
-                    numRows = "%sizeK";
-                    numCols = "%sizeN";
-                    break;
-                case Variant::OperandOrder::OpC:
-                    numRows = "%sizeM";
-                    numCols = "%sizeN";
-                    break;
-                default:
-                    assert(false && "Conversions should be unary ops");
-                    std::abort();
+                case 0: return "%sizeM %sizeK";
+                case 1: return "%sizeK %sizeN";
+                case 2: return "%sizeM %sizeN";
+                default: assert(false && "Invalid matrix index"); std::abort();
             }
-            spirv_text << R"(
-    %matOutty = OpTypeCooperativeMatrixKHR %)"
-                       << elementType << " %i32_subgroup " << numRows << " "
-                       << numCols << " %i32_use" << variant.order << R"(
-            )";
         }
+        // For other operations all matrices share the same dimensions.
+        return "%sizeM %sizeN";
+    };
+
+    spirv_text << "    %matAty = OpTypeCooperativeMatrixKHR %"
+               << showScalarType(variant.inputA.elementType)
+               << " %i32_subgroup " << getDims(0) << " %i32_useA\n"
+               << "    %matBty = OpTypeCooperativeMatrixKHR %"
+               << showScalarType(variant.inputB.elementType)
+               << " %i32_subgroup " << getDims(1) << " %i32_useB\n"
+               << "    %matCty = OpTypeCooperativeMatrixKHR %"
+               << showScalarType(variant.inputC.elementType)
+               << " %i32_subgroup " << getDims(2) << " %i32_useC\n";
+
+    // Emit matOutty when matCty is not going to be the final result type
+    // because of a conversion.
+    if (op == CoopMatOp::convert && needsConversion())
+    {
+        const char *elementType = showScalarType(variant.output.elementType);
+        spirv_text << "    %matOutty = OpTypeCooperativeMatrixKHR %"
+                   << elementType << " %i32_subgroup %sizeM %sizeN %i32_use"
+                   << variant.order << "\n";
     }
 }
 
@@ -635,20 +675,7 @@ std::string ProgramGenerator::emitConversion()
     assert(inputs.size() == 1 && "conversions must be unary");
     const Matrix *input = inputs.front();
 
-    const cl_device_cooperative_matrix_component_type_khr inputElementType =
-        inputs.front()->elementType;
-    const cl_device_cooperative_matrix_component_type_khr outputElementType =
-        variant.output.elementType;
-
-    // The OpenCL SPIR-V Environment Specification requires Signedness to be
-    // equal to zero. When testing for variants that require a conversion
-    // between integers of the same bit width, no code needs to be generated.
-    const bool needsConvert = isFloatType(inputElementType)
-        || isFloatType(outputElementType)
-        || elementSizeOf(inputElementType) != elementSizeOf(outputElementType);
-
-    // no conversion happened
-    if (!needsConvert) return "%matSrc";
+    if (!needsConversion()) return "%matSrc";
 
     std::string_view convOp;
 
@@ -661,7 +688,7 @@ std::string ProgramGenerator::emitConversion()
         }
         else
         {
-            if (isSignedType(outputElementType))
+            if (isSignedType(variant.output.elementType))
             {
                 convOp = "OpConvertFToS";
             }
@@ -673,7 +700,7 @@ std::string ProgramGenerator::emitConversion()
     }
     else
     {
-        if (isFloatType(outputElementType))
+        if (isFloatType(variant.output.elementType))
         {
             if (isSignedType(input->elementType))
             {
@@ -804,11 +831,12 @@ bool ProgramGenerator::generateSpirv(Program *prog_out)
     spirv_text << R"(
     %builtin_slid = OpVariable %iptr_i32 Input
     %builtin_sgid = OpVariable %iptr_i32 Input
+)";
 
-    %sizeM = OpConstant %i32 )" << variant.inputA.nRows << R"(
-    %sizeK = OpConstant %i32 )" << variant.inputA.nCols << R"(
-    %sizeN = OpConstant %i32 )" << variant.inputB.nCols << R"(
+    // sizeM, sizeK, sizeN.
+    genSizeConstants();
 
+    spirv_text << R"(
     %layoutA = OpConstant %i32 )" << variant.layoutA << R"(
     %layoutB = OpConstant %i32 )" << variant.layoutB << R"(
     %layoutC = OpConstant %i32 )" << variant.layoutC << R"(
@@ -826,12 +854,9 @@ bool ProgramGenerator::generateSpirv(Program *prog_out)
     %i32_useB = OpConstant %i32 )" << static_cast<int>(MatrixType::Use::B) << R"(
     %i32_useC = OpConstant %i32 )" << static_cast<int>(MatrixType::Use::Acc) << R"(
 
-    %matAty = OpTypeCooperativeMatrixKHR %)" << showScalarType(variant.inputA.elementType) << R"( %i32_subgroup %sizeM %sizeK %i32_useA
-    %matBty = OpTypeCooperativeMatrixKHR %)" << showScalarType(variant.inputB.elementType) << R"( %i32_subgroup %sizeK %sizeN %i32_useB
-    %matCty = OpTypeCooperativeMatrixKHR %)" << showScalarType(variant.inputC.elementType) << R"( %i32_subgroup %sizeM %sizeN %i32_useC
 )";
 
-    emitConversionTypes();
+    genMatrixTypes();
     genConstants();
 
     spirv_text << R"(
