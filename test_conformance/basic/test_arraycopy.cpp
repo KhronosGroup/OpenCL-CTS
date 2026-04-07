@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,31 +22,31 @@
 
 #include "testBase.h"
 
-const char *copy_kernel_code =
-"__kernel void test_copy(__global unsigned int *src, __global unsigned int *dst)\n"
-"{\n"
-"    int  tid = get_global_id(0);\n"
-"\n"
-"    dst[tid] = src[tid];\n"
-"}\n";
+const char *copy_kernel_code = "__kernel void test_copy(__global unsigned int "
+                               "*src, __global unsigned int *dst)\n"
+                               "{\n"
+                               "    int  tid = get_global_id(0);\n"
+                               "\n"
+                               "    dst[tid] = src[tid];\n"
+                               "}\n";
 
 REGISTER_TEST(arraycopy)
 {
-    cl_uint    *input_ptr, *output_ptr;
-    cl_mem                streams[4], results;
-    cl_program          program;
-    cl_kernel            kernel;
+    cl_uint *input_ptr, *output_ptr;
+    cl_mem streams[4], results;
+    cl_program program;
+    cl_kernel kernel;
     num_elements = 128 * 1024;
-    cl_uint             num_copies = 1;
-    size_t                delta_offset;
-    unsigned            i;
+    cl_uint num_copies = 1;
+    size_t delta_offset;
+    unsigned i;
     cl_int err;
-    MTdata              d;
+    MTdata d;
 
     int error_count = 0;
 
-    input_ptr = (cl_uint*)malloc(sizeof(cl_uint) * num_elements);
-    output_ptr = (cl_uint*)malloc(sizeof(cl_uint) * num_elements);
+    input_ptr = (cl_uint *)malloc(sizeof(cl_uint) * num_elements);
+    output_ptr = (cl_uint *)malloc(sizeof(cl_uint) * num_elements);
 
     // results
     results = clCreateBuffer(context, CL_MEM_READ_WRITE,
@@ -58,8 +58,8 @@ REGISTER_TEST(arraycopy)
 
     log_info("Testing CL_MEM_USE_HOST_PTR buffer with clEnqueueCopyBuffer\n");
     // randomize data
-    d = init_genrand( gRandomSeed );
-    for (i=0; i<num_elements; i++)
+    d = init_genrand(gRandomSeed);
+    for (i = 0; i < num_elements; i++)
         input_ptr[i] = (cl_uint)(genrand_int32(d) & 0x7FFFFFFF);
 
     // client backing
@@ -69,18 +69,21 @@ REGISTER_TEST(arraycopy)
     test_error(err, "clCreateBuffer failed");
 
     delta_offset = num_elements * sizeof(cl_uint) / num_copies;
-    for (i=0; i<num_copies; i++)
+    for (i = 0; i < num_copies; i++)
     {
-        size_t    offset = i * delta_offset;
-        err = clEnqueueCopyBuffer(queue, streams[0], results, offset, offset, delta_offset, 0, NULL, NULL);
+        size_t offset = i * delta_offset;
+        err = clEnqueueCopyBuffer(queue, streams[0], results, offset, offset,
+                                  delta_offset, 0, NULL, NULL);
         test_error(err, "clEnqueueCopyBuffer failed");
     }
 
     // Try upload from client backing
-    err = clEnqueueReadBuffer( queue, results, CL_TRUE, 0, num_elements*sizeof(cl_uint), output_ptr, 0, NULL, NULL );
+    err = clEnqueueReadBuffer(queue, results, CL_TRUE, 0,
+                              num_elements * sizeof(cl_uint), output_ptr, 0,
+                              NULL, NULL);
     test_error(err, "clEnqueueReadBuffer failed");
 
-    for (i=0; i<num_elements; i++)
+    for (i = 0; i < num_elements; i++)
     {
         if (input_ptr[i] != output_ptr[i])
         {
@@ -90,40 +93,57 @@ REGISTER_TEST(arraycopy)
     }
 
     if (err)
-        log_error("\tCL_MEM_USE_HOST_PTR buffer with clEnqueueCopyBuffer FAILED\n");
+        log_error(
+            "\tCL_MEM_USE_HOST_PTR buffer with clEnqueueCopyBuffer FAILED\n");
     else
-        log_info("\tCL_MEM_USE_HOST_PTR buffer with clEnqueueCopyBuffer passed\n");
-
+        log_info(
+            "\tCL_MEM_USE_HOST_PTR buffer with clEnqueueCopyBuffer passed\n");
 
 
 #pragma mark framework backing (no client data)
 
     log_info("Testing with clEnqueueWriteBuffer and clEnqueueCopyBuffer\n");
+    cl_uint *input_mapped_ptr = (cl_uint *)clEnqueueMapBuffer(
+        queue, streams[0], CL_BLOCKING, CL_MAP_WRITE, 0,
+        sizeof(cl_uint) * num_elements, 0, NULL, NULL, &err);
+    test_error(err, "clEnqueueMapBuffer failed");
     // randomize data
-    for (i=0; i<num_elements; i++)
+    for (i = 0; i < num_elements; i++)
         input_ptr[i] = (cl_uint)(genrand_int32(d) & 0x7FFFFFFF);
+
+    err = clEnqueueUnmapMemObject(queue, streams[0], input_mapped_ptr, 0, NULL,
+                                  NULL);
+    test_error(err, "clEnqueueUnmapMemObject failed");
+
+    err = clFinish(queue);
+    test_error(err, "clFinish failed");
 
     // no backing
     streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                 sizeof(cl_uint) * num_elements, NULL, &err);
     test_error(err, "clCreateBuffer failed");
 
-    for (i=0; i<num_copies; i++)
+    for (i = 0; i < num_copies; i++)
     {
-        size_t    offset = i * delta_offset;
+        size_t offset = i * delta_offset;
 
         // Copy the array up from host ptr
-        err = clEnqueueWriteBuffer(queue, streams[2], CL_TRUE, 0, sizeof(cl_uint)*num_elements, input_ptr, 0, NULL, NULL);
+        err = clEnqueueWriteBuffer(queue, streams[2], CL_TRUE, 0,
+                                   sizeof(cl_uint) * num_elements, input_ptr, 0,
+                                   NULL, NULL);
         test_error(err, "clEnqueueWriteBuffer failed");
 
-        err = clEnqueueCopyBuffer(queue, streams[2], results, offset, offset, delta_offset, 0, NULL, NULL);
+        err = clEnqueueCopyBuffer(queue, streams[2], results, offset, offset,
+                                  delta_offset, 0, NULL, NULL);
         test_error(err, "clEnqueueCopyBuffer failed");
     }
 
-    err = clEnqueueReadBuffer( queue, results, true, 0, num_elements*sizeof(cl_uint), output_ptr, 0, NULL, NULL );
+    err = clEnqueueReadBuffer(queue, results, true, 0,
+                              num_elements * sizeof(cl_uint), output_ptr, 0,
+                              NULL, NULL);
     test_error(err, "clEnqueueReadBuffer failed");
 
-    for (i=0; i<num_elements; i++)
+    for (i = 0; i < num_elements; i++)
     {
         if (input_ptr[i] != output_ptr[i])
         {
@@ -142,10 +162,12 @@ REGISTER_TEST(arraycopy)
 #pragma mark kernel copy test
 
     log_info("Testing CL_MEM_USE_HOST_PTR buffer with kernel copy\n");
+
     // randomize data
-    for (i=0; i<num_elements; i++)
+    for (i = 0; i < num_elements; i++)
         input_ptr[i] = (cl_uint)(genrand_int32(d) & 0x7FFFFFFF);
-    free_mtdata(d); d= NULL;
+    free_mtdata(d);
+    d = NULL;
 
     // client backing
     streams[3] =
@@ -163,40 +185,42 @@ REGISTER_TEST(arraycopy)
 
     size_t threads[3] = { static_cast<size_t>(num_elements), 0, 0 };
 
-    err = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
-  test_error(err, "clEnqueueNDRangeKernel failed");
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads, NULL, 0, NULL,
+                                 NULL);
+    test_error(err, "clEnqueueNDRangeKernel failed");
 
-    err = clEnqueueReadBuffer( queue, results, CL_TRUE, 0, num_elements*sizeof(cl_uint), output_ptr, 0, NULL, NULL );
+    err = clEnqueueReadBuffer(queue, results, CL_TRUE, 0,
+                              num_elements * sizeof(cl_uint), output_ptr, 0,
+                              NULL, NULL);
     test_error(err, "clEnqueueReadBuffer failed");
 
-    for (i=0; i<num_elements; i++)
+    for (i = 0; i < num_elements; i++)
     {
         if (input_ptr[i] != output_ptr[i])
         {
             err = -1;
-      error_count++;
+            error_count++;
             break;
         }
     }
-
-    // Keep track of multiple errors.
-    if (error_count != 0) err = error_count;
 
     if (err)
         log_error("\tCL_MEM_USE_HOST_PTR buffer with kernel copy FAILED\n");
     else
         log_info("\tCL_MEM_USE_HOST_PTR buffer with kernel copy passed\n");
 
+    // Keep track of multiple errors.
+    if (error_count != 0) err = error_count;
 
-  clReleaseProgram(program);
-  clReleaseKernel(kernel);
-  clReleaseMemObject(results);
-  clReleaseMemObject(streams[0]);
-  clReleaseMemObject(streams[2]);
-  clReleaseMemObject(streams[3]);
+    clReleaseProgram(program);
+    clReleaseKernel(kernel);
+    clReleaseMemObject(results);
+    clReleaseMemObject(streams[0]);
+    clReleaseMemObject(streams[2]);
+    clReleaseMemObject(streams[3]);
 
-  free(input_ptr);
-  free(output_ptr);
+    free(input_ptr);
+    free(output_ptr);
 
     return err;
 }
