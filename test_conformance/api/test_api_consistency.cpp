@@ -82,8 +82,8 @@ REGISTER_TEST_VERSION(consistency_svm, Version(3, 0))
 
         // These calls purposefully pass bogus pointers to the functions to
         // better test that they are a NOP when SVM is not supported.
-        void* bogus0 = (void*)0xDEADBEEF;
-        void* bogus1 = (void*)0xDEADDEAD;
+        void* bogus0 = (void*)0xDEAD0000;
+        void* bogus1 = (void*)0xBEEF0000;
         cl_uint pattern = 0xAAAAAAAA;
         error = clEnqueueSVMMemFill(queue, bogus0, &pattern, sizeof(pattern),
                                     allocSize, 0, NULL, NULL);
