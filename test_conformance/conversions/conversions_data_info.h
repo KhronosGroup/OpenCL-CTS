@@ -35,6 +35,7 @@ extern roundingMode qcom_rm;
 #include "harness/rounding_mode.h"
 #include "harness/typeWrappers.h"
 
+#include <cmath>
 #include <vector>
 
 #if defined(__linux__)
