@@ -35,6 +35,7 @@ extern roundingMode qcom_rm;
 #include "harness/rounding_mode.h"
 #include "harness/typeWrappers.h"
 
+#include <cmath>
 #include <vector>
 
 #if defined(__linux__)
@@ -366,6 +367,8 @@ DataInfoSpec<InType, OutType, InFP, OutFP>::round_to_int_and_clamp(double f)
 {
     static const double magic[2] = { MAKE_HEX_DOUBLE(0x1.0p52, 0x1LL, 52),
                                      MAKE_HEX_DOUBLE(-0x1.0p52, -0x1LL, 52) };
+
+    if (std::isnan(f)) return 0;
 
     if (f >= -(double)LLONG_MIN) return LLONG_MAX;
 
