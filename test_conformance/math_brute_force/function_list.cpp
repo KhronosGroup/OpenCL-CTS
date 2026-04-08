@@ -426,6 +426,7 @@ const Func functionList[] = {
     // basic operations
     OPERATOR_ENTRY(add, "+", 0.0f, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryOperatorF),
     OPERATOR_ENTRY(subtract, "-", 0.0f, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryOperatorF),
+    OPERATOR_ENTRY(negation, "-", 0.0f, 0.0f, 0.0f, 0.0f, FTZ_OFF, unaryOF),
     { "reciprocal",
       "reciprocal",
       { (void*)reference_reciprocal },
