@@ -99,7 +99,8 @@ const char *known_extensions[] = {
     "cl_khr_command_buffer_multi_device",
     "cl_khr_external_memory_android_hardware_buffer",
     "cl_khr_unified_svm",
-    "cl_khr_spirv_queries"
+    "cl_khr_spirv_queries",
+    "cl_khr_cooperative_matrix",
 };
 // clang-format on
 
