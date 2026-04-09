@@ -18,6 +18,8 @@
 
 #include "defines.h"
 
+#include "harness/parseParameters.h"
+
 #define DEBUG_MEM_ALLOC 0
 
 /** typedef struct _bufferStruct
@@ -223,7 +225,7 @@ void initContents(bufferStruct *pBufferStruct, clState *pClState,
             break;
         }
         case 4: {
-            if (!g_wimpyMode)
+            if (!gWimpyMode)
             {
                 uint32_t *ui = (uint32_t *)(pBufferStruct->m_pIn);
                 for (i = 0; i < countIn; ++i)
@@ -339,9 +341,9 @@ int checkCorrectnessAlign(bufferStruct *pBufferStruct, clState *pClState,
     {
         if ((targetArr[i]) % minAlign != (cl_uint)0)
         {
-            vlog_error(
-                "Error %zu (of %zu).  Expected a multiple of %zx, got %x\n", i,
-                pClState->m_numThreads, minAlign, targetArr[i]);
+            vlog_error("Error in work-item %zu (of %zu).  Expected a multiple "
+                       "of 0x%zx, got 0x%x\n",
+                       i, pClState->m_numThreads, minAlign, targetArr[i]);
             return -1;
         }
     }
@@ -369,8 +371,9 @@ int checkCorrectnessStep(bufferStruct *pBufferStruct, clState *pClState,
     {
         if (targetArr[i] != targetSize)
         {
-            vlog_error("Error %zu (of %zu).  Expected %d, got %d\n", i,
-                       pClState->m_numThreads, targetSize, targetArr[i]);
+            vlog_error(
+                "Error in work-item %zu (of %zu).  Expected %d, got %d\n", i,
+                pClState->m_numThreads, targetSize, targetArr[i]);
             return -1;
         }
     }
@@ -388,10 +391,11 @@ int checkPackedCorrectness(bufferStruct *pBufferStruct, clState *pClState,
     {
         if ((targetArr[i] - beforeSize) % totSize != (cl_uint)0)
         {
-            vlog_error(
-                "Error %zu (of %zu).  Expected %zu more than a multiple of "
-                "%zu, got %d \n",
-                i, pClState->m_numThreads, beforeSize, totSize, targetArr[i]);
+            vlog_error("Error in work-item %zu (of %zu).  Expected %zu more "
+                       "than a multiple of "
+                       "%zu, got %d \n",
+                       i, pClState->m_numThreads, beforeSize, totSize,
+                       targetArr[i]);
             return -1;
         }
     }

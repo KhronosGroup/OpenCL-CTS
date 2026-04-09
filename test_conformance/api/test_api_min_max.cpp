@@ -1088,10 +1088,12 @@ REGISTER_TEST(min_max_image_buffer_size)
     pixelBytes = maxAllocSize / maxDimensionPixels;
     if (pixelBytes == 0)
     {
-        log_error("Value of CL_DEVICE_IMAGE_MAX_BUFFER_SIZE is greater than "
-                  "CL_MAX_MEM_ALLOC_SIZE so there is no way to allocate image "
-                  "of maximum size!\n");
-        return -1;
+        log_info(
+            "Note, the value of CL_DEVICE_IMAGE_MAX_BUFFER_SIZE is %zu pixels, "
+            "therefore the size of the allocated image may be larger than the "
+            "scaled CL_DEVICE_MAX_MEM_ALLOC_SIZE of %" PRIu64 " bytes.\n",
+            maxDimensionPixels, maxAllocSize);
+        pixelBytes = 1;
     }
 
     error = -1;
@@ -1524,7 +1526,7 @@ REGISTER_TEST(min_max_constant_buffer_size)
     size_t threads[1], localThreads[1];
     cl_int *constantData, *resultData;
     cl_ulong maxSize, stepSize, currentSize, maxGlobalSize, maxAllocSize;
-    int i;
+    size_t i;
     cl_event event;
     cl_int event_status;
     MTdata d;
@@ -1554,6 +1556,8 @@ REGISTER_TEST(min_max_constant_buffer_size)
 
     maxAllocSize = get_device_info_max_mem_alloc_size(
         device, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
+    log_info("Reported max alloc size of %" PRIu64 " bytes.\n",
+             (uint64_t)maxAllocSize);
 
     if (maxSize > maxAllocSize) maxSize = maxAllocSize;
 
@@ -1588,7 +1592,7 @@ REGISTER_TEST(min_max_constant_buffer_size)
             return EXIT_FAILURE;
         }
 
-        for (i = 0; i < (int)(numberOfInts); i++)
+        for (i = 0; i < numberOfInts; i++)
             constantData[i] = (int)genrand_int32(d);
 
         clMemWrapper streams[3];
@@ -1676,11 +1680,11 @@ REGISTER_TEST(min_max_constant_buffer_size)
                                     sizeToAllocate, resultData, 0, NULL, NULL);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        for (i = 0; i < (int)(numberOfInts); i++)
+        for (i = 0; i < numberOfInts; i++)
             if (constantData[i] != resultData[i])
             {
-                log_error("Data failed to verify: constantData[%d]=%d != "
-                          "resultData[%d]=%d\n",
+                log_error("Data failed to verify: constantData[%zu]=%d != "
+                          "resultData[%zu]=%d\n",
                           i, constantData[i], i, resultData[i]);
                 free(constantData);
                 free(resultData);

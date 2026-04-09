@@ -25,11 +25,18 @@ if(USE_CL_EXPERIMENTAL)
   add_definitions(-DCL_EXPERIMENTAL)
 endif(USE_CL_EXPERIMENTAL)
 
+option(SANITIZER_THREAD "Build with the thread sanitiser" OFF)
+if (SANITIZER_THREAD)
+    add_compile_options(-fsanitize=thread)
+    add_link_options(-fsanitize=thread)
+endif (SANITIZER_THREAD)
+
 #-----------------------------------------------------------
 # Default Configurable Test Set
 #-----------------------------------------------------------
 option(D3D10_IS_SUPPORTED "Run DirectX 10 interop tests" OFF)
 option(D3D11_IS_SUPPORTED "Run DirectX 11 interop tests" OFF)
+option(D3D12_IS_SUPPORTED "Run DirectX 12 interop tests" OFF)
 option(GL_IS_SUPPORTED "Run OpenGL interop tests" OFF)
 option(GLES_IS_SUPPORTED "Run OpenGL ES interop tests" OFF)
 option(VULKAN_IS_SUPPORTED "Run Vulkan interop tests" OFF)
@@ -59,6 +66,12 @@ else(CL_INCLUDE_DIR AND CL_LIB_DIR)
     message(FATAL_ERROR "Either install OpenCL or pass -DCL_INCLUDE_DIR and -DCL_LIB_DIR")
 endif(CL_INCLUDE_DIR AND CL_LIB_DIR)
 
+# SPIRV_INCLUDE_DIR - path to dir with SPIR-V headers
+if(NOT SPIRV_INCLUDE_DIR)
+    message(STATUS "SPIR-V headers haven't been found!")
+    message(FATAL_ERROR "Pass -DSPIRV_INCLUDE_DIR")
+endif(NOT SPIRV_INCLUDE_DIR)
+
 # CLConform_GL_LIBRARIES_DIR - path to OpenGL libraries
 if(GL_IS_SUPPORTED AND CLConform_GL_LIBRARIES_DIR)
     link_directories(${CLConform_GL_LIBRARIES_DIR})
@@ -68,14 +81,17 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 include(CheckCXXCompilerFlag)
 
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)")
-    set(CLConform_TARGET_ARCH ARM)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)")
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)" OR
+   CMAKE_VS_PLATFORM_NAME MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)")
     set(CLConform_TARGET_ARCH ARM64)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)")
+    set(CLConform_TARGET_ARCH ARM)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "amd64.*|x86_64.*|AMD64.*")
     set(CLConform_TARGET_ARCH x86_64)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i686.*|i386.*|x86.*")
     set(CLConform_TARGET_ARCH x86)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "riscv.*")
+    set(CLConform_TARGET_ARCH RISCV)
 endif()
 
 if(NOT DEFINED CLConform_TARGET_ARCH)
@@ -100,7 +116,11 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
     add_cxx_flag_if_supported(-Wmisleading-indentation)
     add_cxx_flag_if_supported(-Wunused-function)
     add_cxx_flag_if_supported(-Wunused-variable)
-    add_cxx_flag_if_supported(-Werror)
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+      set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
+    else()
+      add_cxx_flag_if_supported(-Werror)
+    endif()
     if(NOT CMAKE_BUILD_TYPE MATCHES "Release|RelWithDebInfo|MinSizeRel")
         # Enable more warnings if not doing a release build.
         add_cxx_flag_if_supported(-Wall)
@@ -122,8 +142,12 @@ if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang"
         add_cxx_flag_if_supported(-frounding-math)
     endif()
 else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /D__SSE__")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D__SSE__")
+    # Curb the inclusion of SSE headers when compiling for non x86 targets
+    if(${CLConform_TARGET_ARCH} STREQUAL "x86_64" OR ${CLConform_TARGET_ARCH}
+            STREQUAL "x86")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /D__SSE__")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D__SSE__")
+    endif()
 endif()
 
 # Set a module's COMPILE_FLAGS if using gcc or clang.
@@ -191,6 +215,7 @@ if(APPLE)
 endif(APPLE)
 
 include_directories(SYSTEM ${CL_INCLUDE_DIR})
+include_directories(SYSTEM ${SPIRV_INCLUDE_DIR}/include)
 include_directories(${CLConform_SOURCE_DIR}/test_common/harness
                     ${CLConform_SOURCE_DIR}/test_common/gles
                     ${CLConform_SOURCE_DIR}/test_common/gl

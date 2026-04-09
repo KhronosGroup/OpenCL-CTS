@@ -32,5 +32,15 @@
         }                                                                      \
     } while (false)
 
+#define GET_FUNCTION_EXTENSION_ADDRESS(device, FUNC)                           \
+    FUNC =                                                                     \
+        reinterpret_cast<FUNC##_fn>(clGetExtensionFunctionAddressForPlatform(  \
+            getPlatformFromDevice(device), #FUNC));                            \
+    if (FUNC == nullptr)                                                       \
+    {                                                                          \
+        log_error("ERROR: clGetExtensionFunctionAddressForPlatform failed"     \
+                  " with " #FUNC "\n");                                        \
+        return TEST_FAIL;                                                      \
+    }
 
 #endif // _extensionHelpers_h

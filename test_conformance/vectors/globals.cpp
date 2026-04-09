@@ -32,8 +32,6 @@ size_t g_arrVecAlignMasks[NUM_VECTOR_SIZES] = {
     (size_t)0xf // 16
 };
 
-bool g_wimpyMode = false;
-
 ExplicitType types[] = {
     kChar,  kUChar, kShort,  kUShort,          kInt, kUInt, kLong,
     kULong, kFloat, kDouble, kNumExplicitTypes

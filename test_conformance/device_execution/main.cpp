@@ -25,7 +25,6 @@
 #include "utils.h"
 
 std::string gKernelName;
-int gWimpyMode = 0;
 
 test_status InitCL(cl_device_id device) {
   auto version = get_device_cl_version(device);
@@ -71,11 +70,6 @@ int main(int argc, const char *argv[])
         gKernelName = std::string(argv[i + 1]);
         argsRemoveNum += 2;
       }
-     if (strcmp(argv[i], "-w") == 0 ){
-        gWimpyMode = 1;
-        argsRemoveNum += 1;
-     }
-
 
       if (argsRemoveNum > 0) {
         for (int j = i; j < (argc - argsRemoveNum); ++j)

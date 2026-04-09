@@ -26,7 +26,6 @@
 
 extern int g_arrVecSizes[NUM_VECTOR_SIZES];
 extern int g_arrVecSteps[NUM_VECTOR_SIZES];
-extern bool g_wimpyMode;
 
 extern const char *g_arrVecSizeNames[NUM_VECTOR_SIZES];
 extern size_t g_arrVecAlignMasks[NUM_VECTOR_SIZES];

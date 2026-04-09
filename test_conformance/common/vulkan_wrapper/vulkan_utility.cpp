@@ -243,6 +243,8 @@ getSupportedVulkanExternalMemoryHandleTypeList(
     VkPhysicalDeviceExternalBufferInfo buffer_info = {};
     buffer_info.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO;
     buffer_info.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
+    buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
     VkExternalBufferProperties buffer_properties = {};
     buffer_properties.sType = VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES;
@@ -307,7 +309,9 @@ getSupportedVulkanExternalSemaphoreHandleTypeList(const VulkanDevice &vkDevice)
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO, nullptr,
             handle_type.vk_type
         };
-        VkExternalSemaphoreProperties query_result = {};
+        VkExternalSemaphoreProperties query_result = {
+            VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES
+        };
         vkGetPhysicalDeviceExternalSemaphorePropertiesKHR(
             vkDevice.getPhysicalDevice(), &handle_query, &query_result);
         if (query_result.externalSemaphoreFeatures

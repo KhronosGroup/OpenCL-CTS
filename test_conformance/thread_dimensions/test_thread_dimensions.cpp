@@ -19,6 +19,7 @@
 #include "harness/errorHelpers.h"
 #include "harness/conversions.h"
 #include "harness/mt19937.h"
+#include "harness/parseParameters.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -524,9 +525,9 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
     cl_uint max_x_size = 1, min_x_size = 1, max_y_size = 1, min_y_size = 1,
             max_z_size = 1, min_z_size = 1;
 
-    if (getenv("CL_WIMPY_MODE") && !quick_test)
+    if (gWimpyMode && !quick_test)
     {
-        log_info("CL_WIMPY_MODE enabled, skipping test\n");
+        log_info("Wimpy mode enabled, skipping test\n");
         return 0;
     }
 

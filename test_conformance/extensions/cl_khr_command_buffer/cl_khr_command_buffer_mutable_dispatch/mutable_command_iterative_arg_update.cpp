@@ -35,9 +35,7 @@ struct IterativeArgUpdateDispatch : BasicMutableCommandBufferTest
                                cl_command_queue queue)
         : BasicMutableCommandBufferTest(device, context, queue),
           command(nullptr)
-    {
-        simultaneous_use_requested = false;
-    }
+    {}
 
     bool Skip() override
     {

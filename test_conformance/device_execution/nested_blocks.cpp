@@ -17,6 +17,7 @@
 #include <string.h>
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
+#include "harness/parseParameters.h"
 
 #include <vector>
 
@@ -27,7 +28,6 @@
 #ifdef CL_VERSION_2_0
 
 static int gNestingLevel = 4;
-extern int gWimpyMode;
 
 static const char* enqueue_nested_blocks_single[] =
 {

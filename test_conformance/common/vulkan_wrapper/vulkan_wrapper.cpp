@@ -147,6 +147,7 @@ VulkanInstance::VulkanInstance(bool useValidationLayers)
         // return WAIVED;
     }
 
+    VK_GET_NULL_INSTANCE_PROC_ADDR(vkGetPhysicalDeviceFeatures2);
     VK_GET_NULL_INSTANCE_PROC_ADDR(vkEnumerateInstanceVersion);
     VK_GET_NULL_INSTANCE_PROC_ADDR(vkEnumerateInstanceLayerProperties);
     VK_GET_NULL_INSTANCE_PROC_ADDR(vkCreateInstance);
@@ -612,7 +613,8 @@ VulkanDevice::VulkanDevice(const VulkanDevice &device)
 
 VulkanDevice::VulkanDevice(
     const VulkanPhysicalDevice &physicalDevice,
-    const VulkanQueueFamilyToQueueCountMap &queueFamilyToQueueCountMap)
+    const VulkanQueueFamilyToQueueCountMap &queueFamilyToQueueCountMap,
+    bool useShaderInt8)
     : m_physicalDevice(physicalDevice), m_vkDevice(NULL)
 {
     uint32_t maxQueueCount = 0;
@@ -676,7 +678,55 @@ VulkanDevice::VulkanDevice(
         enabledExtensionNameList.data();
     vkDeviceCreateInfo.pEnabledFeatures = NULL;
 
-    vkCreateDevice(physicalDevice, &vkDeviceCreateInfo, NULL, &m_vkDevice);
+    if (useShaderInt8)
+    {
+        VkPhysicalDeviceShaderFloat16Int8Features int8Features{};
+        int8Features.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
+
+        VkPhysicalDevice8BitStorageFeatures storage8Features{};
+        storage8Features.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
+
+        int8Features.pNext = &storage8Features;
+
+        VkPhysicalDeviceFeatures2 features2{};
+        features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        features2.pNext = &int8Features;
+
+        vkGetPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+        if (!int8Features.shaderInt8
+            || !storage8Features.storageBuffer8BitAccess)
+        {
+            throw std::runtime_error("shaderInt8 not supported!\n");
+        }
+
+        VkPhysicalDevice8BitStorageFeatures storage8Enable{};
+        storage8Enable.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
+        storage8Enable.storageBuffer8BitAccess = VK_TRUE;
+
+        VkPhysicalDeviceShaderFloat16Int8Features int8Enable{};
+        int8Enable.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
+        int8Enable.shaderInt8 = VK_TRUE;
+        int8Enable.pNext = &storage8Enable;
+
+        vkDeviceCreateInfo.pNext = &int8Enable;
+
+        enabledExtensionNameList.push_back(VK_KHR_8BIT_STORAGE_EXTENSION_NAME);
+        vkDeviceCreateInfo.ppEnabledExtensionNames =
+            enabledExtensionNameList.data();
+        vkDeviceCreateInfo.enabledExtensionCount =
+            (uint32_t)enabledExtensionNameList.size();
+
+        vkCreateDevice(physicalDevice, &vkDeviceCreateInfo, NULL, &m_vkDevice);
+    }
+    else
+    {
+        vkCreateDevice(physicalDevice, &vkDeviceCreateInfo, NULL, &m_vkDevice);
+    }
 
     for (uint32_t qfIdx = 0;
          qfIdx < (uint32_t)m_physicalDevice.getQueueFamilyList().size();
@@ -1071,7 +1121,8 @@ VulkanComputePipeline::VulkanComputePipeline(
 
 VulkanComputePipeline::VulkanComputePipeline(
     const VulkanDevice &device, const VulkanPipelineLayout &pipelineLayout,
-    const VulkanShaderModule &shaderModule, const std::string &entryFuncName)
+    const VulkanShaderModule &shaderModule, const std::string &entryFuncName,
+    const VkSpecializationInfo *spec)
     : VulkanPipeline(device)
 {
     VkPipelineShaderStageCreateInfo vkPipelineShaderStageCreateInfo = {};
@@ -1083,6 +1134,8 @@ VulkanComputePipeline::VulkanComputePipeline(
     vkPipelineShaderStageCreateInfo.module = shaderModule;
     vkPipelineShaderStageCreateInfo.pName = entryFuncName.c_str();
     vkPipelineShaderStageCreateInfo.pSpecializationInfo = NULL;
+
+    if (spec) vkPipelineShaderStageCreateInfo.pSpecializationInfo = spec;
 
     VkComputePipelineCreateInfo vkComputePipelineCreateInfo = {};
     vkComputePipelineCreateInfo.sType =
@@ -1839,7 +1892,13 @@ VulkanImage::VulkanImage(
         vkImageCreateInfo.pNext = &vkExternalMemoryImageCreateInfo;
     }
 
-    vkCreateImage(m_device, &vkImageCreateInfo, NULL, &m_vkImage);
+    VkResult vkStatus =
+        vkCreateImage(m_device, &vkImageCreateInfo, NULL, &m_vkImage);
+    if (vkStatus != VK_SUCCESS)
+    {
+        throw std::runtime_error("Error: Failed create image.");
+    }
+
     VulkanImageCreateInfo = vkImageCreateInfo;
 
     VkMemoryDedicatedRequirements vkMemoryDedicatedRequirements = {};
@@ -1968,7 +2027,7 @@ VulkanExtent3D VulkanImage2D::getExtent3D(uint32_t mipLevel) const
     return VulkanExtent3D(width, height, depth);
 }
 
-VkSubresourceLayout VulkanImage2D::getSubresourceLayout() const
+VkSubresourceLayout VulkanImage::getSubresourceLayout() const
 {
     VkImageSubresource subresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 };
 

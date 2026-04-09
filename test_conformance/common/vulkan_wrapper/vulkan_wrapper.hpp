@@ -148,7 +148,8 @@ public:
     VulkanDevice(
         const VulkanPhysicalDevice &physicalDevice = getVulkanPhysicalDevice(),
         const VulkanQueueFamilyToQueueCountMap &queueFamilyToQueueCountMap =
-            getDefaultVulkanQueueFamilyToQueueCountMap());
+            getDefaultVulkanQueueFamilyToQueueCountMap(),
+        bool useShaderInt8 = false);
     virtual ~VulkanDevice();
     const VulkanPhysicalDevice &getPhysicalDevice() const;
     VulkanQueue &
@@ -296,7 +297,8 @@ public:
     VulkanComputePipeline(const VulkanDevice &device,
                           const VulkanPipelineLayout &pipelineLayout,
                           const VulkanShaderModule &shaderModule,
-                          const std::string &entryFuncName = "main");
+                          const std::string &entryFuncName = "main",
+                          const VkSpecializationInfo *spec = nullptr);
     virtual ~VulkanComputePipeline();
     VulkanPipelineBindPoint getPipelineBindPoint() const;
 };
@@ -491,6 +493,8 @@ public:
         VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
     virtual ~VulkanImage();
     virtual VulkanExtent3D getExtent3D(uint32_t mipLevel = 0) const;
+    virtual VkSubresourceLayout getSubresourceLayout() const;
+
     VulkanFormat getFormat() const;
     uint32_t getNumMipLevels() const;
     uint32_t getNumLayers() const;
@@ -560,7 +564,6 @@ public:
         VulkanSharingMode sharingMode = VULKAN_SHARING_MODE_EXCLUSIVE);
     virtual ~VulkanImage2D();
     virtual VulkanExtent3D getExtent3D(uint32_t mipLevel = 0) const;
-    virtual VkSubresourceLayout getSubresourceLayout() const;
 
     VulkanImage2D(const VulkanImage2D &image2D);
 };

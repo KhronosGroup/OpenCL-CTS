@@ -161,7 +161,7 @@ REGISTER_TEST(arraycopy)
     err |= clSetKernelArg(kernel, 1, sizeof results, &results);
     test_error(err, "clSetKernelArg failed");
 
-    size_t threads[3] = { num_elements, 0, 0 };
+    size_t threads[3] = { static_cast<size_t>(num_elements), 0, 0 };
 
     err = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
   test_error(err, "clEnqueueNDRangeKernel failed");
