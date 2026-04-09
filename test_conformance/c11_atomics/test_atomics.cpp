@@ -3282,8 +3282,10 @@ public:
         // This enables repeated min operations arranged so that every
         // special value is compared to every other one (“all-to-all”).
 
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>||
-                std::is_same_v<HostDataType, HOST_DOUBLE>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             auto spec_vals = GetSpecialValues();
             StartValue(spec_vals.size());
