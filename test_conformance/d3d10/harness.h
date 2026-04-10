@@ -35,6 +35,8 @@ typedef unsigned char UINT8;
 #define __inout_opt
 #endif
 
+#include "directx_wrapper.hpp"
+
 #include <CL/cl.h>
 #include <CL/cl_platform.h>
 #include <CL/cl_d3d10.h>

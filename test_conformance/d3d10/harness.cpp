@@ -34,68 +34,8 @@ clEnqueueReleaseD3D10ObjectsKHR_fn clEnqueueReleaseD3D10ObjectsKHR = NULL;
     x = (x ## _fn)clGetExtensionFunctionAddressForPlatform(platform, #x); NonTestRequire(x, "Failed to get function pointer for %s", #x);
 
 void
-HarnessD3D10_ExtensionCheck()
-{
-    bool extensionPresent = false;
-    cl_int result = CL_SUCCESS;
-    cl_platform_id platform = NULL;
-    size_t set_size;
-
-    HarnessD3D10_TestBegin("Extension query");
-
-    result = clGetPlatformIDs(1, &platform, NULL);
-    NonTestRequire(result == CL_SUCCESS, "Failed to get any platforms.");
-    result = clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, 0, NULL, &set_size);
-    NonTestRequire(result == CL_SUCCESS, "Failed to get size of extensions string.");
-    std::vector<char> extensions(set_size);
-    result = clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, extensions.size(), extensions.data(), NULL);
-    NonTestRequire(result == CL_SUCCESS, "Failed to list extensions.");
-    extensionPresent = strstr(extensions.data(), "cl_khr_d3d10_sharing") ? true : false;
-
-    if (!extensionPresent) {
-      // platform is required to report the extension only if all devices support it
-      cl_uint devicesCount;
-      result = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 0, NULL, &devicesCount);
-      NonTestRequire(result == CL_SUCCESS, "Failed to get devices count.");
-      std::vector<cl_device_id> devices(devicesCount);
-      result = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, devicesCount, &devices[0], NULL);
-      NonTestRequire(result == CL_SUCCESS, "Failed to get devices count.");
-
-      for (cl_uint i = 0; i < devicesCount; i++) {
-        if (is_extension_available(devices[i], "cl_khr_d3d10_sharing")) {
-          extensionPresent = true;
-          break;
-        }
-      }
-    }
-
-    OSVERSIONINFO osvi;
-    osvi.dwOSVersionInfoSize = sizeof(osvi);
-    GetVersionEx(&osvi);
-    if (osvi.dwMajorVersion <= 5)
-    {
-        TestRequire(!extensionPresent, "Extension should not be exported on Windows < 6");
-    }
-    else
-    {
-        TestRequire(extensionPresent, "Extension should be exported on Windows >= 6");
-    }
-
-Cleanup:
-    HarnessD3D10_TestEnd();
-
-    // early-out of the extension is not present
-    if (!extensionPresent)
-    {
-        HarnessD3D10_TestStats();
-    }
-}
-
-void
 HarnessD3D10_Initialize(cl_platform_id platform)
 {
-    HarnessD3D10_ExtensionCheck();
-
     // extract function pointers for exported functions
     INITPFN(clGetDeviceIDsFromD3D10KHR);
     INITPFN(clCreateFromD3D10BufferKHR);

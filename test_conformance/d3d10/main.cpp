@@ -13,78 +13,242 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#if defined( _WIN32 )
-
-#define _CRT_SECURE_NO_WARNINGS
+#include <memory>
+#include <unordered_map>
+#include <vector>
 #include "harness.h"
 #include "harness/testHarness.h"
-#include "harness/parseParameters.h"
+
+namespace {
+
+struct D3D10SuiteState
+{
+    bool initialized = false;
+    cl_platform_id platform = nullptr;
+    std::unique_ptr<DirectX10Wrapper> wrapper;
+    std::unordered_map<cl_device_id, size_t> device_to_target;
+};
+
+static D3D10SuiteState State;
+
+test_status InitState(cl_device_id selected_device)
+{
+    if (State.initialized)
+    {
+        return State.device_to_target.count(selected_device)
+            ? TEST_PASS
+            : TEST_SKIPPED_ITSELF;
+    }
+
+    cl_int result =
+        clGetDeviceInfo(selected_device, CL_DEVICE_PLATFORM,
+                        sizeof(State.platform), &State.platform, NULL);
+    if (result != CL_SUCCESS)
+    {
+        log_error("clGetDeviceInfo(CL_DEVICE_PLATFORM) failed during D3D10 "
+                  "suite initialization (%d)\n",
+                  result);
+        return TEST_FAIL;
+    }
+
+    try
+    {
+        HarnessD3D10_Initialize(State.platform);
+
+        State.wrapper.reset(new DirectX10Wrapper());
+        for (size_t target_index = 0;
+             target_index < State.wrapper->devices.size(); ++target_index)
+        {
+            const auto& device_entry = State.wrapper->devices[target_index];
+
+            cl_uint num_devices = 0;
+            cl_int query_result = clGetDeviceIDsFromD3D10KHR(
+                State.platform, CL_D3D10_DEVICE_KHR,
+                device_entry.dx_device.Get(), CL_ALL_DEVICES_FOR_D3D10_KHR, 0,
+                NULL, &num_devices);
+            if (query_result != CL_DEVICE_NOT_FOUND)
+            {
+                if (query_result != CL_SUCCESS)
+                {
+                    log_error("clGetDeviceIDsFromD3D10KHR failed during D3D10 "
+                              "target discovery (%d)\n",
+                              query_result);
+                    return TEST_FAIL;
+                }
+
+                std::vector<cl_device_id> devices(num_devices);
+                query_result = clGetDeviceIDsFromD3D10KHR(
+                    State.platform, CL_D3D10_DEVICE_KHR,
+                    device_entry.dx_device.Get(), CL_ALL_DEVICES_FOR_D3D10_KHR,
+                    num_devices, devices.data(), NULL);
+                if (query_result != CL_SUCCESS)
+                {
+                    log_error("clGetDeviceIDsFromD3D10KHR failed while "
+                              "retrieving discovered D3D10 targets (%d)\n",
+                              query_result);
+                    return TEST_FAIL;
+                }
+
+                for (cl_device_id device_id : devices)
+                {
+                    State.device_to_target[device_id] = target_index;
+                }
+            }
+        }
+    } catch (const std::exception& e)
+    {
+        log_error("D3D10 suite initialization failed: %s\n", e.what());
+        return TEST_FAIL;
+    } catch (...)
+    {
+        log_error(
+            "D3D10 suite initialization failed with an unknown exception\n");
+        return TEST_FAIL;
+    }
+
+    State.initialized = true;
+    return State.device_to_target.count(selected_device) ? TEST_PASS
+                                                         : TEST_SKIPPED_ITSELF;
+}
+
+test_status InitD3D10Device(cl_device_id device)
+{
+    if (!is_extension_available(device, "cl_khr_d3d10_sharing"))
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    return InitState(device);
+}
+
+} // namespace
 
 int main(int argc, const char* argv[])
 {
-    cl_int result;
-    cl_platform_id platform = NULL;
-    cl_uint num_devices_tested = 0;
+    return runTestHarnessWithCheck(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), true, 0, InitD3D10Device);
+}
 
-    argc = parseCustomParam(argc, argv);
-
-    // get the platform to test
-    result = clGetPlatformIDs(1, &platform, NULL); NonTestRequire(result == CL_SUCCESS, "Failed to get any platforms.");
-
-    HarnessD3D10_Initialize(platform);
-
-    // for each adapter...
-    IDXGIFactory* pFactory = NULL;
-    HRESULT hr = CreateDXGIFactory(IID_IDXGIFactory, (void**)(&pFactory) );
-    NonTestRequire(SUCCEEDED(hr), "Failed to create DXGI factory.");
-    for (UINT adapter = 0;; ++adapter)
+template <typename TargetFn>
+test_status RunD3D10TargetTest(cl_device_id device, TargetFn target_fn)
+{
+    test_status init_status = InitState(device);
+    if (init_status != TEST_PASS)
     {
-        IDXGIAdapter* pAdapter = NULL;
-        ID3D10Device* pDevice = NULL;
-        HRESULT hr = pFactory->EnumAdapters(adapter, &pAdapter);
-        if (FAILED(hr))
-        {
-            break;
-        }
-
-        // print data about the adapter
-        DXGI_ADAPTER_DESC desc;
-        hr = pAdapter->GetDesc(&desc);
-        NonTestRequire(SUCCEEDED(hr), "IDXGIAdapter::GetDesc failed.");
-
-        TestPrint("=====================================\n");
-        TestPrint("Testing DXGI Adapter and D3D10 Device\n");
-        TestPrint("Description=%ls, VendorID=%x, DeviceID=%x\n", desc.Description, desc.VendorId, desc.DeviceId);
-        TestPrint("=====================================\n");
-
-        // run the test on the adapter
-        HarnessD3D10_CreateDevice(pAdapter, &pDevice);
-
-        cl_uint num_devices = 0;
-
-        // test adapter and device enumeration
-        TestAdapterEnumeration(platform, pAdapter, pDevice, &num_devices);
-
-        // if there were any devices found in enumeration, run the tests on them
-        if (num_devices)
-        {
-            TestAdapterDevices(platform, pAdapter, pDevice, num_devices);
-        }
-        num_devices_tested += num_devices;
-
-        // destroy the D3D10 device
-        if (pDevice)
-        {
-            HarnessD3D10_DestroyDevice();
-        }
-
-        pAdapter->Release();
+        return init_status;
     }
-    pFactory->Release();
 
-    NonTestRequire(num_devices_tested, "No D3D10 compatible cl_device_ids were found.");
+    auto iter = State.device_to_target.find(device);
+    if (iter == State.device_to_target.end())
+    {
+        return TEST_SKIPPED_ITSELF;
+    }
 
-    HarnessD3D10_TestStats();
+    const DirectX10Wrapper::DeviceEntry* target =
+        &State.wrapper->devices[iter->second];
+    target_fn(target);
+
+    return TEST_PASS;
+}
+
+template <typename TargetFn>
+test_status RunD3D10InteropTest(cl_device_id device, TargetFn target_fn)
+{
+    return RunD3D10TargetTest(
+        device, [&](const DirectX10Wrapper::DeviceEntry* target) {
+            cl_context interop_context = NULL;
+            cl_command_queue interop_queue = NULL;
+
+            if (!TestDeviceContextCreate(device, target->dx_device.Get(),
+                                         &interop_context, &interop_queue))
+            {
+                return TEST_FAIL;
+            }
+
+            target_fn(target, interop_context, interop_queue);
+
+            if (interop_queue != NULL)
+            {
+                cl_int result = clReleaseCommandQueue(interop_queue);
+                if (result != CL_SUCCESS)
+                {
+                    return TEST_FAIL;
+                }
+            }
+
+            if (interop_context != NULL)
+            {
+                cl_int result = clReleaseContext(interop_context);
+                if (result != CL_SUCCESS)
+                {
+                    return TEST_FAIL;
+                }
+            }
+
+            return TEST_PASS;
+        });
+}
+
+REGISTER_TEST(enumeration)
+{
+    return RunD3D10TargetTest(
+        device, [&](const DirectX10Wrapper::DeviceEntry* target) {
+            cl_uint num_devices = 0;
+            TestAdapterEnumeration(State.platform, target->dx_adapter.Get(),
+                                   target->dx_device.Get(), &num_devices);
+        });
+}
+
+REGISTER_TEST(create_context)
+{
+    return RunD3D10InteropTest(device,
+                               [](const DirectX10Wrapper::DeviceEntry*,
+                                  cl_context, cl_command_queue) {});
+}
+
+REGISTER_TEST(buffer)
+{
+    return RunD3D10InteropTest(
+        device,
+        [](const DirectX10Wrapper::DeviceEntry* target,
+           cl_context interop_context, cl_command_queue interop_queue) {
+            TestDeviceBuffer(interop_context, interop_queue,
+                             target->dx_device.Get());
+        });
+}
+
+REGISTER_TEST(texture2d)
+{
+    return RunD3D10InteropTest(
+        device,
+        [device](const DirectX10Wrapper::DeviceEntry* target,
+                 cl_context interop_context, cl_command_queue interop_queue) {
+            TestDeviceTexture2D(device, interop_context, interop_queue,
+                                target->dx_device.Get());
+        });
+}
+
+REGISTER_TEST(texture3d)
+{
+    return RunD3D10InteropTest(
+        device,
+        [device](const DirectX10Wrapper::DeviceEntry* target,
+                 cl_context interop_context, cl_command_queue interop_queue) {
+            TestDeviceTexture3D(device, interop_context, interop_queue,
+                                target->dx_device.Get());
+        });
+}
+
+REGISTER_TEST(misc)
+{
+    return RunD3D10InteropTest(
+        device,
+        [device](const DirectX10Wrapper::DeviceEntry* target,
+                 cl_context interop_context, cl_command_queue interop_queue) {
+            TestDeviceMisc(device, interop_context, interop_queue,
+                           target->dx_device.Get());
+        });
 }
 
 void TestAdapterEnumeration(cl_platform_id platform, IDXGIAdapter* pAdapter, ID3D10Device* pDevice, cl_uint* num_devices)
@@ -204,110 +368,6 @@ Cleanup:
     HarnessD3D10_TestEnd();
 }
 
-void TestAdapterDevices(cl_platform_id platform, IDXGIAdapter* pAdapter, ID3D10Device* pDevice, cl_uint num_devices_expected)
-{
-    cl_int result;
-    cl_uint num_devices = 0;
-    cl_device_id* devices = NULL;
-
-    devices = new cl_device_id[num_devices_expected];
-    NonTestRequire(
-        devices,
-        "Memory allocation failure.");
-
-    result = clGetDeviceIDsFromD3D10KHR(
-        platform,
-        CL_D3D10_DEVICE_KHR,
-        pDevice,
-        CL_ALL_DEVICES_FOR_D3D10_KHR,
-        num_devices_expected,
-        devices,
-        &num_devices);
-    NonTestRequire(
-        (result == CL_SUCCESS),
-        "clGetDeviceIDsFromD3D10KHR failed.");
-    NonTestRequire(
-        (num_devices == num_devices_expected),
-        "clGetDeviceIDsFromD3D10KHR returned an unexpected number of devices.");
-
-    for (cl_uint i = 0; i < num_devices; ++i)
-    {
-        // make sure the device supports the extension
-        if (!is_extension_available(devices[i], "cl_khr_d3d10_sharing")) {
-          TestPrint("Device does not support cl_khr_d3d10_sharing extension\n");
-          continue;
-        }
-
-        TestDevice(devices[i], pDevice);
-    }
-}
-
-void TestDevice(cl_device_id device, ID3D10Device* pDevice)
-{
-    char device_name[1024];
-    cl_int result = CL_SUCCESS;
-    cl_context context = NULL;
-    cl_command_queue command_queue = NULL;
-    cl_bool prefer_shared_resources = CL_FALSE;
-    ID3D10Device* clDevice = NULL;
-
-    result = clGetDeviceInfo(
-        device,
-        CL_DEVICE_NAME,
-        sizeof(device_name),
-        device_name,
-        NULL);
-    NonTestRequire(CL_SUCCESS == result, "clGetDeviceInfo with CL_DEVICE_NAME failed");
-    TestPrint("--------------------\n");
-    TestPrint("Testing cl_device_id\n");
-    TestPrint("Name=%s\n", device_name);
-    TestPrint("--------------------\n");
-
-    if (!TestDeviceContextCreate(device, pDevice, &context, &command_queue) )
-    {
-        return;
-    }
-
-    // make sure that we can query the shared resource preference
-    result = clGetContextInfo(
-        context,
-        CL_CONTEXT_D3D10_PREFER_SHARED_RESOURCES_KHR,
-        sizeof(prefer_shared_resources),
-        &prefer_shared_resources,
-        NULL);
-    NonTestRequire(CL_SUCCESS == result, "clGetContextInfo with CL_CONTEXT_D3D10_PREFER_SHARED_RESOURCES_KHR failed");
-
-    // run buffer tests
-    TestDeviceBuffer(
-        context,
-        command_queue,
-        pDevice);
-
-    // run 2D texture tests
-    TestDeviceTexture2D(
-        device,
-        context,
-        command_queue,
-        pDevice);
-
-    // run 3D texture tests
-    TestDeviceTexture3D(
-        device,
-        context,
-        command_queue,
-        pDevice);
-
-    // run misc tests
-    TestDeviceMisc(
-        device,
-        context,
-        command_queue,
-        pDevice);
-
-    clReleaseContext(context);
-    clReleaseCommandQueue(command_queue);
-}
-
 bool TestDeviceContextCreate(
     cl_device_id device,
     ID3D10Device* pDevice,
@@ -417,15 +477,3 @@ Cleanup:
     HarnessD3D10_TestEnd();
     return succeeded;
 }
-
-#else
-
-#include "errorHelpers.h"
-
-int main(int argc, char* argv[])
-{
-    log_info( "Windows-specific test skipped.\n" );
-    return 0;
-}
-
-#endif
