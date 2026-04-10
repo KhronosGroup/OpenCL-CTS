@@ -1497,22 +1497,22 @@ struct ImageCommonTest : public VulkanTestBase
                 log_info("Number of images: %d\n", num2DImages);
                 ASSERT_LEQ(num2DImages, (uint32_t)MAX_2D_IMAGES);
 
-            if (numCQ == 2)
-            {
+                if (numCQ == 2)
+                {
                     err = run_test_with_two_queue(
                         context, cmd_queue1, cmd_queue2, kernel_unsigned,
-                        kernel_signed, kernel_float, *vkDevice, num2DImages+1,
-                                              externalSemaphoreType);
-            }
-            else
-            {
-                err = run_test_with_one_queue(
-                    context, cmd_queue1, kernel_unsigned, kernel_signed,
+                        kernel_signed, kernel_float, *vkDevice, num2DImages + 1,
+                        externalSemaphoreType);
+                }
+                else
+                {
+                    err = run_test_with_one_queue(
+                        context, cmd_queue1, kernel_unsigned, kernel_signed,
                         kernel_float, *vkDevice, num2DImages,
                         externalSemaphoreType);
+                }
+                test_error(err, "func_name failed \n");
             }
-            test_error(err, "func_name failed \n");
-        }
         }
 
         return err;
