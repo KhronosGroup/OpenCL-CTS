@@ -104,7 +104,8 @@
     VK_FUNC_DECL(vkGetImageSubresourceLayout)                                  \
     VK_FUNC_DECL(vkCreateDebugUtilsMessengerEXT)                               \
     VK_FUNC_DECL(vkDestroyDebugUtilsMessengerEXT)                              \
-    VK_FUNC_DECL(vkGetPhysicalDeviceExternalBufferProperties)
+    VK_FUNC_DECL(vkGetPhysicalDeviceExternalBufferProperties)                  \
+    VK_FUNC_DECL(vkGetPhysicalDeviceFeatures2)
 #define VK_WINDOWS_FUNC_LIST                                                   \
     VK_FUNC_DECL(vkGetMemoryWin32HandleKHR)                                    \
     VK_FUNC_DECL(vkGetSemaphoreWin32HandleKHR)                                 \
@@ -209,5 +210,6 @@
 #define vkDestroyDebugUtilsMessengerEXT _vkDestroyDebugUtilsMessengerEXT
 #define vkGetPhysicalDeviceExternalBufferProperties                            \
     _vkGetPhysicalDeviceExternalBufferProperties
+#define vkGetPhysicalDeviceFeatures2 _vkGetPhysicalDeviceFeatures2
 
 #endif //_vulkan_api_list_hpp_

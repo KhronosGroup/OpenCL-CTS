@@ -78,6 +78,7 @@ struct TestInfo
     int isRangeLimited; // 1 if the function is only to be evaluated over a
                         // range
     float half_sin_cos_tan_limit;
+
     bool relaxedMode; // True if test is running in relaxed mode, false
                       // otherwise.
 };
@@ -352,14 +353,17 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
                 }
 
                 // half_sin/cos/tan are only valid between +-2**16, Inf, NaN
-                if (isRangeLimited
-                    && fabsf(s[j]) > MAKE_HEX_FLOAT(0x1.0p16f, 0x1L, 16)
-                    && fabsf(s[j]) < INFINITY)
+                if (isRangeLimited)
                 {
-                    if (fabsf(test) <= half_sin_cos_tan_limit)
+                    if (half_sin_cos_tan_limit > 0
+                        && fabsf(s[j]) > MAKE_HEX_FLOAT(0x1.0p16f, 0x1L, 16)
+                        && fabsf(s[j]) < INFINITY)
                     {
-                        err = 0;
-                        fail = 0;
+                        if (fabsf(test) <= half_sin_cos_tan_limit)
+                        {
+                            err = 0;
+                            fail = 0;
+                        }
                     }
                 }
 

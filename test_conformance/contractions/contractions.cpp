@@ -191,7 +191,7 @@ double sse_mul_sd(double x, double y)
 }
 #endif
 
-#ifdef __PPC__
+#if defined(__PPC__) || defined(__riscv)
 float ppc_mul(float a, float b)
 {
     float p;
@@ -630,9 +630,11 @@ test_status InitCL( cl_device_id device )
             // turn that off
             f3[i] = sse_mul(q, q2);
             f4[i] = sse_mul(-q, q2);
-#elif defined(__PPC__)
-            // None of the current generation PPC processors support HW
-            // FTZ, emulate it in sw.
+#elif (defined(__PPC__) || defined(__riscv))
+            // RISC-V CPUs with default 'f' fp32 extension do not support
+            // enabling/disabling FTZ mode, subnormals are always handled
+            // without FTZ. None of the current generation PPC processors
+            // support HW FTZ, emulate it in sw.
             f3[i] = ppc_mul(q, q2);
             f4[i] = ppc_mul(-q, q2);
 #else
@@ -721,9 +723,10 @@ test_status InitCL( cl_device_id device )
                 skipTest[j][i] = (bufSkip[i] ||
                                   (gSkipNanInf && (FE_OVERFLOW == (FE_OVERFLOW & fetestexcept(FE_OVERFLOW)))));
 
-#if defined(__PPC__)
-                // Since the current Power processors don't emulate flush to zero in HW,
-                // it must be emulated in SW instead.
+#if defined(__PPC__) || defined(__riscv)
+                // Since the current Power processors don't emulate flush to
+                // zero in HW, it must be emulated in SW instead. (same for
+                // RISC-V CPUs with 'f' extension)
                 if (gForceFTZ)
                 {
                     if ((fabsf(correct[j][i]) < FLT_MIN) && (correct[j][i] != 0.0f))
@@ -759,7 +762,6 @@ test_status InitCL( cl_device_id device )
                     return TEST_FAIL;
                 }
             }
-
 
             double *f  = (double*) buf1;
             double *f2 = (double*) buf2;
