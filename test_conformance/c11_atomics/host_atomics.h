@@ -18,7 +18,6 @@
 
 #include "harness/testHarness.h"
 #include <mutex>
-
 #include "CL/cl_half.h"
 
 #ifdef WIN32

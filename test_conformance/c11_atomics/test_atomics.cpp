@@ -3279,10 +3279,13 @@ public:
         // StartValue is used as an index divisor in the following test
         // logic. It is set to the number of special values, which allows
         // threads to be mapped deterministically onto the input data array.
-        // This enables repeated add operations arranged so that every
-        // special value is added to every other one (“all-to-all”).
+        // This enables repeated min operations arranged so that every
+        // special value is compared to every other one (“all-to-all”).
 
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             auto spec_vals = GetSpecialValues();
             StartValue(spec_vals.size());
@@ -3294,7 +3297,10 @@ public:
     static std::vector<HostDataType> &GetSpecialValues()
     {
         static std::vector<HostDataType> special_values;
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             const HostDataType test_value_zero =
                 static_cast<HostDataType>(0.0f);
@@ -3323,10 +3329,21 @@ public:
                     std::numeric_limits<HostDataType>::max(),
                 };
 
-                if (0 != (CL_FP_DENORM & gFloatFPConfig))
+                if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
                 {
-                    special_values.push_back(
-                        std::numeric_limits<HostDataType>::denorm_min());
+                    if (0 != (CL_FP_DENORM & gDoubleFPConfig))
+                    {
+                        special_values.push_back(
+                            std::numeric_limits<HostDataType>::denorm_min());
+                    }
+                }
+                else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+                {
+                    if (0 != (CL_FP_DENORM & gFloatFPConfig))
+                    {
+                        special_values.push_back(
+                            std::numeric_limits<HostDataType>::denorm_min());
+                    }
                 }
             }
         }
@@ -3337,7 +3354,10 @@ public:
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (threadCount > ref_vals.size())
             {
@@ -3389,19 +3409,28 @@ public:
                       volatile HostAtomicType *destMemory,
                       HostDataType *oldValues) override
     {
-        auto spec_vals = GetSpecialValues();
-        host_atomic_store(&destMemory[tid], (HostDataType)oldValues[tid],
-                          MEMORY_ORDER_SEQ_CST);
-        host_atomic_fetch_min(&destMemory[tid],
-                              (HostDataType)oldValues[tid / spec_vals.size()],
-                              MemoryOrder());
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
+        {
+            auto spec_vals = GetSpecialValues();
+            host_atomic_store(&destMemory[tid], (HostDataType)oldValues[tid],
+                              MEMORY_ORDER_SEQ_CST);
+            host_atomic_fetch_min(
+                &destMemory[tid],
+                (HostDataType)oldValues[tid / spec_vals.size()], MemoryOrder());
+        }
     }
     bool ExpectedValue(HostDataType &expected, cl_uint threadCount,
                        HostDataType *startRefValues,
                        cl_uint whichDestValue) override
     {
         expected = StartValue();
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             auto spec_vals = GetSpecialValues();
             expected =
@@ -3468,7 +3497,27 @@ public:
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
+        {
+            if (LocalMemory()
+                && (gDoubleAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gDoubleAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0;
+
+            if (!CBasicTestMemOrderScope<HostAtomicType,
+                                         HostDataType>::LocalMemory()
+                && CBasicTestMemOrderScope<HostAtomicType,
+                                           HostDataType>::DeclaredInProgram())
+            {
+                if ((gDoubleAtomicCaps & CL_FP_INF_NAN) == 0) return 0;
+            }
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (LocalMemory()
                 && (gFloatAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
@@ -3529,6 +3578,12 @@ static int test_atomic_fetch_min_generic(cl_device_id deviceID,
 
     if (gFloatAtomicsSupported)
     {
+        CBasicTestFetchMinSpecialFloats<HOST_ATOMIC_DOUBLE, HOST_DOUBLE>
+            test_spec_double(TYPE_ATOMIC_DOUBLE, useSVM);
+        EXECUTE_TEST(
+            error,
+            test_spec_double.Execute(deviceID, context, queue, num_elements));
+
         CBasicTestFetchMinSpecialFloats<HOST_ATOMIC_FLOAT, HOST_FLOAT>
             test_spec_float(TYPE_ATOMIC_FLOAT, useSVM);
         EXECUTE_TEST(
