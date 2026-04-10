@@ -16,15 +16,17 @@
 
 #pragma once
 
+#if D3D12_IS_SUPPORTED
 #include <d3d12.h>
+#endif
 #include <wrl/client.h>
-#include <stdexcept>
 
 using namespace Microsoft::WRL;
 
-class DirectXWrapper {
+#if D3D12_IS_SUPPORTED
+class DirectX12Wrapper {
 public:
-    DirectXWrapper();
+    DirectX12Wrapper();
 
     [[nodiscard]] ID3D12Device* getDXDevice() const;
     [[nodiscard]] ID3D12CommandQueue* getDXCommandQueue() const;
@@ -36,12 +38,13 @@ protected:
     ComPtr<ID3D12CommandAllocator> dx_command_allocator = nullptr;
 };
 
-class DirectXFenceWrapper {
+class DirectX12FenceWrapper {
 public:
-    DirectXFenceWrapper(ID3D12Device* dx_device);
+    DirectX12FenceWrapper(ID3D12Device* dx_device);
     [[nodiscard]] ID3D12Fence* get() const { return dx_fence.Get(); }
 
 private:
     ComPtr<ID3D12Fence> dx_fence = nullptr;
     ComPtr<ID3D12Device> dx_device = nullptr;
 };
+#endif

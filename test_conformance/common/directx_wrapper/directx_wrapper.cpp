@@ -14,9 +14,12 @@
 // limitations under the License.
 //
 
+#include <stdexcept>
+
 #include "directx_wrapper.hpp"
 
-DirectXWrapper::DirectXWrapper()
+#if D3D12_IS_SUPPORTED
+DirectX12Wrapper::DirectX12Wrapper()
 {
 
     HRESULT hr = D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0,
@@ -44,18 +47,18 @@ DirectXWrapper::DirectXWrapper()
     }
 }
 
-ID3D12Device* DirectXWrapper::getDXDevice() const { return dx_device.Get(); }
+ID3D12Device* DirectX12Wrapper::getDXDevice() const { return dx_device.Get(); }
 
-ID3D12CommandQueue* DirectXWrapper::getDXCommandQueue() const
+ID3D12CommandQueue* DirectX12Wrapper::getDXCommandQueue() const
 {
     return dx_command_queue.Get();
 }
-ID3D12CommandAllocator* DirectXWrapper::getDXCommandAllocator() const
+ID3D12CommandAllocator* DirectX12Wrapper::getDXCommandAllocator() const
 {
     return dx_command_allocator.Get();
 }
 
-DirectXFenceWrapper::DirectXFenceWrapper(ID3D12Device* dx_device)
+DirectX12FenceWrapper::DirectX12FenceWrapper(ID3D12Device* dx_device)
     : dx_device(dx_device)
 {
     if (!dx_device)
@@ -69,3 +72,4 @@ DirectXFenceWrapper::DirectXFenceWrapper(ID3D12Device* dx_device)
         throw std::runtime_error("Failed to create the DirectX fence");
     }
 }
+#endif
