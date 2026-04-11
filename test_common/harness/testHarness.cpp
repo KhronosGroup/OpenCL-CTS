@@ -39,6 +39,7 @@ namespace fs = std::filesystem;
 
 #if !defined(_WIN32)
 #include <sys/utsname.h>
+#include <sys/time.h>
 #include <unistd.h>
 #endif
 
@@ -340,7 +341,13 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     /* How are we supposed to seed the random # generators? */
     if (argc > 1 && strcmp(argv[argc - 1], "randomize") == 0)
     {
+#ifdef _WIN32
         gRandomSeed = (cl_uint)time(NULL);
+#else
+        struct timeval TV = { 0 };
+        gettimeofday(&TV, NULL);
+        gRandomSeed = TV.tv_usec;
+#endif
         log_info("Random seed: %u.\n", gRandomSeed);
         gReSeed = 1;
         argc--;
@@ -935,6 +942,7 @@ void callTestFunctions(test_definition testList[],
         for (auto th : threads)
         {
             th->join();
+            delete th;
         }
         assert(gTestQueue.size() == 0);
     }
