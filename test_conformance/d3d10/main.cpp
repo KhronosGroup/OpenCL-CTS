@@ -261,43 +261,32 @@ void TestAdapterEnumeration(cl_platform_id platform, IDXGIAdapter* pAdapter, ID3
 
      cl_int result;
 
-    HarnessD3D10_TestBegin("cl_device_id Enumeration");
+     log_info("cl_device_id Enumeration");
 
-    // get the cl_device_ids for the adapter
-    {
-        result = clGetDeviceIDsFromD3D10KHR(
-            platform,
-            CL_D3D10_DXGI_ADAPTER_KHR,
-            pAdapter,
-            CL_ALL_DEVICES_FOR_D3D10_KHR,
-            0,
-            NULL,
-            &num_adapter_devices);
-        TestRequire(
-            (result == CL_SUCCESS || result == CL_DEVICE_NOT_FOUND),
-            "clGetDeviceIDsFromD3D10KHR failed.");
+     // get the cl_device_ids for the adapter
+     {
+         result = clGetDeviceIDsFromD3D10KHR(
+             platform, CL_D3D10_DXGI_ADAPTER_KHR, pAdapter,
+             CL_ALL_DEVICES_FOR_D3D10_KHR, 0, NULL, &num_adapter_devices);
+         TestRequire((result == CL_SUCCESS || result == CL_DEVICE_NOT_FOUND),
+                     "clGetDeviceIDsFromD3D10KHR failed.");
 
-        if (result == CL_DEVICE_NOT_FOUND)
-        {
-            TestPrint("No devices found for adapter.\n");
-        }
-        else
-        {
-            // if there were devices, query them
-            adapter_devices = new cl_device_id[num_adapter_devices];
-            result = clGetDeviceIDsFromD3D10KHR(
-                platform,
-                CL_D3D10_DXGI_ADAPTER_KHR,
-                pAdapter,
-                CL_ALL_DEVICES_FOR_D3D10_KHR,
-                num_adapter_devices,
-                adapter_devices,
-                NULL);
-            TestRequire(
-                (result == CL_SUCCESS),
-                "clGetDeviceIDsFromD3D10KHR failed.");
-        }
-    }
+         if (result == CL_DEVICE_NOT_FOUND)
+         {
+             TestPrint("No devices found for adapter.\n");
+         }
+         else
+         {
+             // if there were devices, query them
+             adapter_devices = new cl_device_id[num_adapter_devices];
+             result = clGetDeviceIDsFromD3D10KHR(
+                 platform, CL_D3D10_DXGI_ADAPTER_KHR, pAdapter,
+                 CL_ALL_DEVICES_FOR_D3D10_KHR, num_adapter_devices,
+                 adapter_devices, NULL);
+             TestRequire((result == CL_SUCCESS),
+                         "clGetDeviceIDsFromD3D10KHR failed.");
+         }
+     }
 
     // get the cl_device_ids for the device (if it was successfully created)
     if (pDevice)
@@ -364,8 +353,6 @@ Cleanup:
     }
 
     *num_devices = num_device_devices;
-
-    HarnessD3D10_TestEnd();
 }
 
 bool TestDeviceContextCreate(
@@ -382,7 +369,7 @@ bool TestDeviceContextCreate(
 
     bool succeeded = false;
 
-    HarnessD3D10_TestBegin("Context creation");
+    log_info("Context creation");
 
     cl_context_properties properties[5];
 
@@ -474,6 +461,5 @@ Cleanup:
             clReleaseCommandQueue(command_queue);
         }
     }
-    HarnessD3D10_TestEnd();
     return succeeded;
 }
