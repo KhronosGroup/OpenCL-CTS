@@ -29,6 +29,7 @@ set(${MODULE_NAME}_SOURCES
     test_unified_svm_setarg.cpp
     test_unified_svm_map_unmap.cpp
     test_unified_svm_execinfo.cpp
+    test_unified_svm_threading.cpp
 )
 
 set_gnulike_module_compile_flags("-Wno-sometimes-uninitialized -Wno-sign-compare")
