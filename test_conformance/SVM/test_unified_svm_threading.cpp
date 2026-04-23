@@ -39,17 +39,18 @@ struct UnifiedSVMThreadedAllocFree : UnifiedSVMBase
         {
             log_info("   testing SVM type %u\n", ti);
 
-            auto mem = get_usvm_wrapper<cl_int>(ti);
             const unsigned num_threads = 10;
             std::vector<std::thread> threads;
+            std::vector<std::unique_ptr<USVMWrapper<cl_int>>> mems(num_threads);
             std::vector<std::pair<cl_int, cl_int>> ret_codes(num_threads);
 
             for (int i = 0; i < num_threads; ++i)
             {
+                mems[i] = get_usvm_wrapper<cl_int>(ti);
                 cl_int& alloc = ret_codes[i].first;
                 cl_int& free = ret_codes[i].second;
                 threads.push_back(
-                    std::thread(worker, mem.get(), &alloc, &free));
+                    std::thread(worker, mems[i].get(), &alloc, &free));
             }
 
             for (auto& thread : threads)
