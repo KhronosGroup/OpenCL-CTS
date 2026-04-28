@@ -663,11 +663,19 @@ int run_test_with_one_queue(
                 }
                 else if (!use_fence && (iter != (maxIter - 1)))
                 {
+                    // Wait until semaphore is not in-use before re-import
+                    // (VUID-vkImportSemaphoreFdKHR-semaphore-01142)
+                    vkQueue.waitIdle();
+
                     err = clCl2VkExternalSemaphore->signal(cmd_queue1);
                     test_error_and_cleanup(err, CLEANUP,
                                            "Failed to signal CL semaphore\n");
                 }
             }
+
+            // Drain queue before per-iteration resource cleanup
+            vkQueue.waitIdle();
+
             error_2 = (uint8_t *)malloc(sizeof(uint8_t));
             if (NULL == error_2)
             {
@@ -752,6 +760,10 @@ CLEANUP:
 
     if (error_2) free(error_2);
     if (error_1) clReleaseMemObject(error_1);
+
+    // Ensure no pending work before wrapper destructors run
+    vkDevice.waitIdle();
+
     return err;
 }
 

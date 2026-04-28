@@ -763,6 +763,11 @@ VulkanDevice::~VulkanDevice()
     vkDestroyDevice(m_vkDevice, NULL);
 }
 
+void VulkanDevice::waitIdle()
+{
+    vkDeviceWaitIdle(m_vkDevice);
+}
+
 const VulkanPhysicalDevice &VulkanDevice::getPhysicalDevice() const
 {
     return m_physicalDevice;
