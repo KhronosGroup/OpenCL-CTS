@@ -560,10 +560,9 @@ static int verify_fill_struct( void *ptr1, void *ptr2, int n )
 static int verify_pattern_lifetime(cl_int *buffer, size_t num_elements,
                                    cl_int expected_value)
 {
-    for (size_t i = 0; i < num_elements; i++) {
-        if (buffer[i] != expected_value)
-            return -1;
-
+    for (size_t i = 0; i < num_elements; i++)
+    {
+        if (buffer[i] != expected_value) return -1;
     }
     return 0;
 }
@@ -721,11 +720,8 @@ static int test_buffer_fill(cl_device_id deviceID, cl_context context,
 }   // end test_buffer_fill()
 
 
-
-static int test_fill_reused_pattern(cl_device_id device_id,
-                                                 cl_context context,
-                                                 cl_command_queue queue,
-                                                 int num_elements)
+static int test_fill_reused_pattern(cl_device_id device_id, cl_context context,
+                                    cl_command_queue queue, int num_elements)
 {
     cl_int err;
     const size_t buffer_bytes = num_elements * sizeof(cl_int);
@@ -738,8 +734,8 @@ static int test_fill_reused_pattern(cl_device_id device_id,
 
     int result = TEST_FAIL;
 
-    buffer = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                            buffer_bytes, nullptr, &err);
+    buffer =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_bytes, nullptr, &err);
     if (err != CL_SUCCESS)
     {
         print_error(err, "clCreateBuffer failed");
@@ -761,10 +757,8 @@ static int test_fill_reused_pattern(cl_device_id device_id,
     }
     *pattern = TEST_PRIME_INT;
 
-    err = clEnqueueFillBuffer(queue, buffer,
-                              pattern, sizeof(cl_int),
-                              0, buffer_bytes,
-                              1, &user_event, &fill_event);
+    err = clEnqueueFillBuffer(queue, buffer, pattern, sizeof(cl_int), 0,
+                              buffer_bytes, 1, &user_event, &fill_event);
     if (err != CL_SUCCESS)
     {
         print_error(err, "clEnqueueFillBuffer failed");
@@ -795,8 +789,7 @@ static int test_fill_reused_pattern(cl_device_id device_id,
         goto cleanup;
     }
 
-    err = clEnqueueReadBuffer(queue, buffer, CL_TRUE,
-                              0, buffer_bytes,
+    err = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, buffer_bytes,
                               host_buffer, 0, nullptr, nullptr);
     if (err != CL_SUCCESS)
     {
@@ -804,11 +797,10 @@ static int test_fill_reused_pattern(cl_device_id device_id,
         goto cleanup;
     }
 
-    if (verify_pattern_lifetime(host_buffer,
-                                num_elements,
-                                TEST_PRIME_INT) != 0)
+    if (verify_pattern_lifetime(host_buffer, num_elements, TEST_PRIME_INT) != 0)
     {
-        log_error("buffer_fill pattern lifetime test failed - driver used freed/corrupted pattern memory\n");
+        log_error("buffer_fill pattern lifetime test failed - driver used "
+                  "freed/corrupted pattern memory\n");
         goto cleanup;
     }
 
@@ -822,7 +814,7 @@ cleanup:
     if (buffer) clReleaseMemObject(buffer);
 
     return result;
-}   // end test_fill_pattern_freed_and_corrupted()
+} // end test_fill_pattern_freed_and_corrupted()
 
 REGISTER_TEST(buffer_fill_struct)
 {
@@ -1630,12 +1622,12 @@ REGISTER_TEST(buffer_fill_float)
 REGISTER_TEST(buffer_fill_pattern_lifetime)
 {
     int err = 0;
-    if (test_fill_reused_pattern(device, context, queue,
-                                              num_elements)
-        != TEST_PASS) {
+    if (test_fill_reused_pattern(device, context, queue, num_elements)
+        != TEST_PASS)
+    {
         err++;
     }
 
     return err;
 
-}   // end test_buffer_fill_pattern_lifetime()
+} // end test_buffer_fill_pattern_lifetime()
