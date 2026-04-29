@@ -349,3 +349,127 @@ REGISTER_TEST(svm_enqueue_api)
 
     return 0;
 }
+
+// Tests corrupting the pattern before clEnqueueSVMMemFill is executed
+REGISTER_TEST(svm_memfill_pattern_lifetime)
+{
+    constexpr cl_int FILL_PATTERN = 0x12345678;
+
+    clContextWrapper contextWrapper = nullptr;
+    clCommandQueueWrapper queues[MAXQ];
+    cl_uint num_devices = 0;
+    cl_int err = CL_SUCCESS;
+
+    const size_t svm_size = num_elements * sizeof(cl_int);
+
+    cl_int *svm_ptr = nullptr;
+    cl_int *pattern = nullptr;
+    cl_event user_event = nullptr;
+    cl_event fill_event = nullptr;
+
+    int result = TEST_FAIL;
+
+    err = create_cl_objects(device, nullptr, &contextWrapper, nullptr,
+                            &queues[0], &num_devices,
+                            CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
+    if (err) goto cleanup;
+
+    context = contextWrapper;
+    queue = queues[0];
+
+    svm_ptr = static_cast<cl_int *>(clSVMAlloc(context, CL_MEM_READ_WRITE, svm_size, 0));
+    if (!svm_ptr)
+    {
+        log_error("clSVMAlloc failed\n");
+        goto cleanup;
+    }
+
+    user_event = clCreateUserEvent(context, &err);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clCreateUserEvent failed");
+        goto cleanup;
+    }
+
+    pattern = static_cast<cl_int *>(malloc(sizeof(cl_int)));
+    if (!pattern)
+    {
+        log_error("Failed to allocate pattern memory\n");
+        goto cleanup;
+    }
+    *pattern = FILL_PATTERN;
+
+    err = clEnqueueSVMMemFill(queue,
+                              svm_ptr,
+                              pattern,
+                              sizeof(cl_int),
+                              svm_size,
+                              1,
+                              &user_event,
+                              &fill_event);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clEnqueueSVMMemFill failed");
+        goto cleanup;
+    }
+
+    /* corrupt pattern while command is blocked */
+    *pattern = static_cast<cl_int>(0xDEADBEEF);
+
+    err = clSetUserEventStatus(user_event, CL_COMPLETE);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clSetUserEventStatus failed");
+        goto cleanup;
+    }
+
+    err = clWaitForEvents(1, &fill_event);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clWaitForEvents failed");
+        goto cleanup;
+    }
+
+    err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ,
+                          svm_ptr, svm_size,
+                          0, nullptr, nullptr);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clEnqueueSVMMap failed");
+        goto cleanup;
+    }
+
+    for (size_t i = 0; i < num_elements; i++)
+    {
+        if (svm_ptr[i] != FILL_PATTERN)
+        {
+            log_error("Verification failed at index %zu: expected 0x%08x, got 0x%08x\n",
+                      i, FILL_PATTERN, svm_ptr[i]);
+            goto cleanup;
+        }
+    }
+
+    err = clEnqueueSVMUnmap(queue, svm_ptr, 0, nullptr, nullptr);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clEnqueueSVMUnmap failed");
+        goto cleanup;
+    }
+
+    err = clFinish(queue);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clFinish failed");
+        goto cleanup;
+    }
+
+    result = TEST_PASS;
+
+cleanup:
+    if (fill_event) clReleaseEvent(fill_event);
+    if (user_event) clReleaseEvent(user_event);
+    if (pattern) free(pattern);
+    if (svm_ptr) clSVMFree(context, svm_ptr);
+
+    return result;
+}

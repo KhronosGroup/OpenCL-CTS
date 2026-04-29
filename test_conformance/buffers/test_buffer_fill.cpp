@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -557,6 +557,18 @@ static int verify_fill_struct( void *ptr1, void *ptr2, int n )
 }
 
 
+static int verify_pattern_lifetime(cl_int *buffer, size_t num_elements,
+                                   cl_int expected_value)
+{
+    for (size_t i = 0; i < num_elements; i++) {
+        if (buffer[i] != expected_value)
+            return -1;
+
+    }
+    return 0;
+}
+
+
 static int test_buffer_fill(cl_device_id deviceID, cl_context context,
                             cl_command_queue queue, int num_elements,
                             size_t size, char *type, int loops, void *inptr[5],
@@ -708,6 +720,109 @@ static int test_buffer_fill(cl_device_id deviceID, cl_context context,
 
 }   // end test_buffer_fill()
 
+
+
+static int test_fill_reused_pattern(cl_device_id device_id,
+                                                 cl_context context,
+                                                 cl_command_queue queue,
+                                                 int num_elements)
+{
+    cl_int err;
+    const size_t buffer_bytes = num_elements * sizeof(cl_int);
+
+    cl_mem buffer = nullptr;
+    cl_event user_event = nullptr;
+    cl_event fill_event = nullptr;
+    cl_int *pattern = nullptr;
+    cl_int *host_buffer = nullptr;
+
+    int result = TEST_FAIL;
+
+    buffer = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                            buffer_bytes, nullptr, &err);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clCreateBuffer failed");
+        goto cleanup;
+    }
+
+    user_event = clCreateUserEvent(context, &err);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clCreateUserEvent failed");
+        goto cleanup;
+    }
+
+    pattern = static_cast<cl_int *>(malloc(sizeof(cl_int)));
+    if (!pattern)
+    {
+        log_error("Failed to allocate pattern memory\n");
+        goto cleanup;
+    }
+    *pattern = TEST_PRIME_INT;
+
+    err = clEnqueueFillBuffer(queue, buffer,
+                              pattern, sizeof(cl_int),
+                              0, buffer_bytes,
+                              1, &user_event, &fill_event);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clEnqueueFillBuffer failed");
+        goto cleanup;
+    }
+
+    /* Modify pattern while command is blocked */
+    *pattern = static_cast<cl_int>(0xDEADBEEF);
+
+    err = clSetUserEventStatus(user_event, CL_COMPLETE);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clSetUserEventStatus failed");
+        goto cleanup;
+    }
+
+    err = clWaitForEvents(1, &fill_event);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clWaitForEvents failed");
+        goto cleanup;
+    }
+
+    host_buffer = static_cast<cl_int *>(malloc(buffer_bytes));
+    if (!host_buffer)
+    {
+        log_error("Failed to allocate host buffer\n");
+        goto cleanup;
+    }
+
+    err = clEnqueueReadBuffer(queue, buffer, CL_TRUE,
+                              0, buffer_bytes,
+                              host_buffer, 0, nullptr, nullptr);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clEnqueueReadBuffer failed");
+        goto cleanup;
+    }
+
+    if (verify_pattern_lifetime(host_buffer,
+                                num_elements,
+                                TEST_PRIME_INT) != 0)
+    {
+        log_error("buffer_fill pattern lifetime test failed - driver used freed/corrupted pattern memory\n");
+        goto cleanup;
+    }
+
+    result = TEST_PASS;
+
+cleanup:
+    if (host_buffer) free(host_buffer);
+    if (pattern) free(pattern);
+    if (fill_event) clReleaseEvent(fill_event);
+    if (user_event) clReleaseEvent(user_event);
+    if (buffer) clReleaseMemObject(buffer);
+
+    return result;
+}   // end test_fill_pattern_freed_and_corrupted()
 
 REGISTER_TEST(buffer_fill_struct)
 {
@@ -1510,3 +1625,17 @@ REGISTER_TEST(buffer_fill_float)
     return err;
 
 }   // end test_buffer_float_fill()
+
+
+REGISTER_TEST(buffer_fill_pattern_lifetime)
+{
+    int err = 0;
+    if (test_fill_reused_pattern(device, context, queue,
+                                              num_elements)
+        != TEST_PASS) {
+        err++;
+    }
+
+    return err;
+
+}   // end test_buffer_fill_pattern_lifetime()
