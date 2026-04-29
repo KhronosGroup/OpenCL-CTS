@@ -369,15 +369,16 @@ REGISTER_TEST(svm_memfill_pattern_lifetime)
 
     int result = TEST_FAIL;
 
-    err = create_cl_objects(device, nullptr, &contextWrapper, nullptr,
-                            &queues[0], &num_devices,
-                            CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
+    err =
+        create_cl_objects(device, nullptr, &contextWrapper, nullptr, &queues[0],
+                          &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
     if (err) goto cleanup;
 
     context = contextWrapper;
     queue = queues[0];
 
-    svm_ptr = static_cast<cl_int *>(clSVMAlloc(context, CL_MEM_READ_WRITE, svm_size, 0));
+    svm_ptr = static_cast<cl_int *>(
+        clSVMAlloc(context, CL_MEM_READ_WRITE, svm_size, 0));
     if (!svm_ptr)
     {
         log_error("clSVMAlloc failed\n");
@@ -399,14 +400,8 @@ REGISTER_TEST(svm_memfill_pattern_lifetime)
     }
     *pattern = FILL_PATTERN;
 
-    err = clEnqueueSVMMemFill(queue,
-                              svm_ptr,
-                              pattern,
-                              sizeof(cl_int),
-                              svm_size,
-                              1,
-                              &user_event,
-                              &fill_event);
+    err = clEnqueueSVMMemFill(queue, svm_ptr, pattern, sizeof(cl_int), svm_size,
+                              1, &user_event, &fill_event);
     if (err != CL_SUCCESS)
     {
         print_error(err, "clEnqueueSVMMemFill failed");
@@ -430,9 +425,8 @@ REGISTER_TEST(svm_memfill_pattern_lifetime)
         goto cleanup;
     }
 
-    err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ,
-                          svm_ptr, svm_size,
-                          0, nullptr, nullptr);
+    err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, svm_ptr, svm_size, 0,
+                          nullptr, nullptr);
     if (err != CL_SUCCESS)
     {
         print_error(err, "clEnqueueSVMMap failed");
@@ -443,7 +437,8 @@ REGISTER_TEST(svm_memfill_pattern_lifetime)
     {
         if (svm_ptr[i] != FILL_PATTERN)
         {
-            log_error("Verification failed at index %zu: expected 0x%08x, got 0x%08x\n",
+            log_error("Verification failed at index %zu: expected 0x%08x, got "
+                      "0x%08x\n",
                       i, FILL_PATTERN, svm_ptr[i]);
             goto cleanup;
         }
