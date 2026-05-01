@@ -211,7 +211,7 @@ struct UnifiedSVMOPs : UnifiedSVMBase
                                PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR
                                    | CL_SVM_CAPABILITY_HOST_READ_KHR
                                    | CL_SVM_CAPABILITY_HOST_WRITE_KHR,
-                               1, nullptr, nullptr, nullptr, nullptr));
+                               0, nullptr, nullptr, nullptr, nullptr));
     }
 
     bool caps_compatibility_check(cl_uint srcTypeIndex, cl_uint dstTypeIndex)
