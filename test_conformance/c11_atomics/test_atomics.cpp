@@ -532,7 +532,7 @@ public:
     virtual int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                                   cl_command_queue queue)
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
             if (LocalMemory()
                 && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_LOAD_STORE_EXT)
