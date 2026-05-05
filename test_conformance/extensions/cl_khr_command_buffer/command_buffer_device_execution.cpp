@@ -118,15 +118,9 @@ struct CommandBufferDeviceExecutionTest : public BasicCommandBufferTest
                                command_buffer_device_block);
               })";
 
-        error = create_single_kernel_helper_create_program(context, &program, 1,
-                                                           &kernel_str);
-        test_error(error, "Failed to create program with source");
-
-        error = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-        test_error(error, "Failed to build program");
-
-        kernel = clCreateKernel(program, "device_enqueue", &error);
-        test_error(error, "Failed to create device execution kernel");
+        error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &kernel_str, "device_enqueue");
+        test_error(error, "Failed to create test kernel");
 
         return CL_SUCCESS;
     }
@@ -216,7 +210,7 @@ struct CommandBufferDeviceExecutionTest : public BasicCommandBufferTest
 
 } // anonymous namespace
 
-REGISTER_TEST(device_execution)
+REGISTER_TEST(device_enqueue)
 {
     return MakeAndRunTest<CommandBufferDeviceExecutionTest>(
         device, context, queue, num_elements);
