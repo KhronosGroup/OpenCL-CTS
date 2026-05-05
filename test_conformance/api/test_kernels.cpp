@@ -16,6 +16,7 @@
 #include "testBase.h"
 #include "harness/typeWrappers.h"
 #include "harness/conversions.h"
+#include "harness/featureHelpers.h"
 #include "harness/stringHelpers.h"
 #include <array>
 #include <vector>
@@ -88,6 +89,17 @@ const char *sample_two_kernel_program[] = {
 "    dst[tid] = (float)src[tid];\n"
 "\n"
 "}\n" };
+
+const char *sample_queue_test_kernel = R"(
+    __kernel void enqueue_call_func() {
+      }
+    __kernel void queue_test(queue_t queue)
+    {
+        ndrange_t ndrange = ndrange_1D(1);
+        enqueue_kernel(queue, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange,
+                           ^{enqueue_call_func();});
+    }
+)";
 
 const char *sample_sampler_size_test_kernel = R"(
     __kernel void sampler_size_test(sampler_t sampler, __read_only image2d_t src, __global float4 *dst)
@@ -750,6 +762,51 @@ REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
                            "created with CL_MEM_IMMUTABLE_EXT is "
                            "passed to a write_only kernel argument",
                            TEST_FAIL);
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_invalid_arg_queue)
+{
+    OpenCLCFeatures features;
+    get_device_cl_c_features(device, features);
+
+    const Version clc_version = get_device_latest_cl_c_version(device);
+    if (clc_version < Version(2, 0)
+        || (clc_version >= Version(3, 0)
+            && !features.supports__opencl_c_device_enqueue))
+        return TEST_SKIPPED_ITSELF;
+
+    std::string build_opts = "-cl-std=CL" + clc_version.to_string();
+
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper queue_arg_kernel;
+    clCommandQueueWrapper queue_arg;
+
+    // Setup the test
+    error = create_single_kernel_helper(context, &program, &queue_arg_kernel, 1,
+                                        &sample_queue_test_kernel, "queue_test",
+                                        build_opts.c_str());
+    test_error(error, "Unable to create test kernel");
+
+    // Run the test - CL_INVALID_DEVICE_QUEUE
+    error = clSetKernelArg(queue_arg_kernel, 0, sizeof(cl_command_queue),
+                           &queue_arg);
+    test_failure_error_ret(
+        error, CL_INVALID_DEVICE_QUEUE,
+        "clSetKernelArg is supposed to fail with CL_INVALID_DEVICE_QUEUE when "
+        "the specified arg_value is not a valid device queue object",
+        TEST_FAIL);
+
+    // Run the test with host-side queue and expect CL_INVALID_DEVICE_QUEUE
+    error =
+        clSetKernelArg(queue_arg_kernel, 0, sizeof(cl_command_queue), queue);
+    test_failure_error_ret(
+        error, CL_INVALID_DEVICE_QUEUE,
+        "clSetKernelArg is supposed to fail with CL_INVALID_DEVICE_QUEUE when "
+        "the specified arg_value is not a valid device queue object",
+        TEST_FAIL);
 
     return TEST_PASS;
 }

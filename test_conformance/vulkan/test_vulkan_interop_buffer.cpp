@@ -128,12 +128,24 @@ int run_test_with_two_queue(
     vkDescriptorSetLayoutBindingList.addBinding(
         0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
     vkDescriptorSetLayoutBindingList.addBinding(
-        1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_BUFFERS);
+        1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, numBuffers);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
-    VulkanComputePipeline vkComputePipeline(vkDevice, vkPipelineLayout,
-                                            vkBufferShaderModule);
+
+    VkSpecializationMapEntry entry;
+    entry.constantID = 0;
+    entry.offset = 0;
+    entry.size = sizeof(uint32_t);
+
+    VkSpecializationInfo spec;
+    spec.mapEntryCount = 1;
+    spec.pMapEntries = &entry;
+    spec.dataSize = sizeof(uint32_t);
+    spec.pData = &numBuffers;
+
+    VulkanComputePipeline vkComputePipeline(
+        vkDevice, vkPipelineLayout, vkBufferShaderModule, "main", &spec);
 
     VulkanDescriptorPool vkDescriptorPool(vkDevice,
                                           vkDescriptorSetLayoutBindingList);
@@ -461,12 +473,24 @@ int run_test_with_one_queue(
     vkDescriptorSetLayoutBindingList.addBinding(
         0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
     vkDescriptorSetLayoutBindingList.addBinding(
-        1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_BUFFERS);
+        1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, numBuffers);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
-    VulkanComputePipeline vkComputePipeline(vkDevice, vkPipelineLayout,
-                                            vkBufferShaderModule);
+
+    VkSpecializationMapEntry entry;
+    entry.constantID = 0;
+    entry.offset = 0;
+    entry.size = sizeof(uint32_t);
+
+    VkSpecializationInfo spec;
+    spec.mapEntryCount = 1;
+    spec.pMapEntries = &entry;
+    spec.dataSize = sizeof(uint32_t);
+    spec.pData = &numBuffers;
+
+    VulkanComputePipeline vkComputePipeline(
+        vkDevice, vkPipelineLayout, vkBufferShaderModule, "main", &spec);
 
     VulkanDescriptorPool vkDescriptorPool(vkDevice,
                                           vkDescriptorSetLayoutBindingList);
@@ -764,12 +788,24 @@ int run_test_with_multi_import_same_ctx(
     vkDescriptorSetLayoutBindingList.addBinding(
         0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
     vkDescriptorSetLayoutBindingList.addBinding(
-        1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_BUFFERS);
+        1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, numBuffers);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
-    VulkanComputePipeline vkComputePipeline(vkDevice, vkPipelineLayout,
-                                            vkBufferShaderModule);
+
+    VkSpecializationMapEntry entry;
+    entry.constantID = 0;
+    entry.offset = 0;
+    entry.size = sizeof(uint32_t);
+
+    VkSpecializationInfo spec;
+    spec.mapEntryCount = 1;
+    spec.pMapEntries = &entry;
+    spec.dataSize = sizeof(uint32_t);
+    spec.pData = &numBuffers;
+
+    VulkanComputePipeline vkComputePipeline(
+        vkDevice, vkPipelineLayout, vkBufferShaderModule, "main", &spec);
 
     VulkanDescriptorPool vkDescriptorPool(vkDevice,
                                           vkDescriptorSetLayoutBindingList);
@@ -1103,12 +1139,24 @@ int run_test_with_multi_import_diff_ctx(
     vkDescriptorSetLayoutBindingList.addBinding(
         0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
     vkDescriptorSetLayoutBindingList.addBinding(
-        1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_BUFFERS);
+        1, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, numBuffers);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
-    VulkanComputePipeline vkComputePipeline(vkDevice, vkPipelineLayout,
-                                            vkBufferShaderModule);
+
+    VkSpecializationMapEntry entry;
+    entry.constantID = 0;
+    entry.offset = 0;
+    entry.size = sizeof(uint32_t);
+
+    VkSpecializationInfo spec;
+    spec.mapEntryCount = 1;
+    spec.pMapEntries = &entry;
+    spec.dataSize = sizeof(uint32_t);
+    spec.pData = &numBuffers;
+
+    VulkanComputePipeline vkComputePipeline(
+        vkDevice, vkPipelineLayout, vkBufferShaderModule, "main", &spec);
 
     VulkanDescriptorPool vkDescriptorPool(vkDevice,
                                           vkDescriptorSetLayoutBindingList);
