@@ -2167,7 +2167,7 @@ public:
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
                                                                 useSVM)
     {
-        if (std::is_same<HostDataType, HOST_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             auto spec_vals = GetSpecialValues();
             StartValue(spec_vals.size());
@@ -2216,7 +2216,7 @@ public:
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
-        if (std::is_same<HostDataType, HOST_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (threadCount > ref_vals.size())
             {
@@ -2247,7 +2247,7 @@ public:
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
 
-        if (std::is_same<HostDataType, HOST_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             return std::string(DataType().AddSubOperandTypeName())
                 + " start_value = atomic_load_explicit(destMemory+tid, "
@@ -2265,7 +2265,7 @@ public:
                       volatile HostAtomicType *destMemory,
                       HostDataType *oldValues) override
     {
-        if (std::is_same<HostDataType, HOST_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             auto spec_vals = GetSpecialValues();
             host_atomic_store(&destMemory[tid], (HostDataType)oldValues[tid],
@@ -2280,7 +2280,7 @@ public:
                        cl_uint whichDestValue) override
     {
         expected = StartValue();
-        if (std::is_same<HostDataType, HOST_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             auto spec_vals = GetSpecialValues();
             expected = startRefValues[whichDestValue]
@@ -2299,17 +2299,11 @@ public:
             return false;
         else
             return expected != testValues[whichDestValue];
-
-        return CBasicTestMemOrderScope<
-            HostAtomicType, HostDataType>::IsTestNotAsExpected(expected,
-                                                               testValues,
-                                                               startRefValues,
-                                                               whichDestValue);
     }
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
-        if (std::is_same<HostDataType, HOST_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (LocalMemory()
                 && (gFloatAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_ADD_EXT) == 0)
@@ -2333,7 +2327,7 @@ public:
     }
     cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
     {
-        if (std::is_same<HostDataType, HOST_ATOMIC_FLOAT>::value)
+        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             return threadCount;
         }
