@@ -441,6 +441,13 @@ cl_int CustomConversionsTest::Run()
             continue;
         }
 
+        // skip illegal saturated conversions to float type
+        if (kSaturated == sat
+            && (outType == kfloat || outType == kdouble || outType == khalf))
+        {
+            continue;
+        }
+
         // skip longs on embedded
         if (!gHasLong
             && (inType == klong || outType == klong || inType == kulong
