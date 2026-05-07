@@ -29,8 +29,6 @@
 #include <sstream>
 #include <vector>
 
-#include "CL/cl_half.h"
-
 #define MAX_DEVICE_THREADS (gHost ? 0U : gMaxDeviceThreads)
 #define MAX_HOST_THREADS GetThreadCount()
 

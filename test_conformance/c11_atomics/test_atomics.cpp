@@ -2169,7 +2169,7 @@ public:
     {
         if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             StartValue(spec_vals.size());
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
@@ -2221,7 +2221,7 @@ public:
             if (threadCount > ref_vals.size())
             {
                 ref_vals.assign(threadCount, 0);
-                auto spec_vals = GetSpecialValues();
+                const auto &spec_vals = GetSpecialValues();
 
                 cl_uint total_cnt = 0;
                 while (total_cnt < threadCount)
@@ -2267,7 +2267,7 @@ public:
     {
         if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             host_atomic_store(&destMemory[tid], (HostDataType)oldValues[tid],
                               MEMORY_ORDER_SEQ_CST);
             host_atomic_fetch_sub(
@@ -2279,10 +2279,9 @@ public:
                        HostDataType *startRefValues,
                        cl_uint whichDestValue) override
     {
-        expected = StartValue();
         if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             expected = startRefValues[whichDestValue]
                 - startRefValues[whichDestValue / spec_vals.size()];
         }
