@@ -2354,9 +2354,33 @@ smallarg:
 
 double reference_tgamma(double x)
 {
+    // This function is only used for fp32 reference calculations.
+    const float fx = x;
+
+    // Once |fx| >= 128, tgammaf has already overflowed or underflowed, so avoid
+    // host-dependent olm_tgammal behavior.
+    if (isfinite(fx) && fabsf(fx) >= 128.0f)
+    {
+        // Negative integer inputs are invalid for tgamma, so return NaN.
+        if (fx < 0.0f && fx == std::floor(fx))
+        {
+            return cl_make_nan();
+        }
+
+        if (fx < 0.0f)
+        {
+            // Negative non-integer large values underflow to zero; preserve the
+            // sign, which alternates between consecutive negative integers.
+            const long n = (long)std::floor(-fx);
+            const bool negative = (n % 2 == 0);
+            return negative ? -0.0 : 0.0;
+        }
+
+        return INFINITY;
+    }
+
     if (x < 0.0f)
     {
-        float fx = x;
         if (fx == std::floor(fx))
         {
             return std::numeric_limits<double>::signaling_NaN();
