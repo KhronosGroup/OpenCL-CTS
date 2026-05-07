@@ -428,6 +428,7 @@ cleanup_allocations:
   if (bufferA) free(bufferA);
   if (bufferB) free(bufferB);
   if (bufferC) free(bufferC);
+  free_mtdata(d);
 
   return ((failed) ? -1 : 0);
 }

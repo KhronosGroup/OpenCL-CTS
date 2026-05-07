@@ -27,9 +27,15 @@ endif(USE_CL_EXPERIMENTAL)
 
 option(SANITIZER_THREAD "Build with the thread sanitiser" OFF)
 if (SANITIZER_THREAD)
-    add_compile_options(-fsanitize=thread)
+    add_compile_options(-fsanitize=thread -fno-omit-frame-pointer)
     add_link_options(-fsanitize=thread)
 endif (SANITIZER_THREAD)
+
+option(SANITIZER_ADDRESS "Build with the address sanitiser" OFF)
+if (SANITIZER_ADDRESS)
+    add_compile_options(-fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address)
+endif (SANITIZER_ADDRESS)
 
 #-----------------------------------------------------------
 # Default Configurable Test Set

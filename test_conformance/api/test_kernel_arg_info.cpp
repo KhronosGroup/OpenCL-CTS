@@ -542,33 +542,38 @@ size_t get_param_size(const std::string& arg_type, cl_device_id device,
     }
 
     size_t ret(0);
+    /* "signed" and "unsigned" type names are valid (int is implied) */
+    if (arg_type.find("signed") != std::string::npos)
+    {
+        ret = sizeof(cl_int);
+    }
     if (arg_type.find("char") != std::string::npos)
     {
-        ret += sizeof(cl_char);
+        ret = sizeof(cl_char);
     }
     if (arg_type.find("short") != std::string::npos)
     {
-        ret += sizeof(cl_short);
+        ret = sizeof(cl_short);
     }
     if (arg_type.find("half") != std::string::npos)
     {
-        ret += sizeof(cl_half);
+        ret = sizeof(cl_half);
     }
     if (arg_type.find("int") != std::string::npos)
     {
-        ret += sizeof(cl_int);
+        ret = sizeof(cl_int);
     }
     if (arg_type.find("long") != std::string::npos)
     {
-        ret += sizeof(cl_long);
+        ret = sizeof(cl_long);
     }
     if (arg_type.find("float") != std::string::npos)
     {
-        ret += sizeof(cl_float);
+        ret = sizeof(cl_float);
     }
     if (arg_type.find("double") != std::string::npos)
     {
-        ret += sizeof(cl_double);
+        ret = sizeof(cl_double);
     }
     if (arg_type.back() == '2')
     {

@@ -490,6 +490,7 @@ cleanup_allocations:
   if (imageA)  free(imageA);
   if (imageB)  free(imageB);
   if (imageC)  free(imageC);
+  free_mtdata(d);
 
   return ((failed) ? -1 : 0);
 }
