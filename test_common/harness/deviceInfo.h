@@ -39,6 +39,10 @@ std::string get_device_extensions_string(cl_device_id device);
 /* Returns a string containing the supported IL version(s) for a device. */
 std::string get_device_il_version_string(cl_device_id device);
 
+/* Determines if a SPIR-V extension is supported by a device. */
+bool is_spirv_extension_available(cl_device_id device,
+                                  const char *spirvExtensionName);
+
 /* Returns a string containing the supported OpenCL version for a device. */
 std::string get_device_version_string(cl_device_id device);
 
