@@ -94,8 +94,10 @@ public:
             else
             {
                 // For now, just unconditionally align to the device maximum
-                data = static_cast<T*>(
-                    align_malloc(count * sizeof(T), deviceMaxAlignment));
+                const auto alignment =
+                    deviceMaxAlignment ? deviceMaxAlignment : 1;
+                data =
+                    static_cast<T*>(align_malloc(count * sizeof(T), alignment));
                 test_assert_error_ret(data != nullptr,
                                       "Failed to allocate memory",
                                       CL_OUT_OF_RESOURCES);
