@@ -435,8 +435,8 @@ REGISTER_TEST(negative_get_command_queue_info)
     if (device_supports_on_device_queue(device))
     {
         cl_uint queue_size = -1;
-        err = clGetCommandQueueInfo(queue, CL_QUEUE_SIZE,
-                                    sizeof(queue_size), &queue_size, nullptr);
+        err = clGetCommandQueueInfo(queue, CL_QUEUE_SIZE, sizeof(queue_size),
+                                    &queue_size, nullptr);
         test_failure_error_ret(err, CL_INVALID_COMMAND_QUEUE,
                                "clGetCommandQueueInfo should return "
                                "CL_INVALID_COMMAND_QUEUE when: \"command_queue "
