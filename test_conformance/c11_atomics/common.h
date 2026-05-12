@@ -77,6 +77,9 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+extern bool gFloatAtomicsSupported;
+extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
+extern cl_device_fp_config gDoubleCaps;
 
 extern cl_device_fp_config gDoubleFPConfig;
 extern cl_device_fp_config gFloatFPConfig;
@@ -102,6 +105,11 @@ union FloatIntUnion {
     uint32_t i;
 };
 
+union DoubleIntUnion {
+    double d;
+    uint64_t i;
+};
+
 template <typename HostDataType> bool is_qnan(const HostDataType &value)
 {
     if constexpr (std::is_same_v<HostDataType, float>)
@@ -110,6 +118,13 @@ template <typename HostDataType> bool is_qnan(const HostDataType &value)
         u.f = value;
         if ((u.i & 0x7F800000) != 0x7F800000) return false;
         return (u.i & 0x00400000) != 0;
+    }
+    else if constexpr (std::is_same_v<HostDataType, double>)
+    {
+        DoubleIntUnion u;
+        u.d = value;
+        if ((u.i & 0x7FF0000000000000) != 0x7FF0000000000000) return false;
+        return (u.i & 0x0008000000000000) != 0;
     }
     else
         return std::isnan(value);
@@ -123,6 +138,13 @@ template <typename HostDataType> bool is_snan(const HostDataType &value)
         u.f = value;
         if ((u.i & 0x7F800000) != 0x7F800000) return false;
         return (u.i & 0x00400000) == 0;
+    }
+    else if constexpr (std::is_same_v<HostDataType, double>)
+    {
+        DoubleIntUnion u;
+        u.d = value;
+        if ((u.i & 0x7FF0000000000000) != 0x7FF0000000000000) return false;
+        return (u.i & 0x0008000000000000) == 0;
     }
     else
         return std::isnan(value);
@@ -215,7 +237,6 @@ public:
     {
         return false;
     }
-
     virtual bool
     IsTestNotAsExpected(const HostDataType &expected,
                         const std::vector<HostAtomicType> &testValues,
