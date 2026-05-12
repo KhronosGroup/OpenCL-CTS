@@ -345,8 +345,7 @@ std::vector<printDataGenParameters> printSizeT64GenParameters = {
     { { "%-+16.15zu" }, "10000000000L" },
 };
 
-// The table below is used to accommodate differences in `printf` output when
-// using the `%ld` format specifier in 32-bit versus 64-bit compiled binaries
+// clang-format off
 
 std::vector<std::string> correctBufferSizeT64 = {
     "10000000000",
@@ -373,7 +372,7 @@ testCase testCaseSizeT64 = {
     NULL
 };
 
-
+// clang-format on
 
 //==================================
 // ptrdiff_t
@@ -512,8 +511,7 @@ std::vector<printDataGenParameters> printPtrDiffT64GenParameters = {
     { { "%-+16.15tu" }, "10000000000L" },
 };
 
-// The table below is used to accommodate differences in `printf` output when
-// using the `%ld` format specifier in 32-bit versus 64-bit compiled binaries
+// clang-format off
 
 std::vector<std::string> correctBufferPtrDiffT64 = {
     "10000000000",
@@ -540,7 +538,7 @@ testCase testCasePtrDiffT64 = {
     NULL
 };
 
-
+// clang-format on
 
 //==============================================
 

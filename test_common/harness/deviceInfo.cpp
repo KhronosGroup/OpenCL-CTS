@@ -104,7 +104,7 @@ std::string get_device_extensions_string(cl_device_id device)
 }
 
 /* Determines if an IL is supported by a device. */
-bool is_il_available(cl_device_id device, const char* ilNameVersion)
+bool is_il_available(cl_device_id device, const char *ilNameVersion)
 {
     std::string ilString = get_device_il_version_string(device);
     std::istringstream ss(ilString);
