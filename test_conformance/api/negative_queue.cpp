@@ -438,10 +438,10 @@ REGISTER_TEST(negative_get_command_queue_info)
         err = clGetCommandQueueInfo(queue, CL_QUEUE_SIZE,
                                     sizeof(queue_size), &queue_size, nullptr);
         test_failure_error_ret(err, CL_INVALID_COMMAND_QUEUE,
-                                "clGetCommandQueueInfo should return "
-                                "CL_INVALID_COMMAND_QUEUE when: \"command_queue "
-                                "is not a valid command-queue for param_name\"",
-                                TEST_FAIL);
+                               "clGetCommandQueueInfo should return "
+                               "CL_INVALID_COMMAND_QUEUE when: \"command_queue "
+                               "is not a valid command-queue for param_name\"",
+                               TEST_FAIL);
     }
 
     constexpr cl_command_queue_info invalid_param = -1;
