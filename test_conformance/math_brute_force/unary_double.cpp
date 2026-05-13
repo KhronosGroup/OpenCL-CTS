@@ -398,6 +398,8 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         }
     }
 
+    test_info.isRangeLimited = 0;
+
     // Init the kernels
     BuildKernelInfo build_info{ test_info.threadCount, test_info.k,
                                 test_info.programs, f->nameInCode,
