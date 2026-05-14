@@ -573,13 +573,8 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_OPS
                 expected_result = 0;
                 for (wi_id = 0; wi_id < current_sbs; ++wi_id)
                 { // for subgroup element
-                    bs128 bs;
-                    // convert cl_uint4 input into std::bitset<128>
-                    bs |= bs128(mx[wg_offset + wi_id].s0)
-                        | (bs128(mx[wg_offset + wi_id].s1) << 32)
-                        | (bs128(mx[wg_offset + wi_id].s2) << 64)
-                        | (bs128(mx[wg_offset + wi_id].s3) << 96);
-                    bs &= getImportantBits(wi_id, sbs);
+                    bs128 bs = cl_uint4_to_bs128(mx[wg_offset + wi_id])
+                        & getImportantBits(wi_id, sbs);
                     device_result = my[wg_offset + wi_id].s0;
                     if (operation == BallotOp::ballot_inclusive_scan
                         || operation == BallotOp::ballot_exclusive_scan
