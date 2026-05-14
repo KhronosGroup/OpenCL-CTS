@@ -56,11 +56,8 @@ struct ThreadInfo
     clCommandQueueWrapper tQueue;
 };
 
-struct TestInfo
+struct TestInfo : public TestInfoBase
 {
-    size_t subBufferSize; // Size of the sub-buffer in elements
-    const Func *f; // A pointer to the function info
-
     // Programs for various vector sizes.
     Programs programs;
 
@@ -70,19 +67,6 @@ struct TestInfo
 
     // Array of thread specific information
     std::vector<ThreadInfo> tinfo;
-
-    cl_uint threadCount; // Number of worker threads
-    cl_uint jobCount; // Number of jobs
-    cl_uint step; // step between each chunk and the next.
-    cl_uint scale; // stride between individual test values
-    float ulps; // max_allowed ulps
-    int ftz; // non-zero if running in flush to zero mode
-
-    int isFDim;
-    int skipNanInf;
-    int isNextafter;
-    bool relaxedMode; // True if test is running in relaxed mode, false
-                      // otherwise.
 };
 
 // A table of more difficult cases to get right

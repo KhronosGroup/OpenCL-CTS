@@ -67,8 +67,8 @@ static int gStopOnError = 0;
 static bool gSkipRestOfTests;
 int gForceFTZ = 0;
 int gHostFill = 0;
-static int gHasDouble = 0;
-static int gTestFloat = 1;
+int gHasDouble = 0;
+int gTestFloat = 1;
 // This flag should be 'ON' by default and it can be changed through the command
 // line arguments.
 static int gTestFastRelaxed = 1;
@@ -83,6 +83,7 @@ static int gTestFastRelaxed = 1;
 int gFastRelaxedDerived = 1;
 int gHasHalf = 0;
 cl_device_fp_config gHalfCapabilities = 0;
+cl_device_fp_config gDoubleCapabilities = 0;
 int gDeviceILogb0 = 1;
 int gDeviceILogbNaN = 1;
 int gCheckTininessBeforeRounding = 1;
@@ -342,6 +343,7 @@ DO_TEST(sqrt_cr)
 DO_TEST(tan)
 DO_TEST(tanh)
 DO_TEST(tanpi)
+DO_TEST(tgamma)
 DO_TEST(trunc)
 DO_TEST(half_cos)
 DO_TEST(half_divide)
@@ -359,6 +361,7 @@ DO_TEST(half_sqrt)
 DO_TEST(half_tan)
 DO_TEST(add)
 DO_TEST(subtract)
+DO_TEST(negation)
 DO_TEST(reciprocal)
 DO_TEST(divide)
 DO_TEST(divide_cr)
@@ -686,10 +689,9 @@ test_status InitCL(cl_device_id device)
     {
         gHasDouble ^= 1;
 #if defined(CL_DEVICE_DOUBLE_FP_CONFIG)
-        cl_device_fp_config doubleCapabilities = 0;
         if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_DOUBLE_FP_CONFIG,
-                                     sizeof(doubleCapabilities),
-                                     &doubleCapabilities, NULL)))
+                                     sizeof(gDoubleCapabilities),
+                                     &gDoubleCapabilities, NULL)))
         {
             vlog_error("ERROR: Unable to get device "
                        "CL_DEVICE_DOUBLE_FP_CONFIG. (%d)\n",
@@ -698,19 +700,19 @@ test_status InitCL(cl_device_id device)
         }
 
         if (DOUBLE_REQUIRED_FEATURES
-            != (doubleCapabilities & DOUBLE_REQUIRED_FEATURES))
+            != (gDoubleCapabilities & DOUBLE_REQUIRED_FEATURES))
         {
             std::string list;
-            if (0 == (doubleCapabilities & CL_FP_FMA)) list += "CL_FP_FMA, ";
-            if (0 == (doubleCapabilities & CL_FP_ROUND_TO_NEAREST))
+            if (0 == (gDoubleCapabilities & CL_FP_FMA)) list += "CL_FP_FMA, ";
+            if (0 == (gDoubleCapabilities & CL_FP_ROUND_TO_NEAREST))
                 list += "CL_FP_ROUND_TO_NEAREST, ";
-            if (0 == (doubleCapabilities & CL_FP_ROUND_TO_ZERO))
+            if (0 == (gDoubleCapabilities & CL_FP_ROUND_TO_ZERO))
                 list += "CL_FP_ROUND_TO_ZERO, ";
-            if (0 == (doubleCapabilities & CL_FP_ROUND_TO_INF))
+            if (0 == (gDoubleCapabilities & CL_FP_ROUND_TO_INF))
                 list += "CL_FP_ROUND_TO_INF, ";
-            if (0 == (doubleCapabilities & CL_FP_INF_NAN))
+            if (0 == (gDoubleCapabilities & CL_FP_INF_NAN))
                 list += "CL_FP_INF_NAN, ";
-            if (0 == (doubleCapabilities & CL_FP_DENORM))
+            if (0 == (gDoubleCapabilities & CL_FP_DENORM))
                 list += "CL_FP_DENORM, ";
             vlog_error("ERROR: required double features are missing: %s\n",
                        list.c_str());
