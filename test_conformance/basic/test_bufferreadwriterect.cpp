@@ -16,6 +16,7 @@
 #include "harness/compat.h"
 #include "errorHelpers.h"
 
+#include <array>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
