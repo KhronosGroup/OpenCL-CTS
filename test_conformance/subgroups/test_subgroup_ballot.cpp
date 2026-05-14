@@ -425,6 +425,8 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
     }
 };
 
+// Used for static_asserts below
+template <auto...> inline constexpr bool always_false_v = false;
 
 // Test for bit count/inclusive and exclusive scan/ find lsb msb ballot function
 template <typename Ty, BallotOp operation> struct BALLOT_BIT_OPS
@@ -470,18 +472,18 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_OPS
                 {
                     current_sbs = wg_offset + sbs > lws ? lws - wg_offset : sbs;
                 }
-                if (operation == BallotOp::ballot_bit_count
-                    || operation == BallotOp::ballot_inclusive_scan
-                    || operation == BallotOp::ballot_exclusive_scan)
+                if constexpr (operation == BallotOp::ballot_bit_count
+                              || operation == BallotOp::ballot_inclusive_scan
+                              || operation == BallotOp::ballot_exclusive_scan)
                 {
                     set_randomdata_for_subgroup<Ty>(t, wg_offset, current_sbs);
                 }
-                else if (operation == BallotOp::ballot_find_lsb
-                         || operation == BallotOp::ballot_find_msb)
+                else if constexpr (operation == BallotOp::ballot_find_lsb
+                                   || operation == BallotOp::ballot_find_msb)
                 {
-                    // Regarding to the spec, find lsb and find msb result is
-                    // undefined behavior if input value is zero, so generate
-                    // only non-zero values.
+                    // Regarding to the spec, find lsb and find msb result
+                    // is undefined behavior if input value is zero, so
+                    // generate only non-zero values.
                     for (wi_id = 0; wi_id < current_sbs; ++wi_id)
                     {
                         char x = (genrand_int32(gMTdata)) & 0xff;
@@ -492,7 +494,8 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_OPS
                 }
                 else
                 {
-                    log_error("Unknown operation...\n");
+                    static_assert(always_false_v<operation>,
+                                  "Unknown BallotOp in BALLOT_BIT_OPS::gen");
                 }
             }
 
@@ -511,18 +514,24 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_OPS
                                   cl_uint sub_group_size)
     {
         bs128 mask;
-        if (operation == BallotOp::ballot_bit_count
-            || operation == BallotOp::ballot_find_lsb
-            || operation == BallotOp::ballot_find_msb)
+        if constexpr (operation == BallotOp::ballot_bit_count
+                      || operation == BallotOp::ballot_find_lsb
+                      || operation == BallotOp::ballot_find_msb)
         {
             for (cl_uint i = 0; i < sub_group_size; ++i) mask.set(i);
         }
-        else if (operation == BallotOp::ballot_inclusive_scan
-                 || operation == BallotOp::ballot_exclusive_scan)
+        else if constexpr (operation == BallotOp::ballot_inclusive_scan
+                           || operation == BallotOp::ballot_exclusive_scan)
         {
             for (cl_uint i = 0; i < sub_group_local_id; ++i) mask.set(i);
             if (operation == BallotOp::ballot_inclusive_scan)
                 mask.set(sub_group_local_id);
+        }
+        else
+        {
+            static_assert(
+                always_false_v<operation>,
+                "Unknown BallotOp in BALLOT_BIT_OPS::getImportantBits");
         }
         return mask;
     }
@@ -576,9 +585,10 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_OPS
                     bs128 bs = cl_uint4_to_bs128(mx[wg_offset + wi_id])
                         & getImportantBits(wi_id, sbs);
                     device_result = my[wg_offset + wi_id].s0;
-                    if (operation == BallotOp::ballot_inclusive_scan
-                        || operation == BallotOp::ballot_exclusive_scan
-                        || operation == BallotOp::ballot_bit_count)
+                    if constexpr (operation == BallotOp::ballot_inclusive_scan
+                                  || operation
+                                      == BallotOp::ballot_exclusive_scan
+                                  || operation == BallotOp::ballot_bit_count)
                     {
                         expected_result = bs.count();
                         if (!compare(device_result, expected_result))
@@ -592,7 +602,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_OPS
                             return TEST_FAIL;
                         }
                     }
-                    else if (operation == BallotOp::ballot_find_lsb)
+                    else if constexpr (operation == BallotOp::ballot_find_lsb)
                     {
                         if (bs.none())
                         {
@@ -619,7 +629,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_OPS
                             return TEST_FAIL;
                         }
                     }
-                    else if (operation == BallotOp::ballot_find_msb)
+                    else if constexpr (operation == BallotOp::ballot_find_msb)
                     {
                         if (bs.none())
                         {
@@ -645,6 +655,12 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_OPS
                                       expected_result);
                             return TEST_FAIL;
                         }
+                    }
+                    else
+                    {
+                        static_assert(
+                            always_false_v<operation>,
+                            "Unknown BallotOp in BALLOT_BIT_OPS::chk");
                     }
                 }
             }
