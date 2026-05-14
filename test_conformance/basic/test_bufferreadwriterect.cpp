@@ -52,7 +52,7 @@ size_t height [TotalImages];
 size_t depth  [TotalImages];
 
 // cl buffer and host buffer.
-clMemWrapper buffer[TotalImages];
+clMemWrapper* buffer = nullptr;
 std::vector<BufferType> verify[TotalImages];
 
 // Temporary buffer used for read and write operations.
@@ -463,6 +463,9 @@ int test_bufferreadwriterect_impl(cl_device_id device, cl_context context,
     gQueue = queue;
     cl_int err;
 
+    std::array<clMemWrapper, TotalImages> local_buffer;
+    buffer = local_buffer.data();
+
     // Initialize the random number generator.
     mt = init_genrand( gRandomSeed );
 
@@ -664,6 +667,8 @@ int test_bufferreadwriterect_impl(cl_device_id device, cl_context context,
     if (!err) {
         log_info("RECT read, write test passed\n");
     }
+
+    buffer = nullptr;
 
     return err;
 }
