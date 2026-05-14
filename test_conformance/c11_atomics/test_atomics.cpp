@@ -1443,20 +1443,20 @@ public:
         // logic. It is set to the number of special values, which allows
         // threads to be mapped deterministically onto the input data array.
         // This enables repeated add operations arranged so that every
-        // special value is added to every other one (“all-to-all”).
+        // special value is added to every other one ("all-to-all").
         if constexpr (
             std::is_same_v<
                 HostDataType,
                 HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             StartValue(spec_vals.size());
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
         }
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             StartValue(cl_half_from_float(spec_vals.size(), gHalfRoundingMode));
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
@@ -1559,7 +1559,7 @@ public:
             if (threadCount > ref_vals.size())
             {
                 ref_vals.assign(threadCount, 0);
-                auto spec_vals = GetSpecialValues();
+                const auto &spec_vals = GetSpecialValues();
 
                 cl_uint total_cnt = 0;
                 while (total_cnt < threadCount)
@@ -1593,7 +1593,7 @@ public:
             // The start_value variable (set by StartValue) is used
             // as a divisor of the thread index when selecting the operand for
             // atomic_fetch_add. This groups threads into blocks corresponding
-            // to the number of special values and implements an “all-to-all”
+            // to the number of special values and implements an "all-to-all"
             // addition pattern. As a result, each destination element is
             // updated using different combinations of input values, enabling
             // consistent comparison between host and device execution.
@@ -1619,7 +1619,7 @@ public:
                 HostDataType,
                 HOST_HALF> || std::is_same_v<HostDataType, HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             host_atomic_store(&destMemory[tid], (HostDataType)oldValues[tid],
                               MEMORY_ORDER_SEQ_CST);
             host_atomic_fetch_add(
@@ -1637,13 +1637,13 @@ public:
                 HostDataType,
                 HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             expected = startRefValues[whichDestValue]
                 + startRefValues[whichDestValue / spec_vals.size()];
         }
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             expected = cl_half_from_float(
                 cl_half_to_float(startRefValues[whichDestValue])
                     + cl_half_to_float(
@@ -3280,14 +3280,14 @@ public:
         // logic. It is set to the number of special values, which allows
         // threads to be mapped deterministically onto the input data array.
         // This enables repeated min operations arranged so that every
-        // special value is compared to every other one (“all-to-all”).
+        // special value is compared to every other one ("all-to-all").
 
         if constexpr (
             std::is_same_v<
                 HostDataType,
                 HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             StartValue(spec_vals.size());
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
@@ -3362,7 +3362,7 @@ public:
             if (threadCount > ref_vals.size())
             {
                 ref_vals.assign(threadCount, 0);
-                auto spec_vals = GetSpecialValues();
+                const auto &spec_vals = GetSpecialValues();
 
                 cl_uint total_cnt = 0;
                 while (total_cnt < threadCount)
@@ -3387,8 +3387,8 @@ public:
     {
         // The start_value variable (set by StartValue) is used
         // as a divisor of the thread index when selecting the operand for
-        // atomic_fetch_add. This groups threads into blocks corresponding
-        // to the number of special values and implements an “all-to-all”
+        // atomic_fetch_min. This groups threads into blocks corresponding
+        // to the number of special values and implements an "all-to-all"
         // addition pattern. As a result, each destination element is
         // updated using different combinations of input values, enabling
         // consistent comparison between host and device execution.
@@ -3414,7 +3414,7 @@ public:
                 HostDataType,
                 HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             host_atomic_store(&destMemory[tid], (HostDataType)oldValues[tid],
                               MEMORY_ORDER_SEQ_CST);
             host_atomic_fetch_min(
@@ -3432,7 +3432,7 @@ public:
                 HostDataType,
                 HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             expected =
                 std::min(startRefValues[whichDestValue],
                          startRefValues[whichDestValue / spec_vals.size()]);
@@ -3446,7 +3446,12 @@ public:
     {
         if (testValues[whichDestValue] != expected)
         {
-            auto spec_vals = GetSpecialValues();
+            // Accept any NaN when any NaN is expected: IEEE 754 allows quieting
+            // sNaN to qNaN during min/max, so NaN payload type is not required.
+            if (std::isnan(testValues[whichDestValue]) && std::isnan(expected))
+                return false;
+
+            const auto &spec_vals = GetSpecialValues();
             // special cases
             // min(-0, +0) = min(+0, -0) = +0 or -0,
             if (((startRefValues[whichDestValue] == -0.f)
@@ -3458,20 +3463,20 @@ public:
             else if (is_qnan(startRefValues[whichDestValue / spec_vals.size()])
                      || is_qnan(startRefValues[whichDestValue]))
             {
-                // min(x, qNaN) = min(qNaN, x) = x,
                 // min(qNaN, qNaN) = qNaN,
                 if (is_qnan(startRefValues[whichDestValue / spec_vals.size()])
                     && is_qnan(startRefValues[whichDestValue]))
                     return !is_qnan(testValues[whichDestValue]);
+                // min(x, qNaN) = min(qNaN, x) = x,
                 else if (is_qnan(
                              startRefValues[whichDestValue / spec_vals.size()]))
-                    return !std::isnan(testValues[whichDestValue])
-                        && testValues[whichDestValue]
+                    return std::isnan(testValues[whichDestValue])
+                        || testValues[whichDestValue]
                         != startRefValues[whichDestValue]; // NaN != NaN always
                                                            // true
                 else
-                    return !std::isnan(testValues[whichDestValue])
-                        && testValues[whichDestValue]
+                    return std::isnan(testValues[whichDestValue])
+                        || testValues[whichDestValue]
                         != startRefValues[whichDestValue / spec_vals.size()];
             }
             else if (is_snan(startRefValues[whichDestValue / spec_vals.size()])
@@ -3894,12 +3899,12 @@ public:
         // StartValue is used as an index divisor in the following test
         // logic. It is set to the number of special values, which allows
         // threads to be mapped deterministically onto the input data array.
-        // This enables repeated add operations arranged so that every
-        // special value is added to every other one (“all-to-all”).
+        // This enables repeated max operations arranged so that every
+        // special value is added to every other one ("all-to-all").
 
         if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             StartValue(spec_vals.size());
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
@@ -3957,7 +3962,7 @@ public:
             if (threadCount > ref_vals.size())
             {
                 ref_vals.assign(threadCount, 0);
-                auto spec_vals = GetSpecialValues();
+                const auto &spec_vals = GetSpecialValues();
 
                 cl_uint total_cnt = 0;
                 while (total_cnt < threadCount)
@@ -3982,8 +3987,8 @@ public:
     {
         // The start_value variable (set by StartValue) is used
         // as a divisor of the thread index when selecting the operand for
-        // atomic_fetch_add. This groups threads into blocks corresponding
-        // to the number of special values and implements an “all-to-all”
+        // atomic_fetch_max. This groups threads into blocks corresponding
+        // to the number of special values and implements an "all-to-all"
         // addition pattern. As a result, each destination element is
         // updated using different combinations of input values, enabling
         // consistent comparison between host and device execution.
@@ -4004,7 +4009,7 @@ public:
                       volatile HostAtomicType *destMemory,
                       HostDataType *oldValues) override
     {
-        auto spec_vals = GetSpecialValues();
+        const auto &spec_vals = GetSpecialValues();
         host_atomic_store(&destMemory[tid], (HostDataType)oldValues[tid],
                           MEMORY_ORDER_SEQ_CST);
         host_atomic_fetch_max(&destMemory[tid],
@@ -4018,7 +4023,7 @@ public:
         expected = StartValue();
         if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             expected =
                 std::max(startRefValues[whichDestValue],
                          startRefValues[whichDestValue / spec_vals.size()]);
@@ -4032,7 +4037,12 @@ public:
     {
         if (testValues[whichDestValue] != expected)
         {
-            auto spec_vals = GetSpecialValues();
+            // Accept any NaN when any NaN is expected: IEEE 754 allows quieting
+            // sNaN to qNaN during min/max, so NaN payload type is not required.
+            if (std::isnan(testValues[whichDestValue]) && std::isnan(expected))
+                return false;
+
+            const auto &spec_vals = GetSpecialValues();
             // special cases
             // max(-0, +0) = max(+0, -0) = +0 or -0,
             if (((startRefValues[whichDestValue] == -0.f)
@@ -4044,20 +4054,20 @@ public:
             else if (is_qnan(startRefValues[whichDestValue / spec_vals.size()])
                      || is_qnan(startRefValues[whichDestValue]))
             {
-                // max(x, qNaN) = max(qNaN, x) = x,
                 // max(qNaN, qNaN) = qNaN,
                 if (is_qnan(startRefValues[whichDestValue / spec_vals.size()])
                     && is_qnan(startRefValues[whichDestValue]))
                     return !is_qnan(testValues[whichDestValue]);
+                // max(x, qNaN) = max(qNaN, x) = x,
                 else if (is_qnan(
                              startRefValues[whichDestValue / spec_vals.size()]))
-                    return !std::isnan(testValues[whichDestValue])
-                        && testValues[whichDestValue]
+                    return std::isnan(testValues[whichDestValue])
+                        || testValues[whichDestValue]
                         != startRefValues[whichDestValue]; // NaN != NaN always
                                                            // true
                 else
-                    return !std::isnan(testValues[whichDestValue])
-                        && testValues[whichDestValue]
+                    return std::isnan(testValues[whichDestValue])
+                        || testValues[whichDestValue]
                         != startRefValues[whichDestValue / spec_vals.size()];
             }
             else if (is_snan(startRefValues[whichDestValue / spec_vals.size()])
