@@ -427,7 +427,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_INVERSE
 
 
 // Test for bit count/inclusive and exclusive scan/ find lsb msb ballot function
-template <typename Ty, BallotOp operation> struct BALLOT_COUNT_SCAN_FIND
+template <typename Ty, BallotOp operation> struct BALLOT_BIT_OPS
 {
     static void log_test(const WorkGroupParams &test_params,
                          const char *extra_text)
@@ -785,7 +785,7 @@ __kernel void test_sub_group_broadcast_first(const __global Type *in, __global i
     }
 }
 )";
-std::string sub_group_ballot_bit_scan_find_source = R"(
+std::string sub_group_ballot_bit_ops_source = R"(
 __kernel void test_%s(const __global Type *in, __global int4 *xy, __global Type *out) {
     int gid = get_global_id(0);
     XY(xy,gid);
@@ -1053,38 +1053,35 @@ REGISTER_TEST(subgroup_functions_ballot)
     error |=
         rft_ballot.run_impl<cl_uint4, BALLOT<cl_uint4>>("sub_group_ballot");
 
-    // ballot arithmetic functions
-    WorkGroupParams test_params_arith(global_work_size, local_work_size);
-    test_params_arith.save_kernel_source(sub_group_ballot_bit_scan_find_source);
-    test_params_arith.save_kernel_source(sub_group_inverse_ballot_source,
-                                         "sub_group_inverse_ballot");
-    test_params_arith.save_kernel_source(sub_group_ballot_bit_extract_source,
-                                         "sub_group_ballot_bit_extract");
-    RunTestForType rft_arith(device, context, queue, num_elements,
-                             test_params_arith);
-    error |=
-        rft_arith.run_impl<cl_uint4,
-                           BALLOT_INVERSE<cl_uint4, BallotOp::inverse_ballot>>(
-            "sub_group_inverse_ballot");
-    error |= rft_arith.run_impl<
+    // ballot bit-op functions
+    WorkGroupParams test_params_bit_ops(global_work_size, local_work_size);
+    test_params_bit_ops.save_kernel_source(sub_group_ballot_bit_ops_source);
+    test_params_bit_ops.save_kernel_source(sub_group_inverse_ballot_source,
+                                           "sub_group_inverse_ballot");
+    test_params_bit_ops.save_kernel_source(sub_group_ballot_bit_extract_source,
+                                           "sub_group_ballot_bit_extract");
+    RunTestForType rft_bit_ops(device, context, queue, num_elements,
+                               test_params_bit_ops);
+    error |= rft_bit_ops.run_impl<
+        cl_uint4, BALLOT_INVERSE<cl_uint4, BallotOp::inverse_ballot>>(
+        "sub_group_inverse_ballot");
+    error |= rft_bit_ops.run_impl<
         cl_uint4, BALLOT_BIT_EXTRACT<cl_uint4, BallotOp::ballot_bit_extract>>(
         "sub_group_ballot_bit_extract");
-    error |= rft_arith.run_impl<
-        cl_uint4, BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_bit_count>>(
+    error |= rft_bit_ops.run_impl<
+        cl_uint4, BALLOT_BIT_OPS<cl_uint4, BallotOp::ballot_bit_count>>(
         "sub_group_ballot_bit_count");
-    error |= rft_arith.run_impl<
-        cl_uint4,
-        BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_inclusive_scan>>(
+    error |= rft_bit_ops.run_impl<
+        cl_uint4, BALLOT_BIT_OPS<cl_uint4, BallotOp::ballot_inclusive_scan>>(
         "sub_group_ballot_inclusive_scan");
-    error |= rft_arith.run_impl<
-        cl_uint4,
-        BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_exclusive_scan>>(
+    error |= rft_bit_ops.run_impl<
+        cl_uint4, BALLOT_BIT_OPS<cl_uint4, BallotOp::ballot_exclusive_scan>>(
         "sub_group_ballot_exclusive_scan");
-    error |= rft_arith.run_impl<
-        cl_uint4, BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_find_lsb>>(
+    error |= rft_bit_ops.run_impl<
+        cl_uint4, BALLOT_BIT_OPS<cl_uint4, BallotOp::ballot_find_lsb>>(
         "sub_group_ballot_find_lsb");
-    error |= rft_arith.run_impl<
-        cl_uint4, BALLOT_COUNT_SCAN_FIND<cl_uint4, BallotOp::ballot_find_msb>>(
+    error |= rft_bit_ops.run_impl<
+        cl_uint4, BALLOT_BIT_OPS<cl_uint4, BallotOp::ballot_find_msb>>(
         "sub_group_ballot_find_msb");
 
     return error;
