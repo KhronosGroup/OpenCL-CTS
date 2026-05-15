@@ -208,8 +208,8 @@ template <typename C> struct Reduce
         return 0;
     }
 
-    static void generate_reference_values(Type *inptr, size_t n_elems,
-                                          size_t max_wg_size, Type &max_err = 0)
+    static void generate_input_values(Type *inptr, size_t n_elems,
+                                      size_t max_wg_size, Type &max_err = 0)
     {
         MTdataHolder d(gRandomSeed);
         if constexpr (std::is_floating_point_v<
@@ -321,8 +321,8 @@ template <typename C> struct ScanInclusive
         return 0;
     }
 
-    static void generate_reference_values(Type *inptr, size_t n_elems,
-                                          size_t max_wg_size, Type &max_err = 0)
+    static void generate_input_values(Type *inptr, size_t n_elems,
+                                      size_t max_wg_size, Type &max_err = 0)
     {
         MTdataHolder d(gRandomSeed);
         for (size_t i = 0; i < n_elems; i++) inptr[i] = (Type)genrand_int64(d);
@@ -361,8 +361,8 @@ template <typename C> struct ScanExclusive
         return 0;
     }
 
-    static void generate_reference_values(Type *inptr, size_t n_elems,
-                                          size_t max_wg_size, Type &max_err = 0)
+    static void generate_input_values(Type *inptr, size_t n_elems,
+                                      size_t max_wg_size, Type &max_err = 0)
     {
         MTdataHolder d(gRandomSeed);
         for (size_t i = 0; i < n_elems; i++) inptr[i] = (Type)genrand_int64(d);
@@ -412,8 +412,8 @@ static int run_test(cl_device_id device, cl_context context,
     std::vector<T> input_ptr(n_elems);
 
     T max_err = 0;
-    TestInfo::generate_reference_values(input_ptr.data(), n_elems, wg_size[0],
-                                        max_err);
+    TestInfo::generate_input_values(input_ptr.data(), n_elems, wg_size[0],
+                                    max_err);
 
     err = clEnqueueWriteBuffer(queue, src, CL_TRUE, 0, sizeof(T) * n_elems,
                                input_ptr.data(), 0, NULL, NULL);
