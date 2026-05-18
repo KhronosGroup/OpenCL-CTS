@@ -3738,7 +3738,8 @@ static int test_atomic_fetch_min_generic(cl_device_id deviceID,
         CBasicTestFetchMinSpecialFloats<HOST_ATOMIC_HALF, HOST_HALF>
             test_spec_half(TYPE_ATOMIC_HALF, useSVM);
         EXECUTE_TEST(
-            error, test_spec_half.Execute(deviceID, context, queue, num_elements));
+            error,
+            test_spec_half.Execute(deviceID, context, queue, num_elements));
 
         CBasicTestFetchMinSpecialFloats<HOST_ATOMIC_DOUBLE, HOST_DOUBLE>
             test_spec_double(TYPE_ATOMIC_DOUBLE, useSVM);
