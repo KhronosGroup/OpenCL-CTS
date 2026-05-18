@@ -83,13 +83,6 @@ int main (int argc, const char **argv )
     if( (error = ParseArgs( argc, argv )) )
         goto exit;
 
-    if (gIsEmbedded) {
-        vlog( "\tProfile: Embedded\n" );
-    }else
-    {
-        vlog( "\tProfile: Full\n" );
-    }
-
     fflush( stdout );
     error = runTestHarnessWithCheck(
         argCount, argList, test_registry::getInstance().num_tests(),
@@ -114,6 +107,10 @@ exit:
 
 static int ParseArgs( int argc, const char **argv )
 {
+    if (gListTests)
+    {
+        return 0;
+    }
     int i;
     argList = (const char **)calloc(argc, sizeof(char *));
     if( NULL == argList )
@@ -181,9 +178,6 @@ static int ParseArgs( int argc, const char **argv )
 
                     case 'r': gHostReset = true; break;
 
-                    case 'w':  // Wimpy mode
-                        gWimpyMode = true;
-                        break;
                     case '[':
                         parseWimpyReductionFactor( arg, gWimpyReductionFactor);
                         break;
@@ -202,12 +196,6 @@ static int ParseArgs( int argc, const char **argv )
         }
     }
 
-    if (getenv("CL_WIMPY_MODE")) {
-      vlog( "\n" );
-      vlog( "*** Detected CL_WIMPY_MODE env                          ***\n" );
-      gWimpyMode = 1;
-    }
-
     PrintArch();
     if( gWimpyMode )
     {
@@ -217,6 +205,16 @@ static int ParseArgs( int argc, const char **argv )
         vlog( "*** It gives warm fuzzy feelings and then nevers calls. ***\n\n" );
         vlog( "*** Wimpy Reduction Factor: %-27u ***\n\n", gWimpyReductionFactor);
     }
+
+    if (gIsEmbedded)
+    {
+        vlog("\tProfile: Embedded\n");
+    }
+    else
+    {
+        vlog("\tProfile: Full\n");
+    }
+
     return 0;
 }
 
@@ -227,7 +225,6 @@ static void PrintUsage( void )
          "supported)\n");
     vlog("\t\t-t\tToggle reporting performance data.\n");
     vlog("\t\t-r\tReset buffers on host instead of on device.\n");
-    vlog("\t\t-w\tRun in wimpy mode\n");
     vlog("\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
          "1-12, default factor(%u)\n",
          gWimpyReductionFactor);

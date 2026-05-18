@@ -375,8 +375,8 @@ const Func functionList[] = {
       { NULL },
       3.0f,
       0.0f,
-      0.0f,
-      1.0f,
+      1.5f,
+      1.5f,
       4.0f,
       INFINITY,
       INFINITY,
@@ -405,7 +405,7 @@ const Func functionList[] = {
 
     ENTRY(tanh, 5.0f, 5.0f, 2.0f, 3.0f, FTZ_OFF, unaryF),
     ENTRY(tanpi, 6.0f, 6.0f, 2.0f, 3.0f, FTZ_OFF, unaryF),
-    //ENTRY(tgamma, 16.0f, 16.0f, FTZ_OFF, unaryF), Commented this out until we can be sure this requirement is realistic
+    ENTRY(tgamma, 16.0f, 16.0f, 4.f, 4.f, FTZ_OFF, unaryF),
     ENTRY(trunc, 0.0f, 0.0f, 0.0f, 0.0f, FTZ_OFF, unaryF),
 
     HALF_ENTRY(cos, 8192.0f, 8192.0f, FTZ_ON, unaryOF),
@@ -426,6 +426,7 @@ const Func functionList[] = {
     // basic operations
     OPERATOR_ENTRY(add, "+", 0.0f, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryOperatorF),
     OPERATOR_ENTRY(subtract, "-", 0.0f, 0.0f, 0.0f, 0.0f, FTZ_OFF, binaryOperatorF),
+    OPERATOR_ENTRY(negation, "-", 0.0f, 0.0f, 0.0f, 0.0f, FTZ_OFF, unaryOF),
     { "reciprocal",
       "reciprocal",
       { (void*)reference_reciprocal },

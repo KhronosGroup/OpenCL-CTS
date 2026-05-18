@@ -66,10 +66,9 @@ int gSkipCorrectnessTesting = 0;
 static int gStopOnError = 0;
 static bool gSkipRestOfTests;
 int gForceFTZ = 0;
-int gWimpyMode = 0;
 int gHostFill = 0;
-static int gHasDouble = 0;
-static int gTestFloat = 1;
+int gHasDouble = 0;
+int gTestFloat = 1;
 // This flag should be 'ON' by default and it can be changed through the command
 // line arguments.
 static int gTestFastRelaxed = 1;
@@ -82,9 +81,9 @@ static int gTestFastRelaxed = 1;
   OpenCL 2.0 spec then it has to be changed through a command line argument.
 */
 int gFastRelaxedDerived = 1;
-static int gToggleCorrectlyRoundedDivideSqrt = 0;
 int gHasHalf = 0;
 cl_device_fp_config gHalfCapabilities = 0;
+cl_device_fp_config gDoubleCapabilities = 0;
 int gDeviceILogb0 = 1;
 int gDeviceILogbNaN = 1;
 int gCheckTininessBeforeRounding = 1;
@@ -344,6 +343,7 @@ DO_TEST(sqrt_cr)
 DO_TEST(tan)
 DO_TEST(tanh)
 DO_TEST(tanpi)
+DO_TEST(tgamma)
 DO_TEST(trunc)
 DO_TEST(half_cos)
 DO_TEST(half_divide)
@@ -361,6 +361,7 @@ DO_TEST(half_sqrt)
 DO_TEST(half_tan)
 DO_TEST(add)
 DO_TEST(subtract)
+DO_TEST(negation)
 DO_TEST(reciprocal)
 DO_TEST(divide)
 DO_TEST(divide_cr)
@@ -385,21 +386,24 @@ int main(int argc, const char *argv[])
     error = ParseArgs(argc, argv);
     if (error) return error;
 
-    // This takes a while, so prevent the machine from going to sleep.
-    PreventSleep();
-    atexit(ResumeSleep);
+    if (!gListTests)
+    {
+        // This takes a while, so prevent the machine from going to sleep.
+        PreventSleep();
+        atexit(ResumeSleep);
 
-    if (gSkipCorrectnessTesting)
-        vlog("*** Skipping correctness testing! ***\n\n");
-    else if (gStopOnError)
-        vlog("Stopping at first error.\n");
+        if (gSkipCorrectnessTesting)
+            vlog("*** Skipping correctness testing! ***\n\n");
+        else if (gStopOnError)
+            vlog("Stopping at first error.\n");
 
-    vlog("   \t                                        ");
-    if (gWimpyMode) vlog("   ");
-    if (!gSkipCorrectnessTesting) vlog("\t  max_ulps");
+        vlog("   \t                                        ");
+        if (gWimpyMode) vlog("   ");
+        if (!gSkipCorrectnessTesting) vlog("\t  max_ulps");
 
-    vlog("\n-------------------------------------------------------------------"
-         "----------------------------------------\n");
+        vlog("\n---------------------------------------------------------------"
+             "--------------------------------------------\n");
+    }
 
     gMTdata = MTdataHolder(gRandomSeed);
 
@@ -426,6 +430,10 @@ int main(int argc, const char *argv[])
 
 static int ParseArgs(int argc, const char **argv)
 {
+    if (gListTests)
+    {
+        return 0;
+    }
     // We only pass test names to runTestHarnessWithCheck, hence global command
     // line options defined by the harness cannot be used by the user.
     // To respect the implementation details of runTestHarnessWithCheck,
@@ -469,8 +477,6 @@ static int ParseArgs(int argc, const char **argv)
                 optionFound = 1;
                 switch (*arg)
                 {
-                    case 'c': gToggleCorrectlyRoundedDivideSqrt ^= 1; break;
-
                     case 'd': gHasDouble ^= 1; break;
 
                     case 'e': gFastRelaxedDerived ^= 1; break;
@@ -497,10 +503,6 @@ static int ParseArgs(int argc, const char **argv)
                     case 's': gStopOnError ^= 1; break;
 
                     case 'v': gVerboseBruteForce ^= 1; break;
-
-                    case 'w': // wimpy mode
-                        gWimpyMode ^= 1;
-                        break;
 
                     case '[':
                         parseWimpyReductionFactor(arg, gWimpyReductionFactor);
@@ -581,14 +583,6 @@ static int ParseArgs(int argc, const char **argv)
         }
     }
 
-    // Check for the wimpy mode environment variable
-    if (getenv("CL_WIMPY_MODE"))
-    {
-        vlog("\n");
-        vlog("*** Detected CL_WIMPY_MODE env                          ***\n");
-        gWimpyMode = 1;
-    }
-
     PrintArch();
 
     if (gWimpyMode)
@@ -629,8 +623,6 @@ static void PrintUsage(void)
 {
     vlog("%s [-cglsz]: <optional: math function names>\n", appName);
     vlog("\toptions:\n");
-    vlog("\t\t-c\tToggle test fp correctly rounded divide and sqrt (Default: "
-         "off)\n");
     vlog("\t\t-d\tToggle double precision testing. (Default: on iff khr_fp_64 "
          "on)\n");
     vlog("\t\t-f\tToggle float precision testing. (Default: on)\n");
@@ -645,7 +637,6 @@ static void PrintUsage(void)
          "accuracy checks.)\n");
     vlog("\t\t-m\tToggle run multi-threaded. (Default: on) )\n");
     vlog("\t\t-s\tStop on error\n");
-    vlog("\t\t-w\tToggle Wimpy Mode, * Not a valid test * \n");
     vlog("\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
          "1-10, default factor(%u)\n",
          gWimpyReductionFactor);
@@ -698,10 +689,9 @@ test_status InitCL(cl_device_id device)
     {
         gHasDouble ^= 1;
 #if defined(CL_DEVICE_DOUBLE_FP_CONFIG)
-        cl_device_fp_config doubleCapabilities = 0;
         if ((error = clGetDeviceInfo(gDevice, CL_DEVICE_DOUBLE_FP_CONFIG,
-                                     sizeof(doubleCapabilities),
-                                     &doubleCapabilities, NULL)))
+                                     sizeof(gDoubleCapabilities),
+                                     &gDoubleCapabilities, NULL)))
         {
             vlog_error("ERROR: Unable to get device "
                        "CL_DEVICE_DOUBLE_FP_CONFIG. (%d)\n",
@@ -710,19 +700,19 @@ test_status InitCL(cl_device_id device)
         }
 
         if (DOUBLE_REQUIRED_FEATURES
-            != (doubleCapabilities & DOUBLE_REQUIRED_FEATURES))
+            != (gDoubleCapabilities & DOUBLE_REQUIRED_FEATURES))
         {
             std::string list;
-            if (0 == (doubleCapabilities & CL_FP_FMA)) list += "CL_FP_FMA, ";
-            if (0 == (doubleCapabilities & CL_FP_ROUND_TO_NEAREST))
+            if (0 == (gDoubleCapabilities & CL_FP_FMA)) list += "CL_FP_FMA, ";
+            if (0 == (gDoubleCapabilities & CL_FP_ROUND_TO_NEAREST))
                 list += "CL_FP_ROUND_TO_NEAREST, ";
-            if (0 == (doubleCapabilities & CL_FP_ROUND_TO_ZERO))
+            if (0 == (gDoubleCapabilities & CL_FP_ROUND_TO_ZERO))
                 list += "CL_FP_ROUND_TO_ZERO, ";
-            if (0 == (doubleCapabilities & CL_FP_ROUND_TO_INF))
+            if (0 == (gDoubleCapabilities & CL_FP_ROUND_TO_INF))
                 list += "CL_FP_ROUND_TO_INF, ";
-            if (0 == (doubleCapabilities & CL_FP_INF_NAN))
+            if (0 == (gDoubleCapabilities & CL_FP_INF_NAN))
                 list += "CL_FP_INF_NAN, ";
-            if (0 == (doubleCapabilities & CL_FP_DENORM))
+            if (0 == (gDoubleCapabilities & CL_FP_DENORM))
                 list += "CL_FP_DENORM, ";
             vlog_error("ERROR: required double features are missing: %s\n",
                        list.c_str());
@@ -940,13 +930,6 @@ test_status InitCL(cl_device_id device)
     vlog("\tSubnormal values supported for floats? %s\n",
          no_yes[0 != (CL_FP_DENORM & gFloatCapabilities)]);
     vlog("\tCorrectly rounded divide and sqrt supported for floats? %s\n",
-         no_yes[0
-                != (CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT & gFloatCapabilities)]);
-    if (gToggleCorrectlyRoundedDivideSqrt)
-    {
-        gFloatCapabilities ^= CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT;
-    }
-    vlog("\tTesting with correctly rounded float divide and sqrt? %s\n",
          no_yes[0
                 != (CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT & gFloatCapabilities)]);
     vlog("\tTesting with FTZ mode ON for floats? %s\n",
@@ -1330,8 +1313,7 @@ float Bruteforce_Ulp_Error_Double(double test, long double reference)
 
     // reference is a normal power of two or a zero
     // The unbiased exponent of the ulp unit place
-    int ulp_exp =
-        DBL_MANT_DIG - 1 - std::max(ilogbl(reference) - 1, DBL_MIN_EXP - 1);
+    int ulp_exp = DBL_MANT_DIG - std::max(ilogbl(reference), DBL_MIN_EXP);
 
     // allow correctly rounded results to pass through unmolested. (We might add
     // error to it below.) There is something of a performance optimization here

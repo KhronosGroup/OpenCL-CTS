@@ -17,6 +17,7 @@
 #include <string.h>
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
+#include "harness/parseParameters.h"
 
 #include <vector>
 
@@ -25,7 +26,6 @@
 
 
 #ifdef CL_VERSION_2_0
-extern int gWimpyMode;
 
 // clang-format off
 static const char* enqueue_simple_block[] = { R"(
@@ -340,7 +340,7 @@ static const char* enqueue_block_capture_event_profiling_info_before_execution[]
 
         set_user_event_status(user_evt, CL_COMPLETE);
 
-        void (^checkBlock) (void)  = ^{ check_res(tid, &value, res);      };
+        void (^checkBlock) (void)  = ^{ check_res(tid, value, res);      };
 
         enq_res = enqueue_kernel(def_q, CLK_ENQUEUE_FLAGS_NO_WAIT, ndrange, 1, &block_evt1, &block_evt2, checkBlock);
         if (enq_res != CLK_SUCCESS) { res[tid] = -3; return; }

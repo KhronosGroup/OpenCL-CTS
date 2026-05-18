@@ -55,11 +55,8 @@ struct ThreadInfo
     clCommandQueueWrapper tQueue;
 };
 
-struct TestInfo
+struct TestInfo : public TestInfoBase
 {
-    size_t subBufferSize; // Size of the sub-buffer in elements
-    const Func *f; // A pointer to the function info
-
     // Programs for various vector sizes.
     Programs programs;
 
@@ -69,15 +66,6 @@ struct TestInfo
 
     // Array of thread specific information
     std::vector<ThreadInfo> tinfo;
-
-    cl_uint threadCount; // Number of worker threads
-    cl_uint jobCount; // Number of jobs
-    cl_uint step; // step between each chunk and the next.
-    cl_uint scale; // stride between individual test values
-    float ulps; // max_allowed ulps
-    int ftz; // non-zero if running in flush to zero mode
-    bool relaxedMode; // True if test is running in relaxed mode, false
-                      // otherwise.
 
     // no special values
 };
@@ -248,7 +236,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     }
 
     // Init input array
-    cl_ulong *p = (cl_ulong *)gIn + thread_id * buffer_elements;
+    cl_double *p = (cl_double *)gIn + thread_id * buffer_elements;
     cl_int *p2 = (cl_int *)gIn2 + thread_id * buffer_elements;
     size_t idx = 0;
     int totalSpecialValueCount = specialValuesCount * specialValuesIntCount;
@@ -257,7 +245,6 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     // Test edge cases
     if (job_id <= (cl_uint)lastSpecialJobIndex)
     {
-        cl_double *fp = (cl_double *)p;
         cl_int *ip2 = (cl_int *)p2;
         uint32_t x, y;
 
@@ -266,7 +253,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
         for (; idx < buffer_elements; idx++)
         {
-            fp[idx] = specialValues[x];
+            p[idx] = specialValues[x];
             ip2[idx] = specialValuesInt[y];
             if (++x >= specialValuesCount)
             {

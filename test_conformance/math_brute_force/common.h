@@ -84,6 +84,9 @@ struct BuildKernelInfo
 
     // Whether to build with -cl-fast-relaxed-math.
     bool relaxedMode;
+
+    // Whether to build with -cl-fp32-correctly-rounded-divide-sqrt.
+    bool correctlyRounded;
 };
 
 // Data common to all math tests.

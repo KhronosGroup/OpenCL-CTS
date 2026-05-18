@@ -878,18 +878,16 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         numTries, numClamped,
                                                         true, lod);
                                                 log_error("Step by step:\n");
-                                                FloatPixel temp =
-                                                    sample_image_pixel_float_offset(
-                                                        imagePtr, imageInfo,
-                                                        xOffsetValues[j],
-                                                        yOffsetValues[j],
-                                                        zOffsetValues[j],
-                                                        norm_offset_x,
-                                                        norm_offset_y,
-                                                        norm_offset_z,
-                                                        imageSampler, tempOut,
-                                                        1 /*verbose*/,
-                                                        &hasDenormals, lod);
+                                                sample_image_pixel_float_offset(
+                                                    imagePtr, imageInfo,
+                                                    xOffsetValues[j],
+                                                    yOffsetValues[j],
+                                                    zOffsetValues[j],
+                                                    norm_offset_x,
+                                                    norm_offset_y,
+                                                    norm_offset_z, imageSampler,
+                                                    tempOut, 1 /*verbose*/,
+                                                    &hasDenormals, lod);
                                                 log_error(
                                                     "\tulps: %2.2f  (max "
                                                     "allowed: %2.2f)\n\n",
@@ -931,9 +929,6 @@ int test_read_image(cl_context context, cl_command_queue queue,
                 // Validate float results
                 float *resultPtr = (float *)(char *)resultValues;
                 float expected[4], error = 0.0f;
-                float maxErr = get_max_relative_error(
-                    imageInfo->format, imageSampler, image_type_3D,
-                    CL_FILTER_LINEAR == imageSampler->filter_mode);
 
                 for (size_t z = 0, j = 0; z < depth_lod; z++)
                 {
@@ -1242,26 +1237,25 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         j, numTries, numClamped,
                                                         true, lod);
                                                 log_error("Step by step:\n");
-                                                FloatPixel temp =
-                                                    sample_image_pixel_float_offset(
-                                                        imagePtr, imageInfo,
-                                                        xOffsetValues[j],
-                                                        (num_dimensions > 1)
-                                                            ? yOffsetValues[j]
-                                                            : 0.0f,
-                                                        image_type_3D
-                                                            ? zOffsetValues[j]
-                                                            : 0.0f,
-                                                        norm_offset_x,
-                                                        (num_dimensions > 1)
-                                                            ? norm_offset_y
-                                                            : 0.0f,
-                                                        image_type_3D
-                                                            ? norm_offset_z
-                                                            : 0.0f,
-                                                        imageSampler, tempOut,
-                                                        1 /*verbose*/,
-                                                        &hasDenormals, lod);
+                                                sample_image_pixel_float_offset(
+                                                    imagePtr, imageInfo,
+                                                    xOffsetValues[j],
+                                                    (num_dimensions > 1)
+                                                        ? yOffsetValues[j]
+                                                        : 0.0f,
+                                                    image_type_3D
+                                                        ? zOffsetValues[j]
+                                                        : 0.0f,
+                                                    norm_offset_x,
+                                                    (num_dimensions > 1)
+                                                        ? norm_offset_y
+                                                        : 0.0f,
+                                                    image_type_3D
+                                                        ? norm_offset_z
+                                                        : 0.0f,
+                                                    imageSampler, tempOut,
+                                                    1 /*verbose*/,
+                                                    &hasDenormals, lod);
                                                 log_error(
                                                     "\tulps: %2.2f, %2.2f, "
                                                     "%2.2f, %2.2f  (max "
@@ -1632,26 +1626,25 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         j, numTries, numClamped,
                                                         true, lod);
                                                 log_error("Step by step:\n");
-                                                FloatPixel temp =
-                                                    sample_image_pixel_float_offset(
-                                                        imagePtr, imageInfo,
-                                                        xOffsetValues[j],
-                                                        (num_dimensions > 1)
-                                                            ? yOffsetValues[j]
-                                                            : 0.0f,
-                                                        image_type_3D
-                                                            ? zOffsetValues[j]
-                                                            : 0.0f,
-                                                        norm_offset_x,
-                                                        (num_dimensions > 1)
-                                                            ? norm_offset_y
-                                                            : 0.0f,
-                                                        image_type_3D
-                                                            ? norm_offset_z
-                                                            : 0.0f,
-                                                        imageSampler, tempOut,
-                                                        1 /*verbose*/,
-                                                        &hasDenormals, lod);
+                                                sample_image_pixel_float_offset(
+                                                    imagePtr, imageInfo,
+                                                    xOffsetValues[j],
+                                                    (num_dimensions > 1)
+                                                        ? yOffsetValues[j]
+                                                        : 0.0f,
+                                                    image_type_3D
+                                                        ? zOffsetValues[j]
+                                                        : 0.0f,
+                                                    norm_offset_x,
+                                                    (num_dimensions > 1)
+                                                        ? norm_offset_y
+                                                        : 0.0f,
+                                                    image_type_3D
+                                                        ? norm_offset_z
+                                                        : 0.0f,
+                                                    imageSampler, tempOut,
+                                                    1 /*verbose*/,
+                                                    &hasDenormals, lod);
                                                 log_error(
                                                     "\tulps: %2.2f, %2.2f, "
                                                     "%2.2f, %2.2f  (max "

@@ -54,11 +54,8 @@ struct ThreadInfo
     clCommandQueueWrapper tQueue;
 };
 
-struct TestInfo
+struct TestInfo : public TestInfoBase
 {
-    size_t subBufferSize; // Size of the sub-buffer in elements
-    const Func *f; // A pointer to the function info
-
     // Programs for various vector sizes.
     Programs programs;
 
@@ -68,19 +65,6 @@ struct TestInfo
 
     // Array of thread specific information
     std::vector<ThreadInfo> tinfo;
-
-    cl_uint threadCount; // Number of worker threads
-    cl_uint jobCount; // Number of jobs
-    cl_uint step; // step between each chunk and the next.
-    cl_uint scale; // stride between individual test values
-    float ulps; // max_allowed ulps
-    int ftz; // non-zero if running in flush to zero mode
-
-    int isRangeLimited; // 1 if the function is only to be evaluated over a
-                        // range
-    float half_sin_cos_tan_limit;
-    bool relaxedMode; // True if test is running in relaxed mode, false
-                      // otherwise.
 };
 
 cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
@@ -397,6 +381,8 @@ int TestFunc_Double_Double(const Func *f, MTdata d, bool relaxedMode)
             return error;
         }
     }
+
+    test_info.isRangeLimited = 0;
 
     // Init the kernels
     BuildKernelInfo build_info{ test_info.threadCount, test_info.k,

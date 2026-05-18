@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "testHarness.h"
+#include "stringHelpers.h"
 #include "compat.h"
 #include <algorithm>
 #include <stdio.h>
@@ -21,7 +22,9 @@
 #include <string.h>
 #include <cassert>
 #include <deque>
+#include <filesystem>
 #include <mutex>
+#include <set>
 #include <stdexcept>
 #include <thread>
 #include <vector>
@@ -31,6 +34,8 @@
 #include "typeWrappers.h"
 #include "imageHelpers.h"
 #include "parseParameters.h"
+
+namespace fs = std::filesystem;
 
 #if !defined(_WIN32)
 #include <sys/utsname.h>
@@ -59,6 +64,7 @@ int gInfNanSupport = 1;
 int gIsEmbedded = 0;
 int gHasLong = 1;
 bool gCoreILProgram = true;
+int gInvalidObject = InvalidObject::Nullptr;
 
 #define DEFAULT_NUM_ELEMENTS 0x4000
 
@@ -93,11 +99,25 @@ static int saveResultsToJson(const char *suiteName, test_definition testList[],
         return EXIT_SUCCESS;
     }
 
-    FILE *file = fopen(fileName, "w");
+    fs::path file_path(fileName);
+
+    // When running under Bazel test, prepend the Bazel output directory to
+    // the provided path
+    if (nullptr != getenv("BAZEL_TEST"))
+    {
+        char *bazel_output_dir = getenv("TEST_UNDECLARED_OUTPUTS_DIR");
+        if (nullptr != bazel_output_dir)
+        {
+            file_path = fs::path(bazel_output_dir) / file_path;
+        }
+    }
+
+    auto file_path_str = to_string(file_path.u8string());
+    FILE *file = fopen(file_path_str.c_str(), "w");
     if (NULL == file)
     {
         log_error("ERROR: Failed to open '%s' for writing results.\n",
-                  fileName);
+                  file_path_str.c_str());
         return EXIT_FAILURE;
     }
 
@@ -126,7 +146,8 @@ static int saveResultsToJson(const char *suiteName, test_definition testList[],
 
     int ret = fclose(file) ? EXIT_FAILURE : EXIT_SUCCESS;
 
-    log_info("Saving results to %s: %s!\n", fileName, save_map[ret]);
+    log_info("Saving results to %s: %s!\n", file_path_str.c_str(),
+             save_map[ret]);
 
     return ret;
 }
@@ -169,6 +190,19 @@ void version_expected_info(const char *test_name, const char *api_name,
              "reports %s version %s)\n",
              test_name, api_name, expected_version, api_name, device_version);
 }
+
+static void list_tests(int testNum, test_definition testList[])
+{
+    std::set<std::string> names;
+    for (int i = 0; i < testNum; i++)
+    {
+        names.insert(testList[i].name);
+    }
+    for (const auto &name : names)
+    {
+        log_info("\t%s\n", name.c_str());
+    }
+}
 int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
                             test_definition testList[],
                             int forceNoContextCreation,
@@ -197,8 +231,11 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     if (env_mode != NULL)
     {
         based_on_env_var = 1;
-        if (strcmp(env_mode, "gpu") == 0
-            || strcmp(env_mode, "CL_DEVICE_TYPE_GPU") == 0)
+        if (strcmp(env_mode, "all") == 0
+            || strcmp(env_mode, "CL_DEVICE_TYPE_ALL") == 0)
+            device_type = CL_DEVICE_TYPE_ALL;
+        else if (strcmp(env_mode, "gpu") == 0
+                 || strcmp(env_mode, "CL_DEVICE_TYPE_GPU") == 0)
             device_type = CL_DEVICE_TYPE_GPU;
         else if (strcmp(env_mode, "cpu") == 0
                  || strcmp(env_mode, "CL_DEVICE_TYPE_CPU") == 0)
@@ -255,10 +292,23 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
         return EXIT_FAILURE;
     }
 
-    /* Special case: just list the tests */
-    if ((argc > 1)
-        && (!strcmp(argv[1], "-list") || !strcmp(argv[1], "-h")
-            || !strcmp(argv[1], "--help")))
+    if (gListTests)
+    {
+        list_tests(testNum, testList);
+        return EXIT_SUCCESS;
+    }
+
+    gWimpyMode |= (getenv("CL_WIMPY_MODE") != nullptr);
+    if (gWimpyMode)
+    {
+        log_info("\n");
+        log_info("**************************\n");
+        log_info("*** Wimpy mode enabled ***\n");
+        log_info("**************************\n");
+        log_info("\n");
+    }
+
+    if ((argc > 1) && (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")))
     {
         char *fileName = getenv("CL_CONFORMANCE_RESULTS_FILENAME");
 
@@ -271,20 +321,19 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
                  "(default 0).\n");
         log_info("\tid<num>\t\tIndicates device at index <num> should be used "
                  "(default 0).\n");
-        log_info("\t<device_type>\tcpu|gpu|accelerator|<CL_DEVICE_TYPE_*> "
+        log_info("\t<device_type>\tall|cpu|gpu|accelerator|<CL_DEVICE_TYPE_*> "
                  "(default CL_DEVICE_TYPE_DEFAULT)\n");
         log_info("\n");
         log_info("\tNOTE: You may pass environment variable "
                  "CL_CONFORMANCE_RESULTS_FILENAME (currently '%s')\n",
                  fileName != NULL ? fileName : "<undefined>");
         log_info("\t      to save results to JSON file.\n");
+        log_info("\t      When running in Bazel test this is relative to "
+                 "$TEST_UNDECLARED_OUTPUTS_DIR.\n");
 
         log_info("\n");
         log_info("Test names:\n");
-        for (int i = 0; i < testNum; i++)
-        {
-            log_info("\t%s\n", testList[i].name);
-        }
+        list_tests(testNum, testList);
         return EXIT_SUCCESS;
     }
 
@@ -320,8 +369,14 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     /* Do we have a CPU/GPU specification? */
     if (argc > 1)
     {
-        if (strcmp(argv[argc - 1], "gpu") == 0
-            || strcmp(argv[argc - 1], "CL_DEVICE_TYPE_GPU") == 0)
+        if (strcmp(argv[argc - 1], "all") == 0
+            || strcmp(argv[argc - 1], "CL_DEVICE_TYPE_ALL") == 0)
+        {
+            device_type = CL_DEVICE_TYPE_ALL;
+            argc--;
+        }
+        else if (strcmp(argv[argc - 1], "gpu") == 0
+                 || strcmp(argv[argc - 1], "CL_DEVICE_TYPE_GPU") == 0)
         {
             device_type = CL_DEVICE_TYPE_GPU;
             argc--;
@@ -376,6 +431,7 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
 
     switch (device_type)
     {
+        case CL_DEVICE_TYPE_ALL: log_info("Requesting any device "); break;
         case CL_DEVICE_TYPE_GPU: log_info("Requesting GPU device "); break;
         case CL_DEVICE_TYPE_CPU: log_info("Requesting CPU device "); break;
         case CL_DEVICE_TYPE_ACCELERATOR:
@@ -1374,6 +1430,8 @@ void PrintArch(void)
     vlog("ARCH:\tWindows\n");
 #elif defined(__mips__)
     vlog("ARCH:\tmips\n");
+#elif defined(__riscv)
+    vlog("ARCH:\tRISC-V\n");
 #else
 #error unknown arch
 #endif

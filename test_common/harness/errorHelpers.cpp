@@ -387,8 +387,7 @@ static float Ulp_Error_Half_Float(float test, double reference)
     }
 
     // reference is a normal power of two or a zero
-    int ulp_exp =
-        HALF_MANT_DIG - 1 - std::max(ilogb(reference) - 1, HALF_MIN_EXP - 1);
+    int ulp_exp = HALF_MANT_DIG - std::max(ilogb(reference), HALF_MIN_EXP);
 
     // Scale the exponent of the error
     return (float)scalbn(testVal - reference, ulp_exp);
@@ -469,8 +468,7 @@ float Ulp_Error(float test, double reference)
 
     // reference is a normal power of two or a zero
     // The unbiased exponent of the ulp unit place
-    int ulp_exp =
-        FLT_MANT_DIG - 1 - std::max(ilogb(reference) - 1, FLT_MIN_EXP - 1);
+    int ulp_exp = FLT_MANT_DIG - std::max(ilogb(reference), FLT_MIN_EXP);
 
     // Scale the exponent of the error
     return (float)scalbn(testVal - reference, ulp_exp);
@@ -553,8 +551,7 @@ float Ulp_Error_Double(double test, long double reference)
 
     // reference is a normal power of two or a zero
     // The unbiased exponent of the ulp unit place
-    int ulp_exp =
-        DBL_MANT_DIG - 1 - std::max(ilogbl(reference) - 1, DBL_MIN_EXP - 1);
+    int ulp_exp = DBL_MANT_DIG - std::max(ilogbl(reference), DBL_MIN_EXP);
 
     // Scale the exponent of the error
     float result = (float)scalbnl(testVal - reference, ulp_exp);
@@ -665,6 +662,9 @@ const char *subtests_to_skip_with_offline_compiler[] = {
     "load_null_terminated_multi_line_source",
     "load_null_terminated_partial_multi_line_source",
     "load_discreet_length_source",
+    "get_program_info_kernel_names",
+    "get_linked_program_info_kernel_names",
+    "get_program_info_mult_devices",
     "get_program_source",
     "get_program_build_info",
     "options_build_optimizations",
