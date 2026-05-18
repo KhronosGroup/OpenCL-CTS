@@ -17,7 +17,7 @@
 
 int test_read_image_1D_array(cl_context context, cl_command_queue queue,
                              image_descriptor *imageInfo, MTdata d,
-                             cl_mem_flags flags)
+                             cl_mem_flags flags, const context_t &ctx)
 {
     int error;
 
@@ -27,15 +27,17 @@ int test_read_image_1D_array(cl_context context, cl_command_queue queue,
     BufferOwningPtr<char> imageValues;
     generate_random_image_data( imageInfo, imageValues, d );
 
-    if( gDebugTrace )
+    if (ctx.debugTrace)
     {
-        log_info( " - Creating %s image array of size %d by %d...\n", gTestMipmaps?"mipmapped":"", (int)imageInfo->width, (int)imageInfo->arraySize );
-        if( gTestMipmaps )
+        log_info(" - Creating %s image array of size %d by %d...\n",
+                 ctx.testMipmaps ? "mipmapped" : "", (int)imageInfo->width,
+                 (int)imageInfo->arraySize);
+        if (ctx.testMipmaps)
             log_info( " with %llu mip levels\n", (unsigned long long) imageInfo->num_mip_levels );
     }
 
     // Construct testing sources
-    if(!gTestMipmaps)
+    if (!ctx.testMipmaps)
     {
         image = create_image_1d_array(context, flags, imageInfo->format,
                                       imageInfo->width, imageInfo->arraySize, 0,
@@ -62,13 +64,12 @@ int test_read_image_1D_array(cl_context context, cl_command_queue queue,
             return error;
         }
     }
-    if( gDebugTrace )
-        log_info( " - Writing image...\n" );
+    if (ctx.debugTrace) log_info(" - Writing image...\n");
 
     size_t origin[ 3 ] = { 0, 0, 0 };
     size_t region[ 3 ] = { 0, 0, 1 };
     size_t fullImageSize;
-    if( gTestMipmaps )
+    if (ctx.testMipmaps)
     {
         fullImageSize = (size_t)compute_mipmapped_image_size( *imageInfo );
     }
@@ -80,41 +81,43 @@ int test_read_image_1D_array(cl_context context, cl_command_queue queue,
     size_t imgValMipLevelOffset = 0;
     BufferOwningPtr<char> resultValues(malloc(fullImageSize));
 
-    for( size_t lod = 0; (gTestMipmaps && lod < imageInfo->num_mip_levels) || (!gTestMipmaps && lod < 1); lod++)
+    for (size_t lod = 0; (ctx.testMipmaps && lod < imageInfo->num_mip_levels)
+         || (!ctx.testMipmaps && lod < 1);
+         lod++)
     {
         size_t width_lod, row_pitch_lod, slice_pitch_lod;
-        if( gTestMipmaps )
-            origin[2] = lod;
+        if (ctx.testMipmaps) origin[2] = lod;
 
         width_lod = (imageInfo->width >> lod) ? (imageInfo->width >> lod) : 1;
-        row_pitch_lod = gTestMipmaps ? (width_lod * get_pixel_size( imageInfo->format )): imageInfo->rowPitch;
+        row_pitch_lod = ctx.testMipmaps
+            ? (width_lod * get_pixel_size(imageInfo->format))
+            : imageInfo->rowPitch;
         slice_pitch_lod = row_pitch_lod;
 
         region[0] = width_lod;
         region[1] = imageInfo->arraySize;
 
-        if ( gDebugTrace && gTestMipmaps )
+        if (ctx.debugTrace && ctx.testMipmaps)
             log_info("Working at mip level %llu\n", (unsigned long long) lod);
 
-        error = clEnqueueWriteImage(queue, image, CL_FALSE,
-                                    origin, region, ( gEnablePitch ? row_pitch_lod : 0 ), 0,
-                                    (char*)imageValues + imgValMipLevelOffset, 0, NULL, NULL);
+        error = clEnqueueWriteImage(queue, image, CL_FALSE, origin, region,
+                                    (ctx.enablePitch ? row_pitch_lod : 0), 0,
+                                    (char *)imageValues + imgValMipLevelOffset,
+                                    0, NULL, NULL);
         if (error != CL_SUCCESS) {
             log_error( "ERROR: Unable to write to 1D image array  of width %d and size %d\n", (int)width_lod, (int)imageInfo->arraySize );
             return -1;
         }
 
         // To verify, we just read the results right back and see whether they match the input
-        if( gDebugTrace )
-            log_info( " - Initing result array...\n" );
+        if (ctx.debugTrace) log_info(" - Initing result array...\n");
 
         // Note: we read back without any pitch, to verify pitch actually WORKED
         size_t scanlineSize = width_lod * get_pixel_size( imageInfo->format );
         size_t imageSize = scanlineSize * imageInfo->arraySize;
         memset( resultValues, 0xff, imageSize );
 
-        if( gDebugTrace )
-            log_info( " - Reading results...\n" );
+        if (ctx.debugTrace) log_info(" - Reading results...\n");
 
         error = clEnqueueReadImage( queue, image, CL_TRUE, origin, region, 0, 0, resultValues, 0, NULL, NULL );
         test_error( error, "Unable to read image values" );
@@ -170,7 +173,8 @@ int test_read_image_1D_array(cl_context context, cl_command_queue queue,
 
 int test_read_image_set_1D_array(cl_device_id device, cl_context context,
                                  cl_command_queue queue,
-                                 cl_image_format *format, cl_mem_flags flags)
+                                 cl_image_format *format, cl_mem_flags flags,
+                                 const context_t &ctx)
 {
     size_t maxWidth, maxArraySize;
     cl_ulong maxAllocSize, memSize;
@@ -194,7 +198,7 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
         maxAllocSize = (cl_ulong)SIZE_MAX;
     }
 
-    if( gTestSmallImages )
+    if (ctx.testSmallImages)
     {
         for( imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++ )
         {
@@ -202,20 +206,20 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
             imageInfo.slicePitch = imageInfo.rowPitch;
             for( imageInfo.arraySize = 2; imageInfo.arraySize < 9; imageInfo.arraySize++ )
             {
-                if (gTestMipmaps)
+                if (ctx.testMipmaps)
                     imageInfo.num_mip_levels = (cl_uint) random_log_in_range(2, (int)compute_max_mip_levels(imageInfo.width, 0, 0), seed);
 
-                if( gDebugTrace )
+                if (ctx.debugTrace)
                     log_info( "   at size %d,%d\n", (int)imageInfo.width, (int)imageInfo.arraySize );
 
                 int ret = test_read_image_1D_array(context, queue, &imageInfo,
-                                                   seed, flags);
+                                                   seed, flags, ctx);
                 if( ret )
                     return -1;
             }
         }
     }
-    else if( gTestMaxImages )
+    else if (ctx.testMaxImages)
     {
         // Try a specific set of maximum sizes
         size_t numbeOfSizes;
@@ -230,14 +234,14 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
             imageInfo.rowPitch = imageInfo.width * pixelSize;
             imageInfo.slicePitch = imageInfo.rowPitch;
 
-            if (gTestMipmaps)
+            if (ctx.testMipmaps)
                 imageInfo.num_mip_levels = (cl_uint) random_log_in_range(2, (int)compute_max_mip_levels(imageInfo.width, 0, 0), seed);
 
             log_info("Testing %d x %d\n", (int)imageInfo.width, (int)imageInfo.arraySize);
-            if( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "   at max size %d,%d\n", (int)maxWidth, (int)maxArraySize );
             if (test_read_image_1D_array(context, queue, &imageInfo, seed,
-                                         flags))
+                                         flags, ctx))
                 return -1;
         }
     }
@@ -252,7 +256,7 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
             {
                 imageInfo.width = (size_t)random_log_in_range( 16, (int)maxWidth / 32, seed );
                 imageInfo.arraySize = (size_t)random_log_in_range( 16, (int)maxArraySize / 32, seed );
-                if (gTestMipmaps)
+                if (ctx.testMipmaps)
                 {
                     imageInfo.num_mip_levels = (cl_uint) random_log_in_range(2, (int)compute_max_mip_levels(imageInfo.width, 0, 0), seed);
                     imageInfo.rowPitch = imageInfo.width * get_pixel_size( imageInfo.format );
@@ -262,7 +266,7 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
                 else
                 {
                     imageInfo.rowPitch = imageInfo.width * pixelSize;
-                    if( gEnablePitch )
+                    if (ctx.enablePitch)
                     {
                         size_t extraWidth = (int)random_log_in_range( 0, 64, seed );
                         imageInfo.rowPitch += extraWidth * pixelSize;
@@ -273,10 +277,10 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
                 }
             } while(  size > maxAllocSize || ( size * 3 ) > memSize );
 
-            if( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "   at size %d,%d (row pitch %d) out of %d,%d\n", (int)imageInfo.width, (int)imageInfo.arraySize, (int)imageInfo.rowPitch, (int)maxWidth, (int)maxArraySize );
             int ret = test_read_image_1D_array(context, queue, &imageInfo, seed,
-                                               flags);
+                                               flags, ctx);
             if( ret )
                 return -1;
         }

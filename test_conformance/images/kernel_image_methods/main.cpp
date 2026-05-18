@@ -14,43 +14,44 @@
 // limitations under the License.
 //
 
+#include <CL/cl.h>
 #include <stdio.h>
 #include <string.h>
 #include "../testBase.h"
 #include "../harness/compat.h"
 
-bool gDebugTrace;
-bool gTestSmallImages;
-bool gTestMaxImages;
+extern int test_image_set(cl_device_id device, cl_context context,
+                          cl_command_queue queue, cl_mem_object_type imageType,
+                          const context_t &ctx);
 
-cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
-cl_channel_order gChannelOrderToUse = (cl_channel_order)-1;
-
-extern int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_mem_object_type imageType );
+static context_t ctx;
 
 REGISTER_TEST(1D)
 {
-    return test_image_set( device, context, queue, CL_MEM_OBJECT_IMAGE1D );
+    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE1D, ctx);
 }
 REGISTER_TEST(2D)
 {
-    return test_image_set( device, context, queue, CL_MEM_OBJECT_IMAGE2D );
+    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE2D, ctx);
 }
 REGISTER_TEST(3D)
 {
-    return test_image_set( device, context, queue, CL_MEM_OBJECT_IMAGE3D );
+    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE3D, ctx);
 }
 REGISTER_TEST(1Darray)
 {
-    return test_image_set( device, context, queue, CL_MEM_OBJECT_IMAGE1D_ARRAY );
+    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE1D_ARRAY,
+                          ctx);
 }
 REGISTER_TEST(2Darray)
 {
-    return test_image_set( device, context, queue, CL_MEM_OBJECT_IMAGE2D_ARRAY );
+    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE2D_ARRAY,
+                          ctx);
 }
 REGISTER_TEST(1Dbuffer)
 {
-    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE1D_BUFFER);
+    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE1D_BUFFER,
+                          ctx);
 }
 
 static test_status parseArgs(int &argc, const char *argv[],
@@ -58,6 +59,7 @@ static test_status parseArgs(int &argc, const char *argv[],
                              std::string &help)
 {
     cl_channel_type chanType;
+    cl_channel_order chanOrder;
     std::vector<const char *> argList;
     argList.push_back(argv[0]);
 
@@ -67,20 +69,25 @@ static test_status parseArgs(int &argc, const char *argv[],
         randomize - Uses random seed
 )";
 
+    init_context(ctx);
+
     // Parse arguments
     for( int i = 1; i < argc; i++ )
     {
         removed_args.push_back(argv[i]);
         if( strcmp( argv[i], "debug_trace" ) == 0 )
-            gDebugTrace = true;
+            ctx.debugTrace = true;
 
         else if( strcmp( argv[i], "small_images" ) == 0 )
-            gTestSmallImages = true;
+            ctx.testSmallImages = true;
         else if( strcmp( argv[i], "max_images" ) == 0 )
-            gTestMaxImages = true;
-
-        else if( ( chanType = get_channel_type_from_name( argv[i] ) ) != (cl_channel_type)-1 )
-            gChannelTypeToUse = chanType;
+            ctx.testMaxImages = true;
+        else if ((chanOrder = get_channel_order_from_name(argv[i]))
+                 != (cl_channel_order)-1)
+            ctx.channelOrderToUse = chanOrder;
+        else if ((chanType = get_channel_type_from_name(argv[i]))
+                 != (cl_channel_type)-1)
+            ctx.channelTypeToUse = chanType;
         else
         {
             removed_args.pop_back();
@@ -88,7 +95,7 @@ static test_status parseArgs(int &argc, const char *argv[],
         }
     }
 
-    if (gTestSmallImages) log_info("Note: Using small test images\n");
+    if (ctx.testSmallImages) log_info("Note: Using small test images\n");
 
     update_argc_argv_from_args_list(argList, argc, argv);
     return TEST_PASS;

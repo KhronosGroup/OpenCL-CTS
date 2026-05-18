@@ -22,8 +22,6 @@
     #include <setjmp.h>
 #endif
 
-extern bool gTestReadWrite;
-
 const char *read1DKernelSourcePattern =
 "__kernel void sample_kernel( read_only image1d_t input, sampler_t sampler, __global int *results )\n"
 "{\n"
@@ -52,9 +50,10 @@ const char *read_write1DKernelSourcePattern =
 "      results[offset] = 0;\n"
 "}";
 
-int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel kernel,
-                        image_descriptor *imageInfo, image_sampler_data *imageSampler,
-                        ExplicitType outputType, MTdata d )
+int test_read_image_1D(cl_context context, cl_command_queue queue,
+                       cl_kernel kernel, image_descriptor *imageInfo,
+                       image_sampler_data *imageSampler,
+                       ExplicitType outputType, MTdata d, const context_t &ctx)
 {
     int error;
     size_t threads[2];
@@ -64,7 +63,7 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
     BufferOwningPtr<char> imageValues;
     generate_random_image_data( imageInfo, imageValues, d );
 
-    if ( gDebugTrace )
+    if (ctx.debugTrace)
         log_info( " - Creating image %d by %d...\n", (int)imageInfo->width, (int)imageInfo->height );
 
     // Construct testing sources
@@ -74,7 +73,7 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
     memset(&image_desc, 0x0, sizeof(cl_image_desc));
     image_desc.image_type = CL_MEM_OBJECT_IMAGE1D;
     image_desc.image_width = imageInfo->width;
-    image_desc.image_row_pitch = ( gEnablePitch ? imageInfo->rowPitch : 0 );
+    image_desc.image_row_pitch = (ctx.enablePitch ? imageInfo->rowPitch : 0);
     image_desc.num_mip_levels = 0;
 
     read_only_image = clCreateImage(context,
@@ -89,7 +88,7 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
         return error;
     }
 
-    if(gTestReadWrite)
+    if (ctx.testReadWrite)
     {
         read_write_image = clCreateImage(context,
                                         CL_MEM_READ_WRITE,
@@ -108,8 +107,7 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
     }
 
 
-    if ( gDebugTrace )
-        log_info( " - Creating kernel arguments...\n" );
+    if (ctx.debugTrace) log_info(" - Creating kernel arguments...\n");
 
     // Create sampler to use
     actualSampler = clCreateSampler( context, CL_FALSE, CL_ADDRESS_NONE, CL_FILTER_NEAREST, &error );
@@ -128,7 +126,7 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
     int idx = 0;
     error = clSetKernelArg( kernel, idx++, sizeof( cl_mem ), &read_only_image );
     test_error( error, "Unable to set kernel arguments" );
-    if(gTestReadWrite)
+    if (ctx.testReadWrite)
     {
         error = clSetKernelArg( kernel, idx++, sizeof( cl_mem ), &read_write_image );
         test_error( error, "Unable to set kernel arguments" );
@@ -143,13 +141,12 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
     error = clEnqueueNDRangeKernel( queue, kernel, 1, NULL, threads, NULL, 0, NULL, NULL );
     test_error( error, "Unable to run kernel" );
 
-    if ( gDebugTrace )
+    if (ctx.debugTrace)
         log_info( "    reading results, %ld kbytes\n", (unsigned long)( imageInfo->width * sizeof(cl_int) / 1024 ) );
 
     error = clEnqueueReadBuffer( queue, results, CL_TRUE, 0, resultValuesSize, resultValues, 0, NULL, NULL );
     test_error( error, "Unable to read results from kernel" );
-    if ( gDebugTrace )
-        log_info( "    results read\n" );
+    if (ctx.debugTrace) log_info("    results read\n");
 
     // Check for non-zero comps
     bool allZeroes = true;
@@ -169,7 +166,7 @@ int test_read_image_1D( cl_context context, cl_command_queue queue, cl_kernel ke
     clReleaseSampler(actualSampler);
     clReleaseMemObject(results);
     clReleaseMemObject(read_only_image);
-    if(gTestReadWrite)
+    if (ctx.testReadWrite)
     {
         clReleaseMemObject(read_write_image);
     }
@@ -181,7 +178,7 @@ int test_read_image_set_1D(cl_device_id device, cl_context context,
                            cl_command_queue queue,
                            const cl_image_format *format,
                            image_sampler_data *imageSampler,
-                           ExplicitType outputType)
+                           ExplicitType outputType, const context_t &ctx)
 {
     char programSrc[10240];
     const char *ptr;
@@ -192,7 +189,7 @@ int test_read_image_set_1D(cl_device_id device, cl_context context,
     RandomSeed seed( gRandomSeed );
     int error;
 
-    if (gTestReadWrite && checkForReadWriteImageSupport(device))
+    if (ctx.testReadWrite && checkForReadWriteImageSupport(device))
     {
         return TEST_SKIPPED_ITSELF;
     }
@@ -235,7 +232,7 @@ int test_read_image_set_1D(cl_device_id device, cl_context context,
         dataType = "float4";
     }
 
-    if(gTestReadWrite)
+    if (ctx.testReadWrite)
     {
         sprintf( programSrc,
                  read_write1DKernelSourcePattern,
@@ -259,22 +256,24 @@ int test_read_image_set_1D(cl_device_id device, cl_context context,
                                         "sample_kernel");
     test_error( error, "Unable to create testing kernel" );
 
-    if ( gTestSmallImages )
+    if (ctx.testSmallImages)
     {
         for ( imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++ )
         {
             imageInfo.rowPitch = imageInfo.width * pixelSize;
             {
-                if ( gDebugTrace )
+                if (ctx.debugTrace)
                     log_info( "   at size %d\n", (int)imageInfo.width );
 
-                int retCode = test_read_image_1D( context, queue, kernel, &imageInfo, imageSampler, outputType, seed );
+                int retCode =
+                    test_read_image_1D(context, queue, kernel, &imageInfo,
+                                       imageSampler, outputType, seed, ctx);
                 if ( retCode )
                     return retCode;
             }
         }
     }
-    else if ( gTestMaxImages )
+    else if (ctx.testMaxImages)
     {
         // Try a specific set of maximum sizes
         size_t numbeOfSizes;
@@ -287,9 +286,11 @@ int test_read_image_set_1D(cl_device_id device, cl_context context,
             imageInfo.width = sizes[ idx ][ 0 ];
             imageInfo.rowPitch = imageInfo.width * pixelSize;
             log_info("Testing %d\n", (int)sizes[ idx ][ 0 ]);
-            if ( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "   at max size %d\n", (int)sizes[ idx ][ 0 ] );
-            int retCode = test_read_image_1D( context, queue, kernel, &imageInfo, imageSampler, outputType, seed );
+            int retCode =
+                test_read_image_1D(context, queue, kernel, &imageInfo,
+                                   imageSampler, outputType, seed, ctx);
             if ( retCode )
                 return retCode;
         }
@@ -306,7 +307,7 @@ int test_read_image_set_1D(cl_device_id device, cl_context context,
                 imageInfo.width = (size_t)random_log_in_range( 16, (int)maxWidth / 32, seed );
 
                 imageInfo.rowPitch = imageInfo.width * pixelSize;
-                if ( gEnablePitch )
+                if (ctx.enablePitch)
                 {
                     size_t extraWidth = (int)random_log_in_range( 0, 64, seed );
                     imageInfo.rowPitch += extraWidth * pixelSize;
@@ -315,9 +316,11 @@ int test_read_image_set_1D(cl_device_id device, cl_context context,
                 size = (size_t)imageInfo.rowPitch * 4;
             } while (  size > maxAllocSize || ( size * 3 ) > memSize );
 
-            if ( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "   at size %d (row pitch %d) out of %d\n", (int)imageInfo.width, (int)imageInfo.rowPitch, (int)maxWidth );
-            int retCode = test_read_image_1D( context, queue, kernel, &imageInfo, imageSampler, outputType, seed );
+            int retCode =
+                test_read_image_1D(context, queue, kernel, &imageInfo,
+                                   imageSampler, outputType, seed, ctx);
             if ( retCode )
                 return retCode;
         }

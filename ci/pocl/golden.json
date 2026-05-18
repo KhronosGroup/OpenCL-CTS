@@ -124,6 +124,9 @@
         }
     },
     "test_image_streams": {
+        "--num-worker-threads 2 CL_A CL_FILTER_NEAREST": {
+            "1D": "pass"
+        },
         "--num-worker-threads 2 CL_FILTER_NEAREST CL_R": {
             "1D": "fail"
         }

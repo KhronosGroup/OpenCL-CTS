@@ -20,63 +20,59 @@
 #include "../harness/compat.h"
 #include "../harness/testHarness.h"
 
-bool gDebugTrace;
-bool gTestSmallImages;
-bool gTestMaxImages;
-bool gEnablePitch;
-bool gTestMipmaps;
-int gTypesToTest;
-cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
-cl_channel_order gChannelOrderToUse = (cl_channel_order)-1;
+static context_t ctx;
 
-extern int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, MethodsToTest testMethod );
+extern int test_image_set(cl_device_id device, cl_context context,
+                          cl_command_queue queue, MethodsToTest testMethod,
+                          const context_t &ctx);
 
-REGISTER_TEST(1D) { return test_image_set(device, context, queue, k1D); }
-REGISTER_TEST(2D) { return test_image_set(device, context, queue, k2D); }
-REGISTER_TEST(3D) { return test_image_set(device, context, queue, k3D); }
+REGISTER_TEST(1D) { return test_image_set(device, context, queue, k1D, ctx); }
+REGISTER_TEST(2D) { return test_image_set(device, context, queue, k2D, ctx); }
+REGISTER_TEST(3D) { return test_image_set(device, context, queue, k3D, ctx); }
+
 REGISTER_TEST(1Dbuffer)
 {
-    return test_image_set(device, context, queue, k1DBuffer);
+    return test_image_set(device, context, queue, k1DBuffer, ctx);
 }
 REGISTER_TEST(1DTo1Dbuffer)
 {
-    return test_image_set(device, context, queue, k1DTo1DBuffer);
+    return test_image_set(device, context, queue, k1DTo1DBuffer, ctx);
 }
 REGISTER_TEST(1DbufferTo1D)
 {
-    return test_image_set(device, context, queue, k1DBufferTo1D);
+    return test_image_set(device, context, queue, k1DBufferTo1D, ctx);
 }
 REGISTER_TEST(1Darray)
 {
-    return test_image_set( device, context, queue, k1DArray );
+    return test_image_set(device, context, queue, k1DArray, ctx);
 }
 REGISTER_TEST(2Darray)
 {
-    return test_image_set( device, context, queue, k2DArray );
+    return test_image_set(device, context, queue, k2DArray, ctx);
 }
 REGISTER_TEST(2Dto3D)
 {
-    return test_image_set( device, context, queue, k2DTo3D );
+    return test_image_set(device, context, queue, k2DTo3D, ctx);
 }
 REGISTER_TEST(3Dto2D)
 {
-    return test_image_set( device, context, queue, k3DTo2D );
+    return test_image_set(device, context, queue, k3DTo2D, ctx);
 }
 REGISTER_TEST(2Darrayto2D)
 {
-    return test_image_set( device, context, queue, k2DArrayTo2D );
+    return test_image_set(device, context, queue, k2DArrayTo2D, ctx);
 }
 REGISTER_TEST(2Dto2Darray)
 {
-    return test_image_set( device, context, queue, k2DTo2DArray );
+    return test_image_set(device, context, queue, k2DTo2DArray, ctx);
 }
 REGISTER_TEST(2Darrayto3D)
 {
-    return test_image_set( device, context, queue, k2DArrayTo3D );
+    return test_image_set(device, context, queue, k2DArrayTo3D, ctx);
 }
 REGISTER_TEST(3Dto2Darray)
 {
-    return test_image_set( device, context, queue, k3DTo2DArray );
+    return test_image_set(device, context, queue, k3DTo2DArray, ctx);
 }
 
 static test_status parseArgs(int &argc, const char *argv[],
@@ -97,30 +93,32 @@ static test_status parseArgs(int &argc, const char *argv[],
     std::vector<const char *> argList;
     argList.push_back(argv[0]);
 
+    init_context(ctx);
+
     // Parse arguments
     for (int i = 1; i < argc; i++)
     {
         removed_args.push_back(argv[i]);
         if (strcmp(argv[i], "test_mipmaps") == 0)
         {
-            gTestMipmaps = true;
+            ctx.testMipmaps = true;
             // Don't test pitches with mipmaps, at least currently.
-            gEnablePitch = false;
+            ctx.enablePitch = false;
         }
         else if (strcmp(argv[i], "debug_trace") == 0)
-            gDebugTrace = true;
+            ctx.debugTrace = true;
         else if (strcmp(argv[i], "small_images") == 0)
-            gTestSmallImages = true;
+            ctx.testSmallImages = true;
         else if (strcmp(argv[i], "max_images") == 0)
-            gTestMaxImages = true;
+            ctx.testMaxImages = true;
         else if (strcmp(argv[i], "use_pitches") == 0)
-            gEnablePitch = true;
+            ctx.enablePitch = true;
         else if ((chanType = get_channel_type_from_name(argv[i]))
                  != (cl_channel_type)-1)
-            gChannelTypeToUse = chanType;
+            ctx.channelTypeToUse = chanType;
         else if ((chanOrder = get_channel_order_from_name(argv[i]))
                  != (cl_channel_order)-1)
-            gChannelOrderToUse = chanOrder;
+            ctx.channelOrderToUse = chanOrder;
         else
         {
             removed_args.pop_back();
@@ -128,7 +126,7 @@ static test_status parseArgs(int &argc, const char *argv[],
         }
     }
 
-    if (gTestSmallImages) log_info("Note: Using small test images\n");
+    if (ctx.testSmallImages) log_info("Note: Using small test images\n");
 
     update_argc_argv_from_args_list(argList, argc, argv);
     return TEST_PASS;

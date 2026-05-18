@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "common.h"
+#include <CL/cl.h>
 
 cl_channel_type floatFormats[] = {
     CL_UNORM_SHORT_565,
@@ -58,7 +59,10 @@ std::array<ImageTestTypes, 3> imageTestTypes = { {
 int filter_formats(const std::vector<cl_image_format> &formatList,
                    std::vector<bool> &filterFlags,
                    cl_channel_type *channelDataTypesToFilter,
-                   bool testMipmaps /*=false*/)
+                   cl_channel_type channelTypeToUse,
+                   cl_channel_order channelOrderToUse,
+                   bool testMipmaps /*=false*/
+)
 {
     int numSupported = 0;
     for (unsigned int j = 0; j < formatList.size(); j++)
@@ -75,16 +79,16 @@ int filter_formats(const std::vector<cl_image_format> &formatList,
         }
 
         // Have we already discarded the channel type via the command line?
-        if (gChannelTypeToUse != (cl_channel_type)-1
-            && gChannelTypeToUse != formatList[j].image_channel_data_type)
+        if (channelTypeToUse != (cl_channel_type)-1
+            && channelTypeToUse != formatList[j].image_channel_data_type)
         {
             filterFlags[j] = true;
             continue;
         }
 
         // Have we already discarded the channel order via the command line?
-        if (gChannelOrderToUse != (cl_channel_order)-1
-            && gChannelOrderToUse != formatList[j].image_channel_order)
+        if (channelOrderToUse != (cl_channel_order)-1
+            && channelOrderToUse != formatList[j].image_channel_order)
         {
             filterFlags[j] = true;
             continue;
@@ -171,7 +175,7 @@ static void CL_CALLBACK release_cl_buffer(cl_mem image, void *buf)
 clMemWrapper create_image(cl_context context, cl_command_queue queue,
                           BufferOwningPtr<char> &data,
                           image_descriptor *imageInfo, bool enable_pitch,
-                          bool create_mipmaps, int *error)
+                          bool create_mipmaps, bool debugTrace, int *error)
 {
     clMemWrapper img;
     cl_image_desc imageDesc;
@@ -204,20 +208,20 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
     switch (imageInfo->type)
     {
         case CL_MEM_OBJECT_IMAGE1D:
-            if (gDebugTrace)
+            if (debugTrace)
                 log_info(" - Creating 1D image %d ...\n",
                          (int)imageInfo->width);
             if (enable_pitch) host_ptr = malloc(imageInfo->rowPitch);
             break;
         case CL_MEM_OBJECT_IMAGE2D:
-            if (gDebugTrace)
+            if (debugTrace)
                 log_info(" - Creating 2D image %d by %d ...\n",
                          (int)imageInfo->width, (int)imageInfo->height);
             if (enable_pitch)
                 host_ptr = malloc(imageInfo->height * imageInfo->rowPitch);
             break;
         case CL_MEM_OBJECT_IMAGE3D:
-            if (gDebugTrace)
+            if (debugTrace)
                 log_info(" - Creating 3D image %d by %d by %d...\n",
                          (int)imageInfo->width, (int)imageInfo->height,
                          (int)imageInfo->depth);
@@ -225,14 +229,14 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
                 host_ptr = malloc(imageInfo->depth * imageInfo->slicePitch);
             break;
         case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-            if (gDebugTrace)
+            if (debugTrace)
                 log_info(" - Creating 1D image array %d by %d...\n",
                          (int)imageInfo->width, (int)imageInfo->arraySize);
             if (enable_pitch)
                 host_ptr = malloc(imageInfo->arraySize * imageInfo->slicePitch);
             break;
         case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-            if (gDebugTrace)
+            if (debugTrace)
                 log_info(" - Creating 2D image array %d by %d by %d...\n",
                          (int)imageInfo->width, (int)imageInfo->height,
                          (int)imageInfo->arraySize);
@@ -240,7 +244,7 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
                 host_ptr = malloc(imageInfo->arraySize * imageInfo->slicePitch);
             break;
         case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-            if (gDebugTrace)
+            if (debugTrace)
                 log_info(" - Creating 1D buffer image %d ...\n",
                          (int)imageInfo->width);
             {
@@ -298,7 +302,7 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
             break;
     }
 
-    if (gDebugTrace && create_mipmaps)
+    if (debugTrace && create_mipmaps)
         log_info(" - with %llu mip levels\n",
                  (unsigned long long)imageInfo->num_mip_levels);
 
