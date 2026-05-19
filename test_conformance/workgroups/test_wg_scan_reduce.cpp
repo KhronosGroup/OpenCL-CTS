@@ -187,9 +187,9 @@ template <typename C> struct Reduce
         return 0;
     }
 
-    static void generate_reference_values(Type *inptr, size_t n_elems,
-                                          size_t max_wg_size,
-                                          const Type *max_err = nullptr)
+    static void generate_input_values(Type *inptr, size_t n_elems,
+                                      size_t max_wg_size,
+                                      const Type *max_err = nullptr)
     {
         MTdataHolder d(gRandomSeed);
         for (size_t i = 0; i < n_elems; i++) inptr[i] = (Type)genrand_int64(d);
@@ -251,9 +251,9 @@ template <typename C> struct ScanInclusive
         return 0;
     }
 
-    static void generate_reference_values(Type *inptr, size_t n_elems,
-                                          size_t max_wg_size,
-                                          Type *const max_err = nullptr)
+    static void generate_input_values(Type *inptr, size_t n_elems,
+                                      size_t max_wg_size,
+                                      Type *const max_err = nullptr)
     {
         MTdataHolder d(gRandomSeed);
         if constexpr (std::is_floating_point_v<
@@ -361,9 +361,9 @@ template <typename C> struct ScanExclusive
         return 0;
     }
 
-    static void generate_reference_values(Type *inptr, size_t n_elems,
-                                          size_t max_wg_size,
-                                          const Type *max_err = nullptr)
+    static void generate_input_values(Type *inptr, size_t n_elems,
+                                      size_t max_wg_size,
+                                      const Type *max_err = nullptr)
     {
         MTdataHolder d(gRandomSeed);
         for (size_t i = 0; i < n_elems; i++) inptr[i] = (Type)genrand_int64(d);
@@ -414,8 +414,8 @@ static int run_test(cl_device_id device, cl_context context,
     std::vector<T> input_vec(n_elems);
 
     std::vector<T> max_err_vec(n_elems, 0);
-    TestInfo::generate_reference_values(input_vec.data(), n_elems, wg_size[0],
-                                        max_err_vec.data());
+    TestInfo::generate_input_values(input_vec.data(), n_elems, wg_size[0],
+                                    max_err_vec.data());
 
     err = clEnqueueWriteBuffer(queue, src, CL_TRUE, 0, sizeof(T) * n_elems,
                                input_vec.data(), 0, NULL, NULL);
