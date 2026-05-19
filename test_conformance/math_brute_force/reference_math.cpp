@@ -18,6 +18,7 @@
 #include "harness/compat.h"
 
 #include <climits>
+#include <float.h>
 
 #if !defined(_WIN32)
 #include <cstring>
@@ -2154,7 +2155,16 @@ static long double Q[9] = {
     9.999999999999999999908E-1L,
 };
 
+// Largest positive argument handled by the long-double Stirling path before
+// tgamma overflows in the host long-double format.
+#if LDBL_MANT_DIG == DBL_MANT_DIG && LDBL_MAX_EXP == DBL_MAX_EXP
+// The threshold at which tgamma(1-x) overflows float64 (~10^308 max).
+#define MAXGAML 171.624L
+#else
+// The threshold at which tgamma(1-x) overflows float128 (~10^4932 max).
 #define MAXGAML 1755.455L
+#endif
+
 /*static const long double LOGPI = 1.14472988584940017414L;*/
 
 /* Stirling's formula for the gamma function
@@ -2369,11 +2379,9 @@ double reference_tgamma(double x)
         // collapse to +/-0. However, reference olm_tgamma does not handle this
         // case correctly, so it must be handled externally. The sign is
         // determined analytically from the alternating sign rule: for x in
-        // (-(n+1), -n), sign(tgamma(x)) = (-1)^(n+1). The threshold at which
-        // tgamma(1-x) overflows float128 (~10^4932 max) is around argument
-        // 1756, so x < -1755 is sufficient to trigger this path.
+        // (-(n+1), -n), sign(tgamma(x)) = (-1)^(n+1).
 
-        if (x < -1755.0f)
+        if (x < -MAXGAML)
         {
             long n = (long)std::floor(-fx);
             bool negative = (n % 2 == 0);
@@ -6097,11 +6105,9 @@ long double reference_tgammal(long double x)
         // collapse to +/-0. However, reference olm_tgamma does not handle this
         // case correctly, so it must be handled externally. The sign is
         // determined analytically from the alternating sign rule: for x in
-        // (-(n+1), -n), sign(tgamma(x)) = (-1)^(n+1). The threshold at which
-        // tgamma(1-x) overflows float128 (~10^4932 max) is around argument
-        // 1756, so x < -1755 is sufficient to trigger this path.
+        // (-(n+1), -n), sign(tgamma(x)) = (-1)^(n+1).
 
-        if (x < -1755.0)
+        if (x < -MAXGAML)
         {
             long n = (long)std::floor(-x);
             bool negative = (n % 2 == 0);
