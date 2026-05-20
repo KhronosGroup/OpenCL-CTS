@@ -102,7 +102,7 @@ REGISTER_TEST_VERSION(enqueued_local_size, Version(2, 0))
     test_error(err, "clCreateBuffer failed.");
 
     std::string cl_std = "-cl-std=CL";
-    cl_std += (get_device_cl_version(device) == Version(3, 0)) ? "3.0" : "2.0";
+    cl_std += (get_device_cl_version(device) >= Version(3, 0)) ? "3.0" : "2.0";
     err = create_single_kernel_helper(
         context, &program[0], &kernel[0], 1, &enqueued_local_size_1d_code,
         "test_enqueued_local_size_1d", cl_std.c_str());
