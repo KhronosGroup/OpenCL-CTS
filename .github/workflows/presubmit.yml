@@ -246,6 +246,7 @@ jobs:
           cmake -B pocl/build -S pocl -G Ninja \
             -DCMAKE_INSTALL_PREFIX=${{ env.pocl }} \
             -DCMAKE_BUILD_TYPE=Release \
+            -DDKERNELLIB_HOST_CPU_VARIANTS=distro \
             -DENABLE_ICD=ON
           cmake --build pocl/build
           cmake --install pocl/build
