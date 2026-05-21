@@ -93,15 +93,15 @@ int run_test_with_two_queue(
 {
     int err = CL_SUCCESS;
     size_t global_work_size[1];
-    uint8_t *error_2 = nullptr;
-    cl_mem error_1 = nullptr;
-    cl_kernel update_buffer_kernel = nullptr;
-    cl_kernel kernel_cq = nullptr;
-    clExternalImportableSemaphore *clVk2CLExternalSemaphore = nullptr;
-    clExternalExportableSemaphore *clCl2VkExternalSemaphore = nullptr;
+    uint8_t error_2[1];
+    clMemWrapper error_1;
+    clKernelWrapper update_buffer_kernel = nullptr;
+    clKernelWrapper kernel_cq = nullptr;
+    std::unique_ptr<clExternalImportableSemaphore> clVk2CLExternalSemaphore;
+    std::unique_ptr<clExternalExportableSemaphore> clCl2VkExternalSemaphore;
     const char *program_source_const = kernel_text_numbuffer_2;
     size_t program_source_length = strlen(program_source_const);
-    cl_program program = clCreateProgramWithSource(
+    clProgramWrapper program = clCreateProgramWithSource(
         context, 1, &program_source_const, &program_source_length, &err);
     err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
     test_error(err, "Error: Failed to build program \n");
@@ -158,11 +158,13 @@ int run_test_with_two_queue(
     }
     else
     {
-        clVk2CLExternalSemaphore = new clExternalImportableSemaphore(
-            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+        clVk2CLExternalSemaphore.reset(new clExternalImportableSemaphore(
+            vkVk2CLSemaphore, context, vkExternalSemaphoreHandleType,
+            deviceId));
 
-        clCl2VkExternalSemaphore = new clExternalExportableSemaphore(
-            vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType, deviceId);
+        clCl2VkExternalSemaphore.reset(new clExternalExportableSemaphore(
+            vkCl2VkSemaphore, context, vkExternalSemaphoreHandleType,
+            deviceId));
     }
 
     const uint32_t maxIter = innerIterations;
@@ -176,8 +178,8 @@ int run_test_with_two_queue(
         getVulkanMemoryType(vkDevice,
                             VULKAN_MEMORY_TYPE_PROPERTY_HOST_VISIBLE_COHERENT));
     vkParamsDeviceMemory.bindBuffer(vkParamsBuffer);
-    std::vector<VulkanDeviceMemory *> vkBufferListDeviceMemory;
-    std::vector<clExternalMemory *> externalMemory;
+    std::vector<std::unique_ptr<VulkanDeviceMemory>> vkBufferListDeviceMemory;
+    std::vector<std::unique_ptr<clExternalMemory>> externalMemory;
 
     for (size_t emhtIdx = 0; emhtIdx < vkExternalMemoryHandleTypeList.size();
          emhtIdx++)
@@ -205,12 +207,13 @@ int run_test_with_two_queue(
 
             for (size_t bIdx = 0; bIdx < numBuffers; bIdx++)
             {
-                vkBufferListDeviceMemory.push_back(new VulkanDeviceMemory(
-                    vkDevice, vkBufferList[bIdx], memoryType,
-                    vkExternalMemoryHandleType));
-                externalMemory.push_back(new clExternalMemory(
-                    vkBufferListDeviceMemory[bIdx], vkExternalMemoryHandleType,
-                    bufferSize, context, deviceId));
+                vkBufferListDeviceMemory.emplace_back(
+                    std::make_unique<VulkanDeviceMemory>(
+                        vkDevice, vkBufferList[bIdx], memoryType,
+                        vkExternalMemoryHandleType));
+                externalMemory.emplace_back(std::make_unique<clExternalMemory>(
+                    vkBufferListDeviceMemory[bIdx].get(),
+                    vkExternalMemoryHandleType, bufferSize, context, deviceId));
             }
             cl_mem buffers[MAX_BUFFERS];
             clFinish(cmd_queue1);
@@ -271,8 +274,8 @@ int run_test_with_two_queue(
                     }
 
                     err = clVk2CLExternalSemaphore->wait(cmd_queue1);
-                    test_error_and_cleanup(
-                        err, CLEANUP,
+                    test_error(
+                        err,
                         "Error: failed to wait on CL external semaphore\n");
                 }
 
@@ -294,9 +297,7 @@ int run_test_with_two_queue(
                 err |=
                     clSetKernelArg(kernel_cq, 2, sizeof(cl_mem),
                                    (void *)&(buffers[vkBufferList.size() - 1]));
-                test_error_and_cleanup(
-                    err, CLEANUP,
-                    "Error: Failed to set arg values for kernel\n");
+                test_error(err, "Error: Failed to set arg values for kernel\n");
 
                 cl_event first_launch;
 
@@ -304,30 +305,26 @@ int run_test_with_two_queue(
                 err = clEnqueueAcquireExternalMemObjectsKHRptr(
                     cmd_queue1, vkBufferList.size(), buffers, 0, nullptr,
                     &acquire_event);
-                test_error_and_cleanup(err, CLEANUP,
-                                       "Failed to acquire buffers");
+                test_error(err, "Failed to acquire buffers");
 
                 err = clEnqueueNDRangeKernel(cmd_queue1, update_buffer_kernel,
                                              1, NULL, global_work_size, NULL, 1,
                                              &acquire_event, &first_launch);
-                test_error_and_cleanup(
-                    err, CLEANUP,
-                    "Error: Failed to launch update_buffer_kernel,"
-                    "error\n");
+                test_error(err,
+                           "Error: Failed to launch update_buffer_kernel,"
+                           "error\n");
 
                 err = clEnqueueNDRangeKernel(cmd_queue2, kernel_cq, 1, NULL,
                                              global_work_size, NULL, 1,
                                              &first_launch, NULL);
-                test_error_and_cleanup(
-                    err, CLEANUP,
-                    "Error: Failed to launch update_buffer_kernel,"
-                    "error\n");
+                test_error(err,
+                           "Error: Failed to launch update_buffer_kernel,"
+                           "error\n");
 
                 err = clEnqueueReleaseExternalMemObjectsKHRptr(
                     cmd_queue2, vkBufferList.size(), buffers, 0, nullptr,
                     nullptr);
-                test_error_and_cleanup(err, CLEANUP,
-                                       "Failed to release buffers");
+                test_error(err, "Failed to release buffers");
 
                 if (use_fence)
                 {
@@ -338,30 +335,30 @@ int run_test_with_two_queue(
                 }
                 else if (!use_fence && iter != (maxIter - 1))
                 {
+                    // Wait until semaphore is not in-use before re-import
+                    // (VUID-vkImportSemaphoreFdKHR-semaphore-01142)
+                    vkQueue.waitIdle();
+
                     err = clCl2VkExternalSemaphore->signal(cmd_queue2);
-                    test_error_and_cleanup(err, CLEANUP,
-                                           "Failed to signal CL semaphore\n");
+                    test_error(err, "Failed to signal CL semaphore\n");
                 }
                 err = clReleaseEvent(acquire_event);
-                test_error_and_cleanup(err, CLEANUP,
-                                       "Failed to release acquire event\n");
+                test_error(err, "Failed to release acquire event\n");
             }
-            error_2 = (uint8_t *)malloc(sizeof(uint8_t));
-            if (NULL == error_2)
-            {
-                test_fail_and_cleanup(err, CLEANUP,
-                                      "Not able to allocate memory\n");
-            }
+
+
+            // Drain queue before per-iteration resource cleanup
+            vkQueue.waitIdle();
+
             clFinish(cmd_queue2);
             error_1 = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
                                      sizeof(uint8_t), NULL, &err);
-            test_error_and_cleanup(err, CLEANUP, "Error: clCreateBuffer \n");
+            test_error(err, "Error: clCreateBuffer \n");
 
             uint8_t val = 0;
             err = clEnqueueWriteBuffer(cmd_queue1, error_1, CL_TRUE, 0,
                                        sizeof(uint8_t), &val, 0, NULL, NULL);
-            test_error_and_cleanup(err, CLEANUP,
-                                   "Error: Failed read output, error\n");
+            test_error(err, "Error: Failed read output, error\n");
 
             int calc_max_iter;
             for (size_t i = 0; i < vkBufferList.size(); i++)
@@ -378,63 +375,36 @@ int run_test_with_two_queue(
                                       &calc_max_iter);
                 err |= clSetKernelArg(verify_kernel, 3, sizeof(cl_mem),
                                       (void *)&error_1);
-                test_error_and_cleanup(err, CLEANUP,
-                                       "Error: Failed to set arg values for "
-                                       "verify_kernel \n");
+                test_error(err,
+                           "Error: Failed to set arg values for "
+                           "verify_kernel \n");
 
                 err = clEnqueueNDRangeKernel(cmd_queue1, verify_kernel, 1, NULL,
                                              global_work_size, NULL, 0, NULL,
                                              NULL);
-                test_error_and_cleanup(err, CLEANUP,
-                                       "Error: Failed to launch verify_kernel,"
-                                       "error \n");
+                test_error(err,
+                           "Error: Failed to launch verify_kernel,"
+                           "error \n");
 
                 err = clEnqueueReadBuffer(cmd_queue1, error_1, CL_TRUE, 0,
                                           sizeof(uint8_t), error_2, 0, NULL,
                                           NULL);
-                test_error_and_cleanup(err, CLEANUP,
-                                       "Error: Failed read output, error \n");
+                test_error(err, "Error: Failed read output, error \n");
 
                 if (*error_2 == 1)
                 {
-                    test_fail_and_cleanup(
-                        err, CLEANUP,
-                        "&&&& vulkan_opencl_buffer test FAILED\n");
+                    test_error_ret(err,
+                                   "&&&& vulkan_opencl_buffer test FAILED\n",
+                                   TEST_FAIL);
                 }
             }
-            for (size_t i = 0; i < vkBufferList.size(); i++)
-            {
-                delete vkBufferListDeviceMemory[i];
-                delete externalMemory[i];
-            }
-            vkBufferListDeviceMemory.erase(vkBufferListDeviceMemory.begin(),
-                                           vkBufferListDeviceMemory.begin()
-                                               + numBuffers);
-            externalMemory.erase(externalMemory.begin(),
-                                 externalMemory.begin() + numBuffers);
+            vkBufferListDeviceMemory.clear();
+            externalMemory.clear();
         }
     }
-CLEANUP:
-    for (size_t i = 0; i < vkBufferListDeviceMemory.size(); i++)
-    {
-        if (vkBufferListDeviceMemory[i])
-        {
-            delete vkBufferListDeviceMemory[i];
-        }
-        if (externalMemory[i])
-        {
-            delete externalMemory[i];
-        }
-    }
-    if (program) clReleaseProgram(program);
-    if (kernel_cq) clReleaseKernel(kernel_cq);
-    if (!use_fence)
-    {
-        if (clVk2CLExternalSemaphore) delete clVk2CLExternalSemaphore;
-        if (clCl2VkExternalSemaphore) delete clCl2VkExternalSemaphore;
-    }
-    if (error_2) free(error_2);
-    if (error_1) clReleaseMemObject(error_1);
+
+    // Ensure no pending work before wrapper destructors run
+    vkDevice.waitIdle();
 
     return err;
 }
