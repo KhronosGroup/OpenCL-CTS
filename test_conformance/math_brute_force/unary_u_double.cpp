@@ -35,11 +35,6 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-cl_ulong random64(MTdata d)
-{
-    return (cl_ulong)genrand_int32(d) | ((cl_ulong)genrand_int32(d) << 32);
-}
-
 } // anonymous namespace
 
 int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
@@ -66,14 +61,12 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
                                &build_info)))
         return error;
 
-    for (uint64_t i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < getInputCount(); i += step)
     {
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        cl_ulong *p = (cl_ulong *)gIn;
-        for (size_t j = 0; j < BUFFER_SIZE / sizeof(cl_ulong); j++)
-            p[j] = random64(d);
+        fillDoubleUnaryInput((double *)gIn, step, i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))

@@ -51,9 +51,8 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal1 = 0.0f;
     uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
 
-    size_t bufferElements = std::min(BUFFER_SIZE / sizeof(cl_half),
-                                     size_t(1ULL << (sizeof(cl_half) * 8)));
-    size_t bufferSize = bufferElements * sizeof(cl_half);
+    size_t bufferElements = step;
+    size_t bufferSize = BUFFER_SIZE;
 
     std::vector<cl_uchar> overflow(bufferElements);
     int isFract = 0 == strcmp("fract", f->nameInCode);
@@ -76,7 +75,7 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
 
         // Init input array
         cl_half *pIn = (cl_half *)gIn;
-        for (size_t j = 0; j < bufferElements; j++) pIn[j] = (cl_ushort)i + j;
+        fillHalfUnaryInput(pIn, step, i, d, true);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))

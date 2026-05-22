@@ -61,20 +61,14 @@ int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
                                    &build_info)))
             return error;
     }
-    for (uint64_t i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < getInputCount(); i += step)
     {
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        cl_ushort *p = (cl_ushort *)gIn;
-        cl_ushort *p2 = (cl_ushort *)gIn2;
-        cl_ushort *p3 = (cl_ushort *)gIn3;
-        for (size_t j = 0; j < bufferSize / sizeof(cl_ushort); j++)
-        {
-            p[j] = (cl_ushort)genrand_int32(d);
-            p2[j] = (cl_ushort)genrand_int32(d);
-            p3[j] = (cl_ushort)genrand_int32(d);
-        }
+        fillHalfTernaryInput((cl_half *)gIn, (cl_half *)gIn2, (cl_half *)gIn3,
+                             step, i, d);
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
         {

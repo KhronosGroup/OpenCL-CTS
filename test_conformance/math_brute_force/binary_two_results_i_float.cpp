@@ -104,18 +104,12 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                                &build_info)))
         return error;
 
-    for (uint64_t i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < getInputCount(); i += step)
     {
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        cl_uint *p = (cl_uint *)gIn;
-        cl_uint *p2 = (cl_uint *)gIn2;
-        for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
-        {
-            p[j] = genrand_int32(d);
-            p2[j] = genrand_int32(d);
-        }
+        fillFloatBinaryInput((cl_float *)gIn, (cl_float *)gIn2, step, i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))
