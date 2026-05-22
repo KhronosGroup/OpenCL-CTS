@@ -37,7 +37,6 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-
 struct TestInfo : public TestInfoBase
 {
     // Programs for various vector sizes.
@@ -56,7 +55,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     TestInfo *job = (TestInfo *)data;
     size_t buffer_elements = job->subBufferSize;
     size_t buffer_size = buffer_elements * sizeof(cl_double);
-    cl_uint base = job_id * (cl_uint)job->step;
+    cl_uint base = job_id * (cl_uint)buffer_elements;
     ThreadInfoBinary *tinfo = &(job->tinfo[thread_id]);
     float ulps = job->ulps;
     dptr func = job->f->dfunc;
@@ -100,42 +99,8 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     // Init input array
     cl_ulong *p = (cl_ulong *)gIn + thread_id * buffer_elements;
     cl_ulong *p2 = (cl_ulong *)gIn2 + thread_id * buffer_elements;
-    cl_uint idx = 0;
-
-    const std::vector<double> &specialValues = getDoubleSpecialValues();
-    size_t specialValuesCount = specialValues.size();
-    int totalSpecialValueCount = specialValuesCount * specialValuesCount;
-    int lastSpecialJobIndex = (totalSpecialValueCount - 1) / buffer_elements;
-
-    // Test edge cases
-    if (job_id <= (cl_uint)lastSpecialJobIndex)
-    {
-        cl_double *fp = (cl_double *)p;
-        cl_double *fp2 = (cl_double *)p2;
-        uint32_t x, y;
-
-        x = (job_id * buffer_elements) % specialValuesCount;
-        y = (job_id * buffer_elements) / specialValuesCount;
-
-        for (; idx < buffer_elements; idx++)
-        {
-            fp[idx] = specialValues[x];
-            fp2[idx] = specialValues[y];
-            if (++x >= specialValuesCount)
-            {
-                x = 0;
-                y++;
-                if (y >= specialValuesCount) break;
-            }
-        }
-    }
-
-    // Init any remaining values
-    for (; idx < buffer_elements; idx++)
-    {
-        p[idx] = genrand_int64(d);
-        p2[idx] = genrand_int64(d);
-    }
+    fillDoubleBinaryInput((cl_double *)p, (cl_double *)p2, buffer_elements,
+                          base, d);
 
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
                                       buffer_size, p, 0, NULL, NULL)))
@@ -415,10 +380,9 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     {
         if (gVerboseBruteForce)
         {
-            vlog("base:%14u step:%10u scale:%10u buf_elements:%10zu ulps:%5.3f "
+            vlog("base:%14u buf_elements:%10zu ulps:%5.3f "
                  "ThreadCount:%2u\n",
-                 base, job->step, job->scale, buffer_elements, job->ulps,
-                 job->threadCount);
+                 base, buffer_elements, job->ulps, job->threadCount);
         }
         else
         {
@@ -446,18 +410,8 @@ int TestFunc_Double_Double_Double(const Func *f, MTdata d, bool relaxedMode)
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_double) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    test_info.scale = getTestScale(sizeof(cl_double));
-
-    test_info.step = (cl_uint)test_info.subBufferSize * test_info.scale;
-    if (test_info.step / test_info.subBufferSize != test_info.scale)
-    {
-        // there was overflow
-        test_info.jobCount = 1;
-    }
-    else
-    {
-        test_info.jobCount = (cl_uint)((1ULL << 32) / test_info.step);
-    }
+    test_info.jobCount = std::max(
+        (cl_uint)1, (cl_uint)(getInputCount() / test_info.subBufferSize));
 
     test_info.f = f;
     test_info.ulps = getAllowedUlpError(f, kdouble, relaxedMode);

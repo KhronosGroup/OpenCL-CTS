@@ -45,8 +45,6 @@ int TestFunc_Int_Double(const Func *f, MTdata d, bool relaxedMode)
     KernelMatrix kernels;
     int ftz = f->ftz || gForceFTZ;
     uint64_t step = getTestStep(sizeof(cl_double), BUFFER_SIZE);
-    int scale =
-        (int)((1ULL << 32) / (16 * BUFFER_SIZE / sizeof(cl_double)) + 1);
 
     logFunctionInfo(f->name, sizeof(cl_double), relaxedMode);
 
@@ -62,22 +60,12 @@ int TestFunc_Int_Double(const Func *f, MTdata d, bool relaxedMode)
             return error;
     }
 
-    for (uint64_t i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < getInputCount(); i += step)
     {
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        double *p = (double *)gIn;
-        if (gWimpyMode)
-        {
-            for (size_t j = 0; j < BUFFER_SIZE / sizeof(cl_double); j++)
-                p[j] = DoubleFromUInt32((uint32_t)i + j * scale);
-        }
-        else
-        {
-            for (size_t j = 0; j < BUFFER_SIZE / sizeof(cl_double); j++)
-                p[j] = DoubleFromUInt32((uint32_t)i + j);
-        }
+        fillDoubleUnaryInput((double *)gIn, step, i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))

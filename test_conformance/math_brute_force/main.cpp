@@ -17,6 +17,7 @@
 #include "function_list.h"
 #include "sleep.h"
 #include "utility.h"
+#include "common.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -104,6 +105,8 @@ static MTdataHolder gMTdata;
 cl_device_fp_config gFloatCapabilities = 0;
 int gWimpyReductionFactor = 32;
 int gVerboseBruteForce = 0;
+
+bool gTestAll = false;
 
 cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
 
@@ -406,6 +409,7 @@ static test_status ParseArgs(int &argc, const char *argv[],
         -l     link check only (make sure functions are present, skip accuracy checks.)
         -m     Toggle run multi-threaded. (Default: on)
         -s     Stop on error
+        -a     Test 2^32 values, not just special & random values. (Default: off)
         -[2^n] Set wimpy reduction factor, recommended range of n is 1-10, default factor()"
         + std::to_string(gWimpyReductionFactor) + R"()
         -b     Fill buffers on host instead of device. (Default: off)
@@ -443,6 +447,8 @@ static test_status ParseArgs(int &argc, const char *argv[],
                 optionFound = 1;
                 switch (*arg)
                 {
+                    case 'a': gTestAll ^= 1; break;
+
                     case 'd': gHasDouble ^= 1; break;
 
                     case 'e': gFastRelaxedDerived ^= 1; break;
@@ -570,6 +576,7 @@ static test_status ParseArgs(int &argc, const char *argv[],
 
     gMTdata = MTdataHolder(gRandomSeed);
 
+    initInputCount(gWimpyReductionFactor);
     return TEST_PASS;
 }
 
