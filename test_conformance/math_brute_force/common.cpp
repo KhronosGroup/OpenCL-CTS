@@ -720,10 +720,6 @@ static const std::vector<double> doubleSpecialValues = {
     MAKE_HEX_DOUBLE(+0x0.0000000000001p-1022, +0x00000000000001LL, -1074),
     +0.0,
 };
-const std::vector<double> &getDoubleSpecialValues()
-{
-    return doubleSpecialValues;
-}
 
 static const std::vector<float> floatSpecialValues = {
     -NAN,
@@ -827,8 +823,6 @@ static const std::vector<float> floatSpecialValues = {
     +0.0f,
 };
 
-const std::vector<float> &getFloatSpecialValues() { return floatSpecialValues; }
-
 static const std::vector<cl_half> halfSpecialValues = {
     0xffff, 0x0000, 0x0001, 0x7c00, /*INFINITY*/
     0xfc00, /*-INFINITY*/
@@ -848,20 +842,199 @@ static const std::vector<cl_half> halfSpecialValues = {
     0xbbff, /* Largest negative fraction */
 };
 
-const std::vector<cl_half> &getHalfSpecialValues() { return halfSpecialValues; }
-
 static const std::vector<int> intSpecialValues = {
-    0,           1,           2,           3,          126,        127,
-    128,         0x02000001,  0x04000001,  1465264071, 1488522147, -1,
-    -2,          -3,          -126,        -127,       -128,       -0x02000001,
-    -0x04000001, -1465264071, -1488522147,
+    0,          1,           2,           3,           126,         127,
+    128,        1022,        1023,        1024,        0x02000001,  0x04000001,
+    1465264071, 1488522147,  INT_MIN,     INT_MAX,     -1,          -2,
+    -3,         -126,        -127,        -128,        -1022,       -1023,
+    -1024,      -0x02000001, -0x04000001, -1465264071, -1488522147, -INT_MAX,
 };
 
-const std::vector<int> &getIntSpecialValues() { return intSpecialValues; }
+static uint32_t getExponentDeBruijn(uint32_t number)
+{
+    // Lookup table mapping 5-bit De Bruijn hashes to exponents
+    static const int MultiplyDeBruijnBitPosition[32] = {
+        0,  1,  28, 2,  29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4,  8,
+        31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6,  11, 5,  10, 9
+    };
 
-static const std::vector<int> int3SpecialValues = {
-    0,       1,  2,  3,  1022,  1023,  1024,  INT_MIN,
-    INT_MAX, -1, -2, -3, -1022, -1023, -1024, -INT_MAX,
-};
+    // Multiply by the magic De Bruijn sequence and shift down
+    return MultiplyDeBruijnBitPosition[(uint32_t)(number * 0x077CB531U) >> 27];
+}
 
-const std::vector<int> &getInt3SpecialValues() { return int3SpecialValues; }
+static uint32_t input_count_power_of_two = 27;
+void initInputCount(int wimpyReductionFactor)
+{
+    if (gTestAll)
+    {
+        input_count_power_of_two = 32;
+    }
+    if (gWimpyMode)
+    {
+        input_count_power_of_two -= getExponentDeBruijn(wimpyReductionFactor);
+    }
+    if (gIsEmbedded)
+    {
+        input_count_power_of_two -=
+            getExponentDeBruijn(EMBEDDED_REDUCTION_FACTOR);
+    }
+}
+const size_t getInputCount() { return 1LL << input_count_power_of_two; }
+
+static void fillIntUnaryInput(int *data, size_t num_elems, size_t base_elem,
+                              MTdata d)
+{
+    size_t idx = 0;
+    size_t specialValuesCount = intSpecialValues.size();
+    for (; idx < num_elems && ((idx + base_elem) < specialValuesCount); idx++)
+    {
+        data[idx] = intSpecialValues[idx + base_elem];
+    }
+    for (; idx < num_elems; idx++)
+    {
+        data[idx] = genrand_int32(d);
+    }
+}
+
+void fillHalfUnaryInput(cl_half *data, size_t num_elems, size_t base_elem,
+                        MTdata d, bool testAll)
+{
+    cl_ushort *data_short = (cl_ushort *)data;
+    if (testAll)
+    {
+        for (uint32_t i = 0; i < num_elems; i++)
+        {
+            data_short[i] = (cl_ushort)(base_elem + i);
+        }
+        return;
+    }
+
+    size_t idx = 0;
+    size_t specialValuesCount = halfSpecialValues.size();
+    for (; idx < num_elems && ((idx + base_elem) < specialValuesCount); idx++)
+    {
+        data[idx] = halfSpecialValues[idx + base_elem];
+    }
+    for (; (idx + 1) < num_elems; idx += 2)
+    {
+        cl_uint gen = genrand_int32(d);
+        data_short[idx] = (cl_ushort)(gen & 0xffff);
+        data_short[idx + 1] = (cl_ushort)(gen >> 16);
+    }
+    if (idx < num_elems)
+    {
+        data_short[idx] = (cl_ushort)(genrand_int32(d) & 0xffff);
+    }
+}
+void fillFloatUnaryInput(float *data, size_t num_elems, size_t base_elem,
+                         MTdata d, bool testAll)
+{
+    cl_uint *data_int = (cl_uint *)data;
+    if (testAll)
+    {
+        for (uint32_t i = 0; i < num_elems; i++)
+        {
+            data_int[i] = base_elem + i;
+        }
+        return;
+    }
+
+    size_t idx = 0;
+    size_t specialValuesCount = floatSpecialValues.size();
+    for (; idx < num_elems && ((idx + base_elem) < specialValuesCount); idx++)
+    {
+        data[idx] = floatSpecialValues[idx + base_elem];
+    }
+    for (; idx < num_elems; idx++)
+    {
+        data_int[idx] = genrand_int32(d);
+    }
+}
+void fillDoubleUnaryInput(double *data, size_t num_elems, size_t base_elem,
+                          MTdata d)
+{
+    size_t idx = 0;
+    size_t specialValuesCount = doubleSpecialValues.size();
+    for (; idx < num_elems && ((idx + base_elem) < specialValuesCount); idx++)
+    {
+        data[idx] = doubleSpecialValues[idx + base_elem];
+    }
+    cl_uint *data_int = (cl_uint *)data;
+    for (; idx < num_elems; idx++)
+    {
+        data_int[idx] = genrand_int64(d);
+    }
+}
+
+#define MASK(n) ((1 << (n)) - 1)
+
+void fillHalfBinaryInput(cl_half *data1, cl_half *data2, size_t num_elems,
+                         size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 2;
+    fillHalfUnaryInput(data1, num_elems, base_elem & MASK(shift), d, gTestAll);
+    fillHalfUnaryInput(data2, num_elems, base_elem >> shift, d, gTestAll);
+}
+void fillFloatBinaryInput(float *data1, float *data2, size_t num_elems,
+                          size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 2;
+    fillFloatUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillFloatUnaryInput(data2, num_elems, base_elem >> shift, d);
+}
+void fillDoubleBinaryInput(double *data1, double *data2, size_t num_elems,
+                           size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 2;
+    fillDoubleUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillDoubleUnaryInput(data2, num_elems, base_elem >> shift, d);
+}
+
+void fillIntHalfBinaryInput(int *data1, cl_half *data2, size_t num_elems,
+                            size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 2;
+    fillIntUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillHalfUnaryInput(data2, num_elems, base_elem >> shift, d, gTestAll);
+}
+void fillIntFloatBinaryInput(int *data1, float *data2, size_t num_elems,
+                             size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 2;
+    fillIntUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillFloatUnaryInput(data2, num_elems, base_elem >> shift, d);
+}
+void fillIntDoubleBinaryInput(int *data1, double *data2, size_t num_elems,
+                              size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 2;
+    fillIntUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillDoubleUnaryInput(data2, num_elems, base_elem >> shift, d);
+}
+
+void fillHalfTernaryInput(cl_half *data1, cl_half *data2, cl_half *data3,
+                          size_t num_elems, size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 3;
+    fillHalfUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillHalfUnaryInput(data2, num_elems, (base_elem >> shift) & MASK(shift), d);
+    fillHalfUnaryInput(data3, num_elems, base_elem >> (shift * 2), d);
+}
+void fillFloatTernaryInput(float *data1, float *data2, float *data3,
+                           size_t num_elems, size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 3;
+    fillFloatUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillFloatUnaryInput(data2, num_elems, (base_elem >> shift) & MASK(shift),
+                        d);
+    fillFloatUnaryInput(data3, num_elems, base_elem >> (shift * 2), d);
+}
+void fillDoubleTernaryInput(double *data1, double *data2, double *data3,
+                            size_t num_elems, size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 3;
+    fillDoubleUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillDoubleUnaryInput(data2, num_elems, (base_elem >> shift) & MASK(shift),
+                         d);
+    fillDoubleUnaryInput(data3, num_elems, base_elem >> (shift * 2), d);
+}

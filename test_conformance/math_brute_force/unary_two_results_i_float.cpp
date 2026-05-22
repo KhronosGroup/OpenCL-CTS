@@ -57,7 +57,6 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal = 0.0f;
     float maxErrorVal2 = 0.0f;
     uint64_t step = getTestStep(sizeof(float), BUFFER_SIZE);
-    int scale = (int)((1ULL << 32) / (16 * BUFFER_SIZE / sizeof(float)) + 1);
     cl_ulong maxiError;
 
     logFunctionInfo(f->name, sizeof(cl_float), relaxedMode);
@@ -78,22 +77,13 @@ int TestFunc_FloatI_Float(const Func *f, MTdata d, bool relaxedMode)
                                &build_info)))
         return error;
 
-    for (uint64_t i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < getInputCount(); i += step)
     {
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        uint32_t *p = (uint32_t *)gIn;
-        if (gWimpyMode)
-        {
-            for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
-                p[j] = (uint32_t)i + j * scale;
-        }
-        else
-        {
-            for (size_t j = 0; j < BUFFER_SIZE / sizeof(float); j++)
-                p[j] = (uint32_t)i + j;
-        }
+        fillFloatUnaryInput((float *)gIn, step, i, d, gTestAll);
+
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))
         {

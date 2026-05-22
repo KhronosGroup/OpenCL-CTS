@@ -59,20 +59,13 @@ int TestFunc_mad_Double(const Func *f, MTdata d, bool relaxedMode)
                                &build_info)))
         return error;
 
-    for (uint64_t i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < getInputCount(); i += step)
     {
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        double *p = (double *)gIn;
-        double *p2 = (double *)gIn2;
-        double *p3 = (double *)gIn3;
-        for (size_t j = 0; j < BUFFER_SIZE / sizeof(double); j++)
-        {
-            p[j] = DoubleFromUInt32(genrand_int32(d));
-            p2[j] = DoubleFromUInt32(genrand_int32(d));
-            p3[j] = DoubleFromUInt32(genrand_int32(d));
-        }
+        fillDoubleTernaryInput((cl_double *)gIn, (cl_double *)gIn2,
+                               (cl_double *)gIn3, step, i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))
