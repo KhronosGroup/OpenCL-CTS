@@ -75,51 +75,13 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                                &build_info)))
         return error;
 
-    const std::vector<float> &specialValues = getFloatSpecialValues();
-    size_t specialValuesCount = specialValues.size();
-    for (uint64_t i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < getInputCount(); i += step)
     {
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        cl_uint *p = (cl_uint *)gIn;
-        cl_uint *p2 = (cl_uint *)gIn2;
-        cl_uint *p3 = (cl_uint *)gIn3;
-        size_t idx = 0;
-
-        if (i == 0)
-        { // test edge cases
-            float *fp = (float *)gIn;
-            float *fp2 = (float *)gIn2;
-            float *fp3 = (float *)gIn3;
-            uint32_t x, y, z;
-            x = y = z = 0;
-            for (; idx < BUFFER_SIZE / sizeof(float); idx++)
-            {
-                fp[idx] = specialValues[x];
-                fp2[idx] = specialValues[y];
-                fp3[idx] = specialValues[z];
-
-                if (++x >= specialValuesCount)
-                {
-                    x = 0;
-                    if (++y >= specialValuesCount)
-                    {
-                        y = 0;
-                        if (++z >= specialValuesCount) break;
-                    }
-                }
-            }
-            if (idx == BUFFER_SIZE / sizeof(float))
-                vlog_error("Test Error: not all special cases tested!\n");
-        }
-
-        for (; idx < BUFFER_SIZE / sizeof(float); idx++)
-        {
-            p[idx] = genrand_int32(d);
-            p2[idx] = genrand_int32(d);
-            p3[idx] = genrand_int32(d);
-        }
+        fillFloatTernaryInput((float *)gIn, (float *)gIn2, (float *)gIn3, step,
+                              i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))
