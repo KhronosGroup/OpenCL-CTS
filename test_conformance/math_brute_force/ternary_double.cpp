@@ -69,47 +69,13 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
                                &build_info)))
         return error;
 
-    const std::vector<double> &specialValues = getDoubleSpecialValues();
-    size_t specialValuesCount = specialValues.size();
-    for (uint64_t i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < getInputCount(); i += step)
     {
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        double *p = (double *)gIn;
-        double *p2 = (double *)gIn2;
-        double *p3 = (double *)gIn3;
-        size_t idx = 0;
-
-        if (i == 0)
-        { // test edge cases
-            uint32_t x, y, z;
-            x = y = z = 0;
-            for (; idx < BUFFER_SIZE / sizeof(double); idx++)
-            {
-                p[idx] = specialValues[x];
-                p2[idx] = specialValues[y];
-                p3[idx] = specialValues[z];
-                if (++x >= specialValuesCount)
-                {
-                    x = 0;
-                    if (++y >= specialValuesCount)
-                    {
-                        y = 0;
-                        if (++z >= specialValuesCount) break;
-                    }
-                }
-            }
-            if (idx == BUFFER_SIZE / sizeof(double))
-                vlog_error("Test Error: not all special cases tested!\n");
-        }
-
-        for (; idx < BUFFER_SIZE / sizeof(double); idx++)
-        {
-            p[idx] = DoubleFromUInt32(genrand_int32(d));
-            p2[idx] = DoubleFromUInt32(genrand_int32(d));
-            p3[idx] = DoubleFromUInt32(genrand_int32(d));
-        }
+        fillDoubleTernaryInput((cl_double *)gIn, (cl_double *)gIn2,
+                               (cl_double *)gIn3, step, i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))

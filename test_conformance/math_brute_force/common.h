@@ -147,10 +147,6 @@ struct TestInfoBase
     cl_uint threadCount = 0;
     // Number of jobs.
     cl_uint jobCount = 0;
-    // step between each chunk and the next.
-    cl_uint step = 0;
-    // stride between individual test values.
-    cl_uint scale = 0;
     // max_allowed ulps.
     float ulps = -1.f;
     // non-zero if running in flush to zero mode.
@@ -181,10 +177,35 @@ using SourceGenerator = std::string (*)(const std::string &kernel_name,
 cl_int BuildKernels(BuildKernelInfo &info, cl_uint job_id,
                     SourceGenerator generator);
 
-const std::vector<double> &getDoubleSpecialValues();
-const std::vector<float> &getFloatSpecialValues();
-const std::vector<cl_half> &getHalfSpecialValues();
-const std::vector<int> &getIntSpecialValues();
-const std::vector<int> &getInt3SpecialValues();
+const size_t getInputCount();
+void initInputCount(int wimpyReductionFactor);
+
+void fillHalfUnaryInput(cl_half *data, size_t num_elems, size_t base_elem,
+                        MTdata d, bool testAll = false);
+void fillFloatUnaryInput(float *data, size_t num_elems, size_t base_elem,
+                         MTdata d, bool testAll = false);
+void fillDoubleUnaryInput(double *data, size_t num_elems, size_t base_elem,
+                          MTdata d);
+
+void fillHalfBinaryInput(cl_half *data1, cl_half *data2, size_t num_elems,
+                         size_t base_elem, MTdata d);
+void fillFloatBinaryInput(float *data1, float *data2, size_t num_elems,
+                          size_t base_elem, MTdata d);
+void fillDoubleBinaryInput(double *data1, double *data2, size_t num_elems,
+                           size_t base_elem, MTdata d);
+
+void fillIntHalfBinaryInput(int *data1, cl_half *data2, size_t num_elems,
+                            size_t base_elem, MTdata d);
+void fillIntFloatBinaryInput(int *data1, float *data2, size_t num_elems,
+                             size_t base_elem, MTdata d);
+void fillIntDoubleBinaryInput(int *data1, double *data2, size_t num_elems,
+                              size_t base_elem, MTdata d);
+
+void fillHalfTernaryInput(cl_half *data1, cl_half *data2, cl_half *data3,
+                          size_t num_elems, size_t base_elem, MTdata d);
+void fillFloatTernaryInput(float *data1, float *data2, float *data3,
+                           size_t num_elems, size_t base_elem, MTdata d);
+void fillDoubleTernaryInput(double *data1, double *data2, double *data3,
+                            size_t num_elems, size_t base_elem, MTdata d);
 
 #endif /* COMMON_H */

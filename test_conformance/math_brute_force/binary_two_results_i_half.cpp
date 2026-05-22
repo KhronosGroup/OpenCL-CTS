@@ -102,18 +102,14 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                                &build_info)))
         return error;
 
-    for (uint64_t i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < getInputCount(); i += step)
     {
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
         cl_half *p = (cl_half *)gIn;
         cl_half *p2 = (cl_half *)gIn2;
-        for (size_t j = 0; j < buffer_size; j++)
-        {
-            p[j] = (cl_half)genrand_int32(d);
-            p2[j] = (cl_half)genrand_int32(d);
-        }
+        fillHalfBinaryInput(p, p2, step, i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           buffer_size * sizeof(cl_half), gIn, 0,
