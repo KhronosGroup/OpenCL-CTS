@@ -29,15 +29,16 @@
 
 #define TEST_READWRITERECT_PRINT_BUFFER 0
 #define CL_EXIT_ERROR(cmd, format, ...)                                        \
+    do                                                                         \
     {                                                                          \
         if ((cmd) != CL_SUCCESS)                                               \
         {                                                                      \
             log_error("CL ERROR: %s %u: ", __FILE__, __LINE__);                \
             log_error(format, ##__VA_ARGS__);                                  \
             log_error("\n");                                                   \
-            /*abort();*/                                                       \
+            return TEST_FAIL;                                                  \
         }                                                                      \
-    }
+    } while (0)
 
 namespace {
 
