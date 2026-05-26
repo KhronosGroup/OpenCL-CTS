@@ -35,26 +35,6 @@ cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-// Thread specific data for a worker thread
-struct ThreadInfo
-{
-    // Input and output buffers for the thread
-    clMemWrapper inBuf;
-    clMemWrapper inBuf2;
-    Buffers outBuf;
-
-    // max error value. Init to 0.
-    float maxError;
-    // position of the max error value (param 1).  Init to 0.
-    double maxErrorValue;
-    // position of the max error value (param 2).  Init to 0.
-    double maxErrorValue2;
-    MTdataHolder d;
-
-    // Per thread command queue to improve performance
-    clCommandQueueWrapper tQueue;
-};
-
 struct TestInfo : public TestInfoBase
 {
     // Programs for various vector sizes.
@@ -65,7 +45,7 @@ struct TestInfo : public TestInfoBase
     KernelMatrix k;
 
     // Array of thread specific information
-    std::vector<ThreadInfo> tinfo;
+    std::vector<ThreadInfoBinary> tinfo;
 };
 
 // A table of more difficult cases to get right
@@ -96,7 +76,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     size_t buffer_elements = job->subBufferSize;
     size_t buffer_size = buffer_elements * sizeof(cl_half);
     cl_uint base = job_id * (cl_uint)job->step;
-    ThreadInfo *tinfo = &(job->tinfo[thread_id]);
+    ThreadInfoBinary *tinfo = &(job->tinfo[thread_id]);
     float ulps = job->ulps;
     fptr func = job->f->func;
     int ftz = job->ftz;
