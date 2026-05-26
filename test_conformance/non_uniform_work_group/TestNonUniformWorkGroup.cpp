@@ -536,6 +536,8 @@ int TestNonUniformWorkGroup::prepareDevice () {
       }
   }
 
+  _numOfGlobalWorkItems = _globalSize[0] * _globalSize[1] * _globalSize[2];
+
   if(_localSize_IsNull == false)
     calculateExpectedValues();
 
