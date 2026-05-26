@@ -182,6 +182,7 @@ jobs:
   tests:
     name: Run Tests (pocl)
     runs-on: ubuntu-24.04
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v6
       - name: Parse triggers
@@ -214,8 +215,10 @@ jobs:
           git clone --depth 1 https://github.com/KhronosGroup/OpenCL-Headers.git ${{ env.cl-headers }}
           git clone --depth 1 https://github.com/KhronosGroup/SPIRV-Headers.git ${{ env.spv-headers }}
       - name: Setup Ninja
+        if: steps.check_triggers.outputs.run_tests == 'true'
         uses: seanmiddleditch/gha-setup-ninja@master
       - name: Install Vulkan SDK
+        if: steps.check_triggers.outputs.run_tests == 'true'
         uses: humbletim/install-vulkan-sdk@main
         with:
           version: 1.4.309.0
