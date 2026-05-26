@@ -2369,7 +2369,7 @@ double reference_tgamma(double x)
         float fx = x;
         if (fx == std::floor(fx))
         {
-            return std::numeric_limits<double>::signaling_NaN();
+            return cl_make_nan();
         }
 
         // The gamma function satisfies the reflection formula:
@@ -6095,7 +6095,7 @@ long double reference_tgammal(long double x)
     {
         if (x == std::floor(x))
         {
-            return std::numeric_limits<long double>::signaling_NaN();
+            return cl_make_nan();
         }
 
         // The gamma function satisfies the reflection formula:
