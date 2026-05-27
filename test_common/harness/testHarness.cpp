@@ -89,7 +89,8 @@ test_registry &test_registry::getInstance()
     return instance;
 }
 
-static int saveResultsToJson(const char *suiteName, test_definition testList[],
+static int saveResultsToJson(const char *suiteName, const char *args,
+                             test_definition testList[],
                              unsigned char selectedTestList[],
                              test_status resultTestList[], int testNum)
 {
@@ -128,6 +129,7 @@ static int saveResultsToJson(const char *suiteName, test_definition testList[],
 
     fprintf(file, "{\n");
     fprintf(file, "\t\"cmd\": \"%s\",\n", suiteName);
+    fprintf(file, "\t\"args\": \"%s\",\n", args);
     fprintf(file, "\t\"results\": {\n");
 
     for (int i = 0; i < testNum; ++i)
@@ -152,6 +154,17 @@ static int saveResultsToJson(const char *suiteName, test_definition testList[],
     return ret;
 }
 
+int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
+                            test_definition testList[],
+                            int forceNoContextCreation,
+                            cl_command_queue_properties queueProps,
+                            DeviceCheckFn deviceCheckFn)
+{
+    return runTestHarnessWithCheckAndParse(argc, argv, testNum, testList,
+                                           forceNoContextCreation, queueProps,
+                                           deviceCheckFn, NULL);
+}
+
 int runTestHarness(int argc, const char *argv[], int testNum,
                    test_definition testList[], int forceNoContextCreation,
                    cl_command_queue_properties queueProps)
@@ -160,14 +173,20 @@ int runTestHarness(int argc, const char *argv[], int testNum,
                                    forceNoContextCreation, queueProps, NULL);
 }
 
-int suite_did_not_pass_init(const char *suiteName, test_status status,
-                            int testNum, test_definition testList[])
+int suite_did_not_pass_init(const char *suiteName, const char *args,
+                            test_status status, int testNum,
+                            test_definition testList[])
 {
+    if (status == TEST_SKIPPED_ITSELF)
+    {
+        status = TEST_SKIP;
+    }
     std::vector<unsigned char> selectedTestList(testNum, 1);
     std::vector<test_status> resultTestList(testNum, status);
 
-    int ret = saveResultsToJson(suiteName, testList, selectedTestList.data(),
-                                resultTestList.data(), testNum);
+    int ret =
+        saveResultsToJson(suiteName, args, testList, selectedTestList.data(),
+                          resultTestList.data(), testNum);
 
     log_info("Test %s while initialization\n",
              status == TEST_SKIP ? "skipped" : "failed");
@@ -191,6 +210,30 @@ void version_expected_info(const char *test_name, const char *api_name,
              test_name, api_name, expected_version, api_name, device_version);
 }
 
+void update_argc_argv_from_args_list(std::vector<const char *> &argList,
+                                     int &argc, const char *argv[])
+{
+    argc = 0;
+    for (auto arg : argList)
+    {
+        argv[argc++] = arg;
+    }
+}
+
+static std::string removed_args_to_string(std::vector<std::string> &args)
+{
+    std::sort(args.begin(), args.end());
+    std::string result;
+    for (auto &arg : args)
+    {
+        result += arg + " ";
+    }
+    if (!result.empty())
+    {
+        result.erase(result.size() - 1);
+    }
+    return result;
+}
 static void list_tests(int testNum, test_definition testList[])
 {
     std::set<std::string> names;
@@ -203,11 +246,12 @@ static void list_tests(int testNum, test_definition testList[])
         log_info("\t%s\n", name.c_str());
     }
 }
-int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
-                            test_definition testList[],
-                            int forceNoContextCreation,
-                            cl_command_queue_properties queueProps,
-                            DeviceCheckFn deviceCheckFn)
+int runTestHarnessWithCheckAndParse(int argc, const char *argv[], int testNum,
+                                    test_definition testList[],
+                                    int forceNoContextCreation,
+                                    cl_command_queue_properties queueProps,
+                                    DeviceCheckFn deviceCheckFn,
+                                    ParseArgsFn parseArgsFn)
 {
     test_start();
 
@@ -224,6 +268,7 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     int err, ret;
     char *endPtr;
     int based_on_env_var = 0;
+    std::vector<std::string> removed_args;
 
 
     /* Check for environment variable to set device type */
@@ -286,7 +331,8 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
 
     /* Process the command line arguments */
 
-    argc = parseCustomParam(argc, argv);
+    bool help;
+    argc = parseCommonParamAndGetRemovedArgs(argc, argv, removed_args, help);
     if (argc == -1)
     {
         return EXIT_FAILURE;
@@ -298,23 +344,21 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
         return EXIT_SUCCESS;
     }
 
-    gWimpyMode |= (getenv("CL_WIMPY_MODE") != nullptr);
-    if (gWimpyMode)
+    const char *suiteName = argv[0];
+    std::string help_description;
+    if (parseArgsFn != NULL)
     {
-        log_info("\n");
-        log_info("**************************\n");
-        log_info("*** Wimpy mode enabled ***\n");
-        log_info("**************************\n");
-        log_info("\n");
+        help |= (parseArgsFn(argc, argv, removed_args, help_description)
+                 != TEST_PASS);
     }
 
-    if ((argc > 1) && (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")))
+    if (help)
     {
         char *fileName = getenv("CL_CONFORMANCE_RESULTS_FILENAME");
 
         log_info(
-            "Usage: %s [<test name>*] [pid<num>] [id<num>] [<device type>]\n",
-            argv[0]);
+            "Usage: %s %s[<test name>*] [pid<num>] [id<num>] [<device type>]\n",
+            argv[0], help_description.empty() ? "" : "[options] ");
         log_info("\t<test name>\tOne or more of: (wildcard character '*') "
                  "(default *)\n");
         log_info("\tpid<num>\tIndicates platform at index <num> should be used "
@@ -323,6 +367,11 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
                  "(default 0).\n");
         log_info("\t<device_type>\tall|cpu|gpu|accelerator|<CL_DEVICE_TYPE_*> "
                  "(default CL_DEVICE_TYPE_DEFAULT)\n");
+        if (!help_description.empty())
+        {
+            log_info("Options:\n");
+            log_info("%s", help_description.c_str());
+        }
         log_info("\n");
         log_info("\tNOTE: You may pass environment variable "
                  "CL_CONFORMANCE_RESULTS_FILENAME (currently '%s')\n",
@@ -335,6 +384,17 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
         log_info("Test names:\n");
         list_tests(testNum, testList);
         return EXIT_SUCCESS;
+    }
+
+    gWimpyMode |= (getenv("CL_WIMPY_MODE") != nullptr);
+    if (gWimpyMode)
+    {
+        log_info("\n");
+        log_info("**************************\n");
+        log_info("***    !! WARNING !!   ***\n");
+        log_info("*** Wimpy mode enabled ***\n");
+        log_info("**************************\n");
+        log_info("\n");
     }
 
     /* How are we supposed to seed the random # generators? */
@@ -618,25 +678,15 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
         log_error("Invalid device address bit size returned by device.\n");
         return EXIT_FAILURE;
     }
-    const char *suiteName = argv[0];
+
     if (gCompilationMode == kSpir_v)
     {
         test_status spirv_readiness = check_spirv_compilation_readiness(device);
         if (spirv_readiness != TEST_PASS)
         {
-            switch (spirv_readiness)
-            {
-                case TEST_PASS: break;
-                case TEST_FAIL:
-                    return suite_did_not_pass_init(suiteName, TEST_FAIL,
-                                                   testNum, testList);
-                case TEST_SKIP:
-                    return suite_did_not_pass_init(suiteName, TEST_SKIP,
-                                                   testNum, testList);
-                case TEST_SKIPPED_ITSELF:
-                    return suite_did_not_pass_init(suiteName, TEST_SKIP,
-                                                   testNum, testList);
-            }
+            auto args = removed_args_to_string(removed_args);
+            return suite_did_not_pass_init(suiteName, args.c_str(),
+                                           spirv_readiness, testNum, testList);
         }
     }
 
@@ -644,18 +694,11 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     if ((deviceCheckFn != NULL))
     {
         test_status status = deviceCheckFn(device);
-        switch (status)
+        if (status != TEST_PASS)
         {
-            case TEST_PASS: break;
-            case TEST_FAIL:
-                return suite_did_not_pass_init(suiteName, TEST_FAIL, testNum,
-                                               testList);
-            case TEST_SKIP:
-                return suite_did_not_pass_init(suiteName, TEST_SKIP, testNum,
-                                               testList);
-            case TEST_SKIPPED_ITSELF:
-                return suite_did_not_pass_init(suiteName, TEST_SKIP, testNum,
-                                               testList);
+            auto args = removed_args_to_string(removed_args);
+            return suite_did_not_pass_init(suiteName, args.c_str(), status,
+                                           testNum, testList);
         }
     }
 
@@ -679,8 +722,9 @@ int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
     test_harness_config config = { forceNoContextCreation, num_elements,
                                    queueProps, gNumWorkerThreads };
 
-    int error = parseAndCallCommandLineTests(argc, argv, device, testNum,
-                                             testList, config);
+    auto args = removed_args_to_string(removed_args);
+    int error = parseAndCallCommandLineTests(argc, argv, args.c_str(), device,
+                                             testNum, testList, config);
 
 #if defined(__APPLE__) && defined(__arm__)
     // Restore the old FP mode before leaving.
@@ -769,7 +813,7 @@ static void print_results(int failed, int count, const char *name)
     fflush(stdout);
 }
 
-int parseAndCallCommandLineTests(int argc, const char *argv[],
+int parseAndCallCommandLineTests(int argc, const char *argv[], const char *args,
                                  cl_device_id device, int testNum,
                                  test_definition testList[],
                                  const test_harness_config &config)
@@ -823,7 +867,7 @@ int parseAndCallCommandLineTests(int argc, const char *argv[],
         print_results(gFailCount, gTestCount, "sub-test");
         print_results(gTestsFailed, gTestsFailed + gTestsPassed, "test");
 
-        ret = saveResultsToJson(argv[0], testList, selectedTestList,
+        ret = saveResultsToJson(argv[0], args, testList, selectedTestList,
                                 resultTestList.data(), testNum);
 
         if (std::any_of(resultTestList.begin(), resultTestList.end(),
