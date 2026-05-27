@@ -55,8 +55,6 @@
     (CL_FP_FMA | CL_FP_ROUND_TO_NEAREST | CL_FP_ROUND_TO_ZERO                  \
      | CL_FP_ROUND_TO_INF | CL_FP_INF_NAN | CL_FP_DENORM)
 
-static std::vector<const char *> gTestNames;
-static char appName[MAXPATHLEN] = "";
 cl_device_id gDevice = NULL;
 cl_context gContext = NULL;
 cl_command_queue gQueue = NULL;
@@ -109,9 +107,9 @@ int gVerboseBruteForce = 0;
 
 cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
 
-static int ParseArgs(int argc, const char **argv);
-static void PrintUsage(void);
-static void PrintFunctions(void);
+static test_status ParseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help);
 static test_status InitCL(cl_device_id device);
 static void ReleaseCL(void);
 static int InitILogbConstants(void);
@@ -375,45 +373,12 @@ DO_TEST(erfc)
 
 int main(int argc, const char *argv[])
 {
-    int error;
-
-    argc = parseCustomParam(argc, argv);
-    if (argc == -1)
-    {
-        return -1;
-    }
-
-    error = ParseArgs(argc, argv);
-    if (error) return error;
-
-    if (!gListTests)
-    {
-        // This takes a while, so prevent the machine from going to sleep.
-        PreventSleep();
-        atexit(ResumeSleep);
-
-        if (gSkipCorrectnessTesting)
-            vlog("*** Skipping correctness testing! ***\n\n");
-        else if (gStopOnError)
-            vlog("Stopping at first error.\n");
-
-        vlog("   \t                                        ");
-        if (gWimpyMode) vlog("   ");
-        if (!gSkipCorrectnessTesting) vlog("\t  max_ulps");
-
-        vlog("\n---------------------------------------------------------------"
-             "--------------------------------------------\n");
-    }
-
-    gMTdata = MTdataHolder(gRandomSeed);
-
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 
-    int ret = runTestHarnessWithCheck(
-        gTestNames.size(), gTestNames.data(),
-        test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), true, 0, InitCL);
+    int ret = runTestHarnessWithCheckAndParse(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), true, 0, InitCL, ParseArgs);
 
     RestoreFPState(&oldMode);
 
@@ -428,40 +393,40 @@ int main(int argc, const char *argv[])
     return ret;
 }
 
-static int ParseArgs(int argc, const char **argv)
+static test_status ParseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help)
 {
-    if (gListTests)
-    {
-        return 0;
-    }
-    // We only pass test names to runTestHarnessWithCheck, hence global command
-    // line options defined by the harness cannot be used by the user.
-    // To respect the implementation details of runTestHarnessWithCheck,
-    // gTestNames[0] has to exist although its value is not important.
-    gTestNames.push_back("");
+    help =
+        R"(        -d     Toggle double precision testing. (Default: on iff khr_fp_64 on)
+        -f     Toggle float precision testing. (Default: on)
+        -g     Toggle half precision testing. (Default: on if khr_fp_16 on)
+        -r     Toggle fast relaxed math precision testing. (Default: on)
+        -e     Toggle test as derived implementations for fast relaxed math precision. (Default: on)
+        -l     link check only (make sure functions are present, skip accuracy checks.)
+        -m     Toggle run multi-threaded. (Default: on)
+        -s     Stop on error
+        -[2^n] Set wimpy reduction factor, recommended range of n is 1-10, default factor()"
+        + std::to_string(gWimpyReductionFactor) + R"()
+        -b     Fill buffers on host instead of device. (Default: off)
+        -z     Toggle FTZ mode (Section 6.5.3) for all functions. (Set by device capabilities by default.)
+        -v     Toggle Verbosity (Default: off)
+        -#     Test only vector sizes #, e.g. "-1" tests scalar only, "-16" tests 16-wide vectors only.
+
+        You may also pass a number instead of a function name.
+        This causes the first N tests to be skipped. The tests are numbered.
+        If you pass a second number, that is the number tests to run after the first one.
+        A name list may be used in conjunction with a number range. In that case,
+        only the named cases in the number range will run.
+        You may also choose to pass no arguments, in which case all tests will be run.
+)";
+
+    std::vector<const char *> argList;
+    argList.push_back(argv[0]);
 
     int singleThreaded = 0;
     int forcedWorkerThreads = 0;
 
-    { // Extract the app name
-        strncpy(appName, argv[0], MAXPATHLEN - 1);
-        appName[MAXPATHLEN - 1] = '\0';
-
-#if defined(__APPLE__)
-        char baseName[MAXPATHLEN];
-        char *base = NULL;
-        strncpy(baseName, argv[0], MAXPATHLEN - 1);
-        baseName[MAXPATHLEN - 1] = '\0';
-        base = basename(baseName);
-        if (NULL != base)
-        {
-            strncpy(appName, base, sizeof(appName) - 1);
-            appName[sizeof(appName) - 1] = '\0';
-        }
-#endif
-    }
-
-    vlog("\n%s\t", appName);
     for (int i = 1; i < argc; i++)
     {
         const char *arg = argv[i];
@@ -469,6 +434,7 @@ static int ParseArgs(int argc, const char **argv)
 
         vlog("\t%s", arg);
         int optionFound = 0;
+        removed_args.push_back(argv[i]);
         if (arg[0] == '-')
         {
             while (arg[1] != '\0')
@@ -483,15 +449,14 @@ static int ParseArgs(int argc, const char **argv)
 
                     case 'f': gTestFloat ^= 1; break;
 
-                    case 'h': PrintUsage(); return -1;
-
-                    case 'p': PrintFunctions(); return -1;
-
                     case 'l': gSkipCorrectnessTesting ^= 1; break;
 
                     case 'm': singleThreaded ^= 1; break;
 
                     case 't':
+                        removed_args.pop_back();
+                        removed_args.push_back(std::string(argv[i]) + " "
+                                               + argv[i + 1]);
                         forcedWorkerThreads = atoi(argv[++i]);
                         vlog(" %d", forcedWorkerThreads);
                         break;
@@ -544,8 +509,7 @@ static int ParseArgs(int argc, const char **argv)
 
                     default:
                         vlog(" <-- unknown flag: %c (0x%2.2x)\n)", *arg, *arg);
-                        PrintUsage();
-                        return -1;
+                        return TEST_FAIL;
                 }
             }
         }
@@ -563,25 +527,12 @@ static int ParseArgs(int argc, const char **argv)
             }
             else
             {
-                // Make sure this is a valid name
-                unsigned int k;
-                for (k = 0; k < functionListCount; k++)
-                {
-                    const Func *f = functionList + k;
-                    if (strcmp(arg, f->name) == 0)
-                    {
-                        gTestNames.push_back(arg);
-                        break;
-                    }
-                }
-                // If we didn't find it in the list of test names
-                if (k >= functionListCount)
-                {
-                    gTestNames.push_back(arg);
-                }
+                removed_args.pop_back();
+                argList.push_back(argv[i]);
             }
         }
     }
+    update_argc_argv_from_args_list(argList, argc, argv);
 
     PrintArch();
 
@@ -605,60 +556,21 @@ static int ParseArgs(int argc, const char **argv)
              forcedWorkerThreads);
         SetThreadCount(forcedWorkerThreads);
     }
+    if (gSkipCorrectnessTesting)
+        vlog("*** Skipping correctness testing! ***\n\n");
+    else if (gStopOnError)
+        vlog("Stopping at first error.\n");
 
-    return 0;
-}
+    vlog("   \t                                        ");
+    if (gWimpyMode) vlog("   ");
+    if (!gSkipCorrectnessTesting) vlog("\t  max_ulps");
 
+    vlog("\n---------------------------------------------------------------"
+         "--------------------------------------------\n");
 
-static void PrintFunctions(void)
-{
-    vlog("\nMath function names:\n");
-    for (size_t i = 0; i < functionListCount; i++)
-    {
-        vlog("\t%s\n", functionList[i].name);
-    }
-}
+    gMTdata = MTdataHolder(gRandomSeed);
 
-static void PrintUsage(void)
-{
-    vlog("%s [-cglsz]: <optional: math function names>\n", appName);
-    vlog("\toptions:\n");
-    vlog("\t\t-d\tToggle double precision testing. (Default: on iff khr_fp_64 "
-         "on)\n");
-    vlog("\t\t-f\tToggle float precision testing. (Default: on)\n");
-    vlog("\t\t-g\tToggle half precision testing. (Default: on if khr_fp_16 "
-         "on)\n");
-    vlog("\t\t-r\tToggle fast relaxed math precision testing. (Default: on)\n");
-    vlog("\t\t-e\tToggle test as derived implementations for fast relaxed math "
-         "precision. (Default: on)\n");
-    vlog("\t\t-h\tPrint this message and quit\n");
-    vlog("\t\t-p\tPrint all math function names and quit\n");
-    vlog("\t\t-l\tlink check only (make sure functions are present, skip "
-         "accuracy checks.)\n");
-    vlog("\t\t-m\tToggle run multi-threaded. (Default: on) )\n");
-    vlog("\t\t-s\tStop on error\n");
-    vlog("\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
-         "1-10, default factor(%u)\n",
-         gWimpyReductionFactor);
-    vlog("\t\t-b\tFill buffers on host instead of device. (Default: off)\n");
-    vlog("\t\t-z\tToggle FTZ mode (Section 6.5.3) for all functions. (Set by "
-         "device capabilities by default.)\n");
-    vlog("\t\t-v\tToggle Verbosity (Default: off)\n ");
-    vlog("\t\t-#\tTest only vector sizes #, e.g. \"-1\" tests scalar only, "
-         "\"-16\" tests 16-wide vectors only.\n");
-    vlog("\n\tYou may also pass a number instead of a function name.\n");
-    vlog("\tThis causes the first N tests to be skipped. The tests are "
-         "numbered.\n");
-    vlog("\tIf you pass a second number, that is the number tests to run after "
-         "the first one.\n");
-    vlog("\tA name list may be used in conjunction with a number range. In "
-         "that case,\n");
-    vlog("\tonly the named cases in the number range will run.\n");
-    vlog("\tYou may also choose to pass no arguments, in which case all tests "
-         "will be run.\n");
-    vlog("\tYou may pass CL_DEVICE_TYPE_CPU/GPU/ACCELERATOR to select the "
-         "device.\n");
-    vlog("\n");
+    return TEST_PASS;
 }
 
 static void CL_CALLBACK bruteforce_notify_callback(const char *errinfo,
@@ -673,6 +585,10 @@ test_status InitCL(cl_device_id device)
     int error;
     uint32_t i;
     cl_device_type device_type;
+
+    // This takes a while, so prevent the machine from going to sleep.
+    PreventSleep();
+    atexit(ResumeSleep);
 
     error = clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(device_type),
                             &device_type, NULL);
