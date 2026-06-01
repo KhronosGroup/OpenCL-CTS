@@ -19,6 +19,19 @@
 #include <algorithm>
 #include <random>
 
+// Override operator<< for cl_char and cl_uchar to print them as numbers.
+std::ostream& operator<<(std::ostream& os, const cl_char& val)
+{
+    os << static_cast<cl_int>(val);
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const cl_uchar& val)
+{
+    os << static_cast<cl_uint>(val);
+    return os;
+}
+
 // Define operator<< for cl_ types, accessing the .s member.
 #define OP_OSTREAM(Ty, VecSize)                                                \
     std::ostream& operator<<(std::ostream& os, const Ty##VecSize& val)         \

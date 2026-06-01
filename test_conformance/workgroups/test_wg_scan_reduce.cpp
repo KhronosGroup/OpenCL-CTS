@@ -161,6 +161,27 @@ template <typename C> struct Reduce
     static constexpr const char *deviceTypeName =
         TestTypeInfo<Type>::deviceName;
     static constexpr const char *kernelName = "test_wg_reduce";
+
+    static int check_result(const Type &test_value, const Type &reference,
+                            const Type &max_err = 0)
+    {
+        if constexpr (std::is_floating_point_v<Type>)
+        {
+            if (fabs(reference - test_value) > max_err) return -1;
+        }
+        else if constexpr (std::is_same_v<Type, cl_half>)
+        {
+            if (fabs(cl_half_to_float(reference) - cl_half_to_float(test_value))
+                > cl_half_to_float(max_err))
+                return -1;
+        }
+        else
+        {
+            if (reference != test_value) return -1;
+        }
+        return CL_SUCCESS;
+    }
+
     static int verify(Type *inptr, Type *outptr, size_t n_elems,
                       size_t max_wg_size, const Type *const max_err = nullptr)
     {
@@ -176,7 +197,8 @@ template <typename C> struct Reduce
 
             for (size_t j = 0; j < wg_size; j++)
             {
-                if (result != outptr[i + j])
+                if (check_result(outptr[i + j], result, max_err[0])
+                    != CL_SUCCESS)
                 {
                     log_info("%s_%s: Error at %zu\n", testName, testOpName,
                              i + j);
@@ -189,10 +211,83 @@ template <typename C> struct Reduce
 
     static void generate_input_values(Type *inptr, size_t n_elems,
                                       size_t max_wg_size,
-                                      const Type *max_err = nullptr)
+                                      Type *const max_err = nullptr)
     {
         MTdataHolder d(gRandomSeed);
-        for (size_t i = 0; i < n_elems; i++) inptr[i] = (Type)genrand_int64(d);
+        if constexpr (std::is_floating_point_v<
+                          Type> || std::is_same_v<Type, cl_half>)
+        {
+            std::vector<Type> ref_vals(max_wg_size, 0);
+            if constexpr (std::is_same_v<Type, cl_half>)
+            {
+                // to prevent overflow limit range of randomization
+                float max_range = 99.0;
+                float min_range = -99.0;
+                // generate reference values for one work group
+                for (size_t j = 0; j < max_wg_size; j++)
+                    ref_vals[j] = cl_half_from_float(
+                        get_random_float(min_range, max_range, d),
+                        gHalfRoundingMode);
+
+                // populate reference data across all work groups
+                for (size_t i = 0; i < (size_t)n_elems; i += max_wg_size)
+                {
+                    size_t wg_size = std::min(max_wg_size, n_elems - i);
+                    memcpy(&inptr[i], ref_vals.data(), sizeof(Type) * wg_size);
+                }
+
+                if constexpr (std::is_same_v<Operation, Add<Type>>)
+                {
+                    // compute maximal summation error
+                    std::sort(ref_vals.begin(), ref_vals.end(),
+                              [](cl_half a, cl_half b) {
+                                  return std::abs(cl_half_to_float(a))
+                                      < std::abs(cl_half_to_float(b));
+                              });
+
+                    float s = 0.f;
+                    for (auto it = ref_vals.begin(); it != ref_vals.end(); ++it)
+                        s += std::abs(cl_half_to_float(*it));
+                    max_err[0] = cl_half_from_float(
+                        fabs((max_wg_size - 1) * CL_HALF_EPSILON * s),
+                        gHalfRoundingMode);
+                }
+            }
+            else
+            {
+                double max_range = 999.0;
+                double min_range = -999.0;
+                for (size_t j = 0; j < max_wg_size; j++)
+                    ref_vals[j] = get_random_float(min_range, max_range, d);
+
+                for (size_t i = 0; i < (size_t)n_elems; i += max_wg_size)
+                {
+                    size_t work_group_size = std::min(max_wg_size, n_elems - i);
+                    memcpy(&inptr[i], ref_vals.data(),
+                           sizeof(Type) * work_group_size);
+                }
+
+                if constexpr (std::is_same_v<Operation, Add<Type>>)
+                {
+                    // compute maximal summation error
+                    std::sort(ref_vals.begin(), ref_vals.end());
+                    Type abs_sum = 0;
+                    for (auto elem : ref_vals) abs_sum += fabs(elem);
+                    // Higham, N. J. (2002). Accuracy and Stability of Numerical
+                    // Algorithms (2nd ed.), Chapter 4: Summation, Section 2:
+                    // Error Analysis (worst case error summation)
+                    max_err[0] = (max_wg_size - 1)
+                        * (std::is_same_v<Type, cl_float> ? CL_FLT_EPSILON
+                                                          : CL_DBL_EPSILON)
+                        * abs_sum;
+                }
+            }
+        }
+        else
+        {
+            for (size_t i = 0; i < n_elems; i++)
+                inptr[i] = (Type)genrand_int64(d);
+        }
     }
 };
 
@@ -375,7 +470,6 @@ static int run_test(cl_device_id device, cl_context context,
                     cl_command_queue queue, int n_elems)
 {
     using T = typename TestInfo::Type;
-
     cl_int err = CL_SUCCESS;
 
     clProgramWrapper program;
@@ -469,6 +563,37 @@ REGISTER_TEST_VERSION(work_group_reduce_add, Version(2, 0))
                                                   num_elements);
     }
 
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        const cl_device_fp_config fpConfigHalf =
+            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
+        if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTE;
+        }
+        else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTZ;
+        }
+        else
+        {
+            log_error("Error while acquiring half rounding mode\n");
+            return TEST_FAIL;
+        }
+
+        result |= run_test<Reduce<Add<cl_half>>>(device, context, queue,
+                                                 num_elements);
+    }
+
+    result |=
+        run_test<Reduce<Add<cl_float>>>(device, context, queue, num_elements);
+
+    if (is_extension_available(device, "cl_khr_fp64"))
+    {
+        result |= run_test<Reduce<Add<cl_double>>>(device, context, queue,
+                                                   num_elements);
+    }
+
     return result;
 }
 
@@ -489,6 +614,37 @@ REGISTER_TEST_VERSION(work_group_reduce_max, Version(2, 0))
                                                   num_elements);
     }
 
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        const cl_device_fp_config fpConfigHalf =
+            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
+        if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTE;
+        }
+        else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTZ;
+        }
+        else
+        {
+            log_error("Error while acquiring half rounding mode\n");
+            return TEST_FAIL;
+        }
+
+        result |= run_test<Reduce<Max<cl_half>>>(device, context, queue,
+                                                 num_elements);
+    }
+
+    result |=
+        run_test<Reduce<Max<cl_float>>>(device, context, queue, num_elements);
+
+    if (is_extension_available(device, "cl_khr_fp64"))
+    {
+        result |= run_test<Reduce<Max<cl_double>>>(device, context, queue,
+                                                   num_elements);
+    }
+
     return result;
 }
 
@@ -507,6 +663,37 @@ REGISTER_TEST_VERSION(work_group_reduce_min, Version(2, 0))
                                                  num_elements);
         result |= run_test<Reduce<Min<cl_ulong>>>(device, context, queue,
                                                   num_elements);
+    }
+
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        const cl_device_fp_config fpConfigHalf =
+            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
+        if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTE;
+        }
+        else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTZ;
+        }
+        else
+        {
+            log_error("Error while acquiring half rounding mode\n");
+            return TEST_FAIL;
+        }
+
+        result |= run_test<Reduce<Min<cl_half>>>(device, context, queue,
+                                                 num_elements);
+    }
+
+    result |=
+        run_test<Reduce<Min<cl_float>>>(device, context, queue, num_elements);
+
+    if (is_extension_available(device, "cl_khr_fp64"))
+    {
+        result |= run_test<Reduce<Min<cl_double>>>(device, context, queue,
+                                                   num_elements);
     }
 
     return result;

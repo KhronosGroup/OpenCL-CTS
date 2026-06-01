@@ -16,6 +16,7 @@ set(${MODULE_NAME}_SOURCES
     mutable_command_work_groups.cpp
     mutable_command_work_dim.cpp
     mutable_command_update_state.cpp
+    mutable_command_defer_arguments.cpp
     ../basic_command_buffer.cpp
 )
 

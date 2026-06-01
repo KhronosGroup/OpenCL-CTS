@@ -1,5 +1,7 @@
 set(MODULE_NAME COMPILER)
 
+find_package(Python3 COMPONENTS Interpreter QUIET)
+
 set(${MODULE_NAME}_SOURCES
     main.cpp
     test_build_helpers.cpp
@@ -52,7 +54,7 @@ add_custom_command(
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CLConform_SOURCE_DIR}/test_conformance/compiler/secondIncludeTestDirectory
         ${COMPILER_TEST_RESOURCES}/secondIncludeTestDirectory
-        COMMAND ${COMPILER_ASSEMBLY_SCRIPT} --source-dir "${COMPILER_ASM_PATH}" --output-dir "${COMPILER_SPV_PATH}" ${COMPILER_SPV_EXTRA} --verbose
+        COMMAND ${Python3_EXECUTABLE} ${COMPILER_ASSEMBLY_SCRIPT} --source-dir "${COMPILER_ASM_PATH}" --output-dir "${COMPILER_SPV_PATH}" ${COMPILER_SPV_EXTRA} --verbose
         DEPENDS ${COMPILER_ASSEMBLY_SCRIPT} ${COMPILER_ASM}
         VERBATIM)
 

@@ -16,19 +16,29 @@
 
 #pragma once
 
+#if D3D12_IS_SUPPORTED
 #include <d3d12.h>
+#endif
+#if D3D11_IS_SUPPORTED
+#include <cl/cl_d3d11.h>
+#endif
+#if D3D10_IS_SUPPORTED
+#include <cl/cl_d3d10.h>
+#endif
+
+#include <vector>
 #include <wrl/client.h>
-#include <stdexcept>
 
 using namespace Microsoft::WRL;
 
-class DirectXWrapper {
+#if D3D12_IS_SUPPORTED
+class DirectX12Wrapper {
 public:
-    DirectXWrapper();
+    DirectX12Wrapper();
 
-    ID3D12Device* getDXDevice() const;
-    ID3D12CommandQueue* getDXCommandQueue() const;
-    ID3D12CommandAllocator* getDXCommandAllocator() const;
+    [[nodiscard]] ID3D12Device* getDXDevice() const;
+    [[nodiscard]] ID3D12CommandQueue* getDXCommandQueue() const;
+    [[nodiscard]] ID3D12CommandAllocator* getDXCommandAllocator() const;
 
 protected:
     ComPtr<ID3D12Device> dx_device = nullptr;
@@ -36,12 +46,43 @@ protected:
     ComPtr<ID3D12CommandAllocator> dx_command_allocator = nullptr;
 };
 
-class DirectXFenceWrapper {
+class DirectX12FenceWrapper {
 public:
-    DirectXFenceWrapper(ID3D12Device* dx_device);
-    ID3D12Fence* operator*() const { return dx_fence.Get(); }
+    DirectX12FenceWrapper(ID3D12Device* dx_device);
+    [[nodiscard]] ID3D12Fence* get() const { return dx_fence.Get(); }
 
 private:
     ComPtr<ID3D12Fence> dx_fence = nullptr;
     ComPtr<ID3D12Device> dx_device = nullptr;
 };
+#endif
+
+#if D3D11_IS_SUPPORTED
+struct DirectX11Wrapper
+{
+    struct DeviceEntry
+    {
+        ComPtr<IDXGIAdapter> dx_adapter;
+        ComPtr<ID3D11Device> dx_device;
+    };
+
+    DirectX11Wrapper();
+
+    std::vector<DeviceEntry> devices;
+};
+#endif
+
+#if D3D10_IS_SUPPORTED
+struct DirectX10Wrapper
+{
+    struct DeviceEntry
+    {
+        ComPtr<IDXGIAdapter> dx_adapter;
+        ComPtr<ID3D10Device> dx_device;
+    };
+
+    DirectX10Wrapper();
+
+    std::vector<DeviceEntry> devices;
+};
+#endif

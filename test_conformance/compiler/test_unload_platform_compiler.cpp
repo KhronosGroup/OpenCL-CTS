@@ -32,8 +32,6 @@ const std::string slash = "\\";
 #else
 const std::string slash = "/";
 #endif
-std::string compilerSpvBinaries = "test_conformance" + slash + "compiler"
-    + slash + "spirv_bin" + slash + "write_kernel.spv";
 
 const std::string spvExt = ".spv";
 
@@ -338,8 +336,8 @@ public:
 
         std::vector<unsigned char> kernel_buffer;
 
-        std::string file_name =
-            compilerSpvBinaries + std::to_string(address_bits);
+        std::string file_name = spvBinariesPath + slash + "write_kernel.spv"
+            + std::to_string(address_bits);
         m_spirv_binary = readBinary(file_name.c_str());
         m_spirv_size = m_spirv_binary.size();
     }
