@@ -766,7 +766,16 @@ __kernel void test_sub_group_non_uniform_broadcast(const __global Type *in, __gl
     int gid = get_global_id(0);
     XY(xy,gid);
     Type x = in[gid];
-    if (xy[gid].x < (get_sub_group_size() >> 1)) {
+
+    uint sub_group_size = get_sub_group_size();
+    // If we are at the edge, calculate our own sub_group_size as it's implementation defined otherwise.
+    if (get_local_size(0) != get_enqueued_local_size(0) && get_sub_group_id() == get_num_sub_groups() - 1) {
+        uint new_sub_group_size = get_local_size(0) % sub_group_size;
+        if (new_sub_group_size != 0)
+            sub_group_size = new_sub_group_size;
+    }
+
+    if (xy[gid].x < (sub_group_size >> 1)) {
         out[gid] = sub_group_non_uniform_broadcast(x, xy[gid].z);
     } else {
         out[gid] = sub_group_non_uniform_broadcast(x, xy[gid].w);
@@ -778,7 +787,16 @@ __kernel void test_sub_group_broadcast_first(const __global Type *in, __global i
     int gid = get_global_id(0);
     XY(xy,gid);
     Type x = in[gid];
-    if (xy[gid].x < (get_sub_group_size() >> 1)) {
+
+    uint sub_group_size = get_sub_group_size();
+    // If we are at the edge, calculate our own sub_group_size as it's implementation defined otherwise.
+    if (get_local_size(0) != get_enqueued_local_size(0) && get_sub_group_id() == get_num_sub_groups() - 1) {
+        uint new_sub_group_size = get_local_size(0) % sub_group_size;
+        if (new_sub_group_size != 0)
+            sub_group_size = new_sub_group_size;
+    }
+
+    if (xy[gid].x < (sub_group_size >> 1)) {
         out[gid] = sub_group_broadcast_first(x);;
     } else {
         out[gid] = sub_group_broadcast_first(x);;
