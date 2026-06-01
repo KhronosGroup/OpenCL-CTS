@@ -546,6 +546,60 @@ static int run_test(cl_device_id device, cl_context context,
     return TEST_PASS;
 }
 
+template <template <typename> class Op>
+static int run_scan_inclusive_all_types(cl_device_id device, cl_context context,
+                                        cl_command_queue queue,
+                                        int num_elements)
+{
+    int result = TEST_PASS;
+
+    result |= run_test<ScanInclusive<Op<cl_int>>>(device, context, queue,
+                                                  num_elements);
+    result |= run_test<ScanInclusive<Op<cl_uint>>>(device, context, queue,
+                                                   num_elements);
+
+    if (gHasLong)
+    {
+        result |= run_test<ScanInclusive<Op<cl_long>>>(device, context, queue,
+                                                       num_elements);
+        result |= run_test<ScanInclusive<Op<cl_ulong>>>(device, context, queue,
+                                                        num_elements);
+    }
+
+    if (is_extension_available(device, "cl_khr_fp16"))
+    {
+        const cl_device_fp_config fpConfigHalf =
+            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
+        if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTE;
+        }
+        else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
+        {
+            gHalfRoundingMode = CL_HALF_RTZ;
+        }
+        else
+        {
+            log_error("Error while acquiring half rounding mode\n");
+            return TEST_FAIL;
+        }
+
+        result |= run_test<ScanInclusive<Op<cl_half>>>(device, context, queue,
+                                                       num_elements);
+    }
+
+    result |= run_test<ScanInclusive<Op<cl_float>>>(device, context, queue,
+                                                    num_elements);
+
+    if (is_extension_available(device, "cl_khr_fp64"))
+    {
+        result |= run_test<ScanInclusive<Op<cl_double>>>(device, context, queue,
+                                                         num_elements);
+    }
+
+    return result;
+}
+
 REGISTER_TEST_VERSION(work_group_reduce_add, Version(2, 0))
 {
     int result = TEST_PASS;
@@ -701,155 +755,20 @@ REGISTER_TEST_VERSION(work_group_reduce_min, Version(2, 0))
 
 REGISTER_TEST_VERSION(work_group_scan_inclusive_add, Version(2, 0))
 {
-    int result = TEST_PASS;
-
-    result |= run_test<ScanInclusive<Add<cl_int>>>(device, context, queue,
-                                                   num_elements);
-    result |= run_test<ScanInclusive<Add<cl_uint>>>(device, context, queue,
-                                                    num_elements);
-
-    if (gHasLong)
-    {
-        result |= run_test<ScanInclusive<Add<cl_long>>>(device, context, queue,
-                                                        num_elements);
-        result |= run_test<ScanInclusive<Add<cl_ulong>>>(device, context, queue,
-                                                         num_elements);
-    }
-
-    if (is_extension_available(device, "cl_khr_fp16"))
-    {
-        const cl_device_fp_config fpConfigHalf =
-            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
-        if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
-        {
-            gHalfRoundingMode = CL_HALF_RTE;
-        }
-        else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
-        {
-            gHalfRoundingMode = CL_HALF_RTZ;
-        }
-        else
-        {
-            log_error("Error while acquiring half rounding mode\n");
-            return TEST_FAIL;
-        }
-
-        result |= run_test<ScanInclusive<Add<cl_half>>>(device, context, queue,
-                                                        num_elements);
-    }
-
-    result |= run_test<ScanInclusive<Add<cl_float>>>(device, context, queue,
-                                                     num_elements);
-
-    if (is_extension_available(device, "cl_khr_fp64"))
-    {
-        result |= run_test<ScanInclusive<Add<cl_double>>>(device, context,
-                                                          queue, num_elements);
-    }
-
-    return result;
+    return run_scan_inclusive_all_types<Add>(device, context, queue,
+                                             num_elements);
 }
 
 REGISTER_TEST_VERSION(work_group_scan_inclusive_max, Version(2, 0))
 {
-    int result = TEST_PASS;
-
-    result |= run_test<ScanInclusive<Max<cl_int>>>(device, context, queue,
-                                                   num_elements);
-    result |= run_test<ScanInclusive<Max<cl_uint>>>(device, context, queue,
-                                                    num_elements);
-
-    if (gHasLong)
-    {
-        result |= run_test<ScanInclusive<Max<cl_long>>>(device, context, queue,
-                                                        num_elements);
-        result |= run_test<ScanInclusive<Max<cl_ulong>>>(device, context, queue,
-                                                         num_elements);
-    }
-
-    if (is_extension_available(device, "cl_khr_fp16"))
-    {
-        const cl_device_fp_config fpConfigHalf =
-            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
-        if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
-        {
-            gHalfRoundingMode = CL_HALF_RTE;
-        }
-        else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
-        {
-            gHalfRoundingMode = CL_HALF_RTZ;
-        }
-        else
-        {
-            log_error("Error while acquiring half rounding mode\n");
-            return TEST_FAIL;
-        }
-
-        result |= run_test<ScanInclusive<Max<cl_half>>>(device, context, queue,
-                                                        num_elements);
-    }
-
-    result |= run_test<ScanInclusive<Max<cl_float>>>(device, context, queue,
-                                                     num_elements);
-
-    if (is_extension_available(device, "cl_khr_fp64"))
-    {
-        result |= run_test<ScanInclusive<Max<cl_double>>>(device, context,
-                                                          queue, num_elements);
-    }
-
-    return result;
+    return run_scan_inclusive_all_types<Max>(device, context, queue,
+                                             num_elements);
 }
 
 REGISTER_TEST_VERSION(work_group_scan_inclusive_min, Version(2, 0))
 {
-    int result = TEST_PASS;
-
-    result |= run_test<ScanInclusive<Min<cl_int>>>(device, context, queue,
-                                                   num_elements);
-    result |= run_test<ScanInclusive<Min<cl_uint>>>(device, context, queue,
-                                                    num_elements);
-
-    if (gHasLong)
-    {
-        result |= run_test<ScanInclusive<Min<cl_long>>>(device, context, queue,
-                                                        num_elements);
-        result |= run_test<ScanInclusive<Min<cl_ulong>>>(device, context, queue,
-                                                         num_elements);
-    }
-
-    if (is_extension_available(device, "cl_khr_fp16"))
-    {
-        const cl_device_fp_config fpConfigHalf =
-            get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
-        if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
-        {
-            gHalfRoundingMode = CL_HALF_RTE;
-        }
-        else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
-        {
-            gHalfRoundingMode = CL_HALF_RTZ;
-        }
-        else
-        {
-            log_error("Error while acquiring half rounding mode\n");
-            return TEST_FAIL;
-        }
-
-        result |= run_test<ScanInclusive<Min<cl_half>>>(device, context, queue,
-                                                        num_elements);
-    }
-
-    result |= run_test<ScanInclusive<Min<cl_float>>>(device, context, queue,
-                                                     num_elements);
-
-    if (is_extension_available(device, "cl_khr_fp64"))
-    {
-        result |= run_test<ScanInclusive<Min<cl_double>>>(device, context,
-                                                          queue, num_elements);
-    }
-
-    return result;
+    return run_scan_inclusive_all_types<Min>(device, context, queue,
+                                             num_elements);
 }
 
 REGISTER_TEST_VERSION(work_group_scan_exclusive_add, Version(2, 0))
