@@ -34,17 +34,6 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-// Thread specific data for a worker thread
-struct ThreadInfo
-{
-    // Input and output buffers for the thread
-    clMemWrapper inBuf;
-    Buffers outBuf;
-
-    // Per thread command queue to improve performance
-    clCommandQueueWrapper tQueue;
-};
-
 struct TestInfo : public TestInfoBase
 {
     // Programs for various vector sizes.
@@ -55,7 +44,7 @@ struct TestInfo : public TestInfoBase
     KernelMatrix k;
 
     // Array of thread specific information
-    std::vector<ThreadInfo> tinfo;
+    std::vector<ThreadInfoUnary> tinfo;
 };
 
 cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
@@ -65,7 +54,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     size_t buffer_size = buffer_elements * sizeof(cl_float);
     cl_uint scale = job->scale;
     cl_uint base = job_id * (cl_uint)job->step;
-    ThreadInfo *tinfo = &(job->tinfo[thread_id]);
+    ThreadInfoUnary *tinfo = &(job->tinfo[thread_id]);
     fptr func = job->f->func;
     int ftz = job->ftz;
     bool relaxedMode = job->relaxedMode;

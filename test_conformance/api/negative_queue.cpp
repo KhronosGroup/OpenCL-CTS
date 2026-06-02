@@ -434,16 +434,9 @@ REGISTER_TEST(negative_get_command_queue_info)
 
     if (device_supports_on_device_queue(device))
     {
-        const cl_queue_properties properties[] = {
-            CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0
-        };
-        cl_int err = CL_INVALID_VALUE;
-        clCommandQueueWrapper cmd_queue = clCreateCommandQueueWithProperties(
-            context, device, properties, &err);
-        test_error(err, "clCreateCommandQueueWithProperties");
         cl_uint queue_size = -1;
-        err = clGetCommandQueueInfo(cmd_queue, CL_QUEUE_SIZE,
-                                    sizeof(queue_size), &queue_size, nullptr);
+        err = clGetCommandQueueInfo(queue, CL_QUEUE_SIZE, sizeof(queue_size),
+                                    &queue_size, nullptr);
         test_failure_error_ret(err, CL_INVALID_COMMAND_QUEUE,
                                "clGetCommandQueueInfo should return "
                                "CL_INVALID_COMMAND_QUEUE when: \"command_queue "
