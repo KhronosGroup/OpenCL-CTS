@@ -51,6 +51,7 @@
 #include <vector>
 #include <type_traits>
 #include <cmath>
+#include <mutex>
 
 #include "basic_test_conversions.h"
 
@@ -95,48 +96,14 @@ int gMinVectorSize = 0;
 int gMaxVectorSize = sizeof(vectorSizes) / sizeof(vectorSizes[0]);
 MTdata gMTdata;
 std::vector<const char *> argList;
-
+bool gTestAll = false;
+std::recursive_mutex gLock;
 
 cl_half_rounding_mode DataInitInfo::halfRoundingMode = CL_HALF_RTE;
 cl_half_rounding_mode ConversionsTest::defaultHalfRoundingMode = CL_HALF_RTE;
 
 // clang-format off
 // for readability sake keep this section unformatted
-
-std::vector<unsigned int> DataInitInfo::specialValuesUInt = {
-      uint32_t(INT_MIN), uint32_t(INT_MIN + 1), uint32_t(INT_MIN + 2),
-      uint32_t(-(1 << 30) - 3), uint32_t(-(1 << 30) - 2), uint32_t(-(1 << 30) - 1), uint32_t(-(1 << 30)),
-      uint32_t(-(1 << 30) + 1), uint32_t(-(1 << 30) + 2), uint32_t(-(1 << 30) + 3),
-      uint32_t(-(1 << 24) - 3), uint32_t(-(1 << 24) - 2),uint32_t(-(1 << 24) - 1),
-      uint32_t(-(1 << 24)), uint32_t(-(1 << 24) + 1), uint32_t(-(1 << 24) + 2), uint32_t(-(1 << 24) + 3),
-      uint32_t(-(1 << 23) - 3), uint32_t(-(1 << 23) - 2),uint32_t(-(1 << 23) - 1),
-      uint32_t(-(1 << 23)), uint32_t(-(1 << 23) + 1), uint32_t(-(1 << 23) + 2), uint32_t(-(1 << 23) + 3),
-      uint32_t(-(1 << 22) - 3), uint32_t(-(1 << 22) - 2),uint32_t(-(1 << 22) - 1),
-      uint32_t(-(1 << 22)), uint32_t(-(1 << 22) + 1), uint32_t(-(1 << 22) + 2), uint32_t(-(1 << 22) + 3),
-      uint32_t(-(1 << 21) - 3), uint32_t(-(1 << 21) - 2),uint32_t(-(1 << 21) - 1),
-      uint32_t(-(1 << 21)), uint32_t(-(1 << 21) + 1), uint32_t(-(1 << 21) + 2), uint32_t(-(1 << 21) + 3),
-      uint32_t(-(1 << 16) - 3), uint32_t(-(1 << 16) - 2),uint32_t(-(1 << 16) - 1),
-      uint32_t(-(1 << 16)), uint32_t(-(1 << 16) + 1), uint32_t(-(1 << 16) + 2), uint32_t(-(1 << 16) + 3),
-      uint32_t(-(1 << 15) - 3), uint32_t(-(1 << 15) - 2),uint32_t(-(1 << 15) - 1),
-      uint32_t(-(1 << 15)), uint32_t(-(1 << 15) + 1), uint32_t(-(1 << 15) + 2), uint32_t(-(1 << 15) + 3),
-      uint32_t(-(1 << 8) - 3), uint32_t(-(1 << 8) - 2),uint32_t(-(1 << 8) - 1),
-      uint32_t(-(1 << 8)), uint32_t(-(1 << 8) + 1), uint32_t(-(1 << 8) + 2), uint32_t(-(1 << 8) + 3),
-      uint32_t(-(1 << 7) - 3), uint32_t(-(1 << 7) - 2),uint32_t(-(1 << 7) - 1),
-      uint32_t(-(1 << 7)), uint32_t(-(1 << 7) + 1), uint32_t(-(1 << 7) + 2), uint32_t(-(1 << 7) + 3),
-      uint32_t(-4), uint32_t(-3), uint32_t(-2), uint32_t(-1), 0, 1, 2, 3, 4,
-      (1 << 7) - 3,(1 << 7) - 2,(1 << 7) - 1, (1 << 7), (1 << 7) + 1, (1 << 7) + 2, (1 << 7) + 3,
-      (1 << 8) - 3,(1 << 8) - 2,(1 << 8) - 1, (1 << 8), (1 << 8) + 1, (1 << 8) + 2, (1 << 8) + 3,
-      (1 << 15) - 3,(1 << 15) - 2,(1 << 15) - 1, (1 << 15), (1 << 15) + 1, (1 << 15) + 2, (1 << 15) + 3,
-      (1 << 16) - 3,(1 << 16) - 2,(1 << 16) - 1, (1 << 16), (1 << 16) + 1, (1 << 16) + 2, (1 << 16) + 3,
-      (1 << 21) - 3,(1 << 21) - 2,(1 << 21) - 1, (1 << 21), (1 << 21) + 1, (1 << 21) + 2, (1 << 21) + 3,
-      (1 << 22) - 3,(1 << 22) - 2,(1 << 22) - 1, (1 << 22), (1 << 22) + 1, (1 << 22) + 2, (1 << 22) + 3,
-      (1 << 23) - 3,(1 << 23) - 2,(1 << 23) - 1, (1 << 23), (1 << 23) + 1, (1 << 23) + 2, (1 << 23) + 3,
-      (1 << 24) - 3,(1 << 24) - 2,(1 << 24) - 1, (1 << 24), (1 << 24) + 1, (1 << 24) + 2, (1 << 24) + 3,
-      (1 << 30) - 3,(1 << 30) - 2,(1 << 30) - 1, (1 << 30), (1 << 30) + 1, (1 << 30) + 2, (1 << 30) + 3,
-      INT_MAX - 3, INT_MAX - 2, INT_MAX - 1, INT_MAX, // 0x80000000, 0x80000001 0x80000002 already covered above
-      UINT_MAX - 3, UINT_MAX - 2, UINT_MAX - 1, UINT_MAX
-};
-
 std::vector<float> DataInitInfo::specialValuesFloat = {
     -NAN, -INFINITY, -FLT_MAX,
     MAKE_HEX_FLOAT(-0x1.000002p64f, -0x1000002L, 40), MAKE_HEX_FLOAT(-0x1.0p64f, -0x1L, 64), MAKE_HEX_FLOAT(-0x1.fffffep63f, -0x1fffffeL, 39),
@@ -254,29 +221,6 @@ std::vector<double> DataInitInfo::specialValuesDouble = {
     MAKE_HEX_DOUBLE(-0x1.ffffffffp62, -0x1ffffffffLL, 30), MAKE_HEX_DOUBLE(-0x1.ffffffff00001p62, -0x1ffffffff00001LL, 10),
     MAKE_HEX_DOUBLE(0x1.fffffffefffffp62, 0x1fffffffefffffLL, 10), MAKE_HEX_DOUBLE(0x1.ffffffffp62, 0x1ffffffffLL, 30),
     MAKE_HEX_DOUBLE(0x1.ffffffff00001p62, 0x1ffffffff00001LL, 10),
-};
-
-// A table of more difficult cases to get right
-std::vector<cl_half> DataInitInfo::specialValuesHalf = {
-    0xffff,
-    0x0000,
-    0x0001,
-    0x7c00, /*INFINITY*/
-    0xfc00, /*-INFINITY*/
-    0x8000, /*-0*/
-    0x7bff, /*HALF_MAX*/
-    0x0400, /*HALF_MIN*/
-    0x03ff, /* Largest denormal */
-    0x3c00, /* 1 */
-    0xbc00, /* -1 */
-    0x3555, /*nearest value to 1/3*/
-    0x3bff, /*largest number less than one*/
-    0xc000, /* -2 */
-    0xfbff, /* -HALF_MAX */
-    0x8400, /* -HALF_MIN */
-    0x4248, /* M_PI_H */
-    0xc248, /* -M_PI_H */
-    0xbbff, /* Largest negative fraction */
 };
 // clang-format on
 
@@ -690,29 +634,42 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
             init_info.round = round = kRoundTowardZero;
     }
 
-    // Figure out how many elements are in a work block
-    // we handle 64-bit types a bit differently.
-    uint64_t lastCase = (8 * gTypeSizes[inType] > 32)
-        ? 0x100000000ULL
-        : 1ULL << (8 * gTypeSizes[inType]);
+    uint64_t nbInputs = (1ULL << 25);
+    if constexpr (sizeof(InType) <= 2)
+    {
+        nbInputs = (1ULL << (sizeof(InType) * 8));
+    }
+    else
+    {
+        if (gTestAll)
+        {
+            nbInputs = (1ULL << 32);
+        }
+        else
+        {
+            if (gWimpyMode)
+            {
+                nbInputs /= gWimpyReductionFactor;
+            }
+            if (gIsEmbedded)
+            {
+                nbInputs /= EMBEDDED_REDUCTION_FACTOR;
+            }
+        }
+    }
 
-    if (!gWimpyMode && gIsEmbedded)
-        step = blockCount * EMBEDDED_REDUCTION_FACTOR;
-
-    if (gWimpyMode) step = (size_t)blockCount * (size_t)gWimpyReductionFactor;
     vlog("Testing... ");
     fflush(stdout);
-    for (i = 0; i < (uint64_t)lastCase; i += step)
+    for (i = 0; i < (uint64_t)nbInputs; i += step)
     {
 
-        if (0 == (i & ((lastCase >> 3) - 1)))
+        if (0 == (i & ((nbInputs >> 3) - 1)))
         {
             vlog(".");
             fflush(stdout);
         }
 
-        cl_uint count = (uint32_t)std::min((uint64_t)blockCount, lastCase - i);
-        writeInputBufferInfo.count = count;
+        writeInputBufferInfo.count = blockCount;
 
         // Crate a user event to represent the status of the reference value
         // computation completion
@@ -761,14 +718,14 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
         //      Call this in a multithreaded manner
         cl_uint chunks = RoundUpToNextPowerOfTwo(threads) * 2;
         init_info.start = i;
-        init_info.size = count / chunks;
+        init_info.size = blockCount / chunks;
         if (init_info.size < 16384)
         {
             chunks = RoundUpToNextPowerOfTwo(threads);
-            init_info.size = count / chunks;
+            init_info.size = blockCount / chunks;
             if (init_info.size < 16384)
             {
-                init_info.size = count;
+                init_info.size = blockCount;
                 chunks = 1;
             }
         }
@@ -777,8 +734,8 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
 
         // Copy the results to the device
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_TRUE, 0,
-                                          count * gTypeSizes[inType], gIn, 0,
-                                          NULL, NULL)))
+                                          blockCount * gTypeSizes[inType], gIn,
+                                          0, NULL, NULL)))
         {
             vlog_error("ERROR: clEnqueueWriteBuffer failed. (%d)\n", error);
             gFailCount++;
