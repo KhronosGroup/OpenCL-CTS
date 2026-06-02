@@ -160,6 +160,7 @@ static test_status ParseArgs(int &argc, const char *argv[],
         -[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor()"
         + std::to_string(gWimpyReductionFactor) + R"()
         -z     Toggle flush to zero mode  (Default: per device)
+        -a     Test 2^32 values, not just special & random values. (default: off)
         -#     Test just vector size given by #, where # is an element of the set {1,2,3,4,8,16}
 
         You may also pass the number of the test on which to start.
@@ -238,6 +239,7 @@ Test names:
                         gForceFTZ ^= 1;
                         gForceHalfFTZ ^= 1;
                         break;
+                    case 'a': gTestAll ^= 1; break;
                     case '1':
                         if (arg[1] == '6')
                         {
