@@ -29,15 +29,16 @@
 
 #define TEST_READWRITERECT_PRINT_BUFFER 0
 #define CL_EXIT_ERROR(cmd, format, ...)                                        \
+    do                                                                         \
     {                                                                          \
         if ((cmd) != CL_SUCCESS)                                               \
         {                                                                      \
             log_error("CL ERROR: %s %u: ", __FILE__, __LINE__);                \
             log_error(format, ##__VA_ARGS__);                                  \
             log_error("\n");                                                   \
-            /*abort();*/                                                       \
+            return TEST_FAIL;                                                  \
         }                                                                      \
-    }
+    } while (0)
 
 namespace {
 
@@ -63,6 +64,22 @@ size_t tmp_buffer_size;
 size_t num_tries   = 50; // Number of randomly selected operations to perform.
 size_t alloc_scale = 2;   // Scale term applied buffer allocation size.
 MTdata mt;
+
+size_t effective_row_pitch(size_t row_pitch, size_t region_width)
+{
+    return row_pitch == 0 ? region_width : row_pitch;
+}
+
+size_t random_slice_pitch(size_t row_pitch, size_t region_width,
+                          size_t image_height)
+{
+    if ((genrand_int32(mt) % 2) == 0)
+    {
+        return 0;
+    }
+
+    return effective_row_pitch(row_pitch, region_width) * image_height;
+}
 
 // Initialize a buffer in host memory containing random values of the specified size.
 void initialize_image(BufferType* ptr, size_t w, size_t h, size_t d, MTdata mt)
@@ -172,16 +189,12 @@ int copy_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst,
 {
     // Copy between cl buffers
     // Compute or provide zero pitches randomly
-    size_t src_slice_pitch =
-        (width[src] * height[src] != 1 && ((genrand_int32(mt) % 2) != 0))
-        ? width[src] * height[src]
-        : 0;
-    size_t dst_slice_pitch =
-        (width[dst] * height[dst] != 1 && ((genrand_int32(mt) % 2) != 0))
-        ? width[dst] * height[dst]
-        : 0;
     size_t src_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[src] : 0;
     size_t dst_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[dst] : 0;
+    size_t src_slice_pitch =
+        random_slice_pitch(src_row_pitch, sregion[0], height[src]);
+    size_t dst_slice_pitch =
+        random_slice_pitch(dst_row_pitch, dregion[0], height[dst]);
 
     if (src == dst)
     {
