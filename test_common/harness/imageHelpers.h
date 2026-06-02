@@ -448,6 +448,27 @@ void read_image_pixel(void *imageData, image_descriptor *imageInfo, int x,
             tempData[0] = (T)(hi_val | lo_val);
             break;
         }
+        case CL_UNSIGNED_INT10X6_EXT: {
+            cl_short *dPtr = (cl_short *)ptr;
+            const size_t channelCount = get_format_channel_count(format);
+            for (i = 0; i < channelCount; i++)
+                tempData[i] = (dPtr[i] >> 6) & 0x3ff;
+            break;
+        }
+        case CL_UNSIGNED_INT12X4_EXT: {
+            cl_short *dPtr = (cl_short *)ptr;
+            const size_t channelCount = get_format_channel_count(format);
+            for (i = 0; i < channelCount; i++)
+                tempData[i] = (dPtr[i] >> 4) & 0xfff;
+            break;
+        }
+        case CL_UNSIGNED_INT14X2_EXT: {
+            cl_short *dPtr = (cl_short *)ptr;
+            const size_t channelCount = get_format_channel_count(format);
+            for (i = 0; i < channelCount; i++)
+                tempData[i] = (dPtr[i] >> 2) & 0x3fff;
+            break;
+        }
     }
 
 

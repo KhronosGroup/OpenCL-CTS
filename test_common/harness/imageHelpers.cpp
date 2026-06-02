@@ -97,7 +97,13 @@ uint32_t get_channel_data_type_size(cl_channel_type channelType)
         case CL_UNSIGNED_INT32: return sizeof(cl_int);
 
         case CL_UNORM_SHORT_565:
-        case CL_UNORM_SHORT_555: return 2;
+        case CL_UNORM_SHORT_555:
+        case CL_UNSIGNED_INT10X6_EXT:
+        case CL_UNSIGNED_INT12X4_EXT:
+        case CL_UNSIGNED_INT14X2_EXT:
+        case CL_UNORM_INT10X6_EXT:
+        case CL_UNORM_INT12X4_EXT:
+        case CL_UNORM_INT14X2_EXT: return 2;
 
         case CL_UNORM_INT_101010:
         case CL_UNORM_INT_101010_2:
@@ -131,10 +137,10 @@ uint32_t get_channel_order_channel_count(cl_channel_order order)
         case CL_RGx: return 2;
 
         case CL_RGB:
-        case CL_RGBx:
-        case CL_sRGB:
-        case CL_sRGBx: return 3;
+        case CL_sRGB: return 3;
 
+        case CL_RGBx:
+        case CL_sRGBx:
         case CL_RGBA:
         case CL_ARGB:
         case CL_BGRA:
@@ -186,6 +192,12 @@ cl_channel_type get_channel_type_from_name(const char *name)
 #ifdef CL_SFIXED14_APPLE
         { CL_SFIXED14_APPLE, "CL_SFIXED14_APPLE" }
 #endif
+        { CL_UNSIGNED_INT10X6_EXT, "CL_UNSIGNED_INT10X6_EXT" },
+        { CL_UNSIGNED_INT12X4_EXT, "CL_UNSIGNED_INT12X4_EXT" },
+        { CL_UNSIGNED_INT14X2_EXT, "CL_UNSIGNED_INT14X2_EXT" },
+        { CL_UNORM_INT10X6_EXT, "CL_UNORM_INT10X6_EXT" },
+        { CL_UNORM_INT12X4_EXT, "CL_UNORM_INT12X4_EXT" },
+        { CL_UNORM_INT14X2_EXT, "CL_UNORM_INT14X2_EXT" },
     };
     for (size_t i = 0; i < sizeof(typeNames) / sizeof(typeNames[0]); i++)
     {
@@ -278,6 +290,12 @@ uint32_t get_pixel_size(const cl_image_format *format)
 #ifdef CL_SFIXED14_APPLE
         case CL_SFIXED14_APPLE:
 #endif
+        case CL_UNSIGNED_INT10X6_EXT:
+        case CL_UNSIGNED_INT12X4_EXT:
+        case CL_UNSIGNED_INT14X2_EXT:
+        case CL_UNORM_INT10X6_EXT:
+        case CL_UNORM_INT12X4_EXT:
+        case CL_UNORM_INT14X2_EXT:
             return get_format_channel_count(format) * sizeof(cl_ushort);
 
         case CL_SIGNED_INT32:
@@ -475,8 +493,10 @@ size_t compare_scanlines(const image_descriptor *imageInfo, const char *aPtr,
             // If the data type is 101010, then ignore bits 31 and 32 when
             // comparing the row
             case CL_UNORM_INT_101010: {
-                cl_uint aPixel = *(cl_uint *)aPtr;
-                cl_uint bPixel = *(cl_uint *)bPtr;
+                cl_uint aPixel = 0;
+                cl_uint bPixel = 0;
+                memcpy(&aPixel, aPtr, sizeof(aPixel));
+                memcpy(&bPixel, bPtr, sizeof(bPixel));
                 if ((aPixel & 0x3fffffff) != (bPixel & 0x3fffffff))
                     return column;
             }
@@ -484,34 +504,108 @@ size_t compare_scanlines(const image_descriptor *imageInfo, const char *aPtr,
 
             // If the data type is 555, ignore bit 15 when comparing the row
             case CL_UNORM_SHORT_555: {
-                cl_ushort aPixel = *(cl_ushort *)aPtr;
-                cl_ushort bPixel = *(cl_ushort *)bPtr;
+                cl_ushort aPixel = 0;
+                cl_ushort bPixel = 0;
+                memcpy(&aPixel, aPtr, sizeof(aPixel));
+                memcpy(&bPixel, bPtr, sizeof(bPixel));
                 if ((aPixel & 0x7fff) != (bPixel & 0x7fff)) return column;
             }
             break;
 
-            case CL_SNORM_INT8: {
-                cl_uchar aPixel = *(cl_uchar *)aPtr;
-                cl_uchar bPixel = *(cl_uchar *)bPtr;
-                // -1.0 is defined as 0x80 and 0x81
-                aPixel = (aPixel == 0x80) ? 0x81 : aPixel;
-                bPixel = (bPixel == 0x80) ? 0x81 : bPixel;
-                if (aPixel != bPixel)
+            // 16-bit per-channel formats with LSB padding (per spec); compare
+            // defined bits only.
+            case CL_UNSIGNED_INT10X6_EXT:
+            case CL_UNORM_INT10X6_EXT: {
+                const size_t channel_count =
+                    get_format_channel_count(imageInfo->format);
+                for (size_t chan = 0; chan < channel_count; ++chan)
                 {
-                    return column;
+                    cl_ushort aChanVal = 0;
+                    cl_ushort bChanVal = 0;
+                    const char *aChan = aPtr + chan * sizeof(cl_ushort);
+                    const char *bChan = bPtr + chan * sizeof(cl_ushort);
+                    memcpy(&aChanVal, aChan, sizeof(aChanVal));
+                    memcpy(&bChanVal, bChan, sizeof(bChanVal));
+                    if ((aChanVal & 0xffc0) != (bChanVal & 0xffc0))
+                        return column;
+                }
+            }
+            break;
+            case CL_UNSIGNED_INT12X4_EXT:
+            case CL_UNORM_INT12X4_EXT: {
+                const size_t channel_count =
+                    get_format_channel_count(imageInfo->format);
+                for (size_t chan = 0; chan < channel_count; ++chan)
+                {
+                    cl_ushort aChanVal = 0;
+                    cl_ushort bChanVal = 0;
+                    const char *aChan = aPtr + chan * sizeof(cl_ushort);
+                    const char *bChan = bPtr + chan * sizeof(cl_ushort);
+                    memcpy(&aChanVal, aChan, sizeof(aChanVal));
+                    memcpy(&bChanVal, bChan, sizeof(bChanVal));
+                    if ((aChanVal & 0xfff0) != (bChanVal & 0xfff0))
+                        return column;
+                }
+            }
+            break;
+            case CL_UNSIGNED_INT14X2_EXT:
+            case CL_UNORM_INT14X2_EXT: {
+                const size_t channel_count =
+                    get_format_channel_count(imageInfo->format);
+                for (size_t chan = 0; chan < channel_count; ++chan)
+                {
+                    cl_ushort aChanVal = 0;
+                    cl_ushort bChanVal = 0;
+                    const char *aChan = aPtr + chan * sizeof(cl_ushort);
+                    const char *bChan = bPtr + chan * sizeof(cl_ushort);
+                    memcpy(&aChanVal, aChan, sizeof(aChanVal));
+                    memcpy(&bChanVal, bChan, sizeof(bChanVal));
+                    if ((aChanVal & 0xfffc) != (bChanVal & 0xfffc))
+                        return column;
+                }
+            }
+            break;
+
+            case CL_SNORM_INT8: {
+                const size_t channel_count =
+                    get_format_channel_count(imageInfo->format);
+                for (size_t chan = 0; chan < channel_count; ++chan)
+                {
+                    cl_uchar aChanVal = 0;
+                    cl_uchar bChanVal = 0;
+                    const char *aChan = aPtr + chan * sizeof(cl_uchar);
+                    const char *bChan = bPtr + chan * sizeof(cl_uchar);
+                    memcpy(&aChanVal, aChan, sizeof(aChanVal));
+                    memcpy(&bChanVal, bChan, sizeof(bChanVal));
+                    // -1.0 is defined as 0x80 and 0x81
+                    aChanVal = (aChanVal == 0x80) ? 0x81 : aChanVal;
+                    bChanVal = (bChanVal == 0x80) ? 0x81 : bChanVal;
+                    if (aChanVal != bChanVal)
+                    {
+                        return column;
+                    }
                 }
             }
             break;
 
             case CL_SNORM_INT16: {
-                cl_ushort aPixel = *(cl_ushort *)aPtr;
-                cl_ushort bPixel = *(cl_ushort *)bPtr;
-                // -1.0 is defined as 0x8000 and 0x8001
-                aPixel = (aPixel == 0x8000) ? 0x8001 : aPixel;
-                bPixel = (bPixel == 0x8000) ? 0x8001 : bPixel;
-                if (aPixel != bPixel)
+                const size_t channel_count =
+                    get_format_channel_count(imageInfo->format);
+                for (size_t chan = 0; chan < channel_count; ++chan)
                 {
-                    return column;
+                    cl_ushort aChanVal = 0;
+                    cl_ushort bChanVal = 0;
+                    const char *aChan = aPtr + chan * sizeof(cl_ushort);
+                    const char *bChan = bPtr + chan * sizeof(cl_ushort);
+                    memcpy(&aChanVal, aChan, sizeof(aChanVal));
+                    memcpy(&bChanVal, bChan, sizeof(bChanVal));
+                    // -1.0 is defined as 0x8000 and 0x8001
+                    aChanVal = (aChanVal == 0x8000) ? 0x8001 : aChanVal;
+                    bChanVal = (bChanVal == 0x8000) ? 0x8001 : bChanVal;
+                    if (aChanVal != bChanVal)
+                    {
+                        return column;
+                    }
                 }
             }
             break;
@@ -526,6 +620,7 @@ size_t compare_scanlines(const image_descriptor *imageInfo, const char *aPtr,
     }
 
     // If we didn't find a difference, return the width of the image
+    assert(column == imageInfo->width);
     return column;
 }
 
@@ -940,6 +1035,9 @@ float get_max_absolute_error(const cl_image_format *format,
 #endif
         case CL_UNORM_SHORT_555:
         case CL_UNORM_SHORT_565: return 1.0f / 31.0f;
+        case CL_UNORM_INT10X6_EXT: return 1.0f / 1023.0f;
+        case CL_UNORM_INT12X4_EXT: return 1.0f / 4095.0f;
+        case CL_UNORM_INT14X2_EXT: return 1.0f / 16383.0f;
         default: return 0.0f;
     }
 }
@@ -968,6 +1066,9 @@ float get_max_relative_error(const cl_image_format *format,
         case CL_UNORM_INT_101010:
         case CL_UNORM_INT_101010_2:
         case CL_UNORM_INT_2_101010_EXT:
+        case CL_UNORM_INT10X6_EXT:
+        case CL_UNORM_INT12X4_EXT:
+        case CL_UNORM_INT14X2_EXT:
             // Maximum sampling error for round to zero normalization based on
             // multiplication by reciprocal (using reciprocal generated in
             // round to +inf mode, so that 1.0 matches spec)
@@ -1053,7 +1154,15 @@ size_t get_format_max_int(const cl_image_format *format)
 
         case CL_UNORM_INT_101010:
         case CL_UNORM_INT_101010_2:
-        case CL_UNORM_INT_2_101010_EXT: return 1023;
+        case CL_UNORM_INT_2_101010_EXT:
+        case CL_UNSIGNED_INT10X6_EXT:
+        case CL_UNORM_INT10X6_EXT: return 1023;
+
+        case CL_UNSIGNED_INT12X4_EXT:
+        case CL_UNORM_INT12X4_EXT: return 4095;
+
+        case CL_UNSIGNED_INT14X2_EXT:
+        case CL_UNORM_INT14X2_EXT: return 16383;
 
         case CL_HALF_FLOAT: return 1 << 10;
 
@@ -1087,7 +1196,13 @@ int get_format_min_int(const cl_image_format *format)
         case CL_UNORM_SHORT_555:
         case CL_UNORM_INT_101010:
         case CL_UNORM_INT_101010_2:
-        case CL_UNORM_INT_2_101010_EXT: return 0;
+        case CL_UNORM_INT_2_101010_EXT:
+        case CL_UNSIGNED_INT10X6_EXT:
+        case CL_UNSIGNED_INT12X4_EXT:
+        case CL_UNSIGNED_INT14X2_EXT:
+        case CL_UNORM_INT10X6_EXT:
+        case CL_UNORM_INT12X4_EXT:
+        case CL_UNORM_INT14X2_EXT: return 0;
 
         case CL_HALF_FLOAT: return -(1 << 10);
 
@@ -1170,9 +1285,10 @@ void escape_inf_nan_subnormal_values(char *data, size_t allocSize)
 {
     // filter values with 8 not-quite-highest bits
     unsigned int *intPtr = (unsigned int *)data;
-    for (size_t i = 0; i<allocSize>> 2; i++)
+    for (size_t i = 0; i < (allocSize >> 2); i++)
     {
-        if ((intPtr[i] & 0x7F800000) == 0x7F800000) intPtr[i] ^= 0x40000000;
+        if ((intPtr[i] & 0x7F800000) == 0x7F800000)
+            intPtr[i] ^= 0x40000000;
         else if ((intPtr[i] & 0x7F800000) == 0)
             intPtr[i] ^= 0x40000000;
     }
@@ -1180,9 +1296,10 @@ void escape_inf_nan_subnormal_values(char *data, size_t allocSize)
     // Ditto with half floats (16-bit numbers with the 5 not-quite-highest bits
     // = 0x7C00 are special)
     unsigned short *shortPtr = (unsigned short *)data;
-    for (size_t i = 0; i<allocSize>> 1; i++)
+    for (size_t i = 0; i < (allocSize >> 1); i++)
     {
-        if ((shortPtr[i] & 0x7C00) == 0x7C00) shortPtr[i] ^= 0x4000;
+        if ((shortPtr[i] & 0x7C00) == 0x7C00)
+            shortPtr[i] ^= 0x4000;
         else if ((shortPtr[i] & 0x7C00) == 0)
             shortPtr[i] ^= 0x4000;
     }
@@ -1518,6 +1635,30 @@ void read_image_pixel_float(void *imageData, image_descriptor *imageInfo, int x,
             tempData[1] = (float)((dPtr[0] >> 20) & 0x3ff) / (float)1023;
             tempData[2] = (float)(dPtr[0] >> 10 & 0x3ff) / (float)1023;
             tempData[3] = (float)(dPtr[0] >> 0 & 0x3ff) / (float)1023;
+            break;
+        }
+
+        case CL_UNORM_INT10X6_EXT: {
+            cl_ushort *dPtr = (cl_ushort *)ptr;
+            for (i = 0; i < channelCount; i++)
+                tempData[i] =
+                    CLAMP_FLOAT((float)((dPtr[i] >> 6) & 0x3ff) / 1023.0f);
+            break;
+        }
+
+        case CL_UNORM_INT12X4_EXT: {
+            cl_ushort *dPtr = (cl_ushort *)ptr;
+            for (i = 0; i < channelCount; i++)
+                tempData[i] =
+                    CLAMP_FLOAT((float)((dPtr[i] >> 4) & 0xfff) / 4095.0f);
+            break;
+        }
+
+        case CL_UNORM_INT14X2_EXT: {
+            cl_ushort *dPtr = (cl_ushort *)ptr;
+            for (i = 0; i < channelCount; i++)
+                tempData[i] =
+                    CLAMP_FLOAT((float)((dPtr[i] >> 2) & 0x3fff) / 16383.0f);
             break;
         }
 
@@ -2634,6 +2775,24 @@ void pack_image_pixel(unsigned int *srcVector,
                 ptr[i] = (unsigned int)srcVector[i];
             break;
         }
+        case CL_UNSIGNED_INT10X6_EXT: {
+            unsigned short *ptr = (unsigned short *)outData;
+            for (unsigned int i = 0; i < channelCount; i++)
+                ptr[i] = (unsigned short)SATURATE(srcVector[i], 0, 1023) << 6;
+            break;
+        }
+        case CL_UNSIGNED_INT12X4_EXT: {
+            unsigned short *ptr = (unsigned short *)outData;
+            for (unsigned int i = 0; i < channelCount; i++)
+                ptr[i] = (unsigned short)SATURATE(srcVector[i], 0, 4095) << 4;
+            break;
+        }
+        case CL_UNSIGNED_INT14X2_EXT: {
+            unsigned short *ptr = (unsigned short *)outData;
+            for (unsigned int i = 0; i < channelCount; i++)
+                ptr[i] = (unsigned short)SATURATE(srcVector[i], 0, 16383) << 2;
+            break;
+        }
         default: break;
     }
 }
@@ -2809,6 +2968,27 @@ void pack_image_pixel(float *srcVector, const cl_image_format *imageFormat,
                 | (((unsigned int)NORMALIZE(srcVector[3], 1023.f) & 1023) << 0);
             break;
         }
+        case CL_UNORM_INT10X6_EXT: {
+            cl_ushort *ptr = (cl_ushort *)outData;
+            for (unsigned int i = 0; i < channelCount; i++)
+                ptr[i] = ((cl_ushort)NORMALIZE(srcVector[i], 1023.f) & 1023)
+                    << 6;
+            break;
+        }
+        case CL_UNORM_INT12X4_EXT: {
+            cl_ushort *ptr = (cl_ushort *)outData;
+            for (unsigned int i = 0; i < channelCount; i++)
+                ptr[i] = ((cl_ushort)NORMALIZE(srcVector[i], 4095.f) & 4095)
+                    << 4;
+            break;
+        }
+        case CL_UNORM_INT14X2_EXT: {
+            cl_ushort *ptr = (cl_ushort *)outData;
+            for (unsigned int i = 0; i < channelCount; i++)
+                ptr[i] = ((cl_ushort)NORMALIZE(srcVector[i], 16383.f) & 16383)
+                    << 2;
+            break;
+        }
         case CL_SIGNED_INT8: {
             cl_char *ptr = (cl_char *)outData;
             for (unsigned int i = 0; i < channelCount; i++)
@@ -2850,6 +3030,27 @@ void pack_image_pixel(float *srcVector, const cl_image_format *imageFormat,
                     srcVector[i],
                     MAKE_HEX_FLOAT(0x1.fffffep31f, 0x1fffffe, 31 - 23),
                     CL_UINT_MAX);
+            break;
+        }
+        case CL_UNSIGNED_INT10X6_EXT: {
+            cl_ushort *ptr = (cl_ushort *)outData;
+            for (unsigned int i = 0; i < channelCount; i++)
+                ptr[i] = ((cl_ushort)NORMALIZE(srcVector[i], 1023.f) & 1023)
+                    << 6;
+            break;
+        }
+        case CL_UNSIGNED_INT12X4_EXT: {
+            cl_ushort *ptr = (cl_ushort *)outData;
+            for (unsigned int i = 0; i < channelCount; i++)
+                ptr[i] = ((cl_ushort)NORMALIZE(srcVector[i], 4095.f) & 4095)
+                    << 4;
+            break;
+        }
+        case CL_UNSIGNED_INT14X2_EXT: {
+            cl_ushort *ptr = (cl_ushort *)outData;
+            for (unsigned int i = 0; i < channelCount; i++)
+                ptr[i] = ((cl_ushort)NORMALIZE(srcVector[i], 16383.f) & 16383)
+                    << 2;
             break;
         }
 #ifdef CL_SFIXED14_APPLE
@@ -2999,6 +3200,33 @@ void pack_image_pixel_error(const float *srcVector,
 
             break;
         }
+        case CL_UNORM_INT10X6_EXT: {
+            const cl_ushort *ptr = (const cl_ushort *)results;
+
+            for (unsigned int i = 0; i < channelCount; i++)
+                errors[i] =
+                    (ptr[i] >> 6) - NORMALIZE_UNROUNDED(srcVector[i], 1023.f);
+
+            break;
+        }
+        case CL_UNORM_INT12X4_EXT: {
+            const cl_ushort *ptr = (const cl_ushort *)results;
+
+            for (unsigned int i = 0; i < channelCount; i++)
+                errors[i] =
+                    (ptr[i] >> 4) - NORMALIZE_UNROUNDED(srcVector[i], 4095.f);
+
+            break;
+        }
+        case CL_UNORM_INT14X2_EXT: {
+            const cl_ushort *ptr = (const cl_ushort *)results;
+
+            for (unsigned int i = 0; i < channelCount; i++)
+                errors[i] =
+                    (ptr[i] >> 2) - NORMALIZE_UNROUNDED(srcVector[i], 16383.f);
+
+            break;
+        }
         case CL_SIGNED_INT8: {
             const cl_char *ptr = (const cl_char *)results;
 
@@ -3042,12 +3270,35 @@ void pack_image_pixel_error(const float *srcVector,
         case CL_UNSIGNED_INT32: {
             const cl_uint *ptr = (const cl_uint *)results;
             for (unsigned int i = 0; i < channelCount; i++)
-                errors[i] = (cl_float)(
-                    (cl_long)ptr[i]
-                    - (cl_long)CONVERT_UINT(
-                        srcVector[i],
-                        MAKE_HEX_FLOAT(0x1.fffffep31f, 0x1fffffe, 31 - 23),
-                        CL_UINT_MAX));
+                errors[i] = (cl_float)((cl_long)ptr[i]
+                                       - (cl_long)CONVERT_UINT(
+                                           srcVector[i],
+                                           MAKE_HEX_FLOAT(0x1.fffffep31f,
+                                                          0x1fffffe, 31 - 23),
+                                           CL_UINT_MAX));
+            break;
+        }
+        case CL_UNSIGNED_INT10X6_EXT: {
+            cl_ushort *ptr = (cl_ushort *)results;
+            for (unsigned int i = 0; i < channelCount; i++)
+                errors[i] = static_cast<float>(
+                    (cl_int)ptr[i] - (*((cl_int *)(&srcVector[i])) & 0xffc0));
+            break;
+        }
+        case CL_UNSIGNED_INT12X4_EXT: {
+            cl_ushort *ptr = (cl_ushort *)results;
+            for (unsigned int i = 0; i < channelCount; i++)
+                errors[i] = static_cast<float>(
+                    (cl_int)ptr[i] - (*((cl_int *)(&srcVector[i])) & 0xfff0));
+            break;
+        }
+        case CL_UNSIGNED_INT14X2_EXT: {
+            cl_ushort *ptr = (cl_ushort *)results;
+            for (unsigned int i = 0; i < channelCount; i++)
+                errors[i] = static_cast<float>(
+                    (cl_int)ptr[i]
+                    - (cl_int)CONVERT_UINT(srcVector[i], 16383.f,
+                                           CL_USHRT_MAX));
             break;
         }
 #ifdef CL_SFIXED14_APPLE

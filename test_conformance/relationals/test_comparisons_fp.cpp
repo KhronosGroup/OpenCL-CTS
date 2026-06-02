@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "harness/mathHelpers.h"
 #include "harness/stringHelpers.h"
 
 #include <CL/cl_half.h>
@@ -368,9 +369,8 @@ int RelationalsFPTest::test_equiv_kernel(unsigned int vecSize,
                 {
                     if (gInfNanSupport == 0)
                     {
-                        float a = inDataA[i * vecSize + j];
-                        float b = inDataB[i * vecSize + j];
-                        if (isnan(a) || isnan(b))
+                        if (isnan_fp(inDataA[i * vecSize + j])
+                            || isnan_fp(inDataB[i * vecSize + j]))
                             fail = 0;
                         else
                             fail = 1;

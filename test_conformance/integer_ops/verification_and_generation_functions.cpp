@@ -1370,7 +1370,9 @@ verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB
 void
 init_ushort_data(uint64_t indx, int num_elements, cl_ushort *input_ptr[], MTdata d)
 {
-    static const cl_ushort specialCaseList[] = { 0, -1, 1, CL_SHRT_MAX, CL_SHRT_MAX + 1, CL_USHRT_MAX };
+    static const cl_ushort specialCaseList[] = {
+        0, (cl_ushort)-1, 1, CL_SHRT_MAX, CL_SHRT_MAX + 1, CL_USHRT_MAX
+    };
     int            j;
 
     // Set the inputs to a random number
@@ -1812,7 +1814,9 @@ verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, c
 void
 init_uchar_data(uint64_t indx, int num_elements, cl_uchar *input_ptr[], MTdata d)
 {
-    static const cl_uchar specialCaseList[] = { 0, -1, 1, CL_CHAR_MAX, CL_CHAR_MAX + 1, CL_UCHAR_MAX };
+    static const cl_uchar specialCaseList[] = {
+        0, (cl_uchar)-1, 1, CL_CHAR_MAX, CL_CHAR_MAX + 1, CL_UCHAR_MAX
+    };
     int            j;
 
     // FIXME: we really should just check every char against every char here

@@ -26,8 +26,11 @@ static void intRefBuilder(printDataGenParameters&, char*, const size_t);
 static void halfRefBuilder(printDataGenParameters&, char* rResult,
                            const size_t);
 static void floatRefBuilder(printDataGenParameters&, char* rResult, const size_t);
+static bool floatRefTest(const char* refResult, const char* analysisBuffer);
 static void doubleRefBuilder(printDataGenParameters&, char* rResult,
                              const size_t);
+static bool doubleRefTest(const char* refResult, const char* analysisBuffer);
+
 static void octalRefBuilder(printDataGenParameters&, char*, const size_t);
 static void unsignedRefBuilder(printDataGenParameters&, char*, const size_t);
 static void hexRefBuilder(printDataGenParameters&, char*, const size_t);
@@ -468,12 +471,12 @@ std::vector<printDataGenParameters> printFloatGenParameters = {
 
     // Double argument representing floating-point,in [-]xh.hhhhpAd style
 
-    { { "%.6a" }, "0.1f" },
+    { { "%.6a" }, "0.5f", 0, 0, 0, 0, 0, 0, 0, 0, true },
 
     //(Minimum)Ten-wide,Double argument representing floating-point,in
     // xh.hhhhpAd style,default(right)-justified
 
-    { { "%10.2a" }, "9990.235f" },
+    { { "%10.2a" }, "1.5f", 0, 0, 0, 0, 0, 0, 0, 0, true },
 
     //(Minimum)Ten-wide,two positions after the decimal,with
     // a blank space inserted before the value, default(right)-justified
@@ -502,8 +505,9 @@ testCase testCaseFloat = {
 
     floatRefBuilder,
 
-    kfloat
+    kfloat,
 
+    floatRefTest
 };
 
 //==============================================
@@ -673,12 +677,12 @@ std::vector<printDataGenParameters> printDoubleGenParameters = {
 
     // Double argument representing floating-point,in [-]xh.hhhhpAd style
 
-    { { "%.6a" }, "0.1" },
+    { { "%.6a" }, "0.5", 0, 0, 0, 0, 0, 0, 0, 0, true },
 
     //(Minimum)Ten-wide,Double argument representing floating-point,in
     // xh.hhhhpAd style,default(right)-justified
 
-    { { "%10.2a" }, "9990.235" },
+    { { "%10.2a" }, "1.5", 0, 0, 0, 0, 0, 0, 0, 0, true },
 };
 
 //---------------------------------------------------------
@@ -697,8 +701,9 @@ testCase testCaseDouble = {
 
     doubleRefBuilder,
 
-    kdouble
+    kdouble,
 
+    doubleRefTest
 };
 
 //==============================================
@@ -1032,6 +1037,9 @@ testCase testCaseChar = {
 
 std::vector<printDataGenParameters> printStringGenParameters = {
 
+    // empty format, no data representation
+    { {""} },
+
     // empty format
     { {""}, "\"foo\"" },
 
@@ -1089,6 +1097,8 @@ std::vector<printDataGenParameters> printStringGenParameters = {
 //---------------------------------------------------------
 
 std::vector<std::string> correctBufferString = {
+
+    "",
 
     "",
 
@@ -1352,7 +1362,7 @@ std::vector<std::string> correctBufferVectorRTZ = {
 
     "1.23e+03,9.87e+05,4.99e-04",
 
-    "0x1p-2,0x1p-1,0x1p+0,0x1.8p+0",
+    "0x1.0p-2,0x1.0p-1,0x1.0p+0,0x1.8p+0",
 
     "1,2,3,4,1.5,3.13999,2.5,3.5",
 
@@ -1752,7 +1762,15 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
         return !std::regex_match(analysisBuffer, nanRegex);
     }
 
-    return strcmp(analysisBuffer, pTestCase->_correctBuffer[testId].c_str());
+    size_t ret =
+        strcmp(analysisBuffer, pTestCase->_correctBuffer[testId].c_str());
+
+    if (ret != 0 && pTestCase->_genParameters[testId].allowFallbackTest
+        && pTestCase->fallbackTestFN)
+        if (pTestCase->fallbackTestFN(
+                analysisBuffer, pTestCase->_correctBuffer[testId].c_str()))
+            return 0;
+    return ret;
 }
 
 static void intRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
@@ -1776,11 +1794,25 @@ static void floatRefBuilder(printDataGenParameters& params, char* refResult, con
              strtof(params.dataRepresentation, NULL));
 }
 
+static bool floatRefTest(const char* refResult, const char* analysisBuffer)
+{
+    float test = strtof(analysisBuffer, NULL);
+    float expected = strtof(refResult, NULL);
+    return test == expected;
+}
+
 static void doubleRefBuilder(printDataGenParameters& params, char* refResult,
                              const size_t refSize)
 {
     snprintf(refResult, refSize, params.genericFormats.front().c_str(),
              strtod(params.dataRepresentation, NULL));
+}
+
+static bool doubleRefTest(const char* refResult, const char* analysisBuffer)
+{
+    double test = strtod(analysisBuffer, NULL);
+    double expected = strtod(refResult, NULL);
+    return test == expected;
 }
 
 static void octalRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)

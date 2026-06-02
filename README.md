@@ -13,6 +13,8 @@ Compiling the CTS requires the following CMake configuration options to be set:
 
 * `CL_INCLUDE_DIR` Points to the unified
   [OpenCL-Headers](https://github.com/KhronosGroup/OpenCL-Headers).
+* `SPIRV_INCLUDE_DIR` Points to the unified
+  [SPIRV-Headers](https://github.com/KhronosGroup/SPIRV-Headers).
 * `CL_LIB_DIR` Directory containing the OpenCL library to build against.
 * `SPIRV_TOOLS_DIR` Directory containing the `spirv-as` and `spirv-val` binaries
    to be used in the CTS build process. Alternatively, the location to these binaries
@@ -31,6 +33,7 @@ a build, and compile.
 ```sh
 git clone https://github.com/KhronosGroup/OpenCL-CTS.git
 git clone https://github.com/KhronosGroup/OpenCL-Headers.git
+git clone https://github.com/KhronosGroup/SPIRV-Headers.git
 git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
 git clone https://github.com/KhronosGroup/SPIRV-Tools.git
 git clone https://github.com/KhronosGroup/SPIRV-Headers.git SPIRV-Tools/external/spirv-headers
@@ -50,6 +53,7 @@ cmake --build SPIRV-Tools/build --config Release
 mkdir OpenCL-CTS/build
 cmake -S OpenCL-CTS -B OpenCL-CTS/build \
       -DCL_INCLUDE_DIR=$PWD/OpenCL-Headers \
+      -DSPIRV_INCLUDE_DIR=$PWD/SPIRV-Headers \
       -DCL_LIB_DIR=$PWD/OpenCL-ICD-Loader/build \
       -DSPIRV_TOOLS_DIR=$PWD/SPIRV-Tools/build/tools/ \
       -DOPENCL_LIBRARIES=OpenCL
@@ -126,3 +130,24 @@ PRs to the repository are required to be `clang-format` clean to pass CI.
 Developers can either use the `git-clang-format` tool locally to verify this
 before contributing, or update their PR based on the diff provided by a failing
 CI job.
+
+## Running Targeted CI Tests on Pull Requests
+
+To help verify fixes or check for regressions without running the entire
+conformance test suite, our continuous integration pipeline allows contributor
+to trigger specific tests on Pull Requests against the `pocl` implementation.
+
+### How to Trigger Tests
+
+Testing is triggered by adding a special tag to either your
+**Pull Request description** or in any of your **commit messages**.
+
+The CI parses the text for the following syntax:
+`[run-test: <command>]`
+
+Multiples tags for a single Pull Request is supported.
+
+### Examples
+
+```text
+[run-test: test_bruteforce exp -w -1]

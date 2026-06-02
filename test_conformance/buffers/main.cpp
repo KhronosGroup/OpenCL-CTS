@@ -19,19 +19,24 @@
 
 #include "testBase.h"
 
-const cl_mem_flags flag_set[] = {
-    CL_MEM_ALLOC_HOST_PTR,
-    CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR,
-    CL_MEM_USE_HOST_PTR,
-    CL_MEM_COPY_HOST_PTR,
-    0
-};
+const cl_mem_flags flag_set[] = { CL_MEM_ALLOC_HOST_PTR,
+                                  CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR,
+                                  CL_MEM_USE_HOST_PTR,
+                                  CL_MEM_COPY_HOST_PTR,
+                                  0,
+                                  CL_MEM_IMMUTABLE_EXT | CL_MEM_USE_HOST_PTR,
+                                  CL_MEM_IMMUTABLE_EXT | CL_MEM_COPY_HOST_PTR,
+                                  CL_MEM_IMMUTABLE_EXT | CL_MEM_COPY_HOST_PTR
+                                      | CL_MEM_ALLOC_HOST_PTR };
 const char* flag_set_names[] = {
     "CL_MEM_ALLOC_HOST_PTR",
     "CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR",
     "CL_MEM_USE_HOST_PTR",
     "CL_MEM_COPY_HOST_PTR",
-    "0"
+    "0",
+    "CL_MEM_IMMUTABLE_EXT | CL_MEM_USE_HOST_PTR",
+    "CL_MEM_IMMUTABLE_EXT | CL_MEM_COPY_HOST_PTR",
+    "CL_MEM_IMMUTABLE_EXT | CL_MEM_COPY_HOST_PTR | CL_MEM_ALLOC_HOST_PTR",
 };
 
 int main( int argc, const char *argv[] )

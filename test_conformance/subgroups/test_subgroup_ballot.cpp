@@ -896,8 +896,21 @@ REGISTER_TEST(subgroup_functions_ballot)
         return TEST_SKIPPED_ITSELF;
     }
 
-    constexpr size_t global_work_size = 170;
-    constexpr size_t local_work_size = 64;
+    int error = 0;
+
+    // Non-uniform work-groups are an optional feature from 3.0 onward.
+    cl_bool device_supports_non_uniform_wg = CL_TRUE;
+    if (get_device_cl_version(device) >= Version(3, 0))
+    {
+        error = clGetDeviceInfo(
+            device, CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT, sizeof(cl_bool),
+            &device_supports_non_uniform_wg, nullptr);
+        test_error(error, "clGetDeviceInfo failed");
+    }
+
+    const size_t global_work_size = device_supports_non_uniform_wg ? 170 : 192;
+    const size_t local_work_size = 64;
+
     WorkGroupParams test_params(global_work_size, local_work_size);
     test_params.save_kernel_source(sub_group_ballot_mask_source);
     test_params.save_kernel_source(sub_group_non_uniform_broadcast_source,
@@ -907,7 +920,7 @@ REGISTER_TEST(subgroup_functions_ballot)
     RunTestForType rft(device, context, queue, num_elements, test_params);
 
     // non uniform broadcast functions
-    int error = run_non_uniform_broadcast_for_type<cl_int>(rft);
+    error |= run_non_uniform_broadcast_for_type<cl_int>(rft);
     error |= run_non_uniform_broadcast_for_type<cl_int2>(rft);
     error |= run_non_uniform_broadcast_for_type<subgroups::cl_int3>(rft);
     error |= run_non_uniform_broadcast_for_type<cl_int4>(rft);

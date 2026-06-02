@@ -30,6 +30,9 @@ cl_channel_type floatFormats[] = {
     CL_SNORM_INT16,
     CL_FLOAT,
     CL_HALF_FLOAT,
+    CL_UNORM_INT10X6_EXT,
+    CL_UNORM_INT12X4_EXT,
+    CL_UNORM_INT14X2_EXT,
     (cl_channel_type)-1,
 };
 
@@ -41,9 +44,8 @@ cl_channel_type intFormats[] = {
 };
 
 cl_channel_type uintFormats[] = {
-    CL_UNSIGNED_INT8,
-    CL_UNSIGNED_INT16,
-    CL_UNSIGNED_INT32,
+    CL_UNSIGNED_INT8,        CL_UNSIGNED_INT16,       CL_UNSIGNED_INT32,
+    CL_UNSIGNED_INT10X6_EXT, CL_UNSIGNED_INT12X4_EXT, CL_UNSIGNED_INT14X2_EXT,
     (cl_channel_type)-1,
 };
 
@@ -171,7 +173,7 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
                           image_descriptor *imageInfo, bool enable_pitch,
                           bool create_mipmaps, int *error)
 {
-    cl_mem img;
+    clMemWrapper img;
     cl_image_desc imageDesc;
     void *host_ptr = nullptr;
     bool is_host_ptr_aligned = false;
@@ -246,7 +248,7 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
                 cl_mem_flags buffer_flags = CL_MEM_READ_WRITE;
                 if (enable_pitch)
                 {
-                    if (version.major() == 1)
+                    if (version.get_major() == 1)
                     {
                         host_ptr = malloc(imageInfo->rowPitch);
                     }
@@ -339,7 +341,11 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
                 log_error("ERROR: Unable to attach destructor callback to "
                           "pitched 3D image. Err: %d\n",
                           callbackError);
-                clReleaseMemObject(img);
+                if (imageDesc.buffer != nullptr)
+                {
+                    clReleaseMemObject(imageDesc.buffer);
+                }
+                img.reset();
                 return nullptr;
             }
         }
@@ -359,7 +365,7 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
                       "buffer image. Err: %d\n",
                       callbackError);
             clReleaseMemObject(imageDesc.buffer);
-            clReleaseMemObject(img);
+            img.reset();
             return nullptr;
         }
     }

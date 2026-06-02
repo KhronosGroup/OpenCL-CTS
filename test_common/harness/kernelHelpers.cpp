@@ -141,7 +141,6 @@ std::string get_kernel_name(const std::string &source)
         {
             kernelsList = kernelsList.substr(0, MAX_LEN_FOR_KERNEL_LIST + 1);
             kernelsList[kernelsList.size() - 1] = '.';
-            kernelsList[kernelsList.size() - 1] = '.';
         }
         oss << kernelsList;
     }
@@ -678,17 +677,18 @@ static int create_single_kernel_helper_create_program_offline(
     return CL_SUCCESS;
 }
 
-static int create_single_kernel_helper_create_program(
-    cl_context context, cl_device_id device, cl_program *outProgram,
-    unsigned int numKernelLines, const char **kernelProgram,
-    const char *buildOptions, CompilationMode compilationMode)
+int create_single_kernel_helper_create_program(cl_context context,
+                                               cl_program *outProgram,
+                                               unsigned int numKernelLines,
+                                               const char **kernelProgram,
+                                               const char *buildOptions)
 {
     std::lock_guard<std::mutex> compiler_lock(gCompilerMutex);
 
     std::string filePrefix =
         get_unique_filename_prefix(numKernelLines, kernelProgram, buildOptions);
     bool shouldSaveToDisk = should_save_kernel_source_to_disk(
-        compilationMode, gCompilationCacheMode, gCompilationCachePath,
+        gCompilationMode, gCompilationCacheMode, gCompilationCachePath,
         filePrefix);
 
     if (shouldSaveToDisk)
@@ -701,7 +701,7 @@ static int create_single_kernel_helper_create_program(
             return -1;
         }
     }
-    if (compilationMode == kOnline)
+    if (gCompilationMode == kOnline)
     {
         int error = CL_SUCCESS;
 
@@ -718,40 +718,9 @@ static int create_single_kernel_helper_create_program(
     else
     {
         return create_single_kernel_helper_create_program_offline(
-            context, device, outProgram, numKernelLines, kernelProgram,
-            buildOptions, compilationMode);
+            context, nullptr, outProgram, numKernelLines, kernelProgram,
+            buildOptions, gCompilationMode);
     }
-}
-
-int create_single_kernel_helper_create_program(cl_context context,
-                                               cl_program *outProgram,
-                                               unsigned int numKernelLines,
-                                               const char **kernelProgram,
-                                               const char *buildOptions)
-{
-    return create_single_kernel_helper_create_program(
-        context, NULL, outProgram, numKernelLines, kernelProgram, buildOptions,
-        gCompilationMode);
-}
-
-int create_single_kernel_helper_create_program_for_device(
-    cl_context context, cl_device_id device, cl_program *outProgram,
-    unsigned int numKernelLines, const char **kernelProgram,
-    const char *buildOptions)
-{
-    return create_single_kernel_helper_create_program(
-        context, device, outProgram, numKernelLines, kernelProgram,
-        buildOptions, gCompilationMode);
-}
-
-int create_single_kernel_helper_with_build_options(
-    cl_context context, cl_program *outProgram, cl_kernel *outKernel,
-    unsigned int numKernelLines, const char **kernelProgram,
-    const char *kernelName, const char *buildOptions)
-{
-    return create_single_kernel_helper(context, outProgram, outKernel,
-                                       numKernelLines, kernelProgram,
-                                       kernelName, buildOptions);
 }
 
 // Creates and builds OpenCL C/C++ program, and creates a kernel
@@ -1239,8 +1208,8 @@ int is_image_format_supported(cl_context context, cl_mem_flags flags,
 {
     cl_image_format *list;
     cl_uint count = 0;
-    cl_int err = clGetSupportedImageFormats(context, flags, image_type, 128,
-                                            NULL, &count);
+    cl_int err =
+        clGetSupportedImageFormats(context, flags, image_type, 0, NULL, &count);
     if (count == 0) return 0;
 
     list = (cl_image_format *)malloc(count * sizeof(cl_image_format));
@@ -1276,7 +1245,6 @@ int is_image_format_supported(cl_context context, cl_mem_flags flags,
     return (i < count) ? 1 : 0;
 }
 
-size_t get_pixel_bytes(const cl_image_format *fmt);
 size_t get_pixel_bytes(const cl_image_format *fmt)
 {
     size_t chanCount;
@@ -1328,6 +1296,12 @@ size_t get_pixel_bytes(const cl_image_format *fmt)
         case CL_SIGNED_INT8:
         case CL_UNSIGNED_INT8: return chanCount;
 
+        case CL_UNSIGNED_INT10X6_EXT:
+        case CL_UNSIGNED_INT12X4_EXT:
+        case CL_UNSIGNED_INT14X2_EXT:
+        case CL_UNORM_INT10X6_EXT:
+        case CL_UNORM_INT12X4_EXT:
+        case CL_UNORM_INT14X2_EXT:
         case CL_SNORM_INT16:
         case CL_UNORM_INT16:
         case CL_HALF_FLOAT:
