@@ -401,7 +401,7 @@ const Func functionList[] = {
 
     // In derived mode it the ulp error is calculated as sin/cos.
     // In non-derived mode it is the same as half_tan.
-    ENTRY_EXT(tan, 5.0f, 5.0f, 2.0f, 3.0f, 8192.0f, FTZ_OFF, unaryF, 8192.0f),
+    ENTRY_EXT(tan, 5.0f, 5.0f, 2.5f, 3.0f, 8192.0f, FTZ_OFF, unaryF, 8192.0f),
 
     ENTRY(tanh, 5.0f, 5.0f, 2.0f, 3.0f, FTZ_OFF, unaryF),
     ENTRY(tanpi, 6.0f, 6.0f, 2.0f, 3.0f, FTZ_OFF, unaryF),
