@@ -27,6 +27,82 @@ using test_function_t = int (*)(cl_device_id, cl_context, cl_command_queue,
                                 cl_mem_flags, cl_mem_flags, cl_mem_object_type,
                                 const cl_image_format *);
 
+static int test_negative_imagearraycopy_single_format(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    cl_mem_flags image_flags, cl_mem_flags buffer_flags,
+    cl_mem_object_type image_type, const cl_image_format *format)
+{
+    std::unique_ptr<cl_uchar, decltype(&free)> bufptr{ nullptr, free },
+        imgptr{ nullptr, free };
+    clMemWrapper image;
+    clMemWrapper buffer;
+    const size_t img_width = 512;
+    const size_t img_height = 512;
+    const size_t img_depth = (image_type == CL_MEM_OBJECT_IMAGE3D) ? 32 : 1;
+    size_t elem_size;
+    size_t buffer_size;
+    cl_int err;
+    RandomSeed seed(gRandomSeed);
+
+    const size_t origin[3] = { 0, 0, 0 },
+                 region[3] = { img_width, img_height, img_depth };
+
+    log_info("Testing %s %s\n",
+             GetChannelOrderName(format->image_channel_order),
+             GetChannelTypeName(format->image_channel_data_type));
+
+    elem_size = get_pixel_size(format);
+    buffer_size =
+        sizeof(cl_uchar) * elem_size * img_width * img_height * img_depth;
+
+    if (image_flags & CL_MEM_USE_HOST_PTR || image_flags & CL_MEM_COPY_HOST_PTR)
+    {
+        imgptr.reset(static_cast<cl_uchar *>(
+            create_random_data(kUChar, seed, buffer_size)));
+    }
+
+    bufptr.reset(
+        static_cast<cl_uchar *>(create_random_data(kUChar, seed, buffer_size)));
+
+    if (CL_MEM_OBJECT_IMAGE2D == image_type)
+    {
+        image = create_image_2d(context, image_flags, format, img_width,
+                                img_height, 0, imgptr.get(), &err);
+    }
+    else
+    {
+        image =
+            create_image_3d(context, image_flags, format, img_width, img_height,
+                            img_depth, 0, 0, imgptr.get(), &err);
+    }
+    test_error(err, "create_image_xd failed");
+
+    if (!(image_flags & CL_MEM_USE_HOST_PTR
+          || image_flags & CL_MEM_COPY_HOST_PTR))
+    {
+        imgptr.reset(static_cast<cl_uchar *>(
+            create_random_data(kUChar, seed, buffer_size)));
+
+        err = clEnqueueWriteImage(queue, image, CL_TRUE, origin, region, 0, 0,
+                                  imgptr.get(), 0, nullptr, nullptr);
+        test_error(err, "clEnqueueWriteImage failed");
+    }
+
+    buffer =
+        clCreateBuffer(context, buffer_flags, buffer_size, bufptr.get(), &err);
+    test_error(err, "clCreateBuffer failed");
+
+    err = clEnqueueCopyImageToBuffer(queue, image, buffer, origin, region, 0, 0,
+                                     nullptr, nullptr);
+    test_failure_error_ret(
+        err, CL_INVALID_OPERATION,
+        "clEnqueueCopyImageToBuffer should return CL_INVALID_OPERATION when: "
+        "\" dst_buffer is created with CL_MEM_IMMUTABLE_EXT flag\"",
+        TEST_FAIL);
+
+    return TEST_PASS;
+}
+
 static int test_imagearraycopy_single_format(
     cl_device_id device, cl_context context, cl_command_queue queue,
     cl_mem_flags image_flags, cl_mem_flags buffer_flags,
@@ -188,9 +264,18 @@ REGISTER_TEST(imagearraycopy)
 {
     PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
 
-    return test_imagearraycommon(device, context, queue, CL_MEM_READ_WRITE,
-                                 CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
-                                 test_imagearraycopy_single_format);
+    int error = test_imagearraycommon(device, context, queue, CL_MEM_READ_WRITE,
+                                      CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
+                                      test_imagearraycopy_single_format);
+
+    if (is_extension_available(device, "cl_ext_immutable_memory_objects"))
+    {
+        error |= test_imagearraycommon(
+            device, context, queue, CL_MEM_IMMUTABLE_EXT | CL_MEM_USE_HOST_PTR,
+            CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
+            test_imagearraycopy_single_format);
+    }
+    return error;
 }
 
 
@@ -198,7 +283,38 @@ REGISTER_TEST(imagearraycopy3d)
 {
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT(device)
 
+    int error = test_imagearraycommon(device, context, queue, CL_MEM_READ_ONLY,
+                                      CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE3D,
+                                      test_imagearraycopy_single_format);
+
+    if (is_extension_available(device, "cl_ext_immutable_memory_objects"))
+    {
+        error |= test_imagearraycommon(
+            device, context, queue, CL_MEM_IMMUTABLE_EXT | CL_MEM_USE_HOST_PTR,
+            CL_MEM_READ_ONLY, CL_MEM_OBJECT_IMAGE3D,
+            test_imagearraycopy_single_format);
+    }
+    return error;
+}
+
+REGISTER_TEST(negative_imagearraycopy)
+{
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device);
+    REQUIRE_EXTENSION("cl_ext_immutable_memory_objects");
+
+    return test_imagearraycommon(device, context, queue, CL_MEM_READ_WRITE,
+                                 CL_MEM_IMMUTABLE_EXT | CL_MEM_USE_HOST_PTR,
+                                 CL_MEM_OBJECT_IMAGE2D,
+                                 test_negative_imagearraycopy_single_format);
+}
+
+REGISTER_TEST(negative_imagearraycopy3d)
+{
+    PASSIVE_REQUIRE_3D_IMAGE_SUPPORT(device);
+    REQUIRE_EXTENSION("cl_ext_immutable_memory_objects");
+
     return test_imagearraycommon(device, context, queue, CL_MEM_READ_ONLY,
-                                 CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE3D,
-                                 test_imagearraycopy_single_format);
+                                 CL_MEM_IMMUTABLE_EXT | CL_MEM_USE_HOST_PTR,
+                                 CL_MEM_OBJECT_IMAGE3D,
+                                 test_negative_imagearraycopy_single_format);
 }

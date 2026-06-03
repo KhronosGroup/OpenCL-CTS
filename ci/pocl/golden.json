@@ -1,0 +1,9 @@
+{
+    "test_computeinfo": {
+        "computeinfo": "pass",
+        "device_uuid": "skip",
+        "extended_versioning": "pass",
+        "conformance_version": "pass",
+        "pci_bus_info": "skip"
+    }
+}

@@ -63,9 +63,9 @@ REGISTER_TEST(pipe_info)
         log_info( " CL_PIPE_MAX_PACKETS passed.\n" );
     }
 
-    err = create_single_kernel_helper_with_build_options(
-        context, &program, &kernel, 1, &pipe_kernel_code, "pipe_kernel",
-        "-cl-std=CL2.0 -cl-kernel-arg-info");
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &pipe_kernel_code, "pipe_kernel",
+                                      "-cl-std=CL2.0 -cl-kernel-arg-info");
     test_error_fail(err, "Error creating program");
 
     cl_kernel_arg_type_qualifier arg_type_qualifier = 0;

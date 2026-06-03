@@ -23,9 +23,32 @@
 #include <android/hardware_buffer.h>
 #include "debug_ahb.h"
 
-static bool isAHBUsageReadable(const AHardwareBuffer_UsageFlags usage)
+static bool isAHBUsageReadableHost(AHardwareBuffer_UsageFlags usage)
 {
-    return (AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE & usage) != 0;
+    return (AHARDWAREBUFFER_USAGE_CPU_READ_MASK & usage) != 0;
+}
+
+static bool isAHBUsageWritableHost(AHardwareBuffer_UsageFlags usage)
+{
+    return (AHARDWAREBUFFER_USAGE_CPU_WRITE_MASK & usage) != 0;
+}
+
+static bool isAHBUsageReadableDevice(const AHardwareBuffer_UsageFlags usage)
+{
+    return ((AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE
+             | AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER
+             | AHARDWAREBUFFER_USAGE_SENSOR_DIRECT_DATA)
+            & usage)
+        != 0;
+}
+
+static cl_ulong getMaxAllocSize(cl_device_id device)
+{
+    cl_ulong ret;
+    cl_int err = clGetDeviceInfo(device, CL_DEVICE_MAX_MEM_ALLOC_SIZE,
+                                 sizeof(cl_ulong), &ret, nullptr);
+    test_error(err, "clGetDeviceInfo failed");
+    return ret;
 }
 
 struct ahb_format_table
@@ -48,6 +71,32 @@ struct ahb_image_size_table
 
 ahb_image_size_table test_sizes[] = {
     { 64, 64 }, { 128, 128 }, { 256, 256 }, { 512, 512 }
+};
+
+uint32_t test_buffer_sizes[] = { 2, 8, 32, 128, 512, 2048, 16384, 65536 };
+
+ahb_usage_table test_buffer_usages[] = {
+    { static_cast<AHardwareBuffer_UsageFlags>(
+        AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN
+        | AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY
+        | AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER) },
+    { static_cast<AHardwareBuffer_UsageFlags>(
+        AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN
+        | AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY
+        | AHARDWAREBUFFER_USAGE_SENSOR_DIRECT_DATA) },
+    { static_cast<AHardwareBuffer_UsageFlags>(
+        AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN
+        | AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN
+        | AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER) },
+    { static_cast<AHardwareBuffer_UsageFlags>(
+        AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN
+        | AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN
+        | AHARDWAREBUFFER_USAGE_SENSOR_DIRECT_DATA) },
+    { static_cast<AHardwareBuffer_UsageFlags>(
+        AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN
+        | AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY) },
+    { static_cast<AHardwareBuffer_UsageFlags>(
+        AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN) }
 };
 
 ahb_usage_table test_usages[] = {
@@ -96,8 +145,25 @@ static const char *diff_images_kernel_source = {
         })"
 };
 
+static const char *lifetime_kernel_source = {
+    R"(
+            __kernel void increment_buffer(global uchar* buffer)
+            {
+                int tid = get_global_id(0);
+                buffer[tid] ++;
+            }
+
+            __kernel void set_image_color(write_only image2d_t ahb_image, float4 set_color)
+            {
+                int tidX = get_global_id(0);
+                int tidY = get_global_id(1);
+
+                write_imagef(ahb_image, (int2)( tidX, tidY ), set_color);
+            })"
+};
+
 // Checks that the inferred image format is correct
-REGISTER_TEST(test_images)
+REGISTER_TEST(images)
 {
     cl_int err = CL_SUCCESS;
 
@@ -134,19 +200,15 @@ REGISTER_TEST(test_images)
 
                 CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
-                AHardwareBuffer *aHardwareBuffer = nullptr;
-                int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc,
-                                                          &aHardwareBuffer);
-                if (ahb_result != 0)
-                {
-                    log_error("AHardwareBuffer_allocate failed with code %d\n",
-                              ahb_result);
-                    return TEST_FAIL;
-                }
+                AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+                log_info(
+                    "Testing %s\n",
+                    ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                        .c_str());
 
-                const cl_mem_properties props[] = {
+                cl_mem_properties props[] = {
                     CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
-                    reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
+                    aHardwareBuffer.get_props(), 0
                 };
 
                 cl_mem image = clCreateImageWithProperties(
@@ -181,8 +243,6 @@ REGISTER_TEST(test_images)
 
                 test_error(clReleaseMemObject(image),
                            "Failed to release image");
-                AHardwareBuffer_release(aHardwareBuffer);
-                aHardwareBuffer = nullptr;
             }
         }
     }
@@ -190,7 +250,7 @@ REGISTER_TEST(test_images)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_images_read)
+REGISTER_TEST(images_read)
 {
     cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
@@ -223,8 +283,9 @@ REGISTER_TEST(test_images_read)
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for (auto usage : test_usages)
         {
-            // Filter out usage flags that are not readable on device
-            if (!isAHBUsageReadable(usage.usageFlags))
+            if (!(isAHBUsageReadableHost(usage.usageFlags)
+                  && isAHBUsageWritableHost(usage.usageFlags)
+                  && isAHBUsageReadableDevice(usage.usageFlags)))
             {
                 continue;
             }
@@ -238,15 +299,11 @@ REGISTER_TEST(test_images_read)
 
                 CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
-                AHardwareBuffer *aHardwareBuffer = nullptr;
-                int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc,
-                                                          &aHardwareBuffer);
-                if (ahb_result != 0)
-                {
-                    log_error("AHardwareBuffer_allocate failed with code %d\n",
-                              ahb_result);
-                    return TEST_FAIL;
-                }
+                AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+                log_info(
+                    "Testing %s\n",
+                    ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                        .c_str());
 
                 // Determine AHB memory layout
                 AHardwareBuffer_Desc hardware_buffer_desc = {};
@@ -279,7 +336,7 @@ REGISTER_TEST(test_images_read)
                 generate_random_image_data(&imageInfo, srcData, seed);
 
                 void *hardware_buffer_data = nullptr;
-                ahb_result = AHardwareBuffer_lock(
+                int ahb_result = AHardwareBuffer_lock(
                     aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN, -1,
                     nullptr, &hardware_buffer_data);
                 if (ahb_result != 0)
@@ -301,7 +358,7 @@ REGISTER_TEST(test_images_read)
 
                 cl_mem_properties props[] = {
                     CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
-                    reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
+                    aHardwareBuffer.get_props(), 0
                 };
 
                 clMemWrapper imported_image = clCreateImageWithProperties(
@@ -394,7 +451,7 @@ REGISTER_TEST(test_images_read)
                 test_error(err, "clEnqueueNDRangeKernel failed");
 
                 err = clEnqueueReleaseExternalMemObjectsKHR(
-                    queue, 1, &opencl_image, 0, nullptr, nullptr);
+                    queue, 1, &imported_image, 0, nullptr, nullptr);
                 test_error(err, "clEnqueueReleaseExternalMemObjectsKHR failed");
 
                 // Read buffer and verify
@@ -482,9 +539,6 @@ REGISTER_TEST(test_images_read)
                         }
                     }
                 }
-
-                AHardwareBuffer_release(aHardwareBuffer);
-                aHardwareBuffer = nullptr;
             }
         }
     }
@@ -492,7 +546,7 @@ REGISTER_TEST(test_images_read)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_enqueue_read_image)
+REGISTER_TEST(enqueue_read_image)
 {
     cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
@@ -525,8 +579,9 @@ REGISTER_TEST(test_enqueue_read_image)
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for (auto usage : test_usages)
         {
-            // Filter out usage flags that are not readable on device
-            if (!isAHBUsageReadable(usage.usageFlags))
+            if (!(isAHBUsageReadableHost(usage.usageFlags)
+                  && isAHBUsageWritableHost(usage.usageFlags)
+                  && isAHBUsageReadableDevice(usage.usageFlags)))
             {
                 continue;
             }
@@ -540,15 +595,12 @@ REGISTER_TEST(test_enqueue_read_image)
 
                 CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
-                AHardwareBuffer *aHardwareBuffer = nullptr;
-                int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc,
-                                                          &aHardwareBuffer);
-                if (ahb_result != 0)
-                {
-                    log_error("AHardwareBuffer_allocate failed with code %d\n",
-                              ahb_result);
-                    return TEST_FAIL;
-                }
+                AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+
+                log_info(
+                    "Testing %s\n",
+                    ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                        .c_str());
 
                 // Determine AHB memory layout
                 AHardwareBuffer_Desc hardware_buffer_desc = {};
@@ -581,7 +633,7 @@ REGISTER_TEST(test_enqueue_read_image)
                 generate_random_image_data(&imageInfo, srcData, seed);
 
                 void *hardware_buffer_data = nullptr;
-                ahb_result = AHardwareBuffer_lock(
+                int ahb_result = AHardwareBuffer_lock(
                     aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN, -1,
                     nullptr, &hardware_buffer_data);
                 if (ahb_result != 0)
@@ -601,9 +653,9 @@ REGISTER_TEST(test_enqueue_read_image)
                     return TEST_FAIL;
                 }
 
-                const cl_mem_properties props[] = {
+                cl_mem_properties props[] = {
                     CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
-                    reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
+                    aHardwareBuffer.get_props(), 0
                 };
 
                 clMemWrapper imported_image = clCreateImageWithProperties(
@@ -662,9 +714,6 @@ REGISTER_TEST(test_enqueue_read_image)
                     out_image_ptr += imageInfo.rowPitch;
                 }
 
-                AHardwareBuffer_release(aHardwareBuffer);
-                aHardwareBuffer = nullptr;
-
                 if (total_matched == 0)
                 {
                     test_fail("Zero bytes matched");
@@ -676,7 +725,7 @@ REGISTER_TEST(test_enqueue_read_image)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_enqueue_copy_image)
+REGISTER_TEST(enqueue_copy_image)
 {
     cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
@@ -709,8 +758,9 @@ REGISTER_TEST(test_enqueue_copy_image)
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for (auto usage : test_usages)
         {
-            // Filter out usage flags that are not readable on device
-            if (!isAHBUsageReadable(usage.usageFlags))
+            if (!(isAHBUsageReadableHost(usage.usageFlags)
+                  && isAHBUsageWritableHost(usage.usageFlags)
+                  && isAHBUsageReadableDevice(usage.usageFlags)))
             {
                 continue;
             }
@@ -724,15 +774,12 @@ REGISTER_TEST(test_enqueue_copy_image)
 
                 CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
-                AHardwareBuffer *aHardwareBuffer = nullptr;
-                int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc,
-                                                          &aHardwareBuffer);
-                if (ahb_result != 0)
-                {
-                    log_error("AHardwareBuffer_allocate failed with code %d\n",
-                              ahb_result);
-                    return TEST_FAIL;
-                }
+                AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+
+                log_info(
+                    "Testing %s\n",
+                    ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                        .c_str());
 
                 // Determine AHB memory layout
                 AHardwareBuffer_Desc hardware_buffer_desc = {};
@@ -765,7 +812,7 @@ REGISTER_TEST(test_enqueue_copy_image)
                 generate_random_image_data(&imageInfo, srcData, seed);
 
                 void *hardware_buffer_data = nullptr;
-                ahb_result = AHardwareBuffer_lock(
+                int ahb_result = AHardwareBuffer_lock(
                     aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN, -1,
                     nullptr, &hardware_buffer_data);
                 if (ahb_result != 0)
@@ -787,7 +834,7 @@ REGISTER_TEST(test_enqueue_copy_image)
 
                 cl_mem_properties props[] = {
                     CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
-                    reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
+                    aHardwareBuffer.get_props(), 0
                 };
 
                 clMemWrapper imported_image = clCreateImageWithProperties(
@@ -975,9 +1022,6 @@ REGISTER_TEST(test_enqueue_copy_image)
                         }
                     }
                 }
-
-                AHardwareBuffer_release(aHardwareBuffer);
-                aHardwareBuffer = nullptr;
             }
         }
     }
@@ -985,7 +1029,7 @@ REGISTER_TEST(test_enqueue_copy_image)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_enqueue_copy_image_to_buffer)
+REGISTER_TEST(enqueue_copy_image_to_buffer)
 {
     cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
@@ -1018,8 +1062,9 @@ REGISTER_TEST(test_enqueue_copy_image_to_buffer)
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for (auto usage : test_usages)
         {
-            // Filter out usage flags that are not readable on device
-            if (!isAHBUsageReadable(usage.usageFlags))
+            if (!(isAHBUsageReadableHost(usage.usageFlags)
+                  && isAHBUsageWritableHost(usage.usageFlags)
+                  && isAHBUsageReadableDevice(usage.usageFlags)))
             {
                 continue;
             }
@@ -1033,15 +1078,12 @@ REGISTER_TEST(test_enqueue_copy_image_to_buffer)
 
                 CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
-                AHardwareBuffer *aHardwareBuffer = nullptr;
-                int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc,
-                                                          &aHardwareBuffer);
-                if (ahb_result != 0)
-                {
-                    log_error("AHardwareBuffer_allocate failed with code %d\n",
-                              ahb_result);
-                    return TEST_FAIL;
-                }
+                AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+
+                log_info(
+                    "Testing %s\n",
+                    ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                        .c_str());
 
                 // Determine AHB memory layout
                 AHardwareBuffer_Desc hardware_buffer_desc = {};
@@ -1074,7 +1116,7 @@ REGISTER_TEST(test_enqueue_copy_image_to_buffer)
                 generate_random_image_data(&imageInfo, srcData, seed);
 
                 void *hardware_buffer_data = nullptr;
-                ahb_result = AHardwareBuffer_lock(
+                int ahb_result = AHardwareBuffer_lock(
                     aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN, -1,
                     nullptr, &hardware_buffer_data);
                 if (ahb_result != 0)
@@ -1096,7 +1138,7 @@ REGISTER_TEST(test_enqueue_copy_image_to_buffer)
 
                 cl_mem_properties props[] = {
                     CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
-                    reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
+                    aHardwareBuffer.get_props(), 0
                 };
 
                 clMemWrapper imported_image = clCreateImageWithProperties(
@@ -1165,9 +1207,6 @@ REGISTER_TEST(test_enqueue_copy_image_to_buffer)
                     out_buffer_ptr += scanlineSize;
                 }
 
-                AHardwareBuffer_release(aHardwareBuffer);
-                aHardwareBuffer = nullptr;
-
                 if (total_matched == 0)
                 {
                     test_fail("Zero bytes matched");
@@ -1179,7 +1218,7 @@ REGISTER_TEST(test_enqueue_copy_image_to_buffer)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_enqueue_copy_buffer_to_image)
+REGISTER_TEST(enqueue_copy_buffer_to_image)
 {
     cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
@@ -1212,8 +1251,8 @@ REGISTER_TEST(test_enqueue_copy_buffer_to_image)
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for (auto usage : test_usages)
         {
-            // Filter out usage flags that are not readable on device
-            if (!isAHBUsageReadable(usage.usageFlags))
+            if (!(isAHBUsageReadableHost(usage.usageFlags)
+                  && isAHBUsageReadableDevice(usage.usageFlags)))
             {
                 continue;
             }
@@ -1227,15 +1266,12 @@ REGISTER_TEST(test_enqueue_copy_buffer_to_image)
 
                 CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
-                AHardwareBuffer *aHardwareBuffer = nullptr;
-                int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc,
-                                                          &aHardwareBuffer);
-                if (ahb_result != 0)
-                {
-                    log_error("AHardwareBuffer_allocate failed with code %d\n",
-                              ahb_result);
-                    return TEST_FAIL;
-                }
+                AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+
+                log_info(
+                    "Testing %s\n",
+                    ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                        .c_str());
 
                 // Determine AHB memory layout
                 AHardwareBuffer_Desc hardware_buffer_desc = {};
@@ -1256,8 +1292,8 @@ REGISTER_TEST(test_enqueue_copy_buffer_to_image)
                 imageInfo.type = format.clMemObjectType;
                 imageInfo.width = resolution.width;
                 imageInfo.height = resolution.height;
-                imageInfo.rowPitch = resolution.width * resolution.height
-                    * pixelSize; // data is tightly packed in buffer
+                // data is tightly packed in buffer
+                imageInfo.rowPitch = resolution.width * pixelSize;
                 test_assert_error(imageInfo.rowPitch
                                       >= pixelSize * imageInfo.width,
                                   "Row pitch is smaller than width");
@@ -1275,7 +1311,7 @@ REGISTER_TEST(test_enqueue_copy_buffer_to_image)
 
                 cl_mem_properties props[] = {
                     CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
-                    reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
+                    aHardwareBuffer.get_props(), 0
                 };
 
                 clMemWrapper imported_image = clCreateImageWithProperties(
@@ -1307,7 +1343,7 @@ REGISTER_TEST(test_enqueue_copy_buffer_to_image)
                                          &hardware_buffer_desc);
 
                 void *hardware_buffer_data = nullptr;
-                ahb_result = AHardwareBuffer_lock(
+                int ahb_result = AHardwareBuffer_lock(
                     aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN, -1,
                     nullptr, &hardware_buffer_data);
                 if (ahb_result != 0)
@@ -1366,9 +1402,6 @@ REGISTER_TEST(test_enqueue_copy_buffer_to_image)
                     return TEST_FAIL;
                 }
 
-                AHardwareBuffer_release(aHardwareBuffer);
-                aHardwareBuffer = nullptr;
-
                 if (total_matched == 0)
                 {
                     test_fail("Zero bytes matched");
@@ -1380,7 +1413,7 @@ REGISTER_TEST(test_enqueue_copy_buffer_to_image)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_enqueue_write_image)
+REGISTER_TEST(enqueue_write_image)
 {
     cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
@@ -1413,8 +1446,8 @@ REGISTER_TEST(test_enqueue_write_image)
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for (auto usage : test_usages)
         {
-            // Filter out usage flags that are not readable on device
-            if (!isAHBUsageReadable(usage.usageFlags))
+            if (!(isAHBUsageReadableHost(usage.usageFlags)
+                  && isAHBUsageReadableDevice(usage.usageFlags)))
             {
                 continue;
             }
@@ -1428,15 +1461,12 @@ REGISTER_TEST(test_enqueue_write_image)
 
                 CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
-                AHardwareBuffer *aHardwareBuffer = nullptr;
-                int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc,
-                                                          &aHardwareBuffer);
-                if (ahb_result != 0)
-                {
-                    log_error("AHardwareBuffer_allocate failed with code %d\n",
-                              ahb_result);
-                    return TEST_FAIL;
-                }
+                AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+
+                log_info(
+                    "Testing %s\n",
+                    ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                        .c_str());
 
                 // Determine AHB memory layout
                 AHardwareBuffer_Desc hardware_buffer_desc = {};
@@ -1453,7 +1483,7 @@ REGISTER_TEST(test_enqueue_write_image)
 
                 cl_mem_properties props[] = {
                     CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
-                    reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
+                    aHardwareBuffer.get_props(), 0
                 };
 
                 clMemWrapper imported_image = clCreateImageWithProperties(
@@ -1469,8 +1499,8 @@ REGISTER_TEST(test_enqueue_write_image)
                 imageInfo.type = format.clMemObjectType;
                 imageInfo.width = resolution.width;
                 imageInfo.height = resolution.height;
-                imageInfo.rowPitch = resolution.width * resolution.height
-                    * pixelSize; // Data is tightly packed
+                // Data is tightly packed
+                imageInfo.rowPitch = resolution.width * pixelSize;
                 test_assert_error(imageInfo.rowPitch
                                       >= pixelSize * imageInfo.width,
                                   "Row pitch is smaller than width");
@@ -1503,7 +1533,7 @@ REGISTER_TEST(test_enqueue_write_image)
                                          &hardware_buffer_desc);
 
                 void *hardware_buffer_data = nullptr;
-                ahb_result = AHardwareBuffer_lock(
+                int ahb_result = AHardwareBuffer_lock(
                     aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN, -1,
                     nullptr, &hardware_buffer_data);
                 if (ahb_result != 0)
@@ -1564,9 +1594,6 @@ REGISTER_TEST(test_enqueue_write_image)
                     return TEST_FAIL;
                 }
 
-                AHardwareBuffer_release(aHardwareBuffer);
-                aHardwareBuffer = nullptr;
-
                 if (total_matched == 0)
                 {
                     test_fail("Zero bytes matched");
@@ -1578,7 +1605,7 @@ REGISTER_TEST(test_enqueue_write_image)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_enqueue_fill_image)
+REGISTER_TEST(enqueue_fill_image)
 {
     cl_int err = CL_SUCCESS;
     RandomSeed seed(gRandomSeed);
@@ -1611,8 +1638,8 @@ REGISTER_TEST(test_enqueue_fill_image)
         aHardwareBufferDesc.format = format.aHardwareBufferFormat;
         for (auto usage : test_usages)
         {
-            // Filter out usage flags that are not readable on device
-            if (!isAHBUsageReadable(usage.usageFlags))
+            if (!(isAHBUsageReadableHost(usage.usageFlags)
+                  && isAHBUsageReadableDevice(usage.usageFlags)))
             {
                 continue;
             }
@@ -1626,15 +1653,12 @@ REGISTER_TEST(test_enqueue_fill_image)
 
                 CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, format);
 
-                AHardwareBuffer *aHardwareBuffer = nullptr;
-                int ahb_result = AHardwareBuffer_allocate(&aHardwareBufferDesc,
-                                                          &aHardwareBuffer);
-                if (ahb_result != 0)
-                {
-                    log_error("AHardwareBuffer_allocate failed with code %d\n",
-                              ahb_result);
-                    return TEST_FAIL;
-                }
+                AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+
+                log_info(
+                    "Testing %s\n",
+                    ahardwareBufferFormatToString(format.aHardwareBufferFormat)
+                        .c_str());
 
                 // Determine AHB memory layout
                 AHardwareBuffer_Desc hardware_buffer_desc = {};
@@ -1650,7 +1674,7 @@ REGISTER_TEST(test_enqueue_fill_image)
 
                 cl_mem_properties props[] = {
                     CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
-                    reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
+                    aHardwareBuffer.get_props(), 0
                 };
 
                 clMemWrapper imported_image = clCreateImageWithProperties(
@@ -1666,8 +1690,8 @@ REGISTER_TEST(test_enqueue_fill_image)
                 imageInfo.type = format.clMemObjectType;
                 imageInfo.width = resolution.width;
                 imageInfo.height = resolution.height;
-                imageInfo.rowPitch = resolution.width * resolution.height
-                    * pixelSize; // Data is tightly packed
+                imageInfo.rowPitch = resolution.width * pixelSize;
+                // Data is tightly packed
                 test_assert_error(imageInfo.rowPitch
                                       >= pixelSize * imageInfo.width,
                                   "Row pitch is smaller than width");
@@ -1739,7 +1763,7 @@ REGISTER_TEST(test_enqueue_fill_image)
                                          &hardware_buffer_desc);
 
                 void *hardware_buffer_data = nullptr;
-                ahb_result = AHardwareBuffer_lock(
+                int ahb_result = AHardwareBuffer_lock(
                     aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN, -1,
                     nullptr, &hardware_buffer_data);
                 if (ahb_result != 0)
@@ -1819,8 +1843,6 @@ REGISTER_TEST(test_enqueue_fill_image)
                     return TEST_FAIL;
                 }
 
-                AHardwareBuffer_release(aHardwareBuffer);
-                aHardwareBuffer = nullptr;
                 free(verificationLine);
 
                 if (total_matched == 0)
@@ -1834,7 +1856,7 @@ REGISTER_TEST(test_enqueue_fill_image)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_blob)
+REGISTER_TEST(blob)
 {
     cl_int err = CL_SUCCESS;
 
@@ -1883,19 +1905,17 @@ REGISTER_TEST(test_blob)
             continue;
         }
 
-        AHardwareBuffer *aHardwareBuffer = nullptr;
-        int ahb_result =
-            AHardwareBuffer_allocate(&aHardwareBufferDesc, &aHardwareBuffer);
-        if (ahb_result != 0)
-        {
-            log_error("AHardwareBuffer_allocate failed with code %d\n",
-                      ahb_result);
-            return TEST_FAIL;
-        }
+        AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+
+        log_info(
+            "Testing %s\n",
+            ahardwareBufferFormatToString(
+                static_cast<AHardwareBuffer_Format>(aHardwareBufferDesc.format))
+                .c_str());
 
         cl_mem_properties props[] = {
             CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
-            reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
+            aHardwareBuffer.get_props(), 0
         };
 
         cl_mem buffer = clCreateBufferWithProperties(
@@ -1903,9 +1923,416 @@ REGISTER_TEST(test_blob)
         test_error(err, "Failed to create CL buffer from AHardwareBuffer");
 
         test_error(clReleaseMemObject(buffer), "Failed to release buffer");
-        AHardwareBuffer_release(aHardwareBuffer);
-        aHardwareBuffer = nullptr;
     }
 
+    return TEST_PASS;
+}
+
+/*
+ * For cl buffer and cl image
+ *  Create a AHB
+ *  Create a mem object from the AHB
+ *  Release the AHB
+ *  Read and write using the mem object
+ *  Verify reads and writes
+ */
+REGISTER_TEST(lifetime_buffer)
+{
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
+
+    cl_int err;
+    constexpr cl_uint buffer_size = 4096;
+    std::vector<uint8_t> host_buffer(buffer_size, 1);
+    clMemWrapper imported_buffer;
+
+    {
+        // Check if AHB descriptors for buffers and images are supported
+        AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
+        aHardwareBufferDesc.width = buffer_size;
+        aHardwareBufferDesc.height = 1;
+        aHardwareBufferDesc.layers = 1;
+        aHardwareBufferDesc.format = AHARDWAREBUFFER_FORMAT_BLOB;
+        aHardwareBufferDesc.usage = AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN
+            | AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN;
+
+        if (!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
+        {
+            log_unsupported_ahb_format(aHardwareBufferDesc);
+            return TEST_SKIPPED_ITSELF;
+        }
+
+        log_info("Testing buffer lifetime\n");
+
+        AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+
+        const cl_mem_properties props[] = {
+            CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
+            aHardwareBuffer.get_props(),
+            0,
+        };
+
+        imported_buffer = clCreateBufferWithProperties(
+            context, props, CL_MEM_READ_WRITE, 0, nullptr, &err);
+        test_error(err, "Failed to create CL buffer from AHardwareBuffer");
+
+        // Fill AHB buffer
+        void *data_ptr = nullptr;
+        int ahb_result = AHardwareBuffer_lock(
+            aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN, -1, nullptr,
+            &data_ptr);
+        if (ahb_result != 0)
+        {
+            log_error("AHardwareBuffer_lock failed with code %d\n", ahb_result);
+            return TEST_FAIL;
+        }
+
+        memcpy(data_ptr, host_buffer.data(), buffer_size);
+
+        ahb_result = AHardwareBuffer_unlock(aHardwareBuffer, nullptr);
+        if (ahb_result != 0)
+        {
+            log_error("AHardwareBuffer_unlock failed with code %d\n",
+                      ahb_result);
+            return TEST_FAIL;
+        }
+    } // Release test scope reference to AHB
+
+
+    // Verify buffer read by comparing to host buffer
+    std::vector<uint8_t> read_buffer(buffer_size);
+    err = clEnqueueReadBuffer(queue, imported_buffer, true, 0, buffer_size,
+                              read_buffer.data(), 0, nullptr, nullptr);
+    test_error(err, "failed clEnqueueReadBuffer");
+
+    for (size_t i = 0; i < buffer_size; i++)
+    {
+        if (read_buffer[i] != host_buffer[i])
+        {
+            log_error("At position %zu expected value: %u but got value: %u\n",
+                      i, host_buffer[i], read_buffer[i]);
+            return TEST_FAIL;
+        }
+    }
+
+    // Attempt buffer write
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+
+    err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                      &lifetime_kernel_source,
+                                      "increment_buffer");
+    test_error(err, "kernel creation failed");
+
+    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &imported_buffer);
+    test_error(err, "clSetKernelArg failed");
+
+    size_t gws[1] = { buffer_size };
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, gws, nullptr, 0,
+                                 nullptr, nullptr);
+    test_error(err, "Failed clEnqueueNDRangeKernel");
+
+    // Verify write
+    err = clEnqueueReadBuffer(queue, imported_buffer, true, 0, buffer_size,
+                              read_buffer.data(), 0, nullptr, nullptr);
+    test_error(err, "failed clEnqueueReadBuffer");
+
+    for (size_t i = 0; i < buffer_size; i++)
+    {
+        if (read_buffer[i]
+            != host_buffer[i] + 1) // Kernel incremented each index by 1
+        {
+            log_error("At position %zu expected value: %u but got value: %u\n",
+                      i, host_buffer[i], read_buffer[i]);
+            return TEST_FAIL;
+        }
+    }
+
+    return TEST_PASS;
+}
+
+
+REGISTER_TEST(lifetime_image)
+{
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
+
+    int err;
+    const AHardwareBuffer_Format aHardwareBufferFormat =
+        AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM;
+    const cl_image_format clImageFormat = { CL_RGBA, CL_UNORM_INT8 };
+    const size_t pixel_size = get_pixel_size(&clImageFormat);
+
+    for (auto resolution : test_sizes)
+    {
+        const size_t image_size =
+            resolution.width * resolution.height * pixel_size;
+
+        std::vector<uint8_t> host_image_data(image_size, 1);
+        clMemWrapper imported_image;
+        {
+            // Check if AHB descriptors for buffers and images are supported
+            AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
+            aHardwareBufferDesc.width = resolution.width;
+            aHardwareBufferDesc.height = resolution.height;
+            aHardwareBufferDesc.layers = 1;
+            aHardwareBufferDesc.format = aHardwareBufferFormat;
+            aHardwareBufferDesc.usage = AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN
+                | AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN;
+
+            if (!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
+            {
+                log_unsupported_ahb_format(aHardwareBufferDesc);
+                continue;
+            }
+
+            log_info("Testing image lifetime\n");
+
+            AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+
+            const cl_mem_properties props_image[] = {
+                CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
+                aHardwareBuffer.get_props(),
+                0,
+            };
+
+            imported_image = clCreateImageWithProperties(
+                context, props_image, CL_MEM_READ_WRITE, nullptr, nullptr,
+                nullptr, &err);
+            test_error(err, "Failed to create CL image from AHardwareBuffer");
+
+            void *data_ptr = nullptr;
+            int ahb_result = AHardwareBuffer_lock(
+                aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN, -1,
+                nullptr, &data_ptr);
+            if (ahb_result != 0)
+            {
+                log_error("AHardwareBuffer_lock failed with code %d\n",
+                          ahb_result);
+                return TEST_FAIL;
+            }
+
+            memcpy(data_ptr, host_image_data.data(), image_size);
+
+            ahb_result = AHardwareBuffer_unlock(aHardwareBuffer, nullptr);
+            if (ahb_result != 0)
+            {
+                log_error("AHardwareBuffer_unlock failed with code %d\n",
+                          ahb_result);
+                return TEST_FAIL;
+            }
+        } // Release test scope reference to AHB
+
+
+        // Verify image read using host data
+        size_t origin[3] = { 0, 0, 0 };
+        size_t region[3] = { resolution.width, resolution.height, 1 };
+        size_t row_pitch;
+        uint8_t *mapped_image_ptr = static_cast<uint8_t *>(clEnqueueMapImage(
+            queue, imported_image, true, CL_MAP_READ, origin, region,
+            &row_pitch, nullptr, 0, nullptr, nullptr, &err));
+        test_error(err, "clEnqueueMapImage failed");
+
+        for (size_t row = 0; row < resolution.height; ++row)
+        {
+            for (size_t col = 0; col < resolution.width; ++col)
+            {
+                size_t mapped_image_idx = row * row_pitch + col;
+                size_t host_image_idx = row * resolution.width + col;
+                if (mapped_image_ptr[mapped_image_idx]
+                    != host_image_data[host_image_idx])
+                {
+                    log_error(
+                        "At position (%zu, %zu) expected value: %u but got "
+                        "value: %u\n",
+                        row, col, host_image_data[host_image_idx],
+                        mapped_image_ptr[mapped_image_idx]);
+                    return TEST_FAIL;
+                }
+            }
+        }
+
+        err = clEnqueueUnmapMemObject(queue, imported_image, mapped_image_ptr,
+                                      0, nullptr, nullptr);
+        test_error(err, "clEnqueueUnmapMemObject failed");
+
+        err = clFinish(queue);
+        test_error(err, "clFinish failed");
+
+
+        // Attempt image write
+        clProgramWrapper program;
+        clKernelWrapper kernel;
+        err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                          &lifetime_kernel_source,
+                                          "set_image_color");
+        test_error(err, "kernel creation failed");
+
+        err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &imported_image);
+        test_error(err, "clSetKernelArg failed");
+
+        cl_float4 color = { { 0.5f, 0.5f, 0.5f, 0.5f } };
+        err = clSetKernelArg(kernel, 1, sizeof(cl_float4), &color);
+        test_error(err, "clSetKernelArg failed");
+
+        std::vector<size_t> gws = { resolution.width, resolution.height };
+        err = clEnqueueNDRangeKernel(queue, kernel, 2, nullptr, gws.data(),
+                                     nullptr, 0, nullptr, nullptr);
+        test_error(err, "Failed clEnqueueNDRangeKernel");
+
+        err = clFinish(queue);
+        test_error(err, "clFinish failed");
+
+
+        // Verify image write
+        mapped_image_ptr = static_cast<uint8_t *>(clEnqueueMapImage(
+            queue, imported_image, true, CL_MAP_READ, origin, region,
+            &row_pitch, nullptr, 0, nullptr, nullptr, &err));
+        test_error(err, "clEnqueueMapImage failed");
+
+        for (size_t row = 0; row < resolution.height; ++row)
+        {
+            for (size_t col = 0; col < resolution.width; ++col)
+            {
+                size_t mapped_image_idx = row * row_pitch + col;
+                if (128 != mapped_image_ptr[mapped_image_idx])
+                {
+                    log_error(
+                        "At position (%zu, %zu) expected value: %u but got "
+                        "value: %u\n",
+                        row, col, 128, mapped_image_ptr[mapped_image_idx]);
+                    return TEST_FAIL;
+                }
+            }
+        }
+
+        err = clEnqueueUnmapMemObject(queue, imported_image, mapped_image_ptr,
+                                      0, nullptr, nullptr);
+        test_error(err, "clEnqueueUnmapMemObject failed");
+
+        err = clFinish(queue);
+        test_error(err, "clFinish failed");
+    }
+    return TEST_PASS;
+}
+
+
+/* Testing clCreateSubBuffer
+ *  Create AHB
+ *  Write to AHB
+ *  Create CL buffer from AHB
+ *  Create a sub buffer into half of the buffer
+ *  Read & verify sub buffer
+ */
+REGISTER_TEST(sub_buffer)
+{
+    cl_int err;
+    RandomSeed seed(gRandomSeed);
+
+    if (!is_extension_available(
+            device, "cl_khr_external_memory_android_hardware_buffer"))
+    {
+        log_info("cl_khr_external_memory_android_hardware_buffer is not "
+                 "supported on this platform. "
+                 "Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
+    aHardwareBufferDesc.format = AHARDWAREBUFFER_FORMAT_BLOB;
+    for (auto usage : test_buffer_usages)
+    {
+        if (!(isAHBUsageReadableHost(usage.usageFlags)
+              && isAHBUsageWritableHost(usage.usageFlags)
+              && isAHBUsageReadableDevice(usage.usageFlags)))
+        {
+            continue;
+        }
+
+        aHardwareBufferDesc.usage = usage.usageFlags;
+        for (uint32_t buffer_size : test_buffer_sizes)
+        {
+            if (buffer_size > getMaxAllocSize(device))
+            {
+                continue;
+            }
+
+            aHardwareBufferDesc.width = buffer_size;
+            aHardwareBufferDesc.height = 1;
+            aHardwareBufferDesc.layers = 1;
+            if (!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
+            {
+                log_unsupported_ahb_format(aHardwareBufferDesc);
+                continue;
+            }
+
+            AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+
+            log_info("Testing usage: %s, buffer size: %u\n",
+                     ahardwareBufferDecodeUsageFlagsToString(usage.usageFlags)
+                         .c_str(),
+                     buffer_size);
+
+            void *hardware_buffer_data = nullptr;
+            int ahb_result = AHardwareBuffer_lock(
+                aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY, -1,
+                nullptr, &hardware_buffer_data);
+            if (ahb_result != 0)
+            {
+                log_error("AHardwareBuffer_lock failed with code %d\n",
+                          ahb_result);
+                return TEST_FAIL;
+            }
+
+            std::vector<uint8_t> host_buffer(buffer_size);
+
+            generate_random_data(ExplicitType::kUnsignedChar, buffer_size, seed,
+                                 host_buffer.data());
+
+            memcpy(hardware_buffer_data, host_buffer.data(), buffer_size);
+
+            ahb_result = AHardwareBuffer_unlock(aHardwareBuffer, nullptr);
+            if (ahb_result != 0)
+            {
+                log_error("AHardwareBuffer_unlock failed with code %d\n",
+                          ahb_result);
+                return TEST_FAIL;
+            }
+
+            cl_mem_properties props[] = {
+                CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
+                aHardwareBuffer.get_props(), 0
+            };
+
+            clMemWrapper buffer = clCreateBufferWithProperties(
+                context, props, CL_MEM_READ_WRITE, 0, nullptr, &err);
+            test_error(err, "Failed to create CL buffer from AHardwareBuffer");
+
+            cl_uint sub_buffer_size = buffer_size / 2;
+            cl_buffer_region region = { 0 };
+            region.origin = 0;
+            region.size = sub_buffer_size;
+
+            clMemWrapper sub_buffer =
+                clCreateSubBuffer(buffer, CL_MEM_READ_WRITE,
+                                  CL_BUFFER_CREATE_TYPE_REGION, &region, &err);
+            test_error(err, "clCreateSubBuffer failed");
+
+            std::vector<uint8_t> host_sub_buffer(sub_buffer_size);
+            err = clEnqueueReadBuffer(queue, sub_buffer, true, 0,
+                                      sub_buffer_size, host_sub_buffer.data(),
+                                      0, nullptr, nullptr);
+            test_error(err, "clEnqueueReadBuffer failed");
+
+            for (size_t i = 0; i < sub_buffer_size; ++i)
+            {
+                if (host_buffer[i] != host_sub_buffer[i])
+                {
+                    log_error(
+                        "At position i=%zu expected value %u but got %u\n", i,
+                        host_buffer[i], host_sub_buffer[i]);
+                    return TEST_FAIL;
+                }
+            }
+        }
+    }
     return TEST_PASS;
 }
