@@ -24,17 +24,17 @@
 // 1,2,4,8,16,3
 #define NUM_VECTOR_SIZES 6
 
-extern int g_arrVecSizes[NUM_VECTOR_SIZES];
-extern int g_arrVecSteps[NUM_VECTOR_SIZES];
+extern const int g_arrVecSizes[NUM_VECTOR_SIZES];
+extern const int g_arrVecSteps[NUM_VECTOR_SIZES];
 
-extern const char *g_arrVecSizeNames[NUM_VECTOR_SIZES];
-extern size_t g_arrVecAlignMasks[NUM_VECTOR_SIZES];
+extern const char* const g_arrVecSizeNames[NUM_VECTOR_SIZES];
+extern const size_t g_arrVecAlignMasks[NUM_VECTOR_SIZES];
 
 // Define the buffer size that we want to block our test with
 #define BUFFER_SIZE (1024 * 1024)
 #define KPAGESIZE 4096
 
-extern ExplicitType types[];
+extern const ExplicitType types[];
 
-extern const char *g_arrTypeNames[];
+extern const char* const g_arrTypeNames[];
 extern const size_t g_arrTypeSizes[];
