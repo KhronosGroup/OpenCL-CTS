@@ -127,14 +127,18 @@ REGISTER_TEST(kernel_call_kernel_function)
     pass = 1;
     int subtest_errors = 0;
     for (int i=0; i<num_elements; i++) {
-            if (output[i] != expected[i]) {
-                subtest_errors++;
-                pass = 0;
-                log_error("Results do not match: output[%d]=%d != expected[%d]=%d\n", i, output[i], i, expected[i]);
-                if (subtest_errors == 10) {
-                    log_error("Suppressing further results...\n");
-                    break;
-                }
+        if (output[i] != expected[i])
+        {
+            subtest_errors++;
+            pass = 0;
+            log_error(
+                "Results do not match: output[%d]=%d != expected[%d]=%d\n", i,
+                output[i], i, expected[i]);
+            if (subtest_errors == 10)
+            {
+                log_error("Suppressing further results...\n");
+                break;
+            }
         }
     }
     errors += subtest_errors;
@@ -174,14 +178,18 @@ REGISTER_TEST(kernel_call_kernel_function)
     pass = 1;
     subtest_errors = 0;
     for (int i=0; i<num_elements; i++) {
-            if (output[i] != expected[i]) {
-                subtest_errors++;
-                pass = 0;
-                log_error("Results do not match: output[%d]=%d != expected[%d]=%d\n", i, output[i], i, expected[i]);
-                if (subtest_errors == 10) {
-                    log_error("Suppressing further results...\n");
-                    break;
-                }
+        if (output[i] != expected[i])
+        {
+            subtest_errors++;
+            pass = 0;
+            log_error(
+                "Results do not match: output[%d]=%d != expected[%d]=%d\n", i,
+                output[i], i, expected[i]);
+            if (subtest_errors == 10)
+            {
+                log_error("Suppressing further results...\n");
+                break;
+            }
         }
     }
     errors += subtest_errors;
@@ -225,18 +233,22 @@ REGISTER_TEST(kernel_call_kernel_function)
     error = clEnqueueReadBuffer( queue, streams[1], CL_TRUE, 0, sizeof(cl_int)*num_elements, output, 0, NULL, NULL );
     test_error( error, "clEnqueueReadBuffer failed" );
 
-        // Compare the results
+    // Compare the results
     pass = 1;
     subtest_errors = 0;
     for (int i=0; i<num_elements; i++) {
-            if (output[i] != expected[i]) {
-                subtest_errors++;
-                pass = 0;
-                log_error("Results do not match: output[%d]=%d != expected[%d]=%d\n", i, output[i], i, expected[i]);
-                if (subtest_errors == 10) {
-                    log_error("Suppressing further results...\n");
-                    break;
-                }
+        if (output[i] != expected[i])
+        {
+            subtest_errors++;
+            pass = 0;
+            log_error(
+                "Results do not match: output[%d]=%d != expected[%d]=%d\n", i,
+                output[i], i, expected[i]);
+            if (subtest_errors == 10)
+            {
+                log_error("Suppressing further results...\n");
+                break;
+            }
         }
     }
     errors += subtest_errors;
