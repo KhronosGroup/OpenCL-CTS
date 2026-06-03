@@ -22,8 +22,8 @@
 #include "testBase.h"
 
 cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
-constexpr cl_half g_half_min = 0xfbff;
-constexpr cl_half g_half_max = 0x7bff;
+constexpr cl_half g_half_min = 0xFC00;
+constexpr cl_half g_half_max = 0x7C00;
 
 static std::string make_kernel_string(const std::string &type,
                                       const std::string &kernelName,
@@ -113,7 +113,7 @@ template <typename T> struct Max
     static constexpr const char *opName = "max";
     static constexpr T identityValue = std::is_integral_v<T>
         ? std::numeric_limits<T>::min()
-        : -std::numeric_limits<T>::max();
+        : -std::numeric_limits<T>::infinity();
     static T combine(T a, T b) { return std::max(a, b); }
 };
 
@@ -646,15 +646,17 @@ static int run_all_types(cl_device_id device, cl_context context,
 {
     int result = TEST_PASS;
 
-    result |= run_test<Technique<Op<cl_int>>>(device, context, queue, num_elements);
-    result |= run_test<Technique<Op<cl_uint>>>(device, context, queue, num_elements);
+    result |=
+        run_test<Technique<Op<cl_int>>>(device, context, queue, num_elements);
+    result |=
+        run_test<Technique<Op<cl_uint>>>(device, context, queue, num_elements);
 
     if (gHasLong)
     {
         result |= run_test<Technique<Op<cl_long>>>(device, context, queue,
-                                              num_elements);
+                                                   num_elements);
         result |= run_test<Technique<Op<cl_ulong>>>(device, context, queue,
-                                               num_elements);
+                                                    num_elements);
     }
 
     if (is_extension_available(device, "cl_khr_fp16"))
@@ -676,16 +678,16 @@ static int run_all_types(cl_device_id device, cl_context context,
         }
 
         result |= run_test<Technique<Op<cl_half>>>(device, context, queue,
-                                              num_elements);
+                                                   num_elements);
     }
 
-    result |= run_test<Technique<Op<cl_float>>>(device, context, queue,
-                                           num_elements);
+    result |=
+        run_test<Technique<Op<cl_float>>>(device, context, queue, num_elements);
 
     if (is_extension_available(device, "cl_khr_fp64"))
     {
         result |= run_test<Technique<Op<cl_double>>>(device, context, queue,
-                                                num_elements);
+                                                     num_elements);
     }
 
     return result;
