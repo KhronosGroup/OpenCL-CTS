@@ -340,7 +340,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
 };
 
 // Used for static_asserts below
-template <auto...> inline constexpr bool always_false_v = false;
+template <auto...> [[maybe_unused]] inline constexpr bool always_false_v = false;
 
 // Test for bit count/inclusive and exclusive scan/ find lsb msb ballot function
 template <typename Ty, BallotOp operation> struct BALLOT_BIT_OPS
