@@ -3994,8 +3994,7 @@ long double reference_log1pl(long double x)
     // double-double __log2_ep giving ~0.5 ULP accuracy.
     // For |x| < 0.5: delegate to MSVC's log1p(double) which handles small
     // arguments correctly without precision loss from computing 1+x.
-    if (reference_fabsl(x) >= 0.5L)
-        return reference_logl(1.0L + x);
+    if (reference_fabsl(x) >= 0.5L) return reference_logl(1.0L + x);
     return (long double)log1p((double)x);
 #elif defined(__PPC__)
     // log1pl on PPC inadvertantly returns NaN for very large values. Work
