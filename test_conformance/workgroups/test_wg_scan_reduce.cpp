@@ -36,6 +36,7 @@ static std::string make_kernel_string(const std::string &type,
     // }
 
     std::ostringstream os;
+    if (type == "half") os << "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
     os << "__kernel void " << kernelName << "(global " << type
        << " *input, global " << type << " *output) {\n";
     os << "    int tid = get_global_id(0);\n";
