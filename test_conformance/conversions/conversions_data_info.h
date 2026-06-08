@@ -36,10 +36,7 @@ extern roundingMode qcom_rm;
 #include "harness/typeWrappers.h"
 
 #include <cmath>
-#include <vector>
-#include <unordered_set>
 #include <cstring>
-#include <mutex>
 
 #if defined(__linux__)
 #include <sys/param.h>
@@ -70,8 +67,6 @@ struct DataInitInfo
     cl_uint threads;
 
     static cl_half_rounding_mode halfRoundingMode;
-    static std::vector<float> specialValuesFloat;
-    static std::vector<double> specialValuesDouble;
 };
 
 #define HFF(num) cl_half_from_float(num, DataInitInfo::halfRoundingMode)
@@ -89,248 +84,6 @@ struct DataInitBase : public DataInitInfo
     virtual void set_allow_zero_array(uint8_t *allow, void *out, void *in,
                                       size_t n)
     {}
-
-private:
-    template <typename InType, typename OutType> OutType bitcast(InType in)
-    {
-        OutType out;
-        assert(sizeof(InType) == sizeof(OutType));
-        std::memcpy(&out, &in, sizeof(InType));
-        return out;
-    }
-
-    // Adds a value to a vector if it is not already present in the set.
-    // The set is used to check for duplicates, and the vector is used to
-    // store the unique values in the order they were added.
-    template <typename Type, typename IntegerType>
-    void push_unique(std::vector<Type> &vec,
-                     std::unordered_set<IntegerType> &set, Type val)
-    {
-        IntegerType set_val;
-        if constexpr (std::is_same<Type, IntegerType>::value)
-        {
-            set_val = val;
-        }
-        else
-        {
-            set_val = bitcast<Type, IntegerType>(val);
-        }
-        if (set.count(set_val) == 0)
-        {
-            set.insert(set_val);
-            vec.push_back(val);
-        }
-    };
-
-public:
-    template <typename T> std::vector<T> GetIntSpecialValues()
-    {
-        std::lock_guard<std::recursive_mutex> lock(gLock);
-        static std::vector<T> vec;
-        if (!vec.empty())
-        {
-            return vec;
-        }
-        std::unordered_set<T> set;
-        const T sign = static_cast<T>(1) << (sizeof(T) * 8 - 1);
-
-        // For each value, add it and its neighbors to the vector. And for each
-        // of those values, add the bitwise not and the XOR with the sign to the
-        // vector.
-        auto push = [&set, &sign, this](T val) {
-            for (const int offset : { -3, -2, -1, 0, 1, 2, 3 })
-            {
-                T v = val + offset;
-                push_unique<T, T>(vec, set, v);
-                push_unique<T, T>(vec, set, ~v);
-                v = v ^ sign;
-                push_unique<T, T>(vec, set, v);
-                push_unique<T, T>(vec, set, ~v);
-            }
-        };
-
-        // Add all the values close to 0, MIN, and MAX.
-        for (unsigned i = 0; i < 256; i++)
-        {
-            push(i);
-        }
-
-        // Add powers of 2, 3, 5, 7, 10.
-        for (const T base : { 2, 3, 5, 7, 10 })
-        {
-            T val = base;
-            T next = val * base;
-            do
-            {
-                push(val);
-                val = next;
-                next *= base;
-            } while (next > val && next < sign);
-        }
-
-        // Generate patterns and masks.
-        // For uint16_t:
-        // patterns: 0x1111, 0x2222, ..., 0xEEEE
-        // masks: 0x0F0F, 0xF0F0, 0x00FF, 0xFF00, 0xFFFF
-        std::vector<T> patterns;
-        std::vector<T> masks;
-        for (T i = 1; i < 15; i++)
-        {
-            T pattern = i;
-            for (unsigned j = 0; j < sizeof(T) * 2; j++)
-            {
-                pattern = pattern << 4 | i;
-            }
-            patterns.push_back(pattern);
-        }
-        for (unsigned chunk_size = 4; chunk_size < (sizeof(T) * 8);
-             chunk_size *= 2)
-        {
-            T mask = (static_cast<T>(1) << chunk_size) - 1;
-            for (unsigned shift = chunk_size * 2;
-                 shift <= ((sizeof(T) * 8) / 2); shift *= 2)
-            {
-                mask |= (mask << shift);
-            }
-            masks.push_back(mask);
-            masks.push_back(~mask);
-        }
-        masks.push_back(~static_cast<T>(0));
-
-        // Add all the combinations of patterns and masks.
-        for (const auto &pattern : patterns)
-        {
-            for (const auto &mask : masks)
-            {
-                push(pattern & mask);
-            }
-        }
-        return vec;
-    }
-
-    template <typename InType, typename InIntegerType, typename OutType>
-    std::vector<InType> GetFpSpecialValues()
-    {
-        std::lock_guard<std::recursive_mutex> lock(gLock);
-        static std::vector<InType> vec;
-        if (!vec.empty())
-        {
-            return vec;
-        }
-        std::unordered_set<InIntegerType> set;
-
-        // Adds a value and its neighbors (values +/- 1 ULP away) to the vector.
-        auto push = [&set, this](InType val) {
-            push_unique<InType, InIntegerType>(vec, set, val);
-            push_unique<InType, InIntegerType>(
-                vec, set,
-                bitcast<InIntegerType, InType>(
-                    bitcast<InType, InIntegerType>(val) + 1));
-            push_unique<InType, InIntegerType>(
-                vec, set,
-                bitcast<InIntegerType, InType>(
-                    bitcast<InType, InIntegerType>(val) - 1));
-        };
-
-        // Add all the values from the special values list.
-        if constexpr (std::is_same<InType, cl_float>::value)
-        {
-            for (const auto &val : specialValuesFloat)
-            {
-                push(val);
-            }
-        }
-        else if constexpr (std::is_same<InType, cl_double>::value)
-        {
-            for (const auto &val : specialValuesDouble)
-            {
-                push(val);
-            }
-        }
-
-        // Add values to the input test set that correspond to values used as
-        // input for the output type.
-        if constexpr (std::is_same<OutType, cl_uchar>::value)
-        {
-            for (uint32_t i = 0; i < 256; i++)
-            {
-                push(static_cast<InType>(i));
-            }
-        }
-        else if constexpr (std::is_same<OutType, cl_char>::value)
-        {
-            for (int32_t i = -127; i <= 128; i++)
-            {
-                push(static_cast<InType>(i));
-            }
-        }
-        else if constexpr (std::is_same<OutType, cl_ushort>::value)
-        {
-            for (uint32_t i = 0; i < (64 * 1024); i++)
-            {
-                push(static_cast<InType>(i));
-            }
-        }
-        else if constexpr (std::is_same<OutType, cl_short>::value)
-        {
-            for (int32_t i = -(64 * 1024 / 2 - 1); i <= (64 * 1024 / 2); i++)
-            {
-                push(static_cast<InType>(i));
-            }
-        }
-        else if constexpr (std::is_same<OutType, cl_uint>::value)
-        {
-            for (const auto val : GetIntSpecialValues<uint32_t>())
-            {
-                push(static_cast<InType>(val));
-            }
-        }
-        else if constexpr (std::is_same<OutType, cl_int>::value)
-        {
-            for (const auto val : GetIntSpecialValues<uint32_t>())
-            {
-                push(static_cast<InType>(bitcast<uint32_t, OutType>(val)));
-            }
-        }
-        else if constexpr (std::is_same<OutType, cl_ulong>::value)
-        {
-            for (const auto val : GetIntSpecialValues<uint64_t>())
-            {
-                push(static_cast<InType>(val));
-            }
-        }
-        else if constexpr (std::is_same<OutType, cl_long>::value)
-        {
-            for (const auto val : GetIntSpecialValues<uint64_t>())
-            {
-                push(static_cast<InType>(bitcast<uint64_t, OutType>(val)));
-            }
-        }
-        else if constexpr (std::is_same<OutType, cl_half>::value)
-        {
-            for (uint32_t i = 0; i < (64 * 1024); i++)
-            {
-                push(static_cast<InType>(bitcast<uint16_t, OutType>(i)));
-            }
-        }
-        else if constexpr (std::is_same<OutType, cl_float>::value
-                           && !std::is_same<InType, cl_float>::value)
-        {
-            for (const auto &val : specialValuesFloat)
-            {
-                push(static_cast<InType>(val));
-            }
-        }
-        else if constexpr (std::is_same<OutType, cl_double>::value
-                           && !std::is_same<InType, cl_double>::value)
-        {
-            for (const auto &val : specialValuesDouble)
-            {
-                push(static_cast<InType>(val));
-            }
-        }
-        return vec;
-    }
 };
 
 template <typename InType, typename OutType, bool InFP, bool OutFP>
@@ -1044,7 +797,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
                 }
                 return;
             }
-            const auto &specialValues = GetIntSpecialValues<uint32_t>();
+            const auto &specialValues = GetIntSpecialValues<uint32_t>(gLock);
             uint32_t i;
             for (i = 0; i < size && (i + ulStart) < specialValues.size(); i++)
             {
@@ -1058,7 +811,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
         else
         { // long/ulong
             uint64_t *o = (uint64_t *)pIn;
-            const auto &specialValues = GetIntSpecialValues<uint64_t>();
+            const auto &specialValues = GetIntSpecialValues<uint64_t>(gLock);
             uint32_t i;
             for (i = 0; i < size && (i + ulStart) < specialValues.size(); i++)
             {
@@ -1084,7 +837,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
         else
         {
             const auto &specialValuesFloat =
-                GetFpSpecialValues<InType, uint32_t, OutType>();
+                GetFpSpecialValues<InType, uint32_t, OutType>(gLock);
             uint32_t i;
             for (i = 0; i < size && (i + ulStart) < specialValuesFloat.size();
                  i++)
@@ -1107,7 +860,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
         uint64_t *o = (uint64_t *)pIn;
         InType *od = (InType *)pIn;
         const auto &specialValuesDouble =
-            GetFpSpecialValues<InType, uint64_t, OutType>();
+            GetFpSpecialValues<InType, uint64_t, OutType>(gLock);
         uint32_t i;
         for (i = 0; i < size && (i + ulStart) < specialValuesDouble.size(); i++)
         {
