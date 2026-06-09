@@ -13,18 +13,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "mt19937.h"
 #include "testBase.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <cinttypes>
+#include <mutex>
 
 #include "harness/conversions.h"
+#include "harness/parseParameters.h"
+
+static std::recursive_mutex gLock;
 
 extern     MTdata          d;
+#define MASK(n) ((1 << (n)) - 1)
 
 // The tests we are running
 const char *tests[] = {
@@ -280,29 +287,28 @@ verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_l
     if (count) return -1; else return 0;
 }
 
-void
-init_long_data(uint64_t indx, int num_elements, cl_long *input_ptr[], MTdata d)
+void init_long_data(uint64_t indx, uint32_t num_elements, cl_long *input_ptr[],
+                    MTdata d, int num_runs_shift)
 {
-    cl_ulong        *p = (cl_ulong *)input_ptr[0];
-    int         j;
-
-    if (indx == 0) {
-        // Do the tricky values the first time around
-        fill_test_values( input_ptr[ 0 ], input_ptr[ 1 ], (size_t)num_elements, d );
-    } else {
-        // Then just test lots of random ones.
-        for (j=0; j<num_elements; j++) {
-            cl_uint a = (cl_uint)genrand_int32(d);
-            cl_uint b = (cl_uint)genrand_int32(d);
-            p[j] = ((cl_ulong)a <<32 | b);
+    auto specialValues = GetIntSpecialValues<uint64_t>(gLock, 1, gWimpyMode);
+    assert((1ULL << (num_runs_shift / 2)) >= specialValues.size());
+    auto init = [&specialValues, &num_elements, &d](cl_long *ptr,
+                                                    uint64_t offset) {
+        uint32_t index;
+        for (index = 0;
+             ((index + offset) < specialValues.size()) && index < num_elements;
+             index++)
+        {
+            ptr[index] =
+                bitcast<uint64_t, cl_long>(specialValues[index + offset]);
         }
-        p = (cl_ulong *)input_ptr[1];
-        for (j=0; j<num_elements; j++) {
-            cl_uint a = (cl_uint)genrand_int32(d);
-            cl_uint b = (cl_uint)genrand_int32(d);
-            p[j] = ((cl_ulong)a <<32 | b);
+        for (; index < num_elements; index++)
+        {
+            ptr[index] = bitcast<cl_ulong, cl_long>(genrand_int64(d));
         }
-    }
+    };
+    init(input_ptr[0], indx & MASK(num_runs_shift / 2));
+    init(input_ptr[1], indx >> (num_runs_shift / 2));
 }
 
 
@@ -504,36 +510,28 @@ verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, c
     if (count) return -1; else return 0;
 }
 
-void
-init_ulong_data(uint64_t indx, int num_elements, cl_ulong *input_ptr[], MTdata d)
+void init_ulong_data(uint64_t indx, uint32_t num_elements,
+                     cl_ulong *input_ptr[], MTdata d, int num_runs_shift)
 {
-    cl_ulong        *p = (cl_ulong *)input_ptr[0];
-    int            j;
-
-    if (indx == 0)
-    {
-        // Do the tricky values the first time around
-        fill_test_values( (cl_long*)input_ptr[ 0 ], (cl_long*)input_ptr[ 1 ], (size_t)num_elements, d );
-    }
-    else
-    {
-        // Then just test lots of random ones.
-        for (j=0; j<num_elements; j++)
+    auto specialValues = GetIntSpecialValues<uint64_t>(gLock, 1, gWimpyMode);
+    assert((1ULL << (num_runs_shift / 2)) >= specialValues.size());
+    auto init = [&specialValues, &num_elements, &d](cl_ulong *ptr,
+                                                    uint64_t offset) {
+        uint32_t index;
+        for (index = 0;
+             ((index + offset) < specialValues.size()) && index < num_elements;
+             index++)
         {
-            cl_ulong a = genrand_int32(d);
-            cl_ulong b = genrand_int32(d);
-            // Fill in the top, bottom, and middle, remembering that random only sets 31 bits.
-            p[j] = (a <<32) | b;
+            ptr[index] =
+                bitcast<uint64_t, cl_ulong>(specialValues[index + offset]);
         }
-        p = (cl_ulong *)input_ptr[1];
-        for (j=0; j<num_elements; j++)
+        for (; index < num_elements; index++)
         {
-            cl_ulong a = genrand_int32(d);
-            cl_ulong b = genrand_int32(d);
-            // Fill in the top, bottom, and middle, remembering that random only sets 31 bits.
-            p[j] = (a <<32) | b;
+            ptr[index] = bitcast<cl_ulong, cl_ulong>(genrand_int64(d));
         }
-    }
+    };
+    init(input_ptr[0], indx & MASK(num_runs_shift / 2));
+    init(input_ptr[1], indx >> (num_runs_shift / 2));
 }
 
 
@@ -724,29 +722,28 @@ verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int 
     if (count) return -1; else return 0;
 }
 
-void
-init_int_data(uint64_t indx, int num_elements, cl_int *input_ptr[], MTdata d)
+void init_int_data(uint64_t indx, uint32_t num_elements, cl_int *input_ptr[],
+                   MTdata d, int num_runs_shift)
 {
-    static const cl_int specialCaseList[] = { 0, -1, 1, CL_INT_MIN, CL_INT_MIN + 1, CL_INT_MAX };
-    int            j;
-
-    // Set the inputs to a random number
-    for (j=0; j<num_elements; j++)
-    {
-        ((cl_int *)input_ptr[0])[j] = (cl_int)genrand_int32(d);
-        ((cl_int *)input_ptr[1])[j] = (cl_int)genrand_int32(d);
-    }
-
-    // Init the first few values to test special cases
-    {
-        size_t x, y, index = 0;
-        for( x = 0; x < sizeof( specialCaseList ) / sizeof( specialCaseList[0] ); x++ )
-            for( y = 0; y < sizeof( specialCaseList ) / sizeof( specialCaseList[0] ); y++ )
-            {
-                ((cl_int *)input_ptr[0])[index] = specialCaseList[x];
-                ((cl_int *)input_ptr[1])[index++] = specialCaseList[y];
-            }
-    }
+    auto specialValues = GetIntSpecialValues<uint32_t>(gLock, 1, gWimpyMode);
+    assert((1ULL << (num_runs_shift / 2)) >= specialValues.size());
+    auto init = [&specialValues, &num_elements, &d](cl_int *ptr,
+                                                    uint64_t offset) {
+        uint32_t index;
+        for (index = 0;
+             ((index + offset) < specialValues.size()) && index < num_elements;
+             index++)
+        {
+            ptr[index] =
+                bitcast<uint32_t, cl_int>(specialValues[index + offset]);
+        }
+        for (; index < num_elements; index++)
+        {
+            ptr[index] = bitcast<cl_uint, cl_int>(genrand_int32(d));
+        }
+    };
+    init(input_ptr[0], indx & MASK(num_runs_shift / 2));
+    init(input_ptr[1], indx >> (num_runs_shift / 2));
 }
 
 
@@ -936,30 +933,28 @@ verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_u
     if (count) return -1; else return 0;
 }
 
-void
-init_uint_data(uint64_t indx, int num_elements, cl_uint *input_ptr[], MTdata d)
+void init_uint_data(uint64_t indx, uint32_t num_elements, cl_uint *input_ptr[],
+                    MTdata d, int num_runs_shift)
 {
-    static cl_uint specialCaseList[] = { 0, (cl_uint) CL_INT_MAX, (cl_uint) CL_INT_MAX + 1, CL_UINT_MAX-1, CL_UINT_MAX };
-    int            j;
-
-    // Set the first input to an incrementing number
-    // Set the second input to a random number
-    for (j=0; j<num_elements; j++)
-    {
-        ((cl_uint *)input_ptr[0])[j] = genrand_int32(d);
-        ((cl_uint *)input_ptr[1])[j] = genrand_int32(d);
-    }
-
-    // Init the first few values to test special cases
-    {
-        size_t x, y, index = 0;
-        for( x = 0; x < sizeof( specialCaseList ) / sizeof( specialCaseList[0] ); x++ )
-            for( y = 0; y < sizeof( specialCaseList ) / sizeof( specialCaseList[0] ); y++ )
-            {
-                ((cl_uint *)input_ptr[0])[index] = specialCaseList[x];
-                ((cl_uint *)input_ptr[1])[index++] = specialCaseList[y];
-            }
-    }
+    auto specialValues = GetIntSpecialValues<uint32_t>(gLock, 1, gWimpyMode);
+    assert((1ULL << (num_runs_shift / 2)) >= specialValues.size());
+    auto init = [&specialValues, &num_elements, &d](cl_uint *ptr,
+                                                    uint64_t offset) {
+        uint32_t index;
+        for (index = 0;
+             ((index + offset) < specialValues.size()) && index < num_elements;
+             index++)
+        {
+            ptr[index] =
+                bitcast<uint32_t, cl_uint>(specialValues[index + offset]);
+        }
+        for (; index < num_elements; index++)
+        {
+            ptr[index] = bitcast<cl_uint, cl_uint>(genrand_int32(d));
+        }
+    };
+    init(input_ptr[0], indx & MASK(num_runs_shift / 2));
+    init(input_ptr[1], indx >> (num_runs_shift / 2));
 }
 
 // =======================================
@@ -1151,30 +1146,35 @@ verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, c
     if (count) return -1; else return 0;
 }
 
-void
-init_short_data(uint64_t indx, int num_elements, cl_short *input_ptr[], MTdata d)
+void init_short_data(uint64_t indx, uint32_t num_elements,
+                     cl_short *input_ptr[], MTdata d, int num_runs_shift)
 {
-    static const cl_short specialCaseList[] = { 0, -1, 1, CL_SHRT_MIN, CL_SHRT_MIN + 1, CL_SHRT_MAX };
-    int            j;
-
-    // Set the inputs to a random number
-    for (j=0; j<num_elements; j++)
-    {
-        cl_uint bits = genrand_int32(d);
-        ((cl_short *)input_ptr[0])[j] = (cl_short) bits;
-        ((cl_short *)input_ptr[1])[j] = (cl_short) (bits >> 16);
-    }
-
-    // Init the first few values to test special cases
-    {
-        size_t x, y, index = 0;
-        for( x = 0; x < sizeof( specialCaseList ) / sizeof( specialCaseList[0] ); x++ )
-            for( y = 0; y < sizeof( specialCaseList ) / sizeof( specialCaseList[0] ); y++ )
-            {
-                ((cl_short *)input_ptr[0])[index] = specialCaseList[x];
-                ((cl_short *)input_ptr[1])[index++] = specialCaseList[y];
-            }
-    }
+    auto specialValues = GetIntSpecialValues<uint16_t>(gLock, 1, gWimpyMode);
+    assert((1ULL << (num_runs_shift / 2)) >= specialValues.size());
+    auto init = [&specialValues, &num_elements, &d](cl_short *ptr,
+                                                    uint64_t offset) {
+        uint32_t index;
+        for (index = 0;
+             ((index + offset) < specialValues.size()) && index < num_elements;
+             index++)
+        {
+            ptr[index] =
+                bitcast<uint16_t, cl_short>(specialValues[index + offset]);
+        }
+        for (; (index + 1) < num_elements; index += 2)
+        {
+            cl_uint random = genrand_int32(d);
+            ptr[index] = bitcast<cl_ushort, cl_short>(random & 0xffff);
+            ptr[index + 1] = bitcast<cl_ushort, cl_short>(random >> 16);
+        }
+        if (index < num_elements)
+        {
+            ptr[index] =
+                bitcast<cl_ushort, cl_short>(genrand_int32(d) & 0xffff);
+        }
+    };
+    init(input_ptr[0], indx & MASK(num_runs_shift / 2));
+    init(input_ptr[1], indx >> (num_runs_shift / 2));
 }
 
 
@@ -1367,32 +1367,35 @@ verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB
     if (count) return -1; else return 0;
 }
 
-void
-init_ushort_data(uint64_t indx, int num_elements, cl_ushort *input_ptr[], MTdata d)
+void init_ushort_data(uint64_t indx, uint32_t num_elements,
+                      cl_ushort *input_ptr[], MTdata d, int num_runs_shift)
 {
-    static const cl_ushort specialCaseList[] = {
-        0, (cl_ushort)-1, 1, CL_SHRT_MAX, CL_SHRT_MAX + 1, CL_USHRT_MAX
+    auto specialValues = GetIntSpecialValues<uint16_t>(gLock, 1, gWimpyMode);
+    assert((1ULL << (num_runs_shift / 2)) >= specialValues.size());
+    auto init = [&specialValues, &num_elements, &d](cl_ushort *ptr,
+                                                    uint64_t offset) {
+        uint32_t index;
+        for (index = 0;
+             ((index + offset) < specialValues.size()) && index < num_elements;
+             index++)
+        {
+            ptr[index] =
+                bitcast<uint16_t, cl_ushort>(specialValues[index + offset]);
+        }
+        for (; (index + 1) < num_elements; index += 2)
+        {
+            cl_uint random = genrand_int32(d);
+            ptr[index] = bitcast<cl_ushort, cl_ushort>(random & 0xffff);
+            ptr[index + 1] = bitcast<cl_ushort, cl_ushort>(random >> 16);
+        }
+        if (index < num_elements)
+        {
+            ptr[index] =
+                bitcast<cl_ushort, cl_ushort>(genrand_int32(d) & 0xffff);
+        }
     };
-    int            j;
-
-    // Set the inputs to a random number
-    for (j=0; j<num_elements; j++)
-    {
-        cl_uint bits = genrand_int32(d);
-        ((cl_ushort *)input_ptr[0])[j] = (cl_ushort) bits;
-        ((cl_ushort *)input_ptr[1])[j] = (cl_ushort) (bits >> 16);
-    }
-
-    // Init the first few values to test special cases
-    {
-        size_t x, y, index = 0;
-        for( x = 0; x < sizeof( specialCaseList ) / sizeof( specialCaseList[0] ); x++ )
-            for( y = 0; y < sizeof( specialCaseList ) / sizeof( specialCaseList[0] ); y++ )
-            {
-                ((cl_ushort *)input_ptr[0])[index] = specialCaseList[x];
-                ((cl_ushort *)input_ptr[1])[index++] = specialCaseList[y];
-            }
-    }
+    init(input_ptr[0], indx & MASK(num_runs_shift / 2));
+    init(input_ptr[1], indx >> (num_runs_shift / 2));
 }
 
 
@@ -1586,38 +1589,14 @@ verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_c
     if (count) return -1; else return 0;
 }
 
-void
-init_char_data(uint64_t indx, int num_elements, cl_char *input_ptr[], MTdata d)
+void init_char_data(uint64_t indx, uint32_t num_elements, cl_char *input_ptr[],
+                    MTdata d)
 {
-    static const cl_char specialCaseList[] = { 0, -1, 1, CL_CHAR_MIN, CL_CHAR_MIN + 1, CL_CHAR_MAX };
-    int            j;
-
-    // FIXME comment below might not be appropriate for
-    // vector data.  Yes, checking every scalar char against every
-    // scalar char is only 2^16 ~ 64000 tests, but once we get to vec3,
-    // vec4, vec8...
-
-    // in the meantime, this means I can use [] to access vec3 instead of
-    // vload3 / vstore3 :D
-
-    // FIXME: we really should just check every char against every char here
-    // Set the inputs to a random number
-    for (j=0; j<num_elements; j++)
+    for (uint32_t j = 0; j < num_elements; j++)
     {
-        cl_uint bits = genrand_int32(d);
-        ((cl_char *)input_ptr[0])[j] = (cl_char) bits;
-        ((cl_char *)input_ptr[1])[j] = (cl_char) (bits >> 16);
-    }
-
-    // Init the first few values to test special cases
-    {
-        size_t x, y, index = 0;
-        for( x = 0; x < sizeof( specialCaseList ) / sizeof( specialCaseList[0] ); x++ )
-            for( y = 0; y < sizeof( specialCaseList ) / sizeof( specialCaseList[0] ); y++ )
-            {
-                ((cl_char *)input_ptr[0])[index] = specialCaseList[x];
-                ((cl_char *)input_ptr[1])[index++] = specialCaseList[y];
-            }
+        cl_ushort bits = (indx + j) & 0xffff;
+        ((cl_char *)input_ptr[0])[j] = bitcast<cl_uchar, cl_char>(bits & 0xff);
+        ((cl_char *)input_ptr[1])[j] = bitcast<cl_uchar, cl_char>(bits >> 8);
     }
 }
 
@@ -1811,33 +1790,15 @@ verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, c
     if (count) return -1; else return 0;
 }
 
-void
-init_uchar_data(uint64_t indx, int num_elements, cl_uchar *input_ptr[], MTdata d)
+void init_uchar_data(uint64_t indx, uint32_t num_elements,
+                     cl_uchar *input_ptr[], MTdata d)
 {
-    static const cl_uchar specialCaseList[] = {
-        0, (cl_uchar)-1, 1, CL_CHAR_MAX, CL_CHAR_MAX + 1, CL_UCHAR_MAX
-    };
-    int            j;
-
-    // FIXME: we really should just check every char against every char here
-
-    // Set the inputs to a random number
-    for (j=0; j<num_elements; j++)
+    for (uint32_t j = 0; j < num_elements; j++)
     {
-        cl_uint bits = genrand_int32(d);
-        ((cl_uchar *)input_ptr[0])[j] = (cl_uchar) bits;
-        ((cl_uchar *)input_ptr[1])[j] = (cl_uchar) (bits >> 16);
-    }
-
-    // Init the first few values to test special cases
-    {
-        size_t x, y, index = 0;
-        for( x = 0; x < sizeof( specialCaseList ) / sizeof( specialCaseList[0] ); x++ )
-            for( y = 0; y < sizeof( specialCaseList ) / sizeof( specialCaseList[0] ); y++ )
-            {
-                ((cl_uchar *)input_ptr[0])[index] = specialCaseList[x];
-                ((cl_uchar *)input_ptr[1])[index++] = specialCaseList[y];
-            }
+        cl_ushort bits = (indx + j) & 0xffff;
+        ((cl_uchar *)input_ptr[0])[j] =
+            bitcast<cl_uchar, cl_uchar>(bits & 0xff);
+        ((cl_uchar *)input_ptr[1])[j] = bitcast<cl_uchar, cl_uchar>(bits >> 8);
     }
 }
 

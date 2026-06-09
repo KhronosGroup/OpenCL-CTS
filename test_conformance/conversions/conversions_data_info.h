@@ -36,7 +36,7 @@ extern roundingMode qcom_rm;
 #include "harness/typeWrappers.h"
 
 #include <cmath>
-#include <vector>
+#include <cstring>
 
 #if defined(__linux__)
 #include <sys/param.h>
@@ -45,7 +45,8 @@ extern roundingMode qcom_rm;
 
 extern size_t gTypeSizes[kTypeCount];
 extern void *gIn;
-
+extern bool gTestAll;
+extern std::recursive_mutex gLock;
 
 typedef enum
 {
@@ -66,10 +67,6 @@ struct DataInitInfo
     cl_uint threads;
 
     static cl_half_rounding_mode halfRoundingMode;
-    static std::vector<uint32_t> specialValuesUInt;
-    static std::vector<float> specialValuesFloat;
-    static std::vector<double> specialValuesDouble;
-    static std::vector<cl_half> specialValuesHalf;
 };
 
 #define HFF(num) cl_half_from_float(num, DataInitInfo::halfRoundingMode)
@@ -761,187 +758,123 @@ template <typename InType, typename OutType, bool InFP, bool OutFP>
 void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
                                                       const cl_uint &thread_id)
 {
-    uint64_t ulStart = start;
+    const uint64_t ulStart = start;
     void *pIn = (char *)gIn + job_id * size * gTypeSizes[inType];
 
-    if (is_in_half())
+    if constexpr (sizeof(InType) <= sizeof(uint8_t))
     {
-        cl_half *o = (cl_half *)pIn;
-        int i;
-
-        if (gIsEmbedded)
-            for (i = 0; i < size; i++)
-                o[i] = (cl_half)genrand_int32(mdv[thread_id]);
-        else
-            for (i = 0; i < size; i++) o[i] = (cl_half)((i + ulStart) % 0xffff);
-
-        if (0 == ulStart)
+        uint8_t *o = (uint8_t *)pIn;
+        for (uint32_t i = 0; i < size; i++)
         {
-            size_t tableSize = specialValuesHalf.size()
-                * sizeof(decltype(specialValuesHalf)::value_type);
-            if (sizeof(InType) * size < tableSize)
-                tableSize = sizeof(InType) * size;
-            memcpy((char *)(o + i) - tableSize, &specialValuesHalf.front(),
-                   tableSize);
-        }
-
-        if (kUnsaturated == sat)
-        {
-            for (i = 0; i < size; i++) o[i] = clamp(o[i]);
+            o[i] = (uint8_t)(i + ulStart);
         }
     }
-    else if (std::is_integral<InType>::value)
+    else if constexpr (sizeof(InType) <= sizeof(uint16_t))
     {
-        InType *o = (InType *)pIn;
-        if (sizeof(InType) <= sizeof(cl_short))
-        { // char/uchar/ushort/short
-            for (int i = 0; i < size; i++) o[i] = ulStart++;
+        uint16_t *o = (uint16_t *)pIn;
+        for (uint32_t i = 0; i < size; i++)
+        {
+            o[i] = (uint16_t)(i + ulStart);
         }
-        else if (sizeof(InType) <= sizeof(cl_int))
-        { // int/uint
-            int i = 0;
-            if (gIsEmbedded)
-                for (i = 0; i < size; i++)
-                    o[i] = (InType)genrand_int32(mdv[thread_id]);
-            else
-                for (i = 0; i < size; i++) o[i] = (InType)i + ulStart;
-
-            if (0 == ulStart)
+        if (is_in_half() && kUnsaturated == sat)
+        {
+            for (uint32_t i = 0; i < size; i++)
             {
-                size_t tableSize = specialValuesUInt.size()
-                    * sizeof(decltype(specialValuesUInt)::value_type);
-                if (sizeof(InType) * size < tableSize)
-                    tableSize = sizeof(InType) * size;
-                memcpy((char *)(o + i) - tableSize, &specialValuesUInt.front(),
-                       tableSize);
+                o[i] = clamp(o[i]);
+            }
+        }
+    }
+    else if constexpr (std::is_integral<InType>::value)
+    {
+        if constexpr (sizeof(InType) <= sizeof(cl_int))
+        { // int/uint
+            uint32_t *o = (uint32_t *)pIn;
+            if (gTestAll)
+            {
+                for (uint32_t i = 0; i < size; i++)
+                {
+                    o[i] = (uint32_t)(i + ulStart);
+                }
+                return;
+            }
+            const auto &specialValues = GetIntSpecialValues<uint32_t>(gLock);
+            uint32_t i;
+            for (i = 0; i < size && (i + ulStart) < specialValues.size(); i++)
+            {
+                o[i] = specialValues[i + ulStart];
+            }
+            for (; i < size; i++)
+            {
+                o[i] = genrand_int32(mdv[thread_id]);
             }
         }
         else
         { // long/ulong
-            cl_ulong *o = (cl_ulong *)pIn;
-            cl_ulong i, j, k;
-
-            i = 0;
-            if (ulStart == 0)
+            uint64_t *o = (uint64_t *)pIn;
+            const auto &specialValues = GetIntSpecialValues<uint64_t>(gLock);
+            uint32_t i;
+            for (i = 0; i < size && (i + ulStart) < specialValues.size(); i++)
             {
-                // Try various powers of two
-                for (j = 0; j < (cl_ulong)size && j < 8 * sizeof(cl_ulong); j++)
-                    o[j] = (cl_ulong)1 << j;
-                i = j;
-
-                // try the complement of those
-                for (j = 0; i < (cl_ulong)size && j < 8 * sizeof(cl_ulong); j++)
-                    o[i++] = ~((cl_ulong)1 << j);
-
-                // Try various negative powers of two
-                for (j = 0; i < (cl_ulong)size && j < 8 * sizeof(cl_ulong); j++)
-                    o[i++] = (cl_ulong)0xFFFFFFFFFFFFFFFEULL << j;
-
-                // try various powers of two plus 1, shifted by various amounts
-                for (j = 0; i < (cl_ulong)size && j < 8 * sizeof(cl_ulong); j++)
-                    for (k = 0;
-                         i < (cl_ulong)size && k < 8 * sizeof(cl_ulong) - j;
-                         k++)
-                        o[i++] = (((cl_ulong)1 << j) + 1) << k;
-
-                // try various powers of two minus 1
-                for (j = 0; i < (cl_ulong)size && j < 8 * sizeof(cl_ulong); j++)
-                    for (k = 0;
-                         i < (cl_ulong)size && k < 8 * sizeof(cl_ulong) - j;
-                         k++)
-                        o[i++] = (((cl_ulong)1 << j) - 1) << k;
-
-                // Other patterns
-                cl_ulong pattern[] = {
-                    0x3333333333333333ULL, 0x5555555555555555ULL,
-                    0x9999999999999999ULL, 0x6666666666666666ULL,
-                    0xccccccccccccccccULL, 0xaaaaaaaaaaaaaaaaULL
-                };
-                cl_ulong mask[] = { 0xffffffffffffffffULL,
-                                    0xff00ff00ff00ff00ULL,
-                                    0xffff0000ffff0000ULL,
-                                    0xffffffff00000000ULL };
-                for (j = 0; i < (cl_ulong)size
-                     && j < sizeof(pattern) / sizeof(pattern[0]);
-                     j++)
-                    for (k = 0; i + 2 <= (cl_ulong)size
-                         && k < sizeof(mask) / sizeof(mask[0]);
-                         k++)
-                    {
-                        o[i++] = pattern[j] & mask[k];
-                        o[i++] = pattern[j] & ~mask[k];
-                    }
+                o[i] = specialValues[i + ulStart];
             }
-
-            auto &md = mdv[thread_id];
-            for (; i < (cl_ulong)size; i++)
-                o[i] = (cl_ulong)genrand_int32(md)
-                    | ((cl_ulong)genrand_int32(md) << 32);
+            for (; i < size; i++)
+            {
+                o[i] = genrand_int64(mdv[thread_id]);
+            }
         }
     } // integrals
-    else if (std::is_same<InType, cl_float>::value)
+    else if constexpr (std::is_same<InType, cl_float>::value)
     {
-        cl_uint *o = (cl_uint *)pIn;
-        int i;
-
-        if (gIsEmbedded)
-            for (i = 0; i < size; i++)
-                o[i] = (cl_uint)genrand_int32(mdv[thread_id]);
-        else
-            for (i = 0; i < size; i++) o[i] = (cl_uint)i + ulStart;
-
-        if (0 == ulStart)
+        uint32_t *o = (uint32_t *)pIn;
+        InType *of = (InType *)pIn;
+        if (gTestAll)
         {
-            size_t tableSize = specialValuesFloat.size()
-                * sizeof(decltype(specialValuesFloat)::value_type);
-            if (sizeof(InType) * size < tableSize)
-                tableSize = sizeof(InType) * size;
-            memcpy((char *)(o + i) - tableSize, &specialValuesFloat.front(),
-                   tableSize);
+            for (uint32_t i = 0; i < size; i++)
+            {
+                o[i] = (uint32_t)(i + ulStart);
+            }
+        }
+        else
+        {
+            const auto &specialValuesFloat =
+                GetFpSpecialValues<InType, uint32_t, OutType>(gLock);
+            uint32_t i;
+            for (i = 0; i < size && (i + ulStart) < specialValuesFloat.size();
+                 i++)
+            {
+                of[i] = specialValuesFloat[i + ulStart];
+            }
+            for (; i < size; i++)
+            {
+                o[i] = genrand_int32(mdv[thread_id]);
+            }
         }
 
         if (kUnsaturated == sat)
         {
-            InType *f = (InType *)pIn;
-            for (i = 0; i < size; i++) f[i] = clamp(f[i]);
+            for (uint32_t i = 0; i < size; i++) of[i] = clamp(of[i]);
         }
     }
-    else if (std::is_same<InType, cl_double>::value)
+    else if constexpr (std::is_same<InType, cl_double>::value)
     {
-        InType *o = (InType *)pIn;
-        int i = 0;
-
-        union {
-            uint64_t u;
-            InType d;
-        } u;
-
-        for (i = 0; i < size; i++)
+        uint64_t *o = (uint64_t *)pIn;
+        InType *od = (InType *)pIn;
+        const auto &specialValuesDouble =
+            GetFpSpecialValues<InType, uint64_t, OutType>(gLock);
+        uint32_t i;
+        for (i = 0; i < size && (i + ulStart) < specialValuesDouble.size(); i++)
         {
-            uint64_t z = i + ulStart;
-
-            uint32_t bits = ((uint32_t)z ^ (uint32_t)(z >> 32));
-            // split 0x89abcdef to 0x89abc00000000def
-            u.u = bits & 0xfffU;
-            u.u |= (uint64_t)(bits & ~0xfffU) << 32;
-            // sign extend the leading bit of def segment as sign bit so that
-            // the middle region consists of either all 1s or 0s
-            u.u -= (bits & 0x800U) << 1;
-            o[i] = u.d;
+            od[i] = specialValuesDouble[i + ulStart];
+        }
+        for (; i < size; i++)
+        {
+            o[i] = genrand_int64(mdv[thread_id]);
         }
 
-        if (0 == ulStart)
+        if (kUnsaturated == sat)
         {
-            size_t tableSize = specialValuesDouble.size()
-                * sizeof(decltype(specialValuesDouble)::value_type);
-            if (sizeof(InType) * size < tableSize)
-                tableSize = sizeof(InType) * size;
-            memcpy((char *)(o + i) - tableSize, &specialValuesDouble.front(),
-                   tableSize);
+            for (uint32_t i = 0; i < size; i++) od[i] = clamp(od[i]);
         }
-
-        if (0 == sat)
-            for (i = 0; i < size; i++) o[i] = clamp(o[i]);
     }
 }
 
