@@ -47,8 +47,9 @@ static void initSrcBuffer(void* src1, Type stype, MTdata);
 
 // initialize the valued used to compare with in the select with
 // vlaues [start, count)
-static void initCmpBuffer(void *cmp, Type cmptype, uint64_t start,
-                          const size_t count);
+static void initCmpBuffer(void *cmp, Type cmptype, uint32_t start,
+                          const size_t count, const uint32_t vecsize,
+                          MTdataHolder &d);
 
 // make a program that uses select for the given stype (src/dest type),
 // ctype (comparison type), veclen (vector length)
@@ -82,12 +83,6 @@ static int doTest(cl_command_queue queue, cl_context context,
         }                                                                      \
     }
 
-// When we indicate non wimpy mode, the types that are 32 bits value will
-// test their entire range and 64 bits test will test the 32 bit
-// range.  Otherwise, we test a subset of the range
-// [-min_short, min_short]
-static int s_wimpy_reduction_factor = 256;
-
 //-----------------------------------------
 // Static helper functions
 //-----------------------------------------
@@ -120,52 +115,87 @@ static void initSrcBuffer(void* src1, Type stype, MTdata d)
         s1[i]   = genrand_int32(d);
 }
 
-static void initCmpBuffer(void *cmp, Type cmptype, uint64_t start,
-                          const size_t count)
+static void initCmpBuffer(void *cmp, Type cmptype, uint32_t start,
+                          const size_t count, const uint32_t vecsize,
+                          MTdataHolder &d)
 
 {
     assert(cmptype != kfloat);
     switch (type_size[cmptype]) {
         case 1: {
-            uint8_t* ub = (uint8_t *)cmp;
-            for (size_t i = 0; i < count; ++i) ub[i] = (uint8_t)start++;
+            uint8_t *ub = (uint8_t *)cmp;
+            if (vecsize == 1)
+                for (uint32_t i = 0; i < count; i++)
+                    ub[i] = i % 2 ? 0 : (start + i) / 2;
+            else
+                for (uint32_t i = 0; i < count; i++)
+                {
+                    uint16_t vec_bitmask = (start + i) / vecsize;
+                    uint16_t vec_idx = (start + i) % vecsize;
+                    uint8_t gen = genrand_int32(d) & 0xff;
+                    ub[i] = ((vec_bitmask >> vec_idx) & 0x1) ? gen | 0x80
+                                                             : gen & 0x7f;
+                }
             break;
         }
         case 2: {
             uint16_t* us = (uint16_t *)cmp;
-            for (size_t i = 0; i < count; ++i) us[i] = (uint16_t)start++;
+            if (vecsize == 1)
+            {
+                for (uint32_t i = 0; i < count; i++)
+                    us[i] = i % 2 ? 0 : genrand_int32(d) & 0xffff;
+            }
+            else
+            {
+                for (uint32_t i = 0; i < count; i++)
+                {
+                    uint16_t vec_bitmask = (start + i) / vecsize;
+                    uint16_t vec_idx = (start + i) % vecsize;
+                    uint16_t gen = genrand_int32(d) & 0xffff;
+                    us[i] = ((vec_bitmask >> vec_idx) & 0x1) ? gen | 0x8000
+                                                             : gen & 0x7fff;
+                }
+            }
             break;
         }
         case 4: {
-            if (!gWimpyMode)
+            uint32_t *ui = (uint32_t *)cmp;
+            if (vecsize == 1)
             {
-                uint32_t *ui = (uint32_t *)cmp;
-                for (size_t i = 0; i < count; ++i) ui[i] = (uint32_t)start++;
+                for (uint32_t i = 0; i < count; i++)
+                    ui[i] = i % 2 ? 0 : genrand_int32(d);
             }
-            else {
-                // The short test doesn't iterate over the entire 32 bit space so
-                // we alternate between positive and negative values
-                int32_t* ui = (int32_t *)cmp;
-                int32_t neg_start = (int32_t)start * -1;
-                for (size_t i = 0; i < count; i++)
+            else
+            {
+                for (uint32_t i = 0; i < count; i++)
                 {
-                    ++start;
-                    --neg_start;
-                    ui[i] = (int32_t)((i % 2) ? start : neg_start);
+                    uint16_t vec_bitmask = (start + i) / vecsize;
+                    uint16_t vec_idx = (start + i) % vecsize;
+                    uint32_t gen = genrand_int32(d);
+                    ui[i] = ((vec_bitmask >> vec_idx) & 0x1) ? gen | 0x80000000
+                                                             : gen & 0x7fffffff;
                 }
             }
             break;
         }
         case 8: {
-            // We don't iterate over the entire space of 64 bit so for the
-            // selects, we want to test positive and negative values
-            int64_t* ll = (int64_t *)cmp;
-            int64_t neg_start = (int64_t)start * -1;
-            for (size_t i = 0; i < count; i++)
+            uint64_t *ul = (uint64_t *)cmp;
+            if (vecsize == 1)
             {
-                ++start;
-                --neg_start;
-                ll[i] = (int64_t)((i % 2) ? start : neg_start);
+                for (uint32_t i = 0; i < count; i++)
+                    ul[i] = i % 2 ? 0 : genrand_int64(d);
+            }
+            else
+            {
+                for (uint32_t i = 0; i < count; i++)
+                {
+                    uint16_t vec_bitmask = (start + i) / vecsize;
+                    uint16_t vec_idx = (start + i) % vecsize;
+                    uint64_t gen = genrand_int64(d);
+                    ul[i] = ((vec_bitmask >> vec_idx) & 0x1)
+                        ? gen | 0x8000000000000000ULL
+                        : gen & 0x7fffffffffffffffULL;
+                }
             }
             break;
         }
@@ -318,10 +348,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     const size_t element_count[VECTOR_SIZE_COUNT] = { 1, 2, 3, 4, 8, 16 };
     clMemWrapper src1, src2, cmp, dest;
 
-    cl_ulong blocks = type_size[stype] * 0x100000000ULL / BUFFER_SIZE;
     const size_t block_elements = BUFFER_SIZE / type_size[stype];
-    size_t step = gWimpyMode ? s_wimpy_reduction_factor : 1;
-    cl_ulong cmp_stride = block_elements * step;
 
     // It is more efficient to create the tests all at once since we
     // use the same test data on each of the vector sizes
@@ -365,21 +392,10 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     dest = clCreateBuffer( context, CL_MEM_WRITE_ONLY, BUFFER_SIZE, NULL, &err );
     test_error_count(err, "Error: could not allocate dest buffer\n");
 
-    programs[0] = makeSelectProgram(&kernels[0], context, stype, cmptype,
-                                    element_count[0]);
-    programs[1] = makeSelectProgram(&kernels[1], context, stype, cmptype,
-                                    element_count[1]);
-    programs[2] = makeSelectProgram(&kernels[2], context, stype, cmptype,
-                                    element_count[2]);
-    programs[3] = makeSelectProgram(&kernels[3], context, stype, cmptype,
-                                    element_count[3]);
-    programs[4] = makeSelectProgram(&kernels[4], context, stype, cmptype,
-                                    element_count[4]);
-    programs[5] = makeSelectProgram(&kernels[5], context, stype, cmptype,
-                                    element_count[5]);
-
     for (size_t vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
     {
+        programs[vecsize] = makeSelectProgram(&kernels[vecsize], context, stype,
+                                              cmptype, element_count[vecsize]);
         if (!programs[vecsize] || !kernels[vecsize])
         {
             return -1;
@@ -402,48 +418,45 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     std::vector<char> cmp_host(BUFFER_SIZE);
     std::vector<char> dest_host(BUFFER_SIZE);
 
-    // We block the test as we are running over the range of compare values
-    // "block the test" means "break the test into blocks"
-    if( type_size[stype] == 4 )
-        cmp_stride = block_elements * step * (0x100000000ULL / 0x100000000ULL);
-    if( type_size[stype] == 8 )
-        cmp_stride = block_elements * step * (0xffffffffffffffffULL / 0x100000000ULL + 1);
-
     log_info("Testing...");
-    uint64_t i;
 
     initSrcBuffer(src1_host.data(), stype, d);
     initSrcBuffer(src2_host.data(), stype, d);
-    for (i=0; i < blocks; i+=step)
+    err = clEnqueueWriteBuffer(queue, src1, CL_FALSE, 0, BUFFER_SIZE,
+                               src1_host.data(), 0, NULL, NULL);
+    test_error_count(err, "Error: Could not write src1");
+
+    err = clEnqueueWriteBuffer(queue, src2, CL_FALSE, 0, BUFFER_SIZE,
+                               src2_host.data(), 0, NULL, NULL);
+    test_error_count(err, "Error: Could not write src2");
+
+
+    for (int vector_idx = 0; vector_idx < VECTOR_SIZE_COUNT; ++vector_idx)
     {
-        initCmpBuffer(cmp_host.data(), cmptype, i * cmp_stride, block_elements);
+        uint32_t vecsize = element_count[vector_idx];
+        size_t vector_size = vecsize * type_size[stype];
+        size_t vector_count = (BUFFER_SIZE + vector_size - 1) / vector_size;
+        uint32_t nb_elements =
+            std::max((uint32_t)64 * 1024, vecsize << vecsize);
 
-        err = clEnqueueWriteBuffer(queue, src1, CL_FALSE, 0, BUFFER_SIZE,
-                                   src1_host.data(), 0, NULL, NULL);
-        test_error_count(err, "Error: Could not write src1");
-
-        err = clEnqueueWriteBuffer(queue, src2, CL_FALSE, 0, BUFFER_SIZE,
-                                   src2_host.data(), 0, NULL, NULL);
-        test_error_count(err, "Error: Could not write src2");
-
-        err = clEnqueueWriteBuffer(queue, cmp, CL_FALSE, 0, BUFFER_SIZE,
-                                   cmp_host.data(), 0, NULL, NULL);
-        test_error_count(err, "Error: Could not write cmp");
-
-        Select sfunc = (cmptype == ctype[stype][0]) ? vrefSelects[stype][0]
-                                                    : vrefSelects[stype][1];
-        (*sfunc)(ref.data(), src1_host.data(), src2_host.data(),
-                 cmp_host.data(), block_elements);
-
-        sfunc = (cmptype == ctype[stype][0]) ? refSelects[stype][0]
-                                             : refSelects[stype][1];
-        (*sfunc)(sref.data(), src1_host.data(), src2_host.data(),
-                 cmp_host.data(), block_elements);
-
-        for (int vecsize = 0; vecsize < VECTOR_SIZE_COUNT; ++vecsize)
+        for (uint32_t i = 0; i < nb_elements; i += block_elements)
         {
-            size_t vector_size = element_count[vecsize] * type_size[stype];
-            size_t vector_count =  (BUFFER_SIZE + vector_size - 1) / vector_size;
+            initCmpBuffer(cmp_host.data(), cmptype, i, block_elements, vecsize,
+                          d);
+
+            err = clEnqueueWriteBuffer(queue, cmp, CL_FALSE, 0, BUFFER_SIZE,
+                                       cmp_host.data(), 0, NULL, NULL);
+            test_error_count(err, "Error: Could not write cmp");
+
+            Select sfunc = (cmptype == ctype[stype][0]) ? vrefSelects[stype][0]
+                                                        : vrefSelects[stype][1];
+            (*sfunc)(ref.data(), src1_host.data(), src2_host.data(),
+                     cmp_host.data(), block_elements);
+
+            sfunc = (cmptype == ctype[stype][0]) ? refSelects[stype][0]
+                                                 : refSelects[stype][1];
+            (*sfunc)(sref.data(), src1_host.data(), src2_host.data(),
+                     cmp_host.data(), block_elements);
 
             const cl_int pattern = -1;
             err = clEnqueueFillBuffer(queue, dest, &pattern, sizeof(cl_int), 0,
@@ -451,7 +464,8 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
             test_error_count(err, "clEnqueueFillBuffer failed");
 
 
-            err = clEnqueueNDRangeKernel(queue, kernels[vecsize], 1, NULL, &vector_count, NULL, 0, NULL, NULL);
+            err = clEnqueueNDRangeKernel(queue, kernels[vector_idx], 1, NULL,
+                                         &vector_count, NULL, 0, NULL, NULL);
             test_error_count(err, "clEnqueueNDRangeKernel failed errcode\n");
 
             err = clEnqueueReadBuffer(queue, dest, CL_TRUE, 0, BUFFER_SIZE,
@@ -459,22 +473,18 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
             test_error_count(
                 err, "Error: Reading buffer from dest to dest_host failed\n");
 
-            if ((*checkResults[stype])(dest_host.data(),
-                                       vecsize == 0 ? sref.data() : ref.data(),
-                                       block_elements, element_count[vecsize])
+            if ((*checkResults[stype])(
+                    dest_host.data(),
+                    vector_idx == 0 ? sref.data() : ref.data(), block_elements,
+                    element_count[vector_idx])
                 != 0)
             {
-                log_error("vec_size:%d indx: 0x%16.16" PRIx64 "\n",
-                          (int)element_count[vecsize], i);
+                log_error("vec_size:%d indx: 0x%8x\n",
+                          (int)element_count[vector_idx], i);
                 return TEST_FAIL;
             }
-        } // for vecsize
-    } // for i
-
-    if (!gWimpyMode)
-        log_info(" Passed\n\n");
-    else
-        log_info(" Wimpy Passed\n\n");
+        }
+    }
 
     return err;
 }
@@ -568,65 +578,10 @@ REGISTER_TEST(select_double_long)
     return doTest(queue, context, kdouble, klong, device);
 }
 
-static test_status parseArgs(int &argc, const char *argv[],
-                             std::vector<std::string> &removed_args,
-                             std::string &help)
-{
-    help = "\t-[2^n] Set wimpy reduction factor, recommended range of n is "
-           "1-12, default factor("
-        + std::to_string(s_wimpy_reduction_factor) + ")\n";
-
-    std::vector<const char *> argList;
-    argList.push_back(argv[0]);
-
-    for( int i = 1; i < argc; ++i )
-    {
-        const char *arg = argv[i];
-        if (arg == NULL)
-            break;
-
-        if (arg[0] == '-')
-        {
-            arg++;
-            while(*arg != '\0')
-            {
-                switch (*arg)
-                {
-                    case '[':
-                        parseWimpyReductionFactor(arg, s_wimpy_reduction_factor);
-                        break;
-                    default:
-                        break;
-                }
-                arg++;
-            }
-            removed_args.push_back(argv[i]);
-        }
-        else
-        {
-            argList.push_back(argv[i]);
-        }
-    }
-
-    if (gWimpyMode)
-    {
-        log_info("\n");
-        log_info("*** WARNING: Testing in Wimpy mode!                     ***\n");
-        log_info("*** Wimpy mode is not sufficient to verify correctness. ***\n");
-        log_info("*** It gives warm fuzzy feelings and then nevers calls. ***\n\n");
-        log_info("*** Wimpy Reduction Factor: %-27u ***\n\n", s_wimpy_reduction_factor);
-    }
-
-    update_argc_argv_from_args_list(argList, argc, argv);
-    return TEST_PASS;
-}
-
 int main(int argc, const char *argv[])
 {
     test_start();
 
-    return runTestHarnessWithCheckAndParse(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0, nullptr,
-        parseArgs);
+    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
+                          test_registry::getInstance().definitions(), false, 0);
 }
