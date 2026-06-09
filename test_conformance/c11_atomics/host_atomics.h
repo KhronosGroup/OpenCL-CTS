@@ -17,6 +17,7 @@
 #define HOST_ATOMICS_H_
 
 #include "harness/testHarness.h"
+#include <cstring>
 #include <mutex>
 
 #include "CL/cl_half.h"
@@ -281,13 +282,15 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
     {
         static std::mutex mtx;
         std::lock_guard<std::mutex> lock(mtx);
-        tmp = static_cast<CorrespondingType>(*a);
-        if (tmp == *expected)
+        // this is necessary so that (*a == *exp) evaluates to true when
+        // comparing NANs
+        if (std::memcmp((const void *)a, expected, sizeof(CorrespondingType))
+            == 0)
         {
             *a = static_cast<AtomicType>(desired);
             return true;
         }
-        *expected = tmp;
+        *expected = *a;
     }
     else
     {
@@ -299,7 +302,9 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
         log_info("Host function not implemented: atomic_compare_exchange\n");
         tmp = 0;
 #endif
-        if (tmp == *expected) return true;
+        if (std::memcmp((const void *)&tmp, expected, sizeof(CorrespondingType))
+            == 0)
+            return true;
         *expected = tmp;
     }
     return false;
