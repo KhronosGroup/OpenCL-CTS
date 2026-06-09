@@ -174,7 +174,8 @@ void push_unique(std::vector<Type> &vec, std::unordered_set<IntegerType> &set,
 };
 
 template <typename T>
-std::vector<T> GetIntSpecialValues(std::recursive_mutex &mutex)
+std::vector<T> GetIntSpecialValues(std::recursive_mutex &mutex,
+                                   int offset_limit = 3, bool wimpy = false)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     static std::vector<T> vec;
@@ -188,26 +189,33 @@ std::vector<T> GetIntSpecialValues(std::recursive_mutex &mutex)
     // For each value, add it and its neighbors to the vector. And for each
     // of those values, add the bitwise not and the XOR with the sign to the
     // vector.
-    auto push = [&set, &sign](T val) {
-        for (const int offset : { -3, -2, -1, 0, 1, 2, 3 })
+    std::vector<int> offsets = { 0 };
+    if (!wimpy)
+        for (int i = 1; i <= offset_limit; i++)
+        {
+            offsets.push_back(i);
+            offsets.push_back(-i);
+        }
+    auto push = [&set, &sign, &wimpy, &offsets](T val) {
+        for (const int offset : offsets)
         {
             T v = val + offset;
             push_unique<T, T>(vec, set, v);
             push_unique<T, T>(vec, set, ~v);
             v = v ^ sign;
             push_unique<T, T>(vec, set, v);
-            push_unique<T, T>(vec, set, ~v);
+            if (!wimpy) push_unique<T, T>(vec, set, ~v);
         }
     };
 
     // Add all the values close to 0, MIN, and MAX.
-    for (unsigned i = 0; i < 256; i++)
-    {
-        push(i);
-    }
+    push((T)0);
+    push((T)1);
 
     // Add powers of 2, 3, 5, 7, 10.
-    for (const T base : { 2, 3, 5, 7, 10 })
+    std::vector<T> wimpy_powers = { 2 };
+    std::vector<T> all_powers = { 2, 3, 5, 7, 10 };
+    for (const T base : wimpy ? wimpy_powers : all_powers)
     {
         T val = base;
         T next = val * base;
@@ -225,7 +233,7 @@ std::vector<T> GetIntSpecialValues(std::recursive_mutex &mutex)
     // masks: 0x0F0F, 0xF0F0, 0x00FF, 0xFF00, 0xFFFF
     std::vector<T> patterns;
     std::vector<T> masks;
-    for (T i = 1; i < 15; i++)
+    for (T i = 1; i < 15; i += (wimpy ? 2 : 1))
     {
         T pattern = i;
         for (unsigned j = 0; j < sizeof(T) * 2; j++)
