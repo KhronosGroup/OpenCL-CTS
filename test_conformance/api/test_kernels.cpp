@@ -1037,14 +1037,8 @@ REGISTER_TEST(negative_invalid_arg_index)
     return TEST_PASS;
 }
 
-REGISTER_TEST(negative_invalid_arg_size_local)
+REGISTER_TEST(local_arg_size_zero)
 {
-    if (true)
-    {
-        log_info("Disabling this test temporarily, see internal issue 374.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-
     cl_int error = CL_SUCCESS;
     clProgramWrapper program;
     clKernelWrapper local_arg_kernel;
@@ -1059,11 +1053,23 @@ REGISTER_TEST(negative_invalid_arg_size_local)
 
     // Run the test
     error = clSetKernelArg(local_arg_kernel, 0, 0, nullptr);
-    test_failure_error_ret(
-        error, CL_INVALID_ARG_SIZE,
-        "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when 0 is "
-        "passed to a local qualifier kernel argument",
-        TEST_FAIL);
+
+    const Version version = get_platform_cl_version(device);
+    if (version < Version(3, 1))
+    {
+        test_failure_error_ret(
+            error, CL_INVALID_ARG_SIZE,
+            "For an OpenCL platform prior to OpenCL 3.1, setting the size of a "
+            "local memory kernel argument to zero is an error",
+            TEST_FAIL);
+    }
+    else
+    {
+        test_error(
+            error,
+            "For an OpenCL 3.1 platform and newer, setting the size of a local "
+            "memory kernel argument to zero is valid.");
+    }
 
     return TEST_PASS;
 }
