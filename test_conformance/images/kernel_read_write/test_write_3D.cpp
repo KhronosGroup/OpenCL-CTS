@@ -90,8 +90,8 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
     size_t              num_flags   = 0;
     const cl_mem_flags  *mem_flag_types = NULL;
     const char *        *mem_flag_names = NULL;
-    const cl_mem_flags  write_only_mem_flag_types[2] = {  CL_MEM_WRITE_ONLY,   CL_MEM_READ_WRITE };
-    const char *        write_only_mem_flag_names[2] = { "CL_MEM_WRITE_ONLY", "CL_MEM_READ_WRITE" };
+    const cl_mem_flags write_only_mem_flag_types[1] = { CL_MEM_WRITE_ONLY };
+    const char *write_only_mem_flag_names[1] = { "CL_MEM_WRITE_ONLY" };
     const cl_mem_flags  read_write_mem_flag_types[1] = {  CL_MEM_READ_WRITE};
     const char *        read_write_mem_flag_names[1] = { "CL_MEM_READ_WRITE"};
 
