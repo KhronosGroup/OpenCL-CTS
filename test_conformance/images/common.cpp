@@ -172,6 +172,184 @@ static void CL_CALLBACK release_cl_buffer(cl_mem image, void *buf)
     clReleaseMemObject((cl_mem)buf);
 }
 
+int init_image(cl_command_queue queue, clMemWrapper &img,
+               image_descriptor *imageInfo, BufferOwningPtr<char> &data,
+               bool create_mipmaps)
+{
+    size_t mappedRow, mappedSlice;
+    size_t width = imageInfo->width;
+    size_t height = 1;
+    size_t depth = 1;
+    size_t row_pitch_lod, slice_pitch_lod;
+    row_pitch_lod = imageInfo->rowPitch;
+    slice_pitch_lod = imageInfo->slicePitch;
+
+    switch (imageInfo->type)
+    {
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+            height = imageInfo->arraySize;
+            depth = 1;
+            break;
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+        case CL_MEM_OBJECT_IMAGE1D: height = depth = 1; break;
+        case CL_MEM_OBJECT_IMAGE2D:
+            height = imageInfo->height;
+            depth = 1;
+            break;
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+            height = imageInfo->height;
+            depth = imageInfo->arraySize;
+            break;
+        case CL_MEM_OBJECT_IMAGE3D:
+            height = imageInfo->height;
+            depth = imageInfo->depth;
+            break;
+        default:
+            log_error("ERROR Invalid imageInfo->type = %d\n", imageInfo->type);
+            height = 0;
+            depth = 0;
+            return -1;
+            break;
+    }
+
+    size_t origin[4] = { 0, 0, 0, 0 };
+    size_t region[3] = { imageInfo->width, height, depth };
+
+    if (data.getSize() == 0) return CL_SUCCESS;
+
+    for (size_t lod = 0; (create_mipmaps && (lod < imageInfo->num_mip_levels))
+         || (!create_mipmaps && (lod < 1));
+         lod++)
+    {
+        // Map the appropriate miplevel to copy the specified data.
+        if (create_mipmaps)
+        {
+            switch (imageInfo->type)
+            {
+                case CL_MEM_OBJECT_IMAGE3D:
+                case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+                    origin[0] = origin[1] = origin[2] = 0;
+                    origin[3] = lod;
+                    break;
+                case CL_MEM_OBJECT_IMAGE2D:
+                case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+                    origin[0] = origin[1] = origin[3] = 0;
+                    origin[2] = lod;
+                    break;
+                case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+                case CL_MEM_OBJECT_IMAGE1D:
+                    origin[0] = origin[2] = origin[3] = 0;
+                    origin[1] = lod;
+                    break;
+            }
+
+            // Adjust image dimensions as per miplevel
+            switch (imageInfo->type)
+            {
+                case CL_MEM_OBJECT_IMAGE3D:
+                    depth = (imageInfo->depth >> lod)
+                        ? (imageInfo->depth >> lod)
+                        : 1;
+                case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+                case CL_MEM_OBJECT_IMAGE2D:
+                    height = (imageInfo->height >> lod)
+                        ? (imageInfo->height >> lod)
+                        : 1;
+                case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+                case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+                case CL_MEM_OBJECT_IMAGE1D:
+                    width = (imageInfo->width >> lod)
+                        ? (imageInfo->width >> lod)
+                        : 1;
+            }
+            row_pitch_lod = width * get_pixel_size(imageInfo->format);
+            slice_pitch_lod = row_pitch_lod * height;
+            region[0] = width;
+            region[1] = height;
+            region[2] = depth;
+        }
+
+        cl_int error;
+        char *mapped = static_cast<char *>(clEnqueueMapImage(
+            queue, img, CL_TRUE, CL_MAP_WRITE, origin, region, &mappedRow,
+            &mappedSlice, 0, nullptr, nullptr, &error));
+        if (error != CL_SUCCESS || !mapped)
+        {
+            log_error("ERROR: Unable to map image for writing: %s\n",
+                      IGetErrorString(error));
+            return error;
+        }
+        size_t mappedSlicePad = mappedSlice - (mappedRow * height);
+
+        // For 1Darray, the height variable actually contains the arraysize,
+        // so it can't be used for calculating the slice padding.
+        if (imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY)
+            mappedSlicePad = mappedSlice - (mappedRow * 1);
+
+        // Copy the image.
+        size_t scanlineSize = row_pitch_lod;
+        size_t sliceSize = slice_pitch_lod - scanlineSize * height;
+        size_t imageSize = scanlineSize * height * depth;
+        size_t data_lod_offset = 0;
+        if (create_mipmaps)
+        {
+            data_lod_offset = compute_mip_level_offset(imageInfo, lod);
+        }
+
+        char *src = static_cast<char *>(data) + data_lod_offset;
+        char *dst = mapped;
+
+        if ((mappedRow == scanlineSize)
+            && (mappedSlicePad == 0
+                || (imageInfo->depth == 0 && imageInfo->arraySize == 0)))
+        {
+            // Copy the whole image.
+            memcpy(dst, src, imageSize);
+        }
+        else
+        {
+            // Else copy one scan line at a time.
+            size_t dstPitch2D = 0;
+            switch (imageInfo->type)
+            {
+                case CL_MEM_OBJECT_IMAGE3D:
+                case CL_MEM_OBJECT_IMAGE2D_ARRAY:
+                case CL_MEM_OBJECT_IMAGE2D: dstPitch2D = mappedRow; break;
+                case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+                case CL_MEM_OBJECT_IMAGE1D:
+                case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+                    dstPitch2D = mappedSlice;
+                    break;
+            }
+            for (size_t z = 0; z < depth; z++)
+            {
+                for (size_t y = 0; y < height; y++)
+                {
+                    memcpy(dst, src, scanlineSize);
+                    dst += dstPitch2D;
+                    src += scanlineSize;
+                }
+
+                // mappedSlicePad is incorrect for 2D images here, but we
+                // will exit the z loop before this is a problem.
+                dst += mappedSlicePad;
+                src += sliceSize;
+            }
+        }
+
+        // Unmap the image.
+        error =
+            clEnqueueUnmapMemObject(queue, img, mapped, 0, nullptr, nullptr);
+        if (error != CL_SUCCESS)
+        {
+            log_error("ERROR: Unable to unmap image after writing: %s\n",
+                      IGetErrorString(error));
+            return error;
+        }
+    }
+    return CL_SUCCESS;
+}
+
 clMemWrapper create_image(cl_context context, cl_command_queue queue,
                           BufferOwningPtr<char> &data,
                           image_descriptor *imageInfo, bool enable_pitch,
@@ -423,174 +601,12 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
         return nullptr;
     }
 
-    // Copy the specified data to the image via a Map operation.
-    size_t mappedRow, mappedSlice;
-    size_t width = imageInfo->width;
-    size_t height = 1;
-    size_t depth = 1;
-    size_t row_pitch_lod, slice_pitch_lod;
-    row_pitch_lod = imageInfo->rowPitch;
-    slice_pitch_lod = imageInfo->slicePitch;
-
-    switch (imageInfo->type)
+    *error = init_image(queue, img, imageInfo, data, create_mipmaps);
+    if (*error != CL_SUCCESS)
     {
-        case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-            height = imageInfo->arraySize;
-            depth = 1;
-            break;
-        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-        case CL_MEM_OBJECT_IMAGE1D: height = depth = 1; break;
-        case CL_MEM_OBJECT_IMAGE2D:
-            height = imageInfo->height;
-            depth = 1;
-            break;
-        case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-            height = imageInfo->height;
-            depth = imageInfo->arraySize;
-            break;
-        case CL_MEM_OBJECT_IMAGE3D:
-            height = imageInfo->height;
-            depth = imageInfo->depth;
-            break;
-        default:
-            log_error("ERROR Invalid imageInfo->type = %d\n", imageInfo->type);
-            height = 0;
-            depth = 0;
-            return nullptr;
-            break;
+        log_error("ERROR: could not init image");
+        return nullptr;
     }
 
-    size_t origin[4] = { 0, 0, 0, 0 };
-    size_t region[3] = { imageInfo->width, height, depth };
-
-    for (size_t lod = 0; (create_mipmaps && (lod < imageInfo->num_mip_levels))
-         || (!create_mipmaps && (lod < 1));
-         lod++)
-    {
-        // Map the appropriate miplevel to copy the specified data.
-        if (create_mipmaps)
-        {
-            switch (imageInfo->type)
-            {
-                case CL_MEM_OBJECT_IMAGE3D:
-                case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                    origin[0] = origin[1] = origin[2] = 0;
-                    origin[3] = lod;
-                    break;
-                case CL_MEM_OBJECT_IMAGE2D:
-                case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                    origin[0] = origin[1] = origin[3] = 0;
-                    origin[2] = lod;
-                    break;
-                case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-                case CL_MEM_OBJECT_IMAGE1D:
-                    origin[0] = origin[2] = origin[3] = 0;
-                    origin[1] = lod;
-                    break;
-            }
-
-            // Adjust image dimensions as per miplevel
-            switch (imageInfo->type)
-            {
-                case CL_MEM_OBJECT_IMAGE3D:
-                    depth = (imageInfo->depth >> lod)
-                        ? (imageInfo->depth >> lod)
-                        : 1;
-                case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                case CL_MEM_OBJECT_IMAGE2D:
-                    height = (imageInfo->height >> lod)
-                        ? (imageInfo->height >> lod)
-                        : 1;
-                case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-                case CL_MEM_OBJECT_IMAGE1D:
-                    width = (imageInfo->width >> lod)
-                        ? (imageInfo->width >> lod)
-                        : 1;
-            }
-            row_pitch_lod = width * get_pixel_size(imageInfo->format);
-            slice_pitch_lod = row_pitch_lod * height;
-            region[0] = width;
-            region[1] = height;
-            region[2] = depth;
-        }
-
-        char *mapped = static_cast<char *>(clEnqueueMapImage(
-            queue, img, CL_TRUE, CL_MAP_WRITE, origin, region, &mappedRow,
-            &mappedSlice, 0, nullptr, nullptr, error));
-        if (*error != CL_SUCCESS || !mapped)
-        {
-            log_error("ERROR: Unable to map image for writing: %s\n",
-                      IGetErrorString(*error));
-            return nullptr;
-        }
-        size_t mappedSlicePad = mappedSlice - (mappedRow * height);
-
-        // For 1Darray, the height variable actually contains the arraysize,
-        // so it can't be used for calculating the slice padding.
-        if (imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY)
-            mappedSlicePad = mappedSlice - (mappedRow * 1);
-
-        // Copy the image.
-        size_t scanlineSize = row_pitch_lod;
-        size_t sliceSize = slice_pitch_lod - scanlineSize * height;
-        size_t imageSize = scanlineSize * height * depth;
-        size_t data_lod_offset = 0;
-        if (create_mipmaps)
-        {
-            data_lod_offset = compute_mip_level_offset(imageInfo, lod);
-        }
-
-        char *src = static_cast<char *>(data) + data_lod_offset;
-        char *dst = mapped;
-
-        if ((mappedRow == scanlineSize)
-            && (mappedSlicePad == 0
-                || (imageInfo->depth == 0 && imageInfo->arraySize == 0)))
-        {
-            // Copy the whole image.
-            memcpy(dst, src, imageSize);
-        }
-        else
-        {
-            // Else copy one scan line at a time.
-            size_t dstPitch2D = 0;
-            switch (imageInfo->type)
-            {
-                case CL_MEM_OBJECT_IMAGE3D:
-                case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                case CL_MEM_OBJECT_IMAGE2D: dstPitch2D = mappedRow; break;
-                case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                case CL_MEM_OBJECT_IMAGE1D:
-                case CL_MEM_OBJECT_IMAGE1D_BUFFER:
-                    dstPitch2D = mappedSlice;
-                    break;
-            }
-            for (size_t z = 0; z < depth; z++)
-            {
-                for (size_t y = 0; y < height; y++)
-                {
-                    memcpy(dst, src, scanlineSize);
-                    dst += dstPitch2D;
-                    src += scanlineSize;
-                }
-
-                // mappedSlicePad is incorrect for 2D images here, but we will
-                // exit the z loop before this is a problem.
-                dst += mappedSlicePad;
-                src += sliceSize;
-            }
-        }
-
-        // Unmap the image.
-        *error =
-            clEnqueueUnmapMemObject(queue, img, mapped, 0, nullptr, nullptr);
-        if (*error != CL_SUCCESS)
-        {
-            log_error("ERROR: Unable to unmap image after writing: %s\n",
-                      IGetErrorString(*error));
-            return nullptr;
-        }
-    }
     return img;
 }

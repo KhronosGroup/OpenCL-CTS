@@ -16,6 +16,7 @@
 #include "../testBase.h"
 #include <CL/cl.h>
 #include "../common.h"
+#include "test_copy_generic.h"
 
 static cl_int cleanup_mapped_image(cl_command_queue queue, cl_mem image,
                                    void *mapped)
@@ -39,23 +40,15 @@ static cl_int cleanup_mapped_image(cl_command_queue queue, cl_mem image,
     return CL_SUCCESS;
 }
 
-int test_copy_image_generic(cl_context context, cl_command_queue queue,
-                            image_descriptor *srcImageInfo,
-                            image_descriptor *dstImageInfo,
-                            const size_t sourcePos[], const size_t destPos[],
-                            const size_t regionSize[], MTdata d,
-                            const context_t &ctx)
+int test_copy_init_images(cl_context context, cl_command_queue queue,
+                          image_descriptor *srcImageInfo,
+                          image_descriptor *dstImageInfo,
+                          clMemWrapper &srcImage, clMemWrapper &dstImage,
+                          BufferOwningPtr<char> &srcData,
+                          BufferOwningPtr<char> &dstData, MTdata d,
+                          const context_t &ctx)
 {
     int error;
-
-    clMemWrapper srcImage, dstImage;
-
-    BufferOwningPtr<char> srcData;
-    BufferOwningPtr<char> dstData;
-    BufferOwningPtr<char> srcHost;
-    BufferOwningPtr<char> dstHost;
-
-    if (ctx.debugTrace) log_info(" ++ Entering inner test loop...\n");
 
     // Generate some data to test against
     size_t srcBytes = 0;
@@ -68,21 +61,10 @@ int test_copy_image_generic(cl_context context, cl_command_queue queue,
         srcBytes = get_image_size(srcImageInfo);
     }
 
-    if (srcBytes > srcData.getSize())
-    {
-        if (ctx.debugTrace) log_info(" - Resizing random image data...\n");
+    if (ctx.debugTrace) log_info(" - Resizing random image data...\n");
 
-        generate_random_image_data( srcImageInfo, srcData, d  );
+    generate_random_image_data(srcImageInfo, srcData, d);
 
-        // Update the host verification copy of the data.
-        srcHost.reset(malloc(srcBytes),NULL,0,srcBytes);
-        if (srcHost == NULL) {
-            log_error("ERROR: Unable to malloc %zu bytes for srcHost\n",
-                      srcBytes);
-            return -1;
-        }
-        memcpy(srcHost,srcData,srcBytes);
-    }
 
     // Construct testing sources
     if (ctx.debugTrace) log_info(" - Writing source image...\n");
@@ -105,38 +87,42 @@ int test_copy_image_generic(cl_context context, cl_command_queue queue,
         destImageSize = get_image_size(dstImageInfo);
     }
 
-    if (destImageSize > dstData.getSize())
-    {
-        if (ctx.debugTrace) log_info(" - Resizing destination buffer...\n");
-        dstData.reset(malloc(destImageSize),NULL,0,destImageSize);
-        if (dstData == NULL) {
-            log_error("ERROR: Unable to malloc %zu bytes for dstData\n",
-                      destImageSize);
-            return -1;
-        }
-    }
-
-    if (destImageSize > dstHost.getSize())
-    {
-        dstHost.reset(NULL);
-        dstHost.reset(malloc(destImageSize),NULL,0,destImageSize);
-        if (dstHost == NULL) {
-            dstData.reset(NULL);
-            log_error("ERROR: Unable to malloc %zu bytes for dstHost\n",
-                      destImageSize);
-            return -1;
-        }
-    }
-    memset( dstData, 0xff, destImageSize );
-    memset( dstHost, 0xff, destImageSize );
-
     if (ctx.debugTrace) log_info(" - Writing destination image...\n");
 
+    dstData.reset(nullptr, nullptr, 0, 0);
     dstImage =
         create_image(context, queue, dstData, dstImageInfo, ctx.enablePitch,
                      ctx.testMipmaps, ctx.debugTrace, &error);
-    if( dstImage == NULL )
-        return error;
+    if (dstImage == NULL) return error;
+
+    size_t dstDataSize = get_image_size(dstImageInfo);
+    dstData.reset(malloc(dstDataSize), NULL, 0, dstDataSize);
+    if (dstData == NULL)
+    {
+        log_error("ERROR: unable to malloc %zu bytes in test_copy_init_images",
+                  dstDataSize);
+        return CL_OUT_OF_HOST_MEMORY;
+    }
+
+    return CL_SUCCESS;
+}
+
+int test_copy_image_generic(cl_context context, cl_command_queue queue,
+                            image_descriptor *srcImageInfo,
+                            image_descriptor *dstImageInfo,
+                            clMemWrapper &srcImage, clMemWrapper &dstImage,
+                            BufferOwningPtr<char> &srcHost,
+                            BufferOwningPtr<char> &dstHost,
+                            const size_t sourcePos[], const size_t destPos[],
+                            const size_t regionSize[], MTdata d,
+                            const context_t &ctx)
+{
+    int error;
+
+    if (ctx.debugTrace) log_info(" ++ Entering inner test loop...\n");
+
+    memset(dstHost, 0xff, dstHost.getSize());
+    init_image(queue, dstImage, dstImageInfo, dstHost, ctx.testMipmaps);
 
     size_t dstRegion[ 3 ] = { dstImageInfo->width, 1, 1};
     size_t dst_lod = 0;
