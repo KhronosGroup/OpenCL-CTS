@@ -1200,8 +1200,8 @@ REGISTER_TEST(min_max_parameter_size)
         if (embeddedNoLong)
         {
             log_info(
-                "Trying a kernel with %ld int arguments (%ld bytes) and one "
-                "cl_mem (%zu bytes) for %ld bytes total.\n",
+                "Trying a kernel with %ld int arguments (%zu bytes) and one "
+                "cl_mem (%zu bytes) for %zu bytes total.\n",
                 numberOfIntParametersToTry,
                 sizeof(cl_int) * numberOfIntParametersToTry, sizeof(cl_mem),
                 sizeof(cl_mem) + numberOfIntParametersToTry * sizeof(cl_int));
@@ -1209,8 +1209,8 @@ REGISTER_TEST(min_max_parameter_size)
         else
         {
             log_info(
-                "Trying a kernel with %ld long arguments (%ld bytes) and one "
-                "cl_mem (%zu bytes) for %ld bytes total.\n",
+                "Trying a kernel with %ld long arguments (%zu bytes) and one "
+                "cl_mem (%zu bytes) for %zu bytes total.\n",
                 numberOfIntParametersToTry,
                 sizeof(cl_long) * numberOfIntParametersToTry, sizeof(cl_mem),
                 sizeof(cl_mem) + numberOfIntParametersToTry * sizeof(cl_long));
@@ -1365,7 +1365,7 @@ REGISTER_TEST(min_max_parameter_size)
             }
             else
             {
-                log_info("Results verified at %ld bytes of arguments.\n",
+                log_info("Results verified at %zu bytes of arguments.\n",
                          sizeof(cl_mem)
                              + numberOfIntParametersToTry * sizeof(cl_long));
                 break;
@@ -1383,7 +1383,7 @@ REGISTER_TEST(min_max_parameter_size)
             }
             else
             {
-                log_info("Results verified at %ld bytes of arguments.\n",
+                log_info("Results verified at %zu bytes of arguments.\n",
                          sizeof(cl_mem)
                              + numberOfIntParametersToTry * sizeof(cl_int));
                 break;
