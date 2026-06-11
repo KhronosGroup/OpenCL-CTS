@@ -23,7 +23,8 @@
 
 #include <CL/cl_half.h>
 
-[[maybe_unused]] static RoundingMode gFloatToHalfRoundingMode = kDefaultRoundingMode;
+[[maybe_unused]] static RoundingMode gFloatToHalfRoundingMode =
+    kDefaultRoundingMode;
 
 
 CResult::CResult(): _result(TEST_PASS), _resultLast(TEST_NORESULT) {}
