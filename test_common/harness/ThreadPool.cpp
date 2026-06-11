@@ -116,8 +116,9 @@ typedef BOOL(CALLBACK *_PINIT_ONCE_FN)(_PINIT_ONCE, PVOID, PVOID *);
 #define _INIT_ONCE_IN_PROGRESS 1
 #define _INIT_ONCE_DONE 2
 
-static BOOL _InitOnceExecuteOnce(_PINIT_ONCE InitOnce, _PINIT_ONCE_FN InitFn,
-                                 PVOID Parameter, LPVOID *Context)
+[[maybe_unused]] static BOOL _InitOnceExecuteOnce(
+    _PINIT_ONCE InitOnce, _PINIT_ONCE_FN InitFn, PVOID Parameter,
+    LPVOID *Context)
 {
     while (*InitOnce != _INIT_ONCE_DONE)
     {

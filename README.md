@@ -25,10 +25,11 @@ It is advised that the [OpenCL ICD-Loader](https://github.com/KhronosGroup/OpenC
 is used as the OpenCL library to build against. Where `CL_LIB_DIR` points to a
 build of the ICD loader and `OPENCL_LIBRARIES` is "OpenCL".
 
-### Example Build
+### Building CTS on Linux
 
-Steps on a Linux platform to clone dependencies from GitHub sources, configure
-a build, and compile.
+This section provides an example of building CTS on a Linux platform. It includes steps for
+cloning the necessary dependencies from GitHub, setting up the build configuration, and compiling
+the project.
 
 ```sh
 git clone https://github.com/KhronosGroup/OpenCL-CTS.git
@@ -102,6 +103,81 @@ require compilation, these are:
    cl_offline_compiler) invoked by the test harness to perform offline
    compilation of OpenCL-C source code.  This executable must match the
    [interface description](test_common/harness/cl_offline_compiler-interface.txt).
+
+### Building CTS on Windows
+
+For Windows environments, it is strongly recommended to build CTS using [MSYS2](https://www.msys2.org/),
+the MinGW-w64 (GCC) toolchain, and Ninja.
+All commands in the following sections should be run from an MSYS2 MinGW64 shell.
+
+#### Prerequisites
+
+Install the required MSYS2 packages:
+
+```sh
+pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-git mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-python
+```
+
+#### Clone Source and Dependencies 
+
+```sh
+git clone https://github.com/KhronosGroup/OpenCL-CTS.git
+git clone https://github.com/KhronosGroup/OpenCL-Headers.git
+git clone https://github.com/KhronosGroup/SPIRV-Headers.git
+git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
+git clone https://github.com/KhronosGroup/SPIRV-Tools.git
+git clone https://github.com/KhronosGroup/SPIRV-Headers.git SPIRV-Tools/external/spirv-headers
+git clone https://github.com/google/effcee.git SPIRV-Tools/external/effcee
+git clone https://github.com/google/re2.git SPIRV-Tools/external/re2
+```
+
+#### Build the ICD Loader
+
+```sh
+cmake -S OpenCL-ICD-Loader -B OpenCL-ICD-Loader/build -G "Ninja" \
+      -DOPENCL_ICD_LOADER_HEADERS_DIR=$PWD/OpenCL-Headers
+cmake --build OpenCL-ICD-Loader/build --config Release
+```
+
+#### Build SPIRV-Tools
+
+```sh
+cmake -S SPIRV-Tools -B SPIRV-Tools/build -G "Ninja" -DSPIRV_SKIP_TESTS=ON
+cmake --build SPIRV-Tools/build --config Release
+```
+
+#### Build the CTS
+
+```sh
+cmake -S OpenCL-CTS -B OpenCL-CTS/build -G "Ninja" \
+      -DCL_INCLUDE_DIR=$PWD/OpenCL-Headers \
+      -DCL_LIB_DIR=$PWD/OpenCL-ICD-Loader/build \
+      -DSPIRV_INCLUDE_DIR=$PWD/SPIRV-Headers \
+      -DSPIRV_TOOLS_DIR=$PWD/SPIRV-Tools/build/tools \
+      -DOPENCL_LIBRARIES=OpenCL
+cmake --build OpenCL-CTS/build --config Release
+```
+
+#### Running Tests
+
+The compiled executables must be run from a Windows Command Prompt (cmd.exe) or PowerShell session.
+Running them directly from the MSYS2 shell is not supported, as MSYS2 Bash may fail to launch the
+executables (exit code 127) due to a known interoperability issue with PE binaries that depend on
+system DLLs such as OpenCL.dll.
+
+From cmd.exe:
+
+```cmd
+set PATH=C:\msys64\mingw64\bin;%PATH%
+cd OpenCL-CTS\build\test_conformance\basic
+test_basic.exe
+```
+
+Alternatively, launch from the MSYS2 shell via cmd.exe:
+
+```sh
+cmd.exe //c "set PATH=C:\\msys64\\mingw64\\bin;%PATH% && test_conformance\\basic\\test_basic.exe"
+```
 
 ## Generating a Conformance Report
 

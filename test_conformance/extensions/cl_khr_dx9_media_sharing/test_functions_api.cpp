@@ -212,7 +212,7 @@ int api_functions(cl_device_id deviceID, cl_context context,
                                 bufferRef1[frameIdx % FRAME_NUM], width,
                                 height))
                 {
-                    log_error("Frame idx: %i, OCL image is different then "
+                    log_error("Frame idx: %zu, OCL image is different then "
                               "shared OCL object: clEnqueueReadImage\n",
                               frameIdx);
                     result.ResultSub(CResult::TEST_FAIL);
@@ -271,7 +271,7 @@ int api_functions(cl_device_id deviceID, cl_context context,
                                 bufferRef2[frameIdx % FRAME_NUM], width,
                                 height))
                 {
-                    log_error("Frame idx: %i, Shared OCL image verification "
+                    log_error("Frame idx: %zu, Shared OCL image verification "
                               "after clEnqueueWriteImage failed\n",
                               frameIdx);
                     result.ResultSub(CResult::TEST_FAIL);
@@ -337,7 +337,7 @@ int api_functions(cl_device_id deviceID, cl_context context,
                                 height))
                 {
                     log_error(
-                        "Frame idx: %i, OCL image verification after "
+                        "Frame idx: %zu, OCL image verification after "
                         "clEnqueueCopyImage (from shared OCL to OCL) failed\n",
                         frameIdx);
                     result.ResultSub(CResult::TEST_FAIL);
@@ -409,7 +409,7 @@ int api_functions(cl_device_id deviceID, cl_context context,
                                 height))
                 {
                     log_error(
-                        "Frame idx: %i, OCL image verification after "
+                        "Frame idx: %zu, OCL image verification after "
                         "clEnqueueCopyImage (from OCL to shared OCL) failed\n",
                         frameIdx);
                     result.ResultSub(CResult::TEST_FAIL);
@@ -461,7 +461,7 @@ int api_functions(cl_device_id deviceID, cl_context context,
                                 bufferRef1[frameIdx % FRAME_NUM], width,
                                 height))
                 {
-                    log_error("Frame idx: %i, OCL buffer verification after "
+                    log_error("Frame idx: %zu, OCL buffer verification after "
                               "clEnqueueCopyImageToBuffer (from shared OCL "
                               "image to OCL buffer) failed\n",
                               frameIdx);
@@ -517,7 +517,7 @@ int api_functions(cl_device_id deviceID, cl_context context,
                                 bufferRef2[frameIdx % FRAME_NUM], width,
                                 height))
                 {
-                    log_error("Frame idx: %i, OCL image verification after "
+                    log_error("Frame idx: %zu, OCL image verification after "
                               "clEnqueueCopyBufferToImage (from OCL buffer to "
                               "shared OCL image) failed\n",
                               frameIdx);
@@ -573,7 +573,7 @@ int api_functions(cl_device_id deviceID, cl_context context,
                                 bufferRef2[frameIdx % FRAME_NUM], width,
                                 height))
                 {
-                    log_error("Frame idx: %i, Mapped shared OCL image is "
+                    log_error("Frame idx: %zu, Mapped shared OCL image is "
                               "different then expected\n",
                               frameIdx);
                     result.ResultSub(CResult::TEST_FAIL);
@@ -647,7 +647,7 @@ int api_functions(cl_device_id deviceID, cl_context context,
                             bufferRef3[frameIdx % FRAME_NUM], width, height))
             {
                 log_error(
-                    "Frame idx: %i, media surface is different than expected\n",
+                    "Frame idx: %zu, media surface is different than expected\n",
                     frameIdx);
                 result.ResultSub(CResult::TEST_FAIL);
             }

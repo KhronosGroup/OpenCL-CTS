@@ -60,7 +60,11 @@ int test_mem_object_destructor_callback_single(clMemWrapper &memObject)
         int wait = 0;
         while (0 == callbackOrders[i])
         {
+#ifdef _WIN32
+            Sleep(100); // 1/10th second
+#else
             usleep(100000); // 1/10th second
+#endif
             if (++wait >= 10 * 10)
             {
                 log_error("\tERROR: Callback %d was not called within 10 "
