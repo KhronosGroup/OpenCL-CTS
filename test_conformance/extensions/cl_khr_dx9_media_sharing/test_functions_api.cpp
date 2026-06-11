@@ -646,9 +646,9 @@ int api_functions(cl_device_id deviceID, cl_context context,
             if (!YUVCompare(surfaceFormat, bufferOut,
                             bufferRef3[frameIdx % FRAME_NUM], width, height))
             {
-                log_error(
-                    "Frame idx: %zu, media surface is different than expected\n",
-                    frameIdx);
+                log_error("Frame idx: %zu, media surface is different than "
+                          "expected\n",
+                          frameIdx);
                 result.ResultSub(CResult::TEST_FAIL);
             }
         }
