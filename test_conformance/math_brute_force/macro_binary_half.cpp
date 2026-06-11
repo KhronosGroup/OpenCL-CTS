@@ -48,34 +48,12 @@ struct TestInfo : public TestInfoBase
     KernelMatrix k;
 };
 
-// A table of more difficult cases to get right
-const cl_half specialValuesHalf[] = {
-    0xffff, 0x0000, 0x0001, 0x7c00, /*INFINITY*/
-    0xfc00, /*-INFINITY*/
-    0x8000, /*-0*/
-    0x7bff, /*HALF_MAX*/
-    0x0400, /*HALF_MIN*/
-    0x03ff, /* Largest denormal */
-    0x3c00, /* 1 */
-    0xbc00, /* -1 */
-    0x3555, /*nearest value to 1/3*/
-    0x3bff, /*largest number less than one*/
-    0xc000, /* -2 */
-    0xfbff, /* -HALF_MAX */
-    0x8400, /* -HALF_MIN */
-    0x4248, /* M_PI_H */
-    0xc248, /* -M_PI_H */
-    0xbbff, /* Largest negative fraction */
-};
-
-constexpr size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
-
 cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 {
     TestInfo *job = (TestInfo *)data;
     size_t buffer_elements = job->subBufferSize;
     size_t buffer_size = buffer_elements * sizeof(cl_half);
-    cl_uint base = job_id * (cl_uint)job->step;
+    cl_uint base = job_id * (cl_uint)buffer_elements;
     ThreadInfoBinary *tinfo = &(job->tinfo[thread_id]);
     fptr func = job->f->func;
     int ftz = job->ftz;
@@ -114,37 +92,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     cl_ushort *p = (cl_ushort *)gIn + thread_id * buffer_elements;
     cl_ushort *p2 = (cl_ushort *)gIn2 + thread_id * buffer_elements;
     j = 0;
-    int totalSpecialValueCount =
-        specialValuesHalfCount * specialValuesHalfCount;
-    int indx = (totalSpecialValueCount - 1) / buffer_elements;
-
-    if (job_id <= (cl_uint)indx)
-    { // test edge cases
-        uint32_t x, y;
-
-        x = (job_id * buffer_elements) % specialValuesHalfCount;
-        y = (job_id * buffer_elements) / specialValuesHalfCount;
-
-        for (; j < buffer_elements; j++)
-        {
-            p[j] = specialValuesHalf[x];
-            p2[j] = specialValuesHalf[y];
-            if (++x >= specialValuesHalfCount)
-            {
-                x = 0;
-                y++;
-                if (y >= specialValuesHalfCount) break;
-            }
-        }
-    }
-
-    // Init any remaining values.
-    for (; j < buffer_elements; j++)
-    {
-        p[j] = (cl_ushort)genrand_int32(d);
-        p2[j] = (cl_ushort)genrand_int32(d);
-    }
-
+    fillHalfBinaryInput((cl_half *)p, (cl_half *)p2, buffer_elements, base, d);
 
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
                                       buffer_size, p, 0, NULL, NULL)))
@@ -376,10 +324,9 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     {
         if (gVerboseBruteForce)
         {
-            vlog("base:%14u step:%10u scale:%10u buf_elements:%10zd "
+            vlog("base:%14u buf_elements:%10zd "
                  "ThreadCount:%2u\n",
-                 base, job->step, job->scale, buffer_elements,
-                 job->threadCount);
+                 base, buffer_elements, job->threadCount);
         }
         else
         {
@@ -406,18 +353,8 @@ int TestMacro_Int_Half_Half(const Func *f, MTdata d, bool relaxedMode)
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_half) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    test_info.scale = getTestScale(sizeof(cl_half));
-
-    test_info.step = (cl_uint)test_info.subBufferSize * test_info.scale;
-    if (test_info.step / test_info.subBufferSize != test_info.scale)
-    {
-        // there was overflow
-        test_info.jobCount = 1;
-    }
-    else
-    {
-        test_info.jobCount = (cl_uint)((1ULL << 32) / test_info.step);
-    }
+    test_info.jobCount = std::max(
+        (cl_uint)1, (cl_uint)(getInputCount() / test_info.subBufferSize));
 
     test_info.f = f;
     test_info.ftz =

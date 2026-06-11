@@ -52,8 +52,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     TestInfo *job = (TestInfo *)data;
     size_t buffer_elements = job->subBufferSize;
     size_t buffer_size = buffer_elements * sizeof(cl_half);
-    cl_uint scale = job->scale;
-    cl_uint base = job_id * (cl_uint)job->step;
+    cl_uint base = job_id * (cl_uint)buffer_elements;
     ThreadInfoUnary *tinfo = &(job->tinfo[thread_id]);
     fptr func = job->f->func;
     int ftz = job->ftz;
@@ -93,7 +92,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 
     // Write the new values to the input array
     cl_ushort *p = (cl_ushort *)gIn + thread_id * buffer_elements;
-    for (j = 0; j < buffer_elements; j++) p[j] = base + j * scale;
+    fillHalfUnaryInput((cl_half *)p, buffer_elements, base, nullptr, true);
 
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
                                       buffer_size, p, 0, NULL, NULL)))
@@ -280,10 +279,9 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     {
         if (gVerboseBruteForce)
         {
-            vlog("base:%14u step:%10u scale:%10u buf_elements:%10zd "
+            vlog("base:%14u buf_elements:%10zd "
                  "ThreadCount:%2u\n",
-                 base, job->step, job->scale, buffer_elements,
-                 job->threadCount);
+                 base, buffer_elements, job->threadCount);
         }
         else
         {
@@ -308,20 +306,8 @@ int TestMacro_Int_Half(const Func *f, MTdata d, bool relaxedMode)
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_half) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    test_info.scale = getTestScale(sizeof(cl_half));
-
-    test_info.step = (cl_uint)test_info.subBufferSize * test_info.scale;
-    if (test_info.step / test_info.subBufferSize != test_info.scale)
-    {
-        // there was overflow
-        test_info.jobCount = 1;
-    }
-    else
-    {
-        test_info.jobCount =
-            std::max((cl_uint)1,
-                     (cl_uint)((1ULL << sizeof(cl_half) * 8) / test_info.step));
-    }
+    test_info.jobCount =
+        std::max((cl_uint)1, (cl_uint)((1LL << 16) / test_info.subBufferSize));
 
     test_info.f = f;
     test_info.ftz =
