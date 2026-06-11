@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,16 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../testBase.h"
 #include "../common.h"
-
-extern int test_copy_image_generic(cl_context context, cl_command_queue queue,
-                                   image_descriptor *srcImageInfo,
-                                   image_descriptor *dstImageInfo,
-                                   const size_t sourcePos[],
-                                   const size_t destPos[],
-                                   const size_t regionSize[], MTdata d,
-                                   const image_test_context_t &ctx);
+#include "test_copy_generic.h"
 
 static void set_image_dimensions(image_descriptor *imageInfo, size_t width,
                                  size_t height, size_t arraySize,
@@ -133,9 +125,19 @@ int test_copy_image_size_2D_2D_array(cl_context context, cl_command_queue queue,
         }
     }
 
+    clMemWrapper srcImage, dstImage;
+    BufferOwningPtr<char> srcData, dstData;
     retCode =
-        test_copy_image_generic(context, queue, srcImageInfo, dstImageInfo,
-                                sourcePos, destPos, regionSize, d, ctx);
+        test_copy_init_images(context, queue, srcImageInfo, dstImageInfo,
+                              srcImage, dstImage, srcData, dstData, d, ctx);
+    if (retCode != CL_SUCCESS)
+    {
+        return retCode;
+    }
+    retCode = test_copy_image_generic(
+        context, queue, srcImageInfo, dstImageInfo, srcImage, dstImage, srcData,
+        dstData, sourcePos, destPos, regionSize, d, ctx);
+
     if( retCode < 0 )
         return retCode;
     else
@@ -211,10 +213,10 @@ int test_copy_image_size_2D_2D_array(cl_context context, cl_command_queue queue,
         }
 
         // Go for it!
-        retCode =
-            test_copy_image_generic(context, queue, srcImageInfo, dstImageInfo,
-                                    sourcePos, destPos, regionSize, d, ctx);
-        if( retCode < 0 )
+        retCode = test_copy_image_generic(
+            context, queue, srcImageInfo, dstImageInfo, srcImage, dstImage,
+            srcData, dstData, sourcePos, destPos, regionSize, d, ctx);
+        if (retCode < 0)
             return retCode;
         else
             ret += retCode;

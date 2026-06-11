@@ -13,16 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../testBase.h"
-
-// Defined in test_copy_generic.cpp
-extern int test_copy_image_generic(cl_context context, cl_command_queue queue,
-                                   image_descriptor *srcImageInfo,
-                                   image_descriptor *dstImageInfo,
-                                   const size_t sourcePos[],
-                                   const size_t destPos[],
-                                   const size_t regionSize[], MTdata d,
-                                   const image_test_context_t &ctx);
+#include "test_copy_generic.h"
 
 int test_copy_image_2D_array(cl_context context, cl_command_queue queue,
                              image_descriptor *srcImageInfo,
@@ -65,9 +56,19 @@ int test_copy_image_2D_array(cl_context context, cl_command_queue queue,
         region[ 1 ] = height_lod;
         srcPos[ 3 ] = src_lod;
         dstPos[ 3 ] = dst_lod;
-}
-return test_copy_image_generic(context, queue, srcImageInfo, dstImageInfo,
-                               srcPos, dstPos, region, d, ctx);
+    }
+    clMemWrapper srcImage, dstImage;
+    BufferOwningPtr<char> srcData, dstData;
+    int retCode =
+        test_copy_init_images(context, queue, srcImageInfo, dstImageInfo,
+                              srcImage, dstImage, srcData, dstData, d, ctx);
+    if (retCode != CL_SUCCESS)
+    {
+        return retCode;
+    }
+    return test_copy_image_generic(context, queue, srcImageInfo, dstImageInfo,
+                                   srcImage, dstImage, srcData, dstData, srcPos,
+                                   dstPos, region, d, ctx);
 }
 
 int test_copy_image_set_2D_array(cl_device_id device, cl_context context,
