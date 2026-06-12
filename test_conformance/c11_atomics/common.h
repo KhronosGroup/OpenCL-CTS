@@ -111,19 +111,24 @@ union DoubleIntUnion {
 
 template <typename HostDataType> bool is_qnan(const HostDataType &value)
 {
-    if constexpr (std::is_same_v<HostDataType, float>)
+    if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
     {
         FloatIntUnion u;
         u.f = value;
         if ((u.i & 0x7F800000) != 0x7F800000) return false;
         return (u.i & 0x00400000) != 0;
     }
-    else if constexpr (std::is_same_v<HostDataType, double>)
+    else if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
     {
         DoubleIntUnion u;
         u.d = value;
         if ((u.i & 0x7FF0000000000000) != 0x7FF0000000000000) return false;
         return (u.i & 0x0008000000000000) != 0;
+    }
+    else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+    {
+        if ((static_cast<cl_half>(value) & 0x7C00) != 0x7C00) return false;
+        return (static_cast<cl_half>(value) & 0x0200) != 0;
     }
     else
         return std::isnan(value);
@@ -131,22 +136,37 @@ template <typename HostDataType> bool is_qnan(const HostDataType &value)
 
 template <typename HostDataType> bool is_snan(const HostDataType &value)
 {
-    if constexpr (std::is_same_v<HostDataType, float>)
+    if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
     {
         FloatIntUnion u;
         u.f = value;
         if ((u.i & 0x7F800000) != 0x7F800000) return false;
         return (u.i & 0x00400000) == 0;
     }
-    else if constexpr (std::is_same_v<HostDataType, double>)
+    else if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
     {
         DoubleIntUnion u;
         u.d = value;
         if ((u.i & 0x7FF0000000000000) != 0x7FF0000000000000) return false;
         return (u.i & 0x0008000000000000) == 0;
     }
+    else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+    {
+        if ((static_cast<cl_half>(value) & 0x7C00) != 0x7C00) return false;
+        return (static_cast<cl_half>(value) & 0x0200) == 0;
+    }
     else
         return std::isnan(value);
+}
+
+inline bool IsHalfNaN(const cl_half v)
+{
+    // Extract FP16 exponent and mantissa
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+
+    // NaN test
+    return (h_exp == 0x1F && h_mant != 0);
 }
 
 class AtomicTypeInfo {
@@ -1561,23 +1581,48 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
         if (IsTestNotAsExpected(expected, destItems, startRefValues, i))
         {
             std::stringstream logLine;
-            logLine << "ERROR: Result " << i
-                    << " from kernel does not validate! (should be " << expected
-                    << ", was " << static_cast<HostDataType>(destItems[i])
-                    << ")\n";
-            log_error("%s", logLine.str().c_str());
-            for (i = 0; i < threadCount; i++)
+            if constexpr (std::is_same_v<HostDataType, cl_half>)
             {
-                logLine.str("");
-                logLine << " --- " << i << " - ";
-                if (startRefValues.size())
-                    logLine << startRefValues[i] << " -> " << refValues[i];
-                else
-                    logLine << refValues[i];
-                logLine << " --- ";
-                if (i < numDestItems) logLine << destItems[i];
-                logLine << "\n";
-                log_info("%s", logLine.str().c_str());
+                logLine << "ERROR: Result " << i
+                        << " from kernel does not validate! (should be "
+                        << cl_half_to_float(expected) << ", was "
+                        << cl_half_to_float(destItems[i]) << ")\n";
+                log_error("%s", logLine.str().c_str());
+                for (i = 0; i < threadCount; i++)
+                {
+                    logLine.str("");
+                    logLine << " --- " << i << " - ";
+                    if (startRefValues.size())
+                        logLine << cl_half_to_float(startRefValues[i]) << " -> "
+                                << cl_half_to_float(refValues[i]);
+                    else
+                        logLine << cl_half_to_float(refValues[i]);
+                    logLine << " --- ";
+                    if (i < numDestItems)
+                        logLine << cl_half_to_float(destItems[i]);
+                    logLine << "\n";
+                    log_info("%s", logLine.str().c_str());
+                }
+            }
+            else
+            {
+                logLine << "ERROR: Result " << i
+                        << " from kernel does not validate! (should be "
+                        << expected << ", was " << destItems[i] << ")\n";
+                log_error("%s", logLine.str().c_str());
+                for (i = 0; i < threadCount; i++)
+                {
+                    logLine.str("");
+                    logLine << " --- " << i << " - ";
+                    if (startRefValues.size())
+                        logLine << startRefValues[i] << " -> " << refValues[i];
+                    else
+                        logLine << refValues[i];
+                    logLine << " --- ";
+                    if (i < numDestItems) logLine << destItems[i];
+                    logLine << "\n";
+                    log_info("%s", logLine.str().c_str());
+                }
             }
             if (!gDebug)
             {
