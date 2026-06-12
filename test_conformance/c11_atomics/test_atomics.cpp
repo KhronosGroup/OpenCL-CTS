@@ -3486,7 +3486,7 @@ public:
         }
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             StartValue(cl_half_from_float(spec_vals.size(), gHalfRoundingMode));
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
@@ -3666,7 +3666,7 @@ public:
         }
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
-            auto spec_vals = GetSpecialValues();
+            const auto &spec_vals = GetSpecialValues();
             if (cl_half_to_float(startRefValues[whichDestValue])
                 < cl_half_to_float(
                     startRefValues[whichDestValue / spec_vals.size()]))
@@ -3729,7 +3729,7 @@ public:
                     && std::isnan(expected))
                     return false;
 
-                auto spec_vals = GetSpecialValues();
+                const auto &spec_vals = GetSpecialValues();
                 // special cases
                 // min(-0, +0) = min(+0, -0) = +0 or -0,
                 if (((startRefValues[whichDestValue] == -0.f)
@@ -3788,7 +3788,7 @@ public:
                     && IsHalfNaN(expected))
                     return false;
 
-                auto spec_vals = GetSpecialValues();
+                const auto &spec_vals = GetSpecialValues();
                 // special cases
                 // min(-0, +0) = min(+0, -0) = +0 or -0,
                 if (((static_cast<cl_half>(startRefValues[whichDestValue])

@@ -169,16 +169,6 @@ inline bool IsHalfNaN(const cl_half v)
     return (h_exp == 0x1F && h_mant != 0);
 }
 
-inline bool IsHalfInfinity(const cl_half v)
-{
-    // Extract FP16 exponent and mantissa
-    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-    uint16_t h_mant = ((cl_half)v) & 0x3FF;
-
-    // Inf test
-    return (h_exp == 0x1F && h_mant == 0);
-}
-
 class AtomicTypeInfo {
 public:
     TExplicitAtomicType _type;
