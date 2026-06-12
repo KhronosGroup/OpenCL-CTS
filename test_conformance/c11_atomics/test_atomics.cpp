@@ -1422,8 +1422,7 @@ public:
 
 template <typename HostAtomicType, typename HostDataType>
 class CBasicTestFetchSpecialFloats
-    : public CBasicTestMemOrderScope<HostAtomicType, HostDataType>
-{
+    : public CBasicTestMemOrderScope<HostAtomicType, HostDataType> {
 public:
     using CBasicTestMemOrderScope<HostAtomicType,
                                   HostDataType>::CBasicTestMemOrderScope;
@@ -1432,7 +1431,8 @@ protected:
     std::vector<HostDataType> ref_vals;
 
     // Construct a half from its raw 16-bit pattern: selects HostHalf(cl_half),
-    // not HostHalf(int), which would route the value through cl_half_from_float.
+    // not HostHalf(int), which would route the value through
+    // cl_half_from_float.
     static HostDataType HalfBits(cl_half bits) { return HostDataType(bits); }
 
     static std::vector<HostDataType> &GetSpecialValues()
@@ -1440,8 +1440,10 @@ protected:
         static std::vector<HostDataType> special_values;
         if (!special_values.empty()) return special_values;
 
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>
-                      || std::is_same_v<HostDataType, HOST_DOUBLE>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             special_values = {
                 static_cast<HostDataType>(-0.0f),
@@ -1459,7 +1461,8 @@ protected:
                 std::numeric_limits<HostDataType>::max(),
             };
             const cl_uint cfg = std::is_same_v<HostDataType, HOST_DOUBLE>
-                                    ? gDoubleFPConfig : gFloatFPConfig;
+                ? gDoubleFPConfig
+                : gFloatFPConfig;
             if (0 != (CL_FP_DENORM & cfg))
                 special_values.push_back(
                     std::numeric_limits<HostDataType>::denorm_min());
@@ -1469,28 +1472,30 @@ protected:
             // Raw IEEE 754 binary16 bit patterns, materialized via HalfBits.
             const cl_half bits[] = {
                 0xffff, 0x0000, 0x7c00, /* +INF */
-                0xfc00,                 /* -INF */
-                0x8000,                 /* -0 */
-                0x7bff,                 /* HALF_MAX */
-                0x0400,                 /* HALF_MIN */
-                0x3c00,                 /* 1 */
-                0xbc00,                 /* -1 */
-                0x3555,                 /* nearest value to 1/3 */
-                0x3bff,                 /* largest number less than one */
-                0xc000,                 /* -2 */
-                0xfbff,                 /* -HALF_MAX */
-                0x8400,                 /* -HALF_MIN */
-                0x4248,                 /* M_PI_H */
-                0xc248,                 /* -M_PI_H */
-                0xbbff,                 /* largest negative fraction */
+                0xfc00, /* -INF */
+                0x8000, /* -0 */
+                0x7bff, /* HALF_MAX */
+                0x0400, /* HALF_MIN */
+                0x3c00, /* 1 */
+                0xbc00, /* -1 */
+                0x3555, /* nearest value to 1/3 */
+                0x3bff, /* largest number less than one */
+                0xc000, /* -2 */
+                0xfbff, /* -HALF_MAX */
+                0x8400, /* -HALF_MIN */
+                0x4248, /* M_PI_H */
+                0xc248, /* -M_PI_H */
+                0xbbff, /* largest negative fraction */
             };
             special_values.reserve(sizeof(bits) / sizeof(bits[0]) + 2);
             for (cl_half b : bits) special_values.push_back(HalfBits(b));
 
             if (0 != (CL_FP_DENORM & gHalfFPConfig))
             {
-                special_values.push_back(HalfBits(0x0001)); /* smallest denormal */
-                special_values.push_back(HalfBits(0x03ff)); /* largest denormal */
+                special_values.push_back(
+                    HalfBits(0x0001)); /* smallest denormal */
+                special_values.push_back(
+                    HalfBits(0x03ff)); /* largest denormal */
             }
         }
         return special_values;
@@ -1499,9 +1504,10 @@ protected:
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_HALF>
-                      || std::is_same_v<HostDataType, HOST_DOUBLE>
-                      || std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_HALF> || std::is_same_v<HostDataType, HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (threadCount > ref_vals.size())
             {
@@ -1542,7 +1548,7 @@ public:
                                   HostDataType>::DeclaredInProgram;
     CBasicTestFetchAddSpecialFloats(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestFetchSpecialFloats<HostAtomicType, HostDataType>(dataType,
-                                                                useSVM)
+                                                                     useSVM)
     {
         // StartValue is used as an index divisor in the following test
         // logic. It is set to the number of special values, which allows
@@ -1614,6 +1620,7 @@ public:
                 (HostDataType)oldValues[tid / spec_vals.size()], MemoryOrder());
         }
     }
+
     bool ExpectedValue(HostDataType &expected, cl_uint threadCount,
                        HostDataType *startRefValues,
                        cl_uint whichDestValue) override
@@ -2151,7 +2158,7 @@ public:
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
     CBasicTestFetchSubSpecialFloats(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestFetchSpecialFloats<HostAtomicType, HostDataType>(dataType,
-                                                                useSVM)
+                                                                     useSVM)
     {
         if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
@@ -3384,7 +3391,7 @@ public:
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
     CBasicTestFetchMinSpecialFloats(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestFetchSpecialFloats<HostAtomicType, HostDataType>(dataType,
-                                                                useSVM)
+                                                                     useSVM)
     {
         // StartValue is used as an index divisor in the following test
         // logic. It is set to the number of special values, which allows
@@ -4075,7 +4082,7 @@ public:
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
     CBasicTestFetchMaxSpecialFloats(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestFetchSpecialFloats<HostAtomicType, HostDataType>(dataType,
-                                                                useSVM)
+                                                                     useSVM)
     {
         // StartValue is used as an index divisor in the following test
         // logic. It is set to the number of special values, which allows
