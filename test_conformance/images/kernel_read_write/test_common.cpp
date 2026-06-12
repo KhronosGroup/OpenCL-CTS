@@ -80,7 +80,7 @@ static bool InitFloatCoordsCommon(image_descriptor *imageInfo,
                                   float *xOffsets, float *yOffsets,
                                   float *zOffsets, float xfract, float yfract,
                                   float zfract, int normalized_coords, MTdata d,
-                                  int lod)
+                                  int lod, const context_t &ctx)
 {
     size_t i = 0;
     size_t width_loop, height_loop, depth_loop;
@@ -88,7 +88,7 @@ static bool InitFloatCoordsCommon(image_descriptor *imageInfo,
         get_image_dimensions(imageInfo, width_loop, height_loop, depth_loop);
     if (!error)
     {
-        if (gDisableOffsets)
+        if (ctx.disableOffsets)
         {
             for (size_t z = 0; z < depth_loop; z++)
             {
@@ -148,7 +148,7 @@ static bool InitFloatCoordsCommon(image_descriptor *imageInfo,
             }
         }
 
-        if (normalized_coords || gTestMipmaps)
+        if (normalized_coords || ctx.testMipmaps)
         {
             i = 0;
             if (lod == 0)
@@ -175,7 +175,7 @@ static bool InitFloatCoordsCommon(image_descriptor *imageInfo,
                     }
                 }
             }
-            else if (gTestMipmaps)
+            else if (ctx.testMipmaps)
             {
                 size_t width_lod =
                     (width_loop >> lod) ? (width_loop >> lod) : 1;
@@ -281,7 +281,7 @@ static size_t get_image_num_pixels(image_descriptor *imageInfo, size_t width,
 int test_read_image(cl_context context, cl_command_queue queue,
                     cl_kernel kernel, image_descriptor *imageInfo,
                     image_sampler_data *imageSampler, bool useFloatCoords,
-                    ExplicitType outputType, MTdata d)
+                    ExplicitType outputType, MTdata d, const context_t &ctx)
 {
     bool image_type_3D = ((imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
                           || (imageInfo->type == CL_MEM_OBJECT_IMAGE3D));
@@ -327,7 +327,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
     clMemWrapper unprotImage;
     cl_mem image;
 
-    if (gtestTypesToRun & kReadTests)
+    if (ctx.testTypesToRun & kReadTests)
     {
         image_read_write_flags = CL_MEM_READ_ONLY;
     }
@@ -336,19 +336,19 @@ int test_read_image(cl_context context, cl_command_queue queue,
         image_read_write_flags = CL_MEM_READ_WRITE;
     }
 
-    if (gMemFlagsToUse == CL_MEM_USE_HOST_PTR)
+    if (ctx.memFlagsToUse == CL_MEM_USE_HOST_PTR)
     {
         // clProtectedImage uses USE_HOST_PTR, so just rely on that for the
         // testing (via Ian) Do not use protected images for max image size test
         // since it rounds the row size to a page size
-        if (gTestMaxImages)
+        if (ctx.testMaxImages)
         {
             generate_random_image_data(imageInfo,
                                        maxImageUseHostPtrBackingStore, d);
             unprotImage = create_image_of_type(
                 context, image_read_write_flags | CL_MEM_USE_HOST_PTR,
-                imageInfo, (gEnablePitch ? imageInfo->rowPitch : 0),
-                (gEnablePitch ? imageInfo->slicePitch : 0),
+                imageInfo, (ctx.enablePitch ? imageInfo->rowPitch : 0),
+                (ctx.enablePitch ? imageInfo->slicePitch : 0),
                 maxImageUseHostPtrBackingStore, &error);
         }
         else
@@ -368,19 +368,19 @@ int test_read_image(cl_context context, cl_command_queue queue,
                       IGetErrorString(error));
             return error;
         }
-        if (gTestMaxImages)
+        if (ctx.testMaxImages)
             image = (cl_mem)unprotImage;
         else
             image = (cl_mem)protImage;
     }
-    else if (gMemFlagsToUse == CL_MEM_COPY_HOST_PTR)
+    else if (ctx.memFlagsToUse == CL_MEM_COPY_HOST_PTR)
     {
         // Don't use clEnqueueWriteImage; just use copy host ptr to get the data
         // in
         unprotImage = create_image_of_type(
             context, image_read_write_flags | CL_MEM_COPY_HOST_PTR, imageInfo,
-            (gEnablePitch ? imageInfo->rowPitch : 0),
-            (gEnablePitch ? imageInfo->slicePitch : 0), imageValues, &error);
+            (ctx.enablePitch ? imageInfo->rowPitch : 0),
+            (ctx.enablePitch ? imageInfo->slicePitch : 0), imageValues, &error);
         if (error != CL_SUCCESS)
         {
             log_error("ERROR: Unable to create image of size %d x %d x %d x %d "
@@ -398,12 +398,12 @@ int test_read_image(cl_context context, cl_command_queue queue,
         // Note: if ALLOC_HOST_PTR is used, the driver allocates memory that can
         // be accessed by the host, but otherwise it works just as if no flag is
         // specified, so we just do the same thing either way
-        if (!gTestMipmaps)
+        if (!ctx.testMipmaps)
         {
             unprotImage = create_image_of_type(
-                context, image_read_write_flags | gMemFlagsToUse, imageInfo,
-                (gEnablePitch ? imageInfo->rowPitch : 0),
-                (gEnablePitch ? imageInfo->slicePitch : 0), imageValues,
+                context, image_read_write_flags | ctx.memFlagsToUse, imageInfo,
+                (ctx.enablePitch ? imageInfo->rowPitch : 0),
+                (ctx.enablePitch ? imageInfo->slicePitch : 0), imageValues,
                 &error);
             if (error != CL_SUCCESS)
             {
@@ -447,20 +447,20 @@ int test_read_image(cl_context context, cl_command_queue queue,
 
     test_assert_error(nullptr != image, "Image creation failed");
 
-    if (gMemFlagsToUse != CL_MEM_COPY_HOST_PTR)
+    if (ctx.memFlagsToUse != CL_MEM_COPY_HOST_PTR)
     {
         size_t origin[4] = { 0, 0, 0, 0 };
         size_t region[3] = { width_size, height_size, depth_size };
 
-        if (gDebugTrace) log_info(" - Writing image...\n");
+        if (ctx.debugTrace) log_info(" - Writing image...\n");
 
-        if (!gTestMipmaps)
+        if (!ctx.testMipmaps)
         {
 
             error =
                 clEnqueueWriteImage(queue, image, CL_TRUE, origin, region,
-                                    gEnablePitch ? imageInfo->rowPitch : 0,
-                                    gEnablePitch ? imageInfo->slicePitch : 0,
+                                    ctx.enablePitch ? imageInfo->rowPitch : 0,
+                                    ctx.enablePitch ? imageInfo->slicePitch : 0,
                                     imageValues, 0, NULL, NULL);
 
             if (error != CL_SUCCESS)
@@ -531,14 +531,15 @@ int test_read_image(cl_context context, cl_command_queue queue,
     test_error(error, "Unable to create result buffer");
 
     // Create sampler to use
-    actualSampler = create_sampler(context, imageSampler, gTestMipmaps, &error);
+    actualSampler =
+        create_sampler(context, imageSampler, ctx.testMipmaps, &error);
     test_error(error, "Unable to create image sampler");
 
     // Set arguments
     int idx = 0;
     error = clSetKernelArg(kernel, idx++, sizeof(cl_mem), &image);
     test_error(error, "Unable to set kernel arguments");
-    if (!gUseKernelSamplers)
+    if (!ctx.useKernelSamplers)
     {
         error =
             clSetKernelArg(kernel, idx++, sizeof(cl_sampler), &actualSampler);
@@ -571,7 +572,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
     int numTries = MAX_TRIES, numClamped = MAX_CLAMPED;
     int loopCount = 2 * float_offset_count;
     if (!useFloatCoords) loopCount = 1;
-    if (gTestMaxImages)
+    if (ctx.testMaxImages)
     {
         loopCount = 1;
         log_info("Testing each size only once with pixel offsets of %g for max "
@@ -582,7 +583,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
     // Get the maximum absolute error for this format
     double formatAbsoluteError =
         get_max_absolute_error(imageInfo->format, imageSampler);
-    if (gDebugTrace)
+    if (ctx.debugTrace)
         log_info("\tformatAbsoluteError is %e\n", formatAbsoluteError);
 
     if (0 == initHalf
@@ -600,8 +601,8 @@ int test_read_image(cl_context context, cl_command_queue queue,
            depth_lod = depth_size;
 
     // Loop over all mipmap levels, if we are testing mipmapped images.
-    for (int lod = 0; (gTestMipmaps && lod < imageInfo->num_mip_levels)
-         || (!gTestMipmaps && lod < 1);
+    for (int lod = 0; (ctx.testMipmaps && lod < imageInfo->num_mip_levels)
+         || (!ctx.testMipmaps && lod < 1);
          lod++)
     {
         size_t image_lod_size = get_image_num_pixels(
@@ -611,10 +612,10 @@ int test_read_image(cl_context context, cl_command_queue queue,
             image_lod_size * get_explicit_type_size(outputType) * 4;
         BufferOwningPtr<char> resultValues(malloc(resultValuesSize));
         float lod_float = (float)lod;
-        if (gTestMipmaps)
+        if (ctx.testMipmaps)
         {
             // Set the lod kernel arg
-            if (gDebugTrace) log_info(" - Working at mip level %d\n", lod);
+            if (ctx.debugTrace) log_info(" - Working at mip level %d\n", lod);
             error = clSetKernelArg(kernel, idx, sizeof(float), &lod_float);
             test_error(error, "Unable to set kernel arguments");
         }
@@ -629,7 +630,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                 zOffsetValues, q >= float_offset_count ? -offset : offset,
                 q >= float_offset_count ? offset : -offset,
                 q >= float_offset_count ? -offset : offset,
-                imageSampler->normalized_coords, d, lod);
+                imageSampler->normalized_coords, d, lod, ctx);
             test_error(error, "Unable to initialise coordinates");
 
             error = clEnqueueWriteBuffer(queue, xOffsets, CL_TRUE, 0,
@@ -671,7 +672,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                 image_lod_size * get_explicit_type_size(outputType) * 4,
                 resultValues, 0, NULL, NULL);
             test_error(error, "Unable to read results from kernel");
-            if (gDebugTrace) log_info("    results read\n");
+            if (ctx.debugTrace) log_info("    results read\n");
 
             // Validate results element by element
             char *imagePtr = (char *)imageValues + nextLevelOffset;
@@ -876,7 +877,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                         norm_offset_y,
                                                         norm_offset_z, j,
                                                         numTries, numClamped,
-                                                        true, lod);
+                                                        true, lod, ctx);
                                                 log_error("Step by step:\n");
                                                 sample_image_pixel_float_offset(
                                                     imagePtr, imageInfo,
@@ -1235,7 +1236,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                             ? norm_offset_z
                                                             : 0.0f,
                                                         j, numTries, numClamped,
-                                                        true, lod);
+                                                        true, lod, ctx);
                                                 log_error("Step by step:\n");
                                                 sample_image_pixel_float_offset(
                                                     imagePtr, imageInfo,
@@ -1624,7 +1625,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                             ? norm_offset_z
                                                             : 0.0f,
                                                         j, numTries, numClamped,
-                                                        true, lod);
+                                                        true, lod, ctx);
                                                 log_error("Step by step:\n");
                                                 sample_image_pixel_float_offset(
                                                     imagePtr, imageInfo,
@@ -1871,7 +1872,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                             ? norm_offset_z
                                                             : 0.0f,
                                                         j, numTries, numClamped,
-                                                        false, lod);
+                                                        false, lod, ctx);
                                             }
                                             else
                                             {
@@ -2077,7 +2078,7 @@ int test_read_image(cl_context context, cl_command_queue queue,
                                                             ? norm_offset_z
                                                             : 0.0f,
                                                         j, numTries, numClamped,
-                                                        false, lod);
+                                                        false, lod, ctx);
                                             }
                                             else
                                             {

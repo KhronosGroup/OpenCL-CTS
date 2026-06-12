@@ -20,9 +20,6 @@
 #include <sys/mman.h>
 #endif
 
-extern cl_mem_flags gMemFlagsToUse;
-extern int gtestTypesToRun;
-
 extern bool validate_float_write_results( float *expected, float *actual, image_descriptor *imageInfo );
 extern bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor *imageInfo );
 
@@ -82,8 +79,10 @@ const char *offset3DLodSource =
 "   int height_lod = ( get_image_height(output) >> lod ) ? ( get_image_height(output) >> lod ) : 1;\n"
 "   int offset = tidZ*width_lod*height_lod + tidY*width_lod + tidX;\n";
 
-int test_write_image_3D( cl_device_id device, cl_context context, cl_command_queue queue, cl_kernel kernel,
-                        image_descriptor *imageInfo, ExplicitType inputType, MTdata d )
+int test_write_image_3D(cl_device_id device, cl_context context,
+                        cl_command_queue queue, cl_kernel kernel,
+                        image_descriptor *imageInfo, ExplicitType inputType,
+                        MTdata d, const context_t &ctx)
 {
     int                 totalErrors = 0;
 
@@ -95,7 +94,7 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
     const cl_mem_flags  read_write_mem_flag_types[1] = {  CL_MEM_READ_WRITE};
     const char *        read_write_mem_flag_names[1] = { "CL_MEM_READ_WRITE"};
 
-    if(gtestTypesToRun & kWriteTests)
+    if (ctx.testTypesToRun & kWriteTests)
     {
         mem_flag_types = write_only_mem_flag_types;
         mem_flag_names = write_only_mem_flag_names;
@@ -131,7 +130,7 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
 
         create_random_image_data( inputType, imageInfo, imageValues, d );
 
-        if(!gTestMipmaps)
+        if (!ctx.testMipmaps)
         {
             if( inputType == kFloat && imageInfo->format->image_channel_data_type != CL_FLOAT )
             {
@@ -239,7 +238,7 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
         clMemWrapper unprotImage;
         cl_mem image;
 
-        if( gMemFlagsToUse == CL_MEM_USE_HOST_PTR )
+        if (ctx.memFlagsToUse == CL_MEM_USE_HOST_PTR)
         {
             create_random_image_data( inputType, imageInfo, maxImageUseHostPtrBackingStore, d );
 
@@ -263,7 +262,7 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
             // Note: if ALLOC_HOST_PTR is used, the driver allocates memory that can be accessed by the host, but otherwise
             // it works just as if no flag is specified, so we just do the same thing either way
             // Note: if the flags is really CL_MEM_COPY_HOST_PTR, we want to remove it, because we don't want to copy any incoming data
-            if(gTestMipmaps)
+            if (ctx.testMipmaps)
             {
                 cl_image_desc image_desc = {0};
                 image_desc.image_type = imageInfo->type;
@@ -272,8 +271,11 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
                 image_desc.image_height = imageInfo->height;
                 image_desc.image_depth = imageInfo->depth;
 
-                unprotImage = clCreateImage( context, mem_flag_types[mem_flag_index] | ( gMemFlagsToUse & ~(CL_MEM_COPY_HOST_PTR) ),
-                                             imageInfo->format, &image_desc, NULL, &error);
+                unprotImage = clCreateImage(
+                    context,
+                    mem_flag_types[mem_flag_index]
+                        | (ctx.memFlagsToUse & ~(CL_MEM_COPY_HOST_PTR)),
+                    imageInfo->format, &image_desc, NULL, &error);
                 if( error != CL_SUCCESS )
                 {
                     log_error("ERROR: Unable to create %d level mipmapped 3D "
@@ -287,8 +289,12 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
             }
             else
             {
-                unprotImage = create_image_3d( context, mem_flag_types[mem_flag_index] | ( gMemFlagsToUse & ~(CL_MEM_COPY_HOST_PTR) ), imageInfo->format,
-                                              imageInfo->width, imageInfo->height, imageInfo->depth, 0, 0, imageValues, &error );
+                unprotImage = create_image_3d(
+                    context,
+                    mem_flag_types[mem_flag_index]
+                        | (ctx.memFlagsToUse & ~(CL_MEM_COPY_HOST_PTR)),
+                    imageInfo->format, imageInfo->width, imageInfo->height,
+                    imageInfo->depth, 0, 0, imageValues, &error);
                 if( error != CL_SUCCESS )
                 {
                     log_error("ERROR: Unable to create 3D image of size %zu x "
@@ -312,10 +318,10 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
         size_t origin[ 4 ] = { 0, 0, 0, 0 };
         size_t region[ 3 ] = { imageInfo->width, imageInfo->height, imageInfo->depth };
 
-        int num_lod_loops = (gTestMipmaps)? imageInfo->num_mip_levels : 1;
+        int num_lod_loops = (ctx.testMipmaps) ? imageInfo->num_mip_levels : 1;
         for( int lod = 0; lod < num_lod_loops; lod++)
         {
-            if(gTestMipmaps)
+            if (ctx.testMipmaps)
             {
                 error = clSetKernelArg( kernel, 2, sizeof( int ), &lod );
             }
@@ -343,24 +349,27 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
 
             // Get results
             size_t resultSize;
-            if(gTestMipmaps)
+            if (ctx.testMipmaps)
                 resultSize = width_lod * height_lod * depth_lod * pixelSize;
             else
                 resultSize = imageInfo->slicePitch *imageInfo->depth;
             clProtectedArray PA(resultSize);
             char *resultValues = (char *)((void *)PA);
 
-            if( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "    reading results, %ld kbytes\n", (unsigned long)( resultSize / 1024 ) );
 
             origin[3] = lod;
             region[0] = width_lod;
             region[1] = height_lod;
             region[2] = depth_lod;
-            error = clEnqueueReadImage( queue, image, CL_TRUE, origin, region, gEnablePitch ? imageInfo->rowPitch : 0, gEnablePitch ? imageInfo->slicePitch : 0, resultValues, 0, NULL, NULL );
+            error =
+                clEnqueueReadImage(queue, image, CL_TRUE, origin, region,
+                                   ctx.enablePitch ? imageInfo->rowPitch : 0,
+                                   ctx.enablePitch ? imageInfo->slicePitch : 0,
+                                   resultValues, 0, NULL, NULL);
             test_error( error, "Unable to read results from kernel" );
-            if( gDebugTrace )
-                log_info( "    results read\n" );
+            if (ctx.debugTrace) log_info("    results read\n");
 
             // Validate results element by element
             char *imagePtr = (char*)imageValues + nextLevelOffset;
@@ -370,7 +379,7 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
                 for( size_t y = 0; y < height_lod; y++ )
                 {
                     char *resultPtr;
-                    if( gTestMipmaps )
+                    if (ctx.testMipmaps)
                         resultPtr = (char *)resultValues + y * width_lod * pixelSize + z * width_lod * height_lod * pixelSize;
                     else
                         resultPtr = (char *)resultValues + y * imageInfo->rowPitch + z * imageInfo->slicePitch;
@@ -659,7 +668,8 @@ int test_write_image_3D( cl_device_id device, cl_context context, cl_command_que
 int test_write_image_3D_set(cl_device_id device, cl_context context,
                             cl_command_queue queue,
                             const cl_image_format *format,
-                            ExplicitType inputType, MTdata d)
+                            ExplicitType inputType, MTdata d,
+                            const context_t &ctx)
 {
     char programSrc[10240];
     const char *ptr;
@@ -698,7 +708,7 @@ int test_write_image_3D_set(cl_device_id device, cl_context context,
     else // kFloat
         readFormat = "f";
 
-    if(gtestTypesToRun & kWriteTests)
+    if (ctx.testTypesToRun & kWriteTests)
     {
         KernelSourcePattern = write3DKernelSourcePattern;
     }
@@ -710,13 +720,13 @@ int test_write_image_3D_set(cl_device_id device, cl_context context,
     // Construct the source
     sprintf(
         programSrc, KernelSourcePattern, khr3DWritesPragma,
-        gTestMipmaps
+        ctx.testMipmaps
             ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable\n#pragma "
               "OPENCL EXTENSION cl_khr_mipmap_image_writes: enable"
             : "",
-        get_explicit_type_name(inputType), gTestMipmaps ? ", int lod" : "",
-        gTestMipmaps ? offset3DLodSource : offset3DSource, readFormat,
-        gTestMipmaps ? ", lod" : "");
+        get_explicit_type_name(inputType), ctx.testMipmaps ? ", int lod" : "",
+        ctx.testMipmaps ? offset3DLodSource : offset3DSource, readFormat,
+        ctx.testMipmaps ? ", lod" : "");
 
     ptr = programSrc;
     error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
@@ -724,7 +734,7 @@ int test_write_image_3D_set(cl_device_id device, cl_context context,
     test_error( error, "Unable to create testing kernel" );
 
     // Run tests
-    if( gTestSmallImages )
+    if (ctx.testSmallImages)
     {
         for( imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++ )
         {
@@ -734,19 +744,21 @@ int test_write_image_3D_set(cl_device_id device, cl_context context,
                 imageInfo.slicePitch = imageInfo.height * imageInfo.rowPitch;
                 for( imageInfo.depth = 2; imageInfo.depth < 7; imageInfo.depth++ )
                 {
-                    if (gTestMipmaps)
+                    if (ctx.testMipmaps)
                         imageInfo.num_mip_levels = (size_t) random_in_range(2,(compute_max_mip_levels(imageInfo.width, imageInfo.height, imageInfo.depth) - 1), d);
 
-                    if( gDebugTrace )
+                    if (ctx.debugTrace)
                         log_info( "   at size %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.depth );
-                    int retCode = test_write_image_3D( device, context, queue, kernel, &imageInfo, inputType, d );
+                    int retCode =
+                        test_write_image_3D(device, context, queue, kernel,
+                                            &imageInfo, inputType, d, ctx);
                     if( retCode )
                         return retCode;
                 }
             }
         }
     }
-    else if( gTestMaxImages )
+    else if (ctx.testMaxImages)
     {
         // Try a specific set of maximum sizes
         size_t numbeOfSizes;
@@ -761,10 +773,11 @@ int test_write_image_3D_set(cl_device_id device, cl_context context,
             imageInfo.depth = sizes[ idx ][ 2 ];
             imageInfo.rowPitch = imageInfo.width * get_pixel_size( imageInfo.format );
             imageInfo.slicePitch = imageInfo.height * imageInfo.rowPitch;
-            if (gTestMipmaps)
+            if (ctx.testMipmaps)
                 imageInfo.num_mip_levels = (size_t) random_in_range(2,(compute_max_mip_levels(imageInfo.width, imageInfo.height, imageInfo.depth) - 1), d);
             log_info("Testing %d x %d x %d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.depth);
-            int retCode = test_write_image_3D( device, context, queue, kernel, &imageInfo, inputType, d );
+            int retCode = test_write_image_3D(device, context, queue, kernel,
+                                              &imageInfo, inputType, d, ctx);
             if( retCode )
                 return retCode;
         }
@@ -778,7 +791,8 @@ int test_write_image_3D_set(cl_device_id device, cl_context context,
 
         imageInfo.rowPitch = imageInfo.width * get_pixel_size( imageInfo.format );
         imageInfo.slicePitch = imageInfo.height * imageInfo.rowPitch;
-        int retCode = test_write_image_3D( device, context, queue, kernel, &imageInfo, inputType, d );
+        int retCode = test_write_image_3D(device, context, queue, kernel,
+                                          &imageInfo, inputType, d, ctx);
         if( retCode )
             return retCode;
     }
@@ -795,7 +809,7 @@ int test_write_image_3D_set(cl_device_id device, cl_context context,
                 imageInfo.height = reduceImageSizeRange(maxHeight, d );
                 imageInfo.depth = reduceImageDepth(maxDepth, d );
 
-                if(gTestMipmaps)
+                if (ctx.testMipmaps)
                 {
                     imageInfo.num_mip_levels = (size_t) random_in_range(2,(compute_max_mip_levels(imageInfo.width, imageInfo.height, imageInfo.depth) - 1), d);
                     //Need to take into account the input buffer size, otherwise we will end up with input buffer that is exceeding MaxAlloc
@@ -805,7 +819,7 @@ int test_write_image_3D_set(cl_device_id device, cl_context context,
                 {
                     imageInfo.rowPitch = imageInfo.width * get_pixel_size( imageInfo.format );
                     imageInfo.slicePitch = imageInfo.height * imageInfo.rowPitch;
-                    if( gEnablePitch )
+                    if (ctx.enablePitch)
                     {
                         size_t extraWidth = (int)random_log_in_range( 0, 64, d );
                         imageInfo.rowPitch += extraWidth * get_pixel_size( imageInfo.format );
@@ -819,14 +833,15 @@ int test_write_image_3D_set(cl_device_id device, cl_context context,
                 }
             } while(  size > maxAllocSize || ( size * 3 ) > memSize );
 
-            if( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info("   at size %zu,%zu,%zu (pitch %zu, slice %zu) out of "
                          "%zu,%zu,%zu\n",
                          imageInfo.width, imageInfo.height, imageInfo.depth,
                          imageInfo.rowPitch, imageInfo.slicePitch, maxWidth,
                          maxHeight, maxDepth);
 
-            int retCode = test_write_image_3D( device, context, queue, kernel, &imageInfo, inputType, d );
+            int retCode = test_write_image_3D(device, context, queue, kernel,
+                                              &imageInfo, inputType, d, ctx);
             if( retCode )
                 return retCode;
         }

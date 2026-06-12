@@ -31,7 +31,7 @@ int main(int argc, const char* argv[])
     setvbuf(stdout, nullptr, _IONBF, 0);
     setvbuf(stderr, nullptr, _IONBF, 0);
 
-    argc = parseCustomParam(argc, argv);
+    argc = parseCommonParam(argc, argv);
 
     // get the platforms to test
     result = clGetPlatformIDs(1, &platform, NULL); NonTestRequire(result == CL_SUCCESS, "Failed to get any platforms.");

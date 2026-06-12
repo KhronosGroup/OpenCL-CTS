@@ -22,14 +22,52 @@
 #include "harness/clImageHelper.h"
 #include "harness/imageHelpers.h"
 
-extern bool gDebugTrace;
-extern bool gTestSmallImages;
-extern bool gEnablePitch;
-extern bool gTestMaxImages;
-extern bool gTestMipmaps;
-
 // Amount to offset pixels for checking normalized reads
 #define NORM_OFFSET 0.1f
+
+typedef struct
+{
+    bool debugTrace;
+    bool testSmallImages;
+    bool testMaxImages;
+    bool enablePitch;
+    bool testMipmaps;
+    bool extraValidateInfo;
+    bool disableOffsets;
+    bool testImage2DFromBuffer;
+    bool useKernelSamplers;
+    bool testReadWrite;
+    int typesToTest;
+    int testTypesToRun;
+    int normalizedModeToUse;
+    cl_addressing_mode addressModeToUse;
+    cl_mem_flags memFlagsToUse;
+    cl_filter_mode filterModeToUse;
+    cl_channel_type channelTypeToUse;
+    cl_channel_order channelOrderToUse;
+} context_t;
+
+static inline void init_context(context_t &ctx)
+{
+    ctx.debugTrace = false;
+    ctx.testSmallImages = false;
+    ctx.testMaxImages = false;
+    ctx.enablePitch = false;
+    ctx.testMipmaps = false;
+    ctx.extraValidateInfo = false;
+    ctx.disableOffsets = false;
+    ctx.testImage2DFromBuffer = false;
+    ctx.useKernelSamplers = false;
+    ctx.testReadWrite = false;
+    ctx.typesToTest = 0;
+    ctx.testTypesToRun = 0;
+    ctx.normalizedModeToUse = 7;
+    ctx.addressModeToUse = (cl_addressing_mode)-1;
+    ctx.memFlagsToUse = CL_MEM_USE_HOST_PTR;
+    ctx.filterModeToUse = (cl_filter_mode)-1;
+    ctx.channelTypeToUse = (cl_channel_type)-1;
+    ctx.channelOrderToUse = (cl_channel_order)-1;
+}
 
 enum TypesToTest
 {
@@ -71,18 +109,21 @@ typedef int (*test_format_set_fn)(
     cl_device_id device, cl_context context, cl_command_queue queue,
     const std::vector<cl_image_format> &formatList,
     const std::vector<bool> &filterFlags, image_sampler_data *imageSampler,
-    ExplicitType outputType, cl_mem_object_type imageType);
+    ExplicitType outputType, cl_mem_object_type imageType,
+    const context_t &ctx);
 
 extern int test_read_image_formats(
     cl_device_id device, cl_context context, cl_command_queue queue,
     const std::vector<cl_image_format> &formatList,
     const std::vector<bool> &filterFlags, image_sampler_data *imageSampler,
-    ExplicitType outputType, cl_mem_object_type imageType);
+    ExplicitType outputType, cl_mem_object_type imageType,
+    const context_t &ctx);
 extern int test_write_image_formats(
     cl_device_id device, cl_context context, cl_command_queue queue,
     const std::vector<cl_image_format> &formatList,
     const std::vector<bool> &filterFlags, image_sampler_data *imageSampler,
-    ExplicitType outputType, cl_mem_object_type imageType);
+    ExplicitType outputType, cl_mem_object_type imageType,
+    const context_t &ctx);
 
 #endif // _testBase_h
 

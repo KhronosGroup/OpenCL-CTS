@@ -28,19 +28,11 @@ extern cl_sampler create_sampler(cl_context context, image_sampler_data *sdata, 
 extern void read_image_pixel_float(void *imageData, image_descriptor *imageInfo,
                                    int x, int y, int z, float *outData);
 
-extern bool gExtraValidateInfo;
-extern bool gDisableOffsets;
-extern bool gUseKernelSamplers;
-extern cl_mem_flags gMemFlagsToUse;
-extern int gtestTypesToRun;
-extern uint64_t gRoundingStartValue;
-extern bool gPrintOptions;
-
 extern int test_read_image(cl_context context, cl_command_queue queue,
                            cl_kernel kernel, image_descriptor *imageInfo,
                            image_sampler_data *imageSampler,
                            bool useFloatCoords, ExplicitType outputType,
-                           MTdata d);
+                           MTdata d, const context_t &ctx);
 
 extern bool get_image_dimensions(image_descriptor *imageInfo, size_t &width,
                                  size_t &height, size_t &depth);
@@ -51,7 +43,7 @@ int determine_validation_error_offset(
     image_sampler_data *imageSampler, T *resultPtr, T *expected, float error,
     float x, float y, float z, float xAddressOffset, float yAddressOffset,
     float zAddressOffset, size_t j, int &numTries, int &numClamped,
-    bool printAsFloat, int lod)
+    bool printAsFloat, int lod, const context_t &ctx)
 {
     bool image_type_3D = ((imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
                           || (imageInfo->type == CL_MEM_OBJECT_IMAGE3D));
@@ -187,7 +179,7 @@ int determine_validation_error_offset(
             clampedX, clampedY, clampedZ, (int)imageWidth, (int)imageHeight,
             (int)imageDepth);
 
-        if (printAsFloat && gExtraValidateInfo)
+        if (printAsFloat && ctx.extraValidateInfo)
         {
             log_error("\nNearby values:\n");
             for (int zOff = -1; zOff <= 1; zOff++)

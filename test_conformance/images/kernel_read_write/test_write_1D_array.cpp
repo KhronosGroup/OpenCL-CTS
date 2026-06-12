@@ -20,9 +20,6 @@
 #include <sys/mman.h>
 #endif
 
-extern cl_mem_flags gMemFlagsToUse;
-extern int gtestTypesToRun;
-
 extern bool validate_float_write_results( float *expected, float *actual, image_descriptor *imageInfo );
 extern bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor *imageInfo );
 
@@ -53,8 +50,11 @@ const char *offset1DArrayLodSource =
 "   int width_lod = ( get_image_width(output) >> lod ) ? ( get_image_width(output) >> lod ) : 1;\n"
 "   int offset = tidY*width_lod + tidX;\n";
 
-int test_write_image_1D_array( cl_device_id device, cl_context context, cl_command_queue queue, cl_kernel kernel,
-                     image_descriptor *imageInfo, ExplicitType inputType, MTdata d )
+int test_write_image_1D_array(cl_device_id device, cl_context context,
+                              cl_command_queue queue, cl_kernel kernel,
+                              image_descriptor *imageInfo,
+                              ExplicitType inputType, MTdata d,
+                              const context_t &ctx)
 {
     int                 totalErrors = 0;
     size_t              num_flags   = 0;
@@ -65,7 +65,7 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
     const cl_mem_flags  read_write_mem_flag_types[1] = {  CL_MEM_READ_WRITE};
     const char *        read_write_mem_flag_names[1] = { "CL_MEM_READ_WRITE"};
 
-    if(gtestTypesToRun & kWriteTests)
+    if (ctx.testTypesToRun & kWriteTests)
     {
         mem_flag_types = write_only_mem_flag_types;
         mem_flag_names = write_only_mem_flag_names;
@@ -101,7 +101,7 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
 
         create_random_image_data( inputType, imageInfo, imageValues, d );
 
-        if(!gTestMipmaps)
+        if (!ctx.testMipmaps)
         {
             if( inputType == kFloat && imageInfo->format->image_channel_data_type != CL_FLOAT && imageInfo->format->image_channel_data_type != CL_HALF_FLOAT )
             {
@@ -203,17 +203,20 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
         clMemWrapper unprotImage;
         cl_mem image;
 
-        if( gMemFlagsToUse == CL_MEM_USE_HOST_PTR )
+        if (ctx.memFlagsToUse == CL_MEM_USE_HOST_PTR)
         {
             // clProtectedImage uses USE_HOST_PTR, so just rely on that for the testing (via Ian)
             // Do not use protected images for max image size test since it rounds the row size to a page size
-            if (gTestMaxImages) {
+            if (ctx.testMaxImages)
+            {
                 create_random_image_data( inputType, imageInfo, maxImageUseHostPtrBackingStore, d );
 
                 unprotImage = create_image_1d_array( context, mem_flag_types[mem_flag_index] | CL_MEM_USE_HOST_PTR, imageInfo->format,
                                               imageInfo->width, imageInfo->arraySize, 0, 0,
                                               maxImageUseHostPtrBackingStore, &error );
-            } else {
+            }
+            else
+            {
                 error = protImage.Create( context, (cl_mem_object_type)CL_MEM_OBJECT_IMAGE1D_ARRAY, mem_flag_types[mem_flag_index], imageInfo->format, imageInfo->width, 1, 1, imageInfo->arraySize );
             }
             if( error != CL_SUCCESS )
@@ -226,7 +229,7 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
                 return error;
             }
 
-            if (gTestMaxImages)
+            if (ctx.testMaxImages)
                 image = (cl_mem)unprotImage;
             else
                 image = (cl_mem)protImage;
@@ -236,7 +239,7 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
             // Note: if ALLOC_HOST_PTR is used, the driver allocates memory that can be accessed by the host, but otherwise
             // it works just as if no flag is specified, so we just do the same thing either way
             // Note: if the flags is really CL_MEM_COPY_HOST_PTR, we want to remove it, because we don't want to copy any incoming data
-            if( gTestMipmaps )
+            if (ctx.testMipmaps)
             {
                 cl_image_desc image_desc = {0};
                 image_desc.image_type = imageInfo->type;
@@ -244,8 +247,11 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
                 image_desc.image_width = imageInfo->width;
                 image_desc.image_array_size = imageInfo->arraySize;
 
-                unprotImage = clCreateImage( context, mem_flag_types[mem_flag_index] | ( gMemFlagsToUse & ~(CL_MEM_COPY_HOST_PTR) ),
-                                             imageInfo->format, &image_desc, NULL, &error);
+                unprotImage = clCreateImage(
+                    context,
+                    mem_flag_types[mem_flag_index]
+                        | (ctx.memFlagsToUse & ~(CL_MEM_COPY_HOST_PTR)),
+                    imageInfo->format, &image_desc, NULL, &error);
                 if( error != CL_SUCCESS )
                 {
                     log_error("ERROR: Unable to create %d level 1D image array "
@@ -258,9 +264,12 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
             }
             else
             {
-                unprotImage = create_image_1d_array( context, mem_flag_types[mem_flag_index] | ( gMemFlagsToUse & ~(CL_MEM_COPY_HOST_PTR) ), imageInfo->format,
-                                              imageInfo->width, imageInfo->arraySize, 0, 0,
-                                              imageValues, &error );
+                unprotImage = create_image_1d_array(
+                    context,
+                    mem_flag_types[mem_flag_index]
+                        | (ctx.memFlagsToUse & ~(CL_MEM_COPY_HOST_PTR)),
+                    imageInfo->format, imageInfo->width, imageInfo->arraySize,
+                    0, 0, imageValues, &error);
                 if( error != CL_SUCCESS )
                 {
                     log_error("ERROR: Unable to create 1D image array of size "
@@ -282,9 +291,11 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
         size_t region[ 3 ] = { imageInfo->width, imageInfo->arraySize, 1 };
         size_t resultSize;
 
-        for( int lod = 0; (gTestMipmaps && lod < imageInfo->num_mip_levels) || (!gTestMipmaps && lod < 1); lod++)
+        for (int lod = 0; (ctx.testMipmaps && lod < imageInfo->num_mip_levels)
+             || (!ctx.testMipmaps && lod < 1);
+             lod++)
         {
-            if(gTestMipmaps)
+            if (ctx.testMipmaps)
             {
                 error = clSetKernelArg( kernel, 2, sizeof( int ), &lod );
 
@@ -310,7 +321,7 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
             test_error( error, "Unable to run kernel" );
 
             // Get results
-            if( gTestMipmaps )
+            if (ctx.testMipmaps)
                 resultSize = width_lod * get_pixel_size(imageInfo->format) * imageInfo->arraySize;
             else
                 resultSize = imageInfo->rowPitch * imageInfo->arraySize;
@@ -318,17 +329,19 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
             clProtectedArray PA(resultSize);
             char *resultValues = (char *)((void *)PA);
 
-            if( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "    reading results, %ld kbytes\n", (unsigned long)( resultSize / 1024 ) );
 
 
             origin[2] = lod;
             region[0] = width_lod;
-            error = clEnqueueReadImage( queue, image, CL_TRUE, origin, region,
-                                        gEnablePitch ? imageInfo->rowPitch : 0, gEnablePitch ? imageInfo->slicePitch : 0, resultValues, 0, NULL, NULL );
+            error =
+                clEnqueueReadImage(queue, image, CL_TRUE, origin, region,
+                                   ctx.enablePitch ? imageInfo->rowPitch : 0,
+                                   ctx.enablePitch ? imageInfo->slicePitch : 0,
+                                   resultValues, 0, NULL, NULL);
             test_error( error, "Unable to read results from kernel" );
-            if( gDebugTrace )
-                log_info( "    results read\n" );
+            if (ctx.debugTrace) log_info("    results read\n");
 
             // Validate results element by element
             char *imagePtr = imageValues + nextLevelOffset;
@@ -336,7 +349,7 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
             for( size_t y = 0, i = 0; y < imageInfo->arraySize; y++ )
             {
                 char *resultPtr;
-                if( gTestMipmaps )
+                if (ctx.testMipmaps)
                     resultPtr = (char *)resultValues + y * width_lod * pixelSize;
                 else
                     resultPtr = (char*)resultValues + y * imageInfo->rowPitch;
@@ -608,7 +621,8 @@ int test_write_image_1D_array( cl_device_id device, cl_context context, cl_comma
 int test_write_image_1D_array_set(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
                                   const cl_image_format *format,
-                                  ExplicitType inputType, MTdata d)
+                                  ExplicitType inputType, MTdata d,
+                                  const context_t &ctx)
 {
     char programSrc[10240];
     const char *ptr;
@@ -649,7 +663,7 @@ int test_write_image_1D_array_set(cl_device_id device, cl_context context,
     else // kFloat
         readFormat = "f";
 
-    if(gtestTypesToRun & kWriteTests)
+    if (ctx.testTypesToRun & kWriteTests)
     {
         KernelSourcePattern = write1DArrayKernelSourcePattern;
     }
@@ -661,13 +675,13 @@ int test_write_image_1D_array_set(cl_device_id device, cl_context context,
     // Construct the source
     sprintf(
         programSrc, KernelSourcePattern,
-        gTestMipmaps
+        ctx.testMipmaps
             ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable\n#pragma "
               "OPENCL EXTENSION cl_khr_mipmap_image_writes: enable"
             : "",
-        get_explicit_type_name(inputType), gTestMipmaps ? ", int lod" : "",
-        gTestMipmaps ? offset1DArrayLodSource : offset1DArraySource, readFormat,
-        gTestMipmaps ? ", lod" : "");
+        get_explicit_type_name(inputType), ctx.testMipmaps ? ", int lod" : "",
+        ctx.testMipmaps ? offset1DArrayLodSource : offset1DArraySource,
+        readFormat, ctx.testMipmaps ? ", lod" : "");
 
     ptr = programSrc;
     error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
@@ -675,7 +689,7 @@ int test_write_image_1D_array_set(cl_device_id device, cl_context context,
     test_error( error, "Unable to create testing kernel" );
 
     // Run tests
-    if( gTestSmallImages )
+    if (ctx.testSmallImages)
     {
         for( imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++ )
         {
@@ -683,18 +697,20 @@ int test_write_image_1D_array_set(cl_device_id device, cl_context context,
             imageInfo.slicePitch = imageInfo.rowPitch;
             for( imageInfo.arraySize = 2; imageInfo.arraySize < 9; imageInfo.arraySize++ )
             {
-                if(gTestMipmaps)
+                if (ctx.testMipmaps)
                     imageInfo.num_mip_levels = (size_t)random_in_range(2, (compute_max_mip_levels(imageInfo.width, 0, 0)-1), d);
 
-                if( gDebugTrace )
+                if (ctx.debugTrace)
                     log_info( "   at size %d,%d\n", (int)imageInfo.width, (int)imageInfo.arraySize );
-                int retCode = test_write_image_1D_array( device, context, queue, kernel, &imageInfo, inputType, d );
+                int retCode =
+                    test_write_image_1D_array(device, context, queue, kernel,
+                                              &imageInfo, inputType, d, ctx);
                 if( retCode )
                     return retCode;
             }
         }
     }
-    else if( gTestMaxImages )
+    else if (ctx.testMaxImages)
     {
         // Try a specific set of maximum sizes
         size_t numbeOfSizes;
@@ -708,10 +724,11 @@ int test_write_image_1D_array_set(cl_device_id device, cl_context context,
             imageInfo.arraySize = sizes[ idx ][ 2 ];
             imageInfo.rowPitch = imageInfo.width * pixelSize;
             imageInfo.slicePitch = imageInfo.rowPitch;
-            if(gTestMipmaps)
+            if (ctx.testMipmaps)
                 imageInfo.num_mip_levels = (size_t)random_in_range(2, (compute_max_mip_levels(imageInfo.width, 0, 0)-1), d);
             log_info("Testing %d x %d\n", (int)imageInfo.width, (int)imageInfo.arraySize);
-            int retCode = test_write_image_1D_array( device, context, queue, kernel, &imageInfo, inputType, d );
+            int retCode = test_write_image_1D_array(
+                device, context, queue, kernel, &imageInfo, inputType, d, ctx);
             if( retCode )
                 return retCode;
         }
@@ -724,7 +741,8 @@ int test_write_image_1D_array_set(cl_device_id device, cl_context context,
 
         imageInfo.rowPitch = imageInfo.width * pixelSize;
         imageInfo.slicePitch = imageInfo.rowPitch;
-        int retCode = test_write_image_1D_array( device, context, queue, kernel, &imageInfo, inputType, d );
+        int retCode = test_write_image_1D_array(device, context, queue, kernel,
+                                                &imageInfo, inputType, d, ctx);
         if( retCode )
             return retCode;
     }
@@ -740,7 +758,7 @@ int test_write_image_1D_array_set(cl_device_id device, cl_context context,
                 imageInfo.width = (size_t)random_log_in_range( 16, (int)maxWidth / 32, d );
                 imageInfo.arraySize = (size_t)random_log_in_range( 16, (int)maxArraySize / 32, d );
 
-                if( gTestMipmaps)
+                if (ctx.testMipmaps)
                 {
                     imageInfo.num_mip_levels = (size_t)random_in_range(2, (compute_max_mip_levels(imageInfo.width, 0, 0)-1), d);
                     size = (cl_ulong) compute_mipmapped_image_size(imageInfo) * 4;
@@ -748,7 +766,7 @@ int test_write_image_1D_array_set(cl_device_id device, cl_context context,
                 else
                 {
                     imageInfo.rowPitch = imageInfo.width * pixelSize;
-                    if( gEnablePitch )
+                    if (ctx.enablePitch)
                     {
                         size_t extraWidth = (int)random_log_in_range( 0, 64, d );
                         imageInfo.rowPitch += extraWidth * pixelSize;
@@ -759,10 +777,11 @@ int test_write_image_1D_array_set(cl_device_id device, cl_context context,
                 }
             } while(  size > maxAllocSize || ( size * 3 ) > memSize );
 
-            if( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "   at size %d,%d (pitch %d) out of %d,%d\n", (int)imageInfo.width, (int)imageInfo.arraySize, (int)imageInfo.rowPitch, (int)maxWidth, (int)maxArraySize );
 
-            int retCode = test_write_image_1D_array( device, context, queue, kernel, &imageInfo, inputType, d );
+            int retCode = test_write_image_1D_array(
+                device, context, queue, kernel, &imageInfo, inputType, d, ctx);
             if( retCode )
                 return retCode;
         }
