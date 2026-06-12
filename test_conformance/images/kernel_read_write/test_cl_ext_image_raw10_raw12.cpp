@@ -18,14 +18,9 @@
 #include "../common.h"
 #include "test_cl_ext_image_buffer.hpp"
 
-extern int gTypesToTest;
-extern int gtestTypesToRun;
-extern int gNormalizedModeToUse;
-extern bool gTestImage2DFromBuffer;
-extern cl_mem_flags gMemFlagsToUse;
-
 static int test_image_set(cl_device_id device, cl_context context,
-                          cl_command_queue queue, cl_mem_object_type imageType)
+                          cl_command_queue queue, cl_mem_object_type imageType,
+                          const context_t &ctx)
 {
     int ret = 0;
 
@@ -46,7 +41,7 @@ static int test_image_set(cl_device_id device, cl_context context,
     image_sampler_data imageSampler;
     ImageTestTypes test{ kTestUInt, kUInt, uintFormats, "uint" };
 
-    if (gTypesToTest & test.type)
+    if (ctx.typesToTest & test.type)
     {
         std::vector<bool> filterFlags(formatList.size(), false);
         imageSampler.filter_mode = CL_FILTER_NEAREST;
@@ -55,17 +50,17 @@ static int test_image_set(cl_device_id device, cl_context context,
         imageSampler.normalized_coords = false;
         ret = test_read_image_formats(device, context, queue, formatList,
                                       filterFlags, &imageSampler,
-                                      test.explicitType, imageType);
+                                      test.explicitType, imageType, ctx);
     }
     return ret;
 }
 
 int ext_image_raw10_raw12(cl_device_id device, cl_context context,
-                          cl_command_queue queue)
+                          cl_command_queue queue, const context_t &ctx)
 {
     int ret = 0;
 
-    if (true != gNormalizedModeToUse)
+    if (true != ctx.normalizedModeToUse)
     {
         if (0 == is_extension_available(device, "cl_ext_image_raw10_raw12"))
         {
@@ -80,15 +75,16 @@ int ext_image_raw10_raw12(cl_device_id device, cl_context context,
         }
         else
         {
-            gtestTypesToRun = kReadTests;
-            ret +=
-                test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE2D);
+            context_t sub_ctx = ctx;
+            sub_ctx.testTypesToRun = kReadTests;
+            ret += test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE2D,
+                                  sub_ctx);
         }
     }
     else
     {
         // skip the test if it is forced to be NORMALIZED from the command line
-        // argument i.e. gNormalizedModeToUse is true
+        // argument i.e. ctx.normalizedModeToUse is true
         log_info("cl_ext_image_raw10_raw12 does not support normalized channel "
                  "components. Skipping the test.\n");
         ret = TEST_SKIPPED_ITSELF;

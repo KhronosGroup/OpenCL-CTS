@@ -19,22 +19,18 @@
 #include "../testBase.h"
 #include "../harness/compat.h"
 
-bool gDebugTrace;
-bool gTestSmallImages;
-bool gTestMaxImages;
-cl_channel_type gChannelTypeToUse = (cl_channel_type)-1;
-cl_channel_order gChannelOrderToUse = (cl_channel_order)-1;
+static context_t ctx;
 
-extern int test_image_set( cl_device_id device, cl_context context, cl_mem_object_type image_type );
-static void printUsage( const char *execName );
+extern int test_image_set(cl_device_id device, cl_context context,
+                          cl_mem_object_type image_type, const context_t &ctx);
 
 REGISTER_TEST(1D)
 {
-    return test_image_set( device, context, CL_MEM_OBJECT_IMAGE1D );
+    return test_image_set(device, context, CL_MEM_OBJECT_IMAGE1D, ctx);
 }
 REGISTER_TEST(2D)
 {
-    return test_image_set( device, context, CL_MEM_OBJECT_IMAGE2D );
+    return test_image_set(device, context, CL_MEM_OBJECT_IMAGE2D, ctx);
 }
 REGISTER_TEST(3D)
 {
@@ -44,91 +40,70 @@ REGISTER_TEST(3D)
         return 0;
     }
 
-    return test_image_set( device, context, CL_MEM_OBJECT_IMAGE3D );
+    return test_image_set(device, context, CL_MEM_OBJECT_IMAGE3D, ctx);
 }
 REGISTER_TEST(1Darray)
 {
-    return test_image_set( device, context, CL_MEM_OBJECT_IMAGE1D_ARRAY );
+    return test_image_set(device, context, CL_MEM_OBJECT_IMAGE1D_ARRAY, ctx);
 }
 REGISTER_TEST(2Darray)
 {
-    return test_image_set( device, context, CL_MEM_OBJECT_IMAGE2D_ARRAY );
+    return test_image_set(device, context, CL_MEM_OBJECT_IMAGE2D_ARRAY, ctx);
 }
 REGISTER_TEST(1Dbuffer)
 {
-    return test_image_set(device, context, CL_MEM_OBJECT_IMAGE1D_BUFFER);
+    return test_image_set(device, context, CL_MEM_OBJECT_IMAGE1D_BUFFER, ctx);
+}
+
+static test_status parseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help)
+{
+    help =
+        R"(        debug_trace - Enables additional debug info logging (default no debug info)
+
+        small_images - Runs every format through a loop of widths 1-13 and heights 1-9, instead of random sizes (default test random sizes)
+        max_images - Runs every format through a set of size combinations with the max values, max values - 1, and max values / 128 (default test random sizes)
+
+        randomize - Seed random number generator (default do not seed random number generator)
+)";
+
+    cl_channel_type chanType;
+
+    std::vector<const char *> argList;
+    argList.push_back(argv[0]);
+    init_context(ctx);
+
+    // Parse arguments
+    for (int i = 1; i < argc; i++)
+    {
+        removed_args.push_back(argv[i]);
+        if (strcmp(argv[i], "debug_trace") == 0)
+            ctx.debugTrace = true;
+        else if (strcmp(argv[i], "small_images") == 0)
+            ctx.testSmallImages = true;
+        else if (strcmp(argv[i], "max_images") == 0)
+            ctx.testMaxImages = true;
+        else if ((chanType = get_channel_type_from_name(argv[i]))
+                 != (cl_channel_type)-1)
+            ctx.channelTypeToUse = chanType;
+        else
+        {
+            removed_args.pop_back();
+            argList.push_back(argv[i]);
+        }
+    }
+
+    if (ctx.testSmallImages) log_info("Note: Using small test images\n");
+
+    update_argc_argv_from_args_list(argList, argc, argv);
+    return TEST_PASS;
 }
 
 int main(int argc, const char *argv[])
 {
-    cl_channel_type chanType;
-
-    const char ** argList = (const char **)calloc( argc, sizeof( char*) );
-
-    if( NULL == argList )
-    {
-        log_error( "Failed to allocate memory for argList array.\n" );
-        return 1;
-    }
-
-    argList[0] = argv[0];
-    size_t argCount = 1;
-
-    // Parse arguments
-    for( int i = 1; i < argc; i++ )
-    {
-        if( strcmp( argv[i], "debug_trace" ) == 0 )
-            gDebugTrace = true;
-
-        else if( strcmp( argv[i], "small_images" ) == 0 )
-            gTestSmallImages = true;
-        else if( strcmp( argv[i], "max_images" ) == 0 )
-            gTestMaxImages = true;
-
-        else if( strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 )
-        {
-            printUsage( argv[ 0 ] );
-            return -1;
-        }
-        else if( ( chanType = get_channel_type_from_name( argv[i] ) ) != (cl_channel_type)-1 )
-            gChannelTypeToUse = chanType;
-        else
-        {
-            argList[argCount] = argv[i];
-            argCount++;
-        }
-    }
-
-    if( gTestSmallImages )
-        log_info( "Note: Using small test images\n" );
-
-    int ret = runTestHarnessWithCheck(
-        argCount, argList, test_registry::getInstance().num_tests(),
+    return runTestHarnessWithCheckAndParse(
+        argc, argv, test_registry::getInstance().num_tests(),
         test_registry::getInstance().definitions(), false, 0,
-        verifyImageSupport);
-
-    free(argList);
-    return ret;
-}
-
-static void printUsage( const char *execName )
-{
-    const char *p = strrchr( execName, '/' );
-    if( p != NULL )
-        execName = p + 1;
-
-    log_info( "Usage: %s [options] [test_names]\n", execName );
-    log_info( "Options:\n" );
-    log_info( "\tdebug_trace - Enables additional debug info logging (default no debug info)\n" );
-    log_info( "\n" );
-    log_info( "\tsmall_images - Runs every format through a loop of widths 1-13 and heights 1-9, instead of random sizes (default test random sizes)\n" );
-    log_info( "\tmax_images - Runs every format through a set of size combinations with the max values, max values - 1, and max values / 128 (default test random sizes)\n" );
-    log_info( "\n" );
-    log_info( "\trandomize - Seed random number generator (default do not seed random number generator)\n" );
-    log_info( "\n" );
-    log_info( "Test names:\n" );
-    for (size_t i = 0; i < test_registry::getInstance().num_tests(); i++)
-    {
-        log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
-    }
+        verifyImageSupport, parseArgs);
 }

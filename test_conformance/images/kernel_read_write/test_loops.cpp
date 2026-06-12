@@ -16,44 +16,38 @@
 #include "../testBase.h"
 #include "../common.h"
 
-extern cl_filter_mode gFilterModeToUse;
-extern cl_addressing_mode gAddressModeToUse;
-extern int gNormalizedModeToUse;
-extern int gTypesToTest;
-extern int gtestTypesToRun;
-
 extern int test_read_image_set_1D(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
                                   const cl_image_format *format,
                                   image_sampler_data *imageSampler,
-                                  bool floatCoords, ExplicitType outputType);
+                                  bool floatCoords, ExplicitType outputType,
+                                  const context_t &ctx);
 extern int test_read_image_set_2D(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
                                   const cl_image_format *format,
                                   image_sampler_data *imageSampler,
-                                  bool floatCoords, ExplicitType outputType);
+                                  bool floatCoords, ExplicitType outputType,
+                                  const context_t &ctx);
 extern int test_read_image_set_3D(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
                                   const cl_image_format *format,
                                   image_sampler_data *imageSampler,
-                                  bool floatCoords, ExplicitType outputType);
-extern int test_read_image_set_1D_array(cl_device_id device, cl_context context,
-                                        cl_command_queue queue,
-                                        const cl_image_format *format,
-                                        image_sampler_data *imageSampler,
-                                        bool floatCoords,
-                                        ExplicitType outputType);
-extern int test_read_image_set_2D_array(cl_device_id device, cl_context context,
-                                        cl_command_queue queue,
-                                        const cl_image_format *format,
-                                        image_sampler_data *imageSampler,
-                                        bool floatCoords,
-                                        ExplicitType outputType);
+                                  bool floatCoords, ExplicitType outputType,
+                                  const context_t &ctx);
+extern int test_read_image_set_1D_array(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    const cl_image_format *format, image_sampler_data *imageSampler,
+    bool floatCoords, ExplicitType outputType, const context_t &ctx);
+extern int test_read_image_set_2D_array(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    const cl_image_format *format, image_sampler_data *imageSampler,
+    bool floatCoords, ExplicitType outputType, const context_t &ctx);
 
 int test_read_image_type(cl_device_id device, cl_context context,
                          cl_command_queue queue, const cl_image_format *format,
                          bool floatCoords, image_sampler_data *imageSampler,
-                         ExplicitType outputType, cl_mem_object_type imageType)
+                         ExplicitType outputType, cl_mem_object_type imageType,
+                         const context_t &ctx)
 {
     int ret = 0;
     cl_addressing_mode *addressModes = NULL;
@@ -70,7 +64,7 @@ int test_read_image_type(cl_device_id device, cl_context context,
         CL_ADDRESS_REPEAT, CL_ADDRESS_MIRRORED_REPEAT, (cl_addressing_mode)-1
     };
 
-    if (gtestTypesToRun & kReadWriteTests)
+    if (ctx.testTypesToRun & kReadWriteTests)
     {
         addressModes = addressModes_rw;
     }
@@ -106,8 +100,8 @@ int test_read_image_type(cl_device_id device, cl_context context,
             continue; // Repeat doesn't make sense for non-normalized coords
 
         // Use this run if we were told to only run a certain filter mode
-        if (gAddressModeToUse != (cl_addressing_mode)-1
-            && imageSampler->addressing_mode != gAddressModeToUse)
+        if (ctx.addressModeToUse != (cl_addressing_mode)-1
+            && imageSampler->addressing_mode != ctx.addressModeToUse)
             continue;
 
         /*
@@ -127,27 +121,27 @@ int test_read_image_type(cl_device_id device, cl_context context,
             case CL_MEM_OBJECT_IMAGE1D:
                 retCode = test_read_image_set_1D(device, context, queue, format,
                                                  imageSampler, floatCoords,
-                                                 outputType);
+                                                 outputType, ctx);
                 break;
             case CL_MEM_OBJECT_IMAGE1D_ARRAY:
-                retCode = test_read_image_set_1D_array(device, context, queue,
-                                                       format, imageSampler,
-                                                       floatCoords, outputType);
+                retCode = test_read_image_set_1D_array(
+                    device, context, queue, format, imageSampler, floatCoords,
+                    outputType, ctx);
                 break;
             case CL_MEM_OBJECT_IMAGE2D:
                 retCode = test_read_image_set_2D(device, context, queue, format,
                                                  imageSampler, floatCoords,
-                                                 outputType);
+                                                 outputType, ctx);
                 break;
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
-                retCode = test_read_image_set_2D_array(device, context, queue,
-                                                       format, imageSampler,
-                                                       floatCoords, outputType);
+                retCode = test_read_image_set_2D_array(
+                    device, context, queue, format, imageSampler, floatCoords,
+                    outputType, ctx);
                 break;
             case CL_MEM_OBJECT_IMAGE3D:
                 retCode = test_read_image_set_3D(device, context, queue, format,
                                                  imageSampler, floatCoords,
-                                                 outputType);
+                                                 outputType, ctx);
                 break;
         }
         if (retCode != 0)
@@ -169,13 +163,13 @@ int test_read_image_formats(cl_device_id device, cl_context context,
                             const std::vector<bool> &filterFlags,
                             image_sampler_data *imageSampler,
                             ExplicitType outputType,
-                            cl_mem_object_type imageType)
+                            cl_mem_object_type imageType, const context_t &ctx)
 {
     int ret = 0;
     bool flipFlop[2] = { false, true };
     int normalizedIdx, floatCoordIdx;
 
-    if (gTestMipmaps)
+    if (ctx.testMipmaps)
     {
         if (0 == is_extension_available(device, "cl_khr_mipmap_image"))
         {
@@ -189,16 +183,16 @@ int test_read_image_formats(cl_device_id device, cl_context context,
     }
 
     // Use this run if we were told to only run a certain filter mode
-    if (gFilterModeToUse != (cl_filter_mode)-1
-        && imageSampler->filter_mode != gFilterModeToUse)
+    if (ctx.filterModeToUse != (cl_filter_mode)-1
+        && imageSampler->filter_mode != ctx.filterModeToUse)
         return 0;
 
     // Test normalized/non-normalized
     for (normalizedIdx = 0; normalizedIdx < 2; normalizedIdx++)
     {
         imageSampler->normalized_coords = flipFlop[normalizedIdx];
-        if (gNormalizedModeToUse != 7
-            && gNormalizedModeToUse != (int)imageSampler->normalized_coords)
+        if (ctx.normalizedModeToUse != 7
+            && ctx.normalizedModeToUse != (int)imageSampler->normalized_coords)
             continue;
 
         for (floatCoordIdx = 0; floatCoordIdx < 2; floatCoordIdx++)
@@ -212,7 +206,8 @@ int test_read_image_formats(cl_device_id device, cl_context context,
                                              // no sense (they'd all be zero)
                     continue;
 
-            if (flipFlop[floatCoordIdx] && (gtestTypesToRun & kReadWriteTests))
+            if (flipFlop[floatCoordIdx]
+                && (ctx.testTypesToRun & kReadWriteTests))
                 // sampler-less read in read_write tests run only integer coord
                 continue;
 
@@ -234,7 +229,7 @@ int test_read_image_formats(cl_device_id device, cl_context context,
                 ret |=
                     test_read_image_type(device, context, queue, &imageFormat,
                                          flipFlop[floatCoordIdx], imageSampler,
-                                         outputType, imageType);
+                                         outputType, imageType, ctx);
             }
         }
     }
@@ -244,7 +239,7 @@ int test_read_image_formats(cl_device_id device, cl_context context,
 
 int test_image_set(cl_device_id device, cl_context context,
                    cl_command_queue queue, test_format_set_fn formatTestFn,
-                   cl_mem_object_type imageType)
+                   cl_mem_object_type imageType, const context_t &ctx)
 {
     int ret = 0;
     static int printedFormatList = -1;
@@ -265,7 +260,7 @@ int test_image_set(cl_device_id device, cl_context context,
         }
     }
 
-    if (gTestMipmaps)
+    if (ctx.testMipmaps)
     {
         if (0 == is_extension_available(device, "cl_khr_mipmap_image"))
         {
@@ -309,7 +304,7 @@ int test_image_set(cl_device_id device, cl_context context,
     const char *flagNames;
     if (formatTestFn == test_read_image_formats)
     {
-        if (gtestTypesToRun & kReadTests)
+        if (ctx.testTypesToRun & kReadTests)
         {
             flags = CL_MEM_READ_ONLY;
             flagNames = "read";
@@ -322,7 +317,7 @@ int test_image_set(cl_device_id device, cl_context context,
     }
     else
     {
-        if (gtestTypesToRun & kWriteTests)
+        if (ctx.testTypesToRun & kWriteTests)
         {
             flags = CL_MEM_WRITE_ONLY;
             flagNames = "write";
@@ -365,11 +360,12 @@ int test_image_set(cl_device_id device, cl_context context,
 
     for (auto test : imageTestTypes)
     {
-        if (gTypesToTest & test.type)
+        if (ctx.typesToTest & test.type)
         {
             std::vector<bool> filterFlags(formatList.size(), false);
             if (filter_formats(formatList, filterFlags, test.channelTypes,
-                               gTestMipmaps)
+                               ctx.channelTypeToUse, ctx.channelOrderToUse,
+                               ctx.testMipmaps)
                 == 0)
             {
                 log_info("No formats supported for %s type\n", test.name);
@@ -379,7 +375,7 @@ int test_image_set(cl_device_id device, cl_context context,
                 imageSampler.filter_mode = CL_FILTER_NEAREST;
                 ret += formatTestFn(device, context, queue, formatList,
                                     filterFlags, &imageSampler,
-                                    test.explicitType, imageType);
+                                    test.explicitType, imageType, ctx);
 
                 // Linear filtering is only supported with floats
                 if (test.type == kTestFloat)
@@ -387,7 +383,7 @@ int test_image_set(cl_device_id device, cl_context context,
                     imageSampler.filter_mode = CL_FILTER_LINEAR;
                     ret += formatTestFn(device, context, queue, formatList,
                                         filterFlags, &imageSampler,
-                                        test.explicitType, imageType);
+                                        test.explicitType, imageType, ctx);
                 }
             }
         }

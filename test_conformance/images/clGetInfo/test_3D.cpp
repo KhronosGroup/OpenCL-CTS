@@ -15,9 +15,14 @@
 //
 #include "../testBase.h"
 
-extern int test_get_image_info_single( cl_context context, image_descriptor *imageInfo, MTdata d, cl_mem_flags flags, size_t row_pitch, size_t slice_pitch );
+extern int test_get_image_info_single(cl_context context,
+                                      image_descriptor *imageInfo, MTdata d,
+                                      cl_mem_flags flags, size_t row_pitch,
+                                      size_t slice_pitch, const context_t &ctx);
 
-int test_get_image_info_3D( cl_device_id device, cl_context context, cl_image_format *format, cl_mem_flags flags )
+int test_get_image_info_3D(cl_device_id device, cl_context context,
+                           cl_image_format *format, cl_mem_flags flags,
+                           const context_t &ctx)
 {
     size_t maxWidth, maxHeight, maxDepth;
     cl_ulong maxAllocSize, memSize;
@@ -55,7 +60,7 @@ int test_get_image_info_3D( cl_device_id device, cl_context context, cl_image_fo
         memSize = (cl_ulong)SIZE_MAX;
     }
 
-    if( gTestSmallImages )
+    if (ctx.testSmallImages)
     {
         for( imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++ )
         {
@@ -68,12 +73,17 @@ int test_get_image_info_3D( cl_device_id device, cl_context context, cl_image_fo
                 {
                     for (unsigned int j=0; j < sizeof(all_host_ptr_flags)/sizeof(cl_mem_flags); j++)
                     {
-                        if( gDebugTrace )
+                        if (ctx.debugTrace)
                             log_info( "   at size %d,%d,%d (flags[%u] 0x%lx pitch %d,%d)\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.depth, j, (unsigned long)all_host_ptr_flags[j], (int)imageInfo.rowPitch, (int)imageInfo.slicePitch );
-                        if ( test_get_image_info_single( context, &imageInfo, seed, all_host_ptr_flags[j], 0, 0 ) )
+                        if (test_get_image_info_single(
+                                context, &imageInfo, seed,
+                                all_host_ptr_flags[j], 0, 0, ctx))
                             return -1;
                         if (all_host_ptr_flags[j] & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR)) { // skip test when host_ptr is NULL
-                            if ( test_get_image_info_single( context, &imageInfo, seed, all_host_ptr_flags[j], imageInfo.rowPitch, imageInfo.slicePitch ) )
+                            if (test_get_image_info_single(
+                                    context, &imageInfo, seed,
+                                    all_host_ptr_flags[j], imageInfo.rowPitch,
+                                    imageInfo.slicePitch, ctx))
                                 return -1;
                         }
                     }
@@ -81,7 +91,7 @@ int test_get_image_info_3D( cl_device_id device, cl_context context, cl_image_fo
             }
         }
     }
-    else if( gTestMaxImages )
+    else if (ctx.testMaxImages)
     {
         // Try a specific set of maximum sizes
         size_t numbeOfSizes;
@@ -100,12 +110,16 @@ int test_get_image_info_3D( cl_device_id device, cl_context context, cl_image_fo
             log_info( "Testing %d x %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
             for (unsigned int j=0; j < sizeof(all_host_ptr_flags)/sizeof(cl_mem_flags); j++)
             {
-                if( gDebugTrace )
+                if (ctx.debugTrace)
                     log_info( "   at max size %d,%d,%d (flags[%u] 0x%lx pitch %d,%d)\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ], j, (unsigned long)all_host_ptr_flags[j], (int)imageInfo.rowPitch, (int)imageInfo.slicePitch );
-                if( test_get_image_info_single( context, &imageInfo, seed, all_host_ptr_flags[j], 0, 0 ) )
+                if (test_get_image_info_single(context, &imageInfo, seed,
+                                               all_host_ptr_flags[j], 0, 0,
+                                               ctx))
                     return -1;
                 if (all_host_ptr_flags[j] & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR)) { // skip test when host_ptr is NULL
-                    if( test_get_image_info_single( context, &imageInfo, seed, all_host_ptr_flags[j], imageInfo.rowPitch, imageInfo.slicePitch ) )
+                    if (test_get_image_info_single(
+                            context, &imageInfo, seed, all_host_ptr_flags[j],
+                            imageInfo.rowPitch, imageInfo.slicePitch, ctx))
                         return -1;
                 }
             }
@@ -143,12 +157,16 @@ int test_get_image_info_3D( cl_device_id device, cl_context context, cl_image_fo
 
             for (unsigned int j=0; j < sizeof(all_host_ptr_flags)/sizeof(cl_mem_flags); j++)
             {
-                if( gDebugTrace )
+                if (ctx.debugTrace)
                     log_info( "   at size %d,%d,%d (flags[%u] 0x%lx pitch %d,%d) out of %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.depth, j, (unsigned long) all_host_ptr_flags[i], (int)imageInfo.rowPitch, (int)imageInfo.slicePitch, (int)maxWidth, (int)maxHeight, (int)maxDepth );
-                if ( test_get_image_info_single( context, &imageInfo, seed, all_host_ptr_flags[j], 0, 0 ) )
+                if (test_get_image_info_single(context, &imageInfo, seed,
+                                               all_host_ptr_flags[j], 0, 0,
+                                               ctx))
                     return -1;
                 if (all_host_ptr_flags[j] & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR)) { // skip test when host_ptr is NULL
-                    if ( test_get_image_info_single( context, &imageInfo, seed, all_host_ptr_flags[j], imageInfo.rowPitch, imageInfo.slicePitch ) )
+                    if (test_get_image_info_single(
+                            context, &imageInfo, seed, all_host_ptr_flags[j],
+                            imageInfo.rowPitch, imageInfo.slicePitch, ctx))
                         return -1;
                 }
             }

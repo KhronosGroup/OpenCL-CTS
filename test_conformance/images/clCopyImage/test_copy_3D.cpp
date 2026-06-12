@@ -13,21 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../testBase.h"
-
-// Defined in test_copy_generic.cpp
-extern int test_copy_image_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
-                                   const size_t sourcePos[], const size_t destPos[], const size_t regionSize[], MTdata d );
+#include "test_copy_generic.h"
 
 int test_copy_image_3D(cl_context context, cl_command_queue queue,
                        image_descriptor *srcImageInfo,
-                       image_descriptor *dstImageInfo, MTdata d)
+                       image_descriptor *dstImageInfo, MTdata d,
+                       const context_t &ctx)
 {
     size_t origin[] = { 0, 0, 0, 0};
     size_t region[] = { srcImageInfo->width, srcImageInfo->height,
                         srcImageInfo->depth };
 
-    if( gTestMipmaps )
+    if (ctx.testMipmaps)
     {
         size_t lod = (srcImageInfo->num_mip_levels > 1)
             ? (size_t)random_in_range(0, srcImageInfo->num_mip_levels - 1, d)
@@ -41,14 +38,25 @@ int test_copy_image_3D(cl_context context, cl_command_queue queue,
             (srcImageInfo->depth >> lod) ? (srcImageInfo->depth >> lod) : 1;
     }
 
+    clMemWrapper srcImage, dstImage;
+    BufferOwningPtr<char> srcData, dstData;
+    int retCode =
+        test_copy_init_images(context, queue, srcImageInfo, dstImageInfo,
+                              srcImage, dstImage, srcData, dstData, d, ctx);
+    if (retCode != CL_SUCCESS)
+    {
+        return retCode;
+    }
     return test_copy_image_generic(context, queue, srcImageInfo, dstImageInfo,
-                                   origin, origin, region, d);
+                                   srcImage, dstImage, srcData, dstData, origin,
+                                   origin, region, d, ctx);
 }
 
 int test_copy_image_set_3D(cl_device_id device, cl_context context,
                            cl_command_queue queue, cl_mem_flags src_flags,
                            cl_mem_object_type src_type, cl_mem_flags dst_flags,
-                           cl_mem_object_type dst_type, cl_image_format *format)
+                           cl_mem_object_type dst_type, cl_image_format *format,
+                           const context_t &ctx)
 {
     assert(dst_type == src_type); // This test expects to copy 3D -> 3D images
     size_t maxWidth, maxHeight, maxDepth;
@@ -75,17 +83,17 @@ int test_copy_image_set_3D(cl_device_id device, cl_context context,
       maxAllocSize = (cl_ulong)SIZE_MAX;
     }
 
-    if( gTestSmallImages )
+    if (ctx.testSmallImages)
     {
         for (srcImageInfo.width = 1; srcImageInfo.width < 13;
              srcImageInfo.width++)
         {
-            size_t rowPadding = gEnablePitch ? 80 : 0;
-            size_t slicePadding = gEnablePitch ? 3 : 0;
+            size_t rowPadding = ctx.enablePitch ? 80 : 0;
+            size_t slicePadding = ctx.enablePitch ? 3 : 0;
 
             srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
 
-            if (gTestMipmaps)
+            if (ctx.testMipmaps)
                 srcImageInfo.num_mip_levels = (cl_uint)random_log_in_range(
                     2,
                     (int)compute_max_mip_levels(srcImageInfo.width,
@@ -93,7 +101,7 @@ int test_copy_image_set_3D(cl_device_id device, cl_context context,
                                                 srcImageInfo.depth),
                     seed);
 
-            if (gEnablePitch)
+            if (ctx.enablePitch)
             {
                 do {
                     rowPadding++;
@@ -110,7 +118,7 @@ int test_copy_image_set_3D(cl_device_id device, cl_context context,
                 for (srcImageInfo.depth = 2; srcImageInfo.depth < 9;
                      srcImageInfo.depth++)
                 {
-                    if( gDebugTrace )
+                    if (ctx.debugTrace)
                         log_info(
                             "   at size %d,%d,%d\n", (int)srcImageInfo.width,
                             (int)srcImageInfo.height, (int)srcImageInfo.depth);
@@ -118,14 +126,14 @@ int test_copy_image_set_3D(cl_device_id device, cl_context context,
                     dstImageInfo = srcImageInfo;
                     dstImageInfo.mem_flags = dst_flags;
                     int ret = test_copy_image_3D(context, queue, &srcImageInfo,
-                                                 &dstImageInfo, seed);
+                                                 &dstImageInfo, seed, ctx);
                     if( ret )
                         return -1;
                 }
             }
         }
     }
-    else if( gTestMaxImages )
+    else if (ctx.testMaxImages)
     {
         // Try a specific set of maximum sizes
         size_t numbeOfSizes;
@@ -136,15 +144,15 @@ int test_copy_image_set_3D(cl_device_id device, cl_context context,
 
         for( size_t idx = 0; idx < numbeOfSizes; idx++ )
         {
-            size_t rowPadding = gEnablePitch ? 80 : 0;
-            size_t slicePadding = gEnablePitch ? 3 : 0;
+            size_t rowPadding = ctx.enablePitch ? 80 : 0;
+            size_t slicePadding = ctx.enablePitch ? 3 : 0;
 
             srcImageInfo.width = sizes[idx][0];
             srcImageInfo.height = sizes[idx][1];
             srcImageInfo.depth = sizes[idx][2];
             srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
 
-            if (gTestMipmaps)
+            if (ctx.testMipmaps)
                 srcImageInfo.num_mip_levels = (cl_uint)random_log_in_range(
                     2,
                     (int)compute_max_mip_levels(srcImageInfo.width,
@@ -152,7 +160,7 @@ int test_copy_image_set_3D(cl_device_id device, cl_context context,
                                                 srcImageInfo.depth),
                     seed);
 
-            if (gEnablePitch)
+            if (ctx.enablePitch)
             {
                 do {
                     rowPadding++;
@@ -164,13 +172,13 @@ int test_copy_image_set_3D(cl_device_id device, cl_context context,
             srcImageInfo.slicePitch =
                 srcImageInfo.rowPitch * (srcImageInfo.height + slicePadding);
             log_info( "Testing %d x %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
-            if( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "   at max size %d,%d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
 
             dstImageInfo = srcImageInfo;
             dstImageInfo.mem_flags = dst_flags;
             if (test_copy_image_3D(context, queue, &srcImageInfo, &dstImageInfo,
-                                   seed))
+                                   seed, ctx))
                 return -1;
         }
     }
@@ -179,8 +187,8 @@ int test_copy_image_set_3D(cl_device_id device, cl_context context,
         for( int i = 0; i < NUM_IMAGE_ITERATIONS; i++ )
         {
             cl_ulong size;
-            size_t rowPadding = gEnablePitch ? 80 : 0;
-            size_t slicePadding = gEnablePitch ? 3 : 0;
+            size_t rowPadding = ctx.enablePitch ? 80 : 0;
+            size_t slicePadding = ctx.enablePitch ? 3 : 0;
 
             // Loop until we get a size that a) will fit in the max alloc size and b) that an allocation of that
             // image, the result array, plus offset arrays, will fit in the global ram space
@@ -193,7 +201,7 @@ int test_copy_image_set_3D(cl_device_id device, cl_context context,
                 srcImageInfo.depth =
                     (size_t)random_log_in_range(16, (int)maxDepth / 32, seed);
 
-                if (gTestMipmaps)
+                if (ctx.testMipmaps)
                 {
                     srcImageInfo.num_mip_levels = (cl_uint)random_log_in_range(
                         2,
@@ -213,7 +221,7 @@ int test_copy_image_set_3D(cl_device_id device, cl_context context,
                     srcImageInfo.rowPitch =
                         srcImageInfo.width * pixelSize + rowPadding;
 
-                    if (gEnablePitch)
+                    if (ctx.enablePitch)
                     {
                         do
                         {
@@ -231,7 +239,7 @@ int test_copy_image_set_3D(cl_device_id device, cl_context context,
                 }
             } while(  size > maxAllocSize || ( size * 3 ) > memSize );
 
-            if( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info("   at size %d,%d,%d (pitch %d,%d) out of %d,%d,%d\n",
                          (int)srcImageInfo.width, (int)srcImageInfo.height,
                          (int)srcImageInfo.depth, (int)srcImageInfo.rowPitch,
@@ -241,7 +249,7 @@ int test_copy_image_set_3D(cl_device_id device, cl_context context,
             dstImageInfo = srcImageInfo;
             dstImageInfo.mem_flags = dst_flags;
             int ret = test_copy_image_3D(context, queue, &srcImageInfo,
-                                         &dstImageInfo, seed);
+                                         &dstImageInfo, seed, ctx);
             if( ret )
                 return -1;
         }

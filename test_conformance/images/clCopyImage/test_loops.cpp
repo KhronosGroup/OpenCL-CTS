@@ -17,54 +17,51 @@
 #include "../common.h"
 #include <algorithm>
 
-extern int
-test_copy_image_set_1D(cl_device_id device, cl_context context,
-                       cl_command_queue queue, cl_mem_flags src_flags,
-                       cl_mem_object_type src_type, cl_mem_flags dst_flags,
-                       cl_mem_object_type dst_type, cl_image_format *format);
-extern int
-test_copy_image_set_2D(cl_device_id device, cl_context context,
-                       cl_command_queue queue, cl_mem_flags src_flags,
-                       cl_mem_object_type src_type, cl_mem_flags dst_flags,
-                       cl_mem_object_type dst_type, cl_image_format *format);
-extern int
-test_copy_image_set_3D(cl_device_id device, cl_context context,
-                       cl_command_queue queue, cl_mem_flags src_flags,
-                       cl_mem_object_type src_type, cl_mem_flags dst_flags,
-                       cl_mem_object_type dst_type, cl_image_format *format);
+extern int test_copy_image_set_1D(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    cl_mem_flags src_flags, cl_mem_object_type src_type, cl_mem_flags dst_flags,
+    cl_mem_object_type dst_type, cl_image_format *format, const context_t &ctx);
+extern int test_copy_image_set_2D(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    cl_mem_flags src_flags, cl_mem_object_type src_type, cl_mem_flags dst_flags,
+    cl_mem_object_type dst_type, cl_image_format *format, const context_t &ctx);
+extern int test_copy_image_set_3D(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    cl_mem_flags src_flags, cl_mem_object_type src_type, cl_mem_flags dst_flags,
+    cl_mem_object_type dst_type, cl_image_format *format, const context_t &ctx);
 extern int test_copy_image_set_1D_array(
     cl_device_id device, cl_context context, cl_command_queue queue,
     cl_mem_flags src_flags, cl_mem_object_type src_type, cl_mem_flags dst_flags,
-    cl_mem_object_type dst_type, cl_image_format *format);
+    cl_mem_object_type dst_type, cl_image_format *format, const context_t &ctx);
 extern int test_copy_image_set_2D_array(
     cl_device_id device, cl_context context, cl_command_queue queue,
     cl_mem_flags src_flags, cl_mem_object_type src_type, cl_mem_flags dst_flags,
-    cl_mem_object_type dst_type, cl_image_format *format);
-extern int
-test_copy_image_set_2D_3D(cl_device_id device, cl_context context,
-                          cl_command_queue queue, cl_mem_flags src_flags,
-                          cl_mem_object_type src_type, cl_mem_flags dst_flags,
-                          cl_mem_object_type dst_type, cl_image_format *format);
+    cl_mem_object_type dst_type, cl_image_format *format, const context_t &ctx);
+extern int test_copy_image_set_2D_3D(
+    cl_device_id device, cl_context context, cl_command_queue queue,
+    cl_mem_flags src_flags, cl_mem_object_type src_type, cl_mem_flags dst_flags,
+    cl_mem_object_type dst_type, cl_image_format *format, const context_t &ctx);
 extern int test_copy_image_set_2D_2D_array(
     cl_device_id device, cl_context context, cl_command_queue queue,
     cl_mem_flags src_flags, cl_mem_object_type src_type, cl_mem_flags dst_flags,
-    cl_mem_object_type dst_type, cl_image_format *format);
+    cl_mem_object_type dst_type, cl_image_format *format, const context_t &ctx);
 extern int test_copy_image_set_3D_2D_array(
     cl_device_id device, cl_context context, cl_command_queue queue,
     cl_mem_flags src_flags, cl_mem_object_type src_type, cl_mem_flags dst_flags,
-    cl_mem_object_type dst_type, cl_image_format *format);
+    cl_mem_object_type dst_type, cl_image_format *format, const context_t &ctx);
 extern int test_copy_image_set_1D_buffer(
     cl_device_id device, cl_context context, cl_command_queue queue,
     cl_mem_flags src_flags, cl_mem_object_type src_type, cl_mem_flags dst_flags,
-    cl_mem_object_type dst_type, cl_image_format *format);
+    cl_mem_object_type dst_type, cl_image_format *format, const context_t &ctx);
 extern int test_copy_image_set_1D_1D_buffer(
     cl_device_id device, cl_context context, cl_command_queue queue,
     cl_mem_flags src_flags, cl_mem_object_type src_type, cl_mem_flags dst_flags,
-    cl_mem_object_type dst_type, cl_image_format *format);
+    cl_mem_object_type dst_type, cl_image_format *format, const context_t &ctx);
 
 using test_function_t = int (*)(cl_device_id, cl_context, cl_command_queue,
                                 cl_mem_flags, cl_mem_object_type, cl_mem_flags,
-                                cl_mem_object_type, cl_image_format *);
+                                cl_mem_object_type, cl_image_format *,
+                                const context_t &);
 
 struct TestConfigs
 {
@@ -83,11 +80,12 @@ struct TestConfigs
 };
 
 int test_image_type(cl_device_id device, cl_context context,
-                    cl_command_queue queue, MethodsToTest testMethod)
+                    cl_command_queue queue, MethodsToTest testMethod,
+                    const context_t &ctx)
 {
     test_function_t test_fn = nullptr;
 
-    if ( gTestMipmaps )
+    if (ctx.testMipmaps)
     {
         if ( 0 == is_extension_available( device, "cl_khr_mipmap_image" ))
         {
@@ -104,111 +102,111 @@ int test_image_type(cl_device_id device, cl_context context,
         case k1D:
             test_configs.emplace_back(
                 "1D -> 1D", CL_MEM_OBJECT_IMAGE1D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY,
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY,
                 CL_MEM_OBJECT_IMAGE1D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY);
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY);
             test_fn = test_copy_image_set_1D;
             break;
         case k2D:
             test_configs.emplace_back(
                 "2D -> 2D", CL_MEM_OBJECT_IMAGE2D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY,
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY,
                 CL_MEM_OBJECT_IMAGE2D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY);
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY);
             test_fn = test_copy_image_set_2D;
             break;
         case k3D:
             test_configs.emplace_back(
                 "3D -> 3D", CL_MEM_OBJECT_IMAGE3D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY,
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY,
                 CL_MEM_OBJECT_IMAGE3D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY);
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY);
             test_fn = test_copy_image_set_3D;
             break;
         case k1DArray:
             test_configs.emplace_back(
                 "1D array -> 1D array", CL_MEM_OBJECT_IMAGE1D_ARRAY,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY,
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY,
                 CL_MEM_OBJECT_IMAGE1D_ARRAY,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY);
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY);
             test_fn = test_copy_image_set_1D_array;
             break;
         case k2DArray:
             test_configs.emplace_back(
                 "2D array -> 2D array", CL_MEM_OBJECT_IMAGE2D_ARRAY,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY,
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY,
                 CL_MEM_OBJECT_IMAGE2D_ARRAY,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY);
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY);
             test_fn = test_copy_image_set_2D_array;
             break;
         case k2DTo3D:
             test_configs.emplace_back(
                 "2D -> 3D", CL_MEM_OBJECT_IMAGE2D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY,
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY,
                 CL_MEM_OBJECT_IMAGE3D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY);
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY);
             test_fn = test_copy_image_set_2D_3D;
             break;
         case k3DTo2D:
             test_configs.emplace_back(
                 "3D -> 2D", CL_MEM_OBJECT_IMAGE3D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY,
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY,
                 CL_MEM_OBJECT_IMAGE2D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY);
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY);
             test_fn = test_copy_image_set_2D_3D;
             break;
         case k2DArrayTo2D:
             test_configs.emplace_back(
                 "2D array -> 2D", CL_MEM_OBJECT_IMAGE2D_ARRAY,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY,
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY,
                 CL_MEM_OBJECT_IMAGE2D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY);
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY);
             test_fn = test_copy_image_set_2D_2D_array;
             break;
         case k2DTo2DArray:
             test_configs.emplace_back(
                 "2D -> 2D array", CL_MEM_OBJECT_IMAGE2D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY,
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY,
                 CL_MEM_OBJECT_IMAGE2D_ARRAY,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY);
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY);
             test_fn = test_copy_image_set_2D_2D_array;
             break;
         case k2DArrayTo3D:
             test_configs.emplace_back(
                 "2D array -> 3D", CL_MEM_OBJECT_IMAGE2D_ARRAY,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY,
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY,
                 CL_MEM_OBJECT_IMAGE3D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY);
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY);
             test_fn = test_copy_image_set_3D_2D_array;
             break;
         case k3DTo2DArray:
             test_configs.emplace_back(
                 "3D -> 2D array", CL_MEM_OBJECT_IMAGE3D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY,
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY,
                 CL_MEM_OBJECT_IMAGE2D_ARRAY,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY);
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY);
             test_fn = test_copy_image_set_3D_2D_array;
             break;
         case k1DBuffer:
@@ -221,8 +219,8 @@ int test_image_type(cl_device_id device, cl_context context,
         case k1DTo1DBuffer:
             test_configs.emplace_back(
                 "1D -> 1D buffer", CL_MEM_OBJECT_IMAGE1D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY,
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY,
                 CL_MEM_OBJECT_IMAGE1D_BUFFER, CL_MEM_READ_ONLY);
             test_fn = test_copy_image_set_1D_1D_buffer;
             break;
@@ -230,8 +228,8 @@ int test_image_type(cl_device_id device, cl_context context,
             test_configs.emplace_back(
                 "1D buffer -> 1D", CL_MEM_OBJECT_IMAGE1D_BUFFER,
                 CL_MEM_READ_ONLY, CL_MEM_OBJECT_IMAGE1D,
-                gEnablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
-                             : CL_MEM_READ_ONLY);
+                ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
+                                : CL_MEM_READ_ONLY);
             test_fn = test_copy_image_set_1D_1D_buffer;
             break;
     }
@@ -240,7 +238,7 @@ int test_image_type(cl_device_id device, cl_context context,
     int ret = 0;
     for (const auto &test_config : test_configs)
     {
-        if (gTestMipmaps)
+        if (ctx.testMipmaps)
             log_info("Running mipmapped %s tests...\n", test_config.name);
         else
             log_info("Running %s tests...\n", test_config.name);
@@ -276,7 +274,8 @@ int test_image_type(cl_device_id device, cl_context context,
         }
 
         std::vector<bool> filterFlags(formatList.size(), false);
-        filter_formats(formatList, filterFlags, nullptr);
+        filter_formats(formatList, filterFlags, nullptr, ctx.channelTypeToUse,
+                       ctx.channelOrderToUse);
 
         // Run the format list
         for (unsigned int i = 0; i < formatList.size(); i++)
@@ -293,7 +292,7 @@ int test_image_type(cl_device_id device, cl_context context,
 
             test_return = test_fn(device, context, queue, test_config.src_flags,
                                   test_config.src_type, test_config.dst_flags,
-                                  test_config.dst_type, &formatList[i]);
+                                  test_config.dst_type, &formatList[i], ctx);
 
             if (test_return)
             {
@@ -310,9 +309,11 @@ int test_image_type(cl_device_id device, cl_context context,
     return ret;
 }
 
-int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, MethodsToTest testMethod )
+int test_image_set(cl_device_id device, cl_context context,
+                   cl_command_queue queue, MethodsToTest testMethod,
+                   const context_t &ctx)
 {
-    return test_image_type(device, context, queue, testMethod);
+    return test_image_type(device, context, queue, testMethod, ctx);
 }
 
 
