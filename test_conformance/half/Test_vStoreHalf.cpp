@@ -17,15 +17,22 @@
 #include "harness/kernelHelpers.h"
 #include "harness/testHarness.h"
 #include "harness/parseParameters.h"
+#include "harness/conversions.h"
 
+#include <cstdint>
+#include <mutex>
 #include <string.h>
 
 #include <algorithm>
 
 #include "cl_utils.h"
+#include "mt19937.h"
 #include "tests.h"
 
 #include <CL/cl_half.h>
+
+#define NB_INPUT_POWER_OF_TWO (26)
+static std::recursive_mutex gLock;
 
 typedef struct ComputeReferenceInfoF_
 {
@@ -81,16 +88,25 @@ static cl_int ReferenceF(cl_uint jid, cl_uint tid, void *userInfo)
     cl_ushort *r = cri->r + off;
     f2h f = cri->f;
     cl_ulong i = cri->i + off;
-    cl_uint j;
+    auto specialValues = GetFpSpecialValues<float, uint32_t, cl_half>(gLock);
+    MTdata m = init_genrand(jid);
 
     if (off + count > lim) count = lim - off;
 
-    for (j = 0; j < count; ++j)
+    uint32_t index;
+    for (index = 0; ((index + i) < specialValues.size()) && index < count;
+         index++)
     {
-        x[j] = as_float((cl_uint)(i + j));
-        r[j] = f(x[j]);
+        x[index] = specialValues[index + i];
+        r[index] = f(x[index]);
+    }
+    for (; index < count; index++)
+    {
+        x[index] = as_float(genrand_int32(m));
+        r[index] = f(x[index]);
     }
 
+    free_mtdata(m);
     return 0;
 }
 
@@ -149,17 +165,26 @@ static cl_int ReferenceD(cl_uint jid, cl_uint tid, void *userInfo)
     double *x = cri->x + off;
     cl_ushort *r = cri->r + off;
     d2h f = cri->f;
-    cl_uint j;
     cl_ulong i = cri->i + off;
+    auto specialValues = GetFpSpecialValues<double, uint64_t, cl_half>(gLock);
+    MTdata m = init_genrand(jid);
 
     if (off + count > lim) count = lim - off;
 
-    for (j = 0; j < count; ++j)
+    uint32_t index;
+    for (index = 0; ((index + i) < specialValues.size()) && index < count;
+         index++)
     {
-        x[j] = as_double(DoubleFromUInt((cl_uint)(i + j)));
-        r[j] = f(x[j]);
+        x[index] = specialValues[index + i];
+        r[index] = f(x[index]);
+    }
+    for (; index < count; index++)
+    {
+        x[index] = as_double(genrand_int64(m));
+        r[index] = f(x[index]);
     }
 
+    free_mtdata(m);
     return 0;
 }
 
@@ -844,14 +869,9 @@ int Test_vStoreHalf_private(cl_device_id device, f2h referenceFunc,
     // Figure out how many elements are in a work block
     size_t elementSize = std::max(sizeof(cl_ushort), sizeof(float));
     size_t blockCount = BUFFER_SIZE / elementSize; // elementSize is power of 2
-    uint64_t lastCase = 1ULL << (8 * sizeof(float)); // number of floats.
-    size_t stride = blockCount;
+    uint64_t lastCase = 1ULL << NB_INPUT_POWER_OF_TWO;
 
-    if (gWimpyMode)
-        stride = (uint64_t)blockCount * (uint64_t)gWimpyReductionFactor;
-
-    // we handle 64-bit types a bit differently.
-    if (lastCase == 0) lastCase = 0x100000000ULL;
+    if (gWimpyMode) lastCase /= gWimpyReductionFactor;
 
     uint64_t i, j;
     error = 0;
@@ -891,7 +911,7 @@ int Test_vStoreHalf_private(cl_device_id device, f2h referenceFunc,
     dchk.lim = blockCount;
     dchk.count = (blockCount + threadCount - 1) / threadCount;
 
-    for (i = 0; i < lastCase; i += stride)
+    for (i = 0; i < lastCase; i += blockCount)
     {
         count = (cl_uint)std::min((uint64_t)blockCount, lastCase - i);
         fref.i = i;
@@ -1691,11 +1711,9 @@ int Test_vStoreaHalf_private(cl_device_id device, f2h referenceFunc,
     // Figure out how many elements are in a work block
     size_t elementSize = std::max(sizeof(cl_ushort), sizeof(float));
     size_t blockCount = BUFFER_SIZE / elementSize;
-    uint64_t lastCase = 1ULL << (8 * sizeof(float));
-    size_t stride = blockCount;
+    uint64_t lastCase = 1ULL << NB_INPUT_POWER_OF_TWO;
 
-    if (gWimpyMode)
-        stride = (uint64_t)blockCount * (uint64_t)gWimpyReductionFactor;
+    if (gWimpyMode) lastCase /= gWimpyReductionFactor;
 
     // we handle 64-bit types a bit differently.
     if (lastCase == 0) lastCase = 0x100000000ULL;
@@ -1737,7 +1755,7 @@ int Test_vStoreaHalf_private(cl_device_id device, f2h referenceFunc,
     dchk.lim = blockCount;
     dchk.count = (blockCount + threadCount - 1) / threadCount;
 
-    for (i = 0; i < (uint64_t)lastCase; i += stride)
+    for (i = 0; i < (uint64_t)lastCase; i += blockCount)
     {
         count = (cl_uint)std::min((uint64_t)blockCount, lastCase - i);
         fref.i = i;
