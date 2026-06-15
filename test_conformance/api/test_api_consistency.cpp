@@ -1021,36 +1021,24 @@ REGISTER_TEST(consistency_missing_linker)
         return TEST_SKIPPED_ITSELF;
     }
 
-    const char* sample_kernel = R"(
-        __kernel void sample_test_C(__global float *src, __global int *dst)
-        {
-            size_t tid = get_global_id(0);
-            dst[tid] = (int)src[tid];
-        }
-    )";
+    cl_bool compilerAvail = CL_TRUE;
+    err = clGetDeviceInfo(device, CL_DEVICE_COMPILER_AVAILABLE,
+                          sizeof(compilerAvail), &compilerAvail, nullptr);
+    test_error_fail(err, "clGetDeviceInfo failed");
 
-    clProgramWrapper program =
-        clCreateProgramWithSource(context, 1, &sample_kernel, nullptr, &err);
-    test_error(err, "Unable to create reference program");
+    if (compilerAvail)
+    {
+        log_error("CL_DEVICE_LINKER_AVAILABLE must be CL_TRUE if "
+                  "CL_DEVICE_COMPILER_AVAILABLE is CL_TRUE.\n");
+        return TEST_FAIL;
+    }
 
-    /* clCompileProgram consistency check */
-    err = clCompileProgram(program, 1, &device, nullptr, 0, nullptr, nullptr,
-                           nullptr, nullptr);
-    test_error(err, "clCompileProgram failed");
-
-    clProgramWrapper linked =
-        clLinkProgram(context, 1, &device, "", 1, &program, 0, 0, &err);
-    test_failure_error_ret(err, CL_LINKER_NOT_AVAILABLE,
-                           "clLinkProgram should return "
-                           "CL_LINKER_NOT_AVAILABLE",
-                           TEST_FAIL);
-
-    /* clBuildProgram consistency check */
-    err = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
-    test_failure_error_ret(err, CL_COMPILER_NOT_AVAILABLE,
-                           "clBuildProgram should return "
-                           "CL_COMPILER_NOT_AVAILABLE",
-                           TEST_FAIL);
+    if (!gIsEmbedded)
+    {
+        log_error("CL_DEVICE_LINKER_AVAILABLE must be CL_TRUE for devices "
+                  "supporting the full profile.\n");
+        return TEST_FAIL;
+    }
 
     return TEST_PASS;
 }
