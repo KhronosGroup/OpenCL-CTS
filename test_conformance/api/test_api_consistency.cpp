@@ -1040,6 +1040,27 @@ REGISTER_TEST(consistency_missing_linker)
         return TEST_FAIL;
     }
 
+    const char* sample_kernel = R"(
+        __kernel void sample_test_C(__global float *src, __global int *dst)
+        {
+            size_t tid = get_global_id(0);
+            dst[tid] = (int)src[tid];
+        }
+    )";
+
+    clProgramWrapper program =
+        clCreateProgramWithSource(context, 1, &sample_kernel, nullptr, &err);
+    test_error(err, "Unable to create reference program");
+
+    clProgramWrapper linked =
+        clLinkProgram(context, 1, &device, "", 1, &program, 0, 0, &err);
+    if (err != CL_LINKER_NOT_AVAILABLE && err != CL_INVALID_OPERATION)
+    {
+        log_error("clLinkProgram should return CL_LINKER_NOT_AVAILABLE or "
+                  "CL_INVALID_OPERATION\n");
+        return TEST_FAIL;
+    }
+
     return TEST_PASS;
 }
 
