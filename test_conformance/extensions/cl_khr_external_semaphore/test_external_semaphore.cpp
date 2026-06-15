@@ -52,7 +52,7 @@
         }                                                                      \
     } while (false)
 
-static const char *source = "__kernel void empty() {}";
+static const char* source = "__kernel void empty() {}";
 
 static void log_info_semaphore_type(
     VulkanExternalSemaphoreHandleType vkExternalSemaphoreHandleType)
@@ -64,7 +64,7 @@ static void log_info_semaphore_type(
     log_info("%s", semaphore_type_description.str().c_str());
 }
 
-static int init_vulkan_device(cl_uint num_devices, cl_device_id *deviceIds)
+static int init_vulkan_device(cl_uint num_devices, cl_device_id* deviceIds)
 {
     cl_platform_id platform = nullptr;
 
@@ -84,7 +84,7 @@ static int init_vulkan_device(cl_uint num_devices, cl_device_id *deviceIds)
 
 static cl_int get_device_semaphore_handle_types(
     cl_device_id deviceID, cl_device_info param,
-    std::vector<cl_external_semaphore_handle_type_khr> &handle_types)
+    std::vector<cl_external_semaphore_handle_type_khr>& handle_types)
 {
     int err = CL_SUCCESS;
     // Query for export support

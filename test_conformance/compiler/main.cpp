@@ -18,9 +18,16 @@
 
 #include "harness/testHarness.h"
 #include "harness/stringHelpers.h"
+#include "harness/os_helpers.h"
 
 std::string spvBinariesPath = "spirv_bin";
+std::string spvIncludeTestDirectory = "includeTestDirectory";
+std::string spvSecondIncludeTestDirectory = "secondIncludeTestDirectory";
+
 const std::string spvBinariesPathArg = "--spirv-binaries-path";
+const std::string spvIncludeTestDirectoryArg = "--include-test-directory";
+const std::string spvSecondIncludeTestDirectoryArg =
+    "--second-include-test-directory";
 
 void printUsage()
 {
@@ -32,6 +39,18 @@ void printUsage()
 
 int main(int argc, const char *argv[])
 {
+    char const *sep = get_dir_sep();
+    char const *exe_dir = get_exe_dir();
+
+    // Set default include directories
+    spvIncludeTestDirectory =
+        std::string(exe_dir) + sep + "includeTestDirectory";
+    spvSecondIncludeTestDirectory =
+        std::string(exe_dir) + sep + "secondIncludeTestDirectory";
+
+    free((void *)sep);
+    free((void *)exe_dir);
+
     bool modifiedSpvBinariesPath = false;
     bool listTests = false;
     for (int i = 0; i < argc; ++i)
@@ -50,6 +69,34 @@ int main(int argc, const char *argv[])
                 spvBinariesPath = std::string(argv[i + 1]);
                 argsRemoveNum += 2;
                 modifiedSpvBinariesPath = true;
+            }
+        }
+        if (argv[i] == spvIncludeTestDirectoryArg)
+        {
+            if (i + 1 == argc)
+            {
+                log_error("Missing value for '%s' argument.\n",
+                          spvIncludeTestDirectoryArg.c_str());
+                return TEST_FAIL;
+            }
+            else
+            {
+                spvIncludeTestDirectory = std::string(argv[i + 1]);
+                argsRemoveNum += 2;
+            }
+        }
+        if (argv[i] == spvSecondIncludeTestDirectoryArg)
+        {
+            if (i + 1 == argc)
+            {
+                log_error("Missing value for '%s' argument.\n",
+                          spvSecondIncludeTestDirectoryArg.c_str());
+                return TEST_FAIL;
+            }
+            else
+            {
+                spvSecondIncludeTestDirectory = std::string(argv[i + 1]);
+                argsRemoveNum += 2;
             }
         }
 

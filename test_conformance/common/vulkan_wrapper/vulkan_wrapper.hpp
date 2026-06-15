@@ -344,7 +344,7 @@ public:
     void updateArray(uint32_t binding, unsigned numBuffers,
                      const VulkanBufferList &buffers);
     void update(uint32_t binding, const VulkanImageView &imageView);
-    void updateArray(uint32_t binding,
+    void updateArray(uint32_t binding, unsigned numImages,
                      const VulkanImageViewList &imageViewList);
     operator VkDescriptorSet() const;
 };
