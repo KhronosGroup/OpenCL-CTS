@@ -154,6 +154,7 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
 
     if (imageInfo->type == CL_MEM_OBJECT_IMAGE2D
         || imageInfo->type == CL_MEM_OBJECT_IMAGE3D
+        || imageInfo->type == CL_MEM_OBJECT_IMAGE1D_ARRAY
         || imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
     {
         const size_t calc_row =
@@ -176,6 +177,7 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
             case CL_MEM_OBJECT_IMAGE2D_ARRAY:
                 calc_slice = expected_row * imageInfo->height;
                 break;
+            case CL_MEM_OBJECT_IMAGE1D_ARRAY: calc_slice = expected_row; break;
             default: break;
         }
 
@@ -218,6 +220,13 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
             {
                 log_error("ERROR: CL_IMAGE_SLICE_PITCH is 0 for COPY_HOST_PTR "
                           "3D/array image\n");
+                return 1;
+            }
+
+            if (imageInfo->type == CL_MEM_OBJECT_IMAGE2D && outSlicePitch != 0)
+            {
+                log_error("ERROR: CL_IMAGE_SLICE_PITCH must be 0 for "
+                          "CL_MEM_OBJECT_IMAGE2D image\n");
                 return 1;
             }
         }
