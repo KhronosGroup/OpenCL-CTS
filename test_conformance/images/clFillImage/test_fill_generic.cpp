@@ -49,8 +49,10 @@ static void fill_region_with_value( image_descriptor *imageInfo, void *imageValu
     free(fillColor);
 }
 
-int test_fill_image_generic( cl_context context, cl_command_queue queue, image_descriptor *imageInfo,
-                             const size_t origin[], const size_t region[], ExplicitType outputType, MTdata d )
+int test_fill_image_generic(cl_context context, cl_command_queue queue,
+                            image_descriptor *imageInfo, const size_t origin[],
+                            const size_t region[], ExplicitType outputType,
+                            MTdata d, const context_t &ctx)
 {
     BufferOwningPtr<char> imgData;
     BufferOwningPtr<char> imgHost;
@@ -58,8 +60,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     int error;
     clMemWrapper image;
 
-    if ( gDebugTrace )
-        log_info( " ++ Entering inner test loop...\n" );
+    if (ctx.debugTrace) log_info(" ++ Entering inner test loop...\n");
 
     // Generate some data to test against
     size_t dataBytes = 0;
@@ -88,8 +89,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
 
     if (dataBytes > imgData.getSize())
     {
-        if ( gDebugTrace )
-            log_info( " - Resizing random image data...\n" );
+        if (ctx.debugTrace) log_info(" - Resizing random image data...\n");
 
         generate_random_image_data( imageInfo, imgData, d  );
 
@@ -107,16 +107,15 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     memcpy(imgHost, imgData, dataBytes);
 
     // Construct testing sources
-    if ( gDebugTrace )
-        log_info( " - Creating image...\n" );
+    if (ctx.debugTrace) log_info(" - Creating image...\n");
 
-    image = create_image(context, queue, imgData, imageInfo, gEnablePitch,
-                         false, &error);
+    image = create_image(context, queue, imgData, imageInfo, ctx.enablePitch,
+                         false, ctx.debugTrace, &error);
     if ( image == NULL )
         return error;
 
     // Now fill the region defined by origin, region with the pixel value found at origin.
-    if ( gDebugTrace )
+    if (ctx.debugTrace)
         log_info( " - Filling at %d,%d,%d size %d,%d,%d\n", (int)origin[ 0 ], (int)origin[ 1 ], (int)origin[ 2 ],
                  (int)region[ 0 ], (int)region[ 1 ], (int)region[ 2 ] );
 
@@ -129,7 +128,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     {
         cl_float fillColor[ 4 ];
         read_image_pixel_float( imgHost, imageInfo, origin[ 0 ], origin[ 1 ], origin[ 2 ], fillColor );
-        if ( gDebugTrace )
+        if (ctx.debugTrace)
             log_info( " - with value %g, %g, %g, %g\n", fillColor[ 0 ], fillColor[ 1 ], fillColor[ 2 ], fillColor[ 3 ] );
         error = clEnqueueFillImage ( queue, image, fillColor, origin, region, 0, NULL, NULL );
         if ( error != CL_SUCCESS )
@@ -150,7 +149,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     {
         cl_int fillColor[ 4 ];
         read_image_pixel<cl_int>( imgHost, imageInfo, origin[ 0 ], origin[ 1 ], origin[ 2 ], fillColor );
-        if ( gDebugTrace )
+        if (ctx.debugTrace)
             log_info( " - with value %d, %d, %d, %d\n", fillColor[ 0 ], fillColor[ 1 ], fillColor[ 2 ], fillColor[ 3 ] );
         error = clEnqueueFillImage ( queue, image, fillColor, origin, region, 0, NULL, NULL );
         if ( error != CL_SUCCESS )
@@ -171,7 +170,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
     {
         cl_uint fillColor[ 4 ];
         read_image_pixel<cl_uint>( imgHost, imageInfo, origin[ 0 ], origin[ 1 ], origin[ 2 ], fillColor );
-        if ( gDebugTrace )
+        if (ctx.debugTrace)
             log_info( " - with value %u, %u, %u, %u\n", fillColor[ 0 ], fillColor[ 1 ], fillColor[ 2 ], fillColor[ 3 ] );
         error = clEnqueueFillImage ( queue, image, fillColor, origin, region, 0, NULL, NULL );
         if ( error != CL_SUCCESS )
@@ -191,8 +190,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
 
     // Map the destination image to verify the results with the host
     // copy. The contents of the entire buffer are compared.
-    if ( gDebugTrace )
-        log_info( " - Mapping results...\n" );
+    if (ctx.debugTrace) log_info(" - Mapping results...\n");
 
     size_t imageOrigin[ 3 ] = { 0, 0, 0 };
     size_t imageRegion[ 3 ] = { imageInfo->width, 1, 1 };
@@ -231,8 +229,7 @@ int test_fill_image_generic( cl_context context, cl_command_queue queue, image_d
 
     size_t scanlineSize = imageInfo->width * get_pixel_size( imageInfo->format );
 
-    if ( gDebugTrace )
-        log_info( " - Scanline verification...\n" );
+    if (ctx.debugTrace) log_info(" - Scanline verification...\n");
 
     size_t thirdDim = 1;
     size_t secondDim = 1;

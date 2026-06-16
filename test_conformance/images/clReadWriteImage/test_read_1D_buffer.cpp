@@ -18,7 +18,7 @@
 
 int test_read_image_1D_buffer(cl_context context, cl_command_queue queue,
                               image_descriptor *imageInfo, MTdata d,
-                              cl_mem_flags flags)
+                              cl_mem_flags flags, const context_t &ctx)
 {
     int error;
 
@@ -29,7 +29,7 @@ int test_read_image_1D_buffer(cl_context context, cl_command_queue queue,
     BufferOwningPtr<char> imageValues;
     generate_random_image_data(imageInfo, imageValues, d);
 
-    if (gDebugTrace)
+    if (ctx.debugTrace)
     {
         log_info(" - Creating 1D image %d...\n", (int)imageInfo->width);
         log_info(" with %llu mip levels\n",
@@ -53,7 +53,7 @@ int test_read_image_1D_buffer(cl_context context, cl_command_queue queue,
         return -1;
     }
 
-    if (gDebugTrace) log_info(" - Writing image...\n");
+    if (ctx.debugTrace) log_info(" - Writing image...\n");
 
     size_t origin[3] = { 0, 0, 0 };
     size_t region[3] = { imageInfo->width, 1, 1 };
@@ -63,7 +63,7 @@ int test_read_image_1D_buffer(cl_context context, cl_command_queue queue,
     size_t imgValMipLevelOffset = 0;
 
     error = clEnqueueWriteImage(queue, image, CL_FALSE, origin, region,
-                                (gEnablePitch ? imageInfo->rowPitch : 0), 0,
+                                (ctx.enablePitch ? imageInfo->rowPitch : 0), 0,
                                 (char *)imageValues + imgValMipLevelOffset, 0,
                                 NULL, NULL);
     if (error != CL_SUCCESS)
@@ -75,7 +75,7 @@ int test_read_image_1D_buffer(cl_context context, cl_command_queue queue,
 
     // To verify, we just read the results right back and see whether they
     // match the input
-    if (gDebugTrace)
+    if (ctx.debugTrace)
     {
         log_info(" - Initing result array...\n");
     }
@@ -85,7 +85,7 @@ int test_read_image_1D_buffer(cl_context context, cl_command_queue queue,
     size_t imageSize = scanlineSize;
     memset(resultValues, 0xff, imageSize);
 
-    if (gDebugTrace) log_info(" - Reading results...\n");
+    if (ctx.debugTrace) log_info(" - Reading results...\n");
 
     error = clEnqueueReadImage(queue, image, CL_TRUE, origin, region, 0, 0,
                                resultValues, 0, NULL, NULL);
@@ -150,7 +150,8 @@ int test_read_image_1D_buffer(cl_context context, cl_command_queue queue,
 
 int test_read_image_set_1D_buffer(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
-                                  cl_image_format *format, cl_mem_flags flags)
+                                  cl_image_format *format, cl_mem_flags flags,
+                                  const context_t &ctx)
 {
     size_t maxWidth;
     cl_ulong maxAllocSize, memSize;
@@ -158,7 +159,7 @@ int test_read_image_set_1D_buffer(cl_device_id device, cl_context context,
     RandomSeed seed(gRandomSeed);
     size_t pixelSize;
 
-    if (gTestMipmaps)
+    if (ctx.testMipmaps)
     {
         // 1D image buffers don't support mipmaps
         // https://registry.khronos.org/OpenCL/specs/3.0-unified/html/OpenCL_Ext.html#cl_khr_mipmap_image
@@ -184,20 +185,21 @@ int test_read_image_set_1D_buffer(cl_device_id device, cl_context context,
         maxAllocSize = (cl_ulong)SIZE_MAX;
     }
 
-    if (gTestSmallImages)
+    if (ctx.testSmallImages)
     {
         for (imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++)
         {
             imageInfo.rowPitch = imageInfo.width * pixelSize;
 
-            if (gDebugTrace) log_info("   at size %d\n", (int)imageInfo.width);
+            if (ctx.debugTrace)
+                log_info("   at size %d\n", (int)imageInfo.width);
 
             int ret = test_read_image_1D_buffer(context, queue, &imageInfo,
-                                                seed, flags);
+                                                seed, flags, ctx);
             if (ret) return -1;
         }
     }
-    else if (gTestMaxImages)
+    else if (ctx.testMaxImages)
     {
         // Try a specific set of maximum sizes
         size_t numbeOfSizes;
@@ -213,9 +215,9 @@ int test_read_image_set_1D_buffer(cl_device_id device, cl_context context,
             imageInfo.rowPitch = imageInfo.width * pixelSize;
 
             log_info("Testing %d\n", (int)imageInfo.width);
-            if (gDebugTrace) log_info("   at max size %d\n", (int)maxWidth);
+            if (ctx.debugTrace) log_info("   at max size %d\n", (int)maxWidth);
             if (test_read_image_1D_buffer(context, queue, &imageInfo, seed,
-                                          flags))
+                                          flags, ctx))
                 return -1;
         }
     }
@@ -233,7 +235,7 @@ int test_read_image_set_1D_buffer(cl_device_id device, cl_context context,
                     (size_t)random_log_in_range(16, (int)(maxWidth / 32), seed);
 
                 imageInfo.rowPitch = imageInfo.width * pixelSize;
-                if (gEnablePitch)
+                if (ctx.enablePitch)
                 {
                     size_t extraWidth = (int)random_log_in_range(0, 64, seed);
                     imageInfo.rowPitch += extraWidth * pixelSize;
@@ -242,12 +244,12 @@ int test_read_image_set_1D_buffer(cl_device_id device, cl_context context,
                 size = (size_t)imageInfo.rowPitch * 4;
             } while (size > maxAllocSize || (size / 3) > memSize);
 
-            if (gDebugTrace)
+            if (ctx.debugTrace)
                 log_info("   at size %d (row pitch %d) out of %d\n",
                          (int)imageInfo.width, (int)imageInfo.rowPitch,
                          (int)maxWidth);
             int ret = test_read_image_1D_buffer(context, queue, &imageInfo,
-                                                seed, flags);
+                                                seed, flags, ctx);
             if (ret) return -1;
         }
     }

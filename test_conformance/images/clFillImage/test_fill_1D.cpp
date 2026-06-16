@@ -16,11 +16,17 @@
 #include "../testBase.h"
 
 // Defined in test_fill_2D_3D.cpp
-extern int test_fill_image_generic( cl_context context, cl_command_queue queue, image_descriptor *imageInfo,
-                                    const size_t origin[], const size_t region[], ExplicitType outputType, MTdata d );
+extern int test_fill_image_generic(cl_context context, cl_command_queue queue,
+                                   image_descriptor *imageInfo,
+                                   const size_t origin[], const size_t region[],
+                                   ExplicitType outputType, MTdata d,
+                                   const context_t &ctx);
 
 
-int test_fill_image_size_1D( cl_context context, cl_command_queue queue, image_descriptor *imageInfo, ExplicitType outputType, MTdata d )
+int test_fill_image_size_1D(cl_context context, cl_command_queue queue,
+                            image_descriptor *imageInfo,
+                            ExplicitType outputType, MTdata d,
+                            const context_t &ctx)
 {
     size_t origin[ 3 ], region[ 3 ];
     int ret = 0, retCode;
@@ -31,7 +37,8 @@ int test_fill_image_size_1D( cl_context context, cl_command_queue queue, image_d
     region[ 1 ] = 1;
     region[ 2 ] = 1;
 
-    retCode = test_fill_image_generic( context, queue, imageInfo, origin, region, outputType, d );
+    retCode = test_fill_image_generic(context, queue, imageInfo, origin, region,
+                                      outputType, d, ctx);
     if ( retCode < 0 )
         return retCode;
     else
@@ -47,7 +54,8 @@ int test_fill_image_size_1D( cl_context context, cl_command_queue queue, image_d
         origin[ 0 ] = ( imageInfo->width > region[ 0 ] ) ? (size_t)random_in_range( 0, (int)( imageInfo->width - region[ 0 ] - 1 ), d ) : 0;
 
         // Go for it!
-        retCode = test_fill_image_generic( context, queue, imageInfo, origin, region, outputType, d );
+        retCode = test_fill_image_generic(context, queue, imageInfo, origin,
+                                          region, outputType, d, ctx);
         if ( retCode < 0 )
             return retCode;
         else
@@ -60,14 +68,15 @@ int test_fill_image_size_1D( cl_context context, cl_command_queue queue, image_d
 
 int test_fill_image_set_1D(cl_device_id device, cl_context context,
                            cl_command_queue queue, cl_image_format *format,
-                           cl_mem_flags mem_flags, ExplicitType outputType)
+                           cl_mem_flags mem_flags, ExplicitType outputType,
+                           const context_t &ctx)
 {
     size_t maxWidth;
     cl_ulong maxAllocSize, memSize;
     image_descriptor imageInfo = { 0 };
     RandomSeed seed(gRandomSeed);
     const size_t rowPadding_default = 48;
-    size_t rowPadding = gEnablePitch ? rowPadding_default : 0;
+    size_t rowPadding = ctx.enablePitch ? rowPadding_default : 0;
     size_t pixelSize;
 
     memset(&imageInfo, 0x0, sizeof(image_descriptor));
@@ -86,13 +95,13 @@ int test_fill_image_set_1D(cl_device_id device, cl_context context,
       maxAllocSize = (cl_ulong)SIZE_MAX;
     }
 
-    if ( gTestSmallImages )
+    if (ctx.testSmallImages)
     {
         for ( imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++ )
         {
             imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
 
-            if (gEnablePitch)
+            if (ctx.enablePitch)
             {
               rowPadding = rowPadding_default;
               do {
@@ -101,15 +110,16 @@ int test_fill_image_set_1D(cl_device_id device, cl_context context,
               } while ((imageInfo.rowPitch % pixelSize) != 0);
             }
 
-            if ( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "   at size %d,%d\n", (int)imageInfo.width, (int)imageInfo.height );
 
-            int ret = test_fill_image_size_1D( context, queue, &imageInfo, outputType, seed );
+            int ret = test_fill_image_size_1D(context, queue, &imageInfo,
+                                              outputType, seed, ctx);
             if ( ret )
                 return -1;
         }
     }
-    else if ( gTestMaxImages )
+    else if (ctx.testMaxImages)
     {
         // Try a specific set of maximum sizes
         size_t numbeOfSizes;
@@ -122,7 +132,7 @@ int test_fill_image_set_1D(cl_device_id device, cl_context context,
             imageInfo.width = sizes[ idx ][ 0 ];
             imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
 
-            if (gEnablePitch)
+            if (ctx.enablePitch)
             {
               rowPadding = rowPadding_default;
               do {
@@ -132,9 +142,10 @@ int test_fill_image_set_1D(cl_device_id device, cl_context context,
             }
 
             log_info( "Testing %d\n", (int)sizes[ idx ][ 0 ] );
-            if ( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "   at max size %d\n", (int)sizes[ idx ][ 0 ] );
-            if ( test_fill_image_size_1D( context, queue, &imageInfo, outputType, seed ) )
+            if (test_fill_image_size_1D(context, queue, &imageInfo, outputType,
+                                        seed, ctx))
                 return -1;
         }
     }
@@ -151,7 +162,7 @@ int test_fill_image_set_1D(cl_device_id device, cl_context context,
 
                 imageInfo.rowPitch = imageInfo.width * pixelSize + rowPadding;
 
-                if (gEnablePitch)
+                if (ctx.enablePitch)
                 {
                   rowPadding = rowPadding_default;
                   do {
@@ -163,9 +174,10 @@ int test_fill_image_set_1D(cl_device_id device, cl_context context,
                 size = (size_t)imageInfo.rowPitch * 4;
             } while (  size > maxAllocSize || ( size * 3 ) > memSize );
 
-            if ( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "   at size %d (row pitch %d) out of %d\n", (int)imageInfo.width, (int)imageInfo.rowPitch, (int)maxWidth );
-            int ret = test_fill_image_size_1D( context, queue, &imageInfo, outputType, seed );
+            int ret = test_fill_image_size_1D(context, queue, &imageInfo,
+                                              outputType, seed, ctx);
             if ( ret )
                 return -1;
         }
