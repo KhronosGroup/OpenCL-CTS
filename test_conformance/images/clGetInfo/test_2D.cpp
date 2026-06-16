@@ -231,6 +231,15 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
             }
         }
     }
+    else /* 1D, 1D_BUFFER, slice must be 0 */
+    {
+        if (outSlicePitch != 0)
+        {
+            log_error("ERROR: CL_IMAGE_SLICE_PITCH must be 0 for %s image\n",
+                      GetImageTypeName(imageInfo->type));
+            return 1;
+        }
+    }
 
     if( imageInfo->type == CL_MEM_OBJECT_IMAGE1D && outSlicePitch != 0 )
     {
