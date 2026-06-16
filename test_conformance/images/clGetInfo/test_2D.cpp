@@ -156,11 +156,12 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
         imageInfo->width * get_pixel_size(imageInfo->format);
     const bool use_host = (flags & CL_MEM_USE_HOST_PTR) != 0;
     const bool copy_host = (flags & CL_MEM_COPY_HOST_PTR) != 0;
+    const bool has_host_ptr = use_host || copy_host;
 
-    // USE_HOST_PTR + custom row_pitch: must match what user passes
-    // everything else: must equal calc_row
+    // row_pitch/slice_pitch can be non-zero only when a host_ptr is provided,
+    // with host_ptr == NULL it must be 0
     const size_t expected_row =
-        (use_host && row_pitch != 0) ? row_pitch : calc_row;
+        (has_host_ptr && row_pitch != 0) ? row_pitch : calc_row;
 
     // Expected slice pitch for image type:
     // USE_HOST_PTR + custom slice_pitch: must match what user passes
@@ -177,59 +178,25 @@ int test_get_image_info_single( cl_context context, image_descriptor *imageInfo,
     }
 
     const size_t expected_slice =
-        (use_host && slice_pitch != 0) ? slice_pitch : calc_slice;
+        (has_host_ptr && slice_pitch != 0) ? slice_pitch : calc_slice;
 
-    if (use_host || !copy_host)
+    if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER
+        && outRowPitch != expected_row)
     {
-        // USE_HOST_PTR and default/ALLOC_HOST_PTR creation
-        if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER
-            && outRowPitch != expected_row)
-        {
-            log_error("ERROR: CL_IMAGE_ROW_PITCH mismatch "
-                      "(flags=0x%lx row_pitch=%zu): expected %zu, got %zu\n",
-                      (unsigned long)flags, row_pitch, expected_row,
-                      outRowPitch);
-            return 1;
-        }
-
-        if (outSlicePitch != expected_slice)
-        {
-            log_error("ERROR: CL_IMAGE_SLICE_PITCH mismatch "
-                      "(flags=0x%lx slice_pitch=%zu): expected %zu, got %zu\n",
-                      (unsigned long)flags, slice_pitch, expected_slice,
-                      outSlicePitch);
-            return 1;
-        }
+        log_error("ERROR: CL_IMAGE_ROW_PITCH mismatch for image type %s "
+                  "(flags=0x%lx row_pitch=%zu): expected %zu, got %zu\n",
+                  GetImageTypeName(imageInfo->type), (unsigned long)flags,
+                  row_pitch, expected_row, outRowPitch);
+        return 1;
     }
-    else
-    {
-        // COPY_HOST_PTR: may relayout -> only require non-zero
-        if (imageInfo->type != CL_MEM_OBJECT_IMAGE1D_BUFFER && outRowPitch == 0)
-        {
-            log_error(
-                "ERROR: CL_IMAGE_ROW_PITCH is 0 for COPY_HOST_PTR image\n");
-            return 1;
-        }
 
-        if ((imageInfo->type == CL_MEM_OBJECT_IMAGE2D
-             || imageInfo->type == CL_MEM_OBJECT_IMAGE1D
-             || imageInfo->type == CL_MEM_OBJECT_IMAGE1D_BUFFER))
-        {
-            if (outSlicePitch != 0)
-            {
-                log_error(
-                    "ERROR: CL_IMAGE_SLICE_PITCH must be 0 for %s image\n",
-                    GetImageTypeName(imageInfo->type));
-                return 1;
-            }
-        }
-        else if (outSlicePitch == 0)
-        {
-            log_error(
-                "ERROR: CL_IMAGE_SLICE_PITCH is 0 for COPY_HOST_PTR %s image\n",
-                GetImageTypeName(imageInfo->type));
-            return 1;
-        }
+    if (outSlicePitch != expected_slice)
+    {
+        log_error("ERROR: CL_IMAGE_SLICE_PITCH mismatch for image type %s "
+                  "(flags=0x%lx slice_pitch=%zu): expected %zu, got %zu\n",
+                  GetImageTypeName(imageInfo->type), (unsigned long)flags,
+                  slice_pitch, expected_slice, outSlicePitch);
+        return 1;
     }
 
     size_t outWidth;
