@@ -3728,10 +3728,7 @@ public:
     }
     cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
     {
-        if constexpr (
-            std::is_same_v<
-                HostDataType,
-                HOST_FLOAT> || std::is_same_v<HostDataType, HOST_HALF>)
+        if constexpr (is_host_fp_v<HostDataType>)
         {
             return threadCount;
         }

@@ -686,15 +686,15 @@ struct EdgeCasesTest
             {
                 const auto &aec = cases[i];
                 bool skip = false;
+
+                if (aec.requires_denorm && !(gFloatCapabilities & CL_FP_DENORM))
+                {
+                    log_info("SKIP (no CL_FP_DENORM): %s\n", aec.func_name);
+                    skip = true;
+                }
+
                 if (gIsEmbedded)
                 {
-                    if (aec.requires_denorm
-                        && !(gFloatCapabilities & CL_FP_DENORM))
-                    {
-                        log_info("SKIP (no CL_FP_DENORM): %s\n", aec.func_name);
-                        skip = true;
-                    }
-
                     if (aec.requires_inf_nan
                         && !(gFloatCapabilities & CL_FP_INF_NAN))
                     {
