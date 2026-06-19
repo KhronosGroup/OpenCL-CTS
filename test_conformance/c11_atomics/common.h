@@ -99,76 +99,6 @@ extern cl_int getSupportedMemoryOrdersAndScopes(
     cl_device_id device, std::vector<TExplicitMemoryOrderType> &memoryOrders,
     std::vector<TExplicitMemoryScopeType> &memoryScopes);
 
-union FloatIntUnion {
-    float f;
-    uint32_t i;
-};
-
-union DoubleIntUnion {
-    double d;
-    uint64_t i;
-};
-
-template <typename HostDataType> bool is_qnan(const HostDataType &value)
-{
-    if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
-    {
-        FloatIntUnion u;
-        u.f = value;
-        if ((u.i & 0x7F800000) != 0x7F800000) return false;
-        return (u.i & 0x00400000) != 0;
-    }
-    else if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
-    {
-        DoubleIntUnion u;
-        u.d = value;
-        if ((u.i & 0x7FF0000000000000) != 0x7FF0000000000000) return false;
-        return (u.i & 0x0008000000000000) != 0;
-    }
-    else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
-    {
-        if ((static_cast<cl_half>(value) & 0x7C00) != 0x7C00) return false;
-        return (static_cast<cl_half>(value) & 0x0200) != 0;
-    }
-    else
-        return std::isnan(value);
-}
-
-template <typename HostDataType> bool is_snan(const HostDataType &value)
-{
-    if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
-    {
-        FloatIntUnion u;
-        u.f = value;
-        if ((u.i & 0x7F800000) != 0x7F800000) return false;
-        return (u.i & 0x00400000) == 0;
-    }
-    else if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
-    {
-        DoubleIntUnion u;
-        u.d = value;
-        if ((u.i & 0x7FF0000000000000) != 0x7FF0000000000000) return false;
-        return (u.i & 0x0008000000000000) == 0;
-    }
-    else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
-    {
-        if ((static_cast<cl_half>(value) & 0x7C00) != 0x7C00) return false;
-        return (static_cast<cl_half>(value) & 0x0200) == 0;
-    }
-    else
-        return std::isnan(value);
-}
-
-inline bool IsHalfNaN(const cl_half v)
-{
-    // Extract FP16 exponent and mantissa
-    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-    uint16_t h_mant = ((cl_half)v) & 0x3FF;
-
-    // NaN test
-    return (h_exp == 0x1F && h_mant != 0);
-}
-
 class AtomicTypeInfo {
 public:
     TExplicitAtomicType _type;
@@ -1368,7 +1298,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                 CurrentGroupSize() * CurrentGroupNum(deviceThreadCount);
         threadCount = deviceThreadCount + hostThreadCount;
     }
-    if (gDebug)
+    if (gDebug && programLine != nullptr)
     {
         log_info("Program source:\n");
         log_info("%s\n", programLine);

@@ -3585,7 +3585,8 @@ public:
         }
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
-            if (static_cast<cl_half>(expected) != testValues[whichDestValue])
+            if (static_cast<cl_half>(expected)
+                != static_cast<cl_half>(testValues[whichDestValue]))
             {
                 // Accept any NaN when any NaN is expected: IEEE 754 allows
                 // quieting sNaN to qNaN during min/max, so NaN payload type is
@@ -3650,6 +3651,8 @@ public:
                         return false;
                 }
             }
+            else
+                return false;
         }
 
         return CBasicTestMemOrderScope<
