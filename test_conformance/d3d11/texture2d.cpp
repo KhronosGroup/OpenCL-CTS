@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#define _CRT_SECURE_NO_WARNINGS
 #include "harness.h"
 #include <vector>
 
@@ -170,12 +169,10 @@ void SubTestTexture2D(
     cl_image_format clFormat;
     cl_int result = CL_SUCCESS;
 
-    HarnessD3D11_TestBegin("2D Texture: Format=%s, Width=%d, Height=%d, MipLevels=%d, ArraySize=%d",
-        format->name_format,
-        size->Width,
-        size->Height,
-        size->MipLevels,
-        size->ArraySize);
+    log_info("2D Texture: Format=%s, Width=%d, Height=%d, MipLevels=%d, "
+             "ArraySize=%d\n",
+             format->name_format, size->Width, size->Height, size->MipLevels,
+             size->ArraySize);
 
     struct
     {
@@ -630,9 +627,6 @@ Cleanup:
             TestRequire(result == CL_SUCCESS, "clReleaseEvent for event failed.");
         }
     }
-
-
-    HarnessD3D11_TestEnd();
 }
 
 bool is_format_supported(
@@ -712,16 +706,16 @@ void TestDeviceTexture2D(
     {
         if (!is_format_supported(formats[format].channel_order, formats[format].channel_type, supported_image_formats))
         {
-          HarnessD3D11_TestBegin("2D_texture: Format=%s, Width=%d, Height=%d, MipLevels=%d, ArraySize=%d\n",
-            formats[format].name_format,
-            texture2DSizes[size % texture2DSizeCount].Width,
-            texture2DSizes[size % texture2DSizeCount].Height,
-            texture2DSizes[size % texture2DSizeCount].MipLevels,
-            texture2DSizes[size % texture2DSizeCount].ArraySize);
-          log_info("\tFormat not supported, skipping test!\n");
-          HarnessD3D11_TestEnd();
+            log_info("2D_texture: Format=%s, Width=%d, Height=%d, "
+                     "MipLevels=%d, ArraySize=%d\n",
+                     formats[format].name_format,
+                     texture2DSizes[size % texture2DSizeCount].Width,
+                     texture2DSizes[size % texture2DSizeCount].Height,
+                     texture2DSizes[size % texture2DSizeCount].MipLevels,
+                     texture2DSizes[size % texture2DSizeCount].ArraySize);
+            log_info("\tFormat not supported, skipping test!\n");
 
-          continue;
+            continue;
         }
 
         SubTestTexture2D(
