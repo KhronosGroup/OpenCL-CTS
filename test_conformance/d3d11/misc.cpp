@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#define _CRT_SECURE_NO_WARNINGS
 #include "harness.h"
 
 void SubTestMiscMultipleCreates(
@@ -28,7 +27,7 @@ void SubTestMiscMultipleCreates(
 
     cl_int result = CL_SUCCESS;
 
-    HarnessD3D11_TestBegin("Misc: Multiple Creates");
+    log_info("Misc: Multiple Creates\n");
 
     // create the D3D11 resources
     {
@@ -118,8 +117,6 @@ Cleanup:
     {
         pTexture->Release();
     }
-
-    HarnessD3D11_TestEnd();
 }
 
 void SubTestMiscAcquireRelease(
@@ -134,7 +131,7 @@ void SubTestMiscAcquireRelease(
     cl_int result = CL_SUCCESS;
     cl_mem mem[2] = {NULL, NULL};
 
-    HarnessD3D11_TestBegin("Misc: Acquire Release");
+    log_info("Misc: Acquire Release\n");
 
 
     // create the D3D11 resources
@@ -200,8 +197,6 @@ Cleanup:
     {
         pTexture->Release();
     }
-
-    HarnessD3D11_TestEnd();
 }
 
 void TestDeviceMisc(

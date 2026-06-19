@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,12 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#define INITGUID
 #include "harness.h"
-
-#include <tchar.h>
-#include <string>
-#include <vector>
 
 /*
  * OpenCL state
@@ -44,137 +39,6 @@ HarnessD3D11_Initialize(cl_platform_id platform)
     INITPFN(clCreateFromD3D11Texture3DKHR);
     INITPFN(clEnqueueAcquireD3D11ObjectsKHR);
     INITPFN(clEnqueueReleaseD3D11ObjectsKHR);
-}
-
-/*
- * Window management
- */
-
-static IDXGISwapChain*       HarnessD3D11_pSwapChain = NULL;
-static ID3D11Device*         HarnessD3D11_pDevice = NULL;
-static ID3D11DeviceContext*  HarnessD3D11_pDC = NULL;
-static HWND                  HarnessD3D11_hWnd = NULL;
-
-static LRESULT WINAPI HarnessD3D11_Proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-    switch(msg)
-    {
-        case WM_KEYDOWN:
-            return 0;
-            break;
-        case WM_DESTROY:
-            HarnessD3D11_hWnd = NULL;
-            PostQuitMessage(0);
-            return 0;
-        case WM_PAINT:
-            ValidateRect(hWnd, NULL);
-            return 0;
-    }
-    return DefWindowProc(hWnd, msg, wParam, lParam);
-}
-
-static void HarnessD3D11_InteractiveLoop()
-{
-    MSG msg;
-    while(PeekMessage(&msg,HarnessD3D11_hWnd,0,0,PM_REMOVE))
-    {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-}
-
-cl_int HarnessD3D11_CreateDevice(
-    IDXGIAdapter* pAdapter,
-    ID3D11Device **ppDevice,
-    ID3D11DeviceContext** ppDC)
-{
-    HRESULT hr = S_OK;
-    unsigned int cuStatus = 1;
-
-    *ppDevice = NULL;
-
-    // create window
-    static WNDCLASSEX wc =
-    {
-        sizeof(WNDCLASSEX),
-        CS_CLASSDC,
-        HarnessD3D11_Proc,
-        0L,
-        0L,
-        GetModuleHandle(NULL),
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        _T( "cl_khr_d3d11_sharing_conformance" ),
-        NULL
-    };
-    RegisterClassEx(&wc);
-    HarnessD3D11_hWnd = CreateWindow(
-        _T( "cl_khr_d3d11_sharing_conformance" ),
-        _T( "cl_khr_d3d11_sharing_conformance" ),
-        WS_OVERLAPPEDWINDOW,
-        0, 0, 256, 256,
-        NULL,
-        NULL,
-        wc.hInstance,
-        NULL);
-    NonTestRequire(0 != HarnessD3D11_hWnd, "Failed to create window");
-
-    ShowWindow(HarnessD3D11_hWnd,SW_SHOWDEFAULT);
-    UpdateWindow(HarnessD3D11_hWnd);
-
-    RECT rc;
-    GetClientRect(HarnessD3D11_hWnd, &rc);
-    UINT width = rc.right - rc.left;
-    UINT height = rc.bottom - rc.top;
-
-    // Create device and swapchain
-    DXGI_SWAP_CHAIN_DESC sd;
-    ZeroMemory( &sd, sizeof(sd) );
-    sd.BufferCount = 1;
-    sd.BufferDesc.Width = width;
-    sd.BufferDesc.Height = height;
-    sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    sd.BufferDesc.RefreshRate.Numerator = 60;
-    sd.BufferDesc.RefreshRate.Denominator = 1;
-    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    sd.OutputWindow = HarnessD3D11_hWnd;
-    sd.SampleDesc.Count = 1;
-    sd.SampleDesc.Quality = 0;
-    sd.Windowed = TRUE;
-    D3D_FEATURE_LEVEL requestedFeatureLevels[] = {D3D_FEATURE_LEVEL_10_0};
-    D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-    hr = D3D11CreateDeviceAndSwapChain(
-        NULL, // pAdapter,
-        D3D_DRIVER_TYPE_HARDWARE,
-        NULL,
-        0,
-        requestedFeatureLevels,
-        1,
-        D3D11_SDK_VERSION,
-        &sd,
-        &HarnessD3D11_pSwapChain,
-        &HarnessD3D11_pDevice,
-        &featureLevel,
-        &HarnessD3D11_pDC);
-    if (FAILED(hr) ) {
-        return CL_DEVICE_NOT_FOUND;
-    }
-
-    *ppDevice = HarnessD3D11_pDevice;
-    *ppDC = HarnessD3D11_pDC;
-    return CL_SUCCESS;
-}
-
-void HarnessD3D11_DestroyDevice()
-{
-    HarnessD3D11_pSwapChain->Release();
-    HarnessD3D11_pDevice->Release();
-    HarnessD3D11_pDC->Release();
-
-    if (HarnessD3D11_hWnd) DestroyWindow(HarnessD3D11_hWnd);
-    HarnessD3D11_hWnd = 0;
 }
 
 /*
@@ -226,76 +90,6 @@ TextureFormat formats[] =
     ADD_TEXTURE_FORMAT( DXGI_FORMAT_R8_SINT            , CL_R    , CL_SIGNED_INT8     ,  8, 1, TextureFormat::GENERIC_SINT  ),
 };
 UINT formatCount = sizeof(formats)/sizeof(formats[0]);
-
-/*
- *
- * Logging and error reporting
- *
- */
-
-static struct
-{
-    cl_int testCount;
-    cl_int passCount;
-
-    cl_int nonTestFailures;
-    cl_int inTest;
-    cl_int currentTestPass;
-
-    char currentTestName[1024];
-} HarnessD3D11_testStats = {0};
-
-void HarnessD3D11_TestBegin(const char* fmt, ...)
-{
-    va_list ap;
-
-    va_start(ap, fmt);
-    vsprintf(HarnessD3D11_testStats.currentTestName, fmt, ap);
-    va_end(ap);
-
-    printf("[%s] ... ", HarnessD3D11_testStats.currentTestName);
-
-    HarnessD3D11_testStats.inTest = 1;
-    HarnessD3D11_testStats.currentTestPass = 1;
-}
-
-void HarnessD3D11_TestFail()
-{
-    if (HarnessD3D11_testStats.inTest)
-    {
-        HarnessD3D11_testStats.currentTestPass = 0;
-    }
-    else
-    {
-        ++HarnessD3D11_testStats.nonTestFailures;
-    }
-}
-
-void HarnessD3D11_TestEnd()
-{
-    HarnessD3D11_testStats.inTest = 0;
-
-    HarnessD3D11_testStats.testCount += 1;
-    HarnessD3D11_testStats.passCount += HarnessD3D11_testStats.currentTestPass;
-
-    TestPrint("%s\n",
-        HarnessD3D11_testStats.currentTestPass ? "PASSED" : "FAILED");
-}
-
-void HarnessD3D11_TestStats()
-{
-    TestPrint("PASSED %d of %d tests.\n", HarnessD3D11_testStats.passCount, HarnessD3D11_testStats.testCount);
-    if (HarnessD3D11_testStats.testCount > HarnessD3D11_testStats.passCount)
-    {
-        TestPrint("***FAILED***\n");
-        exit(1);
-    }
-    else
-    {
-        TestPrint("&&&& cl_khr_d3d11_sharing test PASSED\n");
-    }
-    exit(0);
-}
 
 /*
  *
