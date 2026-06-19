@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#define _CRT_SECURE_NO_WARNINGS
 #include "harness.h"
 
 Texture3DSize texture3DSizes[] =
@@ -103,11 +102,9 @@ void SubTestTexture3D(
 
     cl_int result = CL_SUCCESS;
 
-    HarnessD3D11_TestBegin("3D Texture: Format=%s, Width=%d, Height=%d, Depth=%d, MipLevels=%d",
-        format->name_format,
-        size->Width,
-        size->Height,
-        size->Depth,
+    log_info(
+        "3D Texture: Format=%s, Width=%d, Height=%d, Depth=%d, MipLevels=%d\n",
+        format->name_format, size->Width, size->Height, size->Depth,
         size->MipLevels);
 
     struct
@@ -460,8 +457,6 @@ Cleanup:
     {
         clReleaseMemObject(subResourceInfo[i].mem);
     }
-
-    HarnessD3D11_TestEnd();
 }
 
 
