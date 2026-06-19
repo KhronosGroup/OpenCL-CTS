@@ -92,12 +92,12 @@ DirectX11Wrapper::DirectX11Wrapper()
         ++i;
 
         ComPtr<ID3D11Device> device;
-        hr = D3D11CreateDevice(adapter.Get(), D3D_DRIVER_TYPE_HARDWARE, nullptr,
+        hr = D3D11CreateDevice(adapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr,
                                0, nullptr, 0, D3D11_SDK_VERSION,
                                device.GetAddressOf(), nullptr, nullptr);
         if (FAILED(hr))
         {
-            throw std::runtime_error("Failed to create DirectX 10 device");
+            throw std::runtime_error("Failed to create DirectX 11 device");
         }
 
         devices.push_back({ adapter, device });
