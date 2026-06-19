@@ -36,6 +36,8 @@ typedef unsigned char UINT8;
 #define __inout_opt
 #endif
 
+#include "directx_wrapper.hpp"
+
 #include <CL/cl.h>
 #include <CL/cl_platform.h>
 #include <CL/cl_d3d11.h>
@@ -159,18 +161,6 @@ void TestAdapterEnumeration(
     IDXGIAdapter* pAdapter,
     ID3D11Device* pDevice,
     cl_uint* num_devices);
-
-void TestAdapterDevices(
-    cl_platform_id platform,
-    IDXGIAdapter* pAdapter,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC,
-    cl_uint num_devices);
-
-void TestDevice(
-    cl_device_id device,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC);
 
 bool TestDeviceContextCreate(
     cl_device_id device,
