@@ -102,7 +102,7 @@ void SubTestTexture3D(
     cl_int result = CL_SUCCESS;
 
     log_info(
-        "3D Texture: Format=%s, Width=%d, Height=%d, Depth=%d, MipLevels=%d",
+        "3D Texture: Format=%s, Width=%d, Height=%d, Depth=%d, MipLevels=%d\n",
         format->name_format, size->Width, size->Height, size->Depth,
         size->MipLevels);
 
