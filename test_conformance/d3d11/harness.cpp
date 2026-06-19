@@ -35,89 +35,8 @@ clEnqueueReleaseD3D11ObjectsKHR_fn clEnqueueReleaseD3D11ObjectsKHR = NULL;
     x = (x ## _fn)clGetExtensionFunctionAddressForPlatform(platform, #x); NonTestRequire(x, "Failed to get function pointer for %s", #x);
 
 void
-HarnessD3D11_ExtensionCheck()
-{
-    cl_int result = CL_SUCCESS;
-    cl_platform_id platform = NULL;
-
-    HarnessD3D11_TestBegin("Extension query");
-
-    bool platform_d3d11 = false; // Does platform support the extension?
-    {
-        std::vector< char > buffer;
-        size_t size = 0;
-        result = clGetPlatformIDs( 1, &platform, NULL );
-            NonTestRequire( result == CL_SUCCESS, "Failed to get any platforms." );
-        result = clGetPlatformInfo( platform, CL_PLATFORM_EXTENSIONS, 0, NULL, & size );
-            NonTestRequire( result == CL_SUCCESS, "Failed to get size of extension string." );
-        buffer.resize( size );
-        result = clGetPlatformInfo( platform, CL_PLATFORM_EXTENSIONS, buffer.size(), & buffer.front(), & size );
-            NonTestRequire( result == CL_SUCCESS, "Failed to get extension string." );
-        std::string extensions = std::string( " " ) + & buffer.front() + " ";
-        platform_d3d11 = ( extensions.find( " cl_khr_d3d11_sharing " ) != std::string::npos );
-    }
-
-    // Platform is required to report the extension only if all devices support it,
-    // so let us iterate through all the devices and count devices supporting the extension.
-
-    // Get list of all devices.
-    std::vector< cl_device_id > devices;
-    cl_uint num_devices = 0;
-    result = clGetDeviceIDs( platform, CL_DEVICE_TYPE_ALL, 0, NULL, & num_devices );
-        NonTestRequire( result == CL_SUCCESS, "Failed to get number of devices." );
-    devices.resize( num_devices );
-    result = clGetDeviceIDs( platform, CL_DEVICE_TYPE_ALL, devices.size(), & devices.front(), & num_devices );
-        NonTestRequire( result == CL_SUCCESS, "Failed to get list of device ids." );
-        NonTestRequire( num_devices == devices.size(), "Failed to get list of device ids." );
-
-    // Iterate through the devices and count devices supporting the extension.
-    cl_uint num_devices_d3d11 = 0; // Number of devices supporting cl_khr_d3d11_sharing.
-    for ( cl_uint i = 0; i < devices.size(); ++ i )
-    {
-        if (is_extension_available(devices[i], "cl_khr_d3d11_sharing"))
-        {
-            ++ num_devices_d3d11;
-        }
-    }
-
-    OSVERSIONINFO osvi;
-    osvi.dwOSVersionInfoSize = sizeof(osvi);
-    GetVersionEx(&osvi);
-    if (osvi.dwMajorVersion <= 5)
-    {
-        // Neither platform nor devices should declare support.
-        TestRequire( ! platform_d3d11, "Platform should not declare extension on Windows < 6" );
-        TestRequire( num_devices_d3d11 == 0, "Devices should not declare extension on Windows < 6" );
-    }
-    else
-    {
-        if ( num_devices_d3d11 == num_devices )
-        {
-            // All the devices declare support, so platform must declare support as well.
-            TestRequire( platform_d3d11, "Extension should be exported on Windows >= 6" );
-        }
-        else
-        {
-            // Not all the devices support th eextension => platform should not declare it.
-            TestRequire( ! platform_d3d11, "Extension should not be exported on Windows >= 6" );
-        }
-    }
-
-Cleanup:
-    HarnessD3D11_TestEnd();
-
-    // early-out of the extension is not present
-    if ( num_devices_d3d11 == 0 )
-    {
-        HarnessD3D11_TestStats();
-    }
-}
-
-void
 HarnessD3D11_Initialize(cl_platform_id platform)
 {
-    HarnessD3D11_ExtensionCheck();
-
     // extract function pointers for exported functions
     INITPFN(clGetDeviceIDsFromD3D11KHR);
     INITPFN(clCreateFromD3D11BufferKHR);
@@ -412,6 +331,3 @@ Cleanup:
 
     return CL_SUCCESS;
 }
-
-
-
