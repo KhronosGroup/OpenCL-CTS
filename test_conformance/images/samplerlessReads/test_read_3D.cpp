@@ -79,6 +79,11 @@ int test_read_image_3D( cl_context context, cl_command_queue queue, cl_kernel ke
 
     if(gTestReadWrite)
     {
+        // We need to reset this because gEnablePitch might be true and
+        // specifying a pitch on an image without a parent or host_ptr is
+        // invalid.
+        image_desc.image_row_pitch = 0;
+        image_desc.image_slice_pitch = 0;
         read_write_image = clCreateImage(context,
                                         CL_MEM_READ_WRITE,
                                         imageInfo->format,
