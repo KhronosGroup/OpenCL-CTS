@@ -18,6 +18,8 @@
 
 #include "utility.h" // for sizeNames and sizeValues.
 
+#include <climits>
+#include <vector>
 #include <sstream>
 #include <string>
 
@@ -607,4 +609,432 @@ cl_int BuildKernels(BuildKernelInfo &info, cl_uint job_id,
     }
 
     return CL_SUCCESS;
+}
+
+static const std::vector<double> doubleSpecialValues = {
+    -NAN,
+    -INFINITY,
+    -DBL_MAX,
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p64, -0x10000000000001LL, 12),
+    MAKE_HEX_DOUBLE(-0x1.0p64, -0x1LL, 64),
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp63, -0x1fffffffffffffLL, 11),
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p63, -0x10000000000001LL, 11),
+    MAKE_HEX_DOUBLE(-0x1.0p63, -0x1LL, 63),
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp62, -0x1fffffffffffffLL, 10),
+    MAKE_HEX_DOUBLE(-0x1.000002p32, -0x1000002LL, 8),
+    MAKE_HEX_DOUBLE(-0x1.0p32, -0x1LL, 32),
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp31, -0x1fffffffffffffLL, -21),
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p31, -0x10000000000001LL, -21),
+    MAKE_HEX_DOUBLE(-0x1.0p31, -0x1LL, 31),
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp30, -0x1fffffffffffffLL, -22),
+    -1000.0,
+    -100.0,
+    -4.0,
+    -3.5,
+    -3.0,
+    MAKE_HEX_DOUBLE(-0x1.8000000000001p1, -0x18000000000001LL, -51),
+    -2.5,
+    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp1, -0x17ffffffffffffLL, -51),
+    -2.0,
+    MAKE_HEX_DOUBLE(-0x1.8000000000001p0, -0x18000000000001LL, -52),
+    -1.5,
+    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp0, -0x17ffffffffffffLL, -52),
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52),
+    -1.0,
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-1, -0x1fffffffffffffLL, -53),
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p-1, -0x10000000000001LL, -53),
+    -0.5,
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-2, -0x1fffffffffffffLL, -54),
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p-2, -0x10000000000001LL, -54),
+    -0.25,
+    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-3, -0x1fffffffffffffLL, -55),
+    MAKE_HEX_DOUBLE(-0x1.0000000000001p-1022, -0x10000000000001LL, -1074),
+    -DBL_MIN,
+    MAKE_HEX_DOUBLE(-0x0.fffffffffffffp-1022, -0x0fffffffffffffLL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000fffp-1022, -0x00000000000fffLL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.00000000000fep-1022, -0x000000000000feLL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.000000000000ep-1022, -0x0000000000000eLL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.000000000000cp-1022, -0x0000000000000cLL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.000000000000ap-1022, -0x0000000000000aLL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000008p-1022, -0x00000000000008LL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000007p-1022, -0x00000000000007LL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000006p-1022, -0x00000000000006LL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000005p-1022, -0x00000000000005LL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000004p-1022, -0x00000000000004LL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000003p-1022, -0x00000000000003LL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000002p-1022, -0x00000000000002LL, -1074),
+    MAKE_HEX_DOUBLE(-0x0.0000000000001p-1022, -0x00000000000001LL, -1074),
+    -0.0,
+
+    +NAN,
+    +INFINITY,
+    +DBL_MAX,
+    MAKE_HEX_DOUBLE(+0x1.0000000000001p64, +0x10000000000001LL, 12),
+    MAKE_HEX_DOUBLE(+0x1.0p64, +0x1LL, 64),
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp63, +0x1fffffffffffffLL, 11),
+    MAKE_HEX_DOUBLE(+0x1.0000000000001p63, +0x10000000000001LL, 11),
+    MAKE_HEX_DOUBLE(+0x1.0p63, +0x1LL, 63),
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp62, +0x1fffffffffffffLL, 10),
+    MAKE_HEX_DOUBLE(+0x1.000002p32, +0x1000002LL, 8),
+    MAKE_HEX_DOUBLE(+0x1.0p32, +0x1LL, 32),
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp31, +0x1fffffffffffffLL, -21),
+    MAKE_HEX_DOUBLE(+0x1.0000000000001p31, +0x10000000000001LL, -21),
+    MAKE_HEX_DOUBLE(+0x1.0p31, +0x1LL, 31),
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp30, +0x1fffffffffffffLL, -22),
+    +1000.0,
+    +100.0,
+    +4.0,
+    +3.5,
+    +3.0,
+    MAKE_HEX_DOUBLE(+0x1.8000000000001p1, +0x18000000000001LL, -51),
+    +2.5,
+    MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp1, +0x17ffffffffffffLL, -51),
+    +2.0,
+    MAKE_HEX_DOUBLE(+0x1.8000000000001p0, +0x18000000000001LL, -52),
+    +1.5,
+    MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp0, +0x17ffffffffffffLL, -52),
+    MAKE_HEX_DOUBLE(+0x1.0000000000001p0, +0x10000000000001LL, -52),
+    +1.0,
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-1, +0x1fffffffffffffLL, -53),
+    MAKE_HEX_DOUBLE(+0x1.0000000000001p-1, +0x10000000000001LL, -53),
+    +0.5,
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-2, +0x1fffffffffffffLL, -54),
+    MAKE_HEX_DOUBLE(+0x1.0000000000001p-2, +0x10000000000001LL, -54),
+    +0.25,
+    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-3, +0x1fffffffffffffLL, -55),
+    MAKE_HEX_DOUBLE(+0x1.0000000000001p-1022, +0x10000000000001LL, -1074),
+    +DBL_MIN,
+    MAKE_HEX_DOUBLE(+0x0.fffffffffffffp-1022, +0x0fffffffffffffLL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000fffp-1022, +0x00000000000fffLL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.00000000000fep-1022, +0x000000000000feLL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.000000000000ep-1022, +0x0000000000000eLL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.000000000000cp-1022, +0x0000000000000cLL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.000000000000ap-1022, +0x0000000000000aLL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000008p-1022, +0x00000000000008LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000007p-1022, +0x00000000000007LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000006p-1022, +0x00000000000006LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000005p-1022, +0x00000000000005LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000004p-1022, +0x00000000000004LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000003p-1022, +0x00000000000003LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000002p-1022, +0x00000000000002LL, -1074),
+    MAKE_HEX_DOUBLE(+0x0.0000000000001p-1022, +0x00000000000001LL, -1074),
+    +0.0,
+};
+
+static const std::vector<float> floatSpecialValues = {
+    -NAN,
+    -INFINITY,
+    -FLT_MAX,
+    MAKE_HEX_FLOAT(-0x1.000002p64f, -0x1000002L, 40),
+    MAKE_HEX_FLOAT(-0x1.0p64f, -0x1L, 64),
+    MAKE_HEX_FLOAT(-0x1.fffffep63f, -0x1fffffeL, 39),
+    MAKE_HEX_FLOAT(-0x1.000002p63f, -0x1000002L, 39),
+    MAKE_HEX_FLOAT(-0x1.0p63f, -0x1L, 63),
+    MAKE_HEX_FLOAT(-0x1.fffffep62f, -0x1fffffeL, 38),
+    MAKE_HEX_FLOAT(-0x1.000002p32f, -0x1000002L, 8),
+    MAKE_HEX_FLOAT(-0x1.0p32f, -0x1L, 32),
+    MAKE_HEX_FLOAT(-0x1.fffffep31f, -0x1fffffeL, 7),
+    MAKE_HEX_FLOAT(-0x1.000002p31f, -0x1000002L, 7),
+    MAKE_HEX_FLOAT(-0x1.0p31f, -0x1L, 31),
+    MAKE_HEX_FLOAT(-0x1.fffffep30f, -0x1fffffeL, 6),
+    -1000.f,
+    -100.f,
+    -4.0f,
+    -3.5f,
+    -3.0f,
+    MAKE_HEX_FLOAT(-0x1.800002p1f, -0x1800002L, -23),
+    -2.5f,
+    MAKE_HEX_FLOAT(-0x1.7ffffep1f, -0x17ffffeL, -23),
+    -2.0f,
+    MAKE_HEX_FLOAT(-0x1.800002p0f, -0x1800002L, -24),
+    -1.5f,
+    MAKE_HEX_FLOAT(-0x1.7ffffep0f, -0x17ffffeL, -24),
+    MAKE_HEX_FLOAT(-0x1.000002p0f, -0x1000002L, -24),
+    -1.0f,
+    MAKE_HEX_FLOAT(-0x1.fffffep-1f, -0x1fffffeL, -25),
+    MAKE_HEX_FLOAT(-0x1.000002p-1f, -0x1000002L, -25),
+    -0.5f,
+    MAKE_HEX_FLOAT(-0x1.fffffep-2f, -0x1fffffeL, -26),
+    MAKE_HEX_FLOAT(-0x1.000002p-2f, -0x1000002L, -26),
+    -0.25f,
+    MAKE_HEX_FLOAT(-0x1.fffffep-3f, -0x1fffffeL, -27),
+    MAKE_HEX_FLOAT(-0x1.000002p-126f, -0x1000002L, -150),
+    -FLT_MIN,
+    MAKE_HEX_FLOAT(-0x0.fffffep-126f, -0x0fffffeL, -150),
+    MAKE_HEX_FLOAT(-0x0.000ffep-126f, -0x0000ffeL, -150),
+    MAKE_HEX_FLOAT(-0x0.0000fep-126f, -0x00000feL, -150),
+    MAKE_HEX_FLOAT(-0x0.00000ep-126f, -0x000000eL, -150),
+    MAKE_HEX_FLOAT(-0x0.00000cp-126f, -0x000000cL, -150),
+    MAKE_HEX_FLOAT(-0x0.00000ap-126f, -0x000000aL, -150),
+    MAKE_HEX_FLOAT(-0x0.000008p-126f, -0x0000008L, -150),
+    MAKE_HEX_FLOAT(-0x0.000006p-126f, -0x0000006L, -150),
+    MAKE_HEX_FLOAT(-0x0.000004p-126f, -0x0000004L, -150),
+    MAKE_HEX_FLOAT(-0x0.000002p-126f, -0x0000002L, -150),
+    -0.0f,
+
+    +NAN,
+    +INFINITY,
+    +FLT_MAX,
+    MAKE_HEX_FLOAT(+0x1.000002p64f, +0x1000002L, 40),
+    MAKE_HEX_FLOAT(+0x1.0p64f, +0x1L, 64),
+    MAKE_HEX_FLOAT(+0x1.fffffep63f, +0x1fffffeL, 39),
+    MAKE_HEX_FLOAT(+0x1.000002p63f, +0x1000002L, 39),
+    MAKE_HEX_FLOAT(+0x1.0p63f, +0x1L, 63),
+    MAKE_HEX_FLOAT(+0x1.fffffep62f, +0x1fffffeL, 38),
+    MAKE_HEX_FLOAT(+0x1.000002p32f, +0x1000002L, 8),
+    MAKE_HEX_FLOAT(+0x1.0p32f, +0x1L, 32),
+    MAKE_HEX_FLOAT(+0x1.fffffep31f, +0x1fffffeL, 7),
+    MAKE_HEX_FLOAT(+0x1.000002p31f, +0x1000002L, 7),
+    MAKE_HEX_FLOAT(+0x1.0p31f, +0x1L, 31),
+    MAKE_HEX_FLOAT(+0x1.fffffep30f, +0x1fffffeL, 6),
+    +1000.f,
+    +100.f,
+    +4.0f,
+    +3.5f,
+    +3.0f,
+    MAKE_HEX_FLOAT(+0x1.800002p1f, +0x1800002L, -23),
+    2.5f,
+    MAKE_HEX_FLOAT(+0x1.7ffffep1f, +0x17ffffeL, -23),
+    +2.0f,
+    MAKE_HEX_FLOAT(+0x1.800002p0f, +0x1800002L, -24),
+    1.5f,
+    MAKE_HEX_FLOAT(+0x1.7ffffep0f, +0x17ffffeL, -24),
+    MAKE_HEX_FLOAT(+0x1.000002p0f, +0x1000002L, -24),
+    +1.0f,
+    MAKE_HEX_FLOAT(+0x1.fffffep-1f, +0x1fffffeL, -25),
+    MAKE_HEX_FLOAT(+0x1.000002p-1f, +0x1000002L, -25),
+    +0.5f,
+    MAKE_HEX_FLOAT(+0x1.fffffep-2f, +0x1fffffeL, -26),
+    MAKE_HEX_FLOAT(+0x1.000002p-2f, +0x1000002L, -26),
+    +0.25f,
+    MAKE_HEX_FLOAT(+0x1.fffffep-3f, +0x1fffffeL, -27),
+    MAKE_HEX_FLOAT(+0x1.000002p-126f, +0x1000002L, -150),
+    +FLT_MIN,
+    MAKE_HEX_FLOAT(+0x0.fffffep-126f, +0x0fffffeL, -150),
+    MAKE_HEX_FLOAT(+0x0.000ffep-126f, +0x0000ffeL, -150),
+    MAKE_HEX_FLOAT(+0x0.0000fep-126f, +0x00000feL, -150),
+    MAKE_HEX_FLOAT(+0x0.00000ep-126f, +0x000000eL, -150),
+    MAKE_HEX_FLOAT(+0x0.00000cp-126f, +0x000000cL, -150),
+    MAKE_HEX_FLOAT(+0x0.00000ap-126f, +0x000000aL, -150),
+    MAKE_HEX_FLOAT(+0x0.000008p-126f, +0x0000008L, -150),
+    MAKE_HEX_FLOAT(+0x0.000006p-126f, +0x0000006L, -150),
+    MAKE_HEX_FLOAT(+0x0.000004p-126f, +0x0000004L, -150),
+    MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150),
+    +0.0f,
+};
+
+static const std::vector<cl_half> halfSpecialValues = {
+    0xffff, 0x0000, 0x0001, 0x7c00, /*INFINITY*/
+    0xfc00, /*-INFINITY*/
+    0x8000, /*-0*/
+    0x7bff, /*HALF_MAX*/
+    0x0400, /*HALF_MIN*/
+    0x03ff, /* Largest denormal */
+    0x3c00, /* 1 */
+    0xbc00, /* -1 */
+    0x3555, /*nearest value to 1/3*/
+    0x3bff, /*largest number less than one*/
+    0xc000, /* -2 */
+    0xfbff, /* -HALF_MAX */
+    0x8400, /* -HALF_MIN */
+    0x4248, /* M_PI_H */
+    0xc248, /* -M_PI_H */
+    0xbbff, /* Largest negative fraction */
+};
+
+static const std::vector<int> intSpecialValues = {
+    0,          1,           2,           3,           126,         127,
+    128,        1022,        1023,        1024,        0x02000001,  0x04000001,
+    1465264071, 1488522147,  INT_MIN,     INT_MAX,     -1,          -2,
+    -3,         -126,        -127,        -128,        -1022,       -1023,
+    -1024,      -0x02000001, -0x04000001, -1465264071, -1488522147, -INT_MAX,
+};
+
+static uint32_t getExponentDeBruijn(uint32_t number)
+{
+    // Lookup table mapping 5-bit De Bruijn hashes to exponents
+    static const int MultiplyDeBruijnBitPosition[32] = {
+        0,  1,  28, 2,  29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4,  8,
+        31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6,  11, 5,  10, 9
+    };
+
+    // Multiply by the magic De Bruijn sequence and shift down
+    return MultiplyDeBruijnBitPosition[(uint32_t)(number * 0x077CB531U) >> 27];
+}
+
+static uint32_t input_count_power_of_two = 27;
+void initInputCount(int wimpyReductionFactor)
+{
+    if (gTestAll)
+    {
+        input_count_power_of_two = 32;
+    }
+    if (gWimpyMode)
+    {
+        input_count_power_of_two -= getExponentDeBruijn(wimpyReductionFactor);
+    }
+    if (gIsEmbedded)
+    {
+        input_count_power_of_two -=
+            getExponentDeBruijn(EMBEDDED_REDUCTION_FACTOR);
+    }
+}
+const size_t getInputCount() { return 1LL << input_count_power_of_two; }
+
+static void fillIntUnaryInput(int *data, size_t num_elems, size_t base_elem,
+                              MTdata d)
+{
+    size_t idx = 0;
+    size_t specialValuesCount = intSpecialValues.size();
+    for (; idx < num_elems && ((idx + base_elem) < specialValuesCount); idx++)
+    {
+        data[idx] = intSpecialValues[idx + base_elem];
+    }
+    for (; idx < num_elems; idx++)
+    {
+        data[idx] = genrand_int32(d);
+    }
+}
+
+void fillHalfUnaryInput(cl_half *data, size_t num_elems, size_t base_elem,
+                        MTdata d, bool testAll)
+{
+    cl_ushort *data_short = (cl_ushort *)data;
+    if (testAll)
+    {
+        for (uint32_t i = 0; i < num_elems; i++)
+        {
+            data_short[i] = (cl_ushort)(base_elem + i);
+        }
+        return;
+    }
+
+    size_t idx = 0;
+    size_t specialValuesCount = halfSpecialValues.size();
+    for (; idx < num_elems && ((idx + base_elem) < specialValuesCount); idx++)
+    {
+        data[idx] = halfSpecialValues[idx + base_elem];
+    }
+    for (; (idx + 1) < num_elems; idx += 2)
+    {
+        cl_uint gen = genrand_int32(d);
+        data_short[idx] = (cl_ushort)(gen & 0xffff);
+        data_short[idx + 1] = (cl_ushort)(gen >> 16);
+    }
+    if (idx < num_elems)
+    {
+        data_short[idx] = (cl_ushort)(genrand_int32(d) & 0xffff);
+    }
+}
+void fillFloatUnaryInput(float *data, size_t num_elems, size_t base_elem,
+                         MTdata d, bool testAll)
+{
+    cl_uint *data_int = (cl_uint *)data;
+    if (testAll)
+    {
+        for (uint32_t i = 0; i < num_elems; i++)
+        {
+            data_int[i] = base_elem + i;
+        }
+        return;
+    }
+
+    size_t idx = 0;
+    size_t specialValuesCount = floatSpecialValues.size();
+    for (; idx < num_elems && ((idx + base_elem) < specialValuesCount); idx++)
+    {
+        data[idx] = floatSpecialValues[idx + base_elem];
+    }
+    for (; idx < num_elems; idx++)
+    {
+        data_int[idx] = genrand_int32(d);
+    }
+}
+void fillDoubleUnaryInput(double *data, size_t num_elems, size_t base_elem,
+                          MTdata d)
+{
+    size_t idx = 0;
+    size_t specialValuesCount = doubleSpecialValues.size();
+    for (; idx < num_elems && ((idx + base_elem) < specialValuesCount); idx++)
+    {
+        data[idx] = doubleSpecialValues[idx + base_elem];
+    }
+    cl_uint *data_int = (cl_uint *)data;
+    for (; idx < num_elems; idx++)
+    {
+        data_int[idx] = genrand_int64(d);
+    }
+}
+
+#define MASK(n) ((1 << (n)) - 1)
+
+void fillHalfBinaryInput(cl_half *data1, cl_half *data2, size_t num_elems,
+                         size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 2;
+    fillHalfUnaryInput(data1, num_elems, base_elem & MASK(shift), d, gTestAll);
+    fillHalfUnaryInput(data2, num_elems, base_elem >> shift, d, gTestAll);
+}
+void fillFloatBinaryInput(float *data1, float *data2, size_t num_elems,
+                          size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 2;
+    fillFloatUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillFloatUnaryInput(data2, num_elems, base_elem >> shift, d);
+}
+void fillDoubleBinaryInput(double *data1, double *data2, size_t num_elems,
+                           size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 2;
+    fillDoubleUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillDoubleUnaryInput(data2, num_elems, base_elem >> shift, d);
+}
+
+void fillIntHalfBinaryInput(int *data1, cl_half *data2, size_t num_elems,
+                            size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 2;
+    fillIntUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillHalfUnaryInput(data2, num_elems, base_elem >> shift, d, gTestAll);
+}
+void fillIntFloatBinaryInput(int *data1, float *data2, size_t num_elems,
+                             size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 2;
+    fillIntUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillFloatUnaryInput(data2, num_elems, base_elem >> shift, d);
+}
+void fillIntDoubleBinaryInput(int *data1, double *data2, size_t num_elems,
+                              size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 2;
+    fillIntUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillDoubleUnaryInput(data2, num_elems, base_elem >> shift, d);
+}
+
+void fillHalfTernaryInput(cl_half *data1, cl_half *data2, cl_half *data3,
+                          size_t num_elems, size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 3;
+    fillHalfUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillHalfUnaryInput(data2, num_elems, (base_elem >> shift) & MASK(shift), d);
+    fillHalfUnaryInput(data3, num_elems, base_elem >> (shift * 2), d);
+}
+void fillFloatTernaryInput(float *data1, float *data2, float *data3,
+                           size_t num_elems, size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 3;
+    fillFloatUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillFloatUnaryInput(data2, num_elems, (base_elem >> shift) & MASK(shift),
+                        d);
+    fillFloatUnaryInput(data3, num_elems, base_elem >> (shift * 2), d);
+}
+void fillDoubleTernaryInput(double *data1, double *data2, double *data3,
+                            size_t num_elems, size_t base_elem, MTdata d)
+{
+    uint32_t shift = input_count_power_of_two / 3;
+    fillDoubleUnaryInput(data1, num_elems, base_elem & MASK(shift), d);
+    fillDoubleUnaryInput(data2, num_elems, (base_elem >> shift) & MASK(shift),
+                         d);
+    fillDoubleUnaryInput(data3, num_elems, base_elem >> (shift * 2), d);
 }

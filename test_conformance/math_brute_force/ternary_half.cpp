@@ -39,28 +39,6 @@ cl_int BuildKernelFn_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-// A table of more difficult cases to get right
-static const cl_half specialValuesHalf[] = {
-    0xffff, 0x0000, 0x0001, 0x7c00, /*INFINITY*/
-    0xfc00, /*-INFINITY*/
-    0x8000, /*-0*/
-    0x7bff, /*HALF_MAX*/
-    0x0400, /*HALF_MIN*/
-    0x03ff, /* Largest denormal */
-    0x3c00, /* 1 */
-    0xbc00, /* -1 */
-    0x3555, /*nearest value to 1/3*/
-    0x3bff, /*largest number less than one*/
-    0xc000, /* -2 */
-    0xfbff, /* -HALF_MAX */
-    0x8400, /* -HALF_MIN */
-    0x4248, /* M_PI_H */
-    0xc248, /* -M_PI_H */
-    0xbbff, /* Largest negative fraction */
-};
-
-constexpr size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
-
 } // anonymous namespace
 
 int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
@@ -92,7 +70,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                                &build_info)))
         return error;
 
-    for (uint64_t i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < getInputCount(); i += step)
     {
         if (gSkipCorrectnessTesting) break;
 
@@ -100,43 +78,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
         cl_half *hp0 = (cl_half *)gIn;
         cl_half *hp1 = (cl_half *)gIn2;
         cl_half *hp2 = (cl_half *)gIn3;
-        size_t idx = 0;
-
-        if (i == 0)
-        { // test edge cases
-            uint32_t x, y, z;
-            x = y = z = 0;
-            for (; idx < bufferElements; idx++)
-            {
-                hp0[idx] = specialValuesHalf[x];
-                hp1[idx] = specialValuesHalf[y];
-                hp2[idx] = specialValuesHalf[z];
-
-                if (++x >= specialValuesHalfCount)
-                {
-                    x = 0;
-                    if (++y >= specialValuesHalfCount)
-                    {
-                        y = 0;
-                        if (++z >= specialValuesHalfCount) break;
-                    }
-                }
-            }
-            if (idx == bufferElements)
-                vlog_error("Test Error: not all special cases tested!\n");
-        }
-
-        auto any_value = [&d]() {
-            float t = (float)((double)genrand_int32(d) / (double)0xFFFFFFFF);
-            return HFF((1.0f - t) * CL_HALF_MIN + t * CL_HALF_MAX);
-        };
-
-        for (; idx < bufferElements; idx++)
-        {
-            hp0[idx] = any_value();
-            hp1[idx] = any_value();
-            hp2[idx] = any_value();
-        }
+        fillHalfTernaryInput(hp0, hp1, hp2, step, i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))
