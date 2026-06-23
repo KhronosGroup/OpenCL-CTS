@@ -1021,6 +1021,13 @@ REGISTER_TEST(consistency_missing_linker)
         return TEST_SKIPPED_ITSELF;
     }
 
+    if (!gIsEmbedded)
+    {
+        log_error("CL_DEVICE_LINKER_AVAILABLE must be CL_TRUE for devices "
+                  "supporting the full profile.\n");
+        return TEST_FAIL;
+    }
+
     cl_bool compilerAvail = CL_TRUE;
     err = clGetDeviceInfo(device, CL_DEVICE_COMPILER_AVAILABLE,
                           sizeof(compilerAvail), &compilerAvail, nullptr);
@@ -1030,13 +1037,6 @@ REGISTER_TEST(consistency_missing_linker)
     {
         log_error("CL_DEVICE_LINKER_AVAILABLE must be CL_TRUE if "
                   "CL_DEVICE_COMPILER_AVAILABLE is CL_TRUE.\n");
-        return TEST_FAIL;
-    }
-
-    if (!gIsEmbedded)
-    {
-        log_error("CL_DEVICE_LINKER_AVAILABLE must be CL_TRUE for devices "
-                  "supporting the full profile.\n");
         return TEST_FAIL;
     }
 
