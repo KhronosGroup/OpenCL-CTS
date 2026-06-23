@@ -59,11 +59,9 @@ void SubTestBuffer(
     cl_mem mem = NULL;
     cl_int result = CL_SUCCESS;
 
-    HarnessD3D11_TestBegin("Buffer: Size=%d, BindFlags=%s, Usage=%s, CPUAccess=%s",
-        props->ByteWidth,
-        props->name_BindFlags,
-        props->name_Usage,
-        props->name_CPUAccess);
+    log_info("Buffer: Size=%d, BindFlags=%s, Usage=%s, CPUAccess=%s\n",
+             props->ByteWidth, props->name_BindFlags, props->name_Usage,
+             props->name_CPUAccess);
 
     // create the D3D11 resource
     {
@@ -297,8 +295,6 @@ Cleanup:
     {
         clReleaseMemObject(mem);
     }
-
-    HarnessD3D11_TestEnd();
 }
 
 

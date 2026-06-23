@@ -168,7 +168,7 @@ void SubTestTexture2D(
     cl_int result = CL_SUCCESS;
 
     log_info("2D Texture: Format=%s, Width=%d, Height=%d, MipLevels=%d, "
-             "ArraySize=%d",
+             "ArraySize=%d\n",
              format->name_format, size->Width, size->Height, size->MipLevels,
              size->ArraySize);
 
