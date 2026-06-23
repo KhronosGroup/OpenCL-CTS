@@ -19,6 +19,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <cinttypes>
+#include <cstring>
 
 const char *sample_single_param_kernel[] = {
     "__kernel void sample_test(__global int *src)\n"
@@ -1401,14 +1402,25 @@ REGISTER_TEST(min_max_samplers)
     cl_uint maxSamplers, i;
     clProgramWrapper program;
     clKernelWrapper kernel;
-    char *programSrc, samplerLine[1024];
+    char samplerLine[1024];
     size_t maxParameterSize;
-    cl_event event;
     cl_int event_status;
     cl_uint minRequiredSamplers = gIsEmbedded ? 8 : 16;
 
+    if (checkForImageSupport(device))
+    {
+        /* Get the max value */
+        error = clGetDeviceInfo(device, CL_DEVICE_MAX_SAMPLERS,
+                                sizeof(maxSamplers), &maxSamplers, NULL);
+        test_error(error, "Unable to get max sampler count from device");
 
-    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+        test_failure_error_ret(
+            maxSamplers, 0,
+            "Missing image support but CL_DEVICE_MAX_SAMPLERS query "
+            "did not return 0",
+            TEST_FAIL);
+        return TEST_SKIPPED_ITSELF;
+    }
 
     /* Get the max value */
     error = clGetDeviceInfo(device, CL_DEVICE_MAX_SAMPLERS, sizeof(maxSamplers),
@@ -1420,7 +1432,7 @@ REGISTER_TEST(min_max_samplers)
         log_error(
             "ERROR: Reported max sampler count is less than required! (%d)\n",
             (int)maxSamplers);
-        return -1;
+        return TEST_FAIL;
     }
 
     log_info("Reported max %d samplers.\n", maxSamplers);
@@ -1443,37 +1455,37 @@ REGISTER_TEST(min_max_samplers)
     }
 
     /* Create a kernel to test with */
-    programSrc = (char *)malloc(
+    std::vector<char> programSrc(
         (strlen(sample_sampler_kernel_pattern[1]) + 8) * (maxSamplers)
-        + strlen(sample_sampler_kernel_pattern[0])
-        + strlen(sample_sampler_kernel_pattern[2])
-        + (strlen(sample_sampler_kernel_pattern[3]) + 8) * maxSamplers
-        + strlen(sample_sampler_kernel_pattern[4]));
-    strcpy(programSrc, sample_sampler_kernel_pattern[0]);
+            + strlen(sample_sampler_kernel_pattern[0])
+            + strlen(sample_sampler_kernel_pattern[2])
+            + (strlen(sample_sampler_kernel_pattern[3]) + 8) * maxSamplers
+            + strlen(sample_sampler_kernel_pattern[4]),
+        0);
+    std::strncpy(programSrc.data(), sample_sampler_kernel_pattern[0],
+                 programSrc.size());
     for (i = 0; i < maxSamplers; i++)
     {
         sprintf(samplerLine, sample_sampler_kernel_pattern[1], i);
-        strcat(programSrc, samplerLine);
+        std::strncat(programSrc.data(), samplerLine, programSrc.size());
     }
-    strcat(programSrc, sample_sampler_kernel_pattern[2]);
+    std::strncat(programSrc.data(), sample_sampler_kernel_pattern[2],
+                 programSrc.size());
     for (i = 0; i < maxSamplers; i++)
     {
         sprintf(samplerLine, sample_sampler_kernel_pattern[3], i);
-        strcat(programSrc, samplerLine);
+        std::strncat(programSrc.data(), samplerLine, programSrc.size());
     }
-    strcat(programSrc, sample_sampler_kernel_pattern[4]);
-
+    std::strncat(programSrc.data(), sample_sampler_kernel_pattern[4],
+                 programSrc.size());
 
     error =
         create_single_kernel_helper(context, &program, &kernel, 1,
                                     (const char **)&programSrc, "sample_test");
     test_error(error, "Failed to create the program and kernel.");
 
-    // We have to set up some fake parameters so it'll work
-    clSamplerWrapper *samplers = new clSamplerWrapper[maxSamplers];
-
+    std::vector<clSamplerWrapper> samplers(maxSamplers);
     cl_image_format format = { CL_RGBA, CL_SIGNED_INT8 };
-
     clMemWrapper image = create_image_2d(context, CL_MEM_READ_WRITE, &format,
                                          16, 16, 0, NULL, &error);
     test_error(error, "Unable to create a test image");
@@ -1495,6 +1507,7 @@ REGISTER_TEST(min_max_samplers)
         test_error(error, "Unable to set sampler argument");
     }
 
+    clEventWrapper event;
     size_t globalDim[3] = { 1, 1, 1 }, localDim[3] = { 1, 1, 1 };
     error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, globalDim, localDim,
                                    0, NULL, &event);
@@ -1509,13 +1522,10 @@ REGISTER_TEST(min_max_samplers)
                            sizeof(event_status), &event_status, NULL);
     test_error(error,
                "clGetEventInfo for CL_EVENT_COMMAND_EXECUTION_STATUS failed");
-    clReleaseEvent(event);
     if (event_status < 0)
-        test_error(error, "Kernel execution event returned error");
+        test_error(event_status, "Kernel execution event returned error");
 
-    free(programSrc);
-    delete[] samplers;
-    return 0;
+    return TEST_PASS;
 }
 
 REGISTER_TEST(min_max_constant_buffer_size)
