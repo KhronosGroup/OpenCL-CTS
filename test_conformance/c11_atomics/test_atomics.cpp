@@ -4154,11 +4154,11 @@ public:
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
             const auto &spec_vals = GetSpecialValues();
-            expected =
-                std::max(static_cast<float>(startRefValues[whichDestValue]),
-                         static_cast<float>(startRefValues[whichDestValue / spec_vals.size()]));
+            expected = std::max(
+                static_cast<float>(startRefValues[whichDestValue]),
+                static_cast<float>(
+                    startRefValues[whichDestValue / spec_vals.size()]));
         }
-
         return true;
     }
     bool IsTestNotAsExpected(const HostDataType &expected,
