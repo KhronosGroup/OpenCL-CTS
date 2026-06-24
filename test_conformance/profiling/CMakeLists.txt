@@ -10,6 +10,7 @@ set(${MODULE_NAME}_SOURCES
     execute.cpp
     execute_multipass.cpp
     profiling_timebase.cpp
+    enqueueSyncFunctions.cpp
 )
 
 include(../CMakeCommon.txt)
