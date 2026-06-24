@@ -36,30 +36,8 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-// Thread specific data for a worker thread
-struct ThreadInfo
+struct TestInfo : public TestInfoBase
 {
-    // Input and output buffers for the thread
-    clMemWrapper inBuf;
-    clMemWrapper inBuf2;
-    Buffers outBuf;
-
-    float maxError; // max error value. Init to 0.
-    double
-        maxErrorValue; // position of the max error value (param 1).  Init to 0.
-    cl_int maxErrorValue2; // position of the max error value (param 2).  Init
-                           // to 0.
-    MTdataHolder d;
-
-    // Per thread command queue to improve performance
-    clCommandQueueWrapper tQueue;
-};
-
-struct TestInfo
-{
-    size_t subBufferSize; // Size of the sub-buffer in elements
-    const Func *f; // A pointer to the function info
-
     // Programs for various vector sizes.
     Programs programs;
 
@@ -68,16 +46,7 @@ struct TestInfo
     KernelMatrix k;
 
     // Array of thread specific information
-    std::vector<ThreadInfo> tinfo;
-
-    cl_uint threadCount; // Number of worker threads
-    cl_uint jobCount; // Number of jobs
-    cl_uint step; // step between each chunk and the next.
-    cl_uint scale; // stride between individual test values
-    float ulps; // max_allowed ulps
-    int ftz; // non-zero if running in flush to zero mode
-    bool relaxedMode; // True if test is running in relaxed mode, false
-                      // otherwise.
+    std::vector<ThreadInfoBinaryFPInt> tinfo;
 
     // no special values
 };
@@ -210,7 +179,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     size_t buffer_elements = job->subBufferSize;
     size_t buffer_size = buffer_elements * sizeof(cl_double);
     cl_uint base = job_id * (cl_uint)job->step;
-    ThreadInfo *tinfo = &(job->tinfo[thread_id]);
+    ThreadInfoBinaryFPInt *tinfo = &(job->tinfo[thread_id]);
     float ulps = job->ulps;
     dptr func = job->f->dfunc;
     int ftz = job->ftz;
@@ -248,7 +217,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     }
 
     // Init input array
-    cl_ulong *p = (cl_ulong *)gIn + thread_id * buffer_elements;
+    cl_double *p = (cl_double *)gIn + thread_id * buffer_elements;
     cl_int *p2 = (cl_int *)gIn2 + thread_id * buffer_elements;
     size_t idx = 0;
     int totalSpecialValueCount = specialValuesCount * specialValuesIntCount;
@@ -257,7 +226,6 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     // Test edge cases
     if (job_id <= (cl_uint)lastSpecialJobIndex)
     {
-        cl_double *fp = (cl_double *)p;
         cl_int *ip2 = (cl_int *)p2;
         uint32_t x, y;
 
@@ -266,7 +234,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
         for (; idx < buffer_elements; idx++)
         {
-            fp[idx] = specialValues[x];
+            p[idx] = specialValues[x];
             ip2[idx] = specialValuesInt[y];
             if (++x >= specialValuesCount)
             {

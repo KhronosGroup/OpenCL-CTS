@@ -66,7 +66,7 @@ REGISTER_TEST(kernel_call_kernel_function)
     clKernelWrapper kernel1, kernel2, kernel_to_call;
     clMemWrapper    streams[2];
 
-    size_t    threads[] = {num_elements,1,1};
+    size_t threads[] = { static_cast<size_t>(num_elements), 1, 1 };
     cl_int *input, *output, *expected;
     cl_int times = 4;
     int pass = 0;
@@ -125,19 +125,23 @@ REGISTER_TEST(kernel_call_kernel_function)
 
     // Compare the results
     pass = 1;
+    int subtest_errors = 0;
     for (int i=0; i<num_elements; i++) {
-        if (output[i] != expected[i]) {
-            if (errors > 10)
-                continue;
-            if (errors == 10) {
-                log_error("Suppressing further results...\n");
-                continue;
-            }
-            log_error("Results do not match: output[%d]=%d != expected[%d]=%d\n", i, output[i], i, expected[i]);
-            errors++;
+        if (output[i] != expected[i])
+        {
+            subtest_errors++;
             pass = 0;
+            log_error(
+                "Results do not match: output[%d]=%d != expected[%d]=%d\n", i,
+                output[i], i, expected[i]);
+            if (subtest_errors == 10)
+            {
+                log_error("Suppressing further results...\n");
+                break;
+            }
         }
     }
+    errors += subtest_errors;
     if (pass) log_info("Passed kernel calling kernel...\n");
 
 
@@ -172,19 +176,23 @@ REGISTER_TEST(kernel_call_kernel_function)
 
     // Compare the results
     pass = 1;
+    subtest_errors = 0;
     for (int i=0; i<num_elements; i++) {
-        if (output[i] != expected[i]) {
-            if (errors > 10)
-                continue;
-            if (errors > 10) {
-                log_error("Suppressing further results...\n");
-                continue;
-            }
-            log_error("Results do not match: output[%d]=%d != expected[%d]=%d\n", i, output[i], i, expected[i]);
-            errors++;
+        if (output[i] != expected[i])
+        {
+            subtest_errors++;
             pass = 0;
+            log_error(
+                "Results do not match: output[%d]=%d != expected[%d]=%d\n", i,
+                output[i], i, expected[i]);
+            if (subtest_errors == 10)
+            {
+                log_error("Suppressing further results...\n");
+                break;
+            }
         }
     }
+    errors += subtest_errors;
     if (pass) log_info("Passed kernel calling function...\n");
 
 
@@ -227,19 +235,23 @@ REGISTER_TEST(kernel_call_kernel_function)
 
     // Compare the results
     pass = 1;
+    subtest_errors = 0;
     for (int i=0; i<num_elements; i++) {
-        if (output[i] != expected[i]) {
-            if (errors > 10)
-                continue;
-            if (errors > 10) {
-                log_error("Suppressing further results...\n");
-                continue;
-            }
-            log_error("Results do not match: output[%d]=%d != expected[%d]=%d\n", i, output[i], i, expected[i]);
-            errors++;
+        if (output[i] != expected[i])
+        {
+            subtest_errors++;
             pass = 0;
+            log_error(
+                "Results do not match: output[%d]=%d != expected[%d]=%d\n", i,
+                output[i], i, expected[i]);
+            if (subtest_errors == 10)
+            {
+                log_error("Suppressing further results...\n");
+                break;
+            }
         }
     }
+    errors += subtest_errors;
     if (pass) log_info("Passed calling the kernel we called from another kernel before...\n");
 
     free( input );

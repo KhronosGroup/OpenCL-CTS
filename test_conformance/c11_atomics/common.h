@@ -27,8 +27,8 @@
 #include <algorithm>
 #include <iomanip>
 #include <limits>
-#include <vector>
 #include <sstream>
+#include <vector>
 
 #define MAX_DEVICE_THREADS (gHost ? 0U : gMaxDeviceThreads)
 #define MAX_HOST_THREADS GetThreadCount()
@@ -77,10 +77,20 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+extern bool gFloatAtomicsSupported;
+extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
+extern cl_device_fp_config gDoubleCaps;
+
+extern cl_device_fp_config gDoubleFPConfig;
+extern cl_device_fp_config gFloatFPConfig;
+extern cl_device_fp_config gHalfFPConfig;
+
 extern cl_half_rounding_mode gHalfRoundingMode;
 extern bool gFloatAtomicsSupported;
+
 extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
-extern cl_device_fp_config gHalfCaps;
+extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
+extern cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps;
 
 extern const char *
 get_memory_order_type_name(TExplicitMemoryOrderType orderType);
@@ -90,76 +100,6 @@ get_memory_scope_type_name(TExplicitMemoryScopeType scopeType);
 extern cl_int getSupportedMemoryOrdersAndScopes(
     cl_device_id device, std::vector<TExplicitMemoryOrderType> &memoryOrders,
     std::vector<TExplicitMemoryScopeType> &memoryScopes);
-
-union FloatIntUnion {
-    float f;
-    uint32_t i;
-};
-
-union DoubleIntUnion {
-    double d;
-    uint64_t i;
-};
-
-template <typename HostDataType> bool is_qnan(const HostDataType &value)
-{
-    if constexpr (std::is_same_v<HostDataType, float>)
-    {
-        FloatIntUnion u;
-        u.f = value;
-        if ((u.i & 0x7F800000) != 0x7F800000) return false;
-        return (u.i & 0x00400000) != 0;
-    }
-    else if constexpr (std::is_same_v<HostDataType, double>)
-    {
-        DoubleIntUnion u;
-        u.d = value;
-        if ((u.i & 0x7FF0000000000000) != 0x7FF0000000000000) return false;
-        return (u.i & 0x0008000000000000) != 0;
-    }
-    else if constexpr (std::is_same_v<HostDataType, cl_half>)
-    {
-        if ((value & 0x7C00) != 0x7C00) return false;
-        return (value & 0x0200) != 0;
-    }
-    else
-        return std::isnan(value);
-}
-
-template <typename HostDataType> bool is_snan(const HostDataType &value)
-{
-    if constexpr (std::is_same_v<HostDataType, float>)
-    {
-        FloatIntUnion u;
-        u.f = value;
-        if ((u.i & 0x7F800000) != 0x7F800000) return false;
-        return (u.i & 0x00400000) == 0;
-    }
-    else if constexpr (std::is_same_v<HostDataType, double>)
-    {
-        DoubleIntUnion u;
-        u.d = value;
-        if ((u.i & 0x7FF0000000000000) != 0x7FF0000000000000) return false;
-        return (u.i & 0x0008000000000000) == 0;
-    }
-    else if constexpr (std::is_same_v<HostDataType, cl_half>)
-    {
-        if ((value & 0x7C00) != 0x7C00) return false;
-        return (value & 0x0200) == 0;
-    }
-    else
-        return std::isnan(value);
-}
-
-inline bool IsHalfNaN(const cl_half v)
-{
-    // Extract FP16 exponent and mantissa
-    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-    uint16_t h_mant = ((cl_half)v) & 0x3FF;
-
-    // NaN test
-    return (h_exp == 0x1F && h_mant != 0);
-}
 
 inline bool IsHalfInfinity(const cl_half v)
 {
@@ -258,13 +198,14 @@ public:
     {
         return false;
     }
-    virtual bool VerifyExpected(const HostDataType &expected,
-                                const HostAtomicType *const testValue,
-                                const HostDataType *startRefValues,
-                                cl_uint whichDestValue)
+    virtual bool
+    IsTestNotAsExpected(const HostDataType &expected,
+                        const std::vector<HostAtomicType> &testValues,
+                        const std::vector<HostDataType> &startRefValues,
+                        cl_uint whichDestValue)
     {
-        if (testValue != nullptr) return expected != testValue[whichDestValue];
-        return true;
+        return expected
+            != static_cast<HostDataType>(testValues[whichDestValue]);
     }
     virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                               MTdata d)
@@ -320,12 +261,12 @@ public:
                                       cl_command_queue queue)
     {
         int error = 0;
-        DeclaredInProgram(false);
+        SetDeclaredInProgram(false);
         EXECUTE_TEST(error,
                      ExecuteForEachPointerType(deviceID, context, queue));
         if (!UseSVM())
         {
-            DeclaredInProgram(true);
+            SetDeclaredInProgram(true);
             EXECUTE_TEST(error,
                          ExecuteForEachPointerType(deviceID, context, queue));
         }
@@ -506,7 +447,7 @@ public:
     HostDataType StartValue() { return _startValue; }
     void SetLocalMemory(bool local) { _localMemory = local; }
     bool LocalMemory() { return _localMemory; }
-    void DeclaredInProgram(bool declaredInProgram)
+    void SetDeclaredInProgram(bool declaredInProgram)
     {
         _declaredInProgram = declaredInProgram;
     }
@@ -790,6 +731,28 @@ public:
                                            cl_context context,
                                            cl_command_queue queue)
     {
+        // Comparator for orders and scopes.
+        const auto checkValidity = [](TExplicitMemoryOrderType success,
+                                      TExplicitMemoryOrderType failure,
+                                      TExplicitMemoryScopeType scope) {
+            // Both memory order arguments must be set (or neither).
+            if ((success == MEMORY_ORDER_EMPTY || failure == MEMORY_ORDER_EMPTY)
+                && success != failure)
+                return false;
+
+            // Memory scope without memory order is disallowed.
+            if (success == MEMORY_ORDER_EMPTY && scope != MEMORY_SCOPE_EMPTY)
+                return false;
+
+            // Failure must not be release or acq_rel.
+            if (failure == MEMORY_ORDER_RELEASE
+                || failure == MEMORY_ORDER_ACQ_REL)
+                return false;
+
+            // Failure must not be stronger than success.
+            return failure <= success;
+        };
+
         // repeat test for each reasonable memory order/scope combination
         std::vector<TExplicitMemoryOrderType> memoryOrder;
         std::vector<TExplicitMemoryScopeType> memoryScope;
@@ -807,16 +770,10 @@ public:
             {
                 for (unsigned si = 0; si < memoryScope.size(); si++)
                 {
-                    if ((memoryOrder[oi] == MEMORY_ORDER_EMPTY
-                         || memoryOrder[o2i] == MEMORY_ORDER_EMPTY)
-                        && memoryOrder[oi] != memoryOrder[o2i])
-                        continue; // both memory order arguments must be set (or
-                                  // none)
-                    if ((memoryOrder[oi] == MEMORY_ORDER_EMPTY
-                         || memoryOrder[o2i] == MEMORY_ORDER_EMPTY)
-                        && memoryScope[si] != MEMORY_SCOPE_EMPTY)
-                        continue; // memory scope without memory order is not
-                                  // allowed
+                    if (!checkValidity(memoryOrder[oi], memoryOrder[o2i],
+                                       memoryScope[si]))
+                        continue;
+
                     MemoryOrder(memoryOrder[oi]);
                     MemoryOrder2(memoryOrder[o2i]);
                     MemoryScope(memoryScope[si]);
@@ -983,10 +940,26 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
             + ss.str() + "] = {\n";
         ss.str("");
 
-        if constexpr (std::is_same_v<HostDataType, HOST_ATOMIC_HALF>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
+        {
+            if (std::isinf(_startValue))
+                ss << (_startValue < 0 ? "-" : "") << "INFINITY";
+            else if (std::isnan(_startValue))
+                ss << "0.0 / 0.0";
+            else
+                ss << std::setprecision(
+                    std::numeric_limits<HostDataType>::max_digits10)
+                   << _startValue;
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
             if (IsHalfInfinity(_startValue))
-                ss << ((_startValue & 0x8000) != 0 ? "-" : "") << "INFINITY";
+                ss << ((static_cast<cl_half>(_startValue) & 0x8000) != 0 ? "-"
+                                                                         : "")
+                   << "INFINITY";
             else if (IsHalfNaN(_startValue))
                 ss << "0.0h / 0.0h";
             else
@@ -1295,9 +1268,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
             programSource = PragmaHeader(deviceID) + ProgramHeader(numDestItems)
                 + FunctionCode() + KernelCode(numDestItems);
             programLine = programSource.c_str();
-            if (create_single_kernel_helper_with_build_options(
-                    context, &program, &kernel, 1, &programLine,
-                    "test_atomic_kernel", gOldAPI ? "" : nullptr))
+            if (create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &programLine, "test_atomic_kernel"))
             {
                 return -1;
             }
@@ -1346,7 +1318,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                 CurrentGroupSize() * CurrentGroupNum(deviceThreadCount);
         threadCount = deviceThreadCount + hostThreadCount;
     }
-    if (gDebug)
+    if (gDebug && programLine != nullptr)
     {
         log_info("Program source:\n");
         log_info("%s\n", programLine);
@@ -1382,7 +1354,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
     numDestItems = NumResults(threadCount, deviceID);
 
     destItems.resize(numDestItems);
-    for (cl_uint i = 0; i < numDestItems; i++) destItems[i] = _startValue;
+    for (cl_uint i = 0; i < numDestItems; i++)
+        destItems[i] = static_cast<HostAtomicType>(_startValue);
 
     // Create main buffer with atomic variables (array size dependent on
     // particular test)
@@ -1555,8 +1528,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (VerifyExpected(expected, destItems.data(), startRefValues.data(),
-                           i))
+        if (IsTestNotAsExpected(expected, destItems, startRefValues, i))
         {
             std::stringstream logLine;
             if constexpr (std::is_same_v<HostDataType, cl_half>)
@@ -1654,7 +1626,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                                  // clEnqueueNDRangeKernel
     {
         /* Re-write the starting value */
-        for (size_t i = 0; i < numDestItems; i++) destItems[i] = _startValue;
+        for (size_t i = 0; i < numDestItems; i++)
+            destItems[i] = static_cast<HostAtomicType>(_startValue);
         refValues[0] = 0;
         if (deviceThreadCount > 0)
         {

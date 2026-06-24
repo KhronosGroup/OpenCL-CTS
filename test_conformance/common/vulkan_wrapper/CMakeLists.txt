@@ -6,8 +6,8 @@ set(VULKAN_WRAPPER_SOURCES
 )
 
 # needed by Vulkan wrapper to compile
+set(CMAKE_COMPILE_WARNING_AS_ERROR OFF)
 add_cxx_flag_if_supported(-Wmisleading-indentation)
-add_cxx_flag_if_supported(-Wno-narrowing)
 add_cxx_flag_if_supported(-Wno-format)
 add_cxx_flag_if_supported(-Wno-error)
 add_cxx_flag_if_supported(-Wno-error=cpp) # Allow #warning directive

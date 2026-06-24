@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2024 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -103,6 +103,8 @@ TEST_FN_REDIRECTOR(renderbuffer_getinfo)
 
 TEST_FN_REDIRECTOR(fence_sync)
 
+TEST_FN_REDIRECTOR(queries)
+
 test_definition test_list[] = { TEST_FN_REDIRECT(buffers),
                                 TEST_FN_REDIRECT(buffers_getinfo),
 
@@ -132,7 +134,9 @@ test_definition test_list[] = { TEST_FN_REDIRECT(buffers),
 
                                 TEST_FN_REDIRECT(renderbuffer_read),
                                 TEST_FN_REDIRECT(renderbuffer_write),
-                                TEST_FN_REDIRECT(renderbuffer_getinfo) };
+                                TEST_FN_REDIRECT(renderbuffer_getinfo),
+
+                                TEST_FN_REDIRECT(queries) };
 
 test_definition test_list32[] = {
     TEST_FN_REDIRECT(images_read_texturebuffer),
@@ -196,7 +200,7 @@ int main(int argc, const char *argv[])
         }
     }
 
-    if (argc > 1 && strcmp(argv[1], "-list") == 0)
+    if (gListTests)
     {
         log_info("Available 2.x tests:\n");
         for (int i = 0; i < test_num; i++)

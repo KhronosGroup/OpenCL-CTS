@@ -371,6 +371,10 @@ struct cl_half16
 };
 }
 
+// Override operator<< for cl_char and cl_uchar to print them as numbers.
+std::ostream &operator<<(std::ostream &os, const cl_char &val);
+std::ostream &operator<<(std::ostream &os, const cl_uchar &val);
+
 // Declare operator<< for cl_ types, accessing the .s member.
 #define OP_OSTREAM(Ty, VecSize)                                                \
     std::ostream &operator<<(std::ostream &os, const Ty##VecSize &val);
@@ -1609,6 +1613,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct subgroup_test
 
         // Generate the desired input for the kernel
         test_params.subgroup_size = subgroup_size;
+        test_params.local_workgroup_size = local;
         Fns::gen(idata.data(), mapin.data(), sgmap.data(), test_params);
 
         test_status status = TEST_FAIL;
