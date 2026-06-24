@@ -19,7 +19,6 @@
 #include "../testBase.h"
 #include "../harness/compat.h"
 #include "../harness/fpcontrol.h"
-#include "../harness/parseParameters.h"
 
 #if defined(__PPC__)
 // Global varaiable used to hold the FPU control register state. The FPSCR register can not
@@ -48,8 +47,6 @@ bool            gEnablePitch = false;
 
 int             gtestTypesToRun = 0;
 static int testTypesToRun;
-
-static void printUsage( const char *execName );
 
 extern int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, test_format_set_fn formatTestFn, cl_mem_object_type imageType );
 
@@ -340,31 +337,64 @@ REGISTER_TEST_VERSION(cl_ext_image_raw10_raw12, Version(1, 2))
     return ext_image_raw10_raw12(device, context, queue);
 }
 
-int main(int argc, const char *argv[])
+static test_status parseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help)
 {
+
+    help =
+        R"(        The following flags specify what kinds of operations to test. They can be combined; if none are specified, all are tested:
+          read - Tests reading from an image
+          write - Tests writing to an image (can be specified with read to run both; default is both)
+
+        The following flags specify the types to test. They can be combined; if none are specified, all are tested:
+          int - Test integer I/O (read_imagei, write_imagei)
+          uint - Test unsigned integer I/O (read_imageui, write_imageui)
+          float - Test float I/O (read_imagef, write_imagef)
+
+        CL_FILTER_LINEAR - Only tests formats with CL_FILTER_LINEAR filtering
+        CL_FILTER_NEAREST - Only tests formats with CL_FILTER_NEAREST filtering
+
+        NORMALIZED - Only tests formats with NORMALIZED coordinates
+        UNNORMALIZED - Only tests formats with UNNORMALIZED coordinates
+
+        CL_ADDRESS_CLAMP - Only tests formats with CL_ADDRESS_CLAMP addressing
+        CL_ADDRESS_CLAMP_TO_EDGE - Only tests formats with CL_ADDRESS_CLAMP_TO_EDGE addressing
+        CL_ADDRESS_REPEAT - Only tests formats with CL_ADDRESS_REPEAT addressing
+        CL_ADDRESS_MIRRORED_REPEAT - Only tests formats with CL_ADDRESS_MIRRORED_REPEAT addressing
+
+        You may also use appropriate CL_ channel type and ordering constants.
+
+        local_samplers - Use samplers declared in the kernel functions instead of passed in as arguments
+
+        The following specify to use the specific flag to allocate images to use in the tests:
+          CL_MEM_COPY_HOST_PTR
+          CL_MEM_USE_HOST_PTR (default)
+          CL_MEM_ALLOC_HOST_PTR
+          NO_HOST_PTR - Specifies to use none of the above flags
+
+        The following modify the types of images tested:
+          small_images - Runs every format through a loop of widths 1-13 and heights 1-9, instead of random sizes
+          max_images - Runs every format through a set of size combinations with the max values, max values - 1, and max values / 128
+          rounding - Runs every format through a single image filled with every possible value for that image format, to verify rounding works properly
+
+        no_offsets - Disables offsets when testing reads (can be good for diagnosing address repeating/clamping problems)
+        debug_trace - Enables additional debug info logging
+        extra_validate - Enables additional validation failure debug information
+        use_pitches - Enables row and slice pitches
+        test_mipmaps - Enables mipmapped images
+)";
+
     cl_channel_type chanType;
     cl_channel_order chanOrder;
 
-    argc = parseCustomParam(argc, argv);
-    if (argc == -1)
-    {
-        return -1;
-    }
-
-    const char ** argList = (const char **)calloc( argc, sizeof( char*) );
-
-    if( NULL == argList )
-    {
-        log_error( "Failed to allocate memory for argList array.\n" );
-        return 1;
-    }
-
-    argList[0] = argv[0];
-    size_t argCount = 1;
+    std::vector<const char *> argList;
+    argList.push_back(argv[0]);
 
     // Parse arguments
     for( int i = 1; i < argc; i++ )
     {
+        removed_args.push_back(argv[i]);
         if( strcmp( argv[i], "debug_trace" ) == 0 )
             gDebugTrace = true;
 
@@ -437,12 +467,6 @@ int main(int argc, const char *argv[])
         else if( strcmp( argv[i], "NO_HOST_PTR" ) == 0 )
             gMemFlagsToUse = 0;
 
-        else if( strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 )
-        {
-            printUsage( argv[ 0 ] );
-            return -1;
-        }
-
         else if( ( chanType = get_channel_type_from_name( argv[i] ) ) != (cl_channel_type)-1 )
             gChannelTypeToUse = chanType;
 
@@ -450,8 +474,8 @@ int main(int argc, const char *argv[])
             gChannelOrderToUse = chanOrder;
         else
         {
-            argList[argCount] = argv[i];
-            argCount++;
+            removed_args.pop_back();
+            argList.push_back(argv[i]);
         }
     }
 
@@ -462,6 +486,13 @@ int main(int argc, const char *argv[])
 
     if( gTestSmallImages )
         log_info( "Note: Using small test images\n" );
+
+    update_argc_argv_from_args_list(argList, argc, argv);
+    return TEST_PASS;
+}
+
+int main(int argc, const char *argv[])
+{
 
     // On most platforms which support denorm, default is FTZ off. However,
     // on some hardware where the reference is computed, default might be flush denorms to zero e.g. arm.
@@ -474,71 +505,13 @@ int main(int argc, const char *argv[])
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 
-    int ret = runTestHarnessWithCheck(
-        argCount, argList, test_registry::getInstance().num_tests(),
+    int ret = runTestHarnessWithCheckAndParse(
+        argc, argv, test_registry::getInstance().num_tests(),
         test_registry::getInstance().definitions(), false, 0,
-        verifyImageSupport);
+        verifyImageSupport, parseArgs);
 
     // Restore FP state before leaving
     RestoreFPState(&oldMode);
 
-    free(argList);
     return ret;
-}
-
-static void printUsage( const char *execName )
-{
-    const char *p = strrchr( execName, '/' );
-    if( p != NULL )
-        execName = p + 1;
-
-    log_info( "Usage: %s [options] [test_names]\n", execName );
-    log_info( "Options:\n" );
-    log_info( "\n" );
-    log_info( "\tThe following flags specify what kinds of operations to test. They can be combined; if none are specified, all are tested:\n" );
-    log_info( "\t\tread - Tests reading from an image\n" );
-    log_info( "\t\twrite - Tests writing to an image (can be specified with read to run both; default is both)\n" );
-    log_info( "\n" );
-    log_info( "\tThe following flags specify the types to test. They can be combined; if none are specified, all are tested:\n" );
-    log_info( "\t\tint - Test integer I/O (read_imagei, write_imagei)\n" );
-    log_info( "\t\tuint - Test unsigned integer I/O (read_imageui, write_imageui)\n" );
-    log_info( "\t\tfloat - Test float I/O (read_imagef, write_imagef)\n" );
-    log_info( "\n" );
-    log_info( "\tCL_FILTER_LINEAR - Only tests formats with CL_FILTER_LINEAR filtering\n" );
-    log_info( "\tCL_FILTER_NEAREST - Only tests formats with CL_FILTER_NEAREST filtering\n" );
-    log_info( "\n" );
-    log_info( "\tNORMALIZED - Only tests formats with NORMALIZED coordinates\n" );
-    log_info( "\tUNNORMALIZED - Only tests formats with UNNORMALIZED coordinates\n" );
-    log_info( "\n" );
-    log_info( "\tCL_ADDRESS_CLAMP - Only tests formats with CL_ADDRESS_CLAMP addressing\n" );
-    log_info( "\tCL_ADDRESS_CLAMP_TO_EDGE - Only tests formats with CL_ADDRESS_CLAMP_TO_EDGE addressing\n" );
-    log_info( "\tCL_ADDRESS_REPEAT - Only tests formats with CL_ADDRESS_REPEAT addressing\n" );
-    log_info( "\tCL_ADDRESS_MIRRORED_REPEAT - Only tests formats with CL_ADDRESS_MIRRORED_REPEAT addressing\n" );
-    log_info( "\n" );
-    log_info( "You may also use appropriate CL_ channel type and ordering constants.\n" );
-    log_info( "\n" );
-    log_info( "\tlocal_samplers - Use samplers declared in the kernel functions instead of passed in as arguments\n" );
-    log_info( "\n" );
-    log_info( "\tThe following specify to use the specific flag to allocate images to use in the tests:\n" );
-    log_info( "\t\tCL_MEM_COPY_HOST_PTR\n" );
-    log_info( "\t\tCL_MEM_USE_HOST_PTR (default)\n" );
-    log_info( "\t\tCL_MEM_ALLOC_HOST_PTR\n" );
-    log_info( "\t\tNO_HOST_PTR - Specifies to use none of the above flags\n" );
-    log_info( "\n" );
-    log_info( "\tThe following modify the types of images tested:\n" );
-    log_info( "\t\tsmall_images - Runs every format through a loop of widths 1-13 and heights 1-9, instead of random sizes\n" );
-    log_info( "\t\tmax_images - Runs every format through a set of size combinations with the max values, max values - 1, and max values / 128\n" );
-    log_info( "\t\trounding - Runs every format through a single image filled with every possible value for that image format, to verify rounding works properly\n" );
-    log_info( "\n" );
-    log_info( "\tno_offsets - Disables offsets when testing reads (can be good for diagnosing address repeating/clamping problems)\n" );
-    log_info( "\tdebug_trace - Enables additional debug info logging\n" );
-    log_info( "\textra_validate - Enables additional validation failure debug information\n" );
-    log_info( "\tuse_pitches - Enables row and slice pitches\n" );
-    log_info( "\ttest_mipmaps - Enables mipmapped images\n");
-    log_info( "\n" );
-    log_info( "Test names:\n" );
-    for (size_t i = 0; i < test_registry::getInstance().num_tests(); i++)
-    {
-        log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
-    }
 }
