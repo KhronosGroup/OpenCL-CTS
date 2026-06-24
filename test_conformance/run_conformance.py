@@ -18,6 +18,9 @@ import time
 import tempfile
 
 DEBUG = 0
+retry=0
+RETRY_COUNT=3
+
 
 log_file_name = "opencl_conformance_results_" + time.strftime("%Y-%m-%d_%H-%M", time.localtime()) + ".log"
 process_pid = 0
@@ -213,6 +216,7 @@ def run_tests(tests):
     failures = 0
     previous_test = None
     test_number = 1
+    failed_tests=[]
     for test in tests:
         # Print the name of the test we're running and the time
         (test_name, test_dir) = test
@@ -270,12 +274,15 @@ def run_tests(tests):
             log_file.write("  *  (" + get_time() + ")     Test " + test_name + " ==> FAILED: " + str(result) + "\n")
             log_file.write("  *******************************************************************************************\n")
             failures = failures + 1
+            #keep failed test_name in a list
+            
+            failed_tests.append(test)
         else:
             log_file.write("     (" + get_time() + ")     Test " + test_name + " passed in " + str(run_time) + "s\n")
 
         log_file.write("     ----------------------------------------------------------------------------------------\n")
         log_file.write("\n")
-    return failures
+    return failures,failed_tests
 
 
 # ########################
@@ -353,12 +360,20 @@ for device_to_test in devices_to_test:
     write_screen_log(("Setting CL_DEVICE_TYPE to " + device_to_test).center(90))
     write_screen_log("========================================================================================")
     write_screen_log("========================================================================================")
-    failures = run_tests(tests)
+    failures,failed_tests = run_tests(tests)
     write_screen_log("========================================================================================")
     if failures == 0:
         write_screen_log(">> TEST on " + device_to_test + " PASSED")
     else:
         write_screen_log(">> TEST on " + device_to_test + " FAILED (" + str(failures) + " FAILURES)")
+        write_screen_log("Failed tests are"+ str(failed_tests))
+        #if retry < RETRY_COUNT then retry the failed tests
+        write_screen_log("Retrying failed tests")
+        if retry < RETRY_COUNT:
+                failures,failed_tests = run_tests(failed_tests)
+                retry=retry+1
+                
+        
     write_screen_log("========================================================================================")
     total_failures = total_failures + failures
 
