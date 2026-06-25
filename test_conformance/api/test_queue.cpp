@@ -23,7 +23,8 @@ REGISTER_TEST(queue_flush_on_release)
     cl_int err;
 
     // Create a command queue
-    cl_command_queue cmd_queue = clCreateCommandQueue(context, device, 0, &err);
+    clCommandQueueWrapper cmd_queue =
+        clCreateCommandQueue(context, device, 0, &err);
     test_error(err, "Could not create command queue");
 
     // Create a kernel
@@ -42,7 +43,7 @@ REGISTER_TEST(queue_flush_on_release)
     test_error(err, "Could not enqueue kernel");
 
     // Release the queue
-    err = clReleaseCommandQueue(cmd_queue);
+    cmd_queue.reset();
 
     // Wait for kernel to execute since the queue must flush on release
     bool success = poll_until(2000, 50, [&event]() {
@@ -64,11 +65,13 @@ REGISTER_TEST(multi_queue_flush_on_release)
     cl_int err;
 
     // Create A command queue
-    cl_command_queue queue_A = clCreateCommandQueue(context, device, 0, &err);
+    clCommandQueueWrapper queue_A =
+        clCreateCommandQueue(context, device, 0, &err);
     test_error(err, "Could not create command queue A");
 
     // Create B command queue
-    cl_command_queue queue_B = clCreateCommandQueue(context, device, 0, &err);
+    clCommandQueueWrapper queue_B =
+        clCreateCommandQueue(context, device, 0, &err);
     test_error(err, "Could not create command queue B");
 
     // Create a kernel
@@ -96,8 +99,7 @@ REGISTER_TEST(multi_queue_flush_on_release)
 
     // Release queue_A, which performs an implicit flush to issue any previously
     // queued OpenCL commands
-    err = clReleaseCommandQueue(queue_A);
-    test_error(err, "clReleaseCommandQueue failed");
+    queue_A.reset();
 
     err = clFlush(queue_B);
     test_error(err, "clFlush failed");

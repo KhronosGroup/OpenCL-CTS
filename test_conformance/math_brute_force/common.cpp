@@ -102,7 +102,7 @@ void EmitEnableExtension(std::ostringstream &kernel,
     if (needsFp16) kernel << "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
 }
 
-std::string GetBuildOptions(bool relaxed_mode)
+std::string GetBuildOptions(const BuildKernelInfo &info)
 {
     std::ostringstream options;
 
@@ -111,14 +111,14 @@ std::string GetBuildOptions(bool relaxed_mode)
         options << " -cl-denorms-are-zero";
     }
 
-    if (gFloatCapabilities & CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT)
-    {
-        options << " -cl-fp32-correctly-rounded-divide-sqrt";
-    }
-
-    if (relaxed_mode)
+    if (info.relaxedMode)
     {
         options << " -cl-fast-relaxed-math";
+    }
+
+    if (info.correctlyRounded)
+    {
+        options << " -cl-fp32-correctly-rounded-divide-sqrt";
     }
 
     return options.str();
@@ -581,7 +581,7 @@ cl_int BuildKernels(BuildKernelInfo &info, cl_uint job_id,
 
     // Create the program.
     clProgramWrapper &program = info.programs[vector_size_index];
-    auto options = GetBuildOptions(info.relaxedMode);
+    auto options = GetBuildOptions(info);
     int error =
         create_single_kernel_helper(gContext, &program, nullptr, sources.size(),
                                     sources.data(), nullptr, options.c_str());

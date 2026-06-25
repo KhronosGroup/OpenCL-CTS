@@ -38,10 +38,6 @@ set(TEST_HARNESS_SOURCES
   ../../test_conformance/math_brute_force/utility.cpp
 )
 
-if(CMAKE_COMPILER_IS_GNUCC OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
-    add_cxx_flag_if_supported(-Wno-narrowing)
-endif()
-
 set(${MODULE_NAME}_SOURCES ${${MODULE_NAME}_SOURCES} ${TEST_HARNESS_SOURCES})
 
 include(../CMakeCommon.txt)

@@ -31,7 +31,7 @@ __kernel void test(__global int* dst) {
 static int test_CL_DEVICE_OPENCL_C_VERSION(cl_device_id device,
                                            cl_context context)
 {
-    const Version latest_version = Version(3, 0);
+    const Version latest_version = Version(3, 1);
 
     const Version api_version = get_device_cl_version(device);
     const Version clc_version = get_device_cl_c_version(device);
@@ -52,13 +52,13 @@ static int test_CL_DEVICE_OPENCL_C_VERSION(cl_device_id device,
                  latest_version.to_string().c_str());
     }
 
-    // For OpenCL 3.0, the minimum required OpenCL C version is OpenCL C 1.2.
+    // For OpenCL 3.x, the minimum required OpenCL C version is OpenCL C 1.2.
     // For OpenCL 2.x, the minimum required OpenCL C version is OpenCL C 2.0.
     // For other OpenCL versions, the minimum required OpenCL C version is
     // the same as the API version.
-    const Version min_clc_version = api_version == Version(3, 0)
-        ? Version(1, 2)
-        : api_version >= Version(2, 0) ? Version(2, 0) : api_version;
+    const Version min_clc_version = api_version >= Version(3, 0) ? Version(1, 2)
+        : api_version >= Version(2, 0)                           ? Version(2, 0)
+                                                                 : api_version;
     if (clc_version < min_clc_version)
     {
         log_error("The minimum required OpenCL C version for API version %s is "
@@ -82,16 +82,17 @@ static int test_CL_DEVICE_OPENCL_C_VERSION(cl_device_id device,
     tests.push_back({ Version(1, 2), "-cl-std=CL1.2" });
     tests.push_back({ Version(2, 0), "-cl-std=CL2.0" });
     tests.push_back({ Version(3, 0), "-cl-std=CL3.0" });
+    tests.push_back({ Version(3, 1), "-cl-std=CL3.1" });
 
     for (const auto& testcase : tests)
     {
         if (clc_version >= testcase.version)
         {
             clProgramWrapper program;
-            cl_int error =
-                create_single_kernel_helper_create_program_for_device(
-                    context, device, &program, 1, &test_kernel,
-                    testcase.buildOptions);
+            clKernelWrapper kernel;
+            cl_int error = create_single_kernel_helper(
+                context, &program, &kernel, 1, &test_kernel, "test",
+                testcase.buildOptions);
             test_error(error, "Unable to build program!");
 
             log_info("    successfully built program with build options '%s'\n",
@@ -152,9 +153,10 @@ static int test_CL_DEVICE_OPENCL_C_ALL_VERSIONS(cl_device_id device,
             buildOptions += std::to_string(minor);
 
             clProgramWrapper program;
-            error = create_single_kernel_helper_create_program_for_device(
-                context, device, &program, 1, &test_kernel,
-                buildOptions.c_str());
+            clKernelWrapper kernel;
+            error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                                &test_kernel, "test",
+                                                buildOptions.c_str());
             test_error(error, "Unable to build program!");
 
             log_info("    successfully built program with build options '%s'\n",
@@ -236,6 +238,7 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_versions(cl_device_id device,
     test_clc_versions.push_back(Version(1, 2));
     test_clc_versions.push_back(Version(2, 0));
     test_clc_versions.push_back(Version(3, 0));
+    test_clc_versions.push_back(Version(3, 1));
 
     cl_int error = CL_SUCCESS;
 
