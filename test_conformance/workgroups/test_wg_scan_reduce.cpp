@@ -380,7 +380,7 @@ template <typename C> struct ScanInclusive
                 {
                     // compute maximal summation error
                     float s = std::abs(cl_half_to_float(ref_vals[0]));
-                    for (size_t i = 1; i < (size_t)n_elems; i++)
+                    for (size_t i = 1; i < (size_t)max_wg_size; i++)
                     {
                         s += std::abs(cl_half_to_float(ref_vals[i]));
                         max_err[i] = cl_half_from_float(
@@ -407,7 +407,7 @@ template <typename C> struct ScanInclusive
                 {
                     // compute maximal summation error
                     Type s = std::abs(ref_vals[0]);
-                    for (size_t i = 1; i < (size_t)n_elems; i++)
+                    for (size_t i = 1; i < (size_t)max_wg_size; i++)
                     {
                         s += std::abs(ref_vals[i]);
                         max_err[i] = std::abs((max_wg_size - 1)
@@ -513,7 +513,7 @@ template <typename C> struct ScanExclusive
                 {
                     // compute maximal summation error
                     float s = std::abs(cl_half_to_float(ref_vals[0]));
-                    for (size_t i = 1; i < (size_t)n_elems; i++)
+                    for (size_t i = 1; i < (size_t)max_wg_size; i++)
                     {
                         max_err[i] = cl_half_from_float(
                             std::abs((max_wg_size - 1) * CL_HALF_EPSILON * s),
@@ -540,7 +540,7 @@ template <typename C> struct ScanExclusive
                 {
                     // compute maximal summation error
                     Type s = std::abs(ref_vals[0]);
-                    for (size_t i = 1; i < (size_t)n_elems; i++)
+                    for (size_t i = 1; i < (size_t)max_wg_size; i++)
                     {
                         max_err[i] = std::abs((max_wg_size - 1)
                                               * (std::is_same_v<Type, cl_float>
@@ -602,7 +602,7 @@ static int run_test(cl_device_id device, cl_context context,
 
     std::vector<T> input_vec(n_elems);
 
-    std::vector<T> max_err_vec(n_elems, 0);
+    std::vector<T> max_err_vec(wg_size[0], 0);
     TestInfo::generate_input_values(input_vec.data(), n_elems, wg_size[0],
                                     max_err_vec.data());
 
