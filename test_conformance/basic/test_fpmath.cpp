@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "harness/mathHelpers.h"
 #include "harness/rounding_mode.h"
 #include "harness/stringHelpers.h"
 
@@ -57,16 +58,6 @@ template <typename T> double toDouble(T val)
         return val;
 }
 
-bool isHalfNan(cl_half v)
-{
-    // Extract FP16 exponent and mantissa
-    uint16_t h_exp = (v >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-    uint16_t h_mant = v & 0x3FF;
-
-    // NaN test
-    return (h_exp == 0x1F && h_mant != 0);
-}
-
 cl_half half_plus(cl_half a, cl_half b)
 {
     return HFF(std::plus<float>()(HTF(a), HTF(b)));
@@ -101,14 +92,7 @@ int verify_fp(std::vector<T> (&input)[2], std::vector<T> &output,
         T r = test.ref(inA[i], inB[i]);
         bool both_nan = false;
 
-        if (std::is_same<T, cl_half>::value)
-        {
-            both_nan = isHalfNan(r) && isHalfNan(output[i]);
-        }
-        else if (std::is_floating_point<T>::value)
-        {
-            both_nan = std::isnan(r) && std::isnan(output[i]);
-        }
+        both_nan = isnan_fp(r) && isnan_fp(output[i]);
 
         // If not both nan, check if the result is the same
         if (!both_nan && (r != output[i]))

@@ -26,10 +26,10 @@ static int test_image_operand_helper(cl_device_id deviceID, cl_context context,
 {
     const char* filename = signExtend ? "spv1.4/image_operand_signextend"
                                       : "spv1.4/image_operand_zeroextend";
-    cl_image_format image_format = {
-        CL_RGBA,
-        signExtend ? CL_SIGNED_INT8 : CL_UNSIGNED_INT8,
-    };
+    cl_image_format image_format = {};
+    image_format.image_channel_order = CL_RGBA;
+    image_format.image_channel_data_type =
+        signExtend ? CL_SIGNED_INT8 : CL_UNSIGNED_INT8;
 
     cl_int error = CL_SUCCESS;
 

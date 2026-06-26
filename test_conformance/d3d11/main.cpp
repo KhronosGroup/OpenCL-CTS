@@ -28,6 +28,9 @@ int main(int argc, const char* argv[])
     cl_platform_id platform = NULL;
     cl_uint num_devices_tested = 0;
 
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    setvbuf(stderr, nullptr, _IONBF, 0);
+
     argc = parseCustomParam(argc, argv);
 
     // get the platforms to test

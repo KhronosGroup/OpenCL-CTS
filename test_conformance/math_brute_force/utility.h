@@ -19,9 +19,11 @@
 #include "harness/compat.h"
 #include "harness/rounding_mode.h"
 #include "harness/fpcontrol.h"
+#include "harness/mathHelpers.h"
 #include "harness/testHarness.h"
 #include "harness/ThreadPool.h"
 #include "harness/conversions.h"
+#include "harness/parseParameters.h"
 #include "CL/cl_half.h"
 
 #define BUFFER_SIZE (1024 * 1024 * 2)
@@ -59,10 +61,11 @@ extern cl_mem gOutBuffer2[VECTOR_SIZE_COUNT];
 extern int gSkipCorrectnessTesting;
 extern int gForceFTZ;
 extern int gFastRelaxedDerived;
-extern int gWimpyMode;
 extern int gHostFill;
 extern int gIsInRTZMode;
 extern int gHasHalf;
+extern int gHasDouble;
+extern int gTestFloat;
 extern int gInfNanSupport;
 extern int gIsEmbedded;
 extern int gVerboseBruteForce;
@@ -70,6 +73,7 @@ extern uint32_t gMaxVectorSizeIndex;
 extern uint32_t gMinVectorSizeIndex;
 extern cl_device_fp_config gFloatCapabilities;
 extern cl_device_fp_config gHalfCapabilities;
+extern cl_device_fp_config gDoubleCapabilities;
 extern RoundingMode gFloatToHalfRoundingMode;
 
 extern cl_half_rounding_mode gHalfRoundingMode;
@@ -170,16 +174,6 @@ inline int IsFloatNaN(double x)
     } u;
     u.d = (cl_float)x;
     return ((u.u & 0x7fffffffU) > 0x7F800000U);
-}
-
-inline bool IsHalfNaN(const cl_half v)
-{
-    // Extract FP16 exponent and mantissa
-    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
-    uint16_t h_mant = ((cl_half)v) & 0x3FF;
-
-    // NaN test
-    return (h_exp == 0x1F && h_mant != 0);
 }
 
 inline bool IsHalfInfinity(const cl_half v)

@@ -84,7 +84,47 @@ struct BuildKernelInfo
 
     // Whether to build with -cl-fast-relaxed-math.
     bool relaxedMode;
+
+    // Whether to build with -cl-fp32-correctly-rounded-divide-sqrt.
+    bool correctlyRounded;
 };
+
+// Thread specific data for a unary function worker thread.
+struct ThreadInfoUnary
+{
+    // Input and output buffer for the thread.
+    clMemWrapper inBuf;
+    Buffers outBuf;
+
+    // Max error value found in this thread.
+    float maxError = 0.0f;
+
+    // Position of the max error value (param 1).
+    double maxErrorValue = 0.0;
+
+    // Per thread pseudorandom number generator to ensure determinism.
+    MTdataHolder d;
+
+    // Per thread command queue to improve performance.
+    clCommandQueueWrapper tQueue;
+};
+
+// Thread specific data for a binary function worker thread.
+template <typename Param2Ty>
+struct ThreadInfoBinaryBase : public ThreadInfoUnary
+{
+    // Input buffer for parameter 2.
+    clMemWrapper inBuf2;
+
+    // Position of the max error value (param 2).
+    Param2Ty maxErrorValue2 = {};
+};
+
+// Thread specific data for an (fp, fp) binary function worker thread.
+using ThreadInfoBinary = ThreadInfoBinaryBase<double>;
+
+// Thread specific data for an (fp, int) binary function worker thread.
+using ThreadInfoBinaryFPInt = ThreadInfoBinaryBase<cl_int>;
 
 // Data common to all math tests.
 struct TestInfoBase

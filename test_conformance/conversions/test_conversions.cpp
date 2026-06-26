@@ -112,6 +112,35 @@ int main(int argc, const char **argv)
     int error;
 
     argc = parseCustomParam(argc, argv);
+    if (gListTests)
+    {
+        for (unsigned dst = 0; dst < kTypeCount; dst++)
+        {
+            for (unsigned src = 0; src < kTypeCount; src++)
+            {
+                for (unsigned sat = 0; sat < 2; sat++)
+                {
+                    // skip illegal saturated conversions to float type
+                    if (gSaturationNames[sat] == std::string("_sat")
+                        && (gTypeNames[dst] == std::string("float")
+                            || gTypeNames[dst] == std::string("half")
+                            || gTypeNames[dst] == std::string("double")))
+                    {
+                        continue;
+                    }
+                    for (unsigned rnd = 0; rnd < kRoundingModeCount; rnd++)
+                    {
+                        vlog("\t%s\n",
+                             (std::string(gTypeNames[dst])
+                              + gSaturationNames[sat] + gRoundingModeNames[rnd]
+                              + "_" + gTypeNames[src])
+                                 .c_str());
+                    }
+                }
+            }
+        }
+        return 0;
+    }
     if (argc == -1)
     {
         return 1;
@@ -218,7 +247,6 @@ static int ParseArgs(int argc, const char **argv)
                     case 'h': gTestHalfs ^= 1; break;
                     case 'l': gSkipTesting ^= 1; break;
                     case 'm': gMultithread ^= 1; break;
-                    case 'w': gWimpyMode ^= 1; break;
                     case '[':
                         parseWimpyReductionFactor(arg, gWimpyReductionFactor);
                         break;
@@ -287,14 +315,6 @@ static int ParseArgs(int argc, const char **argv)
         }
     }
 
-    // Check for the wimpy mode environment variable
-    if (getenv("CL_WIMPY_MODE"))
-    {
-        vlog("\n");
-        vlog("*** Detected CL_WIMPY_MODE env                          ***\n");
-        gWimpyMode = 1;
-    }
-
     vlog("\n");
 
     PrintArch();
@@ -335,9 +355,6 @@ static void PrintUsage(void)
     vlog("\t\t-l\tToggle link check mode. When on, testing is skipped, and we "
          "just check to see that the kernels build. (Off by default.)\n");
     vlog("\t\t-m\tToggle Multithreading. (On by default.)\n");
-    vlog("\t\t-w\tToggle wimpy mode. When wimpy mode is on, we run a very "
-         "small subset of the tests for each fn. NOT A VALID TEST! (Off by "
-         "default.)\n");
     vlog(" \t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
          "1-12, default factor(%u)\n",
          gWimpyReductionFactor);
