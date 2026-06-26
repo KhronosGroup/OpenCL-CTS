@@ -63,6 +63,10 @@ enum PrintfTestType
     TYPE_ADDRESS_SPACE,
     TYPE_MIXED_FORMAT_RANDOM,
     TYPE_LENGTH_SPECIFIER,
+    TYPE_SIZET,
+    TYPE_SIZET_64,
+    TYPE_PTRDIFFT,
+    TYPE_PTRDIFFT_64,
     TYPE_COUNT
 };
 
@@ -89,6 +93,8 @@ static std::vector<std::string> correctBufferDouble;
 static std::vector<std::string> correctBufferOctal;
 static std::vector<std::string> correctBufferUnsigned;
 static std::vector<std::string> correctBufferHexadecimal;
+static std::vector<std::string> correctBufferSizeT;
+static std::vector<std::string> correctBufferPtrDiffT;
 // Reference results - Compile-time known
 extern std::vector<std::string> correctBufferChar;
 extern std::vector<std::string> correctBufferString;

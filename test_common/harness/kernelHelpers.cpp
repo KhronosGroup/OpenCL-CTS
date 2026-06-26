@@ -749,7 +749,11 @@ int create_single_kernel_helper(cl_context context, cl_program *outProgram,
         auto version = get_max_OpenCL_C_for_context(context);
 
         std::string cl_std{};
-        if (version >= Version(3, 0))
+        if (version >= Version(3, 1))
+        {
+            cl_std = "-cl-std=CL3.1";
+        }
+        else if (version >= Version(3, 0))
         {
             cl_std = "-cl-std=CL3.0";
         }

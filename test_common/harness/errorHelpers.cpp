@@ -283,6 +283,21 @@ const char *GetDeviceTypeName(cl_device_type type)
     }
 }
 
+const char *GetImageTypeName(cl_mem_object_type type)
+{
+    switch (type)
+    {
+        case CL_MEM_OBJECT_IMAGE1D: return "CL_MEM_OBJECT_IMAGE1D";
+        case CL_MEM_OBJECT_IMAGE2D: return "CL_MEM_OBJECT_IMAGE2D";
+        case CL_MEM_OBJECT_IMAGE3D: return "CL_MEM_OBJECT_IMAGE3D";
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY: return "CL_MEM_OBJECT_IMAGE1D_ARRAY";
+        case CL_MEM_OBJECT_IMAGE1D_BUFFER:
+            return "CL_MEM_OBJECT_IMAGE1D_BUFFER";
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY: return "CL_MEM_OBJECT_IMAGE2D_ARRAY";
+        default: return "(unknown)";
+    }
+}
+
 const char *GetDataVectorString(void *dataBuffer, size_t typeSize,
                                 size_t vecSize, char *buffer)
 {

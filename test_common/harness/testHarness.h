@@ -64,6 +64,8 @@ private:
     cl_uint m_minor;
 };
 
+Version get_platform_cl_version(cl_platform_id platform);
+Version get_platform_cl_version(cl_device_id device);
 Version get_device_cl_version(cl_device_id device);
 
 #define ADD_TEST(fn)                                                           \

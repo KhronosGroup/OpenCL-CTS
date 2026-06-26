@@ -17,6 +17,8 @@
 #define HOST_ATOMICS_H_
 
 #include "harness/testHarness.h"
+#include <cstring>
+#include <cmath>
 #include <mutex>
 
 #include "CL/cl_half.h"
@@ -193,6 +195,89 @@ constexpr bool is_host_fp_v =
                        std::is_same<HostDataType, HOST_FLOAT>,
                        std::is_same<HostDataType, HOST_DOUBLE>>;
 
+union FloatIntUnion {
+    float f;
+    uint32_t i;
+};
+
+union DoubleIntUnion {
+    double d;
+    uint64_t i;
+};
+
+template <typename HostDataType> bool is_qnan(const HostDataType &value)
+{
+    if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+    {
+        FloatIntUnion u;
+        u.f = value;
+        if ((u.i & 0x7F800000) != 0x7F800000) return false;
+        return (u.i & 0x00400000) != 0;
+    }
+    else if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
+    {
+        DoubleIntUnion u;
+        u.d = value;
+        if ((u.i & 0x7FF0000000000000) != 0x7FF0000000000000) return false;
+        return (u.i & 0x0008000000000000) != 0;
+    }
+    else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+    {
+        if ((static_cast<cl_half>(value) & 0x7C00) != 0x7C00) return false;
+        return (static_cast<cl_half>(value) & 0x0200) != 0;
+    }
+    else
+        return std::isnan(value);
+}
+
+template <typename HostDataType> bool is_snan(const HostDataType &value)
+{
+    if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+    {
+        FloatIntUnion u;
+        u.f = value;
+        if ((u.i & 0x7F800000) != 0x7F800000) return false;
+        if ((u.i & 0x007FFFFF) == 0) return false; // +/-Inf
+        return (u.i & 0x00400000) == 0;
+    }
+    else if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
+    {
+        DoubleIntUnion u;
+        u.d = value;
+        if ((u.i & 0x7FF0000000000000) != 0x7FF0000000000000) return false;
+        if ((u.i & 0x000FFFFFFFFFFFFF) == 0) return false; // +/-Inf
+        return (u.i & 0x0008000000000000) == 0;
+    }
+    else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+    {
+        cl_half h = static_cast<cl_half>(value);
+        if ((h & 0x7C00) != 0x7C00) return false;
+        if ((h & 0x03FF) == 0) return false;
+        return (h & 0x0200) == 0;
+    }
+    else
+        return std::isnan(value);
+}
+
+inline bool IsHalfNaN(const cl_half v)
+{
+    // Extract FP16 exponent and mantissa
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+
+    // NaN test
+    return (h_exp == 0x1F && h_mant != 0);
+}
+
+template <typename CorrespondingType>
+inline bool host_fp_is_nan(const CorrespondingType &v)
+{
+    if constexpr (std::is_same_v<CorrespondingType, HOST_HALF>)
+        return IsHalfNaN(static_cast<cl_half>(v));
+    else
+        return std::isnan(v);
+}
+
 // host atomic functions
 void host_atomic_thread_fence(TExplicitMemoryOrderType order);
 
@@ -281,13 +366,15 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
     {
         static std::mutex mtx;
         std::lock_guard<std::mutex> lock(mtx);
-        tmp = static_cast<CorrespondingType>(*a);
-        if (tmp == *expected)
+        // this is necessary so that (*a == *exp) evaluates to true when
+        // comparing NANs
+        if (std::memcmp((const void *)a, expected, sizeof(CorrespondingType))
+            == 0)
         {
             *a = static_cast<AtomicType>(desired);
             return true;
         }
-        *expected = tmp;
+        *expected = *a;
     }
     else
     {
@@ -299,7 +386,9 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
         log_info("Host function not implemented: atomic_compare_exchange\n");
         tmp = 0;
 #endif
-        if (tmp == *expected) return true;
+        if (std::memcmp((const void *)&tmp, expected, sizeof(CorrespondingType))
+            == 0)
+            return true;
         *expected = tmp;
     }
     return false;
@@ -382,8 +471,20 @@ CorrespondingType host_atomic_fetch_min(volatile AtomicType *a, CorrespondingTyp
   CorrespondingType expected = host_atomic_load<AtomicType, CorrespondingType>(a, order);
   CorrespondingType desired;
   do
-  desired = expected < c ? expected : c;
-  while(!host_atomic_compare_exchange(a, &expected, desired, order, order));
+  {
+      if constexpr (is_host_fp_v<CorrespondingType>)
+      {
+          // min(x, NaN) = min(NaN, x) = x; min(NaN, NaN) = NaN
+          if (host_fp_is_nan(c))
+              desired = expected;
+          else if (host_fp_is_nan(expected))
+              desired = c;
+          else
+              desired = expected < c ? expected : c;
+      }
+      else
+          desired = expected < c ? expected : c;
+  } while (!host_atomic_compare_exchange(a, &expected, desired, order, order));
   return expected;
 }
 
@@ -394,8 +495,20 @@ CorrespondingType host_atomic_fetch_max(volatile AtomicType *a, CorrespondingTyp
   CorrespondingType expected = host_atomic_load<AtomicType, CorrespondingType>(a, order);
   CorrespondingType desired;
   do
-  desired = expected > c ? expected : c;
-  while(!host_atomic_compare_exchange(a, &expected, desired, order, order));
+  {
+      if constexpr (is_host_fp_v<CorrespondingType>)
+      {
+          // max(x, NaN) = max(NaN, x) = x; max(NaN, NaN) = NaN
+          if (host_fp_is_nan(c))
+              desired = expected;
+          else if (host_fp_is_nan(expected))
+              desired = c;
+          else
+              desired = expected > c ? expected : c;
+      }
+      else
+          desired = expected > c ? expected : c;
+  } while (!host_atomic_compare_exchange(a, &expected, desired, order, order));
   return expected;
 }
 
