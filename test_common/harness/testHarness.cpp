@@ -27,6 +27,8 @@
 #include <set>
 #include <stdexcept>
 #include <thread>
+#include <optional>
+#include <string_view>
 #include <vector>
 #include "errorHelpers.h"
 #include "kernelHelpers.h"
@@ -1317,24 +1319,28 @@ Version get_device_spirv_il_version(cl_device_id device)
         ASSERT_SUCCESS(err, "clGetDeviceInfo");
     }
 
-    // Because this query returns a space-separated list of IL version strings
-    // we should check for SPIR-V versions in reverse order, to return the
-    // highest version supported.
-    if (strstr(str.data(), "SPIR-V_1.5") != NULL)
-        return Version(1, 5);
-    else if (strstr(str.data(), "SPIR-V_1.4") != NULL)
-        return Version(1, 4);
-    else if (strstr(str.data(), "SPIR-V_1.3") != NULL)
-        return Version(1, 3);
-    else if (strstr(str.data(), "SPIR-V_1.2") != NULL)
-        return Version(1, 2);
-    else if (strstr(str.data(), "SPIR-V_1.1") != NULL)
-        return Version(1, 1);
-    else if (strstr(str.data(), "SPIR-V_1.0") != NULL)
-        return Version(1, 0);
-
-    throw std::runtime_error(std::string("Unknown SPIR-V version: ")
-                             + str.data());
+    std::optional<Version> best;
+    const std::string_view sv(str.data());
+    constexpr std::string_view prefix = "SPIR-V_";
+    for (size_t pos = sv.find(prefix); pos != std::string_view::npos;
+         pos = sv.find(prefix, pos + prefix.size()))
+    {
+        unsigned int maj, min;
+        if (sscanf(sv.data() + pos, "SPIR-V_%u.%u", &maj, &min) == 2)
+        {
+            Version v(maj, min);
+            if (!best || *best < v) best = v;
+        }
+    }
+    if (best)
+    {
+        return *best;
+    }
+    else
+    {
+        throw std::runtime_error(std::string("Unknown SPIR-V version: ")
+                                 + str.data());
+    }
 }
 
 test_status check_spirv_compilation_readiness(cl_device_id device)
