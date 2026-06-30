@@ -23,6 +23,7 @@
 #include "host_atomics.h"
 
 #include "CL/cl_half.h"
+
 #include <algorithm>
 #include <iomanip>
 #include <limits>
@@ -86,6 +87,7 @@ extern cl_device_fp_config gHalfFPConfig;
 
 extern cl_half_rounding_mode gHalfRoundingMode;
 extern bool gFloatAtomicsSupported;
+
 extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
 extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
 extern cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps;
@@ -98,6 +100,16 @@ get_memory_scope_type_name(TExplicitMemoryScopeType scopeType);
 extern cl_int getSupportedMemoryOrdersAndScopes(
     cl_device_id device, std::vector<TExplicitMemoryOrderType> &memoryOrders,
     std::vector<TExplicitMemoryScopeType> &memoryScopes);
+
+inline bool IsHalfInfinity(const cl_half v)
+{
+    // Extract FP16 exponent and mantissa
+    uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
+    uint16_t h_mant = ((cl_half)v) & 0x3FF;
+
+    // Inf test
+    return (h_exp == 0x1F && h_mant == 0);
+}
 
 class AtomicTypeInfo {
 public:
@@ -944,8 +956,16 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
         }
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
-            ss << std::setprecision(std::numeric_limits<float>::max_digits10)
-               << cl_half_to_float(_startValue);
+            if (IsHalfInfinity(_startValue))
+                ss << ((static_cast<cl_half>(_startValue) & 0x8000) != 0 ? "-"
+                                                                         : "")
+                   << "INFINITY";
+            else if (IsHalfNaN(_startValue))
+                ss << "0.0h / 0.0h";
+            else
+                ss << std::setprecision(
+                    std::numeric_limits<float>::max_digits10)
+                   << cl_half_to_float(_startValue);
         }
         else
             ss << _startValue;
