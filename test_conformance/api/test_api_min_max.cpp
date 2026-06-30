@@ -1203,8 +1203,10 @@ REGISTER_TEST(min_max_parameter_size)
                 "Trying a kernel with %ld int arguments (%zu bytes) and one "
                 "cl_mem (%zu bytes) for %zu bytes total.\n",
                 numberOfIntParametersToTry,
-                (size_t)(sizeof(cl_int) * numberOfIntParametersToTry), sizeof(cl_mem),
-                (size_t)(sizeof(cl_mem) + numberOfIntParametersToTry * sizeof(cl_int)));
+                (size_t)(sizeof(cl_int) * numberOfIntParametersToTry),
+                sizeof(cl_mem),
+                (size_t)(sizeof(cl_mem)
+                         + numberOfIntParametersToTry * sizeof(cl_int)));
         }
         else
         {
@@ -1212,8 +1214,10 @@ REGISTER_TEST(min_max_parameter_size)
                 "Trying a kernel with %ld long arguments (%zu bytes) and one "
                 "cl_mem (%zu bytes) for %zu bytes total.\n",
                 numberOfIntParametersToTry,
-                (size_t)(sizeof(cl_long) * numberOfIntParametersToTry), sizeof(cl_mem),
-                (size_t)(sizeof(cl_mem) + numberOfIntParametersToTry * sizeof(cl_long)));
+                (size_t)(sizeof(cl_long) * numberOfIntParametersToTry),
+                sizeof(cl_mem),
+                (size_t)(sizeof(cl_mem)
+                         + numberOfIntParametersToTry * sizeof(cl_long)));
         }
 
         // Allocate memory for the program storage
@@ -1365,8 +1369,9 @@ REGISTER_TEST(min_max_parameter_size)
             }
             else
             {
-                log_info("Results verified at %zu bytes of arguments.\n",
-                         (size_t)(sizeof(cl_mem)
+                log_info(
+                    "Results verified at %zu bytes of arguments.\n",
+                    (size_t)(sizeof(cl_mem)
                              + numberOfIntParametersToTry * sizeof(cl_long)));
                 break;
             }
@@ -1383,8 +1388,9 @@ REGISTER_TEST(min_max_parameter_size)
             }
             else
             {
-                log_info("Results verified at %zu bytes of arguments.\n",
-                         (size_t)(sizeof(cl_mem)
+                log_info(
+                    "Results verified at %zu bytes of arguments.\n",
+                    (size_t)(sizeof(cl_mem)
                              + numberOfIntParametersToTry * sizeof(cl_int)));
                 break;
             }
