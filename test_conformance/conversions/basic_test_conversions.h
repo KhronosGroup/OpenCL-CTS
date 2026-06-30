@@ -95,8 +95,7 @@ extern void *gRef;
 extern void *gAllowZ;
 extern void *gOut[];
 
-extern const char **argList;
-extern int argCount;
+extern std::vector<const char *> argList;
 
 extern const char *sizeNames[];
 extern int vectorSizes[];
