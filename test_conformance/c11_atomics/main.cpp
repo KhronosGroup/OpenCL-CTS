@@ -31,11 +31,11 @@ int gInternalIterations = 10000; // internal test iterations for atomic operatio
 int gMaxDeviceThreads = 1024; // maximum number of threads executed on OCL device
 cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+bool gFloatAtomicsSupported = false;
 
 cl_device_fp_config gDoubleFPConfig = 0;
 cl_device_fp_config gFloatFPConfig = 0;
 cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
-bool gFloatAtomicsSupported = false;
 cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps = 0;
 cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps = 0;
 cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps = 0;
