@@ -4423,7 +4423,8 @@ public:
         // Derive the fence scope from the test's MemoryScope so the kernel only
         // references scope names that the atomic operation itself already uses.
         // This avoids requiring the compiler to define wider-scope identifiers
-        // (e.g. memory_scope_all_svm_devices) for subtests that don't need them.
+        // (e.g. memory_scope_all_svm_devices) for subtests that don't need
+        // them.
         std::string fenceScopeStr;
         switch (this->MemoryScope())
         {
