@@ -164,27 +164,28 @@ DataInfoSpec<InType, OutType, InFP, OutFP>::DataInfoSpec(
     : DataInitBase(agg), mdv(0)
 {
     if (std::is_same<cl_float, OutType>::value)
-        ranges = std::make_pair(CL_FLT_MIN, CL_FLT_MAX);
+        ranges = std::pair<OutType, OutType>(CL_FLT_MIN, CL_FLT_MAX);
     else if (std::is_same<cl_double, OutType>::value)
-        ranges = std::make_pair(CL_DBL_MIN, CL_DBL_MAX);
+        ranges = std::pair<OutType, OutType>(CL_DBL_MIN, CL_DBL_MAX);
     else if (std::is_same<cl_half, OutType>::value && OutFP)
-        ranges = std::make_pair(HFF(CL_HALF_MIN), HFF(CL_HALF_MAX));
+        ranges =
+            std::pair<OutType, OutType>(HFF(CL_HALF_MIN), HFF(CL_HALF_MAX));
     else if (std::is_same<cl_uchar, OutType>::value)
-        ranges = std::make_pair(0, CL_UCHAR_MAX);
+        ranges = std::pair<OutType, OutType>(0, CL_UCHAR_MAX);
     else if (std::is_same<cl_char, OutType>::value)
-        ranges = std::make_pair(CL_CHAR_MIN, CL_CHAR_MAX);
+        ranges = std::pair<OutType, OutType>(CL_CHAR_MIN, CL_CHAR_MAX);
     else if (std::is_same<cl_ushort, OutType>::value && !OutFP)
-        ranges = std::make_pair(0, CL_USHRT_MAX);
+        ranges = std::pair<OutType, OutType>(0, CL_USHRT_MAX);
     else if (std::is_same<cl_short, OutType>::value)
-        ranges = std::make_pair(CL_SHRT_MIN, CL_SHRT_MAX);
+        ranges = std::pair<OutType, OutType>(CL_SHRT_MIN, CL_SHRT_MAX);
     else if (std::is_same<cl_uint, OutType>::value)
-        ranges = std::make_pair(0, CL_UINT_MAX);
+        ranges = std::pair<OutType, OutType>(0, CL_UINT_MAX);
     else if (std::is_same<cl_int, OutType>::value)
-        ranges = std::make_pair(CL_INT_MIN, CL_INT_MAX);
+        ranges = std::pair<OutType, OutType>(CL_INT_MIN, CL_INT_MAX);
     else if (std::is_same<cl_ulong, OutType>::value)
-        ranges = std::make_pair(0, CL_ULONG_MAX);
+        ranges = std::pair<OutType, OutType>(0, CL_ULONG_MAX);
     else if (std::is_same<cl_long, OutType>::value)
-        ranges = std::make_pair(CL_LONG_MIN, CL_LONG_MAX);
+        ranges = std::pair<OutType, OutType>(CL_LONG_MIN, CL_LONG_MAX);
 
     // clang-format off
     // for readability sake keep this section unformatted
