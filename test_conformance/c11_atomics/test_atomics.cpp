@@ -4419,6 +4419,28 @@ public:
     {
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
+
+        // Derive the fence scope from the test's MemoryScope so the kernel only
+        // references scope names that the atomic operation itself already uses.
+        // This avoids requiring the compiler to define wider-scope identifiers
+        // (e.g. memory_scope_all_svm_devices) for subtests that don't need them.
+        std::string fenceScopeStr;
+        switch (this->MemoryScope())
+        {
+            case MEMORY_SCOPE_WORK_GROUP:
+                fenceScopeStr = "memory_scope_work_group";
+                break;
+            case MEMORY_SCOPE_ALL_DEVICES:
+                fenceScopeStr = "memory_scope_all_devices";
+                break;
+            case MEMORY_SCOPE_ALL_SVM_DEVICES:
+                fenceScopeStr = "memory_scope_all_svm_devices";
+                break;
+            default: // MEMORY_SCOPE_EMPTY, MEMORY_SCOPE_DEVICE
+                fenceScopeStr = "memory_scope_device";
+                break;
+        }
+
         std::string program =
             "  uint cnt, stop = 0;\n"
             "  for(cnt = 0; !stop && cnt < threadCount; cnt++) // each thread "
@@ -4434,10 +4456,8 @@ public:
                                ? "CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE, "
                                : "CLK_GLOBAL_MEM_FENCE, ")
                 + "memory_order_acquire,"
-                + std::string(LocalMemory()
-                                  ? "memory_scope_work_group"
-                                  : (UseSVM() ? "memory_scope_all_svm_devices"
-                                              : "memory_scope_device"))
+                + std::string(LocalMemory() ? "memory_scope_work_group"
+                                            : fenceScopeStr)
                 + ");\n";
 
         program += "    if (!set)\n"
@@ -4469,10 +4489,8 @@ public:
                                ? "CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE, "
                                : "CLK_GLOBAL_MEM_FENCE, ")
                 + "memory_order_release,"
-                + std::string(LocalMemory()
-                                  ? "memory_scope_work_group"
-                                  : (UseSVM() ? "memory_scope_all_svm_devices"
-                                              : "memory_scope_device"))
+                + std::string(LocalMemory() ? "memory_scope_work_group"
+                                            : fenceScopeStr)
                 + ");\n";
 
         program += "      atomic_flag_clear" + postfix + "(&destMemory[cnt]"
