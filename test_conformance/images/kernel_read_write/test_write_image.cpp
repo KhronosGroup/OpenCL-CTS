@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
+// Copyright 2026 NXP
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,6 +15,7 @@
 // limitations under the License.
 //
 #include "../testBase.h"
+#include "../common.h"
 #include "test_common.h"
 
 #if !defined(_WIN32)
@@ -103,6 +105,15 @@ int test_write_image( cl_device_id device, cl_context context, cl_command_queue 
 
     for( size_t mem_flag_index = 0; mem_flag_index < num_flags; mem_flag_index++ )
     {
+        if (!is_image_format_supported(context, imageInfo->type,
+                                       mem_flag_types[mem_flag_index],
+                                       imageInfo->format))
+        {
+            log_info("Format not supported for %s, skipping...\n",
+                     mem_flag_names[mem_flag_index]);
+            continue;
+        }
+
         int error;
         size_t threads[2];
         bool verifyRounding = false;

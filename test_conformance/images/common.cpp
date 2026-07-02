@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2020 The Khronos Group Inc.
+// Copyright 2026 NXP
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -140,6 +141,23 @@ int get_format_list(cl_context context, cl_mem_object_type imageType,
                                        outFormatList.data(), NULL);
     test_error(error, "Unable to get list of supported image formats");
     return 0;
+}
+
+bool is_image_format_supported(cl_context context, cl_mem_object_type imageType,
+                               cl_mem_flags flags,
+                               const cl_image_format *format)
+{
+    std::vector<cl_image_format> formatList;
+    if (get_format_list(context, imageType, formatList, flags)) return false;
+
+    for (unsigned int i = 0; i < formatList.size(); i++)
+    {
+        if (formatList[i].image_channel_order == format->image_channel_order
+            && formatList[i].image_channel_data_type
+                == format->image_channel_data_type)
+            return true;
+    }
+    return false;
 }
 
 size_t random_in_ranges(size_t minimum, size_t rangeA, size_t rangeB, MTdata d)
