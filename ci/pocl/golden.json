@@ -1,4 +1,12 @@
 {
+    "test_allocations": {
+        "5 multiple" : {
+            "image2d_read": "pass"
+        },
+        "5 single": {
+            "image2d_read": "pass"
+        }
+    },
     "test_bruteforce": {
         "--wimpy -1": {
             "math_edge_cases": "fail",
