@@ -218,6 +218,8 @@ REGISTER_TEST(enqueue_map_buffer)
     return 0;
 }
 
+namespace {
+
 cl_int create_image_type(clMemWrapper &memObject, const cl_context context,
                          cl_mem_object_type image_type,
                          const cl_mem_flags mem_flag,
@@ -307,203 +309,242 @@ void random_region_coords(size_t *offset, size_t *region,
     }
 }
 
-REGISTER_TEST(enqueue_map_image)
+struct EnqueueMapImageTest
 {
-    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+    MTdataHolder d;
+    std::vector<cl_uchar> hostPtrData;
+    std::vector<cl_uchar> referenceData;
+    std::vector<cl_uchar> finalData;
 
-    MTdataHolder d{ gRandomSeed };
-    std::vector<cl_uchar> hostPtrData(max_image_data_size, 0);
-    std::vector<cl_uchar> referenceData(max_image_data_size, 0);
-    std::vector<cl_uchar> finalData(max_image_data_size, 0);
+    cl_device_id        device;
+    cl_context          context;
+    cl_command_queue    queue;
+    clMemWrapper        memObject;
 
-    generate_random_data(kUChar, (unsigned int)max_image_data_size, d,
-                         hostPtrData.data());
-
-    for (size_t src_flag_id = 0; src_flag_id < ARRAY_SIZE(flag_set);
-         src_flag_id++)
+    EnqueueMapImageTest(cl_device_id device, cl_context context,
+                        cl_command_queue queue)
+        : d{ gRandomSeed }, hostPtrData(max_image_data_size, 0),
+          referenceData(max_image_data_size, 0),
+          finalData(max_image_data_size, 0), device(device), context(context),
+          queue(queue)
     {
-        log_info("Testing with cl_mem_flags src: %s\n",
-                 flag_set_names[src_flag_id]);
+        generate_random_data(kUChar, (unsigned int)max_image_data_size, d,
+                             hostPtrData.data());
+    }
 
-        for (size_t image_type_ind = 0;
-             image_type_ind < ARRAY_SIZE(image_types); image_type_ind++)
+    cl_int run()
+    {
+        for (size_t src_flag_id = 0; src_flag_id < ARRAY_SIZE(flag_set);
+             src_flag_id++)
         {
-            cl_mem_object_type image_type = image_types[image_type_ind];
-            log_info("Testing with cl_mem_object_type src: %s\n",
-                     image_types_names[image_type_ind]);
+            log_info("Testing with cl_mem_flags src: %s\n",
+                     flag_set_names[src_flag_id]);
 
-            if ((flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
-                && !is_extension_available(device,
-                                           "cl_ext_immutable_memory_objects"))
+            for (size_t image_type_ind = 0;
+                 image_type_ind < ARRAY_SIZE(image_types); image_type_ind++)
             {
-                log_info("Device does not support CL_MEM_IMMUTABLE_EXT. "
-                         "Skipping the memory flag.\n");
-                continue;
-            }
+                cl_mem_object_type image_type = image_types[image_type_ind];
+                log_info("Testing with cl_mem_object_type src: %s\n",
+                         image_types_names[image_type_ind]);
 
-            // find supported image formats
-            cl_uint num_formats = 0;
-            cl_mem_flags mem_flag = flag_set[src_flag_id];
+                cl_mem_flags mem_flag = flag_set[src_flag_id];
+                bool is_immutable_image = mem_flag & CL_MEM_IMMUTABLE_EXT;
 
-            bool is_immutable_image = mem_flag & CL_MEM_IMMUTABLE_EXT;
-            bool hasHostPtr = (mem_flag & CL_MEM_USE_HOST_PTR)
-                || (mem_flag & CL_MEM_COPY_HOST_PTR);
-
-            cl_int error = clGetSupportedImageFormats(
-                context, mem_flag, image_type, 0, nullptr, &num_formats);
-            test_error(error,
-                       "clGetSupportedImageFormats failed to return supported "
-                       "formats");
-
-            std::vector<cl_image_format> formats(num_formats);
-            error = clGetSupportedImageFormats(context, mem_flag, image_type,
-                                               num_formats, formats.data(),
-                                               nullptr);
-            test_error(error,
-                       "clGetSupportedImageFormats failed to return supported "
-                       "formats");
-
-            for (cl_image_format &fmt : formats)
-            {
-                memcpy(referenceData.data(), hostPtrData.data(),
-                       max_image_data_size);
-
-                const size_t pixel_size = get_pixel_size(&fmt);
-
-                size_t img_region[3] = { 1, 1, 1 };
-                clMemWrapper memObject;
-                error =
-                    create_image_type(memObject, context, image_type, mem_flag,
-                                      fmt, img_region, hostPtrData.data());
-                test_error(error, "create_image_type failed");
-                size_t image_size = img_region[0];
-
-                if (!hasHostPtr && !is_immutable_image)
+                if (is_immutable_image
+                    && !is_extension_available(
+                        device, "cl_ext_immutable_memory_objects"))
                 {
-                    size_t write_origin[3] = { 0, 0, 0 };
-                    error = clEnqueueWriteImage(
-                        queue, memObject, CL_TRUE, write_origin, img_region, 0,
-                        0, hostPtrData.data(), 0, NULL, NULL);
-                    test_error(error, "Unable to write to testing buffer");
-                }
-
-                for (int i = 0; i < num_test_per_image_type; i++)
-                {
-                    size_t offset[3], region[3];
-                    random_region_coords(offset, region, image_type, image_size,
-                                         d);
-
-                    size_t rowPitch = 0, slicePitch = 0;
-
-                    cl_uchar *mappedRegion = (cl_uchar *)clEnqueueMapImage(
-                        queue, memObject, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE,
-                        offset, region, &rowPitch, &slicePitch, 0, NULL, NULL,
-                        &error);
-                    ScopeGuard sg(queue, mappedRegion, memObject);
-
-                    if (is_immutable_image)
-                    {
-                        test_failure_error_ret(
-                            error, CL_INVALID_OPERATION,
-                            "clEnqueueMapImage call was expected to fail "
-                            "with CL_INVALID_OPERATION",
-                            TEST_FAIL);
-                        continue;
-                    }
-                    else if (error != CL_SUCCESS)
-                    {
-                        print_error(error, "clEnqueueMapImage call failed");
-                        log_error("\tOffset: %d,%d  Region: %d,%d\n",
-                                  (int)offset[0], (int)offset[1],
-                                  (int)region[0], (int)region[1]);
-                        return -1;
-                    }
-
-                    // Read and write into the region
-                    for (size_t z = 0; z < region[2]; z++)
-                    {
-                        for (size_t y = 0; y < region[1]; y++)
-                        {
-                            for (size_t x = 0; x < region[0]; x++)
-                            {
-                                size_t x_off = offset[0] + x;
-                                size_t y_off = offset[1] + y;
-                                size_t z_off = offset[2] + z;
-                                size_t ref_loc =
-                                    (z_off * image_size * image_size
-                                     + y_off * image_size + x_off);
-                                cl_uchar *pixel =
-                                    &mappedRegion[z * slicePitch + y * rowPitch
-                                                  + x * pixel_size];
-                                for (size_t i = 0; i < pixel_size; i++)
-                                {
-                                    if (pixel[i]
-                                        != referenceData[ref_loc * pixel_size
-                                                         + i])
-                                    {
-                                        log_error(
-                                            "ERROR: Sample %d (coord "
-                                            "%zu,%zu,%zu) "
-                                            "did not validate! Got "
-                                            "%d, expected %d\n",
-                                            (int)ref_loc, x, y, z,
-                                            (int)pixel[i],
-                                            (int)referenceData[ref_loc
-                                                                   * pixel_size
-                                                               + i]);
-                                        return -1;
-                                    }
-
-                                    pixel[i] = 0;
-                                    referenceData[ref_loc * pixel_size + i] = 0;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Final validation: read actual values of buffer and compare
-                // against our reference
-                size_t zero_origin[3] = { 0, 0, 0 };
-                error = clEnqueueReadImage(queue, memObject, CL_TRUE,
-                                           zero_origin, img_region, 0, 0,
-                                           finalData.data(), 0, NULL, NULL);
-                test_error(error, "Unable to read results");
-
-                if (is_immutable_image && !hasHostPtr)
-                {
+                    log_info("Device does not support CL_MEM_IMMUTABLE_EXT. "
+                             "Skipping the memory flag.\n");
                     continue;
                 }
 
-                for (size_t z = 0; z < img_region[2]; z++)
+                // find supported image formats
+                cl_uint num_formats = 0;
+                bool hasHostPtr = (mem_flag & CL_MEM_USE_HOST_PTR)
+                    || (mem_flag & CL_MEM_COPY_HOST_PTR);
+
+                cl_int error = clGetSupportedImageFormats(
+                    context, mem_flag, image_type, 0, nullptr, &num_formats);
+                test_error(
+                    error,
+                    "clGetSupportedImageFormats failed to return supported "
+                    "formats");
+
+                std::vector<cl_image_format> formats(num_formats);
+                error = clGetSupportedImageFormats(context, mem_flag,
+                                                   image_type, num_formats,
+                                                   formats.data(), nullptr);
+                test_error(
+                    error,
+                    "clGetSupportedImageFormats failed to return supported "
+                    "formats");
+
+                for (cl_image_format &fmt : formats)
                 {
-                    for (size_t y = 0; y < img_region[1]; y++)
+                    memcpy(referenceData.data(), hostPtrData.data(),
+                           max_image_data_size);
+
+                    const size_t pixel_size = get_pixel_size(&fmt);
+
+                    size_t img_region[3] = { 1, 1, 1 };
+                    error = create_image_type(memObject, context, image_type,
+                                              mem_flag, fmt, img_region,
+                                              hostPtrData.data());
+                    test_error(error, "create_image_type failed");
+
+                    if (!hasHostPtr && !is_immutable_image)
                     {
-                        for (size_t x = 0; x < img_region[0]; x++)
+                        size_t write_origin[3] = { 0, 0, 0 };
+                        error = clEnqueueWriteImage(
+                            queue, memObject, CL_TRUE, write_origin, img_region,
+                            0, 0, hostPtrData.data(), 0, NULL, NULL);
+                        test_error(error, "Unable to write to testing buffer");
+                    }
+
+                    error = run_tests_for_image_type(
+                        img_region, pixel_size, image_type, is_immutable_image);
+                    test_error(error, "run_tests_for_image_type failed");
+
+                    // Final validation: read actual values of buffer and
+                    // compare against our reference
+                    size_t zero_origin[3] = { 0, 0, 0 };
+                    error = clEnqueueReadImage(queue, memObject, CL_TRUE,
+                                               zero_origin, img_region, 0, 0,
+                                               finalData.data(), 0, NULL, NULL);
+                    test_error(error, "Unable to read results");
+
+                    if (is_immutable_image && !hasHostPtr)
+                    {
+                        continue;
+                    }
+
+                    error = verify_test_results(img_region, pixel_size);
+                    test_error(error, "verify_test_results failed");
+                }
+            }
+        } // cl_mem_flags
+
+        return TEST_PASS;
+    }
+
+    cl_int run_tests_for_image_type(const size_t *img_region,
+                                    const size_t pixel_size,
+                                    const cl_mem_object_type &image_type,
+                                    const bool is_immutable_image)
+    {
+        cl_int error = CL_SUCCESS;
+        size_t image_size = img_region[0];
+        for (int i = 0; i < num_test_per_image_type; i++)
+        {
+            size_t offset[3], region[3];
+            random_region_coords(offset, region, image_type, image_size, d);
+
+            size_t rowPitch = 0, slicePitch = 0;
+
+            cl_uchar *mappedRegion = (cl_uchar *)clEnqueueMapImage(
+                queue, memObject, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, offset,
+                region, &rowPitch, &slicePitch, 0, NULL, NULL, &error);
+            ScopeGuard sg(queue, mappedRegion, memObject);
+
+            if (is_immutable_image)
+            {
+                test_failure_error_ret(
+                    error, CL_INVALID_OPERATION,
+                    "clEnqueueMapImage call was expected to fail "
+                    "with CL_INVALID_OPERATION",
+                    TEST_FAIL);
+                continue;
+            }
+            else if (error != CL_SUCCESS)
+            {
+                print_error(error, "clEnqueueMapImage call failed");
+                log_error("\tOffset: %d,%d  Region: %d,%d\n", (int)offset[0],
+                          (int)offset[1], (int)region[0], (int)region[1]);
+                return -1;
+            }
+
+            // Read and write into the region
+            for (size_t z = 0; z < region[2]; z++)
+            {
+                for (size_t y = 0; y < region[1]; y++)
+                {
+                    for (size_t x = 0; x < region[0]; x++)
+                    {
+                        size_t x_off = offset[0] + x;
+                        size_t y_off = offset[1] + y;
+                        size_t z_off = offset[2] + z;
+                        size_t ref_loc = (z_off * image_size * image_size
+                                          + y_off * image_size + x_off);
+                        cl_uchar *pixel =
+                            &mappedRegion[z * slicePitch + y * rowPitch
+                                          + x * pixel_size];
+                        for (size_t i = 0; i < pixel_size; i++)
                         {
-                            size_t loc = (z * image_size * image_size
-                                          + y * image_size + x);
-                            for (size_t i = 0; i < pixel_size; i++)
+                            if (pixel[i]
+                                != referenceData[ref_loc * pixel_size + i])
                             {
-                                if (referenceData[loc * pixel_size + i]
-                                    != finalData[loc * pixel_size + i])
-                                {
-                                    log_error(
-                                        "Final validation error: sample %d "
-                                        "(coord %zu,%zu,%zu) did not validate! "
-                                        "Got "
-                                        "%d, expected %d\n",
-                                        (int)loc, x, y, z, (int)finalData[loc],
-                                        (int)referenceData[loc]);
-                                    return -1;
-                                }
+                                log_error(
+                                    "ERROR: Sample %d (coord "
+                                    "%zu,%zu,%zu) "
+                                    "did not validate! Got "
+                                    "%d, expected %d\n",
+                                    (int)ref_loc, x, y, z, (int)pixel[i],
+                                    (int)referenceData[ref_loc * pixel_size
+                                                       + i]);
+                                return -1;
                             }
+
+                            pixel[i] = 0;
+                            referenceData[ref_loc * pixel_size + i] = 0;
                         }
                     }
                 }
             }
         }
-    } // cl_mem_flags
+        return CL_SUCCESS;
+    }
 
-    return 0;
+    cl_int verify_test_results(const size_t *img_region,
+                               const size_t pixel_size)
+    {
+        size_t image_size = img_region[0];
+        for (size_t z = 0; z < img_region[2]; z++)
+        {
+            for (size_t y = 0; y < img_region[1]; y++)
+            {
+                for (size_t x = 0; x < img_region[0]; x++)
+                {
+                    size_t loc =
+                        (z * image_size * image_size + y * image_size + x);
+                    for (size_t i = 0; i < pixel_size; i++)
+                    {
+                        if (referenceData[loc * pixel_size + i]
+                            != finalData[loc * pixel_size + i])
+                        {
+                            log_error("Final validation error: sample %d "
+                                      "(coord %zu,%zu,%zu) did not validate! "
+                                      "Got "
+                                      "%d, expected %d\n",
+                                      (int)loc, x, y, z, (int)finalData[loc],
+                                      (int)referenceData[loc]);
+                            return -1;
+                        }
+                    }
+                }
+            }
+        }
+        return CL_SUCCESS;
+    }
+};
+
+} // anonymous namespace
+
+REGISTER_TEST(enqueue_map_image)
+{
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+
+    EnqueueMapImageTest test(device, context, queue);
+
+    return test.run();
 }
