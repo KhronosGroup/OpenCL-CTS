@@ -61,7 +61,7 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
     double r, max_val = NAN;
     int max_index = 0;
 
-    for (int i = 0, j = 0; i < n; i++, j++)
+    for (int i = 0; i < n; i++)
     {
         r = (180.0 / M_PI) * conv_to_dbl(inptr[i]);
 
@@ -110,7 +110,7 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
     double r, max_val = NAN;
     int max_index = 0;
 
-    for (int i = 0, j = 0; i < n; i++, j++)
+    for (int i = 0; i < n; i++)
     {
         r = (M_PI / 180.0) * conv_to_dbl(inptr[i]);
 
