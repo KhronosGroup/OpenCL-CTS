@@ -284,11 +284,11 @@ void random_region_coords(size_t *offset, size_t *region,
                           const size_t &imageSize, const MTdataHolder &d)
 {
     offset[0] = (size_t)random_in_range(0, (int)imageSize - 1, d);
-    region[0] = (size_t)random_in_range(1, (int)(imageSize - offset[0] - 1), d);
+    region[0] = (size_t)random_in_range(1, (int)(imageSize - offset[0]), d);
     offset[1] = (size_t)random_in_range(0, (int)imageSize - 1, d);
-    region[1] = (size_t)random_in_range(1, (int)(imageSize - offset[1] - 1), d);
+    region[1] = (size_t)random_in_range(1, (int)(imageSize - offset[1]), d);
     offset[2] = (size_t)random_in_range(0, (int)imageSize - 1, d);
-    region[2] = (size_t)random_in_range(1, (int)(imageSize - offset[2] - 1), d);
+    region[2] = (size_t)random_in_range(1, (int)(imageSize - offset[2]), d);
 
     switch (image_type)
     {
@@ -433,9 +433,8 @@ REGISTER_TEST(enqueue_map_image)
                                     (z_off * image_size * image_size
                                      + y_off * image_size + x_off);
                                 cl_uchar *pixel =
-                                    &mappedRegion
-                                        [z * slicePitch + y * rowPitch
-                                         + x * pixel_size]; // is this correct ?
+                                    &mappedRegion[z * slicePitch + y * rowPitch
+                                                  + x * pixel_size];
                                 for (size_t i = 0; i < pixel_size; i++)
                                 {
                                     if (pixel[i]
