@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 #include <numeric>
+#include <CL/cl.h>
 
 #define CHECK_AHARDWARE_BUFFER_SUPPORT(ahardwareBuffer_Desc, format)           \
     if (!AHardwareBuffer_isSupported(&ahardwareBuffer_Desc))                   \
@@ -40,3 +41,90 @@ std::string ahardwareBufferFormatToString(AHardwareBuffer_Format format);
 std::string ahardwareBufferUsageFlagToString(AHardwareBuffer_UsageFlags flag);
 std::string
 ahardwareBufferDecodeUsageFlagsToString(AHardwareBuffer_UsageFlags flags);
+
+AHardwareBuffer* create_AHB(AHardwareBuffer_Desc* desc);
+void log_unsupported_ahb_format(AHardwareBuffer_Desc desc);
+
+struct AHardwareBufferWrapper
+{
+    AHardwareBuffer* m_ahb;
+
+    AHardwareBufferWrapper(): m_ahb(nullptr) {}
+
+    AHardwareBufferWrapper(AHardwareBuffer* ahb) { m_ahb = ahb; }
+
+    AHardwareBufferWrapper(AHardwareBuffer_Desc* desc)
+    {
+        m_ahb = create_AHB(desc);
+    }
+
+    AHardwareBufferWrapper& operator=(AHardwareBuffer* rhs)
+    {
+        release();
+        m_ahb = rhs;
+
+        return *this;
+    }
+
+    ~AHardwareBufferWrapper() { release(); }
+
+    // Copy constructor
+    AHardwareBufferWrapper(AHardwareBufferWrapper const& ahbw)
+        : m_ahb(ahbw.m_ahb)
+    {
+        retain();
+    }
+
+    // Copy assignment operator
+    AHardwareBufferWrapper& operator=(AHardwareBufferWrapper const& rhs)
+    {
+        release();
+
+        m_ahb = rhs.m_ahb;
+        retain();
+
+        return *this;
+    }
+
+    // Move constructor
+    AHardwareBufferWrapper(AHardwareBufferWrapper&& ahbw)
+    {
+        m_ahb = ahbw.m_ahb;
+        ahbw.m_ahb = nullptr;
+    }
+
+    // Move assignment operator
+    AHardwareBufferWrapper& operator=(AHardwareBufferWrapper&& rhs)
+    {
+        if (this != &rhs)
+        {
+            release(); // Giving up current reference
+            m_ahb = rhs.m_ahb;
+            rhs.m_ahb = nullptr;
+        }
+        return *this;
+    }
+
+    void retain()
+    {
+        if (nullptr != m_ahb)
+        {
+            AHardwareBuffer_acquire(m_ahb);
+        }
+    }
+
+    void release()
+    {
+        if (nullptr != m_ahb)
+        {
+            AHardwareBuffer_release(m_ahb);
+        }
+    }
+
+    // Usage operators
+    operator AHardwareBuffer*() { return m_ahb; }
+    cl_mem_properties get_props()
+    {
+        return reinterpret_cast<cl_mem_properties>(m_ahb);
+    }
+};

@@ -21,7 +21,7 @@
 #include <android/hardware_buffer.h>
 #include "debug_ahb.h"
 
-REGISTER_TEST(test_buffer_format_negative)
+REGISTER_TEST(buffer_format_negative)
 {
     cl_int err = CL_SUCCESS;
 
@@ -77,7 +77,7 @@ REGISTER_TEST(test_buffer_format_negative)
                  .c_str());
 
     cl_mem_properties props[] = {
-        CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+        CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
         reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
     };
 
@@ -98,7 +98,7 @@ REGISTER_TEST(test_buffer_format_negative)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_buffer_size_negative)
+REGISTER_TEST(buffer_size_negative)
 {
     cl_int err = CL_SUCCESS;
     constexpr size_t buffer_size = 64;
@@ -155,7 +155,7 @@ REGISTER_TEST(test_buffer_size_negative)
                  .c_str());
 
     cl_mem_properties props[] = {
-        CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+        CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
         reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
     };
 
@@ -175,7 +175,7 @@ REGISTER_TEST(test_buffer_size_negative)
     return TEST_PASS;
 }
 
-REGISTER_TEST(test_images_negative)
+REGISTER_TEST(images_negative)
 {
     cl_int err = CL_SUCCESS;
 
@@ -215,7 +215,7 @@ REGISTER_TEST(test_images_negative)
     }
 
     const cl_mem_properties props[] = {
-        CL_EXTERNAL_MEMORY_HANDLE_AHB_KHR,
+        CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
         reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
     };
 
@@ -241,6 +241,158 @@ REGISTER_TEST(test_images_negative)
     }
     AHardwareBuffer_release(aHardwareBuffer);
     aHardwareBuffer = nullptr;
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(invalid_arguments)
+{
+    cl_int err;
+    constexpr cl_uint buffer_size = 4096;
+
+    if (!is_extension_available(
+            device, "cl_khr_external_memory_android_hardware_buffer"))
+    {
+        log_info("cl_khr_external_memory_android_hardware_buffer is not "
+                 "supported on this platform. Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
+    aHardwareBufferDesc.width = buffer_size;
+    aHardwareBufferDesc.height = 1;
+    aHardwareBufferDesc.layers = 1;
+    aHardwareBufferDesc.format = AHARDWAREBUFFER_FORMAT_BLOB;
+    aHardwareBufferDesc.usage = AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN
+        | AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN;
+
+    if (!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
+    {
+        log_unsupported_ahb_format(aHardwareBufferDesc);
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    AHardwareBufferWrapper ahb_buffer(&aHardwareBufferDesc);
+
+    aHardwareBufferDesc.width = 64;
+    aHardwareBufferDesc.height = 64;
+    aHardwareBufferDesc.format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM;
+
+    if (!AHardwareBuffer_isSupported(&aHardwareBufferDesc))
+    {
+        log_unsupported_ahb_format(aHardwareBufferDesc);
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    AHardwareBufferWrapper ahb_image(&aHardwareBufferDesc);
+
+    const cl_mem_properties props_buffer[] = {
+        CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
+        ahb_buffer.get_props(),
+        0,
+    };
+    const cl_mem_properties props_image[] = {
+        CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
+        ahb_image.get_props(),
+        0,
+    };
+
+    // stub values
+    cl_image_format image_format = { 0 };
+    cl_image_desc image_desc = { 0 };
+    int host_data = 0;
+    void *host_ptr = reinterpret_cast<void *>(&host_data);
+
+    log_info("Testing buffer error conditions\n");
+
+    // Buffer error conditions
+    clMemWrapper mem =
+        clCreateBufferWithProperties(context, props_buffer, CL_MEM_READ_WRITE,
+                                     buffer_size + 1, nullptr, &err);
+    if (CL_INVALID_BUFFER_SIZE != err)
+    {
+        log_error(
+            "clCreateBufferWithProperties should return CL_INVALID_BUFFER_SIZE "
+            "but returned %s: CL_INVALID_BUFFER_SIZE if size is non-zero and "
+            "greater than the AHardwareBuffer when importing external memory "
+            "using cl_khr_external_memory_android_hardware_buffer\n",
+            IGetErrorString(err));
+        return TEST_FAIL;
+    }
+
+    mem = clCreateBufferWithProperties(context, props_image, CL_MEM_READ_WRITE,
+                                       0, nullptr, &err);
+    if (CL_INVALID_OPERATION != err)
+    {
+        log_error(
+            "clCreateBufferWithProperties should return CL_INVALID_OPERATION "
+            "but returned %s: CL_INVALID_OPERATION if the AHardwareBuffer "
+            "format is not AHARDWAREBUFFER_FORMAT_BLOB\n",
+            IGetErrorString(err));
+        return TEST_FAIL;
+    }
+
+    mem = clCreateBufferWithProperties(context, props_buffer, CL_MEM_READ_WRITE,
+                                       0, host_ptr, &err);
+    if (CL_INVALID_HOST_PTR != err)
+    {
+        log_error(
+            "clCreateBufferWithProperties should return CL_INVALID_HOST_PTR "
+            "but returned %s: CL_INVALID_HOST_PTR if host_ptr is not NULL\n",
+            IGetErrorString(err));
+        return TEST_FAIL;
+    }
+
+    log_info("Testing image error conditions\n");
+
+    // Image error conditions
+    mem = clCreateImageWithProperties(context, props_image, CL_MEM_READ_WRITE,
+                                      &image_format, nullptr, nullptr, &err);
+    if (CL_INVALID_IMAGE_FORMAT_DESCRIPTOR != err)
+    {
+        log_error(
+            "clCreateBufferWithProperties should return "
+            "CL_INVALID_IMAGE_FORMAT_DESCRIPTOR but returned %s: "
+            "CL_INVALID_IMAGE_FORMAT_DESCRIPTOR if image_format is not NULL "
+            "when using cl_khr_external_memory_android_hardware_buffer.\n",
+            IGetErrorString(err));
+        return TEST_FAIL;
+    }
+
+    mem = clCreateImageWithProperties(context, props_image, CL_MEM_READ_WRITE,
+                                      nullptr, &image_desc, nullptr, &err);
+    if (CL_INVALID_IMAGE_DESCRIPTOR != err)
+    {
+        log_error("clCreateBufferWithProperties should return "
+                  "CL_INVALID_IMAGE_DESCRIPTOR but returned %s: "
+                  "CL_INVALID_IMAGE_DESCRIPTOR if image_desc is not NULL when "
+                  "using cl_khr_external_memory_android_hardware_buffer.\n",
+                  IGetErrorString(err));
+        return TEST_FAIL;
+    }
+
+    mem = clCreateImageWithProperties(context, props_buffer, CL_MEM_READ_WRITE,
+                                      nullptr, nullptr, nullptr, &err);
+    if (CL_IMAGE_FORMAT_NOT_SUPPORTED != err)
+    {
+        log_error("clCreateBufferWithProperties should return "
+                  "CL_IMAGE_FORMAT_NOT_SUPPORTED but returned %s: "
+                  "CL_IMAGE_FORMAT_NOT_SUPPORTED if AHardwareBuffer's format "
+                  "is not supported\n",
+                  IGetErrorString(err));
+        return TEST_FAIL;
+    }
+
+    mem = clCreateImageWithProperties(context, props_image, CL_MEM_READ_WRITE,
+                                      nullptr, nullptr, host_ptr, &err);
+    if (CL_INVALID_HOST_PTR != err)
+    {
+        log_error(
+            "clCreateBufferWithProperties should return CL_INVALID_HOST_PTR "
+            "but returned %s: CL_INVALID_HOST_PTR if host_ptr is not NULL\n",
+            IGetErrorString(err));
+        return TEST_FAIL;
+    }
 
     return TEST_PASS;
 }

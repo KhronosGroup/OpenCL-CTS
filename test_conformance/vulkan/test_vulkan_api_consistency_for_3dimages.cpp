@@ -29,6 +29,7 @@
 #include <vector>
 #include <iostream>
 #include <string.h>
+#include <inttypes.h>
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 #include "harness/deviceInfo.h"
@@ -96,7 +97,7 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
         log_info("Memory type index: %u\n", (uint32_t)memoryTypeList[0]);
         log_info("Memory type property: %d\n",
                  memoryTypeList[0].getMemoryTypeProperty());
-        log_info("Image size : %lu\n", vkImage3D.getSize());
+        log_info("Image size : %" PRIu64 "\n", vkImage3D.getSize());
 
         VulkanDeviceMemory* vkDeviceMem =
             new VulkanDeviceMemory(*vkDevice, vkImage3D, memoryTypeList[0],

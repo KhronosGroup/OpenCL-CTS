@@ -17,6 +17,28 @@
 #include <CL/cl.h>
 #include "../common.h"
 
+static cl_int cleanup_mapped_image(cl_command_queue queue, cl_mem image,
+                                   void *mapped)
+{
+    cl_int error = clEnqueueUnmapMemObject(queue, image, mapped, 0, NULL, NULL);
+    if (error != CL_SUCCESS)
+    {
+        log_error("ERROR: Unable to unmap image after verify: %s\n",
+                  IGetErrorString(error));
+        return error;
+    }
+
+    error = clFinish(queue);
+    if (error != CL_SUCCESS)
+    {
+        log_error("ERROR: clFinish() failed to return CL_SUCCESS: %s\n",
+                  IGetErrorString(error));
+        return error;
+    }
+
+    return CL_SUCCESS;
+}
+
 int test_copy_image_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
                             const size_t sourcePos[], const size_t destPos[], const size_t regionSize[], MTdata d )
 {
@@ -281,7 +303,9 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
         }
         default: {
             log_error("ERROR: Unsupported Image type. \n");
-            return error;
+            cl_int cleanup_error =
+                cleanup_mapped_image(queue, dstImage, mapped);
+            return (cleanup_error != CL_SUCCESS) ? cleanup_error : -1;
             break;
         }
     }
@@ -317,6 +341,9 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
                         where, sourcePtr + pixel_size * where,
                         destPtr + pixel_size * where, dstImageInfo, y,
                         dstImageInfo->depth);
+                    cl_int cleanup_error =
+                        cleanup_mapped_image(queue, dstImage, mapped);
+                    if (cleanup_error != CL_SUCCESS) return cleanup_error;
                     return -1;
                 }
             }
@@ -331,21 +358,8 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     }
 
     // Unmap the image.
-    error = clEnqueueUnmapMemObject(queue, dstImage, mapped, 0, NULL, NULL);
-    if (error != CL_SUCCESS)
-    {
-        log_error( "ERROR: Unable to unmap image after verify: %s\n", IGetErrorString( error ) );
-        return error;
-    }
-
-    // Ensure the unmap call completes.
-    error = clFinish(queue);
-    if (error != CL_SUCCESS)
-    {
-        log_error("ERROR: clFinish() failed to return CL_SUCCESS: %s\n",
-                  IGetErrorString(error));
-        return error;
-    }
+    error = cleanup_mapped_image(queue, dstImage, mapped);
+    if (error != CL_SUCCESS) return error;
 
     return 0;
 }

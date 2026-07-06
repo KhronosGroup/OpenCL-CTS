@@ -80,7 +80,6 @@ extern int gHasDouble;
 extern int gTestDouble;
 extern int gHasHalfs;
 extern int gTestHalfs;
-extern int gWimpyMode;
 extern int gWimpyReductionFactor;
 extern int gSkipTesting;
 extern int gMinVectorSize;
@@ -121,8 +120,6 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p);
 uint64_t GetTime(void);
 
 void WriteInputBufferComplete(void *);
-void *FlushToZero(void);
-void UnFlushToZero(void *);
 }
 
 struct CalcRefValsBase

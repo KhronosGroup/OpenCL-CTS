@@ -26,8 +26,11 @@ static void intRefBuilder(printDataGenParameters&, char*, const size_t);
 static void halfRefBuilder(printDataGenParameters&, char* rResult,
                            const size_t);
 static void floatRefBuilder(printDataGenParameters&, char* rResult, const size_t);
+static bool floatRefTest(const char* refResult, const char* analysisBuffer);
 static void doubleRefBuilder(printDataGenParameters&, char* rResult,
                              const size_t);
+static bool doubleRefTest(const char* refResult, const char* analysisBuffer);
+
 static void octalRefBuilder(printDataGenParameters&, char*, const size_t);
 static void unsignedRefBuilder(printDataGenParameters&, char*, const size_t);
 static void hexRefBuilder(printDataGenParameters&, char*, const size_t);
@@ -151,7 +154,7 @@ std::vector<printDataGenParameters> printLongGenParameters = {
     { { "%.15li" }, "10000000000L" },
 
     //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
-    // digits),default(right)-justified
+    // digits),left-justified, with sign
 
     { { "%-+16.15li" }, "-10000000000L" },
 
@@ -204,6 +207,338 @@ testCase testCaseLong = {
 
 };
 
+
+//==================================
+// size_t
+//==================================
+
+std::vector<printDataGenParameters> printSizeTGenParameters = {
+    //(Minimum)Five-wide,default(right)-justified
+    { { "%5zd" }, "10" },
+
+    //(Minimum)Five-wide,left-justified
+    { { "%-5zd" }, "10" },
+
+    //(Minimum)Five-wide,default(right)-justified,zero-filled
+    { { "%05zd" }, "10" },
+
+    //(Minimum)Five-wide,default(right)-justified,with sign
+    { { "%+5zd" }, "10" },
+
+    //(Minimum)Five-wide ,left-justified,with sign
+    { { "%-+5zd" }, "10" },
+
+    //(Minimum)Five-digit(zero-filled in absent digits),default(right)-justified
+    { { "%.5zi" }, "100" },
+
+    //(Minimum)Six-wide,Five-digit(zero-filled in absent
+    // digits),default(right)-justified
+    { { "%6.5zi" }, "100" },
+
+    // 0 and - flag both apper ==>0 is ignored,left-justified,capital I
+    { { "%-06zi" }, "100" },
+
+    //(Minimum)Six-wide,Five-digit(zero-filled in absent
+    // digits),default(right)-justified
+    { { "%06.5zi" }, "100" },
+
+    //(Minimum)Ten-wide, left-justified, with a blank space inserted before the
+    // value
+    { { "% 10zd" }, "42" },
+
+    // Default(right)-justified
+    { { "%zo" }, "10" },
+
+    // Five-digit,default(right)-justified
+    { { "%.5zo" }, "10" },
+
+    // Default(right)-justified,increase precision
+    { { "%#zo" }, "100000000" },
+
+    //(Minimum)Four-wide,Five-digit,0-flag ignored(because of
+    // precision),default(right)-justified
+    { { "%04.5zo" }, "10" },
+
+    //(Minimum)Ten-wide, zeros inserted before the value,
+    // default(right)-justified
+    { { "%010zo" }, "10" },
+
+    // Default(right)-justified
+    { { "%zu" }, "10" },
+
+    // Zero precision for zero,default(right)-justified
+    { { "%.0zu" }, "0" },
+
+    // Add 0x,low x,default(right)-justified
+    { { "%#zx" }, "11259375" }, // 0xABCDEF
+
+    // Add 0x,capital X,default(right)-justified
+    { { "%#zX" }, "11259375" }, // 0xABCDEF
+
+    // Not add 0x,if zero,default(right)-justified
+    { { "%#zX" }, "0" },
+
+    //(Minimum)Eight-wide,default(right)-justified
+    { { "%8zx" }, "399" },
+
+    //(Minimum)Four-wide,zero-filled,default(right)-justified
+    { { "%04zx" }, "399" }
+};
+
+testCase testCaseSizeT = {
+    TYPE_SIZET,
+    correctBufferSizeT,
+    printSizeTGenParameters,
+    intRefBuilder,
+};
+
+//==================================
+// size_t (64-bits)
+//==================================
+
+std::vector<printDataGenParameters> printSizeT64GenParameters = {
+    //(Minimum) five-wide,default(right)-justified
+    { { "%5zd" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,left-justified
+    { { "%-15zd" }, "-10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified,zero-filled
+    { { "%015zd" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified,with sign
+    { { "%+15zd" }, "-10000000000L" },
+
+    //(Minimum) fifteen-wide ,left-justified,with sign
+    { { "%-+15zd" }, "10000000000L" },
+
+    //(Minimum) fifteen-digit(zero-filled in absent
+    // digits),default(right)-justified
+    { { "%.15zi" }, "10000000000L" },
+
+    //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
+    // digits),left-justified, with sign
+    { { "%-+16.15zi" }, "-10000000000L" },
+
+
+    //(Minimum) five-wide,default(right)-justified
+    { { "%5zu" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,left-justified
+    { { "%-15zu" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified,zero-filled
+    { { "%015zu" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified
+    { { "%+15zu" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,left-justified
+    { { "%-+15zu" }, "10000000000L" },
+
+    //(Minimum) fifteen-digit(zero-filled in absent
+    // digits),default(right)-justified
+    { { "%.15zu" }, "10000000000L" },
+
+    //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
+    // digits),left-justified
+    { { "%-+16.15zu" }, "10000000000L" },
+};
+
+// clang-format off
+
+std::vector<std::string> correctBufferSizeT64 = {
+    "10000000000",
+    "-10000000000   ",
+    "000010000000000",
+    "   -10000000000",
+    "+10000000000   ",
+    "000010000000000",
+    "-000010000000000",
+
+    "10000000000",
+    "10000000000    ",
+    "000010000000000",
+    "    10000000000",
+    "10000000000    ",
+    "000010000000000",
+    "000010000000000 ",
+};
+
+testCase testCaseSizeT64 = {
+    TYPE_SIZET_64,
+    correctBufferSizeT64,
+    printSizeT64GenParameters,
+    NULL
+};
+
+// clang-format on
+
+//==================================
+// ptrdiff_t
+//==================================
+
+std::vector<printDataGenParameters> printPtrDiffTGenParameters = {
+    //(Minimum)Five-wide,default(right)-justified
+    { { "%5td" }, "10" },
+
+    //(Minimum)Five-wide,left-justified
+    { { "%-5td" }, "10" },
+
+    //(Minimum)Five-wide,default(right)-justified,zero-filled
+    { { "%05td" }, "10" },
+
+    //(Minimum)Five-wide,default(right)-justified,with sign
+    { { "%+5td" }, "10" },
+
+    //(Minimum)Five-wide ,left-justified,with sign
+    { { "%-+5td" }, "10" },
+
+    //(Minimum)Five-digit(zero-filled in absent digits),default(right)-justified
+    { { "%.5ti" }, "100" },
+
+    //(Minimum)Six-wide,Five-digit(zero-filled in absent
+    // digits),default(right)-justified
+    { { "%6.5ti" }, "100" },
+
+    // 0 and - flag both apper ==>0 is ignored,left-justified,capital I
+    { { "%-06ti" }, "100" },
+
+    //(Minimum)Six-wide,Five-digit(zero-filled in absent
+    // digits),default(right)-justified
+    { { "%06.5ti" }, "100" },
+
+    //(Minimum)Ten-wide, left-justified, with a blank space inserted before the
+    // value
+    { { "% 10td" }, "42" },
+
+    // Default(right)-justified
+    { { "%to" }, "10" },
+
+    // Five-digit,default(right)-justified
+    { { "%.5to" }, "10" },
+
+    // Default(right)-justified,increase precision
+    { { "%#to" }, "100000000" },
+
+    //(Minimum)Four-wide,Five-digit,0-flag ignored(because of
+    // precision),default(right)-justified
+    { { "%04.5to" }, "10" },
+
+    //(Minimum)Ten-wide, zeros inserted before the value,
+    // default(right)-justified
+    { { "%010to" }, "10" },
+
+    // Default(right)-justified
+    { { "%tu" }, "10" },
+
+    // Zero precision for zero,default(right)-justified
+    { { "%.0tu" }, "0" },
+
+    // Add 0x,low x,default(right)-justified
+    { { "%#tx" }, "11259375" }, // 0xABCDEF
+
+    // Add 0x,capital X,default(right)-justified
+    { { "%#tX" }, "11259375" }, // 0xABCDEF
+
+    // Not add 0x,if zero,default(right)-justified
+    { { "%#tX" }, "0" },
+
+    //(Minimum)Eight-wide,default(right)-justified
+    { { "%8tx" }, "399" },
+
+    //(Minimum)Four-wide,zero-filled,default(right)-justified
+    { { "%04tx" }, "399" }
+};
+
+testCase testCasePtrDiffT = {
+    TYPE_PTRDIFFT,
+    correctBufferPtrDiffT,
+    printPtrDiffTGenParameters,
+    intRefBuilder,
+};
+
+//==================================
+// ptrdiff_t (64-bits)
+//==================================
+
+std::vector<printDataGenParameters> printPtrDiffT64GenParameters = {
+    //(Minimum) five-wide,default(right)-justified
+    { { "%5td" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,left-justified
+    { { "%-15td" }, "-10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified,zero-filled
+    { { "%015td" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified,with sign
+    { { "%+15td" }, "-10000000000L" },
+
+    //(Minimum) fifteen-wide ,left-justified,with sign
+    { { "%-+15td" }, "10000000000L" },
+
+    //(Minimum) fifteen-digit(zero-filled in absent
+    // digits),default(right)-justified
+    { { "%.15ti" }, "10000000000L" },
+
+    //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
+    // digits),left-justified, with sign
+    { { "%-+16.15ti" }, "-10000000000L" },
+
+
+    //(Minimum) five-wide,default(right)-justified
+    { { "%5tu" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,left-justified
+    { { "%-15tu" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified,zero-filled
+    { { "%015tu" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,default(right)-justified
+    { { "%+15tu" }, "10000000000L" },
+
+    //(Minimum) fifteen-wide,left-justified
+    { { "%-+15tu" }, "10000000000L" },
+
+    //(Minimum) fifteen-digit(zero-filled in absent
+    // digits),default(right)-justified
+    { { "%.15tu" }, "10000000000L" },
+
+    //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
+    // digits),left-justified
+    { { "%-+16.15tu" }, "10000000000L" },
+};
+
+// clang-format off
+
+std::vector<std::string> correctBufferPtrDiffT64 = {
+    "10000000000",
+    "-10000000000   ",
+    "000010000000000",
+    "   -10000000000",
+    "+10000000000   ",
+    "000010000000000",
+    "-000010000000000",
+
+    "10000000000",
+    "10000000000    ",
+    "000010000000000",
+    "    10000000000",
+    "10000000000    ",
+    "000010000000000",
+    "000010000000000 ",
+};
+
+testCase testCasePtrDiffT64 = {
+    TYPE_PTRDIFFT_64,
+    correctBufferPtrDiffT64,
+    printPtrDiffT64GenParameters,
+    NULL
+};
+
+// clang-format on
 
 //==============================================
 
@@ -468,12 +803,12 @@ std::vector<printDataGenParameters> printFloatGenParameters = {
 
     // Double argument representing floating-point,in [-]xh.hhhhpAd style
 
-    { { "%.6a" }, "0.1f" },
+    { { "%.6a" }, "0.5f", 0, 0, 0, 0, 0, 0, 0, 0, true },
 
     //(Minimum)Ten-wide,Double argument representing floating-point,in
     // xh.hhhhpAd style,default(right)-justified
 
-    { { "%10.2a" }, "9990.235f" },
+    { { "%10.2a" }, "1.5f", 0, 0, 0, 0, 0, 0, 0, 0, true },
 
     //(Minimum)Ten-wide,two positions after the decimal,with
     // a blank space inserted before the value, default(right)-justified
@@ -502,8 +837,9 @@ testCase testCaseFloat = {
 
     floatRefBuilder,
 
-    kfloat
+    kfloat,
 
+    floatRefTest
 };
 
 //==============================================
@@ -673,12 +1009,12 @@ std::vector<printDataGenParameters> printDoubleGenParameters = {
 
     // Double argument representing floating-point,in [-]xh.hhhhpAd style
 
-    { { "%.6a" }, "0.1" },
+    { { "%.6a" }, "0.5", 0, 0, 0, 0, 0, 0, 0, 0, true },
 
     //(Minimum)Ten-wide,Double argument representing floating-point,in
     // xh.hhhhpAd style,default(right)-justified
 
-    { { "%10.2a" }, "9990.235" },
+    { { "%10.2a" }, "1.5", 0, 0, 0, 0, 0, 0, 0, 0, true },
 };
 
 //---------------------------------------------------------
@@ -697,8 +1033,9 @@ testCase testCaseDouble = {
 
     doubleRefBuilder,
 
-    kdouble
+    kdouble,
 
+    doubleRefTest
 };
 
 //==============================================
@@ -1032,6 +1369,9 @@ testCase testCaseChar = {
 
 std::vector<printDataGenParameters> printStringGenParameters = {
 
+    // empty format, no data representation
+    { {""} },
+
     // empty format
     { {""}, "\"foo\"" },
 
@@ -1089,6 +1429,8 @@ std::vector<printDataGenParameters> printStringGenParameters = {
 //---------------------------------------------------------
 
 std::vector<std::string> correctBufferString = {
+
+    "",
 
     "",
 
@@ -1640,7 +1982,9 @@ std::vector<testCase*> allTestCase = {
     &testCaseDouble,     &testCaseDoubleLimits, &testCaseOctal,
     &testCaseUnsigned,   &testCaseHexadecimal,  &testCaseChar,
     &testCaseString,     &testCaseFormatString, &testCaseVector,
-    &testCaseAddrSpace,  &testCaseMixedFormat,  &testCaseLenSpec
+    &testCaseAddrSpace,  &testCaseMixedFormat,  &testCaseLenSpec,
+    &testCaseSizeT,      &testCaseSizeT64,      &testCasePtrDiffT,
+    &testCasePtrDiffT64,
 };
 
 //-----------------------------------------
@@ -1752,7 +2096,15 @@ size_t verifyOutputBuffer(char *analysisBuffer,testCase* pTestCase,size_t testId
         return !std::regex_match(analysisBuffer, nanRegex);
     }
 
-    return strcmp(analysisBuffer, pTestCase->_correctBuffer[testId].c_str());
+    size_t ret =
+        strcmp(analysisBuffer, pTestCase->_correctBuffer[testId].c_str());
+
+    if (ret != 0 && pTestCase->_genParameters[testId].allowFallbackTest
+        && pTestCase->fallbackTestFN)
+        if (pTestCase->fallbackTestFN(
+                analysisBuffer, pTestCase->_correctBuffer[testId].c_str()))
+            return 0;
+    return ret;
 }
 
 static void intRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
@@ -1776,11 +2128,25 @@ static void floatRefBuilder(printDataGenParameters& params, char* refResult, con
              strtof(params.dataRepresentation, NULL));
 }
 
+static bool floatRefTest(const char* refResult, const char* analysisBuffer)
+{
+    float test = strtof(analysisBuffer, NULL);
+    float expected = strtof(refResult, NULL);
+    return test == expected;
+}
+
 static void doubleRefBuilder(printDataGenParameters& params, char* refResult,
                              const size_t refSize)
 {
     snprintf(refResult, refSize, params.genericFormats.front().c_str(),
              strtod(params.dataRepresentation, NULL));
+}
+
+static bool doubleRefTest(const char* refResult, const char* analysisBuffer)
+{
+    double test = strtod(analysisBuffer, NULL);
+    double expected = strtod(refResult, NULL);
+    return test == expected;
 }
 
 static void octalRefBuilder(printDataGenParameters& params, char* refResult, const size_t refSize)
