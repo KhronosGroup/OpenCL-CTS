@@ -316,10 +316,10 @@ struct EnqueueMapImageTest
     std::vector<cl_uchar> referenceData;
     std::vector<cl_uchar> finalData;
 
-    cl_device_id        device;
-    cl_context          context;
-    cl_command_queue    queue;
-    clMemWrapper        memObject;
+    cl_device_id device;
+    cl_context context;
+    cl_command_queue queue;
+    clMemWrapper memObject;
 
     EnqueueMapImageTest(cl_device_id device, cl_context context,
                         cl_command_queue queue)
