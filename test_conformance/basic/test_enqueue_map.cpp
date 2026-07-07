@@ -299,6 +299,7 @@ void random_region_coords(size_t *offset, size_t *region,
 
     switch (image_type)
     {
+        case CL_MEM_OBJECT_IMAGE2D:
         case CL_MEM_OBJECT_IMAGE1D_ARRAY: {
             offset[2] = 0;
             region[2] = 1;
@@ -307,11 +308,6 @@ void random_region_coords(size_t *offset, size_t *region,
         case CL_MEM_OBJECT_IMAGE1D: {
             offset[1] = offset[2] = 0;
             region[1] = region[2] = 1;
-            break;
-        }
-        case CL_MEM_OBJECT_IMAGE2D: {
-            offset[2] = 0;
-            region[2] = 1;
             break;
         }
     }
