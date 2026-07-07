@@ -234,7 +234,6 @@ cl_int create_image_type(clMemWrapper &memObject, const cl_context context,
                 size_t(256), max_image_data_size / max_bytes_per_pixel);
             memObject = create_image_1d(context, mem_flag, &fmt, image_size, 0,
                                         (void *)data, nullptr, &error);
-            test_error(error, "Unable to create testing buffer");
             img_region[0] = image_size;
             break;
         }
@@ -277,7 +276,13 @@ cl_int create_image_type(clMemWrapper &memObject, const cl_context context,
             img_region[0] = img_region[1] = img_region[2] = image_size;
             break;
         }
+        default: log_info("create_image_type: image type not supported!");
     }
+
+    test_error(error,
+               (std::string("Unable to create test image of type ")
+                + convert_image_type_to_string(image_type))
+                   .c_str());
     return error;
 }
 
@@ -294,13 +299,16 @@ void random_region_coords(size_t *offset, size_t *region,
 
     switch (image_type)
     {
-        case CL_MEM_OBJECT_IMAGE1D_ARRAY:
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY: {
+            offset[2] = 0;
+            region[2] = 1;
+            break;
+        }
         case CL_MEM_OBJECT_IMAGE1D: {
             offset[1] = offset[2] = 0;
             region[1] = region[2] = 1;
             break;
         }
-        case CL_MEM_OBJECT_IMAGE2D_ARRAY:
         case CL_MEM_OBJECT_IMAGE2D: {
             offset[2] = 0;
             region[2] = 1;
@@ -388,10 +396,12 @@ struct EnqueueMapImageTest
                     const size_t pixel_size = get_pixel_size(&fmt);
 
                     size_t img_region[3] = { 1, 1, 1 };
-                    error = create_image_type(memObject, context, image_type,
-                                              mem_flag, fmt, img_region,
-                                              hostPtrData.data());
+                    error = create_image_type(
+                        memObject, context, image_type, mem_flag, fmt,
+                        img_region, hasHostPtr ? hostPtrData.data() : nullptr);
                     test_error(error, "create_image_type failed");
+
+                    if (memObject == nullptr) return TEST_SKIPPED_ITSELF;
 
                     if (!hasHostPtr && !is_immutable_image)
                     {
@@ -435,7 +445,7 @@ struct EnqueueMapImageTest
     {
         cl_int error = CL_SUCCESS;
         size_t image_size = img_region[0];
-        for (int i = 0; i < num_test_per_image_type; i++)
+        for (size_t i = 0; i < num_test_per_image_type; i++)
         {
             size_t offset[3], region[3];
             random_region_coords(offset, region, image_type, image_size, d);
