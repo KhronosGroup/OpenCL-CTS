@@ -276,7 +276,11 @@ cl_int create_image_type(clMemWrapper &memObject, const cl_context context,
             img_region[0] = img_region[1] = img_region[2] = image_size;
             break;
         }
-        default: log_info("create_image_type: image type not supported!");
+        default: {
+            log_error("create_image_type: image type %u not supported!",
+                      image_type);
+            return TEST_FAIL;
+        }
     }
 
     test_error(error,
@@ -395,9 +399,8 @@ struct EnqueueMapImageTest
                     error = create_image_type(
                         memObject, context, image_type, mem_flag, fmt,
                         img_region, hasHostPtr ? hostPtrData.data() : nullptr);
-                    test_error(error, "create_image_type failed");
 
-                    if (memObject == nullptr) return TEST_SKIPPED_ITSELF;
+                    if (error != CL_SUCCESS) return TEST_FAIL;
 
                     if (!hasHostPtr && !is_immutable_image)
                     {
