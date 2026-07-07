@@ -289,14 +289,14 @@ cl_int create_image_type(clMemWrapper &memObject, const cl_context context,
 
 void random_region_coords(size_t *offset, size_t *region,
                           const cl_mem_object_type image_type,
-                          const size_t &imageSize, const MTdataHolder &d)
+                          const size_t *img_region, const MTdataHolder &d)
 {
-    offset[0] = (size_t)random_in_range(0, (int)imageSize - 1, d);
-    region[0] = (size_t)random_in_range(1, (int)(imageSize - offset[0]), d);
-    offset[1] = (size_t)random_in_range(0, (int)imageSize - 1, d);
-    region[1] = (size_t)random_in_range(1, (int)(imageSize - offset[1]), d);
-    offset[2] = (size_t)random_in_range(0, (int)imageSize - 1, d);
-    region[2] = (size_t)random_in_range(1, (int)(imageSize - offset[2]), d);
+    offset[0] = (size_t)random_in_range(0, (int)img_region[0] - 1, d);
+    region[0] = (size_t)random_in_range(1, (int)(img_region[0] - offset[0]), d);
+    offset[1] = (size_t)random_in_range(0, (int)img_region[1] - 1, d);
+    region[1] = (size_t)random_in_range(1, (int)(img_region[1] - offset[1]), d);
+    offset[2] = (size_t)random_in_range(0, (int)img_region[2] - 1, d);
+    region[2] = (size_t)random_in_range(1, (int)(img_region[2] - offset[2]), d);
 
     switch (image_type)
     {
@@ -443,11 +443,10 @@ struct EnqueueMapImageTest
                                     const bool is_immutable_image)
     {
         cl_int error = CL_SUCCESS;
-        size_t image_size = img_region[0];
         for (size_t i = 0; i < num_test_per_image_type; i++)
         {
             size_t offset[3], region[3];
-            random_region_coords(offset, region, image_type, image_size, d);
+            random_region_coords(offset, region, image_type, img_region, d);
 
             size_t rowPitch = 0, slicePitch = 0;
 
@@ -483,8 +482,8 @@ struct EnqueueMapImageTest
                         size_t x_off = offset[0] + x;
                         size_t y_off = offset[1] + y;
                         size_t z_off = offset[2] + z;
-                        size_t ref_loc = (z_off * image_size * image_size
-                                          + y_off * image_size + x_off);
+                        size_t ref_loc = (z_off * img_region[0] * img_region[1]
+                                          + y_off * img_region[0] + x_off);
                         cl_uchar *pixel =
                             &mappedRegion[z * slicePitch + y * rowPitch
                                           + x * pixel_size];
@@ -517,15 +516,14 @@ struct EnqueueMapImageTest
     cl_int verify_test_results(const size_t *img_region,
                                const size_t pixel_size)
     {
-        size_t image_size = img_region[0];
         for (size_t z = 0; z < img_region[2]; z++)
         {
             for (size_t y = 0; y < img_region[1]; y++)
             {
                 for (size_t x = 0; x < img_region[0]; x++)
                 {
-                    size_t loc =
-                        (z * image_size * image_size + y * image_size + x);
+                    size_t loc = (z * img_region[0] * img_region[1]
+                                  + y * img_region[0] + x);
                     for (size_t i = 0; i < pixel_size; i++)
                     {
                         if (referenceData[loc * pixel_size + i]
