@@ -14,17 +14,13 @@
 // limitations under the License.
 //
 
-#include <stdio.h>
-#include <string.h>
-#include "procs.h"
-#if !defined(_WIN32)
-#include <unistd.h>
-#endif
-
-#include <iostream>
 #include <fstream>
 #include <string>
-#include <sstream>
+#include <filesystem>
+
+#include "procs.h"
+#include "harness/os_helpers.h"
+#include "harness/stringHelpers.h"
 
 #if defined(_WIN32)
 const std::string slash = "\\";
@@ -40,9 +36,26 @@ std::string spvBinariesPath = "spirv_bin";
 const std::string spvBinariesPathArg = "--spirv-binaries-path";
 const std::string spvVersionSkipArg = "--skip-spirv-version-check";
 
-std::vector<unsigned char> readBinary(const char *file_name)
+static std::filesystem::path binaries_path()
 {
-    std::ifstream file(file_name,
+    std::filesystem::path path(spvBinariesPath);
+
+    if (path.is_relative())
+    {
+        path = std::filesystem::path(exe_dir()) / path;
+    }
+
+    return path;
+}
+
+static std::string binaries_path_str()
+{
+    return to_string(binaries_path().u8string());
+}
+
+std::vector<unsigned char> readBinary(const std::string &file_name)
+{
+    std::ifstream file(file_name.c_str(),
                        std::ios::in | std::ios::binary | std::ios::ate);
 
     std::vector<char> tmpBuffer(0);
@@ -54,7 +67,7 @@ std::vector<unsigned char> readBinary(const char *file_name)
         file.read(&tmpBuffer[0], size);
         file.close();
     } else {
-        log_error("File %s not found\n", file_name);
+        log_error("File %s not found\n", file_name.c_str());
     }
 
     std::vector<unsigned char> result(tmpBuffer.begin(), tmpBuffer.end());
@@ -62,11 +75,14 @@ std::vector<unsigned char> readBinary(const char *file_name)
     return result;
 }
 
-
 std::vector<unsigned char> readSPIRV(const char *file_name)
 {
-    std::string full_name_str = spvBinariesPath + slash + file_name + spvExt + gAddrWidth;
-    return readBinary(full_name_str.c_str());
+    std::string name(file_name);
+    name += spvExt;
+    name += gAddrWidth;
+
+    std::filesystem::path file_path = binaries_path() / name;
+    return readBinary(to_string(file_path.u8string()));
 }
 
 static int offline_get_program_with_il(clProgramWrapper &prog,
@@ -99,7 +115,7 @@ static int offline_get_program_with_il(clProgramWrapper &prog,
     }
 
     // read output file
-    std::vector<unsigned char> buffer_vec = readBinary(outputFilename.c_str());
+    std::vector<unsigned char> buffer_vec = readBinary(outputFilename);
     size_t file_bytes = buffer_vec.size();
     if (file_bytes == 0) {
         log_error("OfflinerCompiler: Failed to open binary file: %s", outputFilename.c_str());
@@ -210,7 +226,7 @@ static test_status parseArgs(int &argc, const char *argv[],
 {
     help = "        " + spvBinariesPathArg
         + " <path> - Set path to read SPIR-V files from (default: "
-        + spvBinariesPath + ")\n" + "        " + spvVersionSkipArg
+        + binaries_path_str() + ")\n" + "        " + spvVersionSkipArg
         + " - Skip the SPIR-V version check\n";
 
     bool modifiedSpvBinariesPath = false;
@@ -228,7 +244,8 @@ static test_status parseArgs(int &argc, const char *argv[],
                 return TEST_FAIL;
             }
             spvBinariesPath = std::string(argv[i + 1]);
-            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
+            removed_args.push_back(std::string(argv[i]) + " "
+                                   + spvBinariesPath);
             modifiedSpvBinariesPath = true;
             ++i; // skip the value
         }
@@ -246,7 +263,7 @@ static test_status parseArgs(int &argc, const char *argv[],
     if (!modifiedSpvBinariesPath && !gListTests)
     {
         log_info("Reading SPIR-V files from default '%s' path.\n",
-                 spvBinariesPath.c_str());
+                 binaries_path_str().c_str());
         log_info("In case you want to set other directory use '%s' argument.\n",
                  spvBinariesPathArg.c_str());
     }

@@ -1,8 +1,16 @@
 {
+    "test_allocations": {
+        "5 multiple" : {
+            "image2d_read": "pass"
+        },
+        "5 single": {
+            "image2d_read": "pass"
+        }
+    },
     "test_api": {
-      "": {
-        "negative_set_kernel_arg_invalid_image": "pass"
-      }
+        "": {
+          "negative_set_kernel_arg_invalid_image": "pass"
+        }
     },
     "test_bruteforce": {
         "--wimpy -1": {
