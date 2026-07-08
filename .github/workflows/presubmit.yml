@@ -300,6 +300,8 @@ jobs:
         shell: bash
         run: |
           cmake -B build -S . -G Ninja \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCL_INCLUDE_DIR='${{ env.cl-headers }}' \
                 -DCL_LIB_DIR=${{ env.loader }}/lib \
