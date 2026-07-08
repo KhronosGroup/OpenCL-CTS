@@ -9,7 +9,7 @@
     },
     "test_api": {
         "": {
-          "negative_set_kernel_arg_invalid_image": "pass"
+          "negative_set_kernel_arg_invalid_image": "fail"
         }
     },
     "test_bruteforce": {
