@@ -5,8 +5,9 @@ set(${MODULE_NAME}_SOURCES
     host_atomics.cpp
     main.cpp
     test_atomics.cpp
+    inclusive_scopes.cpp
 )
 
-set_gnulike_module_compile_flags("-Wno-sign-compare -Wno-format")
+set_gnulike_module_compile_flags("-Wno-sign-compare")
 
 include(../CMakeCommon.txt)

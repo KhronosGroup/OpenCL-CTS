@@ -204,53 +204,63 @@ test_status InitCL(cl_device_id id)
     return TEST_PASS;
 }
 
-void printUsage() {
-    log_info("Reading SPIR-V files from default '%s' path.\n", spvBinariesPath.c_str());
-    log_info("In case you want to set other directory use '%s' argument.\n",
-             spvBinariesPathArg.c_str());
-    log_info("To skip the SPIR-V version check use the '%s' argument.\n",
-             spvVersionSkipArg.c_str());
+static test_status parseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help)
+{
+    help = "        " + spvBinariesPathArg
+        + " <path> - Set path to read SPIR-V files from (default: "
+        + spvBinariesPath + ")\n" + "        " + spvVersionSkipArg
+        + " - Skip the SPIR-V version check\n";
+
+    bool modifiedSpvBinariesPath = false;
+    std::vector<const char *> argList;
+    argList.push_back(argv[0]);
+
+    for (int i = 1; i < argc; ++i)
+    {
+        if (argv[i] == spvBinariesPathArg)
+        {
+            if (i + 1 >= argc || argv[i + 1] == NULL)
+            {
+                log_error("Missing value for '%s' argument.\n",
+                          spvBinariesPathArg.c_str());
+                return TEST_FAIL;
+            }
+            spvBinariesPath = std::string(argv[i + 1]);
+            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
+            modifiedSpvBinariesPath = true;
+            ++i; // skip the value
+        }
+        else if (argv[i] == spvVersionSkipArg)
+        {
+            gVersionSkip = true;
+            removed_args.push_back(argv[i]);
+        }
+        else
+        {
+            argList.push_back(argv[i]);
+        }
+    }
+
+    if (!modifiedSpvBinariesPath && !gListTests)
+    {
+        log_info("Reading SPIR-V files from default '%s' path.\n",
+                 spvBinariesPath.c_str());
+        log_info("In case you want to set other directory use '%s' argument.\n",
+                 spvBinariesPathArg.c_str());
+    }
+
+    update_argc_argv_from_args_list(argList, argc, argv);
+    return TEST_PASS;
 }
 
 int main(int argc, const char *argv[])
 {
     gReSeed = 1;
-    bool modifiedSpvBinariesPath = false;
-    bool listTests = false;
-    for (int i = 0; i < argc; ++i) {
-        int argsRemoveNum = 0;
-        if (argv[i] == spvBinariesPathArg) {
-            if (i + 1 == argc) {
-                log_error("Missing value for '%s' argument.\n", spvBinariesPathArg.c_str());
-                return TEST_FAIL;
-            } else {
-                spvBinariesPath = std::string(argv[i + 1]);
-                argsRemoveNum += 2;
-                modifiedSpvBinariesPath = true;
-            }
-        }
-        if (argv[i] == spvVersionSkipArg)
-        {
-            gVersionSkip = true;
-            argsRemoveNum++;
-        }
 
-        if (argsRemoveNum > 0) {
-            for (int j = i; j < (argc - argsRemoveNum); ++j)
-                argv[j] = argv[j + argsRemoveNum];
-
-            argc -= argsRemoveNum;
-            --i;
-        }
-        listTests |= (argv[i] == std::string("--list")
-                      || argv[i] == std::string("-list"));
-    }
-    if (modifiedSpvBinariesPath == false && !listTests)
-    {
-        printUsage();
-    }
-
-    return runTestHarnessWithCheck(
+    return runTestHarnessWithCheckAndParse(
         argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0, InitCL);
+        test_registry::getInstance().definitions(), false, 0, InitCL,
+        parseArgs);
 }

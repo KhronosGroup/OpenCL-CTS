@@ -64,6 +64,8 @@ private:
     cl_uint m_minor;
 };
 
+Version get_platform_cl_version(cl_platform_id platform);
+Version get_platform_cl_version(cl_device_id device);
 Version get_device_cl_version(cl_device_id device);
 
 #define ADD_TEST(fn)                                                           \
@@ -189,11 +191,25 @@ extern int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
                                    cl_command_queue_properties queueProps,
                                    DeviceCheckFn deviceCheckFn);
 
+using ParseArgsFn = test_status (*)(int &argc, const char *argv[],
+                                    std::vector<std::string> &removed_args,
+                                    std::string &help_description);
+
+void update_argc_argv_from_args_list(std::vector<const char *> &argList,
+                                     int &argc, const char *argv[]);
+
+int runTestHarnessWithCheckAndParse(int argc, const char *argv[], int testNum,
+                                    test_definition testList[],
+                                    int forceNoContextCreation,
+                                    cl_command_queue_properties queueProps,
+                                    DeviceCheckFn deviceCheckFn,
+                                    ParseArgsFn parseArgsFn);
+
 // The command line parser used by runTestHarness to break up parameters into
 // calls to callTestFunctions
 extern int parseAndCallCommandLineTests(int argc, const char *argv[],
-                                        cl_device_id device, int testNum,
-                                        test_definition testList[],
+                                        const char *args, cl_device_id device,
+                                        int testNum, test_definition testList[],
                                         const test_harness_config &config);
 
 // Call this function if you need to do all the setup work yourself, and just

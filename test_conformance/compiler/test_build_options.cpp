@@ -14,8 +14,12 @@
 // limitations under the License.
 //
 #include "testBase.h"
+#include "harness/kernelHelpers.h"
 #include "harness/os_helpers.h"
 #include "harness/testHarness.h"
+
+extern std::string spvIncludeTestDirectory;
+extern std::string spvSecondIncludeTestDirectory;
 
 #include <array>
 
@@ -101,7 +105,10 @@ REGISTER_TEST(options_build_optimizations)
             continue;
         }
 
-        const char *option = optimization_option.first;
+        auto build_options = std::string("-cl-std=CL")
+            + get_max_OpenCL_C_for_context(context).to_string() + " "
+            + optimization_option.first;
+        const char *option = build_options.c_str();
         clProgramWrapper program;
         error = create_single_kernel_helper_create_program(
             context, &program, 1, options_test_kernel, option);
@@ -245,8 +252,6 @@ REGISTER_TEST(options_include_directory)
 {
     int error;
 
-    std::string sep  = dir_sep();
-    std::string path = exe_dir();    // Directory where test executable is located.
     std::string include_dir;
 
     clProgramWrapper program;
@@ -261,9 +266,8 @@ REGISTER_TEST(options_include_directory)
     }
 
     /* Build with the include directory defined */
-    include_dir = "-I " + path + sep + "includeTestDirectory";
+    include_dir = "-I " + spvIncludeTestDirectory;
 
-//    log_info("%s\n", include_dir);
     error =
         clBuildProgram(program, 1, &device, include_dir.c_str(), NULL, NULL);
     test_error( error, "Test program did not properly build" );
@@ -291,7 +295,7 @@ REGISTER_TEST(options_include_directory)
     }
 
     // Rebuild with a different include directory
-    include_dir = "-I " + path + sep + "secondIncludeTestDirectory";
+    include_dir = "-I " + spvSecondIncludeTestDirectory;
     error =
         clBuildProgram(program, 1, &device, include_dir.c_str(), NULL, NULL);
     test_error( error, "Test program did not properly rebuild" );
@@ -431,7 +435,10 @@ REGISTER_TEST(options_uniform_work_group_size)
     {
         return TEST_SKIPPED_ITSELF;
     }
-    const char *options = "-cl-uniform-work-group-size";
+    std::string build_options = "-cl-std=CL"
+        + get_max_OpenCL_C_for_context(context).to_string()
+        + " -cl-uniform-work-group-size";
+    const char *options = build_options.c_str();
     clProgramWrapper program;
     int error = create_single_kernel_helper_create_program(
         context, &program, 1, options_test_kernel, options);

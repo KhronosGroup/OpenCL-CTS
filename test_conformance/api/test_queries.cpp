@@ -796,6 +796,56 @@ REGISTER_TEST(get_device_info)
     return 0;
 }
 
+REGISTER_TEST_VERSION(get_device_info_31, Version(3, 1))
+{
+    cl_int error;
+
+    cl_uint maxNumSubGroups = 0;
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_NUM_SUB_GROUPS,
+                            sizeof(maxNumSubGroups), &maxNumSubGroups, nullptr);
+    test_error(error, "Unable to query CL_DEVICE_MAX_NUM_SUB_GROUPS");
+    test_assert_error(maxNumSubGroups != 0,
+                      "OpenCL 3.1 requires support for sub-groups");
+
+    const std::vector<const char *> requiredExtensions{
+        "cl_khr_spirv_queries",
+        "cl_khr_extended_bit_ops",
+        "cl_khr_suggested_local_work_size",
+        "cl_khr_device_uuid",
+        "cl_khr_integer_dot_product",
+        "cl_khr_subgroup_extended_types",
+        "cl_khr_subgroup_rotate",
+        "cl_khr_subgroup_shuffle",
+        "cl_khr_subgroup_shuffle_relative",
+    };
+    for (const auto &check : requiredExtensions)
+    {
+        if (!is_extension_available(device, check))
+        {
+            test_fail("OpenCL 3.1 requires support for the extension %s\n",
+                      check);
+        }
+    }
+
+    const std::vector<const char *> requiredILs{
+        "SPIR-V_1.0", "SPIR-V_1.1", "SPIR-V_1.2", "SPIR-V_1.3", "SPIR-V_1.4",
+    };
+    for (const auto &check : requiredILs)
+    {
+        if (!is_il_available(device, check))
+        {
+            test_fail("OpenCL 3.1 requires support for the IL %s\n", check);
+        }
+    }
+
+    if (!device_supports_cl_c_version(device, Version(3, 1)))
+    {
+        test_fail("OpenCL 3.1 requires support for OpenCL C 3.1\n");
+    }
+
+    return TEST_PASS;
+}
+
 REGISTER_TEST(get_device_info_comparability)
 {
     int error = CL_SUCCESS;

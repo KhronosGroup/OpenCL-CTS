@@ -642,11 +642,12 @@ int image_from_small_buffer_negative(cl_device_id device, cl_context context,
 }
 
 static int image_from_buffer_fill_check(cl_command_queue queue, cl_mem image,
-                                        size_t* region, size_t element_size,
-                                        char pattern)
+                                        const cl_image_format& format,
+                                        size_t* region, char pattern)
 {
     /* read the image from buffer and check the pattern */
-    const size_t image_size = region[0] * region[1] * region[2] * element_size;
+    const size_t pixel_size = get_pixel_size(&format);
+    const size_t image_size = region[0] * region[1] * region[2] * pixel_size;
     size_t origin[3] = { 0, 0, 0 };
     std::vector<char> read_buffer(image_size);
 
@@ -655,21 +656,29 @@ static int image_from_buffer_fill_check(cl_command_queue queue, cl_mem image,
                            read_buffer.data(), 0, nullptr, nullptr);
     test_error(error, "Error clEnqueueReadImage");
 
-    for (size_t line = 0; line < region[0]; line++)
+    const size_t row_pitch = region[0] * pixel_size;
+    const size_t slice_pitch = row_pitch * region[1];
+
+    image_descriptor image_info = {};
+    image_info.width = region[0];
+    image_info.format = &format;
+
+    std::vector<char> expected_row(row_pitch, pattern);
+
+    for (size_t depth = 0; depth < region[2]; depth++)
     {
         for (size_t row = 0; row < region[1]; row++)
         {
-            for (size_t depth = 0; depth < region[2]; depth++)
+            const char* actual_ptr =
+                read_buffer.data() + depth * slice_pitch + row * row_pitch;
+            size_t where =
+                compare_scanlines(&image_info, expected_row.data(), actual_ptr);
+            // compare_scanlines returns width when rows match; < width
+            // indicates mismatch.
+            if (where < region[0])
             {
-                for (size_t elmt = 0; elmt < element_size; elmt++)
-                {
-                    size_t index = line * row * depth * elmt;
-
-                    if (read_buffer[index] != pattern)
-                    {
-                        test_fail("Image pattern check failed\n");
-                    }
-                }
+                test_fail("Image pattern check failed (z=%zu, y=%zu, x=%zu)\n",
+                          depth, row, where);
             }
         }
     }
@@ -827,14 +836,14 @@ int image_from_buffer_fill_positive(cl_device_id device, cl_context context,
                 test_error(err, "Error clFinish");
 
                 int fill_error = image_from_buffer_fill_check(
-                    queue, image_from_buffer, region, element_size, pattern);
+                    queue, image_from_buffer, format, region, pattern);
                 if (TEST_PASS != fill_error)
                 {
                     return fill_error;
                 }
 
-                fill_error = image_from_buffer_fill_check(
-                    queue, image, region, element_size, pattern);
+                fill_error = image_from_buffer_fill_check(queue, image, format,
+                                                          region, pattern);
                 if (TEST_PASS != fill_error)
                 {
                     return fill_error;

@@ -173,7 +173,7 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
                           image_descriptor *imageInfo, bool enable_pitch,
                           bool create_mipmaps, int *error)
 {
-    cl_mem img;
+    clMemWrapper img;
     cl_image_desc imageDesc;
     void *host_ptr = nullptr;
     bool is_host_ptr_aligned = false;
@@ -341,7 +341,11 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
                 log_error("ERROR: Unable to attach destructor callback to "
                           "pitched 3D image. Err: %d\n",
                           callbackError);
-                clReleaseMemObject(img);
+                if (imageDesc.buffer != nullptr)
+                {
+                    clReleaseMemObject(imageDesc.buffer);
+                }
+                img.reset();
                 return nullptr;
             }
         }
@@ -361,7 +365,7 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
                       "buffer image. Err: %d\n",
                       callbackError);
             clReleaseMemObject(imageDesc.buffer);
-            clReleaseMemObject(img);
+            img.reset();
             return nullptr;
         }
     }

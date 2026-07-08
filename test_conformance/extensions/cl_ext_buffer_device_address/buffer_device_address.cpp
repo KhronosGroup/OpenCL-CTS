@@ -313,8 +313,8 @@ private:
             // A basic buffer used to pass the other buffer's address.
             error = clEnqueueWriteBuffer(queue, buffer_in_long,
                                          CL_TRUE, // block
-                                         0, sizeof(cl_long), &DeviceAddrFromAPI,
-                                         0, NULL, NULL);
+                                         0, sizeof(DeviceAddrFromAPI),
+                                         &DeviceAddrFromAPI, 0, NULL, NULL);
         test_error_fail(error,
                         "clEnqueueWriteBuffer of dev_addr_buffer failed\n");
 
@@ -325,9 +325,9 @@ private:
                                &buffer_out_int);
         test_error_fail(error, "clSetKernelArg 1 failed\n");
 
-        error = clSetKernelExecInfo(ind_access_kernel,
-                                    CL_KERNEL_EXEC_INFO_DEVICE_PTRS_EXT,
-                                    sizeof(void *), &DeviceAddrFromAPI);
+        error = clSetKernelExecInfo(
+            ind_access_kernel, CL_KERNEL_EXEC_INFO_DEVICE_PTRS_EXT,
+            sizeof(DeviceAddrFromAPI), &DeviceAddrFromAPI);
         test_error_fail(error,
                         "Setting indirect access for "
                         "device ptrs failed!\n");
