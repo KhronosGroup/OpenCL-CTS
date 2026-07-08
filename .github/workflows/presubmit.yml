@@ -231,16 +231,7 @@ jobs:
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
       - name: Install pocl dependencies
-        run: |
-          sudo apt-get update
-          export LLVM_VERSION=20
-          sudo apt-get install -y \
-            python3-dev libpython3-dev build-essential ocl-icd-libopencl1 \
-            cmake git pkg-config libclang-${LLVM_VERSION}-dev clang-${LLVM_VERSION} \
-            llvm-${LLVM_VERSION} make ninja-build ocl-icd-libopencl1 ocl-icd-dev \
-            ocl-icd-opencl-dev libhwloc-dev zlib1g zlib1g-dev clinfo dialog apt-utils \
-            libxml2-dev libclang-cpp${LLVM_VERSION}-dev libclang-cpp${LLVM_VERSION} \
-            llvm-${LLVM_VERSION}-dev
+        uses: ./.github/actions/install-pocl-deps
       - name: Cache pocl
         id: cache-pocl
         uses: actions/cache@v6
@@ -288,6 +279,8 @@ jobs:
         with:
           version: 1.4.309.0
           cache: true
+      - name: Install pocl dependencies
+        uses: ./.github/actions/install-pocl-deps
       - name: Restore pocl from cache
         uses: actions/cache@v5
         with:
