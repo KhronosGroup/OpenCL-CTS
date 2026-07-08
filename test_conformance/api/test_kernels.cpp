@@ -785,6 +785,9 @@ REGISTER_TEST(negative_set_kernel_arg_invalid_image)
     clProgramWrapper program;
     clKernelWrapper kernel;
 
+    const bool has_depth_images =
+        is_extension_available(device, "cl_khr_depth_images");
+
     std::vector<std::pair<std::string, std::string>> image_types = {
         { "image2d_t", "2" },
         { "image2d_depth_t", "2" },
@@ -801,18 +804,23 @@ REGISTER_TEST(negative_set_kernel_arg_invalid_image)
 
     for (auto &el : image_types)
     {
+        if (!has_depth_images
+            && (el.first == "image2d_depth_t"
+                || el.first == "image2d_array_depth_t"))
+        {
+            log_info("Skipping %s: cl_khr_depth_images not supported\n",
+                     el.first.c_str());
+            continue;
+        }
+
         std::string program_source =
             str_sprintf(std::string(sample_arg_image_test_kernel),
                         el.first.c_str(), el.second.c_str(), el.second.c_str());
 
         const char *ptr = program_source.c_str();
-        cl_int error = create_single_kernel_helper(context, &program, &kernel,
-                                                   1, &ptr, "arg_image_test");
+        error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                            "arg_image_test");
         test_error(error, "Unable to build test program");
-
-        kernel = clCreateKernel(program, "arg_image_test", &error);
-        test_error(error,
-                   "Unable to get arg_image_test kernel for built program");
 
         error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &buffer);
         test_failure_error_ret(
