@@ -36,6 +36,9 @@ cl_version get_extension_version(cl_device_id device,
 /* Returns a string containing the supported extensions list for a device. */
 std::string get_device_extensions_string(cl_device_id device);
 
+/* Determines if an IL is supported by a device. */
+bool is_il_available(cl_device_id device, const char *ilNameVersion);
+
 /* Returns a string containing the supported IL version(s) for a device. */
 std::string get_device_il_version_string(cl_device_id device);
 

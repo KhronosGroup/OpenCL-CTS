@@ -13,27 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HARNESS_H_
-#define HARNESS_H_
+#pragma once
 
-#define _CRT_SECURE_NO_WARNINGS
-
-#if defined (__MINGW32__)
-#include <rpcsal.h>
-typedef unsigned char UINT8;
-#define __out
-#define __in
-#define __inout
-#define __out_bcount_opt(size)
-#define __in_opt
-#define __in_ecount(size)
-#define __in_ecount_opt(size)
-#define __out_opt
-#define __out_ecount(size)
-#define __out_ecount_opt(size)
-#define __in_bcount_opt(size)
-#define __inout_opt
-#endif
+#include "directx_wrapper.hpp"
 
 #include <CL/cl.h>
 #include <CL/cl_platform.h>
@@ -41,9 +23,6 @@ typedef unsigned char UINT8;
 #include <stdio.h>
 #include "errorHelpers.h"
 #include "kernelHelpers.h"
-
-// #define log_info(...) printf(__VA_ARGS__)
-// #define log_error(...) printf(__VA_ARGS__)
 
 #define NonTestRequire(x, ...) \
 do \
@@ -59,18 +38,18 @@ do \
     } \
 } while (0)
 
-#define TestRequire(x, ...) \
-    do \
-    { \
-        if (!(x) ) \
-        { \
-            log_info("\n[assertion failed: %s at %s:%d]\n", #x, __FILE__, __LINE__); \
-            log_info("ERROR: "); \
-            log_error(__VA_ARGS__); \
-            log_info("\n"); \
-            HarnessD3D10_TestFail(); \
-            goto Cleanup; \
-        } \
+#define TestRequire(x, ...)                                                    \
+    do                                                                         \
+    {                                                                          \
+        if (!(x))                                                              \
+        {                                                                      \
+            log_info("\n[assertion failed: %s at %s:%d]\n", #x, __FILE__,      \
+                     __LINE__);                                                \
+            log_info("ERROR: ");                                               \
+            log_error(__VA_ARGS__);                                            \
+            log_info("\n");                                                    \
+            goto Cleanup;                                                      \
+        }                                                                      \
     } while (0)
 
 #define TestPrint(...) \
@@ -142,14 +121,6 @@ struct Texture3DSize
 };
 
 void HarnessD3D10_Initialize(cl_platform_id platform);
-cl_int HarnessD3D10_CreateDevice(IDXGIAdapter* pAdapter, ID3D10Device **ppDevice);
-void HarnessD3D10_DestroyDevice();
-
-void HarnessD3D10_TestBegin(const char* fmt, ...);
-void HarnessD3D10_TestFail();
-void HarnessD3D10_TestEnd();
-void HarnessD3D10_TestStats();
-
 
 void TestAdapterEnumeration(
     cl_platform_id platform,
@@ -209,5 +180,3 @@ extern clCreateFromD3D10Texture2DKHR_fn   clCreateFromD3D10Texture2DKHR;
 extern clCreateFromD3D10Texture3DKHR_fn   clCreateFromD3D10Texture3DKHR;
 extern clEnqueueAcquireD3D10ObjectsKHR_fn clEnqueueAcquireD3D10ObjectsKHR;
 extern clEnqueueReleaseD3D10ObjectsKHR_fn clEnqueueReleaseD3D10ObjectsKHR;
-
-#endif

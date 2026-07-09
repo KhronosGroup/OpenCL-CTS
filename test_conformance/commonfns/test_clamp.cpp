@@ -138,7 +138,9 @@ int verify_clamp(const T *const x, const T *const minval, const T *const maxval,
             {
                 log_error(
                     "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n",
-                    i, x[i], minval[i], maxval[i], t, outptr[i]);
+                    i, conv_to_flt(x[i]), conv_to_flt(minval[i]),
+                    conv_to_flt(maxval[i]), conv_to_flt(t),
+                    conv_to_flt(outptr[i]));
                 return -1;
             }
         }

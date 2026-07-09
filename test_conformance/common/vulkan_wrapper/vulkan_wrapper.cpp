@@ -147,6 +147,7 @@ VulkanInstance::VulkanInstance(bool useValidationLayers)
         // return WAIVED;
     }
 
+    VK_GET_NULL_INSTANCE_PROC_ADDR(vkGetPhysicalDeviceFeatures2);
     VK_GET_NULL_INSTANCE_PROC_ADDR(vkEnumerateInstanceVersion);
     VK_GET_NULL_INSTANCE_PROC_ADDR(vkEnumerateInstanceLayerProperties);
     VK_GET_NULL_INSTANCE_PROC_ADDR(vkCreateInstance);
@@ -612,7 +613,8 @@ VulkanDevice::VulkanDevice(const VulkanDevice &device)
 
 VulkanDevice::VulkanDevice(
     const VulkanPhysicalDevice &physicalDevice,
-    const VulkanQueueFamilyToQueueCountMap &queueFamilyToQueueCountMap)
+    const VulkanQueueFamilyToQueueCountMap &queueFamilyToQueueCountMap,
+    bool useShaderInt8)
     : m_physicalDevice(physicalDevice), m_vkDevice(NULL)
 {
     uint32_t maxQueueCount = 0;
@@ -676,7 +678,79 @@ VulkanDevice::VulkanDevice(
         enabledExtensionNameList.data();
     vkDeviceCreateInfo.pEnabledFeatures = NULL;
 
-    vkCreateDevice(physicalDevice, &vkDeviceCreateInfo, NULL, &m_vkDevice);
+    if (useShaderInt8)
+    {
+        VkPhysicalDeviceShaderFloat16Int8Features int8Features{};
+        int8Features.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
+
+        VkPhysicalDevice8BitStorageFeatures storage8Features{};
+        storage8Features.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
+
+        int8Features.pNext = &storage8Features;
+
+        VkPhysicalDeviceFeatures2 features2{};
+        features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        features2.pNext = &int8Features;
+
+        vkGetPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+        if (!int8Features.shaderInt8
+            || !storage8Features.storageBuffer8BitAccess)
+        {
+            throw std::runtime_error("shaderInt8 not supported!\n");
+        }
+
+        VkPhysicalDevice8BitStorageFeatures storage8Enable{};
+        storage8Enable.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
+        storage8Enable.storageBuffer8BitAccess = VK_TRUE;
+
+        VkPhysicalDeviceShaderFloat16Int8Features int8Enable{};
+        int8Enable.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
+        int8Enable.shaderInt8 = VK_TRUE;
+        int8Enable.pNext = &storage8Enable;
+
+        vkDeviceCreateInfo.pNext = &int8Enable;
+
+        enabledExtensionNameList.push_back(VK_KHR_8BIT_STORAGE_EXTENSION_NAME);
+        vkDeviceCreateInfo.ppEnabledExtensionNames =
+            enabledExtensionNameList.data();
+        vkDeviceCreateInfo.enabledExtensionCount =
+            (uint32_t)enabledExtensionNameList.size();
+
+        vkCreateDevice(physicalDevice, &vkDeviceCreateInfo, NULL, &m_vkDevice);
+    }
+    else
+    {
+        vkCreateDevice(physicalDevice, &vkDeviceCreateInfo, NULL, &m_vkDevice);
+    }
+
+    VkPhysicalDeviceCoherentMemoryFeaturesAMD coherentFeatures = {};
+    coherentFeatures.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD;
+
+    VkPhysicalDeviceFeatures2 enabledFeatures = {};
+    enabledFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    enabledFeatures.pNext = &coherentFeatures;
+
+    vkGetPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
+
+    // Build device-level memory type list with only legally usable types
+    auto &memTypeList = physicalDevice.getMemoryTypeList();
+    for (size_t i = 0; i < memTypeList.size(); i++)
+    {
+        const VulkanMemoryType &mt = memTypeList[i];
+        VulkanMemoryTypeProperty flags = mt.getMemoryTypeProperty();
+        if ((flags & VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD)
+            && !coherentFeatures.deviceCoherentMemory)
+        {
+            continue; // feature not enabled, skip
+        }
+        m_memoryTypeList.add(mt);
+    }
 
     for (uint32_t qfIdx = 0;
          qfIdx < (uint32_t)m_physicalDevice.getQueueFamilyList().size();
@@ -725,6 +799,11 @@ VulkanQueue &VulkanDevice::getQueue(const VulkanQueueFamily &queueFamily,
 }
 
 VulkanDevice::operator VkDevice() const { return m_vkDevice; }
+
+const VulkanMemoryTypeList &VulkanDevice::getMemoryTypeList() const
+{
+    return m_memoryTypeList;
+}
 
 ////////////////////////////////
 // VulkanFence implementation //
@@ -1071,7 +1150,8 @@ VulkanComputePipeline::VulkanComputePipeline(
 
 VulkanComputePipeline::VulkanComputePipeline(
     const VulkanDevice &device, const VulkanPipelineLayout &pipelineLayout,
-    const VulkanShaderModule &shaderModule, const std::string &entryFuncName)
+    const VulkanShaderModule &shaderModule, const std::string &entryFuncName,
+    const VkSpecializationInfo *spec)
     : VulkanPipeline(device)
 {
     VkPipelineShaderStageCreateInfo vkPipelineShaderStageCreateInfo = {};
@@ -1083,6 +1163,8 @@ VulkanComputePipeline::VulkanComputePipeline(
     vkPipelineShaderStageCreateInfo.module = shaderModule;
     vkPipelineShaderStageCreateInfo.pName = entryFuncName.c_str();
     vkPipelineShaderStageCreateInfo.pSpecializationInfo = NULL;
+
+    if (spec) vkPipelineShaderStageCreateInfo.pSpecializationInfo = spec;
 
     VkComputePipelineCreateInfo vkComputePipelineCreateInfo = {};
     vkComputePipelineCreateInfo.sType =
@@ -1333,12 +1415,12 @@ void VulkanDescriptorSet::update(uint32_t binding,
     vkUpdateDescriptorSets(m_device, 1, &vkWriteDescriptorSet, 0, NULL);
 }
 
-void VulkanDescriptorSet::updateArray(uint32_t binding,
+void VulkanDescriptorSet::updateArray(uint32_t binding, unsigned numImages,
                                       const VulkanImageViewList &imageViewList)
 {
     VkDescriptorImageInfo *vkDescriptorImageInfo =
         new VkDescriptorImageInfo[imageViewList.size()];
-    for (size_t i = 0; i < imageViewList.size(); i++)
+    for (size_t i = 0; i < numImages; i++)
     {
         vkDescriptorImageInfo[i].sampler = VK_NULL_HANDLE;
         vkDescriptorImageInfo[i].imageView = imageViewList[i];
@@ -1351,7 +1433,7 @@ void VulkanDescriptorSet::updateArray(uint32_t binding,
     vkWriteDescriptorSet.dstSet = m_vkDescriptorSet;
     vkWriteDescriptorSet.dstBinding = binding;
     vkWriteDescriptorSet.dstArrayElement = 0;
-    vkWriteDescriptorSet.descriptorCount = imageViewList.size();
+    vkWriteDescriptorSet.descriptorCount = numImages;
     vkWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
     vkWriteDescriptorSet.pImageInfo = vkDescriptorImageInfo;
     vkWriteDescriptorSet.pBufferInfo = NULL;
@@ -1760,8 +1842,7 @@ VulkanBuffer::VulkanBuffer(
 
     m_size = vkMemoryRequirements.memoryRequirements.size;
     m_alignment = vkMemoryRequirements.memoryRequirements.alignment;
-    const VulkanMemoryTypeList &memoryTypeList =
-        m_device.getPhysicalDevice().getMemoryTypeList();
+    const VulkanMemoryTypeList &memoryTypeList = m_device.getMemoryTypeList();
     for (size_t mtIdx = 0; mtIdx < memoryTypeList.size(); mtIdx++)
     {
         uint32_t memoryTypeIndex = memoryTypeList[mtIdx];
@@ -1870,8 +1951,7 @@ VulkanImage::VulkanImage(
     m_alignment = vkMemoryRequirements.memoryRequirements.alignment;
     m_dedicated = vkMemoryDedicatedRequirements.requiresDedicatedAllocation;
 
-    const VulkanMemoryTypeList &memoryTypeList =
-        m_device.getPhysicalDevice().getMemoryTypeList();
+    const VulkanMemoryTypeList &memoryTypeList = m_device.getMemoryTypeList();
     for (size_t mtIdx = 0; mtIdx < memoryTypeList.size(); mtIdx++)
     {
         uint32_t memoryTypeIndex = memoryTypeList[mtIdx];
