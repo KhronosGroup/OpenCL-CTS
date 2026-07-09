@@ -39,8 +39,12 @@ static cl_int cleanup_mapped_image(cl_command_queue queue, cl_mem image,
     return CL_SUCCESS;
 }
 
-int test_copy_image_generic( cl_context context, cl_command_queue queue, image_descriptor *srcImageInfo, image_descriptor *dstImageInfo,
-                            const size_t sourcePos[], const size_t destPos[], const size_t regionSize[], MTdata d )
+int test_copy_image_generic(cl_context context, cl_command_queue queue,
+                            image_descriptor *srcImageInfo,
+                            image_descriptor *dstImageInfo,
+                            const size_t sourcePos[], const size_t destPos[],
+                            const size_t regionSize[], MTdata d,
+                            const context_t &ctx)
 {
     int error;
 
@@ -51,12 +55,11 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     BufferOwningPtr<char> srcHost;
     BufferOwningPtr<char> dstHost;
 
-    if( gDebugTrace )
-        log_info( " ++ Entering inner test loop...\n" );
+    if (ctx.debugTrace) log_info(" ++ Entering inner test loop...\n");
 
     // Generate some data to test against
     size_t srcBytes = 0;
-    if( gTestMipmaps )
+    if (ctx.testMipmaps)
     {
         srcBytes = (size_t)compute_mipmapped_image_size( *srcImageInfo );
     }
@@ -67,8 +70,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
 
     if (srcBytes > srcData.getSize())
     {
-        if( gDebugTrace )
-            log_info( " - Resizing random image data...\n" );
+        if (ctx.debugTrace) log_info(" - Resizing random image data...\n");
 
         generate_random_image_data( srcImageInfo, srcData, d  );
 
@@ -83,18 +85,18 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     }
 
     // Construct testing sources
-    if( gDebugTrace )
-        log_info( " - Writing source image...\n" );
+    if (ctx.debugTrace) log_info(" - Writing source image...\n");
 
-    srcImage = create_image(context, queue, srcData, srcImageInfo, gEnablePitch,
-                            gTestMipmaps, &error);
+    srcImage =
+        create_image(context, queue, srcData, srcImageInfo, ctx.enablePitch,
+                     ctx.testMipmaps, ctx.debugTrace, &error);
     if( srcImage == NULL )
         return error;
 
 
     // Initialize the destination to empty
     size_t destImageSize = 0;
-    if( gTestMipmaps )
+    if (ctx.testMipmaps)
     {
         destImageSize = (size_t)compute_mipmapped_image_size( *dstImageInfo );
     }
@@ -105,8 +107,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
 
     if (destImageSize > dstData.getSize())
     {
-        if( gDebugTrace )
-            log_info( " - Resizing destination buffer...\n" );
+        if (ctx.debugTrace) log_info(" - Resizing destination buffer...\n");
         dstData.reset(malloc(destImageSize),NULL,0,destImageSize);
         if (dstData == NULL) {
             log_error("ERROR: Unable to malloc %zu bytes for dstData\n",
@@ -129,11 +130,11 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     memset( dstData, 0xff, destImageSize );
     memset( dstHost, 0xff, destImageSize );
 
-    if( gDebugTrace )
-        log_info( " - Writing destination image...\n" );
+    if (ctx.debugTrace) log_info(" - Writing destination image...\n");
 
-    dstImage = create_image(context, queue, dstData, dstImageInfo, gEnablePitch,
-                            gTestMipmaps, &error);
+    dstImage =
+        create_image(context, queue, dstData, dstImageInfo, ctx.enablePitch,
+                     ctx.testMipmaps, ctx.debugTrace, &error);
     if( dstImage == NULL )
         return error;
 
@@ -141,7 +142,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     size_t dst_lod = 0;
     size_t origin[ 4 ] = { 0, 0, 0, 0 };
 
-    if(gTestMipmaps)
+    if (ctx.testMipmaps)
     {
         switch(dstImageInfo->type)
         {
@@ -163,12 +164,11 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     {
         case CL_MEM_OBJECT_IMAGE1D_BUFFER:
         case CL_MEM_OBJECT_IMAGE1D:
-            if( gTestMipmaps )
-                origin[ 1 ] = dst_lod;
+            if (ctx.testMipmaps) origin[1] = dst_lod;
             break;
         case CL_MEM_OBJECT_IMAGE2D:
             dstRegion[ 1 ] = dstImageInfo->height;
-            if( gTestMipmaps )
+            if (ctx.testMipmaps)
             {
                 dstRegion[ 1 ] = (dstImageInfo->height >> dst_lod) ?(dstImageInfo->height >> dst_lod): 1;
                 origin[ 2 ] = dst_lod;
@@ -177,7 +177,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
         case CL_MEM_OBJECT_IMAGE3D:
             dstRegion[ 1 ] = dstImageInfo->height;
             dstRegion[ 2 ] = dstImageInfo->depth;
-            if( gTestMipmaps )
+            if (ctx.testMipmaps)
             {
                 dstRegion[ 1 ] = (dstImageInfo->height >> dst_lod) ?(dstImageInfo->height >> dst_lod): 1;
                 dstRegion[ 2 ] = (dstImageInfo->depth >> dst_lod) ?(dstImageInfo->depth >> dst_lod): 1;
@@ -186,13 +186,12 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
             break;
         case CL_MEM_OBJECT_IMAGE1D_ARRAY:
             dstRegion[ 1 ] = dstImageInfo->arraySize;
-            if( gTestMipmaps )
-                origin[ 2 ] = dst_lod;
+            if (ctx.testMipmaps) origin[2] = dst_lod;
             break;
         case CL_MEM_OBJECT_IMAGE2D_ARRAY:
             dstRegion[ 1 ] = dstImageInfo->height;
             dstRegion[ 2 ] = dstImageInfo->arraySize;
-            if( gTestMipmaps )
+            if (ctx.testMipmaps)
             {
                 dstRegion[ 1 ] = (dstImageInfo->height >> dst_lod) ?(dstImageInfo->height >> dst_lod): 1;
                 origin[ 3 ] = dst_lod;
@@ -203,9 +202,9 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     size_t region[ 3 ] = { dstRegion[ 0 ], dstRegion[ 1 ], dstRegion[ 2 ] };
 
     // Now copy a subset to the destination image. This is the meat of what we're testing
-    if( gDebugTrace )
+    if (ctx.debugTrace)
     {
-        if( gTestMipmaps )
+        if (ctx.testMipmaps)
         {
             log_info( " - Copying from %d,%d,%d,%d to %d,%d,%d,%d size %d,%d,%d\n", (int)sourcePos[ 0 ], (int)sourcePos[ 1 ], (int)sourcePos[ 2 ],(int)sourcePos[ 3 ],
                      (int)destPos[ 0 ], (int)destPos[ 1 ], (int)destPos[ 2 ],(int)destPos[ 3 ],
@@ -229,15 +228,13 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     }
 
     // Construct the final dest image values to test against
-    if( gDebugTrace )
-        log_info( " - Host verification copy...\n" );
+    if (ctx.debugTrace) log_info(" - Host verification copy...\n");
 
     copy_image_data( srcImageInfo, dstImageInfo, srcHost, dstHost, sourcePos, destPos, regionSize );
 
     // Map the destination image to verify the results with the host
     // copy. The contents of the entire buffer are compared.
-    if( gDebugTrace )
-        log_info( " - Mapping results...\n" );
+    if (ctx.debugTrace) log_info(" - Mapping results...\n");
 
     size_t mappedRow, mappedSlice;
     void* mapped = (char*)clEnqueueMapImage(queue, dstImage, CL_TRUE, CL_MAP_READ, origin, region, &mappedRow, &mappedSlice, 0, NULL, NULL, &error);
@@ -252,7 +249,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     size_t cur_lod_offset = 0;
     char *destPtr = (char*)mapped;
 
-    if( gTestMipmaps )
+    if (ctx.testMipmaps)
     {
         cur_lod_offset = compute_mip_level_offset(dstImageInfo, dst_lod);
         sourcePtr += cur_lod_offset;
@@ -262,7 +259,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
     size_t rowPitch = dstImageInfo->rowPitch;
     size_t slicePitch = dstImageInfo->slicePitch;
     size_t dst_height_lod = dstImageInfo->height;
-    if(gTestMipmaps)
+    if (ctx.testMipmaps)
     {
         size_t dst_width_lod = (dstImageInfo->width >> dst_lod)?(dstImageInfo->width >> dst_lod) : 1;
         dst_height_lod = (dstImageInfo->height >> dst_lod)?(dstImageInfo->height >> dst_lod) : 1;
@@ -271,8 +268,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
         slicePitch = rowPitch * dst_height_lod;
     }
 
-    if( gDebugTrace )
-        log_info( " - Scanline verification...\n" );
+    if (ctx.debugTrace) log_info(" - Scanline verification...\n");
 
     size_t thirdDim = 1;
     size_t secondDim = 1;
@@ -309,7 +305,7 @@ int test_copy_image_generic( cl_context context, cl_command_queue queue, image_d
             break;
         }
     }
-    if (gTestMipmaps)
+    if (ctx.testMipmaps)
     {
         switch (dstImageInfo->type)
         {
