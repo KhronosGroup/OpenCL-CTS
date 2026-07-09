@@ -9,7 +9,7 @@
     },
     "test_api": {
         "": {
-          "negative_set_kernel_arg_invalid_image_msaa": "fail"
+          "negative_set_kernel_arg_invalid_image_msaa": "skip"
         }
     },
     "test_bruteforce": {
