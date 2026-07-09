@@ -69,7 +69,8 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
                                  cl_command_queue queue,
                                  const cl_image_format *format,
                                  image_sampler_data *imageSampler,
-                                 bool floatCoords, ExplicitType outputType)
+                                 bool floatCoords, ExplicitType outputType,
+                                 const context_t &ctx)
 {
     char programSrc[10240];
     const char *ptr;
@@ -112,13 +113,13 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
     // Construct the source
     const char *samplerArg = samplerKernelArg;
     char samplerVar[ 1024 ] = "";
-    if( gUseKernelSamplers )
+    if (ctx.useKernelSamplers)
     {
         get_sampler_kernel_code( imageSampler, samplerVar );
         samplerArg = "";
     }
 
-    if(gtestTypesToRun & kReadTests)
+    if (ctx.testTypesToRun & kReadTests)
     {
         KernelSourcePattern = read1DArrayKernelSourcePattern;
     }
@@ -129,41 +130,42 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
 
     sprintf(
         programSrc, KernelSourcePattern,
-        gTestMipmaps ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable"
-                     : "",
+        ctx.testMipmaps ? "#pragma OPENCL EXTENSION cl_khr_mipmap_image: enable"
+                        : "",
         samplerArg, get_explicit_type_name(outputType),
-        gTestMipmaps ? ", float lod" : "", samplerVar,
-        gTestMipmaps ? offset1DArrayLodKernelSource : offset1DArrayKernelSource,
+        ctx.testMipmaps ? ", float lod" : "", samplerVar,
+        ctx.testMipmaps ? offset1DArrayLodKernelSource
+                        : offset1DArrayKernelSource,
         floatCoords ? floatKernelSource1DArray : intCoordKernelSource1DArray,
-        readFormat, gTestMipmaps ? ", lod" : "");
+        readFormat, ctx.testMipmaps ? ", lod" : "");
 
     ptr = programSrc;
     error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
                                         "sample_kernel");
     test_error( error, "Unable to create testing kernel" );
 
-    if( gTestSmallImages )
+    if (ctx.testSmallImages)
     {
         for( imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++ )
         {
             imageInfo.rowPitch = imageInfo.slicePitch = imageInfo.width * pixelSize;
             for( imageInfo.arraySize = 2; imageInfo.arraySize < 9; imageInfo.arraySize++ )
             {
-                if(gTestMipmaps)
+                if (ctx.testMipmaps)
                     imageInfo.num_mip_levels = (size_t)random_in_range(2, (compute_max_mip_levels(imageInfo.width, 0, 0)-1), seed);
 
-                if( gDebugTrace )
+                if (ctx.debugTrace)
                     log_info( "   at size %d,%d\n", (int)imageInfo.width, (int)imageInfo.arraySize );
 
-                int retCode = test_read_image(context, queue, kernel,
-                                              &imageInfo, imageSampler,
-                                              floatCoords, outputType, seed);
+                int retCode = test_read_image(
+                    context, queue, kernel, &imageInfo, imageSampler,
+                    floatCoords, outputType, seed, ctx);
                 if( retCode )
                     return retCode;
             }
         }
     }
-    else if( gTestMaxImages )
+    else if (ctx.testMaxImages)
     {
         // Try a specific set of maximum sizes
         size_t numbeOfSizes;
@@ -177,13 +179,13 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
             imageInfo.arraySize = sizes[ idx ][ 2 ]; // 3rd dimension in get_max_sizes
             imageInfo.rowPitch = imageInfo.slicePitch = imageInfo.width * pixelSize;
             log_info("Testing %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ]);
-            if(gTestMipmaps)
+            if (ctx.testMipmaps)
                 imageInfo.num_mip_levels = (size_t)random_in_range(2, (compute_max_mip_levels(imageInfo.width, 0, 0)-1), seed);
-            if( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "   at max size %d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ] );
-            int retCode =
-                test_read_image(context, queue, kernel, &imageInfo,
-                                imageSampler, floatCoords, outputType, seed);
+            int retCode = test_read_image(context, queue, kernel, &imageInfo,
+                                          imageSampler, floatCoords, outputType,
+                                          seed, ctx);
             if( retCode )
                 return retCode;
         }
@@ -204,23 +206,24 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
             imageInfo.width >>= 1;
         imageInfo.rowPitch = imageInfo.slicePitch = imageInfo.width * pixelSize;
 
-        gRoundingStartValue = 0;
+        uint64_t roundingStartValue = 0;
         do
         {
-            if( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info("   at size %d,%d, starting round ramp at %" PRIu64
                          " for range %" PRIu64 "\n",
                          (int)imageInfo.width, (int)imageInfo.arraySize,
-                         gRoundingStartValue, typeRange);
-            int retCode =
-                test_read_image(context, queue, kernel, &imageInfo,
-                                imageSampler, floatCoords, outputType, seed);
+                         roundingStartValue, typeRange);
+            int retCode = test_read_image(context, queue, kernel, &imageInfo,
+                                          imageSampler, floatCoords, outputType,
+                                          seed, ctx);
             if( retCode )
                 return retCode;
 
-            gRoundingStartValue += imageInfo.width * imageInfo.arraySize * pixelSize / get_format_type_size( imageInfo.format );
+            roundingStartValue += imageInfo.width * imageInfo.arraySize
+                * pixelSize / get_format_type_size(imageInfo.format);
 
-        } while( gRoundingStartValue < typeRange );
+        } while (roundingStartValue < typeRange);
     }
     else
     {
@@ -235,14 +238,14 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
                 imageInfo.arraySize = (size_t)random_log_in_range( 16, (int)maxArraySize / 32, seed );
 
                 imageInfo.rowPitch = imageInfo.width * pixelSize;
-                if(gTestMipmaps)
+                if (ctx.testMipmaps)
                 {
                     imageInfo.num_mip_levels = (size_t)random_in_range(2, (compute_max_mip_levels(imageInfo.width, 0, 0)-1), seed);
                     size = (cl_ulong) compute_mipmapped_image_size(imageInfo) * 4;
                 }
                 else
                 {
-                    if( gEnablePitch )
+                    if (ctx.enablePitch)
                     {
                         size_t extraWidth = (int)random_log_in_range( 0, 64, seed );
                         imageInfo.rowPitch += extraWidth * pixelSize;
@@ -253,11 +256,11 @@ int test_read_image_set_1D_array(cl_device_id device, cl_context context,
                 }
             } while(  size > maxAllocSize || ( size * 3 ) > memSize );
 
-            if( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "   at size %d,%d (row pitch %d) out of %d,%d\n", (int)imageInfo.width, (int)imageInfo.arraySize, (int)imageInfo.rowPitch, (int)maxWidth, (int)maxArraySize );
-            int retCode =
-                test_read_image(context, queue, kernel, &imageInfo,
-                                imageSampler, floatCoords, outputType, seed);
+            int retCode = test_read_image(context, queue, kernel, &imageInfo,
+                                          imageSampler, floatCoords, outputType,
+                                          seed, ctx);
             if( retCode )
                 return retCode;
         }
