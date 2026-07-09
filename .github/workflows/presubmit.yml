@@ -230,14 +230,15 @@ jobs:
           echo "pocl=$POCL_PATH" >> $GITHUB_OUTPUT
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
-      - name: Install pocl dependencies
-        uses: ./.github/actions/install-pocl-deps
       - name: Cache pocl
         id: cache-pocl
         uses: actions/cache@v6
         with:
           path: ${{ env.pocl }}
           key: ubuntu-24.04-pocl-v7.1
+      - name: Install pocl dependencies
+        if: steps.cache-pocl.outputs.cache-hit != 'true'
+        uses: ./.github/actions/install-pocl-deps
       - name: Build pocl
         if: steps.cache-pocl.outputs.cache-hit != 'true'
         run: |
