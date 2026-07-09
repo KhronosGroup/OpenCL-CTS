@@ -53,7 +53,7 @@ static const char *methodTestKernelPattern =
 int test_get_2Dimage_array_info_single(cl_context context,
                                        cl_command_queue queue,
                                        image_descriptor *imageInfo, MTdata d,
-                                       cl_mem_flags flags)
+                                       cl_mem_flags flags, const context_t &ctx)
 {
     int error = 0;
 
@@ -69,7 +69,7 @@ int test_get_2Dimage_array_info_single(cl_context context,
     generate_random_image_data( imageInfo, imageValues, d );
 
     // Construct testing source
-    if( gDebugTrace )
+    if (ctx.debugTrace)
         log_info( " - Creating 2D image array %d by %d by %d...\n", (int)imageInfo->width, (int)imageInfo->height, (int)imageInfo->arraySize );
 
     image = create_image_2d_array(context, flags, imageInfo->format,
@@ -171,7 +171,8 @@ int test_get_2Dimage_array_info_single(cl_context context,
 
 int test_get_image_info_2D_array(cl_device_id device, cl_context context,
                                  cl_command_queue queue,
-                                 cl_image_format *format, cl_mem_flags flags)
+                                 cl_image_format *format, cl_mem_flags flags,
+                                 const context_t &ctx)
 {
     size_t maxWidth, maxHeight, maxArraySize;
     cl_ulong maxAllocSize, memSize;
@@ -194,7 +195,7 @@ int test_get_image_info_2D_array(cl_device_id device, cl_context context,
     memSize = (cl_ulong)SIZE_MAX;
   }
 
-    if( gTestSmallImages )
+    if( ctx.testSmallImages )
     {
         for( imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++ )
         {
@@ -205,17 +206,17 @@ int test_get_image_info_2D_array(cl_device_id device, cl_context context,
                 imageInfo.slicePitch = imageInfo.rowPitch * imageInfo.height;
                 for( imageInfo.arraySize = 2; imageInfo.arraySize < 9; imageInfo.arraySize++ )
                 {
-                    if( gDebugTrace )
+                    if( ctx.debugTrace )
                         log_info( "   at size %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.arraySize );
                     int ret = test_get_2Dimage_array_info_single(
-                        context, queue, &imageInfo, seed, flags);
+                        context, queue, &imageInfo, seed, flags, ctx);
                     if( ret )
                         return -1;
                 }
             }
         }
     }
-    else if( gTestMaxImages )
+    else if( ctx.testMaxImages )
     {
         // Try a specific set of maximum sizes
         size_t numbeOfSizes;
@@ -232,10 +233,10 @@ int test_get_image_info_2D_array(cl_device_id device, cl_context context,
             imageInfo.slicePitch = imageInfo.height * imageInfo.rowPitch;
 
             log_info( "Testing %d x %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
-            if( gDebugTrace )
+            if( ctx.debugTrace )
                 log_info( "   at max size %d,%d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ], (int)sizes[ idx ][ 2 ] );
             if (test_get_2Dimage_array_info_single(context, queue, &imageInfo,
-                                                   seed, flags))
+                                                   seed, flags, ctx))
                 return -1;
         }
     }
@@ -275,10 +276,10 @@ int test_get_image_info_2D_array(cl_device_id device, cl_context context,
             imageInfo.slicePitch = slicePitch;
             imageInfo.rowPitch = rowPitch;
 
-            if( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "   at size %d,%d,%d (pitch %d,%d) out of %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.arraySize, (int)imageInfo.rowPitch, (int)imageInfo.slicePitch, (int)maxWidth, (int)maxHeight, (int)maxArraySize );
             int ret = test_get_2Dimage_array_info_single(
-                context, queue, &imageInfo, seed, flags);
+                context, queue, &imageInfo, seed, flags, ctx);
             if( ret )
                 return -1;
         }

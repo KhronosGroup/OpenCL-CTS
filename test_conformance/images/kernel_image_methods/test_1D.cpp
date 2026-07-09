@@ -47,7 +47,8 @@ static const char *methodTest1DImageKernelPattern =
 static int test_get_1Dimage_info_single(cl_context context,
                                         cl_command_queue queue,
                                         image_descriptor *imageInfo, MTdata d,
-                                        cl_mem_flags flags)
+                                        cl_mem_flags flags,
+                                        const context_t &ctx)
 {
     int error = 0;
 
@@ -63,7 +64,7 @@ static int test_get_1Dimage_info_single(cl_context context,
     generate_random_image_data( imageInfo, imageValues, d );
 
     // Construct testing source
-    if( gDebugTrace )
+    if (ctx.debugTrace)
         log_info( " - Creating 1D image %d ...\n", (int)imageInfo->width );
 
     image = create_image_1d(context, flags, imageInfo->format, imageInfo->width,
@@ -151,7 +152,7 @@ static int test_get_1Dimage_info_single(cl_context context,
 
 int test_get_image_info_1D(cl_device_id device, cl_context context,
                            cl_command_queue queue, cl_image_format *format,
-                           cl_mem_flags flags)
+                           cl_mem_flags flags, const context_t &ctx)
 {
     size_t maxWidth;
     cl_ulong maxAllocSize, memSize;
@@ -174,21 +175,21 @@ int test_get_image_info_1D(cl_device_id device, cl_context context,
     maxAllocSize = (cl_ulong)SIZE_MAX;
   }
 
-    if( gTestSmallImages )
+    if( ctx.testSmallImages )
     {
         for( imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++ )
         {
             imageInfo.rowPitch = imageInfo.width * pixelSize;
-            if( gDebugTrace )
+            if( ctx.debugTrace )
                 log_info( "   at size %d\n", (int)imageInfo.width );
 
             int ret = test_get_1Dimage_info_single(context, queue, &imageInfo,
-                                                   seed, flags);
+                                                   seed, flags, ctx);
             if( ret )
                 return -1;
         }
     }
-    else if( gTestMaxImages )
+    else if( ctx.testMaxImages )
     {
         // Try a specific set of maximum sizes
         size_t numbeOfSizes;
@@ -202,10 +203,10 @@ int test_get_image_info_1D(cl_device_id device, cl_context context,
             imageInfo.rowPitch = imageInfo.width * pixelSize;
 
             log_info( "Testing %d\n", (int)sizes[ idx ][ 0 ]);
-            if( gDebugTrace )
+            if( ctx.debugTrace )
                 log_info( "   at max size %d\n", (int)sizes[ idx ][ 0 ] );
             if (test_get_1Dimage_info_single(context, queue, &imageInfo, seed,
-                                             flags))
+                                             flags, ctx))
                 return -1;
         }
     }
@@ -232,10 +233,10 @@ int test_get_image_info_1D(cl_device_id device, cl_context context,
                 size = (cl_ulong)imageInfo.rowPitch * (cl_ulong)imageInfo.height * 4;
             } while(  size > maxAllocSize || ( size * 3 ) > memSize );
 
-            if( gDebugTrace )
+            if (ctx.debugTrace)
                 log_info( "   at size %d (row pitch %d) out of %d\n", (int)imageInfo.width, (int)imageInfo.rowPitch, (int)maxWidth );
             int ret = test_get_1Dimage_info_single(context, queue, &imageInfo,
-                                                   seed, flags);
+                                                   seed, flags, ctx);
             if( ret )
                 return -1;
         }
