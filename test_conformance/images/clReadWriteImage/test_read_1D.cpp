@@ -27,24 +27,26 @@ int test_read_image_1D(cl_context context, cl_command_queue queue,
     BufferOwningPtr<char> imageValues;
     generate_random_image_data( imageInfo, imageValues, d );
 
-    if( ctx.debugTrace )
-  {
-    log_info( " - Creating %s 1D image %d...\n", ctx.testMipmaps?"mipmapped":"", (int)imageInfo->width );
-    log_info( " with %llu mip levels\n", (unsigned long long) imageInfo->num_mip_levels );
-  }
+    if (ctx.debugTrace)
+    {
+        log_info(" - Creating %s 1D image %d...\n",
+                 ctx.testMipmaps ? "mipmapped" : "", (int)imageInfo->width);
+        log_info(" with %llu mip levels\n",
+                 (unsigned long long)imageInfo->num_mip_levels);
+    }
 
     // Construct testing sources
-  if(!ctx.testMipmaps)
-  {
-      image = create_image_1d(context, flags, imageInfo->format,
-                              imageInfo->width, 0, NULL, NULL, &error);
-      if (image == NULL)
-      {
-          log_error("ERROR: Unable to create 1D image of size %d (%s)",
-                    (int)imageInfo->width, IGetErrorString(error));
-          return -1;
-      }
-  }
+    if (!ctx.testMipmaps)
+    {
+        image = create_image_1d(context, flags, imageInfo->format,
+                                imageInfo->width, 0, NULL, NULL, &error);
+        if (image == NULL)
+        {
+            log_error("ERROR: Unable to create 1D image of size %d (%s)",
+                      (int)imageInfo->width, IGetErrorString(error));
+            return -1;
+        }
+    }
   else
   {
     cl_image_desc image_desc = {0};
@@ -63,13 +65,13 @@ int test_read_image_1D(cl_context context, cl_command_queue queue,
 
     if (ctx.debugTrace) log_info(" - Writing image...\n");
 
-  size_t origin[ 3 ] = { 0, 0, 0 };
-  size_t region[ 3 ] = { 0, 1, 1 };
-  size_t fullImageSize;
-  if( ctx.testMipmaps )
-  {
-      fullImageSize = (size_t)compute_mipmapped_image_size( *imageInfo );
-  }
+    size_t origin[3] = { 0, 0, 0 };
+    size_t region[3] = { 0, 1, 1 };
+    size_t fullImageSize;
+    if (ctx.testMipmaps)
+    {
+        fullImageSize = (size_t)compute_mipmapped_image_size(*imageInfo);
+    }
   else
   {
       fullImageSize = imageInfo->rowPitch;
@@ -192,47 +194,47 @@ int test_read_image_set_1D(cl_device_id device, cl_context context,
     maxAllocSize = (cl_ulong)SIZE_MAX;
   }
 
-    if( ctx.testSmallImages )
-    {
-        for( imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++ )
-        {
-            imageInfo.rowPitch = imageInfo.width * pixelSize;
+  if (ctx.testSmallImages)
+  {
+      for (imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++)
+      {
+          imageInfo.rowPitch = imageInfo.width * pixelSize;
 
-            if (ctx.testMipmaps)
-                imageInfo.num_mip_levels = (cl_uint) random_log_in_range(2, (int)compute_max_mip_levels(imageInfo.width, 0, 0), seed);
+          if (ctx.testMipmaps)
+              imageInfo.num_mip_levels = (cl_uint)random_log_in_range(
+                  2, (int)compute_max_mip_levels(imageInfo.width, 0, 0), seed);
 
-            if( ctx.debugTrace )
-                log_info( "   at size %d\n", (int)imageInfo.width );
+          if (ctx.debugTrace) log_info("   at size %d\n", (int)imageInfo.width);
 
-            int ret =
-                test_read_image_1D(context, queue, &imageInfo, seed, flags, ctx);
-            if( ret )
-                return -1;
-        }
-    }
-    else if( ctx.testMaxImages )
-    {
-        // Try a specific set of maximum sizes
-        size_t numbeOfSizes;
-        size_t sizes[100][3];
+          int ret =
+              test_read_image_1D(context, queue, &imageInfo, seed, flags, ctx);
+          if (ret) return -1;
+      }
+  }
+  else if (ctx.testMaxImages)
+  {
+      // Try a specific set of maximum sizes
+      size_t numbeOfSizes;
+      size_t sizes[100][3];
 
-        get_max_sizes(&numbeOfSizes, 100, sizes, maxWidth, 1, 1, 1, maxAllocSize, memSize, CL_MEM_OBJECT_IMAGE1D, imageInfo.format);
+      get_max_sizes(&numbeOfSizes, 100, sizes, maxWidth, 1, 1, 1, maxAllocSize,
+                    memSize, CL_MEM_OBJECT_IMAGE1D, imageInfo.format);
 
-        for( size_t idx = 0; idx < numbeOfSizes; idx++ )
-        {
-            imageInfo.width = sizes[idx][0];
-            imageInfo.rowPitch = imageInfo.width * pixelSize;
+      for (size_t idx = 0; idx < numbeOfSizes; idx++)
+      {
+          imageInfo.width = sizes[idx][0];
+          imageInfo.rowPitch = imageInfo.width * pixelSize;
 
-            if (ctx.testMipmaps)
-                imageInfo.num_mip_levels = (cl_uint) random_log_in_range(2, (int)compute_max_mip_levels(imageInfo.width, 0, 0), seed);
+          if (ctx.testMipmaps)
+              imageInfo.num_mip_levels = (cl_uint)random_log_in_range(
+                  2, (int)compute_max_mip_levels(imageInfo.width, 0, 0), seed);
 
-            log_info("Testing %d\n", (int)imageInfo.width);
-            if( ctx.debugTrace )
-                log_info( "   at max size %d\n", (int)maxWidth );
-            if (test_read_image_1D(context, queue, &imageInfo, seed, flags, ctx))
-                return -1;
-        }
-    }
+          log_info("Testing %d\n", (int)imageInfo.width);
+          if (ctx.debugTrace) log_info("   at max size %d\n", (int)maxWidth);
+          if (test_read_image_1D(context, queue, &imageInfo, seed, flags, ctx))
+              return -1;
+      }
+  }
     else
     {
         for( int i = 0; i < NUM_IMAGE_ITERATIONS; i++ )
@@ -244,12 +246,15 @@ int test_read_image_set_1D(cl_device_id device, cl_context context,
             {
                 imageInfo.width = (size_t)random_log_in_range( 16, (int)maxWidth / 32, seed );
 
-        if (ctx.testMipmaps)
-        {
-          imageInfo.num_mip_levels = (cl_uint) random_log_in_range(2, (int)compute_max_mip_levels(imageInfo.width, 0, 0), seed);
-          imageInfo.rowPitch = imageInfo.width * get_pixel_size( imageInfo.format );
-          size = compute_mipmapped_image_size( imageInfo );
-        }
+                if (ctx.testMipmaps)
+                {
+                    imageInfo.num_mip_levels = (cl_uint)random_log_in_range(
+                        2, (int)compute_max_mip_levels(imageInfo.width, 0, 0),
+                        seed);
+                    imageInfo.rowPitch =
+                        imageInfo.width * get_pixel_size(imageInfo.format);
+                    size = compute_mipmapped_image_size(imageInfo);
+                }
         else
         {
           imageInfo.rowPitch = imageInfo.width * pixelSize;

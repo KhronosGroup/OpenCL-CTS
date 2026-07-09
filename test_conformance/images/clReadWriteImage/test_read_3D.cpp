@@ -92,8 +92,11 @@ int test_read_image_3D(cl_context context, cl_command_queue queue,
         width_lod = (imageInfo->width >> lod) ? (imageInfo->width >> lod) : 1;
         height_lod = (imageInfo->height >> lod) ? (imageInfo->height >> lod) : 1;
         depth_lod = (imageInfo->depth >> lod) ? (imageInfo->depth >> lod) : 1;
-        row_pitch_lod = ctx.testMipmaps ? (width_lod * get_pixel_size( imageInfo->format )): imageInfo->rowPitch;
-        slice_pitch_lod = ctx.testMipmaps ? (row_pitch_lod * height_lod): imageInfo->slicePitch;
+        row_pitch_lod = ctx.testMipmaps
+            ? (width_lod * get_pixel_size(imageInfo->format))
+            : imageInfo->rowPitch;
+        slice_pitch_lod = ctx.testMipmaps ? (row_pitch_lod * height_lod)
+                                          : imageInfo->slicePitch;
         region[0] = width_lod;
         region[1] = height_lod;
         region[2] = depth_lod;
@@ -102,11 +105,16 @@ int test_read_image_3D(cl_context context, cl_command_queue queue,
         {
             log_info(" - Working at mipLevel :%llu\n", (unsigned long long)lod);
         }
-        error = clEnqueueWriteImage(queue, image, CL_FALSE,
-                                    origin, region, ( ctx.enablePitch ? imageInfo->rowPitch : 0 ), ( ctx.enablePitch ? imageInfo->slicePitch : 0 ),
-                                    (char*)imageValues + imgValMipLevelOffset, 0, NULL, NULL);
+        error = clEnqueueWriteImage(
+            queue, image, CL_FALSE, origin, region,
+            (ctx.enablePitch ? imageInfo->rowPitch : 0),
+            (ctx.enablePitch ? imageInfo->slicePitch : 0),
+            (char *)imageValues + imgValMipLevelOffset, 0, NULL, NULL);
         if (error != CL_SUCCESS) {
-            log_error( "ERROR: Unable to write to %s 3D image of size %d x %d x %d\n", ctx.testMipmaps?"mipmapped":"", (int)width_lod, (int)height_lod, (int)depth_lod );
+            log_error(
+                "ERROR: Unable to write to %s 3D image of size %d x %d x %d\n",
+                ctx.testMipmaps ? "mipmapped" : "", (int)width_lod,
+                (int)height_lod, (int)depth_lod);
             return -1;
         }
 
@@ -223,7 +231,11 @@ int test_read_image_set_3D(cl_device_id device, cl_context context,
       imageInfo.slicePitch = imageInfo.height * imageInfo.rowPitch;
 
       if (ctx.testMipmaps)
-        imageInfo.num_mip_levels = (cl_uint) random_log_in_range(2, (int)compute_max_mip_levels(imageInfo.width, imageInfo.height, imageInfo.depth), seed);
+          imageInfo.num_mip_levels = (cl_uint)random_log_in_range(
+              2,
+              (int)compute_max_mip_levels(imageInfo.width, imageInfo.height,
+                                          imageInfo.depth),
+              seed);
 
       log_info("Testing %d x %d x %d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.depth);
       if (test_read_image_3D(context, queue, &imageInfo, seed, flags, ctx))

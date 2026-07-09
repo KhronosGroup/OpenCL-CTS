@@ -712,19 +712,34 @@ int validate_image_2D_results(void *imageValues, void *resultValues,
                                 log_error("FAILED norm_offsets: %g , %g:\n", norm_offset_x, norm_offset_y);
 
                                 float tempOut[4];
-                                shouldReturn |= determine_validation_error<float>( imagePtr, imageInfo, imageSampler, resultPtr,
-                                                                                  expected, error, xOffsetValues[ j ], yOffsetValues[ j ], norm_offset_x, norm_offset_y, j, numTries, numClamped, true, lod, ctx );
+                                shouldReturn |=
+                                    determine_validation_error<float>(
+                                        imagePtr, imageInfo, imageSampler,
+                                        resultPtr, expected, error,
+                                        xOffsetValues[j], yOffsetValues[j],
+                                        norm_offset_x, norm_offset_y, j,
+                                        numTries, numClamped, true, lod, ctx);
 
                                 log_error( "Step by step:\n" );
                                 FloatPixel temp;
-                                if( ctx.testMipmaps )
-                                     temp = sample_image_pixel_float_offset( imagePtr, imageInfo,
-                                                                                    xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
-                                                                                    imageSampler, tempOut, 1 /* verbose */, &containsDenormals /*dont flush while error reporting*/, lod );
-                                 else
-                                     temp = sample_image_pixel_float_offset( imageValues, imageInfo,
-                                                                                    xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
-                                                                                    imageSampler, tempOut, 1 /* verbose */, &containsDenormals /*dont flush while error reporting*/ );
+                                if (ctx.testMipmaps)
+                                    temp = sample_image_pixel_float_offset(
+                                        imagePtr, imageInfo, xOffsetValues[j],
+                                        yOffsetValues[j], 0.f, norm_offset_x,
+                                        norm_offset_y, 0.0f, imageSampler,
+                                        tempOut, 1 /* verbose */,
+                                        &containsDenormals /*dont flush while
+                                                              error reporting*/
+                                        ,
+                                        lod);
+                                else
+                                    temp =
+                                        sample_image_pixel_float_offset(
+                                            imageValues, imageInfo,
+                                            xOffsetValues[j], yOffsetValues[j],
+                                            0.f, norm_offset_x, norm_offset_y,
+                                            0.0f, imageSampler, tempOut,
+                                            1 /* verbose */, &containsDenormals /*dont flush while error reporting*/);
                                 log_error( "\tulps: %2.2f, %2.2f, %2.2f, %2.2f  (max allowed: %2.2f)\n\n",
                                                     Ulp_Error( resultPtr[0], expected[0] ),
                                                     Ulp_Error( resultPtr[1], expected[1] ),
@@ -1147,14 +1162,24 @@ int validate_image_2D_sRGB_results(void *imageValues, void *resultValues,
 
                                 log_error( "Step by step:\n" );
                                 FloatPixel temp;
-                                if( ctx.testMipmaps )
-                                     temp = sample_image_pixel_float_offset( imagePtr, imageInfo,
-                                                                                    xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
-                                                                                    imageSampler, tempOut, 1 /* verbose */, &containsDenormals /*dont flush while error reporting*/, lod );
-                                 else
-                                     temp = sample_image_pixel_float_offset( imageValues, imageInfo,
-                                                                                    xOffsetValues[ j ], yOffsetValues[ j ], 0.f, norm_offset_x, norm_offset_y, 0.0f,
-                                                                                    imageSampler, tempOut, 1 /* verbose */, &containsDenormals /*dont flush while error reporting*/ );
+                                if (ctx.testMipmaps)
+                                    temp = sample_image_pixel_float_offset(
+                                        imagePtr, imageInfo, xOffsetValues[j],
+                                        yOffsetValues[j], 0.f, norm_offset_x,
+                                        norm_offset_y, 0.0f, imageSampler,
+                                        tempOut, 1 /* verbose */,
+                                        &containsDenormals /*dont flush while
+                                                              error reporting*/
+                                        ,
+                                        lod);
+                                else
+                                    temp =
+                                        sample_image_pixel_float_offset(
+                                            imageValues, imageInfo,
+                                            xOffsetValues[j], yOffsetValues[j],
+                                            0.f, norm_offset_x, norm_offset_y,
+                                            0.0f, imageSampler, tempOut,
+                                            1 /* verbose */, &containsDenormals /*dont flush while error reporting*/);
                                 log_error( "\tulps: %2.2f, %2.2f, %2.2f, %2.2f  (max allowed: %2.2f)\n\n",
                                                     Ulp_Error( resultPtr[0], expected[0] ),
                                                     Ulp_Error( resultPtr[1], expected[1] ),
@@ -1741,10 +1766,15 @@ int test_read_image_set_2D(cl_device_id device, cl_context context,
 
             for( imageInfo.height = 1; imageInfo.height < 9; imageInfo.height++ )
             {
-                if( ctx.testMipmaps )
-                imageInfo.num_mip_levels = (size_t) random_in_range(2, compute_max_mip_levels(imageInfo.width, imageInfo.height, 0)-1, seed);
+                if (ctx.testMipmaps)
+                    imageInfo.num_mip_levels = (size_t)random_in_range(
+                        2,
+                        compute_max_mip_levels(imageInfo.width,
+                                               imageInfo.height, 0)
+                            - 1,
+                        seed);
 
-                if( ctx.debugTrace )
+                if (ctx.debugTrace)
                     log_info( "   at size %d,%d\n", (int)imageInfo.width, (int)imageInfo.height );
 
                 int retCode = test_read_image_2D(

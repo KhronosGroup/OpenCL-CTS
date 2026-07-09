@@ -168,7 +168,10 @@ int test_copy_image_size_2D_2D_array(cl_context context, cl_command_queue queue,
         // Now pick positions within valid ranges
         sourcePos[ 0 ] = ( srcImageInfo->width > regionSize[ 0 ] ) ? (size_t)random_in_range( 0, (int)( srcImageInfo->width - regionSize[ 0 ] - 1 ), d ) : 0;
         sourcePos[ 1 ] = ( srcImageInfo->height > regionSize[ 1 ] ) ? (size_t)random_in_range( 0, (int)( srcImageInfo->height - regionSize[ 1 ] - 1 ), d ) : 0;
-        sourcePos[ 2 ] = ( srcImageInfo->arraySize > 0 ) ? (size_t)random_in_range( 0, (int)( srcImageInfo->arraySize - 1 ), d ) : ctx.testMipmaps ? twoImage_lod : 0;
+        sourcePos[2] = (srcImageInfo->arraySize > 0)
+            ? (size_t)random_in_range(0, (int)(srcImageInfo->arraySize - 1), d)
+            : ctx.testMipmaps ? twoImage_lod
+                              : 0;
         if (ctx.testMipmaps)
         {
             if( srcImageInfo->arraySize > 0 )
@@ -187,7 +190,10 @@ int test_copy_image_size_2D_2D_array(cl_context context, cl_command_queue queue,
 
         destPos[ 0 ] = ( dstImageInfo->width > regionSize[ 0 ] ) ? (size_t)random_in_range( 0, (int)( dstImageInfo->width - regionSize[ 0 ] - 1 ), d ) : 0;
         destPos[ 1 ] = ( dstImageInfo->height > regionSize[ 1 ] ) ? (size_t)random_in_range( 0, (int)( dstImageInfo->height - regionSize[ 1 ] - 1 ), d ) : 0;
-        destPos[ 2 ] = ( dstImageInfo->arraySize > 0 ) ? (size_t)random_in_range( 0, (int)( dstImageInfo->arraySize - 1 ), d ) : ctx.testMipmaps ? twoImage_lod : 0;
+        destPos[2] = (dstImageInfo->arraySize > 0)
+            ? (size_t)random_in_range(0, (int)(dstImageInfo->arraySize - 1), d)
+            : ctx.testMipmaps ? twoImage_lod
+                              : 0;
         if (ctx.testMipmaps)
         {
             if( dstImageInfo->arraySize > 0 )
@@ -353,40 +359,42 @@ int test_copy_image_set_2D_2D_array(
         {
           for( size_t j = 0; j < numberOfSizes2DArray; j++ )
           {
-            size_t rowPadding = ctx.enablePitch ? 256 : 0;
-            size_t slicePadding = ctx.enablePitch ? 3 : 0;
+              size_t rowPadding = ctx.enablePitch ? 256 : 0;
+              size_t slicePadding = ctx.enablePitch ? 3 : 0;
 
-            set_image_dimensions(&imageInfo2Darray, sizes2DArray[j][0],
-                                 sizes2DArray[j][1], sizes2DArray[j][2],
-                                 rowPadding, slicePadding, ctx);
-            set_image_dimensions(&imageInfo2D, sizes2D[i][0], sizes2D[i][1], 0,
-                                 rowPadding, slicePadding, ctx);
+              set_image_dimensions(&imageInfo2Darray, sizes2DArray[j][0],
+                                   sizes2DArray[j][1], sizes2DArray[j][2],
+                                   rowPadding, slicePadding, ctx);
+              set_image_dimensions(&imageInfo2D, sizes2D[i][0], sizes2D[i][1],
+                                   0, rowPadding, slicePadding, ctx);
 
-            cl_ulong dstSize = get_image_size(&imageInfo2Darray);
-            cl_ulong srcSize = get_image_size(&imageInfo2D);
+              cl_ulong dstSize = get_image_size(&imageInfo2Darray);
+              cl_ulong srcSize = get_image_size(&imageInfo2D);
 
-            if (ctx.testMipmaps)
-            {
-                imageInfo2D.num_mip_levels = (cl_uint)random_log_in_range(
-                    2,
-                    (int)compute_max_mip_levels(imageInfo2D.width,
-                                                imageInfo2D.height, 0),
-                    seed);
-                imageInfo2Darray.num_mip_levels = (cl_uint)random_log_in_range(
-                    2,
-                    (int)compute_max_mip_levels(imageInfo2Darray.width,
-                                                imageInfo2Darray.height, 0),
-                    seed);
-                imageInfo2D.rowPitch =
-                    imageInfo2D.width * get_pixel_size(imageInfo2D.format);
-                imageInfo2D.slicePitch = 0;
-                imageInfo2Darray.rowPitch = imageInfo2Darray.width
-                    * get_pixel_size(imageInfo2Darray.format);
-                imageInfo2Darray.slicePitch =
-                    imageInfo2Darray.rowPitch * imageInfo2Darray.height;
-                dstSize = 4 * compute_mipmapped_image_size(imageInfo2Darray);
-                srcSize = 4 * compute_mipmapped_image_size(imageInfo2D);
-            }
+              if (ctx.testMipmaps)
+              {
+                  imageInfo2D.num_mip_levels = (cl_uint)random_log_in_range(
+                      2,
+                      (int)compute_max_mip_levels(imageInfo2D.width,
+                                                  imageInfo2D.height, 0),
+                      seed);
+                  imageInfo2Darray.num_mip_levels =
+                      (cl_uint)random_log_in_range(
+                          2,
+                          (int)compute_max_mip_levels(imageInfo2Darray.width,
+                                                      imageInfo2Darray.height,
+                                                      0),
+                          seed);
+                  imageInfo2D.rowPitch =
+                      imageInfo2D.width * get_pixel_size(imageInfo2D.format);
+                  imageInfo2D.slicePitch = 0;
+                  imageInfo2Darray.rowPitch = imageInfo2Darray.width
+                      * get_pixel_size(imageInfo2Darray.format);
+                  imageInfo2Darray.slicePitch =
+                      imageInfo2Darray.rowPitch * imageInfo2Darray.height;
+                  dstSize = 4 * compute_mipmapped_image_size(imageInfo2Darray);
+                  srcSize = 4 * compute_mipmapped_image_size(imageInfo2D);
+              }
 
             if( dstSize < maxAllocSize && dstSize < ( memSize / 3 ) && srcSize < maxAllocSize && srcSize < ( memSize / 3 ) )
             {

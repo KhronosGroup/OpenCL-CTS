@@ -80,21 +80,24 @@ int test_copy_image_size_1D(cl_context context, cl_command_queue queue,
     // Now try a sampling of different random regions
     for( int i = 0; i < 8; i++ )
     {
-      if( ctx.testMipmaps )
-      {
-        // Work at a random mip level
-        src_lod = (size_t)random_in_range( 0, max_mip_level ? max_mip_level - 1 : 0, d );
-        dst_lod = (size_t)random_in_range( 0, max_mip_level ? max_mip_level - 1 : 0, d );
-        src_width_lod = (srcImageInfo->width >> src_lod)
-            ? (srcImageInfo->width >> src_lod)
-            : 1;
-        dst_width_lod = (dstImageInfo->width >> dst_lod)
-            ? (dstImageInfo->width >> dst_lod)
-            : 1;
-        width_lod  = ( src_width_lod > dst_width_lod ) ? dst_width_lod : src_width_lod;
-        sourcePos[ 1 ] = src_lod;
-        destPos[ 1 ] = dst_lod;
-      }
+        if (ctx.testMipmaps)
+        {
+            // Work at a random mip level
+            src_lod = (size_t)random_in_range(
+                0, max_mip_level ? max_mip_level - 1 : 0, d);
+            dst_lod = (size_t)random_in_range(
+                0, max_mip_level ? max_mip_level - 1 : 0, d);
+            src_width_lod = (srcImageInfo->width >> src_lod)
+                ? (srcImageInfo->width >> src_lod)
+                : 1;
+            dst_width_lod = (dstImageInfo->width >> dst_lod)
+                ? (dstImageInfo->width >> dst_lod)
+                : 1;
+            width_lod =
+                (src_width_lod > dst_width_lod) ? dst_width_lod : src_width_lod;
+            sourcePos[1] = src_lod;
+            destPos[1] = dst_lod;
+        }
       // Pick a random size
       regionSize[ 0 ] = ( width_lod > 8 ) ? (size_t)random_in_range( 8, (int)width_lod - 1, d ) : width_lod;
 
@@ -147,38 +150,40 @@ int test_copy_image_set_1D(cl_device_id device, cl_context context,
         maxAllocSize = (cl_ulong)SIZE_MAX;
     }
 
-    if( ctx.testSmallImages )
+    if (ctx.testSmallImages)
     {
         for (srcImageInfo.width = 1; srcImageInfo.width < 13;
              srcImageInfo.width++)
         {
-      size_t rowPadding = ctx.enablePitch ? 48 : 0;
-      srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
+            size_t rowPadding = ctx.enablePitch ? 48 : 0;
+            srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
 
-      if (ctx.testMipmaps)
-          srcImageInfo.num_mip_levels = (cl_uint)random_log_in_range(
-              2, (int)compute_max_mip_levels(srcImageInfo.width, 0, 0), seed);
+            if (ctx.testMipmaps)
+                srcImageInfo.num_mip_levels = (cl_uint)random_log_in_range(
+                    2, (int)compute_max_mip_levels(srcImageInfo.width, 0, 0),
+                    seed);
 
-      if (ctx.enablePitch)
-      {
-          do
-          {
-              rowPadding++;
-              srcImageInfo.rowPitch =
-                  srcImageInfo.width * pixelSize + rowPadding;
-          } while ((srcImageInfo.rowPitch % pixelSize) != 0);
-      }
+            if (ctx.enablePitch)
+            {
+                do
+                {
+                    rowPadding++;
+                    srcImageInfo.rowPitch =
+                        srcImageInfo.width * pixelSize + rowPadding;
+                } while ((srcImageInfo.rowPitch % pixelSize) != 0);
+            }
 
-      if (ctx.debugTrace) log_info("   at size %d\n", (int)srcImageInfo.width);
+            if (ctx.debugTrace)
+                log_info("   at size %d\n", (int)srcImageInfo.width);
 
-      dstImageInfo = srcImageInfo;
-      dstImageInfo.mem_flags = dst_flags;
-      int ret = test_copy_image_size_1D(context, queue, &srcImageInfo,
-                                        &dstImageInfo, seed, ctx);
-      if (ret) return -1;
+            dstImageInfo = srcImageInfo;
+            dstImageInfo.mem_flags = dst_flags;
+            int ret = test_copy_image_size_1D(context, queue, &srcImageInfo,
+                                              &dstImageInfo, seed, ctx);
+            if (ret) return -1;
         }
     }
-    else if( ctx.testMaxImages )
+    else if (ctx.testMaxImages)
     {
         // Try a specific set of maximum sizes
         size_t numbeOfSizes;
@@ -189,23 +194,24 @@ int test_copy_image_set_1D(cl_device_id device, cl_context context,
 
         for( size_t idx = 0; idx < numbeOfSizes; idx++ )
         {
-      size_t rowPadding = ctx.enablePitch ? 48 : 0;
-      srcImageInfo.width = sizes[idx][0];
-      srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
+            size_t rowPadding = ctx.enablePitch ? 48 : 0;
+            srcImageInfo.width = sizes[idx][0];
+            srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
 
-      if (ctx.testMipmaps)
-          srcImageInfo.num_mip_levels = (cl_uint)random_log_in_range(
-              2, (int)compute_max_mip_levels(srcImageInfo.width, 0, 0), seed);
+            if (ctx.testMipmaps)
+                srcImageInfo.num_mip_levels = (cl_uint)random_log_in_range(
+                    2, (int)compute_max_mip_levels(srcImageInfo.width, 0, 0),
+                    seed);
 
-      if (ctx.enablePitch)
-      {
-          do
-          {
-              rowPadding++;
-              srcImageInfo.rowPitch =
-                  srcImageInfo.width * pixelSize + rowPadding;
-          } while ((srcImageInfo.rowPitch % pixelSize) != 0);
-      }
+            if (ctx.enablePitch)
+            {
+                do
+                {
+                    rowPadding++;
+                    srcImageInfo.rowPitch =
+                        srcImageInfo.width * pixelSize + rowPadding;
+                } while ((srcImageInfo.rowPitch % pixelSize) != 0);
+            }
 
             log_info( "Testing %d\n", (int)sizes[ idx ][ 0 ] );
             if (ctx.debugTrace)
@@ -260,15 +266,15 @@ int test_copy_image_set_1D(cl_device_id device, cl_context context,
         }
             } while(  size > maxAllocSize || ( size * 3 ) > memSize );
 
-            if( ctx.debugTrace )
-      {
-          log_info("   at size %d (row pitch %d) out of %d\n",
-                   (int)srcImageInfo.width, (int)srcImageInfo.rowPitch,
-                   (int)maxWidth);
-          if (ctx.testMipmaps)
-              log_info("   and %zu mip levels\n",
-                       (size_t)srcImageInfo.num_mip_levels);
-      }
+            if (ctx.debugTrace)
+            {
+                log_info("   at size %d (row pitch %d) out of %d\n",
+                         (int)srcImageInfo.width, (int)srcImageInfo.rowPitch,
+                         (int)maxWidth);
+                if (ctx.testMipmaps)
+                    log_info("   and %zu mip levels\n",
+                             (size_t)srcImageInfo.num_mip_levels);
+            }
       dstImageInfo = srcImageInfo;
       dstImageInfo.mem_flags = dst_flags;
       int ret = test_copy_image_size_1D(context, queue, &srcImageInfo,

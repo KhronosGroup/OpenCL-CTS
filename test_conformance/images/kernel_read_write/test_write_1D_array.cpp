@@ -214,7 +214,9 @@ int test_write_image_1D_array(cl_device_id device, cl_context context,
                 unprotImage = create_image_1d_array( context, mem_flag_types[mem_flag_index] | CL_MEM_USE_HOST_PTR, imageInfo->format,
                                               imageInfo->width, imageInfo->arraySize, 0, 0,
                                               maxImageUseHostPtrBackingStore, &error );
-            } else {
+            }
+            else
+            {
                 error = protImage.Create( context, (cl_mem_object_type)CL_MEM_OBJECT_IMAGE1D_ARRAY, mem_flag_types[mem_flag_index], imageInfo->format, imageInfo->width, 1, 1, imageInfo->arraySize );
             }
             if( error != CL_SUCCESS )

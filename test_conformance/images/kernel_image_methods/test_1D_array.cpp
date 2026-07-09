@@ -185,47 +185,51 @@ int test_get_image_info_1D_array(cl_device_id device, cl_context context,
     maxAllocSize = (cl_ulong)SIZE_MAX;
   }
 
-    if( ctx.testSmallImages )
-    {
-        for( imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++ )
-        {
-            imageInfo.rowPitch = imageInfo.width * pixelSize;
-            imageInfo.slicePitch = imageInfo.rowPitch;
-            for( imageInfo.arraySize = 1; imageInfo.arraySize < 9; imageInfo.arraySize++ )
-            {
-                if( ctx.debugTrace )
-                    log_info( "   at size %d,%d\n", (int)imageInfo.width, (int)imageInfo.arraySize );
+  if (ctx.testSmallImages)
+  {
+      for (imageInfo.width = 1; imageInfo.width < 13; imageInfo.width++)
+      {
+          imageInfo.rowPitch = imageInfo.width * pixelSize;
+          imageInfo.slicePitch = imageInfo.rowPitch;
+          for (imageInfo.arraySize = 1; imageInfo.arraySize < 9;
+               imageInfo.arraySize++)
+          {
+              if (ctx.debugTrace)
+                  log_info("   at size %d,%d\n", (int)imageInfo.width,
+                           (int)imageInfo.arraySize);
 
-                int ret = test_get_1Dimage_array_info_single(
-                    context, queue, &imageInfo, seed, flags, ctx);
-                if( ret )
-                    return -1;
-            }
-        }
-    }
-    else if( ctx.testMaxImages )
-    {
-        // Try a specific set of maximum sizes
-        size_t numbeOfSizes;
-        size_t sizes[100][3];
+              int ret = test_get_1Dimage_array_info_single(
+                  context, queue, &imageInfo, seed, flags, ctx);
+              if (ret) return -1;
+          }
+      }
+  }
+  else if (ctx.testMaxImages)
+  {
+      // Try a specific set of maximum sizes
+      size_t numbeOfSizes;
+      size_t sizes[100][3];
 
-        get_max_sizes(&numbeOfSizes, 100, sizes, maxWidth, 1, 1, maxArraySize, maxAllocSize, memSize, CL_MEM_OBJECT_IMAGE1D_ARRAY, imageInfo.format);
+      get_max_sizes(&numbeOfSizes, 100, sizes, maxWidth, 1, 1, maxArraySize,
+                    maxAllocSize, memSize, CL_MEM_OBJECT_IMAGE1D_ARRAY,
+                    imageInfo.format);
 
-        for( size_t idx = 0; idx < numbeOfSizes; idx++ )
-        {
-            imageInfo.width = sizes[ idx ][ 0 ];
-            imageInfo.arraySize = sizes[ idx ][ 2 ];
-            imageInfo.rowPitch = imageInfo.width * pixelSize;
-            imageInfo.slicePitch = imageInfo.rowPitch;
+      for (size_t idx = 0; idx < numbeOfSizes; idx++)
+      {
+          imageInfo.width = sizes[idx][0];
+          imageInfo.arraySize = sizes[idx][2];
+          imageInfo.rowPitch = imageInfo.width * pixelSize;
+          imageInfo.slicePitch = imageInfo.rowPitch;
 
-            log_info( "Testing %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 2 ]);
-            if( ctx.debugTrace )
-                log_info( "   at max size %d,%d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 2 ] );
-            if (test_get_1Dimage_array_info_single(context, queue, &imageInfo,
-                                                   seed, flags, ctx))
-                return -1;
-        }
-    }
+          log_info("Testing %d x %d\n", (int)sizes[idx][0], (int)sizes[idx][2]);
+          if (ctx.debugTrace)
+              log_info("   at max size %d,%d\n", (int)sizes[idx][0],
+                       (int)sizes[idx][2]);
+          if (test_get_1Dimage_array_info_single(context, queue, &imageInfo,
+                                                 seed, flags, ctx))
+              return -1;
+      }
+  }
     else
     {
         for( int i = 0; i < NUM_IMAGE_ITERATIONS; i++ )

@@ -172,24 +172,24 @@ int test_copy_image_set_2D(cl_device_id device, cl_context context,
         {
             size_t rowPadding = ctx.enablePitch ? 48 : 0;
 
-      srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
+            srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
 
-      if (ctx.testMipmaps)
-          srcImageInfo.num_mip_levels = (cl_uint)random_log_in_range(
-              2,
-              (int)compute_max_mip_levels(srcImageInfo.width,
-                                          srcImageInfo.height, 0),
-              seed);
+            if (ctx.testMipmaps)
+                srcImageInfo.num_mip_levels = (cl_uint)random_log_in_range(
+                    2,
+                    (int)compute_max_mip_levels(srcImageInfo.width,
+                                                srcImageInfo.height, 0),
+                    seed);
 
-      if (ctx.enablePitch)
-      {
-          do
-          {
-              rowPadding++;
-              srcImageInfo.rowPitch =
-                  srcImageInfo.width * pixelSize + rowPadding;
-          } while ((srcImageInfo.rowPitch % pixelSize) != 0);
-      }
+            if (ctx.enablePitch)
+            {
+                do
+                {
+                    rowPadding++;
+                    srcImageInfo.rowPitch =
+                        srcImageInfo.width * pixelSize + rowPadding;
+                } while ((srcImageInfo.rowPitch % pixelSize) != 0);
+            }
 
       for (srcImageInfo.height = 1; srcImageInfo.height < 9;
            srcImageInfo.height++)
@@ -217,28 +217,28 @@ int test_copy_image_set_2D(cl_device_id device, cl_context context,
 
         for( size_t idx = 0; idx < numbeOfSizes; idx++ )
         {
-      size_t rowPadding = ctx.enablePitch ? 48 : 0;
+            size_t rowPadding = ctx.enablePitch ? 48 : 0;
 
-      srcImageInfo.width = sizes[idx][0];
-      srcImageInfo.height = sizes[idx][1];
-      srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
+            srcImageInfo.width = sizes[idx][0];
+            srcImageInfo.height = sizes[idx][1];
+            srcImageInfo.rowPitch = srcImageInfo.width * pixelSize + rowPadding;
 
-      if (ctx.testMipmaps)
-          srcImageInfo.num_mip_levels = (cl_uint)random_log_in_range(
-              2,
-              (int)compute_max_mip_levels(srcImageInfo.width,
-                                          srcImageInfo.height, 0),
-              seed);
+            if (ctx.testMipmaps)
+                srcImageInfo.num_mip_levels = (cl_uint)random_log_in_range(
+                    2,
+                    (int)compute_max_mip_levels(srcImageInfo.width,
+                                                srcImageInfo.height, 0),
+                    seed);
 
-      if (ctx.enablePitch)
-      {
-          do
-          {
-              rowPadding++;
-              srcImageInfo.rowPitch =
-                  srcImageInfo.width * pixelSize + rowPadding;
-          } while ((srcImageInfo.rowPitch % pixelSize) != 0);
-      }
+            if (ctx.enablePitch)
+            {
+                do
+                {
+                    rowPadding++;
+                    srcImageInfo.rowPitch =
+                        srcImageInfo.width * pixelSize + rowPadding;
+                } while ((srcImageInfo.rowPitch % pixelSize) != 0);
+            }
 
             log_info( "Testing %d x %d\n", (int)sizes[ idx ][ 0 ], (int)sizes[ idx ][ 1 ] );
             if (ctx.debugTrace)

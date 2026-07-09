@@ -202,7 +202,9 @@ int test_write_image_1D(cl_device_id device, cl_context context,
                 unprotImage = create_image_1d( context, mem_flag_types[mem_flag_index] | CL_MEM_USE_HOST_PTR, imageInfo->format,
                                               imageInfo->width, 0,
                                               maxImageUseHostPtrBackingStore, NULL, &error );
-            } else {
+            }
+            else
+            {
                 error = protImage.Create( context, mem_flag_types[mem_flag_index], imageInfo->format, imageInfo->width );
             }
             if( error != CL_SUCCESS )
