@@ -789,7 +789,7 @@ REGISTER_TEST(negative_set_kernel_arg_invalid_image_msaa)
     std::vector<std::pair<std::string, std::string>> image_types = {
         { "image2d_msaa_t", "2" },
         { "image2d_array_msaa_t", "4" },
-        { "image2d_msaa_depth_t", "4" },
+        { "image2d_msaa_depth_t", "2" },
         { "image2d_array_msaa_depth_t", "4" }
     };
 
