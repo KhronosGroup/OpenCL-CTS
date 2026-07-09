@@ -300,7 +300,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           variant: sccache
-          key: ubuntu-24.04-aarch64
+          key: ubuntu-24.04-
       - name: Build OpenCL CTS
         shell: bash
         run: |
