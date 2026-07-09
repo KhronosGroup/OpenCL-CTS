@@ -7,6 +7,11 @@
             "image2d_read": "pass"
         }
     },
+    "test_api": {
+        "": {
+          "negative_set_kernel_arg_invalid_image_msaa": "pass"
+        }
+    },
     "test_bruteforce": {
         "--wimpy -1": {
             "math_edge_cases": "fail",

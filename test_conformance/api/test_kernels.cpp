@@ -798,7 +798,7 @@ REGISTER_TEST(negative_set_kernel_arg_invalid_image_msaa)
     clMemWrapper image =
         create_image_2d(context, CL_MEM_READ_ONLY, &format, size_dim, size_dim,
                         0, nullptr, &error);
-    test_error(error, "clCreateBuffer failed");
+    test_error(error, "create_image_2d failed");
 
     for (auto &el : image_types)
     {
@@ -807,13 +807,9 @@ REGISTER_TEST(negative_set_kernel_arg_invalid_image_msaa)
                         el.first.c_str(), el.second.c_str(), el.second.c_str());
 
         const char *ptr = program_source.c_str();
-        cl_int error = create_single_kernel_helper(context, &program, &kernel,
-                                                   1, &ptr, "arg_image_test");
+        error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                            "arg_image_test");
         test_error(error, "Unable to build test program");
-
-        kernel = clCreateKernel(program, "arg_image_test", &error);
-        test_error(error,
-                   "Unable to get arg_image_test kernel for built program");
 
         error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &image);
         test_failure_error_ret(
