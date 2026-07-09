@@ -44,6 +44,8 @@ extern std::array<ImageTestTypes, 3> imageTestTypes;
 int filter_formats(const std::vector<cl_image_format> &formatList,
                    std::vector<bool> &filterFlags,
                    cl_channel_type *channelDataTypesToFilter,
+                   cl_channel_type channelTypeToUse,
+                   cl_channel_order channelOrderToUse,
                    bool testMipmaps = false);
 int get_format_list(cl_context context, cl_mem_object_type imageType,
                     std::vector<cl_image_format> &outFormatList,
@@ -53,6 +55,6 @@ size_t random_in_ranges(size_t minimum, size_t rangeA, size_t rangeB, MTdata d);
 clMemWrapper create_image(cl_context context, cl_command_queue queue,
                           BufferOwningPtr<char> &data,
                           image_descriptor *imageInfo, bool enable_pitch,
-                          bool create_mipmaps, int *error);
+                          bool create_mipmaps, bool debugTrace, int *error);
 
 #endif // IMAGES_COMMON_H
