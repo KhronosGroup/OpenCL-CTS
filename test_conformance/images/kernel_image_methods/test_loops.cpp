@@ -39,10 +39,12 @@ extern int test_get_image_info_2D_array(cl_device_id device, cl_context context,
                                         cl_image_format *format,
                                         cl_mem_flags flags,
                                         const image_test_context_t &ctx);
-extern int
-test_get_image_info_1D_buffer(cl_device_id device, cl_context context,
-                              cl_command_queue queue, cl_image_format *format,
-                              cl_mem_flags flags, const image_test_context_t &ctx);
+extern int test_get_image_info_1D_buffer(cl_device_id device,
+                                         cl_context context,
+                                         cl_command_queue queue,
+                                         cl_image_format *format,
+                                         cl_mem_flags flags,
+                                         const image_test_context_t &ctx);
 
 int test_image_type(cl_device_id device, cl_context context,
                     cl_command_queue queue, cl_mem_object_type imageType,

@@ -74,7 +74,8 @@ int test_fill_image_set_2D_array(cl_device_id device, cl_context context,
                                  cl_command_queue queue,
                                  cl_image_format *format,
                                  cl_mem_flags mem_flags,
-                                 ExplicitType outputType, const image_test_context_t &ctx)
+                                 ExplicitType outputType,
+                                 const image_test_context_t &ctx)
 {
     size_t maxWidth, maxHeight, maxArraySize;
     cl_ulong maxAllocSize, memSize;

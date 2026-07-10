@@ -163,7 +163,8 @@ int test_read_image_formats(cl_device_id device, cl_context context,
                             const std::vector<bool> &filterFlags,
                             image_sampler_data *imageSampler,
                             ExplicitType outputType,
-                            cl_mem_object_type imageType, const image_test_context_t &ctx)
+                            cl_mem_object_type imageType,
+                            const image_test_context_t &ctx)
 {
     int ret = 0;
     bool flipFlop[2] = { false, true };
@@ -239,7 +240,8 @@ int test_read_image_formats(cl_device_id device, cl_context context,
 
 int test_image_set(cl_device_id device, cl_context context,
                    cl_command_queue queue, test_format_set_fn formatTestFn,
-                   cl_mem_object_type imageType, const image_test_context_t &ctx)
+                   cl_mem_object_type imageType,
+                   const image_test_context_t &ctx)
 {
     int ret = 0;
     static int printedFormatList = -1;

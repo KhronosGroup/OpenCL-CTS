@@ -241,7 +241,8 @@ int test_copy_image_size_3D_2D_array(cl_context context, cl_command_queue queue,
 int test_copy_image_set_3D_2D_array(
     cl_device_id device, cl_context context, cl_command_queue queue,
     cl_mem_flags src_flags, cl_mem_object_type src_type, cl_mem_flags dst_flags,
-    cl_mem_object_type dst_type, cl_image_format *format, const image_test_context_t &ctx)
+    cl_mem_object_type dst_type, cl_image_format *format,
+    const image_test_context_t &ctx)
 {
     size_t maxWidth, maxHeight, max3DWidth, max3DHeight, maxDepth, maxArraySize;
     cl_ulong maxAllocSize, memSize;

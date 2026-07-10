@@ -108,7 +108,8 @@ int test_read_image_formats(cl_device_id device, cl_context context,
                             const std::vector<bool> &filterFlags,
                             image_sampler_data *imageSampler,
                             ExplicitType outputType,
-                            cl_mem_object_type imageType, const image_test_context_t &ctx)
+                            cl_mem_object_type imageType,
+                            const image_test_context_t &ctx)
 {
     int ret = 0;
     imageSampler->normalized_coords = false;

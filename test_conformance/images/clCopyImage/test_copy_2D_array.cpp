@@ -75,7 +75,8 @@ int test_copy_image_set_2D_array(cl_device_id device, cl_context context,
                                  cl_mem_object_type src_type,
                                  cl_mem_flags dst_flags,
                                  cl_mem_object_type dst_type,
-                                 cl_image_format *format, const image_test_context_t &ctx)
+                                 cl_image_format *format,
+                                 const image_test_context_t &ctx)
 {
     assert(
         dst_type

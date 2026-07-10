@@ -111,7 +111,8 @@ int test_image_type(cl_device_id device, cl_context context,
 }
 
 int test_image_set(cl_device_id device, cl_context context,
-                   cl_mem_object_type image_type, const image_test_context_t& ctx)
+                   cl_mem_object_type image_type,
+                   const image_test_context_t& ctx)
 {
     int ret = 0;
 

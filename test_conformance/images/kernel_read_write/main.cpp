@@ -32,7 +32,8 @@ static image_test_context_t ctx;
 extern int test_image_set(cl_device_id device, cl_context context,
                           cl_command_queue queue,
                           test_format_set_fn formatTestFn,
-                          cl_mem_object_type imageType, const image_test_context_t &ctx);
+                          cl_mem_object_type imageType,
+                          const image_test_context_t &ctx);
 
 extern int cl_image_requirements_size_ext_negative(cl_device_id device,
                                                    cl_context context,
@@ -71,7 +72,8 @@ extern int image_from_buffer_read_positive(cl_device_id device,
                                            cl_context context,
                                            cl_command_queue queue);
 extern int ext_image_raw10_raw12(cl_device_id device, cl_context context,
-                                 cl_command_queue queue, const image_test_context_t &ctx);
+                                 cl_command_queue queue,
+                                 const image_test_context_t &ctx);
 
 static int doTest(cl_device_id device, cl_context context,
                   cl_command_queue queue, cl_mem_object_type imageType,

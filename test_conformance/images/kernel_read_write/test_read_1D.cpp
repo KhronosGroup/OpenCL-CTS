@@ -62,7 +62,8 @@ int test_read_image_set_1D(cl_device_id device, cl_context context,
                            cl_command_queue queue,
                            const cl_image_format *format,
                            image_sampler_data *imageSampler, bool floatCoords,
-                           ExplicitType outputType, const image_test_context_t &ctx)
+                           ExplicitType outputType,
+                           const image_test_context_t &ctx)
 {
     char programSrc[10240];
     const char *ptr;

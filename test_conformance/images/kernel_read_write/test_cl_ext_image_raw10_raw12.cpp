@@ -56,7 +56,8 @@ static int test_image_set(cl_device_id device, cl_context context,
 }
 
 int ext_image_raw10_raw12(cl_device_id device, cl_context context,
-                          cl_command_queue queue, const image_test_context_t &ctx)
+                          cl_command_queue queue,
+                          const image_test_context_t &ctx)
 {
     int ret = 0;
 

@@ -17,7 +17,8 @@
 
 int test_read_image_2D_array(cl_context context, cl_command_queue queue,
                              image_descriptor *imageInfo, MTdata d,
-                             cl_mem_flags flags, const image_test_context_t &ctx)
+                             cl_mem_flags flags,
+                             const image_test_context_t &ctx)
 {
     int error;
 
