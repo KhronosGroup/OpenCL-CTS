@@ -19,10 +19,10 @@
 #include "../testBase.h"
 #include "../harness/compat.h"
 
-static context_t ctx;
+static image_test_context_t ctx;
 
 extern int test_image_set(cl_device_id device, cl_context context,
-                          cl_mem_object_type image_type, const context_t &ctx);
+                          cl_mem_object_type image_type, const image_test_context_t &ctx);
 
 REGISTER_TEST(1D)
 {
@@ -72,7 +72,6 @@ static test_status parseArgs(int &argc, const char *argv[],
 
     std::vector<const char *> argList;
     argList.push_back(argv[0]);
-    init_context(ctx);
 
     // Parse arguments
     for (int i = 1; i < argc; i++)

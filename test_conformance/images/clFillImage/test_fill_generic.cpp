@@ -52,7 +52,7 @@ static void fill_region_with_value( image_descriptor *imageInfo, void *imageValu
 int test_fill_image_generic(cl_context context, cl_command_queue queue,
                             image_descriptor *imageInfo, const size_t origin[],
                             const size_t region[], ExplicitType outputType,
-                            MTdata d, const context_t &ctx)
+                            MTdata d, const image_test_context_t &ctx)
 {
     BufferOwningPtr<char> imgData;
     BufferOwningPtr<char> imgHost;

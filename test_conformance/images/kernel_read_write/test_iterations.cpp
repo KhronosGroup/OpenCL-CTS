@@ -83,7 +83,7 @@ int determine_validation_error(void *imagePtr, image_descriptor *imageInfo,
                                T *expected, float error, float x, float y,
                                float xAddressOffset, float yAddressOffset,
                                size_t j, int &numTries, int &numClamped,
-                               bool printAsFloat, int lod, const context_t &ctx)
+                               bool printAsFloat, int lod, const image_test_context_t &ctx)
 {
     int actualX, actualY;
     int found = debug_find_pixel_in_image( imagePtr, imageInfo, resultPtr, &actualX, &actualY, NULL, lod );
@@ -293,7 +293,7 @@ static void InitFloatCoords(image_descriptor *imageInfo,
                             image_sampler_data *imageSampler, float *xOffsets,
                             float *yOffsets, float xfract, float yfract,
                             int normalized_coords, MTdata d, size_t lod,
-                            const context_t &ctx)
+                            const image_test_context_t &ctx)
 {
     size_t i = 0;
     size_t width_lod = imageInfo->width, height_lod = imageInfo->height;
@@ -360,7 +360,7 @@ int validate_image_2D_depth_results(void *imageValues, void *resultValues,
                                     int &numClamped,
                                     image_sampler_data *imageSampler,
                                     image_descriptor *imageInfo, size_t lod,
-                                    char *imagePtr, const context_t &ctx)
+                                    char *imagePtr, const image_test_context_t &ctx)
 {
     // Validate results element by element
     size_t width_lod = (imageInfo->width >> lod ) ?(imageInfo->width >> lod ) : 1;
@@ -530,7 +530,7 @@ int validate_image_2D_results(void *imageValues, void *resultValues,
                               int &numTries, int &numClamped,
                               image_sampler_data *imageSampler,
                               image_descriptor *imageInfo, size_t lod,
-                              char *imagePtr, const context_t &ctx)
+                              char *imagePtr, const image_test_context_t &ctx)
 {
     // Validate results element by element
     size_t width_lod = (imageInfo->width >> lod ) ?(imageInfo->width >> lod ) : 1;
@@ -984,7 +984,7 @@ int validate_image_2D_sRGB_results(void *imageValues, void *resultValues,
                                    int &numClamped,
                                    image_sampler_data *imageSampler,
                                    image_descriptor *imageInfo, size_t lod,
-                                   char *imagePtr, const context_t &ctx)
+                                   char *imagePtr, const image_test_context_t &ctx)
 {
     // Validate results element by element
     size_t width_lod = (imageInfo->width >> lod ) ?(imageInfo->width >> lod ) : 1;
@@ -1255,7 +1255,7 @@ bool validate_half_write_results( cl_half *expected, cl_half *actual, image_desc
 int test_read_image_2D(cl_context context, cl_command_queue queue,
                        cl_kernel kernel, image_descriptor *imageInfo,
                        image_sampler_data *imageSampler, bool useFloatCoords,
-                       ExplicitType outputType, MTdata d, const context_t &ctx)
+                       ExplicitType outputType, MTdata d, const image_test_context_t &ctx)
 {
     int error;
     static int initHalf = 0;
@@ -1651,7 +1651,7 @@ int test_read_image_set_2D(cl_device_id device, cl_context context,
                            cl_command_queue queue,
                            const cl_image_format *format,
                            image_sampler_data *imageSampler, bool floatCoords,
-                           ExplicitType outputType, const context_t &ctx)
+                           ExplicitType outputType, const image_test_context_t &ctx)
 {
     char programSrc[10240];
     const char *ptr;

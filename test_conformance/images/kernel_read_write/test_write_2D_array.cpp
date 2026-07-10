@@ -81,7 +81,7 @@ int test_write_image_2D_array(cl_device_id device, cl_context context,
                               cl_command_queue queue, cl_kernel kernel,
                               image_descriptor *imageInfo,
                               ExplicitType inputType, MTdata d,
-                              const context_t &ctx)
+                              const image_test_context_t &ctx)
 {
     int                 totalErrors = 0;
 
@@ -663,7 +663,7 @@ int test_write_image_2D_array_set(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
                                   const cl_image_format *format,
                                   ExplicitType inputType, MTdata d,
-                                  const context_t &ctx)
+                                  const image_test_context_t &ctx)
 {
     char programSrc[10240];
     const char *ptr;

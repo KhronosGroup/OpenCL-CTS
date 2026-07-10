@@ -20,33 +20,33 @@
 extern int test_get_image_info_1D(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
                                   cl_image_format *format, cl_mem_flags flags,
-                                  const context_t &ctx);
+                                  const image_test_context_t &ctx);
 extern int test_get_image_info_2D(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
                                   cl_image_format *format, cl_mem_flags flags,
-                                  const context_t &ctx);
+                                  const image_test_context_t &ctx);
 extern int test_get_image_info_3D(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
                                   cl_image_format *format, cl_mem_flags flags,
-                                  const context_t &ctx);
+                                  const image_test_context_t &ctx);
 extern int test_get_image_info_1D_array(cl_device_id device, cl_context context,
                                         cl_command_queue queue,
                                         cl_image_format *format,
                                         cl_mem_flags flags,
-                                        const context_t &ctx);
+                                        const image_test_context_t &ctx);
 extern int test_get_image_info_2D_array(cl_device_id device, cl_context context,
                                         cl_command_queue queue,
                                         cl_image_format *format,
                                         cl_mem_flags flags,
-                                        const context_t &ctx);
+                                        const image_test_context_t &ctx);
 extern int
 test_get_image_info_1D_buffer(cl_device_id device, cl_context context,
                               cl_command_queue queue, cl_image_format *format,
-                              cl_mem_flags flags, const context_t &ctx);
+                              cl_mem_flags flags, const image_test_context_t &ctx);
 
 int test_image_type(cl_device_id device, cl_context context,
                     cl_command_queue queue, cl_mem_object_type imageType,
-                    cl_mem_flags flags, const context_t &ctx)
+                    cl_mem_flags flags, const image_test_context_t &ctx)
 {
     log_info( "Running %s %s-only tests...\n", convert_image_type_to_string(imageType), flags == CL_MEM_READ_ONLY ? "read" : "write" );
 
@@ -117,7 +117,7 @@ int test_image_type(cl_device_id device, cl_context context,
 
 int test_image_set(cl_device_id device, cl_context context,
                    cl_command_queue queue, cl_mem_object_type imageType,
-                   const context_t &ctx)
+                   const image_test_context_t &ctx)
 {
     int version_check;
     auto version = get_device_cl_version(device);

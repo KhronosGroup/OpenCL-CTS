@@ -22,11 +22,11 @@ extern int test_copy_image_generic(cl_context context, cl_command_queue queue,
                                    const size_t sourcePos[],
                                    const size_t destPos[],
                                    const size_t regionSize[], MTdata d,
-                                   const context_t &ctx);
+                                   const image_test_context_t &ctx);
 
 static void set_image_dimensions(image_descriptor *imageInfo, size_t width,
                                  size_t height, size_t depth, size_t rowPadding,
-                                 size_t slicePadding, const context_t &ctx)
+                                 size_t slicePadding, const image_test_context_t &ctx)
 {
     size_t pixelSize = get_pixel_size( imageInfo->format );
 
@@ -51,7 +51,7 @@ static void set_image_dimensions(image_descriptor *imageInfo, size_t width,
 int test_copy_image_size_2D_3D(cl_context context, cl_command_queue queue,
                                image_descriptor *srcImageInfo,
                                image_descriptor *dstImageInfo, MTdata d,
-                               const context_t &ctx)
+                               const image_test_context_t &ctx)
 {
     size_t sourcePos[ 4 ] = { 0 }, destPos[ 4 ] = { 0 }, regionSize[ 3 ];
     int ret = 0, retCode;
@@ -224,7 +224,7 @@ int test_copy_image_set_2D_3D(cl_device_id device, cl_context context,
                               cl_mem_object_type src_type,
                               cl_mem_flags dst_flags,
                               cl_mem_object_type dst_type,
-                              cl_image_format *format, const context_t &ctx)
+                              cl_image_format *format, const image_test_context_t &ctx)
 {
     size_t maxWidth, maxHeight, max3DWidth, max3DHeight, max3DDepth;
     cl_ulong maxAllocSize, memSize;

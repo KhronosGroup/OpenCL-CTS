@@ -21,33 +21,33 @@ extern int test_read_image_set_1D(cl_device_id device, cl_context context,
                                   const cl_image_format *format,
                                   image_sampler_data *imageSampler,
                                   bool floatCoords, ExplicitType outputType,
-                                  const context_t &ctx);
+                                  const image_test_context_t &ctx);
 extern int test_read_image_set_2D(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
                                   const cl_image_format *format,
                                   image_sampler_data *imageSampler,
                                   bool floatCoords, ExplicitType outputType,
-                                  const context_t &ctx);
+                                  const image_test_context_t &ctx);
 extern int test_read_image_set_3D(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
                                   const cl_image_format *format,
                                   image_sampler_data *imageSampler,
                                   bool floatCoords, ExplicitType outputType,
-                                  const context_t &ctx);
+                                  const image_test_context_t &ctx);
 extern int test_read_image_set_1D_array(
     cl_device_id device, cl_context context, cl_command_queue queue,
     const cl_image_format *format, image_sampler_data *imageSampler,
-    bool floatCoords, ExplicitType outputType, const context_t &ctx);
+    bool floatCoords, ExplicitType outputType, const image_test_context_t &ctx);
 extern int test_read_image_set_2D_array(
     cl_device_id device, cl_context context, cl_command_queue queue,
     const cl_image_format *format, image_sampler_data *imageSampler,
-    bool floatCoords, ExplicitType outputType, const context_t &ctx);
+    bool floatCoords, ExplicitType outputType, const image_test_context_t &ctx);
 
 int test_read_image_type(cl_device_id device, cl_context context,
                          cl_command_queue queue, const cl_image_format *format,
                          bool floatCoords, image_sampler_data *imageSampler,
                          ExplicitType outputType, cl_mem_object_type imageType,
-                         const context_t &ctx)
+                         const image_test_context_t &ctx)
 {
     int ret = 0;
     cl_addressing_mode *addressModes = NULL;
@@ -163,7 +163,7 @@ int test_read_image_formats(cl_device_id device, cl_context context,
                             const std::vector<bool> &filterFlags,
                             image_sampler_data *imageSampler,
                             ExplicitType outputType,
-                            cl_mem_object_type imageType, const context_t &ctx)
+                            cl_mem_object_type imageType, const image_test_context_t &ctx)
 {
     int ret = 0;
     bool flipFlop[2] = { false, true };
@@ -239,7 +239,7 @@ int test_read_image_formats(cl_device_id device, cl_context context,
 
 int test_image_set(cl_device_id device, cl_context context,
                    cl_command_queue queue, test_format_set_fn formatTestFn,
-                   cl_mem_object_type imageType, const context_t &ctx)
+                   cl_mem_object_type imageType, const image_test_context_t &ctx)
 {
     int ret = 0;
     static int printedFormatList = -1;

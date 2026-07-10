@@ -55,7 +55,7 @@ const char *read_write2DKernelSourcePattern =
 int test_read_image_2D(cl_context context, cl_command_queue queue,
                        cl_kernel kernel, image_descriptor *imageInfo,
                        image_sampler_data *imageSampler,
-                       ExplicitType outputType, MTdata d, const context_t &ctx)
+                       ExplicitType outputType, MTdata d, const image_test_context_t &ctx)
 {
     int error;
     size_t threads[2];
@@ -177,7 +177,7 @@ int test_read_image_set_2D(cl_device_id device, cl_context context,
                            cl_command_queue queue,
                            const cl_image_format *format,
                            image_sampler_data *imageSampler,
-                           ExplicitType outputType, const context_t &ctx)
+                           ExplicitType outputType, const image_test_context_t &ctx)
 {
     char programSrc[10240];
     const char *ptr;

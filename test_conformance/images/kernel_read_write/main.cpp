@@ -27,12 +27,12 @@
 __thread fpu_control_t fpu_control = 0;
 #endif
 
-static context_t ctx;
+static image_test_context_t ctx;
 
 extern int test_image_set(cl_device_id device, cl_context context,
                           cl_command_queue queue,
                           test_format_set_fn formatTestFn,
-                          cl_mem_object_type imageType, const context_t &ctx);
+                          cl_mem_object_type imageType, const image_test_context_t &ctx);
 
 extern int cl_image_requirements_size_ext_negative(cl_device_id device,
                                                    cl_context context,
@@ -71,18 +71,18 @@ extern int image_from_buffer_read_positive(cl_device_id device,
                                            cl_context context,
                                            cl_command_queue queue);
 extern int ext_image_raw10_raw12(cl_device_id device, cl_context context,
-                                 cl_command_queue queue, const context_t &ctx);
+                                 cl_command_queue queue, const image_test_context_t &ctx);
 
 static int doTest(cl_device_id device, cl_context context,
                   cl_command_queue queue, cl_mem_object_type imageType,
-                  const context_t &ctx)
+                  const image_test_context_t &ctx)
 {
     int ret = 0;
     bool is_2d_image = imageType == CL_MEM_OBJECT_IMAGE2D;
 
     if (ctx.testTypesToRun & kReadTests)
     {
-        context_t sub_ctx = ctx;
+        image_test_context_t sub_ctx = ctx;
         sub_ctx.testTypesToRun = kReadTests;
         ret += test_image_set(device, context, queue, test_read_image_formats,
                               imageType, sub_ctx);
@@ -112,7 +112,7 @@ static int doTest(cl_device_id device, cl_context context,
 
     if (ctx.testTypesToRun & kWriteTests)
     {
-        context_t sub_ctx = ctx;
+        image_test_context_t sub_ctx = ctx;
         sub_ctx.testTypesToRun = kWriteTests;
         ret += test_image_set(device, context, queue, test_write_image_formats,
                               imageType, sub_ctx);
@@ -147,7 +147,7 @@ static int doTest(cl_device_id device, cl_context context,
 
     if ((ctx.testTypesToRun & kReadWriteTests) && !ctx.testMipmaps)
     {
-        context_t sub_ctx = ctx;
+        image_test_context_t sub_ctx = ctx;
         sub_ctx.testTypesToRun = kReadWriteTests;
         // mipmap images only support sampler read built-in while read_write
         // images only support sampler-less read built-in. Hence we cannot test
@@ -177,7 +177,7 @@ static int doTest(cl_device_id device, cl_context context,
                 log_info("Testing read_image{f | i | ui} for 2D image from "
                          "buffer\n");
 
-                context_t sub_sub_ctx = sub_ctx;
+                image_test_context_t sub_sub_ctx = sub_ctx;
                 sub_sub_ctx.testImage2DFromBuffer = true;
 
                 // disable CL_MEM_USE_HOST_PTR for 1.2 extension but enable this
@@ -203,7 +203,7 @@ static int doTest(cl_device_id device, cl_context context,
                 log_info("Testing write_image{f | i | ui} for 2D image from "
                          "buffer\n");
 
-                context_t sub_sub_ctx = sub_ctx;
+                image_test_context_t sub_sub_ctx = sub_ctx;
                 sub_sub_ctx.enablePitch = true;
 
                 // disable CL_MEM_USE_HOST_PTR for 1.2 extension but enable this
@@ -350,8 +350,6 @@ static test_status parseArgs(int &argc, const char *argv[],
 
     std::vector<const char *> argList;
     argList.push_back(argv[0]);
-
-    init_context(ctx);
 
     // Parse arguments
     for( int i = 1; i < argc; i++ )

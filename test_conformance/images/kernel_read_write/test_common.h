@@ -32,7 +32,7 @@ extern int test_read_image(cl_context context, cl_command_queue queue,
                            cl_kernel kernel, image_descriptor *imageInfo,
                            image_sampler_data *imageSampler,
                            bool useFloatCoords, ExplicitType outputType,
-                           MTdata d, const context_t &ctx);
+                           MTdata d, const image_test_context_t &ctx);
 
 extern bool get_image_dimensions(image_descriptor *imageInfo, size_t &width,
                                  size_t &height, size_t &depth);
@@ -43,7 +43,7 @@ int determine_validation_error_offset(
     image_sampler_data *imageSampler, T *resultPtr, T *expected, float error,
     float x, float y, float z, float xAddressOffset, float yAddressOffset,
     float zAddressOffset, size_t j, int &numTries, int &numClamped,
-    bool printAsFloat, int lod, const context_t &ctx)
+    bool printAsFloat, int lod, const image_test_context_t &ctx)
 {
     bool image_type_3D = ((imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
                           || (imageInfo->type == CL_MEM_OBJECT_IMAGE3D));

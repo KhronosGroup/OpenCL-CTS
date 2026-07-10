@@ -66,7 +66,7 @@ static const char *depthDimKernelLine = "   outData->depthDim = dim.z;\n";
 
 int test_get_image_info_single(cl_context context, cl_command_queue queue,
                                image_descriptor *imageInfo, MTdata d,
-                               cl_mem_flags flags, const context_t &ctx)
+                               cl_mem_flags flags, const image_test_context_t &ctx)
 {
     int error = 0;
 
@@ -211,7 +211,7 @@ int test_get_image_info_single(cl_context context, cl_command_queue queue,
 
 int test_get_image_info_2D(cl_device_id device, cl_context context,
                            cl_command_queue queue, cl_image_format *format,
-                           cl_mem_flags flags, const context_t &ctx)
+                           cl_mem_flags flags, const image_test_context_t &ctx)
 {
     size_t maxWidth, maxHeight;
     cl_ulong maxAllocSize, memSize;

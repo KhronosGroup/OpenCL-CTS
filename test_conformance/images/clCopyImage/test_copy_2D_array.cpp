@@ -22,12 +22,12 @@ extern int test_copy_image_generic(cl_context context, cl_command_queue queue,
                                    const size_t sourcePos[],
                                    const size_t destPos[],
                                    const size_t regionSize[], MTdata d,
-                                   const context_t &ctx);
+                                   const image_test_context_t &ctx);
 
 int test_copy_image_2D_array(cl_context context, cl_command_queue queue,
                              image_descriptor *srcImageInfo,
                              image_descriptor *dstImageInfo, MTdata d,
-                             const context_t &ctx)
+                             const image_test_context_t &ctx)
 {
     size_t srcPos[] = { 0, 0, 0, 0}, dstPos[] = {0, 0, 0, 0};
     size_t region[] = { srcImageInfo->width, srcImageInfo->height,
@@ -75,7 +75,7 @@ int test_copy_image_set_2D_array(cl_device_id device, cl_context context,
                                  cl_mem_object_type src_type,
                                  cl_mem_flags dst_flags,
                                  cl_mem_object_type dst_type,
-                                 cl_image_format *format, const context_t &ctx)
+                                 cl_image_format *format, const image_test_context_t &ctx)
 {
     assert(
         dst_type

@@ -20,7 +20,7 @@
 
 static int test_image_set(cl_device_id device, cl_context context,
                           cl_command_queue queue, cl_mem_object_type imageType,
-                          const context_t &ctx)
+                          const image_test_context_t &ctx)
 {
     int ret = 0;
 
@@ -56,7 +56,7 @@ static int test_image_set(cl_device_id device, cl_context context,
 }
 
 int ext_image_raw10_raw12(cl_device_id device, cl_context context,
-                          cl_command_queue queue, const context_t &ctx)
+                          cl_command_queue queue, const image_test_context_t &ctx)
 {
     int ret = 0;
 
@@ -75,7 +75,7 @@ int ext_image_raw10_raw12(cl_device_id device, cl_context context,
         }
         else
         {
-            context_t sub_ctx = ctx;
+            image_test_context_t sub_ctx = ctx;
             sub_ctx.testTypesToRun = kReadTests;
             ret += test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE2D,
                                   sub_ctx);

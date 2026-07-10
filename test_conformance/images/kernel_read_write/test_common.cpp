@@ -80,7 +80,7 @@ static bool InitFloatCoordsCommon(image_descriptor *imageInfo,
                                   float *xOffsets, float *yOffsets,
                                   float *zOffsets, float xfract, float yfract,
                                   float zfract, int normalized_coords, MTdata d,
-                                  int lod, const context_t &ctx)
+                                  int lod, const image_test_context_t &ctx)
 {
     size_t i = 0;
     size_t width_loop, height_loop, depth_loop;
@@ -281,7 +281,7 @@ static size_t get_image_num_pixels(image_descriptor *imageInfo, size_t width,
 int test_read_image(cl_context context, cl_command_queue queue,
                     cl_kernel kernel, image_descriptor *imageInfo,
                     image_sampler_data *imageSampler, bool useFloatCoords,
-                    ExplicitType outputType, MTdata d, const context_t &ctx)
+                    ExplicitType outputType, MTdata d, const image_test_context_t &ctx)
 {
     bool image_type_3D = ((imageInfo->type == CL_MEM_OBJECT_IMAGE2D_ARRAY)
                           || (imageInfo->type == CL_MEM_OBJECT_IMAGE3D));

@@ -17,7 +17,7 @@
 
 int test_read_image_1D_array(cl_context context, cl_command_queue queue,
                              image_descriptor *imageInfo, MTdata d,
-                             cl_mem_flags flags, const context_t &ctx)
+                             cl_mem_flags flags, const image_test_context_t &ctx)
 {
     int error;
 
@@ -174,7 +174,7 @@ int test_read_image_1D_array(cl_context context, cl_command_queue queue,
 int test_read_image_set_1D_array(cl_device_id device, cl_context context,
                                  cl_command_queue queue,
                                  cl_image_format *format, cl_mem_flags flags,
-                                 const context_t &ctx)
+                                 const image_test_context_t &ctx)
 {
     size_t maxWidth, maxArraySize;
     cl_ulong maxAllocSize, memSize;

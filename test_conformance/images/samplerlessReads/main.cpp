@@ -29,9 +29,9 @@ __thread fpu_control_t fpu_control = 0;
 
 extern int test_image_set(cl_device_id device, cl_context context,
                           cl_command_queue queue, cl_mem_object_type imageType,
-                          const context_t &ctx);
+                          const image_test_context_t &ctx);
 
-static context_t ctx;
+static image_test_context_t ctx;
 
 REGISTER_TEST(1D)
 {
@@ -88,8 +88,6 @@ static test_status parseArgs(int &argc, const char *argv[],
 
     std::vector<const char *> argList;
     argList.push_back(argv[0]);
-
-    init_context(ctx);
 
     // Parse arguments
     for ( int i = 1; i < argc; i++ )

@@ -24,24 +24,24 @@ extern int test_write_image_1D_set(cl_device_id device, cl_context context,
                                    cl_command_queue queue,
                                    const cl_image_format *format,
                                    ExplicitType inputType, MTdata d,
-                                   const context_t &ctx);
+                                   const image_test_context_t &ctx);
 extern int test_write_image_3D_set(cl_device_id device, cl_context context,
                                    cl_command_queue queue,
                                    const cl_image_format *format,
                                    ExplicitType inputType, MTdata d,
-                                   const context_t &ctx);
+                                   const image_test_context_t &ctx);
 extern int test_write_image_1D_array_set(cl_device_id device,
                                          cl_context context,
                                          cl_command_queue queue,
                                          const cl_image_format *format,
                                          ExplicitType inputType, MTdata d,
-                                         const context_t &ctx);
+                                         const image_test_context_t &ctx);
 extern int test_write_image_2D_array_set(cl_device_id device,
                                          cl_context context,
                                          cl_command_queue queue,
                                          const cl_image_format *format,
                                          ExplicitType inputType, MTdata d,
-                                         const context_t &ctx);
+                                         const image_test_context_t &ctx);
 
 extern bool validate_float_write_results( float *expected, float *actual, image_descriptor *imageInfo );
 extern bool validate_half_write_results( cl_half *expected, cl_half *actual, image_descriptor *imageInfo );
@@ -76,7 +76,7 @@ const char *offset2DLodKernelSource =
 int test_write_image(cl_device_id device, cl_context context,
                      cl_command_queue queue, cl_kernel kernel,
                      image_descriptor *imageInfo, ExplicitType inputType,
-                     MTdata d, const context_t &ctx)
+                     MTdata d, const image_test_context_t &ctx)
 {
     int                 totalErrors = 0;
     size_t              num_flags   = 0;
@@ -691,7 +691,7 @@ int test_write_image(cl_device_id device, cl_context context,
 
 int test_write_image_set(cl_device_id device, cl_context context,
                          cl_command_queue queue, const cl_image_format *format,
-                         ExplicitType inputType, MTdata d, const context_t &ctx)
+                         ExplicitType inputType, MTdata d, const image_test_context_t &ctx)
 {
     char programSrc[10240];
     const char *ptr;
@@ -907,7 +907,7 @@ int test_write_image_formats(cl_device_id device, cl_context context,
                              const std::vector<bool> &filterFlags,
                              image_sampler_data *imageSampler,
                              ExplicitType inputType,
-                             cl_mem_object_type imageType, const context_t &ctx)
+                             cl_mem_object_type imageType, const image_test_context_t &ctx)
 {
     if( imageSampler->filter_mode == CL_FILTER_LINEAR )
         // No need to run for linear filters

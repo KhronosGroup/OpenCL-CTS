@@ -20,13 +20,13 @@ extern int test_fill_image_generic(cl_context context, cl_command_queue queue,
                                    image_descriptor *imageInfo,
                                    const size_t origin[], const size_t region[],
                                    ExplicitType outputType, MTdata d,
-                                   const context_t &ctx);
+                                   const image_test_context_t &ctx);
 
 
 int test_fill_image_size_1D_buffer(cl_context context, cl_command_queue queue,
                                    image_descriptor *imageInfo,
                                    ExplicitType outputType, MTdata d,
-                                   const context_t &ctx)
+                                   const image_test_context_t &ctx)
 {
     size_t origin[3], region[3];
     int ret = 0, retCode;
@@ -74,7 +74,7 @@ int test_fill_image_set_1D_buffer(cl_device_id device, cl_context context,
                                   cl_command_queue queue,
                                   cl_image_format *format,
                                   cl_mem_flags mem_flags,
-                                  ExplicitType outputType, const context_t &ctx)
+                                  ExplicitType outputType, const image_test_context_t &ctx)
 {
     size_t maxWidth;
     cl_ulong maxAllocSize, memSize;
