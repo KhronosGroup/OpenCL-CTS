@@ -433,11 +433,14 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
 
     for (int vector_idx = 0; vector_idx < VECTOR_SIZE_COUNT; ++vector_idx)
     {
-        uint32_t vecsize = element_count[vector_idx];
-        size_t vector_size = vecsize * type_size[stype];
-        size_t vector_count = (BUFFER_SIZE + vector_size - 1) / vector_size;
-        uint32_t nb_elements =
-            std::max((uint32_t)64 * 1024, vecsize << vecsize);
+        const uint32_t vecsize = element_count[vector_idx];
+        const size_t vector_size = vecsize * type_size[stype];
+        const size_t vector_count =
+            (BUFFER_SIZE + vector_size - 1) / vector_size;
+        const uint32_t full_msb_mask_elements = vecsize * (1u << vecsize);
+        const uint32_t min_cmp_elements = 64 * 1024;
+        const uint32_t nb_elements =
+            std::max(min_cmp_elements, full_msb_mask_elements);
 
         for (uint32_t i = 0; i < nb_elements; i += block_elements)
         {
