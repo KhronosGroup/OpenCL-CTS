@@ -36,18 +36,15 @@
 #include "cl_utils.h"
 #include "tests.h"
 
-const char **   argList = NULL;
-size_t          argCount = 0;
-char            appName[64] = "ctest";
 const char *addressSpaceNames[AS_NumAddressSpaces] = {"global", "private", "local", "constant"};
 
 #pragma mark -
 #pragma mark Declarations
 
 
-static int ParseArgs( int argc, const char **argv );
-static void PrintUsage( void );
-
+static test_status ParseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help);
 
 int g_arrVecSizes[kVectorSizeCount+kStrangeVectorSizeCount];
 int g_arrVecAligns[kLargestVectorSize+1];
@@ -74,21 +71,11 @@ int main (int argc, const char **argv )
         g_arrVecAligns[i] = alignbound;
     }
 
-    argc = parseCustomParam(argc, argv);
-    if (argc == -1)
-    {
-        return -1;
-    }
-
-    if( (error = ParseArgs( argc, argv )) )
-        goto exit;
-
     fflush( stdout );
-    error = runTestHarnessWithCheck(
-        argCount, argList, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), true, 0, InitCL);
+    error = runTestHarnessWithCheckAndParse(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), true, 0, InitCL, ParseArgs);
 
-exit:
     if(gQueue)
     {
         int flush_error = clFinish(gQueue);
@@ -105,52 +92,22 @@ exit:
 #pragma mark -
 #pragma mark setup
 
-static int ParseArgs( int argc, const char **argv )
+static test_status ParseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help)
 {
-    if (gListTests)
-    {
-        return 0;
-    }
-    int i;
-    argList = (const char **)calloc(argc, sizeof(char *));
-    if( NULL == argList )
-    {
-        vlog_error( "Failed to allocate memory for argList.\n" );
-        return 1;
-    }
 
-    argList[0] = argv[0];
-    argCount = 1;
+    help =
+        R"(        -d     Toggle double precision testing (default: on if double supported)
+        -t     Toggle reporting performance data.
+        -r     Reset buffers on host instead of on device.
+        -[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor()"
+        + std::to_string(gWimpyReductionFactor) + ")\n";
 
-#if (defined( __APPLE__ ) || defined(__linux__) || defined(__MINGW32__))
-    { // Extract the app name
-        char baseName[ MAXPATHLEN ];
-        strncpy(baseName, argv[0], MAXPATHLEN - 1);
-        baseName[MAXPATHLEN - 1] = '\0';
-        char *base = basename( baseName );
-        if( NULL != base )
-        {
-            strncpy(appName, base, sizeof(appName) - 1);
-            appName[ sizeof( appName ) -1 ] = '\0';
-        }
-    }
-#elif defined (_WIN32)
-    {
-        char fname[_MAX_FNAME + _MAX_EXT + 1];
-        char ext[_MAX_EXT];
+    std::vector<const char *> argList;
+    argList.push_back(argv[0]);
 
-        errno_t err = _splitpath_s( argv[0], NULL, 0, NULL, 0,
-                                   fname, _MAX_FNAME, ext, _MAX_EXT );
-        if (err == 0) { // no error
-            strcat (fname, ext); //just cat them, size of frame can keep both
-            strncpy (appName, fname, sizeof(appName));
-            appName[ sizeof( appName ) -1 ] = '\0';
-        }
-    }
-#endif
-
-    vlog( "\n%s", appName );
-    for( i = 1; i < argc; i++ )
+    for (int i = 1; i < argc; i++)
     {
         const char *arg = argv[i];
         if( NULL == arg )
@@ -168,42 +125,29 @@ static int ParseArgs( int argc, const char **argv )
                         gTestDouble ^= 1;
                         break;
 
-                    case 'h':
-                        PrintUsage();
-                        return -1;
-
                     case 't':
                         gReportTimes ^= 1;
                         break;
 
                     case 'r': gHostReset = true; break;
 
-                    case 'w':  // Wimpy mode
-                        gWimpyMode = true;
-                        break;
                     case '[':
                         parseWimpyReductionFactor( arg, gWimpyReductionFactor);
                         break;
                     default:
                         vlog_error( " <-- unknown flag: %c (0x%2.2x)\n)", *arg, *arg );
-                        PrintUsage();
-                        return -1;
+                        return TEST_FAIL;
                 }
                 arg++;
             }
+            removed_args.push_back(argv[i]);
         }
         else
         {
-            argList[ argCount ] = arg;
-            argCount++;
+            argList.push_back(argv[i]);
         }
     }
-
-    if (getenv("CL_WIMPY_MODE")) {
-      vlog( "\n" );
-      vlog( "*** Detected CL_WIMPY_MODE env                          ***\n" );
-      gWimpyMode = 1;
-    }
+    update_argc_argv_from_args_list(argList, argc, argv);
 
     PrintArch();
     if( gWimpyMode )
@@ -224,23 +168,5 @@ static int ParseArgs( int argc, const char **argv )
         vlog("\tProfile: Full\n");
     }
 
-    return 0;
-}
-
-static void PrintUsage( void )
-{
-    vlog("%s [-dthw]: <optional: test names>\n", appName);
-    vlog("\t\t-d\tToggle double precision testing (default: on if double "
-         "supported)\n");
-    vlog("\t\t-t\tToggle reporting performance data.\n");
-    vlog("\t\t-r\tReset buffers on host instead of on device.\n");
-    vlog("\t\t-w\tRun in wimpy mode\n");
-    vlog("\t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
-         "1-12, default factor(%u)\n",
-         gWimpyReductionFactor);
-    vlog("\t\t-h\tHelp\n");
-    for (size_t i = 0; i < test_registry::getInstance().num_tests(); i++)
-    {
-        vlog("\t\t%s\n", test_registry::getInstance().definitions()[i].name);
-    }
+    return TEST_PASS;
 }

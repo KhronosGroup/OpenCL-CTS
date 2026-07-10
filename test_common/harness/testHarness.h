@@ -22,6 +22,7 @@
 
 #include <string>
 #include <vector>
+#include <type_traits>
 
 class Version {
 public:
@@ -63,6 +64,8 @@ private:
     cl_uint m_minor;
 };
 
+Version get_platform_cl_version(cl_platform_id platform);
+Version get_platform_cl_version(cl_device_id device);
 Version get_device_cl_version(cl_device_id device);
 
 #define ADD_TEST(fn)                                                           \
@@ -188,11 +191,25 @@ extern int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
                                    cl_command_queue_properties queueProps,
                                    DeviceCheckFn deviceCheckFn);
 
+using ParseArgsFn = test_status (*)(int &argc, const char *argv[],
+                                    std::vector<std::string> &removed_args,
+                                    std::string &help_description);
+
+void update_argc_argv_from_args_list(std::vector<const char *> &argList,
+                                     int &argc, const char *argv[]);
+
+int runTestHarnessWithCheckAndParse(int argc, const char *argv[], int testNum,
+                                    test_definition testList[],
+                                    int forceNoContextCreation,
+                                    cl_command_queue_properties queueProps,
+                                    DeviceCheckFn deviceCheckFn,
+                                    ParseArgsFn parseArgsFn);
+
 // The command line parser used by runTestHarness to break up parameters into
 // calls to callTestFunctions
 extern int parseAndCallCommandLineTests(int argc, const char *argv[],
-                                        cl_device_id device, int testNum,
-                                        test_definition testList[],
+                                        const char *args, cl_device_id device,
+                                        int testNum, test_definition testList[],
                                         const test_harness_config &config);
 
 // Call this function if you need to do all the setup work yourself, and just
@@ -257,6 +274,37 @@ extern std::string get_platform_info_string(cl_platform_id platform,
                                             cl_platform_info param_name);
 extern bool is_platform_extension_available(cl_platform_id platform,
                                             const char *extensionName);
+enum InvalidObject
+{
+    Nullptr = 1 << 0,
+    ValidObjectWrongType = 1 << 1,
+};
+
+extern int gInvalidObject;
+
+
+template <typename T> std::vector<T> get_invalid_objects(cl_device_id device)
+{
+    std::vector<T> ret;
+    if ((gInvalidObject & InvalidObject::Nullptr)
+        && !(std::is_same<T, cl_platform_id>::value))
+    {
+        ret.push_back(nullptr);
+    }
+    if (gInvalidObject & InvalidObject::ValidObjectWrongType)
+    {
+        if (std::is_same<T, cl_device_id>::value)
+        {
+            cl_platform_id platform = getPlatformFromDevice(device);
+            ret.push_back(reinterpret_cast<T>(platform));
+        }
+        else
+        {
+            ret.push_back(reinterpret_cast<T>(device));
+        }
+    }
+    return ret;
+}
 
 #if !defined(__APPLE__)
 void memset_pattern4(void *, const void *, size_t);

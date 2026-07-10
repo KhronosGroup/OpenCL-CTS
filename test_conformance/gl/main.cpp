@@ -164,7 +164,7 @@ int main(int argc, const char *argv[])
     int numErrors = 0;
 
     test_start();
-    argc = parseCustomParam(argc, argv);
+    argc = parseCommonParam(argc, argv);
     if (argc == -1)
     {
         return -1;
@@ -200,7 +200,7 @@ int main(int argc, const char *argv[])
         }
     }
 
-    if (argc > 1 && strcmp(argv[1], "-list") == 0)
+    if (gListTests)
     {
         log_info("Available 2.x tests:\n");
         for (int i = 0; i < test_num; i++)
@@ -324,7 +324,7 @@ int main(int argc, const char *argv[])
             config.forceNoContextCreation = true;
             config.numElementsToUse = 1024;
             config.queueProps = 0;
-            error = parseAndCallCommandLineTests(argc_, argv, deviceIDs[i],
+            error = parseAndCallCommandLineTests(argc_, argv, "", deviceIDs[i],
                                                  test_num, test_list, config);
             if (error != 0) break;
         }
@@ -409,8 +409,9 @@ int main(int argc, const char *argv[])
             config.forceNoContextCreation = true;
             config.numElementsToUse = 1024;
             config.queueProps = 0;
-            error = parseAndCallCommandLineTests(
-                argc_, argv_, deviceIDs[i], test_num32, test_list32, config);
+            error =
+                parseAndCallCommandLineTests(argc_, argv_, "", deviceIDs[i],
+                                             test_num32, test_list32, config);
             if (error != 0) break;
         }
 

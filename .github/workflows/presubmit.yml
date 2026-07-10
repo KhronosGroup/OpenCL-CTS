@@ -28,7 +28,7 @@ jobs:
             arch: android-aarch64
             android_arch_abi: arm64-v8a
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
       - name: Install Arm and AArch64 compilers
@@ -178,13 +178,144 @@ jobs:
                 -DVULKAN_LIB_DIR='${{ github.workspace }}'/Vulkan-Loader/build/loader/ \
                 ${CMAKE_ADDITIONAL_CONFIG_ARGS}
           cmake --build . --parallel
+
+  tests:
+    name: Run Tests (pocl)
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v7
+      - name: Parse triggers
+        id: check_triggers
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          MESSAGES=$(gh api -X GET /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits --jq '.[].commit.message')
+          PR_BODY=$(gh api -X GET /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} --jq '.body')
+          COMMANDS=$(echo -e "$MESSAGES\n$PR_BODY" | grep -oP '^\[run-tests?:\s*\K[^\]]+' | sort -u || true)
+          if [ -z "$COMMANDS" ]; then
+            echo "No '[run-test: ...]' triggers found. Skipping job."
+            echo "run_tests=false" >> $GITHUB_OUTPUT
+          else
+            echo "Found the following test triggers:"
+            echo "$COMMANDS"
+            echo "run_tests=true" >> $GITHUB_OUTPUT
+            echo "$COMMANDS" > test_commands.txt
+          fi
+      - name: Environment variables
+        if: steps.check_triggers.outputs.run_tests == 'true'
+        run: |
+          echo "pocl=$(realpath ${{ github.workspace }}/../pocl)" >> $GITHUB_ENV
+          echo "loader=$(realpath ${{ github.workspace }}/../loader)" >> $GITHUB_ENV
+          echo "cl-headers=$(realpath ${{ github.workspace }}/../cl-headers)" >> $GITHUB_ENV
+          echo "spv-headers=$(realpath ${{ github.workspace }}/../spv-headers)" >> $GITHUB_ENV
+      - name: Clone Headers
+        if: steps.check_triggers.outputs.run_tests == 'true'
+        run: |
+          git clone --depth 1 https://github.com/KhronosGroup/OpenCL-Headers.git ${{ env.cl-headers }}
+          git clone --depth 1 https://github.com/KhronosGroup/SPIRV-Headers.git ${{ env.spv-headers }}
+      - name: Setup Ninja
+        if: steps.check_triggers.outputs.run_tests == 'true'
+        uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Install Vulkan SDK
+        if: steps.check_triggers.outputs.run_tests == 'true'
+        uses: humbletim/install-vulkan-sdk@main
+        with:
+          version: 1.4.309.0
+          cache: true
+      - name: Install pocl dependencies
+        if: steps.check_triggers.outputs.run_tests == 'true'
+        run: |
+          sudo apt-get update
+          export LLVM_VERSION=20
+          sudo apt-get install -y \
+            python3-dev libpython3-dev build-essential ocl-icd-libopencl1 \
+            cmake git pkg-config libclang-${LLVM_VERSION}-dev clang-${LLVM_VERSION} \
+            llvm-${LLVM_VERSION} make ninja-build ocl-icd-libopencl1 ocl-icd-dev \
+            ocl-icd-opencl-dev libhwloc-dev zlib1g zlib1g-dev clinfo dialog apt-utils \
+            libxml2-dev libclang-cpp${LLVM_VERSION}-dev libclang-cpp${LLVM_VERSION} \
+            llvm-${LLVM_VERSION}-dev
+      - name: Cache pocl
+        id: cache-pocl
+        if: steps.check_triggers.outputs.run_tests == 'true'
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.pocl }}
+          key: ubuntu-24.04-pocl-v7.1
+      - name: Build pocl
+        if: steps.check_triggers.outputs.run_tests == 'true' && steps.cache-pocl.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch v7.1 https://github.com/pocl/pocl.git
+          cmake -B pocl/build -S pocl -G Ninja \
+            -DCMAKE_INSTALL_PREFIX=${{ env.pocl }} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DDKERNELLIB_HOST_CPU_VARIANTS=distro \
+            -DENABLE_ICD=ON
+          cmake --build pocl/build
+          cmake --install pocl/build
+      - name: Build loader
+        if: steps.check_triggers.outputs.run_tests == 'true'
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
+          cmake -B OpenCL-ICD-Loader/build -S OpenCL-ICD-Loader -G Ninja \
+            -DCMAKE_INSTALL_PREFIX=${{ env.loader }} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DOPENCL_ICD_LOADER_HEADERS_DIR='${{ env.cl-headers }}'
+          cmake --build OpenCL-ICD-Loader/build
+          cmake --install OpenCL-ICD-Loader/build
+      - name: Build OpenCL CTS
+        if: steps.check_triggers.outputs.run_tests == 'true'
+        shell: bash
+        run: |
+          cmake -B build -S . -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCL_INCLUDE_DIR='${{ env.cl-headers }}' \
+                -DCL_LIB_DIR=${{ env.loader }}/lib \
+                -DSPIRV_INCLUDE_DIR='${{ env.spv-headers }}' \
+                -DCMAKE_RUNTIME_OUTPUT_DIRECTORY='${{ github.workspace }}'/bin \
+                -DOPENCL_LIBRARIES="-lOpenCL -lpthread" \
+                -DUSE_CL_EXPERIMENTAL=ON \
+                -DGL_IS_SUPPORTED=OFF \
+                -DVULKAN_IS_SUPPORTED=OFF
+          cmake --build build
+      - name: Run tests
+        if: steps.check_triggers.outputs.run_tests == 'true'
+        shell: bash
+        run: |
+          export OCL_ICD_ENABLE_TRACE=1
+          export OCL_ICD_VENDORS=${{ env.pocl }}/etc/OpenCL/vendors
+          export LD_LIBRARY_PATH=${{ env.loader }}/lib:$LD_LIBRARY_PATH
+          mkdir -p test_results
+          while IFS= read -r cmd; do
+            if [ -n "$cmd" ]; then
+              SAFE_NAME=$(echo "$cmd" | sed -e 's/[^A-Za-z0-9._-]/_/g')
+              RESULT_FILE="test_results/${SAFE_NAME}.json"
+              export CL_CONFORMANCE_RESULTS_FILENAME="$RESULT_FILE"
+              echo "=================================================="
+              echo "Executing: ./$cmd"
+              echo "Writing JSON result to: $RESULT_FILE"
+              echo "=================================================="
+              ./bin/$cmd || true
+              cat ${RESULT_FILE}
+            fi
+          done < test_commands.txt
+      - name: Check results
+        if: steps.check_triggers.outputs.run_tests == 'true'
+        shell: bash
+        run: |
+          ls test_results
+          python3 ./ci/compare_results.py \
+            --golden ./ci/pocl/golden.json \
+            --results-dir test_results/
+
   formatcheck:
     name: Check code format
     runs-on: ubuntu-22.04
     steps:
       - name: Install packages
         run: sudo apt install -y clang-format clang-format-14
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Check code format

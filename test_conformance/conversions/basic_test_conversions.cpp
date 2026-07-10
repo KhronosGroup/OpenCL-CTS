@@ -17,6 +17,7 @@
 #include "harness/testHarness.h"
 #include "harness/compat.h"
 #include "harness/ThreadPool.h"
+#include "harness/parseParameters.h"
 
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
@@ -77,7 +78,6 @@ cl_mem gInBuffer;
 cl_mem gOutBuffers[kCallStyleCount];
 size_t gComputeDevices = 0;
 uint32_t gDeviceFrequency = 0;
-int gWimpyMode = 0;
 int gWimpyReductionFactor = 128;
 int gSkipTesting = 0;
 int gForceFTZ = 0;
@@ -94,8 +94,7 @@ int vectorSizes[] = { 1, 1, 2, 3, 4, 8, 16 };
 int gMinVectorSize = 0;
 int gMaxVectorSize = sizeof(vectorSizes) / sizeof(vectorSizes[0]);
 MTdata gMTdata;
-const char **argList = NULL;
-int argCount = 0;
+std::vector<const char *> argList;
 
 
 cl_half_rounding_mode DataInitInfo::halfRoundingMode = CL_HALF_RTE;
@@ -403,7 +402,7 @@ cl_int CustomConversionsTest::Run()
     RoundingMode round;
     SaturationMode sat;
 
-    for (int i = 0; i < argCount; i++)
+    for (int i = 2; i < argList.size(); i++)
     {
         if (conv_test::GetTestCase(argList[i], &outType, &inType, &sat, &round))
         {

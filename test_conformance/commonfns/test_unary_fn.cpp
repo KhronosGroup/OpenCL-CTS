@@ -57,11 +57,11 @@ namespace {
 template <typename T>
 int verify_degrees(const T *const inptr, const T *const outptr, int n)
 {
-    float error, max_error = 0.0f;
+    float error, max_error = -INFINITY;
     double r, max_val = NAN;
     int max_index = 0;
 
-    for (int i = 0, j = 0; i < n; i++, j++)
+    for (int i = 0; i < n; i++)
     {
         r = (180.0 / M_PI) * conv_to_dbl(inptr[i]);
 
@@ -82,20 +82,25 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
                 else
                     log_error(
                         "%d) Error @ %a: *%a vs %a  (*%g vs %g) ulps: %f\n", i,
-                        inptr[i], r, outptr[i], r, outptr[i], error);
+                        conv_to_flt(inptr[i]), r, conv_to_flt(outptr[i]), r,
+                        conv_to_flt(outptr[i]), error);
                 return 1;
             }
         }
     }
 
     if (std::is_same<T, half>::value)
-        log_info("degrees: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
-                 max_error, max_index, max_val, conv_to_flt(outptr[max_index]),
-                 max_val, conv_to_flt(outptr[max_index]));
+        log_info("degrees: Max error %f ulps at %d, input %a: *%a vs %a  (*%g "
+                 "vs %g)\n",
+                 max_error, max_index, conv_to_flt(inptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]));
     else
-        log_info("degrees: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
-                 max_error, max_index, max_val, outptr[max_index], max_val,
-                 outptr[max_index]);
+        log_info("degrees: Max error %f ulps at %d, input %a: *%a vs %a  (*%g "
+                 "vs %g)\n",
+                 max_error, max_index, conv_to_flt(inptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]));
 
     return 0;
 }
@@ -103,11 +108,11 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
 template <typename T>
 int verify_radians(const T *const inptr, const T *const outptr, int n)
 {
-    float error, max_error = 0.0f;
+    float error, max_error = -INFINITY;
     double r, max_val = NAN;
     int max_index = 0;
 
-    for (int i = 0, j = 0; i < n; i++, j++)
+    for (int i = 0; i < n; i++)
     {
         r = (M_PI / 180.0) * conv_to_dbl(inptr[i]);
 
@@ -128,20 +133,25 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
                 else
                     log_error(
                         "%d) Error @ %a: *%a vs %a  (*%g vs %g) ulps: %f\n", i,
-                        inptr[i], r, outptr[i], r, outptr[i], error);
+                        conv_to_flt(inptr[i]), r, conv_to_flt(outptr[i]), r,
+                        conv_to_flt(outptr[i]), error);
                 return 1;
             }
         }
     }
 
     if (std::is_same<T, half>::value)
-        log_info("radians: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
-                 max_error, max_index, max_val, conv_to_flt(outptr[max_index]),
-                 max_val, conv_to_flt(outptr[max_index]));
+        log_info("radians: Max error %f ulps at %d, input %a: *%a vs %a  (*%g "
+                 "vs %g)\n",
+                 max_error, max_index, conv_to_flt(inptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]));
     else
-        log_info("radians: Max error %f ulps at %d: *%a vs %a  (*%g vs %g)\n",
-                 max_error, max_index, max_val, outptr[max_index], max_val,
-                 outptr[max_index]);
+        log_info("radians: Max error %f ulps at %d, input %a: *%a vs %a  (*%g "
+                 "vs %g)\n",
+                 max_error, max_index, conv_to_flt(inptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]));
 
     return 0;
 }

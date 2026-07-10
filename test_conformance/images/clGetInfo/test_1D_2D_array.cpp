@@ -199,8 +199,13 @@ int test_get_image_info_2D_array( cl_device_id device, cl_context context, cl_im
                             log_info( "   at size %d,%d,%d (flags[%u] 0x%x pitch %d)\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.arraySize, j, (unsigned int) all_host_ptr_flags[j], (int)imageInfo.rowPitch );
                         if ( test_get_image_info_single( context, &imageInfo, seed, all_host_ptr_flags[j], 0, 0 ) )
                             return -1;
-                        if (all_host_ptr_flags[j] & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR)) { // skip test when host_ptr is NULL
-                            if ( test_get_image_info_single( context, &imageInfo, seed, all_host_ptr_flags[j], imageInfo.rowPitch, 0 ) )
+                        if (all_host_ptr_flags[j]
+                            & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR))
+                        { // skip test when host_ptr is NULL
+                            if (test_get_image_info_single(
+                                    context, &imageInfo, seed,
+                                    all_host_ptr_flags[j], imageInfo.rowPitch,
+                                    imageInfo.slicePitch))
                                 return -1;
                         }
                     }
@@ -231,9 +236,13 @@ int test_get_image_info_2D_array( cl_device_id device, cl_context context, cl_im
                 log_info( "   at max size %d,%d,%d (flags[%u] 0x%x pitch %d)\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.arraySize, j, (unsigned int) all_host_ptr_flags[j], (int)imageInfo.rowPitch );
               if ( test_get_image_info_single( context, &imageInfo, seed, all_host_ptr_flags[j], 0, 0 ) )
                 return -1;
-              if (all_host_ptr_flags[j] & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR)) { // skip test when host_ptr is NULL
-                if ( test_get_image_info_single( context, &imageInfo, seed, all_host_ptr_flags[j], imageInfo.rowPitch, 0 ) )
-                  return -1;
+              if (all_host_ptr_flags[j]
+                  & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR))
+              { // skip test when host_ptr is NULL
+                  if (test_get_image_info_single(
+                          context, &imageInfo, seed, all_host_ptr_flags[j],
+                          imageInfo.rowPitch, imageInfo.slicePitch))
+                      return -1;
               }
             }
         }
@@ -274,8 +283,12 @@ int test_get_image_info_2D_array( cl_device_id device, cl_context context, cl_im
                     log_info( "   at size %d,%d,%d (flags[%u] 0x%x pitch %d) out of %d,%d,%d\n", (int)imageInfo.width, (int)imageInfo.height, (int)imageInfo.arraySize, j, (unsigned int) all_host_ptr_flags[j], (int)imageInfo.rowPitch, (int)maxWidth, (int)maxHeight, (int)maxArraySize );
                 if ( test_get_image_info_single( context, &imageInfo, seed, all_host_ptr_flags[j], 0, 0 ) )
                     return -1;
-                if (all_host_ptr_flags[j] & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR)) { // skip test when host_ptr is NULL
-                    if ( test_get_image_info_single( context, &imageInfo, seed, all_host_ptr_flags[j], imageInfo.rowPitch, 0 ) )
+                if (all_host_ptr_flags[j]
+                    & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR))
+                { // skip test when host_ptr is NULL
+                    if (test_get_image_info_single(
+                            context, &imageInfo, seed, all_host_ptr_flags[j],
+                            imageInfo.rowPitch, imageInfo.slicePitch))
                         return -1;
                 }
             }

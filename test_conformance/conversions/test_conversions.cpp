@@ -68,8 +68,9 @@ roundingMode qcom_rm;
 #endif
 
 
-static int ParseArgs(int argc, const char **argv);
-static void PrintUsage(void);
+static test_status ParseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help);
 test_status InitCL(cl_device_id device);
 
 
@@ -88,13 +89,12 @@ size_t gTypeSizes[kTypeCount] = {
     sizeof(cl_double), sizeof(cl_ulong), sizeof(cl_long),
 };
 
-char appName[64] = "ctest";
 int gMultithread = 1;
 
 
 REGISTER_TEST(conversions)
 {
-    if (argCount)
+    if (argList.size() > 2)
     {
         return MakeAndRunTest<CustomConversionsTest>(device, context, queue,
                                                      num_elements);
@@ -109,9 +109,79 @@ REGISTER_TEST(conversions)
 
 int main(int argc, const char **argv)
 {
-    int error;
+    // Turn off sleep so our tests run to completion
+    PreventSleep();
+    atexit(ResumeSleep);
 
-    argc = parseCustomParam(argc, argv);
+#if defined(_MSC_VER) && defined(_M_IX86)
+    // VS2005 (and probably others, since long double got deprecated) sets
+    // the x87 to 53-bit precision. This causes problems with the tests
+    // that convert long and ulong to float and double, since they deal
+    // with values that need more precision than that. So, set the x87
+    // to 64-bit precision.
+    unsigned int ignored;
+    _controlfp_s(&ignored, _PC_64, _MCW_PC);
+#endif
+
+    int ret = runTestHarnessWithCheckAndParse(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), true, 0, InitCL, ParseArgs);
+
+    free_mtdata(gMTdata);
+    if (gQueue)
+    {
+        int error = clFinish(gQueue);
+        if (error) vlog_error("clFinish failed: %d\n", error);
+    }
+
+    clReleaseMemObject(gInBuffer);
+
+    for (int i = 0; i < kCallStyleCount; i++)
+    {
+        clReleaseMemObject(gOutBuffers[i]);
+    }
+    clReleaseCommandQueue(gQueue);
+    clReleaseContext(gContext);
+
+    return ret;
+}
+
+
+static test_status ParseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help)
+{
+    int i;
+
+    help = R"(
+        -d     Toggle testing of double precision.  On by default if cl_khr_fp64 is enabled, ignored otherwise.
+        -l     Toggle link check mode. When on, testing is skipped, and we just check to see that the kernels build. (Off by default.)
+        -m     Toggle Multithreading. (On by default.)
+        -[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor()"
+        + std::to_string(gWimpyReductionFactor) + R"()
+        -z     Toggle flush to zero mode  (Default: per device)
+        -#     Test just vector size given by #, where # is an element of the set {1,2,3,4,8,16}
+
+        You may also pass the number of the test on which to start.
+        A second number can be then passed to indicate how many tests to run
+
+Test names:
+        destFormat<_sat><_round>_sourceFormat
+        Possible format types are:
+            )";
+    for (i = 0; i < kTypeCount; i++) help += std::string(gTypeNames[i]) + ", ";
+    help += R"(
+        Possible saturation values are: (empty) and _sat
+        Possible rounding values are:
+            (empty), )";
+    for (i = 1; i < kRoundingModeCount; i++)
+        help += std::string(gRoundingModeNames[i]) + ", ";
+    help += R"(
+        Examples:
+          ulong_short          converts short to ulong
+          char_sat_rte_float   converts float to char with saturated clipping in round to nearest rounding mode
+)";
+
     if (gListTests)
     {
         for (unsigned dst = 0; dst < kTypeCount; dst++)
@@ -139,97 +209,11 @@ int main(int argc, const char **argv)
                 }
             }
         }
-        return 0;
-    }
-    if (argc == -1)
-    {
-        return 1;
+        return TEST_PASS;
     }
 
-    if ((error = ParseArgs(argc, argv))) return error;
-
-    // Turn off sleep so our tests run to completion
-    PreventSleep();
-    atexit(ResumeSleep);
-
-    if (!gMultithread) SetThreadCount(1);
-
-#if defined(_MSC_VER) && defined(_M_IX86)
-    // VS2005 (and probably others, since long double got deprecated) sets
-    // the x87 to 53-bit precision. This causes problems with the tests
-    // that convert long and ulong to float and double, since they deal
-    // with values that need more precision than that. So, set the x87
-    // to 64-bit precision.
-    unsigned int ignored;
-    _controlfp_s(&ignored, _PC_64, _MCW_PC);
-#endif
-
-    vlog("===========================================================\n");
-    vlog("Random seed: %u\n", gRandomSeed);
-    gMTdata = init_genrand(gRandomSeed);
-
-    const char *arg[] = { argv[0] };
-    int ret = runTestHarnessWithCheck(
-        1, arg, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), true, 0, InitCL);
-
-    free_mtdata(gMTdata);
-    if (gQueue)
-    {
-        error = clFinish(gQueue);
-        if (error) vlog_error("clFinish failed: %d\n", error);
-    }
-
-    clReleaseMemObject(gInBuffer);
-
-    for (int i = 0; i < kCallStyleCount; i++)
-    {
-        clReleaseMemObject(gOutBuffers[i]);
-    }
-    clReleaseCommandQueue(gQueue);
-    clReleaseContext(gContext);
-
-    return ret;
-}
-
-
-static int ParseArgs(int argc, const char **argv)
-{
-    int i;
-    argList = (const char **)calloc(argc, sizeof(char *));
-    argCount = 0;
-
-    if (NULL == argList && argc > 1) return -1;
-
-#if (defined(__APPLE__) || defined(__linux__) || defined(__MINGW32__))
-    { // Extract the app name
-        char baseName[MAXPATHLEN];
-        strncpy(baseName, argv[0], MAXPATHLEN - 1);
-        baseName[sizeof(baseName) - 1] = '\0';
-        char *base = basename(baseName);
-        if (NULL != base)
-        {
-            strncpy(appName, base, sizeof(appName) - 1);
-            appName[sizeof(appName) - 1] = '\0';
-        }
-    }
-#elif defined(_WIN32)
-    {
-        char fname[_MAX_FNAME + _MAX_EXT + 1];
-        char ext[_MAX_EXT];
-
-        errno_t err = _splitpath_s(argv[0], NULL, 0, NULL, 0, fname, _MAX_FNAME,
-                                   ext, _MAX_EXT);
-        if (err == 0)
-        { // no error
-            strcat(fname, ext); // just cat them, size of frame can keep both
-            strncpy(appName, fname, sizeof(appName) - 1);
-            appName[sizeof(appName) - 1] = '\0';
-        }
-    }
-#endif
-
-    vlog("\n%s", appName);
+    argList.push_back(argv[0]);
+    argList.push_back("all");
     for (i = 1; i < argc; i++)
     {
         const char *arg = argv[i];
@@ -247,7 +231,6 @@ static int ParseArgs(int argc, const char **argv)
                     case 'h': gTestHalfs ^= 1; break;
                     case 'l': gSkipTesting ^= 1; break;
                     case 'm': gMultithread ^= 1; break;
-                    case 'w': gWimpyMode ^= 1; break;
                     case '[':
                         parseWimpyReductionFactor(arg, gWimpyReductionFactor);
                         break;
@@ -291,11 +274,11 @@ static int ParseArgs(int argc, const char **argv)
 
                     default:
                         vlog(" <-- unknown flag: %c (0x%2.2x)\n)", *arg, *arg);
-                        PrintUsage();
-                        return -1;
+                        return TEST_FAIL;
                 }
                 arg++;
             }
+            removed_args.push_back(argv[i]);
         }
         else
         {
@@ -310,19 +293,12 @@ static int ParseArgs(int argc, const char **argv)
             }
             else
             {
-                argList[argCount] = arg;
-                argCount++;
+                removed_args.push_back(argv[i]);
+                argList.push_back(arg);
             }
         }
     }
-
-    // Check for the wimpy mode environment variable
-    if (getenv("CL_WIMPY_MODE"))
-    {
-        vlog("\n");
-        vlog("*** Detected CL_WIMPY_MODE env                          ***\n");
-        gWimpyMode = 1;
-    }
+    update_argc_argv_from_args_list(argList, argc, argv);
 
     vlog("\n");
 
@@ -338,45 +314,13 @@ static int ParseArgs(int argc, const char **argv)
              gWimpyReductionFactor);
     }
 
-    return 0;
-}
+    vlog("===========================================================\n");
+    vlog("Random seed: %u\n", gRandomSeed);
+    gMTdata = init_genrand(gRandomSeed);
 
+    if (!gMultithread) SetThreadCount(1);
 
-static void PrintUsage(void)
-{
-    int i;
-    vlog("%s [-wz#]: <optional: test names>\n", appName);
-    vlog("\ttest names:\n");
-    vlog("\t\tdestFormat<_sat><_round>_sourceFormat\n");
-    vlog("\t\t\tPossible format types are:\n\t\t\t\t");
-    for (i = 0; i < kTypeCount; i++) vlog("%s, ", gTypeNames[i]);
-    vlog("\n\n\t\t\tPossible saturation values are: (empty) and _sat\n");
-    vlog("\t\t\tPossible rounding values are:\n\t\t\t\t(empty), ");
-    for (i = 1; i < kRoundingModeCount; i++)
-        vlog("%s, ", gRoundingModeNames[i]);
-    vlog("\n\t\t\tExamples:\n");
-    vlog("\t\t\t\tulong_short   converts short to ulong\n");
-    vlog("\t\t\t\tchar_sat_rte_float   converts float to char with saturated "
-         "clipping in round to nearest rounding mode\n\n");
-    vlog("\toptions:\n");
-    vlog("\t\t-d\tToggle testing of double precision.  On by default if "
-         "cl_khr_fp64 is enabled, ignored otherwise.\n");
-    vlog("\t\t-l\tToggle link check mode. When on, testing is skipped, and we "
-         "just check to see that the kernels build. (Off by default.)\n");
-    vlog("\t\t-m\tToggle Multithreading. (On by default.)\n");
-    vlog("\t\t-w\tToggle wimpy mode. When wimpy mode is on, we run a very "
-         "small subset of the tests for each fn. NOT A VALID TEST! (Off by "
-         "default.)\n");
-    vlog(" \t\t-[2^n]\tSet wimpy reduction factor, recommended range of n is "
-         "1-12, default factor(%u)\n",
-         gWimpyReductionFactor);
-    vlog("\t\t-z\tToggle flush to zero mode  (Default: per device)\n");
-    vlog("\t\t-#\tTest just vector size given by #, where # is an element of "
-         "the set {1,2,3,4,8,16}\n");
-    vlog("\n");
-    vlog(
-        "You may also pass the number of the test on which to start.\nA second "
-        "number can be then passed to indicate how many tests to run\n\n");
+    return TEST_PASS;
 }
 
 

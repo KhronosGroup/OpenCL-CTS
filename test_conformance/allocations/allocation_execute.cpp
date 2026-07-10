@@ -16,7 +16,10 @@
 #include "allocation_execute.h"
 #include "allocation_functions.h"
 
+#include <algorithm>
 #include <vector>
+
+#define MAX_WORK_ITEMS_PER_DISPATCH (64 * 1024)
 
 
 const char *buffer_kernel_pattern = {
@@ -39,7 +42,7 @@ const char *accumulate_pattern = {
 };
 
 const char *image_kernel_pattern = {
-    "__kernel void sample_test(%s __global uint *result)\n"
+    "__kernel void sample_test(%s __global uint *result, uint stride)\n"
     "{\n"
     "\tuint4 color;\n"
     "\tcolor = (uint4)(0);\n"
@@ -52,7 +55,7 @@ const char *image_kernel_pattern = {
 
 const char *read_pattern = {
     "\tfor(y=0; y<get_image_height(image%d); y++)\n"
-    "\t\tif (y %s get_global_size(0) == get_global_id(0))\n"
+    "\t\tif (y %s stride == get_global_id(0))\n"
     "\t\t\tfor (x=0; x<get_image_width(image%d); x++) {\n"
     "\t\t\t\tcolor += read_imageui(image%d, sampler, (int2)(x,y));\n"
     "\t\t\t}\n"
@@ -67,7 +70,7 @@ const char *sampler_pattern =
 
 const char *write_pattern = {
     "\tfor(y=0; y<get_image_height(image%d); y++)\n"
-    "\t\tif (y %s get_global_size(0) == get_global_id(0))\n"
+    "\t\tif (y %s stride == get_global_id(0))\n"
     "\t\t\tfor (x=0; x<get_image_width(image%d); x++) {\n"
     "\t\t\t\tcolor = (uint4)x*(uint4)y+offset;\n"
     "\t\t\t\twrite_imageui(image%d, (int2)(x,y), color);\n"
@@ -180,7 +183,7 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
     cl_uint per_item_uint;
     cl_uint final_result;
     std::vector<cl_uint> returned_results(number_of_work_items);
-    clEventWrapper event;
+    std::vector<clEventWrapper> events;
     cl_int event_status;
 
     // Allocate memory for the kernel source
@@ -380,24 +383,47 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
         free(uiSizes);
     }
 
-    size_t local_dims[3] = { 1, 1, 1 };
-    error = get_max_common_work_group_size(context, kernel, global_dims[0],
-                                           &local_dims[0]);
-    test_error(error, "get_max_common_work_group_size failed");
-
-    // Execute the kernel
-    error = clEnqueueNDRangeKernel(*queue, kernel, 1, NULL, global_dims,
-                                   local_dims, 0, NULL, &event);
-    result = check_allocation_error(context, device_id, error, queue);
-    if (result != SUCCEEDED)
+    if (test == IMAGE_READ || test == IMAGE_READ_NON_BLOCKING
+        || test == IMAGE_WRITE || test == IMAGE_WRITE_NON_BLOCKING)
     {
-        if (result == FAILED_TOO_BIG)
-            log_info("\t\tExecute kernel failed: %s (global dim: %zu, local "
-                     "dim: %zu)\n",
-                     IGetErrorString(error), global_dims[0], local_dims[0]);
-        else
-            print_error(error, "clEnqueueNDRangeKernel failed");
-        return result;
+        cl_uint stride = number_of_work_items;
+        error = clSetKernelArg(kernel, number_of_mems_used + 1, sizeof(stride),
+                               &stride);
+        test_error(error, "clSetKernelArg failed");
+    }
+
+    for (size_t offset = 0; offset < global_dims[0];
+         offset += MAX_WORK_ITEMS_PER_DISPATCH)
+    {
+        size_t global_offset[3] = { offset, 0, 0 };
+        size_t chunk_dims[3] = { std::min((size_t)MAX_WORK_ITEMS_PER_DISPATCH,
+                                          global_dims[0] - offset),
+                                 1, 1 };
+        size_t local_dims[3] = { 1, 1, 1 };
+
+        error = get_max_common_work_group_size(context, kernel, chunk_dims[0],
+                                               &local_dims[0]);
+        test_error(error, "get_max_common_work_group_size failed");
+
+        // Execute the kernel
+        cl_event event = nullptr;
+        error = clEnqueueNDRangeKernel(*queue, kernel, 1, global_offset,
+                                       chunk_dims, local_dims, 0, NULL, &event);
+        result = check_allocation_error(context, device_id, error, queue);
+
+        if (result != SUCCEEDED)
+        {
+            if (result == FAILED_TOO_BIG)
+                log_info(
+                    "\t\tExecute kernel failed: %s (global dim: %zu, local "
+                    "dim: %zu)\n",
+                    IGetErrorString(error), chunk_dims[0], local_dims[0]);
+            else
+                print_error(error, "clEnqueueNDRangeKernel failed");
+            return result;
+        }
+
+        events.push_back(clEventWrapper(event));
     }
 
     // Finish the test
@@ -414,24 +440,29 @@ int execute_kernel(cl_context context, cl_command_queue *queue,
         return result;
     }
 
-    // Verify that the event from the execution did not have an error
-    error = clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS,
-                           sizeof(event_status), &event_status, NULL);
-    test_error_abort(
-        error, "clGetEventInfo for CL_EVENT_COMMAND_EXECUTION_STATUS failed");
-    if (event_status < 0)
+    // Verify that the events from the execution did not have an error
+    for (const auto &event : events)
     {
-        result =
-            check_allocation_error(context, device_id, event_status, queue);
-        if (result != SUCCEEDED)
+        error = clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS,
+                               sizeof(event_status), &event_status, NULL);
+        test_error_abort(error,
+                         "clGetEventInfo for "
+                         "CL_EVENT_COMMAND_EXECUTION_STATUS failed");
+        if (event_status < 0)
         {
-            if (result == FAILED_TOO_BIG)
-                log_info("\t\tEvent returned from kernel execution indicates "
-                         "failure: %s.\n",
-                         IGetErrorString(event_status));
-            else
-                print_error(event_status, "clEnqueueNDRangeKernel failed");
-            return result;
+            result =
+                check_allocation_error(context, device_id, event_status, queue);
+            if (result != SUCCEEDED)
+            {
+                if (result == FAILED_TOO_BIG)
+                    log_info(
+                        "\t\tEvent returned from kernel execution indicates "
+                        "failure: %s.\n",
+                        IGetErrorString(event_status));
+                else
+                    print_error(event_status, "clEnqueueNDRangeKernel failed");
+                return result;
+            }
         }
     }
 

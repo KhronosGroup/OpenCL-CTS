@@ -63,9 +63,6 @@ static cl_program makeSelectProgram(cl_kernel *kernel_ptr, cl_context context,
 static int doTest(cl_command_queue queue, cl_context context,
                   Type stype, Type cmptype, cl_device_id device);
 
-
-static void printUsage( void );
-
 //-----------------------------------------
 // Definitions and initializations
 //-----------------------------------------
@@ -89,7 +86,6 @@ static void printUsage( void );
 // test their entire range and 64 bits test will test the 32 bit
 // range.  Otherwise, we test a subset of the range
 // [-min_short, min_short]
-static bool  s_wimpy_mode = false;
 static int s_wimpy_reduction_factor = 256;
 
 //-----------------------------------------
@@ -141,8 +137,9 @@ static void initCmpBuffer(void *cmp, Type cmptype, uint64_t start,
             break;
         }
         case 4: {
-            if (!s_wimpy_mode) {
-                uint32_t* ui = (uint32_t *)cmp;
+            if (!gWimpyMode)
+            {
+                uint32_t *ui = (uint32_t *)cmp;
                 for (size_t i = 0; i < count; ++i) ui[i] = (uint32_t)start++;
             }
             else {
@@ -323,7 +320,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
 
     cl_ulong blocks = type_size[stype] * 0x100000000ULL / BUFFER_SIZE;
     const size_t block_elements = BUFFER_SIZE / type_size[stype];
-    size_t step = s_wimpy_mode ? s_wimpy_reduction_factor : 1;
+    size_t step = gWimpyMode ? s_wimpy_reduction_factor : 1;
     cl_ulong cmp_stride = block_elements * step;
 
     // It is more efficient to create the tests all at once since we
@@ -474,7 +471,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
         } // for vecsize
     } // for i
 
-    if (!s_wimpy_mode)
+    if (!gWimpyMode)
         log_info(" Passed\n\n");
     else
         log_info(" Wimpy Passed\n\n");
@@ -571,26 +568,16 @@ REGISTER_TEST(select_double_long)
     return doTest(queue, context, kdouble, klong, device);
 }
 
-int main(int argc, const char* argv[])
+static test_status parseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help)
 {
-    test_start();
+    help = "\t-[2^n] Set wimpy reduction factor, recommended range of n is "
+           "1-12, default factor("
+        + std::to_string(s_wimpy_reduction_factor) + ")\n";
 
-    argc = parseCustomParam(argc, argv);
-    if (argc == -1)
-    {
-        return EXIT_FAILURE;
-    }
-
-    const char ** argList = (const char **)calloc( argc, sizeof( char*) );
-
-    if( NULL == argList )
-    {
-        log_error( "Failed to allocate memory for argList array.\n" );
-        return 1;
-    }
-
-    argList[0] = argv[0];
-    size_t argCount = 1;
+    std::vector<const char *> argList;
+    argList.push_back(argv[0]);
 
     for( int i = 1; i < argc; ++i )
     {
@@ -603,13 +590,8 @@ int main(int argc, const char* argv[])
             arg++;
             while(*arg != '\0')
             {
-                switch(*arg) {
-                    case 'h':
-                        printUsage();
-                        return 0;
-                    case 'w':
-                        s_wimpy_mode = true;
-                        break;
+                switch (*arg)
+                {
                     case '[':
                         parseWimpyReductionFactor(arg, s_wimpy_reduction_factor);
                         break;
@@ -618,19 +600,15 @@ int main(int argc, const char* argv[])
                 }
                 arg++;
             }
+            removed_args.push_back(argv[i]);
         }
         else
         {
-            argList[argCount] = arg;
-            argCount++;
+            argList.push_back(argv[i]);
         }
     }
 
-    if (getenv("CL_WIMPY_MODE")) {
-        s_wimpy_mode = true;
-    }
-
-    if (s_wimpy_mode && !gListTests)
+    if (gWimpyMode)
     {
         log_info("\n");
         log_info("*** WARNING: Testing in Wimpy mode!                     ***\n");
@@ -639,25 +617,16 @@ int main(int argc, const char* argv[])
         log_info("*** Wimpy Reduction Factor: %-27u ***\n\n", s_wimpy_reduction_factor);
     }
 
-    int err = runTestHarness(
-        argCount, argList, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0);
-
-    free( argList );
-
-    return err;
+    update_argc_argv_from_args_list(argList, argc, argv);
+    return TEST_PASS;
 }
 
-static void printUsage( void )
+int main(int argc, const char *argv[])
 {
-    log_info("test_select:  [-w] <optional: test_names> \n");
-    log_info("\tdefault is to run the full test on the default device\n");
-    log_info("\t-w run in wimpy mode (smoke test)\n");
-    log_info("\t-[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor(%u)\n", s_wimpy_reduction_factor);
-    log_info("\n");
-    log_info("Test names:\n");
-    for (size_t i = 0; i < test_registry::getInstance().num_tests(); i++)
-    {
-        log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
-    }
+    test_start();
+
+    return runTestHarnessWithCheckAndParse(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0, nullptr,
+        parseArgs);
 }

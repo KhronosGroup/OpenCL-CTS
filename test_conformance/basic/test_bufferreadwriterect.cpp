@@ -14,7 +14,9 @@
 // limitations under the License.
 //
 #include "harness/compat.h"
+#include "errorHelpers.h"
 
+#include <array>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -111,8 +113,13 @@ void print_buffer(BufferType* buf, size_t w, size_t h, size_t d) {
 
 // Returns true if the two specified regions overlap.
 bool check_overlap_rect(size_t src_offset[3], size_t dst_offset[3],
-                        size_t region[3], size_t row_pitch, size_t slice_pitch)
+                        size_t region[3], size_t src)
 {
+    // Copy between cl buffers.
+    size_t slice_pitch =
+        (width[src] * height[src] != 1) ? width[src] * height[src] : 0;
+    size_t row_pitch = width[src];
+
     const size_t src_min[] = { src_offset[0], src_offset[1], src_offset[2] };
     const size_t src_max[] = { src_offset[0] + region[0],
                                src_offset[1] + region[1],
@@ -129,69 +136,74 @@ bool check_overlap_rect(size_t src_offset[3], size_t dst_offset[3],
     {
         overlap =
             overlap && (src_min[i] < dst_max[i]) && (src_max[i] > dst_min[i]);
-        }
+    }
 
-        size_t dst_start = dst_offset[2] * slice_pitch
-            + dst_offset[1] * row_pitch + dst_offset[0];
-        size_t dst_end = dst_start
-            + (region[2] * slice_pitch + region[1] * row_pitch + region[0]);
-        size_t src_start = src_offset[2] * slice_pitch
-            + src_offset[1] * row_pitch + src_offset[0];
-        size_t src_end = src_start
-            + (region[2] * slice_pitch + region[1] * row_pitch + region[0]);
-        if (!overlap)
+    size_t dst_start =
+        dst_offset[2] * slice_pitch + dst_offset[1] * row_pitch + dst_offset[0];
+    size_t dst_end = dst_start
+        + (region[2] * slice_pitch + region[1] * row_pitch + region[0]);
+    size_t src_start =
+        src_offset[2] * slice_pitch + src_offset[1] * row_pitch + src_offset[0];
+    size_t src_end = src_start
+        + (region[2] * slice_pitch + region[1] * row_pitch + region[0]);
+    if (!overlap)
+    {
+        size_t delta_src_x = (src_offset[0] + region[0] > row_pitch)
+            ? src_offset[0] + region[0] - row_pitch
+            : 0;
+        size_t delta_dst_x = (dst_offset[0] + region[0] > row_pitch)
+            ? dst_offset[0] + region[0] - row_pitch
+            : 0;
+        if ((delta_src_x > 0 && delta_src_x > dst_offset[0])
+            || (delta_dst_x > 0 && delta_dst_x > src_offset[0]))
         {
-            size_t delta_src_x = (src_offset[0] + region[0] > row_pitch)
-                ? src_offset[0] + region[0] - row_pitch
+            if ((src_start <= dst_start && dst_start < src_end)
+                || (dst_start <= src_start && src_start < dst_end))
+                overlap = true;
+        }
+        if (region[2] > 1)
+        {
+            size_t src_height = slice_pitch / row_pitch;
+            size_t dst_height = slice_pitch / row_pitch;
+            size_t delta_src_y = (src_offset[1] + region[1] > src_height)
+                ? src_offset[1] + region[1] - src_height
                 : 0;
-            size_t delta_dst_x = (dst_offset[0] + region[0] > row_pitch)
-                ? dst_offset[0] + region[0] - row_pitch
+            size_t delta_dst_y = (dst_offset[1] + region[1] > dst_height)
+                ? dst_offset[1] + region[1] - dst_height
                 : 0;
-            if ((delta_src_x > 0 && delta_src_x > dst_offset[0])
-                || (delta_dst_x > 0 && delta_dst_x > src_offset[0]))
+            if ((delta_src_y > 0 && delta_src_y > dst_offset[1])
+                || (delta_dst_y > 0 && delta_dst_y > src_offset[1]))
             {
                 if ((src_start <= dst_start && dst_start < src_end)
                     || (dst_start <= src_start && src_start < dst_end))
                     overlap = true;
             }
-            if (region[2] > 1)
-            {
-                size_t src_height = slice_pitch / row_pitch;
-                size_t dst_height = slice_pitch / row_pitch;
-                size_t delta_src_y = (src_offset[1] + region[1] > src_height)
-                    ? src_offset[1] + region[1] - src_height
-                    : 0;
-                size_t delta_dst_y = (dst_offset[1] + region[1] > dst_height)
-                    ? dst_offset[1] + region[1] - dst_height
-                    : 0;
-                if ((delta_src_y > 0 && delta_src_y > dst_offset[1])
-                    || (delta_dst_y > 0 && delta_dst_y > src_offset[1]))
-                {
-                    if ((src_start <= dst_start && dst_start < src_end)
-                        || (dst_start <= src_start && src_start < dst_end))
-                        overlap = true;
-                }
-            }
         }
+    }
     return overlap;
 }
-
 
 // This function invokes the CopyBufferRect CL command and then mirrors the operation on the host side verify buffers.
 int copy_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst,
                 size_t doffset[3], size_t dregion[3])
 {
-
-    // Copy between cl buffers.
+    // Copy between cl buffers
+    // Compute or provide zero pitches randomly
+    size_t src_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[src] : 0;
+    size_t dst_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[dst] : 0;
     size_t src_slice_pitch =
-        (width[src] * height[src] != 1) ? width[src] * height[src] : 0;
+        random_slice_pitch(src_row_pitch, sregion[0], height[src]);
     size_t dst_slice_pitch =
-        (width[dst] * height[dst] != 1) ? width[dst] * height[dst] : 0;
-    size_t src_row_pitch = width[src];
+        random_slice_pitch(dst_row_pitch, dregion[0], height[dst]);
+
+    if (src == dst)
+    {
+        src_row_pitch = dst_row_pitch;
+        src_slice_pitch = dst_slice_pitch;
+    }
 
     cl_int err;
-    if (check_overlap_rect(soffset, doffset, sregion, src_row_pitch,
-                           src_slice_pitch))
+    if (check_overlap_rect(soffset, doffset, sregion, src))
     {
         log_info("Copy overlap reported, skipping copy buffer rect\n");
         return CL_SUCCESS;
@@ -201,8 +213,8 @@ int copy_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst,
         if ((err = clEnqueueCopyBufferRect(
                  gQueue, buffer[src], buffer[dst], soffset, doffset,
                  sregion, /*dregion,*/
-                 width[src], src_slice_pitch, width[dst], dst_slice_pitch, 0,
-                 NULL, NULL))
+                 src_row_pitch, src_slice_pitch, dst_row_pitch, dst_slice_pitch,
+                 0, NULL, NULL))
             != CL_SUCCESS)
         {
             CL_EXIT_ERROR(err,
@@ -214,11 +226,12 @@ int copy_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst,
     // Copy between host buffers.
     size_t total = sregion[0] * sregion[1] * sregion[2];
 
-    size_t spitch = width[src];
-    size_t sslice = width[src] * height[src];
-
-    size_t dpitch = width[dst];
-    size_t dslice = width[dst] * height[dst];
+    size_t spitch = (src_row_pitch == 0) ? sregion[0] : src_row_pitch;
+    size_t sslice =
+        (src_slice_pitch == 0) ? sregion[1] * spitch : src_slice_pitch;
+    size_t dpitch = (dst_row_pitch == 0) ? sregion[0] : dst_row_pitch;
+    size_t dslice =
+        (dst_slice_pitch == 0) ? sregion[1] * dpitch : dst_slice_pitch;
 
     for (size_t i = 0; i != total; ++i) {
 
@@ -240,6 +253,41 @@ int copy_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst,
     }
 
     return 0;
+}
+
+int immutable_copy_region(size_t src, size_t soffset[3], size_t sregion[3],
+                          size_t dst, size_t doffset[3], size_t dregion[3])
+{
+
+    // Copy between cl buffers.
+    size_t src_slice_pitch =
+        (width[src] * height[src] != 1) ? width[src] * height[src] : 0;
+    size_t dst_slice_pitch =
+        (width[dst] * height[dst] != 1) ? width[dst] * height[dst] : 0;
+
+    cl_int err;
+    if (check_overlap_rect(soffset, doffset, sregion, src))
+    {
+        log_info("Copy overlap reported, skipping copy buffer rect\n");
+        return CL_SUCCESS;
+    }
+    else
+    {
+        err = clEnqueueCopyBufferRect(gQueue, buffer[src], buffer[dst], soffset,
+                                      doffset, sregion, /*dregion,*/
+                                      width[src], src_slice_pitch, width[dst],
+                                      dst_slice_pitch, 0, nullptr, nullptr);
+        if (err != CL_INVALID_OPERATION)
+        {
+            log_error(
+                "clEnqueueCopyBufferRect should return "
+                "CL_INVALID_OPERATION but returned %s between %zu and %zu",
+                IGetErrorString(err), src, dst);
+            return TEST_FAIL;
+        }
+    }
+
+    return TEST_PASS;
 }
 
 // This function compares the destination region in the buffer pointed
@@ -405,6 +453,32 @@ int write_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst,
     return 0;
 }
 
+int immutable_write_region(size_t src, size_t soffset[3], size_t sregion[3],
+                           size_t dst, size_t doffset[3], size_t dregion[3])
+{
+    initialize_image(tmp_buffer.data(), tmp_buffer_size, 1, 1, mt);
+
+    size_t src_slice_pitch =
+        (width[src] * height[src] != 1) ? width[src] * height[src] : 0;
+    size_t dst_slice_pitch =
+        (width[dst] * height[dst] != 1) ? width[dst] * height[dst] : 0;
+
+    cl_int error = clEnqueueWriteBufferRect(
+        gQueue, buffer[dst], CL_TRUE, doffset, soffset, dregion, width[dst],
+        dst_slice_pitch, width[src], src_slice_pitch, tmp_buffer.data(), 0,
+        nullptr, nullptr);
+
+    if (error != CL_INVALID_OPERATION)
+    {
+        log_error("clEnqueueWriteBufferRect should return CL_INVALID_OPERATION "
+                  "but retured %s between %zu and %zu",
+                  IGetErrorString(error), src, dst);
+        return TEST_FAIL;
+    }
+
+    return TEST_PASS;
+}
+
 using test_fn = int (*)(size_t, size_t[3], size_t[3], size_t, size_t[3],
                         size_t[3]);
 struct TestFunctions
@@ -414,12 +488,10 @@ struct TestFunctions
     test_fn write;
 };
 
-static int test_bufferreadwriterect_impl(cl_device_id device,
-                                         cl_context context,
-                                         cl_command_queue queue,
-                                         int num_elements,
-                                         cl_map_flags buffer_flags,
-                                         const TestFunctions& test_functions)
+int test_bufferreadwriterect_impl(cl_device_id device, cl_context context,
+                                  cl_command_queue queue, int num_elements,
+                                  cl_map_flags buffer_flags,
+                                  const TestFunctions& test_functions)
 {
     gQueue = queue;
     cl_int err;
@@ -646,4 +718,17 @@ REGISTER_TEST(bufferreadwriterect)
     return test_bufferreadwriterect_impl(
         device, context, queue, num_elements,
         CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE, test_functions);
+}
+
+REGISTER_TEST(immutable_bufferreadwriterect)
+{
+    REQUIRE_EXTENSION("cl_ext_immutable_memory_objects");
+
+    TestFunctions test_functions;
+    test_functions.copy = immutable_copy_region;
+    test_functions.read = read_verify_region;
+    test_functions.write = immutable_write_region;
+    return test_bufferreadwriterect_impl(
+        device, context, queue, num_elements,
+        CL_MEM_USE_HOST_PTR | CL_MEM_IMMUTABLE_EXT, test_functions);
 }

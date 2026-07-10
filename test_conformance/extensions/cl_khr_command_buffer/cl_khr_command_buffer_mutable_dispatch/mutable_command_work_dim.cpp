@@ -36,7 +36,7 @@ struct MutableDispatchWorkDim : public InfoMutableCommandBufferTest
 
     cl_int SetUp(int elements) override
     {
-        result_data.resize(update_elements);
+        result_data.resize(update_total_elements);
         return InfoMutableCommandBufferTest::SetUp(elements);
     }
 
@@ -53,7 +53,7 @@ struct MutableDispatchWorkDim : public InfoMutableCommandBufferTest
         return !mutable_support || InfoMutableCommandBufferTest::Skip();
     }
 
-    bool Verify(cl_mem buffer, cl_uint gid_elements)
+    bool Verify(cl_mem buffer, cl_uint expected_value, size_t total_elements)
     {
         std::memset(result_data.data(), 0, alloc_size);
         cl_int error =
@@ -61,13 +61,13 @@ struct MutableDispatchWorkDim : public InfoMutableCommandBufferTest
                                 result_data.data(), 0, nullptr, nullptr);
         test_error(error, "clEnqueueReadBuffer failed");
 
-        for (size_t i = 0; i < gid_elements; i++)
+        for (size_t i = 0; i < total_elements; i++)
         {
-            if (result_data[i] != gid_elements)
+            if (result_data[i] != expected_value)
             {
                 log_error("Data failed to verify at index %zu. "
                           "Expected %u, result was %u\n",
-                          i, gid_elements, result_data[i]);
+                          i, expected_value, result_data[i]);
                 return false;
             }
         }
@@ -134,15 +134,15 @@ struct MutableDispatchWorkDim : public InfoMutableCommandBufferTest
         test_error(error, "clFinish failed.");
 
         // Verify results before any update
-        if (!Verify(stream1, global_size_3D[0]))
+        if (!Verify(stream1, global_size_3D[0], original_total_elements))
         {
             return TEST_FAIL;
         }
-        if (!Verify(stream2, global_size_3D[1]))
+        if (!Verify(stream2, global_size_3D[1], original_total_elements))
         {
             return TEST_FAIL;
         }
-        if (!Verify(stream3, global_size_3D[2]))
+        if (!Verify(stream3, global_size_3D[2], original_total_elements))
         {
             return TEST_FAIL;
         }
@@ -178,15 +178,15 @@ struct MutableDispatchWorkDim : public InfoMutableCommandBufferTest
         test_error(error, "clEnqueueCommandBufferKHR failed");
 
         // Verify update is reflected in buffer output.
-        if (!Verify(stream1, update_global_size_3D[0]))
+        if (!Verify(stream1, update_global_size_3D[0], update_total_elements))
         {
             return TEST_FAIL;
         }
-        if (!Verify(stream2, update_global_size_3D[1]))
+        if (!Verify(stream2, update_global_size_3D[1], update_total_elements))
         {
             return TEST_FAIL;
         }
-        if (!Verify(stream3, update_global_size_3D[2]))
+        if (!Verify(stream3, update_global_size_3D[2], update_total_elements))
         {
             return TEST_FAIL;
         }
@@ -205,8 +205,13 @@ struct MutableDispatchWorkDim : public InfoMutableCommandBufferTest
     static constexpr std::array<size_t, work_dim> update_global_size_3D = {
         update_elements, update_elements, update_elements
     };
-    // Size in bytes of each of the 3 cl_mem buffers
-    static const size_t alloc_size = update_elements * sizeof(cl_uint);
+    // Total number of work items in original and updated grids
+    static const size_t original_total_elements =
+        original_elements * original_elements * original_elements;
+    static const size_t update_total_elements =
+        update_elements * update_elements * update_elements;
+    // Size in bytes of each of the 3 cl_mem buffers (using the larger size)
+    static const size_t alloc_size = update_total_elements * sizeof(cl_uint);
 
     cl_mutable_command_khr command = nullptr;
     std::vector<cl_uint> result_data;
