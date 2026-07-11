@@ -16,6 +16,7 @@
 #include "ThreadPool.h"
 #include "errorHelpers.h"
 #include "fpcontrol.h"
+#include "parseParameters.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -273,7 +274,7 @@ pthread_cond_t caller_cond_var;
 std::atomic<cl_int> gRunning{ 0 };
 
 // The total number of threads launched.
-std::atomic<cl_int> gThreadCount{ 0 };
+static std::atomic<cl_int> gThreadCount{ 0 };
 
 #ifdef _WIN32
 void ThreadPool_WorkerFunc(void *p)
@@ -470,31 +471,6 @@ exit:
 #endif
 }
 
-// SetThreadCount() may be used to artifically set the number of worker threads
-// If the value is 0 (the default) the number of threads will be determined
-// based on the number of CPU cores.  If it is a unicore machine, then 2 will be
-// used, so that we still get some testing for thread safety.
-//
-// If count < 2 or the CL_TEST_SINGLE_THREADED environment variable is set then
-// the code will run single threaded, but will report an error to indicate that
-// the test is invalid.  This option is intended for debugging purposes only. It
-// is suggested as a convention that test apps set the thread count to 1 in
-// response to the -m flag.
-//
-// SetThreadCount() must be called before the first call to GetThreadCount() or
-// ThreadPool_Do(), otherwise the behavior is indefined.
-void SetThreadCount(int count)
-{
-    if (threadPoolInitErr == CL_SUCCESS)
-    {
-        log_error("Error: It is illegal to set the thread count after the "
-                  "first call to ThreadPool_Do or GetThreadCount\n");
-        abort();
-    }
-
-    gThreadCount = count;
-}
-
 void ThreadPool_Init(void)
 {
     cl_int i;
@@ -503,10 +479,14 @@ void ThreadPool_Init(void)
 
     // Check for manual override of multithreading code. We add this for better
     // debuggability.
-    if (getenv("CL_TEST_SINGLE_THREADED"))
+    if (getenv("CL_TEST_SINGLE_THREADED") || !gThreadPoolEnabled)
     {
-        log_error("ERROR: CL_TEST_SINGLE_THREADED is set in the environment. "
-                  "Running single threaded.\n*** TEST IS INVALID! ***\n");
+        log_info("\n");
+        log_info("*******************************************************\n");
+        log_info("***                  !! WARNING !!                  ***\n");
+        log_info("*** ThreadPool is disabled, running single threaded ***\n");
+        log_info("*******************************************************\n");
+        log_info("\n");
         gThreadCount = 1;
         return;
     }
@@ -591,16 +571,6 @@ void ThreadPool_Init(void)
         gThreadCount = 12;
     }
 #endif
-
-    // Allow the app to set thread count to <0 for debugging purposes.
-    // This will cause the test to run single threaded.
-    if (gThreadCount < 2)
-    {
-        log_error("ERROR: Running single threaded because thread count < 2. "
-                  "\n*** TEST IS INVALID! ***\n");
-        gThreadCount = 1;
-        return;
-    }
 
 #if defined(_WIN32)
     InitializeCriticalSection(gThreadPoolLock);
@@ -1056,10 +1026,5 @@ cl_int ThreadPool_Do(TPFuncPtr func_ptr, cl_uint count, void *userInfo)
 }
 
 cl_uint GetThreadCount(void) { return 1; }
-
-void SetThreadCount(int count)
-{
-    if (count > 1) log_info("WARNING: SetThreadCount(%d) ignored\n", count);
-}
 
 #endif

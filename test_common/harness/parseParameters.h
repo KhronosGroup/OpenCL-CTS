@@ -43,6 +43,8 @@ extern bool gDisableSPIRVValidation;
 extern std::string gSPIRVValidator;
 extern bool gListTests;
 extern bool gWimpyMode;
+extern unsigned gNumWorkerThreads;
+extern bool gThreadPoolEnabled;
 
 extern int
 parseCommonParamAndGetRemovedArgs(int argc, const char *argv[],

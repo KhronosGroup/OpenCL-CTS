@@ -35,6 +35,7 @@ std::string gCompilationProgram = DEFAULT_COMPILATION_PROGRAM;
 bool gDisableSPIRVValidation = false;
 std::string gSPIRVValidator = DEFAULT_SPIRV_VALIDATOR;
 unsigned gNumWorkerThreads;
+bool gThreadPoolEnabled = true;
 bool gListTests = false;
 bool gWimpyMode = false;
 
@@ -57,6 +58,8 @@ void helpInfo()
         Enable wimpy mode. It does not impact all tests. Impacted tests will run
         with a very small subset of the tests. This option should not be used
         for conformance submission (default: disabled).
+    -m, --disable-threadpool
+        Disable multi-threading (using the ThreadPool API) within individual tests.
 
     --invalid-object-scenarios=<option_1>,<option_2>....
         Specify different scenarios to use when
@@ -124,6 +127,13 @@ int parseCommonParamAndGetRemovedArgs(int argc, const char *argv[],
             delArg++;
             removed_args.push_back("--wimpy");
             gWimpyMode = true;
+        }
+        else if (!strcmp(argv[i], "-m")
+                 || !strcmp(argv[i], "--disable-threadpool"))
+        {
+            delArg++;
+            removed_args.push_back("--disable-threadpool");
+            gThreadPoolEnabled = false;
         }
         else if (!strcmp(argv[i], "--compilation-mode"))
         {
