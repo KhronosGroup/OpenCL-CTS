@@ -29,12 +29,20 @@ endif()
 set(spirv_sources
     access_chain_array.spvasm32
     access_chain_array.spvasm64
+    access_chain_array_no_indices.spvasm32
+    access_chain_array_no_indices.spvasm64
     access_chain_inbounds_array.spvasm32
     access_chain_inbounds_array.spvasm64
     access_chain_inbounds_vector.spvasm32
     access_chain_inbounds_vector.spvasm64
+    access_chain_inbounds_array_no_indices.spvasm32
+    access_chain_inbounds_array_no_indices.spvasm64
+    access_chain_inbounds_vector_no_indices.spvasm32
+    access_chain_inbounds_vector_no_indices.spvasm64
     access_chain_vector.spvasm32
     access_chain_vector.spvasm64
+    access_chain_vector_no_indices.spvasm32
+    access_chain_vector_no_indices.spvasm64
     assume.spvasm32
     assume.spvasm64
     atomic_dec_global.spvasm32

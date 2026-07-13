@@ -196,3 +196,27 @@ REGISTER_TEST(ptr_access_chain_inbounds_vector)
     return test_access_chain_vector(device, context, queue,
                                     "ptr_access_chain_inbounds_vector");
 }
+
+REGISTER_TEST(access_chain_vector_no_indices)
+{
+    return test_access_chain_vector(device, context, queue,
+                                    "access_chain_vector_no_indices");
+}
+
+REGISTER_TEST(access_chain_inbounds_vector_no_indices)
+{
+    return test_access_chain_vector(device, context, queue,
+                                    "access_chain_inbounds_vector_no_indices");
+}
+
+REGISTER_TEST(access_chain_array_no_indices)
+{
+    return test_access_chain_array(device, context, queue,
+                                   "access_chain_array_no_indices");
+}
+
+REGISTER_TEST(access_chain_inbounds_array_no_indices)
+{
+    return test_access_chain_array(device, context, queue,
+                                   "access_chain_inbounds_array_no_indices");
+}

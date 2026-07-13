@@ -1,0 +1,35 @@
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "access_chain_inbounds_vector_no_indices" %gl_GlobalInvocationID
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+       %uint = OpTypeInt 32 0
+     %v4uint = OpTypeVector %uint 4
+%_ptr_Input_v3ulong = OpTypePointer Input %v3ulong
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_v4uint = OpTypePointer CrossWorkgroup %v4uint
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+%kernel_sig = OpTypeFunction %void %_ptr_CrossWorkgroup_v4uint %_ptr_CrossWorkgroup_uint
+     %uint_0 = OpConstant %uint 0
+     %uint_4 = OpConstant %uint 4
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3ulong Input
+     %kernel = OpFunction %void None %kernel_sig
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_v4uint
+        %out = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+         %14 = OpLoad %v3ulong %gl_GlobalInvocationID
+         %15 = OpCompositeExtract %ulong %14 0
+        %dst = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %out %15
+         %16 = OpInBoundsAccessChain %_ptr_CrossWorkgroup_v4uint %in
+         %17 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_v4uint %16 %15
+         %18 = OpUConvert %uint %15
+         %19 = OpUMod %uint %18 %uint_4
+         %20 = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %17 %uint_0 %19
+       %data = OpLoad %uint %20
+               OpStore %dst %data
+               OpReturn
+               OpFunctionEnd
