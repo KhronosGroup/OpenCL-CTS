@@ -140,5 +140,18 @@
         "--num-worker-threads 2 CL_FILTER_NEAREST CL_R": {
             "1D": "fail"
         }
+    },
+    "test_vectors": {
+        "--wimpy": {
+            "step_type": "pass",
+            "step_var": "pass",
+            "step_typedef_type": "pass",
+            "step_typedef_var": "pass",
+            "vec_align_array": "pass",
+            "vec_align_struct": "pass",
+            "vec_align_packed_struct": "pass",
+            "vec_align_struct_arr": "pass",
+            "vec_align_packed_struct_arr": "pass"
+        }
     }
 }
