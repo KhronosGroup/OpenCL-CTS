@@ -440,6 +440,11 @@ struct EnqueueMapImageTest
                 region, &rowPitch, &slicePitch, 0, NULL, NULL, &error);
             ScopeGuard sg(queue, mappedRegion, memObject);
 
+            // For IMAGE1D_ARRAY, offset[1]/region[1] index array slices, so
+            // the stride is slicePitch, not rowPitch.
+            const size_t y_pitch = image_type == CL_MEM_OBJECT_IMAGE1D_ARRAY
+                ? slicePitch
+                : rowPitch;
             if (is_immutable_image)
             {
                 test_failure_error_ret(
@@ -470,8 +475,9 @@ struct EnqueueMapImageTest
                         size_t ref_loc = (z_off * img_region[0] * img_region[1]
                                           + y_off * img_region[0] + x_off);
                         cl_uchar *pixel =
-                            &mappedRegion[z * slicePitch + y * rowPitch
+                            &mappedRegion[z * slicePitch + y * y_pitch
                                           + x * pixel_size];
+
                         for (size_t i = 0; i < pixel_size; i++)
                         {
                             if (pixel[i]
