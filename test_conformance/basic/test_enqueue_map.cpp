@@ -288,7 +288,6 @@ cl_int create_image_type(clMemWrapper &memObject, const cl_context context,
 }
 
 void random_region_coords(size_t *offset, size_t *region,
-                          const cl_mem_object_type image_type,
                           const size_t *img_region, const MTdataHolder &d)
 {
     offset[0] = (size_t)random_in_range(0, (int)img_region[0] - 1, d);
@@ -297,21 +296,6 @@ void random_region_coords(size_t *offset, size_t *region,
     region[1] = (size_t)random_in_range(1, (int)(img_region[1] - offset[1]), d);
     offset[2] = (size_t)random_in_range(0, (int)img_region[2] - 1, d);
     region[2] = (size_t)random_in_range(1, (int)(img_region[2] - offset[2]), d);
-
-    switch (image_type)
-    {
-        case CL_MEM_OBJECT_IMAGE2D:
-        case CL_MEM_OBJECT_IMAGE1D_ARRAY: {
-            offset[2] = 0;
-            region[2] = 1;
-            break;
-        }
-        case CL_MEM_OBJECT_IMAGE1D: {
-            offset[1] = offset[2] = 0;
-            region[1] = region[2] = 1;
-            break;
-        }
-    }
 }
 
 struct EnqueueMapImageTest
@@ -364,20 +348,21 @@ struct EnqueueMapImageTest
                     continue;
                 }
 
-                // find supported image formats
-                cl_uint num_formats = 0;
                 bool hasHostPtr = (mem_flag & CL_MEM_USE_HOST_PTR)
                     || (mem_flag & CL_MEM_COPY_HOST_PTR);
+                // find supported image formats
+                cl_uint num_formats = 0;
 
                 cl_int error = clGetSupportedImageFormats(
-                    context, mem_flag, image_type, 0, nullptr, &num_formats);
+                    context, CL_MEM_READ_WRITE, image_type, 0, nullptr,
+                    &num_formats);
                 test_error(
                     error,
                     "clGetSupportedImageFormats failed to return supported "
                     "formats");
 
                 std::vector<cl_image_format> formats(num_formats);
-                error = clGetSupportedImageFormats(context, mem_flag,
+                error = clGetSupportedImageFormats(context, CL_MEM_READ_WRITE,
                                                    image_type, num_formats,
                                                    formats.data(), nullptr);
                 test_error(
@@ -446,7 +431,7 @@ struct EnqueueMapImageTest
         for (size_t i = 0; i < num_test_per_image_type; i++)
         {
             size_t offset[3], region[3];
-            random_region_coords(offset, region, image_type, img_region, d);
+            random_region_coords(offset, region, img_region, d);
 
             size_t rowPitch = 0, slicePitch = 0;
 
