@@ -214,83 +214,111 @@ testCase testCaseLong = {
 
 std::vector<printDataGenParameters> printSizeTGenParameters = {
     //(Minimum)Five-wide,default(right)-justified
-    { { "%5zd" }, "10" },
+    { { "%5zd" }, "(size_t)10" },
 
     //(Minimum)Five-wide,left-justified
-    { { "%-5zd" }, "10" },
+    { { "%-5zd" }, "(size_t)10" },
 
     //(Minimum)Five-wide,default(right)-justified,zero-filled
-    { { "%05zd" }, "10" },
+    { { "%05zd" }, "(size_t)10" },
 
     //(Minimum)Five-wide,default(right)-justified,with sign
-    { { "%+5zd" }, "10" },
+    { { "%+5zd" }, "(size_t)10" },
 
     //(Minimum)Five-wide ,left-justified,with sign
-    { { "%-+5zd" }, "10" },
+    { { "%-+5zd" }, "(size_t)10" },
 
     //(Minimum)Five-digit(zero-filled in absent digits),default(right)-justified
-    { { "%.5zi" }, "100" },
+    { { "%.5zi" }, "(size_t)100" },
 
     //(Minimum)Six-wide,Five-digit(zero-filled in absent
     // digits),default(right)-justified
-    { { "%6.5zi" }, "100" },
+    { { "%6.5zi" }, "(size_t)100" },
 
     // 0 and - flag both apper ==>0 is ignored,left-justified,capital I
-    { { "%-06zi" }, "100" },
+    { { "%-06zi" }, "(size_t)100" },
 
     //(Minimum)Six-wide,Five-digit(zero-filled in absent
     // digits),default(right)-justified
-    { { "%06.5zi" }, "100" },
+    { { "%06.5zi" }, "(size_t)100" },
 
     //(Minimum)Ten-wide, left-justified, with a blank space inserted before the
     // value
-    { { "% 10zd" }, "42" },
+    { { "% 10zd" }, "(size_t)42" },
 
     // Default(right)-justified
-    { { "%zo" }, "10" },
+    { { "%zo" }, "(size_t)10" },
 
     // Five-digit,default(right)-justified
-    { { "%.5zo" }, "10" },
+    { { "%.5zo" }, "(size_t)10" },
 
     // Default(right)-justified,increase precision
-    { { "%#zo" }, "100000000" },
+    { { "%#zo" }, "(size_t)100000000" },
 
     //(Minimum)Four-wide,Five-digit,0-flag ignored(because of
     // precision),default(right)-justified
-    { { "%04.5zo" }, "10" },
+    { { "%04.5zo" }, "(size_t)10" },
 
     //(Minimum)Ten-wide, zeros inserted before the value,
     // default(right)-justified
-    { { "%010zo" }, "10" },
+    { { "%010zo" }, "(size_t)10" },
 
     // Default(right)-justified
-    { { "%zu" }, "10" },
+    { { "%zu" }, "(size_t)10" },
 
     // Zero precision for zero,default(right)-justified
-    { { "%.0zu" }, "0" },
+    { { "%.0zu" }, "(size_t)0" },
 
     // Add 0x,low x,default(right)-justified
-    { { "%#zx" }, "11259375" }, // 0xABCDEF
+    { { "%#zx" }, "(size_t)11259375" }, // 0xABCDEF
 
     // Add 0x,capital X,default(right)-justified
-    { { "%#zX" }, "11259375" }, // 0xABCDEF
+    { { "%#zX" }, "(size_t)11259375" }, // 0xABCDEF
 
     // Not add 0x,if zero,default(right)-justified
-    { { "%#zX" }, "0" },
+    { { "%#zX" }, "(size_t)0" },
 
     //(Minimum)Eight-wide,default(right)-justified
-    { { "%8zx" }, "399" },
+    { { "%8zx" }, "(size_t)399" },
 
     //(Minimum)Four-wide,zero-filled,default(right)-justified
-    { { "%04zx" }, "399" }
+    { { "%04zx" }, "(size_t)399" }
+};
+
+// clang-format off
+std::vector<std::string> correctBufferSizeT = {
+      "   10",
+      "10   ",
+      "00010",
+      "  +10",
+      "+10  ",
+      "00100",
+      " 00100",
+      "100   ",
+      " 00100",
+      "        42",
+      "12",
+      "00012",
+      "0575360400",
+      "00012",
+      "0000000012",
+      "10",
+      "",
+      "0xabcdef",
+      "0XABCDEF",
+      "0",
+      "     18f",
+      "018f",
 };
 
 testCase testCaseSizeT = {
     TYPE_SIZET,
     correctBufferSizeT,
     printSizeTGenParameters,
-    intRefBuilder,
+    nullptr
 };
+
+// clang-format on
 
 //==================================
 // size_t (64-bits)
@@ -298,51 +326,51 @@ testCase testCaseSizeT = {
 
 std::vector<printDataGenParameters> printSizeT64GenParameters = {
     //(Minimum) five-wide,default(right)-justified
-    { { "%5zd" }, "10000000000L" },
+    { { "%5zd" }, "(size_t)10000000000L" },
 
     //(Minimum) fifteen-wide,left-justified
-    { { "%-15zd" }, "-10000000000L" },
+    { { "%-15zd" }, "(size_t)-10000000000L" },
 
     //(Minimum) fifteen-wide,default(right)-justified,zero-filled
-    { { "%015zd" }, "10000000000L" },
+    { { "%015zd" }, "(size_t)10000000000L" },
 
     //(Minimum) fifteen-wide,default(right)-justified,with sign
-    { { "%+15zd" }, "-10000000000L" },
+    { { "%+15zd" }, "(size_t)-10000000000L" },
 
     //(Minimum) fifteen-wide ,left-justified,with sign
-    { { "%-+15zd" }, "10000000000L" },
+    { { "%-+15zd" }, "(size_t)10000000000L" },
 
     //(Minimum) fifteen-digit(zero-filled in absent
     // digits),default(right)-justified
-    { { "%.15zi" }, "10000000000L" },
+    { { "%.15zi" }, "(size_t)10000000000L" },
 
     //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
     // digits),left-justified, with sign
-    { { "%-+16.15zi" }, "-10000000000L" },
+    { { "%-+16.15zi" }, "(size_t)-10000000000L" },
 
 
     //(Minimum) five-wide,default(right)-justified
-    { { "%5zu" }, "10000000000L" },
+    { { "%5zu" }, "(size_t)10000000000L" },
 
     //(Minimum) fifteen-wide,left-justified
-    { { "%-15zu" }, "10000000000L" },
+    { { "%-15zu" }, "(size_t)10000000000L" },
 
     //(Minimum) fifteen-wide,default(right)-justified,zero-filled
-    { { "%015zu" }, "10000000000L" },
+    { { "%015zu" }, "(size_t)10000000000L" },
 
     //(Minimum) fifteen-wide,default(right)-justified
-    { { "%+15zu" }, "10000000000L" },
+    { { "%+15zu" }, "(size_t)10000000000L" },
 
     //(Minimum) fifteen-wide,left-justified
-    { { "%-+15zu" }, "10000000000L" },
+    { { "%-+15zu" }, "(size_t)10000000000L" },
 
     //(Minimum) fifteen-digit(zero-filled in absent
     // digits),default(right)-justified
-    { { "%.15zu" }, "10000000000L" },
+    { { "%.15zu" }, "(size_t)10000000000L" },
 
     //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
     // digits),left-justified
-    { { "%-+16.15zu" }, "10000000000L" },
+    { { "%-+16.15zu" }, "(size_t)10000000000L" },
 };
 
 // clang-format off
@@ -380,83 +408,112 @@ testCase testCaseSizeT64 = {
 
 std::vector<printDataGenParameters> printPtrDiffTGenParameters = {
     //(Minimum)Five-wide,default(right)-justified
-    { { "%5td" }, "10" },
+    { { "%5td" }, "(ptrdiff_t)10" },
 
     //(Minimum)Five-wide,left-justified
-    { { "%-5td" }, "10" },
+    { { "%-5td" }, "(ptrdiff_t)10" },
 
     //(Minimum)Five-wide,default(right)-justified,zero-filled
-    { { "%05td" }, "10" },
+    { { "%05td" }, "(ptrdiff_t)10" },
 
     //(Minimum)Five-wide,default(right)-justified,with sign
-    { { "%+5td" }, "10" },
+    { { "%+5td" }, "(ptrdiff_t)10" },
 
     //(Minimum)Five-wide ,left-justified,with sign
-    { { "%-+5td" }, "10" },
+    { { "%-+5td" }, "(ptrdiff_t)10" },
 
     //(Minimum)Five-digit(zero-filled in absent digits),default(right)-justified
-    { { "%.5ti" }, "100" },
+    { { "%.5ti" }, "(ptrdiff_t)100" },
 
     //(Minimum)Six-wide,Five-digit(zero-filled in absent
     // digits),default(right)-justified
-    { { "%6.5ti" }, "100" },
+    { { "%6.5ti" }, "(ptrdiff_t)100" },
 
     // 0 and - flag both apper ==>0 is ignored,left-justified,capital I
-    { { "%-06ti" }, "100" },
+    { { "%-06ti" }, "(ptrdiff_t)100" },
 
     //(Minimum)Six-wide,Five-digit(zero-filled in absent
     // digits),default(right)-justified
-    { { "%06.5ti" }, "100" },
+    { { "%06.5ti" }, "(ptrdiff_t)100" },
 
     //(Minimum)Ten-wide, left-justified, with a blank space inserted before the
     // value
-    { { "% 10td" }, "42" },
+    { { "% 10td" }, "(ptrdiff_t)42" },
 
     // Default(right)-justified
-    { { "%to" }, "10" },
+    { { "%to" }, "(ptrdiff_t)10" },
 
     // Five-digit,default(right)-justified
-    { { "%.5to" }, "10" },
+    { { "%.5to" }, "(ptrdiff_t)10" },
 
     // Default(right)-justified,increase precision
-    { { "%#to" }, "100000000" },
+    { { "%#to" }, "(ptrdiff_t)100000000" },
 
     //(Minimum)Four-wide,Five-digit,0-flag ignored(because of
     // precision),default(right)-justified
-    { { "%04.5to" }, "10" },
+    { { "%04.5to" }, "(ptrdiff_t)10" },
 
     //(Minimum)Ten-wide, zeros inserted before the value,
     // default(right)-justified
-    { { "%010to" }, "10" },
+    { { "%010to" }, "(ptrdiff_t)10" },
 
     // Default(right)-justified
-    { { "%tu" }, "10" },
+    { { "%tu" }, "(ptrdiff_t)10" },
 
     // Zero precision for zero,default(right)-justified
-    { { "%.0tu" }, "0" },
+    { { "%.0tu" }, "(ptrdiff_t)0" },
 
     // Add 0x,low x,default(right)-justified
-    { { "%#tx" }, "11259375" }, // 0xABCDEF
+    { { "%#tx" }, "(ptrdiff_t)11259375" }, // 0xABCDEF
 
     // Add 0x,capital X,default(right)-justified
-    { { "%#tX" }, "11259375" }, // 0xABCDEF
+    { { "%#tX" }, "(ptrdiff_t)11259375" }, // 0xABCDEF
 
     // Not add 0x,if zero,default(right)-justified
-    { { "%#tX" }, "0" },
+    { { "%#tX" }, "(ptrdiff_t)0" },
 
     //(Minimum)Eight-wide,default(right)-justified
-    { { "%8tx" }, "399" },
+    { { "%8tx" }, "(ptrdiff_t)399" },
 
     //(Minimum)Four-wide,zero-filled,default(right)-justified
-    { { "%04tx" }, "399" }
+    { { "%04tx" }, "(ptrdiff_t)399" }
+};
+
+// clang-format off
+
+std::vector<std::string> correctBufferPtrDiffT = {
+    "   10",
+    "10   ",
+    "00010",
+    "  +10",
+    "+10  ",
+    "00100",
+    " 00100",
+    "100   ",
+    " 00100",
+    "        42",
+    "12",
+    "00012",
+    "0575360400",
+    "00012",
+    "0000000012",
+    "10",
+    "",
+    "0xabcdef",
+    "0XABCDEF",
+    "0",
+    "     18f",
+    "018f",
 };
 
 testCase testCasePtrDiffT = {
     TYPE_PTRDIFFT,
     correctBufferPtrDiffT,
     printPtrDiffTGenParameters,
-    intRefBuilder,
+    nullptr
 };
+
+// clang-format on
 
 //==================================
 // ptrdiff_t (64-bits)
@@ -464,51 +521,51 @@ testCase testCasePtrDiffT = {
 
 std::vector<printDataGenParameters> printPtrDiffT64GenParameters = {
     //(Minimum) five-wide,default(right)-justified
-    { { "%5td" }, "10000000000L" },
+    { { "%5td" }, "(ptrdiff_t)10000000000L" },
 
     //(Minimum) fifteen-wide,left-justified
-    { { "%-15td" }, "-10000000000L" },
+    { { "%-15td" }, "(ptrdiff_t)-10000000000L" },
 
     //(Minimum) fifteen-wide,default(right)-justified,zero-filled
-    { { "%015td" }, "10000000000L" },
+    { { "%015td" }, "(ptrdiff_t)10000000000L" },
 
     //(Minimum) fifteen-wide,default(right)-justified,with sign
-    { { "%+15td" }, "-10000000000L" },
+    { { "%+15td" }, "(ptrdiff_t)-10000000000L" },
 
     //(Minimum) fifteen-wide ,left-justified,with sign
-    { { "%-+15td" }, "10000000000L" },
+    { { "%-+15td" }, "(ptrdiff_t)10000000000L" },
 
     //(Minimum) fifteen-digit(zero-filled in absent
     // digits),default(right)-justified
-    { { "%.15ti" }, "10000000000L" },
+    { { "%.15ti" }, "(ptrdiff_t)10000000000L" },
 
     //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
     // digits),left-justified, with sign
-    { { "%-+16.15ti" }, "-10000000000L" },
+    { { "%-+16.15ti" }, "(ptrdiff_t)-10000000000L" },
 
 
     //(Minimum) five-wide,default(right)-justified
-    { { "%5tu" }, "10000000000L" },
+    { { "%5tu" }, "(ptrdiff_t)10000000000L" },
 
     //(Minimum) fifteen-wide,left-justified
-    { { "%-15tu" }, "10000000000L" },
+    { { "%-15tu" }, "(ptrdiff_t)10000000000L" },
 
     //(Minimum) fifteen-wide,default(right)-justified,zero-filled
-    { { "%015tu" }, "10000000000L" },
+    { { "%015tu" }, "(ptrdiff_t)10000000000L" },
 
     //(Minimum) fifteen-wide,default(right)-justified
-    { { "%+15tu" }, "10000000000L" },
+    { { "%+15tu" }, "(ptrdiff_t)10000000000L" },
 
     //(Minimum) fifteen-wide,left-justified
-    { { "%-+15tu" }, "10000000000L" },
+    { { "%-+15tu" }, "(ptrdiff_t)10000000000L" },
 
     //(Minimum) fifteen-digit(zero-filled in absent
     // digits),default(right)-justified
-    { { "%.15tu" }, "10000000000L" },
+    { { "%.15tu" }, "(ptrdiff_t)10000000000L" },
 
     //(Minimum)Sixteen-wide, fifteen-digit(zero-filled in absent
     // digits),left-justified
-    { { "%-+16.15tu" }, "10000000000L" },
+    { { "%-+16.15tu" }, "(ptrdiff_t)10000000000L" },
 };
 
 // clang-format off

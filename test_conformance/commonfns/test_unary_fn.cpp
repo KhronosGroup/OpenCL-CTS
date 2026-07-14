@@ -82,7 +82,8 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
                 else
                     log_error(
                         "%d) Error @ %a: *%a vs %a  (*%g vs %g) ulps: %f\n", i,
-                        inptr[i], r, outptr[i], r, outptr[i], error);
+                        conv_to_flt(inptr[i]), r, conv_to_flt(outptr[i]), r,
+                        conv_to_flt(outptr[i]), error);
                 return 1;
             }
         }
@@ -98,7 +99,8 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
         log_info("degrees: Max error %f ulps at %d, input %a: *%a vs %a  (*%g "
                  "vs %g)\n",
                  max_error, max_index, conv_to_flt(inptr[max_index]), max_val,
-                 outptr[max_index], max_val, outptr[max_index]);
+                 conv_to_flt(outptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]));
 
     return 0;
 }
@@ -131,7 +133,8 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
                 else
                     log_error(
                         "%d) Error @ %a: *%a vs %a  (*%g vs %g) ulps: %f\n", i,
-                        inptr[i], r, outptr[i], r, outptr[i], error);
+                        conv_to_flt(inptr[i]), r, conv_to_flt(outptr[i]), r,
+                        conv_to_flt(outptr[i]), error);
                 return 1;
             }
         }
@@ -147,7 +150,8 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
         log_info("radians: Max error %f ulps at %d, input %a: *%a vs %a  (*%g "
                  "vs %g)\n",
                  max_error, max_index, conv_to_flt(inptr[max_index]), max_val,
-                 outptr[max_index], max_val, outptr[max_index]);
+                 conv_to_flt(outptr[max_index]), max_val,
+                 conv_to_flt(outptr[max_index]));
 
     return 0;
 }
