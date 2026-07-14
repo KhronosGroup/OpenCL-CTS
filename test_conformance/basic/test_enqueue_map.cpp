@@ -353,16 +353,23 @@ struct EnqueueMapImageTest
                 // find supported image formats
                 cl_uint num_formats = 0;
 
+                // clGetSupportedImageFormats requires an access-mode flag;
+                // add CL_MEM_READ_WRITE when the entry has none, but leave
+                // CL_MEM_IMMUTABLE_EXT entries as-is since it's already a
+                // distinct access mode.
+                cl_mem_flags query_flag = is_immutable_image
+                    ? CL_MEM_IMMUTABLE_EXT
+                    : CL_MEM_READ_WRITE;
+
                 cl_int error = clGetSupportedImageFormats(
-                    context, CL_MEM_READ_WRITE, image_type, 0, nullptr,
-                    &num_formats);
+                    context, query_flag, image_type, 0, nullptr, &num_formats);
                 test_error(
                     error,
                     "clGetSupportedImageFormats failed to return supported "
                     "formats");
 
                 std::vector<cl_image_format> formats(num_formats);
-                error = clGetSupportedImageFormats(context, CL_MEM_READ_WRITE,
+                error = clGetSupportedImageFormats(context, query_flag,
                                                    image_type, num_formats,
                                                    formats.data(), nullptr);
                 test_error(
