@@ -179,14 +179,17 @@ jobs:
                 ${CMAKE_ADDITIONAL_CONFIG_ARGS}
           cmake --build . --parallel
 
-  tests:
-    name: Run Tests (pocl)
+  check-triggers:
+    name: Check Test Triggers
     runs-on: ubuntu-24.04
     if: github.event_name == 'pull_request'
+    outputs:
+      run_tests: ${{ steps.parse_triggers.outputs.run_tests }}
+      test_commands: ${{ steps.parse_triggers.outputs.test_commands }}
     steps:
       - uses: actions/checkout@v7
       - name: Parse triggers
-        id: check_triggers
+        id: parse_triggers
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -194,56 +197,50 @@ jobs:
           PR_BODY=$(gh api -X GET /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} --jq '.body')
           COMMANDS=$(echo -e "$MESSAGES\n$PR_BODY" | grep -oP '^\[run-tests?:\s*\K[^\]]+' | sort -u || true)
           if [ -z "$COMMANDS" ]; then
-            echo "No '[run-test: ...]' triggers found. Skipping job."
+            echo "No '[run-test: ...]' triggers found."
             echo "run_tests=false" >> $GITHUB_OUTPUT
           else
             echo "Found the following test triggers:"
             echo "$COMMANDS"
             echo "run_tests=true" >> $GITHUB_OUTPUT
-            echo "$COMMANDS" > test_commands.txt
+            echo "test_commands<<EOF" >> $GITHUB_OUTPUT
+            echo "$COMMANDS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           fi
+
+  build-pocl:
+    name: Build and Cache POCL
+    runs-on: ubuntu-24.04
+    needs: check-triggers
+    if: |
+      always() &&
+      (
+        github.event_name == 'push' ||
+        (needs.check-triggers.result == 'success' && needs.check-triggers.outputs.run_tests == 'true')
+      )
+    outputs:
+      pocl: ${{ steps.pocl_env.outputs.pocl }}
+    steps:
+      - uses: actions/checkout@v6
       - name: Environment variables
-        if: steps.check_triggers.outputs.run_tests == 'true'
+        id: pocl_env
         run: |
-          echo "pocl=$(realpath ${{ github.workspace }}/../pocl)" >> $GITHUB_ENV
-          echo "loader=$(realpath ${{ github.workspace }}/../loader)" >> $GITHUB_ENV
-          echo "cl-headers=$(realpath ${{ github.workspace }}/../cl-headers)" >> $GITHUB_ENV
-          echo "spv-headers=$(realpath ${{ github.workspace }}/../spv-headers)" >> $GITHUB_ENV
-      - name: Clone Headers
-        if: steps.check_triggers.outputs.run_tests == 'true'
-        run: |
-          git clone --depth 1 https://github.com/KhronosGroup/OpenCL-Headers.git ${{ env.cl-headers }}
-          git clone --depth 1 https://github.com/KhronosGroup/SPIRV-Headers.git ${{ env.spv-headers }}
+          POCL_PATH=$(realpath ${{ github.workspace }}/../pocl)
+          echo "pocl=$POCL_PATH" >> $GITHUB_ENV
+          echo "pocl=$POCL_PATH" >> $GITHUB_OUTPUT
       - name: Setup Ninja
-        if: steps.check_triggers.outputs.run_tests == 'true'
         uses: seanmiddleditch/gha-setup-ninja@master
-      - name: Install Vulkan SDK
-        if: steps.check_triggers.outputs.run_tests == 'true'
-        uses: humbletim/install-vulkan-sdk@main
-        with:
-          version: 1.4.309.0
-          cache: true
-      - name: Install pocl dependencies
-        if: steps.check_triggers.outputs.run_tests == 'true'
-        run: |
-          sudo apt-get update
-          export LLVM_VERSION=20
-          sudo apt-get install -y \
-            python3-dev libpython3-dev build-essential ocl-icd-libopencl1 \
-            cmake git pkg-config libclang-${LLVM_VERSION}-dev clang-${LLVM_VERSION} \
-            llvm-${LLVM_VERSION} make ninja-build ocl-icd-libopencl1 ocl-icd-dev \
-            ocl-icd-opencl-dev libhwloc-dev zlib1g zlib1g-dev clinfo dialog apt-utils \
-            libxml2-dev libclang-cpp${LLVM_VERSION}-dev libclang-cpp${LLVM_VERSION} \
-            llvm-${LLVM_VERSION}-dev
       - name: Cache pocl
         id: cache-pocl
-        if: steps.check_triggers.outputs.run_tests == 'true'
         uses: actions/cache@v6
         with:
           path: ${{ env.pocl }}
           key: ubuntu-24.04-pocl-v7.1
+      - name: Install pocl dependencies
+        if: steps.cache-pocl.outputs.cache-hit != 'true'
+        uses: ./.github/actions/install-pocl-deps
       - name: Build pocl
-        if: steps.check_triggers.outputs.run_tests == 'true' && steps.cache-pocl.outputs.cache-hit != 'true'
+        if: steps.cache-pocl.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 --branch v7.1 https://github.com/pocl/pocl.git
           cmake -B pocl/build -S pocl -G Ninja \
@@ -253,8 +250,44 @@ jobs:
             -DENABLE_ICD=ON
           cmake --build pocl/build
           cmake --install pocl/build
+
+  tests:
+    name: Run Tests (pocl)
+    runs-on: ubuntu-24.04
+    needs: [check-triggers, build-pocl]
+    if: needs.check-triggers.outputs.run_tests == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Environment variables
+        run: |
+          echo "pocl=${{ needs.build-pocl.outputs.pocl }}" >> $GITHUB_ENV
+          echo "loader=$(realpath ${{ github.workspace }}/../loader)" >> $GITHUB_ENV
+          echo "cl-headers=$(realpath ${{ github.workspace }}/../cl-headers)" >> $GITHUB_ENV
+          echo "spv-headers=$(realpath ${{ github.workspace }}/../spv-headers)" >> $GITHUB_ENV
+      - name: Recreate test_commands.txt
+        run: |
+          cat << 'EOF' > test_commands.txt
+          ${{ needs.check-triggers.outputs.test_commands }}
+          EOF
+      - name: Clone Headers
+        run: |
+          git clone --depth 1 https://github.com/KhronosGroup/OpenCL-Headers.git ${{ env.cl-headers }}
+          git clone --depth 1 https://github.com/KhronosGroup/SPIRV-Headers.git ${{ env.spv-headers }}
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Install Vulkan SDK
+        uses: humbletim/install-vulkan-sdk@main
+        with:
+          version: 1.4.309.0
+          cache: true
+      - name: Install pocl dependencies
+        uses: ./.github/actions/install-pocl-deps
+      - name: Restore pocl from cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.pocl }}
+          key: ubuntu-24.04-pocl-v7.1
       - name: Build loader
-        if: steps.check_triggers.outputs.run_tests == 'true'
         shell: bash
         run: |
           git clone --depth 1 https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
@@ -264,11 +297,17 @@ jobs:
             -DOPENCL_ICD_LOADER_HEADERS_DIR='${{ env.cl-headers }}'
           cmake --build OpenCL-ICD-Loader/build
           cmake --install OpenCL-ICD-Loader/build
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+          key: ubuntu-24.04-
       - name: Build OpenCL CTS
-        if: steps.check_triggers.outputs.run_tests == 'true'
         shell: bash
         run: |
           cmake -B build -S . -G Ninja \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCL_INCLUDE_DIR='${{ env.cl-headers }}' \
                 -DCL_LIB_DIR=${{ env.loader }}/lib \
@@ -280,7 +319,6 @@ jobs:
                 -DVULKAN_IS_SUPPORTED=OFF
           cmake --build build
       - name: Run tests
-        if: steps.check_triggers.outputs.run_tests == 'true'
         shell: bash
         run: |
           export OCL_ICD_ENABLE_TRACE=1
@@ -301,7 +339,6 @@ jobs:
             fi
           done < test_commands.txt
       - name: Check results
-        if: steps.check_triggers.outputs.run_tests == 'true'
         shell: bash
         run: |
           ls test_results

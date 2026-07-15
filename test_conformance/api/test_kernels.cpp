@@ -100,6 +100,17 @@ const char *sample_arg_image_msaa_test_kernel = R"(
     }
 )";
 
+const char *sample_arg_image_test_kernel = R"(
+    const sampler_t samplerA = CLK_NORMALIZED_COORDS_FALSE |
+                               CLK_ADDRESS_REPEAT |
+                               CLK_FILTER_NEAREST;
+    __kernel void arg_image_test(%s src, __global float4 *dst)
+    {
+        int%s coord = (int%s)(get_global_id(0));
+        dst[0]=read_imagef(src, samplerA, coord);
+    }
+)";
+
 const char *sample_queue_test_kernel = R"(
     __kernel void enqueue_call_func() {
       }
@@ -817,6 +828,63 @@ REGISTER_TEST(negative_set_kernel_arg_invalid_image_msaa)
             "clSetKernelArg is supposed to fail with CL_INVALID_MEM_OBJECT "
             "when arg_value does not follow the rules described in spec for "
             "msaa images",
+            TEST_FAIL);
+    }
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_set_kernel_arg_invalid_image)
+{
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+
+    const bool has_depth_images =
+        is_extension_available(device, "cl_khr_depth_images");
+
+    std::vector<std::pair<std::string, std::string>> image_types = {
+        { "image2d_t", "2" },
+        { "image2d_depth_t", "2" },
+        { "image3d_t", "4" },
+        { "image1d_t", "" },
+        { "image1d_array_t", "2" },
+        { "image2d_array_t", "4" },
+        { "image2d_array_depth_t", "4" }
+    };
+
+    clMemWrapper buffer = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                         sizeof(cl_float), nullptr, &error);
+    test_error(error, "clCreateBuffer failed");
+
+    for (auto &el : image_types)
+    {
+        if (!has_depth_images
+            && (el.first == "image2d_depth_t"
+                || el.first == "image2d_array_depth_t"))
+        {
+            log_info("Skipping %s: cl_khr_depth_images not supported\n",
+                     el.first.c_str());
+            continue;
+        }
+
+        std::string program_source =
+            str_sprintf(std::string(sample_arg_image_test_kernel),
+                        el.first.c_str(), el.second.c_str(), el.second.c_str());
+
+        const char *ptr = program_source.c_str();
+        error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                            "arg_image_test");
+        test_error(error, "Unable to build test program");
+
+        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &buffer);
+        test_failure_error_ret(
+            error, CL_INVALID_MEM_OBJECT,
+            "clSetKernelArg is supposed to fail with CL_INVALID_MEM_OBJECT "
+            "when arg_value does not follow the rules described in spec for a "
+            "depth memory object or memory array object argument",
             TEST_FAIL);
     }
 
