@@ -1,5 +1,6 @@
 set (MODULE_NAME VULKAN)
 
+if(VULKAN_IS_SUPPORTED)
 list(APPEND CLConform_LIBRARIES vulkan_wrapper)
 set(CMAKE_COMPILE_WARNING_AS_ERROR OFF)
 if(WIN32)
@@ -32,6 +33,12 @@ include_directories("../common/vulkan_wrapper")
 
 add_subdirectory(shaders)
 
+else()
+build_as_stub(${MODULE_NAME})
+endif()
+
 include(../CMakeCommon.txt)
 
-add_dependencies(${${MODULE_NAME}_OUT} vulkan_shaders)
+if(VULKAN_IS_SUPPORTED)
+    add_dependencies(${${MODULE_NAME}_OUT} vulkan_shaders)
+endif()
