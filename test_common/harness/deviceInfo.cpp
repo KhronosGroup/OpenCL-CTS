@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "deviceInfo.h"
+#include "testHarness.h"
 #include "errorHelpers.h"
 #include "typeWrappers.h"
 
@@ -184,4 +185,46 @@ cl_ulong get_device_info_max_constant_buffer_size(cl_device_id device,
 {
     return get_device_info_max_size(device, CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE,
                                     divisor);
+}
+
+static std::vector<std::string> g_stub_required_extensions;
+
+static int test_stub_check_extensions(cl_device_id device, cl_context context,
+                                      cl_command_queue queue, int numElements)
+{
+    std::vector<std::string> supported;
+    for (const auto& ext : g_stub_required_extensions)
+    {
+        if (is_extension_available(device, ext.c_str()))
+        {
+            supported.push_back(ext);
+        }
+    }
+
+    if (!supported.empty())
+    {
+        std::string extList;
+        for (const auto& ext : supported)
+        {
+            extList += ext + " ";
+        }
+        log_error("ERROR: Extensions [ %s] are supported by the device, but "
+                  "this test was built as a stub!\n",
+                  extList.c_str());
+        return TEST_FAIL;
+    }
+
+    log_info("Required extensions are not supported. Skipping stub.\n");
+    return TEST_SKIPPED_ITSELF;
+}
+
+int run_extension_stub(int argc, const char* argv[],
+                       const std::vector<std::string>& extensionNames)
+{
+    g_stub_required_extensions = extensionNames;
+
+    test_definition test_list[] = { { test_stub_check_extensions,
+                                      "stub_check_extensions" } };
+
+    return runTestHarness(argc, argv, 1, test_list, false, 0);
 }

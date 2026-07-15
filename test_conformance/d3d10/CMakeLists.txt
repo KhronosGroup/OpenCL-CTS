@@ -1,6 +1,6 @@
-if(WIN32)
 set(MODULE_NAME D3D10)
 
+if(WIN32 AND D3D10_IS_SUPPORTED)
 set(${MODULE_NAME}_SOURCES
     buffer.cpp
     texture2d.cpp
@@ -11,8 +11,8 @@ set(${MODULE_NAME}_SOURCES
 )
 
 list(APPEND CLConform_LIBRARIES directx_wrapper)
+else()
+build_as_stub(${MODULE_NAME})
+endif()
 
 include(../CMakeCommon.txt)
-else()
-message(STATUS "D3D10 tests are only supported on Windows.")
-endif()

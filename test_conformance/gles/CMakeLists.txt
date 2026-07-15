@@ -1,5 +1,6 @@
 set (MODULE_NAME GLES)
 
+if(GLES_IS_SUPPORTED)
 set (${MODULE_NAME}_SOURCES
         main.cpp
         test_buffers.cpp
@@ -17,12 +18,18 @@ set (${MODULE_NAME}_SOURCES
 
 list(APPEND CLConform_LIBRARIES EGL GLESv2)
 
+else()
+build_as_stub(${MODULE_NAME})
+endif()
+
 include(../CMakeCommon.txt)
 
-if(DEFINED USE_GLES3)
-    target_compile_definitions(${${MODULE_NAME}_OUT} PRIVATE GLES3)
-endif()
-if(MSVC)
-    # Don't warn about using the portable "strdup" function.
-    target_compile_definitions(${${MODULE_NAME}_OUT} PRIVATE _CRT_NONSTDC_NO_DEPRECATE)
+if(GLES_IS_SUPPORTED)
+    if(DEFINED USE_GLES3)
+        target_compile_definitions(${${MODULE_NAME}_OUT} PRIVATE GLES3)
+    endif()
+    if(MSVC)
+        # Don't warn about using the portable "strdup" function.
+        target_compile_definitions(${${MODULE_NAME}_OUT} PRIVATE _CRT_NONSTDC_NO_DEPRECATE)
+    endif()
 endif()

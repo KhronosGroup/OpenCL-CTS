@@ -1,5 +1,6 @@
 set(MODULE_NAME CL_KHR_EXTERNAL_SEMAPHORE)
 
+if(VULKAN_IS_SUPPORTED)
 set(${MODULE_NAME}_SOURCES
     main.cpp
     test_external_semaphore.cpp
@@ -19,5 +20,9 @@ list(APPEND CLConform_LIBRARIES vulkan_wrapper)
 set(CMAKE_COMPILE_WARNING_AS_ERROR OFF)
 
 include_directories("../../common/vulkan_wrapper")
+
+else()
+build_as_stub(${MODULE_NAME})
+endif()
 
 include(../../CMakeCommon.txt)
