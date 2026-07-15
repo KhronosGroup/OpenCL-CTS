@@ -1,5 +1,6 @@
 set (MODULE_NAME GL)
 
+if(GL_IS_SUPPORTED)
 if(WIN32)
 # Windows MSVC/Intel compiler hits: 
 # - dwonload free libraries package glew and glut/freeglut from the Internet
@@ -59,5 +60,9 @@ set_source_files_properties(
 # test_common/gl/setup_x11.cpp can find testBase.h which is located in this
 # folder.
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+else()
+build_as_stub(${MODULE_NAME})
+endif()
 
 include(../CMakeCommon.txt)

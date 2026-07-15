@@ -17,6 +17,7 @@
 #define _deviceInfo_h
 
 #include <string>
+#include <vector>
 
 #include <CL/opencl.h>
 
@@ -27,6 +28,11 @@ std::string get_device_info_string(cl_device_id device,
 
 /* Determines if an extension is supported by a device. */
 bool is_extension_available(cl_device_id device, const char *extensionName);
+
+/* Helper for extension stub tests. Uses harness to select device, checks
+ * extensions, logs, and returns exit code. */
+int run_extension_stub(int argc, const char *argv[],
+                       const std::vector<std::string> &extensionNames);
 
 /* Returns the version of the extension the device supports or throws an
  * exception if the extension is not supported by the device. */

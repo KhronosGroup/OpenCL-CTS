@@ -1,11 +1,11 @@
-if (WIN32)
+set(MODULE_NAME CL_KHR_EXTERNAL_SEMAPHORE_DX_FENCE)
+
+if (WIN32 AND D3D12_IS_SUPPORTED)
     include_directories(${CLConform_SOURCE_DIR}/test_common/harness
             ${CLConform_INCLUDE_DIR})
     link_directories(${CL_LIB_DIR})
 
     list(APPEND CLConform_LIBRARIES directx_wrapper)
-
-    set(MODULE_NAME CL_KHR_EXTERNAL_SEMAPHORE_DX_FENCE)
 
     set(${MODULE_NAME}_SOURCES
             main.cpp
@@ -20,6 +20,9 @@ if (WIN32)
             PROPERTIES LANGUAGE CXX)
 
     include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-    include(../../CMakeCommon.txt)
-endif (WIN32)
+else()
+    build_as_stub(${MODULE_NAME})
+endif()
+
+include(../../CMakeCommon.txt)
 

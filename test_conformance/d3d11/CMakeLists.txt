@@ -1,6 +1,6 @@
-if(WIN32)
 set(MODULE_NAME D3D11)
 
+if(WIN32 AND D3D11_IS_SUPPORTED)
 set(${MODULE_NAME}_SOURCES
     buffer.cpp
     texture2d.cpp
@@ -11,8 +11,8 @@ set(${MODULE_NAME}_SOURCES
 )
 
 list(APPEND CLConform_LIBRARIES d3d11 dxgi)
+else()
+build_as_stub(${MODULE_NAME})
+endif()
 
 include(../CMakeCommon.txt)
-else()
-message(STATUS "D3D11 tests are only supported on Windows.")
-endif()
