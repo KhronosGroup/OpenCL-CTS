@@ -7,6 +7,11 @@
             "image2d_read": "pass"
         }
     },
+    "test_api": {
+        "": {
+          "negative_set_kernel_arg_invalid_image": "fail"
+        }
+    },
     "test_basic": {
         "": {
             "enqueue_map_image": "pass"
@@ -137,8 +142,50 @@
         }
     },
     "test_image_streams": {
+        "--num-worker-threads 2 CL_A CL_FILTER_NEAREST": {
+            "1D": "pass"
+        },
         "--num-worker-threads 2 CL_FILTER_NEAREST CL_R": {
             "1D": "fail"
+        }
+    },
+    "test_select": {
+        "--num-worker-threads 2": {
+            "select_uchar_uchar": "pass",
+            "select_uchar_char": "pass",
+            "select_char_uchar": "pass",
+            "select_char_char": "pass",
+            "select_ushort_ushort": "pass",
+            "select_ushort_short": "pass",
+            "select_short_ushort": "pass",
+            "select_short_short": "pass",
+            "select_half_ushort": "pass",
+            "select_half_short": "pass",
+            "select_uint_uint": "pass",
+            "select_uint_int": "pass",
+            "select_int_uint": "pass",
+            "select_int_int": "pass",
+            "select_float_uint": "pass",
+            "select_float_int": "pass",
+            "select_ulong_ulong": "pass",
+            "select_ulong_long": "pass",
+            "select_long_ulong": "pass",
+            "select_long_long": "pass",
+            "select_double_ulong": "pass",
+            "select_double_long": "pass"
+        }
+    },
+    "test_vectors": {
+        "--wimpy": {
+            "step_type": "pass",
+            "step_var": "pass",
+            "step_typedef_type": "pass",
+            "step_typedef_var": "pass",
+            "vec_align_array": "pass",
+            "vec_align_struct": "pass",
+            "vec_align_packed_struct": "pass",
+            "vec_align_struct_arr": "pass",
+            "vec_align_packed_struct_arr": "pass"
         }
     }
 }
