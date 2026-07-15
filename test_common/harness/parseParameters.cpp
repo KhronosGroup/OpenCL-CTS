@@ -35,7 +35,7 @@ std::string gCompilationProgram = DEFAULT_COMPILATION_PROGRAM;
 bool gDisableSPIRVValidation = false;
 std::string gSPIRVValidator = DEFAULT_SPIRV_VALIDATOR;
 unsigned gNumWorkerThreads;
-bool gThreadPoolEnabled = true;
+unsigned gNumThreadPoolThreads = 0;
 bool gListTests = false;
 bool gWimpyMode = false;
 
@@ -60,6 +60,9 @@ void helpInfo()
         for conformance submission (default: disabled).
     -m, --disable-threadpool
         Disable multi-threading (using the ThreadPool API) within individual tests.
+    -t, --num-threadpool-threads <num>
+        Select the number of threads used by the ThreadPool API.
+        default: All available threads
 
     --invalid-object-scenarios=<option_1>,<option_2>....
         Specify different scenarios to use when
@@ -133,7 +136,26 @@ int parseCommonParamAndGetRemovedArgs(int argc, const char *argv[],
         {
             delArg++;
             removed_args.push_back("--disable-threadpool");
-            gThreadPoolEnabled = false;
+            gNumThreadPoolThreads = 1;
+        }
+        else if (!strcmp(argv[i], "-t")
+                 || !strcmp(argv[i], "--num-threadpool-threads"))
+        {
+            delArg++;
+            if ((i + 1) < argc)
+            {
+                delArg++;
+                const char *numthstr = argv[i + 1];
+
+                gNumThreadPoolThreads = atoi(numthstr);
+            }
+            else
+            {
+                log_error("A parameter to --num-threadpool-threads must be "
+                          "provided!\n");
+                return -1;
+            }
+            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
         }
         else if (!strcmp(argv[i], "--compilation-mode"))
         {

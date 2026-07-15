@@ -479,15 +479,15 @@ void ThreadPool_Init(void)
 
     // Check for manual override of multithreading code. We add this for better
     // debuggability.
-    if (getenv("CL_TEST_SINGLE_THREADED") || !gThreadPoolEnabled)
+    if (getenv("CL_TEST_SINGLE_THREADED") || (gNumThreadPoolThreads != 0))
     {
         log_info("\n");
-        log_info("*******************************************************\n");
-        log_info("***                  !! WARNING !!                  ***\n");
-        log_info("*** ThreadPool is disabled, running single threaded ***\n");
-        log_info("*******************************************************\n");
+        log_info("*****************************************\n");
+        log_info("***           !! WARNING !!           ***\n");
+        log_info("*** ThreadPool is disabled or reduced ***\n");
+        log_info("*****************************************\n");
         log_info("\n");
-        gThreadCount = 1;
+        gThreadCount = gNumThreadPoolThreads;
         return;
     }
 
