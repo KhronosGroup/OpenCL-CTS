@@ -16,7 +16,9 @@
 #include "testBase.h"
 #include "harness/typeWrappers.h"
 #include "harness/conversions.h"
+#include "harness/featureHelpers.h"
 #include "harness/stringHelpers.h"
+
 #include <array>
 #include <vector>
 
@@ -88,6 +90,37 @@ const char *sample_two_kernel_program[] = {
 "    dst[tid] = (float)src[tid];\n"
 "\n"
 "}\n" };
+
+const char *sample_arg_image_msaa_test_kernel = R"(
+    #pragma OPENCL EXTENSION cl_khr_gl_msaa_sharing : enable
+    __kernel void arg_image_test(%s src, __global float4 *dst)
+    {
+        int%s coord = (int%s)(get_global_id(0));
+        dst[0]=read_imagef(src, coord, 0);
+    }
+)";
+
+const char *sample_arg_image_test_kernel = R"(
+    const sampler_t samplerA = CLK_NORMALIZED_COORDS_FALSE |
+                               CLK_ADDRESS_REPEAT |
+                               CLK_FILTER_NEAREST;
+    __kernel void arg_image_test(%s src, __global float4 *dst)
+    {
+        int%s coord = (int%s)(get_global_id(0));
+        dst[0]=read_imagef(src, samplerA, coord);
+    }
+)";
+
+const char *sample_queue_test_kernel = R"(
+    __kernel void enqueue_call_func() {
+      }
+    __kernel void queue_test(queue_t queue)
+    {
+        ndrange_t ndrange = ndrange_1D(1);
+        enqueue_kernel(queue, CLK_ENQUEUE_FLAGS_WAIT_KERNEL, ndrange,
+                           ^{enqueue_call_func();});
+    }
+)";
 
 const char *sample_sampler_size_test_kernel = R"(
     __kernel void sampler_size_test(sampler_t sampler, __read_only image2d_t src, __global float4 *dst)
@@ -754,6 +787,155 @@ REGISTER_TEST(negative_set_immutable_memory_to_writeable_kernel_arg)
     return TEST_PASS;
 }
 
+REGISTER_TEST(negative_set_kernel_arg_invalid_image_msaa)
+{
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+
+    REQUIRE_EXTENSION("cl_khr_gl_msaa_sharing");
+
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+
+    std::vector<std::pair<std::string, std::string>> image_types = {
+        { "image2d_msaa_t", "2" },
+        { "image2d_array_msaa_t", "4" },
+        { "image2d_msaa_depth_t", "2" },
+        { "image2d_array_msaa_depth_t", "4" }
+    };
+
+    constexpr cl_image_format format = { CL_RGBA, CL_UNSIGNED_INT8 };
+    constexpr size_t size_dim = 32;
+    clMemWrapper image =
+        create_image_2d(context, CL_MEM_READ_ONLY, &format, size_dim, size_dim,
+                        0, nullptr, &error);
+    test_error(error, "create_image_2d failed");
+
+    for (auto &el : image_types)
+    {
+        std::string program_source =
+            str_sprintf(std::string(sample_arg_image_msaa_test_kernel),
+                        el.first.c_str(), el.second.c_str(), el.second.c_str());
+
+        const char *ptr = program_source.c_str();
+        error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                            "arg_image_test");
+        test_error(error, "Unable to build test program");
+
+        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &image);
+        test_failure_error_ret(
+            error, CL_INVALID_MEM_OBJECT,
+            "clSetKernelArg is supposed to fail with CL_INVALID_MEM_OBJECT "
+            "when arg_value does not follow the rules described in spec for "
+            "msaa images",
+            TEST_FAIL);
+    }
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_set_kernel_arg_invalid_image)
+{
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+
+    const bool has_depth_images =
+        is_extension_available(device, "cl_khr_depth_images");
+
+    std::vector<std::pair<std::string, std::string>> image_types = {
+        { "image2d_t", "2" },
+        { "image2d_depth_t", "2" },
+        { "image3d_t", "4" },
+        { "image1d_t", "" },
+        { "image1d_array_t", "2" },
+        { "image2d_array_t", "4" },
+        { "image2d_array_depth_t", "4" }
+    };
+
+    clMemWrapper buffer = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                         sizeof(cl_float), nullptr, &error);
+    test_error(error, "clCreateBuffer failed");
+
+    for (auto &el : image_types)
+    {
+        if (!has_depth_images
+            && (el.first == "image2d_depth_t"
+                || el.first == "image2d_array_depth_t"))
+        {
+            log_info("Skipping %s: cl_khr_depth_images not supported\n",
+                     el.first.c_str());
+            continue;
+        }
+
+        std::string program_source =
+            str_sprintf(std::string(sample_arg_image_test_kernel),
+                        el.first.c_str(), el.second.c_str(), el.second.c_str());
+
+        const char *ptr = program_source.c_str();
+        error = create_single_kernel_helper(context, &program, &kernel, 1, &ptr,
+                                            "arg_image_test");
+        test_error(error, "Unable to build test program");
+
+        error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &buffer);
+        test_failure_error_ret(
+            error, CL_INVALID_MEM_OBJECT,
+            "clSetKernelArg is supposed to fail with CL_INVALID_MEM_OBJECT "
+            "when arg_value does not follow the rules described in spec for a "
+            "depth memory object or memory array object argument",
+            TEST_FAIL);
+    }
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST(negative_invalid_arg_queue)
+{
+    OpenCLCFeatures features;
+    get_device_cl_c_features(device, features);
+
+    const Version clc_version = get_device_latest_cl_c_version(device);
+    if (clc_version < Version(2, 0)
+        || (clc_version >= Version(3, 0)
+            && !features.supports__opencl_c_device_enqueue))
+        return TEST_SKIPPED_ITSELF;
+
+    std::string build_opts = "-cl-std=CL" + clc_version.to_string();
+
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper queue_arg_kernel;
+    clCommandQueueWrapper queue_arg;
+
+    // Setup the test
+    error = create_single_kernel_helper(context, &program, &queue_arg_kernel, 1,
+                                        &sample_queue_test_kernel, "queue_test",
+                                        build_opts.c_str());
+    test_error(error, "Unable to create test kernel");
+
+    // Run the test - CL_INVALID_DEVICE_QUEUE
+    error = clSetKernelArg(queue_arg_kernel, 0, sizeof(cl_command_queue),
+                           &queue_arg);
+    test_failure_error_ret(
+        error, CL_INVALID_DEVICE_QUEUE,
+        "clSetKernelArg is supposed to fail with CL_INVALID_DEVICE_QUEUE when "
+        "the specified arg_value is not a valid device queue object",
+        TEST_FAIL);
+
+    // Run the test with host-side queue and expect CL_INVALID_DEVICE_QUEUE
+    error =
+        clSetKernelArg(queue_arg_kernel, 0, sizeof(cl_command_queue), queue);
+    test_failure_error_ret(
+        error, CL_INVALID_DEVICE_QUEUE,
+        "clSetKernelArg is supposed to fail with CL_INVALID_DEVICE_QUEUE when "
+        "the specified arg_value is not a valid device queue object",
+        TEST_FAIL);
+
+    return TEST_PASS;
+}
+
 REGISTER_TEST(negative_invalid_arg_sampler)
 {
     PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
@@ -980,7 +1162,7 @@ REGISTER_TEST(negative_invalid_arg_index)
     return TEST_PASS;
 }
 
-REGISTER_TEST(negative_invalid_arg_size_local)
+REGISTER_TEST(local_arg_size_zero)
 {
     cl_int error = CL_SUCCESS;
     clProgramWrapper program;
@@ -996,11 +1178,23 @@ REGISTER_TEST(negative_invalid_arg_size_local)
 
     // Run the test
     error = clSetKernelArg(local_arg_kernel, 0, 0, nullptr);
-    test_failure_error_ret(
-        error, CL_INVALID_ARG_SIZE,
-        "clSetKernelArg is supposed to fail with CL_INVALID_ARG_SIZE when 0 is "
-        "passed to a local qualifier kernel argument",
-        TEST_FAIL);
+
+    const Version version = get_platform_cl_version(device);
+    if (version < Version(3, 1))
+    {
+        test_failure_error_ret(
+            error, CL_INVALID_ARG_SIZE,
+            "For an OpenCL platform prior to OpenCL 3.1, setting the size of a "
+            "local memory kernel argument to zero is an error",
+            TEST_FAIL);
+    }
+    else
+    {
+        test_error(
+            error,
+            "For an OpenCL 3.1 platform and newer, setting the size of a local "
+            "memory kernel argument to zero is valid.");
+    }
 
     return TEST_PASS;
 }

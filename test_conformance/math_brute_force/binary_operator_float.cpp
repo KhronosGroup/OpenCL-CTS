@@ -35,30 +35,8 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-// Thread specific data for a worker thread
-struct ThreadInfo
+struct TestInfo : public TestInfoBase
 {
-    // Input and output buffers for the thread
-    clMemWrapper inBuf;
-    clMemWrapper inBuf2;
-    Buffers outBuf;
-
-    float maxError; // max error value. Init to 0.
-    double
-        maxErrorValue; // position of the max error value (param 1).  Init to 0.
-    double maxErrorValue2; // position of the max error value (param 2).  Init
-                           // to 0.
-    MTdataHolder d;
-
-    // Per thread command queue to improve performance
-    clCommandQueueWrapper tQueue;
-};
-
-struct TestInfo
-{
-    size_t subBufferSize; // Size of the sub-buffer in elements
-    const Func *f; // A pointer to the function info
-
     // Programs for various vector sizes.
     Programs programs;
 
@@ -67,125 +45,8 @@ struct TestInfo
     KernelMatrix k;
 
     // Array of thread specific information
-    std::vector<ThreadInfo> tinfo;
-
-    cl_uint threadCount; // Number of worker threads
-    cl_uint jobCount; // Number of jobs
-    cl_uint step; // step between each chunk and the next.
-    cl_uint scale; // stride between individual test values
-    float ulps; // max_allowed ulps
-    int ftz; // non-zero if running in flush to zero mode
-    bool relaxedMode; // True if the test is being run in relaxed mode, false
-                      // otherwise.
-
-    // no special fields
+    std::vector<ThreadInfoBinary> tinfo;
 };
-
-// A table of more difficult cases to get right
-const float specialValues[] = {
-    -NAN,
-    -INFINITY,
-    -FLT_MAX,
-    MAKE_HEX_FLOAT(-0x1.000002p64f, -0x1000002L, 40),
-    MAKE_HEX_FLOAT(-0x1.0p64f, -0x1L, 64),
-    MAKE_HEX_FLOAT(-0x1.fffffep63f, -0x1fffffeL, 39),
-    MAKE_HEX_FLOAT(-0x1.000002p63f, -0x1000002L, 39),
-    MAKE_HEX_FLOAT(-0x1.0p63f, -0x1L, 63),
-    MAKE_HEX_FLOAT(-0x1.fffffep62f, -0x1fffffeL, 38),
-    MAKE_HEX_FLOAT(-0x1.000002p32f, -0x1000002L, 8),
-    MAKE_HEX_FLOAT(-0x1.0p32f, -0x1L, 32),
-    MAKE_HEX_FLOAT(-0x1.fffffep31f, -0x1fffffeL, 7),
-    MAKE_HEX_FLOAT(-0x1.000002p31f, -0x1000002L, 7),
-    MAKE_HEX_FLOAT(-0x1.0p31f, -0x1L, 31),
-    MAKE_HEX_FLOAT(-0x1.fffffep30f, -0x1fffffeL, 6),
-    -1000.f,
-    -100.f,
-    -4.0f,
-    -3.5f,
-    -3.0f,
-    MAKE_HEX_FLOAT(-0x1.800002p1f, -0x1800002L, -23),
-    -2.5f,
-    MAKE_HEX_FLOAT(-0x1.7ffffep1f, -0x17ffffeL, -23),
-    -2.0f,
-    MAKE_HEX_FLOAT(-0x1.800002p0f, -0x1800002L, -24),
-    -1.5f,
-    MAKE_HEX_FLOAT(-0x1.7ffffep0f, -0x17ffffeL, -24),
-    MAKE_HEX_FLOAT(-0x1.000002p0f, -0x1000002L, -24),
-    -1.0f,
-    MAKE_HEX_FLOAT(-0x1.fffffep-1f, -0x1fffffeL, -25),
-    MAKE_HEX_FLOAT(-0x1.000002p-1f, -0x1000002L, -25),
-    -0.5f,
-    MAKE_HEX_FLOAT(-0x1.fffffep-2f, -0x1fffffeL, -26),
-    MAKE_HEX_FLOAT(-0x1.000002p-2f, -0x1000002L, -26),
-    -0.25f,
-    MAKE_HEX_FLOAT(-0x1.fffffep-3f, -0x1fffffeL, -27),
-    MAKE_HEX_FLOAT(-0x1.000002p-126f, -0x1000002L, -150),
-    -FLT_MIN,
-    MAKE_HEX_FLOAT(-0x0.fffffep-126f, -0x0fffffeL, -150),
-    MAKE_HEX_FLOAT(-0x0.000ffep-126f, -0x0000ffeL, -150),
-    MAKE_HEX_FLOAT(-0x0.0000fep-126f, -0x00000feL, -150),
-    MAKE_HEX_FLOAT(-0x0.00000ep-126f, -0x000000eL, -150),
-    MAKE_HEX_FLOAT(-0x0.00000cp-126f, -0x000000cL, -150),
-    MAKE_HEX_FLOAT(-0x0.00000ap-126f, -0x000000aL, -150),
-    MAKE_HEX_FLOAT(-0x0.000008p-126f, -0x0000008L, -150),
-    MAKE_HEX_FLOAT(-0x0.000006p-126f, -0x0000006L, -150),
-    MAKE_HEX_FLOAT(-0x0.000004p-126f, -0x0000004L, -150),
-    MAKE_HEX_FLOAT(-0x0.000002p-126f, -0x0000002L, -150),
-    -0.0f,
-
-    +NAN,
-    +INFINITY,
-    +FLT_MAX,
-    MAKE_HEX_FLOAT(+0x1.000002p64f, +0x1000002L, 40),
-    MAKE_HEX_FLOAT(+0x1.0p64f, +0x1L, 64),
-    MAKE_HEX_FLOAT(+0x1.fffffep63f, +0x1fffffeL, 39),
-    MAKE_HEX_FLOAT(+0x1.000002p63f, +0x1000002L, 39),
-    MAKE_HEX_FLOAT(+0x1.0p63f, +0x1L, 63),
-    MAKE_HEX_FLOAT(+0x1.fffffep62f, +0x1fffffeL, 38),
-    MAKE_HEX_FLOAT(+0x1.000002p32f, +0x1000002L, 8),
-    MAKE_HEX_FLOAT(+0x1.0p32f, +0x1L, 32),
-    MAKE_HEX_FLOAT(+0x1.fffffep31f, +0x1fffffeL, 7),
-    MAKE_HEX_FLOAT(+0x1.000002p31f, +0x1000002L, 7),
-    MAKE_HEX_FLOAT(+0x1.0p31f, +0x1L, 31),
-    MAKE_HEX_FLOAT(+0x1.fffffep30f, +0x1fffffeL, 6),
-    +1000.f,
-    +100.f,
-    +4.0f,
-    +3.5f,
-    +3.0f,
-    MAKE_HEX_FLOAT(+0x1.800002p1f, +0x1800002L, -23),
-    2.5f,
-    MAKE_HEX_FLOAT(+0x1.7ffffep1f, +0x17ffffeL, -23),
-    +2.0f,
-    MAKE_HEX_FLOAT(+0x1.800002p0f, +0x1800002L, -24),
-    1.5f,
-    MAKE_HEX_FLOAT(+0x1.7ffffep0f, +0x17ffffeL, -24),
-    MAKE_HEX_FLOAT(+0x1.000002p0f, +0x1000002L, -24),
-    +1.0f,
-    MAKE_HEX_FLOAT(+0x1.fffffep-1f, +0x1fffffeL, -25),
-    MAKE_HEX_FLOAT(+0x1.000002p-1f, +0x1000002L, -25),
-    +0.5f,
-    MAKE_HEX_FLOAT(+0x1.fffffep-2f, +0x1fffffeL, -26),
-    MAKE_HEX_FLOAT(+0x1.000002p-2f, +0x1000002L, -26),
-    +0.25f,
-    MAKE_HEX_FLOAT(+0x1.fffffep-3f, +0x1fffffeL, -27),
-    MAKE_HEX_FLOAT(0x1.000002p-126f, 0x1000002L, -150),
-    +FLT_MIN,
-    MAKE_HEX_FLOAT(+0x0.fffffep-126f, +0x0fffffeL, -150),
-    MAKE_HEX_FLOAT(+0x0.000ffep-126f, +0x0000ffeL, -150),
-    MAKE_HEX_FLOAT(+0x0.0000fep-126f, +0x00000feL, -150),
-    MAKE_HEX_FLOAT(+0x0.00000ep-126f, +0x000000eL, -150),
-    MAKE_HEX_FLOAT(+0x0.00000cp-126f, +0x000000cL, -150),
-    MAKE_HEX_FLOAT(+0x0.00000ap-126f, +0x000000aL, -150),
-    MAKE_HEX_FLOAT(+0x0.000008p-126f, +0x0000008L, -150),
-    MAKE_HEX_FLOAT(+0x0.000006p-126f, +0x0000006L, -150),
-    MAKE_HEX_FLOAT(+0x0.000004p-126f, +0x0000004L, -150),
-    MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150),
-    +0.0f,
-};
-
-constexpr size_t specialValuesCount =
-    sizeof(specialValues) / sizeof(specialValues[0]);
 
 cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 {
@@ -193,7 +54,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     size_t buffer_elements = job->subBufferSize;
     size_t buffer_size = buffer_elements * sizeof(cl_float);
     cl_uint base = job_id * (cl_uint)job->step;
-    ThreadInfo *tinfo = &(job->tinfo[thread_id]);
+    ThreadInfoBinary *tinfo = &(job->tinfo[thread_id]);
     fptr func = job->f->func;
     int ftz = job->ftz;
     bool relaxedMode = job->relaxedMode;
@@ -239,6 +100,9 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     cl_uint *p = (cl_uint *)gIn + thread_id * buffer_elements;
     cl_uint *p2 = (cl_uint *)gIn2 + thread_id * buffer_elements;
     cl_uint idx = 0;
+
+    const std::vector<float> &specialValues = getFloatSpecialValues();
+    size_t specialValuesCount = specialValues.size();
     int totalSpecialValueCount = specialValuesCount * specialValuesCount;
     int lastSpecialJobIndex = (totalSpecialValueCount - 1) / buffer_elements;
 
@@ -252,8 +116,8 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
         for (; idx < buffer_elements; idx++)
         {
-            p[idx] = ((cl_uint *)specialValues)[x];
-            p2[idx] = ((cl_uint *)specialValues)[y];
+            p[idx] = ((cl_uint *)specialValues.data())[x];
+            p2[idx] = ((cl_uint *)specialValues.data())[y];
             ++x;
             if (x >= specialValuesCount)
             {

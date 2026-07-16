@@ -36,25 +36,8 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-// Thread specific data for a worker thread
-struct ThreadInfo
+struct TestInfo : public TestInfoBase
 {
-    // Input and output buffers for the thread
-    clMemWrapper inBuf;
-    clMemWrapper inBuf2;
-    Buffers outBuf;
-
-    MTdataHolder d;
-
-    // Per thread command queue to improve performance
-    clCommandQueueWrapper tQueue;
-};
-
-struct TestInfo
-{
-    size_t subBufferSize; // Size of the sub-buffer in elements
-    const Func *f; // A pointer to the function info
-
     // Programs for various vector sizes.
     Programs programs;
 
@@ -63,130 +46,8 @@ struct TestInfo
     KernelMatrix k;
 
     // Array of thread specific information
-    std::vector<ThreadInfo> tinfo;
-
-    cl_uint threadCount; // Number of worker threads
-    cl_uint jobCount; // Number of jobs
-    cl_uint step; // step between each chunk and the next.
-    cl_uint scale; // stride between individual test values
-    int ftz; // non-zero if running in flush to zero mode
-    bool relaxedMode; // True if test is running in relaxed mode, false
-                      // otherwise.
+    std::vector<ThreadInfoBinary> tinfo;
 };
-
-// A table of more difficult cases to get right
-const double specialValues[] = {
-    -NAN,
-    -INFINITY,
-    -DBL_MAX,
-    MAKE_HEX_DOUBLE(-0x1.0000000000001p64, -0x10000000000001LL, 12),
-    MAKE_HEX_DOUBLE(-0x1.0p64, -0x1LL, 64),
-    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp63, -0x1fffffffffffffLL, 11),
-    MAKE_HEX_DOUBLE(-0x1.0000000000001p63, -0x10000000000001LL, 11),
-    MAKE_HEX_DOUBLE(-0x1.0p63, -0x1LL, 63),
-    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp62, -0x1fffffffffffffLL, 10),
-    MAKE_HEX_DOUBLE(-0x1.000002p32, -0x1000002LL, 8),
-    MAKE_HEX_DOUBLE(-0x1.0p32, -0x1LL, 32),
-    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp31, -0x1fffffffffffffLL, -21),
-    MAKE_HEX_DOUBLE(-0x1.0000000000001p31, -0x10000000000001LL, -21),
-    MAKE_HEX_DOUBLE(-0x1.0p31, -0x1LL, 31),
-    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp30, -0x1fffffffffffffLL, -22),
-    -1000.0,
-    -100.0,
-    -4.0,
-    -3.5,
-    -3.0,
-    MAKE_HEX_DOUBLE(-0x1.8000000000001p1, -0x18000000000001LL, -51),
-    -2.5,
-    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp1, -0x17ffffffffffffLL, -51),
-    -2.0,
-    MAKE_HEX_DOUBLE(-0x1.8000000000001p0, -0x18000000000001LL, -52),
-    -1.5,
-    MAKE_HEX_DOUBLE(-0x1.7ffffffffffffp0, -0x17ffffffffffffLL, -52),
-    MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52),
-    -1.0,
-    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-1, -0x1fffffffffffffLL, -53),
-    MAKE_HEX_DOUBLE(-0x1.0000000000001p-1, -0x10000000000001LL, -53),
-    -0.5,
-    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-2, -0x1fffffffffffffLL, -54),
-    MAKE_HEX_DOUBLE(-0x1.0000000000001p-2, -0x10000000000001LL, -54),
-    -0.25,
-    MAKE_HEX_DOUBLE(-0x1.fffffffffffffp-3, -0x1fffffffffffffLL, -55),
-    MAKE_HEX_DOUBLE(-0x1.0000000000001p-1022, -0x10000000000001LL, -1074),
-    -DBL_MIN,
-    MAKE_HEX_DOUBLE(-0x0.fffffffffffffp-1022, -0x0fffffffffffffLL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.0000000000fffp-1022, -0x00000000000fffLL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.00000000000fep-1022, -0x000000000000feLL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.000000000000ep-1022, -0x0000000000000eLL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.000000000000cp-1022, -0x0000000000000cLL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.000000000000ap-1022, -0x0000000000000aLL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.0000000000008p-1022, -0x00000000000008LL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.0000000000007p-1022, -0x00000000000007LL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.0000000000006p-1022, -0x00000000000006LL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.0000000000005p-1022, -0x00000000000005LL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.0000000000004p-1022, -0x00000000000004LL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.0000000000003p-1022, -0x00000000000003LL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.0000000000002p-1022, -0x00000000000002LL, -1074),
-    MAKE_HEX_DOUBLE(-0x0.0000000000001p-1022, -0x00000000000001LL, -1074),
-    -0.0,
-
-    +NAN,
-    +INFINITY,
-    +DBL_MAX,
-    MAKE_HEX_DOUBLE(+0x1.0000000000001p64, +0x10000000000001LL, 12),
-    MAKE_HEX_DOUBLE(+0x1.0p64, +0x1LL, 64),
-    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp63, +0x1fffffffffffffLL, 11),
-    MAKE_HEX_DOUBLE(+0x1.0000000000001p63, +0x10000000000001LL, 11),
-    MAKE_HEX_DOUBLE(+0x1.0p63, +0x1LL, 63),
-    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp62, +0x1fffffffffffffLL, 10),
-    MAKE_HEX_DOUBLE(+0x1.000002p32, +0x1000002LL, 8),
-    MAKE_HEX_DOUBLE(+0x1.0p32, +0x1LL, 32),
-    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp31, +0x1fffffffffffffLL, -21),
-    MAKE_HEX_DOUBLE(+0x1.0000000000001p31, +0x10000000000001LL, -21),
-    MAKE_HEX_DOUBLE(+0x1.0p31, +0x1LL, 31),
-    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp30, +0x1fffffffffffffLL, -22),
-    +1000.0,
-    +100.0,
-    +4.0,
-    +3.5,
-    +3.0,
-    MAKE_HEX_DOUBLE(+0x1.8000000000001p1, +0x18000000000001LL, -51),
-    +2.5,
-    MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp1, +0x17ffffffffffffLL, -51),
-    +2.0,
-    MAKE_HEX_DOUBLE(+0x1.8000000000001p0, +0x18000000000001LL, -52),
-    +1.5,
-    MAKE_HEX_DOUBLE(+0x1.7ffffffffffffp0, +0x17ffffffffffffLL, -52),
-    MAKE_HEX_DOUBLE(-0x1.0000000000001p0, -0x10000000000001LL, -52),
-    +1.0,
-    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-1, +0x1fffffffffffffLL, -53),
-    MAKE_HEX_DOUBLE(+0x1.0000000000001p-1, +0x10000000000001LL, -53),
-    +0.5,
-    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-2, +0x1fffffffffffffLL, -54),
-    MAKE_HEX_DOUBLE(+0x1.0000000000001p-2, +0x10000000000001LL, -54),
-    +0.25,
-    MAKE_HEX_DOUBLE(+0x1.fffffffffffffp-3, +0x1fffffffffffffLL, -55),
-    MAKE_HEX_DOUBLE(+0x1.0000000000001p-1022, +0x10000000000001LL, -1074),
-    +DBL_MIN,
-    MAKE_HEX_DOUBLE(+0x0.fffffffffffffp-1022, +0x0fffffffffffffLL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.0000000000fffp-1022, +0x00000000000fffLL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.00000000000fep-1022, +0x000000000000feLL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.000000000000ep-1022, +0x0000000000000eLL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.000000000000cp-1022, +0x0000000000000cLL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.000000000000ap-1022, +0x0000000000000aLL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.0000000000008p-1022, +0x00000000000008LL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.0000000000007p-1022, +0x00000000000007LL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.0000000000006p-1022, +0x00000000000006LL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.0000000000005p-1022, +0x00000000000005LL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.0000000000004p-1022, +0x00000000000004LL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.0000000000003p-1022, +0x00000000000003LL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.0000000000002p-1022, +0x00000000000002LL, -1074),
-    MAKE_HEX_DOUBLE(+0x0.0000000000001p-1022, +0x00000000000001LL, -1074),
-    +0.0,
-};
-
-constexpr size_t specialValuesCount =
-    sizeof(specialValues) / sizeof(specialValues[0]);
 
 cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 {
@@ -194,7 +55,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     size_t buffer_elements = job->subBufferSize;
     size_t buffer_size = buffer_elements * sizeof(cl_double);
     cl_uint base = job_id * (cl_uint)job->step;
-    ThreadInfo *tinfo = &(job->tinfo[thread_id]);
+    ThreadInfoBinary *tinfo = &(job->tinfo[thread_id]);
     dptr dfunc = job->f->dfunc;
     int ftz = job->ftz;
     bool relaxedMode = job->relaxedMode;
@@ -234,6 +95,9 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     double *p = (double *)gIn + thread_id * buffer_elements;
     double *p2 = (double *)gIn2 + thread_id * buffer_elements;
     cl_uint idx = 0;
+
+    const std::vector<double> &specialValues = getDoubleSpecialValues();
+    size_t specialValuesCount = specialValues.size();
     int totalSpecialValueCount = specialValuesCount * specialValuesCount;
     int lastSpecialJobIndex = (totalSpecialValueCount - 1) / buffer_elements;
 

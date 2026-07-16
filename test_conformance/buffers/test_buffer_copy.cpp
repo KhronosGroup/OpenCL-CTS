@@ -39,7 +39,8 @@ static int verify_copy_buffer(int *inptr, int *outptr, int n)
 
 using alignedOwningPtr = std::unique_ptr<cl_int[], decltype(&align_free)>;
 
-static int test_copy( cl_command_queue queue, cl_context context, int num_elements, MTdata d )
+static int test_copy(cl_device_id device, cl_command_queue queue,
+                     cl_context context, int num_elements, MTdata d)
 {
     clMemWrapper buffers[2];
     cl_int err = CL_SUCCESS;
@@ -76,10 +77,19 @@ static int test_copy( cl_command_queue queue, cl_context context, int num_elemen
         return TEST_FAIL;
     }
 
+    const bool has_immutable_memory_extension =
+        is_extension_available(device, "cl_ext_immutable_memory_objects");
+
     for (int src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
     {
         for (int dst_flag_id = 0; dst_flag_id < NUM_FLAGS; dst_flag_id++)
         {
+            if (((flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+                 || (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT))
+                && !has_immutable_memory_extension)
+            {
+                continue;
+            }
             log_info("Testing with cl_mem_flags src: %s dst: %s\n", flag_set_names[src_flag_id], flag_set_names[dst_flag_id]);
 
             for (int i = 0; i < num_elements; i++)
@@ -88,7 +98,6 @@ static int test_copy( cl_command_queue queue, cl_context context, int num_elemen
                 out_ptr[i] = static_cast<int>(0xdeadbeef);
                 reference_ptr[i] = (int)genrand_int32(d);
             }
-
 
             if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
                 buffers[0] = clCreateBuffer(context, flag_set[src_flag_id],
@@ -116,7 +125,9 @@ static int test_copy( cl_command_queue queue, cl_context context, int num_elemen
                 return TEST_FAIL;
             }
 
-            if (!(flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) && !(flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR)) {
+            if (!(flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR)
+                && !(flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
+            {
                 err = clEnqueueWriteBuffer(queue, buffers[0], CL_TRUE, 0,
                                            sizeof(cl_int) * num_elements,
                                            reference_ptr.get(), 0, nullptr,
@@ -130,11 +141,44 @@ static int test_copy( cl_command_queue queue, cl_context context, int num_elemen
             err = clEnqueueCopyBuffer(queue, buffers[0], buffers[1], 0, 0,
                                       sizeof(cl_int) * num_elements, 0, nullptr,
                                       nullptr);
-            if ( err != CL_SUCCESS ){
+            if ((flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT))
+            {
+                if (err != CL_INVALID_OPERATION)
+                {
+                    test_failure_error_ret(err, CL_INVALID_OPERATION,
+                                           "clEnqueueCopyBuffer should return "
+                                           "CL_INVALID_OPERATION when: "
+                                           "\"dst_buffer is created with "
+                                           "CL_MEM_IMMUTABLE_EXT flag\"",
+                                           TEST_FAIL);
+                    return TEST_FAIL;
+                }
+            }
+            else if (err != CL_SUCCESS)
+            {
                 print_error(err, "clCopyArray failed\n");
                 return TEST_FAIL;
             }
 
+            err = clEnqueueReadBuffer(queue, buffers[0], true, 0,
+                                      sizeof(int) * num_elements, out_ptr.get(),
+                                      0, nullptr, nullptr);
+            if (verify_copy_buffer(reference_ptr.get(), out_ptr.get(),
+                                   num_elements))
+            {
+                log_error("test failed\n");
+                return TEST_FAIL;
+            }
+            else
+            {
+                log_info("test passed\n");
+            }
+
+            // Reset out_ptr
+            for (int i = 0; i < num_elements; i++)
+            {
+                out_ptr[i] = (int)0xdeadbeef; // seed with incorrect data
+            }
             err = clEnqueueReadBuffer(queue, buffers[1], true, 0,
                                       sizeof(int) * num_elements, out_ptr.get(),
                                       0, nullptr, nullptr);
@@ -143,14 +187,20 @@ static int test_copy( cl_command_queue queue, cl_context context, int num_elemen
                 return TEST_FAIL;
             }
 
-            if (verify_copy_buffer(reference_ptr.get(), out_ptr.get(),
-                                   num_elements))
+            int *target_buffer = reference_ptr.get();
+            if (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT)
             {
-                log_error( " test failed\n" );
+                target_buffer = invalid_ptr.get();
+            }
+
+            if (verify_copy_buffer(target_buffer, out_ptr.get(), num_elements))
+            {
+                log_error("test failed\n");
                 return TEST_FAIL;
             }
-            else{
-                log_info( " test passed\n" );
+            else
+            {
+                log_info("test passed\n");
             }
         } // dst flags
     } // src flags
@@ -160,7 +210,10 @@ static int test_copy( cl_command_queue queue, cl_context context, int num_elemen
 }   // end test_copy()
 
 
-static int testPartialCopy( cl_command_queue queue, cl_context context, int num_elements, cl_uint srcStart, cl_uint dstStart, int size, MTdata d )
+static int testPartialCopy(cl_device_id device, cl_command_queue queue,
+                           cl_context context, int num_elements,
+                           cl_uint srcStart, cl_uint dstStart, int size,
+                           MTdata d)
 {
     clMemWrapper buffers[2];
     cl_int err = CL_SUCCESS;
@@ -197,10 +250,19 @@ static int testPartialCopy( cl_command_queue queue, cl_context context, int num_
         return TEST_FAIL;
     }
 
+    const bool has_immutable_memory_extension =
+        is_extension_available(device, "cl_ext_immutable_memory_objects");
+
     for (int src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
     {
         for (int dst_flag_id = 0; dst_flag_id < NUM_FLAGS; dst_flag_id++)
         {
+            if (((flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+                 || (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT))
+                && !has_immutable_memory_extension)
+            {
+                continue;
+            }
             log_info("Testing with cl_mem_flags src: %s dst: %s\n", flag_set_names[src_flag_id], flag_set_names[dst_flag_id]);
 
             for (int i = 0; i < num_elements; i++)
@@ -236,7 +298,9 @@ static int testPartialCopy( cl_command_queue queue, cl_context context, int num_
                 return TEST_FAIL;
             }
 
-            if (!(flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) && !(flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR)){
+            if (!(flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR)
+                && !(flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
+            {
                 err = clEnqueueWriteBuffer(queue, buffers[0], CL_TRUE, 0,
                                            sizeof(cl_int) * num_elements,
                                            reference_ptr.get(), 0, nullptr,
@@ -251,27 +315,72 @@ static int testPartialCopy( cl_command_queue queue, cl_context context, int num_
                 queue, buffers[0], buffers[1], srcStart * sizeof(cl_int),
                 dstStart * sizeof(cl_int), sizeof(cl_int) * size, 0, nullptr,
                 nullptr);
-            if ( err != CL_SUCCESS){
-                print_error(err, "clEnqueueCopyBuffer failed\n");
+            if ((flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT))
+            {
+                if (err != CL_INVALID_OPERATION)
+                {
+                    test_failure_error_ret(err, CL_INVALID_OPERATION,
+                                           "clEnqueueCopyBuffer should return "
+                                           "CL_INVALID_OPERATION when: "
+                                           "\"dst_buffer is created with "
+                                           "CL_MEM_IMMUTABLE_EXT flag\"",
+                                           TEST_FAIL);
+                }
+            }
+            else if (err != CL_SUCCESS)
+            {
+                print_error(err, "clCopyArray failed\n");
                 return TEST_FAIL;
             }
 
+            err = clEnqueueReadBuffer(queue, buffers[0], true, 0,
+                                      sizeof(int) * num_elements, out_ptr.get(),
+                                      0, nullptr, nullptr);
+            if (err != CL_SUCCESS)
+            {
+                print_error(err, "clEnqueueReadBuffer failed\n");
+                return TEST_FAIL;
+            }
+            if (verify_copy_buffer(reference_ptr.get(), out_ptr.get(),
+                                   num_elements))
+            {
+                log_error("test failed\n");
+                return TEST_FAIL;
+            }
+            else
+            {
+                log_info("test passed\n");
+            }
+
+            // Reset out_ptr
+            for (int i = 0; i < num_elements; i++)
+            {
+                out_ptr[i] = (int)0xdeadbeef; // seed with incorrect data
+            }
             err = clEnqueueReadBuffer(queue, buffers[1], true, 0,
                                       sizeof(int) * num_elements, out_ptr.get(),
                                       0, nullptr, nullptr);
-            if ( err != CL_SUCCESS){
+            if (err != CL_SUCCESS)
+            {
                 print_error(err, "clEnqueueReadBuffer failed\n");
                 return TEST_FAIL;
             }
 
-            if (verify_copy_buffer(reference_ptr.get() + srcStart,
-                                   out_ptr.get() + dstStart, size))
+            cl_int *target_buffer = reference_ptr.get() + srcStart;
+            if (flag_set[dst_flag_id] & CL_MEM_IMMUTABLE_EXT)
             {
-                log_error("buffer_COPY test failed\n");
+                target_buffer = invalid_ptr.get();
+            }
+
+            if (verify_copy_buffer(target_buffer, out_ptr.get() + dstStart,
+                                   size))
+            {
+                log_error("test failed\n");
                 return TEST_FAIL;
             }
-            else{
-                log_info("buffer_COPY test passed\n");
+            else
+            {
+                log_info("test passed\n");
             }
         } // dst mem flags
     } // src mem flags
@@ -289,7 +398,7 @@ REGISTER_TEST(buffer_copy)
 
     // test the preset size
     log_info( "set size: %d: ", num_elements );
-    if (test_copy(queue, context, num_elements, d) != TEST_PASS)
+    if (test_copy(device, queue, context, num_elements, d) != TEST_PASS)
     {
         err++;
     }
@@ -298,7 +407,7 @@ REGISTER_TEST(buffer_copy)
     for ( i = 0; i < 8; i++ ){
         size = (int)get_random_float(2.f,131072.f, d);
         log_info( "random size: %d: ", size );
-        if (test_copy(queue, context, size, d) != TEST_PASS)
+        if (test_copy(device, queue, context, size, d) != TEST_PASS)
         {
             err++;
         }
@@ -324,8 +433,8 @@ REGISTER_TEST(buffer_partial_copy)
         size = (int)get_random_float( 8.f, (float)(num_elements - srcStart), d );
         dstStart = (cl_uint)get_random_float( 0.f, (float)(num_elements - size), d );
         log_info( "random partial copy from %d to %d, size: %d: ", (int)srcStart, (int)dstStart, size );
-        if (testPartialCopy(queue, context, num_elements, srcStart, dstStart,
-                            size, d)
+        if (testPartialCopy(device, queue, context, num_elements, srcStart,
+                            dstStart, size, d)
             != TEST_PASS)
         {
             err++;

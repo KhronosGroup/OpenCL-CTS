@@ -21,13 +21,6 @@
 #define SPV_ENABLE_UTILITY_CODE
 #include <spirv/unified1/spirv.hpp>
 
-static bool is_spirv_version_supported(cl_device_id deviceID,
-                                       const std::string& version)
-{
-    std::string ilVersions = get_device_il_version_string(deviceID);
-    return ilVersions.find(version) != std::string::npos;
-}
-
 static int doQueries(cl_device_id device,
                      std::vector<const char*>& extendedInstructionSets,
                      std::vector<const char*>& extensions,
@@ -726,7 +719,7 @@ REGISTER_TEST(spirv_query_dependencies)
         // Check if a SPIR-V version dependency is satisfied
         const auto& version_dep = it->second.version;
         if (!version_dep.empty()
-            && is_spirv_version_supported(device, version_dep))
+            && is_il_available(device, version_dep.c_str()))
         {
             continue;
         }
@@ -757,7 +750,7 @@ REGISTER_TEST(spirv_query_dependencies)
         }
         for (const auto& extension_dep : it->second.extensions)
         {
-            log_error("Checked for SPIR-V extension %s.n",
+            log_error("Checked for SPIR-V extension %s.\n",
                       extension_dep.c_str());
         }
         return TEST_FAIL;

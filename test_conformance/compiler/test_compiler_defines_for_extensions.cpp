@@ -17,6 +17,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include <cinttypes>
+#include <vector>
 #ifndef _WIN32
 #include <unistd.h>
 #endif
@@ -59,6 +60,7 @@ const char *known_extensions[] = {
     // API-only extensions after this point.  If you add above here, modify
     // first_API_extension below.
     "cl_khr_icd",
+    "cl_khr_icd_unloadable",
     "cl_khr_gl_sharing",
     "cl_khr_gl_event",
     "cl_khr_d3d10_sharing",
@@ -98,7 +100,8 @@ const char *known_extensions[] = {
     "cl_khr_command_buffer_multi_device",
     "cl_khr_external_memory_android_hardware_buffer",
     "cl_khr_unified_svm",
-    "cl_khr_spirv_queries"
+    "cl_khr_spirv_queries",
+    "cl_khr_cooperative_matrix",
 };
 // clang-format on
 
@@ -147,14 +150,10 @@ REGISTER_TEST(compiler_defines_for_extensions)
     error = clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS, 0, NULL, &size);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS size failed");
 
-    char *extensions = (char*)malloc(sizeof(char)*(size + 1));
-    if (extensions == 0) {
-        log_error("Failed to allocate memory for extensions string.\n");
-        return -1;
-    }
-    memset( extensions, CHAR_MIN, sizeof(char)*(size+1) );
+    std::vector<char> extensions(size + 1, CHAR_MIN);
 
-    error = clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS, sizeof(char)*size, extensions, NULL);
+    error = clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS, sizeof(char) * size,
+                            extensions.data(), NULL);
     test_error(error, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS failed");
 
     // Check to make sure the extension string is NUL terminated.
@@ -166,7 +165,7 @@ REGISTER_TEST(compiler_defines_for_extensions)
     extensions[size] = '\0';    // set last char to NUL to avoid problems with string functions later
 
     // test for termination with '\0'
-    size_t stringSize = strlen( extensions );
+    size_t stringSize = strlen(extensions.data());
     if( stringSize == size )
     {
         test_error( -1, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS is not NUL terminated!" );
@@ -178,13 +177,13 @@ REGISTER_TEST(compiler_defines_for_extensions)
     char *extensions_supported[1024];
     Extension_Type extension_type[1024];
     int num_of_supported_extensions = 0;
-    char *currentP = extensions;
+    char *currentP = extensions.data();
 
     memset( extension_type, 0, sizeof( extension_type) );
 
     bool failed = false;
     // loop over extension string
-    while (currentP != extensions + stringSize)
+    while (currentP != extensions.data() + stringSize)
     {
         // skip leading white space
         while( *currentP == ' ' )
@@ -193,7 +192,7 @@ REGISTER_TEST(compiler_defines_for_extensions)
         // Exit if end of string
         if( *currentP == '\0' )
         {
-            if( currentP != extensions + stringSize)
+            if (currentP != extensions.data() + stringSize)
             {
                 test_error( -1, "clGetDeviceInfo for CL_DEVICE_EXTENSIONS contains a NUL in the middle of the string!" );
                 return -1;
@@ -205,7 +204,7 @@ REGISTER_TEST(compiler_defines_for_extensions)
         char *start = currentP;             // start of extension name
 
         // loop looking for the end
-        while (*currentP != ' ' && currentP != extensions + stringSize)
+        while (*currentP != ' ' && currentP != extensions.data() + stringSize)
         {
             // check for non-space white space in the extension name
             if( isspace(*currentP) )
@@ -491,7 +490,6 @@ REGISTER_TEST(compiler_defines_for_extensions)
     {
         free(extensions_not_supported[i]);
     }
-    free(extensions);
 
     if (total_errors)
         return -1;

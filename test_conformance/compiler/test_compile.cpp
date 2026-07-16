@@ -16,6 +16,7 @@
 #include "testBase.h"
 
 #include <filesystem>
+#include <vector>
 
 #if defined(_WIN32)
 #include <time.h>
@@ -1625,6 +1626,66 @@ REGISTER_TEST(simple_link_only)
 
     return 0;
 }
+
+REGISTER_TEST(link_error_returns_program)
+{
+    int error;
+    clProgramWrapper program;
+
+    log_info("Testing clLinkProgram failure returns a valid program...\n");
+    error = create_single_kernel_helper_create_program(context, &program, 1,
+                                                       &another_simple_kernel);
+    if (program == NULL || error != CL_SUCCESS)
+    {
+        log_error(
+            "ERROR: Unable to create a simple test program! (%s in %s:%d)\n",
+            IGetErrorString(error), __FILE__, __LINE__);
+        return -1;
+    }
+
+    error =
+        clCompileProgram(program, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
+    test_error(error, "Unable to compile a simple program");
+
+    clProgramWrapper my_newly_linked_program = clLinkProgram(
+        context, 1, &device, NULL, 1, &program, NULL, NULL, &error);
+
+    if (error != CL_LINK_PROGRAM_FAILURE)
+    {
+        log_error("ERROR: Expected clLinkProgram to fail with "
+                  "CL_LINK_PROGRAM_FAILURE, but got: %s\n",
+                  IGetErrorString(error));
+        return -1;
+    }
+
+    if (my_newly_linked_program == NULL)
+    {
+        log_error("ERROR: clLinkProgram returned NULL on linker failure, "
+                  "but must return a valid program\n");
+        return -1;
+    }
+
+    // Test that build log is queryable
+    size_t size_ret;
+    error = clGetProgramBuildInfo(my_newly_linked_program, device,
+                                  CL_PROGRAM_BUILD_LOG, 0, NULL, &size_ret);
+    test_error(error, "clGetProgramBuildInfo CL_PROGRAM_BUILD_LOG failed");
+    if (size_ret == 0)
+    {
+        log_error("ERROR: Expected build log to be non-empty\n");
+        return -1;
+    }
+
+    std::vector<char> log(size_ret);
+    error =
+        clGetProgramBuildInfo(my_newly_linked_program, device,
+                              CL_PROGRAM_BUILD_LOG, size_ret, log.data(), NULL);
+    test_error(error, "clGetProgramBuildInfo CL_PROGRAM_BUILD_LOG failed");
+    log_info("Expected Link Failure Build Log:\n%s\n", log.data());
+
+    return 0;
+}
+
 
 REGISTER_TEST(two_file_regular_variable_access)
 {
@@ -3983,6 +4044,9 @@ REGISTER_TEST(multiple_build_program)
         error = clEnqueueNDRangeKernel(queue, kernel0, 1, NULL, &num_threads,
                                        NULL, 0, NULL, NULL);
         test_error(error, "clEnqueueNDRangeKernel failed");
+
+        error = clFinish(queue);
+        test_error(error, "clFinish failed");
     }
 
     {
@@ -4001,10 +4065,10 @@ REGISTER_TEST(multiple_build_program)
         error = clEnqueueNDRangeKernel(queue, kernel1, 1, NULL, &num_threads,
                                        NULL, 0, NULL, NULL);
         test_error(error, "clEnqueueNDRangeKernel failed");
-    }
 
-    error = clFinish(queue);
-    test_error(error, "clFinish failed");
+        error = clFinish(queue);
+        test_error(error, "clFinish failed");
+    }
 
     std::vector<cl_int> test_values(num_threads, 0);
     error = clEnqueueReadBuffer(queue, out_stream_0, true, 0,

@@ -137,10 +137,13 @@ public:
 };
 
 class VulkanDevice {
+    friend class VulkanMemoryTypeList;
+
 protected:
     const VulkanPhysicalDevice &m_physicalDevice;
     VkDevice m_vkDevice;
     VulkanQueueFamilyToQueueListMap m_queueFamilyIndexToQueueListMap;
+    VulkanMemoryTypeList m_memoryTypeList;
 
     VulkanDevice(const VulkanDevice &device);
 
@@ -148,12 +151,15 @@ public:
     VulkanDevice(
         const VulkanPhysicalDevice &physicalDevice = getVulkanPhysicalDevice(),
         const VulkanQueueFamilyToQueueCountMap &queueFamilyToQueueCountMap =
-            getDefaultVulkanQueueFamilyToQueueCountMap());
+            getDefaultVulkanQueueFamilyToQueueCountMap(),
+        bool useShaderInt8 = false);
     virtual ~VulkanDevice();
+    void waitIdle();
     const VulkanPhysicalDevice &getPhysicalDevice() const;
     VulkanQueue &
     getQueue(const VulkanQueueFamily &queueFamily /* = getVulkanQueueFamily()*/,
              uint32_t queueIndex = 0);
+    const VulkanMemoryTypeList &getMemoryTypeList() const;
     operator VkDevice() const;
 };
 
@@ -296,7 +302,8 @@ public:
     VulkanComputePipeline(const VulkanDevice &device,
                           const VulkanPipelineLayout &pipelineLayout,
                           const VulkanShaderModule &shaderModule,
-                          const std::string &entryFuncName = "main");
+                          const std::string &entryFuncName = "main",
+                          const VkSpecializationInfo *spec = nullptr);
     virtual ~VulkanComputePipeline();
     VulkanPipelineBindPoint getPipelineBindPoint() const;
 };
@@ -342,7 +349,7 @@ public:
     void updateArray(uint32_t binding, unsigned numBuffers,
                      const VulkanBufferList &buffers);
     void update(uint32_t binding, const VulkanImageView &imageView);
-    void updateArray(uint32_t binding,
+    void updateArray(uint32_t binding, unsigned numImages,
                      const VulkanImageViewList &imageViewList);
     operator VkDescriptorSet() const;
 };

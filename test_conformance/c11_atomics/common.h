@@ -23,8 +23,9 @@
 #include "host_atomics.h"
 
 #include "CL/cl_half.h"
-
+#include <algorithm>
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include <vector>
 
@@ -75,6 +76,13 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+extern bool gFloatAtomicsSupported;
+extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
+extern cl_device_fp_config gDoubleCaps;
+
+extern cl_device_fp_config gDoubleFPConfig;
+extern cl_device_fp_config gFloatFPConfig;
+extern cl_device_fp_config gHalfFPConfig;
 
 extern cl_half_rounding_mode gHalfRoundingMode;
 extern bool gFloatAtomicsSupported;
@@ -154,12 +162,12 @@ public:
         return 0;
     }
     CBasicTest(TExplicitAtomicType dataType, bool useSVM)
-        : CTest(), _maxDeviceThreads(MAX_DEVICE_THREADS), _dataType(dataType),
-          _useSVM(useSVM), _startValue(255), _localMemory(false),
-          _declaredInProgram(false), _usedInFunction(false),
-          _genericAddrSpace(false), _oldValueCheck(true),
-          _localRefValues(false), _maxGroupSize(0), _passCount(0),
-          _iterations(gInternalIterations)
+        : CTest(), _dataType(dataType), _useSVM(useSVM), _startValue(255),
+          _localMemory(false), _declaredInProgram(false),
+          _usedInFunction(false), _genericAddrSpace(false),
+          _oldValueCheck(true), _localRefValues(false), _maxGroupSize(0),
+          _passCount(0), _iterations(gInternalIterations),
+          _maxDeviceThreads(MAX_DEVICE_THREADS), _deviceThreads(0)
     {}
     virtual ~CBasicTest()
     {
@@ -181,9 +189,11 @@ public:
     virtual bool
     IsTestNotAsExpected(const HostDataType &expected,
                         const std::vector<HostAtomicType> &testValues,
+                        const std::vector<HostDataType> &startRefValues,
                         cl_uint whichDestValue)
     {
-        return expected != testValues[whichDestValue];
+        return expected
+            != static_cast<HostDataType>(testValues[whichDestValue]);
     }
     virtual bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                               MTdata d)
@@ -239,12 +249,12 @@ public:
                                       cl_command_queue queue)
     {
         int error = 0;
-        DeclaredInProgram(false);
+        SetDeclaredInProgram(false);
         EXECUTE_TEST(error,
                      ExecuteForEachPointerType(deviceID, context, queue));
         if (!UseSVM())
         {
-            DeclaredInProgram(true);
+            SetDeclaredInProgram(true);
             EXECUTE_TEST(error,
                          ExecuteForEachPointerType(deviceID, context, queue));
         }
@@ -255,13 +265,13 @@ public:
                                            cl_command_queue queue)
     {
         int error = 0;
-        if (_maxDeviceThreads > 0 && !UseSVM())
+        if (_deviceThreads > 0 && !UseSVM())
         {
             SetLocalMemory(true);
             EXECUTE_TEST(
                 error, ExecuteForEachDeclarationType(deviceID, context, queue));
         }
-        if (_maxDeviceThreads + MaxHostThreads() > 0)
+        if (_deviceThreads + MaxHostThreads() > 0)
         {
             SetLocalMemory(false);
             EXECUTE_TEST(
@@ -270,7 +280,7 @@ public:
         return error;
     }
     virtual int Execute(cl_device_id deviceID, cl_context context,
-                        cl_command_queue queue, int num_elements)
+                        cl_command_queue queue, int num_elements) override
     {
         if (sizeof(HostAtomicType) != DataType().Size(deviceID))
         {
@@ -310,7 +320,12 @@ public:
             if (UseSVM()) return 0;
             _maxDeviceThreads = 0;
         }
-        if (_maxDeviceThreads + MaxHostThreads() == 0) return 0;
+
+        _deviceThreads = (num_elements > 0)
+            ? std::min(cl_uint(num_elements), _maxDeviceThreads)
+            : _maxDeviceThreads;
+
+        if (_deviceThreads + MaxHostThreads() == 0) return 0;
         return ExecuteForEachParameterSet(deviceID, context, queue);
     }
     virtual void HostFunction(cl_uint tid, cl_uint threadCount,
@@ -323,7 +338,7 @@ public:
     {
         return AtomicTypeExtendedInfo<HostDataType>(_dataType);
     }
-    cl_uint _maxDeviceThreads;
+
     virtual cl_uint MaxHostThreads()
     {
         if (UseSVM() || gHost)
@@ -420,7 +435,7 @@ public:
     HostDataType StartValue() { return _startValue; }
     void SetLocalMemory(bool local) { _localMemory = local; }
     bool LocalMemory() { return _localMemory; }
-    void DeclaredInProgram(bool declaredInProgram)
+    void SetDeclaredInProgram(bool declaredInProgram)
     {
         _declaredInProgram = declaredInProgram;
     }
@@ -477,6 +492,8 @@ private:
     cl_uint _currentGroupSize;
     cl_uint _passCount;
     const cl_int _iterations;
+    cl_uint _maxDeviceThreads;
+    cl_uint _deviceThreads;
 };
 
 template <typename HostAtomicType, typename HostDataType>
@@ -702,6 +719,28 @@ public:
                                            cl_context context,
                                            cl_command_queue queue)
     {
+        // Comparator for orders and scopes.
+        const auto checkValidity = [](TExplicitMemoryOrderType success,
+                                      TExplicitMemoryOrderType failure,
+                                      TExplicitMemoryScopeType scope) {
+            // Both memory order arguments must be set (or neither).
+            if ((success == MEMORY_ORDER_EMPTY || failure == MEMORY_ORDER_EMPTY)
+                && success != failure)
+                return false;
+
+            // Memory scope without memory order is disallowed.
+            if (success == MEMORY_ORDER_EMPTY && scope != MEMORY_SCOPE_EMPTY)
+                return false;
+
+            // Failure must not be release or acq_rel.
+            if (failure == MEMORY_ORDER_RELEASE
+                || failure == MEMORY_ORDER_ACQ_REL)
+                return false;
+
+            // Failure must not be stronger than success.
+            return failure <= success;
+        };
+
         // repeat test for each reasonable memory order/scope combination
         std::vector<TExplicitMemoryOrderType> memoryOrder;
         std::vector<TExplicitMemoryScopeType> memoryScope;
@@ -719,16 +758,10 @@ public:
             {
                 for (unsigned si = 0; si < memoryScope.size(); si++)
                 {
-                    if ((memoryOrder[oi] == MEMORY_ORDER_EMPTY
-                         || memoryOrder[o2i] == MEMORY_ORDER_EMPTY)
-                        && memoryOrder[oi] != memoryOrder[o2i])
-                        continue; // both memory order arguments must be set (or
-                                  // none)
-                    if ((memoryOrder[oi] == MEMORY_ORDER_EMPTY
-                         || memoryOrder[o2i] == MEMORY_ORDER_EMPTY)
-                        && memoryScope[si] != MEMORY_SCOPE_EMPTY)
-                        continue; // memory scope without memory order is not
-                                  // allowed
+                    if (!checkValidity(memoryOrder[oi], memoryOrder[o2i],
+                                       memoryScope[si]))
+                        continue;
+
                     MemoryOrder(memoryOrder[oi]);
                     MemoryOrder2(memoryOrder[o2i]);
                     MemoryScope(memoryScope[si]);
@@ -895,12 +928,25 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
             + ss.str() + "] = {\n";
         ss.str("");
 
-        if (CBasicTest<HostAtomicType, HostDataType>::DataType()._type
-            == TYPE_ATOMIC_FLOAT)
-            ss << std::setprecision(10) << _startValue;
-        else if (CBasicTest<HostAtomicType, HostDataType>::DataType()._type
-                 == TYPE_ATOMIC_HALF)
-            ss << cl_half_to_float(static_cast<cl_half>(_startValue));
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
+        {
+            if (std::isinf(_startValue))
+                ss << (_startValue < 0 ? "-" : "") << "INFINITY";
+            else if (std::isnan(_startValue))
+                ss << "0.0 / 0.0";
+            else
+                ss << std::setprecision(
+                    std::numeric_limits<HostDataType>::max_digits10)
+                   << _startValue;
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            ss << std::setprecision(std::numeric_limits<float>::max_digits10)
+               << cl_half_to_float(_startValue);
+        }
         else
             ss << _startValue;
 
@@ -1137,7 +1183,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
     MTdata d;
     size_t typeSize = DataType().Size(deviceID);
 
-    deviceThreadCount = _maxDeviceThreads;
+    deviceThreadCount = _deviceThreads;
     hostThreadCount = MaxHostThreads();
     threadCount = deviceThreadCount + hostThreadCount;
 
@@ -1202,9 +1248,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
             programSource = PragmaHeader(deviceID) + ProgramHeader(numDestItems)
                 + FunctionCode() + KernelCode(numDestItems);
             programLine = programSource.c_str();
-            if (create_single_kernel_helper_with_build_options(
-                    context, &program, &kernel, 1, &programLine,
-                    "test_atomic_kernel", gOldAPI ? "" : nullptr))
+            if (create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &programLine, "test_atomic_kernel"))
             {
                 return -1;
             }
@@ -1253,7 +1298,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                 CurrentGroupSize() * CurrentGroupNum(deviceThreadCount);
         threadCount = deviceThreadCount + hostThreadCount;
     }
-    if (gDebug)
+    if (gDebug && programLine != nullptr)
     {
         log_info("Program source:\n");
         log_info("%s\n", programLine);
@@ -1289,7 +1334,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
     numDestItems = NumResults(threadCount, deviceID);
 
     destItems.resize(numDestItems);
-    for (cl_uint i = 0; i < numDestItems; i++) destItems[i] = _startValue;
+    for (cl_uint i = 0; i < numDestItems; i++)
+        destItems[i] = static_cast<HostAtomicType>(_startValue);
 
     // Create main buffer with atomic variables (array size dependent on
     // particular test)
@@ -1462,25 +1508,51 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (IsTestNotAsExpected(expected, destItems, i))
+        if (IsTestNotAsExpected(expected, destItems, startRefValues, i))
         {
             std::stringstream logLine;
-            logLine << "ERROR: Result " << i
-                    << " from kernel does not validate! (should be " << expected
-                    << ", was " << destItems[i] << ")\n";
-            log_error("%s", logLine.str().c_str());
-            for (i = 0; i < threadCount; i++)
+            if constexpr (std::is_same_v<HostDataType, cl_half>)
             {
-                logLine.str("");
-                logLine << " --- " << i << " - ";
-                if (startRefValues.size())
-                    logLine << startRefValues[i] << " -> " << refValues[i];
-                else
-                    logLine << refValues[i];
-                logLine << " --- ";
-                if (i < numDestItems) logLine << destItems[i];
-                logLine << "\n";
-                log_info("%s", logLine.str().c_str());
+                logLine << "ERROR: Result " << i
+                        << " from kernel does not validate! (should be "
+                        << cl_half_to_float(expected) << ", was "
+                        << cl_half_to_float(destItems[i]) << ")\n";
+                log_error("%s", logLine.str().c_str());
+                for (i = 0; i < threadCount; i++)
+                {
+                    logLine.str("");
+                    logLine << " --- " << i << " - ";
+                    if (startRefValues.size())
+                        logLine << cl_half_to_float(startRefValues[i]) << " -> "
+                                << cl_half_to_float(refValues[i]);
+                    else
+                        logLine << cl_half_to_float(refValues[i]);
+                    logLine << " --- ";
+                    if (i < numDestItems)
+                        logLine << cl_half_to_float(destItems[i]);
+                    logLine << "\n";
+                    log_info("%s", logLine.str().c_str());
+                }
+            }
+            else
+            {
+                logLine << "ERROR: Result " << i
+                        << " from kernel does not validate! (should be "
+                        << expected << ", was " << destItems[i] << ")\n";
+                log_error("%s", logLine.str().c_str());
+                for (i = 0; i < threadCount; i++)
+                {
+                    logLine.str("");
+                    logLine << " --- " << i << " - ";
+                    if (startRefValues.size())
+                        logLine << startRefValues[i] << " -> " << refValues[i];
+                    else
+                        logLine << refValues[i];
+                    logLine << " --- ";
+                    if (i < numDestItems) logLine << destItems[i];
+                    logLine << "\n";
+                    log_info("%s", logLine.str().c_str());
+                }
             }
             if (!gDebug)
             {
@@ -1534,7 +1606,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                                  // clEnqueueNDRangeKernel
     {
         /* Re-write the starting value */
-        for (size_t i = 0; i < numDestItems; i++) destItems[i] = _startValue;
+        for (size_t i = 0; i < numDestItems; i++)
+            destItems[i] = static_cast<HostAtomicType>(_startValue);
         refValues[0] = 0;
         if (deviceThreadCount > 0)
         {
