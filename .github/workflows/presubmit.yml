@@ -126,6 +126,22 @@ jobs:
                 -DOPENCL_ICD_LOADER_HEADERS_DIR='${{ github.workspace }}'/OpenCL-Headers/ \
                 ${CMAKE_ADDITIONAL_CONFIG_ARGS}
           cmake --build . --parallel
+      - name: Fetch and build SPIRV-Tools
+        if: ${{ matrix.arch == 'aarch64' }}
+        shell: bash
+        run: |
+          git clone https://github.com/KhronosGroup/SPIRV-Tools.git
+          cd SPIRV-Tools
+          mkdir build
+          cd build
+          cmake .. -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
+                -DSPIRV-Headers_SOURCE_DIR='${{ github.workspace }}'/SPIRV-Headers \
+                -DSPIRV_SKIP_TESTS=On \
+                ${CMAKE_ADDITIONAL_CONFIG_ARGS}
+          cmake --build . --parallel
+          cmake --install . --prefix '${{ github.workspace }}'/SPIRV-Tools/install
       - name: Fetch Vulkan Headers
         shell: bash
         run: |
@@ -161,6 +177,8 @@ jobs:
                   CMAKE_OPENCL_LIBRARIES_OPTION="${CMAKE_OPENCL_LIBRARIES_OPTION} -lpthread"
               fi
           fi
+          PKG_CONFIG_LIBDIR='${{ github.workspace }}'/SPIRV-Tools/install/lib/pkgconfig/
+          PKG_CONFIG_PATH=
           cmake .. -G Ninja \
                 -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -173,6 +191,7 @@ jobs:
                 -DOPENCL_LIBRARIES="${CMAKE_OPENCL_LIBRARIES_OPTION}" \
                 -DUSE_CL_EXPERIMENTAL=ON \
                 -DGL_IS_SUPPORTED=${{ matrix.gl }} \
+                -DSPIRV-Tools_DIR='${{ github.workspace }}'/SPIRV-Tools/install/lib/cmake/SPIRV-Tools/ \
                 -DVULKAN_IS_SUPPORTED=ON \
                 -DVULKAN_INCLUDE_DIR='${{ github.workspace }}'/Vulkan-Headers/include/ \
                 -DVULKAN_LIB_DIR='${{ github.workspace }}'/Vulkan-Loader/build/loader/ \
