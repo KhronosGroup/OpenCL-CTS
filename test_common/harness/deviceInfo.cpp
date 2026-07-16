@@ -228,3 +228,14 @@ int run_extension_stub(int argc, const char* argv[],
 
     return runTestHarness(argc, argv, 1, test_list, false, 0);
 }
+
+bool is_queue_properties_available(cl_device_id device,
+                                   cl_command_queue_properties properties)
+{
+    cl_command_queue_properties supported_properties;
+    cl_int err = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
+                                 sizeof(supported_properties),
+                                 &supported_properties, NULL);
+    return err == CL_SUCCESS
+        && ((supported_properties & properties) == properties);
+}
