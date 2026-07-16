@@ -69,4 +69,7 @@ cl_ulong get_device_info_global_mem_size(cl_device_id device,
 cl_ulong get_device_info_max_constant_buffer_size(cl_device_id device,
                                                   unsigned int divisor = 1);
 
+bool is_queue_properties_available(cl_device_id device,
+                                   cl_command_queue_properties properties);
+
 #endif // _deviceInfo_h

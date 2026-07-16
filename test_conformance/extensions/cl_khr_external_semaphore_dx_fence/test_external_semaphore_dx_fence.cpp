@@ -190,7 +190,11 @@ struct MultipleWaitSignal final : DXFenceTestBase
 
     int SetUp() override
     {
-        DXFenceTestBase::SetUp();
+        auto ret = DXFenceTestBase::SetUp();
+        if (ret != TEST_PASS)
+        {
+            return ret;
+        }
         fence_wrapper_2 = new DirectX12FenceWrapper(dx_wrapper.getDXDevice());
         semaphore_2 = createSemaphoreFromFence(fence_wrapper_2->get());
         test_assert_error(!!semaphore_2, "Could not create semaphore");

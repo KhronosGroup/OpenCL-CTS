@@ -79,7 +79,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
         cl_context_properties contextProperties[] = {
             CL_CONTEXT_PLATFORM,
             (cl_context_properties)gPlatformIDdetected,
-            AdapterTypeToContextInfo(adapterType),
+            (cl_context_properties)AdapterTypeToContextInfo(adapterType),
             (cl_context_properties)deviceWrapper->Device(),
             0,
         };
@@ -265,7 +265,6 @@ int other_data_types(cl_device_id deviceID, cl_context context,
 
             (*dx9SurfaceSrc)->UnlockRect();
 #else
-            void *surfaceInfo = 0;
             return TEST_NOT_IMPLEMENTED;
 #endif
 
@@ -299,7 +298,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
                                  out, bufferIn[frameIdx % FRAME_NUM], width,
                                  height, planeNum))
                 {
-                    log_error("Frame idx: %i, OCL object is different then "
+                    log_error("Frame idx: %zu, OCL object is different then "
                               "expected\n",
                               frameIdx);
                     result.ResultSub(CResult::TEST_FAIL);
@@ -442,7 +441,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
                                  out, bufferIn[frameIdx % FRAME_NUM], width,
                                  height, planeNum))
                 {
-                    log_error("Frame idx: %i, Mapped OCL object is different "
+                    log_error("Frame idx: %zu, Mapped OCL object is different "
                               "then expected\n",
                               frameIdx);
                     result.ResultSub(CResult::TEST_FAIL);
@@ -500,7 +499,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
                              planeNum))
             {
                 log_error(
-                    "Frame idx: %i, media object is different then expected\n",
+                    "Frame idx: %zu, media object is different then expected\n",
                     frameIdx);
                 result.ResultSub(CResult::TEST_FAIL);
             }
