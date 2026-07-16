@@ -26,7 +26,8 @@
 #include "harness/parseParameters.h"
 #include "CL/cl_half.h"
 
-#define BUFFER_SIZE (1024 * 1024 * 2)
+#include <limits>
+
 #define EMBEDDED_REDUCTION_FACTOR (64)
 
 #if defined(__GNUC__)
@@ -38,6 +39,8 @@
 struct Func;
 
 extern int gWimpyReductionFactor;
+extern size_t BUFFER_SIZE;
+extern uint64_t BUFFER_STEP;
 
 #define VECTOR_SIZE_COUNT 6
 extern const char *sizeNames[VECTOR_SIZE_COUNT];
@@ -253,7 +256,13 @@ float getAllowedUlpError(const Func *f, Type t, const bool relaxed);
 
 inline cl_uint getTestScale(size_t typeSize)
 {
-    if (gWimpyMode)
+    if (BUFFER_STEP != 0)
+    {
+        return BUFFER_STEP > std::numeric_limits<cl_uint>::max()
+            ? std::numeric_limits<cl_uint>::max()
+            : static_cast<cl_uint>(BUFFER_STEP);
+    }
+    else if (gWimpyMode)
     {
         return (cl_uint)typeSize * 2 * gWimpyReductionFactor;
     }
@@ -269,7 +278,13 @@ inline cl_uint getTestScale(size_t typeSize)
 
 inline uint64_t getTestStep(size_t typeSize, size_t bufferSize)
 {
-    if (gWimpyMode)
+    if (BUFFER_STEP != 0)
+    {
+        return BUFFER_STEP > std::numeric_limits<uint64_t>::max() / bufferSize
+            ? std::numeric_limits<uint64_t>::max()
+            : BUFFER_STEP * bufferSize;
+    }
+    else if (gWimpyMode)
     {
         return (1ULL << 32) * gWimpyReductionFactor / (512);
     }
