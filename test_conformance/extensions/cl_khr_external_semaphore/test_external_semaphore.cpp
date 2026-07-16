@@ -382,6 +382,7 @@ REGISTER_TEST_VERSION(external_semaphores_import_export, Version(1, 2))
 REGISTER_TEST_VERSION(external_semaphores_simple_1, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_QUEUE_PROPERTIES(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
 
     if (init_vulkan_device(1, &device))
     {
@@ -460,6 +461,7 @@ REGISTER_TEST_VERSION(external_semaphores_simple_1, Version(1, 2))
 REGISTER_TEST_VERSION(external_semaphores_reuse, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_QUEUE_PROPERTIES(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
 
     if (init_vulkan_device(1, &device))
     {
@@ -677,6 +679,8 @@ static int external_semaphore_cross_queue_helper(cl_device_id device,
 // Confirm that a semaphore works across different ooo queues
 REGISTER_TEST_VERSION(external_semaphores_cross_queues_ooo, Version(1, 2))
 {
+    REQUIRE_QUEUE_PROPERTIES(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+
     cl_int err;
 
     // Create ooo queues
@@ -827,6 +831,7 @@ REGISTER_TEST_VERSION(external_semaphores_cross_queues_io2, Version(1, 2))
 REGISTER_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_QUEUE_PROPERTIES(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
 
     if (init_vulkan_device(1, &device))
     {
@@ -922,6 +927,7 @@ REGISTER_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2))
 REGISTER_TEST_VERSION(external_semaphores_multi_wait, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_QUEUE_PROPERTIES(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
 
     if (init_vulkan_device(1, &device))
     {
