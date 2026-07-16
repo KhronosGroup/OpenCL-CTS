@@ -38,18 +38,16 @@ int test_copy_image_3D(cl_context context, cl_command_queue queue,
             (srcImageInfo->depth >> lod) ? (srcImageInfo->depth >> lod) : 1;
     }
 
-    clMemWrapper srcImage, dstImage;
-    BufferOwningPtr<char> srcData, dstData;
+    copy_image_env_t env{ context, queue, d, ctx };
+    copy_image_buffers_t buffers;
     int retCode =
-        test_copy_init_images(context, queue, srcImageInfo, dstImageInfo,
-                              srcImage, dstImage, srcData, dstData, d, ctx);
+        test_copy_init_images(env, srcImageInfo, dstImageInfo, buffers);
     if (retCode != CL_SUCCESS)
     {
         return retCode;
     }
-    return test_copy_image_generic(context, queue, srcImageInfo, dstImageInfo,
-                                   srcImage, dstImage, srcData, dstData, origin,
-                                   origin, region, d, ctx);
+    return test_copy_image_generic(env, srcImageInfo, dstImageInfo, buffers,
+                                   origin, origin, region);
 }
 
 int test_copy_image_set_3D(cl_device_id device, cl_context context,

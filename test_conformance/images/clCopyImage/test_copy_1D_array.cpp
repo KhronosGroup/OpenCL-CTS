@@ -60,18 +60,15 @@ int test_copy_image_size_1D_array(cl_context context, cl_command_queue queue,
         regionSize[ 0 ] = width_lod;
     }
 
-    clMemWrapper srcImage, dstImage;
-    BufferOwningPtr<char> srcData, dstData;
-    retCode =
-        test_copy_init_images(context, queue, srcImageInfo, dstImageInfo,
-                              srcImage, dstImage, srcData, dstData, d, ctx);
+    copy_image_env_t env{ context, queue, d, ctx };
+    copy_image_buffers_t buffers;
+    retCode = test_copy_init_images(env, srcImageInfo, dstImageInfo, buffers);
     if (retCode != CL_SUCCESS)
     {
         return retCode;
     }
-    retCode = test_copy_image_generic(
-        context, queue, srcImageInfo, dstImageInfo, srcImage, dstImage, srcData,
-        dstData, sourcePos, destPos, regionSize, d, ctx);
+    retCode = test_copy_image_generic(env, srcImageInfo, dstImageInfo, buffers,
+                                      sourcePos, destPos, regionSize);
 
     if( retCode < 0 )
         return retCode;
@@ -118,9 +115,9 @@ int test_copy_image_size_1D_array(cl_context context, cl_command_queue queue,
 
 
         // Go for it!
-        retCode = test_copy_image_generic(
-            context, queue, srcImageInfo, dstImageInfo, srcImage, dstImage,
-            srcData, dstData, sourcePos, destPos, regionSize, d, ctx);
+        retCode =
+            test_copy_image_generic(env, srcImageInfo, dstImageInfo, buffers,
+                                    sourcePos, destPos, regionSize);
         if (retCode < 0)
             return retCode;
         else

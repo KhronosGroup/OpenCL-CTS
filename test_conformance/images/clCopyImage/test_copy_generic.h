@@ -20,22 +20,28 @@
 #include "typeWrappers.h"
 #include "testHarness.h"
 
-int test_copy_init_images(cl_context context, cl_command_queue queue,
-                          image_descriptor *srcImageInfo,
-                          image_descriptor *dstImageInfo,
-                          clMemWrapper &srcImage, clMemWrapper &dstImage,
-                          BufferOwningPtr<char> &srcData,
-                          BufferOwningPtr<char> &dstData, MTdata d,
-                          const image_test_context_t &ctx);
+struct copy_image_buffers_t
+{
+    clMemWrapper srcImage, dstImage;
+    BufferOwningPtr<char> srcData, dstData;
+};
+struct copy_image_env_t
+{
+    cl_context context;
+    cl_command_queue queue;
+    MTdata d;
+    const image_test_context_t &ctx;
+};
 
-int test_copy_image_generic(cl_context context, cl_command_queue queue,
+int test_copy_init_images(copy_image_env_t &env, image_descriptor *srcImageInfo,
+                          image_descriptor *dstImageInfo,
+                          copy_image_buffers_t &buffers);
+
+int test_copy_image_generic(copy_image_env_t &env,
                             image_descriptor *srcImageInfo,
                             image_descriptor *dstImageInfo,
-                            clMemWrapper &srcImage, clMemWrapper &dstImage,
-                            BufferOwningPtr<char> &srcData,
-                            BufferOwningPtr<char> &dstHost,
+                            copy_image_buffers_t &buffers,
                             const size_t sourcePos[], const size_t destPos[],
-                            const size_t regionSize[], MTdata d,
-                            const image_test_context_t &ctx);
+                            const size_t regionSize[]);
 
 #endif
