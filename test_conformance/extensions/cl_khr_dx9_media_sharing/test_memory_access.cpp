@@ -97,7 +97,7 @@ int memory_access(cl_device_id deviceID, cl_context context,
         cl_context_properties contextProperties[] = {
             CL_CONTEXT_PLATFORM,
             (cl_context_properties)gPlatformIDdetected,
-            AdapterTypeToContextInfo(adapterType),
+            (cl_context_properties)AdapterTypeToContextInfo(adapterType),
             (cl_context_properties)deviceWrapper->Device(),
             0,
         };

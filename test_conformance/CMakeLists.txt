@@ -4,8 +4,12 @@ set( CLConf_Install_Base_Dir "${CMAKE_CURRENT_SOURCE_DIR}" )
 set(HARNESS_LIB harness)
 
 function(build_as_stub module_name)
-    message(WARNING "Building ${module_name} as a stub.")
+    message(WARNING "Building ${module_name} as a stub implementation.")
     set(${module_name}_SOURCES stub.cpp PARENT_SCOPE)
+endfunction()
+function(build_with_stub module_name)
+    message(WARNING "Building ${module_name} with a stub implementation.")
+    set(${module_name}_STUBS stubs PARENT_SCOPE)
 endfunction()
 
 add_subdirectory( allocations )

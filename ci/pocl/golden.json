@@ -146,6 +146,54 @@
             "3Dto2Darray": "pass"
         }
     },
+    "test_cl_khr_external_memory_ahb": {
+        "": {
+            "images": "skip",
+            "images_read": "skip",
+            "enqueue_read_image": "skip",
+            "enqueue_copy_image": "skip",
+            "enqueue_copy_image_to_buffer": "skip",
+            "enqueue_copy_buffer_to_image": "skip",
+            "enqueue_write_image": "skip",
+            "enqueue_fill_image": "skip",
+            "blob": "skip",
+            "lifetime_buffer": "skip",
+            "lifetime_image": "skip",
+            "sub_buffer": "skip",
+            "buffer_format_negative": "skip",
+            "buffer_size_negative": "skip",
+            "images_negative": "skip",
+            "invalid_arguments": "skip"
+        }
+    },
+    "test_cl_khr_external_semaphore": {
+        "": {
+            "external_semaphores_queries": "skip",
+            "external_semaphores_cross_context": "skip",
+            "external_semaphores_import_export": "pass",
+            "external_semaphores_simple_1": "skip",
+            "external_semaphores_reuse": "skip",
+            "external_semaphores_cross_queues_ooo": "skip",
+            "external_semaphores_cross_queues_io": "skip",
+            "external_semaphores_cross_queues_io2": "skip",
+            "external_semaphores_multi_signal": "skip",
+            "external_semaphores_multi_wait": "skip"
+        }
+    },
+    "test_cl_khr_external_semaphore_dx_fence": {
+        "": {
+            "test_external_semaphores_signal_wait": "skip",
+            "test_external_semaphores_signal_dx_cpu": "skip",
+            "test_external_semaphores_signal_dx_gpu": "skip",
+            "test_external_semaphores_cl_dx_interlock": "skip",
+            "test_external_semaphores_multiple_wait_signal": "skip",
+            "test_external_semaphores_dx_fence_negative_wait": "skip",
+            "test_external_semaphores_dx_fence_negative_signal": "skip",
+            "test_external_semaphores_dx_fence_query_properties": "skip",
+            "test_external_semaphores_export_dx_signal": "skip",
+            "test_external_semaphores_export_dx_wait": "skip"
+        }
+    },
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",
@@ -161,6 +209,17 @@
         },
         "--num-worker-threads 2 CL_FILTER_NEAREST CL_R": {
             "1D": "fail"
+        }
+    },
+    "test_media_surface_sharing": {
+        "": {
+           "context_create": "skip",
+           "api": "skip",
+           "kernel": "skip",
+           "get_device_ids": "skip",
+           "interop_user_sync": "skip",
+           "memory_access": "skip",
+           "other_data_types": "skip"
         }
     },
     "test_select": {
