@@ -22,6 +22,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "hostInfo.h"
 
 #include <cinttypes>
 
@@ -495,6 +496,16 @@ int test_bufferreadwriterect_impl(cl_device_id device, cl_context context,
         return -1;
     }
 
+    // check max host memory. limit max host memory 50%. The test
+    size_t host_max_memory = get_host_physicall_memory();
+    log_info("Physicall host memory = %llu bytes.\n", host_max_memory);
+    if (max_mem_alloc_size > host_max_memory / 2)
+    {
+        log_info("Need to limit CL_DEVICE_MAX_MEM_ALLOC_SIZE from %llu to %llu "
+                 "bytes.\n",
+                 max_mem_alloc_size, host_max_memory / 2);
+        max_mem_alloc_size = host_max_memory / 2;
+    }
     // Guess at a reasonable maximum dimension.
     size_t max_mem_alloc_dim = (size_t)cbrt((double)(max_mem_alloc_size/sizeof(BufferType)))/alloc_scale;
     if (max_mem_alloc_dim == 0) {
