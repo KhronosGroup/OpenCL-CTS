@@ -77,8 +77,6 @@ extern int
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
 extern bool gFloatAtomicsSupported;
-extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
-extern cl_device_fp_config gDoubleCaps;
 
 extern cl_device_fp_config gDoubleFPConfig;
 extern cl_device_fp_config gFloatFPConfig;
