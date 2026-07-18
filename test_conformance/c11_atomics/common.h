@@ -23,6 +23,7 @@
 #include "host_atomics.h"
 
 #include "CL/cl_half.h"
+
 #include <algorithm>
 #include <iomanip>
 #include <limits>
@@ -86,6 +87,7 @@ extern cl_device_fp_config gHalfFPConfig;
 
 extern cl_half_rounding_mode gHalfRoundingMode;
 extern bool gFloatAtomicsSupported;
+
 extern cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps;
 extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
 extern cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps;
