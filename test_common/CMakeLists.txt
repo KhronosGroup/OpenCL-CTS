@@ -22,3 +22,4 @@ set(HARNESS_SOURCES
 )
 
 add_library(harness STATIC ${HARNESS_SOURCES})
+set_property(TARGET harness PROPERTY POSITION_INDEPENDENT_CODE ON)
