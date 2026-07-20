@@ -47,16 +47,6 @@ int test_copy_init_images(copy_image_env_t &env, image_descriptor *srcImageInfo,
     int error;
 
     // Generate some data to test against
-    size_t srcBytes = 0;
-    if (env.ctx.testMipmaps)
-    {
-        srcBytes = (size_t)compute_mipmapped_image_size( *srcImageInfo );
-    }
-    else
-    {
-        srcBytes = get_image_size(srcImageInfo);
-    }
-
     if (env.ctx.debugTrace) log_info(" - Resizing random image data...\n");
 
     generate_random_image_data(srcImageInfo, buffers.srcData, env.d);
@@ -72,16 +62,6 @@ int test_copy_init_images(copy_image_env_t &env, image_descriptor *srcImageInfo,
 
 
     // Initialize the destination to empty
-    size_t destImageSize = 0;
-    if (env.ctx.testMipmaps)
-    {
-        destImageSize = (size_t)compute_mipmapped_image_size( *dstImageInfo );
-    }
-    else
-    {
-        destImageSize = get_image_size(dstImageInfo);
-    }
-
     if (env.ctx.debugTrace) log_info(" - Writing destination image...\n");
 
     buffers.dstData.reset(nullptr, nullptr, 0, 0);
