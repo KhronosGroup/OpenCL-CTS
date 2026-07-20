@@ -99,9 +99,21 @@ REGISTER_TEST(arraycopy)
 #pragma mark framework backing (no client data)
 
     log_info("Testing with clEnqueueWriteBuffer and clEnqueueCopyBuffer\n");
+    cl_uint *input_mapped_ptr = (cl_uint *)clEnqueueMapBuffer(
+        queue, streams[0], CL_BLOCKING, CL_MAP_WRITE, 0,
+        sizeof(cl_uint) * num_elements, 0, NULL, NULL, &err);
+    test_error(err, "clEnqueueMapBuffer failed");
     // randomize data
-    for (i=0; i<num_elements; i++)
-        input_ptr[i] = (cl_uint)(genrand_int32(d) & 0x7FFFFFFF);
+    for (i = 0; i < num_elements; i++)
+        for (i = 0; i < num_elements; i++)
+            input_ptr[i] = (cl_uint)(genrand_int32(d) & 0x7FFFFFFF);
+
+    err = clEnqueueUnmapMemObject(queue, streams[0], input_mapped_ptr, 0, NULL,
+                                  NULL);
+    test_error(err, "clEnqueueUnmapMemObject failed");
+
+    err = clFinish(queue);
+    test_error(err, "clFinish failed");
 
     // no backing
     streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
@@ -179,24 +191,23 @@ REGISTER_TEST(arraycopy)
         }
     }
 
-    // Keep track of multiple errors.
-    if (error_count != 0) err = error_count;
-
     if (err)
         log_error("\tCL_MEM_USE_HOST_PTR buffer with kernel copy FAILED\n");
     else
         log_info("\tCL_MEM_USE_HOST_PTR buffer with kernel copy passed\n");
 
+    // Keep track of multiple errors.
+    if (error_count != 0) err = error_count;
 
-  clReleaseProgram(program);
-  clReleaseKernel(kernel);
-  clReleaseMemObject(results);
-  clReleaseMemObject(streams[0]);
-  clReleaseMemObject(streams[2]);
-  clReleaseMemObject(streams[3]);
+    clReleaseProgram(program);
+    clReleaseKernel(kernel);
+    clReleaseMemObject(results);
+    clReleaseMemObject(streams[0]);
+    clReleaseMemObject(streams[2]);
+    clReleaseMemObject(streams[3]);
 
-  free(input_ptr);
-  free(output_ptr);
+    free(input_ptr);
+    free(output_ptr);
 
     return err;
 }
