@@ -123,7 +123,7 @@ private:
     };
 
 public:
-    template <typename T> std::vector<T> GetIntSpecialValues()
+    template <typename T> std::vector<T> &GetIntSpecialValues()
     {
         std::lock_guard<std::recursive_mutex> lock(gLock);
         static std::vector<T> vec;
@@ -209,7 +209,7 @@ public:
     }
 
     template <typename InType, typename InIntegerType, typename OutType>
-    std::vector<InType> GetFpSpecialValues()
+    std::vector<InType> &GetFpSpecialValues()
     {
         std::lock_guard<std::recursive_mutex> lock(gLock);
         static std::vector<InType> vec;
@@ -273,7 +273,7 @@ public:
         }
         else if constexpr (std::is_same<OutType, cl_short>::value)
         {
-            for (int32_t i = -(64 * 1024 / 2 - 1); i <= (64 * 1024 / 2); i++)
+            for (int32_t i = -(64 * 1024 / 2); i < (64 * 1024 / 2); i++)
             {
                 push(static_cast<InType>(i));
             }
@@ -304,14 +304,6 @@ public:
             for (const auto val : GetIntSpecialValues<uint64_t>())
             {
                 push(static_cast<InType>(bitcast<uint64_t, OutType>(val)));
-            }
-        }
-        else if constexpr (std::is_same<OutType, cl_half>::value)
-        {
-            for (uint32_t i = 0; i < (64 * 1024); i++)
-            {
-                push(static_cast<InType>(
-                    cl_half_to_float(bitcast<uint16_t, OutType>(i))));
             }
         }
         else if constexpr (std::is_same<OutType, cl_float>::value
@@ -1007,7 +999,7 @@ template <typename InType, typename OutType, bool InFP, bool OutFP>
 void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
                                                       const cl_uint &thread_id)
 {
-    const uint64_t ulStart = start;
+    const uint64_t ulStart = start + job_id * size;
     void *pIn = (char *)gIn + job_id * size * gTypeSizes[inType];
 
     if constexpr (sizeof(InType) <= sizeof(uint8_t))

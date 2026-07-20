@@ -669,7 +669,8 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
             fflush(stdout);
         }
 
-        writeInputBufferInfo.count = blockCount;
+        writeInputBufferInfo.count =
+            std::min((uint64_t)blockCount, nbInputs - i);
 
         // Crate a user event to represent the status of the reference value
         // computation completion
