@@ -50,6 +50,9 @@ int filter_formats(const std::vector<cl_image_format> &formatList,
 int get_format_list(cl_context context, cl_mem_object_type imageType,
                     std::vector<cl_image_format> &outFormatList,
                     cl_mem_flags flags);
+bool is_image_format_supported(cl_context context, cl_mem_object_type imageType,
+                               cl_mem_flags flags,
+                               const cl_image_format *format);
 size_t random_in_ranges(size_t minimum, size_t rangeA, size_t rangeB, MTdata d);
 
 clMemWrapper create_image(cl_context context, cl_command_queue queue,
