@@ -16,44 +16,29 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "../testBase.h"
+#include "../common.h"
 #include "../harness/compat.h"
 
 static image_test_context_t ctx;
 
 extern int test_image_set(cl_device_id device, cl_context context,
                           cl_mem_object_type image_type,
+                          cl_channel_type channel_type,
                           const image_test_context_t &ctx);
 
-REGISTER_TEST(1D)
+static std::vector<struct test_configs> test_configs;
+static int doTest(cl_device_id device, cl_context context,
+                  cl_command_queue queue, int, void *args)
 {
-    return test_image_set(device, context, CL_MEM_OBJECT_IMAGE1D, ctx);
-}
-REGISTER_TEST(2D)
-{
-    return test_image_set(device, context, CL_MEM_OBJECT_IMAGE2D, ctx);
-}
-REGISTER_TEST(3D)
-{
-    if( checkFor3DImageSupport( device ) )
+    auto &test = test_configs[(uintptr_t)args];
+    if (test.imageType == CL_MEM_OBJECT_IMAGE3D
+        && checkFor3DImageSupport(device))
     {
         log_info("3D image is not supported, test not run.\n");
         return 0;
     }
-
-    return test_image_set(device, context, CL_MEM_OBJECT_IMAGE3D, ctx);
-}
-REGISTER_TEST(1Darray)
-{
-    return test_image_set(device, context, CL_MEM_OBJECT_IMAGE1D_ARRAY, ctx);
-}
-REGISTER_TEST(2Darray)
-{
-    return test_image_set(device, context, CL_MEM_OBJECT_IMAGE2D_ARRAY, ctx);
-}
-REGISTER_TEST(1Dbuffer)
-{
-    return test_image_set(device, context, CL_MEM_OBJECT_IMAGE1D_BUFFER, ctx);
+    return test_image_set(device, context, test.imageType, test.channel_type,
+                          ctx);
 }
 
 static test_status parseArgs(int &argc, const char *argv[],
@@ -69,8 +54,6 @@ static test_status parseArgs(int &argc, const char *argv[],
         randomize - Seed random number generator (default do not seed random number generator)
 )";
 
-    cl_channel_type chanType;
-
     std::vector<const char *> argList;
     argList.push_back(argv[0]);
 
@@ -84,9 +67,6 @@ static test_status parseArgs(int &argc, const char *argv[],
             ctx.testSmallImages = true;
         else if (strcmp(argv[i], "max_images") == 0)
             ctx.testMaxImages = true;
-        else if ((chanType = get_channel_type_from_name(argv[i]))
-                 != (cl_channel_type)-1)
-            ctx.channelTypeToUse = chanType;
         else
         {
             removed_args.pop_back();
@@ -97,13 +77,22 @@ static test_status parseArgs(int &argc, const char *argv[],
     if (ctx.testSmallImages) log_info("Note: Using small test images\n");
 
     update_argc_argv_from_args_list(argList, argc, argv);
+
+    std::vector<struct image_type> image_types = {
+        { CL_MEM_OBJECT_IMAGE1D, "1D" },
+        { CL_MEM_OBJECT_IMAGE2D, "2D" },
+        { CL_MEM_OBJECT_IMAGE3D, "3D" },
+        { CL_MEM_OBJECT_IMAGE1D_ARRAY, "1Darray" },
+        { CL_MEM_OBJECT_IMAGE2D_ARRAY, "2Darray" },
+        { CL_MEM_OBJECT_IMAGE1D_BUFFER, "1Dbuffer" },
+    };
+    register_test_configs(image_types, test_configs, doTest);
+
     return TEST_PASS;
 }
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarnessWithCheckAndParse(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0,
-        verifyImageSupport, parseArgs);
+    return runTestHarnessWithCheckAndParse(argc, argv, false, 0,
+                                           verifyImageSupport, parseArgs);
 }
