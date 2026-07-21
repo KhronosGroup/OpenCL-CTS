@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "../testBase.h"
+#include "../common.h"
 #include "../harness/compat.h"
 #include "../harness/fpcontrol.h"
 
@@ -29,11 +29,10 @@ __thread fpu_control_t fpu_control = 0;
 
 static image_test_context_t ctx;
 
-extern int test_image_set(cl_device_id device, cl_context context,
-                          cl_command_queue queue,
-                          test_format_set_fn formatTestFn,
-                          cl_mem_object_type imageType,
-                          const image_test_context_t &ctx);
+extern int
+test_image_set(cl_device_id device, cl_context context, cl_command_queue queue,
+               test_format_set_fn formatTestFn, cl_mem_object_type imageType,
+               cl_channel_type channel_type, const image_test_context_t &ctx);
 
 extern int cl_image_requirements_size_ext_negative(cl_device_id device,
                                                    cl_context context,
@@ -77,7 +76,7 @@ extern int ext_image_raw10_raw12(cl_device_id device, cl_context context,
 
 static int doTest(cl_device_id device, cl_context context,
                   cl_command_queue queue, cl_mem_object_type imageType,
-                  const image_test_context_t &ctx)
+                  cl_channel_type channel_type, const image_test_context_t &ctx)
 {
     int ret = 0;
     bool is_2d_image = imageType == CL_MEM_OBJECT_IMAGE2D;
@@ -87,7 +86,7 @@ static int doTest(cl_device_id device, cl_context context,
         image_test_context_t sub_ctx = ctx;
         sub_ctx.testTypesToRun = kReadTests;
         ret += test_image_set(device, context, queue, test_read_image_formats,
-                              imageType, sub_ctx);
+                              imageType, channel_type, sub_ctx);
 
         if( is_2d_image && is_extension_available( device, "cl_khr_image2d_from_buffer" ) )
         {
@@ -105,9 +104,9 @@ static int doTest(cl_device_id device, cl_context context,
                 // for 2.0
                 sub_ctx.memFlagsToUse = CL_MEM_COPY_HOST_PTR;
 
-                ret +=
-                    test_image_set(device, context, queue,
-                                   test_read_image_formats, imageType, sub_ctx);
+                ret += test_image_set(device, context, queue,
+                                      test_read_image_formats, imageType,
+                                      channel_type, sub_ctx);
             }
         }
     }
@@ -117,7 +116,7 @@ static int doTest(cl_device_id device, cl_context context,
         image_test_context_t sub_ctx = ctx;
         sub_ctx.testTypesToRun = kWriteTests;
         ret += test_image_set(device, context, queue, test_write_image_formats,
-                              imageType, sub_ctx);
+                              imageType, channel_type, sub_ctx);
 
         if( is_2d_image && is_extension_available( device, "cl_khr_image2d_from_buffer" ) )
         {
@@ -136,7 +135,7 @@ static int doTest(cl_device_id device, cl_context context,
 
                 ret += test_image_set(device, context, queue,
                                       test_write_image_formats, imageType,
-                                      sub_ctx);
+                                      channel_type, sub_ctx);
             }
         }
     }
@@ -166,7 +165,7 @@ static int doTest(cl_device_id device, cl_context context,
         sub_ctx.filterModeToUse = CL_FILTER_NEAREST;
 
         ret += test_image_set(device, context, queue, test_read_image_formats,
-                              imageType, sub_ctx);
+                              imageType, channel_type, sub_ctx);
 
         if( is_2d_image && is_extension_available( device, "cl_khr_image2d_from_buffer" ) )
         {
@@ -188,12 +187,12 @@ static int doTest(cl_device_id device, cl_context context,
 
                 ret += test_image_set(device, context, queue,
                                       test_read_image_formats, imageType,
-                                      sub_sub_ctx);
+                                      channel_type, sub_sub_ctx);
             }
         }
 
         ret += test_image_set(device, context, queue, test_write_image_formats,
-                              imageType, sub_ctx);
+                              imageType, channel_type, sub_ctx);
 
         if( is_2d_image && is_extension_available( device, "cl_khr_image2d_from_buffer" ) )
         {
@@ -215,7 +214,7 @@ static int doTest(cl_device_id device, cl_context context,
 
                 ret += test_image_set(device, context, queue,
                                       test_write_image_formats, imageType,
-                                      sub_sub_ctx);
+                                      channel_type, sub_sub_ctx);
             }
         }
     }
@@ -223,25 +222,13 @@ static int doTest(cl_device_id device, cl_context context,
     return ret;
 }
 
-REGISTER_TEST(1D)
+std::vector<struct test_configs> test_configs;
+static int runTest(cl_device_id device, cl_context context,
+                   cl_command_queue queue, int, void *args)
 {
-    return doTest(device, context, queue, CL_MEM_OBJECT_IMAGE1D, ctx);
-}
-REGISTER_TEST(2D)
-{
-    return doTest(device, context, queue, CL_MEM_OBJECT_IMAGE2D, ctx);
-}
-REGISTER_TEST(3D)
-{
-    return doTest(device, context, queue, CL_MEM_OBJECT_IMAGE3D, ctx);
-}
-REGISTER_TEST(1Darray)
-{
-    return doTest(device, context, queue, CL_MEM_OBJECT_IMAGE1D_ARRAY, ctx);
-}
-REGISTER_TEST(2Darray)
-{
-    return doTest(device, context, queue, CL_MEM_OBJECT_IMAGE2D_ARRAY, ctx);
+    auto &test = test_configs[(uintptr_t)args];
+    return doTest(device, context, queue, test.imageType, test.channel_type,
+                  ctx);
 }
 
 REGISTER_TEST_VERSION(cl_image_requirements_size_ext_negative, Version(3, 0))
@@ -325,7 +312,7 @@ static test_status parseArgs(int &argc, const char *argv[],
         CL_ADDRESS_REPEAT - Only tests formats with CL_ADDRESS_REPEAT addressing
         CL_ADDRESS_MIRRORED_REPEAT - Only tests formats with CL_ADDRESS_MIRRORED_REPEAT addressing
 
-        You may also use appropriate CL_ channel type and ordering constants.
+        You may also use appropriate CL_ channel ordering constants.
 
         local_samplers - Use samplers declared in the kernel functions instead of passed in as arguments
 
@@ -347,7 +334,6 @@ static test_status parseArgs(int &argc, const char *argv[],
         test_mipmaps - Enables mipmapped images
 )";
 
-    cl_channel_type chanType;
     cl_channel_order chanOrder;
 
     std::vector<const char *> argList;
@@ -429,9 +415,6 @@ static test_status parseArgs(int &argc, const char *argv[],
         else if( strcmp( argv[i], "NO_HOST_PTR" ) == 0 )
             ctx.memFlagsToUse = 0;
 
-        else if( ( chanType = get_channel_type_from_name( argv[i] ) ) != (cl_channel_type)-1 )
-            ctx.channelTypeToUse = chanType;
-
         else if( ( chanOrder = get_channel_order_from_name( argv[i] ) ) != (cl_channel_order)-1 )
             ctx.channelOrderToUse = chanOrder;
         else
@@ -447,6 +430,16 @@ static test_status parseArgs(int &argc, const char *argv[],
     if (ctx.testSmallImages) log_info("Note: Using small test images\n");
 
     update_argc_argv_from_args_list(argList, argc, argv);
+
+    std::vector<struct image_type> image_types = {
+        { CL_MEM_OBJECT_IMAGE1D, "1D" },
+        { CL_MEM_OBJECT_IMAGE2D, "2D" },
+        { CL_MEM_OBJECT_IMAGE3D, "3D" },
+        { CL_MEM_OBJECT_IMAGE1D_ARRAY, "1Darray" },
+        { CL_MEM_OBJECT_IMAGE2D_ARRAY, "2Darray" },
+
+    };
+    register_test_configs(image_types, test_configs, runTest);
     return TEST_PASS;
 }
 
@@ -464,10 +457,8 @@ int main(int argc, const char *argv[])
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 
-    int ret = runTestHarnessWithCheckAndParse(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0,
-        verifyImageSupport, parseArgs);
+    int ret = runTestHarnessWithCheckAndParse(argc, argv, false, 0,
+                                              verifyImageSupport, parseArgs);
 
     // Restore FP state before leaving
     RestoreFPState(&oldMode);
