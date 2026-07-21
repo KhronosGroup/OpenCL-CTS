@@ -95,6 +95,7 @@ extern uint32_t get_format_type_size(const cl_image_format *format);
 extern uint32_t get_channel_data_type_size(cl_channel_type channelType);
 extern uint32_t get_format_channel_count(const cl_image_format *format);
 extern uint32_t get_channel_order_channel_count(cl_channel_order order);
+const char *cl_channel_type_to_string(cl_channel_type channeltype);
 cl_channel_type get_channel_type_from_name(const char *name);
 cl_channel_order get_channel_order_from_name(const char *name);
 extern int is_format_signed(const cl_image_format *format);

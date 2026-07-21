@@ -24,8 +24,23 @@
 #include <array>
 #include <vector>
 
-extern cl_channel_type gChannelTypeToUse;
-extern cl_channel_order gChannelOrderToUse;
+extern const std::vector<cl_channel_type> channel_types;
+
+struct test_configs
+{
+    cl_mem_object_type imageType;
+    cl_channel_type channel_type;
+    std::string name;
+};
+struct image_type
+{
+    cl_mem_object_type object_type;
+    const char *name;
+};
+extern void
+register_test_configs(const std::vector<struct image_type> &tests,
+                      std::vector<struct test_configs> &test_configs,
+                      test_function_pointer runTest);
 
 extern cl_channel_type floatFormats[];
 extern cl_channel_type intFormats[];

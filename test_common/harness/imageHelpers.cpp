@@ -163,6 +163,40 @@ uint32_t get_channel_order_channel_count(cl_channel_order order)
             return 0;
     }
 }
+const char *cl_channel_type_to_string(cl_channel_type type)
+{
+    switch (type)
+    {
+        case CL_SNORM_INT8: return "CL_SNORM_INT8";
+        case CL_SNORM_INT16: return "CL_SNORM_INT16";
+        case CL_UNORM_INT8: return "CL_UNORM_INT8";
+        case CL_UNORM_INT16: return "CL_UNORM_INT16";
+        case CL_UNORM_INT24: return "CL_UNORM_INT24";
+        case CL_UNORM_SHORT_565: return "CL_UNORM_SHORT_565";
+        case CL_UNORM_SHORT_555: return "CL_UNORM_SHORT_555";
+        case CL_UNORM_INT_101010: return "CL_UNORM_INT_101010";
+        case CL_UNORM_INT_101010_2: return "CL_UNORM_INT_101010_2";
+        case CL_UNORM_INT_2_101010_EXT: return "CL_UNORM_INT_2_101010_EXT";
+        case CL_SIGNED_INT8: return "CL_SIGNED_INT8";
+        case CL_SIGNED_INT16: return "CL_SIGNED_INT16";
+        case CL_SIGNED_INT32: return "CL_SIGNED_INT32";
+        case CL_UNSIGNED_INT8: return "CL_UNSIGNED_INT8";
+        case CL_UNSIGNED_INT16: return "CL_UNSIGNED_INT16";
+        case CL_UNSIGNED_INT32: return "CL_UNSIGNED_INT32";
+        case CL_HALF_FLOAT: return "CL_HALF_FLOAT";
+        case CL_FLOAT: return "CL_FLOAT";
+#ifdef CL_SFIXED14_APPLE
+        case CL_SFIXED14_APPLE: return "CL_SFIXED14_APPLE";
+#endif
+        case CL_UNSIGNED_INT10X6_EXT: return "CL_UNSIGNED_INT10X6_EXT";
+        case CL_UNSIGNED_INT12X4_EXT: return "CL_UNSIGNED_INT12X4_EXT";
+        case CL_UNSIGNED_INT14X2_EXT: return "CL_UNSIGNED_INT14X2_EXT";
+        case CL_UNORM_INT10X6_EXT: return "CL_UNORM_INT10X6_EXT";
+        case CL_UNORM_INT12X4_EXT: return "CL_UNORM_INT12X4_EXT";
+        case CL_UNORM_INT14X2_EXT: return "CL_UNORM_INT14X2_EXT";
+        default: return "UNKNOWN_CHANNEL_TYPE";
+    }
+}
 
 cl_channel_type get_channel_type_from_name(const char *name)
 {
