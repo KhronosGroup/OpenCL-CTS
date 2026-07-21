@@ -453,13 +453,11 @@ std::string exe_dir()
 {
 
     std::string exe = exe_path();
-    int count = 0;
-
     // Splitting path into components.
     buffer_t drv(_MAX_DRIVE);
     buffer_t dir(_MAX_DIR);
-    count = _count;
 #if defined(_MSC_VER)
+    int count = _count;
     for (;;)
     {
         int rc =
