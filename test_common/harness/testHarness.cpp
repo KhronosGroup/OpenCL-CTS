@@ -74,14 +74,14 @@ test_definition *test_registry::definitions() { return &m_definitions[0]; }
 
 size_t test_registry::num_tests() { return m_definitions.size(); }
 
-void test_registry::add_test(test *t, const char *name, Version version)
+void test_registry::add_test(test_function_pointer func, const char *name,
+                             Version version, void *args)
 {
-
-    m_tests.push_back(t);
     test_definition testDef;
-    testDef.func = t->getFunction();
+    testDef.func = func;
     testDef.name = name;
     testDef.min_version = version;
+    testDef.args = args;
     m_definitions.push_back(testDef);
 }
 
@@ -156,23 +156,20 @@ static int saveResultsToJson(const char *suiteName, const char *args,
     return ret;
 }
 
-int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
-                            test_definition testList[],
+int runTestHarnessWithCheck(int argc, const char *argv[],
                             int forceNoContextCreation,
                             cl_command_queue_properties queueProps,
                             DeviceCheckFn deviceCheckFn)
 {
-    return runTestHarnessWithCheckAndParse(argc, argv, testNum, testList,
-                                           forceNoContextCreation, queueProps,
-                                           deviceCheckFn, NULL);
+    return runTestHarnessWithCheckAndParse(argc, argv, forceNoContextCreation,
+                                           queueProps, deviceCheckFn, NULL);
 }
 
-int runTestHarness(int argc, const char *argv[], int testNum,
-                   test_definition testList[], int forceNoContextCreation,
+int runTestHarness(int argc, const char *argv[], int forceNoContextCreation,
                    cl_command_queue_properties queueProps)
 {
-    return runTestHarnessWithCheck(argc, argv, testNum, testList,
-                                   forceNoContextCreation, queueProps, NULL);
+    return runTestHarnessWithCheck(argc, argv, forceNoContextCreation,
+                                   queueProps, NULL);
 }
 
 int suite_did_not_pass_init(const char *suiteName, const char *args,
@@ -248,8 +245,7 @@ static void list_tests(int testNum, test_definition testList[])
         log_info("\t%s\n", name.c_str());
     }
 }
-int runTestHarnessWithCheckAndParse(int argc, const char *argv[], int testNum,
-                                    test_definition testList[],
+int runTestHarnessWithCheckAndParse(int argc, const char *argv[],
                                     int forceNoContextCreation,
                                     cl_command_queue_properties queueProps,
                                     DeviceCheckFn deviceCheckFn,
@@ -340,12 +336,6 @@ int runTestHarnessWithCheckAndParse(int argc, const char *argv[], int testNum,
         return EXIT_FAILURE;
     }
 
-    if (gListTests)
-    {
-        list_tests(testNum, testList);
-        return EXIT_SUCCESS;
-    }
-
     const char *suiteName = argv[0];
     std::string help_description;
     if (parseArgsFn != NULL)
@@ -353,6 +343,16 @@ int runTestHarnessWithCheckAndParse(int argc, const char *argv[], int testNum,
         help |= (parseArgsFn(argc, argv, removed_args, help_description)
                  != TEST_PASS);
     }
+
+    int testNum = test_registry::getInstance().num_tests();
+    test_definition *testList = test_registry::getInstance().definitions();
+
+    if (gListTests)
+    {
+        list_tests(testNum, testList);
+        return EXIT_SUCCESS;
+    }
+
 
     if (help)
     {
@@ -1071,8 +1071,8 @@ test_status callSingleTestFunction(test_definition test,
     }
     else
     {
-        int ret =
-            test.func(deviceToUse, context, queue, config.numElementsToUse);
+        int ret = test.func(deviceToUse, context, queue,
+                            config.numElementsToUse, test.args);
         if (ret == TEST_SKIPPED_ITSELF)
         {
             /* Tests can also let us know they're not supported by the
