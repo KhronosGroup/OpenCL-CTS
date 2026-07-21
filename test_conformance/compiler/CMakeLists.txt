@@ -64,3 +64,7 @@ install(DIRECTORY
             ${CLConform_SOURCE_DIR}/test_conformance/compiler/includeTestDirectory
             ${CLConform_SOURCE_DIR}/test_conformance/compiler/secondIncludeTestDirectory
         DESTINATION ${CMAKE_INSTALL_BINDIR}/$<CONFIG>)
+
+install(DIRECTORY
+            ${COMPILER_SPV_PATH}
+        DESTINATION ${CMAKE_INSTALL_BINDIR}/$<CONFIG>)
