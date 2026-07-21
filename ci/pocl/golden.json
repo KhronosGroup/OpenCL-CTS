@@ -130,7 +130,20 @@
     },
     "test_cl_copy_images": {
         "--num-worker-threads 2 small_images": {
-            "1D": "pass"
+            "1D": "pass",
+            "2D": "pass",
+            "3D": "pass",
+            "1Dbuffer": "pass",
+            "1DTo1Dbuffer": "pass",
+            "1DbufferTo1D": "pass",
+            "1Darray": "pass",
+            "2Darray": "pass",
+            "2Dto3D": "pass",
+            "3Dto2D": "pass",
+            "2Darrayto2D": "pass",
+            "2Dto2Darray": "pass",
+            "2Darrayto3D": "pass",
+            "3Dto2Darray": "pass"
         }
     },
     "test_computeinfo": {
