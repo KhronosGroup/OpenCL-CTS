@@ -248,9 +248,8 @@ REGISTER_TEST(contractions_double_7) { return RunTest_Double(7); }
 
 int main( int argc, const char **argv )
 {
-    int error = runTestHarnessWithCheckAndParse(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), true, 0, InitCL, ParseArgs);
+    int error =
+        runTestHarnessWithCheckAndParse(argc, argv, true, 0, InitCL, ParseArgs);
 
     if( gQueue )
     {
@@ -320,8 +319,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
     }
     update_argc_argv_from_args_list(argList, argc, argv);
 
-    PrintArch();
-
     return TEST_PASS;
 }
 
@@ -335,6 +332,8 @@ test_status InitCL( cl_device_id device )
     int *bufSkip = NULL;
     int isRTZ = 0;
     RoundingMode oldRoundMode = kDefaultRoundingMode;
+
+    PrintArch();
 
     cl_device_fp_config floatCapabilities = 0;
     if( (error = clGetDeviceInfo(device, CL_DEVICE_SINGLE_FP_CONFIG, sizeof(floatCapabilities), &floatCapabilities, NULL)))
