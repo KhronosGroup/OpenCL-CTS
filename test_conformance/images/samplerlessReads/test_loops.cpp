@@ -132,6 +132,7 @@ int test_read_image_formats(cl_device_id device, cl_context context,
 
 int test_image_set(cl_device_id device, cl_context context,
                    cl_command_queue queue, cl_mem_object_type imageType,
+                   cl_channel_type channel_type,
                    const image_test_context_t &ctx)
 {
     int ret = 0;
@@ -197,7 +198,7 @@ int test_image_set(cl_device_id device, cl_context context,
         {
             std::vector<bool> filterFlags(formatList.size(), false);
             if (filter_formats(formatList, filterFlags, test.channelTypes,
-                               ctx.channelTypeToUse, ctx.channelOrderToUse)
+                               channel_type, ctx.channelOrderToUse)
                 == 0)
             {
                 log_info("No formats supported for %s type\n", test.name);
