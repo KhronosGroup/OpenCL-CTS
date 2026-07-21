@@ -43,7 +43,6 @@ struct image_test_context_t
     cl_addressing_mode addressModeToUse = (cl_addressing_mode)-1;
     cl_mem_flags memFlagsToUse = CL_MEM_USE_HOST_PTR;
     cl_filter_mode filterModeToUse = (cl_filter_mode)-1;
-    cl_channel_type channelTypeToUse = (cl_channel_type)-1;
     cl_channel_order channelOrderToUse = (cl_channel_order)-1;
 };
 
