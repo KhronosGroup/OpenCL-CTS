@@ -1366,7 +1366,7 @@ REGISTER_TEST(pipe_workgroup_readwrite_int)
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_int(device, context, queue, num_elements);
+    return test_pipe_readwrite_int(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_workgroup_readwrite_uint)
@@ -1374,7 +1374,7 @@ REGISTER_TEST(pipe_workgroup_readwrite_uint)
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_uint(device, context, queue, num_elements);
+    return test_pipe_readwrite_uint(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_workgroup_readwrite_short)
@@ -1382,7 +1382,8 @@ REGISTER_TEST(pipe_workgroup_readwrite_short)
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_short(device, context, queue, num_elements);
+    return test_pipe_readwrite_short(device, context, queue, num_elements,
+                                     args);
 }
 
 REGISTER_TEST(pipe_workgroup_readwrite_ushort)
@@ -1390,7 +1391,8 @@ REGISTER_TEST(pipe_workgroup_readwrite_ushort)
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_ushort(device, context, queue, num_elements);
+    return test_pipe_readwrite_ushort(device, context, queue, num_elements,
+                                      args);
 }
 
 REGISTER_TEST(pipe_workgroup_readwrite_char)
@@ -1398,7 +1400,7 @@ REGISTER_TEST(pipe_workgroup_readwrite_char)
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_char(device, context, queue, num_elements);
+    return test_pipe_readwrite_char(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_workgroup_readwrite_uchar)
@@ -1406,7 +1408,8 @@ REGISTER_TEST(pipe_workgroup_readwrite_uchar)
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_uchar(device, context, queue, num_elements);
+    return test_pipe_readwrite_uchar(device, context, queue, num_elements,
+                                     args);
 }
 
 REGISTER_TEST(pipe_workgroup_readwrite_float)
@@ -1414,7 +1417,8 @@ REGISTER_TEST(pipe_workgroup_readwrite_float)
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_float(device, context, queue, num_elements);
+    return test_pipe_readwrite_float(device, context, queue, num_elements,
+                                     args);
 }
 
 REGISTER_TEST(pipe_workgroup_readwrite_half)
@@ -1422,7 +1426,7 @@ REGISTER_TEST(pipe_workgroup_readwrite_half)
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_half(device, context, queue, num_elements);
+    return test_pipe_readwrite_half(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_workgroup_readwrite_long)
@@ -1430,7 +1434,7 @@ REGISTER_TEST(pipe_workgroup_readwrite_long)
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_long(device, context, queue, num_elements);
+    return test_pipe_readwrite_long(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_workgroup_readwrite_ulong)
@@ -1438,7 +1442,8 @@ REGISTER_TEST(pipe_workgroup_readwrite_ulong)
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_ulong(device, context, queue, num_elements);
+    return test_pipe_readwrite_ulong(device, context, queue, num_elements,
+                                     args);
 }
 
 REGISTER_TEST(pipe_workgroup_readwrite_double)
@@ -1446,7 +1451,8 @@ REGISTER_TEST(pipe_workgroup_readwrite_double)
     useWorkgroupReserve = 1;
     useSubgroupReserve = 0;
     useConvenienceBuiltIn = 0;
-    return test_pipe_readwrite_double(device, context, queue, num_elements);
+    return test_pipe_readwrite_double(device, context, queue, num_elements,
+                                      args);
 }
 
 REGISTER_TEST(pipe_workgroup_readwrite_struct)
@@ -1470,7 +1476,7 @@ REGISTER_TEST(pipe_subgroup_readwrite_int)
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_int(device, context, queue, num_elements);
+    return test_pipe_readwrite_int(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_subgroup_readwrite_uint)
@@ -1485,7 +1491,7 @@ REGISTER_TEST(pipe_subgroup_readwrite_uint)
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_uint(device, context, queue, num_elements);
+    return test_pipe_readwrite_uint(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_subgroup_readwrite_short)
@@ -1500,7 +1506,8 @@ REGISTER_TEST(pipe_subgroup_readwrite_short)
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_short(device, context, queue, num_elements);
+    return test_pipe_readwrite_short(device, context, queue, num_elements,
+                                     args);
 }
 
 REGISTER_TEST(pipe_subgroup_readwrite_ushort)
@@ -1515,7 +1522,8 @@ REGISTER_TEST(pipe_subgroup_readwrite_ushort)
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_ushort(device, context, queue, num_elements);
+    return test_pipe_readwrite_ushort(device, context, queue, num_elements,
+                                      args);
 }
 
 REGISTER_TEST(pipe_subgroup_readwrite_char)
@@ -1530,7 +1538,7 @@ REGISTER_TEST(pipe_subgroup_readwrite_char)
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_char(device, context, queue, num_elements);
+    return test_pipe_readwrite_char(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_subgroup_readwrite_uchar)
@@ -1545,7 +1553,8 @@ REGISTER_TEST(pipe_subgroup_readwrite_uchar)
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_uchar(device, context, queue, num_elements);
+    return test_pipe_readwrite_uchar(device, context, queue, num_elements,
+                                     args);
 }
 
 REGISTER_TEST(pipe_subgroup_readwrite_float)
@@ -1560,7 +1569,8 @@ REGISTER_TEST(pipe_subgroup_readwrite_float)
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_float(device, context, queue, num_elements);
+    return test_pipe_readwrite_float(device, context, queue, num_elements,
+                                     args);
 }
 
 REGISTER_TEST(pipe_subgroup_readwrite_half)
@@ -1575,7 +1585,7 @@ REGISTER_TEST(pipe_subgroup_readwrite_half)
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_half(device, context, queue, num_elements);
+    return test_pipe_readwrite_half(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_subgroup_readwrite_long)
@@ -1590,7 +1600,7 @@ REGISTER_TEST(pipe_subgroup_readwrite_long)
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_long(device, context, queue, num_elements);
+    return test_pipe_readwrite_long(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_subgroup_readwrite_ulong)
@@ -1605,7 +1615,8 @@ REGISTER_TEST(pipe_subgroup_readwrite_ulong)
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_ulong(device, context, queue, num_elements);
+    return test_pipe_readwrite_ulong(device, context, queue, num_elements,
+                                     args);
 }
 
 REGISTER_TEST(pipe_subgroup_readwrite_double)
@@ -1620,7 +1631,8 @@ REGISTER_TEST(pipe_subgroup_readwrite_double)
                  "test.\n");
         return CL_SUCCESS;
     }
-    return test_pipe_readwrite_double(device, context, queue, num_elements);
+    return test_pipe_readwrite_double(device, context, queue, num_elements,
+                                      args);
 }
 
 REGISTER_TEST(pipe_subgroup_readwrite_struct)
@@ -1644,7 +1656,7 @@ REGISTER_TEST(pipe_convenience_readwrite_int)
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_int(device, context, queue, num_elements);
+    return test_pipe_readwrite_int(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_convenience_readwrite_uint)
@@ -1653,7 +1665,7 @@ REGISTER_TEST(pipe_convenience_readwrite_uint)
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_uint(device, context, queue, num_elements);
+    return test_pipe_readwrite_uint(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_convenience_readwrite_short)
@@ -1662,7 +1674,8 @@ REGISTER_TEST(pipe_convenience_readwrite_short)
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_short(device, context, queue, num_elements);
+    return test_pipe_readwrite_short(device, context, queue, num_elements,
+                                     args);
 }
 
 REGISTER_TEST(pipe_convenience_readwrite_ushort)
@@ -1671,7 +1684,8 @@ REGISTER_TEST(pipe_convenience_readwrite_ushort)
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_ushort(device, context, queue, num_elements);
+    return test_pipe_readwrite_ushort(device, context, queue, num_elements,
+                                      args);
 }
 
 REGISTER_TEST(pipe_convenience_readwrite_char)
@@ -1680,7 +1694,7 @@ REGISTER_TEST(pipe_convenience_readwrite_char)
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_char(device, context, queue, num_elements);
+    return test_pipe_readwrite_char(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_convenience_readwrite_uchar)
@@ -1689,7 +1703,8 @@ REGISTER_TEST(pipe_convenience_readwrite_uchar)
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_uchar(device, context, queue, num_elements);
+    return test_pipe_readwrite_uchar(device, context, queue, num_elements,
+                                     args);
 }
 
 
@@ -1699,7 +1714,8 @@ REGISTER_TEST(pipe_convenience_readwrite_float)
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_float(device, context, queue, num_elements);
+    return test_pipe_readwrite_float(device, context, queue, num_elements,
+                                     args);
 }
 
 REGISTER_TEST(pipe_convenience_readwrite_half)
@@ -1708,7 +1724,7 @@ REGISTER_TEST(pipe_convenience_readwrite_half)
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_half(device, context, queue, num_elements);
+    return test_pipe_readwrite_half(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_convenience_readwrite_long)
@@ -1717,7 +1733,7 @@ REGISTER_TEST(pipe_convenience_readwrite_long)
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_long(device, context, queue, num_elements);
+    return test_pipe_readwrite_long(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(pipe_convenience_readwrite_ulong)
@@ -1726,7 +1742,8 @@ REGISTER_TEST(pipe_convenience_readwrite_ulong)
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_ulong(device, context, queue, num_elements);
+    return test_pipe_readwrite_ulong(device, context, queue, num_elements,
+                                     args);
 }
 
 REGISTER_TEST(pipe_convenience_readwrite_double)
@@ -1735,7 +1752,8 @@ REGISTER_TEST(pipe_convenience_readwrite_double)
     useSubgroupReserve = 0;
     useWorkgroupReserve = 0;
 
-    return test_pipe_readwrite_double(device, context, queue, num_elements);
+    return test_pipe_readwrite_double(device, context, queue, num_elements,
+                                      args);
 }
 
 REGISTER_TEST(pipe_convenience_readwrite_struct)

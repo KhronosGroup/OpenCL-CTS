@@ -277,7 +277,5 @@ int main(int argc, const char *argv[])
     log_info("*** Use of this mode is not sufficient to verify correctness.              ***\n");
     log_info("***                                                                        ***\n");
   }
-  return runTestHarnessWithCheck(
-      argc, argv, test_registry::getInstance().num_tests(),
-      test_registry::getInstance().definitions(), false, false, InitCL);
+  return runTestHarnessWithCheck(argc, argv, false, false, InitCL);
 }
