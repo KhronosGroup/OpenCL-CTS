@@ -1,18 +1,5 @@
 set (MODULE_NAME GL)
 
-if(GL_IS_SUPPORTED)
-if(WIN32)
-# Windows MSVC/Intel compiler hits: 
-# - dwonload free libraries package glew and glut/freeglut from the Internet
-# - add x64/x86 binaries with glew and glut/freeglut libraries (.lib) to the directory lib/x64 or lib/x86.
-#   Include folder libs as cmake argument -DCLConform_GL_LIBRARIES_DIR=lib\x64 while solution generation 
-# - GL headers files should be added to project source directory and GL subdirectory
-# - Add .dll files: glut glew to the test binary location.
-    list(APPEND CLConform_LIBRARIES opengl32 freeglut glew32)
-else(WIN32)
-    list(APPEND CLConform_LIBRARIES  GL glut GLEW GLU)
-endif(WIN32)
-
 set (${MODULE_NAME}_SOURCES
     main.cpp
     test_buffers.cpp
@@ -23,18 +10,33 @@ set (${MODULE_NAME}_SOURCES
     test_images_2Darray.cpp
     test_images_3D.cpp
     test_images_depth.cpp
-    test_images_getinfo_common.cpp
     test_images_multisample.cpp
-    test_images_read_common.cpp
-    test_images_write_common.cpp
     test_renderbuffer.cpp
     test_renderbuffer_info.cpp
     test_fence_sync.cpp
     test_queries.cpp
     helpers.cpp
-    ../../test_common/gl/helpers.cpp
     )
 
+if(GL_IS_SUPPORTED)
+if(WIN32)
+# Windows MSVC/Intel compiler hits:
+# - dwonload free libraries package glew and glut/freeglut from the Internet
+# - add x64/x86 binaries with glew and glut/freeglut libraries (.lib) to the directory lib/x64 or lib/x86.
+#   Include folder libs as cmake argument -DCLConform_GL_LIBRARIES_DIR=lib\x64 while solution generation
+# - GL headers files should be added to project source directory and GL subdirectory
+# - Add .dll files: glut glew to the test binary location.
+    list(APPEND CLConform_LIBRARIES opengl32 freeglut glew32)
+else(WIN32)
+    list(APPEND CLConform_LIBRARIES  GL glut GLEW GLU)
+endif(WIN32)
+
+list (APPEND ${MODULE_NAME}_SOURCES
+    test_images_getinfo_common.cpp
+    test_images_read_common.cpp
+    test_images_write_common.cpp
+    ../../test_common/gl/helpers.cpp
+)
 if (WIN32)
     list (APPEND ${MODULE_NAME}_SOURCES ../../test_common/gl/setup_win32.cpp)
 else(WIN32)
@@ -52,6 +54,9 @@ if(MINGW)
     include_directories("./GLEW/")
 endif(MINGW)
 
+add_compile_definitions(GL_IS_SUPPORTED)
+endif()
+
 set_source_files_properties(
         ${${MODULE_NAME}_SOURCES}
         PROPERTIES LANGUAGE CXX)
@@ -60,9 +65,5 @@ set_source_files_properties(
 # test_common/gl/setup_x11.cpp can find testBase.h which is located in this
 # folder.
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-else()
-build_as_stub(${MODULE_NAME})
-endif()
 
 include(../CMakeCommon.txt)

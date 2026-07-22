@@ -20,8 +20,8 @@ if(VULKAN_IS_SUPPORTED)
   list(APPEND CLConform_LIBRARIES vulkan_wrapper)
 
   include_directories("../../common/vulkan_wrapper")
-else()
-  build_with_stub(${MODULE_NAME})
+
+  add_compile_definitions(VULKAN_IS_SUPPORTED)
 endif()
 
 include(../../CMakeCommon.txt)
