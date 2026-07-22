@@ -21,8 +21,7 @@ if (WIN32 AND D3D12_IS_SUPPORTED)
 
     list(APPEND CLConform_LIBRARIES directx_wrapper)
 
-else()
-    build_with_stub(${MODULE_NAME})
+    add_compile_definitions(D3D12_IS_SUPPORTED)
 endif()
 
 include(../../CMakeCommon.txt)

@@ -41,6 +41,7 @@ struct VulkanTestBase
                    bool useShaderInt8 = false)
         : device(device), context(context), num_elems(nelems)
     {
+#ifdef VULKAN_IS_SUPPORTED
         vkDevice.reset(new VulkanDevice(
             getAssociatedVulkanPhysicalDevice(device, useValidationLayers),
             getDefaultVulkanQueueFamilyToQueueCountMap(), useShaderInt8));
@@ -78,6 +79,7 @@ struct VulkanTestBase
                 "Vulkan tests can only run on a GPU device.");
 
         init_cl_vk_ext(platform, 1, &device);
+#endif
     }
 
     virtual cl_int Run() = 0;
@@ -87,7 +89,9 @@ protected:
     cl_context context = nullptr;
     clCommandQueueWrapper queue = nullptr;
     cl_int num_elems = 0;
+#ifdef VULKAN_IS_SUPPORTED
     std::unique_ptr<VulkanDevice> vkDevice;
+#endif
 };
 
 template <class T>
@@ -103,6 +107,7 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
         return TEST_SKIPPED_ITSELF;
     }
 
+#ifdef VULKAN_IS_SUPPORTED
     if (!checkVkSupport(useValidationLayers))
     {
         log_info("Vulkan supported GPU not found \n");
@@ -126,6 +131,9 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
     }
 
     return status;
+#else
+    return TEST_FAIL;
+#endif
 }
 
 #endif // CL_VULKAN_TEST_BASE_H

@@ -26,7 +26,9 @@
 #include "harness/os_helpers.h"
 
 #include "vulkan_test_base.h"
+#ifdef VULKAN_IS_SUPPORTED
 #include "opencl_vulkan_wrapper.hpp"
+#endif
 
 #define MAX_BUFFERS 5
 #define MAX_IMPORTS 5
@@ -34,6 +36,7 @@
 
 namespace {
 
+#ifdef VULKAN_IS_SUPPORTED
 cl_device_id deviceId = nullptr;
 
 struct Params
@@ -1522,7 +1525,7 @@ CLEANUP:
     if (error_2) clReleaseMemObject(error_2);
     return err;
 }
-
+#endif
 
 struct BufferTestBase : public VulkanTestBase
 {
@@ -1531,6 +1534,7 @@ struct BufferTestBase : public VulkanTestBase
         : VulkanTestBase(device, context, queue, nelems, true)
     {}
 
+#ifdef VULKAN_IS_SUPPORTED
     int test_buffer_common(bool use_fence)
     {
         cl_int errNum = CL_SUCCESS;
@@ -1700,6 +1704,7 @@ struct BufferTestBase : public VulkanTestBase
 
         return errNum;
     }
+#endif
 };
 
 template <bool use_fence> struct BufferCommonBufferTest : public BufferTestBase
@@ -1709,7 +1714,14 @@ template <bool use_fence> struct BufferCommonBufferTest : public BufferTestBase
         : BufferTestBase(device, context, queue, nelems)
     {}
 
-    cl_int Run() override { return test_buffer_common(use_fence); }
+    cl_int Run() override
+    {
+#ifdef VULKAN_IS_SUPPORTED
+        return test_buffer_common(use_fence);
+#else
+        return TEST_FAIL;
+#endif
+    }
 };
 
 } // anonymous namespace
