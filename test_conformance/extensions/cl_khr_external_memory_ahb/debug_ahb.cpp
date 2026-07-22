@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 
+#ifdef __ANDROID__
+
 #include "debug_ahb.h"
 #include "harness/errorHelpers.h"
 
@@ -216,3 +218,5 @@ void log_unsupported_ahb_format(AHardwareBuffer_Desc aHardwareBufferDesc)
              usage_string.c_str(), aHardwareBufferDesc.width,
              aHardwareBufferDesc.height, aHardwareBufferDesc.layers);
 }
+
+#endif // __ANDROID__

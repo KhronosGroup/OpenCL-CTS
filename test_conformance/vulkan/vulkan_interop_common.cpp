@@ -15,6 +15,7 @@
 //
 
 #include "vulkan_interop_common.hpp"
+#include <stdint.h>
 
 uint32_t innerIterations(5);
 uint32_t perfIterations(100);

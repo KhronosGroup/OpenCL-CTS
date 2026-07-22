@@ -2,10 +2,6 @@ string(TOLOWER ${MODULE_NAME} MODULE_NAME_LOWER)
 
 set(${MODULE_NAME}_OUT ${CONFORMANCE_PREFIX}${MODULE_NAME_LOWER}${CONFORMANCE_SUFFIX})
 
-if(DEFINED ${MODULE_NAME}_STUBS)
-  list(APPEND ${MODULE_NAME}_SOURCES stubs/stub.cpp)
-endif()
-
 set_property(GLOBAL APPEND PROPERTY CTS_TEST_BINARIES ${${MODULE_NAME}_OUT})
 
 add_executable(${${MODULE_NAME}_OUT} ${${MODULE_NAME}_SOURCES})
@@ -13,16 +9,6 @@ add_executable(${${MODULE_NAME}_OUT} ${${MODULE_NAME}_SOURCES})
 set_property(TARGET ${${MODULE_NAME}_OUT} PROPERTY FOLDER "CONFORMANCE${CONFORMANCE_SUFFIX}")
 
 TARGET_LINK_LIBRARIES(${${MODULE_NAME}_OUT} ${HARNESS_LIB} ${CLConform_LIBRARIES})
-
-if(DEFINED ${MODULE_NAME}_STUBS)
-  TARGET_INCLUDE_DIRECTORIES(${${MODULE_NAME}_OUT} PRIVATE ${${MODULE_NAME}_STUBS})
-  target_compile_definitions(${${MODULE_NAME}_OUT} PRIVATE USE_${MODULE_NAME}_STUBS)
-  if(MSVC)
-    target_compile_options(${${MODULE_NAME}_OUT} PRIVATE "/wd4100")
-  else()
-    target_compile_options(${${MODULE_NAME}_OUT} PRIVATE "-Wno-unused-parameter")
-  endif()
-endif()
 
 include(GNUInstallDirs)
 

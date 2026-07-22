@@ -1,8 +1,9 @@
 set (MODULE_NAME GLES)
 
+set (${MODULE_NAME}_SOURCES main.cpp)
+
 if(GLES_IS_SUPPORTED)
-set (${MODULE_NAME}_SOURCES
-        main.cpp
+list (APPEND ${MODULE_NAME}_SOURCES
         test_buffers.cpp
         test_images_2D.cpp
         test_images_3D.cpp
@@ -17,9 +18,7 @@ set (${MODULE_NAME}_SOURCES
     )
 
 list(APPEND CLConform_LIBRARIES EGL GLESv2)
-
-else()
-build_as_stub(${MODULE_NAME})
+add_compile_definitions(GLES_IS_SUPPORTED)
 endif()
 
 include(../CMakeCommon.txt)

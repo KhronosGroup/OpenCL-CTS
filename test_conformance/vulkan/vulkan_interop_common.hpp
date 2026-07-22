@@ -17,11 +17,15 @@
 #ifndef _vulkan_interop_common_hpp_
 #define _vulkan_interop_common_hpp_
 
+#ifdef VULKAN_IS_SUPPORTED
 #include "vulkan_wrapper_types.hpp"
 #include "vulkan_wrapper.hpp"
 #include "vulkan_list_map.hpp"
 #include "vulkan_utility.hpp"
 #include "opencl_vulkan_wrapper.hpp"
+#endif
+
+#include <stddef.h>
 
 // Number of iterations for loops within tests (default value 5)
 extern unsigned int innerIterations;

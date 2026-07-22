@@ -1,15 +1,7 @@
 set(MODULE_NAME MEDIA_SURFACE_SHARING)
 
-if(WIN32)
-  list(APPEND CLConform_LIBRARIES d3d9.lib dxva2.lib )
-else()
-  build_with_stub(${MODULE_NAME})
-endif()
-
 set(${MODULE_NAME}_SOURCES
         main.cpp
-        wrappers.cpp
-        utils.cpp
         test_create_context.cpp
         test_functions_api.cpp
         test_functions_kernel.cpp
@@ -18,6 +10,14 @@ set(${MODULE_NAME}_SOURCES
         test_memory_access.cpp
         test_other_data_types.cpp
     )
+
+if(WIN32)
+  list(APPEND CLConform_LIBRARIES d3d9.lib dxva2.lib )
+  list(APPEND ${MODULE_NAME}_SOURCES
+        wrappers.cpp
+        utils.cpp
+  )
+endif()
 
 set_source_files_properties(
         ${MODULE_NAME}_SOURCES

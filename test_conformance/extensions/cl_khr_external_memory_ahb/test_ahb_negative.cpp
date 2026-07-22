@@ -18,28 +18,18 @@
 #include "harness/kernelHelpers.h"
 #include "harness/imageHelpers.h"
 #include "harness/errorHelpers.h"
+
+#ifdef __ANDROID__
 #include <android/hardware_buffer.h>
 #include "debug_ahb.h"
+#endif // __ANDROID__
 
 REGISTER_TEST(buffer_format_negative)
 {
-    cl_int err = CL_SUCCESS;
+    REQUIRE_EXTENSION("cl_khr_external_memory");
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
-    if (!is_extension_available(device, "cl_khr_external_memory"))
-    {
-        log_info("cl_khr_external_memory is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-    if (!is_extension_available(
-            device, "cl_khr_external_memory_android_hardware_buffer"))
-    {
-        log_info("cl_khr_external_memory_android_hardware_buffer is not "
-                 "supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-
+#ifdef __ANDROID__
     AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
     aHardwareBufferDesc.format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM;
     aHardwareBufferDesc.usage = AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER;
@@ -81,6 +71,7 @@ REGISTER_TEST(buffer_format_negative)
         reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
     };
 
+    cl_int err = CL_SUCCESS;
     cl_mem buffer = clCreateBufferWithProperties(
         context, props, CL_MEM_READ_WRITE, 0, nullptr, &err);
     test_assert_error(err == CL_INVALID_OPERATION,
@@ -96,27 +87,18 @@ REGISTER_TEST(buffer_format_negative)
     aHardwareBuffer = nullptr;
 
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }
 
 REGISTER_TEST(buffer_size_negative)
 {
-    cl_int err = CL_SUCCESS;
-    constexpr size_t buffer_size = 64;
+    REQUIRE_EXTENSION("cl_khr_external_memory");
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
-    if (!is_extension_available(device, "cl_khr_external_memory"))
-    {
-        log_info("cl_khr_external_memory is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-    if (!is_extension_available(
-            device, "cl_khr_external_memory_android_hardware_buffer"))
-    {
-        log_info("cl_khr_external_memory_android_hardware_buffer is not "
-                 "supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+#ifdef __ANDROID__
+    constexpr size_t buffer_size = 64;
 
     AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
     aHardwareBufferDesc.format = AHARDWAREBUFFER_FORMAT_BLOB;
@@ -159,6 +141,7 @@ REGISTER_TEST(buffer_size_negative)
         reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
     };
 
+    cl_int err = CL_SUCCESS;
     cl_mem buffer = clCreateBufferWithProperties(
         context, props, CL_MEM_READ_WRITE, buffer_size / 2, nullptr, &err);
     test_assert_error(err == CL_INVALID_BUFFER_SIZE,
@@ -173,27 +156,17 @@ REGISTER_TEST(buffer_size_negative)
     aHardwareBuffer = nullptr;
 
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }
 
 REGISTER_TEST(images_negative)
 {
-    cl_int err = CL_SUCCESS;
+    REQUIRE_EXTENSION("cl_khr_external_memory");
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
-    if (!is_extension_available(device, "cl_khr_external_memory"))
-    {
-        log_info("cl_khr_external_memory is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-    if (!is_extension_available(
-            device, "cl_khr_external_memory_android_hardware_buffer"))
-    {
-        log_info("cl_khr_external_memory_android_hardware_buffer is not "
-                 "supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-
+#ifdef __ANDROID__
     AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
     aHardwareBufferDesc.format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM;
     aHardwareBufferDesc.usage = static_cast<AHardwareBuffer_UsageFlags>(
@@ -219,6 +192,7 @@ REGISTER_TEST(images_negative)
         reinterpret_cast<cl_mem_properties>(aHardwareBuffer), 0
     };
 
+    cl_int err = CL_SUCCESS;
     constexpr cl_image_format image_format = { CL_RGBA, CL_UNORM_INT8 };
     cl_mem image =
         clCreateImageWithProperties(context, props, CL_MEM_READ_WRITE,
@@ -243,21 +217,17 @@ REGISTER_TEST(images_negative)
     aHardwareBuffer = nullptr;
 
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }
 
 REGISTER_TEST(invalid_arguments)
 {
-    cl_int err;
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
+
+#ifdef __ANDROID__
     constexpr cl_uint buffer_size = 4096;
-
-    if (!is_extension_available(
-            device, "cl_khr_external_memory_android_hardware_buffer"))
-    {
-        log_info("cl_khr_external_memory_android_hardware_buffer is not "
-                 "supported on this platform. Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-
     AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
     aHardwareBufferDesc.width = buffer_size;
     aHardwareBufferDesc.height = 1;
@@ -306,6 +276,7 @@ REGISTER_TEST(invalid_arguments)
     log_info("Testing buffer error conditions\n");
 
     // Buffer error conditions
+    cl_int err;
     clMemWrapper mem =
         clCreateBufferWithProperties(context, props_buffer, CL_MEM_READ_WRITE,
                                      buffer_size + 1, nullptr, &err);
@@ -395,4 +366,7 @@ REGISTER_TEST(invalid_arguments)
     }
 
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }

@@ -203,6 +203,16 @@
             "pci_bus_info": "skip"
         }
     },
+    "test_d3d10": {
+        "": {
+            "enumeration": "skip",
+            "create_context": "skip",
+            "buffer": "skip",
+            "texture2d": "skip",
+            "texture3d": "skip",
+            "misc": "skip"
+        }
+    },
     "test_image_streams": {
         "--num-worker-threads 2 CL_A CL_FILTER_NEAREST": {
             "1D": "pass"
@@ -259,6 +269,27 @@
             "vec_align_packed_struct": "pass",
             "vec_align_struct_arr": "pass",
             "vec_align_packed_struct_arr": "pass"
+        }
+    },
+    "test_vulkan": {
+        "": {
+            "test_buffer_single_queue": "skip",
+            "test_buffer_multiple_queue": "skip",
+            "test_buffer_multiImport_sameCtx": "skip",
+            "test_buffer_multiImport_diffCtx": "skip",
+            "test_buffer_single_queue_fence": "skip",
+            "test_buffer_multiple_queue_fence": "skip",
+            "test_buffer_multiImport_sameCtx_fence": "skip",
+            "test_buffer_multiImport_diffCtx_fence": "skip",
+            "test_image_single_queue": "skip",
+            "test_image_multiple_queue": "skip",
+            "test_consistency_external_buffer": "skip",
+            "test_consistency_external_image": "skip",
+            "test_consistency_external_semaphore": "skip",
+            "test_consistency_external_for_3dimage": "skip",
+            "test_consistency_external_for_1dimage": "skip",
+            "test_platform_info": "skip",
+            "test_device_info": "skip"
         }
     }
 }
