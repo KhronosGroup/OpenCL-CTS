@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
+#include "testHarness.h"
+#ifdef GL_IS_SUPPORTED
 #include "common.h"
 
 #if defined(__APPLE__)
@@ -22,9 +24,11 @@
 #include <GL/glu.h>
 #include <CL/cl_gl.h>
 #endif
+#endif
 #include <algorithm>
 
-void calc_3D_size_descriptors(sizevec_t* sizes, size_t nsizes)
+#ifdef GL_IS_SUPPORTED
+static void calc_3D_size_descriptors(sizevec_t* sizes, size_t nsizes)
 {
     // Need to limit array size according to GL device properties
     GLint maxTextureSize = 2048;
@@ -43,10 +47,12 @@ void calc_3D_size_descriptors(sizevec_t* sizes, size_t nsizes)
             random_in_range(2, std::min(maxTextureSize, 1 << (i + 4)), seed);
     }
 }
+#endif
 
 int test_images_read_3D(cl_device_id device, cl_context context,
                         cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     GLenum targets[] = { GL_TEXTURE_3D };
     size_t ntargets = 1;
 
@@ -58,6 +64,9 @@ int test_images_read_3D(cl_device_id device, cl_context context,
 
     return test_images_read_common(device, context, queue, common_formats,
                                    nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 #pragma mark -
@@ -68,14 +77,9 @@ int test_images_write_3D(cl_device_id device, cl_context context,
 {
     // TODO: Perhaps the expected behavior is to FAIL if 3D images are
     //       unsupported?
+    REQUIRE_EXTENSION("cl_khr_3d_image_writes");
 
-    if (!is_extension_available(device, "cl_khr_3d_image_writes"))
-    {
-        log_info(
-            "This device does not support 3D image writes.  Skipping test.\n");
-        return 0;
-    }
-
+#ifdef GL_IS_SUPPORTED
     GLenum targets[] = { GL_TEXTURE_3D };
     size_t ntargets = sizeof(targets) / sizeof(targets[0]);
     size_t nformats = sizeof(common_formats) / sizeof(common_formats[0]);
@@ -87,6 +91,9 @@ int test_images_write_3D(cl_device_id device, cl_context context,
 
     return test_images_write_common(device, context, queue, common_formats,
                                     nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 #pragma mark -
@@ -95,6 +102,7 @@ int test_images_write_3D(cl_device_id device, cl_context context,
 int test_images_3D_getinfo(cl_device_id device, cl_context context,
                            cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     GLenum targets[] = { GL_TEXTURE_3D };
     size_t ntargets = 1;
 
@@ -107,4 +115,7 @@ int test_images_3D_getinfo(cl_device_id device, cl_context context,
     return test_images_get_info_common(device, context, queue, common_formats,
                                        nformats, targets, ntargets, sizes,
                                        nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }

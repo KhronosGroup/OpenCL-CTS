@@ -9,8 +9,6 @@ set(${MODULE_NAME}_SOURCES
 
 if(DEFINED ANDROID_PLATFORM AND ANDROID_PLATFORM GREATER 28)
   link_libraries(OpenCL nativewindow)
-else()
-  build_with_stub(${MODULE_NAME})
 endif()
 
 include(../../CMakeCommon.txt)

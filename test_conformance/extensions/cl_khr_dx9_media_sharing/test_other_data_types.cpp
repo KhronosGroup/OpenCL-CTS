@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "testHarness.h"
+#ifdef _WIN32
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -79,7 +81,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
         cl_context_properties contextProperties[] = {
             CL_CONTEXT_PLATFORM,
             (cl_context_properties)gPlatformIDdetected,
-            (cl_context_properties)AdapterTypeToContextInfo(adapterType),
+            AdapterTypeToContextInfo(adapterType),
             (cl_context_properties)deviceWrapper->Device(),
             0,
         };
@@ -265,6 +267,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
 
             (*dx9SurfaceSrc)->UnlockRect();
 #else
+            void *surfaceInfo = 0;
             return TEST_NOT_IMPLEMENTED;
 #endif
 
@@ -298,7 +301,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
                                  out, bufferIn[frameIdx % FRAME_NUM], width,
                                  height, planeNum))
                 {
-                    log_error("Frame idx: %zu, OCL object is different then "
+                    log_error("Frame idx: %i, OCL object is different then "
                               "expected\n",
                               frameIdx);
                     result.ResultSub(CResult::TEST_FAIL);
@@ -441,7 +444,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
                                  out, bufferIn[frameIdx % FRAME_NUM], width,
                                  height, planeNum))
                 {
-                    log_error("Frame idx: %zu, Mapped OCL object is different "
+                    log_error("Frame idx: %i, Mapped OCL object is different "
                               "then expected\n",
                               frameIdx);
                     result.ResultSub(CResult::TEST_FAIL);
@@ -499,7 +502,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
                              planeNum))
             {
                 log_error(
-                    "Frame idx: %zu, media object is different then expected\n",
+                    "Frame idx: %i, media object is different then expected\n",
                     frameIdx);
                 result.ResultSub(CResult::TEST_FAIL);
             }
@@ -525,9 +528,11 @@ int other_data_types(cl_device_id deviceID, cl_context context,
 
     return result.Result();
 }
+#endif
 
 REGISTER_TEST(other_data_types)
 {
+#ifdef _WIN32
     CResult result;
 
 #if defined(_WIN32)
@@ -1314,4 +1319,7 @@ REGISTER_TEST(other_data_types)
 #endif
 
     return result.Result();
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }

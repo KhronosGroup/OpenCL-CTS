@@ -16,6 +16,7 @@
 
 #include "semaphore_dx_fence_base.h"
 
+#ifdef D3D12_IS_SUPPORTED
 struct SignalWait final : DXFenceTestBase
 {
     using DXFenceTestBase::DXFenceTestBase;
@@ -45,13 +46,19 @@ struct SignalWait final : DXFenceTestBase
         return TEST_PASS;
     }
 };
+#endif
 
 // Confirm that a signal followed by a wait in OpenCL will complete successfully
 REGISTER_TEST(test_external_semaphores_signal_wait)
 {
+#ifdef D3D12_IS_SUPPORTED
     return MakeAndRunTest<SignalWait>(device, context, queue, num_elements);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
+#ifdef D3D12_IS_SUPPORTED
 struct SignalDXCPU final : DXFenceTestBase
 {
     using DXFenceTestBase::DXFenceTestBase;
@@ -76,14 +83,20 @@ struct SignalDXCPU final : DXFenceTestBase
         return TEST_PASS;
     }
 };
+#endif
 
 // Confirm that a wait in OpenCL followed by a CPU signal in DX12 will complete
 // successfully
 REGISTER_TEST(test_external_semaphores_signal_dx_cpu)
 {
+#ifdef D3D12_IS_SUPPORTED
     return MakeAndRunTest<SignalDXCPU>(device, context, queue, num_elements);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
+#ifdef D3D12_IS_SUPPORTED
 struct SignalDXGPU final : DXFenceTestBase
 {
     using DXFenceTestBase::DXFenceTestBase;
@@ -109,14 +122,20 @@ struct SignalDXGPU final : DXFenceTestBase
         return TEST_PASS;
     }
 };
+#endif
 
 // Confirm that a wait in OpenCL followed by a GPU signal in DX12 will complete
 // successfully
 REGISTER_TEST(test_external_semaphores_signal_dx_gpu)
 {
+#ifdef D3D12_IS_SUPPORTED
     return MakeAndRunTest<SignalDXGPU>(device, context, queue, num_elements);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
+#ifdef D3D12_IS_SUPPORTED
 struct CLDXInterlock final : DXFenceTestBase
 {
     using DXFenceTestBase::DXFenceTestBase;
@@ -156,14 +175,20 @@ struct CLDXInterlock final : DXFenceTestBase
         return TEST_PASS;
     }
 };
+#endif
 
 // Confirm that interlocking waits between OpenCL and DX12 will complete
 // successfully
 REGISTER_TEST(test_external_semaphores_cl_dx_interlock)
 {
+#ifdef D3D12_IS_SUPPORTED
     return MakeAndRunTest<CLDXInterlock>(device, context, queue, num_elements);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
+#ifdef D3D12_IS_SUPPORTED
 struct MultipleWaitSignal final : DXFenceTestBase
 {
     using DXFenceTestBase::DXFenceTestBase;
@@ -190,11 +215,7 @@ struct MultipleWaitSignal final : DXFenceTestBase
 
     int SetUp() override
     {
-        auto ret = DXFenceTestBase::SetUp();
-        if (ret != TEST_PASS)
-        {
-            return ret;
-        }
+        DXFenceTestBase::SetUp();
         fence_wrapper_2 = new DirectX12FenceWrapper(dx_wrapper.getDXDevice());
         semaphore_2 = createSemaphoreFromFence(fence_wrapper_2->get());
         test_assert_error(!!semaphore_2, "Could not create semaphore");
@@ -288,11 +309,16 @@ protected:
     HANDLE fence_handle_2 = nullptr;
     DirectX12FenceWrapper *fence_wrapper_2 = nullptr;
 };
+#endif
 
 // Confirm that multiple waits in OpenCL followed by signals in DX12 and waits
 // in DX12 followed by signals in OpenCL complete successfully
 REGISTER_TEST(test_external_semaphores_multiple_wait_signal)
 {
+#ifdef D3D12_IS_SUPPORTED
     return MakeAndRunTest<MultipleWaitSignal>(device, context, queue,
                                               num_elements);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
