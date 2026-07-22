@@ -404,7 +404,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
         -r     Toggle fast relaxed math precision testing. (Default: on)
         -e     Toggle test as derived implementations for fast relaxed math precision. (Default: on)
         -l     link check only (make sure functions are present, skip accuracy checks.)
-        -m     Toggle run multi-threaded. (Default: on)
         -s     Stop on error
         -[2^n] Set wimpy reduction factor, recommended range of n is 1-10, default factor()"
         + std::to_string(gWimpyReductionFactor) + R"()
@@ -423,9 +422,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
 
     std::vector<const char *> argList;
     argList.push_back(argv[0]);
-
-    int singleThreaded = 0;
-    int forcedWorkerThreads = 0;
 
     for (int i = 1; i < argc; i++)
     {
@@ -450,16 +446,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
                     case 'f': gTestFloat ^= 1; break;
 
                     case 'l': gSkipCorrectnessTesting ^= 1; break;
-
-                    case 'm': singleThreaded ^= 1; break;
-
-                    case 't':
-                        removed_args.pop_back();
-                        removed_args.push_back(std::string(argv[i]) + " "
-                                               + argv[i + 1]);
-                        forcedWorkerThreads = atoi(argv[++i]);
-                        vlog(" %d", forcedWorkerThreads);
-                        break;
 
                     case 'g': gHasHalf ^= 1; break;
 
@@ -545,17 +531,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
              gWimpyReductionFactor);
     }
 
-    if (singleThreaded)
-    {
-        vlog("*** WARNING: Force 1 worker thread                      ***\n");
-        SetThreadCount(1);
-    }
-    else if (forcedWorkerThreads > 0)
-    {
-        vlog("*** WARNING: Force %d worker threads                    ***\n",
-             forcedWorkerThreads);
-        SetThreadCount(forcedWorkerThreads);
-    }
     if (gSkipCorrectnessTesting)
         vlog("*** Skipping correctness testing! ***\n\n");
     else if (gStopOnError)
