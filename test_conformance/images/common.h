@@ -37,10 +37,9 @@ struct image_type
     cl_mem_object_type object_type;
     const char *name;
 };
-extern void
-register_test_configs(const std::vector<struct image_type> &tests,
-                      std::vector<struct test_configs> &test_configs,
-                      test_function_pointer runTest);
+extern void register_test_configs(const std::vector<image_type> &tests,
+                                  std::vector<test_configs> &test_configs,
+                                  test_function_pointer runTest);
 
 extern cl_channel_type floatFormats[];
 extern cl_channel_type intFormats[];

@@ -27,7 +27,7 @@ extern int test_image_set(cl_device_id device, cl_context context,
                           cl_channel_type channel_type,
                           const image_test_context_t &ctx);
 
-static std::vector<struct test_configs> test_configs;
+static std::vector<test_configs> test_configs;
 static int doTest(cl_device_id device, cl_context context,
                   cl_command_queue queue, int, void *args)
 {
@@ -85,7 +85,7 @@ static test_status parseArgs(int &argc, const char *argv[],
 
     update_argc_argv_from_args_list(argList, argc, argv);
 
-    std::vector<struct image_type> image_types = {
+    std::vector<image_type> image_types = {
         { CL_MEM_OBJECT_IMAGE1D, "1D" },
         { CL_MEM_OBJECT_IMAGE2D, "2D" },
         { CL_MEM_OBJECT_IMAGE3D, "3D" },

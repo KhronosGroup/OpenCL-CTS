@@ -19,8 +19,7 @@
 #include <algorithm>
 
 int test_image_type(cl_device_id device, cl_context context,
-                    cl_command_queue queue,
-                    const struct TestConfigs& test_config,
+                    cl_command_queue queue, const TestConfigs& test_config,
                     const image_test_context_t& ctx)
 {
     if (ctx.testMipmaps)
