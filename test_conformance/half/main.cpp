@@ -72,9 +72,8 @@ int main (int argc, const char **argv )
     }
 
     fflush( stdout );
-    error = runTestHarnessWithCheckAndParse(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), true, 0, InitCL, ParseArgs);
+    error =
+        runTestHarnessWithCheckAndParse(argc, argv, true, 0, InitCL, ParseArgs);
 
     if(gQueue)
     {
@@ -113,7 +112,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
         if( NULL == arg )
             break;
 
-        vlog( "\t%s", arg );
         if( arg[0] == '-' )
         {
             arg++;
@@ -149,7 +147,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
     }
     update_argc_argv_from_args_list(argList, argc, argv);
 
-    PrintArch();
     if( gWimpyMode )
     {
         vlog( "\n" );
@@ -157,15 +154,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
         vlog( "*** Wimpy mode is not sufficient to verify correctness. ***\n" );
         vlog( "*** It gives warm fuzzy feelings and then nevers calls. ***\n\n" );
         vlog( "*** Wimpy Reduction Factor: %-27u ***\n\n", gWimpyReductionFactor);
-    }
-
-    if (gIsEmbedded)
-    {
-        vlog("\tProfile: Embedded\n");
-    }
-    else
-    {
-        vlog("\tProfile: Full\n");
     }
 
     return TEST_PASS;

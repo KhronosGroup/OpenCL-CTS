@@ -1564,61 +1564,61 @@ REGISTER_TEST(buffer_write_ulong)
 REGISTER_TEST(buffer_map_write_int)
 {
     gTestMap = 1;
-    return test_buffer_write_int(device, context, queue, num_elements);
+    return test_buffer_write_int(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(buffer_map_write_uint)
 {
     gTestMap = 1;
-    return test_buffer_write_uint(device, context, queue, num_elements);
+    return test_buffer_write_uint(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(buffer_map_write_long)
 {
     gTestMap = 1;
-    return test_buffer_write_long(device, context, queue, num_elements);
+    return test_buffer_write_long(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(buffer_map_write_ulong)
 {
     gTestMap = 1;
-    return test_buffer_write_ulong(device, context, queue, num_elements);
+    return test_buffer_write_ulong(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(buffer_map_write_short)
 {
     gTestMap = 1;
-    return test_buffer_write_short(device, context, queue, num_elements);
+    return test_buffer_write_short(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(buffer_map_write_ushort)
 {
     gTestMap = 1;
-    return test_buffer_write_ushort(device, context, queue, num_elements);
+    return test_buffer_write_ushort(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(buffer_map_write_char)
 {
     gTestMap = 1;
-    return test_buffer_write_char(device, context, queue, num_elements);
+    return test_buffer_write_char(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(buffer_map_write_uchar)
 {
     gTestMap = 1;
-    return test_buffer_write_uchar(device, context, queue, num_elements);
+    return test_buffer_write_uchar(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(buffer_map_write_float)
 {
     gTestMap = 1;
-    return test_buffer_write_float(device, context, queue, num_elements);
+    return test_buffer_write_float(device, context, queue, num_elements, args);
 }
 
 REGISTER_TEST(buffer_map_write_struct)
 {
     gTestMap = 1;
-    return test_buffer_write_struct(device, context, queue, num_elements);
+    return test_buffer_write_struct(device, context, queue, num_elements, args);
 }
 
 

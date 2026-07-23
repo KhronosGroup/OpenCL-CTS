@@ -15,6 +15,15 @@
 //
 #include "common.h"
 
+const std::vector<cl_channel_type> channel_types = {
+    CL_SNORM_INT8,         CL_SNORM_INT16,     CL_UNORM_INT8,
+    CL_UNORM_INT16,        CL_UNORM_SHORT_565, CL_UNORM_SHORT_555,
+    CL_UNORM_INT_101010,   CL_SIGNED_INT8,     CL_SIGNED_INT16,
+    CL_SIGNED_INT32,       CL_UNSIGNED_INT8,   CL_UNSIGNED_INT16,
+    CL_UNSIGNED_INT32,     CL_HALF_FLOAT,      CL_FLOAT,
+    CL_UNORM_INT_101010_2,
+};
+
 cl_channel_type floatFormats[] = {
     CL_UNORM_SHORT_565,
     CL_UNORM_SHORT_555,
@@ -625,4 +634,27 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
     }
 
     return img;
+}
+
+void register_test_configs(const std::vector<image_type> &tests,
+                           std::vector<test_configs> &test_configs,
+                           test_function_pointer runTest)
+{
+    for (auto test : tests)
+    {
+        for (cl_channel_type channel_type : channel_types)
+        {
+            std::string name;
+            name += test.name;
+            name += "_";
+            name += to_string(channel_type);
+            test_configs.push_back({ test.object_type, channel_type, name });
+        }
+    }
+    for (uint32_t i = 0; i < test_configs.size(); i++)
+    {
+        test_registry::getInstance().add_test(
+            runTest, test_configs[i].name.c_str(), Version(1, 2),
+            (void *)(uintptr_t)i);
+    }
 }

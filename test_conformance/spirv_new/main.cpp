@@ -276,8 +276,6 @@ int main(int argc, const char *argv[])
 {
     gReSeed = 1;
 
-    return runTestHarnessWithCheckAndParse(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0, InitCL,
-        parseArgs);
+    return runTestHarnessWithCheckAndParse(argc, argv, false, 0, InitCL,
+                                           parseArgs);
 }
