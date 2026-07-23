@@ -58,7 +58,7 @@ void SubTestBuffer(
     cl_mem mem = NULL;
     cl_int result = CL_SUCCESS;
 
-    log_info("Buffer: Size=%d, BindFlags=%s, Usage=%s, CPUAccess=%s",
+    log_info("Buffer: Size=%d, BindFlags=%s, Usage=%s, CPUAccess=%s\n",
              props->ByteWidth, props->name_BindFlags, props->name_Usage,
              props->name_CPUAccess);
 

@@ -248,7 +248,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DDKERNELLIB_HOST_CPU_VARIANTS=distro \
             -DENABLE_ICD=ON
-          cmake --build pocl/build
+          cmake --build pocl/build --parallel
           cmake --install pocl/build
 
   tests:
@@ -295,7 +295,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=${{ env.loader }} \
             -DCMAKE_BUILD_TYPE=Release \
             -DOPENCL_ICD_LOADER_HEADERS_DIR='${{ env.cl-headers }}'
-          cmake --build OpenCL-ICD-Loader/build
+          cmake --build OpenCL-ICD-Loader/build --parallel
           cmake --install OpenCL-ICD-Loader/build
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
@@ -317,7 +317,7 @@ jobs:
                 -DUSE_CL_EXPERIMENTAL=ON \
                 -DGL_IS_SUPPORTED=OFF \
                 -DVULKAN_IS_SUPPORTED=OFF
-          cmake --build build
+          cmake --build build --parallel
       - name: Run tests
         shell: bash
         run: |
