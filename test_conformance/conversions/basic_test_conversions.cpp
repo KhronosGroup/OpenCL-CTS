@@ -657,6 +657,9 @@ int ConversionsTest::DoTest(Type outType, Type inType, SaturationMode sat,
             }
         }
     }
+    // Make sure we can do at least one step even if the user reduced it with
+    // the wimpy or embedded reduction factor.
+    nbInputs = std::max(nbInputs, (uint64_t)step);
 
     vlog("Testing... ");
     fflush(stdout);

@@ -165,7 +165,7 @@ public:
                 push(val);
                 val = next;
                 next *= base;
-            } while (next > val && next < sign);
+            } while (next > val && val < sign);
         }
 
         // Generate patterns and masks.
@@ -208,7 +208,8 @@ public:
         return vec;
     }
 
-    template <typename InType, typename InIntegerType, typename OutType>
+    template <typename InType, typename InIntegerType, typename OutType,
+              bool OutFP>
     std::vector<InType> &GetFpSpecialValues()
     {
         std::lock_guard<std::recursive_mutex> lock(gLock);
@@ -264,14 +265,14 @@ public:
                 push(static_cast<InType>(i));
             }
         }
-        else if constexpr (std::is_same<OutType, cl_ushort>::value)
+        else if constexpr (std::is_same<OutType, cl_ushort>::value && !OutFP)
         {
             for (uint32_t i = 0; i < (64 * 1024); i++)
             {
                 push(static_cast<InType>(i));
             }
         }
-        else if constexpr (std::is_same<OutType, cl_short>::value)
+        else if constexpr (std::is_same<OutType, cl_short>::value && !OutFP)
         {
             for (int32_t i = -(64 * 1024 / 2); i < (64 * 1024 / 2); i++)
             {
@@ -304,6 +305,14 @@ public:
             for (const auto val : GetIntSpecialValues<uint64_t>())
             {
                 push(static_cast<InType>(bitcast<uint64_t, OutType>(val)));
+            }
+        }
+        else if constexpr (std::is_same<OutType, cl_half>::value && OutFP)
+        {
+            for (uint32_t i = 0; i < (64 * 1024); i++)
+            {
+                push(static_cast<InType>(
+                    cl_half_to_float(bitcast<uint16_t, OutType>(i))));
             }
         }
         else if constexpr (std::is_same<OutType, cl_float>::value
@@ -1078,7 +1087,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
         else
         {
             const auto &specialValuesFloat =
-                GetFpSpecialValues<InType, uint32_t, OutType>();
+                GetFpSpecialValues<InType, uint32_t, OutType, OutFP>();
             uint32_t i;
             for (i = 0; i < size && (i + ulStart) < specialValuesFloat.size();
                  i++)
@@ -1101,7 +1110,7 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::init(const cl_uint &job_id,
         uint64_t *o = (uint64_t *)pIn;
         InType *od = (InType *)pIn;
         const auto &specialValuesDouble =
-            GetFpSpecialValues<InType, uint64_t, OutType>();
+            GetFpSpecialValues<InType, uint64_t, OutType, OutFP>();
         uint32_t i;
         for (i = 0; i < size && (i + ulStart) < specialValuesDouble.size(); i++)
         {
