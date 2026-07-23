@@ -155,6 +155,11 @@
             "pci_bus_info": "skip"
         }
     },
+    "test_conversions": {
+        "--wimpy": {
+            "conversions": "fail"
+        }
+    },
     "test_image_streams": {
         "--num-worker-threads 2 CL_A CL_FILTER_NEAREST": {
             "1D": "pass"
