@@ -20,6 +20,9 @@
 #include "harness/typeWrappers.h"
 #include "harness/errorHelpers.h"
 #include "harness/extensionHelpers.h"
+#include "testHarness.h"
+
+#ifdef __ANDROID__
 #include <android/hardware_buffer.h>
 #include "debug_ahb.h"
 
@@ -162,26 +165,15 @@ static const char *lifetime_kernel_source = {
             })"
 };
 
+#endif // __ANDROID__
+
 // Checks that the inferred image format is correct
 REGISTER_TEST(images)
 {
-    cl_int err = CL_SUCCESS;
+    REQUIRE_EXTENSION("cl_khr_external_memory");
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
-    if (!is_extension_available(device, "cl_khr_external_memory"))
-    {
-        log_info("cl_khr_external_memory is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-    if (!is_extension_available(
-            device, "cl_khr_external_memory_android_hardware_buffer"))
-    {
-        log_info("cl_khr_external_memory_android_hardware_buffer is not "
-                 "supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-
+#ifdef __ANDROID__
     for (const auto format : test_formats)
     {
         log_info("Testing %s\n",
@@ -211,6 +203,7 @@ REGISTER_TEST(images)
                     aHardwareBuffer.get_props(), 0
                 };
 
+                cl_int err = CL_SUCCESS;
                 cl_mem image = clCreateImageWithProperties(
                     context, props, CL_MEM_READ_WRITE, nullptr, nullptr,
                     nullptr, &err);
@@ -248,27 +241,18 @@ REGISTER_TEST(images)
     }
 
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }
 
 REGISTER_TEST(images_read)
 {
-    cl_int err = CL_SUCCESS;
-    RandomSeed seed(gRandomSeed);
+    REQUIRE_EXTENSION("cl_khr_external_memory");
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
-    if (!is_extension_available(device, "cl_khr_external_memory"))
-    {
-        log_info("cl_khr_external_memory is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-    if (!is_extension_available(
-            device, "cl_khr_external_memory_android_hardware_buffer"))
-    {
-        log_info("cl_khr_external_memory_android_hardware_buffer is not "
-                 "supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+#ifdef __ANDROID__
+    RandomSeed seed(gRandomSeed);
 
     GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
     GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
@@ -361,6 +345,7 @@ REGISTER_TEST(images_read)
                     aHardwareBuffer.get_props(), 0
                 };
 
+                cl_int err = CL_SUCCESS;
                 clMemWrapper imported_image = clCreateImageWithProperties(
                     context, props, CL_MEM_READ_ONLY, nullptr, nullptr, nullptr,
                     &err);
@@ -544,27 +529,18 @@ REGISTER_TEST(images_read)
     }
 
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }
 
 REGISTER_TEST(enqueue_read_image)
 {
-    cl_int err = CL_SUCCESS;
-    RandomSeed seed(gRandomSeed);
+    REQUIRE_EXTENSION("cl_khr_external_memory");
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
-    if (!is_extension_available(device, "cl_khr_external_memory"))
-    {
-        log_info("cl_khr_external_memory is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-    if (!is_extension_available(
-            device, "cl_khr_external_memory_android_hardware_buffer"))
-    {
-        log_info("cl_khr_external_memory_android_hardware_buffer is not "
-                 "supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+#ifdef __ANDROID__
+    RandomSeed seed(gRandomSeed);
 
     GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
     GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
@@ -658,6 +634,7 @@ REGISTER_TEST(enqueue_read_image)
                     aHardwareBuffer.get_props(), 0
                 };
 
+                cl_int err = CL_SUCCESS;
                 clMemWrapper imported_image = clCreateImageWithProperties(
                     context, props, CL_MEM_READ_ONLY, nullptr, nullptr, nullptr,
                     &err);
@@ -723,27 +700,18 @@ REGISTER_TEST(enqueue_read_image)
     }
 
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }
 
 REGISTER_TEST(enqueue_copy_image)
 {
-    cl_int err = CL_SUCCESS;
-    RandomSeed seed(gRandomSeed);
+    REQUIRE_EXTENSION("cl_khr_external_memory");
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
-    if (!is_extension_available(device, "cl_khr_external_memory"))
-    {
-        log_info("cl_khr_external_memory is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-    if (!is_extension_available(
-            device, "cl_khr_external_memory_android_hardware_buffer"))
-    {
-        log_info("cl_khr_external_memory_android_hardware_buffer is not "
-                 "supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+#ifdef __ANDROID__
+    RandomSeed seed(gRandomSeed);
 
     GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
     GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
@@ -837,6 +805,7 @@ REGISTER_TEST(enqueue_copy_image)
                     aHardwareBuffer.get_props(), 0
                 };
 
+                cl_int err = CL_SUCCESS;
                 clMemWrapper imported_image = clCreateImageWithProperties(
                     context, props, CL_MEM_READ_ONLY, nullptr, nullptr, nullptr,
                     &err);
@@ -1027,27 +996,18 @@ REGISTER_TEST(enqueue_copy_image)
     }
 
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }
 
 REGISTER_TEST(enqueue_copy_image_to_buffer)
 {
-    cl_int err = CL_SUCCESS;
-    RandomSeed seed(gRandomSeed);
+    REQUIRE_EXTENSION("cl_khr_external_memory");
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
-    if (!is_extension_available(device, "cl_khr_external_memory"))
-    {
-        log_info("cl_khr_external_memory is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-    if (!is_extension_available(
-            device, "cl_khr_external_memory_android_hardware_buffer"))
-    {
-        log_info("cl_khr_external_memory_android_hardware_buffer is not "
-                 "supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+#ifdef __ANDROID__
+    RandomSeed seed(gRandomSeed);
 
     GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
     GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
@@ -1141,6 +1101,7 @@ REGISTER_TEST(enqueue_copy_image_to_buffer)
                     aHardwareBuffer.get_props(), 0
                 };
 
+                cl_int err = CL_SUCCESS;
                 clMemWrapper imported_image = clCreateImageWithProperties(
                     context, props, CL_MEM_READ_ONLY, nullptr, nullptr, nullptr,
                     &err);
@@ -1216,27 +1177,18 @@ REGISTER_TEST(enqueue_copy_image_to_buffer)
     }
 
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }
 
 REGISTER_TEST(enqueue_copy_buffer_to_image)
 {
-    cl_int err = CL_SUCCESS;
-    RandomSeed seed(gRandomSeed);
+    REQUIRE_EXTENSION("cl_khr_external_memory");
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
-    if (!is_extension_available(device, "cl_khr_external_memory"))
-    {
-        log_info("cl_khr_external_memory is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-    if (!is_extension_available(
-            device, "cl_khr_external_memory_android_hardware_buffer"))
-    {
-        log_info("cl_khr_external_memory_android_hardware_buffer is not "
-                 "supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+#ifdef __ANDROID__
+    RandomSeed seed(gRandomSeed);
 
     GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
     GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
@@ -1304,6 +1256,7 @@ REGISTER_TEST(enqueue_copy_buffer_to_image)
                 BufferOwningPtr<char> srcData;
                 generate_random_image_data(&imageInfo, srcData, seed);
 
+                cl_int err = CL_SUCCESS;
                 clMemWrapper opencl_buffer = clCreateBuffer(
                     context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, srcBytes,
                     srcData, &err);
@@ -1411,27 +1364,18 @@ REGISTER_TEST(enqueue_copy_buffer_to_image)
     }
 
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }
 
 REGISTER_TEST(enqueue_write_image)
 {
-    cl_int err = CL_SUCCESS;
-    RandomSeed seed(gRandomSeed);
+    REQUIRE_EXTENSION("cl_khr_external_memory");
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
-    if (!is_extension_available(device, "cl_khr_external_memory"))
-    {
-        log_info("cl_khr_external_memory is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-    if (!is_extension_available(
-            device, "cl_khr_external_memory_android_hardware_buffer"))
-    {
-        log_info("cl_khr_external_memory_android_hardware_buffer is not "
-                 "supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+#ifdef __ANDROID__
+    RandomSeed seed(gRandomSeed);
 
     GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
     GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
@@ -1486,6 +1430,7 @@ REGISTER_TEST(enqueue_write_image)
                     aHardwareBuffer.get_props(), 0
                 };
 
+                cl_int err = CL_SUCCESS;
                 clMemWrapper imported_image = clCreateImageWithProperties(
                     context, props, CL_MEM_READ_ONLY, nullptr, nullptr, nullptr,
                     &err);
@@ -1603,27 +1548,18 @@ REGISTER_TEST(enqueue_write_image)
     }
 
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }
 
 REGISTER_TEST(enqueue_fill_image)
 {
-    cl_int err = CL_SUCCESS;
-    RandomSeed seed(gRandomSeed);
+    REQUIRE_EXTENSION("cl_khr_external_memory");
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
-    if (!is_extension_available(device, "cl_khr_external_memory"))
-    {
-        log_info("cl_khr_external_memory is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-    if (!is_extension_available(
-            device, "cl_khr_external_memory_android_hardware_buffer"))
-    {
-        log_info("cl_khr_external_memory_android_hardware_buffer is not "
-                 "supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+#ifdef __ANDROID__
+    RandomSeed seed(gRandomSeed);
 
     GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
     GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
@@ -1677,6 +1613,7 @@ REGISTER_TEST(enqueue_fill_image)
                     aHardwareBuffer.get_props(), 0
                 };
 
+                cl_int err = CL_SUCCESS;
                 clMemWrapper imported_image = clCreateImageWithProperties(
                     context, props, CL_MEM_READ_ONLY, nullptr, nullptr, nullptr,
                     &err);
@@ -1854,27 +1791,17 @@ REGISTER_TEST(enqueue_fill_image)
     }
 
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }
 
 REGISTER_TEST(blob)
 {
-    cl_int err = CL_SUCCESS;
+    REQUIRE_EXTENSION("cl_khr_external_memory");
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
-    if (!is_extension_available(device, "cl_khr_external_memory"))
-    {
-        log_info("cl_khr_external_memory is not supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-    if (!is_extension_available(
-            device, "cl_khr_external_memory_android_hardware_buffer"))
-    {
-        log_info("cl_khr_external_memory_android_hardware_buffer is not "
-                 "supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
-
+#ifdef __ANDROID__
     AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
     aHardwareBufferDesc.format = AHARDWAREBUFFER_FORMAT_BLOB;
     aHardwareBufferDesc.usage = AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER;
@@ -1918,6 +1845,7 @@ REGISTER_TEST(blob)
             aHardwareBuffer.get_props(), 0
         };
 
+        cl_int err = CL_SUCCESS;
         cl_mem buffer = clCreateBufferWithProperties(
             context, props, CL_MEM_READ_WRITE, 0, nullptr, &err);
         test_error(err, "Failed to create CL buffer from AHardwareBuffer");
@@ -1926,6 +1854,9 @@ REGISTER_TEST(blob)
     }
 
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }
 
 /*
@@ -1940,6 +1871,7 @@ REGISTER_TEST(lifetime_buffer)
 {
     REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
+#ifdef __ANDROID__
     cl_int err;
     constexpr cl_uint buffer_size = 4096;
     std::vector<uint8_t> host_buffer(buffer_size, 1);
@@ -2048,6 +1980,9 @@ REGISTER_TEST(lifetime_buffer)
     }
 
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }
 
 
@@ -2055,6 +1990,7 @@ REGISTER_TEST(lifetime_image)
 {
     REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
+#ifdef __ANDROID__
     int err;
     const AHardwareBuffer_Format aHardwareBufferFormat =
         AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM;
@@ -2212,6 +2148,9 @@ REGISTER_TEST(lifetime_image)
         test_error(err, "clFinish failed");
     }
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }
 
 
@@ -2224,17 +2163,10 @@ REGISTER_TEST(lifetime_image)
  */
 REGISTER_TEST(sub_buffer)
 {
-    cl_int err;
-    RandomSeed seed(gRandomSeed);
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
-    if (!is_extension_available(
-            device, "cl_khr_external_memory_android_hardware_buffer"))
-    {
-        log_info("cl_khr_external_memory_android_hardware_buffer is not "
-                 "supported on this platform. "
-                 "Skipping test.\n");
-        return TEST_SKIPPED_ITSELF;
-    }
+#ifdef __ANDROID__
+    RandomSeed seed(gRandomSeed);
 
     AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
     aHardwareBufferDesc.format = AHARDWAREBUFFER_FORMAT_BLOB;
@@ -2302,6 +2234,7 @@ REGISTER_TEST(sub_buffer)
                 aHardwareBuffer.get_props(), 0
             };
 
+            cl_int err;
             clMemWrapper buffer = clCreateBufferWithProperties(
                 context, props, CL_MEM_READ_WRITE, 0, nullptr, &err);
             test_error(err, "Failed to create CL buffer from AHardwareBuffer");
@@ -2335,4 +2268,7 @@ REGISTER_TEST(sub_buffer)
         }
     }
     return TEST_PASS;
+#else // __ANDROID__
+    return TEST_FAIL;
+#endif // __ANDROID__
 }

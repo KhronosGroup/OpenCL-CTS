@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "testHarness.h"
+#ifdef _WIN32
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -526,9 +528,11 @@ int other_data_types(cl_device_id deviceID, cl_context context,
 
     return result.Result();
 }
+#endif
 
 REGISTER_TEST(other_data_types)
 {
+#ifdef _WIN32
     CResult result;
 
 #if defined(_WIN32)
@@ -1315,4 +1319,7 @@ REGISTER_TEST(other_data_types)
 #endif
 
     return result.Result();
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }

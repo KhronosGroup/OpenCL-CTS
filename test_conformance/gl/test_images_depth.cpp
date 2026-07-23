@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
+#include "testHarness.h"
+#ifdef GL_IS_SUPPORTED
 #include "common.h"
 
 #if defined(__APPLE__)
@@ -22,10 +24,12 @@
 #include <GL/glu.h>
 #include <CL/cl_gl.h>
 #endif
+#endif
 
 #include <algorithm>
 
-void calc_depth_size_descriptors(sizevec_t* sizes, size_t nsizes)
+#ifdef GL_IS_SUPPORTED
+static void calc_depth_size_descriptors(sizevec_t* sizes, size_t nsizes)
 {
     // Need to limit texture size according to GL device properties
     GLint maxTextureSize = 4096, maxTextureRectangleSize = 4096, size;
@@ -46,7 +50,7 @@ void calc_depth_size_descriptors(sizevec_t* sizes, size_t nsizes)
     }
 }
 
-void calc_depth_array_size_descriptors(sizevec_t* sizes, size_t nsizes)
+static void calc_depth_array_size_descriptors(sizevec_t* sizes, size_t nsizes)
 {
     // Need to limit texture size according to GL device properties
     GLint maxTextureSize = 4096, maxTextureRectangleSize = 4096,
@@ -69,17 +73,14 @@ void calc_depth_array_size_descriptors(sizevec_t* sizes, size_t nsizes)
             random_in_range(2, std::min(maxTextureLayers, 1 << (i + 4)), seed);
     }
 }
+#endif
 
 int test_images_read_2D_depth(cl_device_id device, cl_context context,
                               cl_command_queue queue, int numElements)
 {
-    if (!is_extension_available(device, "cl_khr_gl_depth_images"))
-    {
-        log_info("Test not run because 'cl_khr_gl_depth_images' extension is "
-                 "not supported by the tested device\n");
-        return 0;
-    }
+    REQUIRE_EXTENSION("cl_khr_gl_depth_images");
 
+#ifdef GL_IS_SUPPORTED
     RandomSeed seed(gRandomSeed);
 
     GLenum targets[] = { GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE_EXT };
@@ -93,6 +94,9 @@ int test_images_read_2D_depth(cl_device_id device, cl_context context,
 
     return test_images_read_common(device, context, queue, depth_formats,
                                    nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_FAIL;
+#endif
 }
 
 #pragma mark -
@@ -102,13 +106,9 @@ int test_images_read_2D_depth(cl_device_id device, cl_context context,
 int test_images_write_2D_depth(cl_device_id device, cl_context context,
                                cl_command_queue queue, int numElements)
 {
-    if (!is_extension_available(device, "cl_khr_gl_depth_images"))
-    {
-        log_info("Test not run because 'cl_khr_gl_depth_images' extension is "
-                 "not supported by the tested device\n");
-        return 0;
-    }
+    REQUIRE_EXTENSION("cl_khr_gl_depth_images");
 
+#ifdef GL_IS_SUPPORTED
     GLenum targets[] = { GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE_EXT };
     size_t ntargets = sizeof(targets) / sizeof(targets[0]);
     size_t nformats = sizeof(depth_formats) / sizeof(depth_formats[0]);
@@ -119,18 +119,17 @@ int test_images_write_2D_depth(cl_device_id device, cl_context context,
 
     return test_images_write_common(device, context, queue, depth_formats,
                                     nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_FAIL;
+#endif
 }
 
 int test_images_read_2Darray_depth(cl_device_id device, cl_context context,
                                    cl_command_queue queue, int)
 {
-    if (!is_extension_available(device, "cl_khr_gl_depth_images"))
-    {
-        log_info("Test not run because 'cl_khr_gl_depth_images' extension is "
-                 "not supported by the tested device\n");
-        return 0;
-    }
+    REQUIRE_EXTENSION("cl_khr_gl_depth_images");
 
+#ifdef GL_IS_SUPPORTED
     size_t nformats = sizeof(depth_formats) / sizeof(depth_formats[0]);
     GLenum targets[] = { GL_TEXTURE_2D_ARRAY };
     size_t ntargets = sizeof(targets) / sizeof(targets[0]);
@@ -141,18 +140,17 @@ int test_images_read_2Darray_depth(cl_device_id device, cl_context context,
 
     return test_images_read_common(device, context, queue, depth_formats,
                                    nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_FAIL;
+#endif
 }
 
 int test_images_write_2Darray_depth(cl_device_id device, cl_context context,
                                     cl_command_queue queue, int numElements)
 {
-    if (!is_extension_available(device, "cl_khr_gl_depth_images"))
-    {
-        log_info("Test not run because 'cl_khr_gl_depth_images' extension is "
-                 "not supported by the tested device\n");
-        return 0;
-    }
+    REQUIRE_EXTENSION("cl_khr_gl_depth_images");
 
+#ifdef GL_IS_SUPPORTED
     // FIXME: Query for 2D image array write support.
 
     GLenum targets[] = { GL_TEXTURE_2D_ARRAY };
@@ -165,4 +163,7 @@ int test_images_write_2Darray_depth(cl_device_id device, cl_context context,
 
     return test_images_write_common(device, context, queue, depth_formats,
                                     nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_FAIL;
+#endif
 }

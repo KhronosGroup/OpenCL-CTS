@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #include "testBase.h"
+#include "testHarness.h"
+
+#ifdef GL_IS_SUPPORTED
 #if defined(__APPLE__)
 #include <OpenGL/glu.h>
 #else
@@ -53,10 +56,12 @@ static int test_renderbuffer_object_info(cl_context context,
     return CheckGLObjectInfo(image, CL_GL_OBJECT_RENDERBUFFER,
                              (GLuint)glRenderbuffer, internalFormat, 0);
 }
+#endif
 
 int test_renderbuffer_getinfo(cl_device_id device, cl_context context,
                               cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     GLenum attachments[] = { GL_COLOR_ATTACHMENT0_EXT };
 
     struct
@@ -135,4 +140,7 @@ int test_renderbuffer_getinfo(cl_device_id device, cl_context context,
     }
 
     return error;
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
