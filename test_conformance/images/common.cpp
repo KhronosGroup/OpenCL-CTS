@@ -647,7 +647,7 @@ void register_test_configs(const std::vector<struct image_type> &tests,
             std::string name;
             name += test.name;
             name += "_";
-            name += cl_channel_type_to_string(channel_type);
+            name += to_string(channel_type);
             test_configs.push_back({ test.object_type, channel_type, name });
         }
     }

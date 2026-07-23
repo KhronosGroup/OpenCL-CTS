@@ -73,7 +73,7 @@ struct TestConfigs
     {
         name += name_;
         name += "_";
-        name += cl_channel_type_to_string(channel_type);
+        name += to_string(channel_type);
     }
 };
 
