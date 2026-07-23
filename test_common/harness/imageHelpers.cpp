@@ -163,7 +163,7 @@ uint32_t get_channel_order_channel_count(cl_channel_order order)
             return 0;
     }
 }
-const char *cl_channel_type_to_string(cl_channel_type type)
+const char *to_string(cl_channel_type type)
 {
     switch (type)
     {
