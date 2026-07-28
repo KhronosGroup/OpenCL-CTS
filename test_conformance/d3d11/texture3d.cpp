@@ -89,18 +89,15 @@ texture3DPatterns[2][2][2] =
     },
 };
 
-void SubTestTexture3D(
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC,
-    const TextureFormat* format,
-    const Texture3DSize* size)
+int SubTestTexture3D(cl_context context, cl_command_queue command_queue,
+                     ID3D11Device* pDevice, ID3D11DeviceContext* pDC,
+                     const TextureFormat* format, const Texture3DSize* size)
 {
     ID3D11Texture3D* pTexture = NULL;
     HRESULT hr = S_OK;
 
     cl_int result = CL_SUCCESS;
+    int testResult = TEST_PASS;
 
     log_info(
         "3D Texture: Format=%s, Width=%d, Height=%d, Depth=%d, MipLevels=%d\n",
@@ -457,28 +454,22 @@ Cleanup:
     {
         clReleaseMemObject(subResourceInfo[i].mem);
     }
+    return testResult;
 }
 
 
-void TestDeviceTexture3D(
-    cl_device_id device,
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC)
+int TestDeviceTexture3D(cl_device_id device, cl_context context,
+                        cl_command_queue command_queue, ID3D11Device* pDevice,
+                        ID3D11DeviceContext* pDC)
 {
-    cl_int result = CL_SUCCESS;
+    int testResult = TEST_PASS;
 
 
     for (UINT format = 0, size = 0; format < formatCount; ++size, ++format)
     {
-        SubTestTexture3D(
-            context,
-            command_queue,
-            pDevice,
-            pDC,
-            &formats[format],
+        testResult |= SubTestTexture3D(
+            context, command_queue, pDevice, pDC, &formats[format],
             &texture3DSizes[size % texture3DSizeCount]);
     }
+    return testResult;
 }
-
