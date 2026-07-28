@@ -105,6 +105,7 @@ cl_int HarnessD3D11_CreateKernelFromSource(
     const char *entrypoint)
 {
     cl_int status;
+    int testResult = TEST_PASS;
     cl_kernel kernel = NULL;
 
     // compile program
@@ -123,5 +124,5 @@ cl_int HarnessD3D11_CreateKernelFromSource(
 
 Cleanup:
 
-    return CL_SUCCESS;
+    return testResult == TEST_PASS ? CL_SUCCESS : status;
 }

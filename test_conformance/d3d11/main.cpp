@@ -129,7 +129,7 @@ int main(int argc, const char* argv[])
 }
 
 template <typename TargetFn>
-test_status RunD3D11TargetTest(cl_device_id device, TargetFn target_fn)
+int RunD3D11TargetTest(cl_device_id device, TargetFn target_fn)
 {
     test_status init_status = InitState(device);
     if (init_status != TEST_PASS)
@@ -145,18 +145,17 @@ test_status RunD3D11TargetTest(cl_device_id device, TargetFn target_fn)
 
     const DirectX11Wrapper::DeviceEntry* target =
         &State.wrapper->devices[iter->second];
-    target_fn(target);
-
-    return TEST_PASS;
+    return target_fn(target);
 }
 
 template <typename TargetFn>
-test_status RunD3D11InteropTest(cl_device_id device, TargetFn target_fn)
+int RunD3D11InteropTest(cl_device_id device, TargetFn target_fn)
 {
     return RunD3D11TargetTest(
-        device, [&](const DirectX11Wrapper::DeviceEntry* target) {
+        device, [&](const DirectX11Wrapper::DeviceEntry* target) -> int {
             cl_context interop_context = NULL;
             cl_command_queue interop_queue = NULL;
+            int testResult = TEST_PASS;
 
             if (!TestDeviceContextCreate(device, target->dx_device.Get(),
                                          &interop_context, &interop_queue))
@@ -164,14 +163,15 @@ test_status RunD3D11InteropTest(cl_device_id device, TargetFn target_fn)
                 return TEST_FAIL;
             }
 
-            target_fn(target, interop_context, interop_queue);
+            testResult |= target_fn(target, interop_context, interop_queue);
 
             if (interop_queue != NULL)
             {
                 cl_int result = clReleaseCommandQueue(interop_queue);
                 if (result != CL_SUCCESS)
                 {
-                    return TEST_FAIL;
+                    log_error("clReleaseCommandQueue failed (%d)\n", result);
+                    testResult |= TEST_FAIL;
                 }
             }
 
@@ -180,29 +180,31 @@ test_status RunD3D11InteropTest(cl_device_id device, TargetFn target_fn)
                 cl_int result = clReleaseContext(interop_context);
                 if (result != CL_SUCCESS)
                 {
-                    return TEST_FAIL;
+                    log_error("clReleaseContext failed (%d)\n", result);
+                    testResult |= TEST_FAIL;
                 }
             }
-
-            return TEST_PASS;
+            return testResult;
         });
 }
 
 REGISTER_TEST(enumeration)
 {
-    return RunD3D11TargetTest(
-        device, [&](const DirectX11Wrapper::DeviceEntry* target) {
-            cl_uint num_devices = 0;
-            TestAdapterEnumeration(State.platform, target->dx_adapter.Get(),
-                                   target->dx_device.Get(), &num_devices);
-        });
+    return RunD3D11TargetTest(device,
+                              [&](const DirectX11Wrapper::DeviceEntry* target) {
+                                  cl_uint num_devices = 0;
+                                  return TestAdapterEnumeration(
+                                      State.platform, target->dx_adapter.Get(),
+                                      target->dx_device.Get(), &num_devices);
+                              });
 }
 
 REGISTER_TEST(create_context)
 {
     return RunD3D11InteropTest(device,
                                [](const DirectX11Wrapper::DeviceEntry*,
-                                  cl_context, cl_command_queue) {});
+                                  cl_context,
+                                  cl_command_queue) { return TEST_PASS; });
 }
 
 REGISTER_TEST(buffer)
@@ -214,8 +216,9 @@ REGISTER_TEST(buffer)
             ComPtr<ID3D11DeviceContext> immediate_context;
             target->dx_device->GetImmediateContext(
                 immediate_context.GetAddressOf());
-            TestDeviceBuffer(interop_context, interop_queue,
-                             target->dx_device.Get(), immediate_context.Get());
+            return TestDeviceBuffer(interop_context, interop_queue,
+                                    target->dx_device.Get(),
+                                    immediate_context.Get());
         });
 }
 
@@ -228,9 +231,9 @@ REGISTER_TEST(texture2d)
             ComPtr<ID3D11DeviceContext> immediate_context;
             target->dx_device->GetImmediateContext(
                 immediate_context.GetAddressOf());
-            TestDeviceTexture2D(device, interop_context, interop_queue,
-                                target->dx_device.Get(),
-                                immediate_context.Get());
+            return TestDeviceTexture2D(device, interop_context, interop_queue,
+                                       target->dx_device.Get(),
+                                       immediate_context.Get());
         });
 }
 
@@ -243,9 +246,9 @@ REGISTER_TEST(texture3d)
             ComPtr<ID3D11DeviceContext> immediate_context;
             target->dx_device->GetImmediateContext(
                 immediate_context.GetAddressOf());
-            TestDeviceTexture3D(device, interop_context, interop_queue,
-                                target->dx_device.Get(),
-                                immediate_context.Get());
+            return TestDeviceTexture3D(device, interop_context, interop_queue,
+                                       target->dx_device.Get(),
+                                       immediate_context.Get());
         });
 }
 
@@ -255,66 +258,58 @@ REGISTER_TEST(misc)
         device,
         [device](const DirectX11Wrapper::DeviceEntry* target,
                  cl_context interop_context, cl_command_queue interop_queue) {
-            TestDeviceMisc(device, interop_context, interop_queue,
-                           target->dx_device.Get());
+            return TestDeviceMisc(device, interop_context, interop_queue,
+                                  target->dx_device.Get());
         });
 }
 
-void TestAdapterEnumeration(
-    cl_platform_id platform,
-    IDXGIAdapter* pAdapter,
-    ID3D11Device* pDevice,
-    cl_uint* num_devices)
+int TestAdapterEnumeration(cl_platform_id platform, IDXGIAdapter* pAdapter,
+                           ID3D11Device* pDevice, cl_uint* num_devices)
 {
+    int testResult = TEST_PASS;
     cl_uint num_adapter_devices = 0;
     cl_device_id* adapter_devices = NULL;
 
     cl_uint num_device_devices = 0;
     cl_device_id* device_devices = NULL;
 
-     cl_int result;
+    cl_int result;
 
-     log_info("cl_device_id Enumeration\n");
+    log_info("cl_device_id Enumeration\n");
 
-     // get the cl_device_ids for the adapter
-     {
-         result = clGetDeviceIDsFromD3D11KHR(
-             platform, CL_D3D11_DXGI_ADAPTER_KHR, pAdapter,
-             CL_ALL_DEVICES_FOR_D3D11_KHR, 0, NULL, &num_adapter_devices);
-         TestRequire((result == CL_SUCCESS || result == CL_DEVICE_NOT_FOUND),
-                     "clGetDeviceIDsFromD3D11KHR failed.");
+    // get the cl_device_ids for the adapter
+    {
+        result = clGetDeviceIDsFromD3D11KHR(
+            platform, CL_D3D11_DXGI_ADAPTER_KHR, pAdapter,
+            CL_ALL_DEVICES_FOR_D3D11_KHR, 0, NULL, &num_adapter_devices);
+        TestRequire((result == CL_SUCCESS || result == CL_DEVICE_NOT_FOUND),
+                    "clGetDeviceIDsFromD3D11KHR failed.");
 
-         if (result == CL_DEVICE_NOT_FOUND)
-         {
-             TestPrint("No devices found for adapter.\n");
-         }
-         else
-         {
-             // if there were devices, query them
-             adapter_devices = new cl_device_id[num_adapter_devices];
-             result = clGetDeviceIDsFromD3D11KHR(
-                 platform, CL_D3D11_DXGI_ADAPTER_KHR, pAdapter,
-                 CL_ALL_DEVICES_FOR_D3D11_KHR, num_adapter_devices,
-                 adapter_devices, NULL);
-             TestRequire((result == CL_SUCCESS),
-                         "clGetDeviceIDsFromD3D11KHR failed.");
-         }
-     }
+        if (result == CL_DEVICE_NOT_FOUND)
+        {
+            TestPrint("No devices found for adapter.\n");
+        }
+        else
+        {
+            // if there were devices, query them
+            adapter_devices = new cl_device_id[num_adapter_devices];
+            result = clGetDeviceIDsFromD3D11KHR(
+                platform, CL_D3D11_DXGI_ADAPTER_KHR, pAdapter,
+                CL_ALL_DEVICES_FOR_D3D11_KHR, num_adapter_devices,
+                adapter_devices, NULL);
+            TestRequire((result == CL_SUCCESS),
+                        "clGetDeviceIDsFromD3D11KHR failed.");
+        }
+    }
 
     // get the cl_device_ids for the device (if it was successfully created)
     if (pDevice)
     {
         result = clGetDeviceIDsFromD3D11KHR(
-            platform,
-            CL_D3D11_DEVICE_KHR,
-            pDevice,
-            CL_ALL_DEVICES_FOR_D3D11_KHR,
-            0,
-            NULL,
-            &num_device_devices);
-        TestRequire(
-            (result == CL_SUCCESS || result == CL_DEVICE_NOT_FOUND),
-            "clGetDeviceIDsFromD3D11KHR failed.");
+            platform, CL_D3D11_DEVICE_KHR, pDevice,
+            CL_ALL_DEVICES_FOR_D3D11_KHR, 0, NULL, &num_device_devices);
+        TestRequire((result == CL_SUCCESS || result == CL_DEVICE_NOT_FOUND),
+                    "clGetDeviceIDsFromD3D11KHR failed.");
 
         if (result == CL_DEVICE_NOT_FOUND)
         {
@@ -325,18 +320,12 @@ void TestAdapterEnumeration(
             // if there were devices, query them
             device_devices = new cl_device_id[num_device_devices];
             result = clGetDeviceIDsFromD3D11KHR(
-                platform,
-                CL_D3D11_DEVICE_KHR,
-                pDevice,
-                CL_ALL_DEVICES_FOR_D3D11_KHR,
-                num_device_devices,
-                device_devices,
-                NULL);
-            TestRequire(
-                (result == CL_SUCCESS),
-                "clGetDeviceIDsFromD3D11KHR failed.");
+                platform, CL_D3D11_DEVICE_KHR, pDevice,
+                CL_ALL_DEVICES_FOR_D3D11_KHR, num_device_devices,
+                device_devices, NULL);
+            TestRequire((result == CL_SUCCESS),
+                        "clGetDeviceIDsFromD3D11KHR failed.");
         }
-
     }
 
 Cleanup:
@@ -351,15 +340,15 @@ Cleanup:
     }
 
     *num_devices = num_device_devices;
+    return testResult;
 }
 
-bool TestDeviceContextCreate(
-    cl_device_id device,
-    ID3D11Device* pDevice,
-    cl_context* out_context,
-    cl_command_queue* out_command_queue)
+bool TestDeviceContextCreate(cl_device_id device, ID3D11Device* pDevice,
+                             cl_context* out_context,
+                             cl_command_queue* out_command_queue)
 {
     cl_int result = CL_SUCCESS;
+    int testResult = TEST_PASS;
     cl_context context = NULL;
     cl_command_queue command_queue = NULL;
 
@@ -377,20 +366,12 @@ bool TestDeviceContextCreate(
     properties[2] = (cl_context_properties)CL_CONTEXT_INTEROP_USER_SYNC;
     properties[3] = (cl_context_properties)CL_TRUE;
     properties[4] = (cl_context_properties)0;
-    context = clCreateContext(
-        properties,
-        1,
-        &device,
-        NULL,
-        NULL,
-        &result);
-    TestRequire(
-        (result == CL_SUCCESS),
-        "clCreateContext with CL_CONTEXT_D3D11_DEVICE_KHR failed");
+    context = clCreateContext(properties, 1, &device, NULL, NULL, &result);
+    TestRequire((result == CL_SUCCESS),
+                "clCreateContext with CL_CONTEXT_D3D11_DEVICE_KHR failed");
     result = clReleaseContext(context);
-    TestRequire(
-        (result == CL_SUCCESS),
-        "clReleaseContext with CL_CONTEXT_D3D11_DEVICE_KHR failed");
+    TestRequire((result == CL_SUCCESS),
+                "clReleaseContext with CL_CONTEXT_D3D11_DEVICE_KHR failed");
 
     // create the context
     properties[0] = (cl_context_properties)CL_CONTEXT_D3D11_DEVICE_KHR;
@@ -398,81 +379,71 @@ bool TestDeviceContextCreate(
     properties[2] = (cl_context_properties)CL_CONTEXT_INTEROP_USER_SYNC;
     properties[3] = (cl_context_properties)CL_FALSE;
     properties[4] = (cl_context_properties)0;
-    context = clCreateContext(
-        properties,
-        1,
-        &device,
-        NULL,
-        NULL,
-        &result);
-    TestRequire(
-        (result == CL_SUCCESS),
-        "clCreateContext with CL_CONTEXT_D3D11_DEVICE_KHR failed");
+    context = clCreateContext(properties, 1, &device, NULL, NULL, &result);
+    TestRequire((result == CL_SUCCESS),
+                "clCreateContext with CL_CONTEXT_D3D11_DEVICE_KHR failed");
     result = clReleaseContext(context);
-    TestRequire(
-        (result == CL_SUCCESS),
-        "clReleaseContext with CL_CONTEXT_D3D11_DEVICE_KHR failed");
+    TestRequire((result == CL_SUCCESS),
+                "clReleaseContext with CL_CONTEXT_D3D11_DEVICE_KHR failed");
 
     // create the context
     properties[0] = (cl_context_properties)CL_CONTEXT_D3D11_DEVICE_KHR;
     properties[1] = (cl_context_properties)pDevice;
     properties[2] = (cl_context_properties)0;
-    context = clCreateContext(
-        properties,
-        1,
-        &device,
-        NULL,
-        NULL,
-        &result);
-    TestRequire(
-        (result == CL_SUCCESS),
-        "clCreateContext with CL_CONTEXT_D3D11_DEVICE_KHR failed");
+    context = clCreateContext(properties, 1, &device, NULL, NULL, &result);
+    TestRequire((result == CL_SUCCESS),
+                "clCreateContext with CL_CONTEXT_D3D11_DEVICE_KHR failed");
 
     // check CL_CONTEXT_D3D11_DEVICE_KHR
     {
         size_t param_value_size_ret;
-        result = clGetContextInfo(context, CL_CONTEXT_PROPERTIES, 0, NULL, &param_value_size_ret);
-        TestRequire(
-            (result == CL_SUCCESS),
-            "clGetContextInfo with CL_CONTEXT_PROPERTIES failed");
+        result = clGetContextInfo(context, CL_CONTEXT_PROPERTIES, 0, NULL,
+                                  &param_value_size_ret);
+        TestRequire((result == CL_SUCCESS),
+                    "clGetContextInfo with CL_CONTEXT_PROPERTIES failed");
 
         TestRequire(
             ((param_value_size_ret % sizeof(cl_context_properties)) == 0),
-            "param_value_size_ret is not a multiple of sizeof(cl_context_properties)");
+            "param_value_size_ret is not a multiple of "
+            "sizeof(cl_context_properties)");
 
-        std::vector<cl_context_properties> contextProperties(param_value_size_ret / sizeof(cl_context_properties));
-        result = clGetContextInfo(context, CL_CONTEXT_PROPERTIES, param_value_size_ret, &contextProperties[0], NULL);
-        TestRequire(
-            (result == CL_SUCCESS),
-            "clGetContextInfo with CL_CONTEXT_PROPERTIES failed");
+        std::vector<cl_context_properties> contextProperties(
+            param_value_size_ret / sizeof(cl_context_properties));
+        result =
+            clGetContextInfo(context, CL_CONTEXT_PROPERTIES,
+                             param_value_size_ret, &contextProperties[0], NULL);
+        TestRequire((result == CL_SUCCESS),
+                    "clGetContextInfo with CL_CONTEXT_PROPERTIES failed");
 
-        TestRequire(contextProperties.size() % 2 == 1, "Property list size is not odd.");
-        TestRequire(contextProperties[contextProperties.size() - 1] == 0, "last property is not zero");
+        TestRequire(contextProperties.size() % 2 == 1,
+                    "Property list size is not odd.");
+        TestRequire(contextProperties[contextProperties.size() - 1] == 0,
+                    "last property is not zero");
 
         std::vector<cl_context_properties>::const_iterator iter;
-        for (iter = contextProperties.begin(); *iter != 0; iter+=2)
+        for (iter = contextProperties.begin(); *iter != 0; iter += 2)
         {
             if (CL_CONTEXT_D3D11_DEVICE_KHR == *iter)
             {
-                TestRequire((ID3D11Device*)*(iter+1) == pDevice, "CL_CONTEXT_D3D11_DEVICE_KHR returned invalid value");
+                TestRequire(
+                    (ID3D11Device*)*(iter + 1) == pDevice,
+                    "CL_CONTEXT_D3D11_DEVICE_KHR returned invalid value");
                 break;
             }
         }
 
-        TestRequire((iter != contextProperties.end()), "CL_CONTEXT_PROPERTIES doesn't include CL_CONTEXT_D3D11_DEVICE_KHR");
+        TestRequire((iter != contextProperties.end()),
+                    "CL_CONTEXT_PROPERTIES doesn't include "
+                    "CL_CONTEXT_D3D11_DEVICE_KHR");
     }
 
 
     // create the command queue
     TestPrint("Creating a command queue.\n");
-    command_queue = clCreateCommandQueueWithProperties(
-        context,
-        device,
-        NULL,
-        &result);
-    TestRequire(
-        (result == CL_SUCCESS),
-        "clCreateContext with CL_CONTEXT_D3D11_DEVICE_KHR failed");
+    command_queue =
+        clCreateCommandQueueWithProperties(context, device, NULL, &result);
+    TestRequire((result == CL_SUCCESS),
+                "clCreateContext with CL_CONTEXT_D3D11_DEVICE_KHR failed");
 
     succeeded = true;
 
@@ -494,5 +465,5 @@ Cleanup:
             clReleaseCommandQueue(command_queue);
         }
     }
-    return succeeded;
+    return succeeded && testResult == TEST_PASS;
 }

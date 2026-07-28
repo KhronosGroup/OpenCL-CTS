@@ -48,6 +48,7 @@ do \
             log_info("ERROR: ");                                               \
             log_error(__VA_ARGS__);                                            \
             log_info("\n");                                                    \
+            testResult = TEST_FAIL;                                            \
             goto Cleanup;                                                      \
         }                                                                      \
     } while (0)
@@ -122,11 +123,8 @@ struct Texture3DSize
 
 void HarnessD3D11_Initialize(cl_platform_id platform);
 
-void TestAdapterEnumeration(
-    cl_platform_id platform,
-    IDXGIAdapter* pAdapter,
-    ID3D11Device* pDevice,
-    cl_uint* num_devices);
+int TestAdapterEnumeration(cl_platform_id platform, IDXGIAdapter* pAdapter,
+                           ID3D11Device* pDevice, cl_uint* num_devices);
 
 void TestAdapterDevices(
     cl_platform_id platform,
@@ -146,31 +144,19 @@ bool TestDeviceContextCreate(
     cl_context* out_context,
     cl_command_queue* out_command_queue);
 
-void TestDeviceBuffer(
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC);
+int TestDeviceBuffer(cl_context context, cl_command_queue command_queue,
+                     ID3D11Device* pDevice, ID3D11DeviceContext* pDC);
 
-void TestDeviceTexture2D(
-    cl_device_id device,
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC);
+int TestDeviceTexture2D(cl_device_id device, cl_context context,
+                        cl_command_queue command_queue, ID3D11Device* pDevice,
+                        ID3D11DeviceContext* pDC);
 
-void TestDeviceTexture3D(
-    cl_device_id device,
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC);
+int TestDeviceTexture3D(cl_device_id device, cl_context context,
+                        cl_command_queue command_queue, ID3D11Device* pDevice,
+                        ID3D11DeviceContext* pDC);
 
-void TestDeviceMisc(
-    cl_device_id device,
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice);
+int TestDeviceMisc(cl_device_id device, cl_context context,
+                   cl_command_queue command_queue, ID3D11Device* pDevice);
 
 cl_int HarnessD3D11_CreateKernelFromSource(
     cl_kernel *outKernel,

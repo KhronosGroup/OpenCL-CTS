@@ -155,19 +155,16 @@ texture2DPatterns[2][2] =
     {"zZyYxXwWvVuUtTsSrRqQ", "ZzYyXxWwVvUuTtSsRrQq"},
 };
 
-void SubTestTexture2D(
-    cl_context context,
-    cl_command_queue command_queue,
-    cl_kernel kernel,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC,
-    const TextureFormat* format,
-    const Texture2DSize* size)
+int SubTestTexture2D(cl_context context, cl_command_queue command_queue,
+                     cl_kernel kernel, ID3D11Device* pDevice,
+                     ID3D11DeviceContext* pDC, const TextureFormat* format,
+                     const Texture2DSize* size)
 {
     ID3D11Texture2D* pTexture = NULL;
     HRESULT hr = S_OK;
     cl_image_format clFormat;
     cl_int result = CL_SUCCESS;
+    int testResult = TEST_PASS;
 
     log_info("2D Texture: Format=%s, Width=%d, Height=%d, MipLevels=%d, "
              "ArraySize=%d\n",
@@ -627,6 +624,7 @@ Cleanup:
             TestRequire(result == CL_SUCCESS, "clReleaseEvent for event failed.");
         }
     }
+    return testResult;
 }
 
 bool is_format_supported(
@@ -641,14 +639,12 @@ bool is_format_supported(
   return false;
 }
 
-void TestDeviceTexture2D(
-    cl_device_id device,
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC)
+int TestDeviceTexture2D(cl_device_id device, cl_context context,
+                        cl_command_queue command_queue, ID3D11Device* pDevice,
+                        ID3D11DeviceContext* pDC)
 {
     cl_int result = CL_SUCCESS;
+    int testResult = TEST_PASS;
     cl_kernel kernels[3] = {NULL, NULL, NULL};
 
     const char *sourceRaw =
@@ -718,14 +714,9 @@ void TestDeviceTexture2D(
             continue;
         }
 
-        SubTestTexture2D(
-            context,
-            command_queue,
-            kernels[formats[format].generic],
-            pDevice,
-            pDC,
-            &formats[format],
-            &texture2DSizes[size % texture2DSizeCount]);
+        testResult |= SubTestTexture2D(
+            context, command_queue, kernels[formats[format].generic], pDevice,
+            pDC, &formats[format], &texture2DSizes[size % texture2DSizeCount]);
     }
 
 Cleanup:
@@ -738,6 +729,5 @@ Cleanup:
             clReleaseKernel(kernels[i]);
         }
     }
+    return testResult;
 }
-
-

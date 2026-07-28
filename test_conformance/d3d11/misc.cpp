@@ -15,10 +15,9 @@
 //
 #include "harness.h"
 
-void SubTestMiscMultipleCreates(
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice)
+int SubTestMiscMultipleCreates(cl_context context,
+                               cl_command_queue command_queue,
+                               ID3D11Device* pDevice)
 {
     cl_mem mem[5] = {NULL, NULL, NULL, NULL, NULL};
     ID3D11Buffer* pBuffer = NULL;
@@ -26,6 +25,7 @@ void SubTestMiscMultipleCreates(
     HRESULT hr = S_OK;
 
     cl_int result = CL_SUCCESS;
+    int testResult = TEST_PASS;
 
     log_info("Misc: Multiple Creates\n");
 
@@ -117,18 +117,18 @@ Cleanup:
     {
         pTexture->Release();
     }
+    return testResult;
 }
 
-void SubTestMiscAcquireRelease(
-    cl_device_id  device,
-    cl_context context,
-    ID3D11Device* pDevice)
+int SubTestMiscAcquireRelease(cl_device_id device, cl_context context,
+                              ID3D11Device* pDevice)
 {
     ID3D11Buffer* pBuffer = NULL;
     ID3D11Texture2D* pTexture = NULL;
     HRESULT hr = S_OK;
 
     cl_int result = CL_SUCCESS;
+    int testResult = TEST_PASS;
     cl_mem mem[2] = {NULL, NULL};
 
     log_info("Misc: Acquire Release\n");
@@ -197,23 +197,15 @@ Cleanup:
     {
         pTexture->Release();
     }
+    return testResult;
 }
 
-void TestDeviceMisc(
-    cl_device_id device,
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice)
+int TestDeviceMisc(cl_device_id device, cl_context context,
+                   cl_command_queue command_queue, ID3D11Device* pDevice)
 {
-    SubTestMiscMultipleCreates(
-        context,
-        command_queue,
-        pDevice);
+    int result = TEST_PASS;
+    result |= SubTestMiscMultipleCreates(context, command_queue, pDevice);
 
-    SubTestMiscAcquireRelease(
-        device,
-        context,
-        pDevice);
+    result |= SubTestMiscAcquireRelease(device, context, pDevice);
+    return result;
 }
-
-
