@@ -238,20 +238,22 @@ REGISTER_TEST(geom_cross)
             // On an embedded device w/ round-to-zero, 3 ulps is the worst-case tolerance for cross product
             cross_product( inDataA + i * vecsize, inDataB + i * vecsize, testVector, errorTolerances, 3.f );
 
-        // RTZ devices accrue approximately double the amount of error per operation.  Allow for that.
-        if( defaultRoundingMode == CL_FP_ROUND_TO_ZERO )
-        {
-            errorTolerances[0] *= 2.0f;
-            errorTolerances[1] *= 2.0f;
-            errorTolerances[2] *= 2.0f;
-            errorTolerances[3] *= 2.0f;
-        }
+            // RTZ devices accrue approximately double the amount of error per
+            // operation.  Allow for that.
+            if (defaultRoundingMode == CL_FP_ROUND_TO_ZERO)
+            {
+                errorTolerances[0] *= 2.0f;
+                errorTolerances[1] *= 2.0f;
+                errorTolerances[2] *= 2.0f;
+            }
 
             float errs[] = { fabsf( testVector[ 0 ] - outData[ i * vecsize + 0 ] ),
                              fabsf( testVector[ 1 ] - outData[ i * vecsize + 1 ] ),
                              fabsf( testVector[ 2 ] - outData[ i * vecsize + 2 ] ) };
 
-            if( errs[ 0 ] > errorTolerances[ 0 ] || errs[ 1 ] > errorTolerances[ 1 ] || errs[ 2 ] > errorTolerances[ 2 ] )
+            if (errs[0] > errorTolerances[0] || errs[1] > errorTolerances[1]
+                || errs[2] > errorTolerances[2]
+                || (vecsize == 4 && outData[i * vecsize + 3] != testVector[3]))
             {
                 log_error( "ERROR: Data sample %d does not validate! Expected (%a,%a,%a,%a), got (%a,%a,%a,%a)\n",
                           i, testVector[0], testVector[1], testVector[2], testVector[3],
