@@ -26,7 +26,16 @@
 
 extern const std::vector<cl_channel_type> channel_types;
 
-struct test_configs
+#define CHECK_TEST_CONFIGS_INDEX(index, configs)                               \
+    do                                                                         \
+    {                                                                          \
+        if ((uintptr_t)index >= configs.size())                                \
+        {                                                                      \
+            return TEST_FAIL;                                                  \
+        }                                                                      \
+    } while (0)
+
+struct common_test_configs
 {
     cl_mem_object_type imageType;
     cl_channel_type channel_type;
@@ -37,9 +46,10 @@ struct image_type
     cl_mem_object_type object_type;
     const char *name;
 };
-extern void register_test_configs(const std::vector<image_type> &tests,
-                                  std::vector<test_configs> &test_configs,
-                                  test_function_pointer runTest);
+extern void
+register_test_configs(const std::vector<image_type> &tests,
+                      std::vector<common_test_configs> &test_configs,
+                      test_function_pointer runTest);
 
 extern cl_channel_type floatFormats[];
 extern cl_channel_type intFormats[];

@@ -26,10 +26,11 @@ extern int test_image_set(cl_device_id device, cl_context context,
                           cl_channel_type channel_type,
                           const image_test_context_t &ctx);
 
-static std::vector<test_configs> test_configs;
+static std::vector<common_test_configs> test_configs;
 static int doTest(cl_device_id device, cl_context context,
                   cl_command_queue queue, int, void *args)
 {
+    CHECK_TEST_CONFIGS_INDEX(args, test_configs);
     auto &test = test_configs[(uintptr_t)args];
     if (test.imageType == CL_MEM_OBJECT_IMAGE3D
         && checkFor3DImageSupport(device))
