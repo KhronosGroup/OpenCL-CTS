@@ -637,7 +637,7 @@ clMemWrapper create_image(cl_context context, cl_command_queue queue,
 }
 
 void register_test_configs(const std::vector<image_type> &tests,
-                           std::vector<test_configs> &test_configs,
+                           std::vector<common_test_configs> &test_configs,
                            test_function_pointer runTest)
 {
     for (auto test : tests)

@@ -23,11 +23,12 @@
 
 static image_test_context_t ctx;
 
-static std::vector<TestConfigs> test_configs;
+static std::vector<copy_image_test_configs> test_configs;
 
 static int test_image_set(cl_device_id device, cl_context context,
                           cl_command_queue queue, int num_elements, void *arg)
 {
+    CHECK_TEST_CONFIGS_INDEX(arg, test_configs);
     return test_image_type(device, context, queue, test_configs[(uintptr_t)arg],
                            ctx);
 }

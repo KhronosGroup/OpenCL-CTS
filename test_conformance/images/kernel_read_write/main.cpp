@@ -222,10 +222,11 @@ static int doTest(cl_device_id device, cl_context context,
     return ret;
 }
 
-std::vector<test_configs> test_configs;
+static std::vector<common_test_configs> test_configs;
 static int runTest(cl_device_id device, cl_context context,
                    cl_command_queue queue, int, void *args)
 {
+    CHECK_TEST_CONFIGS_INDEX(args, test_configs);
     auto &test = test_configs[(uintptr_t)args];
     return doTest(device, context, queue, test.imageType, test.channel_type,
                   ctx);
