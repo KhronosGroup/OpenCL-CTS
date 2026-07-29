@@ -51,7 +51,6 @@
 #include <vector>
 #include <type_traits>
 #include <cmath>
-#include <mutex>
 
 #include "basic_test_conversions.h"
 
@@ -97,7 +96,6 @@ int gMaxVectorSize = sizeof(vectorSizes) / sizeof(vectorSizes[0]);
 MTdata gMTdata;
 std::vector<const char *> argList;
 bool gTestAll = false;
-std::recursive_mutex gLock;
 
 cl_half_rounding_mode DataInitInfo::halfRoundingMode = CL_HALF_RTE;
 cl_half_rounding_mode ConversionsTest::defaultHalfRoundingMode = CL_HALF_RTE;

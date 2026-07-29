@@ -40,7 +40,6 @@ extern roundingMode qcom_rm;
 #include <vector>
 #include <unordered_set>
 #include <cstring>
-#include <mutex>
 
 #if defined(__linux__)
 #include <sys/param.h>
@@ -50,7 +49,6 @@ extern roundingMode qcom_rm;
 extern size_t gTypeSizes[kTypeCount];
 extern void *gIn;
 extern bool gTestAll;
-extern std::recursive_mutex gLock;
 
 typedef enum
 {
@@ -92,7 +90,7 @@ struct DataInitBase : public DataInitInfo
     {}
 
 private:
-    template <typename InType, typename OutType> OutType bitcast(InType in)
+    template <typename InType, typename OutType> static OutType bitcast(InType in)
     {
         OutType out;
         assert(sizeof(InType) == sizeof(OutType));
@@ -104,7 +102,7 @@ private:
     // The set is used to check for duplicates, and the vector is used to
     // store the unique values in the order they were added.
     template <typename Type, typename IntegerType>
-    void push_unique(std::vector<Type> &vec,
+    static void push_unique(std::vector<Type> &vec,
                      std::unordered_set<IntegerType> &set, Type val)
     {
         IntegerType set_val;
@@ -124,14 +122,9 @@ private:
     };
 
 public:
-    template <typename T> std::vector<T> &GetIntSpecialValues()
+    template <typename T> static std::vector<T> InitIntSpecialValues()
     {
-        std::lock_guard<std::recursive_mutex> lock(gLock);
-        static std::vector<T> vec;
-        if (!vec.empty())
-        {
-            return vec;
-        }
+        std::vector<T> vec;
         std::unordered_set<T> set;
         static constexpr T sign = static_cast<T>(1)
             << (sizeof(T) * CHAR_BIT - 1);
@@ -139,7 +132,7 @@ public:
         // For each value, add it and its neighbors to the vector. And for each
         // of those values, add the bitwise not and the XOR with the sign to the
         // vector.
-        auto push = [&set, this](T val) {
+        auto push = [&set, &vec](T val) {
             for (const int offset : { -3, -2, -1, 0, 1, 2, 3 })
             {
                 T v = val + offset;
@@ -210,20 +203,21 @@ public:
         return vec;
     }
 
+    template <typename T> static std::vector<T> &GetIntSpecialValues()
+    {
+        static std::vector<T> vec = InitIntSpecialValues<T>();
+        return vec;
+    }
+
     template <typename InType, typename InIntegerType, typename OutType,
               bool OutFP>
-    std::vector<InType> &GetFpSpecialValues()
+    static std::vector<InType> InitFpSpecialValues()
     {
-        std::lock_guard<std::recursive_mutex> lock(gLock);
-        static std::vector<InType> vec;
-        if (!vec.empty())
-        {
-            return vec;
-        }
+        std::vector<InType> vec;
         std::unordered_set<InIntegerType> set;
 
         // Adds a value and its neighbors (values +/- 1 ULP away) to the vector.
-        auto push = [&set, this](InType val) {
+        auto push = [&set, &vec](InType val) {
             push_unique<InType, InIntegerType>(vec, set, val);
             push_unique<InType, InIntegerType>(
                 vec, set,
@@ -333,6 +327,15 @@ public:
                 push(static_cast<InType>(val));
             }
         }
+        return vec;
+    }
+
+    template <typename InType, typename InIntegerType, typename OutType,
+              bool OutFP>
+    static std::vector<InType> &GetFpSpecialValues()
+    {
+        static std::vector<InType> vec =
+            InitFpSpecialValues<InType, InIntegerType, OutType, OutFP>();
         return vec;
     }
 };
