@@ -52,7 +52,7 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
     uint64_t step =
         std::min(numInputs, getTestStep(sizeof(cl_half), BUFFER_SIZE));
     size_t bufferElements = step;
-    size_t bufferSize = BUFFER_SIZE;
+    size_t bufferSize = bufferElements * sizeof(cl_half);
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
     const char *name = f->name;
     float half_ulps = getAllowedUlpError(f, khalf, relaxedMode);
