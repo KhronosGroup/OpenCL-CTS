@@ -564,8 +564,7 @@ int TestFunc_Half_Half_Half_common(const Func *f, MTdata d, int isNextafter,
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_half) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    test_info.jobCount = std::max(
-        (cl_uint)1, (cl_uint)(getInputCount() / test_info.subBufferSize));
+    SET_JOB_COUNT(test_info, getInputCount());
 
     test_info.f = f;
     test_info.ulps = getAllowedUlpError(f, khalf, relaxedMode);

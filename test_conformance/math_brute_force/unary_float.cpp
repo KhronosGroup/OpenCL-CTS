@@ -459,7 +459,7 @@ int TestFunc_Float_Float(const Func *f, MTdata d, bool relaxedMode)
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    test_info.jobCount = getInputCount() / test_info.subBufferSize;
+    SET_JOB_COUNT(test_info, getInputCount());
 
     test_info.f = f;
     test_info.ulps = gIsEmbedded ? f->float_embedded_ulps : f->float_ulps;

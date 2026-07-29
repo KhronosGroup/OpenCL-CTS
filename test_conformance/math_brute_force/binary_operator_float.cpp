@@ -507,8 +507,7 @@ int TestFunc_Float_Float_Float_Operator(const Func *f, MTdata d,
     test_info.threadCount = GetThreadCount();
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_float) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    test_info.jobCount = std::max(
-        (cl_uint)1, (cl_uint)(getInputCount() / test_info.subBufferSize));
+    SET_JOB_COUNT(test_info, getInputCount());
 
     test_info.f = f;
     test_info.ulps = gIsEmbedded ? f->float_embedded_ulps : f->float_ulps;
