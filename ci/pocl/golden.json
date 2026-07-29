@@ -155,6 +155,11 @@
             "pci_bus_info": "skip"
         }
     },
+    "test_conversions": {
+        "--wimpy": {
+            "conversions": "fail"
+        }
+    },
     "test_geometrics": {
         "": {
             "geom_cross": "pass"
