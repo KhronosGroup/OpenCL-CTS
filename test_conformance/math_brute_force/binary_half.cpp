@@ -105,7 +105,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     cl_ushort *p = (cl_ushort *)gIn + thread_id * buffer_elements;
     cl_ushort *p2 = (cl_ushort *)gIn2 + thread_id * buffer_elements;
     j = 0;
-    fillHalfBinaryInput((cl_half *)p, (cl_half *)p2, buffer_elements, base, d);
+    fillBinaryInput((cl_half *)p, (cl_half *)p2, buffer_elements, base, d);
 
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
                                       buffer_size, p, 0, NULL, NULL)))

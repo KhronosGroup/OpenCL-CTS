@@ -66,7 +66,7 @@ int TestFunc_Double_ULong(const Func *f, MTdata d, bool relaxedMode)
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        fillDoubleUnaryInput((double *)gIn, step, i, d);
+        fillUnaryInput((double *)gIn, step, i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))

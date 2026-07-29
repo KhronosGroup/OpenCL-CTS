@@ -109,7 +109,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        fillFloatBinaryInput((cl_float *)gIn, (cl_float *)gIn2, step, i, d);
+        fillBinaryInput((cl_float *)gIn, (cl_float *)gIn2, step, i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))

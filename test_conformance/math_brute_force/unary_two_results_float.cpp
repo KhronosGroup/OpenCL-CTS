@@ -71,7 +71,7 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        fillFloatUnaryInput((float *)gIn, step, i, d, gTestAll);
+        fillUnaryInput((float *)gIn, step, i, d, gTestAll);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))

@@ -80,7 +80,7 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        fillFloatTernaryInput((float *)gIn, (float *)gIn2, (float *)gIn3, step,
+        fillTernaryInput((float *)gIn, (float *)gIn2, (float *)gIn3, step,
                               i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
