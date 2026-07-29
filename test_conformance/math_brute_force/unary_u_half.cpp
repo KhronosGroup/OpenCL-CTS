@@ -48,7 +48,9 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
     float maxError = 0.0f;
     int ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gHalfCapabilities);
     float maxErrorVal = 0.0f;
-    uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
+    uint64_t numInputs = 1ULL << 16;
+    uint64_t step =
+        std::min(numInputs, getTestStep(sizeof(cl_half), BUFFER_SIZE));
     size_t bufferElements = step;
     size_t bufferSize = BUFFER_SIZE;
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
@@ -64,7 +66,7 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
         return error;
     }
 
-    for (uint64_t i = 0; i < (1ULL << 16); i += step)
+    for (uint64_t i = 0; i < numInputs; i += step)
     {
         if (gSkipCorrectnessTesting) break;
 

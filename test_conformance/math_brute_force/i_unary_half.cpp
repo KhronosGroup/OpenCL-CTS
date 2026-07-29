@@ -47,7 +47,9 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
     KernelMatrix kernels;
     const unsigned thread_id = 0; // Test is currently not multithreaded.
     int ftz = f->ftz || 0 == (gHalfCapabilities & CL_FP_DENORM) || gForceFTZ;
-    uint64_t step = getTestStep(sizeof(cl_int), BUFFER_SIZE);
+    uint64_t numInputs = 1ULL << 16;
+    uint64_t step =
+        std::min(numInputs, getTestStep(sizeof(cl_int), BUFFER_SIZE));
     size_t bufferElements = step;
     size_t bufferSizeIn = bufferElements * sizeof(cl_half);
     size_t bufferSizeOut = bufferElements * sizeof(cl_int);
@@ -70,7 +72,7 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
     }
     std::vector<float> s(bufferElements);
 
-    for (uint64_t i = 0; i < (1ULL << 16); i += step)
+    for (uint64_t i = 0; i < numInputs; i += step)
     {
         if (gSkipCorrectnessTesting) break;
 
