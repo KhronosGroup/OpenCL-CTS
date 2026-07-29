@@ -92,7 +92,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 
     // Write the new values to the input array
     cl_ushort *p = (cl_ushort *)gIn + thread_id * buffer_elements;
-    fillHalfUnaryInput((cl_half *)p, buffer_elements, base, nullptr, true);
+    fillUnaryInput((cl_half *)p, buffer_elements, base, nullptr, true);
 
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
                                       buffer_size, p, 0, NULL, NULL)))

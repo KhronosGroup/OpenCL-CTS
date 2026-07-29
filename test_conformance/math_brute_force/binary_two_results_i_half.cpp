@@ -109,7 +109,7 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
         // Init input array
         cl_half *p = (cl_half *)gIn;
         cl_half *p2 = (cl_half *)gIn2;
-        fillHalfBinaryInput(p, p2, step, i, d);
+        fillBinaryInput(p, p2, step, i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           buffer_size * sizeof(cl_half), gIn, 0,

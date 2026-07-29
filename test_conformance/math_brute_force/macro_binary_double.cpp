@@ -94,7 +94,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
     // Init input array
     double *p = (double *)gIn + thread_id * buffer_elements;
     double *p2 = (double *)gIn2 + thread_id * buffer_elements;
-    fillDoubleBinaryInput((cl_double *)p, (cl_double *)p2, buffer_elements,
+    fillBinaryInput((cl_double *)p, (cl_double *)p2, buffer_elements,
                           base, d);
 
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
