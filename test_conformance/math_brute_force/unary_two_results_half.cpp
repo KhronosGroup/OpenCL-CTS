@@ -54,7 +54,7 @@ int TestFunc_Half2_Half(const Func *f, MTdata d, bool relaxedMode)
         std::min(numInputs, getTestStep(sizeof(cl_half), BUFFER_SIZE));
 
     size_t bufferElements = step;
-    size_t bufferSize = BUFFER_SIZE;
+    size_t bufferSize = bufferElements * sizeof(cl_half);
 
     std::vector<cl_uchar> overflow(bufferElements);
     int isFract = 0 == strcmp("fract", f->nameInCode);
