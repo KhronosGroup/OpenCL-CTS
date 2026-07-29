@@ -35,6 +35,7 @@ extern roundingMode qcom_rm;
 #include "harness/rounding_mode.h"
 #include "harness/typeWrappers.h"
 
+#include <climits>
 #include <cmath>
 #include <vector>
 #include <unordered_set>
@@ -132,12 +133,13 @@ public:
             return vec;
         }
         std::unordered_set<T> set;
-        const T sign = static_cast<T>(1) << (sizeof(T) * 8 - 1);
+        static constexpr T sign = static_cast<T>(1)
+            << (sizeof(T) * CHAR_BIT - 1);
 
         // For each value, add it and its neighbors to the vector. And for each
         // of those values, add the bitwise not and the XOR with the sign to the
         // vector.
-        auto push = [&set, &sign, this](T val) {
+        auto push = [&set, this](T val) {
             for (const int offset : { -3, -2, -1, 0, 1, 2, 3 })
             {
                 T v = val + offset;
