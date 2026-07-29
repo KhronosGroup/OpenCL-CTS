@@ -74,8 +74,8 @@ int TestFunc_Double_Double_Double_Double(const Func *f, MTdata d,
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        fillTernaryInput((cl_double *)gIn, (cl_double *)gIn2,
-                               (cl_double *)gIn3, step, i, d);
+        fillTernaryInput((cl_double *)gIn, (cl_double *)gIn2, (cl_double *)gIn3,
+                         step, i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))

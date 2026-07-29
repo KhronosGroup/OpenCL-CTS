@@ -65,8 +65,8 @@ int TestFunc_mad_Float(const Func *f, MTdata d, bool relaxedMode)
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        fillTernaryInput((float *)gIn, (float *)gIn2, (float *)gIn3, step,
-                              i, d);
+        fillTernaryInput((float *)gIn, (float *)gIn2, (float *)gIn3, step, i,
+                         d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))
