@@ -66,8 +66,8 @@ int TestFunc_mad_Half(const Func *f, MTdata d, bool relaxedMode)
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        fillTernaryInput((cl_half *)gIn, (cl_half *)gIn2, (cl_half *)gIn3,
-                             step, i, d);
+        fillTernaryInput((cl_half *)gIn, (cl_half *)gIn2, (cl_half *)gIn3, step,
+                         i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
