@@ -23,6 +23,23 @@
 #include <string>
 #include <vector>
 
+#define SET_JOB_COUNT(test_info, total_count)                                  \
+    do                                                                         \
+    {                                                                          \
+        if ((test_info).subBufferSize == 0)                                    \
+        {                                                                      \
+            log_error("Error: subBufferSize is 0 at %s:%d\n", __FILE__,        \
+                      __LINE__);                                               \
+            return -1;                                                         \
+        }                                                                      \
+        (test_info).jobCount =                                                 \
+            std::max((cl_uint)1,                                               \
+                     (cl_uint)((total_count) / (test_info).subBufferSize));    \
+    } while (0)
+
+
+
+
 // Array of thread-specific kernels for each vector size.
 using KernelMatrix =
     std::array<std::vector<clKernelWrapper>, VECTOR_SIZE_COUNT>;

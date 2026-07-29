@@ -333,8 +333,7 @@ int TestFunc_Half_Half(const Func *f, MTdata d, bool relaxedMode)
 
     test_info.subBufferSize = BUFFER_SIZE
         / (sizeof(cl_half) * RoundUpToNextPowerOfTwo(test_info.threadCount));
-    test_info.jobCount =
-        std::max((cl_uint)1, (cl_uint)((1LL << 16) / test_info.subBufferSize));
+    SET_JOB_COUNT(test_info, 1LL << 16);
 
     test_info.f = f;
     test_info.ulps = getAllowedUlpError(f, khalf, relaxedMode);
