@@ -76,7 +76,7 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
 
         // Init input array
         cl_ushort *p = (cl_ushort *)gIn;
-        fillHalfUnaryInput((cl_half *)p, step, i, d, true);
+        fillUnaryInput((cl_half *)p, step, i, d, true);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSizeIn, gIn, 0, NULL, NULL)))

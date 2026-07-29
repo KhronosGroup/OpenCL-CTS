@@ -88,7 +88,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
     // Write the new values to the input array
     cl_double *p = (cl_double *)gIn + thread_id * buffer_elements;
-    fillDoubleUnaryInput(p, buffer_elements, base, d);
+    fillUnaryInput(p, buffer_elements, base, d);
 
     if ((error = clEnqueueWriteBuffer(tinfo->tQueue, tinfo->inBuf, CL_FALSE, 0,
                                       buffer_size, p, 0, NULL, NULL)))

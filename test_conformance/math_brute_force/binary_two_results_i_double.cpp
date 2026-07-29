@@ -108,7 +108,7 @@ int TestFunc_DoubleI_Double_Double(const Func *f, MTdata d, bool relaxedMode)
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        fillDoubleBinaryInput((cl_double *)gIn, (cl_double *)gIn2, step, i, d);
+        fillBinaryInput((cl_double *)gIn, (cl_double *)gIn2, step, i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))

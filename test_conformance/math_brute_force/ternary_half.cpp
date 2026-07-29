@@ -78,7 +78,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
         cl_half *hp0 = (cl_half *)gIn;
         cl_half *hp1 = (cl_half *)gIn2;
         cl_half *hp2 = (cl_half *)gIn3;
-        fillHalfTernaryInput(hp0, hp1, hp2, step, i, d);
+        fillTernaryInput(hp0, hp1, hp2, step, i, d);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))

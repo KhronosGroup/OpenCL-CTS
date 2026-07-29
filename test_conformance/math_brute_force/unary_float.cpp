@@ -99,7 +99,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
 
     // Write the new values to the input array
     cl_uint *p = (cl_uint *)gIn + thread_id * buffer_elements;
-    fillFloatUnaryInput((float *)p, buffer_elements, base, d, gTestAll);
+    fillUnaryInput((float *)p, buffer_elements, base, d, gTestAll);
     if (relaxedMode)
     {
         for (size_t j = 0; j < buffer_elements; j++)
