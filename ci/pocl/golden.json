@@ -15,7 +15,8 @@
     },
     "test_basic": {
         "": {
-            "enqueue_map_image": "pass"
+            "enqueue_map_image": "pass",
+            "arraycopy": "pass"
         }
     },
     "test_bruteforce": {
