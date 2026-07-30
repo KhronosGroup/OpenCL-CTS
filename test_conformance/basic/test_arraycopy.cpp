@@ -104,8 +104,7 @@ REGISTER_TEST(arraycopy)
 
     // randomize data
     for (i = 0; i < num_elements; i++)
-        for (i = 0; i < num_elements; i++)
-            input_ptr[i] = (cl_uint)(genrand_int32(d) & 0x7FFFFFFF);
+        input_ptr[i] = (cl_uint)(genrand_int32(d) & 0x7FFFFFFF);
 
     // no backing
     streams[2] = clCreateBuffer(context, CL_MEM_READ_WRITE,
