@@ -92,14 +92,16 @@ REGISTER_TEST(arraycopy)
     clReleaseMemObject(streams[0]);
 
     if (err)
-        log_error("\tCL_MEM_USE_HOST_PTR buffer with clEnqueueCopyBuffer FAILED\n");
+        log_error(
+            "\tCL_MEM_USE_HOST_PTR buffer with clEnqueueCopyBuffer FAILED\n");
     else
-        log_info("\tCL_MEM_USE_HOST_PTR buffer with clEnqueueCopyBuffer passed\n");
+        log_info(
+            "\tCL_MEM_USE_HOST_PTR buffer with clEnqueueCopyBuffer passed\n");
 
 #pragma mark framework backing (no client data)
 
     log_info("Testing with clEnqueueWriteBuffer and clEnqueueCopyBuffer\n");
- 
+
     // randomize data
     for (i = 0; i < num_elements; i++)
         for (i = 0; i < num_elements; i++)
