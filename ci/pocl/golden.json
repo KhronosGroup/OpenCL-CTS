@@ -173,6 +173,11 @@
             "1D": "fail"
         }
     },
+    "test_printf": {
+        "": {
+            "return_value": "pass"
+        }
+    },
     "test_select": {
         "--num-worker-threads 2": {
             "select_uchar_uchar": "pass",
