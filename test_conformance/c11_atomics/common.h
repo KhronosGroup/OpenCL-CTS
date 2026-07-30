@@ -22,12 +22,12 @@
 
 #include "host_atomics.h"
 
+#include "CL/cl_half.h"
+#include <algorithm>
 #include <iomanip>
 #include <limits>
 #include <sstream>
 #include <vector>
-
-#include "CL/cl_half.h"
 
 #define MAX_DEVICE_THREADS (gHost ? 0U : gMaxDeviceThreads)
 #define MAX_HOST_THREADS GetThreadCount()
@@ -76,7 +76,11 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+extern bool gFloatAtomicsSupported;
+extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
+extern cl_device_fp_config gDoubleCaps;
 
+extern cl_device_fp_config gDoubleFPConfig;
 extern cl_device_fp_config gFloatFPConfig;
 extern cl_device_fp_config gHalfFPConfig;
 
@@ -182,10 +186,10 @@ public:
     {
         return false;
     }
-
     virtual bool
     IsTestNotAsExpected(const HostDataType &expected,
                         const std::vector<HostAtomicType> &testValues,
+                        const std::vector<HostDataType> &startRefValues,
                         cl_uint whichDestValue)
     {
         return expected
@@ -924,12 +928,15 @@ CBasicTest<HostAtomicType, HostDataType>::ProgramHeader(cl_uint maxNumDestItems)
             + ss.str() + "] = {\n";
         ss.str("");
 
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (std::isinf(_startValue))
                 ss << (_startValue < 0 ? "-" : "") << "INFINITY";
             else if (std::isnan(_startValue))
-                ss << "0.0f / 0.0f";
+                ss << "0.0 / 0.0";
             else
                 ss << std::setprecision(
                     std::numeric_limits<HostDataType>::max_digits10)
@@ -1241,9 +1248,8 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
             programSource = PragmaHeader(deviceID) + ProgramHeader(numDestItems)
                 + FunctionCode() + KernelCode(numDestItems);
             programLine = programSource.c_str();
-            if (create_single_kernel_helper_with_build_options(
-                    context, &program, &kernel, 1, &programLine,
-                    "test_atomic_kernel", gOldAPI ? "" : nullptr))
+            if (create_single_kernel_helper(context, &program, &kernel, 1,
+                                            &programLine, "test_atomic_kernel"))
             {
                 return -1;
             }
@@ -1292,7 +1298,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                 CurrentGroupSize() * CurrentGroupNum(deviceThreadCount);
         threadCount = deviceThreadCount + hostThreadCount;
     }
-    if (gDebug)
+    if (gDebug && programLine != nullptr)
     {
         log_info("Program source:\n");
         log_info("%s\n", programLine);
@@ -1502,26 +1508,51 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                            startRefValues.size() ? &startRefValues[0] : 0, i))
             break; // no expected value function provided
 
-        if (IsTestNotAsExpected(expected, destItems, i))
+        if (IsTestNotAsExpected(expected, destItems, startRefValues, i))
         {
             std::stringstream logLine;
-            logLine << "ERROR: Result " << i
-                    << " from kernel does not validate! (should be " << expected
-                    << ", was " << static_cast<HostDataType>(destItems[i])
-                    << ")\n";
-            log_error("%s", logLine.str().c_str());
-            for (i = 0; i < threadCount; i++)
+            if constexpr (std::is_same_v<HostDataType, cl_half>)
             {
-                logLine.str("");
-                logLine << " --- " << i << " - ";
-                if (startRefValues.size())
-                    logLine << startRefValues[i] << " -> " << refValues[i];
-                else
-                    logLine << refValues[i];
-                logLine << " --- ";
-                if (i < numDestItems) logLine << destItems[i];
-                logLine << "\n";
-                log_info("%s", logLine.str().c_str());
+                logLine << "ERROR: Result " << i
+                        << " from kernel does not validate! (should be "
+                        << cl_half_to_float(expected) << ", was "
+                        << cl_half_to_float(destItems[i]) << ")\n";
+                log_error("%s", logLine.str().c_str());
+                for (i = 0; i < threadCount; i++)
+                {
+                    logLine.str("");
+                    logLine << " --- " << i << " - ";
+                    if (startRefValues.size())
+                        logLine << cl_half_to_float(startRefValues[i]) << " -> "
+                                << cl_half_to_float(refValues[i]);
+                    else
+                        logLine << cl_half_to_float(refValues[i]);
+                    logLine << " --- ";
+                    if (i < numDestItems)
+                        logLine << cl_half_to_float(destItems[i]);
+                    logLine << "\n";
+                    log_info("%s", logLine.str().c_str());
+                }
+            }
+            else
+            {
+                logLine << "ERROR: Result " << i
+                        << " from kernel does not validate! (should be "
+                        << expected << ", was " << destItems[i] << ")\n";
+                log_error("%s", logLine.str().c_str());
+                for (i = 0; i < threadCount; i++)
+                {
+                    logLine.str("");
+                    logLine << " --- " << i << " - ";
+                    if (startRefValues.size())
+                        logLine << startRefValues[i] << " -> " << refValues[i];
+                    else
+                        logLine << refValues[i];
+                    logLine << " --- ";
+                    if (i < numDestItems) logLine << destItems[i];
+                    logLine << "\n";
+                    log_info("%s", logLine.str().c_str());
+                }
             }
             if (!gDebug)
             {

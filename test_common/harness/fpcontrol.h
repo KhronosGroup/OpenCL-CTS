@@ -45,6 +45,9 @@ typedef int64_t FPU_mode_type;
 #elif defined(__PPC__)
 #include <fpu_control.h>
 extern __thread fpu_control_t fpu_control;
+#elif defined(__riscv)
+#define _FPU_MASK_NI 1
+static FPU_mode_type fpu_control;
 #elif defined(__mips__)
 #include "mips/m32c1.h"
 #endif
@@ -56,7 +59,7 @@ inline void ForceFTZ(FPU_mode_type *oldMode)
     || defined(_M_X64) || defined(__MINGW32__)
     *oldMode = _mm_getcsr();
     _mm_setcsr(*oldMode | 0x8040);
-#elif defined(__PPC__)
+#elif defined(__PPC__) || defined(__riscv)
     *oldMode = fpu_control;
     fpu_control |= _FPU_MASK_NI;
 #elif defined(__arm__)
@@ -89,8 +92,8 @@ inline void DisableFTZ(FPU_mode_type *oldMode)
     || defined(_M_X64) || defined(__MINGW32__)
     *oldMode = _mm_getcsr();
     _mm_setcsr(*oldMode & ~0x8040);
-#elif defined(__PPC__)
-    *mode = fpu_control;
+#elif defined(__PPC__) || defined(__riscv)
+    *oldMode = fpu_control;
     fpu_control &= ~_FPU_MASK_NI;
 #elif defined(__arm__)
     unsigned fpscr;
@@ -121,7 +124,7 @@ inline void RestoreFPState(FPU_mode_type *mode)
 #if defined(__i386__) || defined(__x86_64__) || defined(_M_IX86)               \
     || defined(_M_X64) || defined(__MINGW32__)
     _mm_setcsr(*mode);
-#elif defined(__PPC__)
+#elif defined(__PPC__) || defined(__riscv)
     fpu_control = *mode;
 #elif defined(__arm__)
     __asm__ volatile("fmxr fpscr, %0" ::"r"(*mode));

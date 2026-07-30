@@ -18,6 +18,9 @@
 #include "harness/os_helpers.h"
 #include "harness/testHarness.h"
 
+extern std::string spvIncludeTestDirectory;
+extern std::string spvSecondIncludeTestDirectory;
+
 #include <array>
 
 const char *preprocessor_test_kernel[] = {
@@ -249,8 +252,6 @@ REGISTER_TEST(options_include_directory)
 {
     int error;
 
-    std::string sep  = dir_sep();
-    std::string path = exe_dir();    // Directory where test executable is located.
     std::string include_dir;
 
     clProgramWrapper program;
@@ -265,9 +266,8 @@ REGISTER_TEST(options_include_directory)
     }
 
     /* Build with the include directory defined */
-    include_dir = "-I " + path + sep + "includeTestDirectory";
+    include_dir = "-I " + spvIncludeTestDirectory;
 
-//    log_info("%s\n", include_dir);
     error =
         clBuildProgram(program, 1, &device, include_dir.c_str(), NULL, NULL);
     test_error( error, "Test program did not properly build" );
@@ -295,7 +295,7 @@ REGISTER_TEST(options_include_directory)
     }
 
     // Rebuild with a different include directory
-    include_dir = "-I " + path + sep + "secondIncludeTestDirectory";
+    include_dir = "-I " + spvSecondIncludeTestDirectory;
     error =
         clBuildProgram(program, 1, &device, include_dir.c_str(), NULL, NULL);
     test_error( error, "Test program did not properly rebuild" );

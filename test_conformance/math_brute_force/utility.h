@@ -64,6 +64,8 @@ extern int gFastRelaxedDerived;
 extern int gHostFill;
 extern int gIsInRTZMode;
 extern int gHasHalf;
+extern int gHasDouble;
+extern int gTestFloat;
 extern int gInfNanSupport;
 extern int gIsEmbedded;
 extern int gVerboseBruteForce;
@@ -71,6 +73,7 @@ extern uint32_t gMaxVectorSizeIndex;
 extern uint32_t gMinVectorSizeIndex;
 extern cl_device_fp_config gFloatCapabilities;
 extern cl_device_fp_config gHalfCapabilities;
+extern cl_device_fp_config gDoubleCapabilities;
 extern RoundingMode gFloatToHalfRoundingMode;
 
 extern cl_half_rounding_mode gHalfRoundingMode;

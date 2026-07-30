@@ -18,6 +18,7 @@
 
 #include "compat.h"
 #include <string>
+#include <vector>
 
 enum CompilationMode
 {
@@ -43,8 +44,11 @@ extern std::string gSPIRVValidator;
 extern bool gListTests;
 extern bool gWimpyMode;
 
-extern int parseCustomParam(int argc, const char *argv[],
-                            const char *ignore = 0);
+extern int
+parseCommonParamAndGetRemovedArgs(int argc, const char *argv[],
+                                  std::vector<std::string> &removed_args,
+                                  bool &help);
+extern int parseCommonParam(int argc, const char *argv[]);
 
 extern void parseWimpyReductionFactor(const char *&arg,
                                       int &wimpyReductionFactor);

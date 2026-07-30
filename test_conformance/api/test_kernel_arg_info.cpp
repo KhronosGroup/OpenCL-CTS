@@ -487,10 +487,10 @@ compare_kernel_with_expected(cl_context context, cl_device_id device,
     int failed_tests = 0;
     clKernelWrapper kernel;
     clProgramWrapper program;
-    cl_int err = create_single_kernel_helper_with_build_options(
-        context, &program, &kernel, 1, &kernel_src, "get_kernel_arg_info",
-        get_build_options(device).c_str());
-    test_error(err, "create_single_kernel_helper_with_build_options");
+    cl_int err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                             &kernel_src, "get_kernel_arg_info",
+                                             get_build_options(device).c_str());
+    test_error(err, "create_single_kernel_helper");
     for (size_t i = 0; i < expected_args.size(); ++i)
     {
         KernelArgInfo actual;
@@ -874,11 +874,10 @@ static int test_null_param(cl_context context, cl_device_id device,
 {
     clProgramWrapper program;
     clKernelWrapper kernel;
-    cl_int err = create_single_kernel_helper_with_build_options(
-        context, &program, &kernel, 1, &kernel_src, "get_kernel_arg_info",
-        get_build_options(device).c_str());
-    test_error_ret(err, "create_single_kernel_helper_with_build_options",
-                   TEST_FAIL);
+    cl_int err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                             &kernel_src, "get_kernel_arg_info",
+                                             get_build_options(device).c_str());
+    test_error_ret(err, "create_single_kernel_helper", TEST_FAIL);
 
     err = clGetKernelArgInfo(kernel, SINGLE_KERNEL_ARG_NUMBER,
                              CL_KERNEL_ARG_ADDRESS_QUALIFIER, 0, nullptr,
@@ -916,12 +915,11 @@ static int test_arg_name_size(cl_context context, cl_device_id device,
     char arg_return[sizeof(KERNEL_ARGUMENT_NAME) + 1];
     clProgramWrapper program;
     clKernelWrapper kernel;
-    cl_int err = create_single_kernel_helper_with_build_options(
-        context, &program, &kernel, 1, &kernel_src, "get_kernel_arg_info",
-        get_build_options(device).c_str());
+    cl_int err = create_single_kernel_helper(context, &program, &kernel, 1,
+                                             &kernel_src, "get_kernel_arg_info",
+                                             get_build_options(device).c_str());
 
-    test_error_ret(err, "create_single_kernel_helper_with_build_options",
-                   TEST_FAIL);
+    test_error_ret(err, "create_single_kernel_helper", TEST_FAIL);
 
     err =
         clGetKernelArgInfo(kernel, SINGLE_KERNEL_ARG_NUMBER, CL_KERNEL_ARG_NAME,

@@ -130,3 +130,24 @@ PRs to the repository are required to be `clang-format` clean to pass CI.
 Developers can either use the `git-clang-format` tool locally to verify this
 before contributing, or update their PR based on the diff provided by a failing
 CI job.
+
+## Running Targeted CI Tests on Pull Requests
+
+To help verify fixes or check for regressions without running the entire
+conformance test suite, our continuous integration pipeline allows contributor
+to trigger specific tests on Pull Requests against the `pocl` implementation.
+
+### How to Trigger Tests
+
+Testing is triggered by adding a special tag to either your
+**Pull Request description** or in any of your **commit messages**.
+
+The CI parses the text for the following syntax:
+`[run-test: <command>]`
+
+Multiples tags for a single Pull Request is supported.
+
+### Examples
+
+```text
+[run-test: test_bruteforce exp -w -1]

@@ -42,8 +42,8 @@ int test_cxx_for_opencl(cl_device_id device, cl_context context,
             execute(*p, x);
         })";
 
-    error = create_single_kernel_helper_with_build_options(
-        context, &program, &kernel1, 1, &kernel_sstr, "k1", "-cl-std=CLC++");
+    error = create_single_kernel_helper(context, &program, &kernel1, 1,
+                                        &kernel_sstr, "k1", "-cl-std=CLC++");
     test_error(error, "Failed to create k1 kernel");
 
     kernel2 = clCreateKernel(program, "k2", &error);

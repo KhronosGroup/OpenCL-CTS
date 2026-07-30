@@ -32,6 +32,7 @@ int gMaxDeviceThreads = 1024; // maximum number of threads executed on OCL devic
 cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
 
+cl_device_fp_config gDoubleFPConfig = 0;
 cl_device_fp_config gFloatFPConfig = 0;
 cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
 bool gFloatAtomicsSupported = false;
@@ -142,6 +143,11 @@ test_status InitCL(cl_device_id device) {
             cl_int error = clGetDeviceInfo(
                 device, CL_DEVICE_DOUBLE_FP_ATOMIC_CAPABILITIES_EXT,
                 sizeof(gDoubleAtomicCaps), &gDoubleAtomicCaps, nullptr);
+            test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
+
+            error = clGetDeviceInfo(device, CL_DEVICE_DOUBLE_FP_CONFIG,
+                                    sizeof(gDoubleFPConfig), &gDoubleFPConfig,
+                                    NULL);
             test_error_ret(error, "clGetDeviceInfo failed!", TEST_FAIL);
         }
 

@@ -4,10 +4,17 @@ set(DIRECTX_WRAPPER_SOURCES
 
 add_library(directx_wrapper STATIC ${DIRECTX_WRAPPER_SOURCES})
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(directx_wrapper
+    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
-include_directories(${CLConform_INCLUDE_DIR})
+target_compile_definitions(directx_wrapper
+    PUBLIC
+        $<$<BOOL:${D3D10_IS_SUPPORTED}>:D3D10_IS_SUPPORTED>
+        $<$<BOOL:${D3D11_IS_SUPPORTED}>:D3D11_IS_SUPPORTED>
+        $<$<BOOL:${D3D12_IS_SUPPORTED}>:D3D12_IS_SUPPORTED>)
 
-if (WIN32)
-    target_link_libraries(directx_wrapper d3d12)
-endif ()
+target_link_libraries(directx_wrapper
+    dxgi
+    $<$<BOOL:${D3D10_IS_SUPPORTED}>:d3d10>
+    $<$<BOOL:${D3D11_IS_SUPPORTED}>:d3d11>
+    $<$<BOOL:${D3D12_IS_SUPPORTED}>:d3d12>)

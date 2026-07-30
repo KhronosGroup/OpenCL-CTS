@@ -371,6 +371,10 @@ struct cl_half16
 };
 }
 
+// Override operator<< for cl_char and cl_uchar to print them as numbers.
+std::ostream &operator<<(std::ostream &os, const cl_char &val);
+std::ostream &operator<<(std::ostream &os, const cl_uchar &val);
+
 // Declare operator<< for cl_ types, accessing the .s member.
 #define OP_OSTREAM(Ty, VecSize)                                                \
     std::ostream &operator<<(std::ostream &os, const Ty##VecSize &val);

@@ -19,7 +19,6 @@
 #include "../testBase.h"
 #include "../harness/compat.h"
 #include "../harness/fpcontrol.h"
-#include "../harness/parseParameters.h"
 
 #if defined(__PPC__)
 // Global varaiable used to hold the FPU control register state. The FPSCR register can not
@@ -28,110 +27,112 @@
 __thread fpu_control_t fpu_control = 0;
 #endif
 
-bool                gTestReadWrite;
-bool                gDebugTrace;
-bool                gTestMaxImages;
-bool                gTestSmallImages;
-int                 gTypesToTest;
-cl_channel_type     gChannelTypeToUse = (cl_channel_type)-1;
-cl_channel_order    gChannelOrderToUse = (cl_channel_order)-1;
-bool                gEnablePitch = false;
+extern int test_image_set(cl_device_id device, cl_context context,
+                          cl_command_queue queue, cl_mem_object_type imageType,
+                          const image_test_context_t &ctx);
 
-static void printUsage( const char *execName );
-
-extern int test_image_set( cl_device_id device, cl_context context, cl_command_queue queue, cl_mem_object_type imageType );
+static image_test_context_t ctx;
 
 REGISTER_TEST(1D)
 {
-    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE1D);
+    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE1D, ctx);
 }
 REGISTER_TEST(1Dbuffer)
 {
-    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE1D_BUFFER);
+    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE1D_BUFFER,
+                          ctx);
 }
 REGISTER_TEST(2D)
 {
-    return test_image_set( device, context, queue, CL_MEM_OBJECT_IMAGE2D );
+    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE2D, ctx);
 }
 REGISTER_TEST(3D)
 {
-    return test_image_set( device, context, queue, CL_MEM_OBJECT_IMAGE3D );
+    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE3D, ctx);
 }
 REGISTER_TEST(1Darray)
 {
-    return test_image_set( device, context, queue, CL_MEM_OBJECT_IMAGE1D_ARRAY );
+    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE1D_ARRAY,
+                          ctx);
 }
 REGISTER_TEST(2Darray)
 {
-    return test_image_set( device, context, queue, CL_MEM_OBJECT_IMAGE2D_ARRAY );
+    return test_image_set(device, context, queue, CL_MEM_OBJECT_IMAGE2D_ARRAY,
+                          ctx);
 }
 
-int main(int argc, const char *argv[])
+static test_status parseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help)
 {
+
+    help =
+        R"(        The following flags specify the types to test. They can be combined; if none are specified, all are tested:
+          int - Test integer I/O (read_imagei)
+          uint - Test unsigned integer I/O (read_imageui)
+          float - Test float I/O (read_imagef)
+
+        You may also use appropriate CL_ channel type and ordering constants.
+
+        The following modify the types of images tested:
+          read_write - Runs the tests with read_write images which allow a kernel do both read and write to the same image
+          small_images - Runs every format through a loop of widths 1-13 and heights 1-9, instead of random sizes
+          max_images - Runs every format through a set of size combinations with the max values, max values - 1, and max values / 128
+
+        debug_trace - Enables additional debug info logging
+        use_pitches - Enables row and slice pitches
+)";
+
     cl_channel_type chanType;
     cl_channel_order chanOrder;
 
-    argc = parseCustomParam(argc, argv);
-    if (argc == -1)
-    {
-        return -1;
-    }
-
-    const char ** argList = (const char **)calloc( argc, sizeof( char*) );
-
-    if( NULL == argList )
-    {
-        log_error( "Failed to allocate memory for argList array.\n" );
-        return 1;
-    }
-
-    argList[0] = argv[0];
-    size_t argCount = 1;
+    std::vector<const char *> argList;
+    argList.push_back(argv[0]);
 
     // Parse arguments
     for ( int i = 1; i < argc; i++ )
     {
+        removed_args.push_back(argv[i]);
         if ( strcmp( argv[i], "debug_trace" ) == 0 )
-            gDebugTrace = true;
+            ctx.debugTrace = true;
         else if ( strcmp( argv[i], "read_write" ) == 0 )
-            gTestReadWrite = true;
+            ctx.testReadWrite = true;
         else if ( strcmp( argv[i], "small_images" ) == 0 )
-            gTestSmallImages = true;
+            ctx.testSmallImages = true;
         else if ( strcmp( argv[i], "max_images" ) == 0 )
-            gTestMaxImages = true;
+            ctx.testMaxImages = true;
         else if ( strcmp( argv[i], "use_pitches" ) == 0 )
-            gEnablePitch = true;
+            ctx.enablePitch = true;
 
         else if ( strcmp( argv[i], "int" ) == 0 )
-            gTypesToTest |= kTestInt;
+            ctx.typesToTest |= kTestInt;
         else if ( strcmp( argv[i], "uint" ) == 0 )
-            gTypesToTest |= kTestUInt;
+            ctx.typesToTest |= kTestUInt;
         else if ( strcmp( argv[i], "float" ) == 0 )
-            gTypesToTest |= kTestFloat;
-
-        else if ( strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 )
-        {
-            printUsage( argv[ 0 ] );
-            return -1;
-        }
+            ctx.typesToTest |= kTestFloat;
 
         else if ( ( chanType = get_channel_type_from_name( argv[i] ) ) != (cl_channel_type)-1 )
-            gChannelTypeToUse = chanType;
+            ctx.channelTypeToUse = chanType;
 
         else if ( ( chanOrder = get_channel_order_from_name( argv[i] ) ) != (cl_channel_order)-1 )
-            gChannelOrderToUse = chanOrder;
+            ctx.channelOrderToUse = chanOrder;
         else
         {
-            argList[argCount] = argv[i];
-            argCount++;
+            removed_args.pop_back();
+            argList.push_back(argv[i]);
         }
     }
 
-    if ( gTypesToTest == 0 )
-        gTypesToTest = kTestAllTypes;
+    if (ctx.typesToTest == 0) ctx.typesToTest = kTestAllTypes;
 
-    if ( gTestSmallImages )
-        log_info( "Note: Using small test images\n" );
+    if (ctx.testSmallImages) log_info("Note: Using small test images\n");
+
+    update_argc_argv_from_args_list(argList, argc, argv);
+    return TEST_PASS;
+}
+
+int main(int argc, const char *argv[])
+{
 
     // On most platforms which support denorm, default is FTZ off. However,
     // on some hardware where the reference is computed, default might be flush denorms to zero e.g. arm.
@@ -144,45 +145,13 @@ int main(int argc, const char *argv[])
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 
-    int ret = runTestHarnessWithCheck(
-        argCount, argList, test_registry::getInstance().num_tests(),
+    int ret = runTestHarnessWithCheckAndParse(
+        argc, argv, test_registry::getInstance().num_tests(),
         test_registry::getInstance().definitions(), false, 0,
-        verifyImageSupport);
+        verifyImageSupport, parseArgs);
 
     // Restore FP state before leaving
     RestoreFPState(&oldMode);
 
-    free(argList);
     return ret;
-}
-
-static void printUsage( const char *execName )
-{
-    const char *p = strrchr( execName, '/' );
-    if ( p != NULL )
-        execName = p + 1;
-
-    log_info( "Usage: %s [options] [test_names]\n", execName );
-    log_info( "Options:\n" );
-    log_info( "\n" );
-    log_info( "\tThe following flags specify the types to test. They can be combined; if none are specified, all are tested:\n" );
-    log_info( "\t\tint - Test integer I/O (read_imagei)\n" );
-    log_info( "\t\tuint - Test unsigned integer I/O (read_imageui)\n" );
-    log_info( "\t\tfloat - Test float I/O (read_imagef)\n" );
-    log_info( "\n" );
-    log_info( "You may also use appropriate CL_ channel type and ordering constants.\n" );
-    log_info( "\n" );
-    log_info( "\tThe following modify the types of images tested:\n" );
-    log_info( "\t\tread_write - Runs the tests with read_write images which allow a kernel do both read and write to the same image \n" );
-    log_info( "\t\tsmall_images - Runs every format through a loop of widths 1-13 and heights 1-9, instead of random sizes\n" );
-    log_info( "\t\tmax_images - Runs every format through a set of size combinations with the max values, max values - 1, and max values / 128\n" );
-    log_info( "\n" );
-    log_info( "\tdebug_trace - Enables additional debug info logging\n" );
-    log_info( "\tuse_pitches - Enables row and slice pitches\n" );
-    log_info( "\n" );
-    log_info( "Test names:\n" );
-    for (size_t i = 0; i < test_registry::getInstance().num_tests(); i++)
-    {
-        log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
-    }
 }

@@ -56,7 +56,7 @@ if(VULKAN_IS_SUPPORTED)
     add_subdirectory( common/vulkan_wrapper )
     add_subdirectory( vulkan )
 endif()
-if(D3D12_IS_SUPPORTED)
+if(D3D10_IS_SUPPORTED OR D3D11_IS_SUPPORTED OR D3D12_IS_SUPPORTED)
     add_subdirectory(common/directx_wrapper)
 endif ()
 

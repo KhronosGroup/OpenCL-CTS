@@ -10,7 +10,7 @@ set(${MODULE_NAME}_SOURCES
     harness.cpp
 )
 
-list(APPEND CLConform_LIBRARIES d3d10 dxgi)
+list(APPEND CLConform_LIBRARIES directx_wrapper)
 
 include(../CMakeCommon.txt)
 else()
