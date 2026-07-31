@@ -5,26 +5,31 @@
                OpEntryPoint Kernel %kernel "access_chain_inbounds_array" %gl_GlobalInvocationID
                OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
                OpDecorate %gl_GlobalInvocationID Constant
+       %uint = OpTypeInt 32 0
+     %uint_4 = OpConstant %uint 4
+  %test_type = OpTypeArray %uint %uint_4
       %ulong = OpTypeInt 64 0
     %v3ulong = OpTypeVector %ulong 3
-       %uint = OpTypeInt 32 0
 %_ptr_Input_v3ulong = OpTypePointer Input %v3ulong
        %void = OpTypeVoid
-     %uint_4 = OpConstant %uint 4
-%_arr_uint_uint_4 = OpTypeArray %uint %uint_4
-%_ptr_CrossWorkgroup__arr_uint_uint_4 = OpTypePointer CrossWorkgroup %_arr_uint_uint_4
+%_ptr_CrossWorkgroup_test_type = OpTypePointer CrossWorkgroup %test_type
 %_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
- %kernel_sig = OpTypeFunction %void %_ptr_CrossWorkgroup__arr_uint_uint_4 %_ptr_CrossWorkgroup_uint
+ %kernel_sig = OpTypeFunction %void %_ptr_CrossWorkgroup_test_type %_ptr_CrossWorkgroup_uint
 %gl_GlobalInvocationID = OpVariable %_ptr_Input_v3ulong Input
      %kernel = OpFunction %void None %kernel_sig
-         %in = OpFunctionParameter %_ptr_CrossWorkgroup__arr_uint_uint_4
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_test_type
         %out = OpFunctionParameter %_ptr_CrossWorkgroup_uint
       %entry = OpLabel
-         %13 = OpLoad %v3ulong %gl_GlobalInvocationID
-         %14 = OpCompositeExtract %ulong %13 0
-        %dst = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %out %14
-         %16 = OpInBoundsAccessChain %_ptr_CrossWorkgroup_uint %in %14
-       %data = OpLoad %uint %16
+        %gid = OpLoad %v3ulong %gl_GlobalInvocationID
+      %gid_0 = OpCompositeExtract %ulong %gid 0
+        %dst = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %out %gid_0
+       %base = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_test_type %in %gid_0
+     %ugid_0 = OpUConvert %uint %gid_0
+      %index = OpUMod %uint %ugid_0 %uint_4
+  %temp_base = OpInBoundsAccessChain %_ptr_CrossWorkgroup_test_type %base         ; no indices, composite object
+   %temp_src = OpInBoundsAccessChain %_ptr_CrossWorkgroup_uint %temp_base %index  ; with indices
+        %src = OpInBoundsAccessChain %_ptr_CrossWorkgroup_uint %temp_src          ; no indices, non-composite object
+       %data = OpLoad %uint %src
                OpStore %dst %data
                OpReturn
                OpFunctionEnd
