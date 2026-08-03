@@ -216,3 +216,74 @@ REGISTER_TEST(binary_create)
   free(out_data_binary);
     return 0;
 }
+
+REGISTER_TEST(binary_create_negative_status)
+{
+    /* To test this in a self-contained fashion, we have to create a program
+   with source, then get the binary, then use that binary to reload the program,
+   and then verify */
+
+    clProgramWrapper program, program_from_binary;
+    size_t binarySize = 0;
+
+    int error = create_single_kernel_helper(context, &program, NULL, 1,
+                                            sample_binary_kernel_source, NULL);
+    test_error(error, "Unable to build test program");
+
+    // Get the size of the resulting binary (only one device)
+    error = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,
+                             sizeof(binarySize), &binarySize, NULL);
+    test_error(error, "Unable to get binary size");
+
+    // Sanity check
+    if (binarySize == 0)
+    {
+        log_error("ERROR: Binary size of program is zero\n");
+        return -1;
+    }
+
+    std::vector<unsigned char> binary(binarySize, 0);
+
+    // Create a buffer and get the actual binary
+    const unsigned char *buffers[1] = { binary.data() };
+
+    error = clGetProgramInfo(program, CL_PROGRAM_BINARIES, sizeof(buffers),
+                             &buffers, NULL);
+    test_error(error, "Unable to get program binary");
+
+    binarySize = 0;
+    cl_int binary_status[1] = { 42 };
+    program_from_binary = clCreateProgramWithBinary(
+        context, 1, &device, &binarySize, buffers, binary_status, &error);
+
+    test_failure_error_ret(error, CL_INVALID_VALUE,
+                           "clCreateProgramWithBinary should return "
+                           "CL_INVALID_VALUE when lengths[0] is zero",
+                           TEST_FAIL);
+
+    if (binary_status[0] != 42)
+    {
+        log_error("ERROR: binary_status[0] should remain unchanged when "
+                  "clCreateProgramWithBinary fails");
+        return TEST_FAIL;
+    }
+
+    binarySize = binary.size();
+    buffers[0] = nullptr;
+    program_from_binary = clCreateProgramWithBinary(
+        context, 1, &device, &binarySize, buffers, binary_status, &error);
+
+    test_failure_error_ret(error, CL_INVALID_VALUE,
+                           "clCreateProgramWithBinary should return "
+                           "CL_INVALID_VALUE when binaries[0] is NULL",
+                           TEST_FAIL);
+
+    if (binary_status[0] != 42)
+    {
+        log_error("ERROR: binary_status[0] should remain unchanged when "
+                  "clCreateProgramWithBinary fails");
+        return TEST_FAIL;
+    }
+
+    return TEST_PASS;
+}
