@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "testHarness.h"
+#ifdef _WIN32
 #include "utils.h"
 
 int interop_user_sync(cl_device_id deviceID, cl_context context,
@@ -326,9 +328,11 @@ int interop_user_sync(cl_device_id deviceID, cl_context context,
 
     return result.Result();
 }
+#endif
 
 REGISTER_TEST(interop_user_sync)
 {
+#ifdef _WIN32
     const unsigned int WIDTH = 256;
     const unsigned int HEIGHT = 256;
 
@@ -415,4 +419,7 @@ REGISTER_TEST(interop_user_sync)
     }
 
     return result.Result();
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }

@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "testHarness.h"
+#ifdef _WIN32
 #include "utils.h"
 
 int api_functions(cl_device_id deviceID, cl_context context,
@@ -673,9 +675,11 @@ int api_functions(cl_device_id deviceID, cl_context context,
 
     return result.Result();
 }
+#endif
 
 REGISTER_TEST(api)
 {
+#ifdef _WIN32
     CResult result;
 
 #if defined(_WIN32)
@@ -777,4 +781,7 @@ REGISTER_TEST(api)
 #endif
 
     return result.Result();
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }

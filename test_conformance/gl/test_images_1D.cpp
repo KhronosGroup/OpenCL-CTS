@@ -13,8 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "common.h"
 #include "testBase.h"
+#include "testHarness.h"
+#ifdef GL_IS_SUPPORTED
+#include "common.h"
 
 #if defined(__APPLE__)
 #include <OpenGL/glu.h>
@@ -22,9 +24,11 @@
 #include <GL/glu.h>
 #include <CL/cl_gl.h>
 #endif
+#endif
 #include <algorithm>
 
-void calc_test_size_descriptors(sizevec_t* sizes, size_t nsizes)
+#ifdef GL_IS_SUPPORTED
+static void calc_test_size_descriptors(sizevec_t* sizes, size_t nsizes)
 {
     // Need to limit array size according to GL device properties
     GLint maxTextureSize = 4096, maxTextureBufferSize = 4096, size;
@@ -43,10 +47,12 @@ void calc_test_size_descriptors(sizevec_t* sizes, size_t nsizes)
         sizes[i].depth = 1;
     }
 }
+#endif
 
 int test_images_read_1D(cl_device_id device, cl_context context,
                         cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     size_t nformats = sizeof(common_formats) / sizeof(common_formats[0]);
 
     GLenum targets[] = { GL_TEXTURE_1D };
@@ -58,11 +64,15 @@ int test_images_read_1D(cl_device_id device, cl_context context,
 
     return test_images_read_common(device, context, queue, common_formats,
                                    nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 int test_images_write_1D(cl_device_id device, cl_context context,
                          cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     GLenum targets[] = { GL_TEXTURE_1D };
     size_t ntargets = sizeof(targets) / sizeof(targets[0]);
     size_t nformats = sizeof(common_formats) / sizeof(common_formats[0]);
@@ -73,11 +83,15 @@ int test_images_write_1D(cl_device_id device, cl_context context,
 
     return test_images_write_common(device, context, queue, common_formats,
                                     nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 int test_images_1D_getinfo(cl_device_id device, cl_context context,
                            cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     size_t nformats = sizeof(common_formats) / sizeof(common_formats[0]);
 
     GLenum targets[] = { GL_TEXTURE_1D };
@@ -90,11 +104,15 @@ int test_images_1D_getinfo(cl_device_id device, cl_context context,
     return test_images_get_info_common(device, context, queue, common_formats,
                                        nformats, targets, ntargets, sizes,
                                        nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 int test_images_read_texturebuffer(cl_device_id device, cl_context context,
                                    cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     size_t nformats = sizeof(common_formats) / sizeof(common_formats[0]);
 
     GLenum targets[] = { GL_TEXTURE_BUFFER };
@@ -106,11 +124,15 @@ int test_images_read_texturebuffer(cl_device_id device, cl_context context,
 
     return test_images_read_common(device, context, queue, common_formats,
                                    nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 int test_images_write_texturebuffer(cl_device_id device, cl_context context,
                                     cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     GLenum targets[] = { GL_TEXTURE_BUFFER };
     size_t ntargets = sizeof(targets) / sizeof(targets[0]);
     size_t nformats = sizeof(common_formats) / sizeof(common_formats[0]);
@@ -121,11 +143,15 @@ int test_images_write_texturebuffer(cl_device_id device, cl_context context,
 
     return test_images_write_common(device, context, queue, common_formats,
                                     nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 int test_images_texturebuffer_getinfo(cl_device_id device, cl_context context,
                                       cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     size_t nformats = sizeof(common_formats) / sizeof(common_formats[0]);
 
     GLenum targets[] = { GL_TEXTURE_BUFFER };
@@ -138,4 +164,7 @@ int test_images_texturebuffer_getinfo(cl_device_id device, cl_context context,
     return test_images_get_info_common(device, context, queue, common_formats,
                                        nformats, targets, ntargets, sizes,
                                        nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }

@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "testHarness.h"
+#ifdef _WIN32
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -433,9 +435,11 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
 
     return result.Result();
 }
+#endif
 
 REGISTER_TEST(kernel)
 {
+#ifdef _WIN32
     CResult result;
 
 #if defined(_WIN32)
@@ -537,4 +541,7 @@ REGISTER_TEST(kernel)
 #endif
 
     return result.Result();
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }

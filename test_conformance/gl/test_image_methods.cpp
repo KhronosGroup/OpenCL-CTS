@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "testHarness.h"
+#include "deviceInfo.h"
+#ifdef GL_IS_SUPPORTED
 #include "common.h"
 
 #include <algorithm>
@@ -92,10 +95,11 @@ static int verify(cl_int input, cl_int kernelOutput, const char *description)
 extern int supportsMsaa(cl_context context, bool *supports_msaa);
 extern int supportsDepth(cl_context context, bool *supports_depth);
 
-int test_image_format_methods(cl_device_id device, cl_context context,
-                              cl_command_queue queue, size_t width,
-                              size_t height, size_t arraySize, size_t samples,
-                              GLenum target, format format, MTdata d)
+static int test_image_format_methods(cl_device_id device, cl_context context,
+                                     cl_command_queue queue, size_t width,
+                                     size_t height, size_t arraySize,
+                                     size_t samples, GLenum target,
+                                     format format, MTdata d)
 {
     int error, result = 0;
 
@@ -356,17 +360,14 @@ int test_image_format_methods(cl_device_id device, cl_context context,
 
     return result;
 }
+#endif
 
 int test_image_methods_depth(cl_device_id device, cl_context context,
                              cl_command_queue queue, int numElements)
 {
-    if (!is_extension_available(device, "cl_khr_gl_depth_images"))
-    {
-        log_info("Test not run because 'cl_khr_gl_depth_images' extension is "
-                 "not supported by the tested device\n");
-        return 0;
-    }
+    REQUIRE_EXTENSION("cl_khr_gl_depth_images");
 
+#ifdef GL_IS_SUPPORTED
     int result = 0;
     GLenum depth_targets[] = { GL_TEXTURE_2D, GL_TEXTURE_2D_ARRAY };
     size_t ntargets = sizeof(depth_targets) / sizeof(depth_targets[0]);
@@ -409,18 +410,17 @@ int test_image_methods_depth(cl_device_id device, cl_context context,
         }
     }
     return result;
+#else
+    return TEST_FAIL;
+#endif
 }
 
 int test_image_methods_multisample(cl_device_id device, cl_context context,
                                    cl_command_queue queue, int numElements)
 {
-    if (!is_extension_available(device, "cl_khr_gl_msaa_sharing"))
-    {
-        log_info("Test not run because 'cl_khr_gl_msaa_sharing' extension is "
-                 "not supported by the tested device\n");
-        return 0;
-    }
+    REQUIRE_EXTENSION("cl_khr_gl_msaa_sharing");
 
+#ifdef GL_IS_SUPPORTED
     int result = 0;
     GLenum targets[] = { GL_TEXTURE_2D_MULTISAMPLE,
                          GL_TEXTURE_2D_MULTISAMPLE_ARRAY };
@@ -466,4 +466,7 @@ int test_image_methods_multisample(cl_device_id device, cl_context context,
         }
     }
     return result;
+#else
+    return TEST_FAIL;
+#endif
 }

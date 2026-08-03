@@ -16,11 +16,13 @@
 #include "testBase.h"
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
+#include "testHarness.h"
 
 #if !defined(__APPLE__)
 #include <CL/cl_gl.h>
 #endif
 
+#ifdef GL_IS_SUPPORTED
 static const char *bufferKernelPattern =
     "__kernel void sample_test( __global %s%s *source, __global %s%s *clDest, "
     "__global %s%s *glDest )\n"
@@ -324,10 +326,12 @@ int test_buffer_kernel(cl_context context, cl_command_queue queue,
 
     return 0;
 }
+#endif
 
 int test_buffers(cl_device_id device, cl_context context,
                  cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     ExplicitType vecType[] = {
         kChar, kUChar, kShort, kUShort, kInt,
         kUInt, kLong,  kULong, kFloat,  kNumExplicitTypes
@@ -358,12 +362,16 @@ int test_buffers(cl_device_id device, cl_context context,
     }
 
     return retVal;
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 
 int test_buffers_getinfo(cl_device_id device, cl_context context,
                          cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     ExplicitType vecType[] = {
         kChar, kUChar, kShort, kUShort, kInt,
         kUInt, kLong,  kULong, kFloat,  kNumExplicitTypes
@@ -394,4 +402,7 @@ int test_buffers_getinfo(cl_device_id device, cl_context context,
     }
 
     return retVal;
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }

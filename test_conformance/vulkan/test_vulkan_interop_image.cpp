@@ -22,7 +22,9 @@
 #include <algorithm>
 
 #include "vulkan_test_base.h"
+#ifdef VULKAN_IS_SUPPORTED
 #include "opencl_vulkan_wrapper.hpp"
+#endif
 
 namespace {
 
@@ -169,6 +171,7 @@ bool memcmp_images(const void *a, const void *b, size_t size,
     }
 }
 
+#ifdef VULKAN_IS_SUPPORTED
 const cl_kernel getKernelType(VulkanFormat format, cl_kernel kernel_float,
                               cl_kernel kernel_signed,
                               cl_kernel kernel_unsigned)
@@ -1355,6 +1358,7 @@ CLEANUP:
     if (dstBufferPtr) free(dstBufferPtr);
     return err;
 }
+#endif
 
 struct ImageCommonTest : public VulkanTestBase
 {
@@ -1363,6 +1367,7 @@ struct ImageCommonTest : public VulkanTestBase
         : VulkanTestBase(device, context, queue, nelems)
     {}
 
+#ifdef VULKAN_IS_SUPPORTED
     int test_image_common()
     {
         cl_int err = CL_SUCCESS;
@@ -1517,8 +1522,16 @@ struct ImageCommonTest : public VulkanTestBase
 
         return err;
     }
+#endif
 
-    cl_int Run() override { return test_image_common(); }
+    cl_int Run() override
+    {
+#ifdef VULKAN_IS_SUPPORTED
+        return test_image_common();
+#else
+        return TEST_FAIL;
+#endif
+    }
 };
 
 } // anonymous namespace

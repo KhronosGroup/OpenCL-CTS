@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "testHarness.h"
+#ifdef _WIN32
 #include "utils.h"
 
 int context_create(cl_device_id deviceID, cl_context context,
@@ -291,9 +293,11 @@ int context_create(cl_device_id deviceID, cl_context context,
 
     return result.Result();
 }
+#endif
 
 REGISTER_TEST(context_create)
 {
+#ifdef _WIN32
     const unsigned int WIDTH = 256;
     const unsigned int HEIGHT = 256;
 
@@ -369,4 +373,7 @@ REGISTER_TEST(context_create)
     }
 
     return result.Result();
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
