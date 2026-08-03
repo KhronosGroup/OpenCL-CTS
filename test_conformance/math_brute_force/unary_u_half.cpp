@@ -48,10 +48,11 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
     float maxError = 0.0f;
     int ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gHalfCapabilities);
     float maxErrorVal = 0.0f;
-    uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
-    size_t bufferElements = std::min(BUFFER_SIZE / sizeof(cl_half),
-                                     size_t(1ULL << (sizeof(cl_half) * 8)));
-    size_t bufferSize = bufferElements * sizeof(cl_half);
+    uint64_t numInputs = 1ULL << 16;
+    uint64_t step =
+        std::min(numInputs, getTestStep(sizeof(cl_half), BUFFER_SIZE));
+    size_t bufferElements = step;
+    size_t bufferSize = BUFFER_SIZE;
     logFunctionInfo(f->name, sizeof(cl_half), relaxedMode);
     const char *name = f->name;
     float half_ulps = getAllowedUlpError(f, khalf, relaxedMode);
@@ -65,13 +66,13 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
         return error;
     }
 
-    for (uint64_t i = 0; i < (1ULL << 16); i += step)
+    for (uint64_t i = 0; i < numInputs; i += step)
     {
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
         cl_ushort *p = (cl_ushort *)gIn;
-        for (size_t j = 0; j < bufferElements; j++) p[j] = (uint16_t)i + j;
+        fillUnaryInput((cl_half *)p, step, i, d, true);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSize, gIn, 0, NULL, NULL)))
