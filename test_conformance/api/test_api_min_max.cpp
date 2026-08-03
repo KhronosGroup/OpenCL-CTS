@@ -1407,13 +1407,13 @@ REGISTER_TEST(min_max_samplers)
     cl_int event_status;
     cl_uint minRequiredSamplers = gIsEmbedded ? 8 : 16;
 
+    /* Get the max value */
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_SAMPLERS, sizeof(maxSamplers),
+                            &maxSamplers, NULL);
+    test_error(error, "Unable to get max sampler count from device");
+
     if (checkForImageSupport(device))
     {
-        /* Get the max value */
-        error = clGetDeviceInfo(device, CL_DEVICE_MAX_SAMPLERS,
-                                sizeof(maxSamplers), &maxSamplers, NULL);
-        test_error(error, "Unable to get max sampler count from device");
-
         test_failure_error_ret(
             maxSamplers, 0,
             "Missing image support but CL_DEVICE_MAX_SAMPLERS query "
@@ -1421,11 +1421,6 @@ REGISTER_TEST(min_max_samplers)
             TEST_FAIL);
         return TEST_SKIPPED_ITSELF;
     }
-
-    /* Get the max value */
-    error = clGetDeviceInfo(device, CL_DEVICE_MAX_SAMPLERS, sizeof(maxSamplers),
-                            &maxSamplers, NULL);
-    test_error(error, "Unable to get max sampler count from device");
 
     if (maxSamplers < minRequiredSamplers)
     {
@@ -1436,7 +1431,6 @@ REGISTER_TEST(min_max_samplers)
     }
 
     log_info("Reported max %d samplers.\n", maxSamplers);
-
     error = clGetDeviceInfo(device, CL_DEVICE_MAX_PARAMETER_SIZE,
                             sizeof(maxParameterSize), &maxParameterSize, NULL);
     test_error(error, "Unable to get max parameter size from device");
@@ -1463,25 +1457,41 @@ REGISTER_TEST(min_max_samplers)
             + strlen(sample_sampler_kernel_pattern[4]),
         0);
     std::strncpy(programSrc.data(), sample_sampler_kernel_pattern[0],
-                 programSrc.size());
+                 programSrc.size() - 1);
+    size_t remaining = 0;
     for (i = 0; i < maxSamplers; i++)
     {
         sprintf(samplerLine, sample_sampler_kernel_pattern[1], i);
-        std::strncat(programSrc.data(), samplerLine, programSrc.size());
+        remaining = programSrc.size() - std::strlen(programSrc.data()) - 1;
+        test_assert_error_ret(std::strlen(samplerLine) <= remaining,
+                              "Kernel source buffer too small", TEST_FAIL);
+        std::strncat(programSrc.data(), samplerLine, remaining);
     }
+
+    remaining = programSrc.size() - std::strlen(programSrc.data()) - 1;
+    test_assert_error_ret(strlen(sample_sampler_kernel_pattern[2]) <= remaining,
+                          "Kernel source buffer too small", TEST_FAIL);
     std::strncat(programSrc.data(), sample_sampler_kernel_pattern[2],
-                 programSrc.size());
+                 remaining);
+
     for (i = 0; i < maxSamplers; i++)
     {
         sprintf(samplerLine, sample_sampler_kernel_pattern[3], i);
-        std::strncat(programSrc.data(), samplerLine, programSrc.size());
+        remaining = programSrc.size() - std::strlen(programSrc.data()) - 1;
+        test_assert_error_ret(std::strlen(samplerLine) <= remaining,
+                              "Kernel source buffer too small", TEST_FAIL);
+        std::strncat(programSrc.data(), samplerLine, remaining);
     }
-    std::strncat(programSrc.data(), sample_sampler_kernel_pattern[4],
-                 programSrc.size());
 
-    error =
-        create_single_kernel_helper(context, &program, &kernel, 1,
-                                    (const char **)&programSrc, "sample_test");
+    remaining = programSrc.size() - std::strlen(programSrc.data()) - 1;
+    test_assert_error_ret(strlen(sample_sampler_kernel_pattern[4]) <= remaining,
+                          "Kernel source buffer too small", TEST_FAIL);
+    std::strncat(programSrc.data(), sample_sampler_kernel_pattern[4],
+                 remaining);
+
+    const char *src = programSrc.data();
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &src,
+                                        "sample_test");
     test_error(error, "Failed to create the program and kernel.");
 
     std::vector<clSamplerWrapper> samplers(maxSamplers);
