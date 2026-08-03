@@ -36,26 +36,10 @@ cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-// Thread specific data for a worker thread
-typedef struct ThreadInfo
-{
-    clMemWrapper inBuf; // input buffer for the thread
-    clMemWrapper inBuf2; // input buffer for the thread
-    clMemWrapper outBuf[VECTOR_SIZE_COUNT]; // output buffers for the thread
-    float maxError; // max error value. Init to 0.
-    double
-        maxErrorValue; // position of the max error value (param 1).  Init to 0.
-    cl_int maxErrorValue2; // position of the max error value (param 2).  Init
-                           // to 0.
-    MTdataHolder d;
-    clCommandQueueWrapper
-        tQueue; // per thread command queue to improve performance
-} ThreadInfo;
-
 struct TestInfo : public TestInfoBase
 {
     // Array of thread specific information
-    std::vector<ThreadInfo> tinfo;
+    std::vector<ThreadInfoBinaryFPInt> tinfo;
 
     // Programs for various vector sizes.
     Programs programs;
@@ -65,39 +49,12 @@ struct TestInfo : public TestInfoBase
     KernelMatrix k;
 };
 
-// A table of more difficult cases to get right
-const cl_half specialValuesHalf[] = {
-    0xffff, 0x0000, 0x0001, 0x7c00, /*INFINITY*/
-    0xfc00, /*-INFINITY*/
-    0x8000, /*-0*/
-    0x7bff, /*HALF_MAX*/
-    0x0400, /*HALF_MIN*/
-    0x03ff, /* Largest denormal */
-    0x3c00, /* 1 */
-    0xbc00, /* -1 */
-    0x3555, /*nearest value to 1/3*/
-    0x3bff, /*largest number less than one*/
-    0xc000, /* -2 */
-    0xfbff, /* -HALF_MAX */
-    0x8400, /* -HALF_MIN */
-    0x4248, /* M_PI_H */
-    0xc248, /* -M_PI_H */
-    0xbbff, /* Largest negative fraction */
-};
-
-constexpr size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
-
-const int specialValuesInt3[] = { 0,     1,       2,       3,       1022, 1023,
-                                  1024,  INT_MIN, INT_MAX, -1,      -2,   -3,
-                                  -1022, -1023,   -11024,  -INT_MAX };
-size_t specialValuesInt3Count = ARRAY_SIZE(specialValuesInt3);
-
 cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 {
     TestInfo *job = (TestInfo *)data;
     size_t buffer_elements = job->subBufferSize;
     cl_uint base = job_id * (cl_uint)job->step;
-    ThreadInfo *tinfo = &(job->tinfo[thread_id]);
+    ThreadInfoBinaryFPInt *tinfo = &(job->tinfo[thread_id]);
     float ulps = job->ulps;
     fptr func = job->f->func;
     int ftz = job->ftz;
@@ -138,6 +95,11 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     cl_ushort *p = (cl_ushort *)gIn + thread_id * buffer_elements;
     cl_int *p2 = (cl_int *)gIn2 + thread_id * buffer_elements;
     j = 0;
+
+    const std::vector<cl_half> &specialValuesHalf = getHalfSpecialValues();
+    size_t specialValuesHalfCount = specialValuesHalf.size();
+    const std::vector<int> &specialValuesInt3 = getInt3SpecialValues();
+    size_t specialValuesInt3Count = specialValuesInt3.size();
     int totalSpecialValueCount =
         specialValuesHalfCount * specialValuesInt3Count;
     int indx = (totalSpecialValueCount - 1) / buffer_elements;

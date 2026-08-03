@@ -220,12 +220,15 @@ int max_verify(const T* const x, const T* const y, const T* const out,
                               "(index %d is "
                               "vector %d, element %d, for vector size %d)\n",
                               k, conv_to_flt(x[k]), l, conv_to_flt(y[l]), k,
-                              conv_to_flt(out[k]), v, k, i, j, vecSize);
+                              conv_to_flt(out[k]), conv_to_flt(v), k, i, j,
+                              vecSize);
                 else
                     log_error("x[%d]=%g y[%d]=%g out[%d]=%g, expected %g. "
                               "(index %d is "
                               "vector %d, element %d, for vector size %d)\n",
-                              k, x[k], l, y[l], k, out[k], v, k, i, j, vecSize);
+                              k, conv_to_flt(x[k]), l, conv_to_flt(y[l]), k,
+                              conv_to_flt(out[k]), conv_to_flt(v), k, i, j,
+                              vecSize);
                 return -1;
             }
         }
@@ -251,12 +254,15 @@ int min_verify(const T* const x, const T* const y, const T* const out,
                               "(index %d is "
                               "vector %d, element %d, for vector size %d)\n",
                               k, conv_to_flt(x[k]), l, conv_to_flt(y[l]), k,
-                              conv_to_flt(out[k]), v, k, i, j, vecSize);
+                              conv_to_flt(out[k]), conv_to_flt(v), k, i, j,
+                              vecSize);
                 else
                     log_error("x[%d]=%g y[%d]=%g out[%d]=%g, expected %g. "
                               "(index %d is "
                               "vector %d, element %d, for vector size %d)\n",
-                              k, x[k], l, y[l], k, out[k], v, k, i, j, vecSize);
+                              k, conv_to_flt(x[k]), l, conv_to_flt(y[l]), k,
+                              conv_to_flt(out[k]), conv_to_flt(v), k, i, j,
+                              vecSize);
                 return -1;
             }
         }

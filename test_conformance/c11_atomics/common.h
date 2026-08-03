@@ -22,13 +22,12 @@
 
 #include "host_atomics.h"
 
+#include "CL/cl_half.h"
 #include <algorithm>
 #include <iomanip>
 #include <limits>
 #include <sstream>
 #include <vector>
-
-#include "CL/cl_half.h"
 
 #define MAX_DEVICE_THREADS (gHost ? 0U : gMaxDeviceThreads)
 #define MAX_HOST_THREADS GetThreadCount()
@@ -77,6 +76,9 @@ extern int
     gMaxDeviceThreads; // maximum number of threads executed on OCL device
 extern cl_device_atomic_capabilities gAtomicMemCap,
     gAtomicFenceCap; // atomic memory and fence capabilities for this device
+extern bool gFloatAtomicsSupported;
+extern cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps;
+extern cl_device_fp_config gDoubleCaps;
 
 extern cl_device_fp_config gDoubleFPConfig;
 extern cl_device_fp_config gFloatFPConfig;
@@ -96,37 +98,6 @@ get_memory_scope_type_name(TExplicitMemoryScopeType scopeType);
 extern cl_int getSupportedMemoryOrdersAndScopes(
     cl_device_id device, std::vector<TExplicitMemoryOrderType> &memoryOrders,
     std::vector<TExplicitMemoryScopeType> &memoryScopes);
-
-union FloatIntUnion {
-    float f;
-    uint32_t i;
-};
-
-template <typename HostDataType> bool is_qnan(const HostDataType &value)
-{
-    if constexpr (std::is_same_v<HostDataType, float>)
-    {
-        FloatIntUnion u;
-        u.f = value;
-        if ((u.i & 0x7F800000) != 0x7F800000) return false;
-        return (u.i & 0x00400000) != 0;
-    }
-    else
-        return std::isnan(value);
-}
-
-template <typename HostDataType> bool is_snan(const HostDataType &value)
-{
-    if constexpr (std::is_same_v<HostDataType, float>)
-    {
-        FloatIntUnion u;
-        u.f = value;
-        if ((u.i & 0x7F800000) != 0x7F800000) return false;
-        return (u.i & 0x00400000) == 0;
-    }
-    else
-        return std::isnan(value);
-}
 
 class AtomicTypeInfo {
 public:
@@ -215,7 +186,6 @@ public:
     {
         return false;
     }
-
     virtual bool
     IsTestNotAsExpected(const HostDataType &expected,
                         const std::vector<HostAtomicType> &testValues,
@@ -1328,7 +1298,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                 CurrentGroupSize() * CurrentGroupNum(deviceThreadCount);
         threadCount = deviceThreadCount + hostThreadCount;
     }
-    if (gDebug)
+    if (gDebug && programLine != nullptr)
     {
         log_info("Program source:\n");
         log_info("%s\n", programLine);
@@ -1541,23 +1511,48 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
         if (IsTestNotAsExpected(expected, destItems, startRefValues, i))
         {
             std::stringstream logLine;
-            logLine << "ERROR: Result " << i
-                    << " from kernel does not validate! (should be " << expected
-                    << ", was " << static_cast<HostDataType>(destItems[i])
-                    << ")\n";
-            log_error("%s", logLine.str().c_str());
-            for (i = 0; i < threadCount; i++)
+            if constexpr (std::is_same_v<HostDataType, cl_half>)
             {
-                logLine.str("");
-                logLine << " --- " << i << " - ";
-                if (startRefValues.size())
-                    logLine << startRefValues[i] << " -> " << refValues[i];
-                else
-                    logLine << refValues[i];
-                logLine << " --- ";
-                if (i < numDestItems) logLine << destItems[i];
-                logLine << "\n";
-                log_info("%s", logLine.str().c_str());
+                logLine << "ERROR: Result " << i
+                        << " from kernel does not validate! (should be "
+                        << cl_half_to_float(expected) << ", was "
+                        << cl_half_to_float(destItems[i]) << ")\n";
+                log_error("%s", logLine.str().c_str());
+                for (i = 0; i < threadCount; i++)
+                {
+                    logLine.str("");
+                    logLine << " --- " << i << " - ";
+                    if (startRefValues.size())
+                        logLine << cl_half_to_float(startRefValues[i]) << " -> "
+                                << cl_half_to_float(refValues[i]);
+                    else
+                        logLine << cl_half_to_float(refValues[i]);
+                    logLine << " --- ";
+                    if (i < numDestItems)
+                        logLine << cl_half_to_float(destItems[i]);
+                    logLine << "\n";
+                    log_info("%s", logLine.str().c_str());
+                }
+            }
+            else
+            {
+                logLine << "ERROR: Result " << i
+                        << " from kernel does not validate! (should be "
+                        << expected << ", was " << destItems[i] << ")\n";
+                log_error("%s", logLine.str().c_str());
+                for (i = 0; i < threadCount; i++)
+                {
+                    logLine.str("");
+                    logLine << " --- " << i << " - ";
+                    if (startRefValues.size())
+                        logLine << startRefValues[i] << " -> " << refValues[i];
+                    else
+                        logLine << refValues[i];
+                    logLine << " --- ";
+                    if (i < numDestItems) logLine << destItems[i];
+                    logLine << "\n";
+                    log_info("%s", logLine.str().c_str());
+                }
             }
             if (!gDebug)
             {

@@ -26,7 +26,7 @@ void SubTestMiscMultipleCreates(
     cl_mem mem[5] = {NULL, NULL, NULL, NULL, NULL};
     cl_int result = CL_SUCCESS;
 
-    HarnessD3D10_TestBegin("Misc: Multiple Creates");
+    log_info("Misc: Multiple Creates");
 
     // create the D3D10 resources
     {
@@ -116,8 +116,6 @@ Cleanup:
     {
         pTexture->Release();
     }
-
-    HarnessD3D10_TestEnd();
 }
 
 void SubTestMiscAcquireRelease(
@@ -132,7 +130,7 @@ void SubTestMiscAcquireRelease(
     cl_int result = CL_SUCCESS;
     cl_mem mem[2] = {NULL, NULL};
 
-    HarnessD3D10_TestBegin("Misc: Acquire Release");
+    log_info("Misc: Acquire Release");
 
     // create the D3D10 resources
     {
@@ -236,8 +234,6 @@ Cleanup:
     {
         pTexture->Release();
     }
-
-    HarnessD3D10_TestEnd();
 }
 
 void TestDeviceMisc(

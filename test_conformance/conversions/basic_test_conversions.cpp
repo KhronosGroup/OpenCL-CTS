@@ -94,8 +94,7 @@ int vectorSizes[] = { 1, 1, 2, 3, 4, 8, 16 };
 int gMinVectorSize = 0;
 int gMaxVectorSize = sizeof(vectorSizes) / sizeof(vectorSizes[0]);
 MTdata gMTdata;
-const char **argList = NULL;
-int argCount = 0;
+std::vector<const char *> argList;
 
 
 cl_half_rounding_mode DataInitInfo::halfRoundingMode = CL_HALF_RTE;
@@ -403,7 +402,7 @@ cl_int CustomConversionsTest::Run()
     RoundingMode round;
     SaturationMode sat;
 
-    for (int i = 0; i < argCount; i++)
+    for (int i = 2; i < argList.size(); i++)
     {
         if (conv_test::GetTestCase(argList[i], &outType, &inType, &sat, &round))
         {

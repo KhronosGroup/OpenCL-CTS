@@ -82,7 +82,9 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
                 {
                     log_error("%d) verification error: mix(%a, %a, %a) = *%a "
                               "vs. %a\n",
-                              i, inptrX[i], inptrY[i], inptrA[i], r, outptr[i]);
+                              i, conv_to_flt(inptrX[i]), conv_to_flt(inptrY[i]),
+                              conv_to_flt(inptrA[i]), r,
+                              conv_to_flt(outptr[i]));
                     return -1;
                 }
             }
@@ -111,8 +113,9 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
                         log_error(
                             "{%d, element %d}) verification error: mix(%a, "
                             "%a, %a) = *%a vs. %a\n",
-                            ii, j, inptrX[vi], inptrY[vi], inptrA[i], r,
-                            outptr[vi]);
+                            ii, j, conv_to_flt(inptrX[vi]),
+                            conv_to_flt(inptrY[vi]), conv_to_flt(inptrA[i]), r,
+                            conv_to_flt(outptr[vi]));
                         return -1;
                     }
                 }

@@ -95,8 +95,7 @@ extern void *gRef;
 extern void *gAllowZ;
 extern void *gOut[];
 
-extern const char **argList;
-extern int argCount;
+extern std::vector<const char *> argList;
 
 extern const char *sizeNames[];
 extern int vectorSizes[];
@@ -120,8 +119,6 @@ cl_int PrepareReference(cl_uint job_id, cl_uint thread_id, void *p);
 uint64_t GetTime(void);
 
 void WriteInputBufferComplete(void *);
-void *FlushToZero(void);
-void UnFlushToZero(void *);
 }
 
 struct CalcRefValsBase

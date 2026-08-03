@@ -35,31 +35,8 @@ cl_int BuildKernel_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-// Thread specific data for a worker thread
-struct ThreadInfo
+struct TestInfo : public TestInfoBase
 {
-    // Input and output buffers for the thread
-    clMemWrapper inBuf;
-    clMemWrapper inBuf2;
-    Buffers outBuf;
-
-    // max error value. Init to 0.
-    float maxError;
-    // position of the max error value (param 1).  Init to 0.
-    double maxErrorValue;
-    // position of the max error value (param 2).  Init to 0.
-    double maxErrorValue2;
-    MTdataHolder d;
-
-    // Per thread command queue to improve performance
-    clCommandQueueWrapper tQueue;
-};
-
-struct TestInfo
-{
-    size_t subBufferSize; // Size of the sub-buffer in elements
-    const Func *f; // A pointer to the function info
-
     // Programs for various vector sizes.
     Programs programs;
 
@@ -68,39 +45,8 @@ struct TestInfo
     KernelMatrix k;
 
     // Array of thread specific information
-    std::vector<ThreadInfo> tinfo;
-
-    cl_uint threadCount; // Number of worker threads
-    cl_uint jobCount; // Number of jobs
-    cl_uint step; // step between each chunk and the next.
-    cl_uint scale; // stride between individual test values
-    float ulps; // max_allowed ulps
-    int ftz; // non-zero if running in flush to zero mode
-
-    // no special fields
+    std::vector<ThreadInfoBinary> tinfo;
 };
-
-// A table of more difficult cases to get right
-const cl_half specialValuesHalf[] = {
-    0xffff, 0x0000, 0x0001, 0x7c00, /*INFINITY*/
-    0xfc00, /*-INFINITY*/
-    0x8000, /*-0*/
-    0x7bff, /*HALF_MAX*/
-    0x0400, /*HALF_MIN*/
-    0x03ff, /* Largest denormal */
-    0x3c00, /* 1 */
-    0xbc00, /* -1 */
-    0x3555, /*nearest value to 1/3*/
-    0x3bff, /*largest number less than one*/
-    0xc000, /* -2 */
-    0xfbff, /* -HALF_MAX */
-    0x8400, /* -HALF_MIN */
-    0x4248, /* M_PI_H */
-    0xc248, /* -M_PI_H */
-    0xbbff, /* Largest negative fraction */
-};
-
-constexpr size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
 
 cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 {
@@ -108,7 +54,7 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     size_t buffer_elements = job->subBufferSize;
     size_t buffer_size = buffer_elements * sizeof(cl_half);
     cl_uint base = job_id * (cl_uint)job->step;
-    ThreadInfo *tinfo = &(job->tinfo[thread_id]);
+    ThreadInfoBinary *tinfo = &(job->tinfo[thread_id]);
     float ulps = job->ulps;
     fptr func = job->f->func;
     int ftz = job->ftz;
@@ -147,6 +93,9 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     cl_half *p = (cl_half *)gIn + thread_id * buffer_elements;
     cl_half *p2 = (cl_half *)gIn2 + thread_id * buffer_elements;
     cl_uint idx = 0;
+
+    const std::vector<cl_half> &specialValuesHalf = getHalfSpecialValues();
+    size_t specialValuesHalfCount = specialValuesHalf.size();
     int totalSpecialValueCount =
         specialValuesHalfCount * specialValuesHalfCount;
     int lastSpecialJobIndex = (totalSpecialValueCount - 1) / buffer_elements;

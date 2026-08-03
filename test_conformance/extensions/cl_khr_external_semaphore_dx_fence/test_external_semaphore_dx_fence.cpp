@@ -191,7 +191,7 @@ struct MultipleWaitSignal final : DXFenceTestBase
     int SetUp() override
     {
         DXFenceTestBase::SetUp();
-        fence_wrapper_2 = new DirectXFenceWrapper(dx_wrapper.getDXDevice());
+        fence_wrapper_2 = new DirectX12FenceWrapper(dx_wrapper.getDXDevice());
         semaphore_2 = createSemaphoreFromFence(fence_wrapper_2->get());
         test_assert_error(!!semaphore_2, "Could not create semaphore");
 
@@ -282,7 +282,7 @@ struct MultipleWaitSignal final : DXFenceTestBase
 protected:
     cl_semaphore_khr semaphore_2 = nullptr;
     HANDLE fence_handle_2 = nullptr;
-    DirectXFenceWrapper *fence_wrapper_2 = nullptr;
+    DirectX12FenceWrapper *fence_wrapper_2 = nullptr;
 };
 
 // Confirm that multiple waits in OpenCL followed by signals in DX12 and waits
