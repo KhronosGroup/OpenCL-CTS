@@ -1,0 +1,35 @@
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability Int64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "access_chain_vector" %gl_GlobalInvocationID
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_GlobalInvocationID Constant
+       %uint = OpTypeInt 32 0
+     %uint_4 = OpConstant %uint 4
+  %test_type = OpTypeVector %uint 4
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_Input_v3ulong = OpTypePointer Input %v3ulong
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_test_type = OpTypePointer CrossWorkgroup %test_type
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+ %kernel_sig = OpTypeFunction %void %_ptr_CrossWorkgroup_test_type %_ptr_CrossWorkgroup_uint
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3ulong Input
+     %kernel = OpFunction %void None %kernel_sig
+         %in = OpFunctionParameter %_ptr_CrossWorkgroup_test_type
+        %out = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+        %gid = OpLoad %v3ulong %gl_GlobalInvocationID
+      %gid_0 = OpCompositeExtract %ulong %gid 0
+        %dst = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_uint %out %gid_0
+       %base = OpInBoundsPtrAccessChain %_ptr_CrossWorkgroup_test_type %in %gid_0
+     %ugid_0 = OpUConvert %uint %gid_0
+      %index = OpUMod %uint %ugid_0 %uint_4
+  %temp_base = OpAccessChain %_ptr_CrossWorkgroup_test_type %base         ; no indices, composite object
+   %temp_src = OpAccessChain %_ptr_CrossWorkgroup_uint %temp_base %index  ; with indices
+        %src = OpAccessChain %_ptr_CrossWorkgroup_uint %temp_src          ; no indices, non-composite object
+       %data = OpLoad %uint %src
+               OpStore %dst %data
+               OpReturn
+               OpFunctionEnd
