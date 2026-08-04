@@ -37,6 +37,7 @@ cl_device_fp_config gFloatFPConfig = 0;
 cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
 bool gFloatAtomicsSupported = false;
 cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps = 0;
+
 cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps = 0;
 cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps = 0;
 cl_device_fp_config gHalfFPConfig = 0;
