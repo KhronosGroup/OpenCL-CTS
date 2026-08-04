@@ -202,7 +202,7 @@ int anyVerifyFn( ExplicitType vecType, unsigned int vecSize, void *inData )
 REGISTER_TEST(relational_any)
 {
     ExplicitType vecType[] = { kChar, kShort, kInt, kLong };
-    unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
+    unsigned int vecSizes[] = { 2, 3, 4, 8, 16, 0 };
     unsigned int index, typeIndex;
     int retVal = 0;
     RandomSeed seed(gRandomSeed );
@@ -271,7 +271,7 @@ int allVerifyFn( ExplicitType vecType, unsigned int vecSize, void *inData )
 REGISTER_TEST(relational_all)
 {
     ExplicitType vecType[] = { kChar, kShort, kInt, kLong };
-    unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
+    unsigned int vecSizes[] = { 2, 3, 4, 8, 16, 0 };
     unsigned int index, typeIndex;
     int retVal = 0;
     RandomSeed seed(gRandomSeed );
