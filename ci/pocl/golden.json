@@ -173,6 +173,12 @@
             "1D": "fail"
         }
     },
+    "test_relationals": {
+        "": {
+            "relational_all": "pass",
+            "relational_any": "pass"
+        }
+    },
     "test_select": {
         "--num-worker-threads 2": {
             "select_uchar_uchar": "pass",
