@@ -87,7 +87,7 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
     uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
 
     // use larger type of output data to prevent overflowing buffer size
-    constexpr size_t buffer_size = BUFFER_SIZE / sizeof(int32_t);
+    const size_t buffer_size = BUFFER_SIZE / sizeof(int32_t);
 
     cl_uint threadCount = GetThreadCount();
 
@@ -436,7 +436,7 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
             if (gVerboseBruteForce)
             {
                 vlog("base:%14" PRIu64 " step:%10" PRIu64
-                     "  bufferSize:%10d \n",
+                     "  bufferSize:%10zu \n",
                      i, step, BUFFER_SIZE);
             }
             else

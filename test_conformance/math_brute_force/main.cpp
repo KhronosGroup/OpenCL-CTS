@@ -19,9 +19,11 @@
 #include "utility.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -104,12 +106,19 @@ static MTdataHolder gMTdata;
 cl_device_fp_config gFloatCapabilities = 0;
 int gWimpyReductionFactor = 32;
 int gVerboseBruteForce = 0;
+size_t BUFFER_SIZE = 1024 * 1024 * 2;
+uint64_t BUFFER_STEP = 0;
 
 cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
 
 static test_status ParseArgs(int &argc, const char *argv[],
                              std::vector<std::string> &removed_args,
                              std::string &help);
+template <typename T>
+static bool ParsePositiveIntegerOption(int argc, const char *argv[], int &index,
+                                       std::vector<std::string> &removed_args,
+                                       char option,
+                                       const char *value_description, T &value);
 static test_status InitCL(cl_device_id device);
 static void ReleaseCL(void);
 static int InitILogbConstants(void);
@@ -409,6 +418,8 @@ static test_status ParseArgs(int &argc, const char *argv[],
         -[2^n] Set wimpy reduction factor, recommended range of n is 1-10, default factor()"
         + std::to_string(gWimpyReductionFactor) + R"()
         -b     Fill buffers on host instead of device. (Default: off)
+        -c N   Set the test buffer size in bytes, controlling batch size. (Default: 1024 * 1024 * 2)
+        -x N   Reduce test scope by overriding the sampling step.
         -z     Toggle FTZ mode (Section 6.5.3) for all functions. (Set by device capabilities by default.)
         -v     Toggle Verbosity (Default: off)
         -#     Test only vector sizes #, e.g. "-1" tests scalar only, "-16" tests 16-wide vectors only.
@@ -474,6 +485,20 @@ static test_status ParseArgs(int &argc, const char *argv[],
                         break;
 
                     case 'b': gHostFill ^= 1; break;
+
+                    case 'c':
+                        if (!ParsePositiveIntegerOption(
+                                argc, argv, i, removed_args, 'c', "buffer size",
+                                BUFFER_SIZE))
+                            return TEST_FAIL;
+                        break;
+
+                    case 'x':
+                        if (!ParsePositiveIntegerOption(
+                                argc, argv, i, removed_args, 'x', "test step",
+                                BUFFER_STEP))
+                            return TEST_FAIL;
+                        break;
 
                     case 'z': gForceFTZ ^= 1; break;
 
@@ -571,6 +596,36 @@ static test_status ParseArgs(int &argc, const char *argv[],
     gMTdata = MTdataHolder(gRandomSeed);
 
     return TEST_PASS;
+}
+
+template <typename T>
+static bool ParsePositiveIntegerOption(int argc, const char *argv[], int &index,
+                                       std::vector<std::string> &removed_args,
+                                       char option,
+                                       const char *value_description, T &value)
+{
+    if (index + 1 >= argc || argv[index + 1][0] == '-')
+    {
+        vlog_error("-%c requires a positive %s.\n", option, value_description);
+        return false;
+    }
+
+    char *end = NULL;
+    errno = 0;
+    unsigned long long parsed = strtoull(argv[index + 1], &end, 10);
+    if (errno == ERANGE || end == argv[index + 1] || *end != '\0' || parsed == 0
+        || parsed > std::numeric_limits<T>::max())
+    {
+        vlog_error("-%c requires a positive %s.\n", option, value_description);
+        return false;
+    }
+
+    value = static_cast<T>(parsed);
+    removed_args.pop_back();
+    removed_args.push_back(std::string(argv[index]) + " " + argv[index + 1]);
+    vlog(" %llu", parsed);
+    ++index;
+    return true;
 }
 
 static void CL_CALLBACK bruteforce_notify_callback(const char *errinfo,
