@@ -246,7 +246,9 @@ jobs:
           cmake -B pocl/build -S pocl -G Ninja \
             -DCMAKE_INSTALL_PREFIX=${{ env.pocl }} \
             -DCMAKE_BUILD_TYPE=Release \
-            -DDKERNELLIB_HOST_CPU_VARIANTS=distro \
+            -DKERNELLIB_HOST_CPU_VARIANTS=distro \
+            -DLLVM_SPIRV_LIB=${SPIRV_LLVM_TRANSLATOR_PATH}/lib/libLLVMSPIRVLib.a \
+            -DLLVM_SPIRV_INCLUDEDIR=${SPIRV_LLVM_TRANSLATOR_PATH}/include/LLVMSPIRVLib \
             -DENABLE_ICD=ON
           cmake --build pocl/build
           cmake --install pocl/build
