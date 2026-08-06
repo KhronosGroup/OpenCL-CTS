@@ -147,6 +147,12 @@
             "3Dto2Darray": "pass"
         }
     },
+    "test_commonfns": {
+        "": {
+            "clamp": "pass",
+            "clamp_scalar_bounds": "pass"
+        }
+    },
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",
