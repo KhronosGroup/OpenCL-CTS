@@ -103,7 +103,7 @@ static int test_nonsemantic_helper(cl_device_id device, cl_context context,
 
 REGISTER_TEST(extinstimport_nonsemantic)
 {
-    if (!is_spirv_extension_supported(device, "SPV_KHR_non_semantic_info") && false)
+    if (!is_spirv_extension_supported(device, "SPV_KHR_non_semantic_info"))
     {
         log_info("SPIR-V extension SPV_KHR_non_semantic_info not supported; "
                  "skipping tests.\n");
