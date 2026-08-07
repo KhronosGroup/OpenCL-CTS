@@ -91,11 +91,15 @@ struct MaxTest : BaseFunctionTest
 struct ClampTest : BaseFunctionTest
 {
     ClampTest(cl_device_id device, cl_context context, cl_command_queue queue,
-              int num_elems, const char *fn, bool vsp)
-        : BaseFunctionTest(device, context, queue, num_elems, fn, vsp)
+              int num_elems, const char *fn, bool hasScalarBounds)
+        : BaseFunctionTest(device, context, queue, num_elems, fn,
+                           hasScalarBounds),
+          hasScalarBounds(hasScalarBounds)
     {}
 
     cl_int Run() override;
+
+    bool hasScalarBounds;
 };
 
 struct DegreesTest : BaseFunctionTest
