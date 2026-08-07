@@ -41,6 +41,5 @@ const char* flag_set_names[] = {
 
 int main( int argc, const char *argv[] )
 {
-    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
-                          test_registry::getInstance().definitions(), false, 0);
+    return runTestHarness(argc, argv, false, 0);
 }

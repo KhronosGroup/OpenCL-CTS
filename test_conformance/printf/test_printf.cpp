@@ -1059,9 +1059,7 @@ REGISTER_TEST(buffer_size)
 //-----------------------------------------
 int main(int argc, const char* argv[])
 {
-    int err = runTestHarnessWithCheck(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), true, 0, InitCL);
+    int err = runTestHarnessWithCheck(argc, argv, true, 0, InitCL);
 
     if (gQueue)
     {

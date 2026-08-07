@@ -67,7 +67,5 @@ int main(int argc, const char *argv[])
     BaseFunctionTest::type2name[sizeof(float)] = "float";
     BaseFunctionTest::type2name[sizeof(double)] = "double";
 
-    return runTestHarnessWithCheck(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0, InitCL);
+    return runTestHarnessWithCheck(argc, argv, false, 0, InitCL);
 }

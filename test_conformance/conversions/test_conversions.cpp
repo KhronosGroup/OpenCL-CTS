@@ -123,9 +123,8 @@ int main(int argc, const char **argv)
     _controlfp_s(&ignored, _PC_64, _MCW_PC);
 #endif
 
-    int ret = runTestHarnessWithCheckAndParse(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), true, 0, InitCL, ParseArgs);
+    int ret =
+        runTestHarnessWithCheckAndParse(argc, argv, true, 0, InitCL, ParseArgs);
 
     free_mtdata(gMTdata);
     if (gQueue)

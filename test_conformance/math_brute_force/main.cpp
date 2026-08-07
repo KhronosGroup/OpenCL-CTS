@@ -376,9 +376,8 @@ int main(int argc, const char *argv[])
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 
-    int ret = runTestHarnessWithCheckAndParse(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), true, 0, InitCL, ParseArgs);
+    int ret =
+        runTestHarnessWithCheckAndParse(argc, argv, true, 0, InitCL, ParseArgs);
 
     RestoreFPState(&oldMode);
 
@@ -432,7 +431,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
         const char *arg = argv[i];
         if (NULL == arg) break;
 
-        vlog("\t%s", arg);
         int optionFound = 0;
         removed_args.push_back(argv[i]);
         if (arg[0] == '-')
@@ -458,7 +456,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
                         removed_args.push_back(std::string(argv[i]) + " "
                                                + argv[i + 1]);
                         forcedWorkerThreads = atoi(argv[++i]);
-                        vlog(" %d", forcedWorkerThreads);
                         break;
 
                     case 'g': gHasHalf ^= 1; break;
@@ -534,17 +531,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
     }
     update_argc_argv_from_args_list(argList, argc, argv);
 
-    PrintArch();
-
-    if (gWimpyMode)
-    {
-        vlog("\n");
-        vlog("*** WARNING: Testing in Wimpy mode!                     ***\n");
-        vlog("*** Wimpy mode is not sufficient to verify correctness. ***\n");
-        vlog("*** Wimpy Reduction Factor: %-27u ***\n\n",
-             gWimpyReductionFactor);
-    }
-
     if (singleThreaded)
     {
         vlog("*** WARNING: Force 1 worker thread                      ***\n");
@@ -556,17 +542,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
              forcedWorkerThreads);
         SetThreadCount(forcedWorkerThreads);
     }
-    if (gSkipCorrectnessTesting)
-        vlog("*** Skipping correctness testing! ***\n\n");
-    else if (gStopOnError)
-        vlog("Stopping at first error.\n");
-
-    vlog("   \t                                        ");
-    if (gWimpyMode) vlog("   ");
-    if (!gSkipCorrectnessTesting) vlog("\t  max_ulps");
-
-    vlog("\n---------------------------------------------------------------"
-         "--------------------------------------------\n");
 
     gMTdata = MTdataHolder(gRandomSeed);
 
@@ -585,6 +560,29 @@ test_status InitCL(cl_device_id device)
     int error;
     uint32_t i;
     cl_device_type device_type;
+
+    PrintArch();
+
+    if (gWimpyMode)
+    {
+        vlog("\n");
+        vlog("*** WARNING: Testing in Wimpy mode!                     ***\n");
+        vlog("*** Wimpy mode is not sufficient to verify correctness. ***\n");
+        vlog("*** Wimpy Reduction Factor: %-27u ***\n\n",
+             gWimpyReductionFactor);
+    }
+
+    if (gSkipCorrectnessTesting)
+        vlog("*** Skipping correctness testing! ***\n\n");
+    else if (gStopOnError)
+        vlog("Stopping at first error.\n");
+
+    vlog("   \t                                        ");
+    if (gWimpyMode) vlog("   ");
+    if (!gSkipCorrectnessTesting) vlog("\t  max_ulps");
+
+    vlog("\n---------------------------------------------------------------"
+         "--------------------------------------------\n");
 
     // This takes a while, so prevent the machine from going to sleep.
     PreventSleep();
