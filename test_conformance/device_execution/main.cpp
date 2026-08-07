@@ -21,7 +21,6 @@
 #endif
 
 #include "harness/testHarness.h"
-#include "harness/parseParameters.h"
 #include "utils.h"
 
 std::string gKernelName;
@@ -55,32 +54,38 @@ test_status InitCL(cl_device_id device) {
   return TEST_PASS;
 }
 
+static test_status ParseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help)
+{
+    std::vector<const char *> argList;
+    for (int i = 0; i < argc; ++i)
+    {
+        if (strcmp(argv[i], "-kernelName") == 0)
+        {
+            if ((i + 1) > argc || argv[i + 1] == NULL)
+            {
+                vlog("Missing value for -kernelName argument\n");
+                return TEST_FAIL;
+            }
+
+            gKernelName = std::string(argv[i + 1]);
+            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
+        }
+        else
+        {
+            argList.push_back(argv[i]);
+        }
+    }
+    update_argc_argv_from_args_list(argList, argc, argv);
+
+    return TEST_PASS;
+}
+
 int main(int argc, const char *argv[])
 {
-    argc = parseCustomParam(argc, argv);
-
-    for (int i = 0; i < argc; ++i) {
-      int argsRemoveNum = 0;
-      if ( strcmp(argv[i], "-kernelName") == 0 ) {
-        if((i + 1) > argc && argv[i + 1] == NULL) {
-          vlog( "Missing value for -kernelName argument\n");
-          return -1;
-        }
-
-        gKernelName = std::string(argv[i + 1]);
-        argsRemoveNum += 2;
-      }
-
-      if (argsRemoveNum > 0) {
-        for (int j = i; j < (argc - argsRemoveNum); ++j)
-          argv[j] = argv[j + argsRemoveNum];
-
-        argc -= argsRemoveNum;
-        --i;
-      }
-    }
-
-    return runTestHarnessWithCheck(
+    return runTestHarnessWithCheckAndParse(
         argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0, InitCL);
+        test_registry::getInstance().definitions(), false, 0, InitCL,
+        ParseArgs);
 }

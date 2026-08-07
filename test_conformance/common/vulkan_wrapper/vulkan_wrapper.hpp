@@ -154,6 +154,7 @@ public:
             getDefaultVulkanQueueFamilyToQueueCountMap(),
         bool useShaderInt8 = false);
     virtual ~VulkanDevice();
+    void waitIdle();
     const VulkanPhysicalDevice &getPhysicalDevice() const;
     VulkanQueue &
     getQueue(const VulkanQueueFamily &queueFamily /* = getVulkanQueueFamily()*/,

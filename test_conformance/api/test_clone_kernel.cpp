@@ -57,10 +57,6 @@ const char* clone_kernel_test_kernel[] = {
         int i;
         float f;
     } structArg;
-    
-    typedef struct {
-        __global int *store;
-    } BufPtr;
 
     // value type test
     __kernel void clone_kernel_test0(int iarg, float farg, structArg sarg,
@@ -86,13 +82,21 @@ const char* clone_kernel_test_kernel[] = {
         buf[0] = write_val;
     }
 
-    __kernel void set_kernel_exec_info_kernel(int iarg, __global BufPtr* buffer)
-    {
-        buffer->store[0] = iarg;
-    }
-    
     __kernel void test_kernel_empty(){}
     )"
+};
+
+const char* clone_kernel_exec_info_kernel[]{
+    R"(
+typedef struct {
+    __global int *store;
+} BufPtr;
+
+__kernel void set_kernel_exec_info_kernel(int iarg, __global BufPtr* buffer)
+{
+    buffer->store[0] = iarg;
+}
+)"
 };
 
 struct BufPtr
@@ -604,7 +608,7 @@ REGISTER_TEST_VERSION(clone_kernel_with_exec_info, Version(2, 1))
     if (svmCaps != 0)
     {
         error = create_single_kernel_helper(context, &program, &srcKernel, 1,
-                                            clone_kernel_test_kernel,
+                                            clone_kernel_exec_info_kernel,
                                             "set_kernel_exec_info_kernel");
         test_error(error, "Unable to create srcKernel");
 

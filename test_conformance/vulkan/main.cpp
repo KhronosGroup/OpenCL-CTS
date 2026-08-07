@@ -31,7 +31,6 @@
 #endif
 
 #include "harness/testHarness.h"
-#include "harness/parseParameters.h"
 
 unsigned int numCQ;
 bool multiImport;
@@ -42,31 +41,6 @@ bool useDeviceLocal = true;
 bool useValidationLayers = false;
 bool disableNTHandleType = false;
 bool enableOffset = false;
-
-static void printUsage(const char *execName)
-{
-    const char *p = strrchr(execName, '/');
-    if (p != NULL) execName = p + 1;
-
-    log_info("Usage: %s [test_names] [options]\n", execName);
-    log_info("Test names:\n");
-    for (unsigned int i = 0; i < test_registry::getInstance().num_tests(); i++)
-    {
-        log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
-    }
-    log_info("\n");
-    log_info("Options:\n");
-    log_info("\t--debug_trace - Enables additional debug info logging\n");
-    log_info("\t--useSingleImageKernel - Use the same image "
-             "(image_single_queue and image_multiple_queue tests)\n");
-    log_info("\t--disableDeviceLocal - Skip tests that use images with local "
-             "memory type\n");
-    log_info("\t--disableNTHandleType - Skip tests that use win32 external "
-             "memory handle\n");
-    log_info("\t--useValidationLayers - Enables Vulkan validation layer "
-             "diagnostic output\n");
-    log_info("\t-h - Print test usage\n");
-}
 
 bool isDeviceSelection(const char *arg)
 {
@@ -80,47 +54,43 @@ bool isDeviceSelection(const char *arg)
         || strcmp(arg, "CL_DEVICE_TYPE_DEFAULT") == 0;
 }
 
-void parseParams(int &argc, const char *argv[])
+static test_status parseParams(int &argc, const char *argv[],
+                               std::vector<std::string> &removed_args,
+                               std::string &help)
 {
-    argc = parseCustomParam(argc, argv);
+    help = R"(        --debug_trace - Enables additional debug info logging
+        --useSingleImageKernel - Use the same image (image_single_queue and image_multiple_queue tests)
+        --disableDeviceLocal - Skip tests that use images with local memory type
+        --disableNTHandleType - Skip tests that use win32 external memory handle
+        --useValidationLayers - Enables Vulkan validation layer diagnostic output
+)";
 
+    std::vector<const char *> argList;
     for (int i = 0; i < argc; ++i)
     {
-        int argsRemoveNum = 0;
-
         if (argv[i] == NULL) break;
+        removed_args.push_back(argv[i]);
         if (argv[i][0] == '-')
         {
             if (!strcmp(argv[i], "--debug_trace"))
             {
                 debug_trace = true;
-                argsRemoveNum = 1;
             }
             if (!strcmp(argv[i], "--useSingleImageKernel"))
             {
                 useSingleImageKernel = true;
-                argsRemoveNum = 1;
             }
             if (!strcmp(argv[i], "--disableDeviceLocal"))
             {
                 useDeviceLocal = false;
-                argsRemoveNum = 1;
             }
             if (!strcmp(argv[i], "--useValidationLayers"))
             {
                 useValidationLayers = true;
-                argsRemoveNum = 1;
             }
             if (!strcmp(argv[i], "--disableNTHandleType"))
             {
                 disableNTHandleType = true;
-                argsRemoveNum = 1;
-            }
-            if (strcmp(argv[i], "-h") == 0)
-            {
-                printUsage(argv[0]);
-                argc = 0; // Returning argCount=0 to assert error in main()
-                return;
             }
         }
         else if (isDeviceSelection(argv[i]))
@@ -130,20 +100,17 @@ void parseParams(int &argc, const char *argv[])
                 && strcmp(argv[i], "CL_DEVICE_TYPE_DEFAULT") != 0)
             {
                 log_info("Vulkan tests can only run on a GPU device.\n");
-                argc = 0;
-                return;
+                return TEST_FAIL;
             }
         }
-
-        if (argsRemoveNum > 0)
+        else
         {
-            for (int j = i; j < (argc - argsRemoveNum); ++j)
-                argv[j] = argv[j + argsRemoveNum];
-
-            argc -= argsRemoveNum;
-            --i;
+            removed_args.pop_back();
+            argList.push_back(argv[i]);
         }
     }
+    update_argc_argv_from_args_list(argList, argc, argv);
+    return TEST_PASS;
 }
 
 int main(int argc, const char *argv[])
@@ -173,10 +140,8 @@ int main(int argc, const char *argv[])
         return 0;
     }
 
-    parseParams(argc, argv);
-
-    if (argc == 0) return 0;
-
-    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
-                          test_registry::getInstance().definitions(), false, 0);
+    return runTestHarnessWithCheckAndParse(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0, nullptr,
+        parseParams);
 }

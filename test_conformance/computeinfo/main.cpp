@@ -1417,36 +1417,36 @@ REGISTER_TEST(computeinfo)
     return total_errors;
 }
 
-int main(int argc, const char** argv)
+static test_status parseArgs(int& argc, const char* argv[],
+                             std::vector<std::string>& removed_args,
+                             std::string& help)
 {
-    const char** argList = (const char**)calloc(argc, sizeof(char*));
-    if (NULL == argList)
-    {
-        log_error("Failed to allocate memory for argList array.\n");
-        return 1;
-    }
+    help = "        -v     Dump supported formats\n";
 
-    argList[0] = argv[0];
-    size_t argCount = 1;
+    std::vector<const char*> argList;
+    argList.push_back(argv[0]);
 
     for (int i = 1; i < argc; i++)
     {
-        if (strcmp(argv[1], "-v") == 0)
+        if (strcmp(argv[i], "-v") == 0)
         {
             dump_supported_formats = 1;
+            removed_args.push_back(argv[i]);
         }
         else
         {
-            argList[argCount] = argv[i];
-            argCount++;
+            argList.push_back(argv[i]);
         }
     }
 
-    int error = runTestHarness(
-        argCount, argList, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), true, 0);
+    update_argc_argv_from_args_list(argList, argc, argv);
+    return TEST_PASS;
+}
 
-    free(argList);
-
-    return error;
+int main(int argc, const char* argv[])
+{
+    return runTestHarnessWithCheckAndParse(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), true, 0, nullptr,
+        parseArgs);
 }

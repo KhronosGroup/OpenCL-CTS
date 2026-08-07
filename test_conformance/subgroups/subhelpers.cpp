@@ -215,8 +215,10 @@ void set_last_workgroup_params(int non_uniform_size, int &number_of_subgroups,
                                int subgroup_size, int &workgroup_size,
                                int &last_subgroup_size)
 {
-    number_of_subgroups = 1 + non_uniform_size / subgroup_size;
+    number_of_subgroups =
+        (subgroup_size + non_uniform_size - 1) / subgroup_size;
     last_subgroup_size = non_uniform_size % subgroup_size;
+    if (last_subgroup_size == 0) last_subgroup_size = subgroup_size;
     workgroup_size = non_uniform_size;
 }
 

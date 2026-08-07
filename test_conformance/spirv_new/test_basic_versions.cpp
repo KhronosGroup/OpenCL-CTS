@@ -43,12 +43,12 @@ REGISTER_TEST(basic_versions)
 
     std::map<std::string, std::string> mapILtoSubdir({
         { "SPIR-V_1.0", "" }, // SPIR-V 1.0 files are in the base directory
-        { "SPIR-V_1.1", "spv1.1" },
-        { "SPIR-V_1.2", "spv1.2" },
-        { "SPIR-V_1.3", "spv1.3" },
-        { "SPIR-V_1.4", "spv1.4" },
-        { "SPIR-V_1.5", "spv1.5" },
-        { "SPIR-V_1.6", "spv1.6" },
+        { "SPIR-V_1.1", "spv1.1/" },
+        { "SPIR-V_1.2", "spv1.2/" },
+        { "SPIR-V_1.3", "spv1.3/" },
+        { "SPIR-V_1.4", "spv1.4/" },
+        { "SPIR-V_1.5", "spv1.5/" },
+        { "SPIR-V_1.6", "spv1.6/" },
     });
 
     size_t sz = 0;
@@ -85,7 +85,7 @@ REGISTER_TEST(basic_versions)
                                 h_src.size() * sizeof(cl_int), 0, NULL, NULL);
         test_error(error, "Unable to initialize destination buffer");
 
-        std::string filename = testCase.second + "/basic";
+        std::string filename = testCase.second + "basic";
 
         clProgramWrapper prog;
         error = get_program_with_il(prog, device, context, filename.c_str());

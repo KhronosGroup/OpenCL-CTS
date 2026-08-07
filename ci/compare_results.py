@@ -73,6 +73,7 @@ def process_all_results(results_dir, golden_data):
 
         cmd = os.path.basename(data.get("cmd"))
         results = data.get("results", {})
+        args = data.get("args", "")
 
         if not cmd:
             print(f"File {result_file} is missing the 'cmd' key. Skipping.")
@@ -84,8 +85,13 @@ def process_all_results(results_dir, golden_data):
             has_error = True
             continue
 
+        if args not in golden_data[cmd]:
+            missing_refs.append(f"args '{args}' not found in golden reference for cmd '{cmd}'.")
+            has_error = True
+            continue
+
         # Check the specific results against the reference
-        subset_error = compare_test_subset(cmd, results, golden_data[cmd], differences, missing_refs)
+        subset_error = compare_test_subset(cmd, results, golden_data[cmd][args], differences, missing_refs)
         if subset_error:
             has_error = True
 

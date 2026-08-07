@@ -144,8 +144,13 @@ bool DetectPlatformAndDevice()
     return true;
 }
 
-bool CmdlineParse(int argc, const char *argv[])
+static test_status parseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help)
 {
+    help = "        sw, software - Set CDeviceWrapper::AccelerationType to "
+           "ACCELERATION_SW\n";
+
     char *env_mode = getenv("CL_DEVICE_TYPE");
     if (env_mode != NULL)
     {
@@ -166,48 +171,55 @@ bool CmdlineParse(int argc, const char *argv[])
             log_error("Unknown CL_DEVICE_TYPE env variable setting: "
                       "%s.\nAborting...\n",
                       env_mode);
-            return false;
+            return TEST_FAIL;
         }
     }
 
-    for (int i = 0; i < argc; ++i)
+    std::vector<const char *> argList;
+    argList.push_back(argv[0]);
+
+    for (int i = 1; i < argc; ++i)
     {
         if (strcmp(argv[i], "gpu") == 0
             || strcmp(argv[i], "CL_DEVICE_TYPE_GPU") == 0)
         {
             gDeviceTypeSelected = CL_DEVICE_TYPE_GPU;
-            continue;
+            argList.push_back(argv[i]); // Retain for standard test harness
         }
         else if (strcmp(argv[i], "cpu") == 0
                  || strcmp(argv[i], "CL_DEVICE_TYPE_CPU") == 0)
         {
             gDeviceTypeSelected = CL_DEVICE_TYPE_CPU;
-            continue;
+            argList.push_back(argv[i]); // Retain for standard test harness
         }
         else if (strcmp(argv[i], "accelerator") == 0
                  || strcmp(argv[i], "CL_DEVICE_TYPE_ACCELERATOR") == 0)
         {
             gDeviceTypeSelected = CL_DEVICE_TYPE_ACCELERATOR;
-            continue;
+            argList.push_back(argv[i]); // Retain for standard test harness
         }
         else if (strcmp(argv[i], "CL_DEVICE_TYPE_DEFAULT") == 0)
         {
             gDeviceTypeSelected = CL_DEVICE_TYPE_DEFAULT;
-            continue;
+            argList.push_back(argv[i]); // Retain for standard test harness
         }
         else if (strcmp(argv[i], "sw") == 0 || strcmp(argv[i], "software") == 0)
         {
             CDeviceWrapper::AccelerationType(CDeviceWrapper::ACCELERATION_SW);
+            removed_args.push_back(argv[i]);
+        }
+        else
+        {
+            argList.push_back(argv[i]);
         }
     }
 
-    return true;
+    update_argc_argv_from_args_list(argList, argc, argv);
+    return TEST_PASS;
 }
 
-int main(int argc, const char *argv[])
+static test_status checkMediaSurfaceSharingExtension(cl_device_id device)
 {
-    if (!CmdlineParse(argc, argv)) return TEST_FAIL;
-
     if (!DetectPlatformAndDevice())
     {
         log_info("Test was not run, because the media surface sharing "
@@ -217,6 +229,13 @@ int main(int argc, const char *argv[])
 
     if (!MediaSurfaceSharingExtensionInit()) return TEST_FAIL;
 
-    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
-                          test_registry::getInstance().definitions(), true, 0);
+    return TEST_PASS;
+}
+
+int main(int argc, const char *argv[])
+{
+    return runTestHarnessWithCheckAndParse(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), true, 0,
+        checkMediaSurfaceSharingExtension, parseArgs);
 }
