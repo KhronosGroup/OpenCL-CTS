@@ -69,8 +69,8 @@ int test_any_all_kernel(cl_context context, cl_command_queue queue,
     } else {
         sprintf( sizeName, "%d", vecSize );
     }
-    log_info("Testing any/all on %s%s\n",
-             get_explicit_type_name( vecType ), sizeName);
+    log_info("Testing %s(%s%s)\n", fnName, get_explicit_type_name(vecType),
+             sizeName);
     if(DENSE_PACK_VECS && vecSize == 3) {
         // anyAllTestKernelPatternVload
         sprintf(
