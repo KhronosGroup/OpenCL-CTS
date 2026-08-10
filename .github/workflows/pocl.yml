@@ -75,15 +75,9 @@ jobs:
           key: ubuntu-24.04-pocl-${{ env.POCL_VERSION }}-${{ steps.translator_sha.outputs.sha }}
       - name: Install Dependencies
         if: steps.cache-pocl.outputs.cache-hit != 'true'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            python3-dev libpython3-dev build-essential ocl-icd-libopencl1 \
-            cmake git pkg-config libclang-${LLVM_VERSION}-dev clang-${LLVM_VERSION} \
-            llvm-${LLVM_VERSION} make ninja-build ocl-icd-libopencl1 ocl-icd-dev \
-            ocl-icd-opencl-dev libhwloc-dev zlib1g zlib1g-dev clinfo dialog apt-utils \
-            libxml2-dev libclang-cpp${LLVM_VERSION}-dev libclang-cpp${LLVM_VERSION} \
-            llvm-${LLVM_VERSION}-dev
+        uses: ./.github/actions/install-pocl-deps
+        with:
+          llvm-version: ${{ env.LLVM_VERSION }}
       - name: Checkout SPIRV-LLVM-Translator
         if: steps.cache-pocl.outputs.cache-hit != 'true'
         uses: actions/checkout@v7
@@ -165,15 +159,9 @@ jobs:
           version: ${{ env.VULKAN_SDK_VERSION }}
           cache: true
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            python3-dev libpython3-dev build-essential ocl-icd-libopencl1 \
-            cmake git pkg-config libclang-${LLVM_VERSION}-dev clang-${LLVM_VERSION} \
-            llvm-${LLVM_VERSION} make ninja-build ocl-icd-libopencl1 ocl-icd-dev \
-            ocl-icd-opencl-dev libhwloc-dev zlib1g zlib1g-dev clinfo dialog apt-utils \
-            libxml2-dev libclang-cpp${LLVM_VERSION}-dev libclang-cpp${LLVM_VERSION} \
-            llvm-${LLVM_VERSION}-dev
+        uses: ./.github/actions/install-pocl-deps
+        with:
+          llvm-version: ${{ env.LLVM_VERSION }}
       - name: Restore pocl from cache
         uses: actions/cache@v6
         with:

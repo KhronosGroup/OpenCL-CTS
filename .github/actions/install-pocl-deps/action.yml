@@ -1,0 +1,20 @@
+name: 'Install PoCL Dependencies'
+description: 'Installs system packages needed to build and run PoCL'
+inputs:
+  llvm-version:
+    description: 'LLVM major version to install'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Install dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          python3-dev libpython3-dev build-essential ocl-icd-libopencl1 \
+          cmake git pkg-config libclang-${{ inputs.llvm-version }}-dev clang-${{ inputs.llvm-version }} \
+          llvm-${{ inputs.llvm-version }} make ninja-build ocl-icd-libopencl1 ocl-icd-dev \
+          ocl-icd-opencl-dev libhwloc-dev zlib1g zlib1g-dev clinfo dialog apt-utils \
+          libxml2-dev libclang-cpp${{ inputs.llvm-version }}-dev libclang-cpp${{ inputs.llvm-version }} \
+          llvm-${{ inputs.llvm-version }}-dev
