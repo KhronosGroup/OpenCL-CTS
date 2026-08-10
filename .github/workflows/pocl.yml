@@ -192,15 +192,16 @@ jobs:
                 -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
                 -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX='${{ github.workspace }}'/install \
                 -DCL_INCLUDE_DIR='${{ env.cl-headers }}' \
                 -DCL_LIB_DIR=${{ env.loader }}/lib \
                 -DSPIRV_INCLUDE_DIR='${{ env.spv-headers }}' \
-                -DCMAKE_RUNTIME_OUTPUT_DIRECTORY='${{ github.workspace }}'/bin \
                 -DOPENCL_LIBRARIES="-lOpenCL -lpthread" \
                 -DUSE_CL_EXPERIMENTAL=ON \
                 -DGL_IS_SUPPORTED=OFF \
                 -DVULKAN_IS_SUPPORTED=OFF
           cmake --build build
+          cmake --install build
       - name: Run tests
         run: |
           export OCL_ICD_ENABLE_TRACE=1
@@ -213,10 +214,10 @@ jobs:
               RESULT_FILE="test_results/${SAFE_NAME}.json"
               export CL_CONFORMANCE_RESULTS_FILENAME="$RESULT_FILE"
               echo "=================================================="
-              echo "Executing: ./$cmd"
+              echo "Executing: $cmd"
               echo "Writing JSON result to: $RESULT_FILE"
               echo "=================================================="
-              ./bin/$cmd || true
+              ${{ github.workspace }}/install/bin/$cmd || true
               cat ${RESULT_FILE}
             fi
           done < test_commands.txt
