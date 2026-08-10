@@ -217,7 +217,7 @@ jobs:
               echo "Executing: $cmd"
               echo "Writing JSON result to: $RESULT_FILE"
               echo "=================================================="
-              ${{ github.workspace }}/install/bin/$cmd || true
+              ${{ github.workspace }}/install/bin/Release/$cmd || true
               cat ${RESULT_FILE}
             fi
           done < test_commands.txt
