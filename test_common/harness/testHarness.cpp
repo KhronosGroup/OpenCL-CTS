@@ -233,28 +233,16 @@ static std::string removed_args_to_string(std::vector<std::string> &args)
     }
     return result;
 }
-static void list_tests(int testNum, test_definition testList[], bool all)
+static void list_tests(int testNum, test_definition testList[])
 {
     std::set<std::string> names;
     for (int i = 0; i < testNum; i++)
     {
         names.insert(testList[i].name);
     }
-    uint32_t limit = UINT32_MAX;
-    if (!all && testNum > 16)
-    {
-        limit = 12;
-    }
     for (const auto &name : names)
     {
         log_info("\t%s\n", name.c_str());
-        if (!limit--)
-        {
-            log_info("\t...\n");
-            log_info("\n");
-            log_info("List truncated; to view the full list use `--list`.\n");
-            return;
-        }
     }
 }
 int runTestHarnessWithCheckAndParse(int argc, const char *argv[],
@@ -361,7 +349,7 @@ int runTestHarnessWithCheckAndParse(int argc, const char *argv[],
 
     if (gListTests)
     {
-        list_tests(testNum, testList, true);
+        list_tests(testNum, testList);
         return EXIT_SUCCESS;
     }
 
@@ -396,7 +384,7 @@ int runTestHarnessWithCheckAndParse(int argc, const char *argv[],
 
         log_info("\n");
         log_info("Test names:\n");
-        list_tests(testNum, testList, false);
+        list_tests(testNum, testList);
         return EXIT_SUCCESS;
     }
 
