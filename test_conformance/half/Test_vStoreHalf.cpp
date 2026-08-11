@@ -86,11 +86,23 @@ static cl_int ReferenceF(cl_uint jid, cl_uint tid, void *userInfo)
     cl_ushort *r = cri->r + off;
     f2h f = cri->f;
     cl_ulong i = cri->i + off;
+
+    if (off + count > lim) count = lim - off;
+
+    if (gTestAll)
+    {
+        for (uint32_t index = 0; index < count; index++)
+        {
+            x[index] = as_float(index + i);
+            r[index] = f(x[index]);
+        }
+        return 0;
+    }
+
     const auto &specialValues =
         GetFpSpecialValues<float, uint32_t, cl_half, true>();
     MTdata m = init_genrand((cl_uint)i);
 
-    if (off + count > lim) count = lim - off;
 
     uint32_t index;
     for (index = 0; ((index + i) < specialValues.size()) && index < count;
@@ -165,11 +177,23 @@ static cl_int ReferenceD(cl_uint jid, cl_uint tid, void *userInfo)
     cl_ushort *r = cri->r + off;
     d2h f = cri->f;
     cl_ulong i = cri->i + off;
+
+    if (off + count > lim) count = lim - off;
+
+    if (gTestAll)
+    {
+        for (uint32_t index = 0; index < count; index++)
+        {
+            x[index] = as_double(DoubleFromUInt((cl_uint)(index + i)));
+            r[index] = f(x[index]);
+        }
+        return 0;
+    }
+
     const auto &specialValues =
         GetFpSpecialValues<double, uint64_t, cl_half, true>();
     MTdata m = init_genrand(jid);
 
-    if (off + count > lim) count = lim - off;
 
     uint32_t index;
     for (index = 0; ((index + i) < specialValues.size()) && index < count;
@@ -871,7 +895,10 @@ int Test_vStoreHalf_private(cl_device_id device, f2h referenceFunc,
     size_t blockCount = BUFFER_SIZE / elementSize; // elementSize is power of 2
     uint64_t lastCase = 1ULL << NB_INPUT_POWER_OF_TWO;
 
-    if (gWimpyMode) lastCase /= gWimpyReductionFactor;
+    if (gTestAll)
+        lastCase = 1ULL << 32;
+    else if (gWimpyMode)
+        lastCase /= gWimpyReductionFactor;
 
     uint64_t i, j;
     error = 0;
