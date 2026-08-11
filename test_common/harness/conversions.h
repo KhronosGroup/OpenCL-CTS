@@ -144,7 +144,7 @@ extern const std::vector<double> specialValuesDouble;
 template <typename InType, typename OutType> OutType bitcast(InType in)
 {
     OutType out;
-    assert(sizeof(InType) == sizeof(OutType));
+    static_assert(sizeof(InType) == sizeof(OutType));
     std::memcpy(&out, &in, sizeof(InType));
     return out;
 }
