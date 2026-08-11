@@ -88,7 +88,7 @@ static cl_int ReferenceF(cl_uint jid, cl_uint tid, void *userInfo)
     cl_ulong i = cri->i + off;
     const auto &specialValues =
         GetFpSpecialValues<float, uint32_t, cl_half, true>();
-    MTdata m = init_genrand(jid);
+    MTdata m = init_genrand((cl_uint)i);
 
     if (off + count > lim) count = lim - off;
 
