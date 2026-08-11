@@ -134,6 +134,13 @@ int parseCommonParamAndGetRemovedArgs(int argc, const char *argv[],
         else if (!strcmp(argv[i], "-m")
                  || !strcmp(argv[i], "--disable-threadpool"))
         {
+            if (gNumThreadPoolThreads != 0)
+            {
+                log_info(
+                    "WARNING: -m/--disable-threadpool option overriding "
+                    "previously set gNumThreadPoolThreads value of %d to 1.\n",
+                    gNumThreadPoolThreads);
+            }
             delArg++;
             removed_args.push_back("--disable-threadpool");
             gNumThreadPoolThreads = 1;
@@ -146,8 +153,17 @@ int parseCommonParamAndGetRemovedArgs(int argc, const char *argv[],
             {
                 delArg++;
                 const char *numthstr = argv[i + 1];
+                int new_value = atoi(numthstr);
 
-                gNumThreadPoolThreads = atoi(numthstr);
+                if (gNumThreadPoolThreads != 0)
+                {
+                    log_info("WARNING: -t/--num-threadpool-threads option "
+                             "overriding "
+                             "previously set gNumThreadPoolThreads value of %d "
+                             "to %d.\n",
+                             gNumThreadPoolThreads, new_value);
+                }
+                gNumThreadPoolThreads = new_value;
             }
             else
             {
