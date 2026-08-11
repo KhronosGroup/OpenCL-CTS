@@ -720,7 +720,6 @@ int runTestHarnessWithCheckAndParse(int argc, const char *argv[], int testNum,
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 #endif
-    extern unsigned gNumWorkerThreads;
     test_harness_config config = { forceNoContextCreation, num_elements,
                                    queueProps, gNumWorkerThreads };
 
