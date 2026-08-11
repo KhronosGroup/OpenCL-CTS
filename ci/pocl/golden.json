@@ -176,6 +176,11 @@
             "1D": "fail"
         }
     },
+    "test_printf": {
+        "": {
+            "return_value": "pass"
+        }
+    },
     "test_relationals": {
         "": {
             "relational_all": "pass",
