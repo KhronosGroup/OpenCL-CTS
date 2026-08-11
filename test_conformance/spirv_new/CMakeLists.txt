@@ -9,6 +9,7 @@ set(${MODULE_NAME}_SOURCES
   test_get_program_il.cpp
   test_linkage.cpp
   test_no_integer_wrap_decoration.cpp
+  test_op_arithmetic_fence.cpp
   test_op_atomic.cpp
   test_op_branch_conditional.cpp
   test_op_branch.cpp
