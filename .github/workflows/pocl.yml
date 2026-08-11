@@ -15,6 +15,7 @@ jobs:
   check-triggers:
     name: Check Test Triggers
     runs-on: ubuntu-24.04
+    if: github.event_name == 'pull_request'
     outputs:
       run_tests: ${{ steps.parse_triggers.outputs.run_tests }}
       test_commands: ${{ steps.parse_triggers.outputs.test_commands }}
@@ -23,16 +24,10 @@ jobs:
         id: parse_triggers
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Prevents shell injection if the commit message is maliciously crafted:
-          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            MESSAGES=$(gh api -X GET /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits --jq '.[].commit.message')
-            PR_BODY=$(gh api -X GET /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} --jq '.body')
-            TEXT=$(printf '%s\n%s' "$MESSAGES" "$PR_BODY")
-          else
-            TEXT="$HEAD_COMMIT_MESSAGE"
-          fi
+          MESSAGES=$(gh api -X GET /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits --jq '.[].commit.message')
+          PR_BODY=$(gh api -X GET /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} --jq '.body')
+          TEXT=$(printf '%s\n%s' "$MESSAGES" "$PR_BODY")
           COMMANDS=$(echo "$TEXT" | grep -oP '^\[run-tests?:\s*\K[^\]]+' | sort -u || true)
           if [ -z "$COMMANDS" ]; then
             echo "No '[run-test: ...]' triggers found."
@@ -50,11 +45,18 @@ jobs:
     name: Build and Cache PoCL
     runs-on: ubuntu-24.04
     needs: check-triggers
-    if: needs.check-triggers.outputs.run_tests == 'true'
+    if: |
+      always() &&
+      (
+        github.event_name == 'push' ||
+        (needs.check-triggers.result == 'success' && needs.check-triggers.outputs.run_tests == 'true')
+      )
     outputs:
       pocl: ${{ steps.pocl_env.outputs.pocl }}
       translator_sha: ${{ steps.translator_sha.outputs.sha }}
     steps:
+      - name: Checkout OpenCL CTS (for composite action)
+        uses: actions/checkout@v7
       - name: Environment variables
         id: pocl_env
         run: |
@@ -127,7 +129,8 @@ jobs:
     needs: [check-triggers, build-pocl]
     if: needs.check-triggers.outputs.run_tests == 'true'
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout OpenCL CTS (for composite action)
+        uses: actions/checkout@v7
       - name: Environment variables
         run: |
           echo "pocl=${{ needs.build-pocl.outputs.pocl }}" >> $GITHUB_ENV
