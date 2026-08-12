@@ -35,6 +35,7 @@ std::string gCompilationProgram = DEFAULT_COMPILATION_PROGRAM;
 bool gDisableSPIRVValidation = false;
 std::string gSPIRVValidator = DEFAULT_SPIRV_VALIDATOR;
 unsigned gNumWorkerThreads;
+unsigned gNumThreadPoolThreads = 0;
 bool gListTests = false;
 bool gWimpyMode = false;
 
@@ -57,6 +58,11 @@ void helpInfo()
         Enable wimpy mode. It does not impact all tests. Impacted tests will run
         with a very small subset of the tests. This option should not be used
         for conformance submission (default: disabled).
+    -m, --disable-threadpool
+        Disable multi-threading (using the ThreadPool API) within individual tests.
+    -t, --num-threadpool-threads <num>
+        Select the number of threads used by the ThreadPool API.
+        default: All available threads
 
     --invalid-object-scenarios=<option_1>,<option_2>....
         Specify different scenarios to use when
@@ -124,6 +130,48 @@ int parseCommonParamAndGetRemovedArgs(int argc, const char *argv[],
             delArg++;
             removed_args.push_back("--wimpy");
             gWimpyMode = true;
+        }
+        else if (!strcmp(argv[i], "-m")
+                 || !strcmp(argv[i], "--disable-threadpool"))
+        {
+            if (gNumThreadPoolThreads != 0)
+            {
+                log_info(
+                    "WARNING: -m/--disable-threadpool option overriding "
+                    "previously set gNumThreadPoolThreads value of %d to 1.\n",
+                    gNumThreadPoolThreads);
+            }
+            delArg++;
+            removed_args.push_back("--disable-threadpool");
+            gNumThreadPoolThreads = 1;
+        }
+        else if (!strcmp(argv[i], "-t")
+                 || !strcmp(argv[i], "--num-threadpool-threads"))
+        {
+            delArg++;
+            if ((i + 1) < argc)
+            {
+                delArg++;
+                const char *numthstr = argv[i + 1];
+                int new_value = atoi(numthstr);
+
+                if (gNumThreadPoolThreads != 0)
+                {
+                    log_info("WARNING: -t/--num-threadpool-threads option "
+                             "overriding "
+                             "previously set gNumThreadPoolThreads value of %d "
+                             "to %d.\n",
+                             gNumThreadPoolThreads, new_value);
+                }
+                gNumThreadPoolThreads = new_value;
+            }
+            else
+            {
+                log_error("A parameter to --num-threadpool-threads must be "
+                          "provided!\n");
+                return -1;
+            }
+            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
         }
         else if (!strcmp(argv[i], "--compilation-mode"))
         {

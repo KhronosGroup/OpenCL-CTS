@@ -410,6 +410,14 @@ struct EnqueueCommandBufferWithUnsupportedQueueProperty
                                "clEnqueueCommandBufferKHR should return "
                                "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR",
                                TEST_FAIL);
+
+        error = clEnqueueCommandBufferKHR(0, nullptr, command_buffer, 0,
+                                          nullptr, nullptr);
+        test_failure_error_ret(error, CL_INCOMPATIBLE_COMMAND_QUEUE_KHR,
+                               "clEnqueueCommandBufferKHR should return "
+                               "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR",
+                               TEST_FAIL);
+
         return CL_SUCCESS;
     }
 
@@ -423,6 +431,10 @@ struct EnqueueCommandBufferWithUnsupportedQueueProperty
         test_error(error,
                    "clCreateCommandQueue with "
                    "CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE failed");
+
+        command_buffer =
+            clCreateCommandBufferKHR(1, &out_of_order_queue, nullptr, &error);
+        test_error(error, "clCreateCommandBufferKHR failed");
 
         return CL_SUCCESS;
     }

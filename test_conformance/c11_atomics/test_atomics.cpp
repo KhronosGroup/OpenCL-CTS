@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "harness/testHarness.h"
+
 #include "harness/kernelHelpers.h"
 #include "harness/typeWrappers.h"
 #include "harness/conversions.h"
@@ -4090,10 +4091,20 @@ public:
         // This enables repeated max operations arranged so that every
         // special value is added to every other one ("all-to-all").
 
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             const auto &spec_vals = GetSpecialValues();
             StartValue(spec_vals.size());
+            CBasicTestMemOrderScope<HostAtomicType,
+                                    HostDataType>::OldValueCheck(false);
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            const auto &spec_vals = GetSpecialValues();
+            StartValue(cl_half_from_float(spec_vals.size(), gHalfRoundingMode));
             CBasicTestMemOrderScope<HostAtomicType,
                                     HostDataType>::OldValueCheck(false);
         }
@@ -4136,12 +4147,23 @@ public:
                        cl_uint whichDestValue) override
     {
         expected = StartValue();
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             const auto &spec_vals = GetSpecialValues();
             expected =
                 std::max(startRefValues[whichDestValue],
                          startRefValues[whichDestValue / spec_vals.size()]);
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            const auto &spec_vals = GetSpecialValues();
+            expected = std::max(
+                static_cast<float>(startRefValues[whichDestValue]),
+                static_cast<float>(
+                    startRefValues[whichDestValue / spec_vals.size()]));
         }
         return true;
     }
@@ -4150,7 +4172,11 @@ public:
                              const std::vector<HostDataType> &startRefValues,
                              cl_uint whichDestValue) override
     {
-        if (testValues[whichDestValue] != expected)
+
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             // Accept any NaN when any NaN is expected: IEEE 754 allows quieting
             // sNaN to qNaN during min/max, so NaN payload type is not required.
@@ -4199,6 +4225,77 @@ public:
             }
             return testValues[whichDestValue] != expected;
         }
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            if (static_cast<cl_half>(expected)
+                != static_cast<cl_half>(testValues[whichDestValue]))
+            {
+                // Accept any NaN when any NaN is expected: IEEE 754 allows
+                // quieting sNaN to qNaN during min/max, so NaN payload type is
+                // not required.
+                if (IsHalfNaN(testValues[whichDestValue])
+                    && IsHalfNaN(expected))
+                    return false;
+
+                const auto &spec_vals = GetSpecialValues();
+                // special cases
+                // max(-0, +0) = max(+0, -0) = +0 or -0,
+                if (((static_cast<cl_half>(startRefValues[whichDestValue])
+                      == 0x8000)
+                     && (static_cast<cl_half>(
+                             startRefValues[whichDestValue / spec_vals.size()])
+                         == 0x0000))
+                    || ((static_cast<cl_half>(startRefValues[whichDestValue])
+                         == 0x0000)
+                        && (static_cast<cl_half>(
+                                startRefValues[whichDestValue
+                                               / spec_vals.size()])
+                            == 0x8000)))
+                    return false;
+
+                else if (is_qnan(
+                             startRefValues[whichDestValue / spec_vals.size()])
+                         || is_qnan(startRefValues[whichDestValue]))
+                {
+                    // max(qNaN, qNaN) = qNaN,
+                    if (is_qnan(
+                            startRefValues[whichDestValue / spec_vals.size()])
+                        && is_qnan(startRefValues[whichDestValue]))
+                        return !is_qnan(testValues[whichDestValue]);
+                    // max(x, qNaN) = max(qNaN, x) = x,
+                    else if (is_qnan(startRefValues[whichDestValue
+                                                    / spec_vals.size()]))
+                        return IsHalfNaN(testValues[whichDestValue])
+                            || testValues[whichDestValue]
+                            != static_cast<cl_half>(
+                                   startRefValues[whichDestValue]);
+                    else
+                        return IsHalfNaN(testValues[whichDestValue])
+                            || testValues[whichDestValue]
+                            != static_cast<cl_half>(
+                                   startRefValues[whichDestValue
+                                                  / spec_vals.size()]);
+                }
+                else if (is_snan(
+                             startRefValues[whichDestValue / spec_vals.size()])
+                         || is_snan(startRefValues[whichDestValue]))
+                {
+                    // max(x, sNaN) = max(sNaN, x) = NaN or x,
+                    // and max(NaN, sNaN) = max(sNaN, NaN) = NaN
+                    if (IsHalfNaN(testValues[whichDestValue])
+                        || testValues[whichDestValue]
+                            == static_cast<cl_half>(
+                                startRefValues[whichDestValue])
+                        || testValues[whichDestValue]
+                            == static_cast<cl_half>(
+                                startRefValues[whichDestValue
+                                               / spec_vals.size()]))
+                        return false;
+                }
+            }
+            else
+                return false;
+        }
 
         return CBasicTestMemOrderScope<
             HostAtomicType, HostDataType>::IsTestNotAsExpected(expected,
@@ -4209,7 +4306,27 @@ public:
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
+        {
+            if (LocalMemory()
+                && (gDoubleAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gDoubleAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0;
+
+            if (!CBasicTestMemOrderScope<HostAtomicType,
+                                         HostDataType>::LocalMemory()
+                && CBasicTestMemOrderScope<HostAtomicType,
+                                           HostDataType>::DeclaredInProgram())
+            {
+                if ((gDoubleFPConfig & CL_FP_INF_NAN) == 0) return 0;
+            }
+        }
+        else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
         {
             if (LocalMemory()
                 && (gFloatAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
@@ -4229,13 +4346,34 @@ public:
                 if ((gFloatFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
         }
+        else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
+        {
+            if (LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gHalfAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_MIN_MAX_EXT)
+                    == 0)
+                return 0;
+
+            if (!CBasicTestMemOrderScope<HostAtomicType,
+                                         HostDataType>::LocalMemory()
+                && CBasicTestMemOrderScope<HostAtomicType,
+                                           HostDataType>::DeclaredInProgram())
+            {
+                if ((gHalfFPConfig & CL_FP_INF_NAN) == 0) return 0;
+            }
+        }
+
         return CBasicTestMemOrderScope<
             HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context,
                                                              queue);
     }
     cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (is_host_fp_v<HostDataType>)
         {
             return threadCount;
         }
@@ -4270,6 +4408,18 @@ static int test_atomic_fetch_max_generic(cl_device_id deviceID,
 
     if (gFloatAtomicsSupported)
     {
+        CBasicTestFetchMaxSpecialFloats<HOST_ATOMIC_DOUBLE, HOST_DOUBLE>
+            test_spec_double(TYPE_ATOMIC_DOUBLE, useSVM);
+        EXECUTE_TEST(
+            error,
+            test_spec_double.Execute(deviceID, context, queue, num_elements));
+
+        CBasicTestFetchMaxSpecialFloats<HOST_ATOMIC_HALF, HOST_HALF>
+            test_spec_half(TYPE_ATOMIC_HALF, useSVM);
+        EXECUTE_TEST(
+            error,
+            test_spec_half.Execute(deviceID, context, queue, num_elements));
+
         CBasicTestFetchMaxSpecialFloats<HOST_ATOMIC_FLOAT, HOST_FLOAT>
             test_spec_float(TYPE_ATOMIC_FLOAT, useSVM);
         EXECUTE_TEST(

@@ -60,6 +60,9 @@ log_info("\t" string_name ": " #name " = %a  (%17.21g)\n", value, value); \
 REGISTER_TEST(host_numeric_constants)
 {
     int errors = 0;
+
+    // clang-format off
+
     TEST_VALUE_EQUAL_LITERAL( "CL_CHAR_BIT",     CL_CHAR_BIT,    8)
     TEST_VALUE_EQUAL_LITERAL( "CL_SCHAR_MAX",    CL_SCHAR_MAX,   127)
     TEST_VALUE_EQUAL_LITERAL( "CL_SCHAR_MIN",    CL_SCHAR_MIN,   (-127-1))
@@ -86,6 +89,17 @@ REGISTER_TEST(host_numeric_constants)
     TEST_VALUE_EQUAL_LITERAL( "CL_FLT_MAX",         CL_FLT_MAX,         MAKE_HEX_FLOAT( 0x1.fffffep127f, 0x1fffffeL, 103))
     TEST_VALUE_EQUAL_LITERAL( "CL_FLT_MIN",         CL_FLT_MIN,         MAKE_HEX_FLOAT(0x1.0p-126f, 0x1L, -126))
     TEST_VALUE_EQUAL_LITERAL( "CL_FLT_EPSILON",     CL_FLT_EPSILON,     MAKE_HEX_FLOAT(0x1.0p-23f, 0x1L, -23))
+
+    TEST_VALUE_EQUAL_LITERAL( "CL_HALF_DIG",        CL_HALF_DIG,        3)
+    TEST_VALUE_EQUAL_LITERAL( "CL_HALF_MANT_DIG",   CL_HALF_MANT_DIG,   11)
+    TEST_VALUE_EQUAL_LITERAL( "CL_HALF_MAX_10_EXP", CL_HALF_MAX_10_EXP, +4)
+    TEST_VALUE_EQUAL_LITERAL( "CL_HALF_MAX_EXP",    CL_HALF_MAX_EXP,    +16)
+    TEST_VALUE_EQUAL_LITERAL( "CL_HALF_MIN_10_EXP", CL_HALF_MIN_10_EXP, -4)
+    TEST_VALUE_EQUAL_LITERAL( "CL_HALF_MIN_EXP",    CL_HALF_MIN_EXP,    -13)
+    TEST_VALUE_EQUAL_LITERAL( "CL_HALF_RADIX",      CL_HALF_RADIX,      2)
+    TEST_VALUE_EQUAL_LITERAL( "CL_HALF_MAX",        CL_HALF_MAX,        65504.0f)
+    TEST_VALUE_EQUAL_LITERAL( "CL_HALF_MIN",        CL_HALF_MIN,        0x1.0p-14f)
+    TEST_VALUE_EQUAL_LITERAL( "CL_HALF_EPSILON",    CL_HALF_EPSILON,    0x1.0p-10f)
 
     TEST_VALUE_EQUAL_LITERAL( "CL_DBL_DIG",         CL_DBL_DIG,         15)
     TEST_VALUE_EQUAL_LITERAL( "CL_DBL_MANT_DIG",    CL_DBL_MANT_DIG,    53)
@@ -125,6 +139,8 @@ REGISTER_TEST(host_numeric_constants)
     TEST_VALUE_EQUAL( "CL_M_2_SQRTPI_F", CL_M_2_SQRTPI_F,MAKE_HEX_FLOAT(0x1.20dd76p+0f, 0x120dd76L, -24));
     TEST_VALUE_EQUAL( "CL_M_SQRT2_F",    CL_M_SQRT2_F,   MAKE_HEX_FLOAT(0x1.6a09e6p+0f, 0x16a09e6L, -24));
     TEST_VALUE_EQUAL( "CL_M_SQRT1_2_F",  CL_M_SQRT1_2_F, MAKE_HEX_FLOAT(0x1.6a09e6p-1f, 0x16a09e6L, -25));
+
+    // clang-format on
 
     return errors;
 }
@@ -216,6 +232,36 @@ const char *kernel_double[] = {
   "}\n"
 };
 
+const char *kernel_half[] = {
+    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
+    "__kernel void test(__global half *half_out, __global int *int_out)\n"
+    "{\n"
+    "  int_out[0] = HALF_DIG;\n"
+    "  int_out[1] = HALF_MANT_DIG;\n"
+    "  int_out[2] = HALF_MAX_10_EXP;\n"
+    "  int_out[3] = HALF_MAX_EXP;\n"
+    "  int_out[4] = HALF_MIN_10_EXP;\n"
+    "  int_out[5] = HALF_MIN_EXP;\n"
+    "  int_out[6] = HALF_RADIX;\n"
+    "  half_out[0] = HALF_MAX;\n"
+    "  half_out[1] = HALF_MIN;\n"
+    "  half_out[2] = HALF_EPSILON;\n"
+    "  half_out[3] = M_E_H;\n"
+    "  half_out[4] = M_LOG2E_H;\n"
+    "  half_out[5] = M_LOG10E_H;\n"
+    "  half_out[6] = M_LN2_H;\n"
+    "  half_out[7] = M_LN10_H;\n"
+    "  half_out[8] = M_PI_H;\n"
+    "  half_out[9] = M_PI_2_H;\n"
+    "  half_out[10] = M_PI_4_H;\n"
+    "  half_out[11] = M_1_PI_H;\n"
+    "  half_out[12] = M_2_PI_H;\n"
+    "  half_out[13] = M_2_SQRTPI_H;\n"
+    "  half_out[14] = M_SQRT2_H;\n"
+    "  half_out[15] = M_SQRT1_2_H;\n"
+    "}\n"
+};
+
 
 REGISTER_TEST(kernel_numeric_constants)
 {
@@ -234,6 +280,7 @@ REGISTER_TEST(kernel_numeric_constants)
     cl_long long_out[7];
     cl_ulong ulong_out[1];
     cl_double double_out[16];
+    cl_half half_out[16];
 
     /** INTs and FLOATs **/
 
@@ -339,6 +386,79 @@ REGISTER_TEST(kernel_numeric_constants)
     clReleaseMemObject(streams[2]); streams[2] = NULL;
     clReleaseKernel(kernel); kernel = NULL;
     clReleaseProgram(program); program = NULL;
+
+    /** HALFs **/
+
+    if (!is_extension_available(device, "cl_khr_fp16"))
+    {
+        log_info("Extension cl_khr_fp16 not supported; skipping half tests.\n");
+    }
+    else
+    {
+        if (create_single_kernel_helper(context, &program, &kernel, 1,
+                                        kernel_half, "test")
+            != 0)
+        {
+            return -1;
+        }
+
+        streams[0] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    sizeof(half_out), NULL, &error);
+        test_error(error, "Creating test array failed");
+        streams[1] = clCreateBuffer(context, CL_MEM_READ_WRITE,
+                                    7 * sizeof(int_out[0]), NULL, &error);
+        test_error(error, "Creating test array failed");
+
+        error = clSetKernelArg(kernel, 0, sizeof(streams[0]), &streams[0]);
+        test_error(error, "Unable to set indexed kernel arguments");
+        error = clSetKernelArg(kernel, 1, sizeof(streams[1]), &streams[1]);
+        test_error(error, "Unable to set indexed kernel arguments");
+
+        error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, threads, NULL, 0,
+                                       NULL, NULL);
+        test_error(error, "Kernel execution failed");
+
+        error = clEnqueueReadBuffer(queue, streams[0], CL_TRUE, 0,
+                                    sizeof(half_out), half_out, 0, NULL, NULL);
+        test_error(error, "Unable to get result data");
+        error =
+            clEnqueueReadBuffer(queue, streams[1], CL_TRUE, 0,
+                                7 * sizeof(int_out[0]), int_out, 0, NULL, NULL);
+        test_error(error, "Unable to get result data");
+
+        TEST_VALUE_EQUAL_LITERAL("HALF_DIG", int_out[0], 3)
+        TEST_VALUE_EQUAL_LITERAL("HALF_MANT_DIG", int_out[1], 11)
+        TEST_VALUE_EQUAL_LITERAL("HALF_MAX_10_EXP", int_out[2], +4)
+        TEST_VALUE_EQUAL_LITERAL("HALF_MAX_EXP", int_out[3], +16)
+        TEST_VALUE_EQUAL_LITERAL("HALF_MIN_10_EXP", int_out[4], -4)
+        TEST_VALUE_EQUAL_LITERAL("HALF_MIN_EXP", int_out[5], -13)
+        TEST_VALUE_EQUAL_LITERAL("HALF_RADIX", int_out[6], 2)
+        TEST_VALUE_EQUAL_LITERAL("HALF_MAX", half_out[0], 0x7bff)
+        TEST_VALUE_EQUAL_LITERAL("HALF_MIN", half_out[1], 0x0400)
+        TEST_VALUE_EQUAL_LITERAL("HALF_EPSILON", half_out[2], 0x1400)
+        TEST_VALUE_EQUAL_LITERAL("M_E_H", half_out[3], 0x4170)
+        TEST_VALUE_EQUAL_LITERAL("M_LOG2E_H", half_out[4], 0x3dc5)
+        TEST_VALUE_EQUAL_LITERAL("M_LOG10E_H", half_out[5], 0x36f3)
+        TEST_VALUE_EQUAL_LITERAL("M_LN2_H", half_out[6], 0x398c)
+        TEST_VALUE_EQUAL_LITERAL("M_LN10_H", half_out[7], 0x409b)
+        TEST_VALUE_EQUAL_LITERAL("M_PI_H", half_out[8], 0x4248)
+        TEST_VALUE_EQUAL_LITERAL("M_PI_2_H", half_out[9], 0x3e48)
+        TEST_VALUE_EQUAL_LITERAL("M_PI_4_H", half_out[10], 0x3a48)
+        TEST_VALUE_EQUAL_LITERAL("M_1_PI_H", half_out[11], 0x3518)
+        TEST_VALUE_EQUAL_LITERAL("M_2_PI_H", half_out[12], 0x3918)
+        TEST_VALUE_EQUAL_LITERAL("M_2_SQRTPI_H", half_out[13], 0x3c83)
+        TEST_VALUE_EQUAL_LITERAL("M_SQRT2_H", half_out[14], 0x3da8)
+        TEST_VALUE_EQUAL_LITERAL("M_SQRT1_2_H", half_out[15], 0x39a8)
+
+        clReleaseMemObject(streams[0]);
+        streams[0] = NULL;
+        clReleaseMemObject(streams[1]);
+        streams[1] = NULL;
+        clReleaseKernel(kernel);
+        kernel = NULL;
+        clReleaseProgram(program);
+        program = NULL;
+    }
 
     /** LONGs **/
 

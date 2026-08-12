@@ -1,0 +1,235 @@
+name: PoCL Tests
+on: [push, pull_request]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  LLVM_VERSION: 20
+  TRANSLATOR_BRANCH: llvm_release_200
+  POCL_VERSION: v7.1
+  VULKAN_SDK_VERSION: 1.4.309.0
+
+jobs:
+  check-triggers:
+    name: Check Test Triggers
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'pull_request'
+    outputs:
+      run_tests: ${{ steps.parse_triggers.outputs.run_tests }}
+      test_commands: ${{ steps.parse_triggers.outputs.test_commands }}
+    steps:
+      - name: Parse triggers
+        id: parse_triggers
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          MESSAGES=$(gh api -X GET /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits --jq '.[].commit.message')
+          PR_BODY=$(gh api -X GET /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} --jq '.body')
+          TEXT=$(printf '%s\n%s' "$MESSAGES" "$PR_BODY")
+          COMMANDS=$(echo "$TEXT" | grep -oP '^\[run-tests?:\s*\K[^\]]+' | sort -u || true)
+          if [ -z "$COMMANDS" ]; then
+            echo "No '[run-test: ...]' triggers found."
+            echo "run_tests=false" >> $GITHUB_OUTPUT
+          else
+            echo "Found the following test triggers:"
+            echo "$COMMANDS"
+            echo "run_tests=true" >> $GITHUB_OUTPUT
+            echo "test_commands<<EOF" >> $GITHUB_OUTPUT
+            echo "$COMMANDS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+  build-pocl:
+    name: Build and Cache PoCL
+    runs-on: ubuntu-24.04
+    needs: check-triggers
+    if: |
+      always() &&
+      (
+        github.event_name == 'push' ||
+        (needs.check-triggers.result == 'success' && needs.check-triggers.outputs.run_tests == 'true')
+      )
+    outputs:
+      pocl: ${{ steps.pocl_env.outputs.pocl }}
+      translator_sha: ${{ steps.translator_sha.outputs.sha }}
+    steps:
+      - name: Environment variables
+        id: pocl_env
+        run: |
+          POCL_INSTALL_PATH="${{ github.workspace }}/pocl-install"
+          echo "pocl=$POCL_INSTALL_PATH" >> $GITHUB_ENV
+          echo "pocl=$POCL_INSTALL_PATH" >> $GITHUB_OUTPUT
+      - name: Resolve SPIRV-LLVM-Translator SHA
+        id: translator_sha
+        run: |
+          SHA=$(git ls-remote https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git refs/heads/${TRANSLATOR_BRANCH} | awk '{print $1}')
+          echo "sha=$SHA" >> $GITHUB_OUTPUT
+      - name: Cache PoCL
+        id: cache-pocl
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.pocl }}
+          key: ubuntu-24.04-pocl-${{ env.POCL_VERSION }}-${{ steps.translator_sha.outputs.sha }}
+      - name: Checkout OpenCL CTS (for composite action)
+        if: steps.cache-pocl.outputs.cache-hit != 'true'
+        uses: actions/checkout@v7
+      - name: Install Dependencies
+        if: steps.cache-pocl.outputs.cache-hit != 'true'
+        uses: ./.github/actions/install-pocl-deps
+        with:
+          llvm-version: ${{ env.LLVM_VERSION }}
+      - name: Setup Ninja
+        if: steps.cache-pocl.outputs.cache-hit != 'true'
+        uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Checkout SPIRV-LLVM-Translator
+        if: steps.cache-pocl.outputs.cache-hit != 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: KhronosGroup/SPIRV-LLVM-Translator
+          ref: ${{ env.TRANSLATOR_BRANCH }}
+          path: SPIRV-LLVM-Translator
+          fetch-depth: 1
+      - name: Build and install SPIRV-LLVM-Translator
+        if: steps.cache-pocl.outputs.cache-hit != 'true'
+        run: |
+          export TRANSLATOR_INSTALL_PREFIX=$(realpath ${GITHUB_WORKSPACE}/../spirv-llvm-translator-install)
+
+          cmake -S ${{ github.workspace }}/SPIRV-LLVM-Translator \
+            -B ${{ github.workspace }}/SPIRV-LLVM-Translator/build -G Ninja \
+            -DCMAKE_INSTALL_PREFIX=${TRANSLATOR_INSTALL_PREFIX} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLLVM_DIR=/usr/lib/llvm-${LLVM_VERSION}/lib/cmake/llvm
+          cmake --build ${{ github.workspace }}/SPIRV-LLVM-Translator/build
+          cmake --install ${{ github.workspace }}/SPIRV-LLVM-Translator/build
+
+          echo "SPIRV_LLVM_TRANSLATOR_PATH=${TRANSLATOR_INSTALL_PREFIX}" >> $GITHUB_ENV
+      - name: Checkout PoCL
+        if: steps.cache-pocl.outputs.cache-hit != 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: pocl/pocl
+          ref: ${{ env.POCL_VERSION }}
+          path: pocl
+          fetch-depth: 1
+      - name: Build PoCL
+        if: steps.cache-pocl.outputs.cache-hit != 'true'
+        run: |
+          cmake -B pocl/build -S pocl -G Ninja \
+            -DCMAKE_INSTALL_PREFIX=${{ env.pocl }} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DKERNELLIB_HOST_CPU_VARIANTS=distro \
+            -DLLVM_SPIRV_LIB=${SPIRV_LLVM_TRANSLATOR_PATH}/lib/libLLVMSPIRVLib.a \
+            -DLLVM_SPIRV_INCLUDEDIR=${SPIRV_LLVM_TRANSLATOR_PATH}/include/LLVMSPIRVLib \
+            -DENABLE_ICD=ON
+          cmake --build pocl/build
+          cmake --install pocl/build
+
+  tests:
+    name: Run Tests (PoCL)
+    runs-on: ubuntu-24.04
+    needs: [check-triggers, build-pocl]
+    if: needs.check-triggers.outputs.run_tests == 'true'
+    steps:
+      - name: Checkout OpenCL CTS (for composite action)
+        uses: actions/checkout@v7
+      - name: Environment variables
+        run: |
+          echo "pocl=${{ needs.build-pocl.outputs.pocl }}" >> $GITHUB_ENV
+          echo "loader=${{ github.workspace }}/loader" >> $GITHUB_ENV
+          echo "cl-headers=${{ github.workspace }}/cl-headers" >> $GITHUB_ENV
+          echo "spv-headers=${{ github.workspace }}/spv-headers" >> $GITHUB_ENV
+      - name: Recreate test_commands.txt
+        run: |
+          cat << 'EOF' > test_commands.txt
+          ${{ needs.check-triggers.outputs.test_commands }}
+          EOF
+      - name: Checkout OpenCL Headers
+        uses: actions/checkout@v7
+        with:
+          repository: KhronosGroup/OpenCL-Headers
+          path: cl-headers
+          fetch-depth: 1
+      - name: Checkout SPIRV Headers
+        uses: actions/checkout@v7
+        with:
+          repository: KhronosGroup/SPIRV-Headers
+          path: spv-headers
+          fetch-depth: 1
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Install Vulkan SDK
+        uses: humbletim/install-vulkan-sdk@main
+        with:
+          version: ${{ env.VULKAN_SDK_VERSION }}
+          cache: true
+      - name: Install dependencies
+        uses: ./.github/actions/install-pocl-deps
+        with:
+          llvm-version: ${{ env.LLVM_VERSION }}
+      - name: Restore pocl from cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.pocl }}
+          key: ubuntu-24.04-pocl-${{ env.POCL_VERSION }}-${{ needs.build-pocl.outputs.translator_sha }}
+      - name: Checkout OpenCL ICD Loader
+        uses: actions/checkout@v7
+        with:
+          repository: KhronosGroup/OpenCL-ICD-Loader
+          path: OpenCL-ICD-Loader
+          fetch-depth: 1
+      - name: Build OpenCL ICD Loader
+        run: |
+          cmake -B OpenCL-ICD-Loader/build -S OpenCL-ICD-Loader -G Ninja \
+            -DCMAKE_INSTALL_PREFIX=${{ env.loader }} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DOPENCL_ICD_LOADER_HEADERS_DIR='${{ env.cl-headers }}'
+          cmake --build OpenCL-ICD-Loader/build
+          cmake --install OpenCL-ICD-Loader/build
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+          key: ubuntu-24.04-
+      - name: Build OpenCL CTS
+        run: |
+          cmake -B build -S . -G Ninja \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX='${{ github.workspace }}'/install \
+                -DCL_INCLUDE_DIR='${{ env.cl-headers }}' \
+                -DCL_LIB_DIR=${{ env.loader }}/lib \
+                -DSPIRV_INCLUDE_DIR='${{ env.spv-headers }}' \
+                -DOPENCL_LIBRARIES="-lOpenCL -lpthread" \
+                -DUSE_CL_EXPERIMENTAL=ON \
+                -DGL_IS_SUPPORTED=OFF \
+                -DVULKAN_IS_SUPPORTED=OFF
+          cmake --build build
+          cmake --install build
+      - name: Run tests
+        run: |
+          export OCL_ICD_ENABLE_TRACE=1
+          export OCL_ICD_VENDORS=${{ env.pocl }}/etc/OpenCL/vendors
+          export LD_LIBRARY_PATH=${{ env.loader }}/lib:$LD_LIBRARY_PATH
+          mkdir -p test_results
+          while IFS= read -r cmd; do
+            if [ -n "$cmd" ]; then
+              SAFE_NAME=$(echo "$cmd" | sed -e 's/[^A-Za-z0-9._-]/_/g')
+              RESULT_FILE="test_results/${SAFE_NAME}.json"
+              export CL_CONFORMANCE_RESULTS_FILENAME="$RESULT_FILE"
+              echo "=================================================="
+              echo "Executing: $cmd"
+              echo "Writing JSON result to: $RESULT_FILE"
+              echo "=================================================="
+              ${{ github.workspace }}/install/bin/Release/$cmd || true
+              cat ${RESULT_FILE}
+            fi
+          done < test_commands.txt
+      - name: Check results
+        run: |
+          ls test_results
+          python3 ./ci/compare_results.py \
+            --golden ./ci/pocl/golden.json \
+            --results-dir test_results/

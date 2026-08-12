@@ -15,7 +15,10 @@
     },
     "test_basic": {
         "": {
-            "enqueue_map_image": "pass"
+            "enqueue_map_image": "pass",
+            "arraycopy": "pass",
+            "host_numeric_constants": "pass",
+            "kernel_numeric_constants": "pass"
         }
     },
     "test_bruteforce": {
@@ -171,6 +174,17 @@
         },
         "--num-worker-threads 2 CL_FILTER_NEAREST CL_R": {
             "1D": "fail"
+        }
+    },
+    "test_printf": {
+        "": {
+            "return_value": "pass"
+        }
+    },
+    "test_relationals": {
+        "": {
+            "relational_all": "pass",
+            "relational_any": "pass"
         }
     },
     "test_select": {
@@ -456,6 +470,11 @@
             "vec_align_packed_struct": "pass",
             "vec_align_struct_arr": "pass",
             "vec_align_packed_struct_arr": "pass"
+        }
+    },
+    "test_spirv_new": {
+        "": {
+            "basic_versions": "pass"
         }
     }
 }

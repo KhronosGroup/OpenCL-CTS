@@ -633,12 +633,25 @@ REGISTER_TEST(min_max_image_2d_width)
 {
     int error;
     size_t maxDimension;
-    clMemWrapper streams[1];
-    cl_image_format image_format_desc;
+    clMemWrapper streams;
+    cl_image_format imageFormatDesc;
     cl_ulong maxAllocSize;
     cl_uint minRequiredDimension;
 
-    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+    if (checkForImageSupport(device))
+    {
+        /* Get the max 2d image width */
+        error = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_WIDTH,
+                                sizeof(maxDimension), &maxDimension, NULL);
+        test_error(error, "Unable to get max image 2d width from device");
+
+        test_failure_error_ret(
+            maxDimension, 0,
+            "Missing image support but CL_DEVICE_IMAGE2D_MAX_WIDTH query did "
+            "not return 0",
+            TEST_FAIL);
+        return TEST_SKIPPED_ITSELF;
+    }
 
     auto version = get_device_cl_version(device);
     if (version == Version(1, 0))
@@ -650,10 +663,9 @@ REGISTER_TEST(min_max_image_2d_width)
         minRequiredDimension = gIsEmbedded ? 2048 : 8192;
     }
 
-
     /* Just get any ol format to test with */
     error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE2D,
-                                   CL_MEM_READ_WRITE, 0, &image_format_desc);
+                                   CL_MEM_READ_WRITE, 0, &imageFormatDesc);
     test_error(error, "Unable to obtain suitable image format to test with!");
 
     /* Get the max 2d image width */
@@ -663,21 +675,21 @@ REGISTER_TEST(min_max_image_2d_width)
 
     if (maxDimension < minRequiredDimension)
     {
-        log_error(
-            "ERROR: Reported max image 2d width is less than required! (%d)\n",
-            (int)maxDimension);
-        return -1;
+        log_error("ERROR: Reported max image 2d width is less than "
+                  "required! (%d)\n",
+                  (int)maxDimension);
+        return TEST_FAIL;
     }
     log_info("Max reported width is %zu.\n", maxDimension);
 
     /* Verify we can use the format */
-    image_format_desc.image_channel_data_type = CL_UNORM_INT8;
-    image_format_desc.image_channel_order = CL_RGBA;
+    imageFormatDesc.image_channel_data_type = CL_UNORM_INT8;
+    imageFormatDesc.image_channel_order = CL_RGBA;
     if (!is_image_format_supported(context, CL_MEM_READ_ONLY,
-                                   CL_MEM_OBJECT_IMAGE2D, &image_format_desc))
+                                   CL_MEM_OBJECT_IMAGE2D, &imageFormatDesc))
     {
         log_error("CL_UNORM_INT8 CL_RGBA not supported. Can not test.");
-        return -1;
+        return TEST_FAIL;
     }
 
     /* Verify that we can actually allocate an image that large */
@@ -688,34 +700,47 @@ REGISTER_TEST(min_max_image_2d_width)
         log_error("Can not allocate a large enough image (min size: %" PRIu64
                   " bytes, max allowed: %" PRIu64 " bytes) to test.\n",
                   (cl_ulong)maxDimension * 1 * 4, maxAllocSize);
-        return -1;
+        return TEST_FAIL;
     }
 
     log_info("Attempting to create an image of size %d x 1 = %gMB.\n",
              (int)maxDimension, ((float)maxDimension * 4 / 1024.0 / 1024.0));
 
     /* Try to allocate a very big image */
-    streams[0] = create_image_2d(context, CL_MEM_READ_ONLY, &image_format_desc,
-                                 maxDimension, 1, 0, NULL, &error);
-    if ((streams[0] == NULL) || (error != CL_SUCCESS))
+    streams = create_image_2d(context, CL_MEM_READ_ONLY, &imageFormatDesc,
+                              maxDimension, 1, 0, NULL, &error);
+    if ((streams == nullptr) || (error != CL_SUCCESS))
     {
         print_error(error, "Image 2D creation failed for maximum width");
-        return -1;
+        return TEST_FAIL;
     }
 
-    return 0;
+    return TEST_PASS;
 }
 
 REGISTER_TEST(min_max_image_2d_height)
 {
     int error;
     size_t maxDimension;
-    clMemWrapper streams[1];
-    cl_image_format image_format_desc;
+    clMemWrapper streams;
+    cl_image_format imageFormatDesc;
     cl_ulong maxAllocSize;
     cl_uint minRequiredDimension;
 
-    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+    if (checkForImageSupport(device))
+    {
+        /* Get the max 2d image height */
+        error = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_HEIGHT,
+                                sizeof(maxDimension), &maxDimension, NULL);
+        test_error(error, "Unable to get max image 2d height from device");
+
+        test_failure_error_ret(
+            maxDimension, 0,
+            "Missing image support but CL_DEVICE_IMAGE2D_MAX_HEIGHT query did "
+            "not return 0",
+            TEST_FAIL);
+        return TEST_SKIPPED_ITSELF;
+    }
 
     auto version = get_device_cl_version(device);
     if (version == Version(1, 0))
@@ -729,31 +754,31 @@ REGISTER_TEST(min_max_image_2d_height)
 
     /* Just get any ol format to test with */
     error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE2D,
-                                   CL_MEM_READ_WRITE, 0, &image_format_desc);
+                                   CL_MEM_READ_WRITE, 0, &imageFormatDesc);
     test_error(error, "Unable to obtain suitable image format to test with!");
 
-    /* Get the max 2d image width */
+    /* Get the max 2d image height */
     error = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_HEIGHT,
                             sizeof(maxDimension), &maxDimension, NULL);
     test_error(error, "Unable to get max image 2d height from device");
 
     if (maxDimension < minRequiredDimension)
     {
-        log_error(
-            "ERROR: Reported max image 2d height is less than required! (%d)\n",
-            (int)maxDimension);
-        return -1;
+        log_error("ERROR: Reported max image 2d height is less than "
+                  "required! (%d)\n",
+                  (int)maxDimension);
+        return TEST_FAIL;
     }
     log_info("Max reported height is %zu.\n", maxDimension);
 
     /* Verify we can use the format */
-    image_format_desc.image_channel_data_type = CL_UNORM_INT8;
-    image_format_desc.image_channel_order = CL_RGBA;
+    imageFormatDesc.image_channel_data_type = CL_UNORM_INT8;
+    imageFormatDesc.image_channel_order = CL_RGBA;
     if (!is_image_format_supported(context, CL_MEM_READ_ONLY,
-                                   CL_MEM_OBJECT_IMAGE2D, &image_format_desc))
+                                   CL_MEM_OBJECT_IMAGE2D, &imageFormatDesc))
     {
         log_error("CL_UNORM_INT8 CL_RGBA not supported. Can not test.");
-        return -1;
+        return TEST_FAIL;
     }
 
     /* Verify that we can actually allocate an image that large */
@@ -764,41 +789,53 @@ REGISTER_TEST(min_max_image_2d_height)
         log_error("Can not allocate a large enough image (min size: %" PRIu64
                   " bytes, max allowed: %" PRIu64 " bytes) to test.\n",
                   (cl_ulong)maxDimension * 1 * 4, maxAllocSize);
-        return -1;
+        return TEST_FAIL;
     }
 
     log_info("Attempting to create an image of size 1 x %d = %gMB.\n",
              (int)maxDimension, ((float)maxDimension * 4 / 1024.0 / 1024.0));
 
     /* Try to allocate a very big image */
-    streams[0] = create_image_2d(context, CL_MEM_READ_ONLY, &image_format_desc,
-                                 1, maxDimension, 0, NULL, &error);
-    if ((streams[0] == NULL) || (error != CL_SUCCESS))
+    streams = create_image_2d(context, CL_MEM_READ_ONLY, &imageFormatDesc, 1,
+                              maxDimension, 0, NULL, &error);
+    if ((streams == nullptr) || (error != CL_SUCCESS))
     {
         print_error(error, "Image 2D creation failed for maximum height");
-        return -1;
+        return TEST_FAIL;
     }
 
-    return 0;
+    return TEST_PASS;
 }
 
 REGISTER_TEST(min_max_image_3d_width)
 {
     int error;
     size_t maxDimension;
-    clMemWrapper streams[1];
-    cl_image_format image_format_desc;
+    clMemWrapper streams;
+    cl_image_format imageFormatDesc;
     cl_ulong maxAllocSize;
 
+    if (checkFor3DImageSupport(device))
+    {
+        /* Get the max 3d image width */
+        error = clGetDeviceInfo(device, CL_DEVICE_IMAGE3D_MAX_WIDTH,
+                                sizeof(maxDimension), &maxDimension, NULL);
+        test_error(error, "Unable to get max image 3d width from device");
 
-    PASSIVE_REQUIRE_3D_IMAGE_SUPPORT(device)
+        test_failure_error_ret(maxDimension, 0,
+                               "Missing 3d image support but "
+                               "CL_DEVICE_IMAGE3D_MAX_WIDTH query did "
+                               "not return 0",
+                               TEST_FAIL);
+        return TEST_SKIPPED_ITSELF;
+    }
 
     /* Just get any ol format to test with */
     error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE3D,
-                                   CL_MEM_READ_ONLY, 0, &image_format_desc);
+                                   CL_MEM_READ_ONLY, 0, &imageFormatDesc);
     test_error(error, "Unable to obtain suitable image format to test with!");
 
-    /* Get the max 2d image width */
+    /* Get the max 3d image width */
     error = clGetDeviceInfo(device, CL_DEVICE_IMAGE3D_MAX_WIDTH,
                             sizeof(maxDimension), &maxDimension, NULL);
     test_error(error, "Unable to get max image 3d width from device");
@@ -808,18 +845,18 @@ REGISTER_TEST(min_max_image_3d_width)
         log_error(
             "ERROR: Reported max image 3d width is less than required! (%d)\n",
             (int)maxDimension);
-        return -1;
+        return TEST_FAIL;
     }
     log_info("Max reported width is %zu.\n", maxDimension);
 
     /* Verify we can use the format */
-    image_format_desc.image_channel_data_type = CL_UNORM_INT8;
-    image_format_desc.image_channel_order = CL_RGBA;
+    imageFormatDesc.image_channel_data_type = CL_UNORM_INT8;
+    imageFormatDesc.image_channel_order = CL_RGBA;
     if (!is_image_format_supported(context, CL_MEM_READ_ONLY,
-                                   CL_MEM_OBJECT_IMAGE3D, &image_format_desc))
+                                   CL_MEM_OBJECT_IMAGE3D, &imageFormatDesc))
     {
         log_error("CL_UNORM_INT8 CL_RGBA not supported. Can not test.");
-        return -1;
+        return TEST_FAIL;
     }
 
     /* Verify that we can actually allocate an image that large */
@@ -830,7 +867,7 @@ REGISTER_TEST(min_max_image_3d_width)
         log_error("Can not allocate a large enough image (min size: %" PRIu64
                   " bytes, max allowed: %" PRIu64 " bytes) to test.\n",
                   (cl_ulong)maxDimension * 2 * 4, maxAllocSize);
-        return -1;
+        return TEST_FAIL;
     }
 
     log_info("Attempting to create an image of size %d x 1 x 2 = %gMB.\n",
@@ -838,34 +875,46 @@ REGISTER_TEST(min_max_image_3d_width)
              (2 * (float)maxDimension * 4 / 1024.0 / 1024.0));
 
     /* Try to allocate a very big image */
-    streams[0] = create_image_3d(context, CL_MEM_READ_ONLY, &image_format_desc,
-                                 maxDimension, 1, 2, 0, 0, NULL, &error);
-    if ((streams[0] == NULL) || (error != CL_SUCCESS))
+    streams = create_image_3d(context, CL_MEM_READ_ONLY, &imageFormatDesc,
+                              maxDimension, 1, 2, 0, 0, NULL, &error);
+    if ((streams == nullptr) || (error != CL_SUCCESS))
     {
         print_error(error, "Image 3D creation failed for maximum width");
-        return -1;
+        return TEST_FAIL;
     }
 
-    return 0;
+    return TEST_PASS;
 }
 
 REGISTER_TEST(min_max_image_3d_height)
 {
     int error;
     size_t maxDimension;
-    clMemWrapper streams[1];
-    cl_image_format image_format_desc;
+    clMemWrapper streams;
+    cl_image_format imageFormatDesc;
     cl_ulong maxAllocSize;
 
+    if (checkFor3DImageSupport(device))
+    {
+        /* Get the max 3d image height */
+        error = clGetDeviceInfo(device, CL_DEVICE_IMAGE3D_MAX_HEIGHT,
+                                sizeof(maxDimension), &maxDimension, NULL);
+        test_error(error, "Unable to get max image 3d height from device");
 
-    PASSIVE_REQUIRE_3D_IMAGE_SUPPORT(device)
+        test_failure_error_ret(maxDimension, 0,
+                               "Missing 3d image support but "
+                               "CL_DEVICE_IMAGE3D_MAX_HEIGHT query did "
+                               "not return 0",
+                               TEST_FAIL);
+        return TEST_SKIPPED_ITSELF;
+    }
 
     /* Just get any ol format to test with */
     error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE3D,
-                                   CL_MEM_READ_ONLY, 0, &image_format_desc);
+                                   CL_MEM_READ_ONLY, 0, &imageFormatDesc);
     test_error(error, "Unable to obtain suitable image format to test with!");
 
-    /* Get the max 2d image width */
+    /* Get the max 3d image height */
     error = clGetDeviceInfo(device, CL_DEVICE_IMAGE3D_MAX_HEIGHT,
                             sizeof(maxDimension), &maxDimension, NULL);
     test_error(error, "Unable to get max image 3d height from device");
@@ -875,18 +924,18 @@ REGISTER_TEST(min_max_image_3d_height)
         log_error(
             "ERROR: Reported max image 3d height is less than required! (%d)\n",
             (int)maxDimension);
-        return -1;
+        return TEST_FAIL;
     }
     log_info("Max reported height is %zu.\n", maxDimension);
 
     /* Verify we can use the format */
-    image_format_desc.image_channel_data_type = CL_UNORM_INT8;
-    image_format_desc.image_channel_order = CL_RGBA;
+    imageFormatDesc.image_channel_data_type = CL_UNORM_INT8;
+    imageFormatDesc.image_channel_order = CL_RGBA;
     if (!is_image_format_supported(context, CL_MEM_READ_ONLY,
-                                   CL_MEM_OBJECT_IMAGE3D, &image_format_desc))
+                                   CL_MEM_OBJECT_IMAGE3D, &imageFormatDesc))
     {
         log_error("CL_UNORM_INT8 CL_RGBA not supported. Can not test.");
-        return -1;
+        return TEST_FAIL;
     }
 
     /* Verify that we can actually allocate an image that large */
@@ -897,7 +946,7 @@ REGISTER_TEST(min_max_image_3d_height)
         log_error("Can not allocate a large enough image (min size: %" PRIu64
                   " bytes, max allowed: %" PRIu64 " bytes) to test.\n",
                   (cl_ulong)maxDimension * 2 * 4, maxAllocSize);
-        return -1;
+        return TEST_FAIL;
     }
 
     log_info("Attempting to create an image of size 1 x %d x 2 = %gMB.\n",
@@ -905,15 +954,15 @@ REGISTER_TEST(min_max_image_3d_height)
              (2 * (float)maxDimension * 4 / 1024.0 / 1024.0));
 
     /* Try to allocate a very big image */
-    streams[0] = create_image_3d(context, CL_MEM_READ_ONLY, &image_format_desc,
-                                 1, maxDimension, 2, 0, 0, NULL, &error);
-    if ((streams[0] == NULL) || (error != CL_SUCCESS))
+    streams = create_image_3d(context, CL_MEM_READ_ONLY, &imageFormatDesc, 1,
+                              maxDimension, 2, 0, 0, NULL, &error);
+    if ((streams == NULL) || (error != CL_SUCCESS))
     {
         print_error(error, "Image 3D creation failed for maximum height");
-        return -1;
+        return TEST_FAIL;
     }
 
-    return 0;
+    return TEST_PASS;
 }
 
 
@@ -921,40 +970,52 @@ REGISTER_TEST(min_max_image_3d_depth)
 {
     int error;
     size_t maxDimension;
-    clMemWrapper streams[1];
-    cl_image_format image_format_desc;
+    clMemWrapper streams;
+    cl_image_format imageFormatDesc;
     cl_ulong maxAllocSize;
 
+    if (checkFor3DImageSupport(device))
+    {
+        /* Get the max 3d image depth */
+        error = clGetDeviceInfo(device, CL_DEVICE_IMAGE3D_MAX_DEPTH,
+                                sizeof(maxDimension), &maxDimension, NULL);
+        test_error(error, "Unable to get max image 3d depth from device");
 
-    PASSIVE_REQUIRE_3D_IMAGE_SUPPORT(device)
+        test_failure_error_ret(maxDimension, 0,
+                               "Missing 3d image support but "
+                               "CL_DEVICE_IMAGE3D_MAX_DEPTH query did "
+                               "not return 0",
+                               TEST_FAIL);
+        return TEST_SKIPPED_ITSELF;
+    }
 
     /* Just get any ol format to test with */
     error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE3D,
-                                   CL_MEM_READ_ONLY, 0, &image_format_desc);
+                                   CL_MEM_READ_ONLY, 0, &imageFormatDesc);
     test_error(error, "Unable to obtain suitable image format to test with!");
 
-    /* Get the max 2d image width */
+    /* Get the max 3d image depth */
     error = clGetDeviceInfo(device, CL_DEVICE_IMAGE3D_MAX_DEPTH,
                             sizeof(maxDimension), &maxDimension, NULL);
     test_error(error, "Unable to get max image 3d depth from device");
 
     if (maxDimension < 2048)
     {
-        log_error(
-            "ERROR: Reported max image 3d depth is less than required! (%d)\n",
-            (int)maxDimension);
-        return -1;
+        log_error("ERROR: Reported max image 3d depth is less than "
+                  "required! (%d)\n",
+                  (int)maxDimension);
+        return TEST_FAIL;
     }
     log_info("Max reported depth is %zu.\n", maxDimension);
 
     /* Verify we can use the format */
-    image_format_desc.image_channel_data_type = CL_UNORM_INT8;
-    image_format_desc.image_channel_order = CL_RGBA;
+    imageFormatDesc.image_channel_data_type = CL_UNORM_INT8;
+    imageFormatDesc.image_channel_order = CL_RGBA;
     if (!is_image_format_supported(context, CL_MEM_READ_ONLY,
-                                   CL_MEM_OBJECT_IMAGE3D, &image_format_desc))
+                                   CL_MEM_OBJECT_IMAGE3D, &imageFormatDesc))
     {
         log_error("CL_UNORM_INT8 CL_RGBA not supported. Can not test.");
-        return -1;
+        return TEST_FAIL;
     }
 
     /* Verify that we can actually allocate an image that large */
@@ -965,38 +1026,51 @@ REGISTER_TEST(min_max_image_3d_depth)
         log_error("Can not allocate a large enough image (min size: %" PRIu64
                   " bytes, max allowed: %" PRIu64 " bytes) to test.\n",
                   (cl_ulong)maxDimension * 1 * 4, maxAllocSize);
-        return -1;
+        return TEST_FAIL;
     }
 
     log_info("Attempting to create an image of size 1 x 1 x %d = %gMB.\n",
              (int)maxDimension, ((float)maxDimension * 4 / 1024.0 / 1024.0));
 
     /* Try to allocate a very big image */
-    streams[0] = create_image_3d(context, CL_MEM_READ_ONLY, &image_format_desc,
-                                 1, 1, maxDimension, 0, 0, NULL, &error);
-    if ((streams[0] == NULL) || (error != CL_SUCCESS))
+    streams = create_image_3d(context, CL_MEM_READ_ONLY, &imageFormatDesc, 1, 1,
+                              maxDimension, 0, 0, NULL, &error);
+    if ((streams == nullptr) || (error != CL_SUCCESS))
     {
         print_error(error, "Image 3D creation failed for maximum depth");
-        return -1;
+        return TEST_FAIL;
     }
 
-    return 0;
+    return TEST_PASS;
 }
 
 REGISTER_TEST(min_max_image_array_size)
 {
     int error;
     size_t maxDimension;
-    clMemWrapper streams[1];
-    cl_image_format image_format_desc;
+    clMemWrapper streams;
+    cl_image_format imageFormatDesc;
     cl_ulong maxAllocSize;
     size_t minRequiredDimension = gIsEmbedded ? 256 : 2048;
 
-    PASSIVE_REQUIRE_IMAGE_SUPPORT(device);
+    if (checkForImageSupport(device))
+    {
+        /* Get the max image array width */
+        error = clGetDeviceInfo(device, CL_DEVICE_IMAGE_MAX_ARRAY_SIZE,
+                                sizeof(maxDimension), &maxDimension, NULL);
+        test_error(error, "Unable to get max image array size from device");
+
+        test_failure_error_ret(
+            maxDimension, 0,
+            "Missing image support but CL_DEVICE_IMAGE_MAX_ARRAY_SIZE query "
+            "did not return 0",
+            TEST_FAIL);
+        return TEST_SKIPPED_ITSELF;
+    }
 
     /* Just get any ol format to test with */
     error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE2D_ARRAY,
-                                   CL_MEM_READ_WRITE, 0, &image_format_desc);
+                                   CL_MEM_READ_WRITE, 0, &imageFormatDesc);
     test_error(error, "Unable to obtain suitable image format to test with!");
 
     /* Get the max image array width */
@@ -1009,19 +1083,19 @@ REGISTER_TEST(min_max_image_array_size)
         log_error("ERROR: Reported max image array size is less than required! "
                   "(%d)\n",
                   (int)maxDimension);
-        return -1;
+        return TEST_FAIL;
     }
     log_info("Max reported image array size is %zu.\n", maxDimension);
 
     /* Verify we can use the format */
-    image_format_desc.image_channel_data_type = CL_UNORM_INT8;
-    image_format_desc.image_channel_order = CL_RGBA;
+    imageFormatDesc.image_channel_data_type = CL_UNORM_INT8;
+    imageFormatDesc.image_channel_order = CL_RGBA;
     if (!is_image_format_supported(context, CL_MEM_READ_ONLY,
                                    CL_MEM_OBJECT_IMAGE2D_ARRAY,
-                                   &image_format_desc))
+                                   &imageFormatDesc))
     {
         log_error("CL_UNORM_INT8 CL_RGBA not supported. Can not test.");
-        return -1;
+        return TEST_FAIL;
     }
 
     /* Verify that we can actually allocate an image that large */
@@ -1032,24 +1106,23 @@ REGISTER_TEST(min_max_image_array_size)
         log_error("Can not allocate a large enough image (min size: %" PRIu64
                   " bytes, max allowed: %" PRIu64 " bytes) to test.\n",
                   (cl_ulong)maxDimension * 1 * 4, maxAllocSize);
-        return -1;
+        return TEST_FAIL;
     }
 
     log_info("Attempting to create an image of size 1 x 1 x %d = %gMB.\n",
              (int)maxDimension, ((float)maxDimension * 4 / 1024.0 / 1024.0));
 
     /* Try to allocate a very big image */
-    streams[0] =
-        create_image_2d_array(context, CL_MEM_READ_ONLY, &image_format_desc, 1,
-                              1, maxDimension, 0, 0, NULL, &error);
-    if ((streams[0] == NULL) || (error != CL_SUCCESS))
+    streams = create_image_2d_array(context, CL_MEM_READ_ONLY, &imageFormatDesc,
+                                    1, 1, maxDimension, 0, 0, NULL, &error);
+    if ((streams == NULL) || (error != CL_SUCCESS))
     {
         print_error(error,
                     "2D Image Array creation failed for maximum array size");
-        return -1;
+        return TEST_FAIL;
     }
 
-    return 0;
+    return TEST_PASS;
 }
 
 REGISTER_TEST(min_max_image_buffer_size)
@@ -1057,19 +1130,33 @@ REGISTER_TEST(min_max_image_buffer_size)
     int error;
     size_t maxDimensionPixels;
     clMemWrapper streams[2];
-    cl_image_format image_format_desc = { 0 };
+    cl_image_format imageFormatDesc = { 0 };
     cl_ulong maxAllocSize;
     size_t minRequiredDimension = gIsEmbedded ? 2048 : 65536;
     unsigned int i = 0;
     size_t pixelBytes = 0;
 
-    PASSIVE_REQUIRE_IMAGE_SUPPORT(device);
+    if (checkForImageSupport(device))
+    {
+        /* Get the max image buffer size */
+        error = clGetDeviceInfo(device, CL_DEVICE_IMAGE_MAX_BUFFER_SIZE,
+                                sizeof(maxDimensionPixels), &maxDimensionPixels,
+                                NULL);
+        test_error(error, "Unable to get max image buffer size from device");
+
+        test_failure_error_ret(maxDimensionPixels, 0,
+                               "Missing image support but "
+                               "CL_DEVICE_IMAGE_MAX_BUFFER_SIZE query did "
+                               "not return 0",
+                               TEST_FAIL);
+        return TEST_SKIPPED_ITSELF;
+    }
 
     /* Get the max memory allocation size, divide it */
     maxAllocSize = get_device_info_max_mem_alloc_size(
         device, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
 
-    /* Get the max image array width */
+    /* Get the max image buffer size */
     error =
         clGetDeviceInfo(device, CL_DEVICE_IMAGE_MAX_BUFFER_SIZE,
                         sizeof(maxDimensionPixels), &maxDimensionPixels, NULL);
@@ -1080,7 +1167,7 @@ REGISTER_TEST(min_max_image_buffer_size)
         log_error("ERROR: Reported max image buffer size is less than "
                   "required! (%d)\n",
                   (int)maxDimensionPixels);
-        return -1;
+        return TEST_FAIL;
     }
     log_info("Max reported image buffer size is %zu pixels.\n",
              maxDimensionPixels);
@@ -1100,7 +1187,7 @@ REGISTER_TEST(min_max_image_buffer_size)
     for (i = pixelBytes; i > 0; --i)
     {
         error = get_8_bit_image_format(context, CL_MEM_OBJECT_IMAGE1D,
-                                       CL_MEM_READ_ONLY, i, &image_format_desc);
+                                       CL_MEM_READ_ONLY, i, &imageFormatDesc);
         if (error == CL_SUCCESS)
         {
             pixelBytes = i;
@@ -1113,7 +1200,7 @@ REGISTER_TEST(min_max_image_buffer_size)
 
     log_info("Attempting to create an 1D image with channel order %s from "
              "buffer of size %d = %gMB.\n",
-             GetChannelOrderName(image_format_desc.image_channel_order),
+             GetChannelOrderName(imageFormatDesc.image_channel_order),
              (int)maxDimensionPixels,
              ((float)maxDimensionPixels * pixelBytes / 1024.0 / 1024.0));
 
@@ -1124,22 +1211,22 @@ REGISTER_TEST(min_max_image_buffer_size)
     {
         print_error(error,
                     "Buffer creation failed for maximum image buffer size");
-        return -1;
+        return TEST_FAIL;
     }
 
     /* Try to allocate a 1D image array from buffer */
     streams[1] =
-        create_image_1d(context, CL_MEM_READ_ONLY, &image_format_desc,
+        create_image_1d(context, CL_MEM_READ_ONLY, &imageFormatDesc,
                         maxDimensionPixels, 0, NULL, streams[0], &error);
-    if ((streams[0] == NULL) || (error != CL_SUCCESS))
+    if ((streams[1] == NULL) || (error != CL_SUCCESS))
     {
         print_error(error,
                     "1D Image from buffer creation failed for maximum image "
                     "buffer size");
-        return -1;
+        return TEST_FAIL;
     }
 
-    return 0;
+    return TEST_PASS;
 }
 
 
