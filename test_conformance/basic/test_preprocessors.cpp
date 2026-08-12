@@ -105,7 +105,7 @@ REGISTER_TEST(kernel_preprocessor_macros)
     // escape handling and some compilers do not.
     std::replace(testFileName.begin(), testFileName.end(), '\\', '/');
 
-    sprintf(programSource,preprocessor_test,testFileName.c_str());
+    sprintf(programSource, preprocessor_test, testFileName.c_str());
 
     // Create the kernel
     if( create_single_kernel_helper( context, &program, &kernel, 1,  (const char **)&programPtr, "test" ) != 0 )
