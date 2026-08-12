@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include <ctype.h>
+#include <algorithm>
 
 #include "testBase.h"
 
@@ -96,28 +97,15 @@ REGISTER_TEST(kernel_preprocessor_macros)
     cl_int results[ 7 ];
     cl_char fileString[ 512 ] = "", roundingString[ 128 ] = "";
     char programSource[4096];
-    char curFileName[512];
     char *programPtr = programSource;
-    snprintf(curFileName, 512, "%s", __FILE__);
-#ifdef _WIN32
-    // Replace "\" with "\\"
-    int i = 0;
-    while(curFileName[i] != '\0') {
-        if (curFileName[i] == '\\') {
-            int j = i + 1;
-            char prev = '\\';
-            while (curFileName[j - 1] != '\0') {
-                char tmp = curFileName[j];
-                curFileName[j] = prev;
-                prev = tmp;
-                j++;
-            }
-            i++;
-        }
-        i++;
-    }
-#endif
-    sprintf(programSource,preprocessor_test,curFileName);
+    std::string testFileName(__FILE__);
+
+    // Replace all backslash characters with forward slashes.
+    // This avoid possible issues where some compilers process filenames with
+    // escape handling and some compilers do not.
+    std::replace(testFileName.begin(), testFileName.end(), '\\', '/');
+
+    sprintf(programSource,preprocessor_test,testFileName.c_str());
 
     // Create the kernel
     if( create_single_kernel_helper( context, &program, &kernel, 1,  (const char **)&programPtr, "test" ) != 0 )
@@ -327,12 +315,13 @@ REGISTER_TEST(kernel_preprocessor_macros)
         log_error( "ERROR: Kernel preprocessor __FILE__ undefined!\n" );
         return -1;
     }
-    else if( strncmp( (char *)fileString, __FILE__, 512 ) != 0 )
+    else if (strncmp((const char *)fileString, testFileName.c_str(), 512) != 0)
     {
-        log_info( "WARNING: __FILE__ defined, but to an unexpected value (%s)\n\tShould be: \"%s\"", fileString, __FILE__ );
+        log_info("WARNING: __FILE__ defined, but to an unexpected value "
+                 "(%s)\n\tShould be: \"%s\"",
+                 fileString, testFileName.c_str());
         return -1;
     }
-
 
 #if 0 // Removed by Affie's request 2/24
     // One more try through: try with -cl-fast-relaxed-math to make sure the appropriate preprocessor gets defined
