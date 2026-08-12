@@ -223,7 +223,7 @@
             "access_chain_vector": "pass",
             "access_chain_inbounds_vector": "pass",
             "ptr_access_chain_vector": "pass",
-            "ptr_access_chain_inbounds_vector": "pass",
+            "ptr_access_chain_inbounds_vector": "pass"
         }
     },
     "test_vectors": {
