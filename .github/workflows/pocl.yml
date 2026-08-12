@@ -55,31 +55,34 @@ jobs:
       pocl: ${{ steps.pocl_env.outputs.pocl }}
       translator_sha: ${{ steps.translator_sha.outputs.sha }}
     steps:
-      - name: Checkout OpenCL CTS (for composite action)
-        uses: actions/checkout@v7
       - name: Environment variables
         id: pocl_env
         run: |
-          echo "pocl=${{ github.workspace }}/pocl-install" >> $GITHUB_ENV
-          echo "pocl=${{ github.workspace }}/pocl-install" >> $GITHUB_OUTPUT
+          POCL_INSTALL_PATH="${{ github.workspace }}/pocl-install"
+          echo "pocl=$POCL_INSTALL_PATH" >> $GITHUB_ENV
+          echo "pocl=$POCL_INSTALL_PATH" >> $GITHUB_OUTPUT
       - name: Resolve SPIRV-LLVM-Translator SHA
         id: translator_sha
         run: |
           SHA=$(git ls-remote https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git refs/heads/${TRANSLATOR_BRANCH} | awk '{print $1}')
           echo "sha=$SHA" >> $GITHUB_OUTPUT
-      - name: Setup Ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
       - name: Cache PoCL
         id: cache-pocl
         uses: actions/cache@v6
         with:
           path: ${{ env.pocl }}
           key: ubuntu-24.04-pocl-${{ env.POCL_VERSION }}-${{ steps.translator_sha.outputs.sha }}
+      - name: Checkout OpenCL CTS (for composite action)
+        if: steps.cache-pocl.outputs.cache-hit != 'true'
+        uses: actions/checkout@v7
       - name: Install Dependencies
         if: steps.cache-pocl.outputs.cache-hit != 'true'
         uses: ./.github/actions/install-pocl-deps
         with:
           llvm-version: ${{ env.LLVM_VERSION }}
+      - name: Setup Ninja
+        if: steps.cache-pocl.outputs.cache-hit != 'true'
+        uses: seanmiddleditch/gha-setup-ninja@master
       - name: Checkout SPIRV-LLVM-Translator
         if: steps.cache-pocl.outputs.cache-hit != 'true'
         uses: actions/checkout@v7
