@@ -216,7 +216,7 @@
     "test_spirv_new": {
         "": {
             "basic_versions": "pass",
-            "extimport_nonsemantic": "skip"
+            "extinstimport_nonsemantic": "skip"
         }
     },
     "test_vectors": {
