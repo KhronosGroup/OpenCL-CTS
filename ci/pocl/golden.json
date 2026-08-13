@@ -213,6 +213,12 @@
             "select_double_long": "pass"
         }
     },
+    "test_spirv_new": {
+        "": {
+            "basic_versions": "pass",
+            "extinstimport_nonsemantic": "skip"
+        }
+    },
     "test_vectors": {
         "--wimpy": {
             "step_type": "pass",
@@ -224,11 +230,6 @@
             "vec_align_packed_struct": "pass",
             "vec_align_struct_arr": "pass",
             "vec_align_packed_struct_arr": "pass"
-        }
-    },
-    "test_spirv_new": {
-        "": {
-            "basic_versions": "pass"
         }
     }
 }

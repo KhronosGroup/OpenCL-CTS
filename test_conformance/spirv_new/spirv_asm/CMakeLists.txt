@@ -193,6 +193,8 @@ set(spirv_sources
     ext_cl_khr_spirv_no_integer_wrap_decoration_fsub_int.spvasm64
     ext_cl_khr_spirv_no_integer_wrap_decoration_fsub_uint.spvasm32
     ext_cl_khr_spirv_no_integer_wrap_decoration_fsub_uint.spvasm64
+    extinstimport_nonsemantic_none.spvasm64
+    extinstimport_nonsemantic_unknown.spvasm64
     fadd_double.spvasm32
     fadd_double.spvasm64
     fadd_double2.spvasm32

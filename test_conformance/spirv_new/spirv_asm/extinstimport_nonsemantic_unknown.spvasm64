@@ -1,0 +1,29 @@
+; Declare usage of the SPV_KHR_non_semantic_info extension and a few bogus
+; non-semantic extended instruction sets. This should still succeed, since the
+; extended instruction sets are non-semantic and can therefore be ignored.
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpExtension "SPV_KHR_non_semantic_info"
+          %X = OpExtInstImport "NonSemantic.X"
+         %XY = OpExtInstImport "NonSemantic.X.Y"
+        %XYZ = OpExtInstImport "NonSemantic.X.Y.Z"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "non_semantic_info_test"
+        %str = OpString "String Operand"
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+  %no_result = OpExtInst %void %X 0       ; Call to unknown function with no operands and no result
+         %op = OpConstant %uint 31337
+   %X_result = OpExtInst %uint %X 1       ; Call to unknown function with no operands
+  %XY_result = OpExtInst %uint %XY 99 %op ; Call to unknown function with one operand
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+      %value = OpConstant %uint 42
+ %kernel_sig = OpTypeFunction %void %_ptr_CrossWorkgroup_uint
+     %kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+ %XYZ_result = OpExtInst %uint %XYZ 1000 %op %op %str ; Call with more operands
+               OpStore %dst %value Aligned 4
+               OpReturn
+               OpFunctionEnd
