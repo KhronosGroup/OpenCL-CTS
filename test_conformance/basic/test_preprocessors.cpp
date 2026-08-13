@@ -100,8 +100,20 @@ REGISTER_TEST(kernel_preprocessor_macros)
     char *programPtr = programSource;
     std::string testFileName(__FILE__);
 
+    // Shrink the test file name to at most 512 characters, since this will be
+    // the size of the output buffer we read. At some point, this test should be
+    // updated to dynamically handle arbitrarily length file names, but for now,
+    // 512 characters should be sufficient for most file names.
+    if (testFileName.length() > sizeof(fileString) - 1)
+    {
+        testFileName.resize(sizeof(fileString) - 1);
+        log_info(
+            "WARNING: test file name truncated to '%s' for __FILE__ testing.\n",
+            testFileName.c_str());
+    }
+
     // Replace all backslash characters with forward slashes.
-    // This avoid possible issues where some compilers process filenames with
+    // This avoid possible issues where some compilers process file names with
     // escape handling and some compilers do not.
     std::replace(testFileName.begin(), testFileName.end(), '\\', '/');
 
