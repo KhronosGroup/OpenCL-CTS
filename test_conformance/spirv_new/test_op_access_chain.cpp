@@ -20,7 +20,7 @@
 // Notes:
 //
 // The test type for all tests is either a four component array of uints
-// (OpTypeArray) or a for component vector of uints (OpTypeVector).
+// (OpTypeArray) or a four component vector of uints (OpTypeVector).
 //
 //
 // The kernels for the access chain tests look like:
@@ -33,7 +33,7 @@
 //     global TEST_TYPE* temp_base = TEST_INSTRUCTION(base);    // no indices
 //     global uint* temp_src = TEST_INSTRUCTION(temp_base, index);
 //     global uint* src = TEST_INSTRUCTION(temp_src);           // no indices
-//     data = *src;
+//     uint data = *src;
 //     *dst = data;
 // }
 //
@@ -47,18 +47,18 @@
 //     size_t gid_0 = get_global_id(0);
 //     global uint* dst = &out[gid_0];
 //     uint index = (uint)gid_0 % 4;
-//     global TEST_TYPE* temp_base = TEST_INSTRUCTION(base, 0); // no indices
+//     global TEST_TYPE* temp_base = TEST_INSTRUCTION(in, 0); // no indices
 //     global uint* temp_src = TEST_INSTRUCTION(temp_base, gid_0, index);
 //     global uint* src = TEST_INSTRUCTION(temp_src, 0);        // no indices
-//     data = *src;
+//     uint data = *src;
 //     *dst = data;
 // }
 //
 // The test instruction for these tests is OpPtrAccessChain or
 // OpInBoundsPtrAccessChain.
 
-int test_access_chain_helper(cl_device_id deviceID, cl_context context,
-                             cl_command_queue queue, const char *name)
+static int test_access_chain_helper(cl_device_id deviceID, cl_context context,
+                                    cl_command_queue queue, const char *name)
 {
     const int array_size = 4;
     const int num_work_items = 256;
@@ -120,7 +120,9 @@ int test_access_chain_helper(cl_device_id deviceID, cl_context context,
     {
         if (host[i] != expected_results[i])
         {
-            log_error("Values do not match at location %d\n", i);
+            log_error(
+                "Values do not match at location %d: expected %u, got %u\n", i,
+                expected_results[i], host[i]);
             return -1;
         }
     }
