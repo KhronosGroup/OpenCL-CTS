@@ -26,20 +26,23 @@ int run_case(cl_device_id deviceID, cl_context context, cl_command_queue queue,
              T final_value, bool use_spec_constant)
 {
     clProgramWrapper prog;
-    cl_int err = CL_SUCCESS;
+    cl_int err = get_unbuilt_program_with_il(prog, deviceID, context, name);
+    SPIRV_CHECK_ERROR(err, "Failed to build program");
+
     if (use_spec_constant)
     {
-        spec_const new_spec_const =
-            spec_const(101, sizeof(T), &spec_constant_value);
+        err = clSetProgramSpecializationConstant(prog, 101, sizeof(T),
+                                                 &spec_constant_value);
+        SPIRV_CHECK_ERROR(err, "Failed to set specialization constant");
+    }
 
-        err =
-            get_program_with_il(prog, deviceID, context, name, new_spec_const);
-    }
-    else
+    err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
+    if (err != CL_SUCCESS)
     {
-        err = get_program_with_il(prog, deviceID, context, name);
+        cl_int outputErr = OutputBuildLog(prog, deviceID);
+        SPIRV_CHECK_ERROR(outputErr, "OutputBuildLog failed");
+        return -1;
     }
-    SPIRV_CHECK_ERROR(err, "Failed to build program");
 
     clKernelWrapper kernel = clCreateKernel(prog, "spec_const_kernel", &err);
     SPIRV_CHECK_ERROR(err, "Failed to create kernel");
@@ -134,7 +137,7 @@ TEST_SPEC_CONSTANT(half, cl_half, 1, 2)
 TEST_SPEC_CONSTANT(double, cl_double, 14534.53453, 1.53453)
 
 // Boolean tests
-// documenation: 'If a specialization constant is a boolean
+// documentation: 'If a specialization constant is a boolean
 // constant, spec_value should be a pointer to a cl_uchar value'
 
 REGISTER_TEST_VERSION(op_spec_constant_true_simple, Version(2, 2))
@@ -159,4 +162,9 @@ REGISTER_TEST_VERSION(op_spec_constant_false_simple, Version(2, 2))
     return test_spec_constant<cl_uchar>(device, context, queue,
                                         "op_spec_constant_false_simple",
                                         init_value, 1, final_value);
+}
+
+REGISTER_TEST_VERSION(op_spec_constant_compile_link, Version(1, 2))
+{
+    return TEST_PASS;
 }
