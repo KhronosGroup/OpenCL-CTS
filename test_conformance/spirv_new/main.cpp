@@ -145,7 +145,7 @@ int get_unbuilt_program_with_il(clProgramWrapper &prog,
     if (file_bytes == 0)
     {
         log_error("File %s not found\n", fileName);
-        return TEST_FAIL;
+        return -1;
     }
 
     unsigned char *buffer = &buffer_vec[0];
