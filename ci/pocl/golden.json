@@ -228,7 +228,21 @@
     },
     "test_spirv_new": {
         "": {
-            "basic_versions": "pass"
+            "basic_versions": "pass",
+            "linkage_export_function_compile": "pass",
+            "linkage_import_function_compile": "pass",
+            "linkage_import_function_link": "pass",
+            "linkage_linkonce_odr": "skip",
+            "op_spec_constant_uint_simple": "pass",
+            "op_spec_constant_uchar_simple": "pass",
+            "op_spec_constant_ushort_simple": "pass",
+            "op_spec_constant_ulong_simple": "pass",
+            "op_spec_constant_float_simple": "pass",
+            "op_spec_constant_half_simple": "pass",
+            "op_spec_constant_double_simple": "pass",
+            "op_spec_constant_true_simple": "pass",
+            "op_spec_constant_false_simple": "pass",
+            "op_spec_constant_compile_link": "pass"
         }
     }
 }
