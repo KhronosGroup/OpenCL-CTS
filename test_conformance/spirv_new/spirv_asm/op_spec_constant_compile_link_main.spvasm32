@@ -1,0 +1,23 @@
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %kernel "spec_const_kernel"
+               OpDecorate %uint_42 SpecId 101
+               OpDecorate %func LinkageAttributes "func" Import
+       %uint = OpTypeInt 32 0
+    %uint_42 = OpSpecConstant %uint 42
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+   %func_sig = OpTypeFunction %uint
+ %kernel_sig = OpTypeFunction %void %_ptr_CrossWorkgroup_uint
+       %func = OpFunction %uint Pure %func_sig
+               OpFunctionEnd
+     %kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+       %fval = OpFunctionCall %uint %func
+        %val = OpIAdd %uint %fval %uint_42
+               OpStore %dst %val Aligned 4
+               OpReturn
+               OpFunctionEnd

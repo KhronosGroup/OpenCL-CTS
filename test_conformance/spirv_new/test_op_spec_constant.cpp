@@ -190,9 +190,9 @@ REGISTER_TEST_VERSION(op_spec_constant_compile_link, Version(2, 2))
 
     // Set the spec constant value before creating the kernel
     const cl_uint kValue = 3;
-    err = clSetProgramSpecializationConstant(obj, 101, sizeof(kValue),
-                                             &kValue);
-    SPIRV_CHECK_ERROR(err, "Failed to set spec constant before creating kernel");
+    err = clSetProgramSpecializationConstant(obj, 101, sizeof(kValue), &kValue);
+    SPIRV_CHECK_ERROR(err,
+                      "Failed to set spec constant before creating kernel");
 
     clKernelWrapper kernel = clCreateKernel(prog, "spec_const_kernel", &err);
     SPIRV_CHECK_ERROR(err, "Failed to create kernel");
@@ -205,7 +205,8 @@ REGISTER_TEST_VERSION(op_spec_constant_compile_link, Version(2, 2))
     SPIRV_CHECK_ERROR(err, "Failed to set kernel argument output_buffer");
 
     size_t work_size = 1;
-    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &work_size, NULL, 0, NULL, NULL);
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &work_size, NULL, 0,
+                                 NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to enqueue kernel");
 
     cl_uint result = 0;
@@ -213,9 +214,87 @@ REGISTER_TEST_VERSION(op_spec_constant_compile_link, Version(2, 2))
                               &result, 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read result from output_buffer");
 
-    if (result != cValue)
+    const cl_uint expected = cValue;
+    if (result != expected)
     {
-        log_error("Result mismatch: expected %u, got %u\n", cValue, result);
+        log_error("Result mismatch: expected %u, got %u\n", expected, result);
+        return TEST_FAIL;
+    }
+
+    return TEST_PASS;
+}
+
+REGISTER_TEST_VERSION(op_spec_constant_compile_link_obj, Version(2, 2))
+{
+    clProgramWrapper obj1;
+    cl_int err = get_unbuilt_program_with_il(
+        obj1, device, context, "op_spec_constant_compile_link_obj");
+    SPIRV_CHECK_ERROR(err, "Failed to create obj program");
+
+    const cl_uint oValue = 1;
+    err =
+        clSetProgramSpecializationConstant(obj1, 101, sizeof(oValue), &oValue);
+    SPIRV_CHECK_ERROR(err, "Failed to set obj spec constant before compiling");
+
+    err = clCompileProgram(obj1, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
+    SPIRV_CHECK_ERROR(err, "Failed to compile obj program");
+
+    // Set the spec constant to a bogus value after compiling.
+    // This value should not be used.
+    const cl_uint bogus0 = 999;
+    err = clSetProgramSpecializationConstant(obj1, 101, sizeof(bogus0),
+                                             &bogus0);
+    SPIRV_CHECK_ERROR(err, "Failed to set obj spec constant after compiling");
+
+    clProgramWrapper obj2;
+    err = get_unbuilt_program_with_il(obj2, device, context,
+                                      "op_spec_constant_compile_link_main");
+    SPIRV_CHECK_ERROR(err, "Failed to create main program");
+
+    const cl_uint mValue = 2;
+    err =
+        clSetProgramSpecializationConstant(obj2, 101, sizeof(mValue), &mValue);
+    SPIRV_CHECK_ERROR(err, "Failed to set main spec constant before compiling");
+
+    err = clCompileProgram(obj2, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
+    SPIRV_CHECK_ERROR(err, "Failed to compile main program");
+
+    const cl_program progs[] = { obj1, obj2 };
+    clProgramWrapper prog =
+        clLinkProgram(context, 1, &device, NULL, 2, progs, NULL, NULL, &err);
+    SPIRV_CHECK_ERROR(err, "Failed to link program");
+
+    // Set the spec constant to a bogus value after linking.
+    // This value should also not be used.
+    const cl_uint bogus1 = 99999;
+    err = clSetProgramSpecializationConstant(obj1, 101, sizeof(bogus1),
+                                             &bogus1);
+    SPIRV_CHECK_ERROR(err, "Failed to set obj spec constant after linking");
+
+    clKernelWrapper kernel = clCreateKernel(prog, "spec_const_kernel", &err);
+    SPIRV_CHECK_ERROR(err, "Failed to create kernel");
+
+    clMemWrapper output_buffer =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_uint), NULL, &err);
+    SPIRV_CHECK_ERROR(err, "Failed to create output_buffer");
+
+    err = clSetKernelArg(kernel, 0, sizeof(clMemWrapper), &output_buffer);
+    SPIRV_CHECK_ERROR(err, "Failed to set kernel argument output_buffer");
+
+    size_t work_size = 1;
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &work_size, NULL, 0,
+                                 NULL, NULL);
+    SPIRV_CHECK_ERROR(err, "Failed to enqueue kernel");
+
+    cl_uint result = 0;
+    err = clEnqueueReadBuffer(queue, output_buffer, CL_TRUE, 0, sizeof(cl_uint),
+                              &result, 0, NULL, NULL);
+    SPIRV_CHECK_ERROR(err, "Failed to read result from output_buffer");
+
+    const cl_uint expected = oValue + mValue;
+    if (result != expected)
+    {
+        log_error("Result mismatch: expected %u, got %u\n", expected, result);
         return TEST_FAIL;
     }
 
