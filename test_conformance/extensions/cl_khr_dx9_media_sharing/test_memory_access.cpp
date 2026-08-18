@@ -124,15 +124,10 @@ int memory_access(cl_device_id deviceID, cl_context context,
         }
 
         { // memory access write
-#if defined(_WIN32)
             cl_dx9_surface_info_khr surfaceInfo;
             surfaceInfo.resource =
                 *(static_cast<CD3D9SurfaceWrapper *>(surface.get()));
             surfaceInfo.shared_handle = objectSharedHandle;
-#else
-            void *surfaceInfo = 0;
-            return TEST_NOT_IMPLEMENTED;
-#endif
 
             std::vector<cl_mem> memObjList;
             unsigned int planesNum = PlanesNum(surfaceFormat);
@@ -210,15 +205,10 @@ int memory_access(cl_device_id deviceID, cl_context context,
         }
 
         { // memory access read
-#if defined(_WIN32)
             cl_dx9_surface_info_khr surfaceInfo;
             surfaceInfo.resource =
                 *(static_cast<CD3D9SurfaceWrapper *>(surface.get()));
             surfaceInfo.shared_handle = objectSharedHandle;
-#else
-            void *surfaceInfo = 0;
-            return TEST_NOT_IMPLEMENTED;
-#endif
 
             std::vector<cl_mem> memObjList;
             unsigned int planesNum = PlanesNum(surfaceFormat);
@@ -304,15 +294,10 @@ int memory_access(cl_device_id deviceID, cl_context context,
         }
 
         { // memory access read write
-#if defined(_WIN32)
             cl_dx9_surface_info_khr surfaceInfo;
             surfaceInfo.resource =
                 *(static_cast<CD3D9SurfaceWrapper *>(surface.get()));
             surfaceInfo.shared_handle = objectSharedHandle;
-#else
-            void *surfaceInfo = 0;
-            return TEST_NOT_IMPLEMENTED;
-#endif
 
             std::vector<cl_mem> memObjList;
             unsigned int planesNum = PlanesNum(surfaceFormat);
@@ -450,7 +435,6 @@ REGISTER_TEST(memory_access)
 #ifdef _WIN32
     CResult result;
 
-#if defined(_WIN32)
     // D3D9
     if (memory_access(device, context, queue, num_elements, 256, 256,
                       CL_ADAPTER_D3D9_KHR, SURFACE_FORMAT_NV12,
@@ -543,10 +527,6 @@ REGISTER_TEST(memory_access)
         log_error("\nTest case (DXVA, YV12, shared handle) failed\n\n");
         result.ResultSub(CResult::TEST_FAIL);
     }
-
-#else
-    return TEST_NOT_IMPLEMENTED;
-#endif
 
     return result.Result();
 #else

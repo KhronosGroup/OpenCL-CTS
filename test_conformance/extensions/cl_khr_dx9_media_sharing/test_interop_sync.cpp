@@ -132,15 +132,10 @@ int interop_user_sync(cl_device_id deviceID, cl_context context,
             return result.Result();
         }
 
-#if defined(_WIN32)
         cl_dx9_surface_info_khr surfaceInfo;
         surfaceInfo.resource =
             *(static_cast<CD3D9SurfaceWrapper *>(surface.get()));
         surfaceInfo.shared_handle = objectSharedHandle;
-#else
-        void *surfaceInfo = 0;
-        return TEST_NOT_IMPLEMENTED;
-#endif
 
         std::vector<cl_mem> memObjList;
         unsigned int planesNum = PlanesNum(surfaceFormat);
@@ -180,7 +175,6 @@ int interop_user_sync(cl_device_id deviceID, cl_context context,
 
         if (userSync == CL_TRUE)
         {
-#if defined(_WIN32)
             IDirect3DQuery9 *eventQuery = NULL;
             switch (adapterType)
             {
@@ -228,9 +222,6 @@ int interop_user_sync(cl_device_id deviceID, cl_context context,
             {
                 eventQuery->Release();
             }
-#else
-            return TEST_NOT_IMPLEMENTED;
-#endif
         }
 
         error = clEnqueueAcquireDX9MediaSurfacesKHR(
@@ -337,13 +328,9 @@ REGISTER_TEST(interop_user_sync)
     const unsigned int HEIGHT = 256;
 
     std::vector<cl_dx9_media_adapter_type_khr> adapters;
-#if defined(_WIN32)
     adapters.push_back(CL_ADAPTER_D3D9_KHR);
     adapters.push_back(CL_ADAPTER_D3D9EX_KHR);
     adapters.push_back(CL_ADAPTER_DXVA_KHR);
-#else
-    return TEST_NOT_IMPLEMENTED;
-#endif
 
     std::vector<TContextFuncType> contextFuncs;
     contextFuncs.push_back(CONTEXT_CREATE_DEFAULT);
