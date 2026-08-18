@@ -175,6 +175,23 @@
             "geom_cross": "pass"
         }
     },
+    "test_half": {
+        "--wimpy": {
+            "vload_half": "pass",
+            "vloada_half": "pass",
+            "roundTrip": "pass",
+            "vstore_half": "pass",
+            "vstore_half_rte": "pass",
+            "vstore_half_rtz": "pass",
+            "vstore_half_rtp": "pass",
+            "vstore_half_rtn": "pass",
+            "vstorea_half": "pass",
+            "vstorea_half_rte": "pass",
+            "vstorea_half_rtz": "pass",
+            "vstorea_half_rtp": "pass",
+            "vstorea_half_rtn": "pass"
+        }
+    },
     "test_image_streams": {
         "--num-worker-threads 2 CL_A CL_FILTER_NEAREST": {
             "1D": "pass"
