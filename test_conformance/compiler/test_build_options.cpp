@@ -17,6 +17,7 @@
 #include "harness/kernelHelpers.h"
 #include "harness/os_helpers.h"
 #include "harness/testHarness.h"
+#include "harness/parseParameters.h"
 
 extern std::string spvIncludeTestDirectory;
 extern std::string spvSecondIncludeTestDirectory;
@@ -433,6 +434,13 @@ REGISTER_TEST(options_uniform_work_group_size)
 {
     if (get_device_cl_version(device) < Version(2, 0))
     {
+        return TEST_SKIPPED_ITSELF;
+    }
+    if (gCompilationMode == kSpir_v)
+    {
+        log_info("Test not supported in SPIR-V compilation mode: "
+                 "-cl-uniform-work-group-size has no corresponding "
+                 "representation in the OpenCL SPIR-V environment spec.\n");
         return TEST_SKIPPED_ITSELF;
     }
     std::string build_options = "-cl-std=CL"
