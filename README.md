@@ -49,8 +49,10 @@ cmake --build ./OpenCL-ICD-Loader/build --config Release
 mkdir SPIRV-Tools/build
 cmake -S SPIRV-Tools -B SPIRV-Tools/build -DSPIRV_SKIP_TESTS=ON
 cmake --build SPIRV-Tools/build --config Release
+cmake --install SPIRV-Tools/build --prefix=SPIRV-Tools/install
 
 mkdir OpenCL-CTS/build
+PKG_CONFIG_PATH=$PWD/SPIRV-Tools/install/lib/pkgconfig/ \
 cmake -S OpenCL-CTS -B OpenCL-CTS/build \
       -DCL_INCLUDE_DIR=$PWD/OpenCL-Headers \
       -DSPIRV_INCLUDE_DIR=$PWD/SPIRV-Headers \
