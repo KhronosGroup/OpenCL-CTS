@@ -211,13 +211,17 @@ int test_zero_sized_enqueue_helper(cl_device_id device, cl_context context,
 
 REGISTER_TEST_VERSION(zero_sized_enqueue, Version(2, 1))
 {
-    REQUIRE_QUEUE_PROPERTIES(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
-
     int res =
         test_zero_sized_enqueue_helper(device, context, queue, num_elements);
     if (res != 0)
     {
         return res;
+    }
+
+    if (!is_queue_properties_available(device,
+                                       CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE))
+    {
+        return TEST_PASS;
     }
 
     // test out of order queue
