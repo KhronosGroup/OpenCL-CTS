@@ -220,6 +220,19 @@
             "select_double_long": "pass"
         }
     },
+    "test_spirv_new": {
+        "": {
+            "basic_versions": "pass",
+            "access_chain_array": "pass",
+            "access_chain_inbounds_array": "pass",
+            "ptr_access_chain_array": "pass",
+            "ptr_access_chain_inbounds_array": "pass",
+            "access_chain_vector": "pass",
+            "access_chain_inbounds_vector": "pass",
+            "ptr_access_chain_vector": "pass",
+            "ptr_access_chain_inbounds_vector": "pass"
+        }
+    },
     "test_vectors": {
         "--wimpy": {
             "step_type": "pass",
@@ -231,11 +244,6 @@
             "vec_align_packed_struct": "pass",
             "vec_align_struct_arr": "pass",
             "vec_align_packed_struct_arr": "pass"
-        }
-    },
-    "test_spirv_new": {
-        "": {
-            "basic_versions": "pass"
         }
     }
 }

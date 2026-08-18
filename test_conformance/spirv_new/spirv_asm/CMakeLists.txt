@@ -27,6 +27,14 @@ else()
 endif()
 
 set(spirv_sources
+    access_chain_array.spvasm32
+    access_chain_array.spvasm64
+    access_chain_inbounds_array.spvasm32
+    access_chain_inbounds_array.spvasm64
+    access_chain_inbounds_vector.spvasm32
+    access_chain_inbounds_vector.spvasm64
+    access_chain_vector.spvasm32
+    access_chain_vector.spvasm64
     assume.spvasm32
     assume.spvasm64
     atomic_dec_global.spvasm32
@@ -341,6 +349,14 @@ set(spirv_sources
     phi_3.spvasm64
     phi_4.spvasm32
     phi_4.spvasm64
+    ptr_access_chain_array.spvasm32
+    ptr_access_chain_array.spvasm64
+    ptr_access_chain_inbounds_array.spvasm32
+    ptr_access_chain_inbounds_array.spvasm64
+    ptr_access_chain_inbounds_vector.spvasm32
+    ptr_access_chain_inbounds_vector.spvasm64
+    ptr_access_chain_vector.spvasm32
+    ptr_access_chain_vector.spvasm64
     select_if_dont_flatten.spvasm32
     select_if_dont_flatten.spvasm64
     select_if_flatten.spvasm32
