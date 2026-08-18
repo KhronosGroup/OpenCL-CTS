@@ -23,6 +23,20 @@
 #include <string>
 #include <vector>
 
+#define SET_JOB_COUNT(test_info, total_count)                                  \
+    do                                                                         \
+    {                                                                          \
+        if ((test_info).subBufferSize == 0)                                    \
+        {                                                                      \
+            log_error("Error: subBufferSize is 0 at %s:%d\n", __FILE__,        \
+                      __LINE__);                                               \
+            return -1;                                                         \
+        }                                                                      \
+        (test_info).jobCount = std::max(                                       \
+            (cl_uint)1, (cl_uint)((total_count) / (test_info).subBufferSize)); \
+    } while (0)
+
+
 // Array of thread-specific kernels for each vector size.
 using KernelMatrix =
     std::array<std::vector<clKernelWrapper>, VECTOR_SIZE_COUNT>;
@@ -147,10 +161,6 @@ struct TestInfoBase
     cl_uint threadCount = 0;
     // Number of jobs.
     cl_uint jobCount = 0;
-    // step between each chunk and the next.
-    cl_uint step = 0;
-    // stride between individual test values.
-    cl_uint scale = 0;
     // max_allowed ulps.
     float ulps = -1.f;
     // non-zero if running in flush to zero mode.
@@ -181,10 +191,21 @@ using SourceGenerator = std::string (*)(const std::string &kernel_name,
 cl_int BuildKernels(BuildKernelInfo &info, cl_uint job_id,
                     SourceGenerator generator);
 
-const std::vector<double> &getDoubleSpecialValues();
-const std::vector<float> &getFloatSpecialValues();
-const std::vector<cl_half> &getHalfSpecialValues();
-const std::vector<int> &getIntSpecialValues();
-const std::vector<int> &getInt3SpecialValues();
+const size_t getInputCount();
+void initInputCount(int wimpyReductionFactor);
+
+template <typename T>
+void fillUnaryInput(T *data, size_t num_elems, size_t base_elem, MTdata d,
+                    bool testAll = false);
+
+template <typename T1, typename T2>
+void fillBinaryInput(T1 *data1, T2 *data2, size_t num_elems, size_t base_elem,
+                     MTdata d, bool testAll1 = false, bool testAll2 = false);
+
+template <typename T1, typename T2, typename T3>
+void fillTernaryInput(T1 *data1, T2 *data2, T3 *data3, size_t num_elems,
+                      size_t base_elem, MTdata d, bool testAll1 = false,
+                      bool testAll2 = false, bool testAll3 = false);
+
 
 #endif /* COMMON_H */

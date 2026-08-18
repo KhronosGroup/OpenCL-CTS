@@ -720,10 +720,6 @@ static const std::vector<double> doubleSpecialValues = {
     MAKE_HEX_DOUBLE(+0x0.0000000000001p-1022, +0x00000000000001LL, -1074),
     +0.0,
 };
-const std::vector<double> &getDoubleSpecialValues()
-{
-    return doubleSpecialValues;
-}
 
 static const std::vector<float> floatSpecialValues = {
     -NAN,
@@ -827,8 +823,6 @@ static const std::vector<float> floatSpecialValues = {
     +0.0f,
 };
 
-const std::vector<float> &getFloatSpecialValues() { return floatSpecialValues; }
-
 static const std::vector<cl_half> halfSpecialValues = {
     0xffff, 0x0000, 0x0001, 0x7c00, /*INFINITY*/
     0xfc00, /*-INFINITY*/
@@ -848,20 +842,195 @@ static const std::vector<cl_half> halfSpecialValues = {
     0xbbff, /* Largest negative fraction */
 };
 
-const std::vector<cl_half> &getHalfSpecialValues() { return halfSpecialValues; }
-
 static const std::vector<int> intSpecialValues = {
-    0,           1,           2,           3,          126,        127,
-    128,         0x02000001,  0x04000001,  1465264071, 1488522147, -1,
-    -2,          -3,          -126,        -127,       -128,       -0x02000001,
-    -0x04000001, -1465264071, -1488522147,
+    0,          1,           2,           3,           126,         127,
+    128,        1022,        1023,        1024,        0x02000001,  0x04000001,
+    1465264071, 1488522147,  INT_MIN,     INT_MAX,     -1,          -2,
+    -3,         -126,        -127,        -128,        -1022,       -1023,
+    -1024,      -0x02000001, -0x04000001, -1465264071, -1488522147, -INT_MAX,
 };
 
-const std::vector<int> &getIntSpecialValues() { return intSpecialValues; }
+static uint32_t getExponentDeBruijn(uint32_t number)
+{
+    // Lookup table mapping 5-bit De Bruijn hashes to exponents
+    static const int MultiplyDeBruijnBitPosition[32] = {
+        0,  1,  28, 2,  29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4,  8,
+        31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6,  11, 5,  10, 9
+    };
 
-static const std::vector<int> int3SpecialValues = {
-    0,       1,  2,  3,  1022,  1023,  1024,  INT_MIN,
-    INT_MAX, -1, -2, -3, -1022, -1023, -1024, -INT_MAX,
+    // Multiply by the magic De Bruijn sequence and shift down
+    return MultiplyDeBruijnBitPosition[(uint32_t)(number * 0x077CB531U) >> 27];
+}
+
+static uint32_t input_count_power_of_two = 27;
+void initInputCount(int wimpyReductionFactor)
+{
+    if (gTestAll)
+    {
+        input_count_power_of_two = 32;
+    }
+    if (gWimpyMode)
+    {
+        input_count_power_of_two -= getExponentDeBruijn(wimpyReductionFactor);
+    }
+    if (gIsEmbedded)
+    {
+        input_count_power_of_two -=
+            getExponentDeBruijn(EMBEDDED_REDUCTION_FACTOR);
+    }
+}
+const size_t getInputCount() { return 1LL << input_count_power_of_two; }
+
+#define MASK(n) ((1 << (n)) - 1)
+
+template <typename T> const std::vector<T> &get_special_values();
+template <> inline const std::vector<cl_half> &get_special_values<cl_half>()
+{
+    return halfSpecialValues;
+}
+template <> inline const std::vector<float> &get_special_values<float>()
+{
+    return floatSpecialValues;
+}
+template <> inline const std::vector<double> &get_special_values<double>()
+{
+    return doubleSpecialValues;
+}
+template <> inline const std::vector<int> &get_special_values<int>()
+{
+    return intSpecialValues;
+}
+
+template <size_t Size> struct int_type_of_size;
+template <> struct int_type_of_size<8>
+{
+    typedef cl_ulong type;
+};
+template <> struct int_type_of_size<4>
+{
+    typedef cl_uint type;
+};
+template <> struct int_type_of_size<2>
+{
+    typedef cl_ushort type;
 };
 
-const std::vector<int> &getInt3SpecialValues() { return int3SpecialValues; }
+template <size_t Size, typename IntType> struct RandomFiller;
+
+template <typename IntType> struct RandomFiller<8, IntType>
+{
+    static void fill(IntType *data, size_t start, size_t end, MTdata d)
+    {
+        for (size_t i = start; i < end; i++)
+        {
+            data[i] = (IntType)genrand_int64(d);
+        }
+    }
+};
+
+template <typename IntType> struct RandomFiller<4, IntType>
+{
+    static void fill(IntType *data, size_t start, size_t end, MTdata d)
+    {
+        for (size_t i = start; i < end; i++)
+        {
+            data[i] = (IntType)genrand_int32(d);
+        }
+    }
+};
+
+template <typename IntType> struct RandomFiller<2, IntType>
+{
+    static void fill(IntType *data, size_t start, size_t end, MTdata d)
+    {
+        size_t i = start;
+        for (; (i + 1) < end; i += 2)
+        {
+            cl_uint gen = genrand_int32(d);
+            data[i] = (IntType)(gen & 0xffff);
+            data[i + 1] = (IntType)(gen >> 16);
+        }
+        if (i < end)
+        {
+            data[i] = (IntType)(genrand_int32(d) & 0xffff);
+        }
+    }
+};
+
+template <typename T>
+void fillUnaryInput(T *data, size_t num_elems, size_t base_elem, MTdata d,
+                    bool testAll)
+{
+    typedef typename int_type_of_size<sizeof(T)>::type IntType;
+    IntType *data_int = (IntType *)data;
+
+    if (testAll)
+    {
+        for (size_t i = 0; i < num_elems; i++)
+        {
+            data_int[i] = (IntType)(base_elem + i);
+        }
+        return;
+    }
+
+    size_t idx = 0;
+    const std::vector<T> &specialValues = get_special_values<T>();
+    size_t specialValuesCount = specialValues.size();
+    for (; idx < num_elems && ((idx + base_elem) < specialValuesCount); idx++)
+    {
+        data[idx] = specialValues[idx + base_elem];
+    }
+
+    RandomFiller<sizeof(T), IntType>::fill(data_int, idx, num_elems, d);
+}
+
+template <typename T1, typename T2>
+void fillBinaryInput(T1 *data1, T2 *data2, size_t num_elems, size_t base_elem,
+                     MTdata d, bool testAll1, bool testAll2)
+{
+    uint32_t shift = input_count_power_of_two / 2;
+    fillUnaryInput(data1, num_elems, base_elem & MASK(shift), d, testAll1);
+    fillUnaryInput(data2, num_elems, base_elem >> shift, d, testAll2);
+}
+
+template <typename T1, typename T2, typename T3>
+void fillTernaryInput(T1 *data1, T2 *data2, T3 *data3, size_t num_elems,
+                      size_t base_elem, MTdata d, bool testAll1, bool testAll2,
+                      bool testAll3)
+{
+    uint32_t shift = input_count_power_of_two / 3;
+    fillUnaryInput(data1, num_elems, base_elem & MASK(shift), d, testAll1);
+    fillUnaryInput(data2, num_elems, (base_elem >> shift) & MASK(shift), d,
+                   testAll2);
+    fillUnaryInput(data3, num_elems, base_elem >> (shift * 2), d, testAll3);
+}
+
+template void fillUnaryInput<cl_half>(cl_half *, size_t, size_t, MTdata, bool);
+template void fillUnaryInput<float>(float *, size_t, size_t, MTdata, bool);
+template void fillUnaryInput<double>(double *, size_t, size_t, MTdata, bool);
+template void fillUnaryInput<int>(int *, size_t, size_t, MTdata, bool);
+
+template void fillBinaryInput<cl_half, cl_half>(cl_half *, cl_half *, size_t,
+                                                size_t, MTdata, bool, bool);
+template void fillBinaryInput<float, float>(float *, float *, size_t, size_t,
+                                            MTdata, bool, bool);
+template void fillBinaryInput<double, double>(double *, double *, size_t,
+                                              size_t, MTdata, bool, bool);
+template void fillBinaryInput<int, cl_half>(int *, cl_half *, size_t, size_t,
+                                            MTdata, bool, bool);
+template void fillBinaryInput<int, float>(int *, float *, size_t, size_t,
+                                          MTdata, bool, bool);
+template void fillBinaryInput<int, double>(int *, double *, size_t, size_t,
+                                           MTdata, bool, bool);
+
+template void fillTernaryInput<cl_half, cl_half, cl_half>(cl_half *, cl_half *,
+                                                          cl_half *, size_t,
+                                                          size_t, MTdata, bool,
+                                                          bool, bool);
+template void fillTernaryInput<float, float, float>(float *, float *, float *,
+                                                    size_t, size_t, MTdata,
+                                                    bool, bool, bool);
+template void fillTernaryInput<double, double, double>(double *, double *,
+                                                       double *, size_t, size_t,
+                                                       MTdata, bool, bool,
+                                                       bool);
