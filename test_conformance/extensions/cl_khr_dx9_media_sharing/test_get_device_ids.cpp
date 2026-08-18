@@ -190,7 +190,6 @@ REGISTER_TEST(get_device_ids)
 #ifdef _WIN32
     CResult result;
 
-#if defined(_WIN32)
     if (get_device_ids(device, context, queue, num_elements,
                        CL_ADAPTER_D3D9_KHR)
         != 0)
@@ -214,10 +213,6 @@ REGISTER_TEST(get_device_ids)
         log_error("\nTest case (DXVA) failed\n\n");
         result.ResultSub(CResult::TEST_FAIL);
     }
-
-#else
-    return TEST_NOT_IMPLEMENTED;
-#endif
 
     return result.Result();
 #else

@@ -125,15 +125,10 @@ int context_create(cl_device_id deviceID, cl_context context,
             return result.Result();
         }
 
-#if defined(_WIN32)
         cl_dx9_surface_info_khr surfaceInfo;
         surfaceInfo.resource =
             *(static_cast<CD3D9SurfaceWrapper *>(surface.get()));
         surfaceInfo.shared_handle = objectSharedHandle;
-#else
-        void *surfaceInfo = 0;
-        return TEST_NOT_IMPLEMENTED;
-#endif
 
         std::vector<cl_mem> memObjList;
         unsigned int planesNum = PlanesNum(surfaceFormat);
@@ -302,11 +297,9 @@ REGISTER_TEST(context_create)
     const unsigned int HEIGHT = 256;
 
     std::vector<cl_dx9_media_adapter_type_khr> adapterTypes;
-#if defined(_WIN32)
     adapterTypes.push_back(CL_ADAPTER_D3D9_KHR);
     adapterTypes.push_back(CL_ADAPTER_D3D9EX_KHR);
     adapterTypes.push_back(CL_ADAPTER_DXVA_KHR);
-#endif
 
     std::vector<TContextFuncType> contextFuncs;
     contextFuncs.push_back(CONTEXT_CREATE_DEFAULT);
@@ -318,9 +311,7 @@ REGISTER_TEST(context_create)
 
     std::vector<TSharedHandleType> sharedHandleTypes;
     sharedHandleTypes.push_back(SHARED_HANDLE_DISABLED);
-#if defined(_WIN32)
     sharedHandleTypes.push_back(SHARED_HANDLE_ENABLED);
-#endif
 
     CResult result;
     for (size_t adapterTypeIdx = 0; adapterTypeIdx < adapterTypes.size();
