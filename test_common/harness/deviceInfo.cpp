@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "deviceInfo.h"
+#include "testHarness.h"
 #include "errorHelpers.h"
 #include "typeWrappers.h"
 
@@ -184,4 +185,15 @@ cl_ulong get_device_info_max_constant_buffer_size(cl_device_id device,
 {
     return get_device_info_max_size(device, CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE,
                                     divisor);
+}
+
+bool is_queue_properties_available(cl_device_id device,
+                                   cl_command_queue_properties properties)
+{
+    cl_command_queue_properties supported_properties;
+    cl_int err = clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
+                                 sizeof(supported_properties),
+                                 &supported_properties, NULL);
+    return err == CL_SUCCESS
+        && ((supported_properties & properties) == properties);
 }

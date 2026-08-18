@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "testHarness.h"
+#ifdef _WIN32
 #include "utils.h"
 
 int api_functions(cl_device_id deviceID, cl_context context,
@@ -118,15 +120,10 @@ int api_functions(cl_device_id deviceID, cl_context context,
             return result.Result();
         }
 
-#if defined(_WIN32)
         cl_dx9_surface_info_khr surfaceInfo;
         surfaceInfo.resource =
             *(static_cast<CD3D9SurfaceWrapper *>(surface.get()));
         surfaceInfo.shared_handle = objectSharedHandle;
-#else
-        void *surfaceInfo = 0;
-        return TEST_NOT_IMPLEMENTED;
-#endif
 
         std::vector<cl_mem> memObjList;
         unsigned int planesNum = PlanesNum(surfaceFormat);
@@ -673,12 +670,13 @@ int api_functions(cl_device_id deviceID, cl_context context,
 
     return result.Result();
 }
+#endif
 
 REGISTER_TEST(api)
 {
+#ifdef _WIN32
     CResult result;
 
-#if defined(_WIN32)
     // D3D9
     if (api_functions(device, context, queue, num_elements, 10, 256, 256,
                       CL_ADAPTER_D3D9_KHR, SURFACE_FORMAT_NV12,
@@ -772,9 +770,8 @@ REGISTER_TEST(api)
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-#else
-    return TEST_NOT_IMPLEMENTED;
-#endif
-
     return result.Result();
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
