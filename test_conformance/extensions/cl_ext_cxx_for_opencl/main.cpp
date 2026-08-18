@@ -18,7 +18,5 @@
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarnessWithCheck(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0, nullptr);
+    return runTestHarnessWithCheck(argc, argv, false, 0, nullptr);
 }

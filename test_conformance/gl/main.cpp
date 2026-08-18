@@ -37,7 +37,8 @@ static cl_context sCurrentContext = NULL;
 #define TEST_FN_REDIRECT(fn) ADD_TEST(redirect_##fn)
 #define TEST_FN_REDIRECTOR(fn)                                                 \
     int test_redirect_##fn(cl_device_id device, cl_context context,            \
-                           cl_command_queue queue, int numElements)            \
+                           cl_command_queue queue, int numElements,            \
+                           void *args)                                         \
     {                                                                          \
         int error;                                                             \
         clCommandQueueWrapper realQueue = clCreateCommandQueueWithProperties(  \
