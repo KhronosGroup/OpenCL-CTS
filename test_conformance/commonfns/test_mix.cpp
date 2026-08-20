@@ -181,17 +181,28 @@ int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
         pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
         for (i = 0; i < num_elements; i++)
         {
-            input_ptr[0][i] = conv_to_half((float)genrand_real1(d));
-            input_ptr[1][i] = conv_to_half((float)genrand_real1(d));
+            input_ptr[0][i] =
+                conv_to_half(get_random_float(-32752.0f, 32752.0f, d));
+            input_ptr[1][i] =
+                conv_to_half(get_random_float(-32752.0f, 32752.0f, d));
             input_ptr[2][i] = conv_to_half((float)genrand_real1(d));
+        }
+    }
+    else if (std::is_same<T, float>::value)
+    {
+        for (i = 0; i < num_elements; i++)
+        {
+            input_ptr[0][i] = get_random_float(-0x20000000, 0x20000000, d);
+            input_ptr[1][i] = get_random_float(-0x20000000, 0x20000000, d);
+            input_ptr[2][i] = (T)genrand_real1(d);
         }
     }
     else
     {
         for (i = 0; i < num_elements; i++)
         {
-            input_ptr[0][i] = (T)genrand_real1(d);
-            input_ptr[1][i] = (T)genrand_real1(d);
+            input_ptr[0][i] = get_random_double(-0x20000000, 0x20000000, d);
+            input_ptr[1][i] = get_random_double(-0x20000000, 0x20000000, d);
             input_ptr[2][i] = (T)genrand_real1(d);
         }
     }

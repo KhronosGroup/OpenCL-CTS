@@ -153,7 +153,9 @@
     "test_commonfns": {
         "": {
             "clamp": "pass",
-            "clamp_scalar_bounds": "pass"
+            "clamp_scalar_bounds": "pass",
+            "mix": "fail",
+            "mixf": "fail"
         }
     },
     "test_computeinfo": {
