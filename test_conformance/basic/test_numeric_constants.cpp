@@ -16,6 +16,7 @@
 #include "testBase.h"
 
 #include <cinttypes>
+#include <cmath>
 
 #define TEST_VALUE_POSITIVE( string_name, name, value ) \
 { \
@@ -139,6 +140,15 @@ REGISTER_TEST(host_numeric_constants)
     TEST_VALUE_EQUAL( "CL_M_2_SQRTPI_F", CL_M_2_SQRTPI_F,MAKE_HEX_FLOAT(0x1.20dd76p+0f, 0x120dd76L, -24));
     TEST_VALUE_EQUAL( "CL_M_SQRT2_F",    CL_M_SQRT2_F,   MAKE_HEX_FLOAT(0x1.6a09e6p+0f, 0x16a09e6L, -24));
     TEST_VALUE_EQUAL( "CL_M_SQRT1_2_F",  CL_M_SQRT1_2_F, MAKE_HEX_FLOAT(0x1.6a09e6p-1f, 0x16a09e6L, -25));
+
+    TEST_VALUE_EQUAL_LITERAL( "CL_NAN", std::isnan(CL_NAN), 1 )
+    TEST_VALUE_EQUAL_LITERAL( "CL_HUGE_VALF", (std::isinf(CL_HUGE_VALF) && CL_HUGE_VALF > 0), 1 )
+#if !defined(_MSC_VER)
+    // Skip under MSVC to avoid error C2177: constant too big.
+    TEST_VALUE_EQUAL_LITERAL( "CL_HUGE_VAL", (std::isinf(CL_HUGE_VAL) && CL_HUGE_VAL > 0), 1 )
+#endif
+    TEST_VALUE_EQUAL_LITERAL( "CL_MAXFLOAT", CL_MAXFLOAT, CL_FLT_MAX )
+    TEST_VALUE_EQUAL_LITERAL( "CL_INFINITY", (std::isinf(CL_INFINITY) && CL_INFINITY > 0), 1 )
 
     // clang-format on
 
