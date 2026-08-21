@@ -244,7 +244,9 @@
             "op_spec_constant_double_simple": "pass",
             "op_spec_constant_true_simple": "pass",
             "op_spec_constant_false_simple": "pass",
-            "op_spec_constant_compile_link": "pass"
+            "op_spec_constant_compile_link": "pass",
+            "op_spec_constant_build_twice": "pass",
+            "op_spec_constant_compile_twice": "pass"
         }
     },
     "test_vectors": {
