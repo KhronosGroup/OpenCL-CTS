@@ -18,7 +18,8 @@
             "enqueue_map_image": "pass",
             "arraycopy": "pass",
             "host_numeric_constants": "pass",
-            "kernel_numeric_constants": "pass"
+            "kernel_numeric_constants": "pass",
+            "kernel_preprocessor_macros": "pass"
         }
     },
     "test_bruteforce": {
@@ -149,6 +150,12 @@
             "3Dto2Darray": "pass"
         }
     },
+    "test_commonfns": {
+        "": {
+            "clamp": "pass",
+            "clamp_scalar_bounds": "pass"
+        }
+    },
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",
@@ -213,22 +220,17 @@
             "select_double_long": "pass"
         }
     },
-    "test_vectors": {
-        "--wimpy": {
-            "step_type": "pass",
-            "step_var": "pass",
-            "step_typedef_type": "pass",
-            "step_typedef_var": "pass",
-            "vec_align_array": "pass",
-            "vec_align_struct": "pass",
-            "vec_align_packed_struct": "pass",
-            "vec_align_struct_arr": "pass",
-            "vec_align_packed_struct_arr": "pass"
-        }
-    },
     "test_spirv_new": {
         "": {
             "basic_versions": "pass",
+            "access_chain_array": "pass",
+            "access_chain_inbounds_array": "pass",
+            "ptr_access_chain_array": "pass",
+            "ptr_access_chain_inbounds_array": "pass",
+            "access_chain_vector": "pass",
+            "access_chain_inbounds_vector": "pass",
+            "ptr_access_chain_vector": "pass",
+            "ptr_access_chain_inbounds_vector": "pass",
             "linkage_export_function_compile": "pass",
             "linkage_import_function_compile": "pass",
             "linkage_import_function_link": "pass",
@@ -243,6 +245,19 @@
             "op_spec_constant_true_simple": "pass",
             "op_spec_constant_false_simple": "pass",
             "op_spec_constant_compile_link": "pass"
+        }
+    },
+    "test_vectors": {
+        "--wimpy": {
+            "step_type": "pass",
+            "step_var": "pass",
+            "step_typedef_type": "pass",
+            "step_typedef_var": "pass",
+            "vec_align_array": "pass",
+            "vec_align_struct": "pass",
+            "vec_align_packed_struct": "pass",
+            "vec_align_struct_arr": "pass",
+            "vec_align_packed_struct_arr": "pass"
         }
     }
 }
