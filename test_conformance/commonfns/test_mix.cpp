@@ -90,8 +90,7 @@ bool mix_result_is_valid(const T x, const T y, const T a, const T out)
     // tolerance to both permitted evaluations.
     const T contracted = std::fma(difference, a, x);
     const double uncontracted_error =
-        std::fabs(static_cast<double>(out)
-                  - static_cast<double>(uncontracted));
+        std::fabs(static_cast<double>(out) - static_cast<double>(uncontracted));
     const double contracted_error =
         std::fabs(static_cast<double>(out) - static_cast<double>(contracted));
     return uncontracted_error <= MAX_ERR || contracted_error <= MAX_ERR;
@@ -133,8 +132,7 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
                 // Half-precision mix accuracy is implementation-defined so
                 // is only reported.
                 max_delta = std::max(
-                    max_delta,
-                    mix_half_error(x, y, r, conv_to_dbl(outptr[i])));
+                    max_delta, mix_half_error(x, y, r, conv_to_dbl(outptr[i])));
             }
         }
     }
@@ -152,15 +150,15 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
                 r = x + ((y - x) * a);
                 if constexpr (!std::is_same<T, half>::value)
                 {
-                    if (!mix_result_is_valid(inptrX[vi], inptrY[vi],
-                                             inptrA[i], outptr[vi]))
+                    if (!mix_result_is_valid(inptrX[vi], inptrY[vi], inptrA[i],
+                                             outptr[vi]))
                     {
                         log_error(
                             "{%d, element %d}) verification error: mix(%a, "
                             "%a, %a) = *%a vs. %a\n",
                             ii, j, conv_to_flt(inptrX[vi]),
-                            conv_to_flt(inptrY[vi]), conv_to_flt(inptrA[i]),
-                            r, conv_to_flt(outptr[vi]));
+                            conv_to_flt(inptrY[vi]), conv_to_flt(inptrA[i]), r,
+                            conv_to_flt(outptr[vi]));
                         return -1;
                     }
                 }
