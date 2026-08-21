@@ -183,7 +183,11 @@ REGISTER_TEST_VERSION(op_spec_constant_compile_link, Version(2, 2))
     SPIRV_CHECK_ERROR(err, "Failed to set obj spec constant before compiling");
 
     err = clCompileProgram(obj1, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
-    SPIRV_CHECK_ERROR(err, "Failed to compile obj program");
+    if (err != CL_SUCCESS)
+    {
+        OutputBuildLog(obj1, device);
+        SPIRV_CHECK_ERROR(err, "Failed to compile obj1 program");
+    }
 
     const cl_uint bogus0 = 999; // should be ignored
     err =
@@ -204,14 +208,25 @@ REGISTER_TEST_VERSION(op_spec_constant_compile_link, Version(2, 2))
     SPIRV_CHECK_ERROR(err, "Failed to set main spec constant before compiling");
 
     err = clCompileProgram(obj2, 1, &device, NULL, 0, NULL, NULL, NULL, NULL);
-    SPIRV_CHECK_ERROR(err, "Failed to compile main program");
+    if (err != CL_SUCCESS)
+    {
+        OutputBuildLog(obj2, device);
+        SPIRV_CHECK_ERROR(err, "Failed to compile obj2 program");
+    }
 
     // Link the two object files together and create the test kernel.
 
     const cl_program progs[] = { obj1, obj2 };
     clProgramWrapper prog =
         clLinkProgram(context, 1, &device, NULL, 2, progs, NULL, NULL, &err);
-    SPIRV_CHECK_ERROR(err, "Failed to link program");
+    if (err != CL_SUCCESS)
+    {
+        if (prog != NULL)
+        {
+            OutputBuildLog(prog, device);
+        }
+        SPIRV_CHECK_ERROR(err, "Failed to link program");
+    }
 
     const cl_uint bogus1 = 99999; // should be ignored
     err =
@@ -240,7 +255,7 @@ REGISTER_TEST_VERSION(op_spec_constant_compile_link, Version(2, 2))
                               &result, 0, NULL, NULL);
     SPIRV_CHECK_ERROR(err, "Failed to read result from output_buffer");
 
-    // The expect value is the sum of the spec constant values set before
+    // The expected value is the sum of the spec constant values set before
     // compiling.
 
     const cl_uint expected = oValue + mValue;
