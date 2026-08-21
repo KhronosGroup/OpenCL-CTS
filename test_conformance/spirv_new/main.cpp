@@ -129,22 +129,22 @@ static int offline_get_program_with_il(clProgramWrapper &prog,
     return err;
 }
 
-int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
-                        const cl_context context, const char *prog_name,
-                        spec_const spec_const_def)
+int get_unbuilt_program_with_il(clProgramWrapper &prog,
+                                const cl_device_id deviceID,
+                                const cl_context context, const char *fileName)
 {
     cl_int err = 0;
     if (gCompilationMode == kBinary)
     {
-        return offline_get_program_with_il(prog, deviceID, context, prog_name);
+        return offline_get_program_with_il(prog, deviceID, context, fileName);
     }
 
-    std::vector<unsigned char> buffer_vec = readSPIRV(prog_name);
+    std::vector<unsigned char> buffer_vec = readSPIRV(fileName);
 
     int file_bytes = buffer_vec.size();
     if (file_bytes == 0)
     {
-        log_error("File %s not found\n", prog_name);
+        log_error("File %s not found\n", fileName);
         return -1;
     }
 
@@ -154,15 +154,6 @@ int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
         prog = clCreateProgramWithIL(context, buffer, file_bytes, &err);
         SPIRV_CHECK_ERROR(
             err, "Failed to create program with clCreateProgramWithIL");
-
-        if (spec_const_def.spec_value != NULL)
-        {
-            err = clSetProgramSpecializationConstant(
-                prog, spec_const_def.spec_id, spec_const_def.spec_size,
-                spec_const_def.spec_value);
-            SPIRV_CHECK_ERROR(
-                err, "Failed to run clSetProgramSpecializationConstant");
-        }
     }
     else
     {
@@ -186,6 +177,16 @@ int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
         SPIRV_CHECK_ERROR(
             err, "Failed to create program with clCreateProgramWithILKHR");
     }
+
+    return 0;
+}
+
+int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
+                        const cl_context context, const char *fileName)
+{
+    cl_int err = 0;
+    err = get_unbuilt_program_with_il(prog, deviceID, context, fileName);
+    SPIRV_CHECK_ERROR(err, "Failed to get unbuilt program with IL");
 
     err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
     if (err != CL_SUCCESS)
