@@ -856,6 +856,24 @@ void DataInfoSpec<InType, OutType, InFP, OutFP>::conv_sat(OutType *out,
         cl_float inVal = *in;
         if (is_in_half()) inVal = HTF(*in);
 
+        if (!(std::is_floating_point<OutType>::value || is_out_half()))
+        {
+            bool is_nan = false;
+            if constexpr (std::is_same<InType, cl_half>::value && InFP)
+            {
+                is_nan = std::isnan(inVal);
+            }
+            else
+            {
+                is_nan = std::isnan(*in);
+            }
+            if (is_nan)
+            {
+                *out = 0;
+                return;
+            }
+        }
+
         if (std::is_floating_point<OutType>::value || is_out_half())
         { // in half/float/double, out half/float/double
             if (is_out_half())
