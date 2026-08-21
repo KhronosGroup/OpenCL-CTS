@@ -228,30 +228,37 @@ int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
     if (std::is_same<T, half>::value)
     {
         pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
+        const float half_bound = CL_HALF_MAX / 2.0f;
         for (i = 0; i < num_elements; i++)
         {
             input_ptr[0][i] =
-                conv_to_half(get_random_float(-32752.0f, 32752.0f, d));
+                conv_to_half(get_random_float(-half_bound, half_bound, d));
             input_ptr[1][i] =
-                conv_to_half(get_random_float(-32752.0f, 32752.0f, d));
+                conv_to_half(get_random_float(-half_bound, half_bound, d));
             input_ptr[2][i] = conv_to_half((float)genrand_real1(d));
         }
     }
     else if (std::is_same<T, float>::value)
     {
+        // Sample a broad signed range while leaving ample headroom for the
+        // intermediate results in x + (y - x) * a.
+        const float float_bound = 0x1.0p+29f;
         for (i = 0; i < num_elements; i++)
         {
-            input_ptr[0][i] = get_random_float(-0x20000000, 0x20000000, d);
-            input_ptr[1][i] = get_random_float(-0x20000000, 0x20000000, d);
+            input_ptr[0][i] = get_random_float(-float_bound, float_bound, d);
+            input_ptr[1][i] = get_random_float(-float_bound, float_bound, d);
             input_ptr[2][i] = (T)genrand_real1(d);
         }
     }
     else
     {
+        // Use the same range as float so both paths exercise comparable input
+        // values without approaching double-precision overflow.
+        const double double_bound = 0x1.0p+29;
         for (i = 0; i < num_elements; i++)
         {
-            input_ptr[0][i] = get_random_double(-0x20000000, 0x20000000, d);
-            input_ptr[1][i] = get_random_double(-0x20000000, 0x20000000, d);
+            input_ptr[0][i] = get_random_double(-double_bound, double_bound, d);
+            input_ptr[1][i] = get_random_double(-double_bound, double_bound, d);
             input_ptr[2][i] = (T)genrand_real1(d);
         }
     }
