@@ -27,6 +27,9 @@
 
 #include <vector>
 
+extern bool gVersionSkip;
+extern bool gExtensionSkip;
+
 #define SPIRV_CHECK_ERROR(err, fmt, ...)                                       \
     do                                                                         \
     {                                                                          \
@@ -34,6 +37,17 @@
         log_error("%s(%d): Error %d\n" fmt "\n", __FILE__, __LINE__, err,      \
                   ##__VA_ARGS__);                                              \
         return -1;                                                             \
+    } while (0)
+
+#define REQUIRE_SPIRV_EXTENSION(name)                                          \
+    do                                                                         \
+    {                                                                          \
+        if (!is_spirv_extension_available(device, name))                       \
+        {                                                                      \
+            log_info(name                                                      \
+                     " is not supported on this device. Skipping test.\n");    \
+            return TEST_SKIPPED_ITSELF;                                        \
+        }                                                                      \
     } while (0)
 
 struct spec_const
@@ -45,7 +59,10 @@ struct spec_const
     const void *spec_value;
 };
 
+std::vector<unsigned char> readSPIRV(const char *file_name);
+bool is_spirv_version_supported(cl_device_id deviceID, const char *version);
+bool is_spirv_extension_available(cl_device_id device,
+                                  const char *spirvExtensionName);
 int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
                         const cl_context context, const char *prog_name,
                         spec_const spec_const_def = spec_const());
-std::vector<unsigned char> readSPIRV(const char *file_name);
