@@ -315,8 +315,8 @@ static int spec_constant_compile_twice_helper(cl_device_id device,
 
     if (build == false)
     {
-        linked = clLinkProgram(context, 1, &device, nullptr, 1, &prog,
-                               nullptr, nullptr, &err);
+        linked = clLinkProgram(context, 1, &device, nullptr, 1, &prog, nullptr,
+                               nullptr, &err);
         if (err != CL_SUCCESS && linked != nullptr)
         {
             OutputBuildLog(linked, device);
