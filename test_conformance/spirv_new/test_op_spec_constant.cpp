@@ -287,13 +287,13 @@ static int build_or_compile(cl_program prog, cl_device_id device, bool build)
     return err;
 }
 
-static int spec_constant_compile_twice_helper(cl_device_id deviceID,
+static int spec_constant_compile_twice_helper(cl_device_id device,
                                               cl_context context,
                                               cl_command_queue queue,
                                               bool build)
 {
     clProgramWrapper prog, linked;
-    cl_int err = get_unbuilt_program_with_il(prog, deviceID, context,
+    cl_int err = get_unbuilt_program_with_il(prog, device, context,
                                              "op_spec_constant_compile_twice");
     SPIRV_CHECK_ERROR(err, "Failed to create program");
 
@@ -302,7 +302,7 @@ static int spec_constant_compile_twice_helper(cl_device_id deviceID,
                                              &sValue0);
     SPIRV_CHECK_ERROR(err, "Failed to set initial specialization constant");
 
-    err = build_or_compile(prog, deviceID, build);
+    err = build_or_compile(prog, device, build);
     SPIRV_CHECK_ERROR(err, "Failed to build or compile initial program");
 
     const cl_uint sValue1 = 2;
@@ -310,13 +310,17 @@ static int spec_constant_compile_twice_helper(cl_device_id deviceID,
                                              &sValue1);
     SPIRV_CHECK_ERROR(err, "Failed to set updated specialization constant");
 
-    err = build_or_compile(prog, deviceID, build);
+    err = build_or_compile(prog, device, build);
     SPIRV_CHECK_ERROR(err, "Failed to build or compile updated program");
 
     if (build == false)
     {
-        linked = clLinkProgram(context, 1, &deviceID, nullptr, 1, &prog,
+        linked = clLinkProgram(context, 1, &device, nullptr, 1, &prog,
                                nullptr, nullptr, &err);
+        if (err != CL_SUCCESS && linked != nullptr)
+        {
+            OutputBuildLog(linked, device);
+        }
         SPIRV_CHECK_ERROR(err, "Failed to link updated program");
     }
 

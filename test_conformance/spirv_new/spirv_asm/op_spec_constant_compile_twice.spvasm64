@@ -7,7 +7,6 @@
     %uint_42 = OpSpecConstant %uint 42
        %void = OpTypeVoid
 %_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
-   %func_sig = OpTypeFunction %uint
  %kernel_sig = OpTypeFunction %void %_ptr_CrossWorkgroup_uint
      %kernel = OpFunction %void None %kernel_sig
         %dst = OpFunctionParameter %_ptr_CrossWorkgroup_uint
