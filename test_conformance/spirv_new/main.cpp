@@ -123,14 +123,26 @@ bool is_spirv_extension_available(cl_device_id device,
     cl_int err;
     size_t sz = 0;
     err = clGetDeviceInfo(device, CL_DEVICE_SPIRV_EXTENSIONS, 0, nullptr, &sz);
-    if (err != CL_SUCCESS) return false;
+    if (err != CL_SUCCESS)
+    {
+        log_info("Query for CL_DEVICE_SPIRV_EXTENSIONS size failed!\n");
+        log_info("Unable to perform extension check for %s.\n",
+                 spirvExtensionName);
+        return false;
+    }
 
     std::vector<const char *> extensions(sz / sizeof(const char *));
     err = clGetDeviceInfo(device, CL_DEVICE_SPIRV_EXTENSIONS, sz,
                           extensions.data(), nullptr);
-    if (err != CL_SUCCESS) return false;
+    if (err != CL_SUCCESS)
+    {
+        log_info("Query for CL_DEVICE_SPIRV_EXTENSIONS failed!\n");
+        log_info("Unable to perform extension check for %s.\n",
+                 spirvExtensionName);
+        return false;
+    }
 
-    for (auto &ext : extensions)
+    for (const auto &ext : extensions)
     {
         if (!strcmp(spirvExtensionName, ext))
         {
