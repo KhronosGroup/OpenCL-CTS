@@ -196,16 +196,16 @@ void initInputCount(int wimpyReductionFactor);
 
 template <typename T>
 void fillUnaryInput(T *data, size_t num_elems, size_t base_elem, MTdata d,
-                    bool testAll = false);
+                    bool testAll = false, size_t totalSpecialValuesCount = 0,
+                    size_t hold = 1);
 
 template <typename T1, typename T2>
 void fillBinaryInput(T1 *data1, T2 *data2, size_t num_elems, size_t base_elem,
-                     MTdata d, bool testAll1 = false, bool testAll2 = false);
+                     MTdata d, bool testAll = false);
 
 template <typename T1, typename T2, typename T3>
 void fillTernaryInput(T1 *data1, T2 *data2, T3 *data3, size_t num_elems,
-                      size_t base_elem, MTdata d, bool testAll1 = false,
-                      bool testAll2 = false, bool testAll3 = false);
+                      size_t base_elem, MTdata d);
 
 
 #endif /* COMMON_H */
