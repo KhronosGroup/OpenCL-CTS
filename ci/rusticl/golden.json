@@ -36,6 +36,20 @@
             "shuffle_function_call": "pass"
         }
     },
+    "test_spirv_new": {
+        "": {
+            "op_fadd_double2_fast": "pass",
+            "op_fadd_double2_regular": "pass",
+            "op_fadd_double_fast": "pass",
+            "op_fadd_double_regular": "pass",
+            "op_fadd_float4_fast": "pass",
+            "op_fadd_float4_regular": "pass",
+            "op_fadd_float_fast": "pass",
+            "op_fadd_float_regular": "pass",
+            "op_fadd_half_fast": "pass",
+            "op_fadd_half_regular": "pass"
+        }
+    },
     "test_subgroups": {
         "": {
             "ifp_core": "skip",

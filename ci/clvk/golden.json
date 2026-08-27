@@ -26,6 +26,20 @@
             "pci_bus_info": "skip"
         }
     },
+    "test_spirv_new": {
+        "": {
+            "op_fadd_double2_fast": "skip",
+            "op_fadd_double2_regular": "skip",
+            "op_fadd_double_fast": "skip",
+            "op_fadd_double_regular": "skip",
+            "op_fadd_float4_fast": "skip",
+            "op_fadd_float4_regular": "skip",
+            "op_fadd_float_fast": "skip",
+            "op_fadd_float_regular": "skip",
+            "op_fadd_half_fast": "skip",
+            "op_fadd_half_regular": "skip"
+        }
+    },
     "test_subgroups": {
         "": {
             "ifp_core": "skip",

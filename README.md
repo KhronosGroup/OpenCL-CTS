@@ -16,9 +16,8 @@ Compiling the CTS requires the following CMake configuration options to be set:
 * `SPIRV_INCLUDE_DIR` Points to the unified
   [SPIRV-Headers](https://github.com/KhronosGroup/SPIRV-Headers).
 * `CL_LIB_DIR` Directory containing the OpenCL library to build against.
-* `SPIRV_TOOLS_TARGET_DIR` (Optional) Directory containing the target
-  SPIRV-Tools CMake package used to link tests against the SPIRV-Tools library
-  (e.g. `cl_khr_cooperative_matrix`). SPIRV-Tools is discovered in the
+* SPIRV-Tools is required. `SPIRV_TOOLS_TARGET_DIR` optionally specifies the
+  directory containing its CMake package. The library is discovered in the
   following order (preferring `SPIRV-Tools-static`, then `SPIRV-Tools`, then
   `SPIRV-Tools-shared` when CMake targets are available):
   1. Existing CMake targets already defined in the build (e.g. when building

@@ -20,6 +20,7 @@
 
 #include "procs.h"
 #include "harness/os_helpers.h"
+#include "harness/spirvTools.h"
 #include "harness/stringHelpers.h"
 
 #if defined(_WIN32)
@@ -153,16 +154,36 @@ bool is_spirv_extension_available(cl_device_id device,
     return false;
 }
 
-static int offline_get_program_with_il(clProgramWrapper &prog,
-                                       const cl_device_id deviceID,
-                                       const cl_context context,
-                                       const char *prog_name)
+static int
+offline_get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
+                            const cl_context context, const char *prog_name,
+                            const std::vector<uint32_t> *generated_il = nullptr)
 {
     cl_int err = 0;
     std::string outputTypeStr = "binary";
     std::string defaultScript = std::string("..") + slash + std::string("spv_to_binary.py");
     std::string outputFilename = spvBinariesPath + slash + std::string(prog_name);
-    std::string sourceFilename = outputFilename +  spvExt;
+    std::string sourceFilename = outputFilename + spvExt + gAddrWidth;
+
+    if (generated_il != nullptr)
+    {
+        std::ofstream source(
+            sourceFilename, std::ios::out | std::ios::binary | std::ios::trunc);
+        if (!source.good())
+        {
+            log_error("Failed to write generated SPIR-V file: %s\n",
+                      sourceFilename.c_str());
+            return -1;
+        }
+        source.write(reinterpret_cast<const char *>(generated_il->data()),
+                     generated_il->size() * sizeof((*generated_il)[0]));
+        if (!source.good())
+        {
+            log_error("Failed to write generated SPIR-V file: %s\n",
+                      sourceFilename.c_str());
+            return -1;
+        }
+    }
 
     std::string scriptArgs =
         sourceFilename + " " +
@@ -195,6 +216,40 @@ static int offline_get_program_with_il(clProgramWrapper &prog,
     prog = clCreateProgramWithBinary(context, 1, &deviceID, &file_bytes, &buffer, &status, &err);
     SPIRV_CHECK_ERROR((err || status), "Failed to create program with clCreateProgramWithBinary");
     return err;
+}
+
+static cl_int build_program_for_device(clProgramWrapper &prog,
+                                       const cl_device_id deviceID)
+{
+    cl_int err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
+    if (err != CL_SUCCESS)
+    {
+        cl_int outputErr = OutputBuildLog(prog, deviceID);
+        SPIRV_CHECK_ERROR(outputErr, "OutputBuildLog failed");
+    }
+    return err;
+}
+
+int create_and_build_program_from_spirv_text(clProgramWrapper &prog,
+                                             const cl_device_id deviceID,
+                                             const cl_context context,
+                                             const char *prog_name,
+                                             const std::string &spirv_text)
+{
+    std::vector<uint32_t> spirv_binary;
+    if (!assemble_spirv_text(spirv_text, spirv_binary))
+        return CL_INVALID_BINARY;
+
+    if (gCompilationMode == kBinary)
+    {
+        cl_int err = offline_get_program_with_il(prog, deviceID, context,
+                                                 prog_name, &spirv_binary);
+        if (err != CL_SUCCESS) return err;
+        return build_program_for_device(prog, deviceID);
+    }
+
+    return create_and_build_program_from_spirv_il(prog, deviceID, context,
+                                                  spirv_binary);
 }
 
 int get_unbuilt_program_with_il(clProgramWrapper &prog,
@@ -256,15 +311,7 @@ int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
     err = get_unbuilt_program_with_il(prog, deviceID, context, fileName);
     SPIRV_CHECK_ERROR(err, "Failed to get unbuilt program with IL");
 
-    err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
-    if (err != CL_SUCCESS)
-    {
-        cl_int outputErr = OutputBuildLog(prog, deviceID);
-        SPIRV_CHECK_ERROR(outputErr, "OutputBuildLog failed");
-        return err;
-    }
-
-    return err;
+    return build_program_for_device(prog, deviceID);
 }
 
 test_status InitCL(cl_device_id id)

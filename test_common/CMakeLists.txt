@@ -23,3 +23,10 @@ set(HARNESS_SOURCES
 )
 
 add_library(harness STATIC ${HARNESS_SOURCES})
+
+# Binaries that need SPIRV-Tools should prepend spirv_tools_harness before
+# harness.
+add_library(spirv_tools_harness STATIC harness/spirvTools.cpp)
+target_link_libraries(spirv_tools_harness
+    harness
+    ${CLConform_SPIRV_TOOLS_TARGET})
