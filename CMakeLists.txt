@@ -236,5 +236,7 @@ include_directories(${CLConform_SOURCE_DIR}/test_common/harness
                     ${CLConform_SOURCE_DIR}/test_common/gl
                     ${CLConform_SOURCE_DIR}/test_common)
 
+include(test_common/LinkSPIRVTools.cmake)
+
 add_subdirectory(test_common)
 add_subdirectory(test_conformance)

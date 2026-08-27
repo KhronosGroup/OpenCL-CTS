@@ -20,6 +20,7 @@
 
 #include "procs.h"
 #include "harness/os_helpers.h"
+#include "harness/spirvTools.h"
 #include "harness/stringHelpers.h"
 
 #if defined(_WIN32)
@@ -153,16 +154,36 @@ bool is_spirv_extension_available(cl_device_id device,
     return false;
 }
 
-static int offline_get_program_with_il(clProgramWrapper &prog,
-                                       const cl_device_id deviceID,
-                                       const cl_context context,
-                                       const char *prog_name)
+static int
+offline_get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
+                            const cl_context context, const char *prog_name,
+                            const std::vector<uint32_t> *generated_il = nullptr)
 {
     cl_int err = 0;
     std::string outputTypeStr = "binary";
     std::string defaultScript = std::string("..") + slash + std::string("spv_to_binary.py");
     std::string outputFilename = spvBinariesPath + slash + std::string(prog_name);
-    std::string sourceFilename = outputFilename +  spvExt;
+    std::string sourceFilename = outputFilename + spvExt + gAddrWidth;
+
+    if (generated_il != nullptr)
+    {
+        std::ofstream source(
+            sourceFilename, std::ios::out | std::ios::binary | std::ios::trunc);
+        if (!source.good())
+        {
+            log_error("Failed to write generated SPIR-V file: %s\n",
+                      sourceFilename.c_str());
+            return -1;
+        }
+        source.write(reinterpret_cast<const char *>(generated_il->data()),
+                     generated_il->size() * sizeof((*generated_il)[0]));
+        if (!source.good())
+        {
+            log_error("Failed to write generated SPIR-V file: %s\n",
+                      sourceFilename.c_str());
+            return -1;
+        }
+    }
 
     std::string scriptArgs =
         sourceFilename + " " +
@@ -195,6 +216,24 @@ static int offline_get_program_with_il(clProgramWrapper &prog,
     prog = clCreateProgramWithBinary(context, 1, &deviceID, &file_bytes, &buffer, &status, &err);
     SPIRV_CHECK_ERROR((err || status), "Failed to create program with clCreateProgramWithBinary");
     return err;
+}
+
+int get_program_with_generated_il(clProgramWrapper &prog,
+                                  const cl_device_id deviceID,
+                                  const cl_context context,
+                                  const char *prog_name,
+                                  const std::string &spirv_text)
+{
+    std::vector<uint32_t> spirv_binary;
+    if (!assemble_spirv_text(spirv_text, spirv_binary))
+        return CL_INVALID_BINARY;
+
+    if (gCompilationMode == kBinary)
+        return offline_get_program_with_il(prog, deviceID, context, prog_name,
+                                           &spirv_binary);
+
+    return create_program_from_spirv_binary(prog, deviceID, context,
+                                            spirv_binary);
 }
 
 int get_unbuilt_program_with_il(clProgramWrapper &prog,

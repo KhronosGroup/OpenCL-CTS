@@ -16,20 +16,146 @@
 
 #include "testBase.h"
 #include "types.hpp"
+#include "harness/spirvTools.h"
 
 #include <sstream>
 #include <string>
 
-template<typename T>
-int test_fmath(cl_device_id deviceID,
-               cl_context context,
-               cl_command_queue queue,
-               const char *spvName,
-               const char *funcName,
-               const char *Tname,
-               bool fast_math,
-               std::vector<T> &h_lhs,
-               std::vector<T> &h_rhs)
+static int create_fmath_program(clProgramWrapper &program, cl_device_id device,
+                                cl_context context,
+                                const std::string &function_name,
+                                const std::string &type_name)
+{
+    std::string scalar_name;
+    unsigned scalar_bits = 0;
+    unsigned vector_width = 1;
+    if (type_name == "half")
+    {
+        scalar_name = "half";
+        scalar_bits = 16;
+    }
+    else if (type_name == "float")
+    {
+        scalar_name = "float";
+        scalar_bits = 32;
+    }
+    else if (type_name == "float4")
+    {
+        scalar_name = "float";
+        scalar_bits = 32;
+        vector_width = 4;
+    }
+    else if (type_name == "double")
+    {
+        scalar_name = "double";
+        scalar_bits = 64;
+    }
+    else if (type_name == "double2")
+    {
+        scalar_name = "double";
+        scalar_bits = 64;
+        vector_width = 2;
+    }
+    else
+    {
+        log_error("Unsupported fmath type: %s\n", type_name.c_str());
+        return -1;
+    }
+
+    std::string opcode;
+    if (function_name == "fadd")
+        opcode = "OpFAdd";
+    else if (function_name == "fsub")
+        opcode = "OpFSub";
+    else if (function_name == "fmul")
+        opcode = "OpFMul";
+    else if (function_name == "fdiv")
+        opcode = "OpFDiv";
+    else if (function_name == "frem")
+        opcode = "OpFRem";
+    else if (function_name == "fmod")
+        opcode = "OpFMod";
+    else
+    {
+        log_error("Unsupported fmath function: %s\n", function_name.c_str());
+        return -1;
+    }
+
+    const std::string value_type = vector_width == 1
+        ? scalar_name
+        : "v" + std::to_string(vector_width) + scalar_name;
+    const unsigned storage_width = vector_width == 3 ? 4 : vector_width;
+    const unsigned alignment = scalar_bits * storage_width / 8;
+
+    std::stringstream spirv_text;
+    std::vector<std::string> capabilities = { "Linkage" };
+    if (scalar_bits == 16) capabilities.emplace_back("Float16");
+    if (scalar_bits == 64) capabilities.emplace_back("Float64");
+
+    cl_uint address_bits = 0;
+    cl_int err = emit_spirv_assembly_preamble(spirv_text, device, address_bits,
+                                              capabilities);
+    SPIRV_CHECK_ERROR(err, "Failed to emit SPIR-V assembly preamble");
+
+    spirv_text << R"(
+OpEntryPoint Kernel %kernel "fmath_spv" %global_id
+OpName %res "res"
+OpName %lhs "lhs"
+OpName %rhs "rhs"
+OpName %entry "entry"
+OpDecorate %global_id BuiltIn GlobalInvocationId
+OpDecorate %global_id Constant
+OpDecorate %global_id LinkageAttributes "__spirv_GlobalInvocationId" Import
+OpDecorate %no_capture FuncParamAttr NoCapture
+%no_capture = OpDecorationGroup
+OpGroupDecorate %no_capture %res %lhs %rhs
+%size_t = OpTypeInt )"
+               << address_bits << R"( 0
+%v3size_t = OpTypeVector %size_t 3
+%ptr_input_v3size_t = OpTypePointer Input %v3size_t
+%void = OpTypeVoid
+%)" << scalar_name
+               << " = OpTypeFloat " << scalar_bits << "\n";
+    if (vector_width != 1)
+    {
+        spirv_text << "%" << value_type << " = OpTypeVector %" << scalar_name
+                   << " " << vector_width << "\n";
+    }
+    spirv_text << "%ptr_value = OpTypePointer CrossWorkgroup %" << value_type
+               << R"(
+%function_type = OpTypeFunction %void %ptr_value %ptr_value %ptr_value
+%global_id = OpVariable %ptr_input_v3size_t Input
+%kernel = OpFunction %void None %function_type
+%res = OpFunctionParameter %ptr_value
+%lhs = OpFunctionParameter %ptr_value
+%rhs = OpFunctionParameter %ptr_value
+%entry = OpLabel
+%gid = OpLoad %v3size_t %global_id
+%index = OpCompositeExtract %size_t %gid 0
+%lhs_ptr = OpInBoundsPtrAccessChain %ptr_value %lhs %index
+%lhs_value = OpLoad %)"
+               << value_type << " %lhs_ptr Aligned " << alignment << R"(
+%rhs_ptr = OpInBoundsPtrAccessChain %ptr_value %rhs %index
+%rhs_value = OpLoad %)"
+               << value_type << " %rhs_ptr Aligned " << alignment
+               << "\n%result = " << opcode << " %" << value_type
+               << R"( %lhs_value %rhs_value
+%res_ptr = OpInBoundsPtrAccessChain %ptr_value %res %index
+OpStore %res_ptr %result Aligned )"
+               << alignment << R"(
+OpReturn
+OpFunctionEnd
+)";
+
+    const std::string program_name = function_name + "_" + type_name;
+    return get_program_with_generated_il(
+        program, device, context, program_name.c_str(), spirv_text.str());
+}
+
+template <typename T>
+int test_fmath(cl_device_id deviceID, cl_context context,
+               cl_command_queue queue, const char *funcName, const char *Tname,
+               bool fast_math, std::vector<T> &h_lhs, std::vector<T> &h_rhs)
 {
 
     if(std::string(Tname).find("double") != std::string::npos) {
@@ -76,7 +202,7 @@ int test_fmath(cl_device_id deviceID,
         kernelStream << "__kernel void fmath_cl(__global T *out,          \n";
         kernelStream << "const __global T *lhs, const __global T *rhs)    \n";
         kernelStream << "{                                                \n";
-        kernelStream << "    int id = get_global_id(0);                   \n";
+        kernelStream << "    size_t id = get_global_id(0);                \n";
         kernelStream << "    out[id] = FUNC(lhs[id], rhs[id]);            \n";
         kernelStream << "}                                                \n";
         kernelStr = kernelStream.str();
@@ -115,7 +241,7 @@ int test_fmath(cl_device_id deviceID,
     }
 
     clProgramWrapper prog;
-    err = get_program_with_il(prog, deviceID, context, spvName);
+    err = create_fmath_program(prog, deviceID, context, funcName, Tname);
     SPIRV_CHECK_ERROR(err, "Failed to build program");
 
     clKernelWrapper kernel = clCreateKernel(prog, "fmath_spv", &err);
@@ -170,8 +296,8 @@ int test_fmath(cl_device_id deviceID,
         }                                                                      \
                                                                                \
         const char *mode = #MODE;                                              \
-        return test_fmath(device, context, queue, #FUNC "_" #TYPE, #FUNC,      \
-                          #TYPE, mode[0] == 'f', lhs, rhs);                    \
+        return test_fmath(device, context, queue, #FUNC, #TYPE,                \
+                          mode[0] == 'f', lhs, rhs);                           \
     }
 
 #define TEST_FMATH_MODE(TYPE, MODE)                                            \

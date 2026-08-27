@@ -42,6 +42,7 @@ set(TEST_HARNESS_SOURCES
 set(${MODULE_NAME}_SOURCES ${${MODULE_NAME}_SOURCES} ${TEST_HARNESS_SOURCES})
 
 include(../CMakeCommon.txt)
+target_link_spirv_tools(${${MODULE_NAME}_OUT})
 
 add_subdirectory(spirv_asm)
 add_dependencies(${${MODULE_NAME}_OUT} spirv_new_binaries)
