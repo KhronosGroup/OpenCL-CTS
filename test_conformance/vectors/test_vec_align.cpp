@@ -46,43 +46,6 @@ size_t get_align(size_t vecSize)
     return vecSize;
 }
 
-/* // Lots of conditionals means this is not gonna be an optimal min on intel.
- */
-/* // That's okay, make sure we only call a few times per test, not for every */
-/* // element */
-/* size_t min_of_nonzero(size_t a, size_t b) */
-/* { */
-/*     if(a != 0 && (a<=b || b==0)) */
-/*     { */
-/*     return a; */
-/*     } */
-/*     if(b != 0 && (b<a || a==0)) */
-/*     { */
-/*     return b; */
-/*     } */
-/*     return 0; */
-/* } */
-
-
-/* size_t get_min_packed_alignment(size_t preSize, size_t typeMultiplePreSize,
- */
-/*                 size_t postSize, size_t typeMultiplePostSize, */
-/*                 ExplicitType kType, size_t vecSize) */
-/* { */
-/*     size_t pre_min = min_of_nonzero(preSize,  */
-/*                     typeMultiplePreSize* */
-/*                     get_explicit_type_size(kType)); */
-/*     size_t post_min = min_of_nonzero(postSize,  */
-/*                     typeMultiplePostSize* */
-/*                     get_explicit_type_size(kType)); */
-/*     size_t struct_min = min_of_nonzero(pre_min, post_min); */
-/*     size_t result =  min_of_nonzero(struct_min, get_align(vecSize) */
-/*                     *get_explicit_type_size(kType)); */
-/*     return result; */
-
-/* } */
-
-
 int test_vec_internal(cl_device_id deviceID, cl_context context,
                       cl_command_queue queue, const char* pattern,
                       const char* testName, size_t bufSize, size_t preSize,
@@ -178,7 +141,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
                 vlog_error("%s: failed to fill source buf for type %s%s\n",
                            testName, g_arrTypeNames[typeIdx],
                            g_arrVecSizeNames[vecSizeIdx]);
-                destroyBufferStruct(pBuffers, pClState);
+                destroyBufferStruct(pBuffers);
                 destroyClState(pClState);
                 return -1;
             }
@@ -191,7 +154,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
             {
                 vlog_error("%s: Error compiling \"\n%s\n\"", testName,
                            srcBuffer);
-                destroyBufferStruct(pBuffers, pClState);
+                destroyBufferStruct(pBuffers);
                 destroyClState(pClState);
                 return -1;
             }
@@ -202,7 +165,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
                 vlog_error("%s: failed to push args %s%s\n", testName,
                            g_arrTypeNames[typeIdx],
                            g_arrVecSizeNames[vecSizeIdx]);
-                destroyBufferStruct(pBuffers, pClState);
+                destroyBufferStruct(pBuffers);
                 destroyClState(pClState);
                 return -1;
             }
@@ -215,7 +178,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
                 vlog_error("%s: runKernel fail (%zu threads) %s%s\n", testName,
                            pClState->m_numThreads, g_arrTypeNames[typeIdx],
                            g_arrVecSizeNames[vecSizeIdx]);
-                destroyBufferStruct(pBuffers, pClState);
+                destroyBufferStruct(pBuffers);
                 destroyClState(pClState);
                 return -1;
             }
@@ -227,7 +190,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
                 vlog_error("%s: failed to retrieve results %s%s\n", testName,
                            g_arrTypeNames[typeIdx],
                            g_arrVecSizeNames[vecSizeIdx]);
-                destroyBufferStruct(pBuffers, pClState);
+                destroyBufferStruct(pBuffers);
                 destroyClState(pClState);
                 return -1;
             }
@@ -253,7 +216,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
                            g_arrTypeNames[typeIdx],
                            g_arrVecSizeNames[vecSizeIdx]);
                 vlog_error("%s: Source was \"\n%s\n\"", testName, srcBuffer);
-                destroyBufferStruct(pBuffers, pClState);
+                destroyBufferStruct(pBuffers);
                 destroyClState(pClState);
                 return -1;
             }
@@ -262,7 +225,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
         }
     }
 
-    destroyBufferStruct(pBuffers, pClState);
+    destroyBufferStruct(pBuffers);
 
     destroyClState(pClState);
 
