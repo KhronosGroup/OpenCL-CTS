@@ -382,6 +382,20 @@ static const std::array<size_t, ARR_SIZE> type_multiple_post_align_arr = {
     0, 0, 3, 5, 4, 12
 };
 
+// Array-of-struct tests need every trailing-member layout because it can affect
+// the stride between consecutive structures.
+static constexpr std::array<unsigned, ARR_SIZE> all_post_indices = { 0, 1, 2,
+                                                                     3, 4, 5 };
+
+// Single unpacked structs only need cases with no trailing member and with a
+// trailing vector that can increase the structure's alignment.
+static constexpr std::array<unsigned, 2> unpacked_struct_post_indices = { 0,
+                                                                          4 };
+
+// A trailing member cannot affect the offset of an earlier packed member, so
+// the packed single-struct test only needs the empty trailing-member case.
+static constexpr std::array<unsigned, 1> packed_struct_post_indices = { 0 };
+
 struct test_vec_thread_info
 {
     cl_device_id device;
@@ -393,6 +407,8 @@ struct test_vec_thread_info
     const char* source;
     bool supports_fp64;
     bool supports_fp16;
+    const unsigned* postIndices;
+    size_t postCount;
 };
 
 cl_int test_vec_thread(cl_uint job_id, cl_uint thread_id, void* userInfo)
@@ -400,8 +416,8 @@ cl_int test_vec_thread(cl_uint job_id, cl_uint thread_id, void* userInfo)
     test_vec_thread_info* info = (test_vec_thread_info*)userInfo;
     char tmp[2048];
 
-    int preIdx = job_id / ARR_SIZE;
-    int postIdx = job_id % ARR_SIZE;
+    int preIdx = job_id / info->postCount;
+    int postIdx = info->postIndices[job_id % info->postCount];
 
     size_t preSize = 0;
     size_t typeMultiplePreSize = 0;
@@ -456,8 +472,11 @@ REGISTER_TEST(vec_align_struct)
                                false,
                                tmp,
                                device_supports_double(device),
-                               device_supports_half(device) };
-    cl_int result = ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
+                               device_supports_half(device),
+                               unpacked_struct_post_indices.data(),
+                               unpacked_struct_post_indices.size() };
+    cl_int result =
+        ThreadPool_Do(test_vec_thread, ARR_SIZE * info.postCount, &info);
     if (result != CL_SUCCESS)
     {
         return result;
@@ -468,7 +487,7 @@ REGISTER_TEST(vec_align_struct)
               ".DST_SCOPE.", "__global"); //
 
     info.testName = "test_vec_align_struct";
-    return ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
+    return ThreadPool_Do(test_vec_thread, ARR_SIZE * info.postCount, &info);
 }
 
 REGISTER_TEST(vec_align_packed_struct)
@@ -486,8 +505,11 @@ REGISTER_TEST(vec_align_packed_struct)
                                true,
                                tmp,
                                device_supports_double(device),
-                               device_supports_half(device) };
-    cl_int result = ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
+                               device_supports_half(device),
+                               packed_struct_post_indices.data(),
+                               packed_struct_post_indices.size() };
+    cl_int result =
+        ThreadPool_Do(test_vec_thread, ARR_SIZE * info.postCount, &info);
     if (result != CL_SUCCESS)
     {
         return result;
@@ -499,7 +521,7 @@ REGISTER_TEST(vec_align_packed_struct)
               ".DST_SCOPE.", "__global"); //
 
     info.testName = "test_vec_align_packed_struct";
-    return ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
+    return ThreadPool_Do(test_vec_thread, ARR_SIZE * info.postCount, &info);
 }
 
 REGISTER_TEST(vec_align_struct_arr)
@@ -517,8 +539,10 @@ REGISTER_TEST(vec_align_struct_arr)
                                false,
                                tmp,
                                device_supports_double(device),
-                               device_supports_half(device) };
-    return ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
+                               device_supports_half(device),
+                               all_post_indices.data(),
+                               all_post_indices.size() };
+    return ThreadPool_Do(test_vec_thread, ARR_SIZE * info.postCount, &info);
 }
 
 REGISTER_TEST(vec_align_packed_struct_arr)
@@ -536,6 +560,8 @@ REGISTER_TEST(vec_align_packed_struct_arr)
                                true,
                                tmp,
                                device_supports_double(device),
-                               device_supports_half(device) };
-    return ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
+                               device_supports_half(device),
+                               all_post_indices.data(),
+                               all_post_indices.size() };
+    return ThreadPool_Do(test_vec_thread, ARR_SIZE * info.postCount, &info);
 }
