@@ -580,11 +580,16 @@ REGISTER_TEST(set_kernel_arg_struct_array)
     }
 
     /* Create some I/O streams */
+    // The kernel and the host reference both compute A + B as a plain int, so
+    // keep every operand in [-CL_INT_MAX / 2, CL_INT_MAX / 2]: the sum then
+    // stays representable and the arithmetic stays defined.
+    const cl_int max_addend = CL_INT_MAX / 2;
+
     d = init_genrand( gRandomSeed );
     for (i = 0; i < num_elements; i++)
     {
-        image_pair[i].A = (cl_int)genrand_int32(d);
-        image_pair[i].B = (cl_int)genrand_int32(d);
+        image_pair[i].A = (cl_int)get_random_long(-max_addend, max_addend, d);
+        image_pair[i].B = (cl_int)get_random_long(-max_addend, max_addend, d);
     }
     free_mtdata(d); d = NULL;
 
