@@ -664,6 +664,13 @@ test_integer_ops(cl_device_id deviceID, cl_context context,
                     break;
             }
 
+            if (auto definedOp = get_defined_arithmetic_op(tests[i]))
+            {
+                init_defined_arithmetic_data(
+                    type, *definedOp, num_elements * vectorSize,
+                    pThreadData->m_input_ptr[0], pThreadData->m_input_ptr[1],
+                    randDataIn);
+            }
 
             err = clEnqueueWriteBuffer(queue, pThreadData->m_streams[0], CL_FALSE, 0, pThreadData->m_type_size*num_elements * inputAVecSize, (void *)pThreadData->m_input_ptr[0], 0, NULL, NULL);
             test_error(err, "clEnqueueWriteBuffer failed");
