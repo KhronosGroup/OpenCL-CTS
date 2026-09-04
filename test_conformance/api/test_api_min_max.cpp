@@ -573,8 +573,7 @@ REGISTER_TEST(min_max_mem_alloc_size)
 
     /* Get the max mem alloc size, limit the alloc to half of the available
      * memory */
-    maxAllocSize = get_device_info_max_mem_alloc_size(
-        device, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
+    maxAllocSize = get_device_info_max_mem_alloc_size(device);
     memSize =
         get_device_info_global_mem_size(device, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
 
