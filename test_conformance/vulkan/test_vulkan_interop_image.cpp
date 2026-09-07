@@ -266,12 +266,13 @@ int run_test_with_two_queue(
     srcBufferPtr = (char *)malloc(maxImage2DSize);
     dstBufferPtr = (char *)malloc(maxImage2DSize);
 
+    const uint32_t numMipLevels = 1;
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
     vkDescriptorSetLayoutBindingList.addBinding(
         0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
     vkDescriptorSetLayoutBindingList.addBinding(
         1, VULKAN_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-        MAX_2D_IMAGE_MIP_LEVELS * (useSingleImageKernel ? 1 : num2DImages));
+        (useSingleImageKernel ? 1 : num2DImages) * numMipLevels);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
@@ -318,16 +319,23 @@ int run_test_with_two_queue(
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
 
         // add shader constant
-        VkSpecializationMapEntry entry;
-        entry.constantID = 0;
-        entry.offset = 0;
-        entry.size = sizeof(uint32_t);
+        struct
+        {
+            uint32_t num2DImages;
+            uint32_t numMipLevels;
+        } specData = { num2DImages, numMipLevels };
+
+        VkSpecializationMapEntry entries[2];
+        entries[0] = { 0, offsetof(decltype(specData), num2DImages),
+                       sizeof(uint32_t) };
+        entries[1] = { 1, offsetof(decltype(specData), numMipLevels),
+                       sizeof(uint32_t) };
 
         VkSpecializationInfo spec;
-        spec.mapEntryCount = 1;
-        spec.pMapEntries = &entry;
-        spec.dataSize = sizeof(uint32_t);
-        spec.pData = &num2DImages;
+        spec.mapEntryCount = 2;
+        spec.pMapEntries = entries;
+        spec.dataSize = sizeof(specData);
+        spec.pData = &specData;
 
         VulkanComputePipeline vkComputePipeline(
             vkDevice, vkPipelineLayout, vkImage2DShaderModule, "main", &spec);
@@ -345,7 +353,6 @@ int run_test_with_two_queue(
                 if (height > max_height) continue;
                 region[1] = height;
 
-                uint32_t numMipLevels = 1;
                 log_info("Number of mipmap levels: %d\n", numMipLevels);
 
                 magicValue++;
@@ -511,8 +518,9 @@ int run_test_with_two_queue(
 
                         if (!useSingleImageKernel)
                         {
-                            vkDescriptorSet.updateArray(1, num2DImages,
-                                                        vkImage2DViewList);
+                            vkDescriptorSet.updateArray(
+                                1, vkImage2DViewList.size(), vkImage2DViewList);
+
                             vkCopyCommandBuffer.begin();
                             vkCopyCommandBuffer.pipelineBarrier(
                                 (*vkImage2DList), VULKAN_IMAGE_LAYOUT_UNDEFINED,
@@ -861,12 +869,13 @@ int run_test_with_one_queue(
     srcBufferPtr = (char *)malloc(maxImage2DSize);
     dstBufferPtr = (char *)malloc(maxImage2DSize);
 
+    const uint32_t numMipLevels = 1;
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
     vkDescriptorSetLayoutBindingList.addBinding(
         0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
     vkDescriptorSetLayoutBindingList.addBinding(
         1, VULKAN_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-        MAX_2D_IMAGE_MIP_LEVELS * (useSingleImageKernel ? 1 : num2DImages));
+        (useSingleImageKernel ? 1 : num2DImages) * numMipLevels);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
@@ -913,16 +922,23 @@ int run_test_with_one_queue(
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
 
         // add shader constant
-        VkSpecializationMapEntry entry;
-        entry.constantID = 0;
-        entry.offset = 0;
-        entry.size = sizeof(uint32_t);
+        struct
+        {
+            uint32_t num2DImages;
+            uint32_t numMipLevels;
+        } specData = { num2DImages, numMipLevels };
+
+        VkSpecializationMapEntry entries[2];
+        entries[0] = { 0, offsetof(decltype(specData), num2DImages),
+                       sizeof(uint32_t) };
+        entries[1] = { 1, offsetof(decltype(specData), numMipLevels),
+                       sizeof(uint32_t) };
 
         VkSpecializationInfo spec;
-        spec.mapEntryCount = 1;
-        spec.pMapEntries = &entry;
-        spec.dataSize = sizeof(uint32_t);
-        spec.pData = &num2DImages;
+        spec.mapEntryCount = 2;
+        spec.pMapEntries = entries;
+        spec.dataSize = sizeof(specData);
+        spec.pData = &specData;
 
         VulkanComputePipeline vkComputePipeline(
             vkDevice, vkPipelineLayout, vkImage2DShaderModule, "main", &spec);
@@ -940,7 +956,6 @@ int run_test_with_one_queue(
                 if (height > max_height) continue;
                 region[1] = height;
 
-                uint32_t numMipLevels = 1;
                 log_info("Number of mipmap levels: %d\n", numMipLevels);
 
                 magicValue++;
@@ -1112,8 +1127,8 @@ int run_test_with_one_queue(
 
                         if (!useSingleImageKernel)
                         {
-                            vkDescriptorSet.updateArray(1, num_2D_image,
-                                                        vkImage2DViewList);
+                            vkDescriptorSet.updateArray(
+                                1, vkImage2DViewList.size(), vkImage2DViewList);
                             vkCopyCommandBuffer.begin();
                             vkCopyCommandBuffer.pipelineBarrier(
                                 *vkImage2DList, VULKAN_IMAGE_LAYOUT_UNDEFINED,
