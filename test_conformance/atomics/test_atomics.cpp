@@ -283,9 +283,9 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
     }
     streams[1] = clCreateBuffer(
         context,
-        (!startRefValues.empty() ? CL_MEM_COPY_HOST_PTR : CL_MEM_READ_WRITE),
+        startRefValues.empty() ? CL_MEM_READ_WRITE : CL_MEM_COPY_HOST_PTR,
         typeSize * threadSize,
-        !startRefValues.empty() ? startRefValues.data() : NULL, NULL);
+        startRefValues.empty() ? NULL : startRefValues.data(), NULL);
     if (!streams[1])
     {
         log_error("ERROR: Creating reference array failed!\n");
