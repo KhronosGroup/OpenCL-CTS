@@ -27,7 +27,7 @@ struct UnifiedSVMOPs : UnifiedSVMBase
     // Test the clEnqueueSVMMemcpy function for random ranges
     // of a USM allocation and validate the results.
     cl_int test_SVMMemcpy(USVMWrapper<cl_uchar> *src,
-                          USVMWrapper<cl_uchar> *dst)
+                          USVMWrapper<cl_uchar> *dst, bool use_new_api)
     {
         cl_int err = CL_SUCCESS;
 
@@ -54,9 +54,19 @@ struct UnifiedSVMOPs : UnifiedSVMBase
             void *dst_ptr = &dst->get_ptr()[offset];
 
             clEventWrapper event;
-            err = clEnqueueSVMMemcpy(queue, CL_BLOCKING, dst_ptr, src_ptr,
-                                     length, 0, nullptr, &event);
-            test_error(err, "clEnqueueSVMMemcpy failed");
+            if (!use_new_api)
+            {
+                err = clEnqueueSVMMemcpy(queue, CL_BLOCKING, dst_ptr, src_ptr,
+                                         length, 0, nullptr, &event);
+                test_error(err, "clEnqueueSVMMemcpy failed");
+            }
+            else
+            {
+                err = clEnqueueSVMMemcpyWithPropertiesKHR(
+                    queue, NULL, CL_BLOCKING, dst_ptr, src_ptr, length, 0,
+                    nullptr, &event);
+                test_error(err, "clEnqueueSVMMemcpyWithPropertiesKHR failed");
+            }
 
             err = check_event_type(event, CL_COMMAND_SVM_MEMCPY);
             test_error(err,
@@ -95,7 +105,8 @@ struct UnifiedSVMOPs : UnifiedSVMBase
         return CL_SUCCESS;
     }
 
-    cl_int test_svm_memcpy(cl_uint srcTypeIndex, cl_uint dstTypeIndex)
+    cl_int test_svm_memcpy(cl_uint srcTypeIndex, cl_uint dstTypeIndex,
+                           bool use_new_api = false)
     {
         cl_int err;
 
@@ -108,7 +119,7 @@ struct UnifiedSVMOPs : UnifiedSVMBase
         err = dstMem->allocate(alloc_count);
         test_error(err, "SVM allocation failed");
 
-        err = test_SVMMemcpy(srcMem.get(), dstMem.get());
+        err = test_SVMMemcpy(srcMem.get(), dstMem.get(), use_new_api);
         test_error(err, "test_SVMMemcpy");
 
         err = srcMem->free();
@@ -119,7 +130,7 @@ struct UnifiedSVMOPs : UnifiedSVMBase
         return CL_SUCCESS;
     }
 
-    cl_int test_svm_memcpy(cl_uint TypeIndex)
+    cl_int test_svm_memcpy(cl_uint TypeIndex, bool use_new_api = false)
     {
         cl_int err;
         const auto caps = deviceUSVMCaps[TypeIndex];
@@ -137,7 +148,7 @@ struct UnifiedSVMOPs : UnifiedSVMBase
         if (caps & CL_SVM_CAPABILITY_HOST_READ_KHR
             || caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
         {
-            err = test_SVMMemcpy(mem.get(), hostMem.get());
+            err = test_SVMMemcpy(mem.get(), hostMem.get(), use_new_api);
             test_error(err, "test_SVMMemcpy");
         }
 
@@ -145,7 +156,7 @@ struct UnifiedSVMOPs : UnifiedSVMBase
         if (caps & CL_SVM_CAPABILITY_HOST_WRITE_KHR
             || caps & PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR)
         {
-            err = test_SVMMemcpy(hostMem.get(), mem.get());
+            err = test_SVMMemcpy(hostMem.get(), mem.get(), use_new_api);
             test_error(err, "test_SVMMemcpy");
         }
 
@@ -175,13 +186,20 @@ struct UnifiedSVMOPs : UnifiedSVMBase
                         src_ti, dst_ti);
                     err = test_svm_memcpy(src_ti, dst_ti);
                     test_error(err, "test_svm_memcpy failed");
+                    log_info("   testing clEnqueueSVMMemcpyWithPropertiesKHR() "
+                             "SVM type %u -> SVM "
+                             "type %u\n",
+                             src_ti, dst_ti);
+                    err = test_svm_memcpy(src_ti, dst_ti, true);
+                    test_error(err, "test_svm_memcpy failed");
                 }
                 else
                 {
-                    log_info(
-                        "   skipping clEnqueueSVMMemcpy() SVM type %u -> SVM "
-                        "type %u\n",
-                        src_ti, dst_ti);
+                    log_info("   skipping clEnqueueSVMMemcpy() & "
+                             "clEnqueueSVMMemcpyWithPropertiesKHR() for SVM "
+                             "type %u -> SVM "
+                             "type %u\n",
+                             src_ti, dst_ti);
                 }
             }
         }
@@ -190,13 +208,25 @@ struct UnifiedSVMOPs : UnifiedSVMBase
         // ptr
         for (cl_uint ti = 0; ti < max_ti; ti++)
         {
-            log_info(
-                "   testing clEnqueueSVMMemcpy() SVM type %u <-> host ptr \n",
-                ti);
-            err = test_svm_memcpy(ti);
-            if (CL_SUCCESS != err)
+            if (deviceUSVMCaps[ti] & CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR)
             {
-                return err;
+                log_info("   testing clEnqueueSVMMemcpy() SVM type %u <-> host "
+                         "ptr \n",
+                         ti);
+                err = test_svm_memcpy(ti);
+                test_error(err, "test_svm_memcpy failed");
+                log_info("   testing clEnqueueSVMMemcpyWithPropertiesKHR() SVM "
+                         "type %u <-> host ptr \n",
+                         ti);
+                err = test_svm_memcpy(ti, true);
+                test_error(err, "test_svm_memcpy failed");
+            }
+            else
+            {
+                log_info("   skipping clEnqueueSVMMemcpy() & "
+                         "clEnqueueSVMMemcpyWithPropertiesKHR() for SVM type "
+                         "%u <-> host_ptr \n",
+                         ti);
             }
         }
 
@@ -206,12 +236,12 @@ struct UnifiedSVMOPs : UnifiedSVMBase
     template <typename T>
     std::unique_ptr<USVMWrapper<T>> get_hostptr_usvm_wrapper()
     {
-        return std::unique_ptr<USVMWrapper<T>>(
-            new USVMWrapper<T>(nullptr, nullptr, nullptr, CL_UINT_MAX,
-                               PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR
-                                   | CL_SVM_CAPABILITY_HOST_READ_KHR
-                                   | CL_SVM_CAPABILITY_HOST_WRITE_KHR,
-                               0, nullptr, nullptr, nullptr, nullptr));
+        return std::unique_ptr<USVMWrapper<T>>(new USVMWrapper<T>(
+            nullptr, nullptr, nullptr, nullptr, nullptr, CL_UINT_MAX,
+            PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR
+                | CL_SVM_CAPABILITY_HOST_READ_KHR
+                | CL_SVM_CAPABILITY_HOST_WRITE_KHR,
+            0, nullptr, nullptr, nullptr, nullptr, nullptr));
     }
 
     bool caps_compatibility_check(cl_uint srcTypeIndex, cl_uint dstTypeIndex)
@@ -219,7 +249,9 @@ struct UnifiedSVMOPs : UnifiedSVMBase
         const auto srcCaps = deviceUSVMCaps[srcTypeIndex];
         const auto dstCaps = deviceUSVMCaps[dstTypeIndex];
 
-        return (srcCaps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
+        return (srcCaps & CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR)
+            && (dstCaps & CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR)
+            && (srcCaps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
             && (dstCaps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR);
     }
 
