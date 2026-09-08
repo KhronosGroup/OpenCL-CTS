@@ -72,7 +72,8 @@ struct UnifiedSVMSetArg : UnifiedSVMBase
             test_error(err, "clEnqueueReadBuffer failed");
 
             // Validate result
-            const cl_uchar *expected_data = src_data.data() + offset;
+            std::vector<cl_uchar> expected_data(length, 0);
+            src->read(expected_data, offset);
 
             for (size_t i = 0; i < length; i++)
             {
