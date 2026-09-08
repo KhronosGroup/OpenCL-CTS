@@ -30,8 +30,6 @@ namespace {
 #define MAX_2D_IMAGE_WIDTH 1024
 #define MAX_2D_IMAGE_HEIGHT 1024
 #define MAX_2D_IMAGE_ELEMENT_SIZE 16
-#define MAX_2D_IMAGE_MIP_LEVELS 11
-#define MAX_2D_IMAGE_DESCRIPTORS MAX_2D_IMAGES *MAX_2D_IMAGE_MIP_LEVELS
 #define NUM_THREADS_PER_GROUP_X 32
 #define NUM_THREADS_PER_GROUP_Y 32
 #define NUM_BLOCKS(size, blockSize)                                            \
@@ -319,17 +317,10 @@ int run_test_with_two_queue(
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
 
         // add shader constant
-        struct
-        {
-            uint32_t num2DImages;
-            uint32_t numMipLevels;
-        } specData = { num2DImages, numMipLevels };
-
+        uint32_t specData[2] = { num2DImages, numMipLevels };
         VkSpecializationMapEntry entries[2];
-        entries[0] = { 0, offsetof(decltype(specData), num2DImages),
-                       sizeof(uint32_t) };
-        entries[1] = { 1, offsetof(decltype(specData), numMipLevels),
-                       sizeof(uint32_t) };
+        entries[0] = { 0, 0, sizeof(uint32_t) };
+        entries[1] = { 1, sizeof(uint32_t), sizeof(uint32_t) };
 
         VkSpecializationInfo spec;
         spec.mapEntryCount = 2;
@@ -922,17 +913,10 @@ int run_test_with_one_queue(
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
 
         // add shader constant
-        struct
-        {
-            uint32_t num2DImages;
-            uint32_t numMipLevels;
-        } specData = { num2DImages, numMipLevels };
-
+        uint32_t specData[2] = { num2DImages, numMipLevels };
         VkSpecializationMapEntry entries[2];
-        entries[0] = { 0, offsetof(decltype(specData), num2DImages),
-                       sizeof(uint32_t) };
-        entries[1] = { 1, offsetof(decltype(specData), numMipLevels),
-                       sizeof(uint32_t) };
+        entries[0] = { 0, 0, sizeof(uint32_t) };
+        entries[1] = { 1, sizeof(uint32_t), sizeof(uint32_t) };
 
         VkSpecializationInfo spec;
         spec.mapEntryCount = 2;
