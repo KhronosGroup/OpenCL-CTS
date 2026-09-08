@@ -1,0 +1,109 @@
+name: 'Setup PoCL'
+description: 'Installs dependencies, builds/restores, and configures PoCL driver'
+inputs:
+  runtime:
+    description: 'Install runtime dependencies and configure environment'
+    required: false
+    default: 'true'
+runs:
+  using: "composite"
+  steps:
+    - name: Resolve SPIRV-LLVM-Translator SHA
+      id: translator_sha
+      shell: bash
+      run: |
+        SHA=$(git ls-remote https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git refs/heads/${POCL_TRANSLATOR_BRANCH} | awk '{print $1}')
+        echo "sha=$SHA" >> $GITHUB_OUTPUT
+
+    - name: Cache PoCL
+      id: cache-pocl
+      uses: actions/cache@v6
+      with:
+        path: ${{ github.workspace }}/pocl-install
+        key: ubuntu-24.04-pocl-${{ env.POCL_VERSION }}-${{ steps.translator_sha.outputs.sha }}
+
+    - name: Install Runtime Dependencies
+      if: inputs.runtime == 'true'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          ocl-icd-libopencl1 \
+          libhwloc15 \
+          libclang-cpp${POCL_LLVM_VERSION} \
+          clang-${POCL_LLVM_VERSION} \
+          llvm-${POCL_LLVM_VERSION}
+
+    - name: Install Build Dependencies
+      if: steps.cache-pocl.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential cmake ninja-build git pkg-config \
+          python3-dev libpython3-dev \
+          clang-${POCL_LLVM_VERSION} \
+          llvm-${POCL_LLVM_VERSION} \
+          libclang-${POCL_LLVM_VERSION}-dev \
+          libclang-cpp${POCL_LLVM_VERSION} \
+          libclang-cpp${POCL_LLVM_VERSION}-dev \
+          llvm-${POCL_LLVM_VERSION}-dev \
+          libhwloc-dev zlib1g-dev libxml2-dev \
+          ocl-icd-dev ocl-icd-opencl-dev
+
+    - name: Setup Ninja
+      if: steps.cache-pocl.outputs.cache-hit != 'true'
+      uses: seanmiddleditch/gha-setup-ninja@master
+
+    - name: Checkout SPIRV-LLVM-Translator
+      if: steps.cache-pocl.outputs.cache-hit != 'true'
+      uses: actions/checkout@v7
+      with:
+        repository: KhronosGroup/SPIRV-LLVM-Translator
+        ref: ${{ env.POCL_TRANSLATOR_BRANCH }}
+        path: SPIRV-LLVM-Translator
+        fetch-depth: 1
+
+    - name: Build and install SPIRV-LLVM-Translator
+      if: steps.cache-pocl.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        TRANSLATOR_INSTALL_PREFIX=$(realpath ${{ github.workspace }}/../spirv-llvm-translator-install)
+        cmake -S ${{ github.workspace }}/SPIRV-LLVM-Translator \
+          -B ${{ github.workspace }}/SPIRV-LLVM-Translator/build -G Ninja \
+          -DCMAKE_INSTALL_PREFIX=${TRANSLATOR_INSTALL_PREFIX} \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DLLVM_DIR=/usr/lib/llvm-${POCL_LLVM_VERSION}/lib/cmake/llvm
+        cmake --build ${{ github.workspace }}/SPIRV-LLVM-Translator/build
+        cmake --install ${{ github.workspace }}/SPIRV-LLVM-Translator/build
+
+    - name: Checkout PoCL
+      if: steps.cache-pocl.outputs.cache-hit != 'true'
+      uses: actions/checkout@v7
+      with:
+        repository: pocl/pocl
+        ref: ${{ env.POCL_VERSION }}
+        path: pocl
+        fetch-depth: 1
+
+    - name: Build PoCL
+      if: steps.cache-pocl.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        TRANSLATOR_INSTALL_PREFIX=$(realpath ${{ github.workspace }}/../spirv-llvm-translator-install)
+        cmake -B pocl/build -S pocl -G Ninja \
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/pocl-install \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DKERNELLIB_HOST_CPU_VARIANTS=distro \
+          -DLLVM_DIR=/usr/lib/llvm-${POCL_LLVM_VERSION}/lib/cmake/llvm \
+          -DLLVM_SPIRV_LIB=${TRANSLATOR_INSTALL_PREFIX}/lib/libLLVMSPIRVLib.a \
+          -DLLVM_SPIRV_INCLUDEDIR=${TRANSLATOR_INSTALL_PREFIX}/include/LLVMSPIRVLib \
+          -DENABLE_ICD=ON
+        cmake --build pocl/build
+        cmake --install pocl/build
+
+    - name: Configure Environment
+      if: inputs.runtime == 'true'
+      shell: bash
+      run: |
+        echo "OCL_ICD_VENDORS=${{ github.workspace }}/pocl-install/etc/OpenCL/vendors" >> $GITHUB_ENV
