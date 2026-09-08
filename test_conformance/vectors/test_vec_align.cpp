@@ -29,6 +29,13 @@
 
 #include <array>
 
+// Each work-item checks another instance of the same compile-time layout, so a
+// small number is sufficient.
+constexpr size_t ALIGNMENT_WORK_ITEMS = 64;
+
+// Reserve 512 bytes per work-item for generated structures.
+constexpr size_t BUFFER_SIZE = ALIGNMENT_WORK_ITEMS * 512;
+
 size_t get_align(size_t vecSize)
 {
     if (vecSize == 3)
@@ -92,7 +99,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
 
     clState* pClState = newClState(deviceID, context, queue);
     bufferStruct* pBuffers = newBufferStruct(
-        bufSize, bufSize * sizeof(cl_uint) / sizeof(cl_char), pClState);
+        bufSize, ALIGNMENT_WORK_ITEMS * sizeof(cl_uint), pClState);
 
     if (pBuffers == NULL)
     {
@@ -193,10 +200,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
 
             // log_info("About to Run kernel\n"); fflush(stdout);
             // now we run the kernel
-            err = runKernel(
-                pClState,
-                bufSize
-                    / (g_arrVecSizes[vecSizeIdx] * g_arrTypeSizes[typeIdx]));
+            err = runKernel(pClState, ALIGNMENT_WORK_ITEMS);
             if (err != 0)
             {
                 vlog_error("%s: runKernel fail (%zu threads) %s%s\n", testName,

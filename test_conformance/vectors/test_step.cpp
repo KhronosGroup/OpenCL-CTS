@@ -26,6 +26,15 @@
 
 #include "type_replacer.h"
 
+// vec_step depends only on its argument's type, so one work-item is sufficient.
+constexpr size_t STEP_WORK_ITEMS = 1;
+
+// Accommodate one instance of the widest tested type.
+constexpr size_t STEP_INPUT_BUFFER_SIZE = sizeof(cl_double16);
+
+// Store one cl_int result.
+constexpr size_t STEP_OUTPUT_BUFFER_SIZE = sizeof(cl_int);
+
 
 /*
  test_step_type,
@@ -45,8 +54,8 @@ int test_step_internal(cl_device_id deviceID, cl_context context,
     char tempBuffer[2048];
 
     clState* pClState = newClState(deviceID, context, queue);
-    bufferStruct* pBuffers =
-        newBufferStruct(BUFFER_SIZE, BUFFER_SIZE, pClState);
+    bufferStruct* pBuffers = newBufferStruct(STEP_INPUT_BUFFER_SIZE,
+                                             STEP_OUTPUT_BUFFER_SIZE, pClState);
 
     if (pBuffers == NULL)
     {
@@ -137,7 +146,7 @@ int test_step_internal(cl_device_id deviceID, cl_context context,
             }
 
             // now we run the kernel
-            err = runKernel(pClState, 1024);
+            err = runKernel(pClState, STEP_WORK_ITEMS);
             if (err != 0)
             {
                 vlog_error("%s: runKernel fail (%zu threads) %s%s\n", testName,
