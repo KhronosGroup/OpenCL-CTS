@@ -50,19 +50,12 @@ extern bool gExtensionSkip;
         }                                                                      \
     } while (0)
 
-struct spec_const
-{
-    spec_const(cl_int id = 0, size_t sizet = 0, const void *value = NULL)
-        : spec_id(id), spec_size(sizet), spec_value(value){};
-    cl_int spec_id;
-    size_t spec_size;
-    const void *spec_value;
-};
-
+int get_unbuilt_program_with_il(clProgramWrapper &prog,
+                                const cl_device_id deviceID,
+                                const cl_context context, const char *fileName);
+int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
+                        const cl_context context, const char *fileName);
 std::vector<unsigned char> readSPIRV(const char *file_name);
 bool is_spirv_version_supported(cl_device_id deviceID, const char *version);
 bool is_spirv_extension_available(cl_device_id device,
                                   const char *spirvExtensionName);
-int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
-                        const cl_context context, const char *prog_name,
-                        spec_const spec_const_def = spec_const());

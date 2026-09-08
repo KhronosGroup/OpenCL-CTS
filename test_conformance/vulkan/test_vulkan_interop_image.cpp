@@ -30,8 +30,6 @@ namespace {
 #define MAX_2D_IMAGE_WIDTH 1024
 #define MAX_2D_IMAGE_HEIGHT 1024
 #define MAX_2D_IMAGE_ELEMENT_SIZE 16
-#define MAX_2D_IMAGE_MIP_LEVELS 11
-#define MAX_2D_IMAGE_DESCRIPTORS MAX_2D_IMAGES *MAX_2D_IMAGE_MIP_LEVELS
 #define NUM_THREADS_PER_GROUP_X 32
 #define NUM_THREADS_PER_GROUP_Y 32
 #define NUM_BLOCKS(size, blockSize)                                            \
@@ -266,12 +264,13 @@ int run_test_with_two_queue(
     srcBufferPtr = (char *)malloc(maxImage2DSize);
     dstBufferPtr = (char *)malloc(maxImage2DSize);
 
+    const uint32_t numMipLevels = 1;
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
     vkDescriptorSetLayoutBindingList.addBinding(
         0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
     vkDescriptorSetLayoutBindingList.addBinding(
         1, VULKAN_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-        MAX_2D_IMAGE_MIP_LEVELS * (useSingleImageKernel ? 1 : num2DImages));
+        (useSingleImageKernel ? 1 : num2DImages) * numMipLevels);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
@@ -318,16 +317,17 @@ int run_test_with_two_queue(
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
 
         // add shader constant
-        VkSpecializationMapEntry entry;
-        entry.constantID = 0;
-        entry.offset = 0;
-        entry.size = sizeof(uint32_t);
+        const uint32_t numImages = useSingleImageKernel ? 1 : num2DImages;
+        uint32_t specData[2] = { numImages, numMipLevels };
+        VkSpecializationMapEntry entries[2];
+        entries[0] = { 0, 0, sizeof(uint32_t) };
+        entries[1] = { 1, sizeof(uint32_t), sizeof(uint32_t) };
 
         VkSpecializationInfo spec;
-        spec.mapEntryCount = 1;
-        spec.pMapEntries = &entry;
-        spec.dataSize = sizeof(uint32_t);
-        spec.pData = &num2DImages;
+        spec.mapEntryCount = 2;
+        spec.pMapEntries = entries;
+        spec.dataSize = sizeof(specData);
+        spec.pData = &specData;
 
         VulkanComputePipeline vkComputePipeline(
             vkDevice, vkPipelineLayout, vkImage2DShaderModule, "main", &spec);
@@ -345,7 +345,6 @@ int run_test_with_two_queue(
                 if (height > max_height) continue;
                 region[1] = height;
 
-                uint32_t numMipLevels = 1;
                 log_info("Number of mipmap levels: %d\n", numMipLevels);
 
                 magicValue++;
@@ -511,8 +510,9 @@ int run_test_with_two_queue(
 
                         if (!useSingleImageKernel)
                         {
-                            vkDescriptorSet.updateArray(1, num2DImages,
-                                                        vkImage2DViewList);
+                            vkDescriptorSet.updateArray(
+                                1, vkImage2DViewList.size(), vkImage2DViewList);
+
                             vkCopyCommandBuffer.begin();
                             vkCopyCommandBuffer.pipelineBarrier(
                                 (*vkImage2DList), VULKAN_IMAGE_LAYOUT_UNDEFINED,
@@ -738,11 +738,20 @@ int run_test_with_two_queue(
                                                    "Failed to release images");
 
                             clFinish(cmd_queue2);
-                            err = clCl2VkExternalSemaphore->signal(cmd_queue2);
-                            test_error_and_cleanup(
-                                err, CLEANUP,
-                                "Failed to signal CL semaphore\n");
+
+                            if (iter != innerIterations - 1)
+                            {
+                                vkQueue.waitIdle();
+
+                                err = clCl2VkExternalSemaphore->signal(
+                                    cmd_queue2);
+                                test_error_and_cleanup(
+                                    err, CLEANUP,
+                                    "Failed to signal CL semaphore\n");
+                            }
                         }
+
+                        vkQueue.waitIdle();
 
                         clFinish(cmd_queue2);
                         for (uint32_t i = 0; i < num2DImages; i++)
@@ -815,7 +824,11 @@ int run_test_with_two_queue(
 
         vkImage2DShader.clear();
     }
+
 CLEANUP:
+
+    vkDevice.waitIdle();
+
     if (clVk2CLExternalSemaphore) delete clVk2CLExternalSemaphore;
     if (clCl2VkExternalSemaphore) delete clCl2VkExternalSemaphore;
 
@@ -861,12 +874,13 @@ int run_test_with_one_queue(
     srcBufferPtr = (char *)malloc(maxImage2DSize);
     dstBufferPtr = (char *)malloc(maxImage2DSize);
 
+    const uint32_t numMipLevels = 1;
     VulkanDescriptorSetLayoutBindingList vkDescriptorSetLayoutBindingList;
     vkDescriptorSetLayoutBindingList.addBinding(
         0, VULKAN_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1);
     vkDescriptorSetLayoutBindingList.addBinding(
         1, VULKAN_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-        MAX_2D_IMAGE_MIP_LEVELS * (useSingleImageKernel ? 1 : num2DImages));
+        (useSingleImageKernel ? 1 : num2DImages) * numMipLevels);
     VulkanDescriptorSetLayout vkDescriptorSetLayout(
         vkDevice, vkDescriptorSetLayoutBindingList);
     VulkanPipelineLayout vkPipelineLayout(vkDevice, vkDescriptorSetLayout);
@@ -913,16 +927,17 @@ int run_test_with_one_queue(
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
 
         // add shader constant
-        VkSpecializationMapEntry entry;
-        entry.constantID = 0;
-        entry.offset = 0;
-        entry.size = sizeof(uint32_t);
+        const uint32_t numImages = useSingleImageKernel ? 1 : num2DImages;
+        uint32_t specData[2] = { numImages, numMipLevels };
+        VkSpecializationMapEntry entries[2];
+        entries[0] = { 0, 0, sizeof(uint32_t) };
+        entries[1] = { 1, sizeof(uint32_t), sizeof(uint32_t) };
 
         VkSpecializationInfo spec;
-        spec.mapEntryCount = 1;
-        spec.pMapEntries = &entry;
-        spec.dataSize = sizeof(uint32_t);
-        spec.pData = &num2DImages;
+        spec.mapEntryCount = 2;
+        spec.pMapEntries = entries;
+        spec.dataSize = sizeof(specData);
+        spec.pData = &specData;
 
         VulkanComputePipeline vkComputePipeline(
             vkDevice, vkPipelineLayout, vkImage2DShaderModule, "main", &spec);
@@ -940,7 +955,6 @@ int run_test_with_one_queue(
                 if (height > max_height) continue;
                 region[1] = height;
 
-                uint32_t numMipLevels = 1;
                 log_info("Number of mipmap levels: %d\n", numMipLevels);
 
                 magicValue++;
@@ -1112,8 +1126,8 @@ int run_test_with_one_queue(
 
                         if (!useSingleImageKernel)
                         {
-                            vkDescriptorSet.updateArray(1, num_2D_image,
-                                                        vkImage2DViewList);
+                            vkDescriptorSet.updateArray(
+                                1, vkImage2DViewList.size(), vkImage2DViewList);
                             vkCopyCommandBuffer.begin();
                             vkCopyCommandBuffer.pipelineBarrier(
                                 *vkImage2DList, VULKAN_IMAGE_LAYOUT_UNDEFINED,
@@ -1274,11 +1288,19 @@ int run_test_with_one_queue(
                             test_error_and_cleanup(err, CLEANUP,
                                                    "Failed to release images");
 
-                            err = clCl2VkExternalSemaphore->signal(cmd_queue1);
-                            test_error_and_cleanup(
-                                err, CLEANUP,
-                                "Failed to signal CL semaphore\n");
+                            if (iter != innerIterations - 1)
+                            {
+                                vkQueue.waitIdle();
+
+                                err = clCl2VkExternalSemaphore->signal(
+                                    cmd_queue1);
+                                test_error_and_cleanup(
+                                    err, CLEANUP,
+                                    "Failed to signal CL semaphore\n");
+                            }
                         }
+
+                        vkQueue.waitIdle();
 
                         for (uint32_t i = 0; i < num2DImages; i++)
                         {
@@ -1347,7 +1369,11 @@ int run_test_with_one_queue(
         }
         vkImage2DShader.clear();
     }
+
 CLEANUP:
+
+    vkDevice.waitIdle();
+
     if (clVk2CLExternalSemaphore) delete clVk2CLExternalSemaphore;
     if (clCl2VkExternalSemaphore) delete clCl2VkExternalSemaphore;
 

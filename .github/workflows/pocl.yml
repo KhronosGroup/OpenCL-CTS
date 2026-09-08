@@ -8,7 +8,7 @@ permissions:
 env:
   LLVM_VERSION: 20
   TRANSLATOR_BRANCH: llvm_release_200
-  POCL_VERSION: v7.1
+  POCL_VERSION: v7.2
   VULKAN_SDK_VERSION: 1.4.309.0
 
 jobs:
@@ -120,6 +120,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=${{ env.pocl }} \
             -DCMAKE_BUILD_TYPE=Release \
             -DKERNELLIB_HOST_CPU_VARIANTS=distro \
+            -DLLVM_DIR=/usr/lib/llvm-${LLVM_VERSION}/lib/cmake/llvm \
             -DLLVM_SPIRV_LIB=${SPIRV_LLVM_TRANSLATOR_PATH}/lib/libLLVMSPIRVLib.a \
             -DLLVM_SPIRV_INCLUDEDIR=${SPIRV_LLVM_TRANSLATOR_PATH}/include/LLVMSPIRVLib \
             -DENABLE_ICD=ON
