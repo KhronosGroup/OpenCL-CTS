@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,6 +20,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <memory>
 
 #include "testBase.h"
 #include "harness/errorHelpers.h"
@@ -557,6 +558,17 @@ static int verify_fill_struct( void *ptr1, void *ptr2, int n )
 }
 
 
+static int verify_pattern_lifetime(cl_int *buffer, size_t num_elements,
+                                   cl_int expected_value)
+{
+    for (size_t i = 0; i < num_elements; i++)
+    {
+        if (buffer[i] != expected_value) return -1;
+    }
+    return 0;
+}
+
+
 static int test_buffer_fill(cl_device_id deviceID, cl_context context,
                             cl_command_queue queue, int num_elements,
                             size_t size, char *type, int loops, void *inptr[5],
@@ -708,6 +720,80 @@ static int test_buffer_fill(cl_device_id deviceID, cl_context context,
 
 }   // end test_buffer_fill()
 
+
+static int test_fill_reused_pattern(cl_device_id device_id, cl_context context,
+                                    cl_command_queue queue, int num_elements)
+{
+    cl_int err;
+    const size_t buffer_bytes = num_elements * sizeof(cl_int);
+
+    clMemWrapper buffer;
+    clEventWrapper user_event;
+    clEventWrapper fill_event;
+    std::unique_ptr<cl_int[]> pattern(new cl_int[1]);
+    std::vector<cl_int> host_buffer(num_elements);
+
+    buffer =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_bytes, nullptr, &err);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clCreateBuffer failed");
+        return TEST_FAIL;
+    }
+
+    user_event = clCreateUserEvent(context, &err);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clCreateUserEvent failed");
+        return TEST_FAIL;
+    }
+
+    pattern[0] = TEST_PRIME_INT;
+
+    err = clEnqueueFillBuffer(queue, buffer, pattern.get(), sizeof(cl_int), 0,
+                              buffer_bytes, 1, &user_event, &fill_event);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clEnqueueFillBuffer failed");
+        return TEST_FAIL;
+    }
+
+    /* Modify pattern while command is blocked */
+    pattern[0] = static_cast<cl_int>(0xDEADBEEF);
+
+    err = clSetUserEventStatus(user_event, CL_COMPLETE);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clSetUserEventStatus failed");
+        return TEST_FAIL;
+    }
+
+    err = clWaitForEvents(1, &fill_event);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clWaitForEvents failed");
+        return TEST_FAIL;
+    }
+
+    err = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, buffer_bytes,
+                              host_buffer.data(), 0, nullptr, nullptr);
+    if (err != CL_SUCCESS)
+    {
+        print_error(err, "clEnqueueReadBuffer failed");
+        return TEST_FAIL;
+    }
+
+    if (verify_pattern_lifetime(host_buffer.data(), num_elements,
+                                TEST_PRIME_INT)
+        != 0)
+    {
+        log_error("buffer_fill pattern lifetime test failed - driver used "
+                  "freed/corrupted pattern memory\n");
+        return TEST_FAIL;
+    }
+
+    return TEST_PASS;
+} // end test_fill_pattern_freed_and_corrupted()
 
 REGISTER_TEST(buffer_fill_struct)
 {
@@ -1510,3 +1596,17 @@ REGISTER_TEST(buffer_fill_float)
     return err;
 
 }   // end test_buffer_float_fill()
+
+
+REGISTER_TEST(buffer_fill_pattern_lifetime)
+{
+    int err = 0;
+    if (test_fill_reused_pattern(device, context, queue, num_elements)
+        != TEST_PASS)
+    {
+        err++;
+    }
+
+    return err;
+
+} // end test_buffer_fill_pattern_lifetime()
