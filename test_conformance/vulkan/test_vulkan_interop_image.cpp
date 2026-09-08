@@ -738,11 +738,20 @@ int run_test_with_two_queue(
                                                    "Failed to release images");
 
                             clFinish(cmd_queue2);
-                            err = clCl2VkExternalSemaphore->signal(cmd_queue2);
-                            test_error_and_cleanup(
-                                err, CLEANUP,
-                                "Failed to signal CL semaphore\n");
+
+                            if (iter != innerIterations - 1)
+                            {
+                                vkQueue.waitIdle();
+
+                                err = clCl2VkExternalSemaphore->signal(
+                                    cmd_queue2);
+                                test_error_and_cleanup(
+                                    err, CLEANUP,
+                                    "Failed to signal CL semaphore\n");
+                            }
                         }
+
+                        vkQueue.waitIdle();
 
                         clFinish(cmd_queue2);
                         for (uint32_t i = 0; i < num2DImages; i++)
@@ -815,7 +824,11 @@ int run_test_with_two_queue(
 
         vkImage2DShader.clear();
     }
+
 CLEANUP:
+
+    vkDevice.waitIdle();
+
     if (clVk2CLExternalSemaphore) delete clVk2CLExternalSemaphore;
     if (clCl2VkExternalSemaphore) delete clCl2VkExternalSemaphore;
 
@@ -1275,11 +1288,19 @@ int run_test_with_one_queue(
                             test_error_and_cleanup(err, CLEANUP,
                                                    "Failed to release images");
 
-                            err = clCl2VkExternalSemaphore->signal(cmd_queue1);
-                            test_error_and_cleanup(
-                                err, CLEANUP,
-                                "Failed to signal CL semaphore\n");
+                            if (iter != innerIterations - 1)
+                            {
+                                vkQueue.waitIdle();
+
+                                err = clCl2VkExternalSemaphore->signal(
+                                    cmd_queue1);
+                                test_error_and_cleanup(
+                                    err, CLEANUP,
+                                    "Failed to signal CL semaphore\n");
+                            }
                         }
+
+                        vkQueue.waitIdle();
 
                         for (uint32_t i = 0; i < num2DImages; i++)
                         {
@@ -1348,7 +1369,11 @@ int run_test_with_one_queue(
         }
         vkImage2DShader.clear();
     }
+
 CLEANUP:
+
+    vkDevice.waitIdle();
+
     if (clVk2CLExternalSemaphore) delete clVk2CLExternalSemaphore;
     if (clCl2VkExternalSemaphore) delete clCl2VkExternalSemaphore;
 
