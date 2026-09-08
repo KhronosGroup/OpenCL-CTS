@@ -61,6 +61,7 @@ size_t gWorkGroupSize = 0;
 int gWimpyReductionFactor = 512;
 int gTestDouble = 0;
 bool gHostReset = false;
+bool gTestAll = false;
 
 #if defined( __APPLE__ )
 int gReportTimes = 1;

@@ -60,7 +60,7 @@ ahardwareBufferDecodeUsageFlagsToString(const AHardwareBuffer_UsageFlags flags)
 
     return std::accumulate(active_flags.begin() + 1, active_flags.end(),
                            active_flags.front(),
-                           [](std::string acc, const std::string& flag) {
+                           [](std::string acc, const std::string &flag) {
                                return std::move(acc) + "|" + flag;
                            });
 }

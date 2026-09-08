@@ -24,59 +24,83 @@ cl_uint maxThreadDimension = 0;
 cl_uint bufferSize = 0;
 cl_uint bufferStep = 0;
 
-int main(int argc, const char *argv[])
+static test_status parseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help)
 {
-    int delArg = 0;
-    for (auto i = 0; i < argc; i++)
-    {
-        delArg = 0;
+    help = R"(        -n    Maximum thread dimension value
+        -b    Specifies a buffer size for calculations
+        -x    Specifies a step for calculations
+)";
 
-        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
-        {
-            log_info("Thread dimensions options:\n");
-            log_info("\t-n\tMaximum thread dimension value\n");
-            log_info("\t-b\tSpecifies a buffer size for calculations\n");
-            log_info("\t-x\tSpecifies a step for calculations\n");
-        }
+    std::vector<const char *> argList;
+    argList.push_back(argv[0]);
+
+    for (int i = 1; i < argc; i++)
+    {
         if (strcmp(argv[i], "-n") == 0)
         {
-            delArg++;
+            if (i + 1 >= argc || argv[i + 1] == NULL)
+            {
+                log_info("ERROR: -n Maximum thread dimension value missing\n");
+                return TEST_FAIL;
+            }
             if (atoi(argv[i + 1]) < 1)
             {
                 log_info("ERROR: -n Maximum thread dimension value must be "
-                         "greater than 0");
+                         "greater than 0\n");
                 return TEST_FAIL;
             }
             maxThreadDimension = atoi(argv[i + 1]);
-            delArg++;
+            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
+            i++;
         }
-        if (strcmp(argv[i], "-b") == 0)
+        else if (strcmp(argv[i], "-b") == 0)
         {
-            delArg++;
+            if (i + 1 >= argc || argv[i + 1] == NULL)
+            {
+                log_info("ERROR: -b Buffer size missing\n");
+                return TEST_FAIL;
+            }
             if (atoi(argv[i + 1]) < 1)
             {
-                log_info("ERROR: -b Buffer size must be greater than 0");
+                log_info("ERROR: -b Buffer size must be greater than 0\n");
                 return TEST_FAIL;
             }
             bufferSize = atoi(argv[i + 1]);
-            delArg++;
+            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
+            i++;
         }
-        if (strcmp(argv[i], "-x") == 0)
+        else if (strcmp(argv[i], "-x") == 0)
         {
-            delArg++;
+            if (i + 1 >= argc || argv[i + 1] == NULL)
+            {
+                log_info("ERROR: -x Buffer step missing\n");
+                return TEST_FAIL;
+            }
             if (atoi(argv[i + 1]) < 1)
             {
-                log_info("ERROR: -x Buffer step must be greater than 0");
+                log_info("ERROR: -x Buffer step must be greater than 0\n");
                 return TEST_FAIL;
             }
             bufferStep = atoi(argv[i + 1]);
-            delArg++;
+            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
+            i++;
         }
-        for (int j = i; j < argc - delArg; j++) argv[j] = argv[j + delArg];
-        argc -= delArg;
-        i -= delArg;
+        else
+        {
+            argList.push_back(argv[i]);
+        }
     }
 
-    return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
-                          test_registry::getInstance().definitions(), false, 0);
+    update_argc_argv_from_args_list(argList, argc, argv);
+    return TEST_PASS;
+}
+
+int main(int argc, const char *argv[])
+{
+    return runTestHarnessWithCheckAndParse(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0, nullptr,
+        parseArgs);
 }

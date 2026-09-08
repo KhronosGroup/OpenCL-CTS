@@ -67,7 +67,7 @@ struct DXFenceTestBase
             "supported import types");
 
         // Import D3D12 fence into OpenCL
-        fence_wrapper = new DirectXFenceWrapper(dx_wrapper.getDXDevice());
+        fence_wrapper = new DirectX12FenceWrapper(dx_wrapper.getDXDevice());
         semaphore = createSemaphoreFromFence(fence_wrapper->get());
         test_assert_error(!!semaphore, "Could not create semaphore");
 
@@ -83,12 +83,12 @@ protected:
     cl_context context = nullptr;
     cl_command_queue queue = nullptr;
     cl_int num_elems = 0;
-    DirectXWrapper dx_wrapper;
+    DirectX12Wrapper dx_wrapper;
 
     cl_semaphore_payload_khr semaphore_payload = 1;
     cl_semaphore_khr semaphore = nullptr;
     HANDLE fence_handle = nullptr;
-    DirectXFenceWrapper *fence_wrapper = nullptr;
+    DirectX12FenceWrapper *fence_wrapper = nullptr;
 
     clCreateSemaphoreWithPropertiesKHR_fn clCreateSemaphoreWithPropertiesKHR =
         nullptr;

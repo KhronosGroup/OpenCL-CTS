@@ -10,13 +10,14 @@ set(${MODULE_NAME}_SOURCES
     test_enqueue_api.cpp
     test_fine_grain_memory_consistency.cpp
     test_fine_grain_sync_buffers.cpp
+    test_migrate.cpp
+    test_negative_memcpy.cpp
     test_pointer_passing.cpp
     test_set_kernel_exec_info_svm_ptrs.cpp
     test_shared_address_space_coarse_grain.cpp
     test_shared_address_space_fine_grain.cpp
     test_shared_address_space_fine_grain_buffers.cpp
     test_shared_sub_buffers.cpp
-    test_migrate.cpp
     test_unified_svm_consistency.cpp
     test_unified_svm_corner_cases.cpp
     test_unified_svm_capabilities.cpp

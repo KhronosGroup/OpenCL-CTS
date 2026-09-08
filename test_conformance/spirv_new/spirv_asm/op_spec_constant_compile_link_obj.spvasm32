@@ -1,0 +1,13 @@
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpMemoryModel Physical32 OpenCL
+               OpDecorate %uint_5 SpecId 101
+               OpDecorate %func LinkageAttributes "func" Export
+       %uint = OpTypeInt 32 0
+     %uint_5 = OpSpecConstant %uint 5
+   %func_sig = OpTypeFunction %uint
+       %func = OpFunction %uint Pure %func_sig
+ %func_entry = OpLabel
+               OpReturnValue %uint_5
+               OpFunctionEnd

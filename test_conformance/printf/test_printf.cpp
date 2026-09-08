@@ -992,6 +992,44 @@ REGISTER_TEST(length_specifier)
     return doTest(gQueue, gContext, TYPE_LENGTH_SPECIFIER, device);
 }
 
+REGISTER_TEST_VERSION(size_t, Version(3, 1))
+{
+    cl_uint addressBits = 0;
+    cl_int error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS,
+                                   sizeof(addressBits), &addressBits, NULL);
+    test_error(error, "clGetDeviceInfo for CL_DEVICE_ADDRESS_BITS failed");
+
+    auto result = doTest(gQueue, gContext, TYPE_SIZET, device);
+    if (result == TEST_FAIL) return result;
+
+    if (addressBits > 32)
+    {
+        log_info("CL_DEVICE_ADDRESS_BITS is %u, testing 64-bit size_t...\n",
+                 addressBits);
+        result = doTest(gQueue, gContext, TYPE_SIZET_64, device);
+    }
+    return result;
+}
+
+REGISTER_TEST_VERSION(ptrdiff_t, Version(3, 1))
+{
+    cl_uint addressBits = 0;
+    cl_int error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS,
+                                   sizeof(addressBits), &addressBits, NULL);
+    test_error(error, "clGetDeviceInfo for CL_DEVICE_ADDRESS_BITS failed");
+
+    auto result = doTest(gQueue, gContext, TYPE_PTRDIFFT, device);
+    if (result == TEST_FAIL) return result;
+
+    if (addressBits > 32)
+    {
+        log_info("CL_DEVICE_ADDRESS_BITS is %u, testing 64-bit ptrdiff_t...\n",
+                 addressBits);
+        result = doTest(gQueue, gContext, TYPE_PTRDIFFT_64, device);
+    }
+    return result;
+}
+
 REGISTER_TEST(buffer_size)
 {
     size_t printf_buff_size = 0;
@@ -1016,18 +1054,48 @@ REGISTER_TEST(buffer_size)
     return TEST_PASS;
 }
 
-//-----------------------------------------
-// printUsage
-//-----------------------------------------
-static void printUsage(void)
+REGISTER_TEST(return_value)
 {
-    log_info("test_printf: <optional: testnames> \n");
-    log_info("\tdefault is to run the full test on the default device\n");
-    log_info("\n");
-    for (size_t i = 0; i < test_registry::getInstance().num_tests(); i++)
+    static const char* kernel_source = R"(
+__kernel void test_printf_return(__global int *result)
+{
+    result[0] = printf("printf return value test\n");
+}
+)";
+
+    cl_int err = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+    clMemWrapper result_buffer;
+
+    err = create_single_kernel_helper(gContext, &program, &kernel, 1,
+                                      &kernel_source, "test_printf_return");
+    test_error(err, "create_single_kernel_helper failed");
+
+    result_buffer =
+        clCreateBuffer(gContext, CL_MEM_WRITE_ONLY, sizeof(cl_int), NULL, &err);
+    test_error(err, "clCreateBuffer failed");
+
+    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &result_buffer);
+    test_error(err, "clSetKernelArg failed");
+
+    const size_t global_work_size = 1;
+    err = clEnqueueNDRangeKernel(gQueue, kernel, 1, NULL, &global_work_size,
+                                 NULL, 0, NULL, NULL);
+    test_error(err, "clEnqueueNDRangeKernel failed");
+
+    cl_int result = -1;
+    err = clEnqueueReadBuffer(gQueue, result_buffer, CL_TRUE, 0, sizeof(result),
+                              &result, 0, NULL, NULL);
+    test_error(err, "clEnqueueReadBuffer failed");
+
+    if (result != 0)
     {
-        log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
+        log_error("printf returned %d, expected 0\n", result);
+        return TEST_FAIL;
     }
+
+    return TEST_PASS;
 }
 
 //-----------------------------------------
@@ -1035,70 +1103,8 @@ static void printUsage(void)
 //-----------------------------------------
 int main(int argc, const char* argv[])
 {
-    argc = parseCustomParam(argc, argv);
-    if (argc == -1)
-    {
-        return -1;
-    }
-
-    const char ** argList = (const char **)calloc( argc, sizeof( char*) );
-
-    if( NULL == argList )
-    {
-        log_error( "Failed to allocate memory for argList array.\n" );
-        return 1;
-    }
-
-    argList[0] = argv[0];
-    size_t argCount = 1;
-
-    for (int i=1; i < argc; ++i) {
-        const char *arg = argv[i];
-        if (arg == NULL)
-            break;
-
-        if (arg[0] == '-')
-        {
-            arg++;
-            while(*arg != '\0')
-            {
-                switch(*arg) {
-                    case 'h':
-                        printUsage();
-                        return 0;
-                    default:
-                        log_error( " <-- unknown flag: %c (0x%2.2x)\n)", *arg, *arg );
-                        printUsage();
-                        return 0;
-                }
-                arg++;
-            }
-        }
-        else {
-            argList[argCount] = arg;
-            argCount++;
-        }
-    }
-
-    char* pcTempFname = get_temp_filename();
-    if (pcTempFname != nullptr)
-    {
-        strncpy(gFileName, pcTempFname, sizeof(gFileName) - 1);
-        gFileName[sizeof(gFileName) - 1] = '\0';
-    }
-
-    free(pcTempFname);
-
-    if (strlen(gFileName) == 0)
-    {
-        log_error("get_temp_filename failed\n");
-        return -1;
-    }
-
-    gMTdata = MTdataHolder(gRandomSeed);
-
     int err = runTestHarnessWithCheck(
-        argCount, argList, test_registry::getInstance().num_tests(),
+        argc, argv, test_registry::getInstance().num_tests(),
         test_registry::getInstance().definitions(), true, 0, InitCL);
 
     if (gQueue)
@@ -1114,13 +1120,29 @@ int main(int argc, const char* argv[])
     if (gContext && clReleaseContext(gContext) != CL_SUCCESS)
         log_error("clReleaseContext\n");
 
-    free(argList);
     remove(gFileName);
     return err;
 }
 
 test_status InitCL( cl_device_id device )
 {
+    char* pcTempFname = get_temp_filename();
+    if (pcTempFname != nullptr)
+    {
+        strncpy(gFileName, pcTempFname, sizeof(gFileName) - 1);
+        gFileName[sizeof(gFileName) - 1] = '\0';
+    }
+
+    free(pcTempFname);
+
+    if (strlen(gFileName) == 0)
+    {
+        log_error("get_temp_filename failed\n");
+        return TEST_FAIL;
+    }
+
+    gMTdata = MTdataHolder(gRandomSeed);
+
     uint32_t device_frequency = 0;
     uint32_t compute_devices = 0;
 

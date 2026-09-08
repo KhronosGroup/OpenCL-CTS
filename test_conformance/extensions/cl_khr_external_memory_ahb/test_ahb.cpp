@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+#include "harness/deviceInfo.h"
 #include "harness/compat.h"
 #include "harness/kernelHelpers.h"
 #include "harness/imageHelpers.h"
@@ -1940,6 +1941,9 @@ REGISTER_TEST(lifetime_buffer)
 {
     REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
 
+    GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
+    GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
+
     cl_int err;
     constexpr cl_uint buffer_size = 4096;
     std::vector<uint8_t> host_buffer(buffer_size, 1);
@@ -1997,6 +2001,9 @@ REGISTER_TEST(lifetime_buffer)
         }
     } // Release test scope reference to AHB
 
+    err = clEnqueueAcquireExternalMemObjectsKHR(queue, 1, &imported_buffer, 0,
+                                                nullptr, nullptr);
+    test_error(err, "clEnqueueAcquireExternalMemObjectsKHR failed");
 
     // Verify buffer read by comparing to host buffer
     std::vector<uint8_t> read_buffer(buffer_size);
@@ -2010,6 +2017,10 @@ REGISTER_TEST(lifetime_buffer)
         {
             log_error("At position %zu expected value: %u but got value: %u\n",
                       i, host_buffer[i], read_buffer[i]);
+            err = clEnqueueReleaseExternalMemObjectsKHR(
+                queue, 1, &imported_buffer, 0, nullptr, nullptr);
+            test_error(err, "clEnqueueReleaseExternalMemObjectsKHR failed");
+            test_error(clFinish(queue), "clFinish failed");
             return TEST_FAIL;
         }
     }
@@ -2043,9 +2054,18 @@ REGISTER_TEST(lifetime_buffer)
         {
             log_error("At position %zu expected value: %u but got value: %u\n",
                       i, host_buffer[i], read_buffer[i]);
+            err = clEnqueueReleaseExternalMemObjectsKHR(
+                queue, 1, &imported_buffer, 0, nullptr, nullptr);
+            test_error(err, "clEnqueueReleaseExternalMemObjectsKHR failed");
+            test_error(clFinish(queue), "clFinish failed");
             return TEST_FAIL;
         }
     }
+
+    err = clEnqueueReleaseExternalMemObjectsKHR(queue, 1, &imported_buffer, 0,
+                                                nullptr, nullptr);
+    test_error(err, "clEnqueueReleaseExternalMemObjectsKHR failed");
+    test_error(clFinish(queue), "clFinish failed");
 
     return TEST_PASS;
 }
@@ -2054,6 +2074,9 @@ REGISTER_TEST(lifetime_buffer)
 REGISTER_TEST(lifetime_image)
 {
     REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
+
+    GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
+    GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
 
     int err;
     const AHardwareBuffer_Format aHardwareBufferFormat =
@@ -2121,6 +2144,9 @@ REGISTER_TEST(lifetime_image)
             }
         } // Release test scope reference to AHB
 
+        err = clEnqueueAcquireExternalMemObjectsKHR(queue, 1, &imported_image,
+                                                    0, nullptr, nullptr);
+        test_error(err, "clEnqueueAcquireExternalMemObjectsKHR failed");
 
         // Verify image read using host data
         size_t origin[3] = { 0, 0, 0 };
@@ -2131,7 +2157,8 @@ REGISTER_TEST(lifetime_image)
             &row_pitch, nullptr, 0, nullptr, nullptr, &err));
         test_error(err, "clEnqueueMapImage failed");
 
-        for (size_t row = 0; row < resolution.height; ++row)
+        bool valid = true;
+        for (size_t row = 0; row < resolution.height && valid; ++row)
         {
             for (size_t col = 0; col < resolution.width; ++col)
             {
@@ -2145,7 +2172,8 @@ REGISTER_TEST(lifetime_image)
                         "value: %u\n",
                         row, col, host_image_data[host_image_idx],
                         mapped_image_ptr[mapped_image_idx]);
-                    return TEST_FAIL;
+                    valid = false;
+                    break;
                 }
             }
         }
@@ -2156,6 +2184,15 @@ REGISTER_TEST(lifetime_image)
 
         err = clFinish(queue);
         test_error(err, "clFinish failed");
+
+        if (!valid)
+        {
+            err = clEnqueueReleaseExternalMemObjectsKHR(
+                queue, 1, &imported_image, 0, nullptr, nullptr);
+            test_error(err, "clEnqueueReleaseExternalMemObjectsKHR failed");
+            test_error(clFinish(queue), "clFinish failed");
+            return TEST_FAIL;
+        }
 
 
         // Attempt image write
@@ -2188,7 +2225,8 @@ REGISTER_TEST(lifetime_image)
             &row_pitch, nullptr, 0, nullptr, nullptr, &err));
         test_error(err, "clEnqueueMapImage failed");
 
-        for (size_t row = 0; row < resolution.height; ++row)
+        valid = true;
+        for (size_t row = 0; row < resolution.height && valid; ++row)
         {
             for (size_t col = 0; col < resolution.width; ++col)
             {
@@ -2199,7 +2237,8 @@ REGISTER_TEST(lifetime_image)
                         "At position (%zu, %zu) expected value: %u but got "
                         "value: %u\n",
                         row, col, 128, mapped_image_ptr[mapped_image_idx]);
-                    return TEST_FAIL;
+                    valid = false;
+                    break;
                 }
             }
         }
@@ -2210,6 +2249,13 @@ REGISTER_TEST(lifetime_image)
 
         err = clFinish(queue);
         test_error(err, "clFinish failed");
+
+        err = clEnqueueReleaseExternalMemObjectsKHR(queue, 1, &imported_image,
+                                                    0, nullptr, nullptr);
+        test_error(err, "clEnqueueReleaseExternalMemObjectsKHR failed");
+        test_error(clFinish(queue), "clFinish failed");
+
+        if (!valid) return TEST_FAIL;
     }
     return TEST_PASS;
 }
@@ -2235,6 +2281,9 @@ REGISTER_TEST(sub_buffer)
                  "Skipping test.\n");
         return TEST_SKIPPED_ITSELF;
     }
+
+    GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
+    GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
 
     AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
     aHardwareBufferDesc.format = AHARDWAREBUFFER_FORMAT_BLOB;
@@ -2316,11 +2365,20 @@ REGISTER_TEST(sub_buffer)
                                   CL_BUFFER_CREATE_TYPE_REGION, &region, &err);
             test_error(err, "clCreateSubBuffer failed");
 
+            err = clEnqueueAcquireExternalMemObjectsKHR(queue, 1, &buffer, 0,
+                                                        nullptr, nullptr);
+            test_error(err, "clEnqueueAcquireExternalMemObjectsKHR failed");
+
             std::vector<uint8_t> host_sub_buffer(sub_buffer_size);
             err = clEnqueueReadBuffer(queue, sub_buffer, true, 0,
                                       sub_buffer_size, host_sub_buffer.data(),
                                       0, nullptr, nullptr);
             test_error(err, "clEnqueueReadBuffer failed");
+
+            err = clEnqueueReleaseExternalMemObjectsKHR(queue, 1, &buffer, 0,
+                                                        nullptr, nullptr);
+            test_error(err, "clEnqueueReleaseExternalMemObjectsKHR failed");
+            test_error(clFinish(queue), "clFinish failed");
 
             for (size_t i = 0; i < sub_buffer_size; ++i)
             {
@@ -2332,6 +2390,126 @@ REGISTER_TEST(sub_buffer)
                     return TEST_FAIL;
                 }
             }
+        }
+    }
+    return TEST_PASS;
+}
+
+/* Testing clEnqueueMapBuffer & clEnqueueUnmapMemObject
+ *  Create AHB
+ *  Create CL buffer from AHB
+ *  Write to AHB by locking it
+ *  Verify write using clEnqueueMapBuffer clEnqueueUnmapMemObject
+ */
+REGISTER_TEST(enqueue_map_buffer)
+{
+    cl_int err;
+    RandomSeed seed(gRandomSeed);
+
+    REQUIRE_EXTENSION("cl_khr_external_memory");
+    REQUIRE_EXTENSION("cl_khr_external_memory_android_hardware_buffer");
+
+    GET_PFN(device, clEnqueueAcquireExternalMemObjectsKHR);
+    GET_PFN(device, clEnqueueReleaseExternalMemObjectsKHR);
+
+    const ahb_format_table test_format = { AHARDWAREBUFFER_FORMAT_BLOB };
+
+    AHardwareBuffer_Desc aHardwareBufferDesc = { 0 };
+    aHardwareBufferDesc.format = test_format.aHardwareBufferFormat;
+    for (auto usage : test_buffer_usages)
+    {
+        aHardwareBufferDesc.usage = usage.usageFlags;
+        for (uint32_t buffer_size : test_buffer_sizes)
+        {
+            if (buffer_size > get_device_info_max_mem_alloc_size(device))
+            {
+                continue;
+            }
+
+            aHardwareBufferDesc.width = buffer_size;
+            aHardwareBufferDesc.height = 1;
+            aHardwareBufferDesc.layers = 1;
+
+            CHECK_AHARDWARE_BUFFER_SUPPORT(aHardwareBufferDesc, test_format);
+
+            AHardwareBufferWrapper aHardwareBuffer(&aHardwareBufferDesc);
+            log_info("Testing usage: %s, buffer size: %u\n",
+                     ahardwareBufferDecodeUsageFlagsToString(usage.usageFlags)
+                         .c_str(),
+                     buffer_size);
+
+            cl_mem_properties props[] = {
+                CL_EXTERNAL_MEMORY_HANDLE_ANDROID_HARDWARE_BUFFER_KHR,
+                aHardwareBuffer.get_props(), 0
+            };
+
+            clMemWrapper buffer = clCreateBufferWithProperties(
+                context, props, CL_MEM_READ_WRITE, 0, nullptr, &err);
+            test_error(err, "Failed to create CL buffer from AHardwareBuffer");
+
+
+            void *hardware_buffer_data = nullptr;
+            int ahb_result = AHardwareBuffer_lock(
+                aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN, -1,
+                nullptr, &hardware_buffer_data);
+            if (ahb_result != 0)
+            {
+                log_error("AHardwareBuffer_lock failed with code %d\n",
+                          ahb_result);
+                return TEST_FAIL;
+            }
+
+            std::vector<uint8_t> host_buffer(buffer_size);
+
+            generate_random_data(ExplicitType::kUnsignedChar, buffer_size, seed,
+                                 host_buffer.data());
+
+            memcpy(hardware_buffer_data, host_buffer.data(), buffer_size);
+
+            ahb_result = AHardwareBuffer_unlock(aHardwareBuffer, nullptr);
+            if (ahb_result != 0)
+            {
+                log_error("AHardwareBuffer_unlock failed with code %d\n",
+                          ahb_result);
+                return TEST_FAIL;
+            }
+
+            err = clEnqueueAcquireExternalMemObjectsKHR(queue, 1, &buffer, 0,
+                                                        nullptr, nullptr);
+            test_error(err, "clEnqueueAcquireExternalMemObjectsKHR failed");
+
+            void *mapped_ptr =
+                clEnqueueMapBuffer(queue, buffer, CL_BLOCKING, CL_MAP_READ, 0,
+                                   buffer_size, 0, nullptr, nullptr, &err);
+            test_error(err, "clEnqueueMapBuffer failed");
+
+            uint8_t *mapped_data = static_cast<uint8_t *>(mapped_ptr);
+
+            bool valid = true;
+            for (size_t i = 0; i < buffer_size; ++i)
+            {
+                if (host_buffer[i] != mapped_data[i])
+                {
+                    log_error(
+                        "At position i=%zu expected value %u but got %u\n", i,
+                        host_buffer[i], mapped_data[i]);
+                    valid = false;
+                    break;
+                }
+            }
+
+            err = clEnqueueUnmapMemObject(queue, buffer, mapped_ptr, 0, nullptr,
+                                          nullptr);
+            test_error(err, "clEnqueueUnmapMemObject failed");
+
+            err = clEnqueueReleaseExternalMemObjectsKHR(queue, 1, &buffer, 0,
+                                                        nullptr, nullptr);
+            test_error(err, "clEnqueueReleaseExternalMemObjectsKHR failed");
+
+            err = clFinish(queue);
+            test_error(err, "clFinish failed");
+
+            if (!valid) return TEST_FAIL;
         }
     }
     return TEST_PASS;

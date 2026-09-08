@@ -493,8 +493,10 @@ size_t compare_scanlines(const image_descriptor *imageInfo, const char *aPtr,
             // If the data type is 101010, then ignore bits 31 and 32 when
             // comparing the row
             case CL_UNORM_INT_101010: {
-                cl_uint aPixel = *(cl_uint *)aPtr;
-                cl_uint bPixel = *(cl_uint *)bPtr;
+                cl_uint aPixel = 0;
+                cl_uint bPixel = 0;
+                memcpy(&aPixel, aPtr, sizeof(aPixel));
+                memcpy(&bPixel, bPtr, sizeof(bPixel));
                 if ((aPixel & 0x3fffffff) != (bPixel & 0x3fffffff))
                     return column;
             }
@@ -502,34 +504,108 @@ size_t compare_scanlines(const image_descriptor *imageInfo, const char *aPtr,
 
             // If the data type is 555, ignore bit 15 when comparing the row
             case CL_UNORM_SHORT_555: {
-                cl_ushort aPixel = *(cl_ushort *)aPtr;
-                cl_ushort bPixel = *(cl_ushort *)bPtr;
+                cl_ushort aPixel = 0;
+                cl_ushort bPixel = 0;
+                memcpy(&aPixel, aPtr, sizeof(aPixel));
+                memcpy(&bPixel, bPtr, sizeof(bPixel));
                 if ((aPixel & 0x7fff) != (bPixel & 0x7fff)) return column;
             }
             break;
 
-            case CL_SNORM_INT8: {
-                cl_uchar aPixel = *(cl_uchar *)aPtr;
-                cl_uchar bPixel = *(cl_uchar *)bPtr;
-                // -1.0 is defined as 0x80 and 0x81
-                aPixel = (aPixel == 0x80) ? 0x81 : aPixel;
-                bPixel = (bPixel == 0x80) ? 0x81 : bPixel;
-                if (aPixel != bPixel)
+            // 16-bit per-channel formats with LSB padding (per spec); compare
+            // defined bits only.
+            case CL_UNSIGNED_INT10X6_EXT:
+            case CL_UNORM_INT10X6_EXT: {
+                const size_t channel_count =
+                    get_format_channel_count(imageInfo->format);
+                for (size_t chan = 0; chan < channel_count; ++chan)
                 {
-                    return column;
+                    cl_ushort aChanVal = 0;
+                    cl_ushort bChanVal = 0;
+                    const char *aChan = aPtr + chan * sizeof(cl_ushort);
+                    const char *bChan = bPtr + chan * sizeof(cl_ushort);
+                    memcpy(&aChanVal, aChan, sizeof(aChanVal));
+                    memcpy(&bChanVal, bChan, sizeof(bChanVal));
+                    if ((aChanVal & 0xffc0) != (bChanVal & 0xffc0))
+                        return column;
+                }
+            }
+            break;
+            case CL_UNSIGNED_INT12X4_EXT:
+            case CL_UNORM_INT12X4_EXT: {
+                const size_t channel_count =
+                    get_format_channel_count(imageInfo->format);
+                for (size_t chan = 0; chan < channel_count; ++chan)
+                {
+                    cl_ushort aChanVal = 0;
+                    cl_ushort bChanVal = 0;
+                    const char *aChan = aPtr + chan * sizeof(cl_ushort);
+                    const char *bChan = bPtr + chan * sizeof(cl_ushort);
+                    memcpy(&aChanVal, aChan, sizeof(aChanVal));
+                    memcpy(&bChanVal, bChan, sizeof(bChanVal));
+                    if ((aChanVal & 0xfff0) != (bChanVal & 0xfff0))
+                        return column;
+                }
+            }
+            break;
+            case CL_UNSIGNED_INT14X2_EXT:
+            case CL_UNORM_INT14X2_EXT: {
+                const size_t channel_count =
+                    get_format_channel_count(imageInfo->format);
+                for (size_t chan = 0; chan < channel_count; ++chan)
+                {
+                    cl_ushort aChanVal = 0;
+                    cl_ushort bChanVal = 0;
+                    const char *aChan = aPtr + chan * sizeof(cl_ushort);
+                    const char *bChan = bPtr + chan * sizeof(cl_ushort);
+                    memcpy(&aChanVal, aChan, sizeof(aChanVal));
+                    memcpy(&bChanVal, bChan, sizeof(bChanVal));
+                    if ((aChanVal & 0xfffc) != (bChanVal & 0xfffc))
+                        return column;
+                }
+            }
+            break;
+
+            case CL_SNORM_INT8: {
+                const size_t channel_count =
+                    get_format_channel_count(imageInfo->format);
+                for (size_t chan = 0; chan < channel_count; ++chan)
+                {
+                    cl_uchar aChanVal = 0;
+                    cl_uchar bChanVal = 0;
+                    const char *aChan = aPtr + chan * sizeof(cl_uchar);
+                    const char *bChan = bPtr + chan * sizeof(cl_uchar);
+                    memcpy(&aChanVal, aChan, sizeof(aChanVal));
+                    memcpy(&bChanVal, bChan, sizeof(bChanVal));
+                    // -1.0 is defined as 0x80 and 0x81
+                    aChanVal = (aChanVal == 0x80) ? 0x81 : aChanVal;
+                    bChanVal = (bChanVal == 0x80) ? 0x81 : bChanVal;
+                    if (aChanVal != bChanVal)
+                    {
+                        return column;
+                    }
                 }
             }
             break;
 
             case CL_SNORM_INT16: {
-                cl_ushort aPixel = *(cl_ushort *)aPtr;
-                cl_ushort bPixel = *(cl_ushort *)bPtr;
-                // -1.0 is defined as 0x8000 and 0x8001
-                aPixel = (aPixel == 0x8000) ? 0x8001 : aPixel;
-                bPixel = (bPixel == 0x8000) ? 0x8001 : bPixel;
-                if (aPixel != bPixel)
+                const size_t channel_count =
+                    get_format_channel_count(imageInfo->format);
+                for (size_t chan = 0; chan < channel_count; ++chan)
                 {
-                    return column;
+                    cl_ushort aChanVal = 0;
+                    cl_ushort bChanVal = 0;
+                    const char *aChan = aPtr + chan * sizeof(cl_ushort);
+                    const char *bChan = bPtr + chan * sizeof(cl_ushort);
+                    memcpy(&aChanVal, aChan, sizeof(aChanVal));
+                    memcpy(&bChanVal, bChan, sizeof(bChanVal));
+                    // -1.0 is defined as 0x8000 and 0x8001
+                    aChanVal = (aChanVal == 0x8000) ? 0x8001 : aChanVal;
+                    bChanVal = (bChanVal == 0x8000) ? 0x8001 : bChanVal;
+                    if (aChanVal != bChanVal)
+                    {
+                        return column;
+                    }
                 }
             }
             break;
@@ -544,6 +620,7 @@ size_t compare_scanlines(const image_descriptor *imageInfo, const char *aPtr,
     }
 
     // If we didn't find a difference, return the width of the image
+    assert(column == imageInfo->width);
     return column;
 }
 
@@ -1208,9 +1285,10 @@ void escape_inf_nan_subnormal_values(char *data, size_t allocSize)
 {
     // filter values with 8 not-quite-highest bits
     unsigned int *intPtr = (unsigned int *)data;
-    for (size_t i = 0; i<allocSize>> 2; i++)
+    for (size_t i = 0; i < (allocSize >> 2); i++)
     {
-        if ((intPtr[i] & 0x7F800000) == 0x7F800000) intPtr[i] ^= 0x40000000;
+        if ((intPtr[i] & 0x7F800000) == 0x7F800000)
+            intPtr[i] ^= 0x40000000;
         else if ((intPtr[i] & 0x7F800000) == 0)
             intPtr[i] ^= 0x40000000;
     }
@@ -1218,9 +1296,10 @@ void escape_inf_nan_subnormal_values(char *data, size_t allocSize)
     // Ditto with half floats (16-bit numbers with the 5 not-quite-highest bits
     // = 0x7C00 are special)
     unsigned short *shortPtr = (unsigned short *)data;
-    for (size_t i = 0; i<allocSize>> 1; i++)
+    for (size_t i = 0; i < (allocSize >> 1); i++)
     {
-        if ((shortPtr[i] & 0x7C00) == 0x7C00) shortPtr[i] ^= 0x4000;
+        if ((shortPtr[i] & 0x7C00) == 0x7C00)
+            shortPtr[i] ^= 0x4000;
         else if ((shortPtr[i] & 0x7C00) == 0)
             shortPtr[i] ^= 0x4000;
     }
@@ -3191,12 +3270,12 @@ void pack_image_pixel_error(const float *srcVector,
         case CL_UNSIGNED_INT32: {
             const cl_uint *ptr = (const cl_uint *)results;
             for (unsigned int i = 0; i < channelCount; i++)
-                errors[i] = (cl_float)(
-                    (cl_long)ptr[i]
-                    - (cl_long)CONVERT_UINT(
-                        srcVector[i],
-                        MAKE_HEX_FLOAT(0x1.fffffep31f, 0x1fffffe, 31 - 23),
-                        CL_UINT_MAX));
+                errors[i] = (cl_float)((cl_long)ptr[i]
+                                       - (cl_long)CONVERT_UINT(
+                                           srcVector[i],
+                                           MAKE_HEX_FLOAT(0x1.fffffep31f,
+                                                          0x1fffffe, 31 - 23),
+                                           CL_UINT_MAX));
             break;
         }
         case CL_UNSIGNED_INT10X6_EXT: {

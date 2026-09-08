@@ -1,0 +1,293 @@
+{
+    "test_allocations": {
+        "5 multiple" : {
+            "image2d_read": "pass"
+        },
+        "5 single": {
+            "image2d_read": "pass"
+        }
+    },
+    "test_api": {
+        "": {
+          "consistency_read_write_images": "pass",
+          "min_max_image_array_size": "pass",
+          "min_max_read_image_args": "pass",
+          "min_max_write_image_args": "pass",
+          "negative_set_kernel_arg_invalid_image_msaa": "skip",
+          "negative_set_kernel_arg_invalid_image": "pass"
+        }
+    },
+    "test_atomics": {
+        "": {
+            "atomic_add": "pass"
+        }
+    },
+    "test_basic": {
+        "": {
+            "enqueue_map_image": "pass",
+            "arraycopy": "pass",
+            "host_numeric_constants": "pass",
+            "kernel_numeric_constants": "pass",
+            "kernel_preprocessor_macros": "pass"
+        }
+    },
+    "test_bruteforce": {
+        "--wimpy -1": {
+            "math_edge_cases": "fail",
+            "acos": "pass",
+            "acosh": "pass",
+            "acospi": "pass",
+            "asin": "pass",
+            "asinh": "pass",
+            "asinpi": "pass",
+            "atan": "pass",
+            "atanh": "pass",
+            "atanpi": "pass",
+            "atan2": "pass",
+            "atan2pi": "pass",
+            "cbrt": "pass",
+            "ceil": "pass",
+            "copysign": "pass",
+            "cos": "pass",
+            "cosh": "pass",
+            "cospi": "pass",
+            "exp": "pass",
+            "exp2": "pass",
+            "exp10": "pass",
+            "expm1": "pass",
+            "fabs": "pass",
+            "fdim": "pass",
+            "floor": "pass",
+            "fma": "pass",
+            "fmax": "pass",
+            "fmin": "pass",
+            "fmod": "pass",
+            "fract": "fail",
+            "frexp": "pass",
+            "hypot": "pass",
+            "ilogb": "fail",
+            "isequal": "pass",
+            "isfinite": "pass",
+            "isgreater": "pass",
+            "isgreaterequal": "pass",
+            "isinf": "pass",
+            "isless": "pass",
+            "islessequal": "pass",
+            "islessgreater": "pass",
+            "isnan": "pass",
+            "isnormal": "pass",
+            "isnotequal": "pass",
+            "isordered": "pass",
+            "isunordered": "pass",
+            "ldexp": "fail",
+            "lgamma": "pass",
+            "lgamma_r": "pass",
+            "log": "fail",
+            "log2": "pass",
+            "log10": "pass",
+            "log1p": "pass",
+            "logb": "fail",
+            "mad": "pass",
+            "maxmag": "pass",
+            "minmag": "pass",
+            "modf": "fail",
+            "nan": "pass",
+            "nextafter": "fail",
+            "pow": "pass",
+            "pown": "fail",
+            "powr": "fail",
+            "remainder": "fail",
+            "remquo": "fail",
+            "rint": "pass",
+            "rootn": "fail",
+            "round": "pass",
+            "rsqrt": "pass",
+            "signbit": "pass",
+            "sin": "pass",
+            "sincos": "pass",
+            "sinh": "pass",
+            "sinpi": "pass",
+            "sqrt": "pass",
+            "sqrt_cr": "pass",
+            "tan": "pass",
+            "tanh": "pass",
+            "tanpi": "pass",
+            "tgamma": "fail",
+            "trunc": "pass",
+            "half_cos": "pass",
+            "half_divide": "pass",
+            "half_exp": "pass",
+            "half_exp2": "pass",
+            "half_exp10": "pass",
+            "half_log": "pass",
+            "half_log2": "pass",
+            "half_log10": "pass",
+            "half_powr": "pass",
+            "half_recip": "pass",
+            "half_rsqrt": "pass",
+            "half_sin": "pass",
+            "half_sqrt": "pass",
+            "half_tan": "pass",
+            "add": "pass",
+            "subtract": "pass",
+            "negation": "pass",
+            "reciprocal": "pass",
+            "divide": "pass",
+            "divide_cr": "pass",
+            "multiply": "pass",
+            "assignment": "pass",
+            "not": "pass",
+            "erf": "pass",
+            "erfc": "pass"
+        }
+    },
+    "test_cl_copy_images": {
+        "--num-worker-threads 2 small_images": {
+            "1D": "pass",
+            "2D": "pass",
+            "3D": "pass",
+            "1Dbuffer": "pass",
+            "1DTo1Dbuffer": "pass",
+            "1DbufferTo1D": "pass",
+            "1Darray": "pass",
+            "2Darray": "pass",
+            "2Dto3D": "pass",
+            "3Dto2D": "pass",
+            "2Darrayto2D": "pass",
+            "2Dto2Darray": "pass",
+            "2Darrayto3D": "pass",
+            "3Dto2Darray": "pass"
+        }
+    },
+    "test_commonfns": {
+        "": {
+            "clamp": "pass",
+            "clamp_scalar_bounds": "pass",
+            "mix": "pass",
+            "mixf": "pass"
+        }
+    },
+    "test_computeinfo": {
+        "": {
+            "computeinfo": "pass",
+            "device_uuid": "pass",
+            "extended_versioning": "pass",
+            "conformance_version": "pass",
+            "pci_bus_info": "skip"
+        }
+    },
+    "test_conversions": {
+        "--wimpy": {
+            "conversions": "fail"
+        }
+    },
+    "test_geometrics": {
+        "": {
+            "geom_cross": "pass"
+        }
+    },
+    "test_half": {
+        "--wimpy": {
+            "vload_half": "pass",
+            "vloada_half": "pass",
+            "roundTrip": "pass",
+            "vstore_half": "pass",
+            "vstore_half_rte": "pass",
+            "vstore_half_rtz": "pass",
+            "vstore_half_rtp": "pass",
+            "vstore_half_rtn": "pass",
+            "vstorea_half": "pass",
+            "vstorea_half_rte": "pass",
+            "vstorea_half_rtz": "pass",
+            "vstorea_half_rtp": "pass",
+            "vstorea_half_rtn": "pass"
+        }
+    },
+    "test_image_streams": {
+        "--num-worker-threads 2 CL_A CL_FILTER_NEAREST": {
+            "1D": "pass"
+        },
+        "--num-worker-threads 2 CL_FILTER_NEAREST CL_R": {
+            "1D": "fail"
+        }
+    },
+    "test_printf": {
+        "": {
+            "return_value": "pass"
+        }
+    },
+    "test_relationals": {
+        "": {
+            "relational_all": "pass",
+            "relational_any": "pass"
+        }
+    },
+    "test_select": {
+        "--num-worker-threads 2": {
+            "select_uchar_uchar": "pass",
+            "select_uchar_char": "pass",
+            "select_char_uchar": "pass",
+            "select_char_char": "pass",
+            "select_ushort_ushort": "pass",
+            "select_ushort_short": "pass",
+            "select_short_ushort": "pass",
+            "select_short_short": "pass",
+            "select_half_ushort": "pass",
+            "select_half_short": "pass",
+            "select_uint_uint": "pass",
+            "select_uint_int": "pass",
+            "select_int_uint": "pass",
+            "select_int_int": "pass",
+            "select_float_uint": "pass",
+            "select_float_int": "pass",
+            "select_ulong_ulong": "pass",
+            "select_ulong_long": "pass",
+            "select_long_ulong": "pass",
+            "select_long_long": "pass",
+            "select_double_ulong": "pass",
+            "select_double_long": "pass"
+        }
+    },
+    "test_spirv_new": {
+        "": {
+            "basic_versions": "pass",
+            "access_chain_array": "pass",
+            "access_chain_inbounds_array": "pass",
+            "ptr_access_chain_array": "pass",
+            "ptr_access_chain_inbounds_array": "pass",
+            "access_chain_vector": "pass",
+            "access_chain_inbounds_vector": "pass",
+            "ptr_access_chain_vector": "pass",
+            "ptr_access_chain_inbounds_vector": "pass",
+            "linkage_export_function_compile": "pass",
+            "linkage_import_function_compile": "pass",
+            "linkage_import_function_link": "pass",
+            "linkage_linkonce_odr": "pass",
+            "op_spec_constant_uint_simple": "pass",
+            "op_spec_constant_uchar_simple": "pass",
+            "op_spec_constant_ushort_simple": "pass",
+            "op_spec_constant_ulong_simple": "pass",
+            "op_spec_constant_float_simple": "pass",
+            "op_spec_constant_half_simple": "pass",
+            "op_spec_constant_double_simple": "pass",
+            "op_spec_constant_true_simple": "pass",
+            "op_spec_constant_false_simple": "pass",
+            "op_spec_constant_compile_link": "pass",
+            "op_spec_constant_build_twice": "pass",
+            "op_spec_constant_compile_twice": "pass"
+        }
+    },
+    "test_vectors": {
+        "--wimpy": {
+            "step_type": "pass",
+            "step_var": "pass",
+            "step_typedef_type": "pass",
+            "step_typedef_var": "pass",
+            "vec_align_array": "pass",
+            "vec_align_struct": "pass",
+            "vec_align_packed_struct": "pass",
+            "vec_align_struct_arr": "pass",
+            "vec_align_packed_struct_arr": "pass"
+        }
+    }
+}

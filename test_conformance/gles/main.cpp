@@ -270,7 +270,7 @@ int main(int argc, const char *argv[])
     config.forceNoContextCreation = true;
     config.numElementsToUse = 1024;
     config.queueProps = 0;
-    error = parseAndCallCommandLineTests(argc_tmp, argv_tmp, deviceIDs[i],
+    error = parseAndCallCommandLineTests(argc_tmp, argv_tmp, "", deviceIDs[i],
                                          test_num, test_list, config);
     if (error != 0) break;
     }
@@ -346,7 +346,7 @@ int main(int argc, const char *argv[])
         config.forceNoContextCreation = true;
         config.numElementsToUse = 1024;
         config.queueProps = 0;
-        error = parseAndCallCommandLineTests(argc_, argv_, deviceIDs[i],
+        error = parseAndCallCommandLineTests(argc_, argv_, "", deviceIDs[i],
                                              test_num32, test_list32, config);
         if( error != 0 )
           break;

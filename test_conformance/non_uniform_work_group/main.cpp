@@ -15,6 +15,7 @@
 //
 #include "tools.h"
 #include "harness/testHarness.h"
+#include "harness/parseParameters.h"
 #include "TestNonUniformWorkGroup.h"
 
 test_status InitCL(cl_device_id device) {
@@ -30,27 +31,33 @@ test_status InitCL(cl_device_id device) {
     return TEST_PASS;
 }
 
-int main(int argc, const char *argv[])
+static test_status parseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help)
 {
-  typedef std::vector<const char *> ArgsVector;
-  ArgsVector programArgs;
-  programArgs.assign(argv, argv+argc);
-
-  for (ArgsVector::iterator it = programArgs.begin(); it!=programArgs.end();) {
-
-    if(*it == std::string("-strict")) {
-      TestNonUniformWorkGroup::enableStrictMode(true);
-      it=programArgs.erase(it);
-    } else {
-      ++it;
+    std::vector<const char *> argList;
+    for (int i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "-strict") == 0)
+        {
+            TestNonUniformWorkGroup::enableStrictMode(true);
+            removed_args.push_back(argv[i]);
+        }
+        else
+        {
+            argList.push_back(argv[i]);
+        }
     }
-  }
-
-  PrimeNumbers::generatePrimeNumbers(100000);
-
-  return runTestHarnessWithCheck(
-      static_cast<int>(programArgs.size()), &programArgs.front(),
-      test_registry::getInstance().num_tests(),
-      test_registry::getInstance().definitions(), false, false, InitCL);
+    update_argc_argv_from_args_list(argList, argc, argv);
+    return TEST_PASS;
 }
 
+int main(int argc, const char *argv[])
+{
+    PrimeNumbers::generatePrimeNumbers(100000);
+
+    return runTestHarnessWithCheckAndParse(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, false, InitCL,
+        parseArgs);
+}

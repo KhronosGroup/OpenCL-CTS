@@ -20,7 +20,6 @@ if (WIN32)
             PROPERTIES LANGUAGE CXX)
 
     include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-    include_directories("../../common/directx_wrapper")
     include(../../CMakeCommon.txt)
 endif (WIN32)
 

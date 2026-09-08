@@ -19,6 +19,7 @@
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 #include "harness/testHarness.h"
+#include "harness/ThreadPool.h"
 
 #include "structs.h"
 
@@ -26,6 +27,14 @@
 
 #include "type_replacer.h"
 
+#include <array>
+
+// Each work-item checks another instance of the same compile-time layout, so a
+// small number is sufficient.
+constexpr size_t ALIGNMENT_WORK_ITEMS = 64;
+
+// Reserve 512 bytes per work-item for generated structures.
+constexpr size_t BUFFER_SIZE = ALIGNMENT_WORK_ITEMS * 512;
 
 size_t get_align(size_t vecSize)
 {
@@ -77,7 +86,8 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
                       cl_command_queue queue, const char* pattern,
                       const char* testName, size_t bufSize, size_t preSize,
                       size_t typeMultiplePreSize, size_t postSize,
-                      size_t typeMultiplePostSize)
+                      size_t typeMultiplePostSize, bool supports_fp64,
+                      bool supports_fp16)
 {
     int err;
     int typeIdx, vecSizeIdx;
@@ -89,7 +99,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
 
     clState* pClState = newClState(deviceID, context, queue);
     bufferStruct* pBuffers = newBufferStruct(
-        bufSize, bufSize * sizeof(cl_uint) / sizeof(cl_char), pClState);
+        bufSize, ALIGNMENT_WORK_ITEMS * sizeof(cl_uint), pClState);
 
     if (pBuffers == NULL)
     {
@@ -104,7 +114,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
         // Skip doubles if it is not supported otherwise enable pragma
         if (types[typeIdx] == kDouble)
         {
-            if (!is_extension_available(deviceID, "cl_khr_fp64"))
+            if (!supports_fp64)
             {
                 continue;
             }
@@ -112,6 +122,19 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
             {
                 doReplace(tmpBuffer, 2048, pattern, ".PRAGMA.",
                           "#pragma OPENCL EXTENSION cl_khr_fp64: ", ".STATE.",
+                          "enable");
+            }
+        }
+        else if (types[typeIdx] == kHalf)
+        {
+            if (!supports_fp16)
+            {
+                continue;
+            }
+            else
+            {
+                doReplace(tmpBuffer, 2048, pattern, ".PRAGMA.",
+                          "#pragma OPENCL EXTENSION cl_khr_fp16: ", ".STATE.",
                           "enable");
             }
         }
@@ -177,10 +200,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
 
             // log_info("About to Run kernel\n"); fflush(stdout);
             // now we run the kernel
-            err = runKernel(
-                pClState,
-                bufSize
-                    / (g_arrVecSizes[vecSizeIdx] * g_arrTypeSizes[typeIdx]));
+            err = runKernel(pClState, ALIGNMENT_WORK_ITEMS);
             if (err != 0)
             {
                 vlog_error("%s: runKernel fail (%zu threads) %s%s\n", testName,
@@ -243,7 +263,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
 }
 
 
-static const char* patterns[] = {
+static const std::vector<const char*> patterns = {
     ".PRAGMA..STATE.\n"
     "__kernel void test_vec_align_array(.SRC_SCOPE. .TYPE..NUM. *source, "
     ".DST_SCOPE. uint *dest)\n"
@@ -306,50 +326,104 @@ static const char* patterns[] = {
     // __attribute__ ((packed))
 };
 
+constexpr unsigned ARR_SIZE = 6;
 
-const char* pre_substitution_arr[] = { "",
-                                       "char c;\n",
-                                       "short3 s;",
-                                       ".TYPE.3 tPre;\n",
-                                       ".TYPE. arrPre[5];\n",
-                                       ".TYPE. arrPre[12];\n",
-                                       NULL };
+static const std::array<const char*, ARR_SIZE> pre_substitution_arr = {
+    "",
+    "char c;\n",
+    "short3 s;",
+    ".TYPE.3 tPre;\n",
+    ".TYPE. arrPre[5];\n",
+    ".TYPE. arrPre[12];\n"
+};
 
 
 // alignments of everything in pre_substitution_arr as raw alignments
 // 0 if such a thing is meaningless
-size_t pre_align_arr[] = { 0,
-                           sizeof(cl_char),
-                           4 * sizeof(cl_short),
-                           0, // taken care of in type_multiple_pre_align_arr
-                           0,
-                           0 };
+static const std::array<size_t, ARR_SIZE> pre_align_arr = {
+    0,
+    sizeof(cl_char),
+    4 * sizeof(cl_short),
+    0, // taken care of in type_multiple_pre_align_arr
+    0,
+    0
+};
 
 // alignments of everything in pre_substitution_arr as multiples of
 // sizeof(.TYPE.)
 // 0 if such a thing is meaningless
-size_t type_multiple_pre_align_arr[] = { 0, 0, 0, 4, 5, 12 };
+static const std::array<size_t, ARR_SIZE> type_multiple_pre_align_arr = {
+    0, 0, 0, 4, 5, 12
+};
 
-const char* post_substitution_arr[] = { "",
-                                        "char cPost;\n",
-                                        ".TYPE. arrPost[3];\n",
-                                        ".TYPE. arrPost[5];\n",
-                                        ".TYPE.3 arrPost;\n",
-                                        ".TYPE. arrPost[12];\n",
-                                        NULL };
+static const std::array<const char*, ARR_SIZE> post_substitution_arr = {
+    "",
+    "char cPost;\n",
+    ".TYPE. arrPost[3];\n",
+    ".TYPE. arrPost[5];\n",
+    ".TYPE.3 arrPost;\n",
+    ".TYPE. arrPost[12];\n"
+};
 
 
 // alignments of everything in post_substitution_arr as raw alignments
 // 0 if such a thing is meaningless
-size_t post_align_arr[] = { 0, sizeof(cl_char),
-                            0, // taken care of in type_multiple_post_align_arr
-                            0, 0,
-                            0 };
+static const std::array<size_t, ARR_SIZE> post_align_arr = {
+    0, sizeof(cl_char),
+    0, // taken care of in type_multiple_post_align_arr
+    0, 0,
+    0
+};
 
 // alignments of everything in post_substitution_arr as multiples of
 // sizeof(.TYPE.)
 // 0 if such a thing is meaningless
-size_t type_multiple_post_align_arr[] = { 0, 0, 3, 5, 4, 12 };
+static const std::array<size_t, ARR_SIZE> type_multiple_post_align_arr = {
+    0, 0, 3, 5, 4, 12
+};
+
+struct test_vec_thread_info
+{
+    cl_device_id device;
+    cl_context context;
+    cl_command_queue queue;
+    const char* testName;
+    size_t bufSize;
+    bool packed;
+    const char* source;
+    bool supports_fp64;
+    bool supports_fp16;
+};
+
+cl_int test_vec_thread(cl_uint job_id, cl_uint thread_id, void* userInfo)
+{
+    test_vec_thread_info* info = (test_vec_thread_info*)userInfo;
+    char tmp[2048];
+
+    int preIdx = job_id / ARR_SIZE;
+    int postIdx = job_id % ARR_SIZE;
+
+    size_t preSize = 0;
+    size_t typeMultiplePreSize = 0;
+    size_t postSize = 0;
+    size_t typeMultiplePostSize = 0;
+    if (info->packed)
+    {
+        preSize = pre_align_arr[preIdx];
+        typeMultiplePreSize = type_multiple_pre_align_arr[preIdx];
+        postSize = post_align_arr[postIdx];
+        typeMultiplePostSize = type_multiple_post_align_arr[postIdx];
+    }
+    const char* replaceWith1 = pre_substitution_arr[preIdx];
+    const char* replaceWith2 = post_substitution_arr[postIdx];
+
+    doReplace(tmp, (size_t)2048, info->source, ".PRE.", replaceWith1, ".POST.",
+              replaceWith2);
+    return test_vec_internal(
+        info->device, info->context, info->queue, tmp, info->testName,
+        info->bufSize, preSize, typeMultiplePreSize, postSize,
+        typeMultiplePostSize, info->supports_fp64, info->supports_fp16);
+}
 
 // there hsould be a packed version of this?
 REGISTER_TEST(vec_align_array)
@@ -360,176 +434,108 @@ REGISTER_TEST(vec_align_array)
     log_info("Testing global\n");
     doReplace(tmp, (size_t)2048, patterns[0], ".SRC_SCOPE.", "__global",
               ".DST_SCOPE.", "__global"); //
-    result = test_vec_internal(device, context, queue, tmp,
-                               "test_vec_align_array", BUFFER_SIZE, 0, 0, 0, 0);
+    result = test_vec_internal(
+        device, context, queue, tmp, "test_vec_align_array", BUFFER_SIZE, 0, 0,
+        0, 0, device_supports_double(device), device_supports_half(device));
     return result;
 }
 
 
 REGISTER_TEST(vec_align_struct)
 {
-    char tmp1[2048], tmp2[2048];
-    int result = 0;
-    int preIdx, postIdx;
-
+    char tmp[2048];
     log_info("testing __private\n");
-    doReplace(tmp2, (size_t)2048, patterns[1], ".SRC_SCOPE.", "__private",
+    doReplace(tmp, (size_t)2048, patterns[1], ".SRC_SCOPE.", "__private",
               ".DST_SCOPE.", "__global"); //
 
-    for (preIdx = 0; pre_substitution_arr[preIdx] != NULL; ++preIdx)
+    test_vec_thread_info info{ device,
+                               context,
+                               queue,
+                               "test_vec_align_struct",
+                               512,
+                               false,
+                               tmp,
+                               device_supports_double(device),
+                               device_supports_half(device) };
+    cl_int result = ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
+    if (result != CL_SUCCESS)
     {
-        for (postIdx = 0; post_substitution_arr[postIdx] != NULL; ++postIdx)
-        {
-            doReplace(tmp1, (size_t)2048, tmp2, ".PRE.",
-                      pre_substitution_arr[preIdx], ".POST.",
-                      post_substitution_arr[postIdx]);
-
-            result =
-                test_vec_internal(device, context, queue, tmp1,
-                                  "test_vec_align_struct", 512, 0, 0, 0, 0);
-            if (result != 0)
-            {
-                return result;
-            }
-        }
+        return result;
     }
 
     log_info("testing __local\n");
-    doReplace(tmp2, (size_t)2048, patterns[1], ".SRC_SCOPE.", "__local",
+    doReplace(tmp, (size_t)2048, patterns[1], ".SRC_SCOPE.", "__local",
               ".DST_SCOPE.", "__global"); //
 
-    for (preIdx = 0; pre_substitution_arr[preIdx] != NULL; ++preIdx)
-    {
-        for (postIdx = 0; post_substitution_arr[postIdx] != NULL; ++postIdx)
-        {
-            doReplace(tmp1, (size_t)2048, tmp2, ".PRE.",
-                      pre_substitution_arr[preIdx], ".POST.",
-                      post_substitution_arr[postIdx]);
-
-            result =
-                test_vec_internal(device, context, queue, tmp1,
-                                  "test_vec_align_struct", 512, 0, 0, 0, 0);
-            if (result != 0)
-            {
-                return result;
-            }
-        }
-    }
-    return 0;
+    info.testName = "test_vec_align_struct";
+    return ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
 }
 
 REGISTER_TEST(vec_align_packed_struct)
 {
-    char tmp1[2048], tmp2[2048];
-    int result = 0;
-    int preIdx, postIdx;
-
-
+    char tmp[2048];
     log_info("Testing __private\n");
-    doReplace(tmp2, (size_t)2048, patterns[2], ".SRC_SCOPE.", "__private",
+    doReplace(tmp, (size_t)2048, patterns[2], ".SRC_SCOPE.", "__private",
               ".DST_SCOPE.", "__global"); //
 
-    for (preIdx = 0; pre_substitution_arr[preIdx] != NULL; ++preIdx)
+    test_vec_thread_info info{ device,
+                               context,
+                               queue,
+                               "test_vec_align_packed_struct",
+                               512,
+                               true,
+                               tmp,
+                               device_supports_double(device),
+                               device_supports_half(device) };
+    cl_int result = ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
+    if (result != CL_SUCCESS)
     {
-        for (postIdx = 0; post_substitution_arr[postIdx] != NULL; ++postIdx)
-        {
-            doReplace(tmp1, (size_t)2048, tmp2, ".PRE.",
-                      pre_substitution_arr[preIdx], ".POST.",
-                      post_substitution_arr[postIdx]);
-
-            result = test_vec_internal(
-                device, context, queue, tmp1, "test_vec_align_packed_struct",
-                512, pre_align_arr[preIdx], type_multiple_pre_align_arr[preIdx],
-                post_align_arr[postIdx], type_multiple_post_align_arr[postIdx]);
-            if (result != 0)
-            {
-                return result;
-            }
-        }
+        return result;
     }
+
 
     log_info("testing __local\n");
-    doReplace(tmp2, (size_t)2048, patterns[2], ".SRC_SCOPE.", "__local",
+    doReplace(tmp, (size_t)2048, patterns[2], ".SRC_SCOPE.", "__local",
               ".DST_SCOPE.", "__global"); //
 
-    for (preIdx = 0; pre_substitution_arr[preIdx] != NULL; ++preIdx)
-    {
-        for (postIdx = 0; post_substitution_arr[postIdx] != NULL; ++postIdx)
-        {
-            doReplace(tmp1, (size_t)2048, tmp2, ".PRE.",
-                      pre_substitution_arr[preIdx], ".POST.",
-                      post_substitution_arr[postIdx]);
-
-            result = test_vec_internal(
-                device, context, queue, tmp1, "test_vec_align_packed_struct",
-                512, pre_align_arr[preIdx], type_multiple_pre_align_arr[preIdx],
-                post_align_arr[postIdx], type_multiple_post_align_arr[postIdx]);
-            if (result != 0)
-            {
-                return result;
-            }
-        }
-    }
-    return 0;
+    info.testName = "test_vec_align_packed_struct";
+    return ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
 }
 
 REGISTER_TEST(vec_align_struct_arr)
 {
-    char tmp1[2048], tmp2[2048];
-    int result = 0;
-    int preIdx, postIdx;
-
-
+    char tmp[2048];
     log_info("testing __global\n");
-    doReplace(tmp2, (size_t)2048, patterns[3], ".SRC_SCOPE.", "__global",
+    doReplace(tmp, (size_t)2048, patterns[3], ".SRC_SCOPE.", "__global",
               ".DST_SCOPE.", "__global"); //
 
-    for (preIdx = 0; pre_substitution_arr[preIdx] != NULL; ++preIdx)
-    {
-        for (postIdx = 0; post_substitution_arr[postIdx] != NULL; ++postIdx)
-        {
-            doReplace(tmp1, (size_t)2048, tmp2, ".PRE.",
-                      pre_substitution_arr[preIdx], ".POST.",
-                      post_substitution_arr[postIdx]);
-
-            result = test_vec_internal(device, context, queue, tmp1,
-                                       "test_vec_align_struct_arr", BUFFER_SIZE,
-                                       0, 0, 0, 0);
-            if (result != 0)
-            {
-                return result;
-            }
-        }
-    }
-    return 0;
+    test_vec_thread_info info{ device,
+                               context,
+                               queue,
+                               "test_vec_align_struct_arr",
+                               BUFFER_SIZE,
+                               false,
+                               tmp,
+                               device_supports_double(device),
+                               device_supports_half(device) };
+    return ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
 }
 
 REGISTER_TEST(vec_align_packed_struct_arr)
 {
-    char tmp1[2048], tmp2[2048];
-    int result = 0;
-    int preIdx, postIdx;
-
-
+    char tmp[2048];
     log_info("Testing __global\n");
-    doReplace(tmp2, (size_t)2048, patterns[4], ".SRC_SCOPE.", "__global",
+    doReplace(tmp, (size_t)2048, patterns[4], ".SRC_SCOPE.", "__global",
               ".DST_SCOPE.", "__global"); //
 
-    for (preIdx = 0; pre_substitution_arr[preIdx] != NULL; ++preIdx)
-    {
-        for (postIdx = 0; post_substitution_arr[postIdx] != NULL; ++postIdx)
-        {
-            doReplace(tmp1, (size_t)2048, tmp2, ".PRE.",
-                      pre_substitution_arr[preIdx], ".POST.",
-                      post_substitution_arr[postIdx]);
-
-            result = test_vec_internal(
-                device, context, queue, tmp1,
-                "test_vec_align_packed_struct_arr", BUFFER_SIZE,
-                pre_align_arr[preIdx], type_multiple_pre_align_arr[preIdx],
-                post_align_arr[postIdx], type_multiple_post_align_arr[postIdx]);
-            if (result != 0) return result;
-        }
-    }
-    return 0;
+    test_vec_thread_info info{ device,
+                               context,
+                               queue,
+                               "test_vec_align_packed_struct_arr",
+                               BUFFER_SIZE,
+                               true,
+                               tmp,
+                               device_supports_double(device),
+                               device_supports_half(device) };
+    return ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
 }

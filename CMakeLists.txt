@@ -25,11 +25,26 @@ if(USE_CL_EXPERIMENTAL)
   add_definitions(-DCL_EXPERIMENTAL)
 endif(USE_CL_EXPERIMENTAL)
 
-option(SANITIZER_THREAD "Build with the thread sanitiser" OFF)
-if (SANITIZER_THREAD)
+option(SANITIZER_ADDRESS "Build with the address sanitizer" OFF)
+option(SANITIZER_THREAD "Build with the thread sanitizer" OFF)
+option(SANITIZER_UNDEFINED "Build with the undefined behavior sanitizer" OFF)
+
+if (SANITIZER_ADDRESS AND SANITIZER_THREAD)
+    message(FATAL_ERROR "SANITIZER_ADDRESS and SANITIZER_THREAD cannot be enabled together.")
+endif()
+
+if (SANITIZER_ADDRESS)
+    add_compile_options(-fsanitize=address)
+    add_link_options(-fsanitize=address)
+elseif (SANITIZER_THREAD)
     add_compile_options(-fsanitize=thread)
     add_link_options(-fsanitize=thread)
-endif (SANITIZER_THREAD)
+endif()
+
+if (SANITIZER_UNDEFINED)
+    add_compile_options(-fsanitize=undefined)
+    add_link_options(-fsanitize=undefined)
+endif (SANITIZER_UNDEFINED)
 
 #-----------------------------------------------------------
 # Default Configurable Test Set

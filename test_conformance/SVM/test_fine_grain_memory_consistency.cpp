@@ -157,6 +157,21 @@ REGISTER_TEST(svm_fine_grain_memory_consistency)
 
     char *source[] = { hash_table_kernel };
 
+    {
+        cl_device_atomic_capabilities atomicCaps;
+        err = clGetDeviceInfo(device, CL_DEVICE_ATOMIC_MEMORY_CAPABILITIES,
+                              sizeof(atomicCaps), &atomicCaps, nullptr);
+        test_error(err,
+                   "clGetDeviceInfo for CL_DEVICE_ATOMIC_MEMORY_CAPABILITIES "
+                   "failed");
+        if (!(atomicCaps & CL_DEVICE_ATOMIC_SCOPE_ALL_DEVICES))
+        {
+            log_info("memory_scope_all_svm_devices not supported, test not "
+                     "executed.\n");
+            return 0;
+        }
+    }
+
     err = create_cl_objects(
         device, (const char **)source, &contextWrapper, &program, &queues[0],
         &num_devices, CL_DEVICE_SVM_FINE_GRAIN_BUFFER | CL_DEVICE_SVM_ATOMICS,

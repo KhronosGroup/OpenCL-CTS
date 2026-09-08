@@ -39,28 +39,6 @@ cl_int BuildKernelFn_HalfFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-// A table of more difficult cases to get right
-static const cl_half specialValuesHalf[] = {
-    0xffff, 0x0000, 0x0001, 0x7c00, /*INFINITY*/
-    0xfc00, /*-INFINITY*/
-    0x8000, /*-0*/
-    0x7bff, /*HALF_MAX*/
-    0x0400, /*HALF_MIN*/
-    0x03ff, /* Largest denormal */
-    0x3c00, /* 1 */
-    0xbc00, /* -1 */
-    0x3555, /*nearest value to 1/3*/
-    0x3bff, /*largest number less than one*/
-    0xc000, /* -2 */
-    0xfbff, /* -HALF_MAX */
-    0x8400, /* -HALF_MIN */
-    0x4248, /* M_PI_H */
-    0xc248, /* -M_PI_H */
-    0xbbff, /* Largest negative fraction */
-};
-
-constexpr size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
-
 } // anonymous namespace
 
 int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
@@ -92,6 +70,8 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                                &build_info)))
         return error;
 
+    const std::vector<cl_half> &specialValuesHalf = getHalfSpecialValues();
+    size_t specialValuesHalfCount = specialValuesHalf.size();
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
         if (gSkipCorrectnessTesting) break;
