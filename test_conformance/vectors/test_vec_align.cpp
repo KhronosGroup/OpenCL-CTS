@@ -79,7 +79,8 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
                       cl_command_queue queue, const char* pattern,
                       const char* testName, size_t bufSize, size_t preSize,
                       size_t typeMultiplePreSize, size_t postSize,
-                      size_t typeMultiplePostSize, bool supports_fp64)
+                      size_t typeMultiplePostSize, bool supports_fp64,
+                      bool supports_fp16)
 {
     int err;
     int typeIdx, vecSizeIdx;
@@ -114,6 +115,19 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
             {
                 doReplace(tmpBuffer, 2048, pattern, ".PRAGMA.",
                           "#pragma OPENCL EXTENSION cl_khr_fp64: ", ".STATE.",
+                          "enable");
+            }
+        }
+        else if (types[typeIdx] == kHalf)
+        {
+            if (!supports_fp16)
+            {
+                continue;
+            }
+            else
+            {
+                doReplace(tmpBuffer, 2048, pattern, ".PRAGMA.",
+                          "#pragma OPENCL EXTENSION cl_khr_fp16: ", ".STATE.",
                           "enable");
             }
         }
@@ -374,6 +388,7 @@ struct test_vec_thread_info
     bool packed;
     const char* source;
     bool supports_fp64;
+    bool supports_fp16;
 };
 
 cl_int test_vec_thread(cl_uint job_id, cl_uint thread_id, void* userInfo)
@@ -400,15 +415,10 @@ cl_int test_vec_thread(cl_uint job_id, cl_uint thread_id, void* userInfo)
 
     doReplace(tmp, (size_t)2048, info->source, ".PRE.", replaceWith1, ".POST.",
               replaceWith2);
-    return test_vec_internal(info->device, info->context, info->queue, tmp,
-                             info->testName, info->bufSize, preSize,
-                             typeMultiplePreSize, postSize,
-                             typeMultiplePostSize, info->supports_fp64);
-}
-
-bool supports_fp64(cl_device_id device)
-{
-    return is_extension_available(device, "cl_khr_fp64");
+    return test_vec_internal(
+        info->device, info->context, info->queue, tmp, info->testName,
+        info->bufSize, preSize, typeMultiplePreSize, postSize,
+        typeMultiplePostSize, info->supports_fp64, info->supports_fp16);
 }
 
 // there hsould be a packed version of this?
@@ -420,9 +430,9 @@ REGISTER_TEST(vec_align_array)
     log_info("Testing global\n");
     doReplace(tmp, (size_t)2048, patterns[0], ".SRC_SCOPE.", "__global",
               ".DST_SCOPE.", "__global"); //
-    result =
-        test_vec_internal(device, context, queue, tmp, "test_vec_align_array",
-                          BUFFER_SIZE, 0, 0, 0, 0, supports_fp64(device));
+    result = test_vec_internal(
+        device, context, queue, tmp, "test_vec_align_array", BUFFER_SIZE, 0, 0,
+        0, 0, device_supports_double(device), device_supports_half(device));
     return result;
 }
 
@@ -434,8 +444,15 @@ REGISTER_TEST(vec_align_struct)
     doReplace(tmp, (size_t)2048, patterns[1], ".SRC_SCOPE.", "__private",
               ".DST_SCOPE.", "__global"); //
 
-    test_vec_thread_info info{ device, context, queue, "test_vec_align_struct",
-                               512,    false,   tmp,   supports_fp64(device) };
+    test_vec_thread_info info{ device,
+                               context,
+                               queue,
+                               "test_vec_align_struct",
+                               512,
+                               false,
+                               tmp,
+                               device_supports_double(device),
+                               device_supports_half(device) };
     cl_int result = ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
     if (result != CL_SUCCESS)
     {
@@ -457,10 +474,15 @@ REGISTER_TEST(vec_align_packed_struct)
     doReplace(tmp, (size_t)2048, patterns[2], ".SRC_SCOPE.", "__private",
               ".DST_SCOPE.", "__global"); //
 
-    test_vec_thread_info info{ device, context,
-                               queue,  "test_vec_align_packed_struct",
-                               512,    true,
-                               tmp,    supports_fp64(device) };
+    test_vec_thread_info info{ device,
+                               context,
+                               queue,
+                               "test_vec_align_packed_struct",
+                               512,
+                               true,
+                               tmp,
+                               device_supports_double(device),
+                               device_supports_half(device) };
     cl_int result = ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
     if (result != CL_SUCCESS)
     {
@@ -483,10 +505,15 @@ REGISTER_TEST(vec_align_struct_arr)
     doReplace(tmp, (size_t)2048, patterns[3], ".SRC_SCOPE.", "__global",
               ".DST_SCOPE.", "__global"); //
 
-    test_vec_thread_info info{ device,      context,
-                               queue,       "test_vec_align_struct_arr",
-                               BUFFER_SIZE, false,
-                               tmp,         supports_fp64(device) };
+    test_vec_thread_info info{ device,
+                               context,
+                               queue,
+                               "test_vec_align_struct_arr",
+                               BUFFER_SIZE,
+                               false,
+                               tmp,
+                               device_supports_double(device),
+                               device_supports_half(device) };
     return ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
 }
 
@@ -497,9 +524,14 @@ REGISTER_TEST(vec_align_packed_struct_arr)
     doReplace(tmp, (size_t)2048, patterns[4], ".SRC_SCOPE.", "__global",
               ".DST_SCOPE.", "__global"); //
 
-    test_vec_thread_info info{ device,      context,
-                               queue,       "test_vec_align_packed_struct_arr",
-                               BUFFER_SIZE, true,
-                               tmp,         supports_fp64(device) };
+    test_vec_thread_info info{ device,
+                               context,
+                               queue,
+                               "test_vec_align_packed_struct_arr",
+                               BUFFER_SIZE,
+                               true,
+                               tmp,
+                               device_supports_double(device),
+                               device_supports_half(device) };
     return ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
 }

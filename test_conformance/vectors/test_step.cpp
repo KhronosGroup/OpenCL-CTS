@@ -57,6 +57,16 @@ int test_step_internal(cl_device_id deviceID, cl_context context,
 
     for (typeIdx = 0; types[typeIdx] != kNumExplicitTypes; ++typeIdx)
     {
+        if (types[typeIdx] == kHalf)
+        {
+            // If we're testing halfs, we need to check for support first
+            if (!is_extension_available(deviceID, "cl_khr_fp16"))
+            {
+                log_info("Not testing halfs (unsupported on this device)\n");
+                continue;
+            }
+        }
+
         if (types[typeIdx] == kDouble)
         {
             // If we're testing doubles, we need to check for support first
@@ -85,6 +95,8 @@ int test_step_internal(cl_device_id deviceID, cl_context context,
         doSingleReplace(tempBuffer, 2048, pattern, ".EXTENSIONS.",
                         types[typeIdx] == kDouble
                             ? "#pragma OPENCL EXTENSION cl_khr_fp64 : enable"
+                            : types[typeIdx] == kHalf
+                            ? "#pragma OPENCL EXTENSION cl_khr_fp16 : enable"
                             : "");
 
         for (vecSizeIdx = 0; vecSizeIdx < NUM_VECTOR_SIZES; ++vecSizeIdx)
