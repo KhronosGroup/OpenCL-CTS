@@ -317,7 +317,8 @@ int run_test_with_two_queue(
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
 
         // add shader constant
-        uint32_t specData[2] = { num2DImages, numMipLevels };
+        const uint32_t numImages = useSingleImageKernel ? 1 : num2DImages;
+        uint32_t specData[2] = { numImages, numMipLevels };
         VkSpecializationMapEntry entries[2];
         entries[0] = { 0, 0, sizeof(uint32_t) };
         entries[1] = { 1, sizeof(uint32_t), sizeof(uint32_t) };
@@ -913,7 +914,8 @@ int run_test_with_one_queue(
         VulkanShaderModule vkImage2DShaderModule(vkDevice, vkImage2DShader);
 
         // add shader constant
-        uint32_t specData[2] = { num2DImages, numMipLevels };
+        const uint32_t numImages = useSingleImageKernel ? 1 : num2DImages;
+        uint32_t specData[2] = { numImages, numMipLevels };
         VkSpecializationMapEntry entries[2];
         entries[0] = { 0, 0, sizeof(uint32_t) };
         entries[1] = { 1, sizeof(uint32_t), sizeof(uint32_t) };
