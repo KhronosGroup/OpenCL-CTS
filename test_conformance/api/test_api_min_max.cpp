@@ -440,8 +440,11 @@ REGISTER_TEST(min_max_write_image_args)
     size_t threads[2];
     cl_image_format imageFormatDesc;
     size_t maxParameterSize;
+
+    const cl_uint minRequiredWriteImages =
+        get_device_cl_version(device) < Version(2, 0) ? (gIsEmbedded ? 1 : 8)
+                                                      : (gIsEmbedded ? 8 : 64);
     cl_int eventStatus;
-    cl_uint minRequiredWriteImages = gIsEmbedded ? 1 : 8;
 
     /* Get the max write image arg count */
     error = clGetDeviceInfo(device, CL_DEVICE_MAX_WRITE_IMAGE_ARGS,
