@@ -167,6 +167,12 @@
             "mixf": "pass"
         }
     },
+    "test_compiler": {
+        "": {
+            "opencl_c_version_macro": "pass"
+        }
+    },
+
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",
