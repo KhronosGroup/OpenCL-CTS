@@ -13,6 +13,7 @@
           "min_max_image_array_size": "pass",
           "min_max_read_image_args": "pass",
           "min_max_read_write_image_args": "pass",
+          "min_max_samplers": "pass",
           "min_max_write_image_args": "pass",
           "negative_set_kernel_arg_invalid_image_msaa": "skip",
           "negative_set_kernel_arg_invalid_image": "pass"
