@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "../testBase.h"
+#include "../common.h"
 #include "test_common.h"
 
 #if !defined(_WIN32)
@@ -71,6 +72,15 @@ int test_write_image_1D(cl_device_id device, cl_context context,
     }
     for( size_t mem_flag_index = 0; mem_flag_index < num_flags; mem_flag_index++ )
     {
+        if (!is_image_format_supported(context, imageInfo->type,
+                                       mem_flag_types[mem_flag_index],
+                                       imageInfo->format))
+        {
+            log_info("Format not supported for %s, skipping...\n",
+                     mem_flag_names[mem_flag_index]);
+            continue;
+        }
+
         int error;
         size_t threads[2];
         bool verifyRounding = false;

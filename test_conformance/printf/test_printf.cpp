@@ -1054,6 +1054,50 @@ REGISTER_TEST(buffer_size)
     return TEST_PASS;
 }
 
+REGISTER_TEST(return_value)
+{
+    static const char* kernel_source = R"(
+__kernel void test_printf_return(__global int *result)
+{
+    result[0] = printf("printf return value test\n");
+}
+)";
+
+    cl_int err = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+    clMemWrapper result_buffer;
+
+    err = create_single_kernel_helper(gContext, &program, &kernel, 1,
+                                      &kernel_source, "test_printf_return");
+    test_error(err, "create_single_kernel_helper failed");
+
+    result_buffer =
+        clCreateBuffer(gContext, CL_MEM_WRITE_ONLY, sizeof(cl_int), NULL, &err);
+    test_error(err, "clCreateBuffer failed");
+
+    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &result_buffer);
+    test_error(err, "clSetKernelArg failed");
+
+    const size_t global_work_size = 1;
+    err = clEnqueueNDRangeKernel(gQueue, kernel, 1, NULL, &global_work_size,
+                                 NULL, 0, NULL, NULL);
+    test_error(err, "clEnqueueNDRangeKernel failed");
+
+    cl_int result = -1;
+    err = clEnqueueReadBuffer(gQueue, result_buffer, CL_TRUE, 0, sizeof(result),
+                              &result, 0, NULL, NULL);
+    test_error(err, "clEnqueueReadBuffer failed");
+
+    if (result != 0)
+    {
+        log_error("printf returned %d, expected 0\n", result);
+        return TEST_FAIL;
+    }
+
+    return TEST_PASS;
+}
+
 //-----------------------------------------
 // main
 //-----------------------------------------

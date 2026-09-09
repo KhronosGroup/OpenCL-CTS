@@ -49,21 +49,4 @@ cl_int ThreadPool_Do(TPFuncPtr func_ptr, cl_uint count, void *userInfo);
 // inclusive. This is safe to call from a TPFuncPtr.
 cl_uint GetThreadCount(void);
 
-// SetThreadCount() may be used to artifically set the number of worker threads
-// If the value is 0 (the default) the number of threads will be determined
-// based on the number of CPU cores.  If it is a unicore machine, then 2 will be
-// used, so that we still get some testing for thread safety.
-//
-// If count < 2 or the CL_TEST_SINGLE_THREADED environment variable is set then
-// the code will run single threaded, but will report an error to indicate that
-// the test is invalid.  This option is intended for debugging purposes only. It
-// is suggested as a convention that test apps set the thread count to 1 in
-// response to the -m flag.
-//
-// SetThreadCount() must be called before the first call to GetThreadCount() or
-// ThreadPool_Do(), otherwise the behavior is indefined. It may not be called
-// from a TPFuncPtr.
-void SetThreadCount(int count);
-
-
 #endif /* THREAD_POOL_H  */

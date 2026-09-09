@@ -17,6 +17,7 @@
 #define HOST_ATOMICS_H_
 
 #include "harness/testHarness.h"
+
 #include <cstring>
 #include <cmath>
 #include <mutex>

@@ -720,7 +720,6 @@ int runTestHarnessWithCheckAndParse(int argc, const char *argv[], int testNum,
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 #endif
-    extern unsigned gNumWorkerThreads;
     test_harness_config config = { forceNoContextCreation, num_elements,
                                    queueProps, gNumWorkerThreads };
 
@@ -796,7 +795,7 @@ static void print_results(int failed, int count, const char *name)
         {
             log_info("PASSED %d of %d %ss.\n", count, count, name);
         }
-        else
+        else if (count > 0)
         {
             log_info("PASSED %s.\n", name);
         }

@@ -89,9 +89,6 @@ size_t gTypeSizes[kTypeCount] = {
     sizeof(cl_double), sizeof(cl_ulong), sizeof(cl_long),
 };
 
-int gMultithread = 1;
-
-
 REGISTER_TEST(conversions)
 {
     if (argList.size() > 2)
@@ -156,10 +153,10 @@ static test_status ParseArgs(int &argc, const char *argv[],
     help = R"(
         -d     Toggle testing of double precision.  On by default if cl_khr_fp64 is enabled, ignored otherwise.
         -l     Toggle link check mode. When on, testing is skipped, and we just check to see that the kernels build. (Off by default.)
-        -m     Toggle Multithreading. (On by default.)
         -[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor()"
         + std::to_string(gWimpyReductionFactor) + R"()
         -z     Toggle flush to zero mode  (Default: per device)
+        -a     Test 2^32 values, not just special & random values. (default: off)
         -#     Test just vector size given by #, where # is an element of the set {1,2,3,4,8,16}
 
         You may also pass the number of the test on which to start.
@@ -230,7 +227,6 @@ Test names:
                     case 'd': gTestDouble ^= 1; break;
                     case 'h': gTestHalfs ^= 1; break;
                     case 'l': gSkipTesting ^= 1; break;
-                    case 'm': gMultithread ^= 1; break;
                     case '[':
                         parseWimpyReductionFactor(arg, gWimpyReductionFactor);
                         break;
@@ -238,6 +234,7 @@ Test names:
                         gForceFTZ ^= 1;
                         gForceHalfFTZ ^= 1;
                         break;
+                    case 'a': gTestAll ^= 1; break;
                     case '1':
                         if (arg[1] == '6')
                         {
@@ -317,8 +314,6 @@ Test names:
     vlog("===========================================================\n");
     vlog("Random seed: %u\n", gRandomSeed);
     gMTdata = init_genrand(gRandomSeed);
-
-    if (!gMultithread) SetThreadCount(1);
 
     return TEST_PASS;
 }

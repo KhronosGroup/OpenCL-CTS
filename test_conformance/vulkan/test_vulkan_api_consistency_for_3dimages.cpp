@@ -99,9 +99,9 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
                  memoryTypeList[0].getMemoryTypeProperty());
         log_info("Image size : %" PRIu64 "\n", vkImage3D.getSize());
 
-        VulkanDeviceMemory* vkDeviceMem =
+        std::unique_ptr<VulkanDeviceMemory> vkDeviceMem(
             new VulkanDeviceMemory(*vkDevice, vkImage3D, memoryTypeList[0],
-                                   vkExternalMemoryHandleType);
+                                   vkExternalMemoryHandleType));
         vkDeviceMem->bindImage(vkImage3D, 0);
 
         [[maybe_unused]] void* handle = NULL;

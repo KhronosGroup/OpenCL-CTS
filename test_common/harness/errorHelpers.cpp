@@ -717,6 +717,7 @@ const char *subtests_to_skip_with_offline_compiler[] = {
     "execute_after_simple_compile_and_link_no_device_info",
     "execute_after_simple_library_with_link",
     "execute_after_two_file_link",
+    "link_error_returns_program",
     "simple_compile_only",
     "simple_compile_with_callback",
     "simple_library_only",

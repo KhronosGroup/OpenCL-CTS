@@ -97,6 +97,8 @@ extern void *gOut[];
 
 extern std::vector<const char *> argList;
 
+extern bool gTestAll;
+
 extern const char *sizeNames[];
 extern int vectorSizes[];
 
