@@ -458,12 +458,17 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         }
 
         auto ptr = mem->get_ptr();
-        size_t granularity;
+        size_t svm_type_count = 0;
         err = clGetDeviceInfo(device,
                               CL_DEVICE_SVM_CONCURRENT_ACCESS_ATOM_SIZE_KHR,
-                              sizeof(granularity), &granularity, nullptr);
+                              0, nullptr, &svm_type_count);
+        test_error(err, "could not query ConcurrentAccess granularity count");
+        std::vector<size_t> granularity(svm_type_count);
+        err = clGetDeviceInfo(device,
+                              CL_DEVICE_SVM_CONCURRENT_ACCESS_ATOM_SIZE_KHR,
+                              svm_type_count, granularity.data(), nullptr);
         test_error(err, "could not query ConcurrentAccess granularity");
-        int granularity_integer = static_cast<int>(granularity);
+        int granularity_integer = static_cast<int>(granularity[typeIndex]);
 
         err |= clSetKernelArgSVMPointer(kernel_ConcurrentAccessWrite, 0, ptr);
         err |=
@@ -480,7 +485,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         for (int i = granularity_integer; i < num_elements;
              i += (2 * granularity_integer))
         {
-            for (int j = i; j < (i + granularity); j++)
+            for (int j = i; j < (i + granularity[typeIndex]); j++)
             {
                 ptr[j] = j + 1;
             }
