@@ -290,5 +290,10 @@
             "vec_align_struct_arr": "pass",
             "vec_align_packed_struct_arr": "pass"
         }
+    },
+    "test_compiler": {
+        "": {
+            "get_program_source_from_binary": "pass"
+        }
     }
 }

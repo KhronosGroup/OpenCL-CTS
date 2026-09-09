@@ -1120,3 +1120,77 @@ REGISTER_TEST(kernel_name_size)
     }
     return TEST_PASS;
 }
+
+REGISTER_TEST(get_program_source_from_binary)
+{
+    cl_int error = CL_SUCCESS;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+    clProgramWrapper program_from_binary;
+
+    error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                        sample_kernel_code_single_line,
+                                        "sample_test");
+    test_error(error, "create_single_kernel_helper failed");
+
+    size_t binary_size = 0;
+    error = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,
+                             sizeof(binary_size), &binary_size, nullptr);
+    test_error(error, "clGetProgramInfo for binary size failed");
+
+    if (binary_size == 0)
+    {
+        log_error("Binary size is zero\n");
+        return TEST_FAIL;
+    }
+
+    std::vector<unsigned char> binary(binary_size);
+    unsigned char *binary_ptr = binary.data();
+
+    error = clGetProgramInfo(program, CL_PROGRAM_BINARIES, sizeof(binary_ptr),
+                             &binary_ptr, nullptr);
+    test_error(error, "clGetProgramInfo for binary failed");
+
+    const unsigned char *binary_data = binary.data();
+    cl_int binary_status = CL_SUCCESS;
+
+    program_from_binary =
+        clCreateProgramWithBinary(context, 1, &device, &binary_size,
+                                  &binary_data, &binary_status, &error);
+    test_error(error, "clCreateProgramWithBinary failed");
+    test_error(binary_status, "Binary status is not CL_SUCCESS");
+
+    size_t src_size = 0;
+    error = clGetProgramInfo(program_from_binary, CL_PROGRAM_SOURCE, 0, nullptr,
+                             &src_size);
+    test_error(error, "clGetProgramInfo for source size failed");
+
+    if (src_size == 0)
+    {
+        return TEST_PASS;
+    }
+
+    std::vector<char> src(src_size, static_cast<char>(0x7f));
+
+    error = clGetProgramInfo(program_from_binary, CL_PROGRAM_SOURCE, src_size,
+                             src.data(), nullptr);
+    test_error(error, "clGetProgramInfo for source failed");
+
+    if (src.back() != '\0')
+    {
+        log_error("CL_PROGRAM_SOURCE is not null-terminated\n");
+        return TEST_FAIL;
+    }
+
+    if (src_size != 1
+        && (src_size != strlen(sample_kernel_code_single_line[0]) + 1
+            || strcmp(src.data(), sample_kernel_code_single_line[0]) != 0))
+    {
+        log_error(
+            "CL_PROGRAM_SOURCE returned unexpected content (size %zu):\n%s\n",
+            src_size, src.data());
+        return TEST_FAIL;
+    }
+
+    return TEST_PASS;
+}
