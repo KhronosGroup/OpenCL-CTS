@@ -85,7 +85,7 @@ cl_version get_extension_version(cl_device_id device, const char *extensionName)
                                  "VERSION) failed to return value\n");
     }
 
-    for (auto &ext : extensions)
+    for (const auto &ext : extensions)
     {
         if (!strcmp(extensionName, ext.name))
         {

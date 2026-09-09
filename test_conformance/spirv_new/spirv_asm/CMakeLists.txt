@@ -323,6 +323,12 @@ set(spirv_sources
     op_not_long.spvasm64
     op_not_short.spvasm32
     op_not_short.spvasm64
+    op_spec_constant_compile_link_main.spvasm32
+    op_spec_constant_compile_link_main.spvasm64
+    op_spec_constant_compile_link_obj.spvasm32
+    op_spec_constant_compile_link_obj.spvasm64
+    op_spec_constant_compile_twice.spvasm32
+    op_spec_constant_compile_twice.spvasm64
     op_spec_constant_double_simple.spvasm32
     op_spec_constant_double_simple.spvasm64
     op_spec_constant_false_simple.spvasm32

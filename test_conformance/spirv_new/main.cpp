@@ -30,11 +30,13 @@ const std::string slash = "/";
 
 const std::string spvExt = ".spv";
 bool gVersionSkip = false;
+bool gExtensionSkip = false;
 std::string gAddrWidth = "";
 std::string spvBinariesPath = "spirv_bin";
 
 const std::string spvBinariesPathArg = "--spirv-binaries-path";
 const std::string spvVersionSkipArg = "--skip-spirv-version-check";
+const std::string spvExtensionSkipArg = "--skip-spirv-extension-check";
 
 static std::filesystem::path binaries_path()
 {
@@ -85,6 +87,72 @@ std::vector<unsigned char> readSPIRV(const char *file_name)
     return readBinary(to_string(file_path.u8string()));
 }
 
+bool is_spirv_version_supported(cl_device_id deviceID, const char *version)
+{
+    if (gVersionSkip)
+    {
+        log_info("    Skipping version check for %s.\n", version);
+        return true;
+    }
+
+    std::string ilVersions = get_device_il_version_string(deviceID);
+    if (ilVersions.find(version) != std::string::npos)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool is_spirv_extension_available(cl_device_id device,
+                                  const char *spirvExtensionName)
+{
+    if (gExtensionSkip)
+    {
+        log_info("    Skipping extension check for %s.\n", spirvExtensionName);
+        return true;
+    }
+
+    auto version = get_device_cl_version(device);
+    if (version < Version(3, 1)
+        && !is_extension_available(device, CL_KHR_SPIRV_QUERIES_EXTENSION_NAME))
+    {
+        return false;
+    }
+
+    cl_int err;
+    size_t sz = 0;
+    err = clGetDeviceInfo(device, CL_DEVICE_SPIRV_EXTENSIONS, 0, nullptr, &sz);
+    if (err != CL_SUCCESS)
+    {
+        log_info("Query for CL_DEVICE_SPIRV_EXTENSIONS size failed!\n");
+        log_info("Unable to perform extension check for %s.\n",
+                 spirvExtensionName);
+        return false;
+    }
+
+    std::vector<const char *> extensions(sz / sizeof(const char *));
+    err = clGetDeviceInfo(device, CL_DEVICE_SPIRV_EXTENSIONS, sz,
+                          extensions.data(), nullptr);
+    if (err != CL_SUCCESS)
+    {
+        log_info("Query for CL_DEVICE_SPIRV_EXTENSIONS failed!\n");
+        log_info("Unable to perform extension check for %s.\n",
+                 spirvExtensionName);
+        return false;
+    }
+
+    for (const auto &ext : extensions)
+    {
+        if (!strcmp(spirvExtensionName, ext))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static int offline_get_program_with_il(clProgramWrapper &prog,
                                        const cl_device_id deviceID,
                                        const cl_context context,
@@ -129,22 +197,22 @@ static int offline_get_program_with_il(clProgramWrapper &prog,
     return err;
 }
 
-int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
-                        const cl_context context, const char *prog_name,
-                        spec_const spec_const_def)
+int get_unbuilt_program_with_il(clProgramWrapper &prog,
+                                const cl_device_id deviceID,
+                                const cl_context context, const char *fileName)
 {
     cl_int err = 0;
     if (gCompilationMode == kBinary)
     {
-        return offline_get_program_with_il(prog, deviceID, context, prog_name);
+        return offline_get_program_with_il(prog, deviceID, context, fileName);
     }
 
-    std::vector<unsigned char> buffer_vec = readSPIRV(prog_name);
+    std::vector<unsigned char> buffer_vec = readSPIRV(fileName);
 
     int file_bytes = buffer_vec.size();
     if (file_bytes == 0)
     {
-        log_error("File %s not found\n", prog_name);
+        log_error("File %s not found\n", fileName);
         return -1;
     }
 
@@ -154,15 +222,6 @@ int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
         prog = clCreateProgramWithIL(context, buffer, file_bytes, &err);
         SPIRV_CHECK_ERROR(
             err, "Failed to create program with clCreateProgramWithIL");
-
-        if (spec_const_def.spec_value != NULL)
-        {
-            err = clSetProgramSpecializationConstant(
-                prog, spec_const_def.spec_id, spec_const_def.spec_size,
-                spec_const_def.spec_value);
-            SPIRV_CHECK_ERROR(
-                err, "Failed to run clSetProgramSpecializationConstant");
-        }
     }
     else
     {
@@ -186,6 +245,16 @@ int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
         SPIRV_CHECK_ERROR(
             err, "Failed to create program with clCreateProgramWithILKHR");
     }
+
+    return 0;
+}
+
+int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
+                        const cl_context context, const char *fileName)
+{
+    cl_int err = 0;
+    err = get_unbuilt_program_with_il(prog, deviceID, context, fileName);
+    SPIRV_CHECK_ERROR(err, "Failed to get unbuilt program with IL");
 
     err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
     if (err != CL_SUCCESS)
@@ -226,8 +295,11 @@ static test_status parseArgs(int &argc, const char *argv[],
 {
     help = "        " + spvBinariesPathArg
         + " <path> - Set path to read SPIR-V files from (default: "
-        + binaries_path_str() + ")\n" + "        " + spvVersionSkipArg
-        + " - Skip the SPIR-V version check\n";
+        + binaries_path_str() + ")\n";
+    help += "        " + spvVersionSkipArg
+        + " - Skip SPIR-V version checks (for testing new functionality)\n";
+    help += "        " + spvExtensionSkipArg
+        + " - Skip SPIR-V extension check (for testing new functionality)\n";
 
     bool modifiedSpvBinariesPath = false;
     std::vector<const char *> argList;
@@ -252,6 +324,11 @@ static test_status parseArgs(int &argc, const char *argv[],
         else if (argv[i] == spvVersionSkipArg)
         {
             gVersionSkip = true;
+            removed_args.push_back(argv[i]);
+        }
+        else if (argv[i] == spvExtensionSkipArg)
+        {
+            gExtensionSkip = true;
             removed_args.push_back(argv[i]);
         }
         else

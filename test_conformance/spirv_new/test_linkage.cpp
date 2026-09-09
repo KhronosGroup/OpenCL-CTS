@@ -27,43 +27,8 @@ static int test_linkage_compile(cl_device_id deviceID,
                                 clProgramWrapper &prog)
 {
     cl_int err = CL_SUCCESS;
-    std::vector<unsigned char> buffer_vec = readSPIRV(fname);
-
-    int file_bytes = buffer_vec.size();
-    if (file_bytes == 0) {
-        log_error("File not found\n");
-        return -1;
-    }
-    unsigned char *buffer = &buffer_vec[0];
-
-    if (gCoreILProgram)
-    {
-        prog = clCreateProgramWithIL(context, buffer, file_bytes, &err);
-        SPIRV_CHECK_ERROR(
-            err, "Failed to create program with clCreateProgramWithIL");
-    }
-    else
-    {
-        cl_platform_id platform;
-        err = clGetDeviceInfo(deviceID, CL_DEVICE_PLATFORM,
-                              sizeof(cl_platform_id), &platform, NULL);
-        SPIRV_CHECK_ERROR(err,
-                          "Failed to get platform info with clGetDeviceInfo");
-        clCreateProgramWithILKHR_fn clCreateProgramWithILKHR = NULL;
-
-        clCreateProgramWithILKHR = (clCreateProgramWithILKHR_fn)
-            clGetExtensionFunctionAddressForPlatform(
-                platform, "clCreateProgramWithILKHR");
-        if (clCreateProgramWithILKHR == NULL)
-        {
-            log_error(
-                "ERROR: clGetExtensionFunctionAddressForPlatform failed\n");
-            return -1;
-        }
-        prog = clCreateProgramWithILKHR(context, buffer, file_bytes, &err);
-        SPIRV_CHECK_ERROR(
-            err, "Failed to create program with clCreateProgramWithILKHR");
-    }
+    err = get_unbuilt_program_with_il(prog, deviceID, context, fname);
+    SPIRV_CHECK_ERROR(err, "Failed to create program");
 
     err = clCompileProgram(prog, 1, &deviceID,
                            NULL, // options
