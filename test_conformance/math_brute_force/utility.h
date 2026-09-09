@@ -26,7 +26,7 @@
 #include "harness/parseParameters.h"
 #include "CL/cl_half.h"
 
-#define BUFFER_SIZE (1024 * 1024 * 2)
+#define BUFFER_SIZE (1024 * 1024 * 10)
 #define EMBEDDED_REDUCTION_FACTOR (64)
 
 #if defined(__GNUC__)
