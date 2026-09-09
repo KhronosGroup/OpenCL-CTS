@@ -1,0 +1,147 @@
+name: 'Setup Rusticl'
+description: 'Clones, builds, and configures Rusticl OpenCL driver with LLVMpipe'
+inputs:
+  runtime:
+    description: 'Install runtime dependencies and configure environment'
+    required: false
+    default: 'true'
+runs:
+  using: "composite"
+  steps:
+    - name: Resolve SPIRV-LLVM-Translator SHA
+      id: translator_sha
+      shell: bash
+      run: |
+        SHA=$(git ls-remote https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git refs/heads/${RUSTICL_TRANSLATOR_BRANCH} | awk '{print $1}')
+        echo "sha=$SHA" >> $GITHUB_OUTPUT
+
+    - name: Cache Rusticl
+      id: cache-rusticl
+      uses: actions/cache@v6
+      with:
+        path: ${{ github.workspace }}/rusticl-install
+        key: ubuntu-24.04-rusticl-${{ env.RUSTICL_VERSION }}-${{ steps.translator_sha.outputs.sha }}
+
+    - name: Install Runtime Dependencies
+      if: inputs.runtime == 'true'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libclc-${RUSTICL_LLVM_VERSION} \
+          libclang-cpp${RUSTICL_LLVM_VERSION} \
+          libllvm${RUSTICL_LLVM_VERSION}
+
+    - name: Install Build Dependencies
+      if: steps.cache-rusticl.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential cmake ninja-build pkg-config \
+          libclang-${RUSTICL_LLVM_VERSION}-dev clang-${RUSTICL_LLVM_VERSION} \
+          llvm-${RUSTICL_LLVM_VERSION} llvm-${RUSTICL_LLVM_VERSION}-dev \
+          libclang-cpp${RUSTICL_LLVM_VERSION}-dev \
+          libclc-${RUSTICL_LLVM_VERSION}-dev \
+          libelf-dev libdrm-dev bison flex libzstd-dev zlib1g-dev \
+          python3-mako python3-yaml python3-pip
+
+        python3 -m pip install --break-system-packages "meson>=1.7.0" ninja
+
+        source $HOME/.cargo/env 2>/dev/null || true
+        if ! command -v rustc &> /dev/null || [ "$(rustc --version | awk '{print $2}' | cut -d. -f2)" -lt 82 ]; then
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          source $HOME/.cargo/env
+        fi
+        export PATH="$HOME/.cargo/bin:$PATH"
+
+        if ! command -v bindgen &> /dev/null || [[ "$(bindgen --version 2>&1)" != *"0.71.1"* ]]; then
+          cargo install bindgen-cli --version 0.71.1 --force
+        fi
+
+    - name: Build and install SPIRV-Tools
+      if: steps.cache-rusticl.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        git clone --depth 1 https://github.com/KhronosGroup/SPIRV-Tools.git SPIRV-Tools
+        git clone --depth 1 https://github.com/KhronosGroup/SPIRV-Headers.git SPIRV-Tools/external/spirv-headers
+        cmake -S SPIRV-Tools -B SPIRV-Tools/build -G Ninja \
+          -DCMAKE_INSTALL_PREFIX='${{ github.workspace }}/rusticl-install' \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DSPIRV_SKIP_TESTS=ON \
+          -DSPIRV_WERROR=OFF \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+        cmake --build SPIRV-Tools/build
+        cmake --install SPIRV-Tools/build
+
+    - name: Build and install SPIRV-LLVM-Translator
+      if: steps.cache-rusticl.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        git clone --depth 1 --branch ${{ env.RUSTICL_TRANSLATOR_BRANCH }} https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git SPIRV-LLVM-Translator
+        cmake -S SPIRV-LLVM-Translator -B SPIRV-LLVM-Translator/build -G Ninja \
+          -DCMAKE_INSTALL_PREFIX='${{ github.workspace }}/rusticl-install' \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_SHARED_LIBS=ON \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+          -DLLVM_DIR=/usr/lib/llvm-${RUSTICL_LLVM_VERSION}/lib/cmake/llvm
+        cmake --build SPIRV-LLVM-Translator/build
+        cmake --install SPIRV-LLVM-Translator/build
+
+    - name: Checkout Mesa
+      if: steps.cache-rusticl.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        git clone --depth 1 --branch ${{ env.RUSTICL_VERSION }} https://gitlab.freedesktop.org/mesa/mesa.git mesa
+
+    - name: Build and install Rusticl
+      if: steps.cache-rusticl.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        source $HOME/.cargo/env 2>/dev/null || true
+        export PATH="/usr/lib/llvm-${RUSTICL_LLVM_VERSION}/bin:$HOME/.cargo/bin:$PATH"
+        export PKG_CONFIG_PATH="${{ github.workspace }}/rusticl-install/lib/pkgconfig:${{ github.workspace }}/rusticl-install/lib/x86_64-linux-gnu/pkgconfig:${{ github.workspace }}/rusticl-install/share/pkgconfig:$PKG_CONFIG_PATH"
+        export LD_LIBRARY_PATH="${{ github.workspace }}/rusticl-install/lib:${{ github.workspace }}/rusticl-install/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+
+        meson setup mesa/build mesa \
+          --prefix='${{ github.workspace }}/rusticl-install' \
+          --buildtype=release \
+          -Db_ndebug=false \
+          -Dgallium-rusticl=true \
+          -Dgallium-drivers=llvmpipe \
+          -Dllvm=enabled \
+          -Drust_std=2021 \
+          -Dplatforms= \
+          -Dvulkan-drivers= \
+          -Dglx=disabled \
+          -Degl=disabled \
+          -Dopengl=false \
+          -Dbuild-tests=false
+        meson compile -C mesa/build
+        meson install -C mesa/build
+
+    - name: Configure Environment
+      if: inputs.runtime == 'true'
+      shell: bash
+      run: |
+        ICD_DIR="${{ github.workspace }}/rusticl-install/share/OpenCL/vendors"
+        if [ ! -d "$ICD_DIR" ]; then
+          ICD_DIR="${{ github.workspace }}/rusticl-install/etc/OpenCL/vendors"
+        fi
+        echo "OCL_ICD_VENDORS=$ICD_DIR" >> $GITHUB_ENV
+        echo "RUSTICL_ENABLE=llvmpipe" >> $GITHUB_ENV
+
+        EXTRA_LD_PATH=""
+        for libdir in \
+          "${{ github.workspace }}/rusticl-install/lib/x86_64-linux-gnu" \
+          "${{ github.workspace }}/rusticl-install/lib64" \
+          "${{ github.workspace }}/rusticl-install/lib"; do
+          if [ -d "$libdir" ]; then
+            echo "$libdir" >> $GITHUB_PATH
+            EXTRA_LD_PATH="${EXTRA_LD_PATH:+$EXTRA_LD_PATH:}$libdir"
+          fi
+        done
+        if [ -n "$EXTRA_LD_PATH" ]; then
+          echo "LD_LIBRARY_PATH=$EXTRA_LD_PATH${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> $GITHUB_ENV
+          export LD_LIBRARY_PATH="$EXTRA_LD_PATH${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+        fi
