@@ -281,11 +281,11 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
         log_error("ERROR: Creating output array failed!\n");
         return -1;
     }
-    streams[1] =
-        clCreateBuffer(context,
-                       ((startRefValues.data() != NULL ? CL_MEM_COPY_HOST_PTR
-                                                       : CL_MEM_READ_WRITE)),
-                       typeSize * threadSize, startRefValues.data(), NULL);
+    streams[1] = clCreateBuffer(
+        context,
+        startRefValues.empty() ? CL_MEM_READ_WRITE : CL_MEM_COPY_HOST_PTR,
+        typeSize * threadSize,
+        startRefValues.empty() ? NULL : startRefValues.data(), NULL);
     if (!streams[1])
     {
         log_error("ERROR: Creating reference array failed!\n");
