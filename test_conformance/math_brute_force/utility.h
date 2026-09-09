@@ -78,6 +78,8 @@ extern RoundingMode gFloatToHalfRoundingMode;
 
 extern cl_half_rounding_mode gHalfRoundingMode;
 
+extern bool gTestAll;
+
 #define HFF(num) cl_half_from_float(num, gHalfRoundingMode)
 #define HFD(num) cl_half_from_double(num, gHalfRoundingMode)
 #define HTF(num) cl_half_to_float(num)
@@ -97,26 +99,6 @@ extern cl_half_rounding_mode gHalfRoundingMode;
 float Abs_Error(float test, double reference);
 float Ulp_Error(float test, double reference);
 float Bruteforce_Ulp_Error_Double(double test, long double reference);
-
-// used to convert a bucket of bits into a search pattern through double
-inline double DoubleFromUInt32(uint32_t bits)
-{
-    union {
-        uint64_t u;
-        double d;
-    } u;
-
-    // split 0x89abcdef to 0x89abc00000000def
-    u.u = bits & 0xfffU;
-    u.u |= (uint64_t)(bits & ~0xfffU) << 32;
-
-    // sign extend the leading bit of def segment as sign bit so that the middle
-    // region consists of either all 1s or 0s
-    u.u -= (bits & 0x800U) << 1;
-
-    // return result
-    return u.d;
-}
 
 // The spec is fairly clear that we may enforce a hard cutoff to prevent
 // premature flushing to zero.
@@ -251,36 +233,9 @@ void logFunctionInfo(const char *fname, unsigned int float_size,
 
 float getAllowedUlpError(const Func *f, Type t, const bool relaxed);
 
-inline cl_uint getTestScale(size_t typeSize)
-{
-    if (gWimpyMode)
-    {
-        return (cl_uint)typeSize * 2 * gWimpyReductionFactor;
-    }
-    else if (gIsEmbedded)
-    {
-        return EMBEDDED_REDUCTION_FACTOR;
-    }
-    else
-    {
-        return 1;
-    }
-}
-
 inline uint64_t getTestStep(size_t typeSize, size_t bufferSize)
 {
-    if (gWimpyMode)
-    {
-        return (1ULL << 32) * gWimpyReductionFactor / (512);
-    }
-    else if (gIsEmbedded)
-    {
-        return (BUFFER_SIZE / typeSize) * EMBEDDED_REDUCTION_FACTOR;
-    }
-    else
-    {
-        return bufferSize / typeSize;
-    }
+    return bufferSize / typeSize;
 }
 
 #endif /* UTILITY_H */
