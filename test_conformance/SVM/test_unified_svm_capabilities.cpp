@@ -460,8 +460,8 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         auto ptr = mem->get_ptr();
         size_t svm_type_count = 0;
         err = clGetDeviceInfo(device,
-                              CL_DEVICE_SVM_CONCURRENT_ACCESS_ATOM_SIZE_KHR,
-                              0, nullptr, &svm_type_count);
+                              CL_DEVICE_SVM_CONCURRENT_ACCESS_ATOM_SIZE_KHR, 0,
+                              nullptr, &svm_type_count);
         test_error(err, "could not query ConcurrentAccess granularity count");
         std::vector<size_t> granularity(svm_type_count);
         err = clGetDeviceInfo(device,
