@@ -15,7 +15,8 @@
           "min_max_samplers": "pass",
           "min_max_write_image_args": "pass",
           "negative_set_kernel_arg_invalid_image_msaa": "skip",
-          "negative_set_kernel_arg_invalid_image": "pass"
+          "negative_set_kernel_arg_invalid_image": "pass",
+          "set_kernel_arg_struct_array": "pass"
         }
     },
     "test_atomics": {
@@ -29,7 +30,10 @@
             "arraycopy": "pass",
             "host_numeric_constants": "pass",
             "kernel_numeric_constants": "pass",
-            "kernel_preprocessor_macros": "pass"
+            "kernel_preprocessor_macros": "pass",
+            "loop": "pass",
+            "local_arg_def": "pass",
+            "local_kernel_def": "pass"
         }
     },
     "test_bruteforce": {
@@ -210,6 +214,19 @@
         },
         "--num-worker-threads 2 CL_FILTER_NEAREST CL_R": {
             "1D": "fail"
+        }
+    },
+    "test_integer_ops": {
+        "": {
+            "int_math": "pass",
+            "quick_int_math": "pass",
+            "long_math": "pass",
+            "quick_long_math": "pass",
+            "ushort_math": "pass",
+            "quick_ushort_math": "pass",
+            "integer_addAssign": "pass",
+            "integer_subtractAssign": "pass",
+            "integer_multiplyAssign": "pass"
         }
     },
     "test_printf": {

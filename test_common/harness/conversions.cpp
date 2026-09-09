@@ -1440,6 +1440,39 @@ int random_in_range(int minV, int maxV, MTdata d)
     return (cl_uint)(r >> 32) + minV;
 }
 
+cl_ulong get_random_ulong(cl_ulong low, cl_ulong high, MTdata d)
+{
+    assert(low <= high && "Invalid random number range specified");
+
+    const cl_ulong width = high - low;
+    if (width == CL_ULONG_MAX) return genrand_int64(d);
+
+    const cl_ulong range = width + 1;
+
+    // Drop the incomplete trailing block of `range` values so that every
+    // result stays equally likely: the largest usable draw is
+    // CL_ULONG_MAX - (2^64 mod range), computed here without a 65-bit value.
+    const cl_ulong limit = CL_ULONG_MAX - (CL_ULONG_MAX % range + 1) % range;
+
+    cl_ulong r;
+    do
+    {
+        r = genrand_int64(d);
+    } while (r > limit);
+
+    return low + r % range;
+}
+
+cl_long get_random_long(cl_long low, cl_long high, MTdata d)
+{
+    assert(low <= high && "Invalid random number range specified");
+
+    // The width of the interval need not be representable as a cl_long, so
+    // offset the low bound in unsigned arithmetic and convert back.
+    const cl_ulong width = (cl_ulong)high - (cl_ulong)low;
+    return (cl_long)((cl_ulong)low + get_random_ulong(0, width, d));
+}
+
 size_t get_random_size_t(size_t low, size_t high, MTdata d)
 {
     enum
