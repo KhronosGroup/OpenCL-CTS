@@ -14,7 +14,9 @@
 // limitations under the License.
 //
 #include "testBase.h"
+#include "testHarness.h"
 
+#ifdef GL_IS_SUPPORTED
 #if defined(__APPLE__)
 #include <OpenGL/glu.h>
 #else
@@ -63,7 +65,6 @@ extern int test_cl_image_read(cl_context context, cl_command_queue queue,
                               cl_image_format *outFormat, ExplicitType *outType,
                               void **outResultBuffer);
 
-
 static int test_attach_renderbuffer_read_image(
     cl_context context, cl_command_queue queue, GLenum glTarget,
     GLuint glRenderbuffer, size_t imageWidth, size_t imageHeight,
@@ -85,11 +86,12 @@ static int test_attach_renderbuffer_read_image(
                               outResultBuffer);
 }
 
-int test_renderbuffer_read_image(cl_context context, cl_command_queue queue,
-                                 GLsizei width, GLsizei height,
-                                 GLenum attachment, GLenum format,
-                                 GLenum internalFormat, GLenum glType,
-                                 ExplicitType type, MTdata d)
+static int test_renderbuffer_read_image(cl_context context,
+                                        cl_command_queue queue, GLsizei width,
+                                        GLsizei height, GLenum attachment,
+                                        GLenum format, GLenum internalFormat,
+                                        GLenum glType, ExplicitType type,
+                                        MTdata d)
 {
     int error;
 
@@ -177,10 +179,12 @@ int test_renderbuffer_read_image(cl_context context, cl_command_queue queue,
 
     return valid;
 }
+#endif
 
 int test_renderbuffer_read(cl_device_id device, cl_context context,
                            cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     GLenum attachments[] = { GL_COLOR_ATTACHMENT0_EXT };
 
     struct
@@ -289,12 +293,16 @@ int test_renderbuffer_read(cl_device_id device, cl_context context,
     }
 
     return error;
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 
 #pragma mark -------------------- Write tests -------------------------
 
-int test_attach_renderbuffer_write_to_image(
+#ifdef GL_IS_SUPPORTED
+static int test_attach_renderbuffer_write_to_image(
     cl_context context, cl_command_queue queue, GLenum glTarget,
     GLuint glRenderbuffer, size_t imageWidth, size_t imageHeight,
     cl_image_format *outFormat, ExplicitType *outType, MTdata d,
@@ -316,11 +324,12 @@ int test_attach_renderbuffer_write_to_image(
                                outSourceBuffer, d);
 }
 
-int test_renderbuffer_image_write(cl_context context, cl_command_queue queue,
-                                  GLsizei width, GLsizei height,
-                                  GLenum attachment, GLenum format,
-                                  GLenum internalFormat, GLenum glType,
-                                  ExplicitType type, MTdata d)
+static int test_renderbuffer_image_write(cl_context context,
+                                         cl_command_queue queue, GLsizei width,
+                                         GLsizei height, GLenum attachment,
+                                         GLenum format, GLenum internalFormat,
+                                         GLenum glType, ExplicitType type,
+                                         MTdata d)
 {
     int error;
 
@@ -423,10 +432,12 @@ int test_renderbuffer_image_write(cl_context context, cl_command_queue queue,
 
     return valid;
 }
+#endif
 
 int test_renderbuffer_write(cl_device_id device, cl_context context,
                             cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     GLenum attachments[] = { GL_COLOR_ATTACHMENT0_EXT };
 
     struct
@@ -532,4 +543,7 @@ int test_renderbuffer_write(cl_device_id device, cl_context context,
     }
 
     return error;
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }

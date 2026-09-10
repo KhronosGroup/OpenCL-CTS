@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
+#include "testHarness.h"
 
 const char* zero_sized_enqueue_test_kernel = R"(
 __kernel void foo_kernel(__global int *dst)
@@ -217,29 +218,24 @@ REGISTER_TEST_VERSION(zero_sized_enqueue, Version(2, 1))
         return res;
     }
 
-    // now test out of order queue
-    cl_command_queue_properties props;
-    cl_int error =
-        clGetDeviceInfo(device, CL_DEVICE_QUEUE_PROPERTIES,
-                        sizeof(cl_command_queue_properties), &props, NULL);
-    test_error( error, "clGetDeviceInfo failed.");
-
-    if (props & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE)
+    if (!is_queue_properties_available(device,
+                                       CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE))
     {
-        // test out of order queue
-        cl_queue_properties queue_prop_def[] =
-        {
-            CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE,
-            0
-        };
-
-        clCommandQueueWrapper ooqueue = clCreateCommandQueueWithProperties(
-            context, device, queue_prop_def, &error);
-        test_error( error, "clCreateCommandQueueWithProperties failed.");
-
-        res = test_zero_sized_enqueue_helper(device, context, ooqueue,
-                                             num_elements);
+        return TEST_PASS;
     }
+
+    // test out of order queue
+    cl_queue_properties queue_prop_def[] = {
+        CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0
+    };
+
+    int error;
+    clCommandQueueWrapper ooqueue = clCreateCommandQueueWithProperties(
+        context, device, queue_prop_def, &error);
+    test_error(error, "clCreateCommandQueueWithProperties failed.");
+
+    res =
+        test_zero_sized_enqueue_helper(device, context, ooqueue, num_elements);
 
     return res;
 }

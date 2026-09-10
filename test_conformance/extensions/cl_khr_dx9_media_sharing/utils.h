@@ -39,8 +39,6 @@ extern cl_device_id gDeviceIDdetected;
 extern cl_device_type gDeviceTypeSelected;
 
 #define NL "\n"
-#define TEST_NOT_IMPLEMENTED -1
-#define TEST_NOT_SUPPORTED -2
 
 enum TSurfaceFormat
 {

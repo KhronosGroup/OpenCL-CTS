@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "testHarness.h"
+#ifdef _WIN32
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -146,7 +148,6 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
             return result.Result();
         }
 
-#if defined(_WIN32)
         cl_dx9_surface_info_khr surfaceInfoSrc;
         surfaceInfoSrc.resource =
             *(static_cast<CD3D9SurfaceWrapper *>(surfaceSrc.get()));
@@ -156,11 +157,6 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
         surfaceInfoDst.resource =
             *(static_cast<CD3D9SurfaceWrapper *>(surfaceDst.get()));
         surfaceInfoDst.shared_handle = objectDstHandle;
-#else
-        void *surfaceInfoSrc = 0;
-        void *surfaceInfoDst = 0;
-        return TEST_NOT_IMPLEMENTED;
-#endif
 
         std::vector<cl_mem> memObjSrcList;
         std::vector<cl_mem> memObjDstList;
@@ -433,12 +429,13 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
 
     return result.Result();
 }
+#endif
 
 REGISTER_TEST(kernel)
 {
+#ifdef _WIN32
     CResult result;
 
-#if defined(_WIN32)
     // D3D9
     if (kernel_functions(device, context, queue, num_elements, 10, 256, 256,
                          CL_ADAPTER_D3D9_KHR, SURFACE_FORMAT_NV12,
@@ -532,9 +529,8 @@ REGISTER_TEST(kernel)
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-#else
-    return TEST_NOT_IMPLEMENTED;
-#endif
-
     return result.Result();
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
