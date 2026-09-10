@@ -283,6 +283,8 @@ int run_test_with_two_queue(
     VulkanCommandPool vkCommandPool(vkDevice);
     VulkanCommandBuffer vkCopyCommandBuffer(vkDevice, vkCommandPool);
     VulkanCommandBuffer vkShaderCommandBuffer(vkDevice, vkCommandPool);
+    std::shared_ptr<VulkanFence> vkImageDispatchFence(
+        new VulkanFence(vkDevice));
     VulkanQueue &vkQueue = vkDevice.getQueue(getVulkanQueueFamily());
 
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
@@ -551,6 +553,16 @@ int run_test_with_two_queue(
                                 for (size_t i2DIdx = 0;
                                      i2DIdx < vkImage2DList->size(); i2DIdx++)
                                 {
+                                    if (i2DIdx > 0)
+                                    {
+                                        // synchronize reusing vkDescriptorSet
+                                        // (VUID-vkUpdateDescriptorSets-None-03047)
+                                        // and vkCopyCommandBuffer
+                                        // (VUID-vkBeginCommandBuffer-commandBuffer-00049).
+                                        vkImageDispatchFence->wait();
+                                        vkImageDispatchFence->reset();
+                                    }
+
                                     vkDescriptorSet.update(
                                         1, vkImage2DViewList[i2DIdx]);
                                     vkCopyCommandBuffer.begin();
@@ -584,7 +596,8 @@ int run_test_with_two_queue(
                                     vkShaderCommandBuffer.end();
                                     if (i2DIdx < vkImage2DList->size() - 1)
                                     {
-                                        vkQueue.submit(vkShaderCommandBuffer);
+                                        vkQueue.submit(vkShaderCommandBuffer,
+                                                       vkImageDispatchFence);
                                     }
                                 }
                             }
@@ -893,6 +906,8 @@ int run_test_with_one_queue(
     VulkanCommandPool vkCommandPool(vkDevice);
     VulkanCommandBuffer vkCopyCommandBuffer(vkDevice, vkCommandPool);
     VulkanCommandBuffer vkShaderCommandBuffer(vkDevice, vkCommandPool);
+    std::shared_ptr<VulkanFence> vkImageDispatchFence(
+        new VulkanFence(vkDevice));
     VulkanQueue &vkQueue = vkDevice.getQueue(getVulkanQueueFamily());
 
     VulkanSemaphore vkVk2CLSemaphore(vkDevice, vkExternalSemaphoreHandleType);
@@ -1166,6 +1181,16 @@ int run_test_with_one_queue(
                                 for (size_t i2DIdx = 0;
                                      i2DIdx < vkImage2DList->size(); i2DIdx++)
                                 {
+                                    if (i2DIdx > 0)
+                                    {
+                                        // synchronize reusing vkDescriptorSet
+                                        // (VUID-vkUpdateDescriptorSets-None-03047)
+                                        // and vkCopyCommandBuffer
+                                        // (VUID-vkBeginCommandBuffer-commandBuffer-00049).
+                                        vkImageDispatchFence->wait();
+                                        vkImageDispatchFence->reset();
+                                    }
+
                                     vkDescriptorSet.update(
                                         1, vkImage2DViewList[i2DIdx]);
                                     vkCopyCommandBuffer.begin();
@@ -1199,7 +1224,8 @@ int run_test_with_one_queue(
                                     vkShaderCommandBuffer.end();
                                     if (i2DIdx < vkImage2DList->size() - 1)
                                     {
-                                        vkQueue.submit(vkShaderCommandBuffer);
+                                        vkQueue.submit(vkShaderCommandBuffer,
+                                                       vkImageDispatchFence);
                                     }
                                 }
                             }
