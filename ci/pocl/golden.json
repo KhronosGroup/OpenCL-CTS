@@ -164,8 +164,23 @@
         "": {
             "clamp": "pass",
             "clamp_scalar_bounds": "pass",
+            "degrees": "fail",
+            "fmax": "pass",
+            "fmaxf": "pass",
+            "fmin": "pass",
+            "fminf": "pass",
+            "max": "pass",
+            "maxf": "pass",
+            "min": "pass",
+            "minf": "pass",
             "mix": "pass",
-            "mixf": "pass"
+            "mixf": "pass",
+            "radians": "fail",
+            "sign": "pass",
+            "smoothstep": "pass",
+            "smoothstepf": "pass",
+            "step": "pass",
+            "stepf": "pass"
         }
     },
     "test_computeinfo": {
