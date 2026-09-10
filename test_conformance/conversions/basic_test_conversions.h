@@ -95,7 +95,7 @@ extern void *gRef;
 extern void *gAllowZ;
 extern void *gOut[];
 
-extern std::vector<const char *> argList;
+extern std::vector<const char *> customTestList;
 
 extern bool gTestAll;
 
