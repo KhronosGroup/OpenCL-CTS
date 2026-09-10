@@ -252,6 +252,7 @@
     "test_spirv_new": {
         "": {
             "basic_versions": "pass",
+            "extinstimport_nonsemantic": "skip",
             "access_chain_array": "pass",
             "access_chain_inbounds_array": "pass",
             "ptr_access_chain_array": "pass",

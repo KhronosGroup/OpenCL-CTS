@@ -1,0 +1,19 @@
+; Declare usage of the SPV_KHR_non_semantic_info extension, but do not declare
+; any non-semantic extended instruction sets.
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpExtension "SPV_KHR_non_semantic_info"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "non_semantic_info_test"
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+      %value = OpConstant %uint 42
+ %kernel_sig = OpTypeFunction %void %_ptr_CrossWorkgroup_uint
+     %kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+               OpStore %dst %value Aligned 4
+               OpReturn
+               OpFunctionEnd
