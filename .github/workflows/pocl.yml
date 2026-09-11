@@ -123,6 +123,7 @@ jobs:
             -DLLVM_DIR=/usr/lib/llvm-${LLVM_VERSION}/lib/cmake/llvm \
             -DLLVM_SPIRV_LIB=${SPIRV_LLVM_TRANSLATOR_PATH}/lib/libLLVMSPIRVLib.a \
             -DLLVM_SPIRV_INCLUDEDIR=${SPIRV_LLVM_TRANSLATOR_PATH}/include/LLVMSPIRVLib \
+            -DENABLE_CONFORMANCE=ON \
             -DENABLE_ICD=ON
           cmake --build pocl/build
           cmake --install pocl/build
