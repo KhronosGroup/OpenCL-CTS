@@ -80,13 +80,15 @@ Version get_device_cl_version(cl_device_id device);
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 typedef int (*test_function_pointer)(cl_device_id deviceID, cl_context context,
-                                     cl_command_queue queue, int num_elements);
+                                     cl_command_queue queue, int num_elements,
+                                     void *arg);
 
 typedef struct test_definition
 {
     test_function_pointer func;
     const char *name;
     Version min_version;
+    void *args;
 } test_definition;
 
 
@@ -107,14 +109,8 @@ struct test_harness_config
 };
 
 
-struct test
-{
-    virtual test_function_pointer getFunction() = 0;
-};
-
 class test_registry {
 private:
-    std::vector<test *> m_tests;
     std::vector<test_definition> m_definitions;
 
 public:
@@ -124,32 +120,26 @@ public:
 
     size_t num_tests();
 
-    void add_test(test *t, const char *name, Version version);
+    void add_test(test_function_pointer func, const char *name, Version version,
+                  void *args);
     test_registry() {}
 };
 
-template <typename T> T *register_test(const char *name, Version version)
+template <test_function_pointer T>
+test_function_pointer register_test(const char *name, Version version)
 {
-    T *t = new T();
-    test_registry::getInstance().add_test((test *)t, name, version);
-    return t;
+    test_registry::getInstance().add_test(T, name, version, nullptr);
+    return T;
 }
 
 #define REGISTER_TEST_VERSION(name, version)                                   \
     extern int test_##name(cl_device_id device, cl_context context,            \
-                           cl_command_queue queue, int num_elements);          \
-    class test_##name##_class : public test {                                  \
-    private:                                                                   \
-        test_function_pointer fn;                                              \
-                                                                               \
-    public:                                                                    \
-        test_##name##_class(): fn(test_##name) {}                              \
-        test_function_pointer getFunction() { return fn; }                     \
-    };                                                                         \
-    test_##name##_class *var_##name =                                          \
-        register_test<test_##name##_class>(#name, version);                    \
+                           cl_command_queue queue, int num_elements,           \
+                           void *args);                                        \
+    test_function_pointer var_##name =                                         \
+        register_test<test_##name>(#name, version);                            \
     int test_##name(cl_device_id device, cl_context context,                   \
-                    cl_command_queue queue, int num_elements)
+                    cl_command_queue queue, int num_elements, void *args)
 
 #define REGISTER_TEST(name) REGISTER_TEST_VERSION(name, Version(1, 2))
 
@@ -173,8 +163,7 @@ extern cl_uint gRandomSeed;
 // create a context, all that setup work, and then call each function in turn as
 // dictatated by the passed arguments. Returns EXIT_SUCCESS iff all tests
 // succeeded or the tests were listed, otherwise return EXIT_FAILURE.
-extern int runTestHarness(int argc, const char *argv[], int testNum,
-                          test_definition testList[],
+extern int runTestHarness(int argc, const char *argv[],
                           int forceNoContextCreation,
                           cl_command_queue_properties queueProps);
 
@@ -185,8 +174,7 @@ typedef test_status (*DeviceCheckFn)(cl_device_id device);
 // Same as runTestHarness, but also supplies a function that checks the created
 // device for required functionality. Returns EXIT_SUCCESS iff all tests
 // succeeded or the tests were listed, otherwise return EXIT_FAILURE.
-extern int runTestHarnessWithCheck(int argc, const char *argv[], int testNum,
-                                   test_definition testList[],
+extern int runTestHarnessWithCheck(int argc, const char *argv[],
                                    int forceNoContextCreation,
                                    cl_command_queue_properties queueProps,
                                    DeviceCheckFn deviceCheckFn);
@@ -198,8 +186,7 @@ using ParseArgsFn = test_status (*)(int &argc, const char *argv[],
 void update_argc_argv_from_args_list(std::vector<const char *> &argList,
                                      int &argc, const char *argv[]);
 
-int runTestHarnessWithCheckAndParse(int argc, const char *argv[], int testNum,
-                                    test_definition testList[],
+int runTestHarnessWithCheckAndParse(int argc, const char *argv[],
                                     int forceNoContextCreation,
                                     cl_command_queue_properties queueProps,
                                     DeviceCheckFn deviceCheckFn,
