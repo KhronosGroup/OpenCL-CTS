@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#define _CRT_SECURE_NO_WARNINGS
 #include "harness.h"
 #include <vector>
 
@@ -156,26 +155,21 @@ texture2DPatterns[2][2] =
     {"zZyYxXwWvVuUtTsSrRqQ", "ZzYyXxWwVvUuTtSsRrQq"},
 };
 
-void SubTestTexture2D(
-    cl_context context,
-    cl_command_queue command_queue,
-    cl_kernel kernel,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC,
-    const TextureFormat* format,
-    const Texture2DSize* size)
+int SubTestTexture2D(cl_context context, cl_command_queue command_queue,
+                     cl_kernel kernel, ID3D11Device* pDevice,
+                     ID3D11DeviceContext* pDC, const TextureFormat* format,
+                     const Texture2DSize* size)
 {
     ID3D11Texture2D* pTexture = NULL;
     HRESULT hr = S_OK;
     cl_image_format clFormat;
     cl_int result = CL_SUCCESS;
+    int testResult = TEST_PASS;
 
-    HarnessD3D11_TestBegin("2D Texture: Format=%s, Width=%d, Height=%d, MipLevels=%d, ArraySize=%d",
-        format->name_format,
-        size->Width,
-        size->Height,
-        size->MipLevels,
-        size->ArraySize);
+    log_info("2D Texture: Format=%s, Width=%d, Height=%d, MipLevels=%d, "
+             "ArraySize=%d\n",
+             format->name_format, size->Width, size->Height, size->MipLevels,
+             size->ArraySize);
 
     struct
     {
@@ -630,9 +624,7 @@ Cleanup:
             TestRequire(result == CL_SUCCESS, "clReleaseEvent for event failed.");
         }
     }
-
-
-    HarnessD3D11_TestEnd();
+    return testResult;
 }
 
 bool is_format_supported(
@@ -647,14 +639,12 @@ bool is_format_supported(
   return false;
 }
 
-void TestDeviceTexture2D(
-    cl_device_id device,
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC)
+int TestDeviceTexture2D(cl_device_id device, cl_context context,
+                        cl_command_queue command_queue, ID3D11Device* pDevice,
+                        ID3D11DeviceContext* pDC)
 {
     cl_int result = CL_SUCCESS;
+    int testResult = TEST_PASS;
     cl_kernel kernels[3] = {NULL, NULL, NULL};
 
     const char *sourceRaw =
@@ -712,26 +702,21 @@ void TestDeviceTexture2D(
     {
         if (!is_format_supported(formats[format].channel_order, formats[format].channel_type, supported_image_formats))
         {
-          HarnessD3D11_TestBegin("2D_texture: Format=%s, Width=%d, Height=%d, MipLevels=%d, ArraySize=%d\n",
-            formats[format].name_format,
-            texture2DSizes[size % texture2DSizeCount].Width,
-            texture2DSizes[size % texture2DSizeCount].Height,
-            texture2DSizes[size % texture2DSizeCount].MipLevels,
-            texture2DSizes[size % texture2DSizeCount].ArraySize);
-          log_info("\tFormat not supported, skipping test!\n");
-          HarnessD3D11_TestEnd();
+            log_info("2D_texture: Format=%s, Width=%d, Height=%d, "
+                     "MipLevels=%d, ArraySize=%d\n",
+                     formats[format].name_format,
+                     texture2DSizes[size % texture2DSizeCount].Width,
+                     texture2DSizes[size % texture2DSizeCount].Height,
+                     texture2DSizes[size % texture2DSizeCount].MipLevels,
+                     texture2DSizes[size % texture2DSizeCount].ArraySize);
+            log_info("\tFormat not supported, skipping test!\n");
 
-          continue;
+            continue;
         }
 
-        SubTestTexture2D(
-            context,
-            command_queue,
-            kernels[formats[format].generic],
-            pDevice,
-            pDC,
-            &formats[format],
-            &texture2DSizes[size % texture2DSizeCount]);
+        testResult |= SubTestTexture2D(
+            context, command_queue, kernels[formats[format].generic], pDevice,
+            pDC, &formats[format], &texture2DSizes[size % texture2DSizeCount]);
     }
 
 Cleanup:
@@ -744,6 +729,5 @@ Cleanup:
             clReleaseKernel(kernels[i]);
         }
     }
+    return testResult;
 }
-
-
