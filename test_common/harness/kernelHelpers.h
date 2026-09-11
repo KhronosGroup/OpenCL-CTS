@@ -60,11 +60,6 @@ extern int create_single_kernel_helper_create_program(
     cl_context context, cl_program *outProgram, unsigned int numKernelLines,
     const char **kernelProgram, const char *buildOptions = NULL);
 
-extern int create_single_kernel_helper_create_program_for_device(
-    cl_context context, cl_device_id device, cl_program *outProgram,
-    unsigned int numKernelLines, const char **kernelProgram,
-    const char *buildOptions = NULL);
-
 /* Builds program (outProgram) and creates one kernel */
 int build_program_create_kernel_helper(
     cl_context context, cl_program *outProgram, cl_kernel *outKernel,
