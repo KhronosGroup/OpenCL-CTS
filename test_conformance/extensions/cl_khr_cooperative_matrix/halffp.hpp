@@ -63,7 +63,7 @@ struct HalfFP final
 
     bool operator!=(const HalfFP &o) const
     {
-        return static_cast<float>(data) != static_cast<float>(o.data);
+        return static_cast<float>(*this) != static_cast<float>(o);
     }
 
     bool operator==(const HalfFP &o) const { return !(*this != o); }
@@ -72,11 +72,6 @@ struct HalfFP final
     {
         (*this) = HalfFP(static_cast<float>(*this) + f);
         return *this;
-    }
-
-    std::ostream &operator<<(std::ostream &out) const
-    {
-        return out << static_cast<float>(*this);
     }
 
     uint16_t data = 0;

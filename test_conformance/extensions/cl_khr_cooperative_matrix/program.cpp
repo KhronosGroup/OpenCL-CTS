@@ -226,8 +226,9 @@ void ProgramGenerator::genConstants()
                        << " 123\n";
             if (op == CoopMatOp::constant)
                 spirv_text << R"(
-    %result = OpConstantComposite %matAty %fillValue
-            )";
+    %result = OpConstantComposite )"
+                           << getResTy() << R"( %fillValue
+)";
             break;
         case CoopMatOp::composite_array:
             spirv_text << R"(
@@ -287,6 +288,7 @@ void ProgramGenerator::genConstants()
     %filledB = OpConstantComposite %matBty %fillValueB
     %filledC = OpConstantComposite %matCty %fillValueC
 )";
+            [[fallthrough]];
         case CoopMatOp::matrixmuladd:
         case CoopMatOp::matrixmuladd_wrapping:
         case CoopMatOp::matrixmuladd_stride0:

@@ -49,6 +49,8 @@ test_status InitCL(cl_device_id device)
                           &platform, nullptr);
     test_error_fail(err, "clGetDeviceInfo for CL_DEVICE_PLATFORM failed\n");
 
+    REQUIRE_EXTENSION("cl_khr_cooperative_matrix");
+
     err = clGetDeviceInfo(
         device, CL_DEVICE_COOPERATIVE_MATRIX_POINTER_ALIGNMENT_KHR,
         sizeof(cl_uint), &writableTestContext.devicePointerAlignment, nullptr);
@@ -56,7 +58,7 @@ test_status InitCL(cl_device_id device)
         err,
         "clGetDeviceInfo for "
         "CL_DEVICE_COOPERATIVE_MATRIX_POINTER_ALIGNMENT_KHR failed\n");
-    log_info("Pointer alignment is %d bytes.\n",
+    log_info("Pointer alignment is %u bytes.\n",
              writableTestContext.devicePointerAlignment);
 
     err = clGetDeviceInfo(
@@ -66,7 +68,7 @@ test_status InitCL(cl_device_id device)
         err,
         "clGetDeviceInfo for CL_DEVICE_COOPERATIVE_MATRIX_STRIDE_MULTIPLE_KHR "
         "failed\n");
-    log_info("Stride multiple is %d bytes.\n",
+    log_info("Stride multiple is %u bytes.\n",
              writableTestContext.deviceStrideMultiple);
 
     clGetDeviceCooperativeMatrixInfoKHR_fn clGetDeviceCooperativeMatrixInfoKHR =
@@ -89,7 +91,13 @@ test_status InitCL(cl_device_id device)
                     "clGetDeviceCooperativeMatrixInfoKHR failed to get size "
                     "needed for supported "
                     "cooperative matrix variants (default subgroup size).");
-    size_t numVariants =
+    if (size % sizeof(cl_device_cooperative_matrix_variant_khr) != 0)
+    {
+        log_error("clGetDeviceCooperativeMatrixInfoKHR returned an invalid "
+                  "variant data size.\n");
+        return TEST_FAIL;
+    }
+    const size_t numVariants =
         size / sizeof(cl_device_cooperative_matrix_variant_khr);
 
     // Then perform the real query.
@@ -123,16 +131,19 @@ test_status InitCL(cl_device_id device)
     return TEST_PASS;
 }
 
-// Parse test specific arguments and remove those from the argument list
-// before invoking the harness argument parser.
-int parseTestArgs(int *argc, const char *argv[])
+// Parse test-specific arguments and remove them from the argument list before
+// invoking the harness argument parser.
+test_status parseTestArgs(int &argc, const char *argv[],
+                          std::vector<std::string> &removedArgs,
+                          std::string &help)
 {
-    for (int i = 0; i < *argc; ++i)
+    help = helpString;
+    std::vector<const char *> keptArgs{ argv[0] };
+    for (int i = 1; i < argc; ++i)
     {
-        int argsToRemove = 0;
         if (strcmp(argv[i], "--variant") == 0)
         {
-            if (i + 1 == *argc)
+            if (i + 1 == argc)
             {
                 log_error("Missing value for '--variant' argument.\n");
                 return TEST_FAIL;
@@ -145,33 +156,21 @@ int parseTestArgs(int *argc, const char *argv[])
             else
             {
                 writableTestContext.runSingleVariant = std::string(argv[i + 1]);
-                argsToRemove += 2;
+                removedArgs.emplace_back(argv[i]);
+                removedArgs.emplace_back(argv[++i]);
             }
         }
         else if (strcmp(argv[i], "-l") == 0)
         {
             writableTestContext.linkCheckOnly = true;
-            argsToRemove++;
+            removedArgs.emplace_back(argv[i]);
         }
-        else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
+        else
         {
-            // Don't consume this argument so that the harness can print generic
-            // help text too.
-            log_info("%s\n", helpString);
-        }
-
-        if (argsToRemove > 0)
-        {
-            // Shift remaining arguments down, overwriting the arguments that
-            // were just successfully parsed.
-            for (int j = i; j < (*argc - argsToRemove); ++j)
-            {
-                argv[j] = argv[j + argsToRemove];
-            }
-            *argc -= argsToRemove;
-            --i;
+            keptArgs.push_back(argv[i]);
         }
     }
+    update_argc_argv_from_args_list(keptArgs, argc, argv);
     return TEST_PASS;
 }
 
@@ -183,12 +182,8 @@ const TestContext *gTestContext = &writableTestContext;
 
 int main(int argc, const char *argv[])
 {
-    if (parseTestArgs(&argc, argv) != TEST_PASS)
-    {
-        return TEST_FAIL;
-    }
-
-    return runTestHarnessWithCheck(
+    return runTestHarnessWithCheckAndParse(
         argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0, InitCL);
+        test_registry::getInstance().definitions(), false, 0, InitCL,
+        parseTestArgs);
 }
