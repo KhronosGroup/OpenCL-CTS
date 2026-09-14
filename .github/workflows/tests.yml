@@ -1,0 +1,130 @@
+name: Tests
+on: [push, pull_request]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  DRIVERS: "pocl rusticl"
+  POCL_VERSION: v7.2
+  POCL_LLVM_VERSION: 20
+  POCL_TRANSLATOR_BRANCH: llvm_release_200
+  RUSTICL_VERSION: mesa-26.2.2
+  RUSTICL_LLVM_VERSION: 20
+  RUSTICL_TRANSLATOR_BRANCH: llvm_release_200
+  VULKAN_SDK_VERSION: 1.4.309.0
+
+jobs:
+  check-triggers:
+    name: Check Test Triggers
+    runs-on: ubuntu-24.04
+    outputs:
+      run_tests: ${{ steps.parse_triggers.outputs.run_tests }}
+      drivers: ${{ steps.parse_triggers.outputs.drivers }}
+      trigger_text: ${{ steps.parse_triggers.outputs.trigger_text }}
+    steps:
+      - name: Parse triggers
+        id: parse_triggers
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            DRIVERS_ARRAY=()
+            for d in $DRIVERS; do
+              DRIVERS_ARRAY+=("\"$d\"")
+            done
+            JSON="[$(IFS=,; echo "${DRIVERS_ARRAY[*]}")]"
+            echo "drivers=$JSON" >> $GITHUB_OUTPUT
+            echo "run_tests=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          MESSAGES=$(gh api -X GET /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits --jq '.[].commit.message')
+          PR_BODY=$(gh api -X GET /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} --jq '.body')
+          TEXT=$(printf '%s\n%s' "$MESSAGES" "$PR_BODY")
+
+          ACTIVE_DRIVERS=()
+          for d in $DRIVERS; do
+            CMDS=$(echo "$TEXT" | grep -oP "^\[run-tests?(?:-${d})?:\s*\K[^\]]+" || true)
+            if [ -n "$CMDS" ]; then
+              ACTIVE_DRIVERS+=("\"$d\"")
+            fi
+          done
+
+          if [ ${#ACTIVE_DRIVERS[@]} -gt 0 ]; then
+            JSON="[$(IFS=,; echo "${ACTIVE_DRIVERS[*]}")]"
+            echo "Active drivers: $JSON"
+            echo "drivers=$JSON" >> $GITHUB_OUTPUT
+            echo "run_tests=true" >> $GITHUB_OUTPUT
+            echo "trigger_text<<EOF" >> $GITHUB_OUTPUT
+            echo "$TEXT" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "No '[run-test: ...]' triggers found."
+            echo "drivers=[]" >> $GITHUB_OUTPUT
+            echo "run_tests=false" >> $GITHUB_OUTPUT
+          fi
+
+  build-and-cache:
+    name: Build and Cache (${{ matrix.driver }})
+    runs-on: ubuntu-24.04
+    needs: check-triggers
+    if: |
+      always() &&
+      (
+        github.event_name == 'push' ||
+        (needs.check-triggers.result == 'success' && needs.check-triggers.outputs.run_tests == 'true')
+      )
+    strategy:
+      fail-fast: false
+      matrix:
+        driver: ${{ fromJSON(needs.check-triggers.outputs.drivers) }}
+    steps:
+      - name: Checkout Actions
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github
+          sparse-checkout-cone-mode: false
+
+      - name: Setup PoCL
+        if: matrix.driver == 'pocl'
+        uses: ./.github/actions/setup-pocl
+        with:
+          runtime: false
+
+      - name: Setup Rusticl
+        if: matrix.driver == 'rusticl'
+        uses: ./.github/actions/setup-rusticl
+        with:
+          runtime: false
+
+  run:
+    name: Run Tests (${{ matrix.driver }})
+    runs-on: ubuntu-24.04
+    needs: [check-triggers, build-and-cache]
+    if: needs.check-triggers.outputs.run_tests == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        driver: ${{ fromJSON(needs.check-triggers.outputs.drivers) }}
+    steps:
+      - name: Checkout OpenCL CTS
+        uses: actions/checkout@v7
+
+      - name: Setup PoCL
+        if: matrix.driver == 'pocl'
+        uses: ./.github/actions/setup-pocl
+
+      - name: Setup Rusticl
+        if: matrix.driver == 'rusticl'
+        uses: ./.github/actions/setup-rusticl
+
+      - name: Build OpenCL-CTS
+        uses: ./.github/actions/build-cts
+
+      - name: Run OpenCL-CTS
+        uses: ./.github/actions/run-cts
+        with:
+          driver: ${{ matrix.driver }}
+          trigger-text: ${{ needs.check-triggers.outputs.trigger_text }}
