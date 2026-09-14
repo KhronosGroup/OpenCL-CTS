@@ -111,8 +111,8 @@ void print_buffer(BufferType* buf, size_t w, size_t h, size_t d) {
 }
 #endif
 
-// Returns true if the two specified regions overlap. This is adapted version of
-// spec reference:
+// Returns true if the two specified regions overlap. This is an adapted version
+// of spec reference:
 // https://registry.khronos.org/OpenCL/specs/unified/html/OpenCL_API.html#check-copy-overlap
 bool check_overlap_rect(size_t src_offset[3], size_t dst_offset[3],
                         size_t region[3], size_t row_pitch_in,
