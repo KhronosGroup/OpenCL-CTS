@@ -1853,12 +1853,16 @@ void matrixmuladd(std::vector<const Matrix *> &inputs, Matrix &m)
 uint64_t saturating_add(uint64_t a, uint64_t b, size_t widthInBytes,
                         bool isSigned)
 {
-    assert(widthInBytes <= 4 && "maximum byte width is 4");
+    assert(widthInBytes <= sizeof(uint64_t) && "maximum byte width is 8");
+    const size_t widthInBits = widthInBytes * 8;
     if (isSigned)
     {
-        const int64_t signedMax =
-            ((uint64_t{ 1 } << (widthInBytes * 8 - 1)) - 1);
-        const int64_t signedMin = -(uint64_t{ 1 } << (widthInBytes * 8 - 1));
+        const int64_t signedMax = widthInBytes == sizeof(int64_t)
+            ? std::numeric_limits<int64_t>::max()
+            : static_cast<int64_t>((uint64_t{ 1 } << (widthInBits - 1)) - 1);
+        const int64_t signedMin = widthInBytes == sizeof(int64_t)
+            ? std::numeric_limits<int64_t>::min()
+            : -static_cast<int64_t>(uint64_t{ 1 } << (widthInBits - 1));
         const int64_t signedA = a;
         const int64_t signedB = b;
 
@@ -1872,7 +1876,9 @@ uint64_t saturating_add(uint64_t a, uint64_t b, size_t widthInBytes,
         }
         return signedA + signedB;
     }
-    const uint64_t maxVal = (uint64_t{ 1 } << (widthInBytes * 8)) - 1;
+    const uint64_t maxVal = widthInBytes == sizeof(uint64_t)
+        ? std::numeric_limits<uint64_t>::max()
+        : (uint64_t{ 1 } << widthInBits) - 1;
 
     if (b > maxVal - a) return maxVal;
     return a + b;
