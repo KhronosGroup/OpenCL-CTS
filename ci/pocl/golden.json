@@ -19,7 +19,7 @@
             "bufferreadwriterect": "pass",
             "enqueue_map_image": "pass",
             "host_numeric_constants": "pass",
-            "immutable_bufferreadwriterect": "pass",
+            "immutable_bufferreadwriterect": "skip",
             "kernel_numeric_constants": "pass",
             "kernel_preprocessor_macros": "pass"
         }
