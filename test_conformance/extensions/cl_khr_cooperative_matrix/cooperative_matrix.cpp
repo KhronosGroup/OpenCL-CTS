@@ -2027,7 +2027,6 @@ int CoopMatTest::buildAndRun(Variant &variant)
         case CoopMatOp::add:
         case CoopMatOp::sub:
         case CoopMatOp::div:
-        case CoopMatOp::matrixmuladd_saturating:
         case CoopMatOp::matrixmuladd_wrapping:
         case CoopMatOp::matrixmuladd_stride0:
         case CoopMatOp::multicomponent_load:
@@ -2037,6 +2036,41 @@ int CoopMatTest::buildAndRun(Variant &variant)
             variant.inputB.fill(1);
             variant.inputC.fill(2);
             break;
+        case CoopMatOp::matrixmuladd_saturating: {
+            // Multiplication overflow is undefined with SaturatingAccumulation.
+            // Bound the multiplication inputs so each multiplication fits even
+            // in an 8-bit signed result. Keep all inputs non-negative so
+            // upper saturating additions are independent of the
+            // implementation-defined order of operations.
+            const auto multiplicationBounds = [](auto bounds) -> Bounds {
+                bounds.min = 0;
+                bounds.max = std::min(bounds.max, decltype(bounds.max){ 11 });
+                if constexpr (std::is_same_v<decltype(bounds), FloatBounds>)
+                    bounds.canBeNonFinite = false;
+                return bounds;
+            };
+            const double resultMaxMagnitude = std::visit(
+                [](auto bounds) { return static_cast<double>(bounds.max); },
+                getBounds(variant.output.elementType));
+            const auto accumulationBounds =
+                [resultMaxMagnitude](auto bounds) -> Bounds {
+                setBoundsFromMaxMagnitude(bounds, resultMaxMagnitude);
+                bounds.min = 0;
+                if constexpr (std::is_same_v<decltype(bounds), FloatBounds>)
+                    bounds.canBeNonFinite = false;
+                return bounds;
+            };
+            const Bounds aBounds = std::visit(
+                multiplicationBounds, getBounds(variant.inputA.elementType));
+            const Bounds bBounds = std::visit(
+                multiplicationBounds, getBounds(variant.inputB.elementType));
+            const Bounds cBounds = std::visit(
+                accumulationBounds, getBounds(variant.inputC.elementType));
+            variant.inputA.fill(0, aBounds);
+            variant.inputB.fill(1, bBounds);
+            variant.inputC.fill(2, cBounds);
+            break;
+        }
         case CoopMatOp::mul: {
             MatrixType outType(variant.output.elementType, variant.output.nRows,
                                variant.output.nCols, MatrixType::Use::Acc);
