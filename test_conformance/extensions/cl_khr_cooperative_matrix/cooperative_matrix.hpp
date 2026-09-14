@@ -181,7 +181,7 @@ struct MatrixType
     bool operator==(const MatrixType &other) const;
 
     // Return true if this type is convertible to 'other'.  That is, whether
-    // destination type and sourcee type have the same number of Rows, number of
+    // destination type and source type have the same number of Rows, number of
     // Columns, and Use.
     bool isConvertibleTo(const MatrixType &other) const;
 

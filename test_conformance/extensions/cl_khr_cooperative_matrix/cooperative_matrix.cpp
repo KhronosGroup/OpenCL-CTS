@@ -391,29 +391,6 @@ const char *getTypeStr(cl_device_cooperative_matrix_component_type_khr t)
     }
 }
 
-std::string
-describeBufferKind(cl_device_cooperative_matrix_component_type_khr kind)
-{
-    switch (kind)
-    {
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP16_KHR: return "f16";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP32_KHR: return "f32";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP64_KHR: return "f64";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT8_KHR:
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT8_KHR: return "i8";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT16_KHR:
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT16_KHR:
-            return "i16";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT32_KHR:
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT32_KHR:
-            return "i32";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT64_KHR:
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT64_KHR:
-            return "i64";
-        default: return "???";
-    }
-}
-
 static std::string describeBuffer(const BufferDescriptor &d)
 {
     std::string res = describeBufferElementType(d.elementType);
@@ -670,7 +647,7 @@ template <class Ty, class ElementType> Ty loadElement(const void *ptr)
 template <class Ty>
 Ty getHelper(size_t i,
              cl_device_cooperative_matrix_component_type_khr elementType,
-             std::vector<uint8_t> data)
+             const std::vector<uint8_t> &data)
 {
     const void *ptr = data.data() + i;
     switch (elementType)
@@ -822,7 +799,7 @@ SignedBounds getSBounds(cl_device_cooperative_matrix_component_type_khr type)
         int64_t min = CL_INT_MIN;
         return { min, max };
     }
-    if (type == CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT32_KHR)
+    if (type == CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT64_KHR)
     {
         int64_t max = CL_LONG_MAX;
         int64_t min = CL_LONG_MIN;
@@ -985,7 +962,7 @@ T mapBounds(U bounds)
 template <typename T, std::enable_if_t<is_bounds_type_v<T>, int> = 0>
 T boundsIntersection(T left, T right)
 {
-    auto min = std::min(left.min, right.min);
+    auto min = std::max(left.min, right.min);
     auto max = std::min(left.max, right.max);
     if constexpr (std::is_same_v<T, FloatBounds>)
     {
@@ -1848,14 +1825,22 @@ uint64_t saturating_add(uint64_t a, uint64_t b, size_t widthInBytes,
     const size_t widthInBits = widthInBytes * 8;
     if (isSigned)
     {
+        const uint64_t valueMask = widthInBytes == sizeof(uint64_t)
+            ? std::numeric_limits<uint64_t>::max()
+            : (uint64_t{ 1 } << widthInBits) - 1;
+        const uint64_t signBit = uint64_t{ 1 } << (widthInBits - 1);
+        const auto signExtend = [valueMask, signBit](uint64_t value) {
+            value &= valueMask;
+            return value & signBit ? value | ~valueMask : value;
+        };
         const int64_t signedMax = widthInBytes == sizeof(int64_t)
             ? std::numeric_limits<int64_t>::max()
             : static_cast<int64_t>((uint64_t{ 1 } << (widthInBits - 1)) - 1);
         const int64_t signedMin = widthInBytes == sizeof(int64_t)
             ? std::numeric_limits<int64_t>::min()
             : -static_cast<int64_t>(uint64_t{ 1 } << (widthInBits - 1));
-        const int64_t signedA = a;
-        const int64_t signedB = b;
+        const int64_t signedA = signExtend(a);
+        const int64_t signedB = signExtend(b);
 
         if (signedA > 0)
         {
@@ -2073,8 +2058,7 @@ int CoopMatTest::buildAndRun(Variant &variant)
                     auto maxMag = min >= 0 ? max : std::min(-min, max);
                     // Allows some but not all to overflow.
                     maxMag = std::sqrt(maxMag) / 4 * 5;
-                    x.max = maxMag;
-                    x.min = -maxMag;
+                    setBoundsFromMaxMagnitude(x, maxMag);
                     return x;
                 },
                 bounds);
@@ -2208,9 +2192,9 @@ int CoopMatTest::buildAndRun(Variant &variant)
 
     // Fill output buffer to give indication of if the test has written to it.
     unsigned char pattern = 13;
-    clEnqueueFillBuffer(queue, output.subBufferHandle, &pattern,
-                        sizeof(pattern), 0, bufferSizeOf(variant.outputDesc), 0,
-                        nullptr, nullptr);
+    err = clEnqueueFillBuffer(
+        queue, output.subBufferHandle, &pattern, sizeof(pattern), 0,
+        bufferSizeOf(variant.outputDesc), 0, nullptr, nullptr);
 
     test_error_fail(err, "Unable to create output buffer");
 
@@ -2237,9 +2221,9 @@ int CoopMatTest::buildAndRun(Variant &variant)
     variant.globalSize = globalSize;
 
     // Enqueue the work. Cooperative matrices need full subgroups so we set the
-    // global size to the (local) size of a single subgroup.
+    // global and local sizes to the (local) size of a single subgroup.
     err = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &globalSize,
-                                 nullptr, 0, nullptr, nullptr);
+                                 &globalSize, 0, nullptr, nullptr);
     test_error_fail(err, "Unable to enqueue kernel");
 
     // Read back output into a semantic buffer, then unpack into Matrix.
@@ -2442,7 +2426,7 @@ int CoopMatTest::runAll()
             {
                 if (op == CoopMatOp::matrixmuladd_wrapping
                     && isFloatType(rv.result_type))
-                    break;
+                    continue;
                 // Saturated variants are tested in the separate
                 // matrixmuladd_saturating test.  Only add the saturating
                 // variants for the matrixmuladd_saturating test, and only add
