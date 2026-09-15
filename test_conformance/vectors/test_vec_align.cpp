@@ -17,6 +17,7 @@
 
 
 #include "harness/conversions.h"
+#include "harness/parseParameters.h"
 #include "harness/typeWrappers.h"
 #include "harness/testHarness.h"
 #include "harness/ThreadPool.h"
@@ -110,6 +111,14 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
 
     for (typeIdx = 0; types[typeIdx] != kNumExplicitTypes; ++typeIdx)
     {
+        // Signed and unsigned integer types have the same alignment, so one
+        // type from each pair is sufficient in wimpy mode.
+        if (gWimpyMode
+            && (types[typeIdx] == kUChar || types[typeIdx] == kUShort
+                || types[typeIdx] == kUInt || types[typeIdx] == kULong))
+        {
+            continue;
+        }
 
         // Skip doubles if it is not supported otherwise enable pragma
         if (types[typeIdx] == kDouble)
