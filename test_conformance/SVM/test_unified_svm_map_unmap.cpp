@@ -82,7 +82,7 @@ struct UnifiedSVMMapUnmap : UnifiedSVMBase
                     test_error(err, "SVM allocation failed");
 
                     err = test_SVMMapUnmap(mem.get(), flags);
-                    test_error(err, "test_SVMMemfill");
+                    test_error(err, "test_SVMMapUnmap");
 
                     err = mem->free();
                     test_error(err, "SVM free failed");

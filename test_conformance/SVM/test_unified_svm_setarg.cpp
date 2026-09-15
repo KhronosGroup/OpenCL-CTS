@@ -24,7 +24,7 @@ struct UnifiedSVMSetArg : UnifiedSVMBase
 {
     using UnifiedSVMBase::UnifiedSVMBase;
 
-    // Test the clSetKernelArgSVMPointer function for randome ranges
+    // Test the clSetKernelArgSVMPointer function for random ranges
     // of a USM allocation. write a random pattern to the USM memory,
     // and validate that the kernel writes the correct data.
     cl_int test_svm_set_arg(USVMWrapper<cl_uchar> *src)
@@ -32,8 +32,6 @@ struct UnifiedSVMSetArg : UnifiedSVMBase
         cl_int err = CL_SUCCESS;
 
         std::vector<cl_uchar> src_data(alloc_count, 0);
-
-        test_error(err, "clCreateBuffer failed.");
 
         for (size_t it = 0; it < test_iterations; it++)
         {
@@ -57,9 +55,10 @@ struct UnifiedSVMSetArg : UnifiedSVMBase
             clMemWrapper dst_mem = clCreateBuffer(
                 context, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
                 result_data.size(), result_data.data(), &err);
+            test_error(err, "clCreateBuffer failed");
 
             err = clSetKernelArg(test_kernel, 1, sizeof(dst_mem), &dst_mem);
-            test_error(err, "clSetKernelArg failed.");
+            test_error(err, "clSetKernelArg failed");
 
             size_t gws{ length };
             err = clEnqueueNDRangeKernel(queue, test_kernel, 1, nullptr, &gws,

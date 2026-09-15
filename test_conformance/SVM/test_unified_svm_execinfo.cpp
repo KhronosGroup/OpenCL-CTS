@@ -141,7 +141,7 @@ struct UnifiedSVMExecInfo : UnifiedSVMBase
             err = clEnqueueWriteBuffer(queue, direct, CL_NON_BLOCKING, 0,
                                        src_data.size(), src_data.data(), 0,
                                        nullptr, nullptr);
-            test_error(err, "clEnqueueReadBuffer failed");
+            test_error(err, "clEnqueueWriteBuffer failed");
 
             void *info_ptr = &mem->get_ptr()[offset];
 
