@@ -30,6 +30,8 @@
 #include <vector>
 #include <unordered_set>
 #include <cstring>
+#include <map>
+#include <mutex>
 
 /* Note: the next three all have to match in size and order!! */
 
@@ -172,7 +174,8 @@ void push_unique(std::vector<Type> &vec, std::unordered_set<IntegerType> &set,
     }
 };
 
-template <typename T> std::vector<T> InitIntSpecialValues()
+template <typename T>
+std::vector<T> InitIntSpecialValues(int offset_limit, bool wimpy)
 {
     std::vector<T> vec;
     std::unordered_set<T> set;
@@ -181,26 +184,33 @@ template <typename T> std::vector<T> InitIntSpecialValues()
     // For each value, add it and its neighbors to the vector. And for each
     // of those values, add the bitwise not and the XOR with the sign to the
     // vector.
-    auto push = [&set, &vec](T val) {
-        for (const int offset : { -3, -2, -1, 0, 1, 2, 3 })
+    std::vector<int> offsets = { 0 };
+    if (!wimpy)
+        for (int i = 1; i <= offset_limit; i++)
+        {
+            offsets.push_back(i);
+            offsets.push_back(-i);
+        }
+    auto push = [&set, &vec, &wimpy, &offsets](T val) {
+        for (const int offset : offsets)
         {
             T v = val + offset;
             push_unique<T, T>(vec, set, v);
             push_unique<T, T>(vec, set, ~v);
             v = v ^ sign;
             push_unique<T, T>(vec, set, v);
-            push_unique<T, T>(vec, set, ~v);
+            if (!wimpy) push_unique<T, T>(vec, set, ~v);
         }
     };
 
     // Add all the values close to 0, MIN, and MAX.
-    for (unsigned i = 0; i < 256; i++)
-    {
-        push(i);
-    }
+    push((T)0);
+    push((T)1);
 
     // Add powers of 2, 3, 5, 7, 10.
-    for (const T base : { 2, 3, 5, 7, 10 })
+    std::vector<T> wimpy_powers = { 2 };
+    std::vector<T> all_powers = { 2, 3, 5, 7, 10 };
+    for (const T base : wimpy ? wimpy_powers : all_powers)
     {
         T val = base;
         T next = val * base;
@@ -218,7 +228,7 @@ template <typename T> std::vector<T> InitIntSpecialValues()
     // masks: 0x0F0F, 0xF0F0, 0x00FF, 0xFF00, 0xFFFF
     std::vector<T> patterns;
     std::vector<T> masks;
-    for (T i = 1; i < 15; i++)
+    for (T i = 1; i < 15; i += (wimpy ? 2 : 1))
     {
         T pattern = i;
         for (unsigned j = 0; j < sizeof(T) * 2; j++)
@@ -251,10 +261,20 @@ template <typename T> std::vector<T> InitIntSpecialValues()
     return vec;
 }
 
-template <typename T> std::vector<T> &GetIntSpecialValues()
+template <typename T>
+std::vector<T> &GetIntSpecialValues(int offset_limit = 3, bool wimpy = false)
 {
-    static std::vector<T> vec = InitIntSpecialValues<T>();
-    return vec;
+    static std::mutex mutex;
+    static std::map<std::pair<int, bool>, std::vector<T>> cache;
+    std::lock_guard<std::mutex> lock(mutex);
+    auto key = std::make_pair(offset_limit, wimpy);
+    auto it = cache.find(key);
+    if (it == cache.end())
+    {
+        it = cache.emplace(key, InitIntSpecialValues<T>(offset_limit, wimpy))
+                 .first;
+    }
+    return it->second;
 }
 
 template <typename InType, typename InIntegerType, typename OutType, bool OutFP>
