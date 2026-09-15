@@ -871,72 +871,23 @@ template <typename T>
 inline constexpr bool is_bounds_type_v =
     is_one_of_v<T, FloatBounds, UnsignedBounds, SignedBounds>;
 
-/// When the input integer is not representable as a double, perform the
-/// conversion rounding up (towards positive infinity).
-template <typename Int, std::enable_if_t<is_i64_or_u64_v<Int>, int> = 0>
-double castIntToDoubleRoundUp(Int i)
-{
-    double d = static_cast<double>(i);
-    // If the default casting rounded down, we increment it to the next
-    // double value.
-    if (static_cast<Int>(d) < i)
-    {
-        d = std::nextafter(d, std::numeric_limits<double>::infinity());
-    }
-    return d;
-}
-
-/// When the input integer is not representable as a double, perform the
-/// conversion rounding down (towards negative infinity).
-template <typename Int, std::enable_if_t<is_i64_or_u64_v<Int>, int> = 0>
-double castIntToDoubleRoundDown(Int i)
-{
-    double d = static_cast<double>(i);
-    // If the default casting rounded up, we decrement it to the next
-    // double value.
-    if (static_cast<Int>(d) > i)
-    {
-        d = std::nextafter(d, -std::numeric_limits<double>::infinity());
-    }
-    return d;
-}
-
-template <typename Int, std::enable_if_t<is_i64_or_u64_v<Int>, int> = 0>
-bool isFloatGreaterThanInt(double f, const Int i)
-{
-    if (std::isnan(f)) return false;
-    double iAsDouble = castIntToDoubleRoundUp(i);
-    return (f >= iAsDouble && static_cast<Int>(static_cast<double>(i)) != i)
-        || f > iAsDouble;
-}
-
-template <typename Int, std::enable_if_t<is_i64_or_u64_v<Int>, int> = 0>
-bool isFloatLessThanInt(double f, const Int i)
-{
-    if (std::isnan(f)) return false;
-    double iAsDouble = castIntToDoubleRoundDown(i);
-    return (f <= iAsDouble && static_cast<Int>(static_cast<double>(i)) != i)
-        || f < iAsDouble;
-}
-
-
 template <typename Int, std::enable_if_t<is_i64_or_u64_v<Int>, int> = 0>
 Int castDoubleToIntRoundDown(double d)
 {
-    auto min = std::numeric_limits<Int>::min();
-    auto max = std::numeric_limits<Int>::max();
-    if (isFloatGreaterThanInt(d, max)) return max;
-    if (isFloatLessThanInt(d, min)) return min;
+    const Int min = std::numeric_limits<Int>::min();
+    const Int max = std::numeric_limits<Int>::max();
+    if (d <= static_cast<double>(min)) return min;
+    if (d >= static_cast<double>(max)) return max;
     return static_cast<Int>(std::floor(d));
 }
 
 template <typename Int, std::enable_if_t<is_i64_or_u64_v<Int>, int> = 0>
 Int castDoubleToIntRoundUp(double d)
 {
-    auto min = std::numeric_limits<Int>::min();
-    auto max = std::numeric_limits<Int>::max();
-    if (isFloatGreaterThanInt(d, max)) return max;
-    if (isFloatLessThanInt(d, min)) return min;
+    const Int min = std::numeric_limits<Int>::min();
+    const Int max = std::numeric_limits<Int>::max();
+    if (d <= static_cast<double>(min)) return min;
+    if (d >= static_cast<double>(max)) return max;
     return static_cast<Int>(std::ceil(d));
 }
 
@@ -948,8 +899,8 @@ int64_t castUIntToInt(uint64_t i)
 
 uint64_t castIntToUInt(int64_t i) { return std::max(int64_t{ 0 }, i); }
 
-/// maps a U-bound to greatest T-Bound that is contained within it. This ensures
-/// that a number generated from the new bound is still inside the old bound.
+/// Maps a U-bound to a T-bound contained within it. This ensures that a number
+/// generated from the new bound is still inside the old bound.
 template <typename T, std::enable_if_t<is_bounds_type_v<T>, int> = 0,
           typename U, std::enable_if_t<is_bounds_type_v<U>, int> = 0>
 T mapBounds(U bounds)
@@ -962,14 +913,22 @@ T mapBounds(U bounds)
         }
         else if constexpr (std::is_same_v<U, SignedBounds>)
         {
-            double min = castIntToDoubleRoundUp(bounds.min);
-            double max = castIntToDoubleRoundDown(bounds.max);
+            double min =
+                std::nextafter(static_cast<double>(bounds.min),
+                               std::numeric_limits<double>::infinity());
+            double max =
+                std::nextafter(static_cast<double>(bounds.max),
+                               -std::numeric_limits<double>::infinity());
             return { min, max, false };
         }
         else if constexpr (std::is_same_v<U, UnsignedBounds>)
         {
-            double min = castIntToDoubleRoundUp(bounds.min);
-            double max = castIntToDoubleRoundDown(bounds.max);
+            double min =
+                std::nextafter(static_cast<double>(bounds.min),
+                               std::numeric_limits<double>::infinity());
+            double max =
+                std::nextafter(static_cast<double>(bounds.max),
+                               -std::numeric_limits<double>::infinity());
             return { min, max, false };
         }
     }
