@@ -564,12 +564,8 @@ REGISTER_TEST(min_max_mem_alloc_size)
     else
         requiredAllocSize = 128 * 1024 * 1024;
 
-    /* Get the max mem alloc size, limit the alloc to half of the available
-     * memory */
-    maxAllocSize = get_device_info_max_mem_alloc_size(
-        device, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
-    memSize =
-        get_device_info_global_mem_size(device, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
+    maxAllocSize = get_device_info_max_mem_alloc_size(device);
+    memSize = get_device_info_global_mem_size(device);
 
     if (memSize < maxAllocSize)
     {
@@ -585,7 +581,8 @@ REGISTER_TEST(min_max_mem_alloc_size)
 
     if (maxAllocSize < requiredAllocSize)
     {
-        log_error("ERROR: Reported max allocation size is less than required");
+        log_error(
+            "ERROR: Reported max allocation size is less than required\n");
         return -1;
     }
 
@@ -595,9 +592,10 @@ REGISTER_TEST(min_max_mem_alloc_size)
              maxAllocSize, maxAllocSize / (1024.0 * 1024.0), memSize,
              memSize / (1024.0 * 1024.0));
 
-    minSizeToTry = maxAllocSize / 16;
-    currentSize = maxAllocSize;
-    while (currentSize >= maxAllocSize / MAX_REDUCTION_FACTOR)
+    cl_ulong maxAllocToAttempt = maxAllocSize / MAX_DEVICE_MEMORY_SIZE_DIVISOR;
+    minSizeToTry = maxAllocToAttempt / 16;
+    currentSize = maxAllocToAttempt;
+    while (currentSize >= maxAllocToAttempt / MAX_REDUCTION_FACTOR)
     {
 
         log_info("Trying to create a buffer of size of %" PRIu64
