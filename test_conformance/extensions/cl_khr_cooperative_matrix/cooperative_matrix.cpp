@@ -1658,10 +1658,8 @@ void CoopMatTest_negate::calcRef(std::vector<const Matrix *> &inputs, Matrix &m)
             unsigned idx = m.getIndex(row, col);
             if (isFloatType(m.elementType))
                 m.set(idx, -inputs[0]->get<double>(idx));
-            else if (isSignedType(m.elementType))
-                m.set(idx, -inputs[0]->get<int64_t>(idx));
             else
-                m.set(idx, -inputs[0]->get<uint64_t>(idx));
+                m.set(idx, uint64_t{ 0 } - inputs[0]->get<uint64_t>(idx));
         }
     }
 }
@@ -1678,10 +1676,6 @@ void CoopMatTest_add::calcRef(std::vector<const Matrix *> &inputs, Matrix &m)
                 m.set(idx,
                       inputs[0]->get<double>(idx)
                           + inputs[1]->get<double>(idx));
-            else if (isSignedType(m.elementType))
-                m.set(idx,
-                      inputs[0]->get<int64_t>(idx)
-                          + inputs[1]->get<int64_t>(idx));
             else
                 m.set(idx,
                       inputs[0]->get<uint64_t>(idx)
@@ -1702,10 +1696,6 @@ void CoopMatTest_sub::calcRef(std::vector<const Matrix *> &inputs, Matrix &m)
                 m.set(idx,
                       inputs[0]->get<double>(idx)
                           - inputs[1]->get<double>(idx));
-            else if (isSignedType(m.elementType))
-                m.set(idx,
-                      inputs[0]->get<int64_t>(idx)
-                          - inputs[1]->get<int64_t>(idx));
             else
                 m.set(idx,
                       inputs[0]->get<uint64_t>(idx)
@@ -1726,10 +1716,6 @@ void CoopMatTest_mul::calcRef(std::vector<const Matrix *> &inputs, Matrix &m)
                 m.set(idx,
                       inputs[0]->get<double>(idx)
                           * inputs[1]->get<double>(idx));
-            else if (isSignedType(m.elementType))
-                m.set(idx,
-                      inputs[0]->get<int64_t>(idx)
-                          * inputs[1]->get<int64_t>(idx));
             else
                 m.set(idx,
                       inputs[0]->get<uint64_t>(idx)
@@ -1741,6 +1727,10 @@ void CoopMatTest_mul::calcRef(std::vector<const Matrix *> &inputs, Matrix &m)
 template <typename T> T safeDivision(T num, T div)
 {
     if (div == 0) return 0;
+    if constexpr (std::is_signed_v<T>)
+    {
+        if (num == std::numeric_limits<T>::min() && div == -1) return 0;
+    }
     return num / div;
 }
 
@@ -1780,40 +1770,30 @@ void matrixmuladd(std::vector<const Matrix *> &inputs, Matrix &m)
         {
             const unsigned outIdx = m.getIndex(row, col);
             const unsigned CIndex = inputs[2]->getIndex(row, col);
-            union {
-                double d;
-                int64_t s;
-                uint64_t u;
-            } acc;
             if (isFloatType(m.elementType))
-                acc.d = inputs[2]->get<double>(CIndex);
-            else if (isSignedType(m.elementType))
-                acc.s = inputs[2]->get<int64_t>(CIndex);
-            else
-                acc.u = inputs[2]->get<uint64_t>(CIndex);
-
-            for (unsigned i = 0; i < K; i++)
             {
-                const unsigned AIndex = inputs[0]->getIndex(row, i);
-                const unsigned BIndex = inputs[1]->getIndex(i, col);
-
-                if (isFloatType(m.elementType))
-                    acc.d += inputs[0]->get<double>(AIndex)
+                double acc = inputs[2]->get<double>(CIndex);
+                for (unsigned i = 0; i < K; i++)
+                {
+                    const unsigned AIndex = inputs[0]->getIndex(row, i);
+                    const unsigned BIndex = inputs[1]->getIndex(i, col);
+                    acc += inputs[0]->get<double>(AIndex)
                         * inputs[1]->get<double>(BIndex);
-                else if (isSignedType(m.elementType))
-                    acc.s += inputs[0]->get<int64_t>(AIndex)
-                        * inputs[1]->get<int64_t>(BIndex);
-                else
-                    acc.u += inputs[0]->get<uint64_t>(AIndex)
-                        * inputs[1]->get<uint64_t>(BIndex);
+                }
+                m.set(outIdx, acc);
             }
-
-            if (isFloatType(m.elementType))
-                m.set(outIdx, acc.d);
-            else if (isSignedType(m.elementType))
-                m.set(outIdx, acc.s);
             else
-                m.set(outIdx, acc.u);
+            {
+                uint64_t acc = inputs[2]->get<uint64_t>(CIndex);
+                for (unsigned i = 0; i < K; i++)
+                {
+                    const unsigned AIndex = inputs[0]->getIndex(row, i);
+                    const unsigned BIndex = inputs[1]->getIndex(i, col);
+                    acc += inputs[0]->get<uint64_t>(AIndex)
+                        * inputs[1]->get<uint64_t>(BIndex);
+                }
+                m.set(outIdx, acc);
+            }
         }
     }
 }
