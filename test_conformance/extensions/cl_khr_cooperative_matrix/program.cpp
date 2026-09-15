@@ -29,38 +29,9 @@
 
 extern const TestContext *gTestContext;
 
-static std::string
-bufferKindString(cl_device_cooperative_matrix_component_type_khr kind)
-{
-    switch (kind)
-    {
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP16_KHR: return "f16";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP32_KHR: return "f32";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP64_KHR: return "f64";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT8_KHR:
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT8_KHR: return "i8";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT16_KHR:
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT16_KHR:
-            return "i16";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT32_KHR:
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT32_KHR:
-            return "i32";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT64_KHR:
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT64_KHR:
-            return "i64";
-        default: return "???";
-    }
-}
-
 static std::string bufferTypeString(const BufferDescriptor &d)
 {
-    std::string res;
-    if (d.elementType.vectorLength > 1)
-    {
-        res += "vec" + std::to_string(d.elementType.vectorLength) + "_";
-    }
-    res += bufferKindString(d.elementType.scalarType);
-    return res;
+    return describeBufferElementType(d.elementType);
 }
 
 std::ostream &operator<<(std::ostream &out, MatrixType::Use use)
@@ -150,7 +121,7 @@ void ProgramGenerator::genTypeDecls()
         const BufferDescriptor desc = BufferDescriptor::makeBufferDescriptor(
             bufElementType.scalarType, 1, 1, bufElementType);
         const std::string typeStr = bufferTypeString(desc);
-        std::string kindStr = bufferKindString(bufElementType.scalarType);
+        std::string kindStr = describeBufferKind(bufElementType.scalarType);
         spirv_text << "    %" << typeStr << " = OpTypeVector %" << kindStr
                    << " " << std::to_string(bufElementType.vectorLength)
                    << "\n";
@@ -328,17 +299,13 @@ void ProgramGenerator::genConstants()
                 }
             };
 
-            add(isSignedType(variant.inputA.elementType)
-                    && !isFloatType(variant.inputA.elementType),
+            add(isSignedIntType(variant.inputA.elementType),
                 "MatrixASignedComponentsKHR");
-            add(isSignedType(variant.inputB.elementType)
-                    && !isFloatType(variant.inputB.elementType),
+            add(isSignedIntType(variant.inputB.elementType),
                 "MatrixBSignedComponentsKHR");
-            add(isSignedType(variant.inputC.elementType)
-                    && !isFloatType(variant.inputC.elementType),
+            add(isSignedIntType(variant.inputC.elementType),
                 "MatrixCSignedComponentsKHR");
-            add(isSignedType(variant.output.elementType)
-                    && !isFloatType(variant.output.elementType),
+            add(isSignedIntType(variant.output.elementType),
                 "MatrixResultSignedComponentsKHR");
             add(variant.isSaturating, "SaturatingAccumulationKHR");
 
@@ -418,6 +385,9 @@ void ProgramGenerator::genBody()
         resTyOS << "%mat" << variant.order << "ty";
         return resTyOS.str();
     };
+    const char *muladdResultType =
+        variant.inputC.elementType == variant.output.elementType ? "%matCty"
+                                                                 : "%matResty";
 
     // clang-format off
     switch (op)
@@ -552,7 +522,7 @@ void ProgramGenerator::genBody()
             binOp << "Op"
                   << (isFloatType(variant.output.elementType) ? "F" :
                       op != CoopMatOp::div ? "I" :
-                      isSignedType(variant.output.elementType) ? "S" : "U")
+                      isSignedIntType(variant.output.elementType) ? "S" : "U")
                   << (op == CoopMatOp::negate ? "Negate" :
                       op == CoopMatOp::add ? "Add" :
                       op == CoopMatOp::sub ? "Sub" :
@@ -573,7 +543,9 @@ void ProgramGenerator::genBody()
     %matA = OpCooperativeMatrixLoadKHR %matAty %inA %layoutA %strideA
     %matB = OpCooperativeMatrixLoadKHR %matBty %inB %layoutB %strideB
     %matC = OpCooperativeMatrixLoadKHR %matCty %inC %layoutC %strideC
-    %result = OpCooperativeMatrixMulAddKHR %matCty %matA %matB %matC)" << muladdOperand << R"(
+    %result = OpCooperativeMatrixMulAddKHR )"
+                       << muladdResultType << R"( %matA %matB %matC)"
+                       << muladdOperand << R"(
     OpCooperativeMatrixStoreKHR %out %result %layoutRes %strideRes)";
             break;
         case CoopMatOp::matrixmuladd_array:
@@ -588,7 +560,10 @@ void ProgramGenerator::genBody()
     %matBArr1 = OpCompositeExtract %matBty %matBArr 1
     %matCArr1 = OpCompositeExtract %matCty %matCArr 1
 
-    %result = OpCooperativeMatrixMulAddKHR %matCty %matA %matB %matC)" << muladdOperand << R"(
+    %result = OpCooperativeMatrixMulAddKHR )"
+                       << muladdResultType
+                       << R"( %matAArr1 %matBArr1 %matCArr1)" << muladdOperand
+                       << R"(
     OpCooperativeMatrixStoreKHR %out %result %layoutRes %strideRes)";
             break;
 
@@ -657,8 +632,15 @@ void ProgramGenerator::genMatrixTypes()
                << showScalarType(variant.inputC.elementType)
                << " %i32_subgroup " << getDims(2) << " %i32_useC\n";
 
-    // Emit matOutty when matCty is not going to be the final result type
-    // because of a conversion.
+    if (variant.order == Variant::OperandOrder::OpABC
+        && variant.inputC.elementType != variant.output.elementType)
+    {
+        spirv_text << "    %matResty = OpTypeCooperativeMatrixKHR %"
+                   << showScalarType(variant.output.elementType)
+                   << " %i32_subgroup %sizeM %sizeN %i32_useC\n";
+    }
+
+    // Emit matOutty for conversions that change the component type.
     if (op == CoopMatOp::convert && needsConversion())
     {
         const char *elementType = showScalarType(variant.output.elementType);
@@ -688,7 +670,7 @@ std::string ProgramGenerator::emitConversion()
         }
         else
         {
-            if (isSignedType(variant.output.elementType))
+            if (isSignedIntType(variant.output.elementType))
             {
                 convOp = "OpConvertFToS";
             }
@@ -702,7 +684,7 @@ std::string ProgramGenerator::emitConversion()
     {
         if (isFloatType(variant.output.elementType))
         {
-            if (isSignedType(input->elementType))
+            if (isSignedIntType(input->elementType))
             {
                 convOp = "OpConvertSToF";
             }
@@ -714,7 +696,14 @@ std::string ProgramGenerator::emitConversion()
         else
         {
             // it must be a bitwidth conversion
-            convOp = "OpUConvert";
+            if (isSignedIntType(input->elementType))
+            {
+                convOp = "OpSConvert";
+            }
+            else
+            {
+                convOp = "OpUConvert";
+            }
         }
     }
 

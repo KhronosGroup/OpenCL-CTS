@@ -206,8 +206,9 @@ const char *
 showScalarType(const cl_device_cooperative_matrix_component_type_khr t);
 std::string
 describeBufferKind(const cl_device_cooperative_matrix_component_type_khr kind);
+std::string describeBufferElementType(const BufferElementType &elementType);
 bool isFloatType(const cl_device_cooperative_matrix_component_type_khr t);
-bool isSignedType(const cl_device_cooperative_matrix_component_type_khr t);
+bool isSignedIntType(const cl_device_cooperative_matrix_component_type_khr t);
 
 struct BufferDescriptor
 {
@@ -239,9 +240,8 @@ private:
     {}
 };
 
-uint32_t bufferStrideSizeOf(const BufferDescriptor &d);
-uint32_t bufferSizeOf(const BufferDescriptor &d);
-uint32_t bufferElementStride(const BufferDescriptor &d);
+size_t bufferStrideSizeOf(const BufferDescriptor &d);
+size_t bufferSizeOf(const BufferDescriptor &d);
 
 // Semantic buffer. Used together with cooperativeMatrixLoad and
 // cooperativeMatrixStore. Respects the same padding requirements as the real CL
@@ -309,11 +309,10 @@ struct Matrix
     }
 
     // Fill matrix with test data.
-    // seed is used to make sure the matrix for non-unary tests are different.
-    // canBeSigned is used to stop a signed number being generated for
-    // conversion tests. canBeNonFinite is used to indicate if floats can be
-    // positive or negative infinity or nan. bounds is used to stop overflows in
-    // conversion and multiply adds.
+    // seed is used to make sure the matrices for non-unary tests are different.
+    // bounds can restrict generated values to avoid undefined conversions and
+    // overflowing multiply-add operations. Float bounds can also control
+    // whether NaNs and infinities are generated.
     void fill(int8_t seed, std::optional<Bounds> bounds = std::nullopt);
 
     // Deep copy from another matrix with the same shape and type.
@@ -396,10 +395,9 @@ public:
               numberOfStrides(outputLayout, nRows, nCols),
               IndexedBufferElementType<1>(type))),
           layoutA(inputLayout), layoutB(inputLayout), layoutC(inputLayout),
-          layoutRes(outputLayout), strideA(bufferElementStride(inputADesc)),
-          strideB(bufferElementStride(inputBDesc)),
-          strideC(bufferElementStride(inputCDesc)),
-          strideRes(bufferElementStride(outputDesc)), isConversion(false),
+          layoutRes(outputLayout), strideA(inputADesc.stride),
+          strideB(inputBDesc.stride), strideC(inputCDesc.stride),
+          strideRes(outputDesc.stride), isConversion(false),
           isSaturating(false), isMulticomponent(false)
     {
         assert(o != OperandOrder::OpABC
@@ -432,10 +430,9 @@ public:
               numberOfStrides(outputLayout, nRows, nCols),
               IndexedBufferElementType<1>(outputType))),
           layoutA(inputLayout), layoutB(inputLayout), layoutC(inputLayout),
-          layoutRes(outputLayout), strideA(bufferElementStride(inputADesc)),
-          strideB(bufferElementStride(inputBDesc)),
-          strideC(bufferElementStride(inputCDesc)),
-          strideRes(bufferElementStride(outputDesc)), isConversion(false),
+          layoutRes(outputLayout), strideA(inputADesc.stride),
+          strideB(inputBDesc.stride), strideC(inputCDesc.stride),
+          strideRes(outputDesc.stride), isConversion(false),
           isSaturating(false), isMulticomponent(false)
     {
         assert((o == OperandOrder::OpA || o == OperandOrder::OpB
@@ -468,11 +465,10 @@ public:
               numberOfStrides(outputLayout, nRows, nCols),
               IndexedBufferElementType<1>(dstType))),
           layoutA(inputLayout), layoutB(inputLayout), layoutC(inputLayout),
-          layoutRes(outputLayout), strideA(bufferElementStride(inputADesc)),
-          strideB(bufferElementStride(inputBDesc)),
-          strideC(bufferElementStride(inputCDesc)),
-          strideRes(bufferElementStride(outputDesc)), isConversion(true),
-          isSaturating(false), isMulticomponent(false)
+          layoutRes(outputLayout), strideA(inputADesc.stride),
+          strideB(inputBDesc.stride), strideC(inputCDesc.stride),
+          strideRes(outputDesc.stride), isConversion(true), isSaturating(false),
+          isMulticomponent(false)
     {
         assert((o == OperandOrder::OpA || o == OperandOrder::OpB
                 || o == OperandOrder::OpC)
@@ -490,11 +486,9 @@ public:
           inputBDesc(inputBuffer), inputCDesc(inputBuffer),
           outputDesc(outputBuffer), layoutA(inputLayout), layoutB(inputLayout),
           layoutC(inputLayout), layoutRes(outputLayout),
-          strideA(bufferElementStride(inputADesc)),
-          strideB(bufferElementStride(inputBDesc)),
-          strideC(bufferElementStride(inputCDesc)),
-          strideRes(bufferElementStride(outputDesc)), isConversion(false),
-          isSaturating(false), isMulticomponent(true)
+          strideA(inputADesc.stride), strideB(inputBDesc.stride),
+          strideC(inputCDesc.stride), strideRes(outputDesc.stride),
+          isConversion(false), isSaturating(false), isMulticomponent(true)
     {}
 
     // Construct a Variant from config data returned by device query.
@@ -523,10 +517,9 @@ public:
               numberOfStrides(outputLayout, v.m_size, v.n_size),
               IndexedBufferElementType<1>(v.result_type))),
           layoutA(inputLayout), layoutB(inputLayout), layoutC(inputLayout),
-          layoutRes(outputLayout), strideA(bufferElementStride(inputADesc)),
-          strideB(bufferElementStride(inputBDesc)),
-          strideC(bufferElementStride(inputCDesc)),
-          strideRes(bufferElementStride(outputDesc)), isConversion(false),
+          layoutRes(outputLayout), strideA(inputADesc.stride),
+          strideB(inputBDesc.stride), strideC(inputCDesc.stride),
+          strideRes(outputDesc.stride), isConversion(false),
           isSaturating(v.saturating_accumulation), isMulticomponent(false)
     {
         assert(o == OperandOrder::OpABC
