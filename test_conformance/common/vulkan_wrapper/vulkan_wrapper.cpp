@@ -1765,7 +1765,7 @@ VulkanCommandBuffer::operator VkCommandBuffer() const
 VulkanBuffer::VulkanBuffer(const VulkanBuffer &buffer)
     : m_device(buffer.m_device), m_vkBuffer(buffer.m_vkBuffer),
       m_size(buffer.m_size), m_alignment(buffer.m_alignment),
-      m_memoryTypeList(buffer.m_memoryTypeList)
+      m_dedicated(buffer.m_dedicated), m_memoryTypeList(buffer.m_memoryTypeList)
 {}
 
 bool VulkanBuffer::isDedicated() const { return m_dedicated; }
@@ -1821,6 +1821,10 @@ VulkanBuffer::VulkanBuffer(
 
     vkCreateBuffer(m_device, &vkBufferCreateInfo, NULL, &m_vkBuffer);
 
+    VkMemoryRequirements vkBasicMemoryRequirements = {};
+    vkGetBufferMemoryRequirements(m_device, m_vkBuffer,
+                                  &vkBasicMemoryRequirements);
+
     VkMemoryDedicatedRequirements vkMemoryDedicatedRequirements = {};
     vkMemoryDedicatedRequirements.sType =
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS;
@@ -1829,6 +1833,7 @@ VulkanBuffer::VulkanBuffer(
     VkMemoryRequirements2 vkMemoryRequirements = {};
     vkMemoryRequirements.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
     vkMemoryRequirements.pNext = &vkMemoryDedicatedRequirements;
+    vkMemoryRequirements.memoryRequirements = vkBasicMemoryRequirements;
 
     VkBufferMemoryRequirementsInfo2 vkMemoryRequirementsInfo = {};
 
@@ -1840,6 +1845,11 @@ VulkanBuffer::VulkanBuffer(
     vkGetBufferMemoryRequirements2(m_device, &vkMemoryRequirementsInfo,
                                    &vkMemoryRequirements);
 
+    if (vkMemoryRequirements.memoryRequirements.size == 0)
+    {
+        vkMemoryRequirements.memoryRequirements = vkBasicMemoryRequirements;
+    }
+
     m_dedicated = vkMemoryDedicatedRequirements.requiresDedicatedAllocation;
 
     m_size = vkMemoryRequirements.memoryRequirements.size;
@@ -1848,7 +1858,7 @@ VulkanBuffer::VulkanBuffer(
     for (size_t mtIdx = 0; mtIdx < memoryTypeList.size(); mtIdx++)
     {
         uint32_t memoryTypeIndex = memoryTypeList[mtIdx];
-        if ((1 << memoryTypeIndex)
+        if ((1u << memoryTypeIndex)
             & vkMemoryRequirements.memoryRequirements.memoryTypeBits)
         {
             m_memoryTypeList.add(memoryTypeList[mtIdx]);
@@ -1877,8 +1887,9 @@ VulkanImage::VulkanImage(const VulkanImage &image)
     : m_device(image.m_device), m_imageType(image.m_imageType),
       m_extent3D(image.m_extent3D), m_format(image.m_format),
       m_numMipLevels(image.m_numMipLevels), m_numLayers(image.m_numLayers),
-      m_vkImage(image.m_vkImage), m_size(image.m_size),
-      m_alignment(image.m_alignment), m_memoryTypeList(image.m_memoryTypeList)
+      m_dedicated(image.m_dedicated), m_vkImage(image.m_vkImage),
+      m_size(image.m_size), m_alignment(image.m_alignment),
+      m_memoryTypeList(image.m_memoryTypeList)
 {}
 
 VulkanImage::VulkanImage(
@@ -1931,6 +1942,10 @@ VulkanImage::VulkanImage(
 
     VulkanImageCreateInfo = vkImageCreateInfo;
 
+    VkMemoryRequirements vkBasicMemoryRequirements = {};
+    vkGetImageMemoryRequirements(m_device, m_vkImage,
+                                 &vkBasicMemoryRequirements);
+
     VkMemoryDedicatedRequirements vkMemoryDedicatedRequirements = {};
     vkMemoryDedicatedRequirements.sType =
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS;
@@ -1939,6 +1954,7 @@ VulkanImage::VulkanImage(
     VkMemoryRequirements2 vkMemoryRequirements = {};
     vkMemoryRequirements.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
     vkMemoryRequirements.pNext = &vkMemoryDedicatedRequirements;
+    vkMemoryRequirements.memoryRequirements = vkBasicMemoryRequirements;
 
     VkImageMemoryRequirementsInfo2 vkMemoryRequirementsInfo = {};
 
@@ -1949,6 +1965,12 @@ VulkanImage::VulkanImage(
 
     vkGetImageMemoryRequirements2(m_device, &vkMemoryRequirementsInfo,
                                   &vkMemoryRequirements);
+
+    if (vkMemoryRequirements.memoryRequirements.size == 0)
+    {
+        vkMemoryRequirements.memoryRequirements = vkBasicMemoryRequirements;
+    }
+
     m_size = vkMemoryRequirements.memoryRequirements.size;
     m_alignment = vkMemoryRequirements.memoryRequirements.alignment;
     m_dedicated = vkMemoryDedicatedRequirements.requiresDedicatedAllocation;
@@ -1957,7 +1979,7 @@ VulkanImage::VulkanImage(
     for (size_t mtIdx = 0; mtIdx < memoryTypeList.size(); mtIdx++)
     {
         uint32_t memoryTypeIndex = memoryTypeList[mtIdx];
-        if ((1 << memoryTypeIndex)
+        if ((1u << memoryTypeIndex)
             & vkMemoryRequirements.memoryRequirements.memoryTypeBits)
         {
             m_memoryTypeList.add(memoryTypeList[mtIdx]);
