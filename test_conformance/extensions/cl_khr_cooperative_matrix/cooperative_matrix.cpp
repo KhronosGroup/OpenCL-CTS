@@ -20,6 +20,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <iomanip>
 #include <limits>
 #include <optional>
@@ -92,12 +93,9 @@ bool isFloatType(const cl_device_cooperative_matrix_component_type_khr t)
         || t == CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP64_KHR;
 }
 
-bool isSignedType(const cl_device_cooperative_matrix_component_type_khr t)
+bool isSignedIntType(const cl_device_cooperative_matrix_component_type_khr t)
 {
-    return t == CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP16_KHR
-        || t == CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP32_KHR
-        || t == CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP64_KHR
-        || t == CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT8_KHR
+    return t == CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT8_KHR
         || t == CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT16_KHR
         || t == CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT32_KHR
         || t == CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT64_KHR;
@@ -145,25 +143,26 @@ Matrix Matrix::cooperativeMatrixLoad(
     const Layout layout, const uint32_t stride)
 {
     Matrix mat(matElementType, matRows, matCols);
-    const uint32_t bufStrideSize = bufferStrideSizeOf(buf.descriptor);
+    const size_t bufStrideSize = bufferStrideSizeOf(buf.descriptor);
     const uint32_t matElementSize = elementSizeOf(matElementType);
 
     for (uint32_t r = 0; r < matRows; ++r)
     {
         for (uint32_t c = 0; c < matCols; ++c)
         {
-            const uint32_t dstOffset = (r * matCols + c) * matElementSize;
-            uint32_t srcOffset = 0;
+            const size_t dstOffset =
+                (static_cast<size_t>(r) * matCols + c) * matElementSize;
+            size_t srcOffset = 0;
             switch (layout)
             {
                 case Layout::RowMajor: {
                     srcOffset = (stride == 0 ? 0u : r * bufStrideSize)
-                        + c * matElementSize;
+                        + static_cast<size_t>(c) * matElementSize;
                     break;
                 }
                 case Layout::ColumnMajor: {
                     srcOffset = (stride == 0 ? 0u : c * bufStrideSize)
-                        + r * matElementSize;
+                        + static_cast<size_t>(r) * matElementSize;
                     break;
                 }
             }
@@ -212,15 +211,16 @@ Matrix Matrix::cooperativeMatrixLoad(
 void Matrix::cooperativeMatrixStore(SemBuffer &buf, const Matrix &mat,
                                     Layout layout, uint32_t stride)
 {
-    const uint32_t bufStrideSize = bufferStrideSizeOf(buf.descriptor);
+    const size_t bufStrideSize = bufferStrideSizeOf(buf.descriptor);
     const uint32_t matElementSize = elementSizeOf(mat.elementType);
 
     for (uint32_t r = 0; r < mat.nRows; ++r)
     {
         for (uint32_t c = 0; c < mat.nCols; ++c)
         {
-            const uint32_t srcOffset = (r * mat.nCols + c) * matElementSize;
-            uint32_t dstOffset = 0;
+            const size_t srcOffset =
+                (static_cast<size_t>(r) * mat.nCols + c) * matElementSize;
+            size_t dstOffset = 0;
 
             // Stride 0 is undefined per the SPIR-V specification but we need to
             // support it here because of the way the tests are structured.
@@ -231,7 +231,8 @@ void Matrix::cooperativeMatrixStore(SemBuffer &buf, const Matrix &mat,
                     {
                         continue;
                     }
-                    dstOffset = r * bufStrideSize + c * matElementSize;
+                    dstOffset = r * bufStrideSize
+                        + static_cast<size_t>(c) * matElementSize;
                     break;
                 }
                 case Layout::ColumnMajor: {
@@ -239,7 +240,8 @@ void Matrix::cooperativeMatrixStore(SemBuffer &buf, const Matrix &mat,
                     {
                         continue;
                     }
-                    dstOffset = c * bufStrideSize + r * matElementSize;
+                    dstOffset = c * bufStrideSize
+                        + static_cast<size_t>(r) * matElementSize;
                     break;
                 }
             }
@@ -249,13 +251,13 @@ void Matrix::cooperativeMatrixStore(SemBuffer &buf, const Matrix &mat,
     }
 }
 
-static uint32_t roundUpToNearestMultiple(uint32_t val, uint32_t multiple)
+static size_t roundUpToNearestMultiple(size_t val, size_t multiple)
 {
     if (multiple == 0)
     {
         return val;
     }
-    const uint32_t remainder = val % multiple;
+    const size_t remainder = val % multiple;
     return remainder == 0 ? val : val + multiple - remainder;
 }
 
@@ -268,11 +270,12 @@ BufferDescriptor BufferDescriptor::makeBufferDescriptor(
     const uint32_t matStrideMultiple =
         std::max(matElementSize, gTestContext->deviceStrideMultiple);
 
-    const uint32_t dataStrideSize =
-        bufferElementTypeSizeOf(elementType) * stride;
-    const uint32_t strideSize =
+    const size_t dataStrideSize =
+        size_t{ bufferElementTypeSizeOf(elementType) } * stride;
+    const size_t strideSize =
         roundUpToNearestMultiple(dataStrideSize, matStrideMultiple);
-    const uint32_t stridePadding = strideSize - dataStrideSize;
+    const uint32_t stridePadding =
+        static_cast<uint32_t>(strideSize - dataStrideSize);
 
     return BufferDescriptor(stride, strideCount, elementType, stridePadding);
 }
@@ -285,22 +288,15 @@ uint32_t bufferElementTypeSizeOf(const BufferElementType &t)
     return vecLen == 3 ? scalarSize * 4 : scalarSize * vecLen;
 }
 
-uint32_t bufferStrideSizeOf(const BufferDescriptor &d)
+size_t bufferStrideSizeOf(const BufferDescriptor &d)
 {
-    return bufferElementTypeSizeOf(d.elementType) * d.stride + d.stridePadding;
+    return size_t{ bufferElementTypeSizeOf(d.elementType) } * d.stride
+        + d.stridePadding;
 }
 
-uint32_t bufferSizeOf(const BufferDescriptor &d)
+size_t bufferSizeOf(const BufferDescriptor &d)
 {
     return bufferStrideSizeOf(d) * d.strideCount;
-}
-
-uint32_t bufferElementStride(const BufferDescriptor &d)
-{
-    const uint32_t dataStrideSize = bufferStrideSizeOf(d) - d.stridePadding;
-    const uint32_t elementSize = bufferElementTypeSizeOf(d.elementType);
-    assert(dataStrideSize % elementSize == 0);
-    return dataStrideSize / elementSize;
 }
 
 namespace {
@@ -338,12 +334,12 @@ makeClBuffer(cl_context context, cl_command_queue queue, cl_mem_flags flags,
              const BufferDescriptor desc, const Matrix &mat)
 {
     const uint32_t matElementSize = elementSizeOf(mat.elementType);
-    const uint32_t matBufferSize = bufferSizeOf(desc);
+    const size_t matBufferSize = bufferSizeOf(desc);
     const uint32_t bufAlignment =
         std::max(matElementSize, gTestContext->devicePointerAlignment);
     // We overallocate the buffer such that we later can pick an alignment
     // padding in the range [0, bufAlignment).
-    const uint32_t bufSize = matBufferSize + bufAlignment;
+    const size_t bufSize = matBufferSize + bufAlignment;
     cl_int err = CL_SUCCESS;
     clMemWrapper bufHandle = clCreateBuffer(
         context, flags | CL_MEM_ALLOC_HOST_PTR, bufSize, nullptr, &err);
@@ -420,12 +416,7 @@ describeBufferKind(cl_device_cooperative_matrix_component_type_khr kind)
 
 static std::string describeBuffer(const BufferDescriptor &d)
 {
-    std::string res;
-    if (d.elementType.vectorLength > 1)
-    {
-        res += "vec" + std::to_string(d.elementType.vectorLength) + "_";
-    }
-    res += describeBufferKind(d.elementType.scalarType);
+    std::string res = describeBufferElementType(d.elementType);
     res += "_stride" + std::to_string(d.stride);
     return res;
 }
@@ -584,6 +575,16 @@ describeBufferKind(cl_device_cooperative_matrix_component_type_khr kind)
     }
 }
 
+std::string describeBufferElementType(const BufferElementType &elementType)
+{
+    std::string res;
+    if (elementType.vectorLength > 1)
+    {
+        res += "vec" + std::to_string(elementType.vectorLength) + "_";
+    }
+    return res + describeBufferKind(elementType.scalarType);
+}
+
 bool MatrixType::operator<(const MatrixType &other) const
 {
     return type < other.type || (type == other.type && nRows < other.nRows)
@@ -659,38 +660,43 @@ void Matrix::print(const char *title) const
     log_info("%s\n", out.str().c_str());
 }
 
+template <class Ty, class ElementType> Ty loadElement(const void *ptr)
+{
+    ElementType element;
+    std::memcpy(&element, ptr, sizeof(element));
+    return element;
+}
+
 template <class Ty>
 Ty getHelper(size_t i,
              cl_device_cooperative_matrix_component_type_khr elementType,
              std::vector<uint8_t> data)
 {
-    assert((i % elementSizeOf(elementType)) == 0
-           && "Unaligned access detected");
     const void *ptr = data.data() + i;
     switch (elementType)
     {
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP16_KHR:
-            return *static_cast<const HalfFP *>(ptr);
+            return loadElement<Ty, HalfFP>(ptr);
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP32_KHR:
-            return *static_cast<const float *>(ptr);
+            return loadElement<Ty, float>(ptr);
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP64_KHR:
-            return *static_cast<const double *>(ptr);
+            return loadElement<Ty, double>(ptr);
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT8_KHR:
-            return *static_cast<const int8_t *>(ptr);
+            return loadElement<Ty, int8_t>(ptr);
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT16_KHR:
-            return *static_cast<const int16_t *>(ptr);
+            return loadElement<Ty, int16_t>(ptr);
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT32_KHR:
-            return *static_cast<const int32_t *>(ptr);
+            return loadElement<Ty, int32_t>(ptr);
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT64_KHR:
-            return *static_cast<const int64_t *>(ptr);
+            return loadElement<Ty, int64_t>(ptr);
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT8_KHR:
-            return *static_cast<const uint8_t *>(ptr);
+            return loadElement<Ty, uint8_t>(ptr);
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT16_KHR:
-            return *static_cast<const uint16_t *>(ptr);
+            return loadElement<Ty, uint16_t>(ptr);
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT32_KHR:
-            return *static_cast<const uint32_t *>(ptr);
+            return loadElement<Ty, uint32_t>(ptr);
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT64_KHR:
-            return *static_cast<const uint64_t *>(ptr);
+            return loadElement<Ty, uint64_t>(ptr);
     }
     return 0;
 }
@@ -710,48 +716,52 @@ int64_t Matrix::getS64(size_t i) const
     return getHelper<int64_t>(i, elementType, data);
 }
 
+template <class ElementType, class Ty> void storeElement(void *ptr, Ty value)
+{
+    const ElementType element = value;
+    std::memcpy(ptr, &element, sizeof(element));
+}
+
 template <class Ty>
 void setHelper(size_t i, Ty value,
                cl_device_cooperative_matrix_component_type_khr elementType,
                std::vector<uint8_t> &data)
 {
-    assert((i % elementSizeOf(elementType)) == 0
-           && "Unaligned access detected");
     void *ptr = data.data() + i;
     switch (elementType)
     {
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP16_KHR:
-            *static_cast<HalfFP *>(ptr) = value;
+            storeElement<HalfFP>(ptr, value);
             break;
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP32_KHR:
-            *static_cast<float *>(ptr) = value;
+            storeElement<float>(ptr, value);
             break;
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP64_KHR:
-            *static_cast<double *>(ptr) = value;
+            storeElement<double>(ptr, value);
             break;
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT8_KHR:
-            *static_cast<int8_t *>(ptr) = value;
+            storeElement<int8_t>(ptr, value);
             break;
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT16_KHR:
-            *static_cast<int16_t *>(ptr) = value;
+            storeElement<int16_t>(ptr, value);
             break;
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT32_KHR:
-            *static_cast<int32_t *>(ptr) = value;
+            storeElement<int32_t>(ptr, value);
             break;
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT64_KHR:
-            *static_cast<int64_t *>(ptr) = value;
+            storeElement<int64_t>(ptr, value);
             break;
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT8_KHR:
-            *static_cast<uint8_t *>(ptr) = value;
+            storeElement<uint8_t>(ptr, value);
             break;
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT16_KHR:
-            *static_cast<uint16_t *>(ptr) = value;
+            storeElement<uint16_t>(ptr, value);
             break;
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT32_KHR:
-            *static_cast<uint32_t *>(ptr) = value;
+            storeElement<uint32_t>(ptr, value);
             break;
         case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT64_KHR:
-            *static_cast<uint64_t *>(ptr) = value;
+            storeElement<uint64_t>(ptr, value);
             break;
     }
 }
@@ -788,7 +798,7 @@ FloatBounds getFBounds(cl_device_cooperative_matrix_component_type_khr type)
         double max = CL_DBL_MAX;
         return { -max, max, true };
     }
-    assert(false && "Non-float type passed to getFMax");
+    assert(false && "Non-float type passed to getFBounds");
     std::abort();
 }
 
@@ -979,11 +989,33 @@ T boundsIntersection(T left, T right)
     auto max = std::min(left.max, right.max);
     if constexpr (std::is_same_v<T, FloatBounds>)
     {
-        bool canBeNonFinite = left.canBeNonFinite & right.canBeNonFinite;
+        bool canBeNonFinite = left.canBeNonFinite && right.canBeNonFinite;
         return { min, max, canBeNonFinite };
     }
     else
         return { min, max };
+}
+
+template <typename T, std::enable_if_t<is_bounds_type_v<T>, int> = 0>
+void setBoundsFromMaxMagnitude(T &bounds, double maxMagnitude)
+{
+    if constexpr (std::is_same_v<T, FloatBounds>)
+    {
+        bounds.max = std::min(bounds.max, maxMagnitude);
+        bounds.min = -bounds.max;
+    }
+    else if constexpr (std::is_same_v<T, SignedBounds>)
+    {
+        bounds.max = std::min(bounds.max,
+                              castDoubleToIntRoundDown<int64_t>(maxMagnitude));
+        bounds.min = -bounds.max;
+    }
+    else
+    {
+        bounds.max = std::min(bounds.max,
+                              castDoubleToIntRoundDown<uint64_t>(maxMagnitude));
+        bounds.min = 0;
+    }
 }
 
 void Matrix::fill(int8_t seed, std::optional<Bounds> bounds)
@@ -1747,7 +1779,7 @@ void CoopMatTest_div::calcRef(std::vector<const Matrix *> &inputs, Matrix &m)
                 m.set(idx,
                       inputs[0]->get<double>(idx)
                           / inputs[1]->get<double>(idx));
-            else if (isSignedType(m.elementType))
+            else if (isSignedIntType(m.elementType))
                 m.set(idx,
                       safeDivision(inputs[0]->get<int64_t>(idx),
                                    inputs[1]->get<int64_t>(idx)));
@@ -1851,7 +1883,7 @@ void matrixmuladd_saturating(std::vector<const Matrix *> &inputs, Matrix &m)
         return;
     }
     const uint8_t resultWidthInBytes = elementSizeOf(m.elementType);
-    const uint8_t resultSign = isSignedType(m.elementType);
+    const bool resultSign = isSignedIntType(m.elementType);
     assert(inputs.size() == 3);
     const unsigned M = m.nRows;
     const unsigned N = m.nCols;
@@ -1870,10 +1902,10 @@ void matrixmuladd_saturating(std::vector<const Matrix *> &inputs, Matrix &m)
                 const unsigned AIndex = inputs[0]->getIndex(row, i);
                 const unsigned BIndex = inputs[1]->getIndex(i, col);
                 // Signed inputs must be sign extended.
-                uint64_t a = isSignedType(inputs[0]->elementType)
+                uint64_t a = isSignedIntType(inputs[0]->elementType)
                     ? inputs[0]->get<int64_t>(AIndex)
                     : inputs[0]->get<uint64_t>(AIndex);
-                uint64_t b = isSignedType(inputs[1]->elementType)
+                uint64_t b = isSignedIntType(inputs[1]->elementType)
                     ? inputs[1]->get<int64_t>(BIndex)
                     : inputs[1]->get<uint64_t>(BIndex);
 
@@ -1881,7 +1913,7 @@ void matrixmuladd_saturating(std::vector<const Matrix *> &inputs, Matrix &m)
                 acc = saturating_add(multiplication, acc, resultWidthInBytes,
                                      resultSign);
             }
-            uint64_t c = isSignedType(inputs[2]->elementType)
+            uint64_t c = isSignedIntType(inputs[2]->elementType)
                 ? inputs[2]->get<int64_t>(CIndex)
                 : inputs[2]->get<uint64_t>(CIndex);
             m.set(outIdx,
@@ -2053,24 +2085,31 @@ int CoopMatTest::buildAndRun(Variant &variant)
         }
         case CoopMatOp::matrixmuladd:
         case CoopMatOp::matrixmuladd_array: {
-            MatrixType outType(variant.output.elementType, variant.output.nRows,
-                               variant.output.nCols, MatrixType::Use::Acc);
-            Bounds bounds = getBounds(outType.type);
-            Bounds newBounds = std::visit(
-                [&](auto x) -> Bounds {
-                    auto min = x.min;
-                    auto max = x.max;
-                    auto maxMag = min >= 0 ? max : std::min(-min, max);
-                    // Stops overflows in accumulation.
-                    maxMag = std::sqrt(maxMag) / variant.inputA.nCols / 2;
-                    x.max = maxMag;
-                    x.min = -maxMag;
-                    return x;
+            const double resultMaxMagnitude = std::visit(
+                [](auto bounds) {
+                    return bounds.min >= 0
+                        ? static_cast<double>(bounds.max)
+                        : std::min(-static_cast<double>(bounds.min),
+                                   static_cast<double>(bounds.max));
                 },
-                bounds);
-            variant.inputA.fill(0, newBounds);
-            variant.inputB.fill(1, newBounds);
-            variant.inputC.fill(2, newBounds);
+                getBounds(variant.output.elementType));
+            // Stop overflow in accumulation. Bound each input independently so
+            // that the bound matches its component type and does not exceed
+            // that type's range.
+            const double inputMaxMagnitude =
+                std::sqrt(resultMaxMagnitude) / variant.inputA.nCols / 2;
+            const auto getInputBounds =
+                [inputMaxMagnitude](auto elementType) -> Bounds {
+                return std::visit(
+                    [inputMaxMagnitude](auto bounds) -> Bounds {
+                        setBoundsFromMaxMagnitude(bounds, inputMaxMagnitude);
+                        return bounds;
+                    },
+                    getBounds(elementType));
+            };
+            variant.inputA.fill(0, getInputBounds(variant.inputA.elementType));
+            variant.inputB.fill(1, getInputBounds(variant.inputB.elementType));
+            variant.inputC.fill(2, getInputBounds(variant.inputC.elementType));
             break;
         }
         case CoopMatOp::convert: {
@@ -2166,8 +2205,6 @@ int CoopMatTest::buildAndRun(Variant &variant)
     const ClBuffer output = maybe_output.value();
 
     const size_t outReadSize = bufferSizeOf(variant.outputDesc);
-    assert(bufferSizeOf(variant.outputDesc) <= outReadSize
-           && "Output buffer size exceeds padded size after stride rounding");
 
     // Fill output buffer to give indication of if the test has written to it.
     unsigned char pattern = 13;
