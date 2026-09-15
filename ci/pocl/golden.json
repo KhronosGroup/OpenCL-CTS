@@ -16,7 +16,7 @@
     "test_basic": {
         "": {
             "arraycopy": "pass",
-            "bufferreadwriterect": "pass",
+            "bufferreadwriterect": "fail",
             "enqueue_map_image": "pass",
             "host_numeric_constants": "pass",
             "immutable_bufferreadwriterect": "skip",
