@@ -36,6 +36,26 @@
 #define MAX_TOTAL_GLOBAL_THREADS_FOR_TEST (1 << 24)
 int limit_size = 0;
 
+// Finds a local work size equal to or smaller than the passed-in local work
+// size that evenly divides the passed-in global work size.
+static cl_uint find_local_size(cl_uint local_size, cl_uint global_size)
+{
+    cl_uint ret;
+    if (local_size >= global_size)
+    {
+        ret = global_size;
+    }
+    else
+    {
+        ret = local_size;
+        while (global_size % ret != 0)
+        {
+            ret--;
+        }
+    }
+    return ret;
+}
+
 extern cl_uint maxThreadDimension;
 extern cl_uint bufferSize;
 extern cl_uint bufferStep;
@@ -908,9 +928,8 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                         {
                             local_x_size = (int)get_random_float(
                                 1, (int)max_workgroup_size, d);
-                            while ((local_x_size > 1)
-                                   && (final_x_size % local_x_size != 0))
-                                local_x_size--;
+                            local_x_size =
+                                find_local_size(local_x_size, final_x_size);
                             int remainder = (int)floor(
                                 (double)max_workgroup_size / local_x_size);
                             // Evenly prefer dimensions 2 and 1 first
@@ -920,10 +939,8 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                                 {
                                     local_y_size = (int)get_random_float(
                                         1, (int)remainder, d);
-                                    while (
-                                        (local_y_size > 1)
-                                        && (final_y_size % local_y_size != 0))
-                                        local_y_size--;
+                                    local_y_size = find_local_size(
+                                        local_y_size, final_y_size);
                                     remainder = (int)floor((double)remainder
                                                            / local_y_size);
                                 }
@@ -931,10 +948,8 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                                 {
                                     local_z_size = (int)get_random_float(
                                         1, (int)remainder, d);
-                                    while (
-                                        (local_z_size > 1)
-                                        && (final_z_size % local_z_size != 0))
-                                        local_z_size--;
+                                    local_z_size = find_local_size(
+                                        local_z_size, final_z_size);
                                 }
                             }
                             else
@@ -943,10 +958,8 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                                 {
                                     local_z_size = (int)get_random_float(
                                         1, (int)remainder, d);
-                                    while (
-                                        (local_z_size > 1)
-                                        && (final_z_size % local_z_size != 0))
-                                        local_z_size--;
+                                    local_z_size = find_local_size(
+                                        local_z_size, final_z_size);
                                     remainder = (int)floor((double)remainder
                                                            / local_z_size);
                                 }
@@ -954,10 +967,8 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                                 {
                                     local_y_size = (int)get_random_float(
                                         1, (int)remainder, d);
-                                    while (
-                                        (local_y_size > 1)
-                                        && (final_y_size % local_y_size != 0))
-                                        local_y_size--;
+                                    local_y_size = find_local_size(
+                                        local_y_size, final_y_size);
                                 }
                             }
                         }
@@ -988,15 +999,12 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                             local_z_size = (int)max_local_workgroup_size[2];
 
                         // Cleanup the local dimensions
-                        while ((local_x_size > 1)
-                               && (final_x_size % local_x_size != 0))
-                            local_x_size--;
-                        while ((local_y_size > 1)
-                               && (final_y_size % local_y_size != 0))
-                            local_y_size--;
-                        while ((local_z_size > 1)
-                               && (final_z_size % local_z_size != 0))
-                            local_z_size--;
+                        local_x_size =
+                            find_local_size(local_x_size, final_x_size);
+                        local_y_size =
+                            find_local_size(local_y_size, final_y_size);
+                        local_z_size =
+                            find_local_size(local_z_size, final_z_size);
                         if ((previous_local_x_size == local_x_size)
                             && (previous_local_y_size == local_y_size)
                             && (previous_local_z_size == local_z_size))
@@ -1037,8 +1045,10 @@ int test_thread_dimensions(cl_device_id device, cl_context context,
                         // large global sizes
                         cl_uint total_local_size =
                             local_x_size * local_y_size * local_z_size;
-                        long total_global_size = final_x_size * final_y_size * final_z_size;
-                        if (total_local_size < max_workgroup_size) {
+                        long total_global_size =
+                            final_x_size * final_y_size * final_z_size;
+                        if (total_local_size < max_workgroup_size)
+                        {
                             if (((total_global_size > 16384 * 16384)
                                  && (total_local_size < 64))
                                 || ((total_global_size > 8192 * 8192)
