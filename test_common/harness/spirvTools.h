@@ -36,9 +36,8 @@ bool assemble_spirv_text(const std::string &spirv_text,
                          std::vector<uint32_t> &spirv_binary);
 
 // Create an IL program from assembled SPIR-V and build it for the device.
-cl_int
-create_program_from_spirv_binary(clProgramWrapper &program, cl_device_id device,
-                                 cl_context context,
-                                 const std::vector<uint32_t> &spirv_binary);
+cl_int create_and_build_program_from_spirv_il(
+    clProgramWrapper &program, cl_device_id device, cl_context context,
+    const std::vector<uint32_t> &spirv_binary);
 
 #endif // SPIRV_TOOLS_H

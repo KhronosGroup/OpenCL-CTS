@@ -62,10 +62,9 @@ bool assemble_spirv_text(const std::string &spirv_text,
     return spirv_tools.Validate(spirv_binary.data(), spirv_binary.size());
 }
 
-cl_int
-create_program_from_spirv_binary(clProgramWrapper &program, cl_device_id device,
-                                 cl_context context,
-                                 const std::vector<uint32_t> &spirv_binary)
+cl_int create_and_build_program_from_spirv_il(
+    clProgramWrapper &program, cl_device_id device, cl_context context,
+    const std::vector<uint32_t> &spirv_binary)
 {
     cl_int error = CL_SUCCESS;
     const size_t binary_size = spirv_binary.size() * sizeof(spirv_binary[0]);

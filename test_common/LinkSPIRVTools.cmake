@@ -22,19 +22,7 @@ else()
     endif()
 endif()
 
-function(target_link_spirv_tools target)
-    if(NOT TARGET ${target})
-        message(FATAL_ERROR "Cannot link SPIRV-Tools to unknown target '${target}'")
-    endif()
-
-    if(NOT CLConform_SPIRV_TOOLS_TARGET)
-        message(FATAL_ERROR
-            "SPIRV-Tools was not found. Install its pkg-config or CMake package.")
-    endif()
-
-    if(TARGET spirv_tools_harness)
-        target_link_libraries(${target} spirv_tools_harness)
-    else()
-        target_link_libraries(${target} ${CLConform_SPIRV_TOOLS_TARGET})
-    endif()
-endfunction()
+if(NOT CLConform_SPIRV_TOOLS_TARGET)
+    message(FATAL_ERROR
+        "SPIRV-Tools was not found. Install its pkg-config or CMake package.")
+endif()

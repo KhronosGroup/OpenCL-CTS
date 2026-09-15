@@ -218,11 +218,11 @@ offline_get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
     return err;
 }
 
-int get_program_with_generated_il(clProgramWrapper &prog,
-                                  const cl_device_id deviceID,
-                                  const cl_context context,
-                                  const char *prog_name,
-                                  const std::string &spirv_text)
+int create_and_build_program_from_spirv_text(clProgramWrapper &prog,
+                                             const cl_device_id deviceID,
+                                             const cl_context context,
+                                             const char *prog_name,
+                                             const std::string &spirv_text)
 {
     std::vector<uint32_t> spirv_binary;
     if (!assemble_spirv_text(spirv_text, spirv_binary))
@@ -232,8 +232,8 @@ int get_program_with_generated_il(clProgramWrapper &prog,
         return offline_get_program_with_il(prog, deviceID, context, prog_name,
                                            &spirv_binary);
 
-    return create_program_from_spirv_binary(prog, deviceID, context,
-                                            spirv_binary);
+    return create_and_build_program_from_spirv_il(prog, deviceID, context,
+                                                  spirv_binary);
 }
 
 int get_unbuilt_program_with_il(clProgramWrapper &prog,

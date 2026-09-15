@@ -148,7 +148,7 @@ OpFunctionEnd
 )";
 
     const std::string program_name = function_name + "_" + type_name;
-    return get_program_with_generated_il(
+    return create_and_build_program_from_spirv_text(
         program, device, context, program_name.c_str(), spirv_text.str());
 }
 
