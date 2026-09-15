@@ -106,7 +106,7 @@ require compilation, these are:
 
 ### Building CTS on Windows
 
-For Windows environments, it is strongly recommended to build CTS using [MSYS2](https://www.msys2.org/),
+For Windows environments, CTS can be built using [MSYS2](https://www.msys2.org/),
 the MinGW-w64 (GCC) toolchain, and Ninja.
 All commands in the following sections should be run from an MSYS2 MinGW64 shell.
 
