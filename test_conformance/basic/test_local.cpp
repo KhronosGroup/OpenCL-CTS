@@ -114,6 +114,15 @@ verify_sum(int *inptr, int *outptr, int n)
     return 0;
 }
 
+// The kernel reduces all `count` inputs into a single int, so bound every
+// value to +/- CL_INT_MAX / count. Each partial sum, and the total, then stays
+// representable and the accumulation stays defined.
+static cl_int generate_sum_input(MTdata d, int count)
+{
+    const cl_long maximum = CL_INT_MAX / (count > 0 ? count : 1);
+    return (cl_int)get_random_long(-maximum, maximum, d);
+}
+
 REGISTER_TEST(local_arg_def)
 {
     cl_mem streams[2];
@@ -156,7 +165,7 @@ REGISTER_TEST(local_arg_def)
     }
 
     for (i=0; i<num_elements; i++)
-        input_ptr[i] = (int)genrand_int32(d);
+        input_ptr[i] = generate_sum_input(d, num_elements);
 
     free_mtdata(d); d = NULL;
 
@@ -274,7 +283,7 @@ REGISTER_TEST(local_kernel_def)
     }
 
     for (i=0; i<num_elements; i++)
-        input_ptr[i] = (cl_int) genrand_int32(d);
+        input_ptr[i] = generate_sum_input(d, num_elements);
 
     free_mtdata(d); d = NULL;
 

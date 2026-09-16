@@ -95,6 +95,13 @@ extern double any_double(MTdata d);
 
 extern int random_in_range(int minV, int maxV, MTdata d);
 
+// Returns a value uniformly distributed over [low, high]. Unlike
+// random_in_range() the width of the interval is computed in unsigned
+// arithmetic, so the whole type range is usable, up to [CL_LONG_MIN,
+// CL_LONG_MAX] and [0, CL_ULONG_MAX].
+cl_long get_random_long(cl_long low, cl_long high, MTdata d);
+cl_ulong get_random_ulong(cl_ulong low, cl_ulong high, MTdata d);
+
 size_t get_random_size_t(size_t low, size_t high, MTdata d);
 
 // Note: though this takes a double, this is for use with single precision tests
