@@ -795,7 +795,7 @@ static void print_results(int failed, int count, const char *name)
         {
             log_info("PASSED %d of %d %ss.\n", count, count, name);
         }
-        else
+        else if (count > 0)
         {
             log_info("PASSED %s.\n", name);
         }

@@ -31,14 +31,13 @@ const size_t g_arrVecAlignMasks[NUM_VECTOR_SIZES] = {
     (size_t)0xf // 16
 };
 
-const ExplicitType types[] = {
-    kChar,  kUChar, kShort,  kUShort,          kInt, kUInt, kLong,
-    kULong, kFloat, kDouble, kNumExplicitTypes
-};
+const ExplicitType types[] = { kChar, kUChar, kShort,  kUShort,
+                               kInt,  kUInt,  kLong,   kULong,
+                               kHalf, kFloat, kDouble, kNumExplicitTypes };
 
 
-const char* const g_arrTypeNames[] = { "char",  "uchar", "short", "ushort",
-                                       "int",   "uint",  "long",  "ulong",
-                                       "float", "double" };
+const char* const g_arrTypeNames[] = { "char", "uchar", "short", "ushort",
+                                       "int",  "uint",  "long",  "ulong",
+                                       "half", "float", "double" };
 
-extern const size_t g_arrTypeSizes[] = { 1, 1, 2, 2, 4, 4, 8, 8, 4, 8 };
+extern const size_t g_arrTypeSizes[] = { 1, 1, 2, 2, 4, 4, 8, 8, 2, 4, 8 };

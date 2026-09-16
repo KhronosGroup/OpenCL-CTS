@@ -17,6 +17,7 @@
 
 
 #include "harness/conversions.h"
+#include "harness/parseParameters.h"
 #include "harness/typeWrappers.h"
 #include "harness/testHarness.h"
 #include "harness/ThreadPool.h"
@@ -28,6 +29,13 @@
 #include "type_replacer.h"
 
 #include <array>
+
+// Each work-item checks another instance of the same compile-time layout, so a
+// small number is sufficient.
+constexpr size_t ALIGNMENT_WORK_ITEMS = 64;
+
+// Reserve 512 bytes per work-item for generated structures.
+constexpr size_t BUFFER_SIZE = ALIGNMENT_WORK_ITEMS * 512;
 
 size_t get_align(size_t vecSize)
 {
@@ -79,7 +87,8 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
                       cl_command_queue queue, const char* pattern,
                       const char* testName, size_t bufSize, size_t preSize,
                       size_t typeMultiplePreSize, size_t postSize,
-                      size_t typeMultiplePostSize, bool supports_fp64)
+                      size_t typeMultiplePostSize, bool supports_fp64,
+                      bool supports_fp16)
 {
     int err;
     int typeIdx, vecSizeIdx;
@@ -91,7 +100,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
 
     clState* pClState = newClState(deviceID, context, queue);
     bufferStruct* pBuffers = newBufferStruct(
-        bufSize, bufSize * sizeof(cl_uint) / sizeof(cl_char), pClState);
+        bufSize, ALIGNMENT_WORK_ITEMS * sizeof(cl_uint), pClState);
 
     if (pBuffers == NULL)
     {
@@ -102,6 +111,14 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
 
     for (typeIdx = 0; types[typeIdx] != kNumExplicitTypes; ++typeIdx)
     {
+        // Signed and unsigned integer types have the same alignment, so one
+        // type from each pair is sufficient in wimpy mode.
+        if (gWimpyMode
+            && (types[typeIdx] == kUChar || types[typeIdx] == kUShort
+                || types[typeIdx] == kUInt || types[typeIdx] == kULong))
+        {
+            continue;
+        }
 
         // Skip doubles if it is not supported otherwise enable pragma
         if (types[typeIdx] == kDouble)
@@ -114,6 +131,19 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
             {
                 doReplace(tmpBuffer, 2048, pattern, ".PRAGMA.",
                           "#pragma OPENCL EXTENSION cl_khr_fp64: ", ".STATE.",
+                          "enable");
+            }
+        }
+        else if (types[typeIdx] == kHalf)
+        {
+            if (!supports_fp16)
+            {
+                continue;
+            }
+            else
+            {
+                doReplace(tmpBuffer, 2048, pattern, ".PRAGMA.",
+                          "#pragma OPENCL EXTENSION cl_khr_fp16: ", ".STATE.",
                           "enable");
             }
         }
@@ -179,10 +209,7 @@ int test_vec_internal(cl_device_id deviceID, cl_context context,
 
             // log_info("About to Run kernel\n"); fflush(stdout);
             // now we run the kernel
-            err = runKernel(
-                pClState,
-                bufSize
-                    / (g_arrVecSizes[vecSizeIdx] * g_arrTypeSizes[typeIdx]));
+            err = runKernel(pClState, ALIGNMENT_WORK_ITEMS);
             if (err != 0)
             {
                 vlog_error("%s: runKernel fail (%zu threads) %s%s\n", testName,
@@ -364,6 +391,20 @@ static const std::array<size_t, ARR_SIZE> type_multiple_post_align_arr = {
     0, 0, 3, 5, 4, 12
 };
 
+// Array-of-struct tests need every trailing-member layout because it can affect
+// the stride between consecutive structures.
+static constexpr std::array<unsigned, ARR_SIZE> all_post_indices = { 0, 1, 2,
+                                                                     3, 4, 5 };
+
+// Single unpacked structs only need cases with no trailing member and with a
+// trailing vector that can increase the structure's alignment.
+static constexpr std::array<unsigned, 2> unpacked_struct_post_indices = { 0,
+                                                                          4 };
+
+// A trailing member cannot affect the offset of an earlier packed member, so
+// the packed single-struct test only needs the empty trailing-member case.
+static constexpr std::array<unsigned, 1> packed_struct_post_indices = { 0 };
+
 struct test_vec_thread_info
 {
     cl_device_id device;
@@ -374,6 +415,9 @@ struct test_vec_thread_info
     bool packed;
     const char* source;
     bool supports_fp64;
+    bool supports_fp16;
+    const unsigned* postIndices;
+    size_t postCount;
 };
 
 cl_int test_vec_thread(cl_uint job_id, cl_uint thread_id, void* userInfo)
@@ -381,8 +425,8 @@ cl_int test_vec_thread(cl_uint job_id, cl_uint thread_id, void* userInfo)
     test_vec_thread_info* info = (test_vec_thread_info*)userInfo;
     char tmp[2048];
 
-    int preIdx = job_id / ARR_SIZE;
-    int postIdx = job_id % ARR_SIZE;
+    int preIdx = job_id / info->postCount;
+    int postIdx = info->postIndices[job_id % info->postCount];
 
     size_t preSize = 0;
     size_t typeMultiplePreSize = 0;
@@ -400,15 +444,10 @@ cl_int test_vec_thread(cl_uint job_id, cl_uint thread_id, void* userInfo)
 
     doReplace(tmp, (size_t)2048, info->source, ".PRE.", replaceWith1, ".POST.",
               replaceWith2);
-    return test_vec_internal(info->device, info->context, info->queue, tmp,
-                             info->testName, info->bufSize, preSize,
-                             typeMultiplePreSize, postSize,
-                             typeMultiplePostSize, info->supports_fp64);
-}
-
-bool supports_fp64(cl_device_id device)
-{
-    return is_extension_available(device, "cl_khr_fp64");
+    return test_vec_internal(
+        info->device, info->context, info->queue, tmp, info->testName,
+        info->bufSize, preSize, typeMultiplePreSize, postSize,
+        typeMultiplePostSize, info->supports_fp64, info->supports_fp16);
 }
 
 // there hsould be a packed version of this?
@@ -420,9 +459,9 @@ REGISTER_TEST(vec_align_array)
     log_info("Testing global\n");
     doReplace(tmp, (size_t)2048, patterns[0], ".SRC_SCOPE.", "__global",
               ".DST_SCOPE.", "__global"); //
-    result =
-        test_vec_internal(device, context, queue, tmp, "test_vec_align_array",
-                          BUFFER_SIZE, 0, 0, 0, 0, supports_fp64(device));
+    result = test_vec_internal(
+        device, context, queue, tmp, "test_vec_align_array", BUFFER_SIZE, 0, 0,
+        0, 0, device_supports_double(device), device_supports_half(device));
     return result;
 }
 
@@ -434,9 +473,19 @@ REGISTER_TEST(vec_align_struct)
     doReplace(tmp, (size_t)2048, patterns[1], ".SRC_SCOPE.", "__private",
               ".DST_SCOPE.", "__global"); //
 
-    test_vec_thread_info info{ device, context, queue, "test_vec_align_struct",
-                               512,    false,   tmp,   supports_fp64(device) };
-    cl_int result = ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
+    test_vec_thread_info info{ device,
+                               context,
+                               queue,
+                               "test_vec_align_struct",
+                               512,
+                               false,
+                               tmp,
+                               device_supports_double(device),
+                               device_supports_half(device),
+                               unpacked_struct_post_indices.data(),
+                               unpacked_struct_post_indices.size() };
+    cl_int result =
+        ThreadPool_Do(test_vec_thread, ARR_SIZE * info.postCount, &info);
     if (result != CL_SUCCESS)
     {
         return result;
@@ -447,7 +496,7 @@ REGISTER_TEST(vec_align_struct)
               ".DST_SCOPE.", "__global"); //
 
     info.testName = "test_vec_align_struct";
-    return ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
+    return ThreadPool_Do(test_vec_thread, ARR_SIZE * info.postCount, &info);
 }
 
 REGISTER_TEST(vec_align_packed_struct)
@@ -457,11 +506,19 @@ REGISTER_TEST(vec_align_packed_struct)
     doReplace(tmp, (size_t)2048, patterns[2], ".SRC_SCOPE.", "__private",
               ".DST_SCOPE.", "__global"); //
 
-    test_vec_thread_info info{ device, context,
-                               queue,  "test_vec_align_packed_struct",
-                               512,    true,
-                               tmp,    supports_fp64(device) };
-    cl_int result = ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
+    test_vec_thread_info info{ device,
+                               context,
+                               queue,
+                               "test_vec_align_packed_struct",
+                               512,
+                               true,
+                               tmp,
+                               device_supports_double(device),
+                               device_supports_half(device),
+                               packed_struct_post_indices.data(),
+                               packed_struct_post_indices.size() };
+    cl_int result =
+        ThreadPool_Do(test_vec_thread, ARR_SIZE * info.postCount, &info);
     if (result != CL_SUCCESS)
     {
         return result;
@@ -473,7 +530,7 @@ REGISTER_TEST(vec_align_packed_struct)
               ".DST_SCOPE.", "__global"); //
 
     info.testName = "test_vec_align_packed_struct";
-    return ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
+    return ThreadPool_Do(test_vec_thread, ARR_SIZE * info.postCount, &info);
 }
 
 REGISTER_TEST(vec_align_struct_arr)
@@ -483,11 +540,18 @@ REGISTER_TEST(vec_align_struct_arr)
     doReplace(tmp, (size_t)2048, patterns[3], ".SRC_SCOPE.", "__global",
               ".DST_SCOPE.", "__global"); //
 
-    test_vec_thread_info info{ device,      context,
-                               queue,       "test_vec_align_struct_arr",
-                               BUFFER_SIZE, false,
-                               tmp,         supports_fp64(device) };
-    return ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
+    test_vec_thread_info info{ device,
+                               context,
+                               queue,
+                               "test_vec_align_struct_arr",
+                               BUFFER_SIZE,
+                               false,
+                               tmp,
+                               device_supports_double(device),
+                               device_supports_half(device),
+                               all_post_indices.data(),
+                               all_post_indices.size() };
+    return ThreadPool_Do(test_vec_thread, ARR_SIZE * info.postCount, &info);
 }
 
 REGISTER_TEST(vec_align_packed_struct_arr)
@@ -497,9 +561,16 @@ REGISTER_TEST(vec_align_packed_struct_arr)
     doReplace(tmp, (size_t)2048, patterns[4], ".SRC_SCOPE.", "__global",
               ".DST_SCOPE.", "__global"); //
 
-    test_vec_thread_info info{ device,      context,
-                               queue,       "test_vec_align_packed_struct_arr",
-                               BUFFER_SIZE, true,
-                               tmp,         supports_fp64(device) };
-    return ThreadPool_Do(test_vec_thread, ARR_SIZE * ARR_SIZE, &info);
+    test_vec_thread_info info{ device,
+                               context,
+                               queue,
+                               "test_vec_align_packed_struct_arr",
+                               BUFFER_SIZE,
+                               true,
+                               tmp,
+                               device_supports_double(device),
+                               device_supports_half(device),
+                               all_post_indices.data(),
+                               all_post_indices.size() };
+    return ThreadPool_Do(test_vec_thread, ARR_SIZE * info.postCount, &info);
 }
