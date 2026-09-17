@@ -2155,7 +2155,10 @@ public:
         : CBasicTestFetchSpecialFloats<HostAtomicType, HostDataType>(dataType,
                                                                      useSVM)
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             const auto &spec_vals = GetSpecialValues();
             StartValue(spec_vals.size());
@@ -2207,7 +2210,10 @@ public:
                        HostDataType *startRefValues,
                        cl_uint whichDestValue) override
     {
-        if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (
+            std::is_same_v<
+                HostDataType,
+                HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
         {
             const auto &spec_vals = GetSpecialValues();
             expected = startRefValues[whichDestValue]
@@ -2264,6 +2270,25 @@ public:
                 if ((gFloatFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
         }
+        else if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
+        {
+            if (LocalMemory()
+                && (gDoubleAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_ADD_EXT) == 0)
+                return 0; // skip test - not applicable
+
+            if (!LocalMemory()
+                && (gDoubleAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_ADD_EXT)
+                    == 0)
+                return 0;
+
+            if (!CBasicTestMemOrderScope<HostAtomicType,
+                                         HostDataType>::LocalMemory()
+                && CBasicTestMemOrderScope<HostAtomicType,
+                                           HostDataType>::DeclaredInProgram())
+            {
+                if ((gDoubleFPConfig & CL_FP_INF_NAN) == 0) return 0;
+            }
+        }
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
             if (LocalMemory()
@@ -2298,7 +2323,6 @@ public:
                                                                  deviceID);
     }
 };
-
 static int test_atomic_fetch_sub_generic(cl_device_id deviceID,
                                          cl_context context,
                                          cl_command_queue queue,
@@ -2324,6 +2348,12 @@ static int test_atomic_fetch_sub_generic(cl_device_id deviceID,
 
     if (gFloatAtomicsSupported)
     {
+        CBasicTestFetchSubSpecialFloats<HOST_ATOMIC_DOUBLE, HOST_DOUBLE>
+            test_spec_double(TYPE_ATOMIC_DOUBLE, useSVM);
+        EXECUTE_TEST(
+            error,
+            test_spec_double.Execute(deviceID, context, queue, num_elements));
+
         CBasicTestFetchSubSpecialFloats<HOST_ATOMIC_HALF, HOST_HALF>
             test_spec_half(TYPE_ATOMIC_HALF, useSVM);
         EXECUTE_TEST(
