@@ -418,6 +418,11 @@ cl_program makePrintfProgram(cl_kernel* kernel_ptr, const cl_context context,
             == 0)
             strcpy(extension,
                    "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n");
+        else if (strcmp(allTestCase[testId]->_genParameters[testNum].dataType,
+                        "double")
+                 == 0)
+            strcpy(extension,
+                   "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n");
 
         // Program Source code for vector
         const char* sourceVec[] = {
@@ -745,12 +750,15 @@ int doTest(cl_command_queue queue, cl_context context,
 
             if (!is_vector_type_supported("double", "cl_khr_fp64")) continue;
 
-            // Long support for varible type
-            if (!strcmp(allTestCase[testId]->_genParameters[testNum].dataType,
-                        "long")
+            // Skip unsupported 64-bit integer vector types.
+            if ((!strcmp(allTestCase[testId]->_genParameters[testNum].dataType,
+                         "long")
+                 || !strcmp(
+                     allTestCase[testId]->_genParameters[testNum].dataType,
+                     "ulong"))
                 && !isLongSupported(device))
             {
-                log_info("Long is not supported, test not run.\n");
+                log_info("64-bit integers are not supported, test not run.\n");
                 s_test_skip++;
                 s_test_cnt++;
                 continue;
