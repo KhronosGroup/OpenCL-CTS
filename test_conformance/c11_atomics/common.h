@@ -1198,7 +1198,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
     cl_uint deviceThreadCount, hostThreadCount, threadCount;
     size_t groupSize = 0;
     std::string programSource;
-    const char *programLine;
+    const char *programLine = nullptr;
     MTdata d;
     size_t typeSize = DataType().Size(deviceID);
 
@@ -1530,7 +1530,7 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
         if (IsTestNotAsExpected(expected, destItems, startRefValues, i))
         {
             std::stringstream logLine;
-            if constexpr (std::is_same_v<HostDataType, cl_half>)
+            if constexpr (std::is_same_v<HostDataType, HostHalf>)
             {
                 logLine << "ERROR: Result " << i
                         << " from kernel does not validate! (should be "
@@ -1599,7 +1599,16 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
                         << " --- " << i << " - "
                         << refValues[i * NumNonAtomicVariablesPerThread() + j]
                         << " --- ";
-                    if (j == 0 && i < numDestItems) logLine << destItems[i];
+                    if (j == 0 && i < numDestItems)
+                    {
+                        if constexpr (std::is_same_v<HostDataType, HostHalf>)
+                            logLine << cl_half_to_float(
+                                destItems[i]); // look out, destItems[i] is
+                                               // HostAtomicType, not
+                                               // HostDataType
+                        else
+                            logLine << destItems[i];
+                    }
                     logLine << "\n";
                     log_info("%s", logLine.str().c_str());
                 }
@@ -1655,10 +1664,16 @@ int CBasicTest<HostAtomicType, HostDataType>::ExecuteSingleTest(
         if (refValues[0] != _startValue) // destItems[0])
         {
             std::stringstream logLine;
+
             logLine << "ERROR: atomic function operated correctly but did NOT "
                        "return correct 'old' value "
-                       " (should have been "
-                    << destItems[0] << ", returned " << refValues[0] << ")!\n";
+                       " (should have been ";
+            // look out, destItems[i] is HostAtomicType, not HostDataType
+            if constexpr (std::is_same_v<HostDataType, HostHalf>)
+                logLine << cl_half_to_float(destItems[0]);
+            else
+                logLine << destItems[0];
+            logLine << ", returned " << refValues[0] << ")!\n";
             log_error("%s", logLine.str().c_str());
             if (!gDebug)
             {

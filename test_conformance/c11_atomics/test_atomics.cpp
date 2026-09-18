@@ -2069,7 +2069,7 @@ public:
     bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
                     HostAtomicType *finalValues) override
     {
-        if (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (is_host_fp_v<HostDataType>)
         {
             correct = true;
             for (cl_uint i = 1; i < threadCount; i++)
@@ -3754,7 +3754,7 @@ public:
                 && CBasicTestMemOrderScope<HostAtomicType,
                                            HostDataType>::DeclaredInProgram())
             {
-                if ((gDoubleAtomicCaps & CL_FP_INF_NAN) == 0) return 0;
+                if ((gDoubleFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
         }
         else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
