@@ -182,14 +182,6 @@ inline HostHalf abs(const HostHalf &value)
 
 #define HOST_FLAG cl_int
 
-extern cl_half_rounding_mode gHalfRoundingMode;
-
-template <typename HostAtomicType>
-constexpr bool is_host_atomic_fp_v =
-    std::disjunction_v<std::is_same<HostAtomicType, HOST_ATOMIC_HALF>,
-                       std::is_same<HostAtomicType, HOST_ATOMIC_FLOAT>,
-                       std::is_same<HostAtomicType, HOST_ATOMIC_DOUBLE>>;
-
 template <typename HostDataType>
 constexpr bool is_host_fp_v =
     std::disjunction_v<std::is_same<HostDataType, HOST_HALF>,
@@ -286,7 +278,7 @@ template <typename AtomicType, typename CorrespondingType>
 CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingType c,
                                         TExplicitMemoryOrderType order)
 {
-    if constexpr (is_host_atomic_fp_v<AtomicType>)
+    if constexpr (is_host_fp_v<CorrespondingType>)
     {
         static std::mutex mx;
         std::lock_guard<std::mutex> lock(mx);
@@ -312,7 +304,7 @@ template <typename AtomicType, typename CorrespondingType>
 CorrespondingType host_atomic_fetch_sub(volatile AtomicType *a, CorrespondingType c,
                                         TExplicitMemoryOrderType order)
 {
-    if constexpr (is_host_atomic_fp_v<AtomicType>)
+    if constexpr (is_host_fp_v<CorrespondingType>)
     {
         static std::mutex mx;
         std::lock_guard<std::mutex> lock(mx);
@@ -362,7 +354,7 @@ bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *exp
                                   TExplicitMemoryOrderType order_success,
                                   TExplicitMemoryOrderType order_failure)
 {
-    if constexpr (is_host_atomic_fp_v<AtomicType>)
+    if constexpr (is_host_fp_v<CorrespondingType>)
     {
         static std::mutex mtx;
         std::lock_guard<std::mutex> lock(mtx);
