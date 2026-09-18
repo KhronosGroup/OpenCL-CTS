@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "common.h"
 #include "testBase.h"
+#ifdef GL_IS_SUPPORTED
+#include "common.h"
 
 #if defined(__APPLE__)
 #include <OpenGL/glu.h>
@@ -22,10 +23,13 @@
 #include <GL/glu.h>
 #include <CL/cl_gl.h>
 #endif
+#endif
 
 #include <algorithm>
 
-void calc_2D_multisample_size_descriptors(sizevec_t* sizes, size_t nsizes)
+#ifdef GL_IS_SUPPORTED
+static void calc_2D_multisample_size_descriptors(sizevec_t* sizes,
+                                                 size_t nsizes)
 {
     // Need to limit texture size according to GL device properties
     GLint maxTextureSize = 4096;
@@ -44,7 +48,8 @@ void calc_2D_multisample_size_descriptors(sizevec_t* sizes, size_t nsizes)
     }
 }
 
-void calc_2D_array_multisample_size_descriptors(sizevec_t* sizes, size_t nsizes)
+static void calc_2D_array_multisample_size_descriptors(sizevec_t* sizes,
+                                                       size_t nsizes)
 {
     // Need to limit array size according to GL device properties
     GLint maxTextureLayers = 16, maxTextureSize = 4096;
@@ -64,17 +69,14 @@ void calc_2D_array_multisample_size_descriptors(sizevec_t* sizes, size_t nsizes)
             random_in_range(2, std::min(maxTextureLayers, 1 << (i + 4)), seed);
     }
 }
+#endif
 
 int test_images_read_2D_multisample(cl_device_id device, cl_context context,
                                     cl_command_queue queue, int numElements)
 {
-    if (!is_extension_available(device, "cl_khr_gl_msaa_sharing"))
-    {
-        log_info("Test not run because 'cl_khr_gl_msaa_sharing' extension is "
-                 "not supported by the tested device\n");
-        return 0;
-    }
+    REQUIRE_EXTENSION("cl_khr_gl_msaa_sharing");
 
+#ifdef GL_IS_SUPPORTED
     glEnable(GL_MULTISAMPLE);
 
     const size_t nsizes = 8;
@@ -97,19 +99,18 @@ int test_images_read_2D_multisample(cl_device_id device, cl_context context,
                                 targets, ntargets, sizes, nsizes);
 
     return (ret_common) ? ret_common : ret_depth;
+#else
+    return TEST_FAIL;
+#endif
 }
 
 int test_images_read_2Darray_multisample(cl_device_id device,
                                          cl_context context,
                                          cl_command_queue queue, int)
 {
-    if (!is_extension_available(device, "cl_khr_gl_msaa_sharing"))
-    {
-        log_info("Test not run because 'cl_khr_gl_msaa_sharing' extension is "
-                 "not supported by the tested device\n");
-        return 0;
-    }
+    REQUIRE_EXTENSION("cl_khr_gl_msaa_sharing");
 
+#ifdef GL_IS_SUPPORTED
     glEnable(GL_MULTISAMPLE);
 
     const size_t nsizes = 4;
@@ -132,4 +133,7 @@ int test_images_read_2Darray_multisample(cl_device_id device,
                                 targets, ntargets, sizes, nsizes);
 
     return (ret_common) ? ret_common : ret_depth;
+#else
+    return TEST_FAIL;
+#endif
 }

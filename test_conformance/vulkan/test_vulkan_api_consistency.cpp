@@ -14,9 +14,12 @@
 // limitations under the License.
 //
 
+#ifdef VULKAN_IS_SUPPORTED
 #include <vulkan_interop_common.hpp>
 #include <opencl_vulkan_wrapper.hpp>
 #include <vulkan_wrapper.hpp>
+#endif
+
 #if !defined(__APPLE__)
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
@@ -36,7 +39,6 @@
 #include "harness/deviceInfo.h"
 
 #include "vulkan_test_base.h"
-#include "opencl_vulkan_wrapper.hpp"
 
 namespace {
 
@@ -49,25 +51,15 @@ struct ConsistencyExternalBufferTest : public VulkanTestBase
 
     cl_int Run() override
     {
+#ifdef _WIN32
+        REQUIRE_EXTENSION("cl_khr_external_memory_win32");
+#else
+        REQUIRE_EXTENSION("cl_khr_external_memory_opaque_fd");
+#endif
 
+#ifdef VULKAN_IS_SUPPORTED
         cl_int errNum = CL_SUCCESS;
         uint32_t bufferSize = 32;
-
-#ifdef _WIN32
-        if (!is_extension_available(device, "cl_khr_external_memory_win32"))
-        {
-            throw std::runtime_error(
-                "Device does not support "
-                "cl_khr_external_memory_win32 extension \n");
-        }
-#else
-        if (!is_extension_available(device, "cl_khr_external_memory_opaque_fd"))
-        {
-            log_info("Device does not support "
-                     "cl_khr_external_memory_opaque_fd extension \n");
-            return TEST_SKIPPED_ITSELF;
-        }
-#endif
 
         VulkanExternalMemoryHandleType vkExternalMemoryHandleType =
             getSupportedVulkanExternalMemoryHandleTypeList(
@@ -179,6 +171,9 @@ struct ConsistencyExternalBufferTest : public VulkanTestBase
                            "Should return CL_INVALID_BUFFER_SIZE");
 
         return TEST_PASS;
+#else
+        return TEST_FAIL;
+#endif
     }
 };
 
@@ -191,23 +186,15 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
 
     cl_int Run() override
     {
+#ifdef _WIN32
+        REQUIRE_EXTENSION("cl_khr_external_memory_win32");
+#else
+        REQUIRE_EXTENSION("cl_khr_external_memory_opaque_fd");
+#endif
+
+#ifdef VULKAN_IS_SUPPORTED
         cl_int errNum = CL_SUCCESS;
 
-#ifdef _WIN32
-        if (!is_extension_available(device, "cl_khr_external_memory_win32"))
-        {
-            throw std::runtime_error(
-                "Device does not support"
-                "cl_khr_external_memory_win32 extension \n");
-        }
-#else
-        if (!is_extension_available(device, "cl_khr_external_memory_opaque_fd"))
-        {
-            log_info("Device does not support cl_khr_external_memory_opaque_fd "
-                     "extension \n");
-            return TEST_SKIPPED_ITSELF;
-        }
-#endif
         uint32_t width = 256;
         uint32_t height = 16;
         cl_image_desc image_desc;
@@ -337,6 +324,9 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
         image.reset();
 
         return TEST_PASS;
+#else
+        return TEST_FAIL;
+#endif
     }
 };
 
@@ -349,23 +339,14 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
 
     cl_int Run() override
     {
-        cl_int errNum = CL_SUCCESS;
-
 #ifdef _WIN32
-        if (!is_extension_available(device, "cl_khr_external_memory_win32"))
-        {
-            throw std::runtime_error(
-                "Device does not support"
-                "cl_khr_external_memory_win32 extension \n");
-        }
+        REQUIRE_EXTENSION("cl_khr_external_memory_win32");
 #else
-        if (!is_extension_available(device, "cl_khr_external_memory_opaque_fd"))
-        {
-            log_info("Device does not support cl_khr_external_memory_opaque_fd "
-                     "extension \n");
-            return TEST_SKIPPED_ITSELF;
-        }
+        REQUIRE_EXTENSION("cl_khr_external_memory_opaque_fd");
 #endif
+
+#ifdef VULKAN_IS_SUPPORTED
+        cl_int errNum = CL_SUCCESS;
 
         std::vector<VulkanExternalSemaphoreHandleType>
             supportedExternalSemaphores =
@@ -499,6 +480,9 @@ struct ConsistencyExternalSemaphoreTest : public VulkanTestBase
         }
 
         return TEST_PASS;
+#else
+        return TEST_FAIL;
+#endif
     }
 };
 

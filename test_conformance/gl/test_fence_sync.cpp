@@ -14,8 +14,11 @@
 // limitations under the License.
 //
 #include "testBase.h"
-#include "gl/setup.h"
 #include "harness/genericThread.h"
+#include "testHarness.h"
+
+#ifdef GL_IS_SUPPORTED
+#include "gl/setup.h"
 
 #if defined(__APPLE__)
 #include <OpenGL/glu.h>
@@ -710,19 +713,16 @@ int test_fence_sync_single(cl_device_id device, cl_context context,
     glDeleteVertexArrays(1, &vao);
     return 0;
 }
+#endif
 
 int test_fence_sync(cl_device_id device, cl_context context,
                     cl_command_queue queue, int numElements)
 {
+    REQUIRE_EXTENSION("cl_khr_gl_event");
+
+#ifdef GL_IS_SUPPORTED
     GLint vs_count = 0;
     cl_device_id *device_list = NULL;
-
-    if (!is_extension_available(device, "cl_khr_gl_event"))
-    {
-        log_info("NOTE: cl_khr_gl_event extension not present on this device; "
-                 "skipping fence sync test\n");
-        return 0;
-    }
 #ifdef __APPLE__
     CGLContextObj ctx = CGLGetCurrentContext();
     CGLPixelFormatObj pix = CGLGetPixelFormat(ctx);
@@ -811,4 +811,7 @@ int test_fence_sync(cl_device_id device, cl_context context,
     free(device_list);
 
     return any_failed;
+#else
+    return TEST_FAIL;
+#endif
 }
