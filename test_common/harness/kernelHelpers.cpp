@@ -1762,7 +1762,11 @@ bool poll_until(unsigned timeout_ms, unsigned interval_ms,
         {
             break;
         }
+#ifdef _WIN32
+        Sleep(interval_ms);
+#else
         usleep(interval_ms * 1000);
+#endif
         time_spent_ms += interval_ms;
     }
 
