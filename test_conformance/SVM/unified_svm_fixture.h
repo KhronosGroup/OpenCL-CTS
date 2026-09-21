@@ -22,12 +22,12 @@
 constexpr cl_bitfield PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR =
     ((cl_bitfield)1 << 63);
 
-typedef cl_properties cl_svm_memcpy_properties_khr;
+typedef cl_properties cl_svm_copy_properties_khr;
 
 // clang-format off
 typedef cl_int CL_API_CALL clEnqueueSVMMemcpyWithPropertiesKHR_t(
                                 cl_command_queue command_queue,
-                                const cl_svm_memcpy_properties_khr *properties,
+                                const cl_svm_copy_properties_khr *properties,
                                 cl_bool blocking_copy, void *dst_ptr,
                                 const void *src_ptr, size_t size,
                                 cl_uint num_events_in_wait_list,
