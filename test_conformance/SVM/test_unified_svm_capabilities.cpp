@@ -272,7 +272,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
 
     cl_int test_CL_SVM_CAPABILITY_DEVICE_READ_KHR(cl_uint typeIndex)
     {
-        cl_int err;
+        cl_int err, value, check;
 
         // setup
         auto mem = get_usvm_wrapper<cl_int>(typeIndex);
@@ -285,17 +285,22 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
             test_error(err, "could not create CopyMemory kernel");
         }
 
-        // test reading via memcpy:
-        cl_int value = genrand_int32(d);
-        err = mem->write(value);
-        test_error(err, "could not write to usvm memory");
+        // test reading via memcpy
+        if (deviceUSVMCaps[typeIndex]
+            & CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR)
+        {
+            value = genrand_int32(d);
+            err = mem->write(value);
+            test_error(err, "could not write to usvm memory");
 
-        cl_int check;
-        err = mem->read(check);
-        test_error(err, "could not read from usvm memory with memcpy");
+            err = clEnqueueSVMMemcpyWithPropertiesKHR(
+                queue, NULL, CL_TRUE, &check, mem->get_ptr(), sizeof(value), 0,
+                nullptr, nullptr);
+            test_error(err, "could not read from usvm memory with memcpy");
 
-        test_assert_error(check == value,
-                          "read value with memcpy does not match");
+            test_assert_error(check == value,
+                              "read value with memcpy does not match");
+        }
 
         // test reading via kernel
         value = genrand_int32(d);
@@ -361,7 +366,8 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
                           "read value with memfill does not match");
 
         // test writing via memcpy
-        if (mem->getCapabilities() & CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR)
+        if (deviceUSVMCaps[typeIndex]
+            & CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR)
         {
             value = genrand_int32(d);
             err = clEnqueueSVMMemcpyWithPropertiesKHR(
