@@ -22,6 +22,21 @@
 constexpr cl_bitfield PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR =
     ((cl_bitfield)1 << 63);
 
+typedef cl_properties cl_svm_copy_properties_khr;
+
+// clang-format off
+typedef cl_int CL_API_CALL clEnqueueSVMMemcpyWithPropertiesKHR_t(
+                                cl_command_queue command_queue,
+                                const cl_svm_copy_properties_khr *properties,
+                                cl_bool blocking_copy, void *dst_ptr,
+                                const void *src_ptr, size_t size,
+                                cl_uint num_events_in_wait_list,
+                                const cl_event *event_wait_list,
+                                cl_event *event);
+typedef clEnqueueSVMMemcpyWithPropertiesKHR_t
+    *clEnqueueSVMMemcpyWithPropertiesKHR_fn;
+// clang-format on
+
 static inline void parseSVMAllocProperties(
     std::vector<cl_svm_alloc_properties_khr> props, cl_device_id& device,
     cl_svm_alloc_access_flags_khr& accessFlags, size_t& alignment)
@@ -60,22 +75,29 @@ static inline void parseSVMAllocProperties(
 template <typename T> class USVMWrapper {
 public:
     USVMWrapper(cl_context context_, cl_device_id device_,
-                cl_command_queue queue_, cl_uint typeIndex_,
-                cl_svm_capabilities_khr caps_, size_t deviceMaxAlignment_,
+                cl_command_queue queue_, cl_kernel kernel_copy_,
+                cl_uint typeIndex_, cl_svm_capabilities_khr caps_,
+                size_t deviceMaxAlignment_,
                 clSVMAllocWithPropertiesKHR_fn clSVMAllocWithPropertiesKHR_,
                 clSVMFreeWithPropertiesKHR_fn clSVMFreeWithPropertiesKHR_,
                 clGetSVMPointerInfoKHR_fn clGetSVMPointerInfoKHR_,
-                clGetSVMSuggestedTypeIndexKHR_fn clGetSVMSuggestedTypeIndexKHR_)
+                clGetSVMSuggestedTypeIndexKHR_fn clGetSVMSuggestedTypeIndexKHR_,
+                clEnqueueSVMMemcpyWithPropertiesKHR_fn
+                    clEnqueueSVMMemcpyWithPropertiesKHR_)
         : context(context_), device(device_), queue(queue_),
-          typeIndex(typeIndex_), caps(caps_),
+          kernel_copy(kernel_copy_), typeIndex(typeIndex_), caps(caps_),
           deviceMaxAlignment(deviceMaxAlignment_),
           clSVMAllocWithPropertiesKHR(clSVMAllocWithPropertiesKHR_),
           clSVMFreeWithPropertiesKHR(clSVMFreeWithPropertiesKHR_),
           clGetSVMPointerInfoKHR(clGetSVMPointerInfoKHR_),
-          clGetSVMSuggestedTypeIndexKHR(clGetSVMSuggestedTypeIndexKHR_)
+          clGetSVMSuggestedTypeIndexKHR(clGetSVMSuggestedTypeIndexKHR_),
+          clEnqueueSVMMemcpyWithPropertiesKHR(
+              clEnqueueSVMMemcpyWithPropertiesKHR_)
     {}
 
     ~USVMWrapper() { free(); }
+
+    cl_svm_capabilities_khr getCapabilities() { return caps; }
 
     cl_int allocate(const size_t count,
                     const std::vector<cl_svm_alloc_properties_khr> props_ = {})
@@ -184,11 +206,32 @@ public:
             err = clFinish(queue);
             test_error(err, "clFinish failed");
         }
+        else if ((caps & CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR)
+                 && (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR))
+        {
+            err = clEnqueueSVMMemcpyWithPropertiesKHR(
+                queue, NULL, CL_TRUE, data + offset, source, count * sizeof(T),
+                0, nullptr, nullptr);
+            test_error(err, "clEnqueueSVMMemcpyWithPropertiesKHR failed");
+        }
         else if (caps & CL_SVM_CAPABILITY_DEVICE_WRITE_KHR)
         {
-            err = clEnqueueSVMMemcpy(queue, CL_TRUE, data + offset, source,
-                                     count * sizeof(T), 0, nullptr, nullptr);
-            test_error(err, "clEnqueueSVMMemcpy failed");
+            clMemWrapper source_obj =
+                clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
+                               count * sizeof(T), (void*)source, &err);
+            test_error(err, "could not create source buffer");
+            err |= clSetKernelArgSVMPointer(kernel_copy, 0, (data + offset));
+            err |=
+                clSetKernelArg(kernel_copy, 1, sizeof(source_obj), &source_obj);
+            test_error(err, "could not set kernel arguments");
+            size_t global_size = count * sizeof(T);
+            err = clEnqueueNDRangeKernel(queue, kernel_copy, 1, nullptr,
+                                         &global_size, nullptr, 0, nullptr,
+                                         nullptr);
+            test_error(
+                err, "clEnqueueNDRangeKernel failed. Write operation failed.");
+            err = clFinish(queue);
+            test_error(err, "clFinish failed.");
         }
         else
         {
@@ -237,11 +280,35 @@ public:
             err = clFinish(queue);
             test_error(err, "clFinish failed");
         }
+        else if ((caps & CL_SVM_CAPABILITY_SINGLE_ADDRESS_SPACE_KHR)
+                 && (caps & CL_SVM_CAPABILITY_DEVICE_READ_KHR))
+        {
+            err = clEnqueueSVMMemcpyWithPropertiesKHR(
+                queue, NULL, CL_TRUE, dst, data + offset, count * sizeof(T), 0,
+                nullptr, nullptr);
+            test_error(err, "clEnqueueSVMMemcpyWithPropertiesKHR failed");
+        }
         else if (caps & CL_SVM_CAPABILITY_DEVICE_READ_KHR)
         {
-            err = clEnqueueSVMMemcpy(queue, CL_TRUE, dst, data + offset,
-                                     count * sizeof(T), 0, nullptr, nullptr);
-            test_error(err, "clEnqueueSVMMemcpy failed");
+            clMemWrapper dst_obj =
+                clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                               count * sizeof(T), (void*)dst, &err);
+            test_error(err, "could not create dst buffer");
+            err |= clSetKernelArg(kernel_copy, 0, sizeof(dst_obj), &dst_obj);
+            err |= clSetKernelArgSVMPointer(kernel_copy, 1, &data[offset]);
+            test_error(err, "could not set kernel arguments");
+            size_t global_size = count * sizeof(T);
+            err = clEnqueueNDRangeKernel(queue, kernel_copy, 1, nullptr,
+                                         &global_size, nullptr, 0, nullptr,
+                                         nullptr);
+            test_error(err, "clEnqueueNDRangeKernel failed.");
+            err = clFinish(queue);
+            test_error(err, "clFinish failed.");
+            err = clEnqueueReadBuffer(queue, dst_obj, CL_TRUE, 0,
+                                      count * sizeof(T), dst, 0, nullptr,
+                                      nullptr);
+            test_error(err,
+                       "clEnqueueReadBuffer failed. Read operation failed.");
         }
         else
         {
@@ -266,6 +333,7 @@ private:
     cl_context context = nullptr;
     cl_device_id device = nullptr;
     cl_command_queue queue = nullptr;
+    cl_kernel kernel_copy = nullptr;
     cl_uint typeIndex = 0;
     cl_svm_capabilities_khr caps = 0;
     size_t deviceMaxAlignment = 0;
@@ -274,6 +342,8 @@ private:
     clSVMFreeWithPropertiesKHR_fn clSVMFreeWithPropertiesKHR = nullptr;
     clGetSVMPointerInfoKHR_fn clGetSVMPointerInfoKHR = nullptr;
     clGetSVMSuggestedTypeIndexKHR_fn clGetSVMSuggestedTypeIndexKHR = nullptr;
+    clEnqueueSVMMemcpyWithPropertiesKHR_fn clEnqueueSVMMemcpyWithPropertiesKHR =
+        nullptr;
 
     T* data = nullptr;
 };
@@ -289,6 +359,18 @@ struct UnifiedSVMBase
     virtual cl_int setup()
     {
         cl_int err;
+
+        const char* programString = R"(
+            kernel void kernel_copy(global unsigned char* dst, global unsigned char* src)
+            {
+                dst[get_global_id(0)] = src[get_global_id(0)];
+            }
+        )";
+
+        clProgramWrapper program;
+        err = create_single_kernel_helper(context, &program, &kernel_copy, 1,
+                                          &programString, "kernel_copy");
+        test_error(err, "could not create copy kernel");
 
         cl_platform_id platform{};
         err = clGetDeviceInfo(device, CL_DEVICE_PLATFORM,
@@ -386,6 +468,14 @@ struct UnifiedSVMBase
                               "clGetSVMSuggestedTypeIndexKHR not found",
                               CL_INVALID_OPERATION);
 
+        clEnqueueSVMMemcpyWithPropertiesKHR =
+            (clEnqueueSVMMemcpyWithPropertiesKHR_fn)
+                clGetExtensionFunctionAddressForPlatform(
+                    platform, "clEnqueueSVMMemcpyWithPropertiesKHR");
+        test_assert_error_ret(clEnqueueSVMMemcpyWithPropertiesKHR != nullptr,
+                              "clEnqueueSVMMemcpyWithPropertiesKHR not found",
+                              CL_INVALID_OPERATION);
+
         // The maximum supported alignment is equal to the size of the largest
         // data type supported by the device
         if (gHasLong || is_extension_available(device, "cl_khr_fp64"))
@@ -406,16 +496,18 @@ struct UnifiedSVMBase
     std::unique_ptr<USVMWrapper<T>> get_usvm_wrapper(cl_uint typeIndex)
     {
         return std::unique_ptr<USVMWrapper<T>>(new USVMWrapper<T>(
-            context, device, queue, typeIndex, deviceUSVMCaps[typeIndex],
-            deviceMaxAlignment, clSVMAllocWithPropertiesKHR,
-            clSVMFreeWithPropertiesKHR, clGetSVMPointerInfoKHR,
-            clGetSVMSuggestedTypeIndexKHR));
+            context, device, queue, kernel_copy, typeIndex,
+            deviceUSVMCaps[typeIndex], deviceMaxAlignment,
+            clSVMAllocWithPropertiesKHR, clSVMFreeWithPropertiesKHR,
+            clGetSVMPointerInfoKHR, clGetSVMSuggestedTypeIndexKHR,
+            clEnqueueSVMMemcpyWithPropertiesKHR));
     }
 
     MTdataHolder d;
     cl_context context = nullptr;
     cl_device_id device = nullptr;
     cl_command_queue queue = nullptr;
+    clKernelWrapper kernel_copy = nullptr;
     int num_elements = 0;
 
     std::vector<cl_svm_capabilities_khr> platformUSVMCaps;
@@ -426,4 +518,6 @@ struct UnifiedSVMBase
     clSVMFreeWithPropertiesKHR_fn clSVMFreeWithPropertiesKHR = nullptr;
     clGetSVMPointerInfoKHR_fn clGetSVMPointerInfoKHR = nullptr;
     clGetSVMSuggestedTypeIndexKHR_fn clGetSVMSuggestedTypeIndexKHR = nullptr;
+    clEnqueueSVMMemcpyWithPropertiesKHR_fn clEnqueueSVMMemcpyWithPropertiesKHR =
+        nullptr;
 };
