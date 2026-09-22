@@ -201,17 +201,13 @@ void ProgramGenerator::genConstants()
             break;
         case CoopMatOp::copy_workgroup:
             spirv_text << R"(
-    %bool = OpTypeBool
-
     %numElems = OpConstant %i32 )"
                        << variant.output.elementCount() << R"(
     %arrayTy = OpTypeArray %)"
                        << showScalarType(variant.output.elementType)
                        << R"( %numElems
-    %arrayPtr = OpTypePointer Function %arrayTy
     %workgroupPtr = OpTypePointer Workgroup %arrayTy
-    %sharedBufferLoad = OpVariable %workgroupPtr Workgroup
-    %sharedBufferStore = OpVariable %workgroupPtr Workgroup
+    %sharedBuffer = OpVariable %workgroupPtr Workgroup
     %zero = OpConstant %i32 0
     %scopeWorkgroup = OpConstant %i32 2
     %workAcquire  = OpConstant %i32 0x108
@@ -416,25 +412,12 @@ void ProgramGenerator::genBody()
         case CoopMatOp::copy_workgroup:
 
             spirv_text << R"(
-    %scalarPtrLoad = OpAccessChain %workGroupPtrFloat %sharedBufferLoad %zero
-    %scalarPtrStore = OpAccessChain %workGroupPtrFloat %sharedBufferStore %zero
+    %scalarPtr = OpAccessChain %workGroupPtrFloat %sharedBuffer %zero
 
     %matSrc = OpCooperativeMatrixLoadKHR )" << getResTy() << R"( %in)" << variant.order << R"( %layout)" << variant.order << R"( %stride)" << variant.order<< R"(
-    OpCooperativeMatrixStoreKHR %scalarPtrLoad %matSrc)" << R"( %layout)" << variant.order << R"( %stride)" << variant.order << R"(
-
-    %slIsZero = OpIEqual %bool %zero %slid
-    %sgIsZero = OpIEqual %bool %zero %sgid
-    %branch   = OpLogicalAnd %bool %sgIsZero %slIsZero
-    OpSelectionMerge %falseLabel None
-    OpBranchConditional %branch %trueLabel %falseLabel
-    %trueLabel = OpLabel
-
-    OpCopyMemory %sharedBufferStore %sharedBufferLoad
-
-    OpBranch %falseLabel
-    %falseLabel = OpLabel
+    OpCooperativeMatrixStoreKHR %scalarPtr %matSrc)" << R"( %layout)" << variant.order << R"( %stride)" << variant.order << R"(
     OpControlBarrier %scopeWorkgroup %scopeWorkgroup %workAcquire
-    %matStored = OpCooperativeMatrixLoadKHR )" << getResTy() << R"( %scalarPtrStore)" << R"( %layout)" << variant.order << R"( %stride)" << variant.order<< R"(
+    %matStored = OpCooperativeMatrixLoadKHR )" << getResTy() << R"( %scalarPtr)" << R"( %layout)" << variant.order << R"( %stride)" << variant.order<< R"(
     OpCooperativeMatrixStoreKHR %out %matStored %layoutRes %strideRes)";
             break;
 
@@ -803,15 +786,11 @@ bool ProgramGenerator::generateSpirv(Program *prog_out)
     spirv_text << R"(
     OpExtension "SPV_KHR_cooperative_matrix"
     OpMemoryModel Physical)" << gTestContext->addrWidth << R"( OpenCL
-    OpEntryPoint Kernel %fnDef "testCoopMat" %builtin_slid %builtin_sgid
+    OpEntryPoint Kernel %fnDef "testCoopMat" %builtin_slid
 
     OpDecorate %builtin_slid LinkageAttributes "builtin_slid" Import
     OpDecorate %builtin_slid Constant
     OpDecorate %builtin_slid BuiltIn SubgroupLocalInvocationId
-
-    OpDecorate %builtin_sgid LinkageAttributes "builtin_sgid" Import
-    OpDecorate %builtin_sgid Constant
-    OpDecorate %builtin_sgid BuiltIn SubgroupId
 
     %void = OpTypeVoid
 )";
@@ -821,7 +800,6 @@ bool ProgramGenerator::generateSpirv(Program *prog_out)
     const std::string sizetType("%i" + gTestContext->addrWidth);
     spirv_text << R"(
     %builtin_slid = OpVariable %iptr_i32 Input
-    %builtin_sgid = OpVariable %iptr_i32 Input
 )";
 
     // sizeM, sizeK, sizeN.
@@ -862,7 +840,6 @@ bool ProgramGenerator::generateSpirv(Program *prog_out)
 
     spirv_text << R"(
     %slid = OpLoad %i32 %builtin_slid Aligned 32
-    %sgid = OpLoad %i32 %builtin_sgid Aligned 32
     %out_slid_offset = OpInBoundsPtrAccessChain %ptr_)" << bufferTypeString(variant.outputDesc) << R"( %out %slid
 )";
 
