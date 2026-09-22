@@ -616,7 +616,7 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
                 std::set<int> active_work_items;
                 for (i = 0; i < n; ++i)
                 {
-                    if (work_items_mask.test(i))
+                    if (work_item_active(work_items_mask, i))
                     {
                         active_work_items.insert(i);
                     }
@@ -720,7 +720,7 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
 
                 for (i = 0; i < n; ++i)
                 {
-                    if (work_items_mask.test(i))
+                    if (work_item_active(work_items_mask, i))
                     {
                         if (catch_frist_active == -1)
                         {
@@ -834,7 +834,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
                 int catch_frist_active = -1;
                 for (i = 0; i < n; ++i)
                 {
-                    if (work_items_mask.test(i))
+                    if (work_item_active(work_items_mask, i))
                     {
                         if (catch_frist_active == -1)
                         {
