@@ -371,6 +371,28 @@
             "op_spec_constant_compile_twice": "pass"
         }
     },
+    "test_subgroups": {
+        "": {
+            "barrier_functions_core": "pass",
+            "barrier_functions_ext": "fail",
+            "sub_group_info_core": "pass",
+            "sub_group_info_ext": "fail",
+            "work_item_functions_core": "pass",
+            "work_item_functions_ext": "pass",
+            "subgroup_functions_core": "pass",
+            "subgroup_functions_ext": "fail",
+            "ifp_core": "skip",
+            "ifp_ext": "fail",
+            "subgroup_functions_extended_types": "skip",
+            "subgroup_functions_non_uniform_vote": "skip",
+            "subgroup_functions_non_uniform_arithmetic": "skip",
+            "subgroup_functions_ballot": "fail",
+            "subgroup_functions_clustered_reduce": "skip",
+            "subgroup_functions_shuffle": "pass",
+            "subgroup_functions_shuffle_relative": "skip",
+            "subgroup_functions_rotate": "skip"
+        }
+    },
     "test_vectors": {
         "--wimpy": {
             "step_type": "pass",
