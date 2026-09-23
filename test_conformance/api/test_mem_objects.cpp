@@ -16,6 +16,8 @@
 #include "testBase.h"
 
 static volatile cl_int sDestructorIndex;
+#include <chrono>
+#include <thread>
 
 void CL_CALLBACK mem_destructor_callback(cl_mem memObject, void *userData)
 {
@@ -60,11 +62,7 @@ int test_mem_object_destructor_callback_single(clMemWrapper &memObject)
         int wait = 0;
         while (0 == callbackOrders[i])
         {
-#ifdef _WIN32
-            Sleep(100); // 1/10th second
-#else
-            usleep(100000); // 1/10th second
-#endif
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
             if (++wait >= 10 * 10)
             {
                 log_error("\tERROR: Callback %d was not called within 10 "
