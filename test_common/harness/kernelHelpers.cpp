@@ -30,6 +30,8 @@
 #include <iomanip>
 #include <mutex>
 #include <algorithm>
+#include <chrono>
+#include <thread>
 
 #if defined(_WIN32)
 std::string slash = "\\";
@@ -1762,11 +1764,7 @@ bool poll_until(unsigned timeout_ms, unsigned interval_ms,
         {
             break;
         }
-#ifdef _WIN32
-        Sleep(interval_ms);
-#else
-        usleep(interval_ms * 1000);
-#endif
+        std::this_thread::sleep_for(std::chrono::milliseconds(interval_ms));
         time_spent_ms += interval_ms;
     }
 
