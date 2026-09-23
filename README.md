@@ -106,9 +106,14 @@ require compilation, these are:
 
 ### Building CTS on Windows
 
-For Windows environments, CTS can be built using [MSYS2](https://www.msys2.org/),
-the MinGW-w64 (GCC) toolchain, and Ninja.
-All commands in the following sections should be run from an MSYS2 MinGW64 shell.
+On Windows, CTS can be built with the MSVC compiler by following the same instructions used for
+Linux. However, certain math-related subtests are known to have issues when built with MSVC due
+to precision limitations. For example, some `FP64` tests may fail because `long double` is treated
+as equivalent to `double` in MSVC.
+To avoid these issues, CTS can also be built using the native Windows toolchain provided 
+by [MSYS2](https://www.msys2.org/), along with MinGW-w64 (GCC) and Ninja.
+
+When using GCC, all commands in the following sections should be run from an MSYS2 MinGW64 shell.
 
 #### Prerequisites
 
@@ -169,8 +174,8 @@ From cmd.exe:
 
 ```cmd
 set PATH=C:\msys64\mingw64\bin;%PATH%
-cd OpenCL-CTS\build\test_conformance\basic
-test_basic.exe
+cd OpenCL-CTS\build\test_conformance\math_brute_force
+test_bruteforce.exe
 ```
 
 Alternatively, launch from the MSYS2 shell via cmd.exe:
