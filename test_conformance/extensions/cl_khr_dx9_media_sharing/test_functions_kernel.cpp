@@ -340,15 +340,16 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
 
                 if (imageResOut[0] != planeWidth)
                 {
-                    log_error("Invalid width value, test = %i, expected = %i\n",
-                              imageResOut[0], planeWidth);
+                    log_error(
+                        "Invalid width value, test = %i, expected = %zu\n",
+                        imageResOut[0], planeWidth);
                     result.ResultSub(CResult::TEST_FAIL);
                 }
 
                 if (imageResOut[1] != planeHeight)
                 {
                     log_error(
-                        "Invalid height value, test = %i, expected = %i\n",
+                        "Invalid height value, test = %i, expected = %zu\n",
                         imageResOut[1], planeHeight);
                     result.ResultSub(CResult::TEST_FAIL);
                 }
@@ -370,7 +371,7 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
                             width, height))
             {
                 log_error(
-                    "Frame idx: %i, OCL objects are different than expected\n",
+                    "Frame idx: %zu, OCL objects are different than expected\n",
                     frameIdx);
                 result.ResultSub(CResult::TEST_FAIL);
             }
@@ -406,9 +407,9 @@ int kernel_functions(cl_device_id deviceID, cl_context context,
             if (!YUVCompare(surfaceFormat, bufferOut,
                             bufferExp[frameIdx % FRAME_NUM], width, height))
             {
-                log_error(
-                    "Frame idx: %i, media surface is different than expected\n",
-                    frameIdx);
+                log_error("Frame idx: %zu, media surface is different than "
+                          "expected\n",
+                          frameIdx);
                 result.ResultSub(CResult::TEST_FAIL);
             }
         }
