@@ -18,6 +18,8 @@
 
 #include <vector>
 #include <atomic>
+#include <chrono>
+#include <thread>
 
 #if !defined(_WIN32)
 #include <unistd.h>
@@ -323,11 +325,7 @@ REGISTER_TEST(svm_enqueue_api)
     // wait for the callback
     while (data.status.load(std::memory_order_acquire) == 0)
     {
-#ifdef _WIN32
-        Sleep(1);
-#else
-        usleep(1);
-#endif
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
     // check if number of SVM pointers returned in the callback matches with
