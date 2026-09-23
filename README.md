@@ -178,10 +178,12 @@ cd OpenCL-CTS\build\test_conformance\math_brute_force
 test_bruteforce.exe
 ```
 
-Alternatively, launch from the MSYS2 shell via cmd.exe:
+Alternatively, launch from the MSYS2 shell:
 
 ```sh
-cmd.exe //c "set PATH=C:\\msys64\\mingw64\\bin;%PATH% && test_conformance\\basic\\test_basic.exe"
+export PATH=/c/msys64/mingw64/bin:$PATH
+cd ./OpenCL-CTS/build/test_conformance/math_brute_force
+./test_bruteforce.exe
 ```
 
 ## Generating a Conformance Report
