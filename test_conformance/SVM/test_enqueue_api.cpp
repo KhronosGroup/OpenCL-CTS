@@ -218,7 +218,7 @@ REGISTER_TEST(svm_enqueue_api)
                 clEnqueueSVMUnmap(queue, dstBuffer, 0, nullptr, &eventUnmap[1]);
             test_error(error, "clEnqueueSVMUnmap dstBuffer failed");
 
-            error = clEnqueueSVMMemFill(queue, srcBuffer, &fillData1[0],
+            error = clEnqueueSVMMemFill(queue, srcBuffer, &fillData0[0],
                                         typeSizes[i], data_size / 2, 0, 0, 0);
             test_error(error, "clEnqueueSVMMemFill failed");
 
