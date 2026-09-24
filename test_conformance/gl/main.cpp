@@ -23,7 +23,9 @@
 #endif
 
 #include "procs.h"
+#ifdef GL_IS_SUPPORTED
 #include "gl/setup.h"
+#endif
 #include "harness/testHarness.h"
 #include "harness/parseParameters.h"
 
@@ -139,11 +141,14 @@ test_definition test_list[] = { TEST_FN_REDIRECT(buffers),
                                 TEST_FN_REDIRECT(queries) };
 
 test_definition test_list32[] = {
+#ifdef GL_VERSION_3_2
     TEST_FN_REDIRECT(images_read_texturebuffer),
     TEST_FN_REDIRECT(images_write_texturebuffer),
     TEST_FN_REDIRECT(images_texturebuffer_getinfo),
+#endif
 
     TEST_FN_REDIRECT(fence_sync),
+#ifdef GL_VERSION_3_2
     TEST_FN_REDIRECT(images_read_2D_depth),
     TEST_FN_REDIRECT(images_write_2D_depth),
     TEST_FN_REDIRECT(images_read_2Darray_depth),
@@ -152,6 +157,7 @@ test_definition test_list32[] = {
     TEST_FN_REDIRECT(images_read_2Darray_multisample),
     TEST_FN_REDIRECT(image_methods_depth),
     TEST_FN_REDIRECT(image_methods_multisample)
+#endif
 };
 
 const int test_num = ARRAY_SIZE(test_list);
@@ -160,8 +166,6 @@ const int test_num32 = ARRAY_SIZE(test_list32);
 int main(int argc, const char *argv[])
 {
     gTestRounding = true;
-    int error = 0;
-    int numErrors = 0;
 
     test_start();
     argc = parseCommonParam(argc, argv);
@@ -170,6 +174,24 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
+    if (gListTests)
+    {
+        log_info("Available 2.x tests:\n");
+        for (int i = 0; i < test_num; i++)
+            log_info("\t%s\n", test_list[i].name);
+
+        log_info("Available 3.2 tests:\n");
+        for (int i = 0; i < test_num32; i++)
+            log_info("\t%s\n", test_list32[i].name);
+
+        log_info("Note: Any 3.2 test names must follow 2.1 test names on the "
+                 "command line.\n");
+        log_info("Use environment variables to specify desired device.\n");
+
+        return 0;
+    }
+
+#ifdef GL_IS_SUPPORTED
     cl_device_type requestedDeviceType = CL_DEVICE_TYPE_DEFAULT;
 
     /* Do we have a CPU/GPU specification? */
@@ -200,23 +222,6 @@ int main(int argc, const char *argv[])
         }
     }
 
-    if (gListTests)
-    {
-        log_info("Available 2.x tests:\n");
-        for (int i = 0; i < test_num; i++)
-            log_info("\t%s\n", test_list[i].name);
-
-        log_info("Available 3.2 tests:\n");
-        for (int i = 0; i < test_num32; i++)
-            log_info("\t%s\n", test_list32[i].name);
-
-        log_info("Note: Any 3.2 test names must follow 2.1 test names on the "
-                 "command line.\n");
-        log_info("Use environment variables to specify desired device.\n");
-
-        return 0;
-    }
-
     // Check to see if any 2.x or 3.2 test names were specified on the command
     // line.
     unsigned first_32_testname = 0;
@@ -229,6 +234,8 @@ int main(int argc, const char *argv[])
                 break;
             }
 
+    int error = 0;
+    int numErrors = 0;
     // Create the environment for the test.
     GLEnvironment *glEnv = GLEnvironment::Instance();
 
@@ -425,4 +432,7 @@ int main(int argc, const char *argv[])
 
     // All done.
     return numErrors;
+#else
+    return 0;
+#endif
 }

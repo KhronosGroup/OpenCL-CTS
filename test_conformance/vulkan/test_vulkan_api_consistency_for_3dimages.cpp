@@ -14,9 +14,12 @@
 // limitations under the License.
 //
 
+#ifdef VULKAN_IS_SUPPORTED
 #include <vulkan_interop_common.hpp>
 #include <opencl_vulkan_wrapper.hpp>
 #include <vulkan_wrapper.hpp>
+#endif
+
 #if !defined(__APPLE__)
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
@@ -36,7 +39,6 @@
 #include <string>
 
 #include "vulkan_test_base.h"
-#include "opencl_vulkan_wrapper.hpp"
 
 namespace {
 
@@ -49,23 +51,15 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
 
     cl_int Run() override
     {
+#ifdef _WIN32
+        REQUIRE_EXTENSION("cl_khr_external_memory_win32");
+#else
+        REQUIRE_EXTENSION("cl_khr_external_memory_opaque_fd");
+#endif
+
+#ifdef VULKAN_IS_SUPPORTED
         cl_int errNum;
 
-#ifdef _WIN32
-        if (!is_extension_available(device, "cl_khr_external_memory_win32"))
-        {
-            throw std::runtime_error(
-                "Device does not support"
-                "cl_khr_external_memory_win32 extension \n");
-        }
-#else
-        if (!is_extension_available(device, "cl_khr_external_memory_opaque_fd"))
-        {
-            log_info("Device does not support "
-                     "cl_khr_external_memory_opaque_fd extension \n");
-            return TEST_SKIPPED_ITSELF;
-        }
-#endif
         uint32_t width = 256;
         uint32_t height = 16;
         uint32_t depth = 10;
@@ -196,6 +190,9 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
         image.reset();
 
         return TEST_PASS;
+#else
+        return TEST_FAIL;
+#endif
     }
 };
 

@@ -16,11 +16,16 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include "harness.h"
 #include "harness/testHarness.h"
+#include "harness/deviceInfo.h"
+
+#ifdef D3D10_IS_SUPPORTED
+#include "harness.h"
+#endif
 
 namespace {
 
+#ifdef D3D10_IS_SUPPORTED
 struct D3D10SuiteState
 {
     bool initialized = false;
@@ -110,15 +115,16 @@ test_status InitState(cl_device_id selected_device)
     return State.device_to_target.count(selected_device) ? TEST_PASS
                                                          : TEST_SKIPPED_ITSELF;
 }
+#endif
 
 test_status InitD3D10Device(cl_device_id device)
 {
-    if (!is_extension_available(device, "cl_khr_d3d10_sharing"))
-    {
-        return TEST_SKIPPED_ITSELF;
-    }
-
+    REQUIRE_EXTENSION("cl_khr_d3d10_sharing");
+#ifdef D3D10_IS_SUPPORTED
     return InitState(device);
+#else
+    return TEST_FAIL;
+#endif
 }
 
 } // namespace
@@ -130,6 +136,7 @@ int main(int argc, const char* argv[])
         test_registry::getInstance().definitions(), true, 0, InitD3D10Device);
 }
 
+#ifdef D3D10_IS_SUPPORTED
 template <typename TargetFn>
 test_status RunD3D10TargetTest(cl_device_id device, TargetFn target_fn)
 {
@@ -189,26 +196,36 @@ test_status RunD3D10InteropTest(cl_device_id device, TargetFn target_fn)
             return TEST_PASS;
         });
 }
+#endif
 
 REGISTER_TEST(enumeration)
 {
+#ifdef D3D10_IS_SUPPORTED
     return RunD3D10TargetTest(
         device, [&](const DirectX10Wrapper::DeviceEntry* target) {
             cl_uint num_devices = 0;
             TestAdapterEnumeration(State.platform, target->dx_adapter.Get(),
                                    target->dx_device.Get(), &num_devices);
         });
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 REGISTER_TEST(create_context)
 {
+#ifdef D3D10_IS_SUPPORTED
     return RunD3D10InteropTest(device,
                                [](const DirectX10Wrapper::DeviceEntry*,
                                   cl_context, cl_command_queue) {});
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 REGISTER_TEST(buffer)
 {
+#ifdef D3D10_IS_SUPPORTED
     return RunD3D10InteropTest(
         device,
         [](const DirectX10Wrapper::DeviceEntry* target,
@@ -216,10 +233,14 @@ REGISTER_TEST(buffer)
             TestDeviceBuffer(interop_context, interop_queue,
                              target->dx_device.Get());
         });
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 REGISTER_TEST(texture2d)
 {
+#ifdef D3D10_IS_SUPPORTED
     return RunD3D10InteropTest(
         device,
         [device](const DirectX10Wrapper::DeviceEntry* target,
@@ -227,10 +248,14 @@ REGISTER_TEST(texture2d)
             TestDeviceTexture2D(device, interop_context, interop_queue,
                                 target->dx_device.Get());
         });
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 REGISTER_TEST(texture3d)
 {
+#ifdef D3D10_IS_SUPPORTED
     return RunD3D10InteropTest(
         device,
         [device](const DirectX10Wrapper::DeviceEntry* target,
@@ -238,10 +263,14 @@ REGISTER_TEST(texture3d)
             TestDeviceTexture3D(device, interop_context, interop_queue,
                                 target->dx_device.Get());
         });
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 REGISTER_TEST(misc)
 {
+#ifdef D3D10_IS_SUPPORTED
     return RunD3D10InteropTest(
         device,
         [device](const DirectX10Wrapper::DeviceEntry* target,
@@ -249,8 +278,12 @@ REGISTER_TEST(misc)
             TestDeviceMisc(device, interop_context, interop_queue,
                            target->dx_device.Get());
         });
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
+#ifdef D3D10_IS_SUPPORTED
 void TestAdapterEnumeration(cl_platform_id platform, IDXGIAdapter* pAdapter, ID3D10Device* pDevice, cl_uint* num_devices)
 {
     cl_uint num_adapter_devices = 0;
@@ -463,3 +496,4 @@ Cleanup:
     }
     return succeeded;
 }
+#endif

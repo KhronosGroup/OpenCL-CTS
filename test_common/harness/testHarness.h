@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <type_traits>
+#include <cinttypes>
 
 class Version {
 public:
@@ -160,6 +161,18 @@ template <typename T> T *register_test(const char *name, Version version)
         {                                                                      \
             log_info(name                                                      \
                      " is not supported on this device. Skipping test.\n");    \
+            return TEST_SKIPPED_ITSELF;                                        \
+        }                                                                      \
+    } while (0)
+
+#define REQUIRE_QUEUE_PROPERTIES(properties)                                   \
+    do                                                                         \
+    {                                                                          \
+        if (!is_queue_properties_available(device, properties))                \
+        {                                                                      \
+            log_info("0x%" PRIx64 " queue properties are not all supported "   \
+                     "on this device. Skipping test.\n",                       \
+                     (cl_command_queue_properties)properties);                 \
             return TEST_SKIPPED_ITSELF;                                        \
         }                                                                      \
     } while (0)
