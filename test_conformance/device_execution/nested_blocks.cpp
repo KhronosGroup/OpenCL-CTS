@@ -338,10 +338,7 @@ REGISTER_TEST(enqueue_nested_blocks)
                "clCreateCommandQueueWithProperties(CL_QUEUE_ON_DEVICE | "
                "CL_QUEUE_ON_DEVICE_DEFAULT) failed");
 
-    kernel_arg args[] =
-    {
-        { sizeof(cl_int), &gNestingLevel }
-    };
+    kernel_arg kargs[] = { { sizeof(cl_int), &gNestingLevel } };
 
     size_t failCnt = 0;
     for(k = 0; k < arr_size(sources_nested_blocks); ++k)
@@ -354,7 +351,11 @@ REGISTER_TEST(enqueue_nested_blocks)
                  arr_size(sources_nested_blocks));
         for(i = 0; i < MAX_GLOBAL_WORK_SIZE; ++i) kernel_results[i] = 0;
 
-        err_ret = run_n_kernel_args(context, queue, sources_nested_blocks[k].src.lines, sources_nested_blocks[k].src.num_lines, sources_nested_blocks[k].src.kernel_name, 0, MAX_GLOBAL_WORK_SIZE, kernel_results, sizeof(kernel_results), arr_size(args), args);
+        err_ret = run_n_kernel_args(
+            context, queue, sources_nested_blocks[k].src.lines,
+            sources_nested_blocks[k].src.num_lines,
+            sources_nested_blocks[k].src.kernel_name, 0, MAX_GLOBAL_WORK_SIZE,
+            kernel_results, sizeof(kernel_results), arr_size(kargs), kargs);
         if(check_error(err_ret, "'%s' kernel execution failed", sources_nested_blocks[k].src.kernel_name)) { res = -1; continue ; }
 
         //check results

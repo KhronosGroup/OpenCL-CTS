@@ -22,8 +22,6 @@ int main(int argc, const char *argv[])
     // for this in the tests themselves, rather than here, where we have a
     // device to query.
     const cl_command_queue_properties queue_properties = 0;
-    return runTestHarnessWithCheck(argc, argv,
-                                   test_registry::getInstance().num_tests(),
-                                   test_registry::getInstance().definitions(),
-                                   false, queue_properties, nullptr);
+    return runTestHarnessWithCheck(argc, argv, false, queue_properties,
+                                   nullptr);
 }
