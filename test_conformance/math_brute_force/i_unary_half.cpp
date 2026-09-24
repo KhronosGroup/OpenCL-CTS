@@ -47,9 +47,10 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
     KernelMatrix kernels;
     const unsigned thread_id = 0; // Test is currently not multithreaded.
     int ftz = f->ftz || 0 == (gHalfCapabilities & CL_FP_DENORM) || gForceFTZ;
-    uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
-    size_t bufferElements = std::min(BUFFER_SIZE / sizeof(cl_int),
-                                     size_t(1ULL << (sizeof(cl_half) * 8)));
+    uint64_t numInputs = 1ULL << 16;
+    uint64_t step =
+        std::min(numInputs, getTestStep(sizeof(cl_int), BUFFER_SIZE));
+    size_t bufferElements = step;
     size_t bufferSizeIn = bufferElements * sizeof(cl_half);
     size_t bufferSizeOut = bufferElements * sizeof(cl_int);
 
@@ -71,14 +72,13 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
     }
     std::vector<float> s(bufferElements);
 
-    for (uint64_t i = 0; i < (1ULL << 16); i += step)
+    for (uint64_t i = 0; i < numInputs; i += step)
     {
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
         cl_ushort *p = (cl_ushort *)gIn;
-
-        for (size_t j = 0; j < bufferElements; j++) p[j] = (cl_ushort)i + j;
+        fillUnaryInput((cl_half *)p, step, i, d, true);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSizeIn, gIn, 0, NULL, NULL)))
