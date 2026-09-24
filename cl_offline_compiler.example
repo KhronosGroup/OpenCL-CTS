@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+
+# from test_common/harness/cl_offline_compiler-interface.txt:
+#
+# The cl_offline_compiler program used for offline compilation must
+# implement the following interface.
+#
+#    usage: cl_offline_compiler --source FILE --output FILE
+#                               --cl-device-info FILE --mode MODE
+#                               -- [BUILD_OPTIONS [BUILD_OPTIONS ...]]
+#
+#    positional arguments:
+#      BUILD_OPTIONS          additional options to pass to the compiler
+#
+#    optional arguments:
+#      --source FILE          OpenCL C source file to compile
+#      --output FILE          SPIR-V or binary file to create
+#      --cl-device-info FILE  OpenCL device info file
+#      --mode                 compilation mode (spir-v or binary)
+#
+# The --cl-device-info file is a list of KEY=VALUE pairs containing device
+# information relevant to the mode of offline compilation in question.
+# It is of the following form:
+#
+#    # OpenCL device info affecting <SPIR-V|binary> offline compilation:
+#    CL_DEVICE_ADDRESS_BITS=<32|64>
+#    CL_DEVICE_EXTENSIONS="<space separated list of CL extensions>"
+#    CL_DEVICE_IL_VERSION="<space separated list of IL versions>"
+#    CL_DEVICE_VERSION="OpenCL <version> <vendor info>"
+#    CL_DEVICE_IMAGE_SUPPORT=<0|1>
+#    CL_DEVICE_NAME="device name"
+
+import argparse
+import subprocess
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--source', type=argparse.FileType('r'), required=True)
+parser.add_argument('--output', type=argparse.FileType('w'), required=True)
+parser.add_argument('--cl-device-info', type=argparse.FileType('r'), required=True)
+parser.add_argument('--mode', type=str, choices=['binary', 'spir-v'], required=True)
+parser.add_argument('build_options', type=str, nargs='*')
+args = parser.parse_args()
+
+target=''
+spirv_extensions=[]
+spirv_max='1.0'
+
+for info in filter(len, args.cl_device_info.readlines()):
+    if info[0] == '#':
+        continue
+    info = info.strip('\r\n')
+    split = info.split('=')
+    key = split[0]
+    value = split[1]
+    match key:
+        case 'CL_DEVICE_ADDRESS_BITS':
+            target = 'spir' + ('64' if value == '64' else '')
+        case 'CL_DEVICE_EXTENSIONS':
+            for ext in value[1:-1].split(' '):
+                match ext:
+                    case 'cl_khr_integer_dot_product':
+                        spirv_extensions.append('+SPV_KHR_integer_dot_product')
+        case 'CL_DEVICE_IL_VERSION':
+            spirv_max = max([ext.replace('SPIR-V_', '') for ext in value[1:-1].split(' ')])
+            spirv_max = '1.2' if spirv_max > '1.2' else spirv_max
+
+clang_args = [
+    'clang',
+    '-emit-llvm',
+    '-O0',
+    '-cl-std=CL3.0',
+    '-Xclang', '-cl-ext=-cl_khr_fp64,-__opencl_c_fp64,-__opencl_c_generic_address_space,-__opencl_c_pipes,-__opencl_c_device_enqueue',
+    '-target', target + '-unknown-unknown',
+    '-o', '/dev/stdout',
+    '-c', args.source.name
+] + args.build_options
+
+spirv_args = [
+    'llvm-spirv',
+    '-o', args.output.name,
+    '--spirv-max-version=' + spirv_max,
+]
+
+if len(spirv_extensions) > 0:
+    spirv_args.append('--spirv-ext=' + ','.join(spirv_extensions))
+
+clang = subprocess.Popen(clang_args, stdout=subprocess.PIPE)
+llvm_spirv = subprocess.Popen(spirv_args, stdin=clang.stdout)
+
+clang.stdout.close()
+llvm_spirv.communicate()
