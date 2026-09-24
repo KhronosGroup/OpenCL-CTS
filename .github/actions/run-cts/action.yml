@@ -1,0 +1,64 @@
+name: 'Run OpenCL-CTS'
+description: 'Run specified test commands and compare results against a golden reference'
+inputs:
+  driver:
+    description: 'Driver name being tested'
+    required: true
+  trigger-text:
+    description: 'Full text containing PR descriptions and commit messages to extract triggers from'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Prepare test commands
+      id: prep
+      shell: bash
+      run: |
+        COMMANDS=$(echo "${{ inputs.trigger-text }}" | grep -oP "^\[run-tests?(?:-${{ inputs.driver }})?:\s*\K[^\]]+" | sort -u || true)
+        if [ -z "$COMMANDS" ]; then
+          echo "No test triggers found for driver '${{ inputs.driver }}'."
+          echo "has_tests=false" >> $GITHUB_OUTPUT
+        else
+          echo "Found test triggers for driver '${{ inputs.driver }}':"
+          echo "$COMMANDS"
+          echo "$COMMANDS" > test_commands.txt
+          echo "has_tests=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Run tests
+      if: steps.prep.outputs.has_tests == 'true'
+      shell: bash
+      run: |
+        export OCL_ICD_ENABLE_TRACE=1
+        export LD_LIBRARY_PATH='${{ github.workspace }}/loader/lib':$LD_LIBRARY_PATH
+        mkdir -p test_results
+        while IFS= read -r cmd; do
+          if [ -n "$cmd" ]; then
+            SAFE_NAME=$(echo "$cmd" | sed -e 's/[^A-Za-z0-9._-]/_/g')
+            RESULT_FILE="test_results/${SAFE_NAME}.json"
+            export CL_CONFORMANCE_RESULTS_FILENAME="$RESULT_FILE"
+            echo "=================================================="
+            echo "Executing: $cmd"
+            echo "Writing JSON result to: $RESULT_FILE"
+            echo "=================================================="
+            ${{ github.workspace }}/install/bin/Release/$cmd || true
+            if [ -f "$RESULT_FILE" ]; then
+              cat "$RESULT_FILE"
+            fi
+          fi
+        done < test_commands.txt
+
+    - name: Check results
+      if: steps.prep.outputs.has_tests == 'true'
+      shell: bash
+      run: |
+        ls test_results
+        GOLDEN_FILE="./ci/${{ inputs.driver }}/golden.json"
+        if [ ! -f "$GOLDEN_FILE" ]; then
+          echo "Golden reference '$GOLDEN_FILE' does not exist."
+          mkdir -p "$(dirname "$GOLDEN_FILE")"
+          echo "{}" > "$GOLDEN_FILE"
+        fi
+        python3 ./ci/compare_results.py \
+          --golden "$GOLDEN_FILE" \
+          --results-dir test_results/
