@@ -83,8 +83,8 @@ find_package(Python3 REQUIRED)
 
 get_property(ALL_TEST_BINARIES GLOBAL PROPERTY CTS_TEST_BINARIES)
 
-add_custom_target(check_csv ALL
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/check_binaries_in_csv.py
+add_custom_target(check_csv
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../ci/check_binaries_in_csv.py
             ${CMAKE_CURRENT_SOURCE_DIR}/opencl_conformance_tests_full.csv
             ${ALL_TEST_BINARIES}
     COMMENT "Checking if all binaries are in CSV"
