@@ -22,5 +22,9 @@
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 #include "harness/rounding_mode.h"
+extern int gUseDataType;
+extern unsigned int gUseVectorSize;
+extern unsigned int gUseStride;
+extern std::vector<ExplicitType> gVecType;
 
 #endif // _testBase_h
