@@ -307,7 +307,8 @@
     },
     "test_printf": {
         "": {
-            "return_value": "pass"
+            "return_value": "pass",
+            "vector": "pass"
         }
     },
     "test_relationals": {
