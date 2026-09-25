@@ -457,18 +457,18 @@ cl_int perThreadDataInit(perThreadData *pThis, ExplicitType type,
 
 typedef struct _globalThreadData
 {
-    cl_device_id     m_deviceID;
-    cl_context       m_context;
-    int              m_num_elements;
-    int              m_threadcount;
+    cl_device_id m_deviceID;
+    cl_context m_context;
+    int m_num_elements;
+    int m_threadcount;
     std::vector<int> m_vectorSizes;
-    int              m_num_runs_shift;
-    TestStyle        m_style;
-    ExplicitType     m_type;
-    MTdata *         m_pRandData;
-    uint64_t         m_offset;
-    int              m_testID;
-    perThreadData  **m_arrPerThreadData;
+    int m_num_runs_shift;
+    TestStyle m_style;
+    ExplicitType m_type;
+    MTdata *m_pRandData;
+    uint64_t m_offset;
+    int m_testID;
+    perThreadData **m_arrPerThreadData;
 } globalThreadData;
 
 
