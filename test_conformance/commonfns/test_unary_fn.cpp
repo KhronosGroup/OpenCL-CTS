@@ -55,6 +55,23 @@ const char *unary_fn_code_pattern_v3 =
 namespace {
 
 template <typename T>
+bool is_half_ftz_zero_allowed(const T input, const T output,
+                              const double reference)
+{
+    if constexpr (!std::is_same<T, half>::value)
+        return false;
+    else
+    {
+        if (BaseFunctionTest::halfDenormsSupported
+            || conv_to_flt(output) != 0.0f)
+            return false;
+
+        return IsHalfSubnormal(static_cast<half>(input))
+            || IsHalfSubnormal(conv_to_half(reference));
+    }
+}
+
+template <typename T>
 int verify_degrees(const T *const inptr, const T *const outptr, int n)
 {
     float error, max_error = -INFINITY;
@@ -72,6 +89,8 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
         }
 
         r = (180.0 / M_PI) * conv_to_dbl(inptr[i]);
+        if (is_half_ftz_zero_allowed(inptr[i], outptr[i], r)) continue;
+
         error = UlpFn(outptr[i], r);
 
         if (fabsf(error) > max_error)
@@ -130,6 +149,8 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
         }
 
         r = (M_PI / 180.0) * conv_to_dbl(inptr[i]);
+        if (is_half_ftz_zero_allowed(inptr[i], outptr[i], r)) continue;
+
         error = UlpFn(outptr[i], r);
 
         if (fabsf(error) > max_error)
@@ -196,9 +217,12 @@ int verify_sign(const T *const inptr, const T *const outptr, int n)
             r = 0.0;
         if (!fp_value_equals(r, outptr[i]))
         {
-            log_error("%d) Error: sign(%a) returned %a\n", i,
-                      conv_to_flt(inptr[i]), conv_to_flt(outptr[i]));
-            return -1;
+            if (!is_half_ftz_zero_allowed(inptr[i], outptr[i], r))
+            {
+                log_error("%d) Error: sign(%a) returned %a\n", i,
+                          conv_to_flt(inptr[i]), conv_to_flt(outptr[i]));
+                return -1;
+            }
         }
     }
     return 0;
@@ -227,7 +251,18 @@ int test_unary_fn(cl_device_id device, cl_context context,
     programs.resize(kTotalVecCount);
     kernels.resize(kTotalVecCount);
 
+    const bool test_all_half_inputs = std::is_same<T, half>::value;
+    constexpr int all_half_input_count = 1 << 16;
     int num_elements = n_elems * (1 << (kTotalVecCount - 1));
+    if (test_all_half_inputs)
+    {
+        // Pad the 65536 inputs so each vector variant can process whole
+        // vectors. 48 is the LCM of all vector widths (1, 2, 3, 4, 8, 16).
+        constexpr int allocation_multiple = 48;
+        num_elements = ((all_half_input_count + allocation_multiple - 1)
+                        / allocation_multiple)
+            * allocation_multiple;
+    }
 
     input_ptr.resize(num_elements);
     output_ptr.resize(num_elements);
@@ -262,8 +297,7 @@ int test_unary_fn(cl_device_id device, cl_context context,
         pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
         for (int j = 0; j < num_elements; j++)
         {
-            input_ptr[j] = conv_to_half(get_random_float(
-                (float)(-10000.f * M_PI), (float)(10000.f * M_PI), d));
+            input_ptr[j] = static_cast<half>(j % all_half_input_count);
         }
     }
 
@@ -326,8 +360,10 @@ int test_unary_fn(cl_device_id device, cl_context context,
             return -1;
         }
 
+        const int elements_to_verify =
+            test_all_half_inputs ? all_half_input_count : n_elems * (i + 1);
         if (verifyFn((T *)&input_ptr.front(), (T *)&output_ptr.front(),
-                     n_elems * (i + 1)))
+                     elements_to_verify))
         {
             log_error("%s %s%d test failed\n", fnName.c_str(), tname.c_str(),
                       ((g_arrVecSizes[i])));

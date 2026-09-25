@@ -66,6 +66,7 @@ struct BaseFunctionTest
 
     static std::map<size_t, std::string> type2name;
     static cl_half_rounding_mode halfRoundingMode;
+    static bool halfDenormsSupported;
 };
 
 struct MinTest : BaseFunctionTest
