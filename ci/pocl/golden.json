@@ -302,7 +302,7 @@
             "integer_dot_product": "pass",
             "extended_bit_ops_extract": "pass",
             "extended_bit_ops_insert": "pass",
-            "extended_bit_ops_reverse": "fail"
+            "extended_bit_ops_reverse": "pass"
         }
     },
     "test_printf": {
