@@ -22,6 +22,7 @@
 
 #include <cinttypes>
 
+
 // The tests we are running
 const char *tests[] = {
     "+",
@@ -76,8 +77,25 @@ const char *test_names[] = {
     "!",  // 22
 };
 
-#include <limits>
-#include <type_traits>
+template <typename T> struct VerifyInput
+{
+    const T *ptr;
+    bool is_scalar;
+    size_t vector_size;
+
+    VerifyInput(const T *p, bool is_s, size_t v)
+        : ptr(p), is_scalar(is_s), vector_size(v)
+    {}
+
+    T operator[](size_t idx) const
+    {
+        return is_scalar ? ptr[idx / vector_size] : ptr[idx];
+    }
+};
+
+#define WRAP_INPUTS(type)                                                      \
+    VerifyInput<type> inptrA(inptrA_raw, a_scalar, vector_size);               \
+    VerifyInput<type> inptrB(inptrB_raw, b_scalar, vector_size)
 
 template <typename T> bool is_valid_div(T a, T b)
 {
@@ -93,94 +111,108 @@ template <typename T> bool is_valid_div(T a, T b)
 }
 
 template <typename T>
-static T compute_reference(int test, size_t vector_size, T inA, T inB,
-                           T inB_j, T inA_j, T out, cl_uint shift_mask)
+static void compute_references(int test, size_t vector_size,
+                               const VerifyInput<T> &inptrA,
+                               const VerifyInput<T> &inptrB, const T *outptr,
+                               T *ref, size_t n, cl_uint shift_mask)
 {
-    T r = 0;
-    switch (test)
+    for (size_t j = 0; j < n; j += vector_size)
     {
-        case 0: r = inA + inB; break;
-        case 1: r = inA - inB; break;
-        case 2: r = inA * inB; break;
-        case 3:
-            if (!is_valid_div<T>(inA, inB))
-                r = out;
-            else
-                r = inA / inB;
-            break;
-        case 4:
-            if (!is_valid_div<T>(inA, inB))
-                r = out;
-            else
-                r = inA % inB;
-            break;
-        case 5: r = inA & inB; break;
-        case 6: r = inA | inB; break;
-        case 7: r = inA ^ inB; break;
-        case 8: r = inA >> (inB & shift_mask); break;
-        case 9: r = inA << (inB & shift_mask); break;
-        case 10: r = inA >> (inB_j & shift_mask); break;
-        case 11: r = inA << (inB_j & shift_mask); break;
-        case 12: r = ~inA; break;
-        case 13:
-            r = (inA_j < inB_j) ? inA : inB;
-            break;
-        case 14:
-            r = inA && inB;
-            if (vector_size != 1 && r) r = -1;
-            break;
-        case 15:
-            r = inA || inB;
-            if (vector_size != 1 && r) r = -1;
-            break;
-        case 16:
-            r = inA < inB;
-            if (vector_size != 1 && r) r = -1;
-            break;
-        case 17:
-            r = inA > inB;
-            if (vector_size != 1 && r) r = -1;
-            break;
-        case 18:
-            r = inA <= inB;
-            if (vector_size != 1 && r) r = -1;
-            break;
-        case 19:
-            r = inA >= inB;
-            if (vector_size != 1 && r) r = -1;
-            break;
-        case 20:
-            r = inA == inB;
-            if (vector_size != 1 && r) r = -1;
-            break;
-        case 21:
-            r = inA != inB;
-            if (vector_size != 1 && r) r = -1;
-            break;
-        case 22:
-            r = !inA;
-            if (vector_size != 1 && r) r = -1;
-            break;
+        for (size_t i = j; i < j + vector_size; i++)
+        {
+            T r = 0;
+            switch (test)
+            {
+                case 0: r = inptrA[i] + inptrB[i]; break;
+                case 1: r = inptrA[i] - inptrB[i]; break;
+                case 2: r = inptrA[i] * inptrB[i]; break;
+                case 3:
+                    if (!is_valid_div<T>(inptrA[i], inptrB[i]))
+                        r = outptr[i];
+                    else
+                        r = inptrA[i] / inptrB[i];
+                    break;
+                case 4:
+                    if (!is_valid_div<T>(inptrA[i], inptrB[i]))
+                        r = outptr[i];
+                    else
+                        r = inptrA[i] % inptrB[i];
+                    break;
+                case 5: r = inptrA[i] & inptrB[i]; break;
+                case 6: r = inptrA[i] | inptrB[i]; break;
+                case 7: r = inptrA[i] ^ inptrB[i]; break;
+                case 8: r = inptrA[i] >> (inptrB[i] & shift_mask); break;
+                case 9: r = inptrA[i] << (inptrB[i] & shift_mask); break;
+                case 10: r = inptrA[i] >> (inptrB[j] & shift_mask); break;
+                case 11: r = inptrA[i] << (inptrB[j] & shift_mask); break;
+                case 12: r = ~inptrA[i]; break;
+                case 13:
+                    r = (inptrA[j] < inptrB[j]) ? inptrA[i] : inptrB[i];
+                    break;
+                case 14:
+                    r = inptrA[i] && inptrB[i];
+                    if (vector_size != 1 && r) r = -1;
+                    break;
+                case 15:
+                    r = inptrA[i] || inptrB[i];
+                    if (vector_size != 1 && r) r = -1;
+                    break;
+                case 16:
+                    r = inptrA[i] < inptrB[i];
+                    if (vector_size != 1 && r) r = -1;
+                    break;
+                case 17:
+                    r = inptrA[i] > inptrB[i];
+                    if (vector_size != 1 && r) r = -1;
+                    break;
+                case 18:
+                    r = inptrA[i] <= inptrB[i];
+                    if (vector_size != 1 && r) r = -1;
+                    break;
+                case 19:
+                    r = inptrA[i] >= inptrB[i];
+                    if (vector_size != 1 && r) r = -1;
+                    break;
+                case 20:
+                    r = inptrA[i] == inptrB[i];
+                    if (vector_size != 1 && r) r = -1;
+                    break;
+                case 21:
+                    r = inptrA[i] != inptrB[i];
+                    if (vector_size != 1 && r) r = -1;
+                    break;
+                case 22:
+                    r = !inptrA[i];
+                    if (vector_size != 1 && r) r = -1;
+                    break;
+            }
+            ref[i] = r;
+        }
     }
-    return r;
 }
-
 
 // =======================================
 // long
 // =======================================
-int
-verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_long *outptr, size_t n)
+int verify_long(int test, size_t vector_size, cl_long *inptrA_raw,
+                cl_long *inptrB_raw, cl_long *outptr, cl_long *ref, size_t n,
+                bool a_scalar, bool b_scalar)
 {
-    cl_long            r, shift_mask = (sizeof(cl_long)*8)-1;
-    size_t         i, j;
-    int count=0;
-
-    for (j=0; j<n; j += vector_size )
+    cl_long shift_mask = (sizeof(cl_long) * 8) - 1;
+    WRAP_INPUTS(cl_long);
+    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
+                       shift_mask);
+    if (memcmp(ref, outptr, n * sizeof(cl_long)) == 0)
     {
-        for( i = j; i < j + vector_size; i++ )
+        return 0;
+    }
+
+    int count=0;
+    for (size_t j=0; j<n; j += vector_size )
+    {
+        for (size_t i = j; i < j + vector_size; i++)
         {
-            r = compute_reference<cl_long>(test, vector_size, inptrA[i], inptrB[i], inptrB[j], inptrA[j], outptr[i], shift_mask);
+            cl_long r = ref[i];
             if (r != outptr[i]) {
                 // Shift is tricky
                 if (test == 8 || test == 9) {
@@ -244,18 +276,25 @@ verify_long(int test, size_t vector_size, cl_long *inptrA, cl_long *inptrB, cl_l
 // =======================================
 // ulong
 // =======================================
-int
-verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, cl_ulong *outptr, size_t n)
+int verify_ulong(int test, size_t vector_size, cl_ulong *inptrA_raw,
+                 cl_ulong *inptrB_raw, cl_ulong *outptr, cl_ulong *ref,
+                 size_t n, bool a_scalar, bool b_scalar)
 {
-    cl_ulong        r, shift_mask = (sizeof(cl_ulong)*8)-1;
-    size_t          i, j;
-    int count=0;
-
-    for (j=0; j<n; j += vector_size )
+    cl_ulong shift_mask = (sizeof(cl_ulong)*8)-1;
+    WRAP_INPUTS(cl_ulong);
+    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
+                       shift_mask);
+    if (memcmp(ref, outptr, n * sizeof(cl_ulong)) == 0)
     {
-        for( i = j; i < j + vector_size; i++ )
+        return 0;
+    }
+
+    int count=0;
+    for (size_t j = 0; j < n; j += vector_size)
+    {
+        for (size_t i = j; i < j + vector_size; i++)
         {
-            r = compute_reference<cl_ulong>(test, vector_size, inptrA[i], inptrB[i], inptrB[j], inptrA[j], outptr[i], shift_mask);
+            cl_ulong r = ref[i];
             if (r != outptr[i]) {
                 // Shift is tricky
                 if (test == 8 || test == 9) {
@@ -317,18 +356,25 @@ verify_ulong(int test, size_t vector_size, cl_ulong *inptrA, cl_ulong *inptrB, c
 // =======================================
 // int
 // =======================================
-int
-verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int *outptr, size_t n)
+int verify_int(int test, size_t vector_size, cl_int *inptrA_raw,
+               cl_int *inptrB_raw, cl_int *outptr, cl_int *ref, size_t n,
+               bool a_scalar, bool b_scalar)
 {
-    cl_int            r, shift_mask = (sizeof(cl_int)*8)-1;
-    size_t          i, j;
-    int count=0;
-
-    for (j=0; j<n; j += vector_size )
+    cl_int shift_mask = (sizeof(cl_int)*8)-1;
+    WRAP_INPUTS(cl_int);
+    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
+                       shift_mask);
+    if (memcmp(ref, outptr, n * sizeof(cl_int)) == 0)
     {
-        for( i = j; i < j + vector_size; i++ )
+        return 0;
+    }
+
+    int count=0;
+    for (size_t j = 0; j < n; j += vector_size)
+    {
+        for (size_t i = j; i < j + vector_size; i++)
         {
-            r = compute_reference<cl_int>(test, vector_size, inptrA[i], inptrB[i], inptrB[j], inptrA[j], outptr[i], shift_mask);
+            cl_int r = ref[i];
             if (r != outptr[i]) {
                 // Shift is tricky
                 if (test == 8 || test == 9) {
@@ -379,18 +425,24 @@ verify_int(int test, size_t vector_size, cl_int *inptrA, cl_int *inptrB, cl_int 
 // =======================================
 // uint
 // =======================================
-int
-verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_uint *outptr, size_t n)
+int verify_uint(int test, size_t vector_size, cl_uint *inptrA_raw,
+                cl_uint *inptrB_raw, cl_uint *outptr, cl_uint *ref, size_t n,
+                bool a_scalar, bool b_scalar)
 {
-    cl_uint            r, shift_mask = (sizeof(cl_uint)*8)-1;
-    size_t          i, j;
-    int count=0;
-
-    for (j=0; j<n; j += vector_size )
+    cl_uint shift_mask = (sizeof(cl_uint)*8)-1;
+    WRAP_INPUTS(cl_uint);
+    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
+                       shift_mask);
+    if (memcmp(ref, outptr, n * sizeof(cl_uint)) == 0)
     {
-        for( i = j; i < j + vector_size; i++ )
+        return 0;
+    }
+    int count=0;
+    for (size_t j = 0; j < n; j += vector_size)
+    {
+        for (size_t i = j; i < j + vector_size; i++)
         {
-            r = compute_reference<cl_uint>(test, vector_size, inptrA[i], inptrB[i], inptrB[j], inptrA[j], outptr[i], shift_mask);
+            cl_uint r = ref[i];
             if (r != outptr[i]) {
                 // Shift is tricky
                 if (test == 8 || test == 9) {
@@ -440,20 +492,25 @@ verify_uint(int test, size_t vector_size, cl_uint *inptrA, cl_uint *inptrB, cl_u
 // =======================================
 // short
 // =======================================
-int
-verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, cl_short *outptr, size_t n)
+int verify_short(int test, size_t vector_size, cl_short *inptrA_raw,
+                 cl_short *inptrB_raw, cl_short *outptr, cl_short *ref,
+                 size_t n, bool a_scalar, bool b_scalar)
 {
-    cl_short r;
     cl_int   shift_mask = vector_size == 1 ? (cl_int)(sizeof(cl_int)*8)-1
     : (cl_int)(sizeof(cl_short)*8)-1;
-    size_t   i, j;
-    int      count=0;
-
-    for (j=0; j<n; j += vector_size )
+    WRAP_INPUTS(cl_short);
+    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
+                       shift_mask);
+    if (memcmp(ref, outptr, n * sizeof(cl_short)) == 0)
     {
-        for( i = j; i < j + vector_size; i++ )
+        return 0;
+    }
+    int      count=0;
+    for (size_t j = 0; j < n; j += vector_size)
+    {
+        for (size_t i = j; i < j + vector_size; i++)
         {
-            r = compute_reference<cl_short>(test, vector_size, inptrA[i], inptrB[i], inptrB[j], inptrA[j], outptr[i], shift_mask);
+            cl_short r = ref[i];
             if (r != outptr[i]) {
                 // Shift is tricky
                 if (test == 8 || test == 9) {
@@ -504,20 +561,25 @@ verify_short(int test, size_t vector_size, cl_short *inptrA, cl_short *inptrB, c
 // =======================================
 // ushort
 // =======================================
-int
-verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB, cl_ushort *outptr, size_t n)
+int verify_ushort(int test, size_t vector_size, cl_ushort *inptrA_raw,
+                  cl_ushort *inptrB_raw, cl_ushort *outptr, cl_ushort *ref,
+                  size_t n, bool a_scalar, bool b_scalar)
 {
-    cl_ushort       r;
     cl_uint   shift_mask = vector_size == 1 ? (cl_uint)(sizeof(cl_uint)*8)-1
     : (cl_uint)(sizeof(cl_ushort)*8)-1;
-    size_t          i, j;
-    int             count=0;
-
-    for (j=0; j<n; j += vector_size )
+    WRAP_INPUTS(cl_ushort);
+    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
+                       shift_mask);
+    if (memcmp(ref, outptr, n * sizeof(cl_ushort)) == 0)
     {
-        for( i = j; i < j + vector_size; i++ )
+        return 0;
+    }
+    int             count=0;
+    for (size_t j = 0; j < n; j += vector_size)
+    {
+        for (size_t i = j; i < j + vector_size; i++)
         {
-            r = compute_reference<cl_ushort>(test, vector_size, inptrA[i], inptrB[i], inptrB[j], inptrA[j], outptr[i], shift_mask);
+            cl_ushort r = ref[i];
             if (r != outptr[i]) {
                 // Shift is tricky
                 if (test == 8 || test == 9) {
@@ -568,21 +630,25 @@ verify_ushort(int test, size_t vector_size, cl_ushort *inptrA, cl_ushort *inptrB
 // =======================================
 // char
 // =======================================
-int
-verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_char *outptr, size_t n)
+int verify_char(int test, size_t vector_size, cl_char *inptrA_raw,
+                cl_char *inptrB_raw, cl_char *outptr, cl_char *ref, size_t n,
+                bool a_scalar, bool b_scalar)
 {
-    cl_char   r;
     cl_int    shift_mask = vector_size == 1 ? (cl_int)(sizeof(cl_int)*8)-1
     : (cl_int)(sizeof(cl_char)*8)-1;
-    size_t    i, j;
-    int       count=0;
-
-    for (j=0; j<n; j += vector_size )
+    WRAP_INPUTS(cl_char);
+    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
+                       shift_mask);
+    if (memcmp(ref, outptr, n * sizeof(cl_char)) == 0)
     {
-        for( i = j; i < j + vector_size; i++ )
+        return 0;
+    }
+    int count = 0;
+    for (size_t j = 0; j < n; j += vector_size)
+    {
+        for (size_t i = j; i < j + vector_size; i++)
         {
-
-            r = compute_reference<cl_char>(test, vector_size, inptrA[i], inptrB[i], inptrB[j], inptrA[j], outptr[i], shift_mask);
+            cl_char r = ref[i];
             if (r != outptr[i]) {
                 // Shift is tricky
                 if (test == 8 || test == 9) {
@@ -632,20 +698,25 @@ verify_char(int test, size_t vector_size, cl_char *inptrA, cl_char *inptrB, cl_c
 // =======================================
 // uchar
 // =======================================
-int
-verify_uchar(int test, size_t vector_size, cl_uchar *inptrA, cl_uchar *inptrB, cl_uchar *outptr, size_t n)
+int verify_uchar(int test, size_t vector_size, cl_uchar *inptrA_raw,
+                 cl_uchar *inptrB_raw, cl_uchar *outptr, cl_uchar *ref,
+                 size_t n, bool a_scalar, bool b_scalar)
 {
-    cl_uchar r;
     cl_uint shift_mask = vector_size == 1 ? (cl_uint)(sizeof(cl_uint) * 8) - 1
                                           : (cl_uint)(sizeof(cl_uchar) * 8) - 1;
-    size_t   i, j;
-    int      count=0;
-
-    for (j=0; j<n; j += vector_size )
+    WRAP_INPUTS(cl_uchar);
+    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
+                       shift_mask);
+    if (memcmp(ref, outptr, n * sizeof(cl_uchar)) == 0)
     {
-        for( i = j; i < j + vector_size; i++ )
+        return 0;
+    }
+    int count = 0;
+    for (size_t j = 0; j < n; j += vector_size)
+    {
+        for (size_t i = j; i < j + vector_size; i++)
         {
-            r = compute_reference<cl_uchar>(test, vector_size, inptrA[i], inptrB[i], inptrB[j], inptrA[j], outptr[i], shift_mask);
+            cl_uchar r = ref[i];
             if (r != outptr[i]) {
                 // Shift is tricky
                 if (test == 8 || test == 9) {

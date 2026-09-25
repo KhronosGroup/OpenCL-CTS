@@ -192,21 +192,29 @@ void init_data_8bit(uint64_t indx, uint32_t num_elements, InputTy *input_ptr[])
 extern const char *tests[];
 extern const char *test_names[];
 extern int verify_long(int test, size_t vector_size, cl_long *inptrA,
-                       cl_long *inptrB, cl_long *outptr, size_t n);
+                       cl_long *inptrB, cl_long *outptr, cl_long *ref, size_t n,
+                       bool a_scalar, bool b_scalar);
 extern int verify_ulong(int test, size_t vector_size, cl_ulong *inptrA,
-                        cl_ulong *inptrB, cl_ulong *outptr, size_t n);
+                        cl_ulong *inptrB, cl_ulong *outptr, cl_ulong *ref,
+                        size_t n, bool a_scalar, bool b_scalar);
 extern int verify_int(int test, size_t vector_size, cl_int *inptrA,
-                      cl_int *inptrB, cl_int *outptr, size_t n);
+                      cl_int *inptrB, cl_int *outptr, cl_int *ref, size_t n,
+                      bool a_scalar, bool b_scalar);
 extern int verify_uint(int test, size_t vector_size, cl_uint *inptrA,
-                       cl_uint *inptrB, cl_uint *outptr, size_t n);
+                       cl_uint *inptrB, cl_uint *outptr, cl_uint *ref, size_t n,
+                       bool a_scalar, bool b_scalar);
 extern int verify_short(int test, size_t vector_size, cl_short *inptrA,
-                        cl_short *inptrB, cl_short *outptr, size_t n);
+                        cl_short *inptrB, cl_short *outptr, cl_short *ref,
+                        size_t n, bool a_scalar, bool b_scalar);
 extern int verify_ushort(int test, size_t vector_size, cl_ushort *inptrA,
-                         cl_ushort *inptrB, cl_ushort *outptr, size_t n);
+                         cl_ushort *inptrB, cl_ushort *outptr, cl_ushort *ref,
+                         size_t n, bool a_scalar, bool b_scalar);
 extern int verify_char(int test, size_t vector_size, cl_char *inptrA,
-                       cl_char *inptrB, cl_char *outptr, size_t n);
+                       cl_char *inptrB, cl_char *outptr, cl_char *ref, size_t n,
+                       bool a_scalar, bool b_scalar);
 extern int verify_uchar(int test, size_t vector_size, cl_uchar *inptrA,
-                        cl_uchar *inptrB, cl_uchar *outptr, size_t n);
+                        cl_uchar *inptrB, cl_uchar *outptr, cl_uchar *ref,
+                        size_t n, bool a_scalar, bool b_scalar);
 
 // Supported type list
 const ExplicitType types[] = {
@@ -249,6 +257,7 @@ typedef struct _perThreadData
     cl_mem m_streams[2];
     cl_mem m_out_streams[6];
     cl_int *m_input_ptr[2], *m_output_ptr[6];
+    cl_int *m_reference_ptr;
     size_t                      m_type_size;
     cl_program m_program[NUM_TESTS][6];
     cl_kernel m_kernel[NUM_TESTS][6];
@@ -274,6 +283,7 @@ void perThreadDataDestroy(perThreadData * pThis)
     }
     free(pThis->m_input_ptr[0]);
     free(pThis->m_input_ptr[1]);
+    free(pThis->m_reference_ptr);
 
     delete pThis;
 }
@@ -316,6 +326,8 @@ cl_int perThreadDataInit(perThreadData *pThis, ExplicitType type,
 
     pThis->m_input_ptr[0] = (cl_int *)malloc(pThis->m_type_size * num_elements);
     pThis->m_input_ptr[1] = (cl_int *)malloc(pThis->m_type_size * num_elements);
+    pThis->m_reference_ptr =
+        (cl_int *)malloc(pThis->m_type_size * num_elements);
     pThis->m_streams[0] =
         clCreateBuffer(context, CL_MEM_READ_WRITE,
                        pThis->m_type_size * num_elements, NULL, &err);
@@ -798,78 +810,75 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
             for (int vSize : vectorSizes)
             {
                 int vIdx = get_vector_size_index(vSize);
-                void *inA = pThreadData->m_input_ptr[0];
-                void *inB = pThreadData->m_input_ptr[1];
-                std::vector<char> temp_scalar;
-                if (vSize > 1 && (style == kInputAScalar || style == kInputBScalar))
-                {
-                    temp_scalar.resize(pThreadData->m_type_size * num_elements);
-                    char *src = (char *)(style == kInputAScalar ? inA : inB);
-                    for (int element = 0; element < num_elements / vSize; element++)
-                        for (int vec = 0; vec < vSize; vec++)
-                            memcpy(temp_scalar.data() + (element * vSize + vec) * pThreadData->m_type_size, src + element * pThreadData->m_type_size, pThreadData->m_type_size);
-                    if (style == kInputAScalar) inA = temp_scalar.data();
-                    else inB = temp_scalar.data();
-                }
+                bool a_scalar = style == kInputAScalar;
+                bool b_scalar = style == kInputBScalar;
 
                 int element_computed = (num_elements / vSize) * vSize;
                 switch (type)
                 {
                     case kChar:
                         err = verify_char(
-                            i, vSize, (cl_char *)inA,
-                            (cl_char *)inB,
+                            i, vSize, (cl_char *)pThreadData->m_input_ptr[0],
+                            (cl_char *)pThreadData->m_input_ptr[1],
                             (cl_char *)pThreadData->m_output_ptr[vIdx],
-                            element_computed);
+                            (cl_char *)pThreadData->m_reference_ptr,
+                            element_computed, a_scalar, b_scalar);
                         break;
                     case kUChar:
                         err = verify_uchar(
-                            i, vSize, (cl_uchar *)inA,
-                            (cl_uchar *)inB,
+                            i, vSize, (cl_uchar *)pThreadData->m_input_ptr[0],
+                            (cl_uchar *)pThreadData->m_input_ptr[1],
                             (cl_uchar *)pThreadData->m_output_ptr[vIdx],
-                            element_computed);
+                            (cl_uchar *)pThreadData->m_reference_ptr,
+                            element_computed, a_scalar, b_scalar);
                         break;
                     case kShort:
                         err = verify_short(
-                            i, vSize, (cl_short *)inA,
-                            (cl_short *)inB,
+                            i, vSize, (cl_short *)pThreadData->m_input_ptr[0],
+                            (cl_short *)pThreadData->m_input_ptr[1],
                             (cl_short *)pThreadData->m_output_ptr[vIdx],
-                            element_computed);
+                            (cl_short *)pThreadData->m_reference_ptr,
+                            element_computed, a_scalar, b_scalar);
                         break;
                     case kUShort:
                         err = verify_ushort(
-                            i, vSize, (cl_ushort *)inA,
-                            (cl_ushort *)inB,
+                            i, vSize, (cl_ushort *)pThreadData->m_input_ptr[0],
+                            (cl_ushort *)pThreadData->m_input_ptr[1],
                             (cl_ushort *)pThreadData->m_output_ptr[vIdx],
-                            element_computed);
+                            (cl_ushort *)pThreadData->m_reference_ptr,
+                            element_computed, a_scalar, b_scalar);
                         break;
                     case kInt:
                         err = verify_int(
-                            i, vSize, (cl_int *)inA,
-                            (cl_int *)inB,
+                            i, vSize, (cl_int *)pThreadData->m_input_ptr[0],
+                            (cl_int *)pThreadData->m_input_ptr[1],
                             (cl_int *)pThreadData->m_output_ptr[vIdx],
-                            element_computed);
+                            (cl_int *)pThreadData->m_reference_ptr,
+                            element_computed, a_scalar, b_scalar);
                         break;
                     case kUInt:
                         err = verify_uint(
-                            i, vSize, (cl_uint *)inA,
-                            (cl_uint *)inB,
+                            i, vSize, (cl_uint *)pThreadData->m_input_ptr[0],
+                            (cl_uint *)pThreadData->m_input_ptr[1],
                             (cl_uint *)pThreadData->m_output_ptr[vIdx],
-                            element_computed);
+                            (cl_uint *)pThreadData->m_reference_ptr,
+                            element_computed, a_scalar, b_scalar);
                         break;
                     case kLong:
                         err = verify_long(
-                            i, vSize, (cl_long *)inA,
-                            (cl_long *)inB,
+                            i, vSize, (cl_long *)pThreadData->m_input_ptr[0],
+                            (cl_long *)pThreadData->m_input_ptr[1],
                             (cl_long *)pThreadData->m_output_ptr[vIdx],
-                            element_computed);
+                            (cl_long *)pThreadData->m_reference_ptr,
+                            element_computed, a_scalar, b_scalar);
                         break;
                     case kULong:
                         err = verify_ulong(
-                            i, vSize, (cl_ulong *)inA,
-                            (cl_ulong *)inB,
+                            i, vSize, (cl_ulong *)pThreadData->m_input_ptr[0],
+                            (cl_ulong *)pThreadData->m_input_ptr[1],
                             (cl_ulong *)pThreadData->m_output_ptr[vIdx],
-                            element_computed);
+                            (cl_ulong *)pThreadData->m_reference_ptr,
+                            element_computed, a_scalar, b_scalar);
                         break;
                     default:
                         err = 1;
@@ -878,7 +887,8 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                 }
 
                 error_count += err ? 1 : 0;
-            }        }
+            }
+        }
     }
 
     return error_count;
