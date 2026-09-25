@@ -193,28 +193,32 @@ extern const char *tests[];
 extern const char *test_names[];
 extern int verify_long(int test, size_t vector_size, cl_long *inptrA,
                        cl_long *inptrB, cl_long *outptr, cl_long *ref, size_t n,
-                       bool a_scalar, bool b_scalar);
+                       bool a_scalar, bool b_scalar, cl_event &event);
 extern int verify_ulong(int test, size_t vector_size, cl_ulong *inptrA,
                         cl_ulong *inptrB, cl_ulong *outptr, cl_ulong *ref,
-                        size_t n, bool a_scalar, bool b_scalar);
+                        size_t n, bool a_scalar, bool b_scalar,
+                        cl_event &event);
 extern int verify_int(int test, size_t vector_size, cl_int *inptrA,
                       cl_int *inptrB, cl_int *outptr, cl_int *ref, size_t n,
-                      bool a_scalar, bool b_scalar);
+                      bool a_scalar, bool b_scalar, cl_event &event);
 extern int verify_uint(int test, size_t vector_size, cl_uint *inptrA,
                        cl_uint *inptrB, cl_uint *outptr, cl_uint *ref, size_t n,
-                       bool a_scalar, bool b_scalar);
+                       bool a_scalar, bool b_scalar, cl_event &event);
 extern int verify_short(int test, size_t vector_size, cl_short *inptrA,
                         cl_short *inptrB, cl_short *outptr, cl_short *ref,
-                        size_t n, bool a_scalar, bool b_scalar);
+                        size_t n, bool a_scalar, bool b_scalar,
+                        cl_event &event);
 extern int verify_ushort(int test, size_t vector_size, cl_ushort *inptrA,
                          cl_ushort *inptrB, cl_ushort *outptr, cl_ushort *ref,
-                         size_t n, bool a_scalar, bool b_scalar);
+                         size_t n, bool a_scalar, bool b_scalar,
+                         cl_event &event);
 extern int verify_char(int test, size_t vector_size, cl_char *inptrA,
                        cl_char *inptrB, cl_char *outptr, cl_char *ref, size_t n,
-                       bool a_scalar, bool b_scalar);
+                       bool a_scalar, bool b_scalar, cl_event &event);
 extern int verify_uchar(int test, size_t vector_size, cl_uchar *inptrA,
                         cl_uchar *inptrB, cl_uchar *outptr, cl_uchar *ref,
-                        size_t n, bool a_scalar, bool b_scalar);
+                        size_t n, bool a_scalar, bool b_scalar,
+                        cl_event &event);
 
 // Supported type list
 const ExplicitType types[] = {
@@ -782,6 +786,8 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                 (void *)pThreadData->m_input_ptr[1], 0, NULL, NULL);
             test_error(err, "clEnqueueWriteBuffer failed");
 
+            std::vector<cl_event> read_events(6, nullptr);
+
             // Loop over each vector size to enqueue NDRange and ReadBuffer
             for (int vSize : vectorSizes)
             {
@@ -799,12 +805,14 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                 test_error(err, "clEnqueueNDRangeKernel failed");
 
                 err = clEnqueueReadBuffer(
-                    queue, pThreadData->m_out_streams[vIdx], CL_TRUE, 0,
+                    queue, pThreadData->m_out_streams[vIdx], CL_FALSE, 0,
                     pThreadData->m_type_size * num_elements,
                     (void *)pThreadData->m_output_ptr[vIdx], 0, NULL,
-                    NULL);
+                    &read_events[vIdx]);
                 test_error(err, "clEnqueueReadBuffer failed");
             }
+
+            clFlush(queue);
 
             // Now loop over each vector size to wait and verify
             for (int vSize : vectorSizes)
@@ -822,7 +830,8 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                             (cl_char *)pThreadData->m_input_ptr[1],
                             (cl_char *)pThreadData->m_output_ptr[vIdx],
                             (cl_char *)pThreadData->m_reference_ptr,
-                            element_computed, a_scalar, b_scalar);
+                            element_computed, a_scalar, b_scalar,
+                            read_events[vIdx]);
                         break;
                     case kUChar:
                         err = verify_uchar(
@@ -830,7 +839,8 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                             (cl_uchar *)pThreadData->m_input_ptr[1],
                             (cl_uchar *)pThreadData->m_output_ptr[vIdx],
                             (cl_uchar *)pThreadData->m_reference_ptr,
-                            element_computed, a_scalar, b_scalar);
+                            element_computed, a_scalar, b_scalar,
+                            read_events[vIdx]);
                         break;
                     case kShort:
                         err = verify_short(
@@ -838,7 +848,8 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                             (cl_short *)pThreadData->m_input_ptr[1],
                             (cl_short *)pThreadData->m_output_ptr[vIdx],
                             (cl_short *)pThreadData->m_reference_ptr,
-                            element_computed, a_scalar, b_scalar);
+                            element_computed, a_scalar, b_scalar,
+                            read_events[vIdx]);
                         break;
                     case kUShort:
                         err = verify_ushort(
@@ -846,7 +857,8 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                             (cl_ushort *)pThreadData->m_input_ptr[1],
                             (cl_ushort *)pThreadData->m_output_ptr[vIdx],
                             (cl_ushort *)pThreadData->m_reference_ptr,
-                            element_computed, a_scalar, b_scalar);
+                            element_computed, a_scalar, b_scalar,
+                            read_events[vIdx]);
                         break;
                     case kInt:
                         err = verify_int(
@@ -854,7 +866,8 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                             (cl_int *)pThreadData->m_input_ptr[1],
                             (cl_int *)pThreadData->m_output_ptr[vIdx],
                             (cl_int *)pThreadData->m_reference_ptr,
-                            element_computed, a_scalar, b_scalar);
+                            element_computed, a_scalar, b_scalar,
+                            read_events[vIdx]);
                         break;
                     case kUInt:
                         err = verify_uint(
@@ -862,7 +875,8 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                             (cl_uint *)pThreadData->m_input_ptr[1],
                             (cl_uint *)pThreadData->m_output_ptr[vIdx],
                             (cl_uint *)pThreadData->m_reference_ptr,
-                            element_computed, a_scalar, b_scalar);
+                            element_computed, a_scalar, b_scalar,
+                            read_events[vIdx]);
                         break;
                     case kLong:
                         err = verify_long(
@@ -870,7 +884,8 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                             (cl_long *)pThreadData->m_input_ptr[1],
                             (cl_long *)pThreadData->m_output_ptr[vIdx],
                             (cl_long *)pThreadData->m_reference_ptr,
-                            element_computed, a_scalar, b_scalar);
+                            element_computed, a_scalar, b_scalar,
+                            read_events[vIdx]);
                         break;
                     case kULong:
                         err = verify_ulong(
@@ -878,7 +893,8 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                             (cl_ulong *)pThreadData->m_input_ptr[1],
                             (cl_ulong *)pThreadData->m_output_ptr[vIdx],
                             (cl_ulong *)pThreadData->m_reference_ptr,
-                            element_computed, a_scalar, b_scalar);
+                            element_computed, a_scalar, b_scalar,
+                            read_events[vIdx]);
                         break;
                     default:
                         err = 1;
