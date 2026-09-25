@@ -218,8 +218,8 @@ int verify_long(int test, size_t vector_size, cl_long *inptrA_raw,
         return 0;
     }
 
-    int count=0;
-    for (size_t j=0; j<n; j += vector_size )
+    int count = 0;
+    for (size_t j = 0; j < n; j += vector_size)
     {
         for (size_t i = j; i < j + vector_size; i++)
         {
@@ -291,7 +291,7 @@ int verify_ulong(int test, size_t vector_size, cl_ulong *inptrA_raw,
                  cl_ulong *inptrB_raw, cl_ulong *outptr, cl_ulong *ref,
                  size_t n, bool a_scalar, bool b_scalar, cl_event &event)
 {
-    cl_ulong shift_mask = (sizeof(cl_ulong)*8)-1;
+    cl_ulong shift_mask = (sizeof(cl_ulong) * 8) - 1;
     wait_for_event(event);
     WRAP_INPUTS(cl_ulong);
     compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
@@ -301,7 +301,7 @@ int verify_ulong(int test, size_t vector_size, cl_ulong *inptrA_raw,
         return 0;
     }
 
-    int count=0;
+    int count = 0;
     for (size_t j = 0; j < n; j += vector_size)
     {
         for (size_t i = j; i < j + vector_size; i++)
@@ -372,7 +372,7 @@ int verify_int(int test, size_t vector_size, cl_int *inptrA_raw,
                cl_int *inptrB_raw, cl_int *outptr, cl_int *ref, size_t n,
                bool a_scalar, bool b_scalar, cl_event &event)
 {
-    cl_int shift_mask = (sizeof(cl_int)*8)-1;
+    cl_int shift_mask = (sizeof(cl_int) * 8) - 1;
     wait_for_event(event);
     WRAP_INPUTS(cl_int);
     compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
@@ -382,7 +382,7 @@ int verify_int(int test, size_t vector_size, cl_int *inptrA_raw,
         return 0;
     }
 
-    int count=0;
+    int count = 0;
     for (size_t j = 0; j < n; j += vector_size)
     {
         for (size_t i = j; i < j + vector_size; i++)
@@ -442,7 +442,7 @@ int verify_uint(int test, size_t vector_size, cl_uint *inptrA_raw,
                 cl_uint *inptrB_raw, cl_uint *outptr, cl_uint *ref, size_t n,
                 bool a_scalar, bool b_scalar, cl_event &event)
 {
-    cl_uint shift_mask = (sizeof(cl_uint)*8)-1;
+    cl_uint shift_mask = (sizeof(cl_uint) * 8) - 1;
     wait_for_event(event);
     WRAP_INPUTS(cl_uint);
     compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
@@ -451,7 +451,7 @@ int verify_uint(int test, size_t vector_size, cl_uint *inptrA_raw,
     {
         return 0;
     }
-    int count=0;
+    int count = 0;
     for (size_t j = 0; j < n; j += vector_size)
     {
         for (size_t i = j; i < j + vector_size; i++)
@@ -510,8 +510,8 @@ int verify_short(int test, size_t vector_size, cl_short *inptrA_raw,
                  cl_short *inptrB_raw, cl_short *outptr, cl_short *ref,
                  size_t n, bool a_scalar, bool b_scalar, cl_event &event)
 {
-    cl_int   shift_mask = vector_size == 1 ? (cl_int)(sizeof(cl_int)*8)-1
-    : (cl_int)(sizeof(cl_short)*8)-1;
+    cl_int shift_mask = vector_size == 1 ? (cl_int)(sizeof(cl_int) * 8) - 1
+                                         : (cl_int)(sizeof(cl_short) * 8) - 1;
     wait_for_event(event);
     WRAP_INPUTS(cl_short);
     compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
@@ -520,7 +520,7 @@ int verify_short(int test, size_t vector_size, cl_short *inptrA_raw,
     {
         return 0;
     }
-    int      count=0;
+    int count = 0;
     for (size_t j = 0; j < n; j += vector_size)
     {
         for (size_t i = j; i < j + vector_size; i++)
@@ -580,8 +580,9 @@ int verify_ushort(int test, size_t vector_size, cl_ushort *inptrA_raw,
                   cl_ushort *inptrB_raw, cl_ushort *outptr, cl_ushort *ref,
                   size_t n, bool a_scalar, bool b_scalar, cl_event &event)
 {
-    cl_uint   shift_mask = vector_size == 1 ? (cl_uint)(sizeof(cl_uint)*8)-1
-    : (cl_uint)(sizeof(cl_ushort)*8)-1;
+    cl_uint shift_mask = vector_size == 1
+        ? (cl_uint)(sizeof(cl_uint) * 8) - 1
+        : (cl_uint)(sizeof(cl_ushort) * 8) - 1;
     wait_for_event(event);
     WRAP_INPUTS(cl_ushort);
     compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
@@ -590,7 +591,7 @@ int verify_ushort(int test, size_t vector_size, cl_ushort *inptrA_raw,
     {
         return 0;
     }
-    int             count=0;
+    int count = 0;
     for (size_t j = 0; j < n; j += vector_size)
     {
         for (size_t i = j; i < j + vector_size; i++)
@@ -650,8 +651,8 @@ int verify_char(int test, size_t vector_size, cl_char *inptrA_raw,
                 cl_char *inptrB_raw, cl_char *outptr, cl_char *ref, size_t n,
                 bool a_scalar, bool b_scalar, cl_event &event)
 {
-    cl_int    shift_mask = vector_size == 1 ? (cl_int)(sizeof(cl_int)*8)-1
-    : (cl_int)(sizeof(cl_char)*8)-1;
+    cl_int shift_mask = vector_size == 1 ? (cl_int)(sizeof(cl_int) * 8) - 1
+                                         : (cl_int)(sizeof(cl_char) * 8) - 1;
     wait_for_event(event);
     WRAP_INPUTS(cl_char);
     compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
