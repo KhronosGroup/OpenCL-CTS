@@ -1125,12 +1125,11 @@ REGISTER_TEST(get_program_source_from_binary)
 {
     cl_int error = CL_SUCCESS;
     clProgramWrapper program;
-    clKernelWrapper kernel;
     clProgramWrapper program_from_binary;
 
-    error = create_single_kernel_helper(context, &program, &kernel, 1,
+    error = create_single_kernel_helper(context, &program, nullptr, 1,
                                         sample_kernel_code_single_line,
-                                        "sample_test");
+                                        nullptr);
     test_error(error, "create_single_kernel_helper failed");
 
     size_t binary_size = 0;
