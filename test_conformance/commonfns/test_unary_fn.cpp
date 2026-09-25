@@ -55,15 +55,20 @@ const char *unary_fn_code_pattern_v3 =
 namespace {
 
 template <typename T>
-bool half_ftz_result_allowed(const T input, const T output,
-                             const double reference)
+bool is_half_ftz_zero_allowed(const T input, const T output,
+                              const double reference)
 {
-    if (!std::is_same<T, half>::value || BaseFunctionTest::halfDenormsSupported
-        || conv_to_flt(output) != 0.0f)
+    if constexpr (!std::is_same<T, half>::value)
         return false;
+    else
+    {
+        if (BaseFunctionTest::halfDenormsSupported
+            || conv_to_flt(output) != 0.0f)
+            return false;
 
-    return IsHalfSubnormal(static_cast<half>(input))
-        || IsHalfSubnormal(conv_to_half(reference));
+        return IsHalfSubnormal(static_cast<half>(input))
+            || IsHalfSubnormal(conv_to_half(reference));
+    }
 }
 
 template <typename T>
@@ -84,7 +89,7 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
         }
 
         r = (180.0 / M_PI) * conv_to_dbl(inptr[i]);
-        if (half_ftz_result_allowed(inptr[i], outptr[i], r)) continue;
+        if (is_half_ftz_zero_allowed(inptr[i], outptr[i], r)) continue;
 
         error = UlpFn(outptr[i], r);
 
@@ -144,7 +149,7 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
         }
 
         r = (M_PI / 180.0) * conv_to_dbl(inptr[i]);
-        if (half_ftz_result_allowed(inptr[i], outptr[i], r)) continue;
+        if (is_half_ftz_zero_allowed(inptr[i], outptr[i], r)) continue;
 
         error = UlpFn(outptr[i], r);
 
@@ -212,7 +217,7 @@ int verify_sign(const T *const inptr, const T *const outptr, int n)
             r = 0.0;
         if (!fp_value_equals(r, outptr[i]))
         {
-            if (!half_ftz_result_allowed(inptr[i], outptr[i], r))
+            if (!is_half_ftz_zero_allowed(inptr[i], outptr[i], r))
             {
                 log_error("%d) Error: sign(%a) returned %a\n", i,
                           conv_to_flt(inptr[i]), conv_to_flt(outptr[i]));

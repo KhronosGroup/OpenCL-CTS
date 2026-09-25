@@ -49,13 +49,13 @@ test_status InitCL(cl_device_id device)
         BaseFunctionTest::halfDenormsSupported =
             (fpConfigHalf & CL_FP_DENORM) != 0;
 
-        const cl_device_fp_config halfRoundingMode =
+        const cl_device_fp_config rounding =
             get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
-        if ((halfRoundingMode & CL_FP_ROUND_TO_NEAREST) != 0)
+        if ((rounding & CL_FP_ROUND_TO_NEAREST) != 0)
         {
             BaseFunctionTest::halfRoundingMode = CL_HALF_RTE;
         }
-        else if ((halfRoundingMode & CL_FP_ROUND_TO_ZERO) != 0)
+        else if ((rounding & CL_FP_ROUND_TO_ZERO) != 0)
         {
             BaseFunctionTest::halfRoundingMode = CL_HALF_RTZ;
         }
