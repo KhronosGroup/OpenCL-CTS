@@ -25,6 +25,6 @@
 extern const cl_mem_flags flag_set[];
 extern const char* flag_set_names[];
 
-#define NUM_FLAGS 5
+#define NUM_FLAGS 8
 
 #endif // _testBase_h

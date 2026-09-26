@@ -30,6 +30,7 @@
     VK_FUNC_DECL(vkDestroyDevice)                                              \
     VK_FUNC_DECL(vkGetDeviceQueue)                                             \
     VK_FUNC_DECL(vkQueueWaitIdle)                                              \
+    VK_FUNC_DECL(vkDeviceWaitIdle)                                             \
     VK_FUNC_DECL(vkCreateDescriptorSetLayout)                                  \
     VK_FUNC_DECL(vkCreatePipelineLayout)                                       \
     VK_FUNC_DECL(vkCreateShaderModule)                                         \
@@ -104,7 +105,8 @@
     VK_FUNC_DECL(vkGetImageSubresourceLayout)                                  \
     VK_FUNC_DECL(vkCreateDebugUtilsMessengerEXT)                               \
     VK_FUNC_DECL(vkDestroyDebugUtilsMessengerEXT)                              \
-    VK_FUNC_DECL(vkGetPhysicalDeviceExternalBufferProperties)
+    VK_FUNC_DECL(vkGetPhysicalDeviceExternalBufferProperties)                  \
+    VK_FUNC_DECL(vkGetPhysicalDeviceFeatures2)
 #define VK_WINDOWS_FUNC_LIST                                                   \
     VK_FUNC_DECL(vkGetMemoryWin32HandleKHR)                                    \
     VK_FUNC_DECL(vkGetSemaphoreWin32HandleKHR)                                 \
@@ -123,6 +125,7 @@
 #define vkDestroyDevice _vkDestroyDevice
 #define vkGetDeviceQueue _vkGetDeviceQueue
 #define vkQueueWaitIdle _vkQueueWaitIdle
+#define vkDeviceWaitIdle _vkDeviceWaitIdle
 #define vkCreateDescriptorSetLayout _vkCreateDescriptorSetLayout
 #define vkCreatePipelineLayout _vkCreatePipelineLayout
 #define vkCreateShaderModule _vkCreateShaderModule
@@ -209,5 +212,6 @@
 #define vkDestroyDebugUtilsMessengerEXT _vkDestroyDebugUtilsMessengerEXT
 #define vkGetPhysicalDeviceExternalBufferProperties                            \
     _vkGetPhysicalDeviceExternalBufferProperties
+#define vkGetPhysicalDeviceFeatures2 _vkGetPhysicalDeviceFeatures2
 
 #endif //_vulkan_api_list_hpp_

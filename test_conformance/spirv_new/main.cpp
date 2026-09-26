@@ -14,17 +14,13 @@
 // limitations under the License.
 //
 
-#include <stdio.h>
-#include <string.h>
-#include "procs.h"
-#if !defined(_WIN32)
-#include <unistd.h>
-#endif
-
-#include <iostream>
 #include <fstream>
 #include <string>
-#include <sstream>
+#include <filesystem>
+
+#include "procs.h"
+#include "harness/os_helpers.h"
+#include "harness/stringHelpers.h"
 
 #if defined(_WIN32)
 const std::string slash = "\\";
@@ -34,15 +30,34 @@ const std::string slash = "/";
 
 const std::string spvExt = ".spv";
 bool gVersionSkip = false;
+bool gExtensionSkip = false;
 std::string gAddrWidth = "";
 std::string spvBinariesPath = "spirv_bin";
 
 const std::string spvBinariesPathArg = "--spirv-binaries-path";
 const std::string spvVersionSkipArg = "--skip-spirv-version-check";
+const std::string spvExtensionSkipArg = "--skip-spirv-extension-check";
 
-std::vector<unsigned char> readBinary(const char *file_name)
+static std::filesystem::path binaries_path()
 {
-    std::ifstream file(file_name,
+    std::filesystem::path path(spvBinariesPath);
+
+    if (path.is_relative())
+    {
+        path = std::filesystem::path(exe_dir()) / path;
+    }
+
+    return path;
+}
+
+static std::string binaries_path_str()
+{
+    return to_string(binaries_path().u8string());
+}
+
+std::vector<unsigned char> readBinary(const std::string &file_name)
+{
+    std::ifstream file(file_name.c_str(),
                        std::ios::in | std::ios::binary | std::ios::ate);
 
     std::vector<char> tmpBuffer(0);
@@ -54,7 +69,7 @@ std::vector<unsigned char> readBinary(const char *file_name)
         file.read(&tmpBuffer[0], size);
         file.close();
     } else {
-        log_error("File %s not found\n", file_name);
+        log_error("File %s not found\n", file_name.c_str());
     }
 
     std::vector<unsigned char> result(tmpBuffer.begin(), tmpBuffer.end());
@@ -62,11 +77,80 @@ std::vector<unsigned char> readBinary(const char *file_name)
     return result;
 }
 
-
 std::vector<unsigned char> readSPIRV(const char *file_name)
 {
-    std::string full_name_str = spvBinariesPath + slash + file_name + spvExt + gAddrWidth;
-    return readBinary(full_name_str.c_str());
+    std::string name(file_name);
+    name += spvExt;
+    name += gAddrWidth;
+
+    std::filesystem::path file_path = binaries_path() / name;
+    return readBinary(to_string(file_path.u8string()));
+}
+
+bool is_spirv_version_supported(cl_device_id deviceID, const char *version)
+{
+    if (gVersionSkip)
+    {
+        log_info("    Skipping version check for %s.\n", version);
+        return true;
+    }
+
+    std::string ilVersions = get_device_il_version_string(deviceID);
+    if (ilVersions.find(version) != std::string::npos)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool is_spirv_extension_available(cl_device_id device,
+                                  const char *spirvExtensionName)
+{
+    if (gExtensionSkip)
+    {
+        log_info("    Skipping extension check for %s.\n", spirvExtensionName);
+        return true;
+    }
+
+    auto version = get_device_cl_version(device);
+    if (version < Version(3, 1)
+        && !is_extension_available(device, CL_KHR_SPIRV_QUERIES_EXTENSION_NAME))
+    {
+        return false;
+    }
+
+    cl_int err;
+    size_t sz = 0;
+    err = clGetDeviceInfo(device, CL_DEVICE_SPIRV_EXTENSIONS, 0, nullptr, &sz);
+    if (err != CL_SUCCESS)
+    {
+        log_info("Query for CL_DEVICE_SPIRV_EXTENSIONS size failed!\n");
+        log_info("Unable to perform extension check for %s.\n",
+                 spirvExtensionName);
+        return false;
+    }
+
+    std::vector<const char *> extensions(sz / sizeof(const char *));
+    err = clGetDeviceInfo(device, CL_DEVICE_SPIRV_EXTENSIONS, sz,
+                          extensions.data(), nullptr);
+    if (err != CL_SUCCESS)
+    {
+        log_info("Query for CL_DEVICE_SPIRV_EXTENSIONS failed!\n");
+        log_info("Unable to perform extension check for %s.\n",
+                 spirvExtensionName);
+        return false;
+    }
+
+    for (const auto &ext : extensions)
+    {
+        if (!strcmp(spirvExtensionName, ext))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 static int offline_get_program_with_il(clProgramWrapper &prog,
@@ -99,7 +183,7 @@ static int offline_get_program_with_il(clProgramWrapper &prog,
     }
 
     // read output file
-    std::vector<unsigned char> buffer_vec = readBinary(outputFilename.c_str());
+    std::vector<unsigned char> buffer_vec = readBinary(outputFilename);
     size_t file_bytes = buffer_vec.size();
     if (file_bytes == 0) {
         log_error("OfflinerCompiler: Failed to open binary file: %s", outputFilename.c_str());
@@ -113,22 +197,22 @@ static int offline_get_program_with_il(clProgramWrapper &prog,
     return err;
 }
 
-int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
-                        const cl_context context, const char *prog_name,
-                        spec_const spec_const_def)
+int get_unbuilt_program_with_il(clProgramWrapper &prog,
+                                const cl_device_id deviceID,
+                                const cl_context context, const char *fileName)
 {
     cl_int err = 0;
     if (gCompilationMode == kBinary)
     {
-        return offline_get_program_with_il(prog, deviceID, context, prog_name);
+        return offline_get_program_with_il(prog, deviceID, context, fileName);
     }
 
-    std::vector<unsigned char> buffer_vec = readSPIRV(prog_name);
+    std::vector<unsigned char> buffer_vec = readSPIRV(fileName);
 
     int file_bytes = buffer_vec.size();
     if (file_bytes == 0)
     {
-        log_error("File %s not found\n", prog_name);
+        log_error("File %s not found\n", fileName);
         return -1;
     }
 
@@ -138,15 +222,6 @@ int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
         prog = clCreateProgramWithIL(context, buffer, file_bytes, &err);
         SPIRV_CHECK_ERROR(
             err, "Failed to create program with clCreateProgramWithIL");
-
-        if (spec_const_def.spec_value != NULL)
-        {
-            err = clSetProgramSpecializationConstant(
-                prog, spec_const_def.spec_id, spec_const_def.spec_size,
-                spec_const_def.spec_value);
-            SPIRV_CHECK_ERROR(
-                err, "Failed to run clSetProgramSpecializationConstant");
-        }
     }
     else
     {
@@ -170,6 +245,16 @@ int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
         SPIRV_CHECK_ERROR(
             err, "Failed to create program with clCreateProgramWithILKHR");
     }
+
+    return 0;
+}
+
+int get_program_with_il(clProgramWrapper &prog, const cl_device_id deviceID,
+                        const cl_context context, const char *fileName)
+{
+    cl_int err = 0;
+    err = get_unbuilt_program_with_il(prog, deviceID, context, fileName);
+    SPIRV_CHECK_ERROR(err, "Failed to get unbuilt program with IL");
 
     err = clBuildProgram(prog, 1, &deviceID, NULL, NULL, NULL);
     if (err != CL_SUCCESS)
@@ -204,49 +289,72 @@ test_status InitCL(cl_device_id id)
     return TEST_PASS;
 }
 
-void printUsage() {
-    log_info("Reading SPIR-V files from default '%s' path.\n", spvBinariesPath.c_str());
-    log_info("In case you want to set other directory use '%s' argument.\n",
-             spvBinariesPathArg.c_str());
-    log_info("To skip the SPIR-V version check use the '%s' argument.\n",
-             spvVersionSkipArg.c_str());
+static test_status parseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help)
+{
+    help = "        " + spvBinariesPathArg
+        + " <path> - Set path to read SPIR-V files from (default: "
+        + binaries_path_str() + ")\n";
+    help += "        " + spvVersionSkipArg
+        + " - Skip SPIR-V version checks (for testing new functionality)\n";
+    help += "        " + spvExtensionSkipArg
+        + " - Skip SPIR-V extension check (for testing new functionality)\n";
+
+    bool modifiedSpvBinariesPath = false;
+    std::vector<const char *> argList;
+    argList.push_back(argv[0]);
+
+    for (int i = 1; i < argc; ++i)
+    {
+        if (argv[i] == spvBinariesPathArg)
+        {
+            if (i + 1 >= argc || argv[i + 1] == NULL)
+            {
+                log_error("Missing value for '%s' argument.\n",
+                          spvBinariesPathArg.c_str());
+                return TEST_FAIL;
+            }
+            spvBinariesPath = std::string(argv[i + 1]);
+            removed_args.push_back(std::string(argv[i]) + " "
+                                   + spvBinariesPath);
+            modifiedSpvBinariesPath = true;
+            ++i; // skip the value
+        }
+        else if (argv[i] == spvVersionSkipArg)
+        {
+            gVersionSkip = true;
+            removed_args.push_back(argv[i]);
+        }
+        else if (argv[i] == spvExtensionSkipArg)
+        {
+            gExtensionSkip = true;
+            removed_args.push_back(argv[i]);
+        }
+        else
+        {
+            argList.push_back(argv[i]);
+        }
+    }
+
+    if (!modifiedSpvBinariesPath && !gListTests)
+    {
+        log_info("Reading SPIR-V files from default '%s' path.\n",
+                 binaries_path_str().c_str());
+        log_info("In case you want to set other directory use '%s' argument.\n",
+                 spvBinariesPathArg.c_str());
+    }
+
+    update_argc_argv_from_args_list(argList, argc, argv);
+    return TEST_PASS;
 }
 
 int main(int argc, const char *argv[])
 {
     gReSeed = 1;
-    bool modifiedSpvBinariesPath = false;
-    for (int i = 0; i < argc; ++i) {
-        int argsRemoveNum = 0;
-        if (argv[i] == spvBinariesPathArg) {
-            if (i + 1 == argc) {
-                log_error("Missing value for '%s' argument.\n", spvBinariesPathArg.c_str());
-                return TEST_FAIL;
-            } else {
-                spvBinariesPath = std::string(argv[i + 1]);
-                argsRemoveNum += 2;
-                modifiedSpvBinariesPath = true;
-            }
-        }
-        if (argv[i] == spvVersionSkipArg)
-        {
-            gVersionSkip = true;
-            argsRemoveNum++;
-        }
 
-        if (argsRemoveNum > 0) {
-            for (int j = i; j < (argc - argsRemoveNum); ++j)
-                argv[j] = argv[j + argsRemoveNum];
-
-            argc -= argsRemoveNum;
-            --i;
-        }
-    }
-    if (modifiedSpvBinariesPath == false) {
-       printUsage();
-    }
-
-    return runTestHarnessWithCheck(
+    return runTestHarnessWithCheckAndParse(
         argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0, InitCL);
+        test_registry::getInstance().definitions(), false, 0, InitCL,
+        parseArgs);
 }

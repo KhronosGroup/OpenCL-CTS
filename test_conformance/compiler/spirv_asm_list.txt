@@ -1,0 +1,4 @@
+set(COMPILER_SPIRV_NEW_ASM
+compiler_spirv_asm/write_kernel.spvasm32
+compiler_spirv_asm/write_kernel.spvasm64
+)

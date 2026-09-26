@@ -58,10 +58,10 @@ uint32_t gDeviceFrequency = 0;
 uint32_t gComputeDevices = 0;
 size_t gMaxThreadGroupSize = 0;
 size_t gWorkGroupSize = 0;
-bool gWimpyMode = false;
 int gWimpyReductionFactor = 512;
 int gTestDouble = 0;
 bool gHostReset = false;
+bool gTestAll = false;
 
 #if defined( __APPLE__ )
 int gReportTimes = 1;

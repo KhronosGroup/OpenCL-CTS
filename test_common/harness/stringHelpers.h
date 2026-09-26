@@ -39,4 +39,20 @@ inline std::string str_sprintf(const std::string &str, Args... args)
     return std::string(buffer.get(), buffer.get() + s - 1);
 }
 
+// Returns the argument, converted to std::string.
+// The return type of std::filesystem::path::u8string() was
+// std::string in C++17, but became std::u8string in C++20.
+// Use this method to wrap the result when a std::string
+// is desired.
+//
+// Use a template with a specialization for std::string,
+// so the generic template applies when std::u8string exists
+// and is used.
+template <typename STRING_TYPE>
+inline std::string to_string(const STRING_TYPE &str)
+{
+    return std::string(str.begin(), str.end());
+}
+inline std::string to_string(const std::string &str) { return str; }
+
 #endif // STRING_HELPERS_H

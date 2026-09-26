@@ -31,7 +31,6 @@
 
 int main(int argc, const char *argv[])
 {
-    log_info("1st part, non gl-sharing objects...\n");
     gTestRounding = true;
     return runTestHarness(argc, argv, test_registry::getInstance().num_tests(),
                           test_registry::getInstance().definitions(), false, 0);

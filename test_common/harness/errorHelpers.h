@@ -120,6 +120,12 @@ static int vlog_win32(const char *format, ...);
             return retValue;                                                   \
         }                                                                      \
     }
+#define test_object_failure_ret(object, errCode, expectedErrCode, msg,         \
+                                retValue)                                      \
+    {                                                                          \
+        test_assert_error_ret(object == nullptr, msg, retValue);               \
+        test_failure_error_ret(errCode, expectedErrCode, msg, retValue);       \
+    }
 #define print_failure_error(errCode, expectedErrCode, msg)                     \
     log_error("ERROR: %s! (Got %s, expected %s from %s:%d)\n", msg,            \
               IGetErrorString(errCode), IGetErrorString(expectedErrCode),      \
@@ -197,6 +203,7 @@ extern const char *GetAddressModeName(cl_addressing_mode mode);
 extern const char *GetQueuePropertyName(cl_command_queue_properties properties);
 
 extern const char *GetDeviceTypeName(cl_device_type type);
+extern const char *GetImageTypeName(cl_mem_object_type type);
 bool check_functions_for_offline_compiler(const char *subtestname);
 cl_int OutputBuildLog(cl_program program, const cl_device_id device);
 cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,

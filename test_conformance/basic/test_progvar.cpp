@@ -1264,7 +1264,7 @@ static int l_write_read_for_type(cl_device_id device, cl_context context,
             }
 
             cl_uchar* read_ptr = (cl_uchar*)clEnqueueMapBuffer(
-                queue, read_mem, CL_TRUE, CL_MAP_READ, 0, read_data_size, 0, 0,
+                queue, read_mem, CL_TRUE, CL_MAP_WRITE, 0, read_data_size, 0, 0,
                 0, 0);
             memset(read_data, -1, read_data_size);
             clEnqueueUnmapMemObject(queue, read_mem, read_ptr, 0, 0, 0);
@@ -1503,7 +1503,7 @@ static int l_init_write_read_for_type(cl_device_id device, cl_context context,
             clEnqueueUnmapMemObject(queue, write_mem, write_ptr, 0, 0, 0);
 
             cl_uchar* read_ptr = (cl_uchar*)clEnqueueMapBuffer(
-                queue, read_mem, CL_TRUE, CL_MAP_READ, 0, read_data_size, 0, 0,
+                queue, read_mem, CL_TRUE, CL_MAP_WRITE, 0, read_data_size, 0, 0,
                 0, 0);
             memset(read_data, -1, read_data_size);
             clEnqueueUnmapMemObject(queue, read_mem, read_ptr, 0, 0, 0);

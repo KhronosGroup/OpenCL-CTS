@@ -19,7 +19,6 @@
 #include "allocation_fill.h"
 #include "allocation_execute.h"
 #include "harness/testHarness.h"
-#include "harness/parseParameters.h"
 #include <time.h>
 
 typedef long long unsigned llu;
@@ -41,8 +40,6 @@ cl_long g_max_individual_allocation_size;
 cl_long g_global_mem_size;
 
 cl_uint checksum;
-
-static void printUsage(const char *execName);
 
 test_status init_cl(cl_device_id device)
 {
@@ -300,31 +297,36 @@ REGISTER_TEST(image2d_write_non_blocking)
     return doTest(device, context, queue, IMAGE_WRITE_NON_BLOCKING);
 }
 
-int main(int argc, const char *argv[])
+static test_status parseArgs(int &argc, const char *argv[],
+                             std::vector<std::string> &removed_args,
+                             std::string &help)
 {
     char *endPtr;
     int r;
+    std::vector<const char *> kept_args;
 
-    argc = parseCustomParam(argc, argv);
-    if (argc == -1)
-    {
-        return 1;
-    }
+    help =
+        R"(        randomize - Uses random seed
+        single - Tests using a single allocation as large as possible
+        multiple - Tests using as many allocations as possible
+        numReps - Optional integer specifying the number of repetitions to run
+                  and average the result (defaults to 1)
+        reduction% - Optional integer, followed by a % sign, that acts as a
+                     multiplier for the target amount of memory.
+                     Example: target amount of 512MB and a reduction of 75% will
+                     result in a target of 384MB.
+        do_not_force_fill - Disable explicitly write data to all memory objects
+                            after creating them. Without this, the kernel
+                            execution can not verify its checksum.
+        do_not_execute - Disable executing a kernel that accesses all of the
+                         memory objects.
+)";
 
-    const char **argList = (const char **)calloc(argc, sizeof(char *));
-
-    if (NULL == argList)
-    {
-        log_error("Failed to allocate memory for argList array.\n");
-        return 1;
-    }
-
-    argList[0] = argv[0];
-    size_t argCount = 1;
-
+    kept_args.push_back(argv[0]);
     // Parse arguments
     for (int i = 1; i < argc; i++)
     {
+        removed_args.push_back(argv[i]);
         if (strcmp(argv[i], "multiple") == 0)
             g_multiple_allocations = 1;
         else if (strcmp(argv[i], "single") == 0)
@@ -354,57 +356,21 @@ int main(int argc, const char *argv[])
             g_execute_kernel = 0;
         }
 
-        else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
-        {
-            printUsage(argv[0]);
-            free(argList);
-            return -1;
-        }
-
         else
         {
-            argList[argCount] = argv[i];
-            argCount++;
+            removed_args.pop_back();
+            kept_args.push_back(argv[i]);
         }
     }
-
-    int ret = runTestHarnessWithCheck(
-        argCount, argList, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0, init_cl);
-
-    free(argList);
-    return ret;
+    update_argc_argv_from_args_list(kept_args, argc, argv);
+    return TEST_PASS;
 }
 
-void printUsage(const char *execName)
+int main(int argc, const char *argv[])
 {
-    const char *p = strrchr(execName, '/');
-    if (p != NULL) execName = p + 1;
-
-    log_info("Usage: %s [options] [test_names]\n", execName);
-    log_info("Options:\n");
-    log_info("\trandomize - Uses random seed\n");
-    log_info(
-        "\tsingle - Tests using a single allocation as large as possible\n");
-    log_info("\tmultiple - Tests using as many allocations as possible\n");
-    log_info("\n");
-    log_info("\tnumReps - Optional integer specifying the number of "
-             "repetitions to run and average the result (defaults to 1)\n");
-    log_info("\treduction%% - Optional integer, followed by a %% sign, that "
-             "acts as a multiplier for the target amount of memory.\n");
-    log_info("\t             Example: target amount of 512MB and a reduction "
-             "of 75%% will result in a target of 384MB.\n");
-    log_info("\n");
-    log_info("\tdo_not_force_fill - Disable explicitly write data to all "
-             "memory objects after creating them.\n");
-    log_info("\t                    Without this, the kernel execution can not "
-             "verify its checksum.\n");
-    log_info("\tdo_not_execute - Disable executing a kernel that accesses all "
-             "of the memory objects.\n");
-    log_info("\n");
-    log_info("Test names (Allocation Types):\n");
-    for (int i = 0; i < test_registry::getInstance().num_tests(); i++)
-    {
-        log_info("\t%s\n", test_registry::getInstance().definitions()[i].name);
-    }
+    int ret = runTestHarnessWithCheckAndParse(
+        argc, argv, test_registry::getInstance().num_tests(),
+        test_registry::getInstance().definitions(), false, 0, init_cl,
+        parseArgs);
+    return ret;
 }

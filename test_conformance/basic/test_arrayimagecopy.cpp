@@ -35,9 +35,9 @@ static int test_arrayimagecopy_single_format(
     std::unique_ptr<cl_uchar, decltype(&free)> bufptr{ nullptr, free },
         imgptr{ nullptr, free };
     clMemWrapper buffer, image;
-    int img_width = 512;
-    int img_height = 512;
-    int img_depth = (image_type == CL_MEM_OBJECT_IMAGE3D) ? 32 : 1;
+    size_t img_width = 512;
+    size_t img_height = 512;
+    size_t img_depth = (image_type == CL_MEM_OBJECT_IMAGE3D) ? 32 : 1;
     size_t elem_size;
     size_t buffer_size;
     cl_int err;
@@ -188,9 +188,17 @@ REGISTER_TEST(arrayimagecopy)
 {
     PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
 
-    return test_arrayimagecommon(device, context, queue, CL_MEM_READ_WRITE,
-                                 CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
-                                 test_arrayimagecopy_single_format);
+    int error = test_arrayimagecommon(device, context, queue, CL_MEM_READ_WRITE,
+                                      CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
+                                      test_arrayimagecopy_single_format);
+    if (is_extension_available(device, "cl_ext_immutable_memory_objects"))
+    {
+        error |= test_arrayimagecommon(
+            device, context, queue, CL_MEM_IMMUTABLE_EXT | CL_MEM_USE_HOST_PTR,
+            CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
+            test_arrayimagecopy_single_format);
+    }
+    return error;
 }
 
 
@@ -198,7 +206,15 @@ REGISTER_TEST(arrayimagecopy3d)
 {
     PASSIVE_REQUIRE_3D_IMAGE_SUPPORT(device)
 
-    return test_arrayimagecommon(device, context, queue, CL_MEM_READ_WRITE,
-                                 CL_MEM_READ_ONLY, CL_MEM_OBJECT_IMAGE3D,
-                                 test_arrayimagecopy_single_format);
+    int error = test_arrayimagecommon(device, context, queue, CL_MEM_READ_WRITE,
+                                      CL_MEM_READ_ONLY, CL_MEM_OBJECT_IMAGE3D,
+                                      test_arrayimagecopy_single_format);
+    if (is_extension_available(device, "cl_ext_immutable_memory_objects"))
+    {
+        error |= test_arrayimagecommon(
+            device, context, queue, CL_MEM_IMMUTABLE_EXT | CL_MEM_USE_HOST_PTR,
+            CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE3D,
+            test_arrayimagecopy_single_format);
+    }
+    return error;
 }

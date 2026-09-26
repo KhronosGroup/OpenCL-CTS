@@ -15,7 +15,6 @@
 //
 
 #include "testBase.h"
-#include "spirvInfo.hpp"
 #include "types.hpp"
 
 #include <string>
@@ -28,6 +27,8 @@ REGISTER_TEST(spirv16_image_operand_nontemporal)
         log_info("SPIR-V 1.6 not supported; skipping tests.\n");
         return TEST_SKIPPED_ITSELF;
     }
+
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device);
 
     cl_int error = CL_SUCCESS;
 

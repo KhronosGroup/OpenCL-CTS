@@ -18,6 +18,8 @@
 #include "harness/typeWrappers.h"
 #include "harness/testHarness.h"
 
+#include <array>
+
 // clang-format off
 
 const char *anyAllTestKernelPattern =
@@ -46,6 +48,81 @@ const char *anyAllTestKernelPatternVload =
 
 typedef int (*anyAllVerifyFn)( ExplicitType vecType, unsigned int vecSize, void *inData );
 
+constexpr unsigned int anyAllInputPatternCount = 10;
+static_assert(anyAllInputPatternCount < TEST_SIZE,
+              "Any/all inputs must include directed and random patterns");
+
+// Write the directed patterns for one input element type.
+template <typename T>
+static void write_any_all_patterns_typed(T *data, unsigned int vecSize,
+                                         unsigned int vectorStride)
+{
+    // any/all inspect only the MSB; choose values representable in every
+    // tested type with some lower bits set that should not affect the result.
+    const T msbSet = -42;
+    const T msbClear = 42;
+
+    // Each bit indicates whether the corresponding vector component has its
+    // MSB set.
+    const unsigned int none = 0;
+    const unsigned int all = (1u << vecSize) - 1;
+    const unsigned int first = 1u;
+    const unsigned int middle = 1u << (vecSize / 2);
+    const unsigned int last = 1u << (vecSize - 1);
+    const unsigned int alternating = 0xaaaau & all;
+    const std::array<unsigned int, anyAllInputPatternCount> patterns = {
+        none,        all,          first,      middle,      last,
+        all ^ first, all ^ middle, all ^ last, alternating, all ^ alternating
+    };
+
+    // The result depends only on the most-significant bit of each component.
+    T *patternData = data;
+    for (const auto pattern : patterns)
+    {
+        for (unsigned int component = 0; component < vectorStride; component++)
+        {
+            const bool mustSetMsb =
+                component < vecSize && (pattern & (1u << component));
+            patternData[component] = mustSetMsb ? msbSet : msbClear;
+        }
+        patternData += vectorStride;
+    }
+}
+
+// Write directed patterns to the input buffer. Return true on success.
+static bool write_any_all_patterns(ExplicitType elementType,
+                                   unsigned int vecSize, void *inData)
+{
+    const unsigned int vectorStride = g_vector_aligns[vecSize];
+
+    switch (elementType)
+    {
+        case kChar:
+            write_any_all_patterns_typed((cl_char *)inData, vecSize,
+                                         vectorStride);
+            break;
+        case kShort:
+            write_any_all_patterns_typed((cl_short *)inData, vecSize,
+                                         vectorStride);
+            break;
+        case kInt:
+            write_any_all_patterns_typed((cl_int *)inData, vecSize,
+                                         vectorStride);
+            break;
+        case kLong:
+            write_any_all_patterns_typed((cl_long *)inData, vecSize,
+                                         vectorStride);
+            break;
+        default:
+            log_error(
+                "Unsupported element type %s for any/all input patterns\n",
+                get_explicit_type_name(elementType));
+            return false;
+    }
+
+    return true;
+}
+
 int test_any_all_kernel(cl_context context, cl_command_queue queue,
                         const char *fnName, ExplicitType vecType,
                         unsigned int vecSize, anyAllVerifyFn verifyFn,
@@ -69,8 +146,8 @@ int test_any_all_kernel(cl_context context, cl_command_queue queue,
     } else {
         sprintf( sizeName, "%d", vecSize );
     }
-    log_info("Testing any/all on %s%s\n",
-             get_explicit_type_name( vecType ), sizeName);
+    log_info("Testing %s(%s%s)\n", fnName, get_explicit_type_name(vecType),
+             sizeName);
     if(DENSE_PACK_VECS && vecSize == 3) {
         // anyAllTestKernelPatternVload
         sprintf(
@@ -100,7 +177,17 @@ int test_any_all_kernel(cl_context context, cl_command_queue queue,
     }
 
     /* Generate some streams */
-    generate_random_data( vecType, TEST_SIZE * g_vector_aligns[vecSize], d, inDataA );
+    const unsigned int vectorStride = g_vector_aligns[vecSize];
+    const size_t directedElementCount = anyAllInputPatternCount * vectorStride;
+    const size_t randomElementCount =
+        TEST_SIZE * vectorStride - directedElementCount;
+    const size_t elementSize = get_explicit_type_size(vecType);
+    // Start with directed patterns to guarantee coverage of key MSB
+    // combinations that random data is unlikely to produce.
+    if (!write_any_all_patterns(vecType, vecSize, inDataA)) return -1;
+    // Fill the remainder of the input buffer with random data.
+    generate_random_data(vecType, randomElementCount, d,
+                         (char *)inDataA + directedElementCount * elementSize);
     memset( clearData, 0, sizeof( clearData ) );
 
     streams[0] = clCreateBuffer(context, CL_MEM_COPY_HOST_PTR,

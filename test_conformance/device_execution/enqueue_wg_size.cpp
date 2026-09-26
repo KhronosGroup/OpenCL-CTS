@@ -17,6 +17,7 @@
 #include <string.h>
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
+#include "harness/parseParameters.h"
 
 #include <vector>
 
@@ -25,7 +26,6 @@
 
 
 #ifdef CL_VERSION_2_0
-extern int gWimpyMode;
 static int nestingLevel = 3;
 
 static const char* enqueue_1D_wg_size_single[] =

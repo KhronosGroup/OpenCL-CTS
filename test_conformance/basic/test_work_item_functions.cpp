@@ -113,10 +113,10 @@ __kernel void sample_kernel( __global work_item_data *outData, int dim_param )
     outData[ind].localID = (uint)get_local_id(dimindx);
     outData[ind].numGroups = (uint)get_num_groups(dimindx);
     outData[ind].groupID = (uint)get_group_id(dimindx);
-#if __OPENCL_VERSION__ >= CL_VERSION_2_0
+#if __OPENCL_C_VERSION__ >= CL_VERSION_2_0
     outData[ind].enqueuedLocalSize = (uint)get_enqueued_local_size(dimindx);
     outData[ind].globalOffset = (uint)get_global_offset(dimindx);
-#elif __OPENCL_VERSION__ >= CL_VERSION_1_1
+#elif __OPENCL_C_VERSION__ >= CL_VERSION_1_1
     outData[ind].globalOffset = (uint)get_global_offset(dimindx);
 #endif
 })";
@@ -150,10 +150,10 @@ __kernel void sample_kernel( __global work_item_data *outData, int dim_param )
     outData[ind].localID = (uint)get_local_id(4);
     outData[ind].numGroups = (uint)get_num_groups(4);
     outData[ind].groupID = (uint)get_group_id(4);
-#if __OPENCL_VERSION__ >= CL_VERSION_2_0
+#if __OPENCL_C_VERSION__ >= CL_VERSION_2_0
     outData[ind].enqueuedLocalSize = (uint)get_enqueued_local_size(4);
     outData[ind].globalOffset = (uint)get_global_offset(4);
-#elif __OPENCL_VERSION__ >= CL_VERSION_1_1
+#elif __OPENCL_C_VERSION__ >= CL_VERSION_1_1
     outData[ind].globalOffset = (uint)get_global_offset(4);
 #endif
 })";
@@ -476,7 +476,7 @@ struct TestWorkItemFnsOutOfRange
                                                maxWorkItemSizes[2] };
             // check if maximum work group size for current dimention is not
             // exceeded
-            cl_uint work_group_size = max_workgroup_size + 1;
+            size_t work_group_size = max_workgroup_size + 1;
             while (max_workgroup_size < work_group_size && work_group_size != 1)
             {
                 work_group_size = 1;
@@ -492,9 +492,9 @@ struct TestWorkItemFnsOutOfRange
 
             // compute max number of work groups based on buffer size and max
             // group size
-            cl_uint max_work_groups = testData.size() / work_group_size;
+            size_t max_work_groups = testData.size() / work_group_size;
             // take into account number of dimentions
-            cl_uint work_groups_per_dim =
+            size_t work_groups_per_dim =
                 std::max(1, (int)pow(max_work_groups, 1.f / dim));
 
             for (size_t j = 0; j < dim; j++)

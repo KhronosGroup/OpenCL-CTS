@@ -64,6 +64,7 @@ double reference_modf(double, double* n);
 double reference_fdim(double, double);
 double reference_add(double, double);
 double reference_subtract(double, double);
+double reference_negation(double v);
 double reference_divide(double, double);
 double reference_multiply(double, double);
 double reference_remquo(double, double, int*);
@@ -116,6 +117,11 @@ double reference_ldexp(double x, int n);
 
 double reference_assignment(double x);
 int reference_not(double x);
+
+double reference_erfc(double x);
+double reference_erf(double x);
+double reference_tgamma(double x);
+
 // -- for testing fast-relaxed
 
 double reference_relaxed_acos(double);
@@ -183,6 +189,7 @@ long double reference_modfl(long double, long double* n);
 long double reference_fdiml(long double, long double);
 long double reference_addl(long double, long double);
 long double reference_subtractl(long double, long double);
+long double reference_negationl(long double);
 long double reference_dividel(long double, long double);
 long double reference_multiplyl(long double, long double);
 long double reference_remquol(long double, long double, int*);
@@ -238,6 +245,6 @@ int reference_notl(long double x);
 
 long double reference_erfcl(long double x);
 long double reference_erfl(long double x);
-double reference_erfc(double x);
-double reference_erf(double x);
+long double reference_tgammal(long double x);
+
 #endif

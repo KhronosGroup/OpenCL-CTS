@@ -81,12 +81,15 @@ int verify_step(const T *const inptrA, const T *const inptrB,
                             "Failure @ {%d, element %d}: step(%a,%a) -> *%a "
                             "vs %a\n",
                             ii, j, conv_to_flt(inptrA[ii]),
-                            conv_to_flt(inptrB[i]), r, conv_to_flt(outptr[i]));
+                            conv_to_flt(inptrB[i]), conv_to_dbl(r),
+                            conv_to_flt(outptr[i]));
                     else
                         log_error(
                             "Failure @ {%d, element %d}: step(%a,%a) -> *%a "
                             "vs %a\n",
-                            ii, j, inptrA[ii], inptrB[i], r, outptr[i]);
+                            ii, j, conv_to_flt(inptrA[ii]),
+                            conv_to_flt(inptrB[i]), conv_to_dbl(r),
+                            conv_to_flt(outptr[i]));
                     return -1;
                 }
             }

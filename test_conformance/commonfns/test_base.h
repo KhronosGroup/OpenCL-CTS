@@ -167,7 +167,7 @@ template <typename T> inline double conv_to_dbl(const T &val)
         return (double)val;
 }
 
-template <typename T> inline double conv_to_flt(const T &val)
+template <typename T> inline float conv_to_flt(const T &val)
 {
     if (std::is_same<T, half>::value)
         return (float)cl_half_to_float(val);

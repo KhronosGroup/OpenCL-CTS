@@ -84,7 +84,8 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
                     log_error(
                         "%d) verification error: smoothstep(%a, %a, %a) = "
                         "*%a vs. %a\n",
-                        i, x[i], edge0[i], edge1[i], r, outptr[i]);
+                        i, conv_to_flt(x[i]), conv_to_flt(edge0[i]),
+                        conv_to_flt(edge1[i]), r, conv_to_flt(outptr[i]));
                     return -1;
                 }
             }
@@ -115,8 +116,9 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
                     {
                         log_error("{%d, element %d}) verification error: "
                                   "smoothstep(%a, %a, %a) = *%a vs. %a\n",
-                                  ii, j, x[vi], edge0[i], edge1[i], r,
-                                  outptr[vi]);
+                                  ii, j, conv_to_flt(x[vi]),
+                                  conv_to_flt(edge0[i]), conv_to_flt(edge1[i]),
+                                  r, conv_to_flt(outptr[vi]));
                         return -1;
                     }
                 }

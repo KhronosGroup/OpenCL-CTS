@@ -15,6 +15,7 @@ set(${MODULE_NAME}_SOURCES
     binary_two_results_i_half.cpp
     common.cpp
     common.h
+    edge_cases.cpp
     function_list.cpp
     function_list.h
     i_unary_double.cpp

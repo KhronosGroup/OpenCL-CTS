@@ -28,13 +28,21 @@ private:
     cl_uint m_device_count;
     bool m_glut_init;
 
+    cl_platform_id m_platform;
+    GLXContext m_context;
+    Display *m_dpy;
+
 public:
     X11GLEnvironment()
     {
         m_device_count = 0;
         m_glut_init = false;
+        m_platform = 0;
+        m_context = 0;
+        m_dpy = nullptr;
     }
-    virtual int Init( int *argc, char **argv, int use_opencl_32 )
+
+    int Init(int *argc, char **argv, int use_opencl_32) override
     {
          // Create a GLUT window to render into
          if (!m_glut_init)
@@ -49,19 +57,24 @@ public:
         return 0;
     }
 
-    virtual cl_context CreateCLContext( void )
+    cl_context CreateCLContext(void) override
     {
-        GLXContext context = glXGetCurrentContext();
-        Display *dpy = glXGetCurrentDisplay();
+        m_context = glXGetCurrentContext();
+        m_dpy = glXGetCurrentDisplay();
 
         cl_context_properties properties[] = {
-            CL_GL_CONTEXT_KHR,  (cl_context_properties) context,
-            CL_GLX_DISPLAY_KHR, (cl_context_properties) dpy,
+            CL_CONTEXT_PLATFORM,
+            (cl_context_properties)m_platform,
+            CL_GL_CONTEXT_KHR,
+            (cl_context_properties)m_context,
+            CL_GLX_DISPLAY_KHR,
+            (cl_context_properties)m_dpy,
             0
         };
         cl_int status;
 
-        if (!context || !dpy) {
+        if (!m_context || !m_dpy)
+        {
             print_error(CL_INVALID_CONTEXT, "No GL context bound");
             return 0;
         }
@@ -69,19 +82,19 @@ public:
         return clCreateContext(properties, 1, m_devices, NULL, NULL, &status);
     }
 
-    virtual int SupportsCLGLInterop( cl_device_type device_type )
+    int SupportsCLGLInterop(cl_device_type device_type) override
     {
         int found_valid_device = 0;
-        cl_platform_id platform;
         cl_device_id devices[64];
         cl_uint num_of_devices;
         int error;
-        error = clGetPlatformIDs(1, &platform, NULL);
+        error = clGetPlatformIDs(1, &m_platform, NULL);
         if (error) {
             print_error(error, "clGetPlatformIDs failed");
             return -1;
         }
-        error = clGetDeviceIDs(platform, device_type, 64, devices, &num_of_devices);
+        error = clGetDeviceIDs(m_platform, device_type, 64, devices,
+                               &num_of_devices);
         // If this platform doesn't have any of the requested device_type (namely GPUs) then return 0
         if (error == CL_DEVICE_NOT_FOUND)
           return 0;

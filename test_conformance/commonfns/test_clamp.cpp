@@ -61,6 +61,30 @@
         "vload3(tid,maxval)), tid, dst);\n"                                    \
         "}\n";
 
+#define CLAMP_KERNEL_V_SCALAR(type, size)                                      \
+    const char *clamp_##type##size##_scalar_kernel_code =                      \
+        EMIT_PRAGMA_DIRECTIVE                                                  \
+        "__kernel void test_clamp(__global " #type #size                       \
+        " *x, __global " #type " *minval, __global " #type                     \
+        " *maxval, __global " #type #size " *dst)\n"                           \
+        "{\n"                                                                  \
+        "    size_t tid = get_global_id(0);\n"                                 \
+        "\n"                                                                   \
+        "    dst[tid] = clamp(x[tid], minval[tid], maxval[tid]);\n"            \
+        "}\n";
+
+#define CLAMP_KERNEL_V3_SCALAR(type, size)                                     \
+    const char *clamp_##type##size##_scalar_kernel_code =                      \
+        EMIT_PRAGMA_DIRECTIVE                                                  \
+        "__kernel void test_clamp(__global " #type " *x, __global " #type      \
+        " *minval, __global " #type " *maxval, __global " #type " *dst)\n"     \
+        "{\n"                                                                  \
+        "    size_t tid = get_global_id(0);\n"                                 \
+        "\n"                                                                   \
+        "    vstore3(clamp(vload3(tid, x), minval[tid], maxval[tid]), tid, "   \
+        "dst);\n"                                                              \
+        "}\n";
+
 #define EMIT_PRAGMA_DIRECTIVE "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
 CLAMP_KERNEL(half)
 CLAMP_KERNEL_V(half, 2)
@@ -68,6 +92,11 @@ CLAMP_KERNEL_V(half, 4)
 CLAMP_KERNEL_V(half, 8)
 CLAMP_KERNEL_V(half, 16)
 CLAMP_KERNEL_V3(half, 3)
+CLAMP_KERNEL_V_SCALAR(half, 2)
+CLAMP_KERNEL_V_SCALAR(half, 4)
+CLAMP_KERNEL_V_SCALAR(half, 8)
+CLAMP_KERNEL_V_SCALAR(half, 16)
+CLAMP_KERNEL_V3_SCALAR(half, 3)
 #undef EMIT_PRAGMA_DIRECTIVE
 
 #define EMIT_PRAGMA_DIRECTIVE " "
@@ -77,6 +106,11 @@ CLAMP_KERNEL_V(float, 4)
 CLAMP_KERNEL_V(float, 8)
 CLAMP_KERNEL_V(float, 16)
 CLAMP_KERNEL_V3(float, 3)
+CLAMP_KERNEL_V_SCALAR(float, 2)
+CLAMP_KERNEL_V_SCALAR(float, 4)
+CLAMP_KERNEL_V_SCALAR(float, 8)
+CLAMP_KERNEL_V_SCALAR(float, 16)
+CLAMP_KERNEL_V3_SCALAR(float, 3)
 #undef EMIT_PRAGMA_DIRECTIVE
 
 #define EMIT_PRAGMA_DIRECTIVE "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n"
@@ -86,6 +120,11 @@ CLAMP_KERNEL_V(double, 4)
 CLAMP_KERNEL_V(double, 8)
 CLAMP_KERNEL_V(double, 16)
 CLAMP_KERNEL_V3(double, 3)
+CLAMP_KERNEL_V_SCALAR(double, 2)
+CLAMP_KERNEL_V_SCALAR(double, 4)
+CLAMP_KERNEL_V_SCALAR(double, 8)
+CLAMP_KERNEL_V_SCALAR(double, 16)
+CLAMP_KERNEL_V3_SCALAR(double, 3)
 #undef EMIT_PRAGMA_DIRECTIVE
 
 const char *clamp_half_codes[] = {
@@ -102,27 +141,44 @@ const char *clamp_double_codes[] = {
     clamp_double4_kernel_code,  clamp_double8_kernel_code,
     clamp_double16_kernel_code, clamp_double3_kernel_code
 };
+const char *clamp_half_scalar_codes[] = {
+    clamp_half_kernel_code,          clamp_half2_scalar_kernel_code,
+    clamp_half4_scalar_kernel_code,  clamp_half8_scalar_kernel_code,
+    clamp_half16_scalar_kernel_code, clamp_half3_scalar_kernel_code
+};
+const char *clamp_float_scalar_codes[] = {
+    clamp_float_kernel_code,          clamp_float2_scalar_kernel_code,
+    clamp_float4_scalar_kernel_code,  clamp_float8_scalar_kernel_code,
+    clamp_float16_scalar_kernel_code, clamp_float3_scalar_kernel_code
+};
+const char *clamp_double_scalar_codes[] = {
+    clamp_double_kernel_code,          clamp_double2_scalar_kernel_code,
+    clamp_double4_scalar_kernel_code,  clamp_double8_scalar_kernel_code,
+    clamp_double16_scalar_kernel_code, clamp_double3_scalar_kernel_code
+};
 
 namespace {
 
 template <typename T>
 int verify_clamp(const T *const x, const T *const minval, const T *const maxval,
-                 const T *const outptr, int n)
+                 const T *const outptr, int n, int veclen, bool hasScalarBounds)
 {
     if (std::is_same<T, half>::value)
     {
         float t;
         for (int i = 0; i < n; i++)
         {
-            t = std::min(
-                std::max(cl_half_to_float(x[i]), cl_half_to_float(minval[i])),
-                cl_half_to_float(maxval[i]));
+            const int boundIndex = hasScalarBounds ? i / veclen : i;
+            t = std::min(std::max(cl_half_to_float(x[i]),
+                                  cl_half_to_float(minval[boundIndex])),
+                         cl_half_to_float(maxval[boundIndex]));
             if (t != cl_half_to_float(outptr[i]))
             {
                 log_error(
                     "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n",
-                    i, cl_half_to_float(x[i]), cl_half_to_float(minval[i]),
-                    cl_half_to_float(maxval[i]), t,
+                    i, cl_half_to_float(x[i]),
+                    cl_half_to_float(minval[boundIndex]),
+                    cl_half_to_float(maxval[boundIndex]), t,
                     cl_half_to_float(outptr[i]));
                 return -1;
             }
@@ -133,12 +189,16 @@ int verify_clamp(const T *const x, const T *const minval, const T *const maxval,
         T t;
         for (int i = 0; i < n; i++)
         {
-            t = std::min(std::max(x[i], minval[i]), maxval[i]);
+            const int boundIndex = hasScalarBounds ? i / veclen : i;
+            t = std::min(std::max(x[i], minval[boundIndex]),
+                         maxval[boundIndex]);
             if (t != outptr[i])
             {
                 log_error(
                     "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n",
-                    i, x[i], minval[i], maxval[i], t, outptr[i]);
+                    i, conv_to_flt(x[i]), conv_to_flt(minval[boundIndex]),
+                    conv_to_flt(maxval[boundIndex]), conv_to_flt(t),
+                    conv_to_flt(outptr[i]));
                 return -1;
             }
         }
@@ -150,7 +210,7 @@ int verify_clamp(const T *const x, const T *const minval, const T *const maxval,
 
 template <typename T>
 int test_clamp_fn(cl_device_id device, cl_context context,
-                  cl_command_queue queue, int n_elems)
+                  cl_command_queue queue, int n_elems, bool hasScalarBounds)
 {
     clMemWrapper streams[4];
     std::vector<T> input_ptr[3], output_ptr;
@@ -218,32 +278,46 @@ int test_clamp_fn(cl_device_id device, cl_context context,
         test_error(err, "Unable to write input buffer");
     }
 
-    for (i = 0; i < kTotalVecCount; i++)
+    // For scalar gentype, the scalar-bounds overload has the same signature as
+    // clamp(gentype, gentype, gentype), which is already covered by clamp.
+    // So skip the all-scalar overload for clamp_scalar_bounds.
+    const int firstVecIndex = hasScalarBounds ? 1 : 0;
+    for (i = firstVecIndex; i < kTotalVecCount; i++)
     {
+        std::string gentype = tname;
+        if (g_arrVecSizes[i] != 1) gentype += std::to_string(g_arrVecSizes[i]);
+        const std::string &boundType = hasScalarBounds ? tname : gentype;
+
         if (std::is_same<T, float>::value)
         {
             err = create_single_kernel_helper(
-                context, &programs[i], &kernels[i], 1, &clamp_float_codes[i],
+                context, &programs[i], &kernels[i], 1,
+                hasScalarBounds ? &clamp_float_scalar_codes[i]
+                                : &clamp_float_codes[i],
                 "test_clamp");
             test_error(err, "Unable to create kernel");
         }
         else if (std::is_same<T, double>::value)
         {
             err = create_single_kernel_helper(
-                context, &programs[i], &kernels[i], 1, &clamp_double_codes[i],
+                context, &programs[i], &kernels[i], 1,
+                hasScalarBounds ? &clamp_double_scalar_codes[i]
+                                : &clamp_double_codes[i],
                 "test_clamp");
             test_error(err, "Unable to create kernel");
         }
         else if (std::is_same<T, half>::value)
         {
             err = create_single_kernel_helper(
-                context, &programs[i], &kernels[i], 1, &clamp_half_codes[i],
+                context, &programs[i], &kernels[i], 1,
+                hasScalarBounds ? &clamp_half_scalar_codes[i]
+                                : &clamp_half_codes[i],
                 "test_clamp");
             test_error(err, "Unable to create kernel");
         }
 
-        log_info("Just made a program for %s, i=%d, size=%d, in slot %d\n",
-                 tname.c_str(), i, g_arrVecSizes[i], i);
+        log_info("Just made a program for clamp(%s, %s, %s), in slot %d\n",
+                 gentype.c_str(), boundType.c_str(), boundType.c_str(), i);
         fflush(stdout);
 
         for (j = 0; j < 4; j++)
@@ -267,16 +341,17 @@ int test_clamp_fn(cl_device_id device, cl_context context,
         if (verify_clamp<T>((T *)&input_ptr[0].front(),
                             (T *)&input_ptr[1].front(),
                             (T *)&input_ptr[2].front(), (T *)&output_ptr[0],
-                            n_elems * ((g_arrVecSizes[i]))))
+                            n_elems * ((g_arrVecSizes[i])), g_arrVecSizes[i],
+                            hasScalarBounds))
         {
-            log_error("CLAMP %s%d test failed\n", tname.c_str(),
-                      ((g_arrVecSizes[i])));
+            log_error("clamp(%s, %s, %s) test failed\n", gentype.c_str(),
+                      boundType.c_str(), boundType.c_str());
             err = -1;
         }
         else
         {
-            log_info("CLAMP %s%d test passed\n", tname.c_str(),
-                     ((g_arrVecSizes[i])));
+            log_info("clamp(%s, %s, %s) test passed\n", gentype.c_str(),
+                     boundType.c_str(), boundType.c_str());
             err = 0;
         }
 
@@ -289,25 +364,40 @@ int test_clamp_fn(cl_device_id device, cl_context context,
 cl_int ClampTest::Run()
 {
     cl_int error = CL_SUCCESS;
+    const bool hasScalarBounds = !vecParam;
     if (is_extension_available(device, "cl_khr_fp16"))
     {
-        error = test_clamp_fn<cl_half>(device, context, queue, num_elems);
+        error = test_clamp_fn<cl_half>(device, context, queue, num_elems,
+                                       hasScalarBounds);
         test_error(error, "ClampTest::Run<cl_half> failed");
     }
 
-    error = test_clamp_fn<float>(device, context, queue, num_elems);
+    error = test_clamp_fn<float>(device, context, queue, num_elems,
+                                 hasScalarBounds);
     test_error(error, "ClampTest::Run<float> failed");
 
     if (is_extension_available(device, "cl_khr_fp64"))
     {
-        error = test_clamp_fn<double>(device, context, queue, num_elems);
+        error = test_clamp_fn<double>(device, context, queue, num_elems,
+                                      hasScalarBounds);
         test_error(error, "ClampTest::Run<double> failed");
     }
 
     return error;
 }
 
+// gentype clamp(gentype x, gentype minval, gentype maxval)
 REGISTER_TEST(clamp)
 {
-    return MakeAndRunTest<ClampTest>(device, context, queue, num_elements);
+    return MakeAndRunTest<ClampTest>(device, context, queue, num_elements,
+                                     "clamp", true);
+}
+
+// gentypef clamp(gentypef x, float minval, float maxval)
+// gentyped clamp(gentyped x, double minval, double maxval)
+// gentypeh clamp(gentypeh x, half minval, half maxval)
+REGISTER_TEST(clamp_scalar_bounds)
+{
+    return MakeAndRunTest<ClampTest>(device, context, queue, num_elements,
+                                     "clamp", false);
 }

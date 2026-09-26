@@ -598,6 +598,12 @@ static int test_buffer_fill(cl_device_id deviceID, cl_context context,
 
         for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
         {
+            // Skip immutable memory flags
+            if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+            {
+                continue;
+            }
+
             clEventWrapper event[2];
             clMemWrapper buffers[2];
             if ((flag_set[src_flag_id] & CL_MEM_USE_HOST_PTR) || (flag_set[src_flag_id] & CL_MEM_COPY_HOST_PTR))
@@ -721,6 +727,12 @@ REGISTER_TEST(buffer_fill_struct)
 
     for (src_flag_id = 0; src_flag_id < NUM_FLAGS; src_flag_id++)
     {
+        // Skip immutable memory flags
+        if (flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
+        {
+            continue;
+        }
+
         clProgramWrapper program;
         clKernelWrapper kernel;
         log_info("Testing with cl_mem_flags: %s\n",

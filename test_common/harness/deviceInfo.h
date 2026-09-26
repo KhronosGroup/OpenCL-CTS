@@ -26,7 +26,7 @@ std::string get_device_info_string(cl_device_id device,
                                    cl_device_info param_name);
 
 /* Determines if an extension is supported by a device. */
-int is_extension_available(cl_device_id device, const char *extensionName);
+bool is_extension_available(cl_device_id device, const char *extensionName);
 
 /* Returns the version of the extension the device supports or throws an
  * exception if the extension is not supported by the device. */
@@ -35,6 +35,9 @@ cl_version get_extension_version(cl_device_id device,
 
 /* Returns a string containing the supported extensions list for a device. */
 std::string get_device_extensions_string(cl_device_id device);
+
+/* Determines if an IL is supported by a device. */
+bool is_il_available(cl_device_id device, const char *ilNameVersion);
 
 /* Returns a string containing the supported IL version(s) for a device. */
 std::string get_device_il_version_string(cl_device_id device);

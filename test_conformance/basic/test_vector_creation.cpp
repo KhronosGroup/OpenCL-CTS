@@ -33,13 +33,18 @@ static const char *size_names[] = { "",   "2",   "3",   "4",   "8",
                                     "16", "!!a", "!!b", "!!c", "!!d" };
 static char extension[128] = { 0 };
 
-// Creates a kernel by enumerating all possible ways of building the vector out
-// of vloads skip_to_results will skip results up to a given number. If the
-// amount of code generated is greater than MAX_CODE_SIZE, this function will
-// return the number of results used, which can then be used as the
-// skip_to_result value to continue where it left off.
-int create_kernel(ExplicitType type, int output_size, char *program,
-                  int *number_of_results, int skip_to_result)
+// Creates a kernel by enumerating all possible ways of building a vector of
+// `output_size` using combinations of `vload` operations.
+// If the amount of code generated exceeds `MAX_CODE_SIZE`, this function
+// returns `false` and can be called again to continue from where it left off.
+// The `number_of_results` parameter is updated to indicate how many vector
+// creation lines were added in this call.
+// `reset_skip_to_permutation` should be set to `true` for the first call
+// to start the enumeration from the beginning. Subsequent calls should set it
+// to `false` to continue the permutation search using an internal static
+// variable.
+bool create_kernel(ExplicitType type, int output_size, char *program,
+                   int *number_of_results, bool reset_skip_to_permutation)
 {
 
     int number_of_sizes;
@@ -55,13 +60,14 @@ int create_kernel(ExplicitType type, int output_size, char *program,
         default: log_error("Invalid size: %d\n", output_size); return -1;
     }
 
-    int total_results = 0;
+    int permutation_index = 0;
     int current_result = 0;
     int total_vloads = 0;
     int total_program_length = 0;
     int aborted_due_to_size = 0;
 
-    if (skip_to_result < 0) skip_to_result = 0;
+    static int skip_to_permutation = 0;
+    if (reset_skip_to_permutation) skip_to_permutation = 0;
 
     // The line of code for the vector creation
     char line[1024];
@@ -153,7 +159,7 @@ int create_kernel(ExplicitType type, int output_size, char *program,
 
         // Generate the actual load line if we are building this part
         line[0] = '\0';
-        if (skip_to_result == 0 || total_results >= skip_to_result)
+        if (permutation_index >= skip_to_permutation)
         {
             if (number_of_sizes == 3)
             {
@@ -168,34 +174,40 @@ int create_kernel(ExplicitType type, int output_size, char *program,
 
             sprintf(line, "\t%s(%s%d)(", storePrefix,
                     get_explicit_type_name(type), output_size);
-            current_result++;
 
+            bool covers_middle = false;
             int offset = 0;
             for (int i = 0; i < vloads; i++)
             {
+                int start = offset;
                 if (pos[i] == 0)
                     sprintf(line + strlen(line), "src[%d]", offset);
                 else
                     sprintf(line + strlen(line), "vload%s(0,src+%d)",
                             size_names[pos[i]], offset);
                 offset += sizes[pos[i]];
+                if (start <= ((output_size / 2) - 1)
+                    && offset > (output_size / 2))
+                    covers_middle = true;
                 if (i < (vloads - 1)) sprintf(line + strlen(line), ",");
             }
             sprintf(line + strlen(line), ")%s;\n", storeSuffix);
 
-            strcat(program, line);
-            total_vloads += vloads;
+            if (covers_middle || vloads < 4 || vloads == output_size)
+            {
+                strcat(program, line);
+                total_vloads += vloads;
+                current_result++;
+                total_program_length += (int)strlen(line);
+                if (total_program_length > MAX_CODE_SIZE)
+                {
+                    aborted_due_to_size = 1;
+                    done = 1;
+                }
+                if (DEBUG) log_info("line is: %s", line);
+            }
         }
-        total_results++;
-        total_program_length += (int)strlen(line);
-        if (total_program_length > MAX_CODE_SIZE)
-        {
-            aborted_due_to_size = 1;
-            done = 1;
-        }
-
-
-        if (DEBUG) log_info("line is: %s", line);
+        permutation_index++;
 
         // If we did not use all of them, then we ignore any changes further to
         // the right. We do this by causing those loops to skip on the next
@@ -236,10 +248,10 @@ int create_kernel(ExplicitType type, int output_size, char *program,
             "\t\t(Program for vector type %s%s contains %d vector creations, "
             "of total program length %gkB, with a total of %d vloads.)\n",
             get_explicit_type_name(type), size_names[number_of_sizes - 1],
-            total_results, total_program_length / 1024.0, total_vloads);
+            current_result, total_program_length / 1024.0, total_vloads);
     *number_of_results = current_result;
-    if (aborted_due_to_size) return total_results;
-    return 0;
+    skip_to_permutation = permutation_index;
+    return !aborted_due_to_size;
 }
 
 
@@ -253,7 +265,6 @@ REGISTER_TEST(vector_creation)
 
     int error = CL_SUCCESS;
     int total_errors = 0;
-    int number_of_results = 0;
 
     std::vector<char> input_data_converted(sizeof(cl_double) * 16);
     std::vector<char> program_source(sizeof(char) * 1024 * 1024 * 4);
@@ -340,31 +351,31 @@ REGISTER_TEST(vector_creation)
         for (size_t size_index = 1; size_index < vecSizes.size(); size_index++)
         {
             size_t global[] = { 1, 1, 1 };
-            int number_generated = -1;
-            int previous_number_generated = 0;
+            bool vector_size_completed = false;
+            int total_number_of_results = 0;
 
             log_info("Testing %s%s...\n",
                      get_explicit_type_name(vecType[type_index]),
                      size_names[size_index]);
-            while (number_generated != 0)
+            while (!vector_size_completed)
             {
                 clMemWrapper output;
                 clKernelWrapper kernel;
                 clProgramWrapper program;
+                int number_of_results = 0;
 
-                number_generated =
+                vector_size_completed =
                     create_kernel(vecType[type_index], vecSizes[size_index],
                                   program_source.data(), &number_of_results,
-                                  number_generated);
-                if (number_generated != 0)
-                {
-                    if (previous_number_generated == 0)
-                        log_info("Code size greater than %gkB; splitting test "
-                                 "into multiple kernels.\n",
-                                 MAX_CODE_SIZE / 1024.0);
-                    log_info("\tExecuting vector permutations %d to %d...\n",
-                             previous_number_generated, number_generated - 1);
-                }
+                                  total_number_of_results == 0);
+                if (total_number_of_results == 0 && !vector_size_completed)
+                    log_info("Code size greater than %gkB; splitting test "
+                             "into multiple kernels.\n",
+                             MAX_CODE_SIZE / 1024.0);
+                log_info("\tExecuting vector permutations %d to %d...\n",
+                         total_number_of_results,
+                         total_number_of_results + number_of_results - 1);
+                total_number_of_results += number_of_results;
 
                 char *src = program_source.data();
                 error = create_single_kernel_helper(context, &program, &kernel,
@@ -497,7 +508,6 @@ REGISTER_TEST(vector_creation)
                         total_errors++;
                     }
                 }
-                previous_number_generated = number_generated;
             } // number_generated != 0
         } // vector sizes
     } // vector types
