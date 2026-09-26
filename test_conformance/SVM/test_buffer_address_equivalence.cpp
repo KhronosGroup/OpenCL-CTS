@@ -93,7 +93,7 @@ static int svm_buffer_address_equivalence_helper(cl_device_id device,
     const cl_uint reserved = subBufferAlign;
     svmBuf = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
                             sz - reserved, svmPtr(), &error);
-    test_error(error, "clCreateBuffer with offset SVM pointer failed");
+    test_error(error, "clCreateBuffer with smaller size failed");
 
     log_info("      testing smaller buffer\n");
     result |= do_svm_buffer_address_equivalent_test(queue, kernel, svmBuf, out,
