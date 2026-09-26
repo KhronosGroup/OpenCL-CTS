@@ -69,8 +69,6 @@ static int svm_buffer_address_equivalence_helper(cl_device_id device,
     clSVMWrapper svmPtr(context, sz, svmFlags | CL_MEM_READ_WRITE);
     test_assert_error(svmPtr() != nullptr, "clSVMAlloc failed");
 
-    // printf("SVM pointer is %p\n", svmPtr());
-
     clMemWrapper svmBuf = clCreateBuffer(
         context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, sz, svmPtr(), &error);
     test_error(error, "clCreateBuffer with SVM pointer failed");
@@ -88,6 +86,18 @@ static int svm_buffer_address_equivalence_helper(cl_device_id device,
     log_info("      testing sub-buffer\n");
     result |= do_svm_buffer_address_equivalent_test(
         queue, kernel, svmSubBuf, out, (char *)svmPtr() + region.origin);
+
+    svmSubBuf = nullptr; // Release the sub-buffer
+    svmBuf = nullptr; // Release the main buffer
+
+    const cl_uint reserved = subBufferAlign;
+    svmBuf = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                            sz - reserved, svmPtr(), &error);
+    test_error(error, "clCreateBuffer with offset SVM pointer failed");
+
+    log_info("      testing smaller buffer\n");
+    result |= do_svm_buffer_address_equivalent_test(queue, kernel, svmBuf, out,
+                                                    svmPtr());
 
     return result;
 }
@@ -121,7 +131,6 @@ REGISTER_TEST(svm_buffer_address_equivalence)
         struct s { const global int* ptr; }; 
         kernel void test_StorePointer(const global int* ptr, global struct s* dst)
         {
-            //printf("Buffer pointer on the device = %p\n", ptr);
             dst[get_global_id(0)].ptr = ptr;
         }
     )";
