@@ -286,7 +286,7 @@
     },
     "test_svm": {
         "": {
-            "svm_buffer_address_equivalence": "pass",
+            "svm_buffer_address_equivalence": "pass"
         }
     },
     "test_vectors": {
