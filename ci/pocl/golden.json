@@ -284,6 +284,11 @@
             "op_spec_constant_compile_twice": "pass"
         }
     },
+    "test_svm": {
+        "": {
+            "svm_buffer_address_equivalence": "pass",
+        }
+    },
     "test_vectors": {
         "--wimpy": {
             "step_type": "pass",
