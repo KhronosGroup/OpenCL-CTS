@@ -207,7 +207,7 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
             if (gVerboseBruteForce)
             {
                 vlog("base:%14" PRIu64 " step:%10" PRIu64
-                     "  bufferSize:%10zd \n",
+                     "  bufferSize:%10zu \n",
                      i, step, bufferSize);
             }
             else
