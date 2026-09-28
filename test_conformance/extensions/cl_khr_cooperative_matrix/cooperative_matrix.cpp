@@ -23,6 +23,7 @@
 #include <cstring>
 #include <iomanip>
 #include <limits>
+#include <numeric>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -188,7 +189,7 @@ Matrix Matrix::cooperativeMatrixLoad(
 // |36.0 37.0 38.0 39.0|
 // +----+----+----+----+
 //
-// The output buffer have an f32 element type and a stride of 4 elements.
+// The output buffer has an f32 element type and a stride of 4 elements.
 //
 // Row major                         Column major
 //
@@ -251,33 +252,59 @@ void Matrix::cooperativeMatrixStore(SemBuffer &buf, const Matrix &mat,
     }
 }
 
-static size_t roundUpToNearestMultiple(size_t val, size_t multiple)
-{
-    if (multiple == 0)
-    {
-        return val;
-    }
-    const size_t remainder = val % multiple;
-    return remainder == 0 ? val : val + multiple - remainder;
-}
-
 BufferDescriptor BufferDescriptor::makeBufferDescriptor(
     const cl_device_cooperative_matrix_component_type_khr matElementType,
     const uint32_t stride, const uint32_t strideCount,
     const BufferElementType elementType)
 {
-    const uint32_t matElementSize = elementSizeOf(matElementType);
-    const uint32_t matStrideMultiple =
-        std::max(matElementSize, gTestContext->deviceStrideMultiple);
-
-    const size_t dataStrideSize =
-        size_t{ bufferElementTypeSizeOf(elementType) } * stride;
-    const size_t strideSize =
-        roundUpToNearestMultiple(dataStrideSize, matStrideMultiple);
-    const uint32_t stridePadding =
-        static_cast<uint32_t>(strideSize - dataStrideSize);
+    const uint32_t bufferElementSize = bufferElementTypeSizeOf(elementType);
+    const auto layout =
+        calculateBufferLayout(matElementType, stride, strideCount, elementType,
+                              gTestContext->deviceStrideMultiple);
+    assert(layout.has_value());
+    const uint64_t dataStrideSize = uint64_t{ bufferElementSize } * stride;
+    assert(dataStrideSize <= std::numeric_limits<size_t>::max());
+    assert(layout->strideSize <= std::numeric_limits<size_t>::max());
+    assert(layout->totalSize <= std::numeric_limits<size_t>::max());
+    const size_t stridePadding =
+        static_cast<size_t>(layout->strideSize - dataStrideSize);
 
     return BufferDescriptor(stride, strideCount, elementType, stridePadding);
+}
+
+std::optional<BufferLayout> calculateBufferLayout(
+    const cl_device_cooperative_matrix_component_type_khr matElementType,
+    const uint32_t stride, const uint32_t strideCount,
+    const BufferElementType elementType, const uint32_t strideMultiple)
+{
+    const uint64_t bufferElementSize = bufferElementTypeSizeOf(elementType);
+    // Each buffer stride must satisfy both the matrix component and device
+    // stride-multiple alignment requirements.
+    const uint64_t matStrideMultiple = std::max(
+        uint64_t{ elementSizeOf(matElementType) }, uint64_t{ strideMultiple });
+    const uint64_t gcd = std::gcd(matStrideMultiple, bufferElementSize);
+    if (matStrideMultiple / gcd
+        > std::numeric_limits<uint64_t>::max() / bufferElementSize)
+        return std::nullopt;
+    const uint64_t strideAlignment =
+        matStrideMultiple / gcd * bufferElementSize;
+
+    // Compute the unpadded and padded stride without overflowing.
+    if (stride > std::numeric_limits<uint64_t>::max() / bufferElementSize)
+        return std::nullopt;
+    const uint64_t dataStrideSize = bufferElementSize * stride;
+    const uint64_t remainder = dataStrideSize % strideAlignment;
+    const uint64_t stridePadding =
+        remainder == 0 ? 0 : strideAlignment - remainder;
+    if (dataStrideSize > std::numeric_limits<uint64_t>::max() - stridePadding)
+        return std::nullopt;
+    const uint64_t strideSize = dataStrideSize + stridePadding;
+    if (strideCount != 0
+        && strideSize > std::numeric_limits<uint64_t>::max() / strideCount)
+        return std::nullopt;
+
+    // The complete buffer consists of one padded stride per matrix row/column.
+    return BufferLayout{ strideSize, strideSize * strideCount };
 }
 
 uint32_t bufferElementTypeSizeOf(const BufferElementType &t)
@@ -299,6 +326,24 @@ size_t bufferSizeOf(const BufferDescriptor &d)
     return bufferStrideSizeOf(d) * d.strideCount;
 }
 
+void Variant::initializeStrides()
+{
+    const auto strideInPointerElements = [](const BufferDescriptor &desc) {
+        const size_t pointerElementSize =
+            bufferElementTypeSizeOf(desc.elementType);
+        const size_t byteStride = bufferStrideSizeOf(desc);
+        assert(byteStride % pointerElementSize == 0);
+        assert(byteStride / pointerElementSize
+               <= std::numeric_limits<uint32_t>::max());
+        return static_cast<uint32_t>(byteStride / pointerElementSize);
+    };
+
+    strideA = strideInPointerElements(inputADesc);
+    strideB = strideInPointerElements(inputBDesc);
+    strideC = strideInPointerElements(inputCDesc);
+    strideRes = strideInPointerElements(outputDesc);
+}
+
 namespace {
 
 // clang-format off
@@ -306,64 +351,86 @@ namespace {
 //                     |-----SUB-BUFFER ----------------------------------------------------|
 //
 // +-------------------+----------+---------+----------+---------+-----+----------+---------+
-// | Alignment padding | Stride 0 | padding | Stride 1 | padding | ... | Stride n | padding |
+// | Sub-buffer origin | Stride 0 | padding | Stride 1 | padding | ... | Stride n | padding |
 // +-------------------+----------+---------+----------+---------+-----+----------+---------+
 // clang-format on
-// SUB-BUFFER is aligned to the maximum of the matrix element size and
-// CL_DEVICE_COOPERATIVE_MATRIX_POINTER_ALIGNMENT_KHR.
+// SUB-BUFFER is aligned to the matrix element size,
+// CL_DEVICE_COOPERATIVE_MATRIX_POINTER_ALIGNMENT_KHR, and
+// CL_DEVICE_MEM_BASE_ADDR_ALIGN.
 //
 // The stride padding is chosen such that each stride (including padding) is a
 // multiple of the larger of the matrix element size and
 // CL_DEVICE_COOPERATIVE_MATRIX_STRIDE_MULTIPLE_KHR.
 struct ClBuffer
 {
+    // Owns the oversized parent allocation.
     clMemWrapper bufferHandle;
+
+    // Aligned sub-buffer to be passed to a kernel.
     clMemWrapper subBufferHandle;
 
-    const BufferDescriptor descriptor;
-
-    ClBuffer(clMemWrapper bufferHandle, clMemWrapper subBufferHandle,
-             const BufferDescriptor descriptor)
-        : bufferHandle(bufferHandle), subBufferHandle(subBufferHandle),
-          descriptor(std::move(descriptor))
+    ClBuffer(clMemWrapper bufferHandle, clMemWrapper subBufferHandle)
+        : bufferHandle(bufferHandle), subBufferHandle(subBufferHandle)
     {}
 };
 
-static std::optional<ClBuffer>
-makeClBuffer(cl_context context, cl_command_queue queue, cl_mem_flags flags,
-             const BufferDescriptor desc, const Matrix &mat)
+// Calculate an LCM without overflowing size_t.
+static std::optional<size_t> checkedLcm(const size_t lhs, const size_t rhs)
 {
-    const uint32_t matElementSize = elementSizeOf(mat.elementType);
+    if (lhs == 0 || rhs == 0) return std::nullopt;
+    const size_t reducedLhs = lhs / std::gcd(lhs, rhs);
+    if (reducedLhs > std::numeric_limits<size_t>::max() / rhs)
+        return std::nullopt;
+    return reducedLhs * rhs;
+}
+
+// Create an aligned sub-buffer for use as a cooperative matrix pointer. The
+// parent buffer is oversized so the sub-buffer can begin at an origin that
+// satisfies both the extension and core OpenCL alignment requirements.
+static std::optional<ClBuffer> makeClBuffer(
+    cl_context context, cl_mem_flags flags, const BufferDescriptor desc,
+    const cl_device_cooperative_matrix_component_type_khr matElementType)
+{
+    const uint32_t matElementSize = elementSizeOf(matElementType);
     const size_t matBufferSize = bufferSizeOf(desc);
-    const uint32_t bufAlignment =
-        std::max(matElementSize, gTestContext->devicePointerAlignment);
-    // We overallocate the buffer such that we later can pick an alignment
-    // padding in the range [0, bufAlignment).
-    const size_t bufSize = matBufferSize + bufAlignment;
+    const size_t pointerAlignment =
+        std::max(size_t{ 1 }, size_t{ gTestContext->devicePointerAlignment });
+    const size_t baseAddrAlignment = std::max(
+        size_t{ 1 }, size_t{ gTestContext->deviceMemBaseAddrAlignment });
+
+    // A cooperative matrix pointer and the sub-buffer origin have independent
+    // alignment requirements. Use an origin that satisfies both, as well as
+    // the component type alignment.
+    const auto componentPointerAlignment =
+        checkedLcm(size_t{ matElementSize }, pointerAlignment);
+    if (!componentPointerAlignment.has_value())
+    {
+        log_error("Cooperative matrix buffer alignment is too large.\n");
+        return std::nullopt;
+    }
+    const auto subBufferAlignment =
+        checkedLcm(*componentPointerAlignment, baseAddrAlignment);
+    if (!subBufferAlignment.has_value()
+        || matBufferSize
+            > std::numeric_limits<size_t>::max() - *subBufferAlignment)
+    {
+        log_error("Cooperative matrix buffer is too large.\n");
+        return std::nullopt;
+    }
+
+    // Allocate space before the sub-buffer so it can start at the required
+    // aligned origin.
+    const size_t bufSize = matBufferSize + *subBufferAlignment;
     cl_int err = CL_SUCCESS;
-    clMemWrapper bufHandle = clCreateBuffer(
-        context, flags | CL_MEM_ALLOC_HOST_PTR, bufSize, nullptr, &err);
+    clMemWrapper bufHandle =
+        clCreateBuffer(context, flags, bufSize, nullptr, &err);
     test_error_ret(err, "Unable to create buffer.\n", std::nullopt);
 
-    // We need to map the buffer to learn the actual alignment.
-    void *bufPointer =
-        clEnqueueMapBuffer(queue, bufHandle, CL_TRUE, CL_MAP_READ, 0, bufSize,
-                           0, nullptr, nullptr, &err);
-    test_error_ret(err, "Unable to map buffer.\n", std::nullopt);
-    const uintptr_t bufAddress = reinterpret_cast<uintptr_t>(bufPointer);
-    const uint32_t alignmentRemainder = bufAddress % bufAlignment;
-    const uint32_t alignmentPadding =
-        alignmentRemainder == 0 ? 0 : bufAlignment - alignmentRemainder;
-    // Unmap the buffer pointer since we do not need it anymore.
-    err = clEnqueueUnmapMemObject(queue, bufHandle, bufPointer, 0, nullptr,
-                                  nullptr);
-    test_error_ret(err, "Unable to unmap parent buffer.\n", std::nullopt);
-
-    const cl_buffer_region bufRegion = { alignmentPadding, matBufferSize };
+    const cl_buffer_region bufRegion = { *subBufferAlignment, matBufferSize };
     clMemWrapper subBufHandle = clCreateSubBuffer(
         bufHandle, flags, CL_BUFFER_CREATE_TYPE_REGION, &bufRegion, &err);
     test_error_ret(err, "Unable to create sub-buffer.\n", std::nullopt);
-    return ClBuffer(bufHandle, subBufHandle, desc);
+    return ClBuffer(bufHandle, subBufHandle);
 }
 
 const char *getTypeStr(cl_device_cooperative_matrix_component_type_khr t)
@@ -504,7 +571,8 @@ std::set<BufferElementType> bufferElementTypeCombinations(bool fp64_support)
 
 } // anonymous namespace
 
-const char *showScalarType(cl_device_cooperative_matrix_component_type_khr t)
+const char *
+spirvScalarTypeName(cl_device_cooperative_matrix_component_type_khr t)
 {
     switch (t)
     {
@@ -529,29 +597,6 @@ const char *showScalarType(cl_device_cooperative_matrix_component_type_khr t)
     }
 }
 
-std::string
-describeBufferKind(cl_device_cooperative_matrix_component_type_khr kind)
-{
-    switch (kind)
-    {
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP16_KHR: return "f16";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP32_KHR: return "f32";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP64_KHR: return "f64";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT8_KHR:
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT8_KHR: return "i8";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT16_KHR:
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT16_KHR:
-            return "i16";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT32_KHR:
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT32_KHR:
-            return "i32";
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT64_KHR:
-        case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT64_KHR:
-            return "i64";
-        default: return "???";
-    }
-}
-
 std::string describeBufferElementType(const BufferElementType &elementType)
 {
     std::string res;
@@ -559,7 +604,7 @@ std::string describeBufferElementType(const BufferElementType &elementType)
     {
         res += "vec" + std::to_string(elementType.vectorLength) + "_";
     }
-    return res + describeBufferKind(elementType.scalarType);
+    return res + spirvScalarTypeName(elementType.scalarType);
 }
 
 bool MatrixType::operator<(const MatrixType &other) const
@@ -998,6 +1043,7 @@ void setBoundsFromMaxMagnitude(T &bounds, double maxMagnitude)
 void Matrix::fill(int8_t seed, std::optional<Bounds> bounds)
 {
     MTdataHolder rng = MTdataHolder(seed);
+    bool warnedAboutEmptyIntegerRange = false;
 
     for (cl_uint row = 0; row < nRows; row++)
     {
@@ -1014,7 +1060,8 @@ void Matrix::fill(int8_t seed, std::optional<Bounds> bounds)
                            std::get<FloatBounds>(*bounds))
                         : getFBounds(elementType);
 
-                    auto ratio = uint64_t{ 2 * nRows * nCols };
+                    const uint64_t ratio =
+                        std::max(uint64_t{ 1 }, 2 * uint64_t{ nRows } * nCols);
                     uint64_t discriminator = genrand_int64(rng) % ratio;
                     double value;
                     if (fBounds.canBeNonFinite && discriminator == 0)
@@ -1038,12 +1085,25 @@ void Matrix::fill(int8_t seed, std::optional<Bounds> bounds)
                                std::holds_alternative<SignedBounds>(*bounds)),
                            std::get<SignedBounds>(*bounds))
                         : getSBounds(elementType);
-                    int64_t value =
-                        static_cast<int64_t>(
-                            static_cast<uint64_t>(genrand_int64(rng))
-                            % (static_cast<uint64_t>(sBounds.max)
-                               - static_cast<uint64_t>(sBounds.min)))
-                        + sBounds.min;
+                    int64_t value;
+                    if (sBounds.min >= sBounds.max)
+                    {
+                        if (!warnedAboutEmptyIntegerRange)
+                        {
+                            log_info("WARNING: empty signed integer input "
+                                     "range; filling with its lower bound.\n");
+                            warnedAboutEmptyIntegerRange = true;
+                        }
+                        value = sBounds.min;
+                    }
+                    else
+                    {
+                        value = static_cast<int64_t>(
+                                    static_cast<uint64_t>(genrand_int64(rng))
+                                    % (static_cast<uint64_t>(sBounds.max)
+                                       - static_cast<uint64_t>(sBounds.min)))
+                            + sBounds.min;
+                    }
                     setS64(offset, value);
                     break;
                 }
@@ -1056,7 +1116,22 @@ void Matrix::fill(int8_t seed, std::optional<Bounds> bounds)
                                std::holds_alternative<UnsignedBounds>(*bounds)),
                            std::get<UnsignedBounds>(*bounds))
                         : getUBounds(elementType);
-                    uint64_t value = genrand_int64(rng) % uBounds.max;
+                    uint64_t value;
+                    if (uBounds.min >= uBounds.max)
+                    {
+                        if (!warnedAboutEmptyIntegerRange)
+                        {
+                            log_info("WARNING: empty unsigned integer input "
+                                     "range; filling with its lower bound.\n");
+                            warnedAboutEmptyIntegerRange = true;
+                        }
+                        value = uBounds.min;
+                    }
+                    else
+                    {
+                        value = genrand_int64(rng) % (uBounds.max - uBounds.min)
+                            + uBounds.min;
+                    }
                     setU64(offset, value);
                     break;
             }
@@ -1415,32 +1490,6 @@ bool verifyOutputBuffer(const Variant &v, bool isDiv, double maxULPError)
 
 bool CoopMatTest::verify(const Variant &variant) const
 {
-    if (op == CoopMatOp::length)
-    {
-        // The distribution of matrix elements across work-items is
-        // implementation defined and there is no guarantee of an even
-        // distribution. The only thing we can check is that the values from all
-        // work-items add up to the matrix size.
-        uint32_t sum = 0;
-        const uint32_t expected = variant.output.elementCount();
-        const size_t outputBytes = bufferSizeOf(variant.outputDesc);
-        for (size_t i = 0; i < variant.globalSize; i++)
-        {
-            // Outputs are packed starting at index 0.
-            const size_t byteOffset = i * sizeof(uint32_t);
-            if (byteOffset + sizeof(uint32_t) > outputBytes) break;
-            sum += variant.output.get<uint32_t>(byteOffset);
-        }
-        if (sum != expected)
-        {
-            log_error(
-                "Verification failed; expected length to be %u; actual %u\n",
-                expected, sum);
-            return false;
-        }
-        return true;
-    }
-
     const bool isDiv = (op == CoopMatOp::div);
 
     double maxULPError = 0;
@@ -1809,9 +1858,17 @@ uint64_t saturating_add(uint64_t a, uint64_t b, size_t widthInBytes,
             ? std::numeric_limits<uint64_t>::max()
             : (uint64_t{ 1 } << widthInBits) - 1;
         const uint64_t signBit = uint64_t{ 1 } << (widthInBits - 1);
-        const auto signExtend = [valueMask, signBit](uint64_t value) {
+        const auto signExtend = [valueMask, signBit,
+                                 widthInBytes](uint64_t value) -> int64_t {
             value &= valueMask;
-            return value & signBit ? value | ~valueMask : value;
+            if ((value & signBit) == 0) return static_cast<int64_t>(value);
+
+            // Avoid an out-of-range uint64_t-to-int64_t conversion.
+            if (widthInBytes == sizeof(int64_t) && value == signBit)
+            {
+                return std::numeric_limits<int64_t>::min();
+            }
+            return -static_cast<int64_t>((~value + 1) & valueMask);
         };
         const int64_t signedMax = widthInBytes == sizeof(int64_t)
             ? std::numeric_limits<int64_t>::max()
@@ -1966,6 +2023,37 @@ int CoopMatTest::buildAndRun(Variant &variant)
         return TEST_PASS;
     }
 
+    // Query the local size needed for a single subgroup, so we can
+    // use this as the global size for our work.
+    const size_t numSubgroups = 1;
+    size_t globalSize;
+    err = clGetKernelSubGroupInfo(
+        kernel, device, CL_KERNEL_LOCAL_SIZE_FOR_SUB_GROUP_COUNT,
+        sizeof(numSubgroups), (void *)&numSubgroups, sizeof(globalSize),
+        (void *)&globalSize, nullptr);
+    test_error_fail(err, "Failed to get required work group size");
+    if (op == CoopMatOp::length)
+    {
+        if (globalSize > std::numeric_limits<uint32_t>::max())
+        {
+            log_error("Subgroup size %zu is too large for the length test\n",
+                      globalSize);
+            return TEST_FAIL;
+        }
+        const auto outputLayout = calculateBufferLayout(
+            CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT32_KHR,
+            static_cast<uint32_t>(globalSize), 1,
+            IndexedBufferElementType<1>(
+                CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT32_KHR),
+            gTestContext->deviceStrideMultiple);
+        if (!outputLayout.has_value()
+            || outputLayout->totalSize > std::numeric_limits<uint32_t>::max())
+        {
+            log_error("Length-test output buffer is too large\n");
+            return TEST_FAIL;
+        }
+    }
+
     // Set up input buffers.
     // Regardless of the vectorSize of the operation being tested, always set up
     // 3 input arguments to simplify generation of the program.
@@ -2105,7 +2193,7 @@ int CoopMatTest::buildAndRun(Variant &variant)
                                   Layout layout,
                                   uint32_t stride) -> std::optional<ClBuffer> {
         std::optional<ClBuffer> maybe_clBuf =
-            makeClBuffer(context, queue, CL_MEM_READ_WRITE, desc, mat);
+            makeClBuffer(context, CL_MEM_READ_WRITE, desc, mat.elementType);
         if (!maybe_clBuf.has_value())
         {
             return std::nullopt;
@@ -2121,7 +2209,7 @@ int CoopMatTest::buildAndRun(Variant &variant)
                                    nullptr);
         test_error_ret(err, "Unable to fill input buffer", std::nullopt);
 
-        // Load the matrix from the buffer the get the "correct" input matrix.
+        // Load the matrix from the buffer to get the "correct" input matrix.
         // This is necessary since OpCooperativeMatrixStoreKHR followed by a
         // OpCooperativeMatrixLoadKHR does not have a round-trip property, due
         // to the stride 0 edge case.
@@ -2159,22 +2247,35 @@ int CoopMatTest::buildAndRun(Variant &variant)
     // Compute the reference output.
     fillRefOutput(variant);
 
+    // OpCooperativeMatrixLengthKHR returns one value per subgroup invocation,
+    // which may be more than the number of matrix elements.
+    const BufferDescriptor outputDesc = op == CoopMatOp::length
+        ? BufferDescriptor::makeBufferDescriptor(
+            CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT32_KHR,
+            static_cast<uint32_t>(globalSize), 1,
+            IndexedBufferElementType<1>(
+                CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT32_KHR))
+        : variant.outputDesc;
+    const auto outputElementType = op == CoopMatOp::length
+        ? CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT32_KHR
+        : variant.output.elementType;
+
     // Set up output buffer.
-    std::optional<ClBuffer> maybe_output = makeClBuffer(
-        context, queue, CL_MEM_WRITE_ONLY, variant.outputDesc, variant.output);
+    std::optional<ClBuffer> maybe_output =
+        makeClBuffer(context, CL_MEM_WRITE_ONLY, outputDesc, outputElementType);
     if (!maybe_output.has_value())
     {
         return TEST_FAIL;
     }
     const ClBuffer output = maybe_output.value();
 
-    const size_t outReadSize = bufferSizeOf(variant.outputDesc);
+    const size_t outReadSize = bufferSizeOf(outputDesc);
 
     // Fill output buffer to give indication of if the test has written to it.
     unsigned char pattern = 13;
-    err = clEnqueueFillBuffer(
-        queue, output.subBufferHandle, &pattern, sizeof(pattern), 0,
-        bufferSizeOf(variant.outputDesc), 0, nullptr, nullptr);
+    err = clEnqueueFillBuffer(queue, output.subBufferHandle, &pattern,
+                              sizeof(pattern), 0, bufferSizeOf(outputDesc), 0,
+                              nullptr, nullptr);
 
     test_error_fail(err, "Unable to create output buffer");
 
@@ -2189,22 +2290,39 @@ int CoopMatTest::buildAndRun(Variant &variant)
         i++;
     }
 
-    // Query the local size needed for a single subgroup, so we can
-    // use this as the global size for our work.
-    const size_t numSubgroups = 1;
-    size_t globalSize;
-    err |= clGetKernelSubGroupInfo(
-        kernel, device, CL_KERNEL_LOCAL_SIZE_FOR_SUB_GROUP_COUNT,
-        sizeof(numSubgroups), (void *)&numSubgroups, sizeof(globalSize),
-        (void *)&globalSize, nullptr);
-    test_error_fail(err, "Failed to get required work group size");
-    variant.globalSize = globalSize;
-
     // Enqueue the work. Cooperative matrices need full subgroups so we set the
     // global and local sizes to the (local) size of a single subgroup.
     err = clEnqueueNDRangeKernel(queue, kernel, 1, nullptr, &globalSize,
                                  &globalSize, 0, nullptr, nullptr);
     test_error_fail(err, "Unable to enqueue kernel");
+
+    if (op == CoopMatOp::length)
+    {
+        std::vector<uint32_t> lengths(globalSize);
+        err = clEnqueueReadBuffer(queue, output.subBufferHandle, CL_TRUE, 0,
+                                  lengths.size() * sizeof(uint32_t),
+                                  lengths.data(), 0, nullptr, nullptr);
+        test_error_fail(err, "Unable to read destination buffer");
+
+        // The distribution of matrix elements across work-items is
+        // implementation defined and there is no guarantee of an even
+        // distribution. The only thing we can check is that the values from all
+        // work-items add up to the matrix size.
+        uint32_t sum = 0;
+        for (uint32_t length : lengths)
+        {
+            sum += length;
+        }
+        const uint32_t expected = variant.output.elementCount();
+        if (sum != expected)
+        {
+            log_error(
+                "Verification failed; expected length to be %u; actual %u\n",
+                expected, sum);
+            return TEST_FAIL;
+        }
+        return TEST_PASS;
+    }
 
     // Read back output into a semantic buffer, then unpack into Matrix.
     SemBuffer buf(variant.outputDesc, std::vector<uint8_t>(outReadSize));
@@ -2454,8 +2572,9 @@ int CoopMatTest::runAll()
                     Variant::OperandOrder order =
                         getOrderFromKindAndUse(kind, src.use);
                     variantsToRun.emplace_back(
-                        src.type, dst.type, src.nRows, src.nCols, src.use,
-                        order, Layout::RowMajor, Layout::RowMajor);
+                        src.type, dst.type, src.nRows, src.nCols, order,
+                        Layout::RowMajor, Layout::RowMajor,
+                        /* conversion */ true);
                 }
             }
 

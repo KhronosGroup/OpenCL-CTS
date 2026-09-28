@@ -203,16 +203,14 @@ uint32_t numberOfStrides(const Layout layout, const uint32_t rows,
                          const uint32_t cols);
 uint32_t elementSizeOf(const cl_device_cooperative_matrix_component_type_khr t);
 const char *
-showScalarType(const cl_device_cooperative_matrix_component_type_khr t);
-std::string
-describeBufferKind(const cl_device_cooperative_matrix_component_type_khr kind);
+spirvScalarTypeName(const cl_device_cooperative_matrix_component_type_khr t);
 std::string describeBufferElementType(const BufferElementType &elementType);
 bool isFloatType(const cl_device_cooperative_matrix_component_type_khr t);
 bool isSignedIntType(const cl_device_cooperative_matrix_component_type_khr t);
 
 struct BufferDescriptor
 {
-    // Elements per stride.
+    // Pointer elements per stride, excluding padding.
     const uint32_t stride;
 
     // Number of strides.
@@ -221,9 +219,9 @@ struct BufferDescriptor
     // Element type.
     const BufferElementType elementType;
 
-    // Padding after each stride. Needed to satisfy
+    // Padding in bytes after each stride. Needed to satisfy
     // CL_DEVICE_COOPERATIVE_MATRIX_STRIDE_MULTIPLE_KHR.
-    const uint32_t stridePadding;
+    const size_t stridePadding;
 
     static BufferDescriptor makeBufferDescriptor(
         const cl_device_cooperative_matrix_component_type_khr matElementType,
@@ -234,11 +232,24 @@ private:
     explicit BufferDescriptor(const uint32_t stride,
                               const uint32_t stride_count,
                               const BufferElementType elementType,
-                              const uint32_t stridePadding)
+                              const size_t stridePadding)
         : stride(stride), strideCount(stride_count), elementType(elementType),
           stridePadding(stridePadding)
     {}
 };
+
+struct BufferLayout
+{
+    const uint64_t strideSize;
+    const uint64_t totalSize;
+};
+
+// Calculate the padded stride and total buffer size. Returns std::nullopt if
+// the stride alignment, padded stride, or total size would overflow uint64_t.
+std::optional<BufferLayout> calculateBufferLayout(
+    cl_device_cooperative_matrix_component_type_khr matElementType,
+    uint32_t stride, uint32_t strideCount, BufferElementType elementType,
+    uint32_t strideMultiple);
 
 size_t bufferStrideSizeOf(const BufferDescriptor &d);
 size_t bufferSizeOf(const BufferDescriptor &d);
@@ -395,21 +406,20 @@ public:
               numberOfStrides(outputLayout, nRows, nCols),
               IndexedBufferElementType<1>(type))),
           layoutA(inputLayout), layoutB(inputLayout), layoutC(inputLayout),
-          layoutRes(outputLayout), strideA(inputADesc.stride),
-          strideB(inputBDesc.stride), strideC(inputCDesc.stride),
-          strideRes(outputDesc.stride), isConversion(false),
-          isSaturating(false), isMulticomponent(false)
+          layoutRes(outputLayout), isConversion(false), isSaturating(false),
+          isMulticomponent(false)
     {
+        initializeStrides();
         assert(o != OperandOrder::OpABC
                && "constructor must not be used for ternary operations");
     }
 
-    // Construct a Variant for a single matrix type, but with a different
-    // output type; primarily intended for the length operation.
+    // Construct a Variant with different input and output types, for length or
+    // conversion operations.
     Variant(cl_device_cooperative_matrix_component_type_khr inputType,
             cl_device_cooperative_matrix_component_type_khr outputType,
             cl_uint nRows, cl_uint nCols, OperandOrder o, Layout inputLayout,
-            Layout outputLayout)
+            Layout outputLayout, bool conversion = false)
         : order(o), inputA(inputType, nRows, nCols),
           inputB(inputType, nRows, nCols), inputC(inputType, nRows, nCols),
           output(outputType, nRows, nCols), outputRef(outputType, nRows, nCols),
@@ -430,46 +440,10 @@ public:
               numberOfStrides(outputLayout, nRows, nCols),
               IndexedBufferElementType<1>(outputType))),
           layoutA(inputLayout), layoutB(inputLayout), layoutC(inputLayout),
-          layoutRes(outputLayout), strideA(inputADesc.stride),
-          strideB(inputBDesc.stride), strideC(inputCDesc.stride),
-          strideRes(outputDesc.stride), isConversion(false),
+          layoutRes(outputLayout), isConversion(conversion),
           isSaturating(false), isMulticomponent(false)
     {
-        assert((o == OperandOrder::OpA || o == OperandOrder::OpB
-                || o == OperandOrder::OpC)
-               && "constructor must not be used for non-unary operations");
-    }
-
-    // Construct a Variant for a conversion.
-    Variant(cl_device_cooperative_matrix_component_type_khr srcType,
-            cl_device_cooperative_matrix_component_type_khr dstType,
-            cl_uint nRows, cl_uint nCols, MatrixType::Use u, OperandOrder o,
-            Layout inputLayout, Layout outputLayout)
-        : order(o), inputA(srcType, nRows, nCols),
-          inputB(srcType, nRows, nCols), inputC(srcType, nRows, nCols),
-          output(dstType, nRows, nCols), outputRef(dstType, nRows, nCols),
-          inputADesc(BufferDescriptor::makeBufferDescriptor(
-              srcType, elementsPerStride(inputLayout, nRows, nCols),
-              numberOfStrides(inputLayout, nRows, nCols),
-              IndexedBufferElementType<1>(srcType))),
-          inputBDesc(BufferDescriptor::makeBufferDescriptor(
-              srcType, elementsPerStride(inputLayout, nRows, nCols),
-              numberOfStrides(inputLayout, nRows, nCols),
-              IndexedBufferElementType<1>(srcType))),
-          inputCDesc(BufferDescriptor::makeBufferDescriptor(
-              srcType, elementsPerStride(inputLayout, nRows, nCols),
-              numberOfStrides(inputLayout, nRows, nCols),
-              IndexedBufferElementType<1>(srcType))),
-          outputDesc(BufferDescriptor::makeBufferDescriptor(
-              dstType, elementsPerStride(outputLayout, nRows, nCols),
-              numberOfStrides(outputLayout, nRows, nCols),
-              IndexedBufferElementType<1>(dstType))),
-          layoutA(inputLayout), layoutB(inputLayout), layoutC(inputLayout),
-          layoutRes(outputLayout), strideA(inputADesc.stride),
-          strideB(inputBDesc.stride), strideC(inputCDesc.stride),
-          strideRes(outputDesc.stride), isConversion(true), isSaturating(false),
-          isMulticomponent(false)
-    {
+        initializeStrides();
         assert((o == OperandOrder::OpA || o == OperandOrder::OpB
                 || o == OperandOrder::OpC)
                && "constructor must not be used for non-unary operations");
@@ -485,11 +459,11 @@ public:
           outputRef(type, nRows, nCols), inputADesc(inputBuffer),
           inputBDesc(inputBuffer), inputCDesc(inputBuffer),
           outputDesc(outputBuffer), layoutA(inputLayout), layoutB(inputLayout),
-          layoutC(inputLayout), layoutRes(outputLayout),
-          strideA(inputADesc.stride), strideB(inputBDesc.stride),
-          strideC(inputCDesc.stride), strideRes(outputDesc.stride),
-          isConversion(false), isSaturating(false), isMulticomponent(true)
-    {}
+          layoutC(inputLayout), layoutRes(outputLayout), isConversion(false),
+          isSaturating(false), isMulticomponent(true)
+    {
+        initializeStrides();
+    }
 
     // Construct a Variant from config data returned by device query.
     Variant(const cl_device_cooperative_matrix_variant_khr &v, OperandOrder o,
@@ -517,11 +491,10 @@ public:
               numberOfStrides(outputLayout, v.m_size, v.n_size),
               IndexedBufferElementType<1>(v.result_type))),
           layoutA(inputLayout), layoutB(inputLayout), layoutC(inputLayout),
-          layoutRes(outputLayout), strideA(inputADesc.stride),
-          strideB(inputBDesc.stride), strideC(inputCDesc.stride),
-          strideRes(outputDesc.stride), isConversion(false),
+          layoutRes(outputLayout), isConversion(false),
           isSaturating(v.saturating_accumulation), isMulticomponent(false)
     {
+        initializeStrides();
         assert(o == OperandOrder::OpABC
                && "constructor must only be used for ternary operations");
     }
@@ -537,6 +510,9 @@ public:
     // Return a vector with the input matrices for the OperandOrder of this
     // Variant.
     void getInputsForOperation(std::vector<const Matrix *> &inputs) const;
+
+private:
+    void initializeStrides();
 
 public:
     const OperandOrder order;
@@ -560,7 +536,6 @@ public:
     bool isConversion;
     bool isSaturating;
     bool isMulticomponent;
-    size_t globalSize;
 };
 
 // Global test data.
@@ -592,6 +567,9 @@ struct TestContext
     // CL_DEVICE_COOPERATIVE_MATRIX_STRIDE_MULTIPLE_KHR, respectively.
     uint32_t devicePointerAlignment;
     uint32_t deviceStrideMultiple;
+
+    // Alignment in bytes required for sub-buffer origins.
+    uint32_t deviceMemBaseAddrAlignment;
 };
 
 #endif // COOPERATIVE_MATRIX_HPP

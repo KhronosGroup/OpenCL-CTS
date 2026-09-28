@@ -17,7 +17,6 @@
 
 #include <cassert>
 #include <cstdlib>
-#include <fstream>
 #include <set>
 #include <string_view>
 
@@ -75,12 +74,12 @@ void ProgramGenerator::genTypeDecls()
     // Collect types for all input and output matrices.
     for (int i = 0; i < 4; i++)
     {
-        types.insert(showScalarType(variant.getMatrix(i).elementType));
-        types.insert(describeBufferKind(
+        types.insert(spirvScalarTypeName(variant.getMatrix(i).elementType));
+        types.insert(spirvScalarTypeName(
             variant.getBufferDescriptor(i).elementType.scalarType));
     }
 
-    // Emit the type declarations for the matrix types.
+    // Emit the scalar and pointer type declarations.
     for (const auto &t : types)
     {
         // Declare the scalar type.
@@ -100,8 +99,11 @@ void ProgramGenerator::genTypeDecls()
                    << t << "\n";
     }
 
-    // Declare the input pointer type.
-    spirv_text << "    %iptr_i32 = OpTypePointer Input %i32\n";
+    if (op == CoopMatOp::length)
+    {
+        // Declare the subgroup-local-ID pointer type.
+        spirv_text << "    %iptr_i32 = OpTypePointer Input %i32\n";
+    }
 
     // Then, emit the vector declarations for the input/output buffer (if any).
     std::set<BufferElementType> bufElementTypes;
@@ -121,7 +123,7 @@ void ProgramGenerator::genTypeDecls()
         const BufferDescriptor desc = BufferDescriptor::makeBufferDescriptor(
             bufElementType.scalarType, 1, 1, bufElementType);
         const std::string typeStr = bufferTypeString(desc);
-        std::string kindStr = describeBufferKind(bufElementType.scalarType);
+        std::string kindStr = spirvScalarTypeName(bufElementType.scalarType);
         spirv_text << "    %" << typeStr << " = OpTypeVector %" << kindStr
                    << " " << std::to_string(bufElementType.vectorLength)
                    << "\n";
@@ -131,7 +133,6 @@ void ProgramGenerator::genTypeDecls()
         spirv_text << "    %ptr_" << typeStr
                    << " = OpTypePointer CrossWorkgroup %" << typeStr << "\n";
     }
-
 
     // Declare the kernel function type.
     spirv_text << "    %FnTy = OpTypeFunction %void";
@@ -204,7 +205,7 @@ void ProgramGenerator::genConstants()
     %numElems = OpConstant %i32 )"
                        << variant.output.elementCount() << R"(
     %arrayTy = OpTypeArray %)"
-                       << showScalarType(variant.output.elementType)
+                       << spirvScalarTypeName(variant.output.elementType)
                        << R"( %numElems
     %workgroupPtr = OpTypePointer Workgroup %arrayTy
     %sharedBuffer = OpVariable %workgroupPtr Workgroup
@@ -212,13 +213,14 @@ void ProgramGenerator::genConstants()
     %scopeWorkgroup = OpConstant %i32 2
     %workAcquire  = OpConstant %i32 0x108
     %workGroupPtrFloat = OpTypePointer Workgroup %)"
-                       << showScalarType(variant.output.elementType) << "\n";
+                       << spirvScalarTypeName(variant.output.elementType)
+                       << "\n";
             break;
         case CoopMatOp::constant:
         case CoopMatOp::composite:
             spirv_text << R"(
     %fillValue = OpConstant %)"
-                       << showScalarType(variant.inputA.elementType)
+                       << spirvScalarTypeName(variant.inputA.elementType)
                        << " 123\n";
             if (op == CoopMatOp::constant)
                 spirv_text << R"(
@@ -233,18 +235,21 @@ void ProgramGenerator::genConstants()
     %one = OpConstant %i32 1
     %two = OpConstant %i32 2
     %fillValue = OpConstant %)"
-                       << showScalarType(variant.output.elementType) << R"( 121
+                       << spirvScalarTypeName(variant.output.elementType)
+                       << R"( 121
     %fillValue2 = OpConstant %)"
-                       << showScalarType(variant.output.elementType) << R"( 122
+                       << spirvScalarTypeName(variant.output.elementType)
+                       << R"( 122
     %fillValue3 = OpConstant %)"
-                       << showScalarType(variant.output.elementType) << R"( 123
+                       << spirvScalarTypeName(variant.output.elementType)
+                       << R"( 123
     %matArrty = OpTypeArray %mat)"
                        << variant.order << R"(ty %two
     %filled = OpConstantComposite %mat)"
                        << variant.order << R"(ty %fillValue
     %matOArrty = OpTypePointer Function %matArrty
     %ptr = OpTypePointer Function %)"
-                       << showScalarType(variant.output.elementType) << R"(
+                       << spirvScalarTypeName(variant.output.elementType) << R"(
     %ity = OpTypePointer Function %i32
     %matptr = OpTypePointer Function %mat)"
                        << variant.order << R"(ty
@@ -255,15 +260,17 @@ void ProgramGenerator::genConstants()
     %bool = OpTypeBool
     %zero = OpConstant %i32 0
     %zeroO = OpConstant %)"
-                       << showScalarType(variant.output.elementType) << R"( 0
+                       << spirvScalarTypeName(variant.output.elementType)
+                       << R"( 0
     %ptr = OpTypePointer Function %)"
-                       << showScalarType(variant.output.elementType) << R"(
+                       << spirvScalarTypeName(variant.output.elementType) << R"(
     %ity = OpTypePointer Function %i32
     %matptr = OpTypePointer Function )"
                        << getResTy() << R"(
 
     %fillValue = OpConstant %)"
-                       << showScalarType(variant.output.elementType) << R"( 123
+                       << spirvScalarTypeName(variant.output.elementType)
+                       << R"( 123
     %filled = OpConstantComposite %mat)"
                        << variant.order << R"(ty %fillValue
 )";
@@ -272,11 +279,14 @@ void ProgramGenerator::genConstants()
             spirv_text << R"(
     %two = OpConstant %i32 2
     %fillValueA = OpConstant %)"
-                       << showScalarType(variant.inputA.elementType) << R"( 123
+                       << spirvScalarTypeName(variant.inputA.elementType)
+                       << R"( 123
     %fillValueB = OpConstant %)"
-                       << showScalarType(variant.inputB.elementType) << R"( 123
+                       << spirvScalarTypeName(variant.inputB.elementType)
+                       << R"( 123
     %fillValueC = OpConstant %)"
-                       << showScalarType(variant.inputC.elementType) << R"( 123
+                       << spirvScalarTypeName(variant.inputC.elementType)
+                       << R"( 123
     %matAArrty = OpTypeArray %matAty %two
     %matBArrty = OpTypeArray %matBty %two
     %matCArrty = OpTypeArray %matCty %two
@@ -446,7 +456,7 @@ void ProgramGenerator::genBody()
     %val = OpLoad %i32 %i
     %src_ptr = OpAccessChain %ptr %matArrVar %one %val
     %dest_ptr = OpAccessChain %ptr %matOArr %one %val
-    %element = OpLoad %)" << showScalarType(variant.getMatrix(3).elementType) << R"( %src_ptr
+    %element = OpLoad %)" << spirvScalarTypeName(variant.getMatrix(3).elementType) << R"( %src_ptr
     OpStore %dest_ptr %element
 
     %inc = OpIAdd %i32 %val %one
@@ -473,7 +483,7 @@ void ProgramGenerator::genBody()
     %then = OpLabel
     OpStore %tempVar %mat
     %tempMat = OpLoad )" << getResTy() << R"( %tempVar
-    %val = OpCompositeExtract %)" << showScalarType(variant.getMatrix(3).elementType) << R"( %tempMat 0
+    %val = OpCompositeExtract %)" << spirvScalarTypeName(variant.getMatrix(3).elementType) << R"( %tempMat 0
     %matReIns = OpCompositeInsert )" << getResTy() << R"( %val %mat 0
     OpStore %matOVar %matReIns
     OpBranch %endIf
@@ -508,8 +518,7 @@ void ProgramGenerator::genBody()
                   << (isFloatType(variant.output.elementType) ? "F" :
                       op != CoopMatOp::div ? "I" :
                       isSignedIntType(variant.output.elementType) ? "S" : "U")
-                  << (op == CoopMatOp::negate ? "Negate" :
-                      op == CoopMatOp::add ? "Add" :
+                  << (op == CoopMatOp::add ? "Add" :
                       op == CoopMatOp::sub ? "Sub" :
                       op == CoopMatOp::mul ? "Mul" :
                       op == CoopMatOp::div ? "Div" : "???");
@@ -607,28 +616,45 @@ void ProgramGenerator::genMatrixTypes()
         return "%sizeM %sizeN";
     };
 
-    spirv_text << "    %matAty = OpTypeCooperativeMatrixKHR %"
-               << showScalarType(variant.inputA.elementType)
-               << " %i32_subgroup " << getDims(0) << " %i32_useA\n"
-               << "    %matBty = OpTypeCooperativeMatrixKHR %"
-               << showScalarType(variant.inputB.elementType)
-               << " %i32_subgroup " << getDims(1) << " %i32_useB\n"
-               << "    %matCty = OpTypeCooperativeMatrixKHR %"
-               << showScalarType(variant.inputC.elementType)
-               << " %i32_subgroup " << getDims(2) << " %i32_useC\n";
+    const auto emitMatrixType =
+        [&](const char *name, const int matrixIdx,
+            const cl_device_cooperative_matrix_component_type_khr elementType,
+            const char *use) {
+            spirv_text << "    %mat" << name
+                       << "ty = OpTypeCooperativeMatrixKHR %"
+                       << spirvScalarTypeName(elementType) << " %i32_subgroup "
+                       << getDims(matrixIdx) << " " << use << "\n";
+        };
 
-    if (variant.order == Variant::OperandOrder::OpABC
-        && variant.inputC.elementType != variant.output.elementType)
+    const bool isTernary = variant.order == Variant::OperandOrder::OpABC;
+    if (isTernary || variant.order == Variant::OperandOrder::OpA
+        || variant.order == Variant::OperandOrder::OpAA)
+    {
+        emitMatrixType("A", 0, variant.inputA.elementType, "%i32_useA");
+    }
+    if (isTernary || variant.order == Variant::OperandOrder::OpB
+        || variant.order == Variant::OperandOrder::OpBB)
+    {
+        emitMatrixType("B", 1, variant.inputB.elementType, "%i32_useB");
+    }
+    if (isTernary || variant.order == Variant::OperandOrder::OpC
+        || variant.order == Variant::OperandOrder::OpCC)
+    {
+        emitMatrixType("C", 2, variant.inputC.elementType, "%i32_useC");
+    }
+
+    if (isTernary && variant.inputC.elementType != variant.output.elementType)
     {
         spirv_text << "    %matResty = OpTypeCooperativeMatrixKHR %"
-                   << showScalarType(variant.output.elementType)
+                   << spirvScalarTypeName(variant.output.elementType)
                    << " %i32_subgroup %sizeM %sizeN %i32_useC\n";
     }
 
     // Emit matOutty for conversions that change the component type.
     if (op == CoopMatOp::convert && needsConversion())
     {
-        const char *elementType = showScalarType(variant.output.elementType);
+        const char *elementType =
+            spirvScalarTypeName(variant.output.elementType);
         spirv_text << "    %matOutty = OpTypeCooperativeMatrixKHR %"
                    << elementType << " %i32_subgroup %sizeM %sizeN %i32_use"
                    << variant.order << "\n";
@@ -703,37 +729,30 @@ bool ProgramGenerator::generateSpirv(Program *prog_out)
     // Capabilities that depend on the supported variants.
     std::set<std::string> capabilities;
 
-    // Gather kernel argument information.
+    // Gather capabilities required by kernel argument types.
     for (size_t i = 0; i < Program::numKernelArgs; i++)
     {
-        if (op == CoopMatOp::length && i == 3)
+        // length is different from the other operations: the result is an i32
+        // regardless of the input/output matrix types.
+        const std::string argType = op == CoopMatOp::length && i == 3
+            ? "i32"
+            : spirvScalarTypeName(variant.getMatrix(i).elementType);
+        if (argType == "i8")
         {
-            // length is different from the other operations: the result is an
-            // i32 regardless of the input/output matrix types.
-            prog_out->argType[i] = "i32";
+            capabilities.insert("Int8");
         }
-        else
+        else if (argType == "i64")
         {
-            prog_out->argType[i] =
-                showScalarType(variant.getMatrix(i).elementType);
-            if (prog_out->argType[i] == "i8")
-            {
-                capabilities.insert("Int8");
-            }
-            else if (prog_out->argType[i] == "i64")
-            {
-                capabilities.insert("Int64");
-            }
-            else if (prog_out->argType[i] == "f16")
-            {
-                capabilities.insert("Float16");
-            }
-            else if (prog_out->argType[i] == "f64")
-            {
-                capabilities.insert("Float64");
-            }
+            capabilities.insert("Int64");
         }
-        prog_out->bufferSize[i] = bufferSizeOf(variant.getBufferDescriptor(i));
+        else if (argType == "f16")
+        {
+            capabilities.insert("Float16");
+        }
+        else if (argType == "f64")
+        {
+            capabilities.insert("Float64");
+        }
     }
 
     // Add capability for buffer element pointers (used by
@@ -786,21 +805,30 @@ bool ProgramGenerator::generateSpirv(Program *prog_out)
     spirv_text << R"(
     OpExtension "SPV_KHR_cooperative_matrix"
     OpMemoryModel Physical)" << gTestContext->addrWidth << R"( OpenCL
-    OpEntryPoint Kernel %fnDef "testCoopMat" %builtin_slid
+    OpEntryPoint Kernel %fnDef "testCoopMat")";
+
+    if (op == CoopMatOp::length)
+    {
+        spirv_text << R"( %builtin_slid
 
     OpDecorate %builtin_slid LinkageAttributes "builtin_slid" Import
     OpDecorate %builtin_slid Constant
     OpDecorate %builtin_slid BuiltIn SubgroupLocalInvocationId
+)";
+    }
 
+    spirv_text << R"(
     %void = OpTypeVoid
 )";
 
     genTypeDecls();
 
-    const std::string sizetType("%i" + gTestContext->addrWidth);
-    spirv_text << R"(
+    if (op == CoopMatOp::length)
+    {
+        spirv_text << R"(
     %builtin_slid = OpVariable %iptr_i32 Input
 )";
+    }
 
     // sizeM, sizeK, sizeN.
     genSizeConstants();
@@ -838,10 +866,13 @@ bool ProgramGenerator::generateSpirv(Program *prog_out)
 
     genVariables();
 
-    spirv_text << R"(
+    if (op == CoopMatOp::length)
+    {
+        spirv_text << R"(
     %slid = OpLoad %i32 %builtin_slid Aligned 32
     %out_slid_offset = OpInBoundsPtrAccessChain %ptr_)" << bufferTypeString(variant.outputDesc) << R"( %out %slid
 )";
+    }
 
     genBody();
 

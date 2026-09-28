@@ -13,7 +13,10 @@
 // limitations under the License.
 //
 
+#include <climits>
 #include <cstring>
+#include <limits>
+#include <numeric>
 
 #include "harness/deviceInfo.h"
 #include "harness/testHarness.h"
@@ -71,6 +74,21 @@ test_status InitCL(cl_device_id device)
     log_info("Stride multiple is %u bytes.\n",
              writableTestContext.deviceStrideMultiple);
 
+    cl_uint memBaseAddrAlignmentBits;
+    err = clGetDeviceInfo(device, CL_DEVICE_MEM_BASE_ADDR_ALIGN,
+                          sizeof(cl_uint), &memBaseAddrAlignmentBits, nullptr);
+    test_error_fail(err,
+                    "clGetDeviceInfo for CL_DEVICE_MEM_BASE_ADDR_ALIGN "
+                    "failed\n");
+    // Convert the bit alignment requirement to the minimum byte-aligned
+    // origin. This is lcm(alignment, CHAR_BIT) / CHAR_BIT, simplified to
+    // alignment / gcd(alignment, CHAR_BIT) to avoid overflowing size_t.
+    writableTestContext.deviceMemBaseAddrAlignment = static_cast<uint32_t>(
+        size_t{ memBaseAddrAlignmentBits }
+        / std::gcd(size_t{ memBaseAddrAlignmentBits }, size_t{ CHAR_BIT }));
+    log_info("Sub-buffer origin alignment is %u bytes.\n",
+             writableTestContext.deviceMemBaseAddrAlignment);
+
     clGetDeviceCooperativeMatrixInfoKHR_fn clGetDeviceCooperativeMatrixInfoKHR =
         reinterpret_cast<clGetDeviceCooperativeMatrixInfoKHR_fn>(
             clGetExtensionFunctionAddressForPlatform(
@@ -116,17 +134,67 @@ test_status InitCL(cl_device_id device)
     writableTestContext.supportFP64 =
         is_extension_available(device, "cl_khr_fp64");
 
-    // Take all valid matrix types reported by the device query and store
-    // in a set, to get a deduplicated set of types that must be tested.
+    // Skip very large matrices, to avoid unnecessary complexity in the suite.
+    const uint64_t maxTestBufferSize = std::numeric_limits<uint32_t>::max();
+    const BufferElementType maxBufferElementType = IndexedBufferElementType<16>(
+        CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT64_KHR);
+    const uint64_t maxBufferElementSize =
+        bufferElementTypeSizeOf(maxBufferElementType);
+    // Check the largest buffer descriptor the suite can create for a matrix.
+    const auto fitsTestLimits =
+        [maxTestBufferSize, maxBufferElementSize, maxBufferElementType](
+            cl_device_cooperative_matrix_component_type_khr type, cl_uint rows,
+            cl_uint cols) {
+            const auto layoutFits =
+                [maxTestBufferSize, maxBufferElementSize, maxBufferElementType,
+                 type](uint32_t stride, uint32_t strideCount) {
+                    const auto layout = calculateBufferLayout(
+                        type, stride, strideCount, maxBufferElementType,
+                        writableTestContext.deviceStrideMultiple);
+                    if (!layout.has_value()
+                        || layout->strideSize / maxBufferElementSize
+                            > std::numeric_limits<uint32_t>::max())
+                        return false;
+                    return layout->totalSize <= maxTestBufferSize;
+                };
+            // Rows and columns are respectively the stride count and pointer
+            // stride for row-major layout, and vice versa for column-major.
+            if (layoutFits(cols, rows) && layoutFits(rows, cols)) return true;
+
+            log_info("Skipping %ux%u %s cooperative matrix: exceeds the test "
+                     "size limit.\n",
+                     rows, cols, spirvScalarTypeName(type));
+            return false;
+        };
+
+    // Store individually supported matrix types in a set, to deduplicate the
+    // types tested. Retain ternary variants only when all of their matrices
+    // fit the test limits.
+    std::vector<cl_device_cooperative_matrix_variant_khr> filtered_variants;
+    filtered_variants.reserve(supported_variants.size());
     for (const auto &v : supported_variants)
     {
-        writableTestContext.types.emplace(v.a_type, v.m_size, v.k_size,
-                                          MatrixType::Use::A);
-        writableTestContext.types.emplace(v.b_type, v.k_size, v.n_size,
-                                          MatrixType::Use::B);
-        writableTestContext.types.emplace(v.c_type, v.m_size, v.n_size,
-                                          MatrixType::Use::Acc);
+        const bool aFits = fitsTestLimits(v.a_type, v.m_size, v.k_size);
+        const bool bFits = fitsTestLimits(v.b_type, v.k_size, v.n_size);
+        const bool cFits = fitsTestLimits(v.c_type, v.m_size, v.n_size);
+        const bool resultFits =
+            fitsTestLimits(v.result_type, v.m_size, v.n_size);
+
+        if (aFits)
+            writableTestContext.types.emplace(v.a_type, v.m_size, v.k_size,
+                                              MatrixType::Use::A);
+        if (bFits)
+            writableTestContext.types.emplace(v.b_type, v.k_size, v.n_size,
+                                              MatrixType::Use::B);
+        if (cFits)
+            writableTestContext.types.emplace(v.c_type, v.m_size, v.n_size,
+                                              MatrixType::Use::Acc);
+        if (aFits && bFits && cFits && resultFits)
+        {
+            filtered_variants.push_back(v);
+        }
     }
+    supported_variants.swap(filtered_variants);
 
     return TEST_PASS;
 }

@@ -18,7 +18,6 @@
 
 #include "CL/cl_half.h"
 
-#include <sstream>
 #include <type_traits>
 
 struct HalfFP final

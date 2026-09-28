@@ -31,12 +31,6 @@ struct Program
 
     // SPIR-V binary.
     std::vector<uint32_t> spirvBinary;
-
-    // Kernel argument types given as u32/f16/...
-    std::string argType[numKernelArgs];
-
-    // Kernel buffer sizes in bytes.
-    size_t bufferSize[numKernelArgs];
 };
 
 // Program generator for a given variant and operation.
