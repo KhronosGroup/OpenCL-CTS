@@ -63,8 +63,15 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
 
     for (int i = 0; i < n; i++)
     {
-        r = (180.0 / M_PI) * conv_to_dbl(inptr[i]);
+        if (conv_to_dbl(inptr[i]) == 0.0
+            && !fp_value_equals(inptr[i], outptr[i]))
+        {
+            log_error("%d) Error @ %a: expected signed zero, got %a\n", i,
+                      conv_to_flt(inptr[i]), conv_to_flt(outptr[i]));
+            return 1;
+        }
 
+        r = (180.0 / M_PI) * conv_to_dbl(inptr[i]);
         error = UlpFn(outptr[i], r);
 
         if (fabsf(error) > max_error)
@@ -114,8 +121,15 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
 
     for (int i = 0; i < n; i++)
     {
-        r = (M_PI / 180.0) * conv_to_dbl(inptr[i]);
+        if (conv_to_dbl(inptr[i]) == 0.0
+            && !fp_value_equals(inptr[i], outptr[i]))
+        {
+            log_error("%d) Error @ %a: expected signed zero, got %a\n", i,
+                      conv_to_flt(inptr[i]), conv_to_flt(outptr[i]));
+            return 1;
+        }
 
+        r = (M_PI / 180.0) * conv_to_dbl(inptr[i]);
         error = UlpFn(outptr[i], r);
 
         if (fabsf(error) > max_error)
@@ -162,13 +176,30 @@ int verify_sign(const T *const inptr, const T *const outptr, int n)
     double r = 0;
     for (int i = 0; i < n; i++)
     {
+        // sign preserves the sign of zero.
+        if (conv_to_dbl(inptr[i]) == 0.0)
+        {
+            if (!fp_value_equals(inptr[i], outptr[i]))
+            {
+                log_error("%d) Error: sign(%a) returned %a\n", i,
+                          conv_to_flt(inptr[i]), conv_to_flt(outptr[i]));
+                return -1;
+            }
+            continue;
+        }
+
         if (conv_to_dbl(inptr[i]) > 0.0f)
             r = 1.0;
         else if (conv_to_dbl(inptr[i]) < 0.0f)
             r = -1.0;
-        else
+        else // NaN
             r = 0.0;
-        if (r != conv_to_dbl(outptr[i])) return -1;
+        if (!fp_value_equals(r, outptr[i]))
+        {
+            log_error("%d) Error: sign(%a) returned %a\n", i,
+                      conv_to_flt(inptr[i]), conv_to_flt(outptr[i]));
+            return -1;
+        }
     }
     return 0;
 }

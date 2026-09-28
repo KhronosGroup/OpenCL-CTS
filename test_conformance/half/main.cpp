@@ -101,6 +101,7 @@ static test_status ParseArgs(int &argc, const char *argv[],
         R"(        -d     Toggle double precision testing (default: on if double supported)
         -t     Toggle reporting performance data.
         -r     Reset buffers on host instead of on device.
+        -a     Test 2^32 values, not just special & random values. (default: off)
         -[2^n] Set wimpy reduction factor, recommended range of n is 1-12, default factor()"
         + std::to_string(gWimpyReductionFactor) + ")\n";
 
@@ -121,6 +122,8 @@ static test_status ParseArgs(int &argc, const char *argv[],
             {
                 switch( *arg )
                 {
+                    case 'a': gTestAll ^= 1; break;
+
                     case 'd':
                         gTestDouble ^= 1;
                         break;

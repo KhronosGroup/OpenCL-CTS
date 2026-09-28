@@ -10,6 +10,8 @@ runs:
     - name: Install dependencies
       shell: bash
       run: |
+        curl -L "https://apt.llvm.org/llvm-snapshot.gpg.key" | sudo apt-key add -
+        echo "deb https://apt.llvm.org/noble/ llvm-toolchain-noble-${{ inputs.llvm-version }} main" | sudo tee -a /etc/apt/sources.list
         sudo apt-get update
         sudo apt-get install -y \
           python3-dev libpython3-dev build-essential ocl-icd-libopencl1 \

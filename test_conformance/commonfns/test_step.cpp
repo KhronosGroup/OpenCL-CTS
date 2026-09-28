@@ -55,14 +55,20 @@ int verify_step(const T *const inptrA, const T *const inptrB,
                 const T *const outptr, const int n, const int veclen,
                 const bool vecParam)
 {
-    T r;
+    double r;
 
     if (vecParam)
     {
         for (int i = 0; i < n * veclen; i++)
         {
             r = (conv_to_dbl(inptrB[i]) < conv_to_dbl(inptrA[i])) ? 0.0 : 1.0;
-            if (r != conv_to_dbl(outptr[i])) return -1;
+            if (!fp_value_equals(r, outptr[i]))
+            {
+                log_error("Failure @ %d: step(%a,%a) -> *%a vs %a\n", i,
+                          conv_to_flt(inptrA[i]), conv_to_flt(inptrB[i]), r,
+                          conv_to_flt(outptr[i]));
+                return -1;
+            }
         }
     }
     else
@@ -74,7 +80,7 @@ int verify_step(const T *const inptrA, const T *const inptrB,
             {
                 r = (conv_to_dbl(inptrB[i]) < conv_to_dbl(inptrA[ii])) ? 0.0f
                                                                        : 1.0f;
-                if (r != conv_to_dbl(outptr[i]))
+                if (!fp_value_equals(r, outptr[i]))
                 {
                     if (std::is_same<T, half>::value)
                         log_error(

@@ -30,9 +30,6 @@
 // The number of errors to print out for each test
 #define MAX_ERRORS_TO_PRINT 10
 
-extern void fill_test_values(cl_long *outBufferA, cl_long *outBufferB,
-                             size_t numElements, MTdata d);
-
 #endif // _testBase_h
 
 

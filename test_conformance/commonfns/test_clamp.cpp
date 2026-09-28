@@ -172,7 +172,7 @@ int verify_clamp(const T *const x, const T *const minval, const T *const maxval,
             t = std::min(std::max(cl_half_to_float(x[i]),
                                   cl_half_to_float(minval[boundIndex])),
                          cl_half_to_float(maxval[boundIndex]));
-            if (t != cl_half_to_float(outptr[i]))
+            if (!fp_value_equals(t, outptr[i]))
             {
                 log_error(
                     "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n",
@@ -192,7 +192,7 @@ int verify_clamp(const T *const x, const T *const minval, const T *const maxval,
             const int boundIndex = hasScalarBounds ? i / veclen : i;
             t = std::min(std::max(x[i], minval[boundIndex]),
                          maxval[boundIndex]);
-            if (t != outptr[i])
+            if (!fp_value_equals(t, outptr[i]))
             {
                 log_error(
                     "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n",

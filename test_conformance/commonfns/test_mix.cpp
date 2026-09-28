@@ -18,6 +18,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <algorithm>
+#include <cmath>
+
 #include "harness/stringHelpers.h"
 
 #include "test_base.h"
@@ -57,28 +60,64 @@ const char *mix_fn_code_pattern_v3_scalar =
 
 namespace {
 
+double mix_half_error(const double x, const double y, const double r,
+                      const double o)
+{
+    const double absolute_error = std::fabs(r - o);
+    // The accuracy of half-precision mix is implementation-defined, so this
+    // value is only reported. Normalize it to the scale of the operands and
+    // result to make the report meaningful near zero and across the
+    // half-precision range.
+    const double max_scale =
+        std::max(std::fabs(r), std::max(std::fabs(x), std::fabs(y)));
+    return max_scale > 0.0 ? absolute_error / max_scale : absolute_error;
+}
+
+template <typename T>
+bool mix_result_is_valid(const T x, const T y, const T a, const T out)
+{
+    // mix is specified as x + (y - x) * a. Evaluate that expression in the
+    // destination type so the reference includes the rounding that is
+    // unavoidable at each operation. Use fma to explicitly round each
+    // operation and prevent the host compiler from contracting the
+    // uncontracted reference calculation.
+    const T difference = std::fma(T(-1), x, y);
+    const T product = std::fma(difference, a, T(0));
+    const T uncontracted = std::fma(T(1), product, x);
+
+    // OpenCL implementations may contract the final multiply-add, so accept
+    // that evaluation as well. Apply the specification's absolute 1e-3
+    // tolerance to both permitted evaluations.
+    const T contracted = std::fma(difference, a, x);
+    const double uncontracted_error =
+        std::fabs(static_cast<double>(out) - static_cast<double>(uncontracted));
+    const double contracted_error =
+        std::fabs(static_cast<double>(out) - static_cast<double>(contracted));
+    return uncontracted_error <= MAX_ERR || contracted_error <= MAX_ERR;
+}
+
 template <typename T>
 int verify_mix(const T *const inptrX, const T *const inptrY,
                const T *const inptrA, const T *const outptr, const int n,
                const int veclen, const bool vecParam)
 {
-    double r, o;
-    float delta = 0.f, max_delta = 0.f;
+    double r;
+    [[maybe_unused]] double max_delta = 0.0;
     int i;
 
     if (vecParam)
     {
         for (i = 0; i < n * veclen; i++)
         {
-            r = conv_to_dbl(inptrX[i])
-                + ((conv_to_dbl(inptrY[i]) - conv_to_dbl(inptrX[i]))
-                   * conv_to_dbl(inptrA[i]));
+            const double x = conv_to_dbl(inptrX[i]);
+            const double y = conv_to_dbl(inptrY[i]);
+            const double a = conv_to_dbl(inptrA[i]);
+            r = x + ((y - x) * a);
 
-            o = conv_to_dbl(outptr[i]);
-            delta = fabs(double(r - o)) / r;
-            if (!std::is_same<T, half>::value)
+            if constexpr (!std::is_same<T, half>::value)
             {
-                if (delta > MAX_ERR)
+                if (!mix_result_is_valid(inptrX[i], inptrY[i], inptrA[i],
+                                         outptr[i]))
                 {
                     log_error("%d) verification error: mix(%a, %a, %a) = *%a "
                               "vs. %a\n",
@@ -90,7 +129,10 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
             }
             else
             {
-                max_delta = std::max(max_delta, delta);
+                // Half-precision mix accuracy is implementation-defined so
+                // is only reported.
+                max_delta = std::max(
+                    max_delta, mix_half_error(x, y, r, conv_to_dbl(outptr[i])));
             }
         }
     }
@@ -102,13 +144,14 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
             int vi = i * veclen;
             for (int j = 0; j < veclen; ++j, ++vi)
             {
-                r = conv_to_dbl(inptrX[vi])
-                    + ((conv_to_dbl(inptrY[vi]) - conv_to_dbl(inptrX[vi]))
-                       * conv_to_dbl(inptrA[i]));
-                delta = fabs(double(r - conv_to_dbl(outptr[vi]))) / r;
-                if (!std::is_same<T, half>::value)
+                const double x = conv_to_dbl(inptrX[vi]);
+                const double y = conv_to_dbl(inptrY[vi]);
+                const double a = conv_to_dbl(inptrA[i]);
+                r = x + ((y - x) * a);
+                if constexpr (!std::is_same<T, half>::value)
                 {
-                    if (delta > MAX_ERR)
+                    if (!mix_result_is_valid(inptrX[vi], inptrY[vi], inptrA[i],
+                                             outptr[vi]))
                     {
                         log_error(
                             "{%d, element %d}) verification error: mix(%a, "
@@ -121,7 +164,11 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
                 }
                 else
                 {
-                    max_delta = std::max(max_delta, delta);
+                    // Half-precision mix accuracy is implementation-defined so
+                    // is only reported.
+                    max_delta = std::max(
+                        max_delta,
+                        mix_half_error(x, y, r, conv_to_dbl(outptr[vi])));
                 }
             }
         }
@@ -130,7 +177,7 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
     // due to the fact that accuracy of mix for cl_khr_fp16 is implementation
     // defined this test only reports maximum error without testing maximum
     // error threshold
-    if (std::is_same<T, half>::value)
+    if constexpr (std::is_same<T, half>::value)
         log_error("mix half verification result, max delta: %a\n", max_delta);
 
     return 0;
@@ -179,19 +226,37 @@ int test_mix_fn(cl_device_id device, cl_context context, cl_command_queue queue,
     if (std::is_same<T, half>::value)
     {
         pragma_str = "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n";
+        const float half_bound = CL_HALF_MAX / 2.0f;
         for (i = 0; i < num_elements; i++)
         {
-            input_ptr[0][i] = conv_to_half((float)genrand_real1(d));
-            input_ptr[1][i] = conv_to_half((float)genrand_real1(d));
+            input_ptr[0][i] =
+                conv_to_half(get_random_float(-half_bound, half_bound, d));
+            input_ptr[1][i] =
+                conv_to_half(get_random_float(-half_bound, half_bound, d));
             input_ptr[2][i] = conv_to_half((float)genrand_real1(d));
+        }
+    }
+    else if (std::is_same<T, float>::value)
+    {
+        // Sample a broad signed range while leaving ample headroom for the
+        // intermediate results in x + (y - x) * a.
+        const float float_bound = 0x1.0p+29f;
+        for (i = 0; i < num_elements; i++)
+        {
+            input_ptr[0][i] = get_random_float(-float_bound, float_bound, d);
+            input_ptr[1][i] = get_random_float(-float_bound, float_bound, d);
+            input_ptr[2][i] = (T)genrand_real1(d);
         }
     }
     else
     {
+        // Use the same range as float so both paths exercise comparable input
+        // values without approaching double-precision overflow.
+        const double double_bound = 0x1.0p+29;
         for (i = 0; i < num_elements; i++)
         {
-            input_ptr[0][i] = (T)genrand_real1(d);
-            input_ptr[1][i] = (T)genrand_real1(d);
+            input_ptr[0][i] = get_random_double(-double_bound, double_bound, d);
+            input_ptr[1][i] = get_random_double(-double_bound, double_bound, d);
             input_ptr[2][i] = (T)genrand_real1(d);
         }
     }
