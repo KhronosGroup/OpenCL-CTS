@@ -1646,9 +1646,17 @@ std::vector<printDataGenParameters> printVectorGenParameters = {
 
     { { "" }, "(1.0f,2.0f,3.0f,4.0f)", "%2.2", "hlf", "float", "4" },
 
+    // Four component vector in signed decimal format
+
+    { { "" }, "(1,-2,3,-4)", "%+", "hhi", "char", "4" },
+
     // Alternative form,uchar argument
 
     { { "" }, "(0xFA,0xFB)", "%#", "hhx", "uchar", "2" },
+
+    // Two component vector in signed decimal format
+
+    { { "" }, "(1234,-5678)", "%", "hd", "short", "2" },
 
     // Alternative form,ushort argument
 
@@ -1661,6 +1669,19 @@ std::vector<printDataGenParameters> printVectorGenParameters = {
     // Alternative form,long argument
 
     { { "" }, "(12345678,98765432)", "%", "ld", "long", "2" },
+
+    // Three component vector in unsigned decimal format
+
+    { { "" },
+      "(1UL,4294967296UL,18446744073709551615UL)",
+      "%",
+      "lu",
+      "ulong",
+      "3" },
+
+    // Two component vector in scientific notation
+
+    { { "" }, "(1.25,3.5)", "%.2", "le", "double", "2" },
 
     //(Minimum)Two-wide,two positions after decimal
 
@@ -1712,13 +1733,21 @@ std::vector<std::string> correctBufferVector = {
 
     "1.00,2.00,3.00,4.00",
 
+    "+1,-2,+3,-4",
+
     "0xfa,0xfb",
+
+    "1234,-5678",
 
     "0x1234,0x8765",
 
     "0x12345678,0x87654321",
 
     "12345678,98765432",
+
+    "1,4294967296,18446744073709551615",
+
+    "1.25e+00,3.50e+00",
 
     "1.00,2.00,3.00,4.00",
 
@@ -1739,13 +1768,21 @@ std::vector<std::string> correctBufferVectorRTZ = {
 
     "1.00,2.00,3.00,4.00",
 
+    "+1,-2,+3,-4",
+
     "0xfa,0xfb",
+
+    "1234,-5678",
 
     "0x1234,0x8765",
 
     "0x12345678,0x87654321",
 
     "12345678,98765432",
+
+    "1,4294967296,18446744073709551615",
+
+    "1.25e+00,3.50e+00",
 
     "1.00,2.00,3.00,4.00",
 
