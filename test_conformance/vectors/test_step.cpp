@@ -119,7 +119,7 @@ int test_step_internal(cl_device_id deviceID, cl_context context,
                 vlog_error("%s: failed to fill source buf for type %s%s\n",
                            testName, g_arrTypeNames[typeIdx],
                            g_arrVecSizeNames[vecSizeIdx]);
-                destroyBufferStruct(pBuffers, pClState);
+                destroyBufferStruct(pBuffers);
                 destroyClState(pClState);
                 return -1;
             }
@@ -129,7 +129,7 @@ int test_step_internal(cl_device_id deviceID, cl_context context,
             {
                 vlog_error("%s: Error compiling \"\n%s\n\"", testName,
                            srcBuffer);
-                destroyBufferStruct(pBuffers, pClState);
+                destroyBufferStruct(pBuffers);
                 destroyClState(pClState);
                 return -1;
             }
@@ -140,7 +140,7 @@ int test_step_internal(cl_device_id deviceID, cl_context context,
                 vlog_error("%s: failed to push args %s%s\n", testName,
                            g_arrTypeNames[typeIdx],
                            g_arrVecSizeNames[vecSizeIdx]);
-                destroyBufferStruct(pBuffers, pClState);
+                destroyBufferStruct(pBuffers);
                 destroyClState(pClState);
                 return -1;
             }
@@ -152,7 +152,7 @@ int test_step_internal(cl_device_id deviceID, cl_context context,
                 vlog_error("%s: runKernel fail (%zu threads) %s%s\n", testName,
                            pClState->m_numThreads, g_arrTypeNames[typeIdx],
                            g_arrVecSizeNames[vecSizeIdx]);
-                destroyBufferStruct(pBuffers, pClState);
+                destroyBufferStruct(pBuffers);
                 destroyClState(pClState);
                 return -1;
             }
@@ -163,13 +163,12 @@ int test_step_internal(cl_device_id deviceID, cl_context context,
                 vlog_error("%s: failed to retrieve results %s%s\n", testName,
                            g_arrTypeNames[typeIdx],
                            g_arrVecSizeNames[vecSizeIdx]);
-                destroyBufferStruct(pBuffers, pClState);
+                destroyBufferStruct(pBuffers);
                 destroyClState(pClState);
                 return -1;
             }
 
             err = checkCorrectnessStep(pBuffers, pClState,
-                                       g_arrTypeSizes[typeIdx],
                                        g_arrVecSizes[vecSizeIdx]);
 
             if (err != 0)
@@ -178,7 +177,7 @@ int test_step_internal(cl_device_id deviceID, cl_context context,
                            g_arrTypeNames[typeIdx],
                            g_arrVecSizeNames[vecSizeIdx]);
                 vlog_error("%s: Source was \"\n%s\n\"", testName, srcBuffer);
-                destroyBufferStruct(pBuffers, pClState);
+                destroyBufferStruct(pBuffers);
                 destroyClState(pClState);
                 return -1;
             }
@@ -187,7 +186,7 @@ int test_step_internal(cl_device_id deviceID, cl_context context,
         }
     }
 
-    destroyBufferStruct(pBuffers, pClState);
+    destroyBufferStruct(pBuffers);
 
     destroyClState(pClState);
 
