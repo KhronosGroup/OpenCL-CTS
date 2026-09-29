@@ -16,10 +16,11 @@
 #ifndef SUBHELPERS_H
 #define SUBHELPERS_H
 
-#include "testHarness.h"
-#include "kernelHelpers.h"
-#include "typeWrappers.h"
 #include "imageHelpers.h"
+#include "kernelHelpers.h"
+#include "mathHelpers.h"
+#include "testHarness.h"
+#include "typeWrappers.h"
 
 #include <limits>
 #include <vector>
@@ -1558,7 +1559,7 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct subgroup_test
 
         num_subgroups = tmp;
         // Make sure the number of sub groups is what we expect
-        if (num_subgroups != (local + subgroup_size - 1) / subgroup_size)
+        if (num_subgroups != div_round_up(local, subgroup_size))
         {
             log_error("ERROR: unexpected number of subgroups (%zu) returned\n",
                       num_subgroups);
