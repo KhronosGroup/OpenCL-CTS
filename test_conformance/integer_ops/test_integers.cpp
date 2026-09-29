@@ -92,6 +92,22 @@ int test_single_param_integer_kernel(cl_command_queue queue, cl_context context,
     /* Generate some streams */
     generate_random_data( vecType, vecSize * TEST_SIZE, d, inDataA );
 
+    if (useOpKernel)
+    {
+        // Op kernels use an r/w buffer for the second param, so we need to init
+        // it with data.
+        //
+        // Both operands are filled here, before either of them is handed to
+        // clCreateBuffer() below, so that a pair can still be bounded.
+        generate_random_data(vecType, vecSize * TEST_SIZE, d, inDataB);
+
+        if (auto definedOp = get_defined_arithmetic_op(fnName))
+        {
+            init_defined_arithmetic_data(
+                vecType, *definedOp, vecSize * TEST_SIZE, inDataA, inDataB, d);
+        }
+    }
+
     streams[0] = clCreateBuffer(
         context, CL_MEM_COPY_HOST_PTR,
         get_explicit_type_size(vecType) * vecSize * TEST_SIZE, inDataA, NULL);
@@ -101,11 +117,6 @@ int test_single_param_integer_kernel(cl_command_queue queue, cl_context context,
         return -1;
     }
 
-    if( useOpKernel )
-    {
-        // Op kernels use an r/w buffer for the second param, so we need to init it with data
-        generate_random_data( vecType, vecSize * TEST_SIZE, d, inDataB );
-    }
     streams[1] = clCreateBuffer(
         context, (CL_MEM_READ_WRITE | (useOpKernel ? CL_MEM_COPY_HOST_PTR : 0)),
         get_explicit_type_size(vecType) * vecSize * TEST_SIZE,
