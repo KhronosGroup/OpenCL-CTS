@@ -16,6 +16,7 @@
 
 #pragma once
 #include <CL/cl.h>
+#include <CL/cl_half.h>
 
 #if defined(_MSC_VER) || defined(_WIN32)
 #define PACKED(__STRUCT__) __pragma(pack(push, 1)) __STRUCT__ __pragma(pack(pop))
@@ -127,7 +128,8 @@ GENRAND_REAL_FUNC(cl_half, 8)
 
 template<> inline cl_half genrandReal<cl_half>(RandomSeed &seed)
 {
-    return (cl_half)(genrand_int32(seed) % 2048);
+    float f = (float)(genrand_real1(seed) * 2048.0);
+    return cl_half_from_float(f, CL_HALF_RTE);
 }
 
 template<typename T>

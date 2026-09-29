@@ -18,6 +18,7 @@
 
 #include "testBase.h"
 #include "types.hpp"
+#include <CL/cl_half.h>
 
 
 template <typename T>
@@ -133,7 +134,15 @@ TEST_SPEC_CONSTANT(uchar, cl_uchar, 19, 4)
 TEST_SPEC_CONSTANT(ushort, cl_ushort, 6000, 3000)
 TEST_SPEC_CONSTANT(ulong, cl_ulong, 9223372036854775000UL, 200)
 TEST_SPEC_CONSTANT(float, cl_float, 1.5, -3.7)
-TEST_SPEC_CONSTANT(half, cl_half, 1, 2)
+REGISTER_TEST_VERSION(op_spec_constant_half_simple, Version(2, 2))
+{
+    cl_half init_value = cl_half_from_float(1.0f, CL_HALF_RTE);
+    cl_half spec_constant_value = cl_half_from_float(2.0f, CL_HALF_RTE);
+    cl_half final_value = cl_half_from_float(3.0f, CL_HALF_RTE);
+    return test_spec_constant<cl_half>(
+        device, context, queue, "op_spec_constant_half_simple", init_value,
+        spec_constant_value, final_value);
+}
 TEST_SPEC_CONSTANT(double, cl_double, 14534.53453, 1.53453)
 
 // Boolean tests
