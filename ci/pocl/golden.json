@@ -190,10 +190,10 @@
     },
     "test_compiler": {
         "": {
+            "get_program_source_from_binary": "pass",
             "opencl_c_version_macro": "pass"
         }
     },
-
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",
