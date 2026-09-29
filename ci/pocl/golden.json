@@ -193,6 +193,9 @@
         "": {
             "get_program_source_from_binary": "pass",
             "opencl_c_version_macro": "pass"
+        },
+        "--spirv-binaries-path install/bin/Release/spirv_bin": {
+            "unload_repeated": "pass"
         }
     },
     "test_computeinfo": {
