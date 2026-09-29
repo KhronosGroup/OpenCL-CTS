@@ -144,7 +144,7 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
         {
             // align working group size with the bigger output type
             size_t vectorSize = sizeValues[j] * sizeof(cl_int);
-            size_t localCount = (bufferSizeHi + vectorSize - 1) / vectorSize;
+            size_t localCount = div_round_up(bufferSizeHi, vectorSize);
             error = clSetKernelArg(kernels[j][thread_id], 0,
                                    sizeof(gOutBuffer[j]), &gOutBuffer[j]);
             test_error(error, "Failed to set kernel argument");

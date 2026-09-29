@@ -185,8 +185,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeof(cl_float) * sizeValues[j];
-            size_t localCount = (BUFFER_SIZE + vectorSize - 1)
-                / vectorSize; // BUFFER_SIZE / vectorSize  rounded up
+            size_t localCount = div_round_up(BUFFER_SIZE, vectorSize);
             error = clSetKernelArg(kernels[j][thread_id], 0,
                                    sizeof(gOutBuffer[j]), &gOutBuffer[j]);
             test_error(error, "Failed to set kernel argument");
@@ -225,7 +224,7 @@ int TestFunc_FloatI_Float_Float(const Func *f, MTdata d, bool relaxedMode)
             cri.i = (int *)gOut_Ref2;
             cri.f_ffpI = f->func.f_ffpI;
             cri.lim = BUFFER_SIZE / sizeof(float);
-            cri.count = (cri.lim + threadCount - 1) / threadCount;
+            cri.count = div_round_up(cri.lim, threadCount);
             ThreadPool_Do(ReferenceF, threadCount, &cri);
         }
         else
