@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,6 +17,7 @@
 #define HOST_ATOMICS_H_
 
 #include "harness/testHarness.h"
+#include "harness/conversions.h"
 
 #include <cstring>
 #include <cmath>
@@ -281,6 +282,9 @@ inline bool host_fp_is_nan(const CorrespondingType &v)
 
 // host atomic functions
 void host_atomic_thread_fence(TExplicitMemoryOrderType order);
+template <typename AtomicType, typename CorrespondingType>
+CorrespondingType host_atomic_load(volatile AtomicType *a,
+                                   TExplicitMemoryOrderType order);
 
 template <typename AtomicType, typename CorrespondingType>
 CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingType c,
@@ -288,12 +292,15 @@ CorrespondingType host_atomic_fetch_add(volatile AtomicType *a, CorrespondingTyp
 {
     if constexpr (is_host_atomic_fp_v<AtomicType>)
     {
-        static std::mutex mx;
-        std::lock_guard<std::mutex> lock(mx);
-        CorrespondingType old_value = *a;
-        CorrespondingType new_value = old_value + c;
-        *a = static_cast<AtomicType>(new_value);
-        return old_value;
+        CorrespondingType expected =
+            host_atomic_load<AtomicType, CorrespondingType>(a, order);
+        CorrespondingType desired;
+        do
+        {
+            desired = expected + c;
+        } while (
+            !host_atomic_compare_exchange(a, &expected, desired, order, order));
+        return expected;
     }
     else
     {
@@ -314,12 +321,15 @@ CorrespondingType host_atomic_fetch_sub(volatile AtomicType *a, CorrespondingTyp
 {
     if constexpr (is_host_atomic_fp_v<AtomicType>)
     {
-        static std::mutex mx;
-        std::lock_guard<std::mutex> lock(mx);
-        CorrespondingType old_value = *a;
-        CorrespondingType new_value = old_value - c;
-        *a = static_cast<AtomicType>(new_value);
-        return old_value;
+        CorrespondingType expected =
+            host_atomic_load<AtomicType, CorrespondingType>(a, order);
+        CorrespondingType desired;
+        do
+        {
+            desired = expected - c;
+        } while (
+            !host_atomic_compare_exchange(a, &expected, desired, order, order));
+        return expected;
     }
     else
     {
@@ -358,41 +368,74 @@ template <> HOST_DOUBLE host_atomic_exchange(volatile HOST_ATOMIC_DOUBLE *a, HOS
                                              TExplicitMemoryOrderType order);
 
 template <typename AtomicType, typename CorrespondingType>
-bool host_atomic_compare_exchange(volatile AtomicType *a, CorrespondingType *expected, CorrespondingType desired,
+bool host_atomic_compare_exchange_int(volatile AtomicType *a,
+                                      CorrespondingType *expected,
+                                      CorrespondingType desired)
+{
+    CorrespondingType tmp;
+#if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
+    if constexpr (sizeof(AtomicType) == 2)
+        tmp =
+            InterlockedCompareExchange16(reinterpret_cast<volatile SHORT *>(a),
+                                         *reinterpret_cast<SHORT *>(&desired),
+                                         *reinterpret_cast<SHORT *>(expected));
+    else
+        tmp = InterlockedCompareExchange(a, desired, *expected);
+#elif defined(__GNUC__)
+    tmp = __sync_val_compare_and_swap(a, *expected, desired);
+#else
+    log_info("Host function not implemented: atomic_compare_exchange\n");
+    tmp = 0;
+#endif
+    if (std::memcmp((const void *)&tmp, expected, sizeof(CorrespondingType))
+        == 0)
+        return true;
+    *expected = tmp;
+    return false;
+}
+
+template <typename IntType, typename AtomicType, typename CorrespondingType>
+bool host_atomic_compare_exchange_fp(volatile AtomicType *a,
+                                     CorrespondingType *expected,
+                                     CorrespondingType desired)
+{
+    IntType expected_int = bitcast<CorrespondingType, IntType>(*expected);
+    IntType desired_int = bitcast<CorrespondingType, IntType>(desired);
+    bool ret = host_atomic_compare_exchange_int(
+        reinterpret_cast<volatile IntType *>(a), &expected_int, desired_int);
+    *expected = bitcast<IntType, CorrespondingType>(expected_int);
+    return ret;
+}
+
+template <typename AtomicType, typename CorrespondingType>
+bool host_atomic_compare_exchange(volatile AtomicType *a,
+                                  CorrespondingType *expected,
+                                  CorrespondingType desired,
                                   TExplicitMemoryOrderType order_success,
                                   TExplicitMemoryOrderType order_failure)
 {
     if constexpr (is_host_atomic_fp_v<AtomicType>)
     {
-        static std::mutex mtx;
-        std::lock_guard<std::mutex> lock(mtx);
-        // this is necessary so that (*a == *exp) evaluates to true when
-        // comparing NANs
-        if (std::memcmp((const void *)a, expected, sizeof(CorrespondingType))
-            == 0)
+        if constexpr (sizeof(AtomicType) == 2)
         {
-            *a = static_cast<AtomicType>(desired);
-            return true;
+            cl_half expected_int = static_cast<cl_half>(*expected);
+            bool ret = host_atomic_compare_exchange_int(
+                a, &expected_int, static_cast<cl_half>(desired));
+            *expected = HostHalf(expected_int);
+            return ret;
         }
-        *expected = *a;
+        else if constexpr (sizeof(AtomicType) == 4)
+            return host_atomic_compare_exchange_fp<HOST_ATOMIC_UINT>(
+                a, expected, desired);
+        else if constexpr (sizeof(AtomicType) == 8)
+            return host_atomic_compare_exchange_fp<HOST_ATOMIC_ULONG>(
+                a, expected, desired);
+        else
+            static_assert(sizeof(AtomicType) == 0,
+                          "Unsupported floating-point type size");
     }
     else
-    {
-        CorrespondingType tmp;
-#if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(WIN32))
-        tmp = InterlockedCompareExchange(a, desired, *expected);
-#elif defined(__GNUC__)
-        tmp = __sync_val_compare_and_swap(a, *expected, desired);
-#else
-        log_info("Host function not implemented: atomic_compare_exchange\n");
-        tmp = 0;
-#endif
-        if (std::memcmp((const void *)&tmp, expected, sizeof(CorrespondingType))
-            == 0)
-            return true;
-        *expected = tmp;
-    }
-    return false;
+        return host_atomic_compare_exchange_int(a, expected, desired);
 }
 
 template <typename AtomicType, typename CorrespondingType>
