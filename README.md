@@ -16,9 +16,12 @@ Compiling the CTS requires the following CMake configuration options to be set:
 * `SPIRV_INCLUDE_DIR` Points to the unified
   [SPIRV-Headers](https://github.com/KhronosGroup/SPIRV-Headers).
 * `CL_LIB_DIR` Directory containing the OpenCL library to build against.
+* `SPIRV_TOOLS_TARGET_DIR` Directory containing the target SPIRV-Tools CMake
+  package used to link the CTS against the SPIRV-Tools library. Alternatively,
+  SPIRV-Tools may be discoverable through pkg-config.
 * `SPIRV_TOOLS_DIR` Directory containing the `spirv-as` and `spirv-val` binaries
-   to be used in the CTS build process. Alternatively, the location to these binaries
-   can be provided via the `PATH` variable.
+  to be used in the CTS build process. Alternatively, the location to these
+  binaries can be provided via the `PATH` variable.
 * `OPENCL_LIBRARIES` Name of the OpenCL library to link.
 
 It is advised that the [OpenCL ICD-Loader](https://github.com/KhronosGroup/OpenCL-ICD-Loader)
@@ -47,14 +50,18 @@ cmake -S OpenCL-ICD-Loader -B OpenCL-ICD-Loader/build \
 cmake --build ./OpenCL-ICD-Loader/build --config Release
 
 mkdir SPIRV-Tools/build
-cmake -S SPIRV-Tools -B SPIRV-Tools/build -DSPIRV_SKIP_TESTS=ON
+cmake -S SPIRV-Tools -B SPIRV-Tools/build \
+      -DCMAKE_INSTALL_PREFIX=$PWD/SPIRV-Tools/install \
+      -DSPIRV_SKIP_TESTS=ON
 cmake --build SPIRV-Tools/build --config Release
+cmake --install SPIRV-Tools/build
 
 mkdir OpenCL-CTS/build
 cmake -S OpenCL-CTS -B OpenCL-CTS/build \
       -DCL_INCLUDE_DIR=$PWD/OpenCL-Headers \
       -DSPIRV_INCLUDE_DIR=$PWD/SPIRV-Headers \
       -DCL_LIB_DIR=$PWD/OpenCL-ICD-Loader/build \
+      -DSPIRV_TOOLS_TARGET_DIR=$PWD/SPIRV-Tools/install/lib/cmake/SPIRV-Tools \
       -DSPIRV_TOOLS_DIR=$PWD/SPIRV-Tools/build/tools/ \
       -DOPENCL_LIBRARIES=OpenCL
 cmake --build OpenCL-CTS/build --config Release
