@@ -1272,6 +1272,17 @@ const BufferDescriptor &Variant::getBufferDescriptor(uint8_t bufferID) const
     }
 }
 
+const BufferDescriptor &Variant::getUnaryInputDescriptor() const
+{
+    switch (order)
+    {
+        case OperandOrder::OpA: return inputADesc;
+        case OperandOrder::OpB: return inputBDesc;
+        case OperandOrder::OpC: return inputCDesc;
+        default: assert(false && "operation must be unary"); std::abort();
+    }
+}
+
 void Variant::getInputsForOperation(std::vector<const Matrix *> &inputs) const
 {
     switch (order)
@@ -2488,11 +2499,29 @@ int CoopMatTest::runAll()
     // Run the variants.
     int result = TEST_PASS;
     bool didAnyTestsRun = false;
+    bool didAnyVariantsMatch = false;
     for (auto &v : variantsToRun)
     {
         if (!gTestContext->runSingleVariant.empty())
         {
             if (v.describe() != gTestContext->runSingleVariant) continue;
+        }
+        didAnyVariantsMatch = true;
+
+        if (op == CoopMatOp::copy_workgroup)
+        {
+            const size_t localMemoryRequired =
+                bufferSizeOf(v.getUnaryInputDescriptor());
+            if (localMemoryRequired > gTestContext->deviceLocalMemSize)
+            {
+                log_info("Skipping copy_workgroup --variant %s: requires "
+                         "%zu bytes of local memory; device reports %llu "
+                         "bytes.\n",
+                         v.describe().c_str(), localMemoryRequired,
+                         static_cast<unsigned long long>(
+                             gTestContext->deviceLocalMemSize));
+                continue;
+            }
         }
 
         log_info("%s%s --variant %s\n", isSpirv ? "spirv_" : "", opName,
@@ -2505,12 +2534,14 @@ int CoopMatTest::runAll()
     }
 
     // If a single variant was specified, make sure it is valid.
-    if (!gTestContext->runSingleVariant.empty() && !didAnyTestsRun)
+    if (!gTestContext->runSingleVariant.empty() && !didAnyVariantsMatch)
     {
         log_error("Unknown or unsupported variant '%s'.\n",
                   gTestContext->runSingleVariant.c_str());
         return TEST_FAIL;
     }
+
+    if (!didAnyTestsRun) return TEST_SKIPPED_ITSELF;
 
     return result;
 }

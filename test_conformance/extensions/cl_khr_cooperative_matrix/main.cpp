@@ -89,6 +89,15 @@ test_status InitCL(cl_device_id device)
     log_info("Sub-buffer origin alignment is %u bytes.\n",
              writableTestContext.deviceMemBaseAddrAlignment);
 
+    err = clGetDeviceInfo(device, CL_DEVICE_LOCAL_MEM_SIZE,
+                          sizeof(writableTestContext.deviceLocalMemSize),
+                          &writableTestContext.deviceLocalMemSize, nullptr);
+    test_error_fail(err,
+                    "clGetDeviceInfo for CL_DEVICE_LOCAL_MEM_SIZE failed\n");
+    log_info("Local memory size is %llu bytes.\n",
+             static_cast<unsigned long long>(
+                 writableTestContext.deviceLocalMemSize));
+
     clGetDeviceCooperativeMatrixInfoKHR_fn clGetDeviceCooperativeMatrixInfoKHR =
         reinterpret_cast<clGetDeviceCooperativeMatrixInfoKHR_fn>(
             clGetExtensionFunctionAddressForPlatform(

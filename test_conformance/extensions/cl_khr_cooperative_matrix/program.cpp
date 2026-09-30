@@ -202,24 +202,10 @@ void ProgramGenerator::genConstants()
             // Nothing to do.
             break;
         case CoopMatOp::copy_workgroup: {
-            const BufferDescriptor *inputDesc = nullptr;
-            switch (variant.order)
-            {
-                case Variant::OperandOrder::OpA:
-                    inputDesc = &variant.inputADesc;
-                    break;
-                case Variant::OperandOrder::OpB:
-                    inputDesc = &variant.inputBDesc;
-                    break;
-                case Variant::OperandOrder::OpC:
-                    inputDesc = &variant.inputCDesc;
-                    break;
-                default:
-                    assert(false && "copy_workgroup must be unary");
-                    std::abort();
-            }
-            const size_t numWorkgroupElements = bufferSizeOf(*inputDesc)
-                / bufferElementTypeSizeOf(inputDesc->elementType);
+            const BufferDescriptor &inputDesc =
+                variant.getUnaryInputDescriptor();
+            const size_t numWorkgroupElements = bufferSizeOf(inputDesc)
+                / bufferElementTypeSizeOf(inputDesc.elementType);
             spirv_text << R"(
     %numElems = OpConstant %i32 )"
                        << numWorkgroupElements << R"(

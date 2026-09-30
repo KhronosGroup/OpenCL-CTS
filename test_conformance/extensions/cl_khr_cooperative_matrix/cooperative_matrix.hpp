@@ -508,6 +508,9 @@ public:
     const Matrix &getMatrix(uint8_t matrixID) const;
     const BufferDescriptor &getBufferDescriptor(uint8_t bufferID) const;
 
+    // Return the selected input descriptor for a unary operation.
+    const BufferDescriptor &getUnaryInputDescriptor() const;
+
     // Return a vector with the input matrices for the OperandOrder of this
     // Variant.
     void getInputsForOperation(std::vector<const Matrix *> &inputs) const;
@@ -573,6 +576,9 @@ struct TestContext
 
     // Alignment in bytes required for sub-buffer origins.
     uint32_t deviceMemBaseAddrAlignment;
+
+    // Total local memory available to a work-group.
+    cl_ulong deviceLocalMemSize;
 };
 
 #endif // COOPERATIVE_MATRIX_HPP
