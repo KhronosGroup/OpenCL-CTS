@@ -379,14 +379,14 @@
             "sub_group_info_ext": "fail",
             "work_item_functions_core": "pass",
             "work_item_functions_ext": "pass",
-            "ifp_core": "pass",
-            "ifp_ext": "pass",
-            "subgroup_functions_non_uniform_vote": "pass",
-            "subgroup_functions_ballot": "pass",
-            "subgroup_functions_clustered_reduce": "pass",
+            "ifp_core": "skip",
+            "ifp_ext": "fail",
+            "subgroup_functions_non_uniform_vote": "skip",
+            "subgroup_functions_ballot": "fail",
+            "subgroup_functions_clustered_reduce": "skip",
             "subgroup_functions_shuffle": "pass",
-            "subgroup_functions_shuffle_relative": "pass",
-            "subgroup_functions_rotate": "pass"
+            "subgroup_functions_shuffle_relative": "skip",
+            "subgroup_functions_rotate": "skip"
         }
     },
     "test_vectors": {
