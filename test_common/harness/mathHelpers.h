@@ -34,10 +34,10 @@ template <> inline bool isnan_fp<cl_half>(const cl_half &v)
     return (h_exp == 0x1F && h_mant != 0);
 }
 
-template <typename T>
-inline T div_round_up(const T &a, const typename std::common_type<T>::type &b)
+template <typename T, typename U>
+inline std::common_type_t<T, U> div_round_up(T a, U b)
 {
-    static_assert(std::is_integral<T>::value,
+    static_assert(std::is_integral_v<T> && std::is_integral_v<U>,
                   "div_round_up: integral type required");
     return a / b + ((a % b) != 0 ? 1 : 0);
 }
