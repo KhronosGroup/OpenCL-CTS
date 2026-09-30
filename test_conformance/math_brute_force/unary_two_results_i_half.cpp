@@ -56,14 +56,11 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
     int ftz = f->ftz || gForceFTZ || 0 == (CL_FP_DENORM & gHalfCapabilities);
     float maxErrorVal = 0.0f;
     float maxErrorVal2 = 0.0f;
-    uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
+    uint64_t numInputs = 1ULL << 16;
+    uint64_t step =
+        std::min(numInputs, getTestStep(sizeof(cl_int), BUFFER_SIZE));
 
-    // sizeof(cl_half) < sizeof (int32_t)
-    // to prevent overflowing gOut_Ref2 it is necessary to use
-    // bigger type as denominator for buffer size calculation
-    size_t bufferElements = std::min(BUFFER_SIZE / sizeof(cl_int),
-                                     size_t(1ULL << (sizeof(cl_half) * 8)));
-
+    size_t bufferElements = step;
     size_t bufferSizeLo = bufferElements * sizeof(cl_half);
     size_t bufferSizeHi = bufferElements * sizeof(cl_int);
 
@@ -82,13 +79,13 @@ int TestFunc_HalfI_Half(const Func *f, MTdata d, bool relaxedMode)
                                &build_info)))
         return error;
 
-    for (uint64_t i = 0; i < (1ULL << 16); i += step)
+    for (uint64_t i = 0; i < numInputs; i += step)
     {
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
         cl_half *pIn = (cl_half *)gIn;
-        for (size_t j = 0; j < bufferElements; j++) pIn[j] = (cl_ushort)i + j;
+        fillUnaryInput(pIn, step, i, d, true);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           bufferSizeLo, gIn, 0, NULL, NULL)))
