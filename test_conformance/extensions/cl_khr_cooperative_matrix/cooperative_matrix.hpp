@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <iosfwd>
 #include <optional>
 #include <set>
 #include <string>
@@ -291,7 +292,7 @@ struct Matrix
     // Number of elements in the matrix.
     uint32_t elementCount() const { return nRows * nCols; }
 
-    // Flatten a (row,col) index into a linear index.
+    // Flatten a (row,col) index into a linear byte index.
     unsigned getIndex(unsigned row, unsigned col) const;
 
     // Retrieve the i-th element and convert it to T.
@@ -537,6 +538,8 @@ public:
     bool isSaturating;
     bool isMulticomponent;
 };
+
+std::ostream &operator<<(std::ostream &out, Variant::OperandOrder order);
 
 // Global test data.
 struct TestContext

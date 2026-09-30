@@ -15,6 +15,7 @@
 
 #include "program.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <set>
@@ -200,10 +201,28 @@ void ProgramGenerator::genConstants()
         case CoopMatOp::multicomponent_store:
             // Nothing to do.
             break;
-        case CoopMatOp::copy_workgroup:
+        case CoopMatOp::copy_workgroup: {
+            const BufferDescriptor *inputDesc = nullptr;
+            switch (variant.order)
+            {
+                case Variant::OperandOrder::OpA:
+                    inputDesc = &variant.inputADesc;
+                    break;
+                case Variant::OperandOrder::OpB:
+                    inputDesc = &variant.inputBDesc;
+                    break;
+                case Variant::OperandOrder::OpC:
+                    inputDesc = &variant.inputCDesc;
+                    break;
+                default:
+                    assert(false && "copy_workgroup must be unary");
+                    std::abort();
+            }
+            const size_t numWorkgroupElements = bufferSizeOf(*inputDesc)
+                / bufferElementTypeSizeOf(inputDesc->elementType);
             spirv_text << R"(
     %numElems = OpConstant %i32 )"
-                       << variant.output.elementCount() << R"(
+                       << numWorkgroupElements << R"(
     %arrayTy = OpTypeArray %)"
                        << spirvScalarTypeName(variant.output.elementType)
                        << R"( %numElems
@@ -212,10 +231,11 @@ void ProgramGenerator::genConstants()
     %zero = OpConstant %i32 0
     %scopeWorkgroup = OpConstant %i32 2
     %workAcquire  = OpConstant %i32 0x108
-    %workGroupPtrFloat = OpTypePointer Workgroup %)"
+    %workGroupPtrScalar = OpTypePointer Workgroup %)"
                        << spirvScalarTypeName(variant.output.elementType)
                        << "\n";
             break;
+        }
         case CoopMatOp::constant:
         case CoopMatOp::composite:
             spirv_text << R"(
@@ -422,7 +442,7 @@ void ProgramGenerator::genBody()
         case CoopMatOp::copy_workgroup:
 
             spirv_text << R"(
-    %scalarPtr = OpAccessChain %workGroupPtrFloat %sharedBuffer %zero
+    %scalarPtr = OpAccessChain %workGroupPtrScalar %sharedBuffer %zero
 
     %matSrc = OpCooperativeMatrixLoadKHR )" << getResTy() << R"( %in)" << variant.order << R"( %layout)" << variant.order << R"( %stride)" << variant.order<< R"(
     OpCooperativeMatrixStoreKHR %scalarPtr %matSrc)" << R"( %layout)" << variant.order << R"( %stride)" << variant.order << R"(
@@ -729,41 +749,10 @@ bool ProgramGenerator::generateSpirv(Program *prog_out)
     // Capabilities that depend on the supported variants.
     std::set<std::string> capabilities;
 
-    // Gather capabilities required by kernel argument types.
-    for (size_t i = 0; i < Program::numKernelArgs; i++)
-    {
-        // length is different from the other operations: the result is an i32
-        // regardless of the input/output matrix types.
-        const std::string argType = op == CoopMatOp::length && i == 3
-            ? "i32"
-            : spirvScalarTypeName(variant.getMatrix(i).elementType);
-        if (argType == "i8")
-        {
-            capabilities.insert("Int8");
-        }
-        else if (argType == "i64")
-        {
-            capabilities.insert("Int64");
-        }
-        else if (argType == "f16")
-        {
-            capabilities.insert("Float16");
-        }
-        else if (argType == "f64")
-        {
-            capabilities.insert("Float64");
-        }
-    }
-
-    // Add capability for buffer element pointers (used by
-    // multicomponent_load/store)
-    auto checkBufferTypeCapabilities =
-        [&capabilities](const BufferDescriptor &d) {
-            if (d.elementType.vectorLength >= 8)
-            {
-                capabilities.insert("Vector16");
-            }
-            switch (d.elementType.scalarType)
+    const auto addComponentTypeCapabilities =
+        [&capabilities](
+            const cl_device_cooperative_matrix_component_type_khr type) {
+            switch (type)
             {
                 case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT8_KHR:
                 case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT8_KHR:
@@ -785,6 +774,24 @@ bool ProgramGenerator::generateSpirv(Program *prog_out)
                     break;
                 default: break;
             }
+        };
+
+    // Gather capabilities required by matrix types.
+    for (size_t i = 0; i < Program::numKernelArgs; i++)
+    {
+        addComponentTypeCapabilities(variant.getMatrix(i).elementType);
+    }
+
+    // Add capabilities for buffer element pointers (used by
+    // multicomponent_load/store).
+    auto checkBufferTypeCapabilities =
+        [&capabilities,
+         &addComponentTypeCapabilities](const BufferDescriptor &d) {
+            if (d.elementType.vectorLength >= 8)
+            {
+                capabilities.insert("Vector16");
+            }
+            addComponentTypeCapabilities(d.elementType.scalarType);
         };
     checkBufferTypeCapabilities(variant.inputADesc);
     checkBufferTypeCapabilities(variant.inputBDesc);
@@ -815,6 +822,18 @@ bool ProgramGenerator::generateSpirv(Program *prog_out)
     OpDecorate %builtin_slid Constant
     OpDecorate %builtin_slid BuiltIn SubgroupLocalInvocationId
 )";
+    }
+
+    if (op == CoopMatOp::copy_workgroup)
+    {
+        // Pointer must be aligned to at least the larger of the size of the
+        // elements of the matrix or
+        // CL_DEVICE_COOPERATIVE_MATRIX_POINTER_ALIGNMENT_KHR.
+        const uint32_t sharedBufferAlignment = std::max(
+            elementSizeOf(variant.output.elementType),
+            gTestContext->devicePointerAlignment);
+        spirv_text << "\n    OpDecorate %sharedBuffer Alignment "
+                   << sharedBufferAlignment << "\n";
     }
 
     spirv_text << R"(

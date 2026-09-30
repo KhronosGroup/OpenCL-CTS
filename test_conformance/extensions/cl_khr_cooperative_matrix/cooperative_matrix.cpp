@@ -1043,7 +1043,7 @@ void setBoundsFromMaxMagnitude(T &bounds, double maxMagnitude)
 void Matrix::fill(int8_t seed, std::optional<Bounds> bounds)
 {
     MTdataHolder rng = MTdataHolder(seed);
-    bool warnedAboutEmptyIntegerRange = false;
+    bool warnedAboutIntegerRange = false;
 
     for (cl_uint row = 0; row < nRows; row++)
     {
@@ -1086,23 +1086,26 @@ void Matrix::fill(int8_t seed, std::optional<Bounds> bounds)
                            std::get<SignedBounds>(*bounds))
                         : getSBounds(elementType);
                     int64_t value;
-                    if (sBounds.min >= sBounds.max)
+                    if (sBounds.min > sBounds.max)
                     {
-                        if (!warnedAboutEmptyIntegerRange)
+                        if (!warnedAboutIntegerRange)
                         {
-                            log_info("WARNING: empty signed integer input "
+                            log_info("WARNING: invalid signed integer input "
                                      "range; filling with its lower bound.\n");
-                            warnedAboutEmptyIntegerRange = true;
+                            warnedAboutIntegerRange = true;
                         }
                         value = sBounds.min;
                     }
                     else
                     {
-                        value = static_cast<int64_t>(
-                                    static_cast<uint64_t>(genrand_int64(rng))
-                                    % (static_cast<uint64_t>(sBounds.max)
-                                       - static_cast<uint64_t>(sBounds.min)))
-                            + sBounds.min;
+                        if (sBounds.min == sBounds.max
+                            && !warnedAboutIntegerRange)
+                        {
+                            log_info("WARNING: single-value signed integer "
+                                     "input range.\n");
+                            warnedAboutIntegerRange = true;
+                        }
+                        value = get_random_long(sBounds.min, sBounds.max, rng);
                     }
                     setS64(offset, value);
                     break;
@@ -1117,20 +1120,26 @@ void Matrix::fill(int8_t seed, std::optional<Bounds> bounds)
                            std::get<UnsignedBounds>(*bounds))
                         : getUBounds(elementType);
                     uint64_t value;
-                    if (uBounds.min >= uBounds.max)
+                    if (uBounds.min > uBounds.max)
                     {
-                        if (!warnedAboutEmptyIntegerRange)
+                        if (!warnedAboutIntegerRange)
                         {
-                            log_info("WARNING: empty unsigned integer input "
+                            log_info("WARNING: invalid unsigned integer input "
                                      "range; filling with its lower bound.\n");
-                            warnedAboutEmptyIntegerRange = true;
+                            warnedAboutIntegerRange = true;
                         }
                         value = uBounds.min;
                     }
                     else
                     {
-                        value = genrand_int64(rng) % (uBounds.max - uBounds.min)
-                            + uBounds.min;
+                        if (uBounds.min == uBounds.max
+                            && !warnedAboutIntegerRange)
+                        {
+                            log_info("WARNING: single-value unsigned integer "
+                                     "input range.\n");
+                            warnedAboutIntegerRange = true;
+                        }
+                        value = get_random_ulong(uBounds.min, uBounds.max, rng);
                     }
                     setU64(offset, value);
                     break;
@@ -1145,51 +1154,7 @@ void Matrix::copyFrom(const Matrix &other)
     assert(elementType == other.elementType);
     assert(nRows == other.nRows);
     assert(nCols == other.nCols);
-    for (cl_uint row = 0; row < nRows; row++)
-    {
-        for (cl_uint col = 0; col < nCols; col++)
-        {
-            const size_t dst = getIndex(row, col);
-            const size_t src = other.getIndex(row, col);
-
-            switch (elementType)
-            {
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP16_KHR:
-                    set(dst, other.get<HalfFP>(src));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP32_KHR:
-                    set(dst, other.get<float>(src));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP64_KHR:
-                    set(dst, other.get<double>(src));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT8_KHR:
-                    set(dst, other.get<int8_t>(src));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT16_KHR:
-                    set(dst, other.get<int16_t>(src));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT32_KHR:
-                    set(dst, other.get<int32_t>(src));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT64_KHR:
-                    set(dst, other.get<int64_t>(src));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT8_KHR:
-                    set(dst, other.get<uint8_t>(src));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT16_KHR:
-                    set(dst, other.get<uint16_t>(src));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT32_KHR:
-                    set(dst, other.get<uint32_t>(src));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT64_KHR:
-                    set(dst, other.get<uint64_t>(src));
-                    break;
-            }
-        }
-    }
+    data = other.data;
 }
 
 std::string Variant::describe() const
@@ -1216,8 +1181,8 @@ std::string Variant::describe() const
                 break;
             default: break;
         }
-        OS << ".to." << output.nRows << "x" << output.nCols << ".C."
-           << getTypeStr(output.elementType);
+        OS << ".to." << output.nRows << "x" << output.nCols << "." << order
+           << "." << getTypeStr(output.elementType);
         return OS.str();
     }
 
@@ -1567,53 +1532,7 @@ void CoopMatTest_constant::calcRef(std::vector<const Matrix *> &inputs,
 static void fillCopy(std::vector<const Matrix *> &inputs, Matrix &m)
 {
     assert(inputs.size() == 1);
-    const Matrix *in = inputs.front();
-    for (size_t row = 0; row < in->nRows; row++)
-    {
-        for (size_t col = 0; col < in->nCols; col++)
-        {
-            const size_t srcIndex = in->getIndex(row, col);
-            const size_t dstIndex = m.getIndex(row, col);
-            assert(m.elementType == inputs[0]->elementType);
-
-            switch (m.elementType)
-            {
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP16_KHR:
-                    m.set(dstIndex, in->get<HalfFP>(srcIndex));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP32_KHR:
-                    m.set(dstIndex, in->get<float>(srcIndex));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_FP64_KHR:
-                    m.set(dstIndex, in->get<double>(srcIndex));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT8_KHR:
-                    m.set(dstIndex, in->get<int8_t>(srcIndex));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT16_KHR:
-                    m.set(dstIndex, in->get<int16_t>(srcIndex));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT32_KHR:
-                    m.set(dstIndex, in->get<int32_t>(srcIndex));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_SINT64_KHR:
-                    m.set(dstIndex, in->get<int64_t>(srcIndex));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT8_KHR:
-                    m.set(dstIndex, in->get<uint8_t>(srcIndex));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT16_KHR:
-                    m.set(dstIndex, in->get<uint16_t>(srcIndex));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT32_KHR:
-                    m.set(dstIndex, in->get<uint32_t>(srcIndex));
-                    break;
-                case CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT64_KHR:
-                    m.set(dstIndex, in->get<uint64_t>(srcIndex));
-                    break;
-            }
-        }
-    }
+    m.copyFrom(*inputs.front());
 }
 
 void CoopMatTest_copy::calcRef(std::vector<const Matrix *> &inputs, Matrix &m)
@@ -2121,9 +2040,10 @@ int CoopMatTest::buildAndRun(Variant &variant)
             Bounds bounds = getBounds(outType.type);
             Bounds newBounds = std::visit(
                 [&](auto x) -> Bounds {
-                    auto min = x.min;
-                    auto max = x.max;
-                    auto maxMag = min >= 0 ? max : std::min(-min, max);
+                    double maxMag = x.min >= 0
+                        ? static_cast<double>(x.max)
+                        : std::min(-static_cast<double>(x.min),
+                                   static_cast<double>(x.max));
                     // Allows some but not all to overflow.
                     maxMag = std::sqrt(maxMag) / 4 * 5;
                     setBoundsFromMaxMagnitude(x, maxMag);
@@ -2457,7 +2377,15 @@ int CoopMatTest::runAll()
                                 continue;
                             }
 
-                            const BufferDescriptor inputDesc =
+                            const BufferDescriptor scalarDesc =
+                                BufferDescriptor::makeBufferDescriptor(
+                                    mt.type,
+                                    elementsPerStride(Layout::RowMajor,
+                                                      mt.nRows, mt.nCols),
+                                    numberOfStrides(Layout::RowMajor, mt.nRows,
+                                                    mt.nCols),
+                                    IndexedBufferElementType<1>(mt.type));
+                            const BufferDescriptor vectorDesc =
                                 BufferDescriptor::makeBufferDescriptor(
                                     mt.type,
                                     elementsPerStride(Layout::RowMajor,
@@ -2466,46 +2394,16 @@ int CoopMatTest::runAll()
                                                     mt.nCols),
                                     BufferElementType(choice.vectorLength,
                                                       choice.scalarType));
-                            const BufferDescriptor outputDesc =
-                                BufferDescriptor::makeBufferDescriptor(
-                                    mt.type,
-                                    elementsPerStride(Layout::RowMajor,
-                                                      mt.nRows, mt.nCols),
-                                    numberOfStrides(Layout::RowMajor, mt.nRows,
-                                                    mt.nCols),
-                                    IndexedBufferElementType<1>(mt.type));
 
-                            if (op == CoopMatOp::multicomponent_load)
-                            {
-                                variantsToRun.emplace_back(
-                                    mt.type, mt.nRows, mt.nCols, order,
-                                    inputDesc, outputDesc, Layout::RowMajor,
-                                    Layout::RowMajor);
-                            }
-                            else
-                            {
-                                const BufferDescriptor outDesc =
-                                    BufferDescriptor::makeBufferDescriptor(
-                                        mt.type,
-                                        elementsPerStride(Layout::RowMajor,
-                                                          mt.nRows, mt.nCols),
-                                        numberOfStrides(Layout::RowMajor,
-                                                        mt.nRows, mt.nCols),
-                                        BufferElementType(choice.vectorLength,
-                                                          choice.scalarType));
-                                const BufferDescriptor inDesc =
-                                    BufferDescriptor::makeBufferDescriptor(
-                                        mt.type,
-                                        elementsPerStride(Layout::RowMajor,
-                                                          mt.nRows, mt.nCols),
-                                        numberOfStrides(Layout::RowMajor,
-                                                        mt.nRows, mt.nCols),
-                                        IndexedBufferElementType<1>(mt.type));
-                                variantsToRun.emplace_back(
-                                    mt.type, mt.nRows, mt.nCols, order, inDesc,
-                                    outDesc, Layout::RowMajor,
-                                    Layout::RowMajor);
-                            }
+                            const bool isLoad =
+                                op == CoopMatOp::multicomponent_load;
+                            const BufferDescriptor &inputDesc =
+                                isLoad ? vectorDesc : scalarDesc;
+                            const BufferDescriptor &outputDesc =
+                                isLoad ? scalarDesc : vectorDesc;
+                            variantsToRun.emplace_back(
+                                mt.type, mt.nRows, mt.nCols, order, inputDesc,
+                                outputDesc, Layout::RowMajor, Layout::RowMajor);
                         }
                         break;
                     }
