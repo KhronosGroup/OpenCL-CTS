@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "imageHelpers.h"
+#include "mathHelpers.h"
 #include <limits.h>
 #include <assert.h>
 #if defined(__APPLE__)
@@ -1269,12 +1270,7 @@ cl_ulong get_image_size(image_descriptor const *imageInfo)
 cl_ulong get_image_size_mb(image_descriptor const *imageInfo)
 {
     cl_ulong imageSize = get_image_size(imageInfo);
-    cl_ulong mb = imageSize / (1024 * 1024);
-    if (imageSize % (1024 * 1024) > 0)
-    {
-        mb += 1;
-    }
-    return mb;
+    return div_round_up(imageSize, 1024 * 1024);
 }
 
 
