@@ -13,8 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "common.h"
 #include "testBase.h"
+#include "testHarness.h"
+#ifdef GL_IS_SUPPORTED
+#include "common.h"
 
 #if defined(__APPLE__)
 #include <OpenGL/glu.h>
@@ -22,9 +24,11 @@
 #include <GL/glu.h>
 #include <CL/cl_gl.h>
 #endif
+#endif
 #include <algorithm>
 
-void calc_2D_array_size_descriptors(sizevec_t* sizes, size_t nsizes)
+#ifdef GL_IS_SUPPORTED
+static void calc_2D_array_size_descriptors(sizevec_t* sizes, size_t nsizes)
 {
     // Need to limit array size according to GL device properties
     GLint maxTextureLayers = 16, maxTextureSize = 4096;
@@ -44,10 +48,12 @@ void calc_2D_array_size_descriptors(sizevec_t* sizes, size_t nsizes)
             random_in_range(2, std::min(maxTextureLayers, 1 << (i + 4)), seed);
     }
 }
+#endif
 
 int test_images_read_2Darray(cl_device_id device, cl_context context,
                              cl_command_queue queue, int)
 {
+#ifdef GL_IS_SUPPORTED
     size_t nformats = sizeof(common_formats) / sizeof(common_formats[0]);
 
     GLenum targets[] = { GL_TEXTURE_2D_ARRAY };
@@ -59,11 +65,15 @@ int test_images_read_2Darray(cl_device_id device, cl_context context,
 
     return test_images_read_common(device, context, queue, common_formats,
                                    nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 int test_images_write_2Darray(cl_device_id device, cl_context context,
                               cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     // FIXME: Query for 2D image array write support.
 
     GLenum targets[] = { GL_TEXTURE_2D_ARRAY };
@@ -76,11 +86,15 @@ int test_images_write_2Darray(cl_device_id device, cl_context context,
 
     return test_images_write_common(device, context, queue, common_formats,
                                     nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 int test_images_2Darray_getinfo(cl_device_id device, cl_context context,
                                 cl_command_queue queue, int)
 {
+#ifdef GL_IS_SUPPORTED
     size_t nformats = sizeof(common_formats) / sizeof(common_formats[0]);
 
     GLenum targets[] = { GL_TEXTURE_2D_ARRAY };
@@ -93,4 +107,7 @@ int test_images_2Darray_getinfo(cl_device_id device, cl_context context,
     return test_images_get_info_common(device, context, queue, common_formats,
                                        nformats, targets, ntargets, sizes,
                                        nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }

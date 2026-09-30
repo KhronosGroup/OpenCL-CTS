@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "testHarness.h"
+#ifdef _WIN32
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -185,7 +187,6 @@ int other_data_types(cl_device_id deviceID, cl_context context,
             return result.Result();
         }
 
-#if defined(_WIN32)
         cl_dx9_surface_info_khr surfaceSrcInfo;
         CD3D9SurfaceWrapper *dx9SurfaceSrc =
             (static_cast<CD3D9SurfaceWrapper *>(surfaceSrc.get()));
@@ -197,11 +198,6 @@ int other_data_types(cl_device_id deviceID, cl_context context,
             (static_cast<CD3D9SurfaceWrapper *>(surfaceDst.get()));
         surfaceDstInfo.resource = *dx9SurfaceDst;
         surfaceDstInfo.shared_handle = objectDstHandle;
-#else
-        void *surfaceSrcInfo = 0;
-        void *surfaceDstInfo = 0;
-        return TEST_NOT_IMPLEMENTED;
-#endif
 
         // create OCL shared object
         clMemWrapper objectSrcShared = clCreateFromDX9MediaSurfaceKHR(
@@ -245,7 +241,6 @@ int other_data_types(cl_device_id deviceID, cl_context context,
         for (size_t frameIdx = 0; frameIdx < iterationNum; ++frameIdx)
         {
             // surface set
-#if defined(_WIN32)
             D3DLOCKED_RECT rect;
             if (FAILED((*dx9SurfaceSrc)->LockRect(&rect, NULL, 0)))
             {
@@ -264,10 +259,6 @@ int other_data_types(cl_device_id deviceID, cl_context context,
                        lineSize);
 
             (*dx9SurfaceSrc)->UnlockRect();
-#else
-            void *surfaceInfo = 0;
-            return TEST_NOT_IMPLEMENTED;
-#endif
 
             error = clEnqueueAcquireDX9MediaSurfacesKHR(
                 cmdQueue, static_cast<cl_uint>(memObjList.size()),
@@ -476,7 +467,6 @@ int other_data_types(cl_device_id deviceID, cl_context context,
 
             std::vector<T> out(width * height * planeNum, 0);
             // surface get
-#if defined(_WIN32)
             if (FAILED((*dx9SurfaceDst)->LockRect(&rect, NULL, 0)))
             {
                 log_error("Surface lock failed\n");
@@ -491,9 +481,6 @@ int other_data_types(cl_device_id deviceID, cl_context context,
                 memcpy(&out[y * width * planeNum], ptr + y * pitch, lineSize);
 
             (*dx9SurfaceDst)->UnlockRect();
-#else
-            return TEST_NOT_IMPLEMENTED;
-#endif
 
             if (!DataCompare(surfaceFormat, format.image_channel_data_type, out,
                              bufferExp[frameIdx % FRAME_NUM], width, height,
@@ -526,12 +513,13 @@ int other_data_types(cl_device_id deviceID, cl_context context,
 
     return result.Result();
 }
+#endif
 
 REGISTER_TEST(other_data_types)
 {
+#ifdef _WIN32
     CResult result;
 
-#if defined(_WIN32)
     // D3D9
     if (other_data_types<cl_float>(device, context, queue, num_elements, 10, 64,
                                    256, CL_ADAPTER_D3D9_KHR,
@@ -1310,9 +1298,8 @@ REGISTER_TEST(other_data_types)
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-#else
-    return TEST_NOT_IMPLEMENTED;
-#endif
-
     return result.Result();
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }

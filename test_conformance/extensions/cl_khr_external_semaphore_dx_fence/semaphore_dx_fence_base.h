@@ -19,7 +19,9 @@
 #include "harness/typeWrappers.h"
 #include "harness/extensionHelpers.h"
 #include "harness/errorHelpers.h"
+#ifdef D3D12_IS_SUPPORTED
 #include "directx_wrapper.hpp"
+#endif
 
 struct DXFenceTestBase
 {
@@ -29,6 +31,7 @@ struct DXFenceTestBase
     {}
     virtual ~DXFenceTestBase()
     {
+#ifdef D3D12_IS_SUPPORTED
         if (fence_handle)
         {
             CloseHandle(fence_handle);
@@ -44,6 +47,7 @@ struct DXFenceTestBase
             clReleaseSemaphoreKHR(semaphore);
             semaphore = nullptr;
         }
+#endif
     };
 
     virtual int SetUp()
@@ -51,6 +55,7 @@ struct DXFenceTestBase
         REQUIRE_EXTENSION("cl_khr_external_semaphore");
         REQUIRE_EXTENSION("cl_khr_external_semaphore_dx_fence");
 
+#ifdef D3D12_IS_SUPPORTED
         // Obtain pointers to semaphore's API
         GET_FUNCTION_EXTENSION_ADDRESS(device,
                                        clCreateSemaphoreWithPropertiesKHR);
@@ -72,6 +77,9 @@ struct DXFenceTestBase
         test_assert_error(!!semaphore, "Could not create semaphore");
 
         return TEST_PASS;
+#else
+        return TEST_FAIL;
+#endif
     }
 
     virtual cl_int Run() = 0;
@@ -83,6 +91,7 @@ protected:
     cl_context context = nullptr;
     cl_command_queue queue = nullptr;
     cl_int num_elems = 0;
+#ifdef D3D12_IS_SUPPORTED
     DirectX12Wrapper dx_wrapper;
 
     cl_semaphore_payload_khr semaphore_payload = 1;
@@ -146,6 +155,7 @@ protected:
 
         return tmp_semaphore;
     }
+#endif
 };
 
 template <class T>

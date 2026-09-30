@@ -68,7 +68,7 @@ struct PlatformInfoTest : public VulkanTestBase
         cl_int errNum;
         cl_uint *handle_type;
         size_t handle_type_size = 0;
-        cl_uint num_handles = 0;
+        size_t num_handles = 0;
         cl_bool external_mem_extn_available = is_platform_extension_available(
             platform, "cl_khr_external_semaphore");
         cl_bool external_sema_extn_available =
@@ -82,7 +82,7 @@ struct PlatformInfoTest : public VulkanTestBase
             return TEST_SKIPPED_ITSELF;
         }
 
-        log_info("Platform (id %lu) info:\n", (unsigned long)platform);
+        log_info("Platform (id %p) info:\n", platform);
 
         for (i = 0;
              i < sizeof(platform_info_table) / sizeof(platform_info_table[0]);
@@ -156,7 +156,7 @@ struct DeviceInfoTest : public VulkanTestBase
         cl_uint j;
         cl_uint *handle_type;
         size_t handle_type_size = 0;
-        cl_uint num_handles = 0;
+        size_t num_handles = 0;
         cl_int errNum = CL_SUCCESS;
         cl_bool external_mem_extn_available =
             is_extension_available(device, "cl_khr_external_memory");
