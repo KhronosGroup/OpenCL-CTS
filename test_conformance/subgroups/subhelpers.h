@@ -33,6 +33,16 @@ typedef std::bitset<128> bs128;
 extern cl_half_rounding_mode g_rounding_mode;
 
 bs128 cl_uint4_to_bs128(cl_uint4 v);
+
+// Work-item masks are 128-bit patterns, passed to the divergent kernels as a
+// uint4. Sub-groups can have more than 128 work-items (the specification does
+// not bound the size), so the pattern repeats: work-item i is active when bit
+// i % 128 is set. The kernels apply the same rule when they select the mask
+// word, so host and device agree for any sub-group size.
+inline bool work_item_active(const bs128 &mask, size_t sub_group_local_id)
+{
+    return mask.test(sub_group_local_id % 128);
+}
 cl_uint4 bs128_to_cl_uint4(bs128 v);
 cl_uint4 generate_bit_mask(cl_uint subgroup_local_id,
                            const std::string &mask_type,

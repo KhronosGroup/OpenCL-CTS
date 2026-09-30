@@ -135,7 +135,7 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
                 std::set<int> active_work_items;
                 for (i = 0; i < n; ++i)
                 {
-                    if (test_params.work_items_mask.test(i))
+                    if (work_item_active(test_params.work_items_mask, i))
                     {
                         active_work_items.insert(i);
                         switch (operation)
@@ -205,15 +205,16 @@ std::string sub_group_elect_source = R"(
         int gid = get_global_id(0);
         XY(xy,gid);
         uint subgroup_local_id = get_sub_group_local_id();
-        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint mask_id = subgroup_local_id % 128;
+        uint elect_work_item = 1 << (mask_id % 32);
         uint work_item_mask;
-        if(subgroup_local_id < 32) {
+        if(mask_id < 32) {
             work_item_mask = work_item_mask_vector.x;
-        } else if(subgroup_local_id < 64) {
+        } else if(mask_id < 64) {
             work_item_mask = work_item_mask_vector.y;
-        } else if(subgroup_local_id < 96) {
+        } else if(mask_id < 96) {
             work_item_mask = work_item_mask_vector.z;
-        } else if(subgroup_local_id < 128) {
+        } else {
             work_item_mask = work_item_mask_vector.w;
         }
         if (elect_work_item & work_item_mask){
@@ -227,15 +228,16 @@ std::string sub_group_non_uniform_any_all_all_equal_source = R"(
         int gid = get_global_id(0);
         XY(xy,gid);
         uint subgroup_local_id = get_sub_group_local_id();
-        uint elect_work_item = 1 << (subgroup_local_id % 32);
+        uint mask_id = subgroup_local_id % 128;
+        uint elect_work_item = 1 << (mask_id % 32);
         uint work_item_mask;
-        if(subgroup_local_id < 32) {
+        if(mask_id < 32) {
             work_item_mask = work_item_mask_vector.x;
-        } else if(subgroup_local_id < 64) {
+        } else if(mask_id < 64) {
             work_item_mask = work_item_mask_vector.y;
-        } else if(subgroup_local_id < 96) {
+        } else if(mask_id < 96) {
             work_item_mask = work_item_mask_vector.z;
-        } else if(subgroup_local_id < 128) {
+        } else {
             work_item_mask = work_item_mask_vector.w;
         }
         if (elect_work_item & work_item_mask){
