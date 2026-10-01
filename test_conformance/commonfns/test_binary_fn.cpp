@@ -213,19 +213,22 @@ int max_verify(const T* const x, const T* const y, const T* const out,
             int k = i * vecSize + j;
             int l = (k * vecParam + i * (1 - vecParam));
             T v = (conv_to_dbl(x[k]) < conv_to_dbl(y[l])) ? y[l] : x[k];
-            if (v != out[k])
+            if (!fp_value_equals(v, out[k]))
             {
                 if (std::is_same<T, half>::value)
                     log_error("x[%d]=%g y[%d]=%g out[%d]=%g, expected %g. "
                               "(index %d is "
                               "vector %d, element %d, for vector size %d)\n",
                               k, conv_to_flt(x[k]), l, conv_to_flt(y[l]), k,
-                              conv_to_flt(out[k]), v, k, i, j, vecSize);
+                              conv_to_flt(out[k]), conv_to_flt(v), k, i, j,
+                              vecSize);
                 else
                     log_error("x[%d]=%g y[%d]=%g out[%d]=%g, expected %g. "
                               "(index %d is "
                               "vector %d, element %d, for vector size %d)\n",
-                              k, x[k], l, y[l], k, out[k], v, k, i, j, vecSize);
+                              k, conv_to_flt(x[k]), l, conv_to_flt(y[l]), k,
+                              conv_to_flt(out[k]), conv_to_flt(v), k, i, j,
+                              vecSize);
                 return -1;
             }
         }
@@ -244,19 +247,22 @@ int min_verify(const T* const x, const T* const y, const T* const out,
             int k = i * vecSize + j;
             int l = (k * vecParam + i * (1 - vecParam));
             T v = (conv_to_dbl(x[k]) > conv_to_dbl(y[l])) ? y[l] : x[k];
-            if (v != out[k])
+            if (!fp_value_equals(v, out[k]))
             {
                 if (std::is_same<T, half>::value)
                     log_error("x[%d]=%g y[%d]=%g out[%d]=%g, expected %g. "
                               "(index %d is "
                               "vector %d, element %d, for vector size %d)\n",
                               k, conv_to_flt(x[k]), l, conv_to_flt(y[l]), k,
-                              conv_to_flt(out[k]), v, k, i, j, vecSize);
+                              conv_to_flt(out[k]), conv_to_flt(v), k, i, j,
+                              vecSize);
                 else
                     log_error("x[%d]=%g y[%d]=%g out[%d]=%g, expected %g. "
                               "(index %d is "
                               "vector %d, element %d, for vector size %d)\n",
-                              k, x[k], l, y[l], k, out[k], v, k, i, j, vecSize);
+                              k, conv_to_flt(x[k]), l, conv_to_flt(y[l]), k,
+                              conv_to_flt(out[k]), conv_to_flt(v), k, i, j,
+                              vecSize);
                 return -1;
             }
         }

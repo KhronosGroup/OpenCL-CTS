@@ -35,6 +35,7 @@ std::string gCompilationProgram = DEFAULT_COMPILATION_PROGRAM;
 bool gDisableSPIRVValidation = false;
 std::string gSPIRVValidator = DEFAULT_SPIRV_VALIDATOR;
 unsigned gNumWorkerThreads;
+unsigned gNumThreadPoolThreads = 0;
 bool gListTests = false;
 bool gWimpyMode = false;
 
@@ -57,6 +58,11 @@ void helpInfo()
         Enable wimpy mode. It does not impact all tests. Impacted tests will run
         with a very small subset of the tests. This option should not be used
         for conformance submission (default: disabled).
+    -m, --disable-threadpool
+        Disable multi-threading (using the ThreadPool API) within individual tests.
+    -t, --num-threadpool-threads <num>
+        Select the number of threads used by the ThreadPool API.
+        default: All available threads
 
     --invalid-object-scenarios=<option_1>,<option_2>....
         Specify different scenarios to use when
@@ -91,44 +97,81 @@ For spir-v mode only:
         "\n");
 }
 
-int parseCustomParam(int argc, const char *argv[], const char *ignore)
+int parseCommonParamAndGetRemovedArgs(int argc, const char *argv[],
+                                      std::vector<std::string> &removed_args,
+                                      bool &help)
 {
     int delArg = 0;
+    help = false;
 
     for (int i = 1; i < argc; i++)
     {
-        if (ignore != 0)
-        {
-            // skip parameters that require special/different treatment in
-            // application (generic interpretation and parameter removal will
-            // not be performed)
-            const char *ptr = strstr(ignore, argv[i]);
-            if (ptr != 0 && (ptr == ignore || ptr[-1] == ' ')
-                && // first on list or ' ' before
-                (ptr[strlen(argv[i])] == 0
-                 || ptr[strlen(argv[i])] == ' ')) // last on list or ' ' after
-                continue;
-        }
-
         delArg = 0;
         size_t i_object_length = strlen("--invalid-object-scenarios=");
 
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
         {
-            // Note: we don't increment delArg to delete this argument,
-            // to allow the caller's argument parsing routine to see the
-            // option and print its own help.
-            helpInfo();
+            delArg++;
+            if (!help)
+            {
+                help = true;
+                removed_args.push_back("--help");
+                helpInfo();
+            }
         }
         else if (!strcmp(argv[i], "--list") || !strcmp(argv[i], "-list"))
         {
             delArg++;
+            removed_args.push_back("--list");
             gListTests = true;
         }
         else if (!strcmp(argv[i], "--wimpy") || !strcmp(argv[i], "-w"))
         {
             delArg++;
+            removed_args.push_back("--wimpy");
             gWimpyMode = true;
+        }
+        else if (!strcmp(argv[i], "-m")
+                 || !strcmp(argv[i], "--disable-threadpool"))
+        {
+            if (gNumThreadPoolThreads != 0)
+            {
+                log_info(
+                    "WARNING: -m/--disable-threadpool option overriding "
+                    "previously set gNumThreadPoolThreads value of %d to 1.\n",
+                    gNumThreadPoolThreads);
+            }
+            delArg++;
+            removed_args.push_back("--disable-threadpool");
+            gNumThreadPoolThreads = 1;
+        }
+        else if (!strcmp(argv[i], "-t")
+                 || !strcmp(argv[i], "--num-threadpool-threads"))
+        {
+            delArg++;
+            if ((i + 1) < argc)
+            {
+                delArg++;
+                const char *numthstr = argv[i + 1];
+                int new_value = atoi(numthstr);
+
+                if (gNumThreadPoolThreads != 0)
+                {
+                    log_info("WARNING: -t/--num-threadpool-threads option "
+                             "overriding "
+                             "previously set gNumThreadPoolThreads value of %d "
+                             "to %d.\n",
+                             gNumThreadPoolThreads, new_value);
+                }
+                gNumThreadPoolThreads = new_value;
+            }
+            else
+            {
+                log_error("A parameter to --num-threadpool-threads must be "
+                          "provided!\n");
+                return -1;
+            }
+            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
         }
         else if (!strcmp(argv[i], "--compilation-mode"))
         {
@@ -163,6 +206,7 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
                           "  --compilation-mode <online|binary|spir-v>\n");
                 return -1;
             }
+            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
         }
         else if (!strcmp(argv[i], "--num-worker-threads"))
         {
@@ -180,6 +224,7 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
                     "A parameter to --num-worker-threads must be provided!\n");
                 return -1;
             }
+            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
         }
         else if (!strcmp(argv[i], "--compilation-cache-mode"))
         {
@@ -221,6 +266,7 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
                     "<compile-if-absent|force-read|overwrite>\n");
                 return -1;
             }
+            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
         }
         else if (!strcmp(argv[i], "--compilation-cache-path"))
         {
@@ -236,6 +282,7 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
                           "specified.\n");
                 return -1;
             }
+            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
         }
         else if (!strcmp(argv[i], "--compilation-program"))
         {
@@ -251,10 +298,12 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
                           "specified.\n");
                 return -1;
             }
+            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
         }
         else if (!strcmp(argv[i], "--disable-spirv-validation"))
         {
             delArg++;
+            removed_args.push_back(argv[i]);
             gDisableSPIRVValidation = true;
         }
         else if (!strcmp(argv[i], "--spirv-validator"))
@@ -271,6 +320,7 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
                           "specified.\n");
                 return -1;
             }
+            removed_args.push_back(std::string(argv[i]) + " " + argv[i + 1]);
         }
         else if (!strncmp(argv[i],
                           "--invalid-object-scenarios=", i_object_length))
@@ -297,6 +347,7 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
                           "not specified.\n");
                 return -1;
             }
+            removed_args.push_back(argv[i]);
         }
 
         // cleaning parameters from argv tab
@@ -315,6 +366,13 @@ int parseCustomParam(int argc, const char *argv[], const char *ignore)
     }
 
     return argc;
+}
+
+int parseCommonParam(int argc, const char *argv[])
+{
+    std::vector<std::string> unused1;
+    bool unused2;
+    return parseCommonParamAndGetRemovedArgs(argc, argv, unused1, unused2);
 }
 
 bool is_power_of_two(int number) { return number && !(number & (number - 1)); }

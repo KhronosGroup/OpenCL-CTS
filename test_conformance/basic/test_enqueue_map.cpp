@@ -15,15 +15,45 @@
 //
 #include "harness/compat.h"
 
+#include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "harness/conversions.h"
+#include "harness/imageHelpers.h"
 #include "harness/typeWrappers.h"
 
 // clang-format off
+namespace {
+
+struct ScopeGuard
+{
+    ScopeGuard(cl_command_queue q, cl_uchar *region, cl_mem mo)
+        : queue(q), mapped_region(region), mem_object(mo)
+    {}
+    ~ScopeGuard()
+    {
+        if (queue != nullptr && mapped_region!=nullptr && mem_object!=nullptr)
+        {
+            // Unmap
+            cl_int error = clEnqueueUnmapMemObject(queue, mem_object, mapped_region,
+                                            0, NULL, NULL);
+            if(error!=CL_SUCCESS)
+                log_error("Unable to unmap buffer %d\n", error);
+
+            queue=nullptr;
+            mapped_region=nullptr;
+            mem_object=nullptr;
+        }
+    }
+
+    cl_command_queue queue;
+    cl_uchar *mapped_region;
+    cl_mem mem_object;
+};
+
 const cl_mem_flags flag_set[] = {
   CL_MEM_ALLOC_HOST_PTR,
   CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR,
@@ -45,6 +75,25 @@ const char *flag_set_names[] = {
   "CL_MEM_COPY_HOST_PTR | CL_MEM_ALLOC_HOST_PTR | CL_MEM_IMMUTABLE_EXT",
   "0"
 };
+
+static constexpr cl_mem_object_type image_types[] = {
+    CL_MEM_OBJECT_IMAGE2D, CL_MEM_OBJECT_IMAGE3D,
+    CL_MEM_OBJECT_IMAGE2D_ARRAY, CL_MEM_OBJECT_IMAGE1D,
+    CL_MEM_OBJECT_IMAGE1D_ARRAY
+};
+
+static constexpr const char *image_types_names[]{
+    "CL_MEM_OBJECT_IMAGE2D", "CL_MEM_OBJECT_IMAGE3D",
+    "CL_MEM_OBJECT_IMAGE2D_ARRAY", "CL_MEM_OBJECT_IMAGE1D",
+    "CL_MEM_OBJECT_IMAGE1D_ARRAY"
+};
+
+constexpr size_t max_3D_image_size = 64;
+constexpr size_t max_bytes_per_pixel = 4 * sizeof(cl_ulong);
+constexpr size_t max_image_data_size =
+    max_3D_image_size * max_3D_image_size * max_3D_image_size * max_bytes_per_pixel;
+constexpr size_t num_test_per_image_type = 4;
+}
 // clang-format on
 
 REGISTER_TEST(enqueue_map_buffer)
@@ -169,79 +218,240 @@ REGISTER_TEST(enqueue_map_buffer)
     return 0;
 }
 
-REGISTER_TEST(enqueue_map_image)
+namespace {
+
+cl_int create_image_type(clMemWrapper &memObject, const cl_context context,
+                         cl_mem_object_type image_type,
+                         const cl_mem_flags mem_flag,
+                         const cl_image_format &fmt, size_t *img_region,
+                         const cl_uchar *data)
 {
-    int error;
-    constexpr cl_image_format format = { CL_RGBA, CL_UNSIGNED_INT32 };
-    constexpr size_t imageSize = 256;
-    constexpr size_t imageDataSize =
-        imageSize * imageSize * 4 * sizeof(cl_uint);
-
-    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
-
-    BufferOwningPtr<cl_uint> hostPtrData{ malloc(imageDataSize) };
-    BufferOwningPtr<cl_uint> referenceData{ malloc(imageDataSize) };
-    BufferOwningPtr<cl_uint> finalData{ malloc(imageDataSize) };
-
-    MTdataHolder d{ gRandomSeed };
-    for (size_t src_flag_id = 0; src_flag_id < ARRAY_SIZE(flag_set);
-         src_flag_id++)
+    cl_int error = CL_SUCCESS;
+    switch (image_type)
     {
-        clMemWrapper memObject;
-        log_info("Testing with cl_mem_flags src: %s\n",
-                 flag_set_names[src_flag_id]);
-
-        if ((flag_set[src_flag_id] & CL_MEM_IMMUTABLE_EXT)
-            && !is_extension_available(device,
-                                       "cl_ext_immutable_memory_objects"))
-        {
-            log_info("Device does not support CL_MEM_IMMUTABLE_EXT. "
-                     "Skipping the memory flag.\n");
-            continue;
+        case CL_MEM_OBJECT_IMAGE1D: {
+            size_t image_size = std::min(
+                size_t(256), max_image_data_size / max_bytes_per_pixel);
+            memObject = create_image_1d(context, mem_flag, &fmt, image_size, 0,
+                                        (void *)data, nullptr, &error);
+            img_region[0] = image_size;
+            break;
         }
-
-        generate_random_data(kUInt, (unsigned int)(imageSize * imageSize * 4),
-                             d, hostPtrData);
-        memcpy(referenceData, hostPtrData, imageDataSize);
-
-        cl_mem_flags flags = flag_set[src_flag_id];
-        bool is_immutable_image = flags & CL_MEM_IMMUTABLE_EXT;
-        bool hasHostPtr =
-            (flags & CL_MEM_USE_HOST_PTR) || (flags & CL_MEM_COPY_HOST_PTR);
-        void *hostPtr = nullptr;
-        if (hasHostPtr) hostPtr = hostPtrData;
-        memObject = create_image_2d(context, flags, &format, imageSize,
-                                    imageSize, 0, hostPtr, &error);
-        test_error(error, "Unable to create testing buffer");
-
-        if (!hasHostPtr && !is_immutable_image)
-        {
-            size_t write_origin[3] = { 0, 0, 0 },
-                   write_region[3] = { imageSize, imageSize, 1 };
-            error = clEnqueueWriteImage(queue, memObject, CL_TRUE, write_origin,
-                                        write_region, 0, 0, hostPtrData, 0,
-                                        NULL, NULL);
-            test_error(error, "Unable to write to testing buffer");
+        case CL_MEM_OBJECT_IMAGE2D: {
+            size_t image_size = std::min(
+                size_t(256),
+                (size_t)std::sqrt(max_image_data_size / max_bytes_per_pixel));
+            memObject = create_image_2d(context, mem_flag, &fmt, image_size,
+                                        image_size, 0, (void *)data, &error);
+            img_region[0] = img_region[1] = image_size;
+            break;
         }
+        case CL_MEM_OBJECT_IMAGE3D: {
+            size_t image_size = std::min(
+                size_t(256),
+                (size_t)std::cbrt(max_image_data_size / max_bytes_per_pixel));
+            memObject =
+                create_image_3d(context, mem_flag, &fmt, image_size, image_size,
+                                image_size, 0, 0, (void *)data, &error);
+            img_region[0] = img_region[1] = img_region[2] = image_size;
+            break;
+        }
+        case CL_MEM_OBJECT_IMAGE1D_ARRAY: {
+            size_t image_size = std::min(
+                size_t(256),
+                (size_t)std::sqrt(max_image_data_size / max_bytes_per_pixel));
+            memObject =
+                create_image_1d_array(context, mem_flag, &fmt, image_size,
+                                      image_size, 0, 0, (void *)data, &error);
+            img_region[0] = img_region[1] = image_size;
+            break;
+        }
+        case CL_MEM_OBJECT_IMAGE2D_ARRAY: {
+            size_t image_size = std::min(
+                size_t(256),
+                (size_t)std::cbrt(max_image_data_size / max_bytes_per_pixel));
+            memObject = create_image_2d_array(
+                context, mem_flag, &fmt, image_size, image_size, image_size, 0,
+                0, (void *)data, &error);
+            img_region[0] = img_region[1] = img_region[2] = image_size;
+            break;
+        }
+        default: {
+            log_error("create_image_type: image type %u not supported!",
+                      image_type);
+            error = TEST_FAIL;
+            break;
+        }
+    }
 
-        for (int i = 0; i < 128; i++)
+    return error;
+}
+
+void random_region_coords(size_t *offset, size_t *region,
+                          const size_t *img_region, const MTdataHolder &d)
+{
+    offset[0] = (size_t)random_in_range(0, (int)img_region[0] - 1, d);
+    region[0] = (size_t)random_in_range(1, (int)(img_region[0] - offset[0]), d);
+    offset[1] = (size_t)random_in_range(0, (int)img_region[1] - 1, d);
+    region[1] = (size_t)random_in_range(1, (int)(img_region[1] - offset[1]), d);
+    offset[2] = (size_t)random_in_range(0, (int)img_region[2] - 1, d);
+    region[2] = (size_t)random_in_range(1, (int)(img_region[2] - offset[2]), d);
+}
+
+struct EnqueueMapImageTest
+{
+    MTdataHolder d;
+    std::vector<cl_uchar> hostPtrData;
+    std::vector<cl_uchar> referenceData;
+    std::vector<cl_uchar> finalData;
+
+    cl_device_id device;
+    cl_context context;
+    cl_command_queue queue;
+    clMemWrapper memObject;
+
+    EnqueueMapImageTest(cl_device_id device, cl_context context,
+                        cl_command_queue queue)
+        : d{ gRandomSeed }, hostPtrData(max_image_data_size, 0),
+          referenceData(max_image_data_size, 0),
+          finalData(max_image_data_size, 0), device(device), context(context),
+          queue(queue)
+    {
+        generate_random_data(kUChar, (unsigned int)max_image_data_size, d,
+                             hostPtrData.data());
+    }
+
+    cl_int run()
+    {
+        for (size_t src_flag_id = 0; src_flag_id < ARRAY_SIZE(flag_set);
+             src_flag_id++)
         {
+            log_info("Testing with cl_mem_flags src: %s\n",
+                     flag_set_names[src_flag_id]);
 
+            for (size_t image_type_ind = 0;
+                 image_type_ind < ARRAY_SIZE(image_types); image_type_ind++)
+            {
+                cl_mem_object_type image_type = image_types[image_type_ind];
+                log_info("Testing with cl_mem_object_type src: %s\n",
+                         image_types_names[image_type_ind]);
+
+                cl_mem_flags mem_flag = flag_set[src_flag_id];
+                bool is_immutable_image = mem_flag & CL_MEM_IMMUTABLE_EXT;
+
+                if (is_immutable_image
+                    && !is_extension_available(
+                        device, "cl_ext_immutable_memory_objects"))
+                {
+                    log_info("Device does not support CL_MEM_IMMUTABLE_EXT. "
+                             "Skipping the memory flag.\n");
+                    continue;
+                }
+
+                bool hasHostPtr = (mem_flag & CL_MEM_USE_HOST_PTR)
+                    || (mem_flag & CL_MEM_COPY_HOST_PTR);
+                // find supported image formats
+                cl_uint num_formats = 0;
+
+                // clGetSupportedImageFormats requires an access-mode flag;
+                // add CL_MEM_READ_WRITE when the entry has none, but leave
+                // CL_MEM_IMMUTABLE_EXT entries as-is since it's already a
+                // distinct access mode.
+                cl_mem_flags query_flag = is_immutable_image
+                    ? CL_MEM_IMMUTABLE_EXT
+                    : CL_MEM_READ_WRITE;
+
+                cl_int error = clGetSupportedImageFormats(
+                    context, query_flag, image_type, 0, nullptr, &num_formats);
+                test_error(
+                    error,
+                    "clGetSupportedImageFormats failed to return supported "
+                    "formats");
+
+                std::vector<cl_image_format> formats(num_formats);
+                error = clGetSupportedImageFormats(context, query_flag,
+                                                   image_type, num_formats,
+                                                   formats.data(), nullptr);
+                test_error(
+                    error,
+                    "clGetSupportedImageFormats failed to return supported "
+                    "formats");
+
+                for (cl_image_format &fmt : formats)
+                {
+                    memcpy(referenceData.data(), hostPtrData.data(),
+                           max_image_data_size);
+
+                    const size_t pixel_size = get_pixel_size(&fmt);
+
+                    size_t img_region[3] = { 1, 1, 1 };
+                    error = create_image_type(
+                        memObject, context, image_type, mem_flag, fmt,
+                        img_region, hasHostPtr ? hostPtrData.data() : nullptr);
+                    test_error(
+                        error,
+                        (std::string("Unable to create test image of type ")
+                         + convert_image_type_to_string(image_type))
+                            .c_str());
+
+                    if (!hasHostPtr && !is_immutable_image)
+                    {
+                        size_t write_origin[3] = { 0, 0, 0 };
+                        error = clEnqueueWriteImage(
+                            queue, memObject, CL_TRUE, write_origin, img_region,
+                            0, 0, hostPtrData.data(), 0, NULL, NULL);
+                        test_error(error, "Unable to write to testing buffer");
+                    }
+
+                    error = run_tests_for_image_type(
+                        img_region, pixel_size, image_type, is_immutable_image);
+                    test_error(error, "run_tests_for_image_type failed");
+
+                    // Final validation: read actual values of buffer and
+                    // compare against our reference
+                    size_t zero_origin[3] = { 0, 0, 0 };
+                    error = clEnqueueReadImage(queue, memObject, CL_TRUE,
+                                               zero_origin, img_region, 0, 0,
+                                               finalData.data(), 0, NULL, NULL);
+                    test_error(error, "Unable to read results");
+
+                    if (is_immutable_image && !hasHostPtr)
+                    {
+                        continue;
+                    }
+
+                    error = verify_test_results(img_region, pixel_size);
+                    test_error(error, "verify_test_results failed");
+                }
+            }
+        } // cl_mem_flags
+
+        return TEST_PASS;
+    }
+
+    cl_int run_tests_for_image_type(const size_t *img_region,
+                                    const size_t pixel_size,
+                                    const cl_mem_object_type &image_type,
+                                    const bool is_immutable_image)
+    {
+        cl_int error = CL_SUCCESS;
+        for (size_t i = 0; i < num_test_per_image_type; i++)
+        {
             size_t offset[3], region[3];
-            size_t rowPitch;
+            random_region_coords(offset, region, img_region, d);
 
-            offset[0] = (size_t)random_in_range(0, (int)imageSize - 1, d);
-            region[0] =
-                (size_t)random_in_range(1, (int)(imageSize - offset[0] - 1), d);
-            offset[1] = (size_t)random_in_range(0, (int)imageSize - 1, d);
-            region[1] =
-                (size_t)random_in_range(1, (int)(imageSize - offset[1] - 1), d);
-            offset[2] = 0;
-            region[2] = 1;
-            cl_uint *mappedRegion = (cl_uint *)clEnqueueMapImage(
+            size_t rowPitch = 0, slicePitch = 0;
+
+            cl_uchar *mappedRegion = (cl_uchar *)clEnqueueMapImage(
                 queue, memObject, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, offset,
-                region, &rowPitch, NULL, 0, NULL, NULL, &error);
+                region, &rowPitch, &slicePitch, 0, NULL, NULL, &error);
+            ScopeGuard sg(queue, mappedRegion, memObject);
 
+            // For IMAGE1D_ARRAY, offset[1]/region[1] index array slices, so
+            // the stride is slicePitch, not rowPitch.
+            const size_t y_pitch = image_type == CL_MEM_OBJECT_IMAGE1D_ARRAY
+                ? slicePitch
+                : rowPitch;
             if (is_immutable_image)
             {
                 test_failure_error_ret(
@@ -259,64 +469,87 @@ REGISTER_TEST(enqueue_map_image)
                 return -1;
             }
 
-            // Write into the region
-            cl_uint *mappedPtr = mappedRegion;
-            for (size_t y = 0; y < region[1]; y++)
+            // Read and write into the region
+            for (size_t z = 0; z < region[2]; z++)
             {
-                for (size_t x = 0; x < region[0] * 4; x++)
+                for (size_t y = 0; y < region[1]; y++)
                 {
-                    cl_int spin = (cl_int)random_in_range(16, 1024, d);
+                    for (size_t x = 0; x < region[0]; x++)
+                    {
+                        size_t x_off = offset[0] + x;
+                        size_t y_off = offset[1] + y;
+                        size_t z_off = offset[2] + z;
+                        size_t ref_loc = (z_off * img_region[0] * img_region[1]
+                                          + y_off * img_region[0] + x_off);
+                        cl_uchar *pixel =
+                            &mappedRegion[z * slicePitch + y * y_pitch
+                                          + x * pixel_size];
 
-                    cl_int value;
-                    // Test read AND write in one swipe
-                    value = mappedPtr[(y * rowPitch / sizeof(cl_uint)) + x];
-                    value = spin - value;
-                    mappedPtr[(y * rowPitch / sizeof(cl_uint)) + x] = value;
+                        for (size_t i = 0; i < pixel_size; i++)
+                        {
+                            if (pixel[i]
+                                != referenceData[ref_loc * pixel_size + i])
+                            {
+                                log_error(
+                                    "ERROR: Sample %d (coord "
+                                    "%zu,%zu,%zu) "
+                                    "did not validate! Got "
+                                    "%d, expected %d\n",
+                                    (int)ref_loc, x, y, z, (int)pixel[i],
+                                    (int)referenceData[ref_loc * pixel_size
+                                                       + i]);
+                                return -1;
+                            }
 
-                    // Also update the initial data array
-                    value =
-                        referenceData[((offset[1] + y) * imageSize + offset[0])
-                                          * 4
-                                      + x];
-                    value = spin - value;
-                    referenceData[((offset[1] + y) * imageSize + offset[0]) * 4
-                                  + x] = value;
+                            pixel[i] = 0;
+                            referenceData[ref_loc * pixel_size + i] = 0;
+                        }
+                    }
                 }
             }
-
-            // Unmap
-            error = clEnqueueUnmapMemObject(queue, memObject, mappedRegion, 0,
-                                            NULL, NULL);
-            test_error(error, "Unable to unmap buffer");
         }
+        return CL_SUCCESS;
+    }
 
-        // Final validation: read actual values of buffer and compare against
-        // our reference
-        size_t finalOrigin[3] = { 0, 0, 0 },
-               finalRegion[3] = { imageSize, imageSize, 1 };
-        error = clEnqueueReadImage(queue, memObject, CL_TRUE, finalOrigin,
-                                   finalRegion, 0, 0, finalData, 0, NULL, NULL);
-        test_error(error, "Unable to read results");
-
-        if (is_immutable_image && !hasHostPtr)
+    cl_int verify_test_results(const size_t *img_region,
+                               const size_t pixel_size)
+    {
+        for (size_t z = 0; z < img_region[2]; z++)
         {
-            continue;
-        }
-
-        for (size_t q = 0; q < imageSize * imageSize * 4; q++)
-        {
-            if (referenceData[q] != finalData[q])
+            for (size_t y = 0; y < img_region[1]; y++)
             {
-                log_error(
-                    "ERROR: Sample %d (coord %d,%d) did not validate! Got "
-                    "%d, expected %d\n",
-                    (int)q, (int)((q / 4) % imageSize),
-                    (int)((q / 4) / imageSize), (int)finalData[q],
-                    (int)referenceData[q]);
-                return -1;
+                for (size_t x = 0; x < img_region[0]; x++)
+                {
+                    size_t loc = (z * img_region[0] * img_region[1]
+                                  + y * img_region[0] + x);
+                    for (size_t i = 0; i < pixel_size; i++)
+                    {
+                        if (referenceData[loc * pixel_size + i]
+                            != finalData[loc * pixel_size + i])
+                        {
+                            log_error("Final validation error: sample %d "
+                                      "(coord %zu,%zu,%zu) did not validate! "
+                                      "Got "
+                                      "%d, expected %d\n",
+                                      (int)loc, x, y, z, (int)finalData[loc],
+                                      (int)referenceData[loc]);
+                            return -1;
+                        }
+                    }
+                }
             }
         }
-    } // cl_mem_flags
+        return CL_SUCCESS;
+    }
+};
 
-    return 0;
+} // anonymous namespace
+
+REGISTER_TEST(enqueue_map_image)
+{
+    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
+
+    EnqueueMapImageTest test(device, context, queue);
+
+    return test.run();
 }

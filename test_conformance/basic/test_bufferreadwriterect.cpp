@@ -292,14 +292,19 @@ int immutable_copy_region(size_t src, size_t soffset[3], size_t sregion[3],
 
 // This function compares the destination region in the buffer pointed
 // to by device, to the source region of the specified verify buffer.
-int verify_region(BufferType* device, size_t src, size_t soffset[3], size_t sregion[3], size_t dst, size_t doffset[3]) {
+int verify_region(BufferType* device, size_t src, size_t soffset[3],
+                  size_t sregion[3], size_t dst, size_t doffset[3],
+                  size_t src_row_pitch = 0, size_t dst_row_pitch = 0,
+                  size_t src_slice_pitch = 0, size_t dst_slice_pitch = 0)
+{
 
     // Copy between host buffers.
-    size_t spitch = width[src];
-    size_t sslice = width[src]*height[src];
-
-    size_t dpitch = width[dst];
-    size_t dslice = width[dst]*height[dst];
+    size_t spitch = (src_row_pitch == 0) ? sregion[0] : src_row_pitch;
+    size_t sslice =
+        (src_slice_pitch == 0) ? sregion[1] * spitch : src_slice_pitch;
+    size_t dpitch = (dst_row_pitch == 0) ? sregion[0] : dst_row_pitch;
+    size_t dslice =
+        (dst_slice_pitch == 0) ? sregion[1] * dpitch : dst_slice_pitch;
 
     size_t total = sregion[0] * sregion[1] * sregion[2];
     for (size_t i = 0; i != total; ++i) {
@@ -345,19 +350,26 @@ int read_verify_region(size_t src, size_t soffset[3], size_t sregion[3], size_t 
     // Clear the temporary destination host buffer.
     memset(tmp_buffer.data(), 0xff, tmp_buffer_size * sizeof(BufferType));
 
-    size_t src_slice_pitch = (width[src]*height[src] != 1) ? width[src]*height[src] : 0;
-    size_t dst_slice_pitch = (width[dst]*height[dst] != 1) ? width[dst]*height[dst] : 0;
+    // Compute or provide zero pitches randomly
+    size_t src_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[src] : 0;
+    size_t dst_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[dst] : 0;
+    size_t src_slice_pitch =
+        random_slice_pitch(src_row_pitch, sregion[0], height[src]);
+    size_t dst_slice_pitch =
+        random_slice_pitch(dst_row_pitch, dregion[0], height[dst]);
 
-    // Copy the source region of the cl buffer, to the destination region of the temporary buffer.
+    // Copy the source region of the cl buffer, to the destination region of the
+    // temporary buffer.
     CL_EXIT_ERROR(clEnqueueReadBufferRect(
                       gQueue, buffer[src], CL_TRUE, soffset, doffset, sregion,
-                      width[src], src_slice_pitch, width[dst], dst_slice_pitch,
-                      tmp_buffer.data(), 0, NULL, NULL),
+                      src_row_pitch, src_slice_pitch, dst_row_pitch,
+                      dst_slice_pitch, tmp_buffer.data(), 0, NULL, NULL),
                   "clEnqueueCopyBufferRect failed between %u and %u",
                   (unsigned)src, (unsigned)dst);
 
-    return verify_region(tmp_buffer.data(), src, soffset, sregion, dst,
-                         doffset);
+    return verify_region(tmp_buffer.data(), src, soffset, sregion, dst, doffset,
+                         src_row_pitch, dst_row_pitch, src_slice_pitch,
+                         dst_slice_pitch);
 }
 
 // This function performs the same verification check as
@@ -389,28 +401,35 @@ int map_verify_region(size_t src) {
 
 // This function generates a new temporary buffer and then writes a
 // region of it to a region in the specified destination buffer.
-int write_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst, size_t doffset[3], size_t dregion[3]) {
-
+int write_region(size_t src, size_t soffset[3], size_t sregion[3], size_t dst,
+                 size_t doffset[3], size_t dregion[3])
+{
     initialize_image(tmp_buffer.data(), tmp_buffer_size, 1, 1, mt);
-    // memset(tmp_buffer, 0xf0, tmp_buffer_size);
+    // Compute or provide zero pitches randomly
+    size_t src_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[src] : 0;
+    size_t dst_row_pitch = ((genrand_int32(mt) % 2) != 0) ? width[dst] : 0;
+    size_t src_slice_pitch =
+        random_slice_pitch(src_row_pitch, sregion[0], height[src]);
+    size_t dst_slice_pitch =
+        random_slice_pitch(dst_row_pitch, dregion[0], height[dst]);
 
-    size_t src_slice_pitch = (width[src]*height[src] != 1) ? width[src]*height[src] : 0;
-    size_t dst_slice_pitch = (width[dst]*height[dst] != 1) ? width[dst]*height[dst] : 0;
-
-    // Copy the source region of the cl buffer, to the destination region of the temporary buffer.
-    CL_EXIT_ERROR(
-        clEnqueueWriteBufferRect(gQueue, buffer[dst], CL_TRUE, doffset, soffset,
-                                 /*sregion,*/ dregion, width[dst],
-                                 dst_slice_pitch, width[src], src_slice_pitch,
-                                 tmp_buffer.data(), 0, NULL, NULL),
-        "clEnqueueWriteBufferRect failed between %u and %u", (unsigned)src,
-        (unsigned)dst);
+    // Copy the source region of the cl buffer, to the destination region of the
+    // temporary buffer.
+    CL_EXIT_ERROR(clEnqueueWriteBufferRect(
+                      gQueue, buffer[dst], CL_TRUE, doffset, soffset,
+                      /*sregion,*/ dregion, dst_row_pitch, dst_slice_pitch,
+                      src_row_pitch, src_slice_pitch, tmp_buffer.data(), 0,
+                      NULL, NULL),
+                  "clEnqueueWriteBufferRect failed between %u and %u",
+                  (unsigned)src, (unsigned)dst);
 
     // Copy from the temporary buffer to the host buffer.
-    size_t spitch = width[src];
-    size_t sslice = width[src]*height[src];
-    size_t dpitch = width[dst];
-    size_t dslice = width[dst]*height[dst];
+    size_t spitch = (src_row_pitch == 0) ? sregion[0] : src_row_pitch;
+    size_t sslice =
+        (src_slice_pitch == 0) ? sregion[1] * spitch : src_slice_pitch;
+    size_t dpitch = (dst_row_pitch == 0) ? sregion[0] : dst_row_pitch;
+    size_t dslice =
+        (dst_slice_pitch == 0) ? sregion[1] * dpitch : dst_slice_pitch;
 
     size_t total = sregion[0] * sregion[1] * sregion[2];
     for (size_t i = 0; i != total; ++i) {

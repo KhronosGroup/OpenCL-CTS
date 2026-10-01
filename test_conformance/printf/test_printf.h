@@ -93,8 +93,6 @@ static std::vector<std::string> correctBufferDouble;
 static std::vector<std::string> correctBufferOctal;
 static std::vector<std::string> correctBufferUnsigned;
 static std::vector<std::string> correctBufferHexadecimal;
-static std::vector<std::string> correctBufferSizeT;
-static std::vector<std::string> correctBufferPtrDiffT;
 // Reference results - Compile-time known
 extern std::vector<std::string> correctBufferChar;
 extern std::vector<std::string> correctBufferString;

@@ -17,9 +17,105 @@
 #include "testBase.h"
 #include "harness/featureHelpers.h"
 
+#include <string>
 #include <vector>
 
-static const char* test_kernel = R"CLC(
+namespace {
+
+const char* version_macro_kernel = R"CLC(
+__kernel void test(__global int* dst) {
+    dst[0] = __OPENCL_C_VERSION__;
+}
+)CLC";
+
+// This sub-test verifies if __OPENCL_C_VERSION__ preprocessor macro matches
+// specific version the kernel was built for.
+int test_version_macro(cl_context context, cl_command_queue queue,
+                       const Version& clc_version)
+{
+    std::string buildOptions = "-cl-std=CL";
+    buildOptions += std::to_string(clc_version.get_major());
+    buildOptions += ".";
+    buildOptions += std::to_string(clc_version.get_minor());
+
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+    cl_int error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                               &version_macro_kernel, "test",
+                                               buildOptions.c_str());
+    test_error(error, "Unable to build program!");
+
+    cl_int value = 0;
+    clMemWrapper dst =
+        clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                       sizeof(value), &value, &error);
+    test_error(error, "clCreateBuffer failed");
+
+    error = clSetKernelArg(kernel, 0, sizeof(cl_mem), &dst);
+    test_error(error, "clSetKernelArg failed");
+
+    const size_t global_size = 1;
+    error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global_size, NULL,
+                                   0, NULL, NULL);
+    test_error(error, "clEnqueueNDRangeKernel failed");
+
+    error = clEnqueueReadBuffer(queue, dst, CL_TRUE, 0, sizeof(value), &value,
+                                0, NULL, NULL);
+    test_error(error, "clEnqueueReadBuffer failed");
+
+    const cl_int expected =
+        clc_version.get_major() * 100 + clc_version.get_minor() * 10;
+    if (value != expected)
+    {
+        log_error("got __OPENCL_C_VERSION__ %d when building with '%s', "
+                  "expected %d!\n",
+                  value, buildOptions.c_str(), expected);
+        return TEST_FAIL;
+    }
+
+    return TEST_PASS;
+}
+
+// Collects the OpenCL C versions that require __OPENCL_C_VERSION__
+int get_macro_supported_clc_versions(cl_device_id device,
+                                     std::vector<Version>& versions)
+{
+    size_t sz = 0;
+    cl_int error =
+        clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS, 0, NULL, &sz);
+    test_error(error, "clGetDeviceInfo failed");
+
+    test_assert_error(
+        sz != 0 && sz % sizeof(cl_name_version) == 0,
+        "CL_DEVICE_OPENCL_C_ALL_VERSIONS returned an unexpected size");
+
+    std::vector<cl_name_version> clc_versions(sz / sizeof(cl_name_version));
+    error = clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_ALL_VERSIONS, sz,
+                            clc_versions.data(), NULL);
+    test_error(error, "clGetDeviceInfo failed");
+
+    for (const auto& clc_version : clc_versions)
+    {
+        if (strcmp(clc_version.name, "OpenCL C") != 0)
+        {
+            log_error("Unexpected OpenCL C name '%s'.\n", clc_version.name);
+            return TEST_FAIL;
+        }
+
+        const Version version = Version(CL_VERSION_MAJOR(clc_version.version),
+                                        CL_VERSION_MINOR(clc_version.version));
+        if (version >= Version(1, 2))
+        {
+            versions.push_back(version);
+        }
+    }
+
+    return TEST_PASS;
+}
+
+}
+
+const char* test_kernel = R"CLC(
 __kernel void test(__global int* dst) {
     dst[0] = 0;
 }
@@ -285,8 +381,50 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_versions(cl_device_id device,
         }
     }
 
-
     return TEST_PASS;
+}
+
+REGISTER_TEST(opencl_c_version_macro)
+{
+    check_compiler_available(device);
+
+    const Version clc_version = get_device_cl_c_version(device);
+    if (clc_version < Version(1, 2))
+    {
+        log_info("Device reports OpenCL C %s, the __OPENCL_C_VERSION__ macro "
+                 "requires OpenCL C %s or newer. Skipping the test.\n",
+                 clc_version.to_string().c_str(),
+                 Version(1, 2).to_string().c_str());
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    std::vector<Version> versions;
+    if (get_device_cl_version(device) >= Version(3, 0))
+    {
+        if (get_macro_supported_clc_versions(device, versions) != TEST_PASS)
+        {
+            return TEST_FAIL;
+        }
+    }
+    else
+    {
+        versions.push_back(Version(1, 2));
+        if (clc_version >= Version(2, 0))
+        {
+            versions.push_back(Version(2, 0));
+        }
+    }
+
+    test_assert_error(!versions.empty(),
+                      "Unexpected behavior, no OpenCL C versions to test!");
+
+    int result = TEST_PASS;
+    for (const auto& version : versions)
+    {
+        result |= test_version_macro(context, queue, version);
+    }
+
+    return result;
 }
 
 REGISTER_TEST(opencl_c_versions)

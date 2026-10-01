@@ -49,33 +49,6 @@ struct TestInfo : public TestInfoBase
     KernelMatrix k;
 };
 
-// A table of more difficult cases to get right
-const cl_half specialValuesHalf[] = {
-    0xffff, 0x0000, 0x0001, 0x7c00, /*INFINITY*/
-    0xfc00, /*-INFINITY*/
-    0x8000, /*-0*/
-    0x7bff, /*HALF_MAX*/
-    0x0400, /*HALF_MIN*/
-    0x03ff, /* Largest denormal */
-    0x3c00, /* 1 */
-    0xbc00, /* -1 */
-    0x3555, /*nearest value to 1/3*/
-    0x3bff, /*largest number less than one*/
-    0xc000, /* -2 */
-    0xfbff, /* -HALF_MAX */
-    0x8400, /* -HALF_MIN */
-    0x4248, /* M_PI_H */
-    0xc248, /* -M_PI_H */
-    0xbbff, /* Largest negative fraction */
-};
-
-constexpr size_t specialValuesHalfCount = ARRAY_SIZE(specialValuesHalf);
-
-const int specialValuesInt3[] = { 0,     1,       2,       3,       1022, 1023,
-                                  1024,  INT_MIN, INT_MAX, -1,      -2,   -3,
-                                  -1022, -1023,   -11024,  -INT_MAX };
-size_t specialValuesInt3Count = ARRAY_SIZE(specialValuesInt3);
-
 cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
 {
     TestInfo *job = (TestInfo *)data;
@@ -122,6 +95,11 @@ cl_int TestHalf(cl_uint job_id, cl_uint thread_id, void *data)
     cl_ushort *p = (cl_ushort *)gIn + thread_id * buffer_elements;
     cl_int *p2 = (cl_int *)gIn2 + thread_id * buffer_elements;
     j = 0;
+
+    const std::vector<cl_half> &specialValuesHalf = getHalfSpecialValues();
+    size_t specialValuesHalfCount = specialValuesHalf.size();
+    const std::vector<int> &specialValuesInt3 = getInt3SpecialValues();
+    size_t specialValuesInt3Count = specialValuesInt3.size();
     int totalSpecialValueCount =
         specialValuesHalfCount * specialValuesInt3Count;
     int indx = (totalSpecialValueCount - 1) / buffer_elements;

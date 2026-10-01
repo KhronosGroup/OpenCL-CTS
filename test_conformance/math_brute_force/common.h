@@ -181,4 +181,10 @@ using SourceGenerator = std::string (*)(const std::string &kernel_name,
 cl_int BuildKernels(BuildKernelInfo &info, cl_uint job_id,
                     SourceGenerator generator);
 
+const std::vector<double> &getDoubleSpecialValues();
+const std::vector<float> &getFloatSpecialValues();
+const std::vector<cl_half> &getHalfSpecialValues();
+const std::vector<int> &getIntSpecialValues();
+const std::vector<int> &getInt3SpecialValues();
+
 #endif /* COMMON_H */
