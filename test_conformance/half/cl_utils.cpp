@@ -23,17 +23,15 @@
 #include "test_config.h"
 #include "string.h"
 #include "harness/kernelHelpers.h"
-
+#include "harness/mathHelpers.h"
 #include "harness/testHarness.h"
 
 #define HALF_MIN 1.0p-14
-
 
 const char *vector_size_name_extensions[kVectorSizeCount+kStrangeVectorSizeCount] = { "", "2", "4", "8", "16", "3" };
 const char *vector_size_strings[kVectorSizeCount+kStrangeVectorSizeCount] = { "1", "2", "4", "8", "16", "3" };
 const char *align_divisors[kVectorSizeCount+kStrangeVectorSizeCount] = { "1", "2", "4", "8", "16", "4" };
 const char *align_types[kVectorSizeCount+kStrangeVectorSizeCount] = { "half", "int", "int2", "int4", "int8", "int2" };
-
 
 void *gIn_half = NULL;
 void *gOut_half = NULL;
@@ -267,8 +265,7 @@ cl_uint numVecs(cl_uint count, int vectorSizeIdx, bool aligned) {
     if(aligned && g_arrVecSizes[vectorSizeIdx] == 3) {
         return count/4;
     }
-    return  (count + g_arrVecSizes[vectorSizeIdx] - 1)/
-    ( (g_arrVecSizes[vectorSizeIdx]) );
+    return div_round_up(count, g_arrVecSizes[vectorSizeIdx]);
 }
 
 cl_uint runsOverBy(cl_uint count, int vectorSizeIdx, bool aligned) {
