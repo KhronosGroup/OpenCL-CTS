@@ -47,23 +47,19 @@ BufferProperties bufferProperties[] =
 };
 UINT bufferPropertyCount = sizeof(bufferProperties)/sizeof(bufferProperties[0]);
 
-void SubTestBuffer(
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC,
-    const BufferProperties* props)
+int SubTestBuffer(cl_context context, cl_command_queue command_queue,
+                  ID3D11Device* pDevice, ID3D11DeviceContext* pDC,
+                  const BufferProperties* props)
 {
     ID3D11Buffer* pBuffer = NULL;
     HRESULT hr = S_OK;
     cl_mem mem = NULL;
     cl_int result = CL_SUCCESS;
+    int testResult = TEST_PASS;
 
-    HarnessD3D11_TestBegin("Buffer: Size=%d, BindFlags=%s, Usage=%s, CPUAccess=%s",
-        props->ByteWidth,
-        props->name_BindFlags,
-        props->name_Usage,
-        props->name_CPUAccess);
+    log_info("Buffer: Size=%d, BindFlags=%s, Usage=%s, CPUAccess=%s\n",
+             props->ByteWidth, props->name_BindFlags, props->name_Usage,
+             props->name_CPUAccess);
 
     // create the D3D11 resource
     {
@@ -297,25 +293,18 @@ Cleanup:
     {
         clReleaseMemObject(mem);
     }
-
-    HarnessD3D11_TestEnd();
+    return testResult;
 }
 
 
-void TestDeviceBuffer(
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC)
+int TestDeviceBuffer(cl_context context, cl_command_queue command_queue,
+                     ID3D11Device* pDevice, ID3D11DeviceContext* pDC)
 {
+    int result = TEST_PASS;
     for (UINT i = 0; i < bufferPropertyCount; ++i)
     {
-        SubTestBuffer(
-            context,
-            command_queue,
-            pDevice,
-            pDC,
-            &bufferProperties[i]);
+        result |= SubTestBuffer(context, command_queue, pDevice, pDC,
+                                &bufferProperties[i]);
     }
+    return result;
 }
-

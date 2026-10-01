@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,13 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#define _CRT_SECURE_NO_WARNINGS
 #include "harness.h"
 
-void SubTestMiscMultipleCreates(
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice)
+int SubTestMiscMultipleCreates(cl_context context,
+                               cl_command_queue command_queue,
+                               ID3D11Device* pDevice)
 {
     cl_mem mem[5] = {NULL, NULL, NULL, NULL, NULL};
     ID3D11Buffer* pBuffer = NULL;
@@ -27,8 +25,9 @@ void SubTestMiscMultipleCreates(
     HRESULT hr = S_OK;
 
     cl_int result = CL_SUCCESS;
+    int testResult = TEST_PASS;
 
-    HarnessD3D11_TestBegin("Misc: Multiple Creates");
+    log_info("Misc: Multiple Creates\n");
 
     // create the D3D11 resources
     {
@@ -118,23 +117,21 @@ Cleanup:
     {
         pTexture->Release();
     }
-
-    HarnessD3D11_TestEnd();
+    return testResult;
 }
 
-void SubTestMiscAcquireRelease(
-    cl_device_id  device,
-    cl_context context,
-    ID3D11Device* pDevice)
+int SubTestMiscAcquireRelease(cl_device_id device, cl_context context,
+                              ID3D11Device* pDevice)
 {
     ID3D11Buffer* pBuffer = NULL;
     ID3D11Texture2D* pTexture = NULL;
     HRESULT hr = S_OK;
 
     cl_int result = CL_SUCCESS;
+    int testResult = TEST_PASS;
     cl_mem mem[2] = {NULL, NULL};
 
-    HarnessD3D11_TestBegin("Misc: Acquire Release");
+    log_info("Misc: Acquire Release\n");
 
 
     // create the D3D11 resources
@@ -200,25 +197,15 @@ Cleanup:
     {
         pTexture->Release();
     }
-
-    HarnessD3D11_TestEnd();
+    return testResult;
 }
 
-void TestDeviceMisc(
-    cl_device_id device,
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice)
+int TestDeviceMisc(cl_device_id device, cl_context context,
+                   cl_command_queue command_queue, ID3D11Device* pDevice)
 {
-    SubTestMiscMultipleCreates(
-        context,
-        command_queue,
-        pDevice);
+    int result = TEST_PASS;
+    result |= SubTestMiscMultipleCreates(context, command_queue, pDevice);
 
-    SubTestMiscAcquireRelease(
-        device,
-        context,
-        pDevice);
+    result |= SubTestMiscAcquireRelease(device, context, pDevice);
+    return result;
 }
-
-

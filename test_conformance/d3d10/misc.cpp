@@ -26,7 +26,7 @@ void SubTestMiscMultipleCreates(
     cl_mem mem[5] = {NULL, NULL, NULL, NULL, NULL};
     cl_int result = CL_SUCCESS;
 
-    log_info("Misc: Multiple Creates");
+    log_info("Misc: Multiple Creates\n");
 
     // create the D3D10 resources
     {
@@ -130,7 +130,7 @@ void SubTestMiscAcquireRelease(
     cl_int result = CL_SUCCESS;
     cl_mem mem[2] = {NULL, NULL};
 
-    log_info("Misc: Acquire Release");
+    log_info("Misc: Acquire Release\n");
 
     // create the D3D10 resources
     {

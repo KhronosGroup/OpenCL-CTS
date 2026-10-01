@@ -261,7 +261,7 @@ void TestAdapterEnumeration(cl_platform_id platform, IDXGIAdapter* pAdapter, ID3
 
      cl_int result;
 
-     log_info("cl_device_id Enumeration");
+     log_info("cl_device_id Enumeration\n");
 
      // get the cl_device_ids for the adapter
      {
@@ -369,7 +369,7 @@ bool TestDeviceContextCreate(
 
     bool succeeded = false;
 
-    log_info("Context creation");
+    log_info("Context creation\n");
 
     cl_context_properties properties[5];
 
