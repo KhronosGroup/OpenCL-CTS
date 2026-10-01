@@ -28,7 +28,7 @@ jobs:
             arch: android-aarch64
             android_arch_abi: arm64-v8a
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
       - name: Install Arm and AArch64 compilers
@@ -179,12 +179,59 @@ jobs:
                 ${CMAKE_ADDITIONAL_CONFIG_ARGS}
           cmake --build . --parallel
 
+  build-windows-msys2:
+    name: Build windows-latest msys2 mingw64 gcc
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-git
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-python
+      - name: Fetch dependencies
+        run: |
+          git clone https://github.com/KhronosGroup/OpenCL-Headers.git
+          git clone https://github.com/KhronosGroup/SPIRV-Headers.git
+          git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
+          git clone https://github.com/KhronosGroup/SPIRV-Tools.git
+          git clone https://github.com/KhronosGroup/SPIRV-Headers.git SPIRV-Tools/external/spirv-headers
+          git clone https://github.com/google/effcee.git SPIRV-Tools/external/effcee
+          git clone https://github.com/google/re2.git SPIRV-Tools/external/re2
+      - name: Build OpenCL ICD Loader
+        run: |
+          cmake -S OpenCL-ICD-Loader -B OpenCL-ICD-Loader/build -G Ninja \
+                -DOPENCL_ICD_LOADER_HEADERS_DIR=$PWD/OpenCL-Headers
+          cmake --build OpenCL-ICD-Loader/build --config Release
+      - name: Build SPIRV-Tools
+        run: |
+          cmake -S SPIRV-Tools -B SPIRV-Tools/build -G Ninja -DSPIRV_SKIP_TESTS=ON
+          cmake --build SPIRV-Tools/build --config Release
+      - name: Configure and build CTS
+        run: |
+          cmake -S . -B build -G Ninja \
+                -DCL_INCLUDE_DIR=$PWD/OpenCL-Headers \
+                -DCL_LIB_DIR=$PWD/OpenCL-ICD-Loader/build \
+                -DSPIRV_INCLUDE_DIR=$PWD/SPIRV-Headers \
+                -DSPIRV_TOOLS_DIR=$PWD/SPIRV-Tools/build/tools \
+                -DOPENCL_LIBRARIES=OpenCL
+          cmake --build build --config Release
+
   tests:
     name: Run Tests (pocl)
     runs-on: ubuntu-24.04
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Parse triggers
         id: check_triggers
         env:
@@ -315,7 +362,7 @@ jobs:
     steps:
       - name: Install packages
         run: sudo apt install -y clang-format clang-format-14
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Check code format
