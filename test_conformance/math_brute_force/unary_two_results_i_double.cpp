@@ -153,7 +153,7 @@ int TestFunc_DoubleI_Double(const Func *f, MTdata d, bool relaxedMode)
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_double);
-            size_t localCount = (BUFFER_SIZE + vectorSize - 1) / vectorSize;
+            size_t localCount = div_round_up(BUFFER_SIZE, vectorSize);
             error = clSetKernelArg(kernels[j][thread_id], 0,
                                    sizeof(gOutBuffer[j]), &gOutBuffer[j]);
             test_error(error, "Failed to set kernel argument");
