@@ -21,7 +21,10 @@
     },
     "test_atomics": {
         "": {
-            "atomic_add": "pass"
+            "atomic_add": "pass",
+            "atomic_and": "pass",
+            "atomic_or": "pass",
+            "atomic_xor": "pass"
         }
     },
     "test_basic": {
