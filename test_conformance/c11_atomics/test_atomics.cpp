@@ -23,7 +23,6 @@
 #include "host_atomics.h"
 
 #include <algorithm>
-#include <numeric>
 #include <sstream>
 #include <vector>
 
@@ -1121,23 +1120,6 @@ REGISTER_TEST(svm_atomic_compare_exchange_weak)
                                                      num_elements, true);
 }
 
-template <typename T> double kahan_sum(const std::vector<T> &nums)
-{
-    return 0.0;
-}
-template <> double kahan_sum<double>(const std::vector<double> &nums)
-{
-    double sum = 0.0;
-    double compensation = 0.0;
-    for (double num : nums)
-    {
-        double y = num - compensation;
-        double t = sum + y;
-        compensation = (t - sum) - y;
-        sum = t;
-    }
-    return sum;
-}
 template <typename HostAtomicType, typename HostDataType>
 class CBasicTestFetchAdd
     : public CBasicTestMemOrderScope<HostAtomicType, HostDataType> {
@@ -1192,52 +1174,20 @@ public:
                 memcpy(startRefValues, ref_vals.data(),
                        sizeof(HostDataType) * ref_vals.size());
 
-                // Estimate highest possible summation error for given set.
-                std::vector<HostDataType> sums;
-                std::sort(ref_vals.begin(), ref_vals.end());
-
-                sums.push_back(std::accumulate(ref_vals.begin(), ref_vals.end(),
-                                               static_cast<HostDataType>(0.f)));
-
-                sums.push_back(std::accumulate(ref_vals.rbegin(),
-                                               ref_vals.rend(),
-                                               static_cast<HostDataType>(0.f)));
-
-                std::sort(ref_vals.begin(), ref_vals.end(),
-                          [](HostDataType a, HostDataType b) {
-                              return std::abs(a) < std::abs(b);
-                          });
-
-                double precise = 0.0;
-                if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
-                    precise = kahan_sum(ref_vals);
-                else
-                    for (auto elem : ref_vals) precise += double(elem);
-
-                sums.push_back(precise);
-
-                sums.push_back(std::accumulate(ref_vals.begin(), ref_vals.end(),
-                                               static_cast<HostDataType>(0.f)));
-
-                sums.push_back(std::accumulate(ref_vals.rbegin(),
-                                               ref_vals.rend(),
-                                               static_cast<HostDataType>(0.f)));
-
-                std::sort(sums.begin(), sums.end());
-                assert(std::all_of(sums.begin(), sums.end(),
-                                   [](const HostDataType &val) {
-                                       return std::isfinite(
-                                           static_cast<double>(val));
-                                   })
-                       && "Infinite summation value detected!");
-                max_error = std::abs(sums.front() - sums.back());
+                double abs_sum = 0;
+                for (auto elem : ref_vals)
+                    abs_sum += std::abs(static_cast<double>(elem));
+                // Higham, N. J. (2002). Accuracy and Stability of Numerical
+                // Algorithms (2nd ed.), Chapter 4: Summation, Section 2:
+                // Error Analysis (worst case error summation)
+                double eps = std::is_same_v<HostDataType, HOST_HALF>
+                    ? CL_HALF_EPSILON
+                    : std::is_same_v<HostDataType, HOST_FLOAT> ? CL_FLT_EPSILON
+                                                               : CL_DBL_EPSILON;
+                max_error = (threadCount - 1) * eps * abs_sum;
 
                 log_info("Max allowed error for %u elements: %.10f\n",
                          threadCount, max_error);
-
-                // restore unsorted order
-                memcpy(ref_vals.data(), startRefValues,
-                       sizeof(HostDataType) * ref_vals.size());
             }
             else
             {
@@ -1862,23 +1812,6 @@ REGISTER_TEST(svm_atomic_fetch_add)
                                          true);
 }
 
-template <typename T> double kahan_sub(const std::vector<T> &nums)
-{
-    return 0.0;
-}
-template <> double kahan_sub<double>(const std::vector<double> &nums)
-{
-    double sum = 0.0;
-    double compensation = 0.0;
-    for (double num : nums)
-    {
-        double y = -num - compensation;
-        double t = sum + y;
-        compensation = (t - sum) - y;
-        sum = t;
-    }
-    return sum;
-}
 template <typename HostAtomicType, typename HostDataType>
 class CBasicTestFetchSub
     : public CBasicTestMemOrderScope<HostAtomicType, HostDataType> {
@@ -1914,13 +1847,6 @@ public:
             }
         }
     }
-    template <typename Iterator>
-    HostDataType subtract(Iterator begin, Iterator end)
-    {
-        HostDataType res = 0;
-        for (auto it = begin; it != end; ++it) res = res - *it;
-        return res;
-    }
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
@@ -1937,42 +1863,20 @@ public:
                 memcpy(startRefValues, ref_vals.data(),
                        sizeof(HostDataType) * ref_vals.size());
 
-                // Estimate highest possible subtraction error for given set.
-                std::vector<HostDataType> sums;
-                std::sort(ref_vals.begin(), ref_vals.end());
-                sums.push_back(subtract(ref_vals.begin(), ref_vals.end()));
-                sums.push_back(subtract(ref_vals.rbegin(), ref_vals.rend()));
-
-                std::sort(ref_vals.begin(), ref_vals.end(),
-                          [](HostDataType a, HostDataType b) {
-                              return std::abs(a) < std::abs(b);
-                          });
-
-                double precise = 0.0;
-                if constexpr (std::is_same_v<HostDataType, HOST_DOUBLE>)
-                    precise = kahan_sub(ref_vals);
-                else
-                    for (auto elem : ref_vals) precise += double(elem);
-                sums.push_back(precise);
-
-                sums.push_back(subtract(ref_vals.begin(), ref_vals.end()));
-                sums.push_back(subtract(ref_vals.rbegin(), ref_vals.rend()));
-
-                std::sort(sums.begin(), sums.end());
-                assert(std::all_of(sums.begin(), sums.end(),
-                                   [](const HostDataType &val) {
-                                       return std::isfinite(
-                                           static_cast<double>(val));
-                                   })
-                       && "Infinite subtraction value detected!");
-                max_error = std::abs(sums.front() - sums.back());
+                double abs_sum = 0;
+                for (auto elem : ref_vals)
+                    abs_sum += std::abs(static_cast<double>(elem));
+                // Higham, N. J. (2002). Accuracy and Stability of Numerical
+                // Algorithms (2nd ed.), Chapter 4: Summation, Section 2:
+                // Error Analysis (worst case error summation)
+                double eps = std::is_same_v<HostDataType, HOST_HALF>
+                    ? CL_HALF_EPSILON
+                    : std::is_same_v<HostDataType, HOST_FLOAT> ? CL_FLT_EPSILON
+                                                               : CL_DBL_EPSILON;
+                max_error = (threadCount - 1) * eps * abs_sum;
 
                 log_info("Max allowed error for %u elements: %.10f\n",
                          threadCount, max_error);
-
-                // restore unsorted order
-                memcpy(ref_vals.data(), startRefValues,
-                       sizeof(HostDataType) * ref_vals.size());
             }
             else
             {
