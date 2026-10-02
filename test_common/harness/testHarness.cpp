@@ -865,6 +865,15 @@ int parseAndCallCommandLineTests(int argc, const char *argv[], const char *args,
         callTestFunctions(testList, selectedTestList, resultTestList.data(),
                           testNum, device, config);
 
+        const int skipped =
+            std::count(resultTestList.begin(), resultTestList.end(), TEST_SKIP);
+        const int selected =
+            std::count(selectedTestList, selectedTestList + testNum, 1);
+        if (skipped > 0 && skipped == selected)
+        {
+            log_info("SKIPPED %d of %d tests.\n", skipped, selected);
+        }
+
         print_results(gFailCount, gTestCount, "sub-test");
         print_results(gTestsFailed, gTestsFailed + gTestsPassed, "test");
 

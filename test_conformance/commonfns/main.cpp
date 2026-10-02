@@ -21,6 +21,7 @@
 
 std::map<size_t, std::string> BaseFunctionTest::type2name;
 cl_half_rounding_mode BaseFunctionTest::halfRoundingMode = CL_HALF_RTE;
+bool BaseFunctionTest::halfDenormsSupported = false;
 
 int g_arrVecSizes[kVectorSizeCount + kStrangeVectorSizeCount];
 int g_arrStrangeVectorSizes[kStrangeVectorSizeCount] = {3};
@@ -39,13 +40,22 @@ test_status InitCL(cl_device_id device)
 {
     if (is_extension_available(device, "cl_khr_fp16"))
     {
-        const cl_device_fp_config fpConfigHalf =
+        cl_device_fp_config fpConfigHalf = 0;
+        const cl_int error =
+            clGetDeviceInfo(device, CL_DEVICE_HALF_FP_CONFIG,
+                            sizeof(fpConfigHalf), &fpConfigHalf, nullptr);
+        test_error_ret(error, "Unable to get device CL_DEVICE_HALF_FP_CONFIG",
+                       TEST_FAIL);
+        BaseFunctionTest::halfDenormsSupported =
+            (fpConfigHalf & CL_FP_DENORM) != 0;
+
+        const cl_device_fp_config rounding =
             get_default_rounding_mode(device, CL_DEVICE_HALF_FP_CONFIG);
-        if ((fpConfigHalf & CL_FP_ROUND_TO_NEAREST) != 0)
+        if ((rounding & CL_FP_ROUND_TO_NEAREST) != 0)
         {
             BaseFunctionTest::halfRoundingMode = CL_HALF_RTE;
         }
-        else if ((fpConfigHalf & CL_FP_ROUND_TO_ZERO) != 0)
+        else if ((rounding & CL_FP_ROUND_TO_ZERO) != 0)
         {
             BaseFunctionTest::halfRoundingMode = CL_HALF_RTZ;
         }

@@ -19,18 +19,8 @@
 // 1,2,3,4,8,16 or
 // 1,2,4,8,16,3
 const int g_arrVecSizes[NUM_VECTOR_SIZES] = { 1, 2, 3, 4, 8, 16 };
-const int g_arrVecSteps[NUM_VECTOR_SIZES] = { 1, 2, 4, 4, 8, 16 };
 const char* const g_arrVecSizeNames[NUM_VECTOR_SIZES] = { "",  "2", "3",
                                                           "4", "8", "16" };
-const size_t g_arrVecAlignMasks[NUM_VECTOR_SIZES] = {
-    (size_t)0,
-    (size_t)0x1, // 2
-    (size_t)0x3, // 3
-    (size_t)0x3, // 4
-    (size_t)0x7, // 8
-    (size_t)0xf // 16
-};
-
 const ExplicitType types[] = { kChar, kUChar, kShort,  kUShort,
                                kInt,  kUInt,  kLong,   kULong,
                                kHalf, kFloat, kDouble, kNumExplicitTypes };
@@ -39,5 +29,3 @@ const ExplicitType types[] = { kChar, kUChar, kShort,  kUShort,
 const char* const g_arrTypeNames[] = { "char", "uchar", "short", "ushort",
                                        "int",  "uint",  "long",  "ulong",
                                        "half", "float", "double" };
-
-extern const size_t g_arrTypeSizes[] = { 1, 1, 2, 2, 4, 4, 8, 8, 2, 4, 8 };
