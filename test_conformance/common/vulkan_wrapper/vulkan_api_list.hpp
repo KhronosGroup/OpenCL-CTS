@@ -30,6 +30,7 @@
     VK_FUNC_DECL(vkDestroyDevice)                                              \
     VK_FUNC_DECL(vkGetDeviceQueue)                                             \
     VK_FUNC_DECL(vkQueueWaitIdle)                                              \
+    VK_FUNC_DECL(vkDeviceWaitIdle)                                             \
     VK_FUNC_DECL(vkCreateDescriptorSetLayout)                                  \
     VK_FUNC_DECL(vkCreatePipelineLayout)                                       \
     VK_FUNC_DECL(vkCreateShaderModule)                                         \
@@ -124,6 +125,7 @@
 #define vkDestroyDevice _vkDestroyDevice
 #define vkGetDeviceQueue _vkGetDeviceQueue
 #define vkQueueWaitIdle _vkQueueWaitIdle
+#define vkDeviceWaitIdle _vkDeviceWaitIdle
 #define vkCreateDescriptorSetLayout _vkCreateDescriptorSetLayout
 #define vkCreatePipelineLayout _vkCreatePipelineLayout
 #define vkCreateShaderModule _vkCreateShaderModule

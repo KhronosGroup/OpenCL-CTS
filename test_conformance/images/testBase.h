@@ -22,14 +22,30 @@
 #include "harness/clImageHelper.h"
 #include "harness/imageHelpers.h"
 
-extern bool gDebugTrace;
-extern bool gTestSmallImages;
-extern bool gEnablePitch;
-extern bool gTestMaxImages;
-extern bool gTestMipmaps;
-
 // Amount to offset pixels for checking normalized reads
 #define NORM_OFFSET 0.1f
+
+struct image_test_context_t
+{
+    bool debugTrace = false;
+    bool testSmallImages = false;
+    bool testMaxImages = false;
+    bool enablePitch = false;
+    bool testMipmaps = false;
+    bool extraValidateInfo = false;
+    bool disableOffsets = false;
+    bool testImage2DFromBuffer = false;
+    bool useKernelSamplers = false;
+    bool testReadWrite = false;
+    int typesToTest = 0;
+    int testTypesToRun = 0;
+    int normalizedModeToUse = 7;
+    cl_addressing_mode addressModeToUse = (cl_addressing_mode)-1;
+    cl_mem_flags memFlagsToUse = CL_MEM_USE_HOST_PTR;
+    cl_filter_mode filterModeToUse = (cl_filter_mode)-1;
+    cl_channel_type channelTypeToUse = (cl_channel_type)-1;
+    cl_channel_order channelOrderToUse = (cl_channel_order)-1;
+};
 
 enum TypesToTest
 {
@@ -71,18 +87,21 @@ typedef int (*test_format_set_fn)(
     cl_device_id device, cl_context context, cl_command_queue queue,
     const std::vector<cl_image_format> &formatList,
     const std::vector<bool> &filterFlags, image_sampler_data *imageSampler,
-    ExplicitType outputType, cl_mem_object_type imageType);
+    ExplicitType outputType, cl_mem_object_type imageType,
+    const image_test_context_t &ctx);
 
 extern int test_read_image_formats(
     cl_device_id device, cl_context context, cl_command_queue queue,
     const std::vector<cl_image_format> &formatList,
     const std::vector<bool> &filterFlags, image_sampler_data *imageSampler,
-    ExplicitType outputType, cl_mem_object_type imageType);
+    ExplicitType outputType, cl_mem_object_type imageType,
+    const image_test_context_t &ctx);
 extern int test_write_image_formats(
     cl_device_id device, cl_context context, cl_command_queue queue,
     const std::vector<cl_image_format> &formatList,
     const std::vector<bool> &filterFlags, image_sampler_data *imageSampler,
-    ExplicitType outputType, cl_mem_object_type imageType);
+    ExplicitType outputType, cl_mem_object_type imageType,
+    const image_test_context_t &ctx);
 
 #endif // _testBase_h
 

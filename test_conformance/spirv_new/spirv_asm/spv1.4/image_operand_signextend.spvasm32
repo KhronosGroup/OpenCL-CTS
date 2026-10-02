@@ -8,7 +8,7 @@
                OpCapability Kernel
                OpCapability ImageBasic
                OpCapability LiteralSampler
-               OpMemoryModel Physical64 OpenCL
+               OpMemoryModel Physical32 OpenCL
                OpEntryPoint Kernel %read_image_test "read_image_test"
                OpSource OpenCL_C 102000
        %uint = OpTypeInt 32 0

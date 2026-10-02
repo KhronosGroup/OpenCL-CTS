@@ -16,6 +16,8 @@
 #include "testBase.h"
 #include "harness/os_helpers.h"
 
+extern std::string spvIncludeTestDirectory;
+
 const char *define_kernel_code[] = {
 " #define VALUE\n"
 "__kernel void define_test(__global int *src, __global int *dstA, __global int *dstB)\n"
@@ -157,18 +159,15 @@ REGISTER_TEST(preprocessor_include)
     cl_int *resultData;
     int i;
 
-    char include_dir[4096] = { 0 };
     char include_kernel[4096] = { 0 };
 
     char const *sep = get_dir_sep();
-    char const *path = get_exe_dir();
 
     /* Build with the include directory defined */
-    sprintf(include_dir, "%s%sincludeTestDirectory%stestIncludeFile.h", path,
-            sep, sep);
-    sprintf(include_kernel, include_kernel_code, include_dir);
+    std::string include_dir =
+        spvIncludeTestDirectory + sep + "testIncludeFile.h";
+    sprintf(include_kernel, include_kernel_code, include_dir.c_str());
     free((void *)sep);
-    free((void *)path);
 
     const char *test_kernel[] = { include_kernel, 0 };
     error = create_single_kernel_helper(context, &program, &kernel, 1,

@@ -728,6 +728,30 @@ VulkanDevice::VulkanDevice(
         vkCreateDevice(physicalDevice, &vkDeviceCreateInfo, NULL, &m_vkDevice);
     }
 
+    VkPhysicalDeviceCoherentMemoryFeaturesAMD coherentFeatures = {};
+    coherentFeatures.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD;
+
+    VkPhysicalDeviceFeatures2 enabledFeatures = {};
+    enabledFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    enabledFeatures.pNext = &coherentFeatures;
+
+    vkGetPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
+
+    // Build device-level memory type list with only legally usable types
+    auto &memTypeList = physicalDevice.getMemoryTypeList();
+    for (size_t i = 0; i < memTypeList.size(); i++)
+    {
+        const VulkanMemoryType &mt = memTypeList[i];
+        VulkanMemoryTypeProperty flags = mt.getMemoryTypeProperty();
+        if ((flags & VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD)
+            && !coherentFeatures.deviceCoherentMemory)
+        {
+            continue; // feature not enabled, skip
+        }
+        m_memoryTypeList.add(mt);
+    }
+
     for (uint32_t qfIdx = 0;
          qfIdx < (uint32_t)m_physicalDevice.getQueueFamilyList().size();
          qfIdx++)
@@ -763,6 +787,8 @@ VulkanDevice::~VulkanDevice()
     vkDestroyDevice(m_vkDevice, NULL);
 }
 
+void VulkanDevice::waitIdle() { vkDeviceWaitIdle(m_vkDevice); }
+
 const VulkanPhysicalDevice &VulkanDevice::getPhysicalDevice() const
 {
     return m_physicalDevice;
@@ -775,6 +801,11 @@ VulkanQueue &VulkanDevice::getQueue(const VulkanQueueFamily &queueFamily,
 }
 
 VulkanDevice::operator VkDevice() const { return m_vkDevice; }
+
+const VulkanMemoryTypeList &VulkanDevice::getMemoryTypeList() const
+{
+    return m_memoryTypeList;
+}
 
 ////////////////////////////////
 // VulkanFence implementation //
@@ -1386,12 +1417,12 @@ void VulkanDescriptorSet::update(uint32_t binding,
     vkUpdateDescriptorSets(m_device, 1, &vkWriteDescriptorSet, 0, NULL);
 }
 
-void VulkanDescriptorSet::updateArray(uint32_t binding,
+void VulkanDescriptorSet::updateArray(uint32_t binding, unsigned numImages,
                                       const VulkanImageViewList &imageViewList)
 {
     VkDescriptorImageInfo *vkDescriptorImageInfo =
         new VkDescriptorImageInfo[imageViewList.size()];
-    for (size_t i = 0; i < imageViewList.size(); i++)
+    for (size_t i = 0; i < numImages; i++)
     {
         vkDescriptorImageInfo[i].sampler = VK_NULL_HANDLE;
         vkDescriptorImageInfo[i].imageView = imageViewList[i];
@@ -1404,7 +1435,7 @@ void VulkanDescriptorSet::updateArray(uint32_t binding,
     vkWriteDescriptorSet.dstSet = m_vkDescriptorSet;
     vkWriteDescriptorSet.dstBinding = binding;
     vkWriteDescriptorSet.dstArrayElement = 0;
-    vkWriteDescriptorSet.descriptorCount = imageViewList.size();
+    vkWriteDescriptorSet.descriptorCount = numImages;
     vkWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
     vkWriteDescriptorSet.pImageInfo = vkDescriptorImageInfo;
     vkWriteDescriptorSet.pBufferInfo = NULL;
@@ -1813,8 +1844,7 @@ VulkanBuffer::VulkanBuffer(
 
     m_size = vkMemoryRequirements.memoryRequirements.size;
     m_alignment = vkMemoryRequirements.memoryRequirements.alignment;
-    const VulkanMemoryTypeList &memoryTypeList =
-        m_device.getPhysicalDevice().getMemoryTypeList();
+    const VulkanMemoryTypeList &memoryTypeList = m_device.getMemoryTypeList();
     for (size_t mtIdx = 0; mtIdx < memoryTypeList.size(); mtIdx++)
     {
         uint32_t memoryTypeIndex = memoryTypeList[mtIdx];
@@ -1923,8 +1953,7 @@ VulkanImage::VulkanImage(
     m_alignment = vkMemoryRequirements.memoryRequirements.alignment;
     m_dedicated = vkMemoryDedicatedRequirements.requiresDedicatedAllocation;
 
-    const VulkanMemoryTypeList &memoryTypeList =
-        m_device.getPhysicalDevice().getMemoryTypeList();
+    const VulkanMemoryTypeList &memoryTypeList = m_device.getMemoryTypeList();
     for (size_t mtIdx = 0; mtIdx < memoryTypeList.size(); mtIdx++)
     {
         uint32_t memoryTypeIndex = memoryTypeList[mtIdx];

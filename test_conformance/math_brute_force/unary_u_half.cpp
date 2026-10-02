@@ -65,7 +65,7 @@ int TestFunc_Half_UShort(const Func *f, MTdata d, bool relaxedMode)
         return error;
     }
 
-    for (uint64_t i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < (1ULL << 16); i += step)
     {
         if (gSkipCorrectnessTesting) break;
 

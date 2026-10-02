@@ -19,6 +19,19 @@
 #include <algorithm>
 #include <random>
 
+// Override operator<< for cl_char and cl_uchar to print them as numbers.
+std::ostream& operator<<(std::ostream& os, const cl_char& val)
+{
+    os << static_cast<cl_int>(val);
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const cl_uchar& val)
+{
+    os << static_cast<cl_uint>(val);
+    return os;
+}
+
 // Define operator<< for cl_ types, accessing the .s member.
 #define OP_OSTREAM(Ty, VecSize)                                                \
     std::ostream& operator<<(std::ostream& os, const Ty##VecSize& val)         \
@@ -202,8 +215,10 @@ void set_last_workgroup_params(int non_uniform_size, int &number_of_subgroups,
                                int subgroup_size, int &workgroup_size,
                                int &last_subgroup_size)
 {
-    number_of_subgroups = 1 + non_uniform_size / subgroup_size;
+    number_of_subgroups =
+        (subgroup_size + non_uniform_size - 1) / subgroup_size;
     last_subgroup_size = non_uniform_size % subgroup_size;
+    if (last_subgroup_size == 0) last_subgroup_size = subgroup_size;
     workgroup_size = non_uniform_size;
 }
 

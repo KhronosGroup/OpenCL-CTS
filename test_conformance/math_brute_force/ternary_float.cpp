@@ -39,88 +39,6 @@ cl_int BuildKernelFn(cl_uint job_id, cl_uint thread_id UNUSED, void *p)
     return BuildKernels(info, job_id, generator);
 }
 
-// A table of more difficult cases to get right
-const float specialValues[] = {
-    -NAN,
-    -INFINITY,
-    -FLT_MAX,
-    MAKE_HEX_FLOAT(-0x1.000002p64f, -0x1000002L, 40),
-    MAKE_HEX_FLOAT(-0x1.0p64f, -0x1L, 64),
-    MAKE_HEX_FLOAT(-0x1.fffffep63f, -0x1fffffeL, 39),
-    MAKE_HEX_FLOAT(-0x1.000002p63f, -0x1000002L, 39),
-    MAKE_HEX_FLOAT(-0x1.0p63f, -0x1L, 63),
-    MAKE_HEX_FLOAT(-0x1.fffffep62f, -0x1fffffeL, 38),
-    -3.0f,
-    MAKE_HEX_FLOAT(-0x1.800002p1f, -0x1800002L, -23),
-    -2.5f,
-    MAKE_HEX_FLOAT(-0x1.7ffffep1f, -0x17ffffeL, -23),
-    -2.0f,
-    MAKE_HEX_FLOAT(-0x1.800002p0f, -0x1800002L, -24),
-    -1.75f,
-    -1.5f,
-    -1.25f,
-    MAKE_HEX_FLOAT(-0x1.7ffffep0f, -0x17ffffeL, -24),
-    MAKE_HEX_FLOAT(-0x1.000002p0f, -0x1000002L, -24),
-    MAKE_HEX_FLOAT(-0x1.003p0f, -0x1003000L, -24),
-    -MAKE_HEX_FLOAT(0x1.001p0f, 0x1001000L, -24),
-    -1.0f,
-    MAKE_HEX_FLOAT(-0x1.fffffep-1f, -0x1fffffeL, -25),
-    MAKE_HEX_FLOAT(-0x1.000002p-126f, -0x1000002L, -150),
-    -FLT_MIN,
-    MAKE_HEX_FLOAT(-0x0.fffffep-126f, -0x0fffffeL, -150),
-    MAKE_HEX_FLOAT(-0x0.000ffep-126f, -0x0000ffeL, -150),
-    MAKE_HEX_FLOAT(-0x0.0000fep-126f, -0x00000feL, -150),
-    MAKE_HEX_FLOAT(-0x0.00000ep-126f, -0x000000eL, -150),
-    MAKE_HEX_FLOAT(-0x0.00000cp-126f, -0x000000cL, -150),
-    MAKE_HEX_FLOAT(-0x0.00000ap-126f, -0x000000aL, -150),
-    MAKE_HEX_FLOAT(-0x0.000008p-126f, -0x0000008L, -150),
-    MAKE_HEX_FLOAT(-0x0.000006p-126f, -0x0000006L, -150),
-    MAKE_HEX_FLOAT(-0x0.000004p-126f, -0x0000004L, -150),
-    MAKE_HEX_FLOAT(-0x0.000002p-126f, -0x0000002L, -150),
-    -0.0f,
-
-    +NAN,
-    +INFINITY,
-    +FLT_MAX,
-    MAKE_HEX_FLOAT(+0x1.000002p64f, +0x1000002L, 40),
-    MAKE_HEX_FLOAT(+0x1.0p64f, +0x1L, 64),
-    MAKE_HEX_FLOAT(+0x1.fffffep63f, +0x1fffffeL, 39),
-    MAKE_HEX_FLOAT(+0x1.000002p63f, +0x1000002L, 39),
-    MAKE_HEX_FLOAT(+0x1.0p63f, +0x1L, 63),
-    MAKE_HEX_FLOAT(+0x1.fffffep62f, +0x1fffffeL, 38),
-    +3.0f,
-    MAKE_HEX_FLOAT(+0x1.800002p1f, +0x1800002L, -23),
-    2.5f,
-    MAKE_HEX_FLOAT(+0x1.7ffffep1f, +0x17ffffeL, -23),
-    +2.0f,
-    MAKE_HEX_FLOAT(+0x1.800002p0f, +0x1800002L, -24),
-    1.75f,
-    1.5f,
-    1.25f,
-    MAKE_HEX_FLOAT(+0x1.7ffffep0f, +0x17ffffeL, -24),
-    MAKE_HEX_FLOAT(+0x1.000002p0f, +0x1000002L, -24),
-    MAKE_HEX_FLOAT(0x1.003p0f, 0x1003000L, -24),
-    +MAKE_HEX_FLOAT(0x1.001p0f, 0x1001000L, -24),
-    +1.0f,
-    MAKE_HEX_FLOAT(+0x1.fffffep-1f, +0x1fffffeL, -25),
-    MAKE_HEX_FLOAT(0x1.000002p-126f, 0x1000002L, -150),
-    +FLT_MIN,
-    MAKE_HEX_FLOAT(+0x0.fffffep-126f, +0x0fffffeL, -150),
-    MAKE_HEX_FLOAT(+0x0.000ffep-126f, +0x0000ffeL, -150),
-    MAKE_HEX_FLOAT(+0x0.0000fep-126f, +0x00000feL, -150),
-    MAKE_HEX_FLOAT(+0x0.00000ep-126f, +0x000000eL, -150),
-    MAKE_HEX_FLOAT(+0x0.00000cp-126f, +0x000000cL, -150),
-    MAKE_HEX_FLOAT(+0x0.00000ap-126f, +0x000000aL, -150),
-    MAKE_HEX_FLOAT(+0x0.000008p-126f, +0x0000008L, -150),
-    MAKE_HEX_FLOAT(+0x0.000006p-126f, +0x0000006L, -150),
-    MAKE_HEX_FLOAT(+0x0.000004p-126f, +0x0000004L, -150),
-    MAKE_HEX_FLOAT(+0x0.000002p-126f, +0x0000002L, -150),
-    +0.0f,
-};
-
-constexpr size_t specialValuesCount =
-    sizeof(specialValues) / sizeof(specialValues[0]);
-
 } // anonymous namespace
 
 int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
@@ -157,6 +75,8 @@ int TestFunc_Float_Float_Float_Float(const Func *f, MTdata d, bool relaxedMode)
                                &build_info)))
         return error;
 
+    const std::vector<float> &specialValues = getFloatSpecialValues();
+    size_t specialValuesCount = specialValues.size();
     for (uint64_t i = 0; i < (1ULL << 32); i += step)
     {
         if (gSkipCorrectnessTesting) break;

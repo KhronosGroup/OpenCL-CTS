@@ -113,10 +113,10 @@ __kernel void sample_kernel( __global work_item_data *outData, int dim_param )
     outData[ind].localID = (uint)get_local_id(dimindx);
     outData[ind].numGroups = (uint)get_num_groups(dimindx);
     outData[ind].groupID = (uint)get_group_id(dimindx);
-#if __OPENCL_VERSION__ >= CL_VERSION_2_0
+#if __OPENCL_C_VERSION__ >= CL_VERSION_2_0
     outData[ind].enqueuedLocalSize = (uint)get_enqueued_local_size(dimindx);
     outData[ind].globalOffset = (uint)get_global_offset(dimindx);
-#elif __OPENCL_VERSION__ >= CL_VERSION_1_1
+#elif __OPENCL_C_VERSION__ >= CL_VERSION_1_1
     outData[ind].globalOffset = (uint)get_global_offset(dimindx);
 #endif
 })";
@@ -150,10 +150,10 @@ __kernel void sample_kernel( __global work_item_data *outData, int dim_param )
     outData[ind].localID = (uint)get_local_id(4);
     outData[ind].numGroups = (uint)get_num_groups(4);
     outData[ind].groupID = (uint)get_group_id(4);
-#if __OPENCL_VERSION__ >= CL_VERSION_2_0
+#if __OPENCL_C_VERSION__ >= CL_VERSION_2_0
     outData[ind].enqueuedLocalSize = (uint)get_enqueued_local_size(4);
     outData[ind].globalOffset = (uint)get_global_offset(4);
-#elif __OPENCL_VERSION__ >= CL_VERSION_1_1
+#elif __OPENCL_C_VERSION__ >= CL_VERSION_1_1
     outData[ind].globalOffset = (uint)get_global_offset(4);
 #endif
 })";

@@ -1,0 +1,16 @@
+               OpCapability Addresses
+               OpCapability Kernel
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "spec_const_kernel"
+               OpDecorate %uint_42 SpecId 101
+       %uint = OpTypeInt 32 0
+    %uint_42 = OpSpecConstant %uint 42
+       %void = OpTypeVoid
+%_ptr_CrossWorkgroup_uint = OpTypePointer CrossWorkgroup %uint
+ %kernel_sig = OpTypeFunction %void %_ptr_CrossWorkgroup_uint
+     %kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %_ptr_CrossWorkgroup_uint
+      %entry = OpLabel
+               OpStore %dst %uint_42 Aligned 4
+               OpReturn
+               OpFunctionEnd

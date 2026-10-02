@@ -203,6 +203,7 @@ extern const char *GetAddressModeName(cl_addressing_mode mode);
 extern const char *GetQueuePropertyName(cl_command_queue_properties properties);
 
 extern const char *GetDeviceTypeName(cl_device_type type);
+extern const char *GetImageTypeName(cl_mem_object_type type);
 bool check_functions_for_offline_compiler(const char *subtestname);
 cl_int OutputBuildLog(cl_program program, const cl_device_id device);
 cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,

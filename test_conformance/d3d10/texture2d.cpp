@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#define _CRT_SECURE_NO_WARNINGS
 #include "harness.h"
 
 Texture2DSize texture2DSizes[] =
@@ -168,12 +167,10 @@ void SubTestTexture2D(
 
     cl_int result = CL_SUCCESS;
 
-    HarnessD3D10_TestBegin("2D Texture: Format=%s, Width=%d, Height=%d, MipLevels=%d, ArraySize=%d",
-        format->name_format,
-        size->Width,
-        size->Height,
-        size->MipLevels,
-        size->ArraySize);
+    log_info("2D Texture: Format=%s, Width=%d, Height=%d, MipLevels=%d, "
+             "ArraySize=%d",
+             format->name_format, size->Width, size->Height, size->MipLevels,
+             size->ArraySize);
 
     struct
     {
@@ -617,8 +614,6 @@ Cleanup:
             TestRequire(result == CL_SUCCESS, "clReleaseEvent for event failed.");
         }
     }
-
-    HarnessD3D10_TestEnd();
 }
 
 void TestDeviceTexture2D(

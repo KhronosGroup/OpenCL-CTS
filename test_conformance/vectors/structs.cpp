@@ -18,22 +18,7 @@
 
 #include "defines.h"
 
-#include "harness/parseParameters.h"
-
 #define DEBUG_MEM_ALLOC 0
-
-/** typedef struct _bufferStruct
- {
- void * m_pIn;
- void * m_pOut;
-
- cl_mem m_outBuffer;
- cl_mem m_inBuffer;
-
- size_t m_bufSize;
- } bufferStruct;
- */
-
 
 clState *newClState(cl_device_id device, cl_context context,
                     cl_command_queue queue)
@@ -132,7 +117,7 @@ bufferStruct *newBufferStruct(size_t inSize, size_t outSize, clState *pClState)
     if (pResult->m_inBuffer == NULL)
     {
         vlog_error("clCreateArray failed for input (%d)\n", error);
-        return destroyBufferStruct(pResult, pClState);
+        return destroyBufferStruct(pResult);
     }
 #if DEBUG_MEM_ALLOC
     log_info("clCreateBuffer %x\n", pResult->m_inBuffer);
@@ -143,7 +128,7 @@ bufferStruct *newBufferStruct(size_t inSize, size_t outSize, clState *pClState)
     if (pResult->m_outBuffer == NULL)
     {
         vlog_error("clCreateArray failed for output (%d)\n", error);
-        return destroyBufferStruct(pResult, pClState);
+        return destroyBufferStruct(pResult);
     }
 #if DEBUG_MEM_ALLOC
     log_info("clCreateBuffer %x\n", pResult->m_outBuffer);
@@ -154,7 +139,7 @@ bufferStruct *newBufferStruct(size_t inSize, size_t outSize, clState *pClState)
     return pResult;
 }
 
-bufferStruct *destroyBufferStruct(bufferStruct *destroyMe, clState *pClState)
+bufferStruct *destroyBufferStruct(bufferStruct *destroyMe)
 {
     if (destroyMe)
     {
@@ -199,74 +184,6 @@ bufferStruct *destroyBufferStruct(bufferStruct *destroyMe, clState *pClState)
     return destroyMe;
 }
 
-void initContents(bufferStruct *pBufferStruct, clState *pClState,
-                  size_t typeSize, size_t countIn, size_t countOut)
-{
-    size_t i;
-
-    uint64_t start = 0;
-
-    switch (typeSize)
-    {
-        case 1: {
-            uint8_t *ub = (uint8_t *)(pBufferStruct->m_pIn);
-            for (i = 0; i < countIn; ++i)
-            {
-                ub[i] = (uint8_t)start++;
-            }
-            break;
-        }
-        case 2: {
-            uint16_t *us = (uint16_t *)(pBufferStruct->m_pIn);
-            for (i = 0; i < countIn; ++i)
-            {
-                us[i] = (uint16_t)start++;
-            }
-            break;
-        }
-        case 4: {
-            if (!gWimpyMode)
-            {
-                uint32_t *ui = (uint32_t *)(pBufferStruct->m_pIn);
-                for (i = 0; i < countIn; ++i)
-                {
-                    ui[i] = (uint32_t)start++;
-                }
-            }
-            else
-            {
-                // The short test doesn't iterate over the entire 32 bit space
-                // so we alternate between positive and negative values
-                int32_t *ui = (int32_t *)(pBufferStruct->m_pIn);
-                int32_t sign = 1;
-                for (i = 0; i < countIn; ++i, ++start)
-                {
-                    ui[i] = (int32_t)start * sign;
-                    sign = sign * -1;
-                }
-            }
-            break;
-        }
-        case 8: {
-            // We don't iterate over the entire space of 64 bit so for the
-            // selects, we want to test positive and negative values
-            int64_t *ll = (int64_t *)(pBufferStruct->m_pIn);
-            int64_t sign = 1;
-            for (i = 0; i < countIn; ++i, ++start)
-            {
-                ll[i] = start * sign;
-                sign = sign * -1;
-            }
-            break;
-        }
-        default: {
-            log_error("invalid type size %x\n", (int)typeSize);
-        }
-    }
-    // pBufferStruct->m_bufSizeIn
-    // pBufferStruct->m_bufSizeOut
-}
-
 int pushArgs(bufferStruct *pBufferStruct, clState *pClState)
 {
     int err;
@@ -290,9 +207,6 @@ int pushArgs(bufferStruct *pBufferStruct, clState *pClState)
         pClState->m_kernel, 0,
         sizeof(pBufferStruct->m_inBuffer), // pBufferStruct->m_bufSizeIn,
         &(pBufferStruct->m_inBuffer));
-#if DEBUG_MEM_ALLOC
-    // log_info("clSetKernelArg 0, %x\n", pBufferStruct->m_inBuffer);
-#endif
     if (err != CL_SUCCESS)
     {
         log_error("clSetKernelArgs failed, first arg (0)\n");
@@ -308,10 +222,6 @@ int pushArgs(bufferStruct *pBufferStruct, clState *pClState)
         log_error("clSetKernelArgs failed, second arg (1)\n");
         return -1;
     }
-
-#if DEBUG_MEM_ALLOC
-    // log_info("clSetKernelArg 0, %x\n", pBufferStruct->m_outBuffer);
-#endif
 
     return 0;
 }
@@ -330,8 +240,6 @@ int retrieveResults(bufferStruct *pBufferStruct, clState *pClState)
     return 0;
 }
 
-// vecSizeIdx indexes into g_arrVecAlignMasks, g_arrVecSizeNames
-// and g_arrVecSizes
 int checkCorrectnessAlign(bufferStruct *pBufferStruct, clState *pClState,
                           size_t minAlign)
 {
@@ -347,18 +255,11 @@ int checkCorrectnessAlign(bufferStruct *pBufferStruct, clState *pClState,
             return -1;
         }
     }
-
-    /*    log_info("\n");
-     for(i = 0; i < 4; ++i) {
-     log_info("%lx, ", targetArr[i]);
-     }
-     log_info("\n");
-     fflush(stdout); */
     return 0;
 }
 
 int checkCorrectnessStep(bufferStruct *pBufferStruct, clState *pClState,
-                         size_t typeSize, size_t vecWidth)
+                         size_t vecWidth)
 {
     size_t i;
     cl_int targetSize = (cl_int)vecWidth;
@@ -380,8 +281,6 @@ int checkCorrectnessStep(bufferStruct *pBufferStruct, clState *pClState,
     return 0;
 }
 
-// vecSizeIdx indexes into g_arrVecAlignMasks, g_arrVecSizeNames
-// and g_arrVecSizes
 int checkPackedCorrectness(bufferStruct *pBufferStruct, clState *pClState,
                            size_t totSize, size_t beforeSize)
 {
@@ -399,12 +298,5 @@ int checkPackedCorrectness(bufferStruct *pBufferStruct, clState *pClState,
             return -1;
         }
     }
-
-    /*    log_info("\n");
-     for(i = 0; i < 4; ++i) {
-     log_info("%lx, ", targetArr[i]);
-     }
-     log_info("\n");
-     fflush(stdout); */
     return 0;
 }
