@@ -17,6 +17,7 @@
 #include "CL/cl.h"
 #include "harness/errorHelpers.h"
 #include "harness/kernelHelpers.h"
+#include "harness/specialFloatValues.h"
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 
@@ -26,7 +27,6 @@
 #include <cmath>
 #include <cinttypes>
 #include <cstring>
-#include <limits>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -105,56 +105,28 @@ struct EdgeCaseSpec
     bool expect_nan = false;
 };
 
-struct AbstractValue
-{
-    enum class Kind
-    {
-        PosZero,
-        NegZero,
-        PosInf,
-        NegInf,
-        NaN,
-        Finite,
-        Int,
-        SmallestPosDenorm,
-        SmallestNegDenorm,
-    } kind;
+using special_float_values::AbstractValue;
 
-    double d = 0.0;
-    int i = 0;
-};
+const AbstractValue POS_ZERO = special_float_values::pos_zero();
+const AbstractValue NEG_ZERO = special_float_values::neg_zero();
+const AbstractValue POS_INF = special_float_values::pos_inf();
+const AbstractValue NEG_INF = special_float_values::neg_inf();
+const AbstractValue NAN_V = special_float_values::nan();
+const AbstractValue ONE = special_float_values::finite(1.0);
+const AbstractValue NEG_ONE = special_float_values::finite(-1.0);
+const AbstractValue TWO = special_float_values::finite(2.0);
+const AbstractValue NEG_TWO = special_float_values::finite(-2.0);
 
-inline AbstractValue AV_POS_ZERO() { return { AbstractValue::Kind::PosZero }; }
-inline AbstractValue AV_NEG_ZERO() { return { AbstractValue::Kind::NegZero }; }
-inline AbstractValue AV_POS_INF() { return { AbstractValue::Kind::PosInf }; }
-inline AbstractValue AV_NEG_INF() { return { AbstractValue::Kind::NegInf }; }
-inline AbstractValue AV_NAN() { return { AbstractValue::Kind::NaN }; }
-inline AbstractValue AV_F(double v)
-{
-    return { AbstractValue::Kind::Finite, v };
-}
-inline AbstractValue AV_INT(int v)
-{
-    return { AbstractValue::Kind::Int, 0.0, v };
-}
+inline AbstractValue AV_F(double v) { return special_float_values::finite(v); }
+inline AbstractValue AV_INT(int v) { return special_float_values::integer(v); }
 inline AbstractValue AV_SMALLEST_POS_DENORM()
 {
-    return { AbstractValue::Kind::SmallestPosDenorm };
+    return special_float_values::smallest_pos_denorm();
 }
 inline AbstractValue AV_SMALLEST_NEG_DENORM()
 {
-    return { AbstractValue::Kind::SmallestNegDenorm };
+    return special_float_values::smallest_neg_denorm();
 }
-
-const AbstractValue POS_ZERO = AV_POS_ZERO();
-const AbstractValue NEG_ZERO = AV_NEG_ZERO();
-const AbstractValue POS_INF = AV_POS_INF();
-const AbstractValue NEG_INF = AV_NEG_INF();
-const AbstractValue NAN_V = AV_NAN();
-const AbstractValue ONE = AV_F(1.0);
-const AbstractValue NEG_ONE = AV_F(-1.0);
-const AbstractValue TWO = AV_F(2.0);
-const AbstractValue NEG_TWO = AV_F(-2.0);
 
 struct AbstractEdgeCase
 {
@@ -163,10 +135,15 @@ struct AbstractEdgeCase
     AbstractValue expected;
 
     bool expect_nan = false;
-
-    bool requires_inf_nan = false; // CL_FP_INF_NAN
-    bool requires_denorm = false; // CL_FP_DENORM
     bool requires_rte = false; // CL_FP_ROUND_TO_NEAREST
+
+    bool areValuesSupportedBy(cl_device_fp_config fp_config) const
+    {
+        if (!expected.isSupportedBy(fp_config)) return false;
+        for (const auto &input : inputs)
+            if (!input.isSupportedBy(fp_config)) return false;
+        return true;
+    }
 };
 
 // Taken from OpenCL C Section 7.5.1. Additional Requirements Beyond C99 TC2
@@ -174,16 +151,16 @@ struct AbstractEdgeCase
 const AbstractEdgeCase edge_case_table[] = {
 
     { "acospi", { ONE }, POS_ZERO },
-    { "acospi", { AV_F(2) }, NAN_V, true, true },
-    { "acospi", { AV_F(-2) }, NAN_V, true, true },
+    { "acospi", { AV_F(2) }, NAN_V, true },
+    { "acospi", { AV_F(-2) }, NAN_V, true },
     { "asinpi", { POS_ZERO }, POS_ZERO },
     { "asinpi", { NEG_ZERO }, NEG_ZERO },
-    { "asinpi", { AV_F(2) }, NAN_V, true, true },
-    { "asinpi", { AV_F(-2) }, NAN_V, true, true },
+    { "asinpi", { AV_F(2) }, NAN_V, true },
+    { "asinpi", { AV_F(-2) }, NAN_V, true },
     { "atanpi", { POS_ZERO }, POS_ZERO },
     { "atanpi", { NEG_ZERO }, NEG_ZERO },
-    { "atanpi", { POS_INF }, AV_F(0.5), false, true },
-    { "atanpi", { NEG_INF }, AV_F(-0.5), false, true },
+    { "atanpi", { POS_INF }, AV_F(0.5) },
+    { "atanpi", { NEG_INF }, AV_F(-0.5) },
     { "atan2pi", { POS_ZERO, NEG_ZERO }, AV_F(1.0) },
     { "atan2pi", { NEG_ZERO, NEG_ZERO }, AV_F(-1.0) },
     { "atan2pi", { POS_ZERO, POS_ZERO }, POS_ZERO },
@@ -196,18 +173,18 @@ const AbstractEdgeCase edge_case_table[] = {
     { "atan2pi", { NEG_ONE, NEG_ZERO }, AV_F(-0.5) },
     { "atan2pi", { ONE, POS_ZERO }, AV_F(0.5) },
     { "atan2pi", { ONE, NEG_ZERO }, AV_F(0.5) },
-    { "atan2pi", { ONE, NEG_INF }, AV_F(1.0), false, true },
-    { "atan2pi", { NEG_ONE, NEG_INF }, AV_F(-1.0), false, true },
-    { "atan2pi", { ONE, POS_INF }, POS_ZERO, false, true },
-    { "atan2pi", { NEG_ONE, POS_INF }, NEG_ZERO, false, true },
-    { "atan2pi", { POS_INF, ONE }, AV_F(0.5), false, true },
-    { "atan2pi", { NEG_INF, ONE }, AV_F(-0.5), false, true },
-    { "atan2pi", { POS_INF, NEG_INF }, AV_F(0.75), false, true },
-    { "atan2pi", { NEG_INF, NEG_INF }, AV_F(-0.75), false, true },
-    { "atan2pi", { POS_INF, POS_INF }, AV_F(0.25), false, true },
-    { "atan2pi", { NEG_INF, POS_INF }, AV_F(-0.25), false, true },
-    { "ceil", { AV_F(-0.5) }, NEG_ZERO, false, false, false, true },
-    { "ceil", { AV_F(-0.25) }, NEG_ZERO, false, false, false, true },
+    { "atan2pi", { ONE, NEG_INF }, AV_F(1.0) },
+    { "atan2pi", { NEG_ONE, NEG_INF }, AV_F(-1.0) },
+    { "atan2pi", { ONE, POS_INF }, POS_ZERO },
+    { "atan2pi", { NEG_ONE, POS_INF }, NEG_ZERO },
+    { "atan2pi", { POS_INF, ONE }, AV_F(0.5) },
+    { "atan2pi", { NEG_INF, ONE }, AV_F(-0.5) },
+    { "atan2pi", { POS_INF, NEG_INF }, AV_F(0.75) },
+    { "atan2pi", { NEG_INF, NEG_INF }, AV_F(-0.75) },
+    { "atan2pi", { POS_INF, POS_INF }, AV_F(0.25) },
+    { "atan2pi", { NEG_INF, POS_INF }, AV_F(-0.25) },
+    { "ceil", { AV_F(-0.5) }, NEG_ZERO, false, true },
+    { "ceil", { AV_F(-0.25) }, NEG_ZERO, false, true },
     { "cospi", { POS_ZERO }, ONE },
     { "cospi", { NEG_ZERO }, ONE },
     { "cospi", { AV_F(0.5) }, POS_ZERO },
@@ -215,41 +192,31 @@ const AbstractEdgeCase edge_case_table[] = {
     { "cospi", { AV_F(2.5) }, POS_ZERO },
     { "cospi", { AV_F(-0.5) }, POS_ZERO },
     { "cospi", { AV_F(-1.5) }, POS_ZERO },
-    { "cospi", { POS_INF }, NAN_V, true, true },
-    { "cospi", { NEG_INF }, NAN_V, true, true },
-    { "exp10", { NEG_INF }, POS_ZERO, false, true },
-    { "exp10", { POS_INF }, POS_INF, false, true },
-    { "fdim", { ONE, NAN_V }, NAN_V, true, true },
-    { "fdim", { NAN_V, ONE }, NAN_V, true, true },
-    { "fdim", { POS_INF, NAN_V }, NAN_V, true, true },
-    { "fdim", { NAN_V, POS_INF }, NAN_V, true, true },
-    { "fmod", { POS_ZERO, NAN_V }, NAN_V, true, true },
-    { "fmod", { NEG_ZERO, NAN_V }, NAN_V, true, true },
-    { "nextafter",
-      { NEG_ZERO, ONE },
-      AV_SMALLEST_POS_DENORM(),
-      false,
-      false,
-      true },
-    { "nextafter",
-      { POS_ZERO, NEG_ONE },
-      AV_SMALLEST_NEG_DENORM(),
-      false,
-      false,
-      true },
-    { "pow", { POS_ZERO, NEG_INF }, POS_INF, false, true },
-    { "pow", { NEG_ZERO, NEG_INF }, POS_INF, false, true },
+    { "cospi", { POS_INF }, NAN_V, true },
+    { "cospi", { NEG_INF }, NAN_V, true },
+    { "exp10", { NEG_INF }, POS_ZERO },
+    { "exp10", { POS_INF }, POS_INF },
+    { "fdim", { ONE, NAN_V }, NAN_V, true },
+    { "fdim", { NAN_V, ONE }, NAN_V, true },
+    { "fdim", { POS_INF, NAN_V }, NAN_V, true },
+    { "fdim", { NAN_V, POS_INF }, NAN_V, true },
+    { "fmod", { POS_ZERO, NAN_V }, NAN_V, true },
+    { "fmod", { NEG_ZERO, NAN_V }, NAN_V, true },
+    { "nextafter", { NEG_ZERO, ONE }, AV_SMALLEST_POS_DENORM() },
+    { "nextafter", { POS_ZERO, NEG_ONE }, AV_SMALLEST_NEG_DENORM() },
+    { "pow", { POS_ZERO, NEG_INF }, POS_INF },
+    { "pow", { NEG_ZERO, NEG_INF }, POS_INF },
     { "pown", { POS_ZERO, AV_INT(0) }, ONE },
     { "pown", { NEG_ZERO, AV_INT(0) }, ONE },
-    { "pown", { POS_INF, AV_INT(0) }, ONE, false, true },
-    { "pown", { NEG_INF, AV_INT(0) }, ONE, false, true },
-    { "pown", { NAN_V, AV_INT(0) }, ONE, false, true },
-    { "pown", { POS_ZERO, AV_INT(-1) }, POS_INF, false, true },
-    { "pown", { NEG_ZERO, AV_INT(-1) }, NEG_INF, false, true },
-    { "pown", { POS_ZERO, AV_INT(-3) }, POS_INF, false, true },
-    { "pown", { NEG_ZERO, AV_INT(-3) }, NEG_INF, false, true },
-    { "pown", { POS_ZERO, AV_INT(-2) }, POS_INF, false, true },
-    { "pown", { NEG_ZERO, AV_INT(-2) }, POS_INF, false, true },
+    { "pown", { POS_INF, AV_INT(0) }, ONE },
+    { "pown", { NEG_INF, AV_INT(0) }, ONE },
+    { "pown", { NAN_V, AV_INT(0) }, ONE },
+    { "pown", { POS_ZERO, AV_INT(-1) }, POS_INF },
+    { "pown", { NEG_ZERO, AV_INT(-1) }, NEG_INF },
+    { "pown", { POS_ZERO, AV_INT(-3) }, POS_INF },
+    { "pown", { NEG_ZERO, AV_INT(-3) }, NEG_INF },
+    { "pown", { POS_ZERO, AV_INT(-2) }, POS_INF },
+    { "pown", { NEG_ZERO, AV_INT(-2) }, POS_INF },
     { "pown", { POS_ZERO, AV_INT(2) }, POS_ZERO },
     { "pown", { NEG_ZERO, AV_INT(2) }, POS_ZERO },
     { "pown", { POS_ZERO, AV_INT(1) }, POS_ZERO },
@@ -258,39 +225,39 @@ const AbstractEdgeCase edge_case_table[] = {
     { "pown", { NEG_ZERO, AV_INT(3) }, NEG_ZERO },
     { "powr", { ONE, POS_ZERO }, ONE },
     { "powr", { TWO, NEG_ZERO }, ONE },
-    { "powr", { POS_ZERO, NEG_ONE }, POS_INF, false, true },
-    { "powr", { NEG_ZERO, NEG_ONE }, POS_INF, false, true },
-    { "powr", { POS_ZERO, NEG_INF }, POS_INF, false, true },
-    { "powr", { NEG_ZERO, NEG_INF }, POS_INF, false, true },
+    { "powr", { POS_ZERO, NEG_ONE }, POS_INF },
+    { "powr", { NEG_ZERO, NEG_ONE }, POS_INF },
+    { "powr", { POS_ZERO, NEG_INF }, POS_INF },
+    { "powr", { NEG_ZERO, NEG_INF }, POS_INF },
     { "powr", { POS_ZERO, ONE }, POS_ZERO },
     { "powr", { NEG_ZERO, ONE }, POS_ZERO },
     { "powr", { ONE, TWO }, ONE },
     { "powr", { ONE, NEG_ONE }, ONE },
-    { "powr", { NEG_ONE, TWO }, NAN_V, true, true },
-    { "powr", { POS_ZERO, POS_ZERO }, NAN_V, true, true },
-    { "powr", { NEG_ZERO, NEG_ZERO }, NAN_V, true, true },
-    { "powr", { POS_INF, POS_ZERO }, NAN_V, true, true },
-    { "powr", { POS_INF, NEG_ZERO }, NAN_V, true, true },
-    { "powr", { ONE, POS_INF }, NAN_V, true, true },
-    { "powr", { ONE, NEG_INF }, NAN_V, true, true },
-    { "rint", { AV_F(-0.5) }, NEG_ZERO, false, false, false, true },
-    { "rootn", { POS_ZERO, AV_INT(-1) }, POS_INF, false, true },
-    { "rootn", { NEG_ZERO, AV_INT(-1) }, NEG_INF, false, true },
-    { "rootn", { POS_ZERO, AV_INT(-3) }, POS_INF, false, true },
-    { "rootn", { NEG_ZERO, AV_INT(-3) }, NEG_INF, false, true },
-    { "rootn", { POS_ZERO, AV_INT(-2) }, POS_INF, false, true },
-    { "rootn", { NEG_ZERO, AV_INT(-2) }, POS_INF, false, true },
+    { "powr", { NEG_ONE, TWO }, NAN_V, true },
+    { "powr", { POS_ZERO, POS_ZERO }, NAN_V, true },
+    { "powr", { NEG_ZERO, NEG_ZERO }, NAN_V, true },
+    { "powr", { POS_INF, POS_ZERO }, NAN_V, true },
+    { "powr", { POS_INF, NEG_ZERO }, NAN_V, true },
+    { "powr", { ONE, POS_INF }, NAN_V, true },
+    { "powr", { ONE, NEG_INF }, NAN_V, true },
+    { "rint", { AV_F(-0.5) }, NEG_ZERO, false, true },
+    { "rootn", { POS_ZERO, AV_INT(-1) }, POS_INF },
+    { "rootn", { NEG_ZERO, AV_INT(-1) }, NEG_INF },
+    { "rootn", { POS_ZERO, AV_INT(-3) }, POS_INF },
+    { "rootn", { NEG_ZERO, AV_INT(-3) }, NEG_INF },
+    { "rootn", { POS_ZERO, AV_INT(-2) }, POS_INF },
+    { "rootn", { NEG_ZERO, AV_INT(-2) }, POS_INF },
     { "rootn", { POS_ZERO, AV_INT(2) }, POS_ZERO },
     { "rootn", { NEG_ZERO, AV_INT(2) }, POS_ZERO },
     { "rootn", { POS_ZERO, AV_INT(1) }, POS_ZERO },
     { "rootn", { NEG_ZERO, AV_INT(1) }, NEG_ZERO },
     { "rootn", { POS_ZERO, AV_INT(3) }, POS_ZERO },
     { "rootn", { NEG_ZERO, AV_INT(3) }, NEG_ZERO },
-    { "rootn", { NEG_ONE, AV_INT(2) }, NAN_V, true, true },
-    { "rootn", { NEG_ONE, AV_INT(4) }, NAN_V, true, true },
-    { "rootn", { ONE, AV_INT(0) }, NAN_V, true, true },
-    { "rootn", { POS_ZERO, AV_INT(0) }, NAN_V, true, true },
-    { "round", { AV_F(-0.25) }, NEG_ZERO, false, false, false, true },
+    { "rootn", { NEG_ONE, AV_INT(2) }, NAN_V, true },
+    { "rootn", { NEG_ONE, AV_INT(4) }, NAN_V, true },
+    { "rootn", { ONE, AV_INT(0) }, NAN_V, true },
+    { "rootn", { POS_ZERO, AV_INT(0) }, NAN_V, true },
+    { "round", { AV_F(-0.25) }, NEG_ZERO, false, true },
     { "sinpi", { POS_ZERO }, POS_ZERO },
     { "sinpi", { NEG_ZERO }, NEG_ZERO },
     { "sinpi", { ONE }, POS_ZERO },
@@ -299,12 +266,12 @@ const AbstractEdgeCase edge_case_table[] = {
     { "sinpi", { NEG_ONE }, NEG_ZERO },
     { "sinpi", { NEG_TWO }, NEG_ZERO },
     { "sinpi", { AV_F(-4.0) }, NEG_ZERO },
-    { "sinpi", { POS_INF }, NAN_V, true, true },
-    { "sinpi", { NEG_INF }, NAN_V, true, true },
+    { "sinpi", { POS_INF }, NAN_V, true },
+    { "sinpi", { NEG_INF }, NAN_V, true },
     { "tanpi", { POS_ZERO }, POS_ZERO },
     { "tanpi", { NEG_ZERO }, NEG_ZERO },
-    { "tanpi", { POS_INF }, NAN_V, true, true },
-    { "tanpi", { NEG_INF }, NAN_V, true, true },
+    { "tanpi", { POS_INF }, NAN_V, true },
+    { "tanpi", { NEG_INF }, NAN_V, true },
     { "tanpi", { AV_F(0.0) }, POS_ZERO },
     { "tanpi", { AV_F(2.0) }, POS_ZERO },
     { "tanpi", { AV_F(-2.0) }, NEG_ZERO },
@@ -312,12 +279,12 @@ const AbstractEdgeCase edge_case_table[] = {
     { "tanpi", { NEG_ONE }, POS_ZERO },
     { "tanpi", { AV_F(3.0) }, NEG_ZERO },
     { "tanpi", { AV_F(-3.0) }, POS_ZERO },
-    { "tanpi", { AV_F(0.5) }, POS_INF, false, true },
-    { "tanpi", { AV_F(2.5) }, POS_INF, false, true },
-    { "tanpi", { AV_F(1.5) }, NEG_INF, false, true },
-    { "tanpi", { AV_F(-0.5) }, NEG_INF, false, true },
-    { "trunc", { AV_F(-0.5) }, NEG_ZERO, false, false, false, true },
-    { "trunc", { AV_F(-0.25) }, NEG_ZERO, false, false, false, true },
+    { "tanpi", { AV_F(0.5) }, POS_INF },
+    { "tanpi", { AV_F(2.5) }, POS_INF },
+    { "tanpi", { AV_F(1.5) }, NEG_INF },
+    { "tanpi", { AV_F(-0.5) }, NEG_INF },
+    { "trunc", { AV_F(-0.5) }, NEG_ZERO, false, true },
+    { "trunc", { AV_F(-0.25) }, NEG_ZERO, false, true },
 };
 
 struct EdgeCasesTest
@@ -581,59 +548,7 @@ struct EdgeCasesTest
         if (av.kind == AbstractValue::Kind::Int)
             return AnyValue::make<cl_int>(av.i);
 
-        if constexpr (std::is_same_v<T, cl_half>)
-        {
-            uint16_t bits = 0;
-            switch (av.kind)
-            {
-                case AbstractValue::Kind::PosZero: bits = 0x0000; break;
-                case AbstractValue::Kind::NegZero: bits = 0x8000; break;
-                case AbstractValue::Kind::PosInf: bits = 0x7C00; break;
-                case AbstractValue::Kind::NegInf: bits = 0xFC00; break;
-                case AbstractValue::Kind::NaN: bits = 0x7E00; break;
-                case AbstractValue::Kind::SmallestPosDenorm:
-                    bits = 0x0001;
-                    break;
-                case AbstractValue::Kind::SmallestNegDenorm:
-                    bits = 0x8001;
-                    break;
-                case AbstractValue::Kind::Finite:
-                    bits = cl_half_from_float(static_cast<float>(av.d),
-                                              CL_HALF_RTE);
-                    break;
-                default: break;
-            }
-            return AnyValue::make<cl_half>(bits);
-        }
-        else
-        {
-            T val{};
-            switch (av.kind)
-            {
-                case AbstractValue::Kind::PosZero: val = T(0); break;
-                case AbstractValue::Kind::NegZero: val = -T(0); break;
-                case AbstractValue::Kind::PosInf:
-                    val = std::numeric_limits<T>::infinity();
-                    break;
-                case AbstractValue::Kind::NegInf:
-                    val = -std::numeric_limits<T>::infinity();
-                    break;
-                case AbstractValue::Kind::NaN:
-                    val = std::numeric_limits<T>::quiet_NaN();
-                    break;
-                case AbstractValue::Kind::Finite:
-                    val = static_cast<T>(av.d);
-                    break;
-                case AbstractValue::Kind::SmallestPosDenorm:
-                    val = std::numeric_limits<T>::denorm_min();
-                    break;
-                case AbstractValue::Kind::SmallestNegDenorm:
-                    val = -std::numeric_limits<T>::denorm_min();
-                    break;
-                default: break;
-            }
-            return AnyValue::make<T>(val);
-        }
+        return AnyValue::make<T>(av.toValue<T>());
     }
 
     template <typename T>
@@ -686,23 +601,20 @@ struct EdgeCasesTest
             {
                 const auto &aec = cases[i];
                 bool skip = false;
+                cl_device_fp_config fp_config = gFloatCapabilities;
+                // Full Profile requires Inf and NaN, so still run these cases
+                // if the mandatory capability bit is absent.
+                if (!gIsEmbedded) fp_config |= CL_FP_INF_NAN;
 
-                if (aec.requires_denorm && !(gFloatCapabilities & CL_FP_DENORM))
+                if (!aec.areValuesSupportedBy(fp_config))
                 {
-                    log_info("SKIP (no CL_FP_DENORM): %s\n", aec.func_name);
+                    log_info("SKIP (unsupported special values): %s\n",
+                             aec.func_name);
                     skip = true;
                 }
 
                 if (gIsEmbedded)
                 {
-                    if (aec.requires_inf_nan
-                        && !(gFloatCapabilities & CL_FP_INF_NAN))
-                    {
-                        log_info("SKIP (no CL_FP_INF_NAN): %s\n",
-                                 aec.func_name);
-                        skip = true;
-                    }
-
                     if (aec.requires_rte
                         && !(gFloatCapabilities & CL_FP_ROUND_TO_NEAREST))
                     {
@@ -734,17 +646,9 @@ struct EdgeCasesTest
             {
                 const auto &aec = cases[i];
                 bool skip = false;
-                if (aec.requires_denorm && !(gHalfCapabilities & CL_FP_DENORM))
+                if (!aec.areValuesSupportedBy(gHalfCapabilities))
                 {
-                    log_info("SKIP fp16 (no CL_FP_DENORM): %s\n",
-                             aec.func_name);
-                    skip = true;
-                }
-
-                if (aec.requires_inf_nan
-                    && !(gHalfCapabilities & CL_FP_INF_NAN))
-                {
-                    log_info("SKIP fp16 (no CL_FP_INF_NAN): %s\n",
+                    log_info("SKIP fp16 (unsupported special values): %s\n",
                              aec.func_name);
                     skip = true;
                 }
@@ -778,18 +682,9 @@ struct EdgeCasesTest
             {
                 const auto &aec = cases[i];
                 bool skip = false;
-                if (aec.requires_denorm
-                    && !(gDoubleCapabilities & CL_FP_DENORM))
+                if (!aec.areValuesSupportedBy(gDoubleCapabilities))
                 {
-                    log_info("SKIP fp64 (no CL_FP_DENORM): %s\n",
-                             aec.func_name);
-                    skip = true;
-                }
-
-                if (aec.requires_inf_nan
-                    && !(gDoubleCapabilities & CL_FP_INF_NAN))
-                {
-                    log_info("SKIP fp64 (no CL_FP_INF_NAN): %s\n",
+                    log_info("SKIP fp64 (unsupported special values): %s\n",
                              aec.func_name);
                     skip = true;
                 }
