@@ -30,7 +30,11 @@
             "arraycopy": "pass",
             "host_numeric_constants": "pass",
             "kernel_numeric_constants": "pass",
-            "kernel_preprocessor_macros": "pass"
+            "kernel_preprocessor_macros": "pass",
+            "loop": "pass",
+            "local_arg_def": "pass",
+            "local_kernel_def": "pass",
+            "work_item_functions": "pass"
         }
     },
     "test_bruteforce": {
