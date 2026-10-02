@@ -91,7 +91,7 @@ size_t gTypeSizes[kTypeCount] = {
 
 REGISTER_TEST(conversions)
 {
-    if (argList.size() > 2)
+    if (!customTestList.empty())
     {
         return MakeAndRunTest<CustomConversionsTest>(device, context, queue,
                                                      num_elements);
@@ -179,6 +179,10 @@ Test names:
           char_sat_rte_float   converts float to char with saturated clipping in round to nearest rounding mode
 )";
 
+    // TODO: This code is currently unreachable, because the test harness lists
+    // the tests it knows about and exits before ParseArgs is called.  Since the
+    // tests to run are specified by the name of a conversion, the conversions
+    // below should be listed instead of the single registered test name.
     if (gListTests)
     {
         for (unsigned dst = 0; dst < kTypeCount; dst++)
@@ -209,8 +213,10 @@ Test names:
         return TEST_PASS;
     }
 
-    argList.push_back(argv[0]);
-    argList.push_back("all");
+    // Arguments that are not handled here are passed to the harness to parse.
+    std::vector<const char *> harnessArgs;
+    harnessArgs.push_back(argv[0]); // always pass the test executable name
+
     for (i = 1; i < argc; i++)
     {
         const char *arg = argv[i];
@@ -290,12 +296,29 @@ Test names:
             }
             else
             {
-                removed_args.push_back(argv[i]);
-                argList.push_back(arg);
+                Type outType, inType;
+                SaturationMode sat;
+                RoundingMode round;
+                if (conv_test::GetTestCase(arg, &outType, &inType, &sat,
+                                           &round))
+                {
+                    // This is not a conversion test name, so let the test
+                    // harness parse it instead.
+                    harnessArgs.push_back(argv[i]);
+                }
+                else
+                {
+                    // This is a conversion test name, so add it to the custom
+                    // test list, and mark it as a removed argument.  It is not
+                    // parsed by the harness.
+                    removed_args.push_back(argv[i]);
+                    customTestList.push_back(arg);
+                }
             }
         }
     }
-    update_argc_argv_from_args_list(argList, argc, argv);
+
+    update_argc_argv_from_args_list(harnessArgs, argc, argv);
 
     vlog("\n");
 

@@ -95,7 +95,7 @@ int vectorSizes[] = { 1, 1, 2, 3, 4, 8, 16 };
 int gMinVectorSize = 0;
 int gMaxVectorSize = sizeof(vectorSizes) / sizeof(vectorSizes[0]);
 MTdata gMTdata;
-std::vector<const char *> argList;
+std::vector<const char *> customTestList;
 bool gTestAll = false;
 
 cl_half_rounding_mode DataInitInfo::halfRoundingMode = CL_HALF_RTE;
@@ -223,13 +223,14 @@ cl_int CustomConversionsTest::Run()
     RoundingMode round;
     SaturationMode sat;
 
-    for (int i = 2; i < argList.size(); i++)
+    for (size_t i = 0; i < customTestList.size(); i++)
     {
-        if (conv_test::GetTestCase(argList[i], &outType, &inType, &sat, &round))
+        if (conv_test::GetTestCase(customTestList[i], &outType, &inType, &sat,
+                                   &round))
         {
             vlog_error("\n\t\t**** ERROR:  Unable to parse function name "
                        "%s.  Skipping....  *****\n\n",
-                       argList[i]);
+                       customTestList[i]);
             continue;
         }
 
