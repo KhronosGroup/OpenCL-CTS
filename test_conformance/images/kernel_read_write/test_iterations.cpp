@@ -446,7 +446,9 @@ int validate_image_2D_depth_results(
                             // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                             // E.g., test one pixel.
                             if (!imageSampler->normalized_coords
+#if defined(__APPLE__)
                                 || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+#endif
                                 || NORM_OFFSET == 0)
                             {
                                 norm_offset_x = 0.0f;
@@ -646,7 +648,9 @@ int validate_image_2D_results(void *imageValues, void *resultValues,
                             // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                             // E.g., test one pixel.
                             if (!imageSampler->normalized_coords
+#if defined(__APPLE__)
                                 || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+#endif
                                 || NORM_OFFSET == 0)
                             {
                                 norm_offset_x = 0.0f;
@@ -784,7 +788,9 @@ int validate_image_2D_results(void *imageValues, void *resultValues,
                         // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                         // E.g., test one pixel.
                         if (!imageSampler->normalized_coords
+#if defined(__APPLE__)
                             || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+#endif
                             || NORM_OFFSET == 0)
                         {
                             norm_offset_x = 0.0f;
@@ -822,7 +828,9 @@ int validate_image_2D_results(void *imageValues, void *resultValues,
                             // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                             // E.g., test one pixel.
                             if (!imageSampler->normalized_coords
+#if defined(__APPLE__)
                                 || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+#endif
                                 || NORM_OFFSET == 0)
                             {
                                 norm_offset_x = 0.0f;
@@ -891,7 +899,9 @@ int validate_image_2D_results(void *imageValues, void *resultValues,
                         // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                         // E.g., test one pixel.
                         if (!imageSampler->normalized_coords
+#if defined(__APPLE__)
                             || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+#endif
                             || NORM_OFFSET == 0)
                         {
                             norm_offset_x = 0.0f;
@@ -929,7 +939,9 @@ int validate_image_2D_results(void *imageValues, void *resultValues,
                             // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                             // E.g., test one pixel.
                             if (!imageSampler->normalized_coords
+#if defined(__APPLE__)
                                 || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+#endif
                                 || NORM_OFFSET == 0)
                             {
                                 norm_offset_x = 0.0f;
@@ -1088,7 +1100,9 @@ int validate_image_2D_sRGB_results(
                             // If we are not on a GPU, or we are not normalized, then only test with offsets (0.0, 0.0)
                             // E.g., test one pixel.
                             if (!imageSampler->normalized_coords
+#if defined(__APPLE__)
                                 || !(gDeviceType & CL_DEVICE_TYPE_GPU)
+#endif
                                 || NORM_OFFSET == 0)
                             {
                                 norm_offset_x = 0.0f;
