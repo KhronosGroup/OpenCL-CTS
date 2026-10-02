@@ -35,7 +35,8 @@
             "kernel_preprocessor_macros": "pass",
             "loop": "pass",
             "local_arg_def": "pass",
-            "local_kernel_def": "pass"
+            "local_kernel_def": "pass",
+            "work_item_functions": "pass"
         }
     },
     "test_bruteforce": {
