@@ -21,7 +21,9 @@
 #else
 #include <CL/cl_platform.h>
 #endif
+
 #include <cmath>
+#include <type_traits>
 
 template <typename T> inline bool isnan_fp(const T &v) { return std::isnan(v); }
 
@@ -30,6 +32,14 @@ template <> inline bool isnan_fp<cl_half>(const cl_half &v)
     uint16_t h_exp = (((cl_half)v) >> (CL_HALF_MANT_DIG - 1)) & 0x1F;
     uint16_t h_mant = ((cl_half)v) & 0x3FF;
     return (h_exp == 0x1F && h_mant != 0);
+}
+
+template <typename T, typename U>
+inline std::common_type_t<T, U> div_round_up(T a, U b)
+{
+    static_assert(std::is_integral_v<T> && std::is_integral_v<U>,
+                  "div_round_up: integral type required");
+    return a / b + ((a % b) != 0 ? 1 : 0);
 }
 
 #endif // _mathHelpers_h
