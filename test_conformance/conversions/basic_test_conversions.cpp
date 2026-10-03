@@ -233,6 +233,15 @@ cl_int CustomConversionsTest::Run()
             continue;
         }
 
+        if (kSaturated == sat
+            && (outType == kfloat || outType == kdouble || outType == khalf))
+        {
+            vlog_error("\n\t\t**** ERROR:  Saturation may not be used for "
+                       "conversions to floating-point type: %s.  *****\n\n",
+                       argList[i]);
+            return TEST_FAIL;
+        }
+
         // skip double if we don't have it
         if (!gTestDouble && (inType == kdouble || outType == kdouble))
         {
