@@ -131,7 +131,7 @@ template <typename Ty> struct BALLOT
                 std::set<int> active_work_items;
                 for (int wi_id = 0; wi_id < current_sbs; ++wi_id)
                 {
-                    if (work_item_active(test_params.work_items_mask, wi_id))
+                    if (test_params.work_items_mask.test(wi_id))
                     {
                         bool predicate = (mx[wg_offset + wi_id].s0 != 0);
                         expected_result_bs |= (bs128(predicate) << wi_id);
@@ -772,16 +772,15 @@ __kernel void test_sub_group_ballot(const __global Type *in, __global int4 *xy, 
     uint gid = get_global_id(0);
     XY(xy,gid);
     uint subgroup_local_id = get_sub_group_local_id();
-    uint mask_id = subgroup_local_id % 128;
-    uint elect_work_item = 1 << (mask_id % 32);
+    uint elect_work_item = 1 << (subgroup_local_id % 32);
     uint work_item_mask;
-    if (mask_id < 32) {
+    if (subgroup_local_id < 32) {
         work_item_mask = work_item_mask_vector.x;
-    } else if(mask_id < 64) {
+    } else if(subgroup_local_id < 64) {
         work_item_mask = work_item_mask_vector.y;
-    } else if(mask_id < 96) {
+    } else if(subgroup_local_id < 96) {
         work_item_mask = work_item_mask_vector.z;
-    } else {
+    } else if(subgroup_local_id < 128) {
         work_item_mask = work_item_mask_vector.w;
     }
     uint4 value = (uint4)(0, 0, 0, 0);

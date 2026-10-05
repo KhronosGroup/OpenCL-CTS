@@ -35,10 +35,11 @@ extern cl_half_rounding_mode g_rounding_mode;
 bs128 cl_uint4_to_bs128(cl_uint4 v);
 
 // Work-item masks are 128-bit patterns, passed to the divergent kernels as a
-// uint4. Sub-groups can have more than 128 work-items (the specification does
-// not bound the size), so the pattern repeats: work-item i is active when bit
-// i % 128 is set. The kernels apply the same rule when they select the mask
-// word, so host and device agree for any sub-group size.
+// uint4. Sub-groups can have more than 128 work-items (only the uint4 results
+// of cl_khr_subgroup_ballot limit them to 128, and its tests use a local size
+// of 64), so the pattern repeats: work-item i is active when bit i % 128 is
+// set. The kernels apply the same rule when they select the mask word, so host
+// and device agree for any sub-group size.
 inline bool work_item_active(const bs128 &mask, size_t sub_group_local_id)
 {
     return mask.test(sub_group_local_id % 128);
