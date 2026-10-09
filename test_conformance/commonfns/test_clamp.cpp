@@ -25,6 +25,8 @@
 
 #include "test_base.h"
 
+#include "harness/mathHelpers.h"
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327950288
 #endif
@@ -159,26 +161,40 @@ const char *clamp_double_scalar_codes[] = {
 
 namespace {
 
+template <typename T> T fmax_reference(T x, T y)
+{
+    if (isnan_fp(x)) return y;
+    if (isnan_fp(y)) return x;
+    return conv_to_dbl(x) < conv_to_dbl(y) ? y : x;
+}
+
+template <typename T> T fmin_reference(T x, T y)
+{
+    if (isnan_fp(x)) return y;
+    if (isnan_fp(y)) return x;
+    return conv_to_dbl(y) < conv_to_dbl(x) ? y : x;
+}
+
 template <typename T>
 int verify_clamp(const T *const x, const T *const minval, const T *const maxval,
                  const T *const outptr, int n, int veclen, bool hasScalarBounds)
 {
     if (std::is_same<T, half>::value)
     {
-        float t;
         for (int i = 0; i < n; i++)
         {
             const int boundIndex = hasScalarBounds ? i / veclen : i;
-            t = std::min(std::max(cl_half_to_float(x[i]),
-                                  cl_half_to_float(minval[boundIndex])),
-                         cl_half_to_float(maxval[boundIndex]));
-            if (!fp_value_equals(t, outptr[i]))
+            const T t = fmin_reference(fmax_reference(x[i], minval[boundIndex]),
+                                       maxval[boundIndex]);
+            const bool matches = isnan_fp(t) ? isnan_fp(outptr[i])
+                                             : fp_value_equals(t, outptr[i]);
+            if (!matches)
             {
                 log_error(
                     "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n",
                     i, cl_half_to_float(x[i]),
                     cl_half_to_float(minval[boundIndex]),
-                    cl_half_to_float(maxval[boundIndex]), t,
+                    cl_half_to_float(maxval[boundIndex]), cl_half_to_float(t),
                     cl_half_to_float(outptr[i]));
                 return -1;
             }
@@ -186,13 +202,14 @@ int verify_clamp(const T *const x, const T *const minval, const T *const maxval,
     }
     else
     {
-        T t;
         for (int i = 0; i < n; i++)
         {
             const int boundIndex = hasScalarBounds ? i / veclen : i;
-            t = std::min(std::max(x[i], minval[boundIndex]),
-                         maxval[boundIndex]);
-            if (!fp_value_equals(t, outptr[i]))
+            const T t = fmin_reference(fmax_reference(x[i], minval[boundIndex]),
+                                       maxval[boundIndex]);
+            const bool matches = isnan_fp(t) ? isnan_fp(outptr[i])
+                                             : fp_value_equals(t, outptr[i]);
+            if (!matches)
             {
                 log_error(
                     "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n",
