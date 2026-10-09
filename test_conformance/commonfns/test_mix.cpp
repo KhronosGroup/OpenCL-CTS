@@ -25,6 +25,8 @@
 
 #include "test_base.h"
 
+#include "harness/mathHelpers.h"
+
 
 const char *mix_fn_code_pattern =
     "%s\n" /* optional pragma */
@@ -73,8 +75,21 @@ double mix_half_error(const double x, const double y, const double r,
     return max_scale > 0.0 ? absolute_error / max_scale : absolute_error;
 }
 
+// Half-precision mix accuracy is implementation-defined, so only NaN and
+// infinity results are verified.
+bool mix_half_special_result_is_valid(const half x, const half y, const half a,
+                                      const half out, double &reference)
+{
+    const double blend = conv_to_dbl(a);
+    reference = conv_to_dbl(x) + (conv_to_dbl(y) - conv_to_dbl(x)) * blend;
+    if (std::isnan(reference)) return isnan_fp(out);
+    if (std::isinf(reference)) return fp_value_equals(reference, out);
+    return true;
+}
+
 template <typename T>
-bool mix_result_is_valid(const T x, const T y, const T a, const T out)
+bool mix_result_is_valid(const T x, const T y, const T a, const T out,
+                         T &uncontracted, T &contracted)
 {
     // mix is specified as x + (y - x) * a. Evaluate that expression in the
     // destination type so the reference includes the rounding that is
@@ -83,17 +98,21 @@ bool mix_result_is_valid(const T x, const T y, const T a, const T out)
     // uncontracted reference calculation.
     const T difference = std::fma(T(-1), x, y);
     const T product = std::fma(difference, a, T(0));
-    const T uncontracted = std::fma(T(1), product, x);
+    uncontracted = std::fma(T(1), product, x);
 
     // OpenCL implementations may contract the final multiply-add, so accept
-    // that evaluation as well. Apply the specification's absolute 1e-3
-    // tolerance to both permitted evaluations.
-    const T contracted = std::fma(difference, a, x);
-    const double uncontracted_error =
-        std::fabs(static_cast<double>(out) - static_cast<double>(uncontracted));
-    const double contracted_error =
-        std::fabs(static_cast<double>(out) - static_cast<double>(contracted));
-    return uncontracted_error <= MAX_ERR || contracted_error <= MAX_ERR;
+    // that evaluation as well.
+    contracted = std::fma(difference, a, x);
+
+    const auto matches = [out](const T expected) {
+        if (isnan_fp(expected)) return isnan_fp(out);
+        if (std::isinf(conv_to_dbl(expected)))
+            return fp_value_equals(expected, out);
+        return std::fabs(static_cast<double>(out)
+                         - static_cast<double>(expected))
+            <= MAX_ERR;
+    };
+    return matches(uncontracted) || matches(contracted);
 }
 
 template <typename T>
@@ -101,7 +120,6 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
                const T *const inptrA, const T *const outptr, const int n,
                const int veclen, const bool vecParam)
 {
-    double r;
     [[maybe_unused]] double max_delta = 0.0;
     int i;
 
@@ -109,30 +127,39 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
     {
         for (i = 0; i < n * veclen; i++)
         {
-            const double x = conv_to_dbl(inptrX[i]);
-            const double y = conv_to_dbl(inptrY[i]);
-            const double a = conv_to_dbl(inptrA[i]);
-            r = x + ((y - x) * a);
-
             if constexpr (!std::is_same<T, half>::value)
             {
+                T uncontracted, contracted;
                 if (!mix_result_is_valid(inptrX[i], inptrY[i], inptrA[i],
-                                         outptr[i]))
+                                         outptr[i], uncontracted, contracted))
                 {
-                    log_error("%d) verification error: mix(%a, %a, %a) = *%a "
-                              "vs. %a\n",
-                              i, conv_to_flt(inptrX[i]), conv_to_flt(inptrY[i]),
-                              conv_to_flt(inptrA[i]), r,
-                              conv_to_flt(outptr[i]));
+                    log_error("%d) verification error: mix(%a, %a, %a): "
+                              "expected %a (uncontracted) or %a (contracted), "
+                              "got %a\n",
+                              i, conv_to_dbl(inptrX[i]), conv_to_dbl(inptrY[i]),
+                              conv_to_dbl(inptrA[i]), conv_to_dbl(uncontracted),
+                              conv_to_dbl(contracted), conv_to_dbl(outptr[i]));
                     return -1;
                 }
             }
             else
             {
-                // Half-precision mix accuracy is implementation-defined so
-                // is only reported.
+                double reference;
+                if (!mix_half_special_result_is_valid(
+                        inptrX[i], inptrY[i], inptrA[i], outptr[i], reference))
+                {
+                    log_error("%d) verification error: mix(%a, %a, %a): "
+                              "expected %a, got %a\n",
+                              i, conv_to_flt(inptrX[i]), conv_to_flt(inptrY[i]),
+                              conv_to_flt(inptrA[i]), reference,
+                              conv_to_flt(outptr[i]));
+                    return -1;
+                }
+                const double x = conv_to_dbl(inptrX[i]);
+                const double y = conv_to_dbl(inptrY[i]);
                 max_delta = std::max(
-                    max_delta, mix_half_error(x, y, r, conv_to_dbl(outptr[i])));
+                    max_delta,
+                    mix_half_error(x, y, reference, conv_to_dbl(outptr[i])));
             }
         }
     }
@@ -144,31 +171,45 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
             int vi = i * veclen;
             for (int j = 0; j < veclen; ++j, ++vi)
             {
-                const double x = conv_to_dbl(inptrX[vi]);
-                const double y = conv_to_dbl(inptrY[vi]);
-                const double a = conv_to_dbl(inptrA[i]);
-                r = x + ((y - x) * a);
                 if constexpr (!std::is_same<T, half>::value)
                 {
+                    T uncontracted, contracted;
                     if (!mix_result_is_valid(inptrX[vi], inptrY[vi], inptrA[i],
-                                             outptr[vi]))
+                                             outptr[vi], uncontracted,
+                                             contracted))
                     {
                         log_error(
                             "{%d, element %d}) verification error: mix(%a, "
-                            "%a, %a) = *%a vs. %a\n",
-                            ii, j, conv_to_flt(inptrX[vi]),
-                            conv_to_flt(inptrY[vi]), conv_to_flt(inptrA[i]), r,
-                            conv_to_flt(outptr[vi]));
+                            "%a, %a): expected %a (uncontracted) or %a "
+                            "(contracted), got %a\n",
+                            ii, j, conv_to_dbl(inptrX[vi]),
+                            conv_to_dbl(inptrY[vi]), conv_to_dbl(inptrA[i]),
+                            conv_to_dbl(uncontracted), conv_to_dbl(contracted),
+                            conv_to_dbl(outptr[vi]));
                         return -1;
                     }
                 }
                 else
                 {
-                    // Half-precision mix accuracy is implementation-defined so
-                    // is only reported.
-                    max_delta = std::max(
-                        max_delta,
-                        mix_half_error(x, y, r, conv_to_dbl(outptr[vi])));
+                    double reference;
+                    if (!mix_half_special_result_is_valid(
+                            inptrX[vi], inptrY[vi], inptrA[i], outptr[vi],
+                            reference))
+                    {
+                        log_error(
+                            "{%d, element %d}) verification error: mix(%a, "
+                            "%a, %a): expected %a, got %a\n",
+                            ii, j, conv_to_flt(inptrX[vi]),
+                            conv_to_flt(inptrY[vi]), conv_to_flt(inptrA[i]),
+                            reference, conv_to_flt(outptr[vi]));
+                        return -1;
+                    }
+                    const double x = conv_to_dbl(inptrX[vi]);
+                    const double y = conv_to_dbl(inptrY[vi]);
+                    max_delta =
+                        std::max(max_delta,
+                                 mix_half_error(x, y, reference,
+                                                conv_to_dbl(outptr[vi])));
                 }
             }
         }

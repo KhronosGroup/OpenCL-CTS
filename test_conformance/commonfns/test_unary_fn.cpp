@@ -26,6 +26,8 @@
 
 #include "test_base.h"
 
+#include "harness/mathHelpers.h"
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327950288
 #endif
@@ -71,6 +73,23 @@ bool is_half_ftz_zero_allowed(const T input, const T output,
     }
 }
 
+template <typename T> bool is_special_input(const T input)
+{
+    const double value = conv_to_dbl(input);
+    return isnan_fp(input) || std::isinf(value) || value == 0.0;
+}
+
+template <typename T>
+bool is_special_result_valid(const T input, const T output)
+{
+    if (isnan_fp(input)) return isnan_fp(output);
+    const double value = conv_to_dbl(input);
+    if (std::isinf(value) || value == 0.0)
+        return fp_value_equals(input, output);
+
+    return true;
+}
+
 template <typename T>
 int verify_degrees(const T *const inptr, const T *const outptr, int n)
 {
@@ -80,12 +99,17 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
 
     for (int i = 0; i < n; i++)
     {
-        if (conv_to_dbl(inptr[i]) == 0.0
-            && !fp_value_equals(inptr[i], outptr[i]))
+        if (is_special_input(inptr[i]))
         {
-            log_error("%d) Error @ %a: expected signed zero, got %a\n", i,
-                      conv_to_flt(inptr[i]), conv_to_flt(outptr[i]));
-            return 1;
+            if (!is_special_result_valid(inptr[i], outptr[i]))
+            {
+                log_error("%d) verification error: degrees(%a): expected %a, "
+                          "got %a\n",
+                          i, conv_to_dbl(inptr[i]), conv_to_dbl(inptr[i]),
+                          conv_to_dbl(outptr[i]));
+                return 1;
+            }
+            continue;
         }
 
         r = (180.0 / M_PI) * conv_to_dbl(inptr[i]);
@@ -140,12 +164,17 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
 
     for (int i = 0; i < n; i++)
     {
-        if (conv_to_dbl(inptr[i]) == 0.0
-            && !fp_value_equals(inptr[i], outptr[i]))
+        if (is_special_input(inptr[i]))
         {
-            log_error("%d) Error @ %a: expected signed zero, got %a\n", i,
-                      conv_to_flt(inptr[i]), conv_to_flt(outptr[i]));
-            return 1;
+            if (!is_special_result_valid(inptr[i], outptr[i]))
+            {
+                log_error("%d) verification error: radians(%a): expected %a, "
+                          "got %a\n",
+                          i, conv_to_dbl(inptr[i]), conv_to_dbl(inptr[i]),
+                          conv_to_dbl(outptr[i]));
+                return 1;
+            }
+            continue;
         }
 
         r = (M_PI / 180.0) * conv_to_dbl(inptr[i]);
