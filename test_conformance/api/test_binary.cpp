@@ -26,13 +26,13 @@ static const char *sample_binary_kernel_source[] = {
 "\n"
 "}\n" };
 
-const char *sample_header_source =
+static const char *sample_header_source =
     "extern __kernel void CopyBuffer(__global float *src,\n"
     "                                __global float *dst);\n";
 
-const char *sample_header_name = "simple_header.h";
+static const char *sample_header_name = "simple_header.h";
 
-const char *sample_source_with_header =
+static const char *sample_source_with_header =
     "#include \"simple_header.h\"\n"
     "__kernel void AnotherCopyBuffer(__global float *src,\n"
     "                                __global float *dst)\n"
@@ -234,6 +234,8 @@ REGISTER_TEST(binary_create)
 
 REGISTER_TEST(binary_create_with_header)
 {
+    check_compiler_available(device);
+
     cl_int error;
     clProgramWrapper header = clCreateProgramWithSource(
         context, 1, &sample_header_source, nullptr, &error);
