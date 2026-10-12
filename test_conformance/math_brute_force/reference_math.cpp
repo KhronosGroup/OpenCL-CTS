@@ -16,6 +16,7 @@
 
 #include "reference_math.h"
 #include "harness/compat.h"
+#include <cstdlib>
 
 #include <climits>
 #include <float.h>
@@ -3903,7 +3904,8 @@ long double reference_exp2l(long double z)
 
 long double reference_expm1l(long double x)
 {
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)                            \
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(_M_X64)        \
+    && !defined(_M_ARM64EC) && !defined(_M_ARM64)                              \
     && !defined(__INTEL_LLVM_COMPILER)
     // unimplemented
     return x;
@@ -3991,7 +3993,8 @@ long double reference_log2l(long double x)
 
 long double reference_log1pl(long double x)
 {
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)                            \
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(_M_X64)        \
+    && !defined(_M_ARM64EC) && !defined(_M_ARM64)                              \
     && !defined(__INTEL_LLVM_COMPILER)
     // unimplemented
     return x;
