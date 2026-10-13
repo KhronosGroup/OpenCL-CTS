@@ -183,8 +183,8 @@
             "mixf": "pass",
             "radians": "fail",
             "sign": "pass",
-            "smoothstep": "pass",
-            "smoothstepf": "pass",
+            "smoothstep": "fail",
+            "smoothstepf": "fail",
             "step": "pass",
             "stepf": "pass"
         }
