@@ -169,7 +169,7 @@ template <typename T> T *register_test(const char *name, Version version)
 //
 // Not all tests need to use this macro, only those that don't use the
 // test harness compiler helpers.
-#define check_compiler_available(DEVICE)                                       \
+#define CHECK_COMPILER_AVAILABLE(DEVICE)                                       \
     {                                                                          \
         cl_bool compilerAvailable = CL_FALSE;                                  \
         cl_int error = clGetDeviceInfo((DEVICE), CL_DEVICE_COMPILER_AVAILABLE, \
