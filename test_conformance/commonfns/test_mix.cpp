@@ -21,11 +21,10 @@
 #include <algorithm>
 #include <cmath>
 
+#include "harness/mathHelpers.h"
 #include "harness/stringHelpers.h"
 
 #include "test_base.h"
-
-#include "harness/mathHelpers.h"
 
 
 const char *mix_fn_code_pattern =
@@ -75,8 +74,8 @@ double mix_half_error(const double x, const double y, const double r,
     return max_scale > 0.0 ? absolute_error / max_scale : absolute_error;
 }
 
-// Half-precision mix accuracy is implementation-defined, so only NaN and
-// infinity results are verified.
+// Half-precision mix accuracy is implementation-defined, so only special-value
+// behavior is verified.
 bool mix_half_special_result_is_valid(const half x, const half y, const half a,
                                       const half out, double &reference)
 {
@@ -84,7 +83,8 @@ bool mix_half_special_result_is_valid(const half x, const half y, const half a,
     reference = conv_to_dbl(x) + (conv_to_dbl(y) - conv_to_dbl(x)) * blend;
     if (std::isnan(reference)) return isnan_fp(out);
     if (std::isinf(reference)) return fp_value_equals(reference, out);
-    return true;
+    // The generated finite inputs cannot overflow half-precision intermediates.
+    return !isnan_fp(out);
 }
 
 template <typename T>
@@ -155,6 +155,8 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
                               conv_to_flt(outptr[i]));
                     return -1;
                 }
+                if (!std::isfinite(reference)) continue;
+
                 const double x = conv_to_dbl(inptrX[i]);
                 const double y = conv_to_dbl(inptrY[i]);
                 max_delta = std::max(
@@ -204,6 +206,8 @@ int verify_mix(const T *const inptrX, const T *const inptrY,
                             reference, conv_to_flt(outptr[vi]));
                         return -1;
                     }
+                    if (!std::isfinite(reference)) continue;
+
                     const double x = conv_to_dbl(inptrX[vi]);
                     const double y = conv_to_dbl(inptrY[vi]);
                     max_delta =

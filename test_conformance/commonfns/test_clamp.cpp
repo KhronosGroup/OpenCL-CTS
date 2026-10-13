@@ -21,11 +21,10 @@
 #include <vector>
 
 #include "harness/deviceInfo.h"
+#include "harness/mathHelpers.h"
 #include "harness/typeWrappers.h"
 
 #include "test_base.h"
-
-#include "harness/mathHelpers.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327950288
@@ -179,45 +178,21 @@ template <typename T>
 int verify_clamp(const T *const x, const T *const minval, const T *const maxval,
                  const T *const outptr, int n, int veclen, bool hasScalarBounds)
 {
-    if (std::is_same<T, half>::value)
+    for (int i = 0; i < n; i++)
     {
-        for (int i = 0; i < n; i++)
+        const int boundIndex = hasScalarBounds ? i / veclen : i;
+        const T t = fmin_reference(fmax_reference(x[i], minval[boundIndex]),
+                                   maxval[boundIndex]);
+        const bool matches =
+            isnan_fp(t) ? isnan_fp(outptr[i]) : fp_value_equals(t, outptr[i]);
+        if (!matches)
         {
-            const int boundIndex = hasScalarBounds ? i / veclen : i;
-            const T t = fmin_reference(fmax_reference(x[i], minval[boundIndex]),
-                                       maxval[boundIndex]);
-            const bool matches = isnan_fp(t) ? isnan_fp(outptr[i])
-                                             : fp_value_equals(t, outptr[i]);
-            if (!matches)
-            {
-                log_error(
-                    "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n",
-                    i, cl_half_to_float(x[i]),
-                    cl_half_to_float(minval[boundIndex]),
-                    cl_half_to_float(maxval[boundIndex]), cl_half_to_float(t),
-                    cl_half_to_float(outptr[i]));
-                return -1;
-            }
-        }
-    }
-    else
-    {
-        for (int i = 0; i < n; i++)
-        {
-            const int boundIndex = hasScalarBounds ? i / veclen : i;
-            const T t = fmin_reference(fmax_reference(x[i], minval[boundIndex]),
-                                       maxval[boundIndex]);
-            const bool matches = isnan_fp(t) ? isnan_fp(outptr[i])
-                                             : fp_value_equals(t, outptr[i]);
-            if (!matches)
-            {
-                log_error(
-                    "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n",
-                    i, conv_to_flt(x[i]), conv_to_flt(minval[boundIndex]),
-                    conv_to_flt(maxval[boundIndex]), conv_to_flt(t),
-                    conv_to_flt(outptr[i]));
-                return -1;
-            }
+            log_error(
+                "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n", i,
+                conv_to_dbl(x[i]), conv_to_dbl(minval[boundIndex]),
+                conv_to_dbl(maxval[boundIndex]), conv_to_dbl(t),
+                conv_to_dbl(outptr[i]));
+            return -1;
         }
     }
 
