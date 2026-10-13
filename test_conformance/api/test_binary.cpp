@@ -234,7 +234,7 @@ REGISTER_TEST(binary_create)
 
 REGISTER_TEST(binary_create_with_header)
 {
-    check_compiler_available(device);
+    CHECK_COMPILER_AVAILABLE(device);
 
     cl_int error;
     clProgramWrapper header = clCreateProgramWithSource(
