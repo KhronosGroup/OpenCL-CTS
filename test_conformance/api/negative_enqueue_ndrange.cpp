@@ -238,5 +238,6 @@ REGISTER_TEST(negative_enqueue_zero_work_group)
             }
         }
     }
+
     return TEST_PASS;
 }
