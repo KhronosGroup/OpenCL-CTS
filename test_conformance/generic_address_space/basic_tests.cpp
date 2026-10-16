@@ -289,15 +289,21 @@ REGISTER_TEST(casting)
         NL "    intp = &gint;"
         NL "    failures += !(isFenceValid(get_fence(intp)));"
         NL "    failures += !(to_global(intp));"
+        NL "    failures += (to_local(intp) != NULL);"
+        NL "    failures += (to_private(intp) != NULL);"
         NL "    failures += (*intp != 1);"
         NL
         NL "    intp = &lint;"
         NL "    failures += !(isFenceValid(get_fence(intp)));"
+        NL "    failures += (to_global(intp) != NULL);"
         NL "    failures += !(to_local(intp));"
+        NL "    failures += (to_private(intp) != NULL);"
         NL "    failures += (*intp != 2);"
         NL
         NL "    intp = &pint;"
         NL "    failures += !(isFenceValid(get_fence(intp)));"
+        NL "    failures += (to_global(intp) != NULL);"
+        NL "    failures += (to_local(intp) != NULL);"
         NL "    failures += !(to_private(intp));"
         NL "    failures += (*intp != 3);"
         NL
