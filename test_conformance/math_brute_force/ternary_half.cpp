@@ -55,7 +55,7 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
     float maxErrorVal3 = 0.0f;
     uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
 
-    constexpr size_t bufferElements = BUFFER_SIZE / sizeof(cl_half);
+    const size_t bufferElements = BUFFER_SIZE / sizeof(cl_half);
 
     std::vector<cl_uchar> overflow(bufferElements);
     float half_ulps = getAllowedUlpError(f, khalf, relaxedMode);
@@ -730,7 +730,8 @@ int TestFunc_Half_Half_Half_Half(const Func *f, MTdata d, bool relaxedMode)
         {
             if (gVerboseBruteForce)
             {
-                vlog("base:%14" PRIu64 " step:%10" PRIu64 " bufferSize:%10d \n",
+                vlog("base:%14" PRIu64 " step:%10" PRIu64
+                     " bufferSize:%10zu \n",
                      i, step, BUFFER_SIZE);
             }
             else
