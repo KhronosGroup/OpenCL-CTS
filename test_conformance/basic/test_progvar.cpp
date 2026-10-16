@@ -1580,17 +1580,9 @@ static int l_capacity(cl_device_id device, cl_context context,
     log_info(" l_capacity...");
 
     const char prog_src_template[] =
-#if defined(_WIN32)
-        "uchar var[%Iu];\n\n"
-#else
         "uchar var[%zu];\n\n"
-#endif
         "kernel void get_max_size( global ulong* size_ret ) {\n"
-#if defined(_WIN32)
-        "  *size_ret = (ulong)%Iu;\n"
-#else
         "  *size_ret = (ulong)%zu;\n"
-#endif
         "}\n\n"
         "kernel void writer( global uchar* src ) {\n"
         "  var[get_global_id(0)] = src[get_global_linear_id()];\n"
