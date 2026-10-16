@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifdef GLES_IS_SUPPORTED
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -93,11 +94,12 @@ const int test_num = ARRAY_SIZE( test_list );
 #ifdef GL_ES_VERSION_3_0
 const int test_num32 = ARRAY_SIZE( test_list32 );
 #endif
-
+#endif
 
 int main(int argc, const char *argv[])
 {
   int error = 0;
+#ifdef GLES_IS_SUPPORTED
   cl_platform_id platform_id = NULL;
   /* To keep it simple, use a static allocation of 32 argv pointers.
      argc is not expected to go beyond 32 */
@@ -376,5 +378,6 @@ cleanup:
 
     delete glEnv;
 
+#endif
     return error;
 }
