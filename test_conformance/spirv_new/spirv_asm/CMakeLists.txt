@@ -201,66 +201,6 @@ set(spirv_sources
     ext_cl_khr_spirv_no_integer_wrap_decoration_fsub_int.spvasm64
     ext_cl_khr_spirv_no_integer_wrap_decoration_fsub_uint.spvasm32
     ext_cl_khr_spirv_no_integer_wrap_decoration_fsub_uint.spvasm64
-    fadd_double.spvasm32
-    fadd_double.spvasm64
-    fadd_double2.spvasm32
-    fadd_double2.spvasm64
-    fadd_float.spvasm32
-    fadd_float.spvasm64
-    fadd_float4.spvasm32
-    fadd_float4.spvasm64
-    fadd_half.spvasm32
-    fadd_half.spvasm64
-    fdiv_double.spvasm32
-    fdiv_double.spvasm64
-    fdiv_double2.spvasm32
-    fdiv_double2.spvasm64
-    fdiv_float.spvasm32
-    fdiv_float.spvasm64
-    fdiv_float4.spvasm32
-    fdiv_float4.spvasm64
-    fdiv_half.spvasm32
-    fdiv_half.spvasm64
-    fmod_double.spvasm32
-    fmod_double.spvasm64
-    fmod_double2.spvasm32
-    fmod_double2.spvasm64
-    fmod_float.spvasm32
-    fmod_float.spvasm64
-    fmod_float4.spvasm32
-    fmod_float4.spvasm64
-    fmod_half.spvasm32
-    fmod_half.spvasm64
-    fmul_double.spvasm32
-    fmul_double.spvasm64
-    fmul_double2.spvasm32
-    fmul_double2.spvasm64
-    fmul_float.spvasm32
-    fmul_float.spvasm64
-    fmul_float4.spvasm32
-    fmul_float4.spvasm64
-    fmul_half.spvasm32
-    fmul_half.spvasm64
-    frem_double.spvasm32
-    frem_double.spvasm64
-    frem_double2.spvasm32
-    frem_double2.spvasm64
-    frem_float.spvasm32
-    frem_float.spvasm64
-    frem_float4.spvasm32
-    frem_float4.spvasm64
-    frem_half.spvasm32
-    frem_half.spvasm64
-    fsub_double.spvasm32
-    fsub_double.spvasm64
-    fsub_double2.spvasm32
-    fsub_double2.spvasm64
-    fsub_float.spvasm32
-    fsub_float.spvasm64
-    fsub_float4.spvasm32
-    fsub_float4.spvasm64
-    fsub_half.spvasm32
-    fsub_half.spvasm64
     label_simple.spvasm32
     label_simple.spvasm64
     lifetime_simple.spvasm32
