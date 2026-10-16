@@ -45,17 +45,13 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
         int ng = test_params.global_workgroup_size;
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        int nj = div_round_up(nw, ns);
         int d = ns > 100 ? 100 : ns;
         int non_uniform_size = ng % nw;
-        ng = ng / nw;
+        ng = div_round_up(ng, nw);
         int last_subgroup_size = 0;
         ii = 0;
 
-        if (non_uniform_size)
-        {
-            ng++;
-        }
         for (k = 0; k < ng; ++k)
         { // for each work_group
             if (non_uniform_size && k == ng - 1)
@@ -141,12 +137,11 @@ template <typename Ty, SubgroupsBroadcastOp operation> struct BC
         int ng = test_params.global_workgroup_size;
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        int nj = div_round_up(nw, ns);
         Ty tr, rr;
         int non_uniform_size = ng % nw;
-        ng = ng / nw;
+        ng = div_round_up(ng, nw);
         int last_subgroup_size = 0;
-        if (non_uniform_size) ng++;
 
         for (k = 0; k < ng; ++k)
         { // for each work_group
@@ -355,7 +350,7 @@ template <typename Ty> bool is_floating_point()
 template <typename Ty, ArithmeticOp operation>
 void generate_inputs(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
 {
-    int nj = (nw + ns - 1) / ns;
+    int nj = div_round_up(nw, ns);
 
     std::vector<cl_ulong> safe_values;
     if (operation == ArithmeticOp::mul_ || operation == ArithmeticOp::add_)
@@ -418,7 +413,7 @@ template <typename Ty, ShuffleOp operation> struct SHF
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        int nj = div_round_up(nw, ns);
         ii = 0;
         ng = ng / nw;
         for (k = 0; k < ng; ++k)
@@ -481,7 +476,7 @@ template <typename Ty, ShuffleOp operation> struct SHF
         size_t nw = test_params.local_workgroup_size;
         size_t ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
-        size_t nj = (nw + ns - 1) / ns;
+        size_t nj = div_round_up(nw, ns);
         Ty tr, rr;
         ng = ng / nw;
 
@@ -588,7 +583,7 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
         bs128 work_items_mask = test_params.work_items_mask;
-        int nj = (nw + ns - 1) / ns;
+        int nj = div_round_up(nw, ns);
         Ty tr, rr;
         ng = ng / nw;
 
@@ -688,7 +683,7 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
         int ng = test_params.global_workgroup_size;
         bs128 work_items_mask = test_params.work_items_mask;
 
-        int nj = (nw + ns - 1) / ns;
+        int nj = div_round_up(nw, ns);
         Ty tr, rr;
         ng = ng / nw;
 
@@ -803,7 +798,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
         bs128 work_items_mask = test_params.work_items_mask;
-        int nj = (nw + ns - 1) / ns;
+        int nj = div_round_up(nw, ns);
         ng = ng / nw;
         Ty tr, rr;
 

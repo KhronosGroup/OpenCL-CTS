@@ -237,7 +237,7 @@ struct IFP
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        int nj = div_round_up(nw, ns);
         ng = ng / nw;
 
         // We need at least 2 sub groups per group for this test
@@ -257,7 +257,7 @@ struct IFP
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        int nj = div_round_up(nw, ns);
         ng = ng / nw;
 
         // We need at least 2 sub groups per group for this test
