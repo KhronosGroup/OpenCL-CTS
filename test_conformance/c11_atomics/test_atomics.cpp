@@ -59,9 +59,7 @@ public:
             == TEST_SKIPPED_ITSELF)
             return 0; // skip test - not applicable
 
-        if (CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DataType()
-                ._type
-            == TYPE_ATOMIC_HALF)
+        if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
             if (LocalMemory()
                 && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_LOAD_STORE_EXT)
@@ -348,9 +346,7 @@ public:
             == TEST_SKIPPED_ITSELF)
             return 0; // skip test - not applicable
 
-        if (CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DataType()
-                ._type
-            == TYPE_ATOMIC_HALF)
+        if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
             if (LocalMemory()
                 && (gHalfAtomicCaps & CL_DEVICE_LOCAL_FP_ATOMIC_LOAD_STORE_EXT)
@@ -1505,10 +1501,7 @@ protected:
     bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
                       MTdata d) override
     {
-        if constexpr (
-            std::is_same_v<
-                HostDataType,
-                HOST_HALF> || std::is_same_v<HostDataType, HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (is_host_fp_v<HostDataType>)
         {
             if (threadCount > ref_vals.size())
             {
@@ -1620,7 +1613,6 @@ public:
                        HostDataType *startRefValues,
                        cl_uint whichDestValue) override
     {
-        expected = StartValue();
         if constexpr (
             std::is_same_v<
                 HostDataType,
@@ -1681,10 +1673,7 @@ public:
                     == 0)
                 return 0;
 
-            if (!CBasicTestMemOrderScope<HostAtomicType,
-                                         HostDataType>::LocalMemory()
-                && CBasicTestMemOrderScope<HostAtomicType,
-                                           HostDataType>::DeclaredInProgram())
+            if (!LocalMemory() && DeclaredInProgram())
             {
                 if ((gDoubleFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
@@ -1699,10 +1688,7 @@ public:
                 && (gFloatAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_ADD_EXT) == 0)
                 return 0;
 
-            if (!CBasicTestMemOrderScope<HostAtomicType,
-                                         HostDataType>::LocalMemory()
-                && CBasicTestMemOrderScope<HostAtomicType,
-                                           HostDataType>::DeclaredInProgram())
+            if (!LocalMemory() && DeclaredInProgram())
             {
                 if ((gFloatFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
@@ -1719,10 +1705,7 @@ public:
                 && (gHalfAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_ADD_EXT) == 0)
                 return 0;
 
-            if (!CBasicTestMemOrderScope<HostAtomicType,
-                                         HostDataType>::LocalMemory()
-                && CBasicTestMemOrderScope<HostAtomicType,
-                                           HostDataType>::DeclaredInProgram())
+            if (!LocalMemory() && DeclaredInProgram())
             {
                 if ((gHalfFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
@@ -1733,10 +1716,7 @@ public:
     }
     cl_uint NumResults(cl_uint threadCount, cl_device_id deviceID) override
     {
-        if constexpr (
-            std::is_same_v<
-                HostDataType,
-                HOST_HALF> || std::is_same_v<HostDataType, HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (is_host_fp_v<HostDataType>)
         {
             return threadCount;
         }
@@ -2071,7 +2051,7 @@ public:
     bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
                     HostAtomicType *finalValues) override
     {
-        if (std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (is_host_fp_v<HostDataType>)
         {
             correct = true;
             for (cl_uint i = 1; i < threadCount; i++)
@@ -2153,6 +2133,8 @@ public:
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::StartValue;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DataType;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
+    using CBasicTestMemOrderScope<HostAtomicType,
+                                  HostDataType>::DeclaredInProgram;
     CBasicTestFetchSubSpecialFloats(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestFetchSpecialFloats<HostAtomicType, HostDataType>(dataType,
                                                                      useSVM)
@@ -2266,10 +2248,7 @@ public:
                 && (gFloatAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_ADD_EXT) == 0)
                 return 0;
 
-            if (!CBasicTestMemOrderScope<HostAtomicType,
-                                         HostDataType>::LocalMemory()
-                && CBasicTestMemOrderScope<HostAtomicType,
-                                           HostDataType>::DeclaredInProgram())
+            if (!LocalMemory() && DeclaredInProgram())
             {
                 if ((gFloatFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
@@ -2285,10 +2264,7 @@ public:
                     == 0)
                 return 0;
 
-            if (!CBasicTestMemOrderScope<HostAtomicType,
-                                         HostDataType>::LocalMemory()
-                && CBasicTestMemOrderScope<HostAtomicType,
-                                           HostDataType>::DeclaredInProgram())
+            if (!LocalMemory() && DeclaredInProgram())
             {
                 if ((gDoubleFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
@@ -2303,10 +2279,7 @@ public:
                 && (gHalfAtomicCaps & CL_DEVICE_GLOBAL_FP_ATOMIC_ADD_EXT) == 0)
                 return 0;
 
-            if (!CBasicTestMemOrderScope<HostAtomicType,
-                                         HostDataType>::LocalMemory()
-                && CBasicTestMemOrderScope<HostAtomicType,
-                                           HostDataType>::DeclaredInProgram())
+            if (!LocalMemory() && DeclaredInProgram())
             {
                 if ((gHalfFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
@@ -3466,6 +3439,8 @@ public:
     using CBasicTestMemOrderScope<HostAtomicType,
                                   HostDataType>::MemoryOrderScopeStr;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
+    using CBasicTestMemOrderScope<HostAtomicType,
+                                  HostDataType>::DeclaredInProgram;
     CBasicTestFetchMinSpecialFloats(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestFetchSpecialFloats<HostAtomicType, HostDataType>(dataType,
                                                                      useSVM)
@@ -3520,10 +3495,7 @@ public:
                       volatile HostAtomicType *destMemory,
                       HostDataType *oldValues) override
     {
-        if constexpr (
-            std::is_same_v<
-                HostDataType,
-                HOST_HALF> || std::is_same_v<HostDataType, HOST_DOUBLE> || std::is_same_v<HostDataType, HOST_FLOAT>)
+        if constexpr (is_host_fp_v<HostDataType>)
         {
             const auto &spec_vals = GetSpecialValues();
             host_atomic_store(&destMemory[tid], (HostDataType)oldValues[tid],
@@ -3609,55 +3581,11 @@ public:
                 // min(x, sNaN) = min(sNaN, x) = NaN or x, and
                 // min(NaN, sNaN) = min(sNaN, NaN) = NaN
                 if (std::isnan(testValues[whichDestValue])
-                    && std::isnan(expected))
+                    || testValues[whichDestValue]
+                        == startRefValues[whichDestValue]
+                    || testValues[whichDestValue]
+                        == startRefValues[whichDestValue / spec_vals.size()])
                     return false;
-
-                const auto &spec_vals = GetSpecialValues();
-                // special cases
-                // min(-0, +0) = min(+0, -0) = +0 or -0,
-                if (((startRefValues[whichDestValue] == -0.f)
-                     && (startRefValues[whichDestValue / spec_vals.size()]
-                         == 0.f))
-                    || ((startRefValues[whichDestValue] == 0.f)
-                        && (startRefValues[whichDestValue / spec_vals.size()]
-                            == -0.f)))
-                    return false;
-                else if (is_qnan(
-                             startRefValues[whichDestValue / spec_vals.size()])
-                         || is_qnan(startRefValues[whichDestValue]))
-                {
-                    // min(qNaN, qNaN) = qNaN,
-                    if (is_qnan(
-                            startRefValues[whichDestValue / spec_vals.size()])
-                        && is_qnan(startRefValues[whichDestValue]))
-                        return !is_qnan(testValues[whichDestValue]);
-                    // min(x, qNaN) = min(qNaN, x) = x,
-                    else if (is_qnan(startRefValues[whichDestValue
-                                                    / spec_vals.size()]))
-                        return std::isnan(testValues[whichDestValue])
-                            || testValues[whichDestValue]
-                            != startRefValues[whichDestValue]; // NaN != NaN
-                                                               // always true
-                    else
-                        return std::isnan(testValues[whichDestValue])
-                            || testValues[whichDestValue]
-                            != startRefValues[whichDestValue
-                                              / spec_vals.size()];
-                }
-                else if (is_snan(
-                             startRefValues[whichDestValue / spec_vals.size()])
-                         || is_snan(startRefValues[whichDestValue]))
-                {
-                    // min(x, sNaN) = min(sNaN, x) = NaN or x, and
-                    // min(NaN, sNaN) = min(sNaN, NaN) = NaN
-                    if (std::isnan(testValues[whichDestValue])
-                        || testValues[whichDestValue]
-                            == startRefValues[whichDestValue]
-                        || testValues[whichDestValue]
-                            == startRefValues[whichDestValue
-                                              / spec_vals.size()])
-                        return false;
-                }
             }
         }
         else if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
@@ -3753,12 +3681,9 @@ public:
                     == 0)
                 return 0;
 
-            if (!CBasicTestMemOrderScope<HostAtomicType,
-                                         HostDataType>::LocalMemory()
-                && CBasicTestMemOrderScope<HostAtomicType,
-                                           HostDataType>::DeclaredInProgram())
+            if (!LocalMemory() && DeclaredInProgram())
             {
-                if ((gDoubleAtomicCaps & CL_FP_INF_NAN) == 0) return 0;
+                if ((gDoubleFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
         }
         else if constexpr (std::is_same_v<HostDataType, HOST_FLOAT>)
@@ -3773,10 +3698,7 @@ public:
                     == 0)
                 return 0;
 
-            if (!CBasicTestMemOrderScope<HostAtomicType,
-                                         HostDataType>::LocalMemory()
-                && CBasicTestMemOrderScope<HostAtomicType,
-                                           HostDataType>::DeclaredInProgram())
+            if (!LocalMemory() && DeclaredInProgram())
             {
                 if ((gFloatFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
@@ -3793,10 +3715,7 @@ public:
                     == 0)
                 return 0;
 
-            if (!CBasicTestMemOrderScope<HostAtomicType,
-                                         HostDataType>::LocalMemory()
-                && CBasicTestMemOrderScope<HostAtomicType,
-                                           HostDataType>::DeclaredInProgram())
+            if (!LocalMemory() && DeclaredInProgram())
             {
                 if ((gHalfFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
@@ -3965,10 +3884,7 @@ public:
     {
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
-        if constexpr (
-            std::is_same_v<
-                HostDataType,
-                HOST_HALF> || std::is_same_v<HostDataType, HOST_FLOAT> || std::is_same_v<HostDataType, HOST_DOUBLE>)
+        if constexpr (is_host_fp_v<HostDataType>)
         {
             return "  atomic_fetch_max" + postfix
                 + "(&destMemory[0], oldValues[tid] " + memoryOrderScope + ");\n"
@@ -4157,6 +4073,8 @@ public:
     using CBasicTestMemOrderScope<HostAtomicType,
                                   HostDataType>::MemoryOrderScopeStr;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
+    using CBasicTestMemOrderScope<HostAtomicType,
+                                  HostDataType>::DeclaredInProgram;
     CBasicTestFetchMaxSpecialFloats(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestFetchSpecialFloats<HostAtomicType, HostDataType>(dataType,
                                                                      useSVM)
@@ -4394,10 +4312,7 @@ public:
                     == 0)
                 return 0;
 
-            if (!CBasicTestMemOrderScope<HostAtomicType,
-                                         HostDataType>::LocalMemory()
-                && CBasicTestMemOrderScope<HostAtomicType,
-                                           HostDataType>::DeclaredInProgram())
+            if (!LocalMemory() && DeclaredInProgram())
             {
                 if ((gDoubleFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
@@ -4414,10 +4329,7 @@ public:
                     == 0)
                 return 0;
 
-            if (!CBasicTestMemOrderScope<HostAtomicType,
-                                         HostDataType>::LocalMemory()
-                && CBasicTestMemOrderScope<HostAtomicType,
-                                           HostDataType>::DeclaredInProgram())
+            if (!LocalMemory() && DeclaredInProgram())
             {
                 if ((gFloatFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
@@ -4434,10 +4346,7 @@ public:
                     == 0)
                 return 0;
 
-            if (!CBasicTestMemOrderScope<HostAtomicType,
-                                         HostDataType>::LocalMemory()
-                && CBasicTestMemOrderScope<HostAtomicType,
-                                           HostDataType>::DeclaredInProgram())
+            if (!LocalMemory() && DeclaredInProgram())
             {
                 if ((gHalfFPConfig & CL_FP_INF_NAN) == 0) return 0;
             }
