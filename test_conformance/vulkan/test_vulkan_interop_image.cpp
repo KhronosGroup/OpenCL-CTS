@@ -18,6 +18,7 @@
 #include <string>
 #include "harness/errorHelpers.h"
 #include "harness/imageHelpers.h"
+#include "harness/mathHelpers.h"
 #include "harness/os_helpers.h"
 #include <algorithm>
 
@@ -32,8 +33,6 @@ namespace {
 #define MAX_2D_IMAGE_ELEMENT_SIZE 16
 #define NUM_THREADS_PER_GROUP_X 32
 #define NUM_THREADS_PER_GROUP_Y 32
-#define NUM_BLOCKS(size, blockSize)                                            \
-    (ROUND_UP((size), (blockSize)) / (blockSize))
 
 #define ASSERT(x)                                                              \
     if (!(x))                                                                  \
@@ -540,8 +539,9 @@ int run_test_with_two_queue(
                                 vkComputePipeline, vkPipelineLayout,
                                 vkDescriptorSet);
                             vkShaderCommandBuffer.dispatch(
-                                NUM_BLOCKS(width, NUM_THREADS_PER_GROUP_X),
-                                NUM_BLOCKS(height, NUM_THREADS_PER_GROUP_Y / 2),
+                                div_round_up(width, NUM_THREADS_PER_GROUP_X),
+                                div_round_up(height,
+                                             NUM_THREADS_PER_GROUP_Y / 2),
                                 1);
                             vkShaderCommandBuffer.end();
                         }
@@ -578,10 +578,11 @@ int run_test_with_two_queue(
                                         vkComputePipeline, vkPipelineLayout,
                                         vkDescriptorSet);
                                     vkShaderCommandBuffer.dispatch(
-                                        NUM_BLOCKS(width,
-                                                   NUM_THREADS_PER_GROUP_X),
-                                        NUM_BLOCKS(height,
-                                                   NUM_THREADS_PER_GROUP_Y / 2),
+                                        div_round_up(width,
+                                                     NUM_THREADS_PER_GROUP_X),
+                                        div_round_up(height,
+                                                     NUM_THREADS_PER_GROUP_Y
+                                                         / 2),
                                         1);
                                     vkShaderCommandBuffer.end();
                                     if (i2DIdx < vkImage2DList->size() - 1)
@@ -1164,8 +1165,9 @@ int run_test_with_one_queue(
                                 vkComputePipeline, vkPipelineLayout,
                                 vkDescriptorSet);
                             vkShaderCommandBuffer.dispatch(
-                                NUM_BLOCKS(width, NUM_THREADS_PER_GROUP_X),
-                                NUM_BLOCKS(height, NUM_THREADS_PER_GROUP_Y / 2),
+                                div_round_up(width, NUM_THREADS_PER_GROUP_X),
+                                div_round_up(height,
+                                             NUM_THREADS_PER_GROUP_Y / 2),
                                 1);
                             vkShaderCommandBuffer.end();
                         }
@@ -1202,10 +1204,11 @@ int run_test_with_one_queue(
                                         vkComputePipeline, vkPipelineLayout,
                                         vkDescriptorSet);
                                     vkShaderCommandBuffer.dispatch(
-                                        NUM_BLOCKS(width,
-                                                   NUM_THREADS_PER_GROUP_X),
-                                        NUM_BLOCKS(height,
-                                                   NUM_THREADS_PER_GROUP_Y / 2),
+                                        div_round_up(width,
+                                                     NUM_THREADS_PER_GROUP_X),
+                                        div_round_up(height,
+                                                     NUM_THREADS_PER_GROUP_Y
+                                                         / 2),
                                         1);
                                     vkShaderCommandBuffer.end();
                                     if (i2DIdx < vkImage2DList->size() - 1)
