@@ -1649,6 +1649,8 @@ public:
     {
         if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
+            if (IsHalfNaN(testValues[whichDestValue]) && IsHalfNaN(expected))
+                return false;
             return static_cast<cl_half>(expected) != testValues[whichDestValue];
         }
         else
@@ -2239,6 +2241,8 @@ public:
     {
         if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
+            if (IsHalfNaN(testValues[whichDestValue]) && IsHalfNaN(expected))
+                return false;
             return static_cast<cl_half>(expected) != testValues[whichDestValue];
         }
         else
