@@ -360,8 +360,9 @@ int test_unary_fn(cl_device_id device, cl_context context,
             return -1;
         }
 
-        const int elements_to_verify =
-            test_all_half_inputs ? all_half_input_count : n_elems * (i + 1);
+        const int elements_to_verify = test_all_half_inputs
+            ? all_half_input_count
+            : n_elems * g_arrVecSizes[i];
         if (verifyFn((T *)&input_ptr.front(), (T *)&output_ptr.front(),
                      elements_to_verify))
         {
