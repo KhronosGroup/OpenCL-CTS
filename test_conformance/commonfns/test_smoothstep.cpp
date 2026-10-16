@@ -18,6 +18,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <cmath>
+
 #include "harness/mathHelpers.h"
 #include "harness/stringHelpers.h"
 
@@ -58,6 +60,17 @@ const char *smoothstep_fn_code_pattern_v3_scalar =
 
 namespace {
 
+double smoothstep_reference(const double edge0, const double edge1,
+                            const double x)
+{
+    if (x <= edge0) return 0.0;
+    if (x >= edge1) return 1.0;
+
+    const double t =
+        std::fmin(std::fmax((x - edge0) / (edge1 - edge0), 0.0), 1.0);
+    return t * t * (3.0 - 2.0 * t);
+}
+
 template <typename T>
 bool is_special_result_valid(const T edge0, const T edge1, const T x,
                              const T output, const double reference)
@@ -78,23 +91,20 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
                       const T *const x, const T *const outptr, const int n,
                       const int veclen, const bool vecParam)
 {
-    double r, t;
     float delta = 0, max_delta = 0;
 
     if (vecParam)
     {
         for (int i = 0; i < n * veclen; i++)
         {
-            // Results are undefined unless edge0 < edge1.
-            if (!(conv_to_dbl(edge0[i]) < conv_to_dbl(edge1[i]))) continue;
+            // Results are undefined for NaN inputs or edge0 >= edge1.
+            if (!(conv_to_dbl(edge0[i]) < conv_to_dbl(edge1[i]))
+                || isnan_fp(x[i]))
+                continue;
 
-            t = (conv_to_dbl(x[i]) - conv_to_dbl(edge0[i]))
-                / (conv_to_dbl(edge1[i]) - conv_to_dbl(edge0[i]));
-            if (t < 0.0)
-                t = 0.0;
-            else if (t > 1.0)
-                t = 1.0;
-            r = t * t * (3.0 - 2.0 * t);
+            const double r =
+                smoothstep_reference(conv_to_dbl(edge0[i]),
+                                     conv_to_dbl(edge1[i]), conv_to_dbl(x[i]));
             if (!is_special_result_valid(edge0[i], edge1[i], x[i], outptr[i],
                                          r))
             {
@@ -131,13 +141,12 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
             int vi = i * veclen;
             for (int j = 0; j < veclen; ++j, ++vi)
             {
-                t = (conv_to_dbl(x[vi]) - conv_to_dbl(edge0[i]))
-                    / (conv_to_dbl(edge1[i]) - conv_to_dbl(edge0[i]));
-                if (t < 0.0)
-                    t = 0.0;
-                else if (t > 1.0)
-                    t = 1.0;
-                r = t * t * (3.0 - 2.0 * t);
+                // Results are undefined if x is NaN.
+                if (isnan_fp(x[vi])) continue;
+
+                const double r = smoothstep_reference(conv_to_dbl(edge0[i]),
+                                                      conv_to_dbl(edge1[i]),
+                                                      conv_to_dbl(x[vi]));
                 if (!is_special_result_valid(edge0[i], edge1[i], x[vi],
                                              outptr[vi], r))
                 {
@@ -177,7 +186,6 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
 
     return 0;
 }
-
 }
 
 template <typename T>
