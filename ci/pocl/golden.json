@@ -9,6 +9,7 @@
     },
     "test_api": {
         "": {
+          "binary_create_with_header": "pass",
           "consistency_read_write_images": "pass",
           "min_max_image_array_size": "pass",
           "min_max_mem_alloc_size": "pass",
