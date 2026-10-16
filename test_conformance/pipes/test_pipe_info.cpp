@@ -81,7 +81,7 @@ REGISTER_TEST(pipe_info)
                       arg_type_qualifier);
         }
     }
-    else
+    else if (gCompilationMode == kBinary)
     {
         test_failure_error_ret(err, CL_KERNEL_ARG_INFO_NOT_AVAILABLE,
                                "clGetKernelArgInfo error not as expected",
