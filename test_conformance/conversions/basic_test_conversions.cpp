@@ -1096,8 +1096,7 @@ void WriteInputBufferComplete(void *data)
     // wait for the main thread to finish calculating the reference results.
     for (vectorSize = gMinVectorSize; vectorSize < gMaxVectorSize; vectorSize++)
     {
-        size_t workItemCount =
-            (count + vectorSizes[vectorSize] - 1) / (vectorSizes[vectorSize]);
+        size_t workItemCount = div_round_up(count, vectorSizes[vectorSize]);
 
         if ((status = conv_test::RunKernel(info->calcInfo[vectorSize]->kernel,
                                            gInBuffer, gOutBuffers[vectorSize],
