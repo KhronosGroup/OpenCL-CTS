@@ -14,10 +14,12 @@
 // limitations under the License.
 //
 #include "testBase.h"
+#ifdef GL_IS_SUPPORTED
 #if defined(__APPLE__)
 #include <OpenGL/glu.h>
 #else
 #include <GL/glu.h>
+#endif
 #endif
 
 const char *get_kernel_suffix(cl_image_format *format)
@@ -149,6 +151,7 @@ const char *get_write_conversion(cl_image_format *format, ExplicitType type)
         return (char *)dst;                                                    \
     }
 
+#ifdef GL_IS_SUPPORTED
 char *convert_to_expected(void *inputBuffer, size_t numPixels,
                           ExplicitType inType, ExplicitType outType,
                           size_t channelNum, GLenum glDataType)
@@ -400,6 +403,7 @@ char *convert_to_expected(void *inputBuffer, size_t numPixels,
 
     return NULL;
 }
+#endif
 
 int validate_integer_results(void *expectedResults, void *actualResults,
                              size_t width, size_t height, size_t sampleNum,
@@ -587,6 +591,7 @@ int validate_float_results_rgb_101010(void *expectedResults,
     return 0;
 }
 
+#ifdef GL_IS_SUPPORTED
 int CheckGLObjectInfo(cl_mem mem, cl_gl_object_type expected_cl_gl_type,
                       GLuint expected_gl_name,
                       GLenum expected_cl_gl_texture_target,
@@ -720,3 +725,4 @@ int is_rgb_101010_supported(cl_context context, GLenum gl_target)
 
     return 0;
 }
+#endif

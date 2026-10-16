@@ -178,6 +178,7 @@ jobs:
                 -DVULKAN_LIB_DIR='${{ github.workspace }}'/Vulkan-Loader/build/loader/ \
                 ${CMAKE_ADDITIONAL_CONFIG_ARGS}
           cmake --build . --parallel
+          cmake --build . --target check_csv
 
   formatcheck:
     name: Check code format

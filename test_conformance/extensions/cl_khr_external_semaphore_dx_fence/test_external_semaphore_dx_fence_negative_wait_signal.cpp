@@ -16,6 +16,7 @@
 
 #include "semaphore_dx_fence_base.h"
 
+#ifdef D3D12_IS_SUPPORTED
 struct DXFenceNegativeWait final : DXFenceTestBase
 {
     using DXFenceTestBase::DXFenceTestBase;
@@ -32,15 +33,21 @@ struct DXFenceNegativeWait final : DXFenceTestBase
         return TEST_PASS;
     }
 };
+#endif
 
 // Confirm that a wait without a semaphore payload list will return
 // CL_INVALID_VALUE
 REGISTER_TEST(test_external_semaphores_dx_fence_negative_wait)
 {
+#ifdef D3D12_IS_SUPPORTED
     return MakeAndRunTest<DXFenceNegativeWait>(device, context, queue,
                                                num_elements);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
+#ifdef D3D12_IS_SUPPORTED
 struct DXFenceNegativeSignal final : DXFenceTestBase
 {
     using DXFenceTestBase::DXFenceTestBase;
@@ -57,11 +64,16 @@ struct DXFenceNegativeSignal final : DXFenceTestBase
         return TEST_PASS;
     }
 };
+#endif
 
 // Confirm that a signal without a semaphore payload list will return
 // CL_INVALID_VALUE
 REGISTER_TEST(test_external_semaphores_dx_fence_negative_signal)
 {
+#ifdef D3D12_IS_SUPPORTED
     return MakeAndRunTest<DXFenceNegativeSignal>(device, context, queue,
                                                  num_elements);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
