@@ -171,19 +171,22 @@ int main(int argc, const char *argv[])
     goto cleanup;
   }
 
-  // OpenGL tests for non-3.2 ////////////////////////////////////////////////////////
-  if ((argc == 1) || (first_32_testname != 1)) {
-
-    // At least one device supports CL-GL interop, so init the test.
-    if( glEnv->Init( &argc, (char **)argv, CL_FALSE ) ) {
+  // At least one device supports CL-GL interop, so init the test.
+  if (glEnv->Init(&argc, (char **)argv, CL_FALSE))
+  {
       log_error("Failed to initialize the GL environment for this test.\n");
       error = -1;
       goto cleanup;
-    }
+  }
 
-    // Create a context to use and then grab a device (or devices) from it
-    sCurrentContext = glEnv->CreateCLContext();
-    if( sCurrentContext == NULL )
+  // OpenGL tests for non-3.2
+  // ////////////////////////////////////////////////////////
+  if ((argc == 1) || (first_32_testname != 1))
+  {
+
+      // Create a context to use and then grab a device (or devices) from it
+      sCurrentContext = glEnv->CreateCLContext();
+      if (sCurrentContext == NULL)
       {
         log_error( "ERROR: Unable to obtain CL context from GL\n" );
         error = -1;
@@ -279,50 +282,48 @@ int main(int argc, const char *argv[])
       // We move this to a common cleanup step to make sure that things will be released properly before the test exit
       goto cleanup;
       // clReleaseContext( sCurrentContext );
-      // delete glEnv;
   }
 
   // OpenGL 3.2 tests. ////////////////////////////////////////////////////////
-  if ((argc==1) || first_32_testname) {
+  if ((argc == 1) || first_32_testname)
+  {
+      // Create a context to use and then grab a device (or devices) from it
+      sCurrentContext = glEnv->CreateCLContext();
+      if (sCurrentContext == NULL)
+      {
+          log_error("ERROR: Unable to obtain CL context from GL\n");
+          error = -1;
+          goto cleanup;
+      }
 
-    // At least one device supports CL-GL interop, so init the test.
-    if( glEnv->Init( &argc, (char **)argv, CL_TRUE ) ) {
-      log_error("Failed to initialize the GL environment for this test.\n");
-      error = -1;
-      goto cleanup;
-    }
+      size_t numDevices = 0;
+      cl_device_id deviceIDs[16];
 
-    // Create a context to use and then grab a device (or devices) from it
-    sCurrentContext = glEnv->CreateCLContext();
-    if( sCurrentContext == NULL ) {
-      log_error( "ERROR: Unable to obtain CL context from GL\n" );
-      error = -1;
-      goto cleanup;
-    }
+      error = clGetContextInfo(sCurrentContext, CL_CONTEXT_DEVICES, 0, NULL,
+                               &numDevices);
+      if (error != CL_SUCCESS)
+      {
+          print_error(error, "Unable to get device count from context");
+          error = -1;
+          goto cleanup;
+      }
+      numDevices /= sizeof(cl_device_id);
 
-    size_t numDevices = 0;
-    cl_device_id deviceIDs[ 16 ];
+      if (numDevices < 1)
+      {
+          log_error("No devices found.\n");
+          error = -1;
+          goto cleanup;
+      }
 
-    error = clGetContextInfo( sCurrentContext, CL_CONTEXT_DEVICES, 0, NULL, &numDevices);
-    if( error != CL_SUCCESS ) {
-      print_error( error, "Unable to get device count from context" );
-      error = -1;
-      goto cleanup;
-    }
-    numDevices /= sizeof(cl_device_id);
-
-    if (numDevices < 1) {
-      log_error("No devices found.\n");
-      error = -1;
-      goto cleanup;
-    }
-
-    error = clGetContextInfo( sCurrentContext, CL_CONTEXT_DEVICES, sizeof( deviceIDs ), deviceIDs, NULL);
-    if( error != CL_SUCCESS ) {
-      print_error( error, "Unable to get device list from context" );
-      error = -1;
-      goto cleanup;
-    }
+      error = clGetContextInfo(sCurrentContext, CL_CONTEXT_DEVICES,
+                               sizeof(deviceIDs), deviceIDs, NULL);
+      if (error != CL_SUCCESS)
+      {
+          print_error(error, "Unable to get device list from context");
+          error = -1;
+          goto cleanup;
+      }
 
 #ifdef GLES3
     int argc_ = (first_32_testname) ? 1 + (argc - first_32_testname) : argc;
