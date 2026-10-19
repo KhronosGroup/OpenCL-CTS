@@ -79,28 +79,6 @@ When using GCC, all commands must be run from an MSYS2 MinGW64 shell. The requir
 
 An example of these steps can be found in the [github CI workflow](https://github.com/KhronosGroup/OpenCL-CTS/blob/main/.github/workflows/presubmit.yml) (job: `build-windows-msys2`).
 
-### Offline Compilation
-
-Testing OpenCL drivers which do not have a runtime compiler can be done by using
-additional command line arguments provided by the test harness for tests which
-require compilation, these are:
-
-* `--compilation-mode` Selects if OpenCL-C source code should be compiled using
-  an external tool before being passed on to the OpenCL driver in that form for
-  testing. Online is the default mode, but also accepts the values `spir-v`, and
-  `binary`.
-
-* `--compilation-cache-mode` Controls how the compiled OpenCL-C source code
-  should be cached on disk.
-
-* `--compilation-cache-path` Accepts a path to a directory where the compiled
-  binary cache should be stored on disk.
-
-* `--compilation-program` Accepts a path to an executable (default:
-   cl_offline_compiler) invoked by the test harness to perform offline
-   compilation of OpenCL-C source code.  This executable must match the
-   [interface description](test_common/harness/cl_offline_compiler-interface.txt).
-
 ## Running the CTS
 
 A build of the CTS contains multiple executables representing the directories in
@@ -142,6 +120,29 @@ export PATH=/c/msys64/mingw64/bin:$PATH
 cd ./OpenCL-CTS/build/test_conformance/math_brute_force
 ./test_bruteforce.exe
 ```
+
+## Offline Compilation
+
+Testing OpenCL drivers which do not have a runtime compiler can be done by using
+additional command line arguments provided by the test harness for tests which
+require compilation, these are:
+
+* `--compilation-mode` Selects if OpenCL-C source code should be compiled using
+  an external tool before being passed on to the OpenCL driver in that form for
+  testing. Online is the default mode, but also accepts the values `spir-v`, and
+  `binary`.
+
+* `--compilation-cache-mode` Controls how the compiled OpenCL-C source code
+  should be cached on disk.
+
+* `--compilation-cache-path` Accepts a path to a directory where the compiled
+  binary cache should be stored on disk.
+
+* `--compilation-program` Accepts a path to an executable (default:
+   cl_offline_compiler) invoked by the test harness to perform offline
+   compilation of OpenCL-C source code.  This executable must match the
+   [interface description](test_common/harness/cl_offline_compiler-interface.txt).
+
 ## Generating a Conformance Report
 
 The Khronos [Conformance Process Document](https://members.khronos.org/document/dl/911)
