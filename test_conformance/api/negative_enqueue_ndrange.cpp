@@ -15,6 +15,48 @@
 //
 #include "testBase.h"
 
+// Verify that clEnqueueNDRangeKernel returns CL_INVALID_WORK_DIMENSION when
+// work_dim is zero or greater than CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS
+REGISTER_TEST(negative_enqueue_invalid_work_dim)
+{
+    int error = 0;
+    clProgramWrapper program;
+    clKernelWrapper kernel;
+    cl_uint maxThreadDim = 0;
+
+    const char* kernel_test = "__kernel void test(){}\n";
+
+    error = create_single_kernel_helper(context, &program, &kernel, 1,
+                                        &kernel_test, "test");
+    test_error(error, "create_single_kernel_helper failed");
+
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,
+                            sizeof(maxThreadDim), &maxThreadDim, NULL);
+    test_error(error, "Unable to get max work item dimensions from device");
+
+    // Valid global and local sizes, with one more element than the device
+    // supports, so work_dim is the only error condition.
+    std::vector<size_t> work_size(maxThreadDim + 1, 1);
+
+    error = clEnqueueNDRangeKernel(queue, kernel, maxThreadDim + 1, NULL,
+                                   work_size.data(), work_size.data(), 0, NULL,
+                                   NULL);
+    test_failure_error_ret(error, CL_INVALID_WORK_DIMENSION,
+                           "CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS exceeded but "
+                           "clEnqueueNDRangeKernel did not return "
+                           "CL_INVALID_WORK_DIMENSION as expected",
+                           TEST_FAIL);
+
+    error = clEnqueueNDRangeKernel(queue, kernel, 0, NULL, work_size.data(),
+                                   work_size.data(), 0, NULL, NULL);
+    test_failure_error_ret(error, CL_INVALID_WORK_DIMENSION,
+                           "work_dim is zero but clEnqueueNDRangeKernel did "
+                           "not return CL_INVALID_WORK_DIMENSION as expected",
+                           TEST_FAIL);
+
+    return TEST_PASS;
+}
+
 // Verify that clEnqueueNDRangeKernel returns CL_INVALID_WORK_GROUP_SIZE
 // when local_work_size is not NULL and the total number of work-items in
 // the work-group is zero, see OpenCL-Docs#1542.

@@ -20,6 +20,7 @@
           "negative_enqueue_zero_work_group": "pass",
           "negative_set_kernel_arg_invalid_image_msaa": "skip",
           "negative_set_kernel_arg_invalid_image": "pass",
+          "negative_enqueue_invalid_work_dim": "pass",
           "set_kernel_arg_struct_array": "pass"
         }
     },
