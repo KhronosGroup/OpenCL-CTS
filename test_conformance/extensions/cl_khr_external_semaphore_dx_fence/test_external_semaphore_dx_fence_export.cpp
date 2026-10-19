@@ -41,7 +41,7 @@ struct ExportDXSignal final : DXFenceTestBase
             log_info(
                 "Could not find CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR between "
                 "the supported export types\n");
-            return TEST_FAIL;
+            return TEST_SKIPPED_ITSELF;
         }
 
         constexpr cl_semaphore_properties_khr sem_props[] = {
@@ -136,7 +136,7 @@ struct ExportDXWait final : DXFenceTestBase
             log_info(
                 "Could not find CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR between "
                 "the supported export types\n");
-            return TEST_FAIL;
+            return TEST_SKIPPED_ITSELF;
         }
 
         constexpr cl_semaphore_properties_khr sem_props[] = {
