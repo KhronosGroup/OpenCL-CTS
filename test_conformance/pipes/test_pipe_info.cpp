@@ -72,7 +72,8 @@ REGISTER_TEST(pipe_info)
     err = clGetKernelArgInfo(kernel, 0, CL_KERNEL_ARG_TYPE_QUALIFIER,
                              sizeof(arg_type_qualifier), &arg_type_qualifier,
                              NULL);
-    if (gCompilationMode == kOnline)
+    if (gCompilationMode == kOnline
+        || (gCompilationMode == kSpir_v && err == CL_SUCCESS))
     {
         test_error_fail(err, "clGetKernelArgInfo failed");
         if (arg_type_qualifier != CL_KERNEL_ARG_TYPE_PIPE)
@@ -81,7 +82,7 @@ REGISTER_TEST(pipe_info)
                       arg_type_qualifier);
         }
     }
-    else if (gCompilationMode == kBinary)
+    else
     {
         test_failure_error_ret(err, CL_KERNEL_ARG_INFO_NOT_AVAILABLE,
                                "clGetKernelArgInfo error not as expected",
