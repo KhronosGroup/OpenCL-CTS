@@ -82,18 +82,19 @@ An example of these steps can be found in the [github CI workflow](https://githu
 ## Running the CTS
 
 A build of the CTS contains multiple executables representing the directories in
-the `test_conformance` folder. Each executable contains sub-tests, and possibly finer
-granularities of testing within those sub-tests.
+the `test_conformance` folder. Each of these executables contains sub-tests, and
+possibly smaller granularities of testing within the sub-tests.
 
-See the `--help` output on each executable for the list of available available sub-tests,
+See the `--help` output on each executable for the list of sub-tests available,
 as well as other options for configuring execution.
 
 If the OpenCL library built against is the ICD Loader, and the vendor library to
 be tested is not registered in the
 [default ICD Loader location](https://github.com/KhronosGroup/OpenCL-ICD-Loader#registering-icds)
 then the [OCL_ICD_FILENAMES](https://github.com/KhronosGroup/OpenCL-ICD-Loader#table-of-debug-environment-variables)
-environment variable must be set for the ICD Loader to detect the OpenCL
-library at runtime. For example, to run the basic tests on a Linux:
+environment variable will need to be set for the ICD Loader to detect the OpenCL
+library to use at runtime. For example, to run the basic tests on a Linux
+platform:
 
 ```sh
 OCL_ICD_FILENAMES=/path/to/vendor_lib.so ./test_basic
@@ -121,7 +122,7 @@ cd ./OpenCL-CTS/build/test_conformance/math_brute_force
 ./test_bruteforce.exe
 ```
 
-## Offline Compilation
+### Offline Compilation
 
 Testing OpenCL drivers which do not have a runtime compiler can be done by using
 additional command line arguments provided by the test harness for tests which
