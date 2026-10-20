@@ -157,6 +157,7 @@ REGISTER_TEST(svm_fine_grain_memory_consistency)
 
     char *source[] = { hash_table_kernel };
 
+    if (get_device_cl_version(device) >= Version(3, 0))
     {
         cl_device_atomic_capabilities atomicCaps;
         err = clGetDeviceInfo(device, CL_DEVICE_ATOMIC_MEMORY_CAPABILITIES,

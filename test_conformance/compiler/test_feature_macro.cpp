@@ -836,7 +836,7 @@ REGISTER_TEST_VERSION(features_macro, Version(3, 0))
     // support compilation from OpenCL C source, this query may return an empty
     // array."  It "may" return an empty array implies that an implementation
     // also "may not".
-    check_compiler_available(device);
+    CHECK_COMPILER_AVAILABLE(device);
 
     int error = TEST_PASS;
     cl_bool supported = CL_FALSE;

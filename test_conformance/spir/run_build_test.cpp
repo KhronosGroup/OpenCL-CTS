@@ -33,7 +33,7 @@
 #include "harness/clImageHelper.h"
 #include "harness/os_helpers.h"
 
-#include "../math_brute_force/function_list.h"
+#include "harness/math_function_list.h"
 #include "datagen.h"
 #include "exceptions.h"
 #include "kernelargs.h"

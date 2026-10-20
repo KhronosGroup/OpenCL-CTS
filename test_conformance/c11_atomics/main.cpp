@@ -35,12 +35,13 @@ bool gFloatAtomicsSupported = false;
 
 cl_device_fp_config gDoubleFPConfig = 0;
 cl_device_fp_config gFloatFPConfig = 0;
+cl_device_fp_config gHalfFPConfig = 0;
+
 cl_half_rounding_mode gHalfRoundingMode = CL_HALF_RTE;
 cl_device_fp_atomic_capabilities_ext gHalfAtomicCaps = 0;
 
 cl_device_fp_atomic_capabilities_ext gDoubleAtomicCaps = 0;
 cl_device_fp_atomic_capabilities_ext gFloatAtomicCaps = 0;
-cl_device_fp_config gHalfFPConfig = 0;
 
 test_status InitCL(cl_device_id device) {
     auto version = get_device_cl_version(device);

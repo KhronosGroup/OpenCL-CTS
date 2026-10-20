@@ -36,7 +36,7 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        int nj = div_round_up(nw, ns);
         int non_uniform_size = ng % nw;
         ng = ng / nw;
         int last_subgroup_size = 0;
@@ -94,11 +94,10 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        int nj = div_round_up(nw, ns);
         cl_int tr, rr;
         int non_uniform_size = ng % nw;
-        ng = ng / nw;
-        if (non_uniform_size) ng++;
+        ng = div_round_up(ng, nw);
         int last_subgroup_size = 0;
 
         for (k = 0; k < ng; ++k)

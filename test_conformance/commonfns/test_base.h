@@ -66,6 +66,7 @@ struct BaseFunctionTest
 
     static std::map<size_t, std::string> type2name;
     static cl_half_rounding_mode halfRoundingMode;
+    static bool halfDenormsSupported;
 };
 
 struct MinTest : BaseFunctionTest
@@ -173,6 +174,17 @@ template <typename T> inline float conv_to_flt(const T &val)
         return (float)cl_half_to_float(val);
     else
         return (float)val;
+}
+
+// Unlike ordinary equality, distinguish positive and negative zero.
+template <typename Expected, typename Actual>
+inline bool fp_value_equals(const Expected &expected, const Actual &actual)
+{
+    const double expected_value = conv_to_dbl(expected);
+    const double actual_value = conv_to_dbl(actual);
+    if (expected_value != actual_value) return false;
+    return expected_value != 0.0
+        || std::signbit(expected_value) == std::signbit(actual_value);
 }
 
 template <typename T> inline half conv_to_half(const T &val)

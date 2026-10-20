@@ -15,7 +15,7 @@
 //
 
 #include "common.h"
-#include "function_list.h"
+#include "harness/math_function_list.h"
 #include "test_functions.h"
 #include "utility.h"
 
