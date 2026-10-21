@@ -16,6 +16,7 @@
 #include "program.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cstdlib>
 #include <set>

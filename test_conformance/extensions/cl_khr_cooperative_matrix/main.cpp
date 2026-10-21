@@ -144,31 +144,30 @@ test_status InitCL(cl_device_id device)
         is_extension_available(device, "cl_khr_fp64");
 
     // Skip very large matrices, to avoid unnecessary complexity in the suite.
-    const uint64_t maxTestBufferSize = std::numeric_limits<uint32_t>::max();
-    const BufferElementType maxBufferElementType = IndexedBufferElementType<16>(
-        CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT64_KHR);
-    const uint64_t maxBufferElementSize =
-        bufferElementTypeSizeOf(maxBufferElementType);
+    const auto layoutFits =
+        [](cl_device_cooperative_matrix_component_type_khr type,
+           uint32_t stride, uint32_t strideCount) {
+            const BufferElementType maxBufferElementType =
+                IndexedBufferElementType<16>(
+                    CL_DEVICE_COOPERATIVE_MATRIX_COMPONENT_TYPE_UINT64_KHR);
+            const uint64_t maxBufferElementSize =
+                bufferElementTypeSizeOf(maxBufferElementType);
+            const auto layout = calculateBufferLayout(
+                type, stride, strideCount, maxBufferElementType,
+                writableTestContext.deviceStrideMultiple);
+            return layout.has_value()
+                && layout->strideSize / maxBufferElementSize
+                <= std::numeric_limits<uint32_t>::max()
+                && layout->totalSize <= std::numeric_limits<uint32_t>::max();
+        };
     // Check the largest buffer descriptor the suite can create for a matrix.
     const auto fitsTestLimits =
-        [maxTestBufferSize, maxBufferElementSize, maxBufferElementType](
-            cl_device_cooperative_matrix_component_type_khr type, cl_uint rows,
-            cl_uint cols) {
-            const auto layoutFits =
-                [maxTestBufferSize, maxBufferElementSize, maxBufferElementType,
-                 type](uint32_t stride, uint32_t strideCount) {
-                    const auto layout = calculateBufferLayout(
-                        type, stride, strideCount, maxBufferElementType,
-                        writableTestContext.deviceStrideMultiple);
-                    if (!layout.has_value()
-                        || layout->strideSize / maxBufferElementSize
-                            > std::numeric_limits<uint32_t>::max())
-                        return false;
-                    return layout->totalSize <= maxTestBufferSize;
-                };
+        [&layoutFits](cl_device_cooperative_matrix_component_type_khr type,
+                      cl_uint rows, cl_uint cols) {
             // Rows and columns are respectively the stride count and pointer
             // stride for row-major layout, and vice versa for column-major.
-            if (layoutFits(cols, rows) && layoutFits(rows, cols)) return true;
+            if (layoutFits(type, cols, rows) && layoutFits(type, rows, cols))
+                return true;
 
             log_info("Skipping %ux%u %s cooperative matrix: exceeds the test "
                      "size limit.\n",

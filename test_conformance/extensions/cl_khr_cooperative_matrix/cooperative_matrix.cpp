@@ -17,6 +17,7 @@
 
 #include <CL/cl_platform.h>
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
@@ -2076,9 +2077,7 @@ int CoopMatTest::buildAndRun(Variant &variant)
                                    static_cast<double>(bounds.max));
                 },
                 getBounds(variant.output.elementType));
-            // Stop overflow in accumulation. Bound each input independently so
-            // that the bound matches its component type and does not exceed
-            // that type's range.
+            // Bound multiplication inputs to avoid overflow in accumulation.
             const double inputMaxMagnitude =
                 std::sqrt(resultMaxMagnitude) / variant.inputA.nCols / 2;
             const auto getInputBounds =
@@ -2090,9 +2089,50 @@ int CoopMatTest::buildAndRun(Variant &variant)
                     },
                     getBounds(elementType));
             };
-            variant.inputA.fill(0, getInputBounds(variant.inputA.elementType));
-            variant.inputB.fill(1, getInputBounds(variant.inputB.elementType));
-            variant.inputC.fill(2, getInputBounds(variant.inputC.elementType));
+            const auto fillInput = [&getInputBounds](Matrix &input, int8_t seed,
+                                                     bool isMultiplicand) {
+                if (isFloatType(input.elementType))
+                {
+                    // For floating point matrices, use these binary-exact
+                    // values to reduce large cancellation errors.
+                    static constexpr std::array<double, 18>
+                        floatingPointValues = {
+                            -2.0,  -1.5, -1.0, -0.5, -0.125, 0.0,
+                            0.125, 0.5,  1.0,  1.5,  2.0,    2.5,
+                            3.0,   3.5,  4.0,  4.5,  5.0,    5.5,
+                        };
+                    // Limit the magnitude for A & B matrices.
+                    const double maxMagnitude = isMultiplicand
+                        ? std::get<FloatBounds>(
+                              getInputBounds(input.elementType))
+                              .max
+                        : std::numeric_limits<double>::infinity();
+                    std::vector<double> values;
+                    values.reserve(floatingPointValues.size());
+                    for (double value : floatingPointValues)
+                    {
+                        if (std::abs(value) <= maxMagnitude)
+                            values.push_back(value);
+                    }
+                    assert(!values.empty());
+                    MTdataHolder rng = MTdataHolder(seed);
+                    for (cl_uint row = 0; row < input.nRows; row++)
+                    {
+                        for (cl_uint col = 0; col < input.nCols; col++)
+                        {
+                            const cl_uint offset = input.getIndex(row, col);
+                            const size_t valueIndex =
+                                genrand_int64(rng) % values.size();
+                            input.set(offset, values[valueIndex]);
+                        }
+                    }
+                }
+                else
+                    input.fill(seed, getInputBounds(input.elementType));
+            };
+            fillInput(variant.inputA, 0, true);
+            fillInput(variant.inputB, 1, true);
+            fillInput(variant.inputC, 2, false);
             break;
         }
         case CoopMatOp::convert: {
