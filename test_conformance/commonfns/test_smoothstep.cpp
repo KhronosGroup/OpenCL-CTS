@@ -63,9 +63,6 @@ namespace {
 double smoothstep_reference(const double edge0, const double edge1,
                             const double x)
 {
-    if (x <= edge0) return 0.0;
-    if (x >= edge1) return 1.0;
-
     const double t =
         std::fmin(std::fmax((x - edge0) / (edge1 - edge0), 0.0), 1.0);
     return t * t * (3.0 - 2.0 * t);
@@ -75,15 +72,30 @@ template <typename T>
 bool is_special_result_valid(const T edge0, const T edge1, const T x,
                              const T output, const double reference)
 {
-    // Require 0.0 if x <= edge0 and 1.0 if x >= edge1 .
-    const bool requires_exact_result = conv_to_dbl(x) <= conv_to_dbl(edge0)
-        || conv_to_dbl(x) >= conv_to_dbl(edge1);
+    const double lower = conv_to_dbl(edge0);
+    const double upper = conv_to_dbl(edge1);
+
+    // Float and double input ranges avoid intermediate overflow.
+    bool stable_interval = true;
+    if constexpr (std::is_same<T, half>::value)
+    {
+        // Half intermediates may overflow or flush to zero; subnormal edges
+        // may also be flushed before subtraction.
+        const double width = upper - lower;
+        stable_interval = width >= CL_HALF_MIN && width <= CL_HALF_MAX
+            && (lower == 0.0 || std::fabs(lower) >= CL_HALF_MIN)
+            && (upper == 0.0 || std::fabs(upper) >= CL_HALF_MIN);
+    }
+    // For x >= edge1, intermediate overflow or flushing can result in NaN,
+    // which gets clamped to 0 instead of 1.
+    const bool requires_exact_result =
+        conv_to_dbl(x) <= lower || (stable_interval && conv_to_dbl(x) >= upper);
     const bool exact_result_mismatch =
         requires_exact_result && !fp_value_equals(reference, output);
 
-    const bool unexpected_nan = isnan_fp(output);
+    const bool unexpected_nonfinite = !std::isfinite(conv_to_dbl(output));
 
-    return !exact_result_mismatch && !unexpected_nan;
+    return !exact_result_mismatch && !unexpected_nonfinite;
 }
 
 template <typename T>
