@@ -5283,7 +5283,7 @@ long double reference_remquol(long double xd, long double yd, int *n)
     return xr;
 }
 
-static double reference_scalbn(double x, int n)
+[[maybe_unused]] static double reference_scalbn(double x, int n)
 {
     if (reference_isinf(x) || reference_isnan(x) || x == 0.0) return x;
 
