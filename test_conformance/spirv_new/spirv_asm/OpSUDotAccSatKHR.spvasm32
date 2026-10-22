@@ -1,0 +1,39 @@
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability DotProductKHR
+               OpCapability DotProductInput4x8BitKHR
+               OpExtension "SPV_KHR_integer_dot_product"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %kernel "OpSUDotAccSatKHR" %ptr_global_id
+               OpDecorate %ptr_global_id BuiltIn GlobalInvocationId
+               OpDecorate %ptr_global_id Constant
+       %void = OpTypeVoid
+       %char = OpTypeInt 8 0
+       %uint = OpTypeInt 32 0
+     %v4char = OpTypeVector %char 4
+     %v3uint = OpTypeVector %uint 3
+%ptr_input_v3uint = OpTypePointer Input %v3uint
+%ptr_global_uint = OpTypePointer CrossWorkgroup %uint
+%ptr_global_v4char = OpTypePointer CrossWorkgroup %v4char
+ %kernel_sig = OpTypeFunction %void %ptr_global_uint %ptr_global_v4char %ptr_global_v4char %ptr_global_uint
+%ptr_global_id = OpVariable %ptr_input_v3uint Input
+%kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %ptr_global_uint
+          %a = OpFunctionParameter %ptr_global_v4char
+          %b = OpFunctionParameter %ptr_global_v4char
+        %acc = OpFunctionParameter %ptr_global_uint
+      %entry = OpLabel
+  %global_id = OpLoad %v3uint %ptr_global_id Aligned 32
+      %gid_0 = OpCompositeExtract %uint %global_id 0
+       %aptr = OpInBoundsPtrAccessChain %ptr_global_v4char %a %gid_0
+     %avalue = OpLoad %v4char %aptr Aligned 4
+       %bptr = OpInBoundsPtrAccessChain %ptr_global_v4char %b %gid_0
+     %bvalue = OpLoad %v4char %bptr Aligned 4
+     %accptr = OpInBoundsPtrAccessChain %ptr_global_uint %acc %gid_0
+   %accvalue = OpLoad %uint %accptr Aligned 4
+     %result = OpSUDotAccSatKHR %uint %avalue %bvalue %accvalue
+     %dstptr = OpInBoundsPtrAccessChain %ptr_global_uint %dst %gid_0
+               OpStore %dstptr %result Aligned 4
+               OpReturn
+               OpFunctionEnd
