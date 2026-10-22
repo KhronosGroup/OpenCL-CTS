@@ -139,8 +139,14 @@ REGISTER_TEST(non_uniform_2d_basic)
 
   // non_uniform_2d_three_prime_numbers_basic
   {
+      size_t maxWorkItemSizes[3];
+      clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
+                      sizeof(maxWorkItemSizes), maxWorkItemSizes, NULL);
+
+      size_t effectiveMax = std::min(maxWgSize, maxWorkItemSizes[0]);
+
       size_t primeNumber =
-          PrimeNumbers::getPrimeNumberInRange(maxWgSize / 2, maxWgSize);
+          PrimeNumbers::getPrimeNumberInRange(effectiveMax / 2, effectiveMax);
       if (primeNumber < 1)
       {
           log_error("Cannot find proper prime number.");
@@ -149,7 +155,7 @@ REGISTER_TEST(non_uniform_2d_basic)
       size_t primeNumber2 = 42967;
       size_t primeNumber3 = 13;
       size_t globalSize[] = { primeNumber2, primeNumber3 };
-      size_t localSize[] = { primeNumber, 1 };
+      size_t localSize[] = { (size_t)primeNumber, 1 };
 
       exec.runTestNonUniformWorkGroup(sizeof(globalSize)
                                           / sizeof(globalSize[0]),
@@ -281,8 +287,14 @@ REGISTER_TEST(non_uniform_2d_atomics)
 
   // non_uniform_2d_three_prime_numbers_atomics
   {
+      size_t maxWorkItemSizes[3];
+      clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
+                      sizeof(maxWorkItemSizes), maxWorkItemSizes, NULL);
+
+      size_t effectiveMax = std::min(maxWgSize, maxWorkItemSizes[0]);
+
       size_t primeNumber =
-          PrimeNumbers::getPrimeNumberInRange(maxWgSize / 2, maxWgSize);
+          PrimeNumbers::getPrimeNumberInRange(effectiveMax / 2, effectiveMax);
       if (primeNumber < 1)
       {
           log_error("Cannot find proper prime number.");
@@ -291,7 +303,7 @@ REGISTER_TEST(non_uniform_2d_atomics)
       size_t primeNumber2 = 42967;
       size_t primeNumber3 = 13;
       size_t globalSize[] = { primeNumber2, primeNumber3 };
-      size_t localSize[] = { primeNumber, 1 };
+      size_t localSize[] = { (size_t)primeNumber, 1 };
 
       exec.runTestNonUniformWorkGroup(sizeof(globalSize)
                                           / sizeof(globalSize[0]),
@@ -421,8 +433,14 @@ REGISTER_TEST(non_uniform_2d_barriers)
 
   // non_uniform_2d_three_prime_numbers_barriers
   {
+      size_t maxWorkItemSizes[3];
+      clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
+                      sizeof(maxWorkItemSizes), maxWorkItemSizes, NULL);
+
+      size_t effectiveMax = std::min(maxWgSize, maxWorkItemSizes[0]);
+
       size_t primeNumber =
-          PrimeNumbers::getPrimeNumberInRange(maxWgSize / 2, maxWgSize);
+          PrimeNumbers::getPrimeNumberInRange(effectiveMax / 2, effectiveMax);
       if (primeNumber < 1)
       {
           log_error("Cannot find proper prime number.");
@@ -431,7 +449,7 @@ REGISTER_TEST(non_uniform_2d_barriers)
       size_t primeNumber2 = 42967;
       size_t primeNumber3 = 13;
       size_t globalSize[] = { primeNumber2, primeNumber3 };
-      size_t localSize[] = { primeNumber, 1 };
+      size_t localSize[] = { (size_t)primeNumber, 1 };
 
       exec.runTestNonUniformWorkGroup(sizeof(globalSize)
                                           / sizeof(globalSize[0]),
