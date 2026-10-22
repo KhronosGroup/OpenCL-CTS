@@ -207,8 +207,7 @@ cl_int Test(cl_uint job_id, cl_uint thread_id, void *data)
         }
 
         // Run the kernel
-        size_t vectorCount =
-            (buffer_elements + sizeValues[j] - 1) / sizeValues[j];
+        size_t vectorCount = div_round_up(buffer_elements, sizeValues[j]);
         cl_kernel kernel = job->k[j][thread_id]; // each worker thread has its
                                                  // own copy of the cl_kernel
 
