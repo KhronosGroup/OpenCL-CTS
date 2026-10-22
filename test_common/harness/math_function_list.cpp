@@ -14,9 +14,11 @@
 // limitations under the License.
 //
 
-#include "function_list.h"
+#include "harness/math_function_list.h"
+#ifndef FUNCTION_LIST_ULPS_ONLY
 #include "reference_math.h"
 #include "test_functions.h"
+#endif
 
 #define FTZ_ON 1
 #define FTZ_OFF 0

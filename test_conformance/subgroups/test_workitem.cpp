@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "harness/conversions.h"
+#include "harness/mathHelpers.h"
 #include "harness/typeWrappers.h"
 #include <CL/cl.h>
 
@@ -165,7 +166,7 @@ static int check_group(const get_test_data *result, int nw, cl_uint ensg,
             }
         }
 
-        j = (result[first].subGroupSize + 31) / 32 * result[i].subGroupId
+        j = div_round_up(result[first].subGroupSize, 32) * result[i].subGroupId
             + (result[i].subGroupLocalId >> 5);
         if (j < static_cast<int>(sizeof(hit) / 4))
         {

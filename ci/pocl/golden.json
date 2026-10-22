@@ -10,6 +10,7 @@
     "test_api": {
         "": {
           "binary_create_negative_status": "fail",
+          "binary_create_with_header": "pass",
           "consistency_read_write_images": "pass",
           "min_max_image_array_size": "pass",
           "min_max_mem_alloc_size": "pass",
@@ -17,6 +18,7 @@
           "min_max_read_write_image_args": "pass",
           "min_max_samplers": "pass",
           "min_max_write_image_args": "pass",
+          "negative_enqueue_zero_work_group": "pass",
           "negative_set_kernel_arg_invalid_image_msaa": "skip",
           "negative_set_kernel_arg_invalid_image": "pass",
           "set_kernel_arg_struct_array": "pass"
@@ -236,6 +238,11 @@
         }
     },
     "test_image_streams": {
+        "CL_RGBA NORMALIZED float int read uint": {
+            "1D": "pass",
+            "2D": "pass",
+            "3D": "pass"
+        },
         "--num-worker-threads 2 CL_A CL_FILTER_NEAREST": {
             "1D": "pass"
         },
@@ -379,6 +386,24 @@
             "op_spec_constant_compile_link": "pass",
             "op_spec_constant_build_twice": "pass",
             "op_spec_constant_compile_twice": "pass"
+        }
+    },
+    "test_subgroups": {
+        "": {
+            "barrier_functions_core": "pass",
+            "barrier_functions_ext": "fail",
+            "sub_group_info_core": "pass",
+            "sub_group_info_ext": "fail",
+            "work_item_functions_core": "pass",
+            "work_item_functions_ext": "pass",
+            "ifp_core": "skip",
+            "ifp_ext": "fail",
+            "subgroup_functions_non_uniform_vote": "skip",
+            "subgroup_functions_ballot": "fail",
+            "subgroup_functions_clustered_reduce": "skip",
+            "subgroup_functions_shuffle": "pass",
+            "subgroup_functions_shuffle_relative": "skip",
+            "subgroup_functions_rotate": "skip"
         }
     },
     "test_vectors": {
