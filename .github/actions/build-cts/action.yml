@@ -1,0 +1,61 @@
+name: 'Build OpenCL-CTS'
+description: 'Build OpenCL-CTS and its dependencies (headers, ICD loader)'
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout OpenCL Headers
+      uses: actions/checkout@v7
+      with:
+        repository: KhronosGroup/OpenCL-Headers
+        path: cl-headers
+        fetch-depth: 1
+    - name: Checkout SPIRV Headers
+      uses: actions/checkout@v7
+      with:
+        repository: KhronosGroup/SPIRV-Headers
+        path: spv-headers
+        fetch-depth: 1
+    - name: Setup Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Install Vulkan SDK
+      uses: humbletim/install-vulkan-sdk@main
+      with:
+        version: ${{ env.VULKAN_SDK_VERSION }}
+        cache: true
+    - name: Checkout OpenCL ICD Loader
+      uses: actions/checkout@v7
+      with:
+        repository: KhronosGroup/OpenCL-ICD-Loader
+        path: OpenCL-ICD-Loader
+        fetch-depth: 1
+    - name: Build OpenCL ICD Loader
+      shell: bash
+      run: |
+        cmake -B OpenCL-ICD-Loader/build -S OpenCL-ICD-Loader -G Ninja \
+          -DCMAKE_INSTALL_PREFIX='${{ github.workspace }}/loader' \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DOPENCL_ICD_LOADER_HEADERS_DIR='${{ github.workspace }}/cl-headers'
+        cmake --build OpenCL-ICD-Loader/build
+        cmake --install OpenCL-ICD-Loader/build
+    - name: Setup ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        variant: sccache
+        key: ubuntu-24.04-
+    - name: Build OpenCL CTS
+      shell: bash
+      run: |
+        cmake -B build -S . -G Ninja \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX='${{ github.workspace }}/install' \
+              -DCL_INCLUDE_DIR='${{ github.workspace }}/cl-headers' \
+              -DCL_LIB_DIR='${{ github.workspace }}/loader/lib' \
+              -DSPIRV_INCLUDE_DIR='${{ github.workspace }}/spv-headers' \
+              -DOPENCL_LIBRARIES="-lOpenCL -lpthread" \
+              -DUSE_CL_EXPERIMENTAL=ON \
+              -DGL_IS_SUPPORTED=OFF \
+              -DVULKAN_IS_SUPPORTED=OFF
+        cmake --build build
+        cmake --install build
