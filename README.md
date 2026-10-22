@@ -115,6 +115,14 @@ of which must be included alongside a filled in
 Utility script [run_conformance.py](test_conformance/run_conformance.py) can be
 used to help generating the submission log, although it is not required.
 
+Some rows in the test lists are conditional on the device type under test. Such
+a row starts with a device type name, for example `CL_DEVICE_TYPE_CPU, Images
+(Kernel CL_FILTER_LINEAR),...`, and is only required when a device of that type
+is being tested. `run_conformance.py` skips these rows for other device types,
+and a submission produced with any other tooling is expected to apply the same
+rule. At present this applies to the `CL_FILTER_LINEAR` image tests, which are
+required for CPU devices only.
+
 Git [tags](https://github.com/KhronosGroup/OpenCL-CTS/tags) are used to define
 the version of the repository conformance submissions are made against.
 
