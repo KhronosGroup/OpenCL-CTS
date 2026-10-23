@@ -56,8 +56,6 @@ int main(int argc, const char *argv[])
 {
     PrimeNumbers::generatePrimeNumbers(100000);
 
-    return runTestHarnessWithCheckAndParse(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, false, InitCL,
-        parseArgs);
+    return runTestHarnessWithCheckAndParse(argc, argv, false, false, InitCL,
+                                           parseArgs);
 }

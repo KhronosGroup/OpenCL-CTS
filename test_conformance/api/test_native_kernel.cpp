@@ -54,7 +54,7 @@ REGISTER_TEST(native_kernel)
         cl_mem inputStream;
         cl_mem outputStream;
         cl_int count;
-    } args;
+    } io_streams;
 
 
     // Create some input values
@@ -71,19 +71,17 @@ REGISTER_TEST(native_kernel)
 
 
     // Set up the arrays to call with
-    args.inputStream = streams[ 0 ];
-    args.outputStream = streams[ 1 ];
-    args.count = num_elements;
+    io_streams.inputStream = streams[0];
+    io_streams.outputStream = streams[1];
+    io_streams.count = num_elements;
 
-    void * memLocs[ 2 ] = { &args.inputStream, &args.outputStream };
+    void *memLocs[2] = { &io_streams.inputStream, &io_streams.outputStream };
 
 
     // Run the kernel
-    error = clEnqueueNativeKernel( queue, test_native_kernel_fn,
-                                      &args, sizeof( args ),
-                                      2, &streams[ 0 ],
-                                      (const void **)memLocs,
-                                      0, NULL, &finishEvent );
+    error = clEnqueueNativeKernel(
+        queue, test_native_kernel_fn, &io_streams, sizeof(io_streams), 2,
+        &streams[0], (const void **)memLocs, 0, NULL, &finishEvent);
     test_error( error, "Unable to queue native kernel" );
 
     // Finish and wait for the kernel to complete
