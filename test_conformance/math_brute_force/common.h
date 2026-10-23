@@ -32,8 +32,8 @@
                       __LINE__);                                               \
             return -1;                                                         \
         }                                                                      \
-        (test_info).jobCount = std::max(                                       \
-            (cl_uint)1, (cl_uint)((total_count) / (test_info).subBufferSize)); \
+        (test_info).jobCount =                                                 \
+            (cl_uint)div_round_up(total_count, (test_info).subBufferSize);     \
     } while (0)
 
 
