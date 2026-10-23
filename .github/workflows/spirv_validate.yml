@@ -1,0 +1,28 @@
+name: SPIR-V Validation
+
+on:
+  push:
+    paths:
+      - 'test_conformance/spirv_new/spirv_asm/**'
+  pull_request:
+    paths:
+      - 'test_conformance/spirv_new/spirv_asm/**'
+
+jobs:
+  spirv_validate:
+    name: Validate SPIR-V assembly sources
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install SPIRV-Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y spirv-tools
+
+      - name: Assemble and validate SPIR-V
+        working-directory: test_conformance/spirv_new/spirv_asm
+        run: |
+          python3 assemble_spirv.py --verbose \
+            --source-dir . \
+            --output-dir /tmp/spirv_bin
