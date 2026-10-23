@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "harness/conversions.h"
+#include "harness/mathHelpers.h"
 #include "harness/ThreadPool.h"
 #include "harness/parseParameters.h"
 
@@ -645,12 +646,7 @@ int test_integer_ops_threaded(cl_device_id deviceID, cl_context context,
 
     uint64_t startIndx = (uint64_t)0;
     uint64_t endIndx = (1ULL<<num_runs_shift);
-    uint64_t jobcount = (endIndx-startIndx)/num_elements;
-
-    if(jobcount==0)
-    {
-        jobcount = 1;
-    }
+    uint64_t jobcount = div_round_up(endIndx - startIndx, num_elements);
 
     pThreadInfo =
         globalThreadDataNew(deviceID, context, num_elements, vectorSizes, style,
