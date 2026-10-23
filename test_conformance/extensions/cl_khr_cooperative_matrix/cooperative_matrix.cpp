@@ -2003,7 +2003,6 @@ int CoopMatTest::buildAndRun(Variant &variant)
         case CoopMatOp::sub:
         case CoopMatOp::div:
         case CoopMatOp::matrixmuladd_wrapping:
-        case CoopMatOp::matrixmuladd_stride0:
         case CoopMatOp::multicomponent_load:
         case CoopMatOp::multicomponent_store:
         case CoopMatOp::func:
@@ -2068,7 +2067,8 @@ int CoopMatTest::buildAndRun(Variant &variant)
             break;
         }
         case CoopMatOp::matrixmuladd:
-        case CoopMatOp::matrixmuladd_array: {
+        case CoopMatOp::matrixmuladd_array:
+        case CoopMatOp::matrixmuladd_stride0: {
             const double resultMaxMagnitude = std::visit(
                 [](auto bounds) {
                     return bounds.min >= 0
