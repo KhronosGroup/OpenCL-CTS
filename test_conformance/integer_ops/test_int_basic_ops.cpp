@@ -220,7 +220,7 @@ void generate_inputs(uint64_t indx, uint32_t num_elements, T *inputA, T *inputB,
 template <typename T>
 int verify(int test, size_t vector_size, T *inptrA_raw, T *inptrB_raw,
            T *outptr, T *ref, size_t n, bool a_scalar, bool b_scalar,
-           cl_event event);
+           cl_event event, bool compute_ref);
 
 // Supported type list
 const ExplicitType types[] = {
@@ -669,12 +669,24 @@ int run_integer_ops_for_type(cl_command_queue queue, int num_elements,
             clFlush(queue);
 
             // Now loop over each vector size to wait and verify
+            int prev_vSize = 0;
             for (int vSize : vectorSizes)
             {
                 int vIdx = get_vector_size_index(vSize);
                 assert(vIdx >= 0);
                 bool a_scalar = style == kInputAScalar;
                 bool b_scalar = style == kInputBScalar;
+
+                const TestDef &test_def = test_defs[i];
+                bool compute_ref = (prev_vSize == 0) || a_scalar || b_scalar
+                    || test_def.id == kOpDiv || test_def.id == kOpRem
+                    || test_def.template_kind == kKernelScalarShift
+                    || test_def.template_kind == kKernelQuestionColon
+                    || (((prev_vSize == 1) != (vSize == 1))
+                        && (test_def.signed_result
+                            || (test_def.group == kGroupShift
+                                && sizeof(T) < sizeof(cl_int))));
+                prev_vSize = vSize;
 
                 int element_computed = (num_elements / vSize) * vSize;
                 err = verify<T>(i, vSize,
@@ -683,7 +695,7 @@ int run_integer_ops_for_type(cl_command_queue queue, int num_elements,
                                 (T *)pThreadData->m_output_ptr[vIdx].data(),
                                 (T *)pThreadData->m_reference_ptr.data(),
                                 element_computed, a_scalar, b_scalar,
-                                read_events[vIdx]);
+                                read_events[vIdx], compute_ref);
 
                 error_count += err ? 1 : 0;
             }

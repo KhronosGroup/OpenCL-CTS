@@ -83,6 +83,27 @@ template <typename T> bool is_valid_div(T a, T b)
     return true;
 }
 
+template <typename T, typename Func>
+static void compute_loop_i(T *ref, size_t n, Func fn)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        ref[i] = fn(i);
+    }
+}
+
+template <typename T, typename Func>
+static void compute_loop_ij(T *ref, size_t n, size_t vector_size, Func fn)
+{
+    for (size_t j = 0; j < n; j += vector_size)
+    {
+        for (size_t i = j; i < j + vector_size; i++)
+        {
+            ref[i] = fn(i, j);
+        }
+    }
+}
+
 template <typename T>
 static void compute_references(int test, size_t vector_size,
                                const VerifyInput<T> &inptrA,
@@ -90,53 +111,127 @@ static void compute_references(int test, size_t vector_size,
                                T *ref, size_t n, cl_uint shift_mask)
 {
     const TestDef &test_def = test_defs[test];
-    for (size_t j = 0; j < n; j += vector_size)
+    const T true_val = (vector_size == 1) ? (T)1 : (T)-1;
+    switch (test_def.id)
     {
-        for (size_t i = j; i < j + vector_size; i++)
-        {
-            T r = 0;
-            switch (test_def.id)
-            {
-                case kOpAdd: r = inptrA[i] + inptrB[i]; break;
-                case kOpSub: r = inptrA[i] - inptrB[i]; break;
-                case kOpMul: r = inptrA[i] * inptrB[i]; break;
-                case kOpDiv:
-                    if (!is_valid_div<T>(inptrA[i], inptrB[i]))
-                        r = outptr[i];
-                    else
-                        r = inptrA[i] / inptrB[i];
-                    break;
-                case kOpRem:
-                    if (!is_valid_div<T>(inptrA[i], inptrB[i]))
-                        r = outptr[i];
-                    else
-                        r = inptrA[i] % inptrB[i];
-                    break;
-                case kOpBitAnd: r = inptrA[i] & inptrB[i]; break;
-                case kOpBitOr: r = inptrA[i] | inptrB[i]; break;
-                case kOpBitXor: r = inptrA[i] ^ inptrB[i]; break;
-                case kOpShrVec: r = inptrA[i] >> (inptrB[i] & shift_mask); break;
-                case kOpShlVec: r = inptrA[i] << (inptrB[i] & shift_mask); break;
-                case kOpShrScalar: r = inptrA[i] >> (inptrB[j] & shift_mask); break;
-                case kOpShlScalar: r = inptrA[i] << (inptrB[j] & shift_mask); break;
-                case kOpBitNot: r = ~inptrA[i]; break;
-                case kOpTernary:
-                    r = (inptrA[j] < inptrB[j]) ? inptrA[i] : inptrB[i];
-                    break;
-                case kOpLogAnd: r = inptrA[i] && inptrB[i]; break;
-                case kOpLogOr: r = inptrA[i] || inptrB[i]; break;
-                case kOpLt: r = inptrA[i] < inptrB[i]; break;
-                case kOpGt: r = inptrA[i] > inptrB[i]; break;
-                case kOpLe: r = inptrA[i] <= inptrB[i]; break;
-                case kOpGe: r = inptrA[i] >= inptrB[i]; break;
-                case kOpEq: r = inptrA[i] == inptrB[i]; break;
-                case kOpNe: r = inptrA[i] != inptrB[i]; break;
-                case kOpLogNot: r = !inptrA[i]; break;
-                case NUM_TESTS: break;
-            }
-            if (test_def.signed_result && vector_size != 1 && r) r = -1;
-            ref[i] = r;
-        }
+        case kOpAdd:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return inptrA[i] + inptrB[i];
+            });
+            break;
+        case kOpSub:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return inptrA[i] - inptrB[i];
+            });
+            break;
+        case kOpMul:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return inptrA[i] * inptrB[i];
+            });
+            break;
+        case kOpDiv:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return is_valid_div<T>(inptrA[i], inptrB[i])
+                    ? (T)(inptrA[i] / inptrB[i])
+                    : outptr[i];
+            });
+            break;
+        case kOpRem:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return is_valid_div<T>(inptrA[i], inptrB[i])
+                    ? (T)(inptrA[i] % inptrB[i])
+                    : outptr[i];
+            });
+            break;
+        case kOpBitAnd:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return inptrA[i] & inptrB[i];
+            });
+            break;
+        case kOpBitOr:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return inptrA[i] | inptrB[i];
+            });
+            break;
+        case kOpBitXor:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return inptrA[i] ^ inptrB[i];
+            });
+            break;
+        case kOpShrVec:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return inptrA[i] >> (inptrB[i] & shift_mask);
+            });
+            break;
+        case kOpShlVec:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return inptrA[i] << (inptrB[i] & shift_mask);
+            });
+            break;
+        case kOpShrScalar:
+            compute_loop_ij(ref, n, vector_size, [&](size_t i, size_t j) -> T {
+                return inptrA[i] >> (inptrB[j] & shift_mask);
+            });
+            break;
+        case kOpShlScalar:
+            compute_loop_ij(ref, n, vector_size, [&](size_t i, size_t j) -> T {
+                return inptrA[i] << (inptrB[j] & shift_mask);
+            });
+            break;
+        case kOpBitNot:
+            compute_loop_i(ref, n, [&](size_t i) -> T { return ~inptrA[i]; });
+            break;
+        case kOpTernary:
+            compute_loop_ij(ref, n, vector_size, [&](size_t i, size_t j) -> T {
+                return (inptrA[j] < inptrB[j]) ? inptrA[i] : inptrB[i];
+            });
+            break;
+        case kOpLogAnd:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return (inptrA[i] && inptrB[i]) ? true_val : (T)0;
+            });
+            break;
+        case kOpLogOr:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return (inptrA[i] || inptrB[i]) ? true_val : (T)0;
+            });
+            break;
+        case kOpLt:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return (inptrA[i] < inptrB[i]) ? true_val : (T)0;
+            });
+            break;
+        case kOpGt:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return (inptrA[i] > inptrB[i]) ? true_val : (T)0;
+            });
+            break;
+        case kOpLe:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return (inptrA[i] <= inptrB[i]) ? true_val : (T)0;
+            });
+            break;
+        case kOpGe:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return (inptrA[i] >= inptrB[i]) ? true_val : (T)0;
+            });
+            break;
+        case kOpEq:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return (inptrA[i] == inptrB[i]) ? true_val : (T)0;
+            });
+            break;
+        case kOpNe:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return (inptrA[i] != inptrB[i]) ? true_val : (T)0;
+            });
+            break;
+        case kOpLogNot:
+            compute_loop_i(ref, n, [&](size_t i) -> T {
+                return (!inptrA[i]) ? true_val : (T)0;
+            });
+            break;
+        case NUM_TESTS: break;
     }
 }
 
@@ -261,15 +356,18 @@ template <> const char *get_cl_type_name<cl_ulong>() { return "cl_ulong"; }
 template <typename T>
 int verify(int test, size_t vector_size, T *inptrA_raw, T *inptrB_raw,
            T *outptr, T *ref, size_t n, bool a_scalar, bool b_scalar,
-           cl_event event)
+           cl_event event, bool compute_ref)
 {
     cl_uint shift_mask = (vector_size == 1 && sizeof(T) < sizeof(cl_int))
         ? (cl_uint)(sizeof(cl_int) * 8) - 1
         : (cl_uint)(sizeof(T) * 8) - 1;
     wait_for_event(event);
     WRAP_INPUTS(T);
-    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
-                       shift_mask);
+    if (compute_ref)
+    {
+        compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
+                           shift_mask);
+    }
     if (memcmp(ref, outptr, n * sizeof(T)) == 0)
     {
         return 0;
@@ -359,19 +457,19 @@ int verify(int test, size_t vector_size, T *inptrA_raw, T *inptrB_raw,
 }
 
 template int verify<cl_char>(int, size_t, cl_char *, cl_char *, cl_char *,
-                             cl_char *, size_t, bool, bool, cl_event);
+                             cl_char *, size_t, bool, bool, cl_event, bool);
 template int verify<cl_uchar>(int, size_t, cl_uchar *, cl_uchar *, cl_uchar *,
-                              cl_uchar *, size_t, bool, bool, cl_event);
+                              cl_uchar *, size_t, bool, bool, cl_event, bool);
 template int verify<cl_short>(int, size_t, cl_short *, cl_short *, cl_short *,
-                              cl_short *, size_t, bool, bool, cl_event);
+                              cl_short *, size_t, bool, bool, cl_event, bool);
 template int verify<cl_ushort>(int, size_t, cl_ushort *, cl_ushort *,
                                cl_ushort *, cl_ushort *, size_t, bool, bool,
-                               cl_event);
+                               cl_event, bool);
 template int verify<cl_int>(int, size_t, cl_int *, cl_int *, cl_int *, cl_int *,
-                            size_t, bool, bool, cl_event);
+                            size_t, bool, bool, cl_event, bool);
 template int verify<cl_uint>(int, size_t, cl_uint *, cl_uint *, cl_uint *,
-                             cl_uint *, size_t, bool, bool, cl_event);
+                             cl_uint *, size_t, bool, bool, cl_event, bool);
 template int verify<cl_long>(int, size_t, cl_long *, cl_long *, cl_long *,
-                             cl_long *, size_t, bool, bool, cl_event);
+                             cl_long *, size_t, bool, bool, cl_event, bool);
 template int verify<cl_ulong>(int, size_t, cl_ulong *, cl_ulong *, cl_ulong *,
-                              cl_ulong *, size_t, bool, bool, cl_event);
+                              cl_ulong *, size_t, bool, bool, cl_event, bool);
