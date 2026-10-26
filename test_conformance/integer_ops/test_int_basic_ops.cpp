@@ -325,6 +325,7 @@ cl_int perThreadDataInit(perThreadData *pThis, ExplicitType type,
     for (int vSize : vectorSizes)
     {
         int vIdx = get_vector_size_index(vSize);
+        assert(vIdx >= 0);
         pThis->m_output_ptr[vIdx].resize(pThis->m_type_size * num_elements);
         pThis->m_out_streams[vIdx] =
             clCreateBuffer(context, CL_MEM_READ_WRITE,
@@ -338,6 +339,7 @@ cl_int perThreadDataInit(perThreadData *pThis, ExplicitType type,
     for (int vectorSize : vectorSizes)
     {
         int vIdx = get_vector_size_index(vectorSize);
+        assert(vIdx >= 0);
         int inputAVecSize, inputBVecSize;
         inputAVecSize = inputBVecSize = vectorSize;
         if (style == kInputAScalar)
@@ -769,6 +771,7 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
             for (int vSize : vectorSizes)
             {
                 int vIdx = get_vector_size_index(vSize);
+                assert(vIdx >= 0);
                 size_t threads = (size_t)num_elements / vSize;
 
                 err = clSetKernelArg(pThreadData->m_kernel[i][vIdx], 2,
@@ -795,6 +798,7 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
             for (int vSize : vectorSizes)
             {
                 int vIdx = get_vector_size_index(vSize);
+                assert(vIdx >= 0);
                 bool a_scalar = style == kInputAScalar;
                 bool b_scalar = style == kInputBScalar;
 
