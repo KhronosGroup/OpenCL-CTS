@@ -191,35 +191,36 @@ void init_data_8bit(uint64_t indx, uint32_t num_elements, InputTy *inputA,
     }
 }
 
-// External verification and data generation functions
-extern int verify_long(int test, size_t vector_size, cl_long *inptrA,
-                       cl_long *inptrB, cl_long *outptr, cl_long *ref, size_t n,
-                       bool a_scalar, bool b_scalar, cl_event event);
-extern int verify_ulong(int test, size_t vector_size, cl_ulong *inptrA,
-                        cl_ulong *inptrB, cl_ulong *outptr, cl_ulong *ref,
-                        size_t n, bool a_scalar, bool b_scalar,
-                        cl_event event);
-extern int verify_int(int test, size_t vector_size, cl_int *inptrA,
-                      cl_int *inptrB, cl_int *outptr, cl_int *ref, size_t n,
-                      bool a_scalar, bool b_scalar, cl_event event);
-extern int verify_uint(int test, size_t vector_size, cl_uint *inptrA,
-                       cl_uint *inptrB, cl_uint *outptr, cl_uint *ref, size_t n,
-                       bool a_scalar, bool b_scalar, cl_event event);
-extern int verify_short(int test, size_t vector_size, cl_short *inptrA,
-                        cl_short *inptrB, cl_short *outptr, cl_short *ref,
-                        size_t n, bool a_scalar, bool b_scalar,
-                        cl_event event);
-extern int verify_ushort(int test, size_t vector_size, cl_ushort *inptrA,
-                         cl_ushort *inptrB, cl_ushort *outptr, cl_ushort *ref,
-                         size_t n, bool a_scalar, bool b_scalar,
-                         cl_event event);
-extern int verify_char(int test, size_t vector_size, cl_char *inptrA,
-                       cl_char *inptrB, cl_char *outptr, cl_char *ref, size_t n,
-                       bool a_scalar, bool b_scalar, cl_event event);
-extern int verify_uchar(int test, size_t vector_size, cl_uchar *inptrA,
-                        cl_uchar *inptrB, cl_uchar *outptr, cl_uchar *ref,
-                        size_t n, bool a_scalar, bool b_scalar,
-                        cl_event event);
+template <typename T>
+void generate_inputs(uint64_t indx, uint32_t num_elements, T *inputA, T *inputB,
+                     MTdata d, int num_runs_shift)
+{
+    if constexpr (sizeof(T) == 1)
+    {
+        init_data_8bit<T>(indx, num_elements, inputA, inputB);
+    }
+    else if constexpr (sizeof(T) == 2)
+    {
+        init_data_16bit<T>(indx, num_elements, inputA, inputB, d,
+                           num_runs_shift);
+    }
+    else if constexpr (sizeof(T) == 4)
+    {
+        init_data<T, uint32_t, cl_uint>(indx, num_elements, inputA, inputB, d,
+                                        num_runs_shift, genrand_int32);
+    }
+    else if constexpr (sizeof(T) == 8)
+    {
+        init_data<T, uint64_t, cl_ulong>(indx, num_elements, inputA, inputB, d,
+                                         num_runs_shift, genrand_int64);
+    }
+}
+
+// External verification function
+template <typename T>
+int verify(int test, size_t vector_size, T *inptrA_raw, T *inptrB_raw,
+           T *outptr, T *ref, size_t n, bool a_scalar, bool b_scalar,
+           cl_event event);
 
 // Supported type list
 const ExplicitType types[] = {
@@ -593,107 +594,30 @@ int test_integer_ops_threaded(cl_device_id deviceID, cl_context context,
 }
 
 
-int test_integer_ops(cl_device_id deviceID, cl_context context,
-                     cl_command_queue queue, int num_elements,
-                     const std::vector<int> &vectorSizes, TestStyle style,
-                     int num_runs_shift, ExplicitType type, int testID,
-                     MTdata randDataIn, uint64_t startIndx, uint64_t endIndx,
-                     std::unique_ptr<perThreadData> &pThreadData)
+template <typename T>
+int run_integer_ops_for_type(cl_command_queue queue, int num_elements,
+                             const std::vector<int> &vectorSizes,
+                             TestStyle style, int num_runs_shift,
+                             ExplicitType type, int start_test_ID,
+                             int end_test_ID, MTdata randDataIn,
+                             uint64_t startIndx, uint64_t endIndx,
+                             perThreadData *pThreadData)
 {
     int err;
-
-    // Figure out which sub-test to run, or all of them
-    int start_test_ID = 0;
-    int end_test_ID = NUM_TESTS;
-    if (testID != -1) {
-        start_test_ID = testID;
-        end_test_ID = testID+1;
-    }
-    if (testID > NUM_TESTS) {
-        log_error("Invalid test ID: %d\n", testID);
-        return -1;
-    }
-
-    if (!pThreadData)
-    {
-        pThreadData = std::make_unique<perThreadData>();
-        err = perThreadDataInit(pThreadData.get(), type, num_elements,
-                                vectorSizes, style, context, start_test_ID,
-                                end_test_ID, testID);
-        test_error(err, "failed to init per thread data\n");
-    }
-
     int error_count = 0;
     for (int i = start_test_ID; i < end_test_ID; i++)
     {
-        if(startIndx >= endIndx)
+        if (startIndx >= endIndx)
         {
             startIndx = (uint64_t)0;
-            endIndx = (1ULL<<num_runs_shift);
+            endIndx = (1ULL << num_runs_shift);
         }
         for (uint64_t indx = startIndx; indx < endIndx; indx += num_elements)
         {
-
-            switch (type) {
-                case kChar:
-                    init_data_8bit<cl_char>(
-                        indx, num_elements,
-                        (cl_char *)pThreadData->m_input_ptr[0].data(),
-                        (cl_char *)pThreadData->m_input_ptr[1].data());
-                    break;
-                case kUChar:
-                    init_data_8bit<cl_uchar>(
-                        indx, num_elements,
-                        (cl_uchar *)pThreadData->m_input_ptr[0].data(),
-                        (cl_uchar *)pThreadData->m_input_ptr[1].data());
-                    break;
-                case kShort:
-                    init_data_16bit<cl_short>(
-                        indx, num_elements,
-                        (cl_short *)pThreadData->m_input_ptr[0].data(),
-                        (cl_short *)pThreadData->m_input_ptr[1].data(),
-                        randDataIn, num_runs_shift);
-                    break;
-                case kUShort:
-                    init_data_16bit<cl_ushort>(
-                        indx, num_elements,
-                        (cl_ushort *)pThreadData->m_input_ptr[0].data(),
-                        (cl_ushort *)pThreadData->m_input_ptr[1].data(),
-                        randDataIn, num_runs_shift);
-                    break;
-                case kInt:
-                    init_data<cl_int, uint32_t, cl_uint>(
-                        indx, num_elements,
-                        (cl_int *)pThreadData->m_input_ptr[0].data(),
-                        (cl_int *)pThreadData->m_input_ptr[1].data(),
-                        randDataIn, num_runs_shift, genrand_int32);
-                    break;
-                case kUInt:
-                    init_data<cl_uint, uint32_t, cl_uint>(
-                        indx, num_elements,
-                        (cl_uint *)pThreadData->m_input_ptr[0].data(),
-                        (cl_uint *)pThreadData->m_input_ptr[1].data(),
-                        randDataIn, num_runs_shift, genrand_int32);
-                    break;
-                case kLong:
-                    init_data<cl_long, uint64_t, cl_ulong>(
-                        indx, num_elements,
-                        (cl_long *)pThreadData->m_input_ptr[0].data(),
-                        (cl_long *)pThreadData->m_input_ptr[1].data(),
-                        randDataIn, num_runs_shift, genrand_int64);
-                    break;
-                case kULong:
-                    init_data<cl_ulong, uint64_t, cl_ulong>(
-                        indx, num_elements,
-                        (cl_ulong *)pThreadData->m_input_ptr[0].data(),
-                        (cl_ulong *)pThreadData->m_input_ptr[1].data(),
-                        randDataIn, num_runs_shift, genrand_int64);
-                    break;
-                default:
-                    err = 1;
-                    log_error("Invalid type.\n");
-                    break;
-            }
+            generate_inputs<T>(indx, num_elements,
+                               (T *)pThreadData->m_input_ptr[0].data(),
+                               (T *)pThreadData->m_input_ptr[1].data(),
+                               randDataIn, num_runs_shift);
 
             if (auto definedOp = get_defined_arithmetic_op(test_defs[i].op))
             {
@@ -753,93 +677,13 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                 bool b_scalar = style == kInputBScalar;
 
                 int element_computed = (num_elements / vSize) * vSize;
-                switch (type)
-                {
-                    case kChar:
-                        err = verify_char(
-                            i, vSize,
-                            (cl_char *)pThreadData->m_input_ptr[0].data(),
-                            (cl_char *)pThreadData->m_input_ptr[1].data(),
-                            (cl_char *)pThreadData->m_output_ptr[vIdx].data(),
-                            (cl_char *)pThreadData->m_reference_ptr.data(),
-                            element_computed, a_scalar, b_scalar,
-                            read_events[vIdx]);
-                        break;
-                    case kUChar:
-                        err = verify_uchar(
-                            i, vSize,
-                            (cl_uchar *)pThreadData->m_input_ptr[0].data(),
-                            (cl_uchar *)pThreadData->m_input_ptr[1].data(),
-                            (cl_uchar *)pThreadData->m_output_ptr[vIdx].data(),
-                            (cl_uchar *)pThreadData->m_reference_ptr.data(),
-                            element_computed, a_scalar, b_scalar,
-                            read_events[vIdx]);
-                        break;
-                    case kShort:
-                        err = verify_short(
-                            i, vSize,
-                            (cl_short *)pThreadData->m_input_ptr[0].data(),
-                            (cl_short *)pThreadData->m_input_ptr[1].data(),
-                            (cl_short *)pThreadData->m_output_ptr[vIdx].data(),
-                            (cl_short *)pThreadData->m_reference_ptr.data(),
-                            element_computed, a_scalar, b_scalar,
-                            read_events[vIdx]);
-                        break;
-                    case kUShort:
-                        err = verify_ushort(
-                            i, vSize,
-                            (cl_ushort *)pThreadData->m_input_ptr[0].data(),
-                            (cl_ushort *)pThreadData->m_input_ptr[1].data(),
-                            (cl_ushort *)pThreadData->m_output_ptr[vIdx].data(),
-                            (cl_ushort *)pThreadData->m_reference_ptr.data(),
-                            element_computed, a_scalar, b_scalar,
-                            read_events[vIdx]);
-                        break;
-                    case kInt:
-                        err = verify_int(
-                            i, vSize,
-                            (cl_int *)pThreadData->m_input_ptr[0].data(),
-                            (cl_int *)pThreadData->m_input_ptr[1].data(),
-                            (cl_int *)pThreadData->m_output_ptr[vIdx].data(),
-                            (cl_int *)pThreadData->m_reference_ptr.data(),
-                            element_computed, a_scalar, b_scalar,
-                            read_events[vIdx]);
-                        break;
-                    case kUInt:
-                        err = verify_uint(
-                            i, vSize,
-                            (cl_uint *)pThreadData->m_input_ptr[0].data(),
-                            (cl_uint *)pThreadData->m_input_ptr[1].data(),
-                            (cl_uint *)pThreadData->m_output_ptr[vIdx].data(),
-                            (cl_uint *)pThreadData->m_reference_ptr.data(),
-                            element_computed, a_scalar, b_scalar,
-                            read_events[vIdx]);
-                        break;
-                    case kLong:
-                        err = verify_long(
-                            i, vSize,
-                            (cl_long *)pThreadData->m_input_ptr[0].data(),
-                            (cl_long *)pThreadData->m_input_ptr[1].data(),
-                            (cl_long *)pThreadData->m_output_ptr[vIdx].data(),
-                            (cl_long *)pThreadData->m_reference_ptr.data(),
-                            element_computed, a_scalar, b_scalar,
-                            read_events[vIdx]);
-                        break;
-                    case kULong:
-                        err = verify_ulong(
-                            i, vSize,
-                            (cl_ulong *)pThreadData->m_input_ptr[0].data(),
-                            (cl_ulong *)pThreadData->m_input_ptr[1].data(),
-                            (cl_ulong *)pThreadData->m_output_ptr[vIdx].data(),
-                            (cl_ulong *)pThreadData->m_reference_ptr.data(),
-                            element_computed, a_scalar, b_scalar,
-                            read_events[vIdx]);
-                        break;
-                    default:
-                        err = 1;
-                        log_error("Invalid type.\n");
-                        break;
-                }
+                err = verify<T>(i, vSize,
+                                (T *)pThreadData->m_input_ptr[0].data(),
+                                (T *)pThreadData->m_input_ptr[1].data(),
+                                (T *)pThreadData->m_output_ptr[vIdx].data(),
+                                (T *)pThreadData->m_reference_ptr.data(),
+                                element_computed, a_scalar, b_scalar,
+                                read_events[vIdx]);
 
                 error_count += err ? 1 : 0;
             }
@@ -847,6 +691,85 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
     }
 
     return error_count;
+}
+
+
+int test_integer_ops(cl_device_id deviceID, cl_context context,
+                     cl_command_queue queue, int num_elements,
+                     const std::vector<int> &vectorSizes, TestStyle style,
+                     int num_runs_shift, ExplicitType type, int testID,
+                     MTdata randDataIn, uint64_t startIndx, uint64_t endIndx,
+                     std::unique_ptr<perThreadData> &pThreadData)
+{
+    int err;
+
+    // Figure out which sub-test to run, or all of them
+    int start_test_ID = 0;
+    int end_test_ID = NUM_TESTS;
+    if (testID != -1) {
+        start_test_ID = testID;
+        end_test_ID = testID+1;
+    }
+    if (testID > NUM_TESTS) {
+        log_error("Invalid test ID: %d\n", testID);
+        return -1;
+    }
+
+    if (!pThreadData)
+    {
+        pThreadData = std::make_unique<perThreadData>();
+        err = perThreadDataInit(pThreadData.get(), type, num_elements,
+                                vectorSizes, style, context, start_test_ID,
+                                end_test_ID, testID);
+        test_error(err, "failed to init per thread data\n");
+    }
+
+    switch (type)
+    {
+        case kChar:
+            return run_integer_ops_for_type<cl_char>(
+                queue, num_elements, vectorSizes, style, num_runs_shift, type,
+                start_test_ID, end_test_ID, randDataIn, startIndx, endIndx,
+                pThreadData.get());
+        case kUChar:
+            return run_integer_ops_for_type<cl_uchar>(
+                queue, num_elements, vectorSizes, style, num_runs_shift, type,
+                start_test_ID, end_test_ID, randDataIn, startIndx, endIndx,
+                pThreadData.get());
+        case kShort:
+            return run_integer_ops_for_type<cl_short>(
+                queue, num_elements, vectorSizes, style, num_runs_shift, type,
+                start_test_ID, end_test_ID, randDataIn, startIndx, endIndx,
+                pThreadData.get());
+        case kUShort:
+            return run_integer_ops_for_type<cl_ushort>(
+                queue, num_elements, vectorSizes, style, num_runs_shift, type,
+                start_test_ID, end_test_ID, randDataIn, startIndx, endIndx,
+                pThreadData.get());
+        case kInt:
+            return run_integer_ops_for_type<cl_int>(
+                queue, num_elements, vectorSizes, style, num_runs_shift, type,
+                start_test_ID, end_test_ID, randDataIn, startIndx, endIndx,
+                pThreadData.get());
+        case kUInt:
+            return run_integer_ops_for_type<cl_uint>(
+                queue, num_elements, vectorSizes, style, num_runs_shift, type,
+                start_test_ID, end_test_ID, randDataIn, startIndx, endIndx,
+                pThreadData.get());
+        case kLong:
+            return run_integer_ops_for_type<cl_long>(
+                queue, num_elements, vectorSizes, style, num_runs_shift, type,
+                start_test_ID, end_test_ID, randDataIn, startIndx, endIndx,
+                pThreadData.get());
+        case kULong:
+            return run_integer_ops_for_type<cl_ulong>(
+                queue, num_elements, vectorSizes, style, num_runs_shift, type,
+                start_test_ID, end_test_ID, randDataIn, startIndx, endIndx,
+                pThreadData.get());
+        default:
+            log_error("Invalid type.\n");
+            return 1;
+    }
 }
 
 

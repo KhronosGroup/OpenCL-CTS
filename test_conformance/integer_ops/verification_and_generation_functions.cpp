@@ -248,230 +248,106 @@ void init_defined_arithmetic_data(ExplicitType type, DefinedArithmeticOp op,
     }
 }
 
-// =======================================
-// long
-// =======================================
-int verify_long(int test, size_t vector_size, cl_long *inptrA_raw,
-                cl_long *inptrB_raw, cl_long *outptr, cl_long *ref, size_t n,
-                bool a_scalar, bool b_scalar, cl_event event)
+template <typename T> const char *get_cl_type_name();
+template <> const char *get_cl_type_name<cl_char>() { return "cl_char"; }
+template <> const char *get_cl_type_name<cl_uchar>() { return "cl_uchar"; }
+template <> const char *get_cl_type_name<cl_short>() { return "cl_short"; }
+template <> const char *get_cl_type_name<cl_ushort>() { return "cl_ushort"; }
+template <> const char *get_cl_type_name<cl_int>() { return "cl_int"; }
+template <> const char *get_cl_type_name<cl_uint>() { return "cl_uint"; }
+template <> const char *get_cl_type_name<cl_long>() { return "cl_long"; }
+template <> const char *get_cl_type_name<cl_ulong>() { return "cl_ulong"; }
+
+template <typename T>
+int verify(int test, size_t vector_size, T *inptrA_raw, T *inptrB_raw,
+           T *outptr, T *ref, size_t n, bool a_scalar, bool b_scalar,
+           cl_event event)
 {
-    cl_long shift_mask = (sizeof(cl_long) * 8) - 1;
+    cl_uint shift_mask = (vector_size == 1 && sizeof(T) < sizeof(cl_int))
+        ? (cl_uint)(sizeof(cl_int) * 8) - 1
+        : (cl_uint)(sizeof(T) * 8) - 1;
     wait_for_event(event);
-    WRAP_INPUTS(cl_long);
+    WRAP_INPUTS(T);
     compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
                        shift_mask);
-    if (memcmp(ref, outptr, n * sizeof(cl_long)) == 0)
+    if (memcmp(ref, outptr, n * sizeof(T)) == 0)
     {
         return 0;
     }
 
+    const char *type_name = get_cl_type_name<T>();
     int count = 0;
     for (size_t j = 0; j < n; j += vector_size)
     {
         for (size_t i = j; i < j + vector_size; i++)
         {
-            cl_long r = ref[i];
-            if (r != outptr[i]) {
+            T r = ref[i];
+            if (r != outptr[i])
+            {
                 // Shift is tricky
-                if (test == kOpShrVec || test == kOpShlVec) {
-                    log_error("cl_long Verification failed at element %zu of "
-                              "%zu : 0x%" PRIx64 " %s 0x%" PRIx64
+                if (test == kOpShrVec || test == kOpShlVec)
+                {
+                    log_error("%s Verification failed at element %zu of "
+                              "%zu: 0x%" PRIx64 " %s 0x%" PRIx64
                               " = 0x%" PRIx64 ", got 0x%" PRIx64 "\n",
-                              i, n, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
+                              type_name, i, n, (cl_ulong)inptrA[i],
+                              test_defs[test].op, (cl_ulong)inptrB[i],
+                              (cl_ulong)r, (cl_ulong)outptr[i]);
                     log_error(
                         "\t1) Vector shift failure at element %zu: original is "
                         "0x%" PRIx64 " %s %d (0x%" PRIx64 ")\n",
-                        i, inptrA[i], test_defs[test].op, (int)inptrB[i], inptrB[i]);
-                    log_error("\t2) Take the %d LSBs of the shift to get the "
-                              "final shift amount %" PRId64 " (0x%" PRIx64
-                              ").\n",
-                              (int)log2(sizeof(cl_long) * 8),
-                              inptrB[i] & shift_mask, inptrB[i] & shift_mask);
-                }
-                else if (test == kOpShrScalar || test == kOpShlScalar) {
-
-                    log_error("cl_long Verification failed at element %zu of "
-                              "%zu (%zu): 0x%" PRIx64 " %s 0x%" PRIx64
-                              " = 0x%" PRIx64 ", got 0x%" PRIx64 "\n",
-                              i, n, j, inptrA[i], test_defs[test].op, inptrB[j], r,
-                              outptr[i]);
-                    log_error(
-                        "\t1) Scalar shift failure at element %zu: original is "
-                        "0x%" PRIx64 " %s %d (0x%" PRIx64 ")\n",
-                        i, inptrA[i], test_defs[test].op, (int)inptrB[j], inptrB[j]);
-                    log_error("\t2) Take the %d LSBs of the shift to get the "
-                              "final shift amount %" PRId64 " (0x%" PRIx64
-                              ").\n",
-                              (int)log2(sizeof(cl_long) * 8),
-                              inptrB[j] & shift_mask, inptrB[j] & shift_mask);
-                } else if (test == kOpTernary) {
-                    log_error("cl_int Verification failed at element %zu "
-                              "(%zu): (0x%" PRIx64 " < 0x%" PRIx64
-                              ") ? 0x%" PRIx64 " : 0x%" PRIx64 " = 0x%" PRIx64
-                              ", got 0x%" PRIx64 "\n",
-                              i, j, inptrA[j], inptrB[j], inptrA[i], inptrB[i],
-                              r, outptr[i]);
-                } else {
-                    log_error("cl_long Verification failed at element %zu of "
-                              "%zu: 0x%" PRIx64 " %s 0x%" PRIx64 " = 0x%" PRIx64
-                              ", got 0x%" PRIx64 "\n",
-                              i, n, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
-                }
-                count++;
-                if (count >= MAX_ERRORS_TO_PRINT) {
-                    log_error("Further errors ignored.\n");
-                    return -1;
-                }
-            }
-        }
-    }
-
-    if (count) return -1; else return 0;
-}
-
-// =======================================
-// ulong
-// =======================================
-int verify_ulong(int test, size_t vector_size, cl_ulong *inptrA_raw,
-                 cl_ulong *inptrB_raw, cl_ulong *outptr, cl_ulong *ref,
-                 size_t n, bool a_scalar, bool b_scalar, cl_event event)
-{
-    cl_ulong shift_mask = (sizeof(cl_ulong) * 8) - 1;
-    wait_for_event(event);
-    WRAP_INPUTS(cl_ulong);
-    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
-                       shift_mask);
-    if (memcmp(ref, outptr, n * sizeof(cl_ulong)) == 0)
-    {
-        return 0;
-    }
-
-    int count = 0;
-    for (size_t j = 0; j < n; j += vector_size)
-    {
-        for (size_t i = j; i < j + vector_size; i++)
-        {
-            cl_ulong r = ref[i];
-            if (r != outptr[i]) {
-                // Shift is tricky
-                if (test == kOpShrVec || test == kOpShlVec) {
-                    log_error("cl_ulong Verification failed at element %zu of "
-                              "%zu: 0x%" PRIx64 " %s 0x%" PRIx64 " = 0x%" PRIx64
-                              ", got 0x%" PRIx64 "\n",
-                              i, n, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
-                    log_error("\t1) Shift failure at element %zu: original is "
-                              "0x%" PRIx64 " %s %d (0x%" PRIx64 ")\n",
-                              i, inptrA[i], test_defs[test].op, (int)inptrB[i],
-                              inptrB[i]);
+                        i, (cl_ulong)inptrA[i], test_defs[test].op,
+                        (int)inptrB[i], (cl_ulong)inptrB[i]);
                     log_error("\t2) Take the %d LSBs of the shift to get the "
                               "final shift amount %" PRIu64 " (0x%" PRIx64
                               ").\n",
-                              (int)log2(sizeof(cl_ulong) * 8),
-                              inptrB[i] & shift_mask, inptrB[i] & shift_mask);
+                              (int)log2(sizeof(T) * 8),
+                              (cl_ulong)(inptrB[i] & shift_mask),
+                              (cl_ulong)(inptrB[i] & shift_mask));
                 }
-                else if (test == kOpShrScalar || test == kOpShlScalar) {
-                    log_error("cl_ulong Verification failed at element %zu of "
+                else if (test == kOpShrScalar || test == kOpShlScalar)
+                {
+                    log_error("%s Verification failed at element %zu of "
                               "%zu (%zu): 0x%" PRIx64 " %s 0x%" PRIx64
                               " = 0x%" PRIx64 ", got 0x%" PRIx64 "\n",
-                              i, n, j, inptrA[i], test_defs[test].op, inptrB[j], r,
-                              outptr[i]);
+                              type_name, i, n, j, (cl_ulong)inptrA[i],
+                              test_defs[test].op, (cl_ulong)inptrB[j],
+                              (cl_ulong)r, (cl_ulong)outptr[i]);
                     log_error(
                         "\t1) Scalar shift failure at element %zu: original is "
                         "0x%" PRIx64 " %s %d (0x%" PRIx64 ")\n",
-                        i, inptrA[i], test_defs[test].op, (int)inptrB[j], inptrB[j]);
+                        i, (cl_ulong)inptrA[i], test_defs[test].op,
+                        (int)inptrB[j], (cl_ulong)inptrB[j]);
                     log_error("\t2) Take the %d LSBs of the shift to get the "
-                              "final shift amount %" PRId64 " (0x%" PRIx64
+                              "final shift amount %" PRIu64 " (0x%" PRIx64
                               ").\n",
-                              (int)log2(sizeof(cl_long) * 8),
-                              inptrB[j] & shift_mask, inptrB[j] & shift_mask);
-                } else if (test == kOpTernary) {
-                    log_error("cl_int Verification failed at element %zu of "
+                              (int)log2(sizeof(T) * 8),
+                              (cl_ulong)(inptrB[j] & shift_mask),
+                              (cl_ulong)(inptrB[j] & shift_mask));
+                }
+                else if (test == kOpTernary)
+                {
+                    log_error("%s Verification failed at element %zu of "
                               "%zu (%zu): (0x%" PRIx64 " < 0x%" PRIx64
                               ") ? 0x%" PRIx64 " : 0x%" PRIx64 " = 0x%" PRIx64
                               ", got 0x%" PRIx64 "\n",
-                              i, n, j, inptrA[j], inptrB[j], inptrA[i],
-                              inptrB[i], r, outptr[i]);
-                } else {
-                    log_error("cl_ulong Verification failed at element %zu of "
-                              "%zu: 0x%" PRIx64 " %s 0x%" PRIx64 " = 0x%" PRIx64
-                              ", got 0x%" PRIx64 "\n",
-                              i, n, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
+                              type_name, i, n, j, (cl_ulong)inptrA[j],
+                              (cl_ulong)inptrB[j], (cl_ulong)inptrA[i],
+                              (cl_ulong)inptrB[i], (cl_ulong)r,
+                              (cl_ulong)outptr[i]);
+                }
+                else
+                {
+                    log_error("%s Verification failed at element %zu of "
+                              "%zu: 0x%" PRIx64 " %s 0x%" PRIx64
+                              " = 0x%" PRIx64 ", got 0x%" PRIx64 "\n",
+                              type_name, i, n, (cl_ulong)inptrA[i],
+                              test_defs[test].op, (cl_ulong)inptrB[i],
+                              (cl_ulong)r, (cl_ulong)outptr[i]);
                 }
                 count++;
-                if (count >= MAX_ERRORS_TO_PRINT) {
-                    log_error("Further errors ignored.\n");
-                    return -1;
-                }
-            }
-        }
-    }
-    if (count) return -1; else return 0;
-}
-
-// =======================================
-// int
-// =======================================
-int verify_int(int test, size_t vector_size, cl_int *inptrA_raw,
-               cl_int *inptrB_raw, cl_int *outptr, cl_int *ref, size_t n,
-               bool a_scalar, bool b_scalar, cl_event event)
-{
-    cl_int shift_mask = (sizeof(cl_int) * 8) - 1;
-    wait_for_event(event);
-    WRAP_INPUTS(cl_int);
-    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
-                       shift_mask);
-    if (memcmp(ref, outptr, n * sizeof(cl_int)) == 0)
-    {
-        return 0;
-    }
-
-    int count = 0;
-    for (size_t j = 0; j < n; j += vector_size)
-    {
-        for (size_t i = j; i < j + vector_size; i++)
-        {
-            cl_int r = ref[i];
-            if (r != outptr[i]) {
-                // Shift is tricky
-                if (test == kOpShrVec || test == kOpShlVec) {
-                    log_error("cl_int Verification failed at element %zu: 0x%x "
-                              "%s 0x%x = 0x%x, got 0x%x\n",
-                              i, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
-                    log_error("\t1) Shift failure at element %zu: original is "
-                              "0x%x %s %d (0x%x)\n",
-                              i, inptrA[i], test_defs[test].op, (int)inptrB[i],
-                              inptrB[i]);
-                    log_error("\t2) Take the %d LSBs of the shift to get the final shift amount %d (0x%x).\n", (int)log2(sizeof(cl_int)*8),  inptrB[i]&shift_mask, inptrB[i]&shift_mask);
-                }
-                else if (test == kOpShrScalar || test == kOpShlScalar) {
-                    log_error("cl_int Verification failed at element %zu "
-                              "(%zu): 0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, j, inptrA[i], test_defs[test].op, inptrB[j], r,
-                              outptr[i]);
-                    log_error("\t1) Scalar shift failure at element %zu: "
-                              "original is 0x%x %s %d (0x%x)\n",
-                              i, inptrA[i], test_defs[test].op, (int)inptrB[j],
-                              inptrB[j]);
-                    log_error("\t2) Take the %d LSBs of the shift to get the final shift amount %d (0x%x).\n", (int)log2(sizeof(cl_int)*8),  inptrB[j]&shift_mask, inptrB[j]&shift_mask);
-                } else if (test == kOpTernary) {
-                    log_error(
-                        "cl_int Verification failed at element %zu (%zu): "
-                        "(0x%x < 0x%x) ? 0x%x : 0x%x = 0x%x, got 0x%x\n",
-                        i, j, inptrA[j], inptrB[j], inptrA[i], inptrB[i], r,
-                        outptr[i]);
-                } else {
-                    log_error("cl_int Verification failed at element %zu: 0x%x "
-                              "%s 0x%x = 0x%x, got 0x%x\n",
-                              i, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
-                }
-                count++;
-                if (count >= MAX_ERRORS_TO_PRINT) {
+                if (count >= MAX_ERRORS_TO_PRINT)
+                {
                     log_error("Further errors ignored.\n");
                     return -1;
                 }
@@ -479,353 +355,23 @@ int verify_int(int test, size_t vector_size, cl_int *inptrA_raw,
         }
     }
 
-    if (count) return -1; else return 0;
+    return count ? -1 : 0;
 }
 
-// =======================================
-// uint
-// =======================================
-int verify_uint(int test, size_t vector_size, cl_uint *inptrA_raw,
-                cl_uint *inptrB_raw, cl_uint *outptr, cl_uint *ref, size_t n,
-                bool a_scalar, bool b_scalar, cl_event event)
-{
-    cl_uint shift_mask = (sizeof(cl_uint) * 8) - 1;
-    wait_for_event(event);
-    WRAP_INPUTS(cl_uint);
-    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
-                       shift_mask);
-    if (memcmp(ref, outptr, n * sizeof(cl_uint)) == 0)
-    {
-        return 0;
-    }
-    int count = 0;
-    for (size_t j = 0; j < n; j += vector_size)
-    {
-        for (size_t i = j; i < j + vector_size; i++)
-        {
-            cl_uint r = ref[i];
-            if (r != outptr[i]) {
-                // Shift is tricky
-                if (test == kOpShrVec || test == kOpShlVec) {
-                    log_error("cl_uint Verification failed at element %zu: "
-                              "0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
-                    log_error("\t1) Shift failure at element %zu: original is "
-                              "0x%x %s %d (0x%x)\n",
-                              i, inptrA[i], test_defs[test].op, (int)inptrB[i],
-                              inptrB[i]);
-                    log_error("\t2) Take the %d LSBs of the shift to get the final shift amount %d (0x%x).\n", (int)log2(sizeof(cl_uint)*8),  inptrB[i]&shift_mask, inptrB[i]&shift_mask);
-                }
-                else if (test == kOpShrScalar || test == kOpShlScalar) {
-                    log_error("cl_uint Verification failed at element %zu "
-                              "(%zu): 0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, j, inptrA[i], test_defs[test].op, inptrB[j], r,
-                              outptr[i]);
-                    log_error("\t1) Scalar shift failure at element %zu: "
-                              "original is 0x%x %s %d (0x%x)\n",
-                              i, inptrA[i], test_defs[test].op, (int)inptrB[j],
-                              inptrB[j]);
-                    log_error("\t2) Take the %d LSBs of the shift to get the final shift amount %d (0x%x).\n", (int)log2(sizeof(cl_uint)*8),  inptrB[j]&shift_mask, inptrB[j]&shift_mask);
-                } else if (test == kOpTernary) {
-                    log_error(
-                        "cl_int Verification failed at element %zu (%zu): "
-                        "(0x%x < 0x%x) ? 0x%x : 0x%x = 0x%x, got 0x%x\n",
-                        i, j, inptrA[j], inptrB[j], inptrA[i], inptrB[i], r,
-                        outptr[i]);
-                } else {
-                    log_error("cl_uint Verification failed at element %zu: "
-                              "0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
-                }
-                count++;
-                if (count >= MAX_ERRORS_TO_PRINT) {
-                    log_error("Further errors ignored.\n");
-                    return -1;
-                }
-            }
-        }
-    }
-    if (count) return -1; else return 0;
-}
-
-// =======================================
-// short
-// =======================================
-int verify_short(int test, size_t vector_size, cl_short *inptrA_raw,
-                 cl_short *inptrB_raw, cl_short *outptr, cl_short *ref,
-                 size_t n, bool a_scalar, bool b_scalar, cl_event event)
-{
-    cl_int shift_mask = vector_size == 1 ? (cl_int)(sizeof(cl_int) * 8) - 1
-                                         : (cl_int)(sizeof(cl_short) * 8) - 1;
-    wait_for_event(event);
-    WRAP_INPUTS(cl_short);
-    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
-                       shift_mask);
-    if (memcmp(ref, outptr, n * sizeof(cl_short)) == 0)
-    {
-        return 0;
-    }
-    int count = 0;
-    for (size_t j = 0; j < n; j += vector_size)
-    {
-        for (size_t i = j; i < j + vector_size; i++)
-        {
-            cl_short r = ref[i];
-            if (r != outptr[i]) {
-                // Shift is tricky
-                if (test == kOpShrVec || test == kOpShlVec) {
-                    log_error("cl_short Verification failed at element %zu: "
-                              "0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
-                    log_error("\t1) Shift failure at element %zu: original is "
-                              "0x%x %s %d (0x%x)\n",
-                              i, inptrA[i], test_defs[test].op, (int)inptrB[i],
-                              inptrB[i]);
-                    log_error("\t2) Take the %d LSBs of the shift to get the final shift amount %d (0x%x).\n", (int)log2(sizeof(cl_short)*8),  inptrB[i]&shift_mask, inptrB[i]&shift_mask);
-                }
-                else if (test == kOpShrScalar || test == kOpShlScalar) {
-                    log_error("cl_short Verification failed at element %zu "
-                              "(%zu): 0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, j, inptrA[i], test_defs[test].op, inptrB[j], r,
-                              outptr[i]);
-                    log_error("\t1) Scalar shift failure at element %zu: "
-                              "original is 0x%x %s %d (0x%x)\n",
-                              i, inptrA[i], test_defs[test].op, (int)inptrB[j],
-                              inptrB[j]);
-                    log_error("\t2) Take the %d LSBs of the shift to get the final shift amount %d (0x%x).\n", (int)log2(sizeof(cl_short)*8),  inptrB[j]&shift_mask, inptrB[j]&shift_mask);
-                } else if (test == kOpTernary) {
-                    log_error(
-                        "cl_int Verification failed at element %zu (%zu): "
-                        "(0x%x < 0x%x) ? 0x%x : 0x%x = 0x%x, got 0x%x\n",
-                        i, j, inptrA[j], inptrB[j], inptrA[i], inptrB[i], r,
-                        outptr[i]);
-                } else {
-                    log_error("cl_short Verification failed at element %zu: "
-                              "0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
-                }
-                count++;
-                if (count >= MAX_ERRORS_TO_PRINT) {
-                    log_error("Further errors ignored.\n");
-                    return -1;
-                }
-            }
-        }
-    }
-
-    if (count) return -1; else return 0;
-}
-
-// =======================================
-// ushort
-// =======================================
-int verify_ushort(int test, size_t vector_size, cl_ushort *inptrA_raw,
-                  cl_ushort *inptrB_raw, cl_ushort *outptr, cl_ushort *ref,
-                  size_t n, bool a_scalar, bool b_scalar, cl_event event)
-{
-    cl_uint shift_mask = vector_size == 1
-        ? (cl_uint)(sizeof(cl_uint) * 8) - 1
-        : (cl_uint)(sizeof(cl_ushort) * 8) - 1;
-    wait_for_event(event);
-    WRAP_INPUTS(cl_ushort);
-    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
-                       shift_mask);
-    if (memcmp(ref, outptr, n * sizeof(cl_ushort)) == 0)
-    {
-        return 0;
-    }
-    int count = 0;
-    for (size_t j = 0; j < n; j += vector_size)
-    {
-        for (size_t i = j; i < j + vector_size; i++)
-        {
-            cl_ushort r = ref[i];
-            if (r != outptr[i]) {
-                // Shift is tricky
-                if (test == kOpShrVec || test == kOpShlVec) {
-                    log_error("cl_ushort Verification failed at element %zu: "
-                              "0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
-                    log_error("\t1) Shift failure at element %zu: original is "
-                              "0x%x %s %d (0x%x)\n",
-                              i, inptrA[i], test_defs[test].op, (int)inptrB[i],
-                              inptrB[i]);
-                    log_error("\t2) Take the %d LSBs of the shift to get the final shift amount %d (0x%x).\n", (int)log2(sizeof(cl_ushort)*8),  inptrB[i]&shift_mask, inptrB[i]&shift_mask);
-                }
-                else if (test == kOpShrScalar || test == kOpShlScalar) {
-                    log_error("cl_ushort Verification failed at element %zu "
-                              "(%zu): 0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, j, inptrA[i], test_defs[test].op, inptrB[j], r,
-                              outptr[i]);
-                    log_error("\t1) Scalar shift failure at element %zu: "
-                              "original is 0x%x %s %d (0x%x)\n",
-                              i, inptrA[i], test_defs[test].op, (int)inptrB[j],
-                              inptrB[j]);
-                    log_error("\t2) Take the %d LSBs of the shift to get the final shift amount %d (0x%x).\n", (int)log2(sizeof(cl_ushort)*8),  inptrB[j]&shift_mask, inptrB[j]&shift_mask);
-                } else if (test == kOpTernary) {
-                    log_error(
-                        "cl_int Verification failed at element %zu (%zu): "
-                        "(0x%x < 0x%x) ? 0x%x : 0x%x = 0x%x, got 0x%x\n",
-                        i, j, inptrA[j], inptrB[j], inptrA[i], inptrB[i], r,
-                        outptr[i]);
-                } else {
-                    log_error("cl_ushort Verification failed at element %zu: "
-                              "0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
-                }
-                count++;
-                if (count >= MAX_ERRORS_TO_PRINT) {
-                    log_error("Further errors ignored.\n");
-                    return -1;
-                }
-            }
-        }
-    }
-
-    if (count) return -1; else return 0;
-}
-
-// =======================================
-// char
-// =======================================
-int verify_char(int test, size_t vector_size, cl_char *inptrA_raw,
-                cl_char *inptrB_raw, cl_char *outptr, cl_char *ref, size_t n,
-                bool a_scalar, bool b_scalar, cl_event event)
-{
-    cl_int shift_mask = vector_size == 1 ? (cl_int)(sizeof(cl_int) * 8) - 1
-                                         : (cl_int)(sizeof(cl_char) * 8) - 1;
-    wait_for_event(event);
-    WRAP_INPUTS(cl_char);
-    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
-                       shift_mask);
-    if (memcmp(ref, outptr, n * sizeof(cl_char)) == 0)
-    {
-        return 0;
-    }
-    int count = 0;
-    for (size_t j = 0; j < n; j += vector_size)
-    {
-        for (size_t i = j; i < j + vector_size; i++)
-        {
-            cl_char r = ref[i];
-            if (r != outptr[i]) {
-                // Shift is tricky
-                if (test == kOpShrVec || test == kOpShlVec) {
-                    log_error("cl_char Verification failed at element %zu: "
-                              "0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
-                    log_error("\t1) Shift failure at element %zu: original is "
-                              "0x%x %s %d (0x%x)\n",
-                              i, inptrA[i], test_defs[test].op, (int)inptrB[i],
-                              inptrB[i]);
-                    log_error("\t2) Take the %d LSBs of the shift to get the final shift amount %d (0x%x).\n", (int)log2(sizeof(cl_char)*8),  inptrB[i]&shift_mask, inptrB[i]&shift_mask);
-                }
-                else if (test == kOpShrScalar || test == kOpShlScalar) {
-                    log_error("cl_char Verification failed at element %zu "
-                              "(%zu): 0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, j, inptrA[i], test_defs[test].op, inptrB[j], r,
-                              outptr[i]);
-                    log_error("\t1) Scalar shift failure at element %zu: "
-                              "original is 0x%x %s %d (0x%x)\n",
-                              i, inptrA[i], test_defs[test].op, (int)inptrB[j],
-                              inptrB[j]);
-                    log_error("\t2) Take the %d LSBs of the shift to get the final shift amount %d (0x%x).\n", (int)log2(sizeof(cl_long)*8),  inptrB[j]&shift_mask, inptrB[j]&shift_mask);
-                } else if (test == kOpTernary) {
-                    log_error(
-                        "cl_int Verification failed at element %zu (%zu): "
-                        "(0x%x < 0x%x) ? 0x%x : 0x%x = 0x%x, got 0x%x\n",
-                        i, j, inptrA[j], inptrB[j], inptrA[i], inptrB[i], r,
-                        outptr[i]);
-                } else {
-                    log_error("cl_char Verification failed at element %zu: "
-                              "0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
-                }
-                count++;
-                if (count >= MAX_ERRORS_TO_PRINT) {
-                    log_error("Further errors ignored.\n");
-                    return -1;
-                }
-            }
-        }
-    }
-    if (count) return -1; else return 0;
-}
-
-// =======================================
-// uchar
-// =======================================
-int verify_uchar(int test, size_t vector_size, cl_uchar *inptrA_raw,
-                 cl_uchar *inptrB_raw, cl_uchar *outptr, cl_uchar *ref,
-                 size_t n, bool a_scalar, bool b_scalar, cl_event event)
-{
-    cl_uint shift_mask = vector_size == 1 ? (cl_uint)(sizeof(cl_uint) * 8) - 1
-                                          : (cl_uint)(sizeof(cl_uchar) * 8) - 1;
-    wait_for_event(event);
-    WRAP_INPUTS(cl_uchar);
-    compute_references(test, vector_size, inptrA, inptrB, outptr, ref, n,
-                       shift_mask);
-    if (memcmp(ref, outptr, n * sizeof(cl_uchar)) == 0)
-    {
-        return 0;
-    }
-    int count = 0;
-    for (size_t j = 0; j < n; j += vector_size)
-    {
-        for (size_t i = j; i < j + vector_size; i++)
-        {
-            cl_uchar r = ref[i];
-            if (r != outptr[i]) {
-                // Shift is tricky
-                if (test == kOpShrVec || test == kOpShlVec) {
-                    log_error("cl_uchar Verification failed at element %zu: "
-                              "0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
-                    log_error("\t1) Shift failure at element %zu: original is "
-                              "0x%x %s %d (0x%x)\n",
-                              i, inptrA[i], test_defs[test].op, (int)inptrB[i],
-                              inptrB[i]);
-                    log_error("\t2) Take the %d LSBs of the shift to get the final shift amount %d (0x%x).\n", (int)log2(sizeof(cl_uchar)*8),  inptrB[i]&shift_mask, inptrB[i]&shift_mask);
-                }
-                else if (test == kOpShrScalar || test == kOpShlScalar) {
-                    log_error("cl_uchar Verification failed at element %zu "
-                              "(%zu): 0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, j, inptrA[i], test_defs[test].op, inptrB[j], r,
-                              outptr[i]);
-                    log_error("\t1) Scalar shift failure at element %zu: "
-                              "original is 0x%x %s %d (0x%x)\n",
-                              i, inptrA[i], test_defs[test].op, (int)inptrB[j],
-                              inptrB[j]);
-                    log_error("\t2) Take the %d LSBs of the shift to get the final shift amount %d (0x%x).\n", (int)log2(sizeof(cl_uchar)*8),  inptrB[j]&shift_mask, inptrB[j]&shift_mask);
-                } else if (test == kOpTernary) {
-                    log_error(
-                        "cl_int Verification failed at element %zu (%zu): "
-                        "(0x%x < 0x%x) ? 0x%x : 0x%x = 0x%x, got 0x%x\n",
-                        i, j, inptrA[j], inptrB[j], inptrA[i], inptrB[i], r,
-                        outptr[i]);
-                } else {
-                    log_error("cl_uchar Verification failed at element %zu: "
-                              "0x%x %s 0x%x = 0x%x, got 0x%x\n",
-                              i, inptrA[i], test_defs[test].op, inptrB[i], r,
-                              outptr[i]);
-                }
-                count++;
-                if (count >= MAX_ERRORS_TO_PRINT) {
-                    log_error("Further errors ignored.\n");
-                    return -1;
-                }
-            }
-        }
-    }
-
-    if (count) return -1; else return 0;
-}
+template int verify<cl_char>(int, size_t, cl_char *, cl_char *, cl_char *,
+                             cl_char *, size_t, bool, bool, cl_event);
+template int verify<cl_uchar>(int, size_t, cl_uchar *, cl_uchar *, cl_uchar *,
+                              cl_uchar *, size_t, bool, bool, cl_event);
+template int verify<cl_short>(int, size_t, cl_short *, cl_short *, cl_short *,
+                              cl_short *, size_t, bool, bool, cl_event);
+template int verify<cl_ushort>(int, size_t, cl_ushort *, cl_ushort *,
+                               cl_ushort *, cl_ushort *, size_t, bool, bool,
+                               cl_event);
+template int verify<cl_int>(int, size_t, cl_int *, cl_int *, cl_int *, cl_int *,
+                            size_t, bool, bool, cl_event);
+template int verify<cl_uint>(int, size_t, cl_uint *, cl_uint *, cl_uint *,
+                             cl_uint *, size_t, bool, bool, cl_event);
+template int verify<cl_long>(int, size_t, cl_long *, cl_long *, cl_long *,
+                             cl_long *, size_t, bool, bool, cl_event);
+template int verify<cl_ulong>(int, size_t, cl_ulong *, cl_ulong *, cl_ulong *,
+                              cl_ulong *, size_t, bool, bool, cl_event);
