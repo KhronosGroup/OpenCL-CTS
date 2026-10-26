@@ -128,6 +128,23 @@ int test_fill_image_generic(cl_context context, cl_command_queue queue,
     {
         cl_float fillColor[ 4 ];
         read_image_pixel_float( imgHost, imageInfo, origin[ 0 ], origin[ 1 ], origin[ 2 ], fillColor );
+        if (imageInfo->format->image_channel_data_type != CL_FLOAT
+            && imageInfo->format->image_channel_data_type != CL_HALF_FLOAT
+            && !is_sRGBA_order(imageInfo->format->image_channel_order))
+        {
+            // Slightly nudge non-zero values toward zero so fillColor is not an
+            // exact multiple of 1 / max_int, testing that the implementation
+            // rounds rather than truncates when converting to normalized ints.
+            float offset =
+                0.125f / (float)get_format_max_int(imageInfo->format);
+            for (int i = 0; i < 4; i++)
+            {
+                if (fillColor[i] > 0.0f)
+                    fillColor[i] -= offset;
+                else if (fillColor[i] < 0.0f)
+                    fillColor[i] += offset;
+            }
+        }
         if (ctx.debugTrace)
             log_info( " - with value %g, %g, %g, %g\n", fillColor[ 0 ], fillColor[ 1 ], fillColor[ 2 ], fillColor[ 3 ] );
         error = clEnqueueFillImage ( queue, image, fillColor, origin, region, 0, NULL, NULL );

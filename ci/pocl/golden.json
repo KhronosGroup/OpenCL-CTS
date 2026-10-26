@@ -168,6 +168,16 @@
             "3Dto2Darray": "pass"
         }
     },
+    "test_cl_fill_images": {
+        "--num-worker-threads 2 float": {
+            "1D": "fail",
+            "2D": "fail",
+            "3D": "fail",
+            "1Darray": "fail",
+            "2Darray": "fail",
+            "1Dbuffer": "fail"
+        }
+    },
     "test_commonfns": {
         "": {
             "clamp": "pass",
