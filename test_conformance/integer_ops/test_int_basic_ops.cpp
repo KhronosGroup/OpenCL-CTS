@@ -410,61 +410,38 @@ cl_int perThreadDataInit(perThreadData *pThis, ExplicitType type,
     return CL_SUCCESS;
 }
 
-typedef struct _globalThreadData
+struct globalThreadData
 {
-    cl_device_id m_deviceID;
+    cl_device_id m_device_id;
     cl_context m_context;
     int m_num_elements;
-    int m_threadcount;
-    std::vector<int> m_vectorSizes;
+    int m_thread_count;
+    std::vector<int> m_vector_sizes;
     int m_num_runs_shift;
     TestStyle m_style;
     ExplicitType m_type;
-    MTdata *m_pRandData;
+    std::vector<MTdataHolder> m_rand_data;
     uint64_t m_offset;
-    int m_testID;
-    std::vector<std::unique_ptr<perThreadData>> m_arrPerThreadData;
-} globalThreadData;
+    int m_test_id;
+    std::vector<std::unique_ptr<perThreadData>> m_per_thread_data;
 
-
-globalThreadData *globalThreadDataNew(cl_device_id deviceID, cl_context context,
-                                      int num_elements,
-                                      const std::vector<int> &vectorSizes,
-                                      TestStyle style, int num_runs_shift,
-                                      ExplicitType type, int testID,
-                                      int threadcount)
-{
-    globalThreadData *pThis = new globalThreadData();
-    pThis->m_deviceID = deviceID;
-    pThis->m_context = context;
-    pThis->m_num_elements = num_elements;
-    pThis->m_num_runs_shift = num_runs_shift;
-    pThis->m_vectorSizes = vectorSizes;
-    pThis->m_style = style;
-    pThis->m_type = type;
-    pThis->m_offset = (uint64_t)0;
-    pThis->m_testID = testID;
-    pThis->m_threadcount = threadcount;
-
-    pThis->m_pRandData = (MTdata *)malloc(threadcount*sizeof(MTdata));
-    pThis->m_arrPerThreadData.resize(threadcount);
-    for (int i = 0; i < threadcount; ++i)
+    globalThreadData(cl_device_id device_id, cl_context context,
+                     int num_elements, const std::vector<int> &vector_sizes,
+                     TestStyle style, int num_runs_shift, ExplicitType type,
+                     int test_id, int thread_count, uint64_t offset)
+        : m_device_id(device_id), m_context(context),
+          m_num_elements(num_elements), m_thread_count(thread_count),
+          m_vector_sizes(vector_sizes), m_num_runs_shift(num_runs_shift),
+          m_style(style), m_type(type), m_offset(offset), m_test_id(test_id),
+          m_per_thread_data(thread_count)
     {
-        pThis->m_pRandData[i] = init_genrand(i+1);
+        m_rand_data.reserve(thread_count);
+        for (int i = 0; i < thread_count; ++i)
+        {
+            m_rand_data.emplace_back(i + 1);
+        }
     }
-
-    return pThis;
-}
-
-void globalThreadDataDestroy(globalThreadData * pThis)
-{
-    for (int i = 0; i < pThis->m_threadcount; ++i)
-    {
-        free_mtdata(pThis->m_pRandData[i]);
-    }
-    free(pThis->m_pRandData);
-    delete pThis;
-}
+};
 
 int test_integer_ops(cl_device_id deviceID, cl_context context,
                      cl_command_queue queue, int num_elements,
@@ -486,7 +463,7 @@ cl_int test_integer_ops_do_thread( cl_uint job_id, cl_uint thread_id, void *user
 #endif
 
     queue =  clCreateCommandQueue (threadInfoGlobal->m_context,
-                                   threadInfoGlobal->m_deviceID,0,
+                                   threadInfoGlobal->m_device_id,0,
                                    &error);
 
     if(error != CL_SUCCESS)
@@ -502,15 +479,15 @@ cl_int test_integer_ops_do_thread( cl_uint job_id, cl_uint thread_id, void *user
 #endif
 
     result = test_integer_ops(
-        threadInfoGlobal->m_deviceID, threadInfoGlobal->m_context, queue,
-        threadInfoGlobal->m_num_elements, threadInfoGlobal->m_vectorSizes,
+        threadInfoGlobal->m_device_id, threadInfoGlobal->m_context, queue,
+        threadInfoGlobal->m_num_elements, threadInfoGlobal->m_vector_sizes,
         threadInfoGlobal->m_style, threadInfoGlobal->m_num_runs_shift,
-        threadInfoGlobal->m_type, threadInfoGlobal->m_testID,
-        threadInfoGlobal->m_pRandData[thread_id],
+        threadInfoGlobal->m_type, threadInfoGlobal->m_test_id,
+        threadInfoGlobal->m_rand_data[thread_id],
         threadInfoGlobal->m_offset + threadInfoGlobal->m_num_elements * job_id,
         threadInfoGlobal->m_offset
             + threadInfoGlobal->m_num_elements * (job_id + 1),
-        threadInfoGlobal->m_arrPerThreadData[thread_id]);
+        threadInfoGlobal->m_per_thread_data[thread_id]);
 
     if(result != 0)
     {
@@ -543,7 +520,6 @@ int test_integer_ops_threaded(cl_device_id deviceID, cl_context context,
                               TestStyle style, int num_runs_shift,
                               ExplicitType type, int testID)
 {
-    globalThreadData * pThreadInfo = NULL;
     cl_int result=0;
     cl_uint threadcount = GetThreadCount();
 
@@ -594,19 +570,17 @@ int test_integer_ops_threaded(cl_device_id deviceID, cl_context context,
     uint64_t endIndx = (1ULL<<num_runs_shift);
     uint64_t jobcount = div_round_up(endIndx - startIndx, num_elements);
 
-    pThreadInfo =
-        globalThreadDataNew(deviceID, context, num_elements, vectorSizes, style,
-                            num_runs_shift, type, testID, threadcount);
-
-
-    pThreadInfo->m_offset = startIndx;
+    globalThreadData thread_info(deviceID, context, num_elements, vectorSizes,
+                                 style, num_runs_shift, type, testID,
+                                 threadcount, startIndx);
 
 #if THREAD_DEBUG
     log_error("Launching %llx jobs\n",
               jobcount);
 #endif
 
-    result = ThreadPool_Do(test_integer_ops_do_thread, (cl_uint)jobcount, (void *)pThreadInfo);
+    result = ThreadPool_Do(test_integer_ops_do_thread, (cl_uint)jobcount,
+                           (void *)&thread_info);
 
     if(result != 0)
     {
@@ -614,7 +588,6 @@ int test_integer_ops_threaded(cl_device_id deviceID, cl_context context,
         log_error("ThreadPool_Do return non-success value %d\n", result);
 
     }
-    globalThreadDataDestroy(pThreadInfo);
     return result;
 }
 
