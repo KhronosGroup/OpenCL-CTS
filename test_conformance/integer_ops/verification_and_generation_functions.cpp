@@ -140,13 +140,11 @@ static void compute_references(int test, size_t vector_size,
     }
 }
 
-static void wait_for_event(cl_event &event)
+static void wait_for_event(cl_event event)
 {
     if (event != nullptr)
     {
         clWaitForEvents(1, &event);
-        clReleaseEvent(event);
-        event = nullptr;
     }
 }
 
@@ -255,7 +253,7 @@ void init_defined_arithmetic_data(ExplicitType type, DefinedArithmeticOp op,
 // =======================================
 int verify_long(int test, size_t vector_size, cl_long *inptrA_raw,
                 cl_long *inptrB_raw, cl_long *outptr, cl_long *ref, size_t n,
-                bool a_scalar, bool b_scalar, cl_event &event)
+                bool a_scalar, bool b_scalar, cl_event event)
 {
     cl_long shift_mask = (sizeof(cl_long) * 8) - 1;
     wait_for_event(event);
@@ -338,7 +336,7 @@ int verify_long(int test, size_t vector_size, cl_long *inptrA_raw,
 // =======================================
 int verify_ulong(int test, size_t vector_size, cl_ulong *inptrA_raw,
                  cl_ulong *inptrB_raw, cl_ulong *outptr, cl_ulong *ref,
-                 size_t n, bool a_scalar, bool b_scalar, cl_event &event)
+                 size_t n, bool a_scalar, bool b_scalar, cl_event event)
 {
     cl_ulong shift_mask = (sizeof(cl_ulong) * 8) - 1;
     wait_for_event(event);
@@ -419,7 +417,7 @@ int verify_ulong(int test, size_t vector_size, cl_ulong *inptrA_raw,
 // =======================================
 int verify_int(int test, size_t vector_size, cl_int *inptrA_raw,
                cl_int *inptrB_raw, cl_int *outptr, cl_int *ref, size_t n,
-               bool a_scalar, bool b_scalar, cl_event &event)
+               bool a_scalar, bool b_scalar, cl_event event)
 {
     cl_int shift_mask = (sizeof(cl_int) * 8) - 1;
     wait_for_event(event);
@@ -489,7 +487,7 @@ int verify_int(int test, size_t vector_size, cl_int *inptrA_raw,
 // =======================================
 int verify_uint(int test, size_t vector_size, cl_uint *inptrA_raw,
                 cl_uint *inptrB_raw, cl_uint *outptr, cl_uint *ref, size_t n,
-                bool a_scalar, bool b_scalar, cl_event &event)
+                bool a_scalar, bool b_scalar, cl_event event)
 {
     cl_uint shift_mask = (sizeof(cl_uint) * 8) - 1;
     wait_for_event(event);
@@ -557,7 +555,7 @@ int verify_uint(int test, size_t vector_size, cl_uint *inptrA_raw,
 // =======================================
 int verify_short(int test, size_t vector_size, cl_short *inptrA_raw,
                  cl_short *inptrB_raw, cl_short *outptr, cl_short *ref,
-                 size_t n, bool a_scalar, bool b_scalar, cl_event &event)
+                 size_t n, bool a_scalar, bool b_scalar, cl_event event)
 {
     cl_int shift_mask = vector_size == 1 ? (cl_int)(sizeof(cl_int) * 8) - 1
                                          : (cl_int)(sizeof(cl_short) * 8) - 1;
@@ -627,7 +625,7 @@ int verify_short(int test, size_t vector_size, cl_short *inptrA_raw,
 // =======================================
 int verify_ushort(int test, size_t vector_size, cl_ushort *inptrA_raw,
                   cl_ushort *inptrB_raw, cl_ushort *outptr, cl_ushort *ref,
-                  size_t n, bool a_scalar, bool b_scalar, cl_event &event)
+                  size_t n, bool a_scalar, bool b_scalar, cl_event event)
 {
     cl_uint shift_mask = vector_size == 1
         ? (cl_uint)(sizeof(cl_uint) * 8) - 1
@@ -698,7 +696,7 @@ int verify_ushort(int test, size_t vector_size, cl_ushort *inptrA_raw,
 // =======================================
 int verify_char(int test, size_t vector_size, cl_char *inptrA_raw,
                 cl_char *inptrB_raw, cl_char *outptr, cl_char *ref, size_t n,
-                bool a_scalar, bool b_scalar, cl_event &event)
+                bool a_scalar, bool b_scalar, cl_event event)
 {
     cl_int shift_mask = vector_size == 1 ? (cl_int)(sizeof(cl_int) * 8) - 1
                                          : (cl_int)(sizeof(cl_char) * 8) - 1;
@@ -767,7 +765,7 @@ int verify_char(int test, size_t vector_size, cl_char *inptrA_raw,
 // =======================================
 int verify_uchar(int test, size_t vector_size, cl_uchar *inptrA_raw,
                  cl_uchar *inptrB_raw, cl_uchar *outptr, cl_uchar *ref,
-                 size_t n, bool a_scalar, bool b_scalar, cl_event &event)
+                 size_t n, bool a_scalar, bool b_scalar, cl_event event)
 {
     cl_uint shift_mask = vector_size == 1 ? (cl_uint)(sizeof(cl_uint) * 8) - 1
                                           : (cl_uint)(sizeof(cl_uchar) * 8) - 1;
