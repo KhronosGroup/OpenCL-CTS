@@ -15,6 +15,7 @@
 //
 #include "testBase.h"
 
+#include <memory>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -118,8 +119,9 @@ static const char *kernel_code_question_colon_V3 =
 
 
 template <typename InputTy, typename IntTy, typename GenTy>
-void init_data(uint64_t indx, uint32_t num_elements, InputTy *input_ptr[],
-               MTdata d, int num_runs_shift, GenTy (*genrand)(MTdata))
+void init_data(uint64_t indx, uint32_t num_elements, InputTy *inputA,
+               InputTy *inputB, MTdata d, int num_runs_shift,
+               GenTy (*genrand)(MTdata))
 {
     const auto &specialValues = GetIntSpecialValues<IntTy>(1, gWimpyMode);
     assert((1ULL << (num_runs_shift / 2)) >= specialValues.size());
@@ -130,21 +132,21 @@ void init_data(uint64_t indx, uint32_t num_elements, InputTy *input_ptr[],
          ((index + indx) < total_special_pairs) && index < num_elements;
          index++)
     {
-        input_ptr[0][index] = bitcast<IntTy, InputTy>(
+        inputA[index] = bitcast<IntTy, InputTy>(
             specialValues[(index + indx) % num_specials]);
-        input_ptr[1][index] = bitcast<IntTy, InputTy>(
+        inputB[index] = bitcast<IntTy, InputTy>(
             specialValues[(index + indx) / num_specials]);
     }
     for (; index < num_elements; index++)
     {
-        input_ptr[0][index] = bitcast<GenTy, InputTy>(genrand(d));
-        input_ptr[1][index] = bitcast<GenTy, InputTy>(genrand(d));
+        inputA[index] = bitcast<GenTy, InputTy>(genrand(d));
+        inputB[index] = bitcast<GenTy, InputTy>(genrand(d));
     }
 }
 
 template <typename InputTy>
-void init_data_16bit(uint64_t indx, uint32_t num_elements, InputTy *input_ptr[],
-                     MTdata d, int num_runs_shift)
+void init_data_16bit(uint64_t indx, uint32_t num_elements, InputTy *inputA,
+                     InputTy *inputB, MTdata d, int num_runs_shift)
 {
     const auto &specialValues = GetIntSpecialValues<uint16_t>(1, gWimpyMode);
     assert((1ULL << (num_runs_shift / 2)) >= specialValues.size());
@@ -155,37 +157,38 @@ void init_data_16bit(uint64_t indx, uint32_t num_elements, InputTy *input_ptr[],
          ((index + indx) < total_special_pairs) && index < num_elements;
          index++)
     {
-        input_ptr[0][index] = bitcast<uint16_t, InputTy>(
+        inputA[index] = bitcast<uint16_t, InputTy>(
             specialValues[(index + indx) % num_specials]);
-        input_ptr[1][index] = bitcast<uint16_t, InputTy>(
+        inputB[index] = bitcast<uint16_t, InputTy>(
             specialValues[(index + indx) / num_specials]);
     }
     for (; index + 1 < num_elements; index += 2)
     {
         cl_uint random = genrand_int32(d);
-        input_ptr[0][index] = bitcast<cl_ushort, InputTy>(random & 0xffff);
-        input_ptr[0][index + 1] = bitcast<cl_ushort, InputTy>(random >> 16);
+        inputA[index] = bitcast<cl_ushort, InputTy>(random & 0xffff);
+        inputA[index + 1] = bitcast<cl_ushort, InputTy>(random >> 16);
         random = genrand_int32(d);
-        input_ptr[1][index] = bitcast<cl_ushort, InputTy>(random & 0xffff);
-        input_ptr[1][index + 1] = bitcast<cl_ushort, InputTy>(random >> 16);
+        inputB[index] = bitcast<cl_ushort, InputTy>(random & 0xffff);
+        inputB[index + 1] = bitcast<cl_ushort, InputTy>(random >> 16);
     }
     if (index < num_elements)
     {
-        input_ptr[0][index] =
+        inputA[index] =
             bitcast<cl_ushort, InputTy>(genrand_int32(d) & 0xffff);
-        input_ptr[1][index] =
+        inputB[index] =
             bitcast<cl_ushort, InputTy>(genrand_int32(d) & 0xffff);
     }
 }
 
 template <typename InputTy>
-void init_data_8bit(uint64_t indx, uint32_t num_elements, InputTy *input_ptr[])
+void init_data_8bit(uint64_t indx, uint32_t num_elements, InputTy *inputA,
+                    InputTy *inputB)
 {
     for (uint32_t j = 0; j < num_elements; j++)
     {
         cl_ushort bits = (indx + j) & 0xffff;
-        input_ptr[0][j] = bitcast<cl_uchar, InputTy>(bits & 0xff);
-        input_ptr[1][j] = bitcast<cl_uchar, InputTy>(bits >> 8);
+        inputA[j] = bitcast<cl_uchar, InputTy>(bits & 0xff);
+        inputB[j] = bitcast<cl_uchar, InputTy>(bits >> 8);
     }
 }
 
@@ -259,39 +262,14 @@ inline int get_vector_size_index(int size)
 
 typedef struct _perThreadData
 {
-    cl_mem m_streams[2];
-    cl_mem m_out_streams[6];
-    cl_int *m_input_ptr[2], *m_output_ptr[6];
-    cl_int *m_reference_ptr;
+    clMemWrapper m_streams[2];
+    clMemWrapper m_out_streams[6];
+    std::vector<uint8_t> m_input_ptr[2], m_output_ptr[6];
+    std::vector<uint8_t> m_reference_ptr;
     size_t                      m_type_size;
-    cl_program m_program[NUM_TESTS][6];
-    cl_kernel m_kernel[NUM_TESTS][6];
+    clProgramWrapper m_program[NUM_TESTS][6];
+    clKernelWrapper m_kernel[NUM_TESTS][6];
 } perThreadData;
-
-void perThreadDataDestroy(perThreadData * pThis)
-{
-    // cleanup
-    if (pThis->m_streams[0] != NULL) clReleaseMemObject(pThis->m_streams[0]);
-    if (pThis->m_streams[1] != NULL) clReleaseMemObject(pThis->m_streams[1]);
-    for (int j = 0; j < 6; j++)
-    {
-        if (pThis->m_out_streams[j] != NULL)
-            clReleaseMemObject(pThis->m_out_streams[j]);
-        if (pThis->m_output_ptr[j] != NULL) free(pThis->m_output_ptr[j]);
-        for (int i = 0; i < NUM_TESTS; i++)
-        {
-            if (pThis->m_kernel[i][j] != NULL)
-                clReleaseKernel(pThis->m_kernel[i][j]);
-            if (pThis->m_program[i][j] != NULL)
-                clReleaseProgram(pThis->m_program[i][j]);
-        }
-    }
-    free(pThis->m_input_ptr[0]);
-    free(pThis->m_input_ptr[1]);
-    free(pThis->m_reference_ptr);
-
-    delete pThis;
-}
 
 
 cl_int perThreadDataInit(perThreadData *pThis, ExplicitType type,
@@ -329,10 +307,9 @@ cl_int perThreadDataInit(perThreadData *pThis, ExplicitType type,
             break;
     }
 
-    pThis->m_input_ptr[0] = (cl_int *)malloc(pThis->m_type_size * num_elements);
-    pThis->m_input_ptr[1] = (cl_int *)malloc(pThis->m_type_size * num_elements);
-    pThis->m_reference_ptr =
-        (cl_int *)malloc(pThis->m_type_size * num_elements);
+    pThis->m_input_ptr[0].resize(pThis->m_type_size * num_elements);
+    pThis->m_input_ptr[1].resize(pThis->m_type_size * num_elements);
+    pThis->m_reference_ptr.resize(pThis->m_type_size * num_elements);
     pThis->m_streams[0] =
         clCreateBuffer(context, CL_MEM_READ_WRITE,
                        pThis->m_type_size * num_elements, NULL, &err);
@@ -348,8 +325,7 @@ cl_int perThreadDataInit(perThreadData *pThis, ExplicitType type,
     for (int vSize : vectorSizes)
     {
         int vIdx = get_vector_size_index(vSize);
-        pThis->m_output_ptr[vIdx] =
-            (cl_int *)malloc(pThis->m_type_size * num_elements);
+        pThis->m_output_ptr[vIdx].resize(pThis->m_type_size * num_elements);
         pThis->m_out_streams[vIdx] =
             clCreateBuffer(context, CL_MEM_READ_WRITE,
                            pThis->m_type_size * num_elements, NULL, &err);
@@ -444,10 +420,10 @@ cl_int perThreadDataInit(perThreadData *pThis, ExplicitType type,
                 &(pThis->m_kernel[i][vIdx]), 1, &ptr, "test");
             test_error(err, "Unable to create test kernel");
             err = clSetKernelArg(pThis->m_kernel[i][vIdx], 0,
-                                 sizeof pThis->m_streams[0],
+                                 sizeof(cl_mem),
                                  &(pThis->m_streams[0]));
             err |= clSetKernelArg(pThis->m_kernel[i][vIdx], 1,
-                                  sizeof pThis->m_streams[1],
+                                  sizeof(cl_mem),
                                   &(pThis->m_streams[1]));
             test_error(err, "clSetKernelArgs failed");
         }
@@ -469,7 +445,7 @@ typedef struct _globalThreadData
     MTdata *m_pRandData;
     uint64_t m_offset;
     int m_testID;
-    perThreadData **m_arrPerThreadData;
+    std::vector<std::unique_ptr<perThreadData>> m_arrPerThreadData;
 } globalThreadData;
 
 
@@ -490,16 +466,13 @@ globalThreadData *globalThreadDataNew(cl_device_id deviceID, cl_context context,
     pThis->m_type = type;
     pThis->m_offset = (uint64_t)0;
     pThis->m_testID = testID;
-    pThis->m_arrPerThreadData = NULL;
     pThis->m_threadcount = threadcount;
 
     pThis->m_pRandData = (MTdata *)malloc(threadcount*sizeof(MTdata));
-    pThis->m_arrPerThreadData = (perThreadData **)
-    malloc(threadcount*sizeof(perThreadData *));
+    pThis->m_arrPerThreadData.resize(threadcount);
     for (int i = 0; i < threadcount; ++i)
     {
         pThis->m_pRandData[i] = init_genrand(i+1);
-        pThis->m_arrPerThreadData[i] = NULL;
     }
 
     return pThis;
@@ -510,12 +483,7 @@ void globalThreadDataDestroy(globalThreadData * pThis)
     for (int i = 0; i < pThis->m_threadcount; ++i)
     {
         free_mtdata(pThis->m_pRandData[i]);
-        if(pThis->m_arrPerThreadData[i] != NULL)
-        {
-            perThreadDataDestroy(pThis->m_arrPerThreadData[i]);
-        }
     }
-    free(pThis->m_arrPerThreadData);
     free(pThis->m_pRandData);
     delete pThis;
 }
@@ -525,7 +493,7 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                      const std::vector<int> &vectorSizes, TestStyle style,
                      int num_runs_shift, ExplicitType type, int testID,
                      MTdata randIn, uint64_t startIndx, uint64_t endIndx,
-                     perThreadData **ppThreadData);
+                     std::unique_ptr<perThreadData> &pThreadData);
 
 
 cl_int test_integer_ops_do_thread( cl_uint job_id, cl_uint thread_id, void *userInfo )
@@ -564,7 +532,7 @@ cl_int test_integer_ops_do_thread( cl_uint job_id, cl_uint thread_id, void *user
         threadInfoGlobal->m_offset + threadInfoGlobal->m_num_elements * job_id,
         threadInfoGlobal->m_offset
             + threadInfoGlobal->m_num_elements * (job_id + 1),
-        &(threadInfoGlobal->m_arrPerThreadData[thread_id]));
+        threadInfoGlobal->m_arrPerThreadData[thread_id]);
 
     if(result != 0)
     {
@@ -678,7 +646,7 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                      const std::vector<int> &vectorSizes, TestStyle style,
                      int num_runs_shift, ExplicitType type, int testID,
                      MTdata randDataIn, uint64_t startIndx, uint64_t endIndx,
-                     perThreadData **ppThreadData)
+                     std::unique_ptr<perThreadData> &pThreadData)
 {
     int err;
 
@@ -694,16 +662,14 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
         return -1;
     }
 
-    if(*ppThreadData == NULL)
+    if (!pThreadData)
     {
-        *ppThreadData = new perThreadData();
-        err = perThreadDataInit(*ppThreadData, type, num_elements, vectorSizes,
-                                style, context, start_test_ID, end_test_ID,
-                                testID);
+        pThreadData = std::make_unique<perThreadData>();
+        err = perThreadDataInit(pThreadData.get(), type, num_elements,
+                                vectorSizes, style, context, start_test_ID,
+                                end_test_ID, testID);
         test_error(err, "failed to init per thread data\n");
     }
-
-    perThreadData * pThreadData = *ppThreadData;
 
     int error_count = 0;
     for (int i = start_test_ID; i < end_test_ID; i++)
@@ -720,49 +686,56 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                 case kChar:
                     init_data_8bit<cl_char>(
                         indx, num_elements,
-                        (cl_char **)(pThreadData->m_input_ptr));
+                        (cl_char *)pThreadData->m_input_ptr[0].data(),
+                        (cl_char *)pThreadData->m_input_ptr[1].data());
                     break;
                 case kUChar:
                     init_data_8bit<cl_uchar>(
                         indx, num_elements,
-                        (cl_uchar **)(pThreadData->m_input_ptr));
+                        (cl_uchar *)pThreadData->m_input_ptr[0].data(),
+                        (cl_uchar *)pThreadData->m_input_ptr[1].data());
                     break;
                 case kShort:
                     init_data_16bit<cl_short>(
                         indx, num_elements,
-                        (cl_short **)(pThreadData->m_input_ptr), randDataIn,
-                        num_runs_shift);
+                        (cl_short *)pThreadData->m_input_ptr[0].data(),
+                        (cl_short *)pThreadData->m_input_ptr[1].data(),
+                        randDataIn, num_runs_shift);
                     break;
                 case kUShort:
                     init_data_16bit<cl_ushort>(
                         indx, num_elements,
-                        (cl_ushort **)(pThreadData->m_input_ptr), randDataIn,
-                        num_runs_shift);
+                        (cl_ushort *)pThreadData->m_input_ptr[0].data(),
+                        (cl_ushort *)pThreadData->m_input_ptr[1].data(),
+                        randDataIn, num_runs_shift);
                     break;
                 case kInt:
                     init_data<cl_int, uint32_t, cl_uint>(
                         indx, num_elements,
-                        (cl_int **)(pThreadData->m_input_ptr), randDataIn,
-                        num_runs_shift, genrand_int32);
+                        (cl_int *)pThreadData->m_input_ptr[0].data(),
+                        (cl_int *)pThreadData->m_input_ptr[1].data(),
+                        randDataIn, num_runs_shift, genrand_int32);
                     break;
                 case kUInt:
                     init_data<cl_uint, uint32_t, cl_uint>(
                         indx, num_elements,
-                        (cl_uint **)(pThreadData->m_input_ptr), randDataIn,
-                        num_runs_shift, genrand_int32);
+                        (cl_uint *)pThreadData->m_input_ptr[0].data(),
+                        (cl_uint *)pThreadData->m_input_ptr[1].data(),
+                        randDataIn, num_runs_shift, genrand_int32);
                     break;
                 case kLong:
                     init_data<cl_long, uint64_t, cl_ulong>(
                         indx, num_elements,
-                        (cl_long **)(pThreadData->m_input_ptr), randDataIn,
-                        num_runs_shift, genrand_int64);
+                        (cl_long *)pThreadData->m_input_ptr[0].data(),
+                        (cl_long *)pThreadData->m_input_ptr[1].data(),
+                        randDataIn, num_runs_shift, genrand_int64);
                     break;
                 case kULong:
                     init_data<cl_ulong, uint64_t, cl_ulong>(
                         indx, num_elements,
-                        (cl_ulong **)(pThreadData->m_input_ptr), randDataIn,
-                        num_runs_shift, genrand_int64);
-                    break;
+                        (cl_ulong *)pThreadData->m_input_ptr[0].data(),
+                        (cl_ulong *)pThreadData->m_input_ptr[1].data(),
+                        randDataIn, num_runs_shift, genrand_int64);
                     break;
                 default:
                     err = 1;
@@ -773,20 +746,21 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
             if (auto definedOp = get_defined_arithmetic_op(tests[i]))
             {
                 init_defined_arithmetic_data(
-                    type, *definedOp, num_elements, pThreadData->m_input_ptr[0],
-                    pThreadData->m_input_ptr[1], randDataIn);
+                    type, *definedOp, num_elements,
+                    pThreadData->m_input_ptr[0].data(),
+                    pThreadData->m_input_ptr[1].data(), randDataIn);
             }
 
             // Copy to GPU once (maximum size)
             err = clEnqueueWriteBuffer(
                 queue, pThreadData->m_streams[0], CL_FALSE, 0,
                 pThreadData->m_type_size * num_elements,
-                (void *)pThreadData->m_input_ptr[0], 0, NULL, NULL);
+                pThreadData->m_input_ptr[0].data(), 0, NULL, NULL);
             test_error(err, "clEnqueueWriteBuffer failed");
             err = clEnqueueWriteBuffer(
                 queue, pThreadData->m_streams[1], CL_FALSE, 0,
                 pThreadData->m_type_size * num_elements,
-                (void *)pThreadData->m_input_ptr[1], 0, NULL, NULL);
+                pThreadData->m_input_ptr[1].data(), 0, NULL, NULL);
             test_error(err, "clEnqueueWriteBuffer failed");
 
             std::vector<cl_event> read_events(6, nullptr);
@@ -798,7 +772,7 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                 size_t threads = (size_t)num_elements / vSize;
 
                 err = clSetKernelArg(pThreadData->m_kernel[i][vIdx], 2,
-                                     sizeof(pThreadData->m_out_streams[vIdx]),
+                                     sizeof(cl_mem),
                                      &(pThreadData->m_out_streams[vIdx]));
                 test_error(err, "clSetKernelArg output failed");
 
@@ -810,7 +784,7 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                 err = clEnqueueReadBuffer(
                     queue, pThreadData->m_out_streams[vIdx], CL_FALSE, 0,
                     pThreadData->m_type_size * num_elements,
-                    (void *)pThreadData->m_output_ptr[vIdx], 0, NULL,
+                    pThreadData->m_output_ptr[vIdx].data(), 0, NULL,
                     &read_events[vIdx]);
                 test_error(err, "clEnqueueReadBuffer failed");
             }
@@ -829,73 +803,81 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                 {
                     case kChar:
                         err = verify_char(
-                            i, vSize, (cl_char *)pThreadData->m_input_ptr[0],
-                            (cl_char *)pThreadData->m_input_ptr[1],
-                            (cl_char *)pThreadData->m_output_ptr[vIdx],
-                            (cl_char *)pThreadData->m_reference_ptr,
+                            i, vSize,
+                            (cl_char *)pThreadData->m_input_ptr[0].data(),
+                            (cl_char *)pThreadData->m_input_ptr[1].data(),
+                            (cl_char *)pThreadData->m_output_ptr[vIdx].data(),
+                            (cl_char *)pThreadData->m_reference_ptr.data(),
                             element_computed, a_scalar, b_scalar,
                             read_events[vIdx]);
                         break;
                     case kUChar:
                         err = verify_uchar(
-                            i, vSize, (cl_uchar *)pThreadData->m_input_ptr[0],
-                            (cl_uchar *)pThreadData->m_input_ptr[1],
-                            (cl_uchar *)pThreadData->m_output_ptr[vIdx],
-                            (cl_uchar *)pThreadData->m_reference_ptr,
+                            i, vSize,
+                            (cl_uchar *)pThreadData->m_input_ptr[0].data(),
+                            (cl_uchar *)pThreadData->m_input_ptr[1].data(),
+                            (cl_uchar *)pThreadData->m_output_ptr[vIdx].data(),
+                            (cl_uchar *)pThreadData->m_reference_ptr.data(),
                             element_computed, a_scalar, b_scalar,
                             read_events[vIdx]);
                         break;
                     case kShort:
                         err = verify_short(
-                            i, vSize, (cl_short *)pThreadData->m_input_ptr[0],
-                            (cl_short *)pThreadData->m_input_ptr[1],
-                            (cl_short *)pThreadData->m_output_ptr[vIdx],
-                            (cl_short *)pThreadData->m_reference_ptr,
+                            i, vSize,
+                            (cl_short *)pThreadData->m_input_ptr[0].data(),
+                            (cl_short *)pThreadData->m_input_ptr[1].data(),
+                            (cl_short *)pThreadData->m_output_ptr[vIdx].data(),
+                            (cl_short *)pThreadData->m_reference_ptr.data(),
                             element_computed, a_scalar, b_scalar,
                             read_events[vIdx]);
                         break;
                     case kUShort:
                         err = verify_ushort(
-                            i, vSize, (cl_ushort *)pThreadData->m_input_ptr[0],
-                            (cl_ushort *)pThreadData->m_input_ptr[1],
-                            (cl_ushort *)pThreadData->m_output_ptr[vIdx],
-                            (cl_ushort *)pThreadData->m_reference_ptr,
+                            i, vSize,
+                            (cl_ushort *)pThreadData->m_input_ptr[0].data(),
+                            (cl_ushort *)pThreadData->m_input_ptr[1].data(),
+                            (cl_ushort *)pThreadData->m_output_ptr[vIdx].data(),
+                            (cl_ushort *)pThreadData->m_reference_ptr.data(),
                             element_computed, a_scalar, b_scalar,
                             read_events[vIdx]);
                         break;
                     case kInt:
                         err = verify_int(
-                            i, vSize, (cl_int *)pThreadData->m_input_ptr[0],
-                            (cl_int *)pThreadData->m_input_ptr[1],
-                            (cl_int *)pThreadData->m_output_ptr[vIdx],
-                            (cl_int *)pThreadData->m_reference_ptr,
+                            i, vSize,
+                            (cl_int *)pThreadData->m_input_ptr[0].data(),
+                            (cl_int *)pThreadData->m_input_ptr[1].data(),
+                            (cl_int *)pThreadData->m_output_ptr[vIdx].data(),
+                            (cl_int *)pThreadData->m_reference_ptr.data(),
                             element_computed, a_scalar, b_scalar,
                             read_events[vIdx]);
                         break;
                     case kUInt:
                         err = verify_uint(
-                            i, vSize, (cl_uint *)pThreadData->m_input_ptr[0],
-                            (cl_uint *)pThreadData->m_input_ptr[1],
-                            (cl_uint *)pThreadData->m_output_ptr[vIdx],
-                            (cl_uint *)pThreadData->m_reference_ptr,
+                            i, vSize,
+                            (cl_uint *)pThreadData->m_input_ptr[0].data(),
+                            (cl_uint *)pThreadData->m_input_ptr[1].data(),
+                            (cl_uint *)pThreadData->m_output_ptr[vIdx].data(),
+                            (cl_uint *)pThreadData->m_reference_ptr.data(),
                             element_computed, a_scalar, b_scalar,
                             read_events[vIdx]);
                         break;
                     case kLong:
                         err = verify_long(
-                            i, vSize, (cl_long *)pThreadData->m_input_ptr[0],
-                            (cl_long *)pThreadData->m_input_ptr[1],
-                            (cl_long *)pThreadData->m_output_ptr[vIdx],
-                            (cl_long *)pThreadData->m_reference_ptr,
+                            i, vSize,
+                            (cl_long *)pThreadData->m_input_ptr[0].data(),
+                            (cl_long *)pThreadData->m_input_ptr[1].data(),
+                            (cl_long *)pThreadData->m_output_ptr[vIdx].data(),
+                            (cl_long *)pThreadData->m_reference_ptr.data(),
                             element_computed, a_scalar, b_scalar,
                             read_events[vIdx]);
                         break;
                     case kULong:
                         err = verify_ulong(
-                            i, vSize, (cl_ulong *)pThreadData->m_input_ptr[0],
-                            (cl_ulong *)pThreadData->m_input_ptr[1],
-                            (cl_ulong *)pThreadData->m_output_ptr[vIdx],
-                            (cl_ulong *)pThreadData->m_reference_ptr,
+                            i, vSize,
+                            (cl_ulong *)pThreadData->m_input_ptr[0].data(),
+                            (cl_ulong *)pThreadData->m_input_ptr[1].data(),
+                            (cl_ulong *)pThreadData->m_output_ptr[vIdx].data(),
+                            (cl_ulong *)pThreadData->m_reference_ptr.data(),
                             element_computed, a_scalar, b_scalar,
                             read_events[vIdx]);
                         break;
