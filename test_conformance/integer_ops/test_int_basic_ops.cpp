@@ -172,10 +172,8 @@ void init_data_16bit(uint64_t indx, uint32_t num_elements, InputTy *inputA,
     }
     if (index < num_elements)
     {
-        inputA[index] =
-            bitcast<cl_ushort, InputTy>(genrand_int32(d) & 0xffff);
-        inputB[index] =
-            bitcast<cl_ushort, InputTy>(genrand_int32(d) & 0xffff);
+        inputA[index] = bitcast<cl_ushort, InputTy>(genrand_int32(d) & 0xffff);
+        inputB[index] = bitcast<cl_ushort, InputTy>(genrand_int32(d) & 0xffff);
     }
 }
 
@@ -264,7 +262,7 @@ typedef struct _perThreadData
     clMemWrapper m_out_streams[6];
     std::vector<uint8_t> m_input_ptr[2], m_output_ptr[6];
     std::vector<uint8_t> m_reference_ptr;
-    size_t                      m_type_size;
+    size_t m_type_size;
     clProgramWrapper m_program[NUM_TESTS][6];
     clKernelWrapper m_kernel[NUM_TESTS][6];
 } perThreadData;
@@ -371,12 +369,12 @@ cl_int perThreadDataInit(perThreadData *pThis, ExplicitType type,
                             test_def.op, ((vectorSize == 1) ? "" : ".s0"));
                     break;
                 case kKernelUnary:
-                    sprintf(
-                        programString,
-                        vectorSize == 3 ? not_kernel_code_V3 : not_kernel_code,
-                        type_name, inputAVectorString, type_name,
-                        inputBVectorString, out_type_name, vectorString,
-                        test_def.op);
+                    sprintf(programString,
+                            vectorSize == 3 ? not_kernel_code_V3
+                                            : not_kernel_code,
+                            type_name, inputAVectorString, type_name,
+                            inputBVectorString, out_type_name, vectorString,
+                            test_def.op);
                     break;
                 case kKernelQuestionColon:
                     sprintf(programString,
@@ -399,11 +397,9 @@ cl_int perThreadDataInit(perThreadData *pThis, ExplicitType type,
                 context, &(pThis->m_program[i][vIdx]),
                 &(pThis->m_kernel[i][vIdx]), 1, &ptr, "test");
             test_error(err, "Unable to create test kernel");
-            err = clSetKernelArg(pThis->m_kernel[i][vIdx], 0,
-                                 sizeof(cl_mem),
+            err = clSetKernelArg(pThis->m_kernel[i][vIdx], 0, sizeof(cl_mem),
                                  &(pThis->m_streams[0]));
-            err |= clSetKernelArg(pThis->m_kernel[i][vIdx], 1,
-                                  sizeof(cl_mem),
+            err |= clSetKernelArg(pThis->m_kernel[i][vIdx], 1, sizeof(cl_mem),
                                   &(pThis->m_streams[1]));
             test_error(err, "clSetKernelArgs failed");
         }
@@ -460,13 +456,12 @@ cl_int test_integer_ops_do_thread( cl_uint job_id, cl_uint thread_id, void *user
     cl_command_queue queue;
 
 #if THREAD_DEBUG
-    log_error("Thread %u (job %u) about to create command queue\n",
-              thread_id, job_id);
+    log_error("Thread %u (job %u) about to create command queue\n", thread_id,
+              job_id);
 #endif
 
-    queue =  clCreateCommandQueue (threadInfoGlobal->m_context,
-                                   threadInfoGlobal->m_device_id,0,
-                                   &error);
+    queue = clCreateCommandQueue(threadInfoGlobal->m_context,
+                                 threadInfoGlobal->m_device_id, 0, &error);
 
     if(error != CL_SUCCESS)
     {
@@ -476,8 +471,7 @@ cl_int test_integer_ops_do_thread( cl_uint job_id, cl_uint thread_id, void *user
     }
 
 #if THREAD_DEBUG
-    log_error("Thread %u (job %u) created command queue\n",
-              thread_id, job_id);
+    log_error("Thread %u (job %u) created command queue\n", thread_id, job_id);
 #endif
 
     result = test_integer_ops(
@@ -588,7 +582,6 @@ int test_integer_ops_threaded(cl_device_id deviceID, cl_context context,
     {
         // cleanup ??
         log_error("ThreadPool_Do return non-success value %d\n", result);
-
     }
     return result;
 }
@@ -621,10 +614,10 @@ int run_integer_ops_for_type(cl_command_queue queue, int num_elements,
 
             if (auto definedOp = get_defined_arithmetic_op(test_defs[i].op))
             {
-                init_defined_arithmetic_data(
-                    type, *definedOp, num_elements,
-                    pThreadData->m_input_ptr[0].data(),
-                    pThreadData->m_input_ptr[1].data(), randDataIn);
+                init_defined_arithmetic_data(type, *definedOp, num_elements,
+                                             pThreadData->m_input_ptr[0].data(),
+                                             pThreadData->m_input_ptr[1].data(),
+                                             randDataIn);
             }
 
             // Copy to GPU once (maximum size)
@@ -689,13 +682,12 @@ int run_integer_ops_for_type(cl_command_queue queue, int num_elements,
                 prev_vSize = vSize;
 
                 int element_computed = (num_elements / vSize) * vSize;
-                err = verify<T>(i, vSize,
-                                (T *)pThreadData->m_input_ptr[0].data(),
-                                (T *)pThreadData->m_input_ptr[1].data(),
-                                (T *)pThreadData->m_output_ptr[vIdx].data(),
-                                (T *)pThreadData->m_reference_ptr.data(),
-                                element_computed, a_scalar, b_scalar,
-                                read_events[vIdx], compute_ref);
+                err = verify<T>(
+                    i, vSize, (T *)pThreadData->m_input_ptr[0].data(),
+                    (T *)pThreadData->m_input_ptr[1].data(),
+                    (T *)pThreadData->m_output_ptr[vIdx].data(),
+                    (T *)pThreadData->m_reference_ptr.data(), element_computed,
+                    a_scalar, b_scalar, read_events[vIdx], compute_ref);
 
                 error_count += err ? 1 : 0;
             }
@@ -718,11 +710,13 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
     // Figure out which sub-test to run, or all of them
     int start_test_ID = 0;
     int end_test_ID = NUM_TESTS;
-    if (testID != -1) {
+    if (testID != -1)
+    {
         start_test_ID = testID;
-        end_test_ID = testID+1;
+        end_test_ID = testID + 1;
     }
-    if (testID > NUM_TESTS) {
+    if (testID > NUM_TESTS)
+    {
         log_error("Invalid test ID: %d\n", testID);
         return -1;
     }
@@ -778,9 +772,7 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                 queue, num_elements, vectorSizes, style, num_runs_shift, type,
                 start_test_ID, end_test_ID, randDataIn, startIndx, endIndx,
                 pThreadData.get());
-        default:
-            log_error("Invalid type.\n");
-            return 1;
+        default: log_error("Invalid type.\n"); return 1;
     }
 }
 
@@ -793,7 +785,10 @@ int run_specific_test(cl_device_id deviceID, cl_context context, cl_command_queu
 }
 
 // Run multiple tests for a given type
-int run_multiple_tests(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num, TestGroup group) {
+int run_multiple_tests(cl_device_id deviceID, cl_context context,
+                       cl_command_queue queue, int num_elements,
+                       ExplicitType type, int num, TestGroup group)
+{
     int errors = 0;
 
     if (gWimpyMode)
@@ -804,8 +799,10 @@ int run_multiple_tests(cl_device_id deviceID, cl_context context, cl_command_que
         if (test_defs[i].group != group) continue;
 
         int localErrors;
-        log_info("Testing \"%s\" ", test_defs[i].name);  fflush( stdout );
-        localErrors = run_specific_test(deviceID, context, queue, num_elements, type, num, i);
+        log_info("Testing \"%s\" ", test_defs[i].name);
+        fflush(stdout);
+        localErrors = run_specific_test(deviceID, context, queue, num_elements,
+                                        type, num, i);
         if( localErrors )
             log_info( "FAILED\n" );
         else
@@ -819,22 +816,26 @@ int run_multiple_tests(cl_device_id deviceID, cl_context context, cl_command_que
 
 // Run all the math tests for a given type
 int run_test_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num) {
-    return run_multiple_tests(deviceID, context, queue, num_elements, type, num, kGroupMath);
+    return run_multiple_tests(deviceID, context, queue, num_elements, type, num,
+                              kGroupMath);
 }
 
 // Run all the logic tests for a given type
 int run_test_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num) {
-    return run_multiple_tests(deviceID, context, queue, num_elements, type, num, kGroupLogic);
+    return run_multiple_tests(deviceID, context, queue, num_elements, type, num,
+                              kGroupLogic);
 }
 
 // Run all the shifting tests for a given type
 int run_test_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num) {
-    return run_multiple_tests(deviceID, context, queue, num_elements, type, num, kGroupShift);
+    return run_multiple_tests(deviceID, context, queue, num_elements, type, num,
+                              kGroupShift);
 }
 
 // Run all the comparison tests for a given type
 int run_test_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num) {
-    return run_multiple_tests(deviceID, context, queue, num_elements, type, num, kGroupCompare);
+    return run_multiple_tests(deviceID, context, queue, num_elements, type, num,
+                              kGroupCompare);
 }
 
 // Run all tests for a given type
